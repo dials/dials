@@ -4,6 +4,7 @@ conda-forge::python.app
 conda-forge::hdf5-external-filter-plugins
 conda-forge::libcxx
 
+conda-forge::colorlog
 conda-forge::dials-data
 conda-forge::mrcfile
 conda-forge::msgpack-python=0.6.2
@@ -14,6 +15,7 @@ conda-forge::pyrtf
 conda-forge::alabaster
 conda-forge::biopython=1.73
 conda-forge::bzip2
+conda-forge::conda
 conda-forge::cython>=0.29,<0.30
 conda-forge::docutils
 conda-forge::future
@@ -29,7 +31,7 @@ conda-forge::pip
 conda-forge::psutil
 conda-forge::pytest>=4.5,<5.0
 conda-forge::pytest-forked
-conda-forge::pytest-mock
+conda-forge::pytest-mock<2.0
 conda-forge::pytest-xdist
 conda-forge::python>=3.6,<3.7
 conda-forge::requests

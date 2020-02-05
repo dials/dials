@@ -17,6 +17,7 @@ from dials.command_line import symmetry
 from dials.command_line.symmetry import (
     apply_change_of_basis_ops,
     change_of_basis_ops_to_minimum_cell,
+    eliminate_sys_absent,
     median_unit_cell,
 )
 
@@ -90,19 +91,21 @@ def test_symmetry_basis_changes_for_C2(tmpdir):
         )
 
 
-def test_symmetry_with_absences(dials_data, tmpdir):
+@pytest.mark.parametrize("option", ["", "exclude_images=0:1500:1800"])
+def test_symmetry_with_absences(dials_data, tmpdir, option):
     """Simple test to check that dials.symmetry, with absences, completes"""
 
-    result = procrunner.run(
-        [
-            "dials.symmetry",
-            dials_data("l_cysteine_dials_output") / "20_integrated_experiments.json",
-            dials_data("l_cysteine_dials_output") / "20_integrated.pickle",
-            dials_data("l_cysteine_dials_output") / "25_integrated_experiments.json",
-            dials_data("l_cysteine_dials_output") / "25_integrated.pickle",
-        ],
-        working_directory=tmpdir,
-    )
+    cmd = [
+        "dials.symmetry",
+        dials_data("l_cysteine_dials_output") / "20_integrated_experiments.json",
+        dials_data("l_cysteine_dials_output") / "20_integrated.pickle",
+        dials_data("l_cysteine_dials_output") / "25_integrated_experiments.json",
+        dials_data("l_cysteine_dials_output") / "25_integrated.pickle",
+    ]
+    if option:
+        cmd.append(option)
+
+    result = procrunner.run(cmd, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
     assert tmpdir.join("symmetrized.refl").check()
     assert tmpdir.join("symmetrized.expt").check()
@@ -295,7 +298,12 @@ def test_change_of_basis_ops_to_minimum_cell_1037(mocker):
     cb_ops = change_of_basis_ops_to_minimum_cell(
         expts, max_delta=5, relative_length_tolerance=0.05, absolute_angle_tolerance=2
     )
-    assert symmetry.unit_cells_are_similar_to.return_value is True
+    import pytest_mock
+
+    if pytest_mock.version.startswith("1."):
+        assert symmetry.unit_cells_are_similar_to.return_value is True
+    else:
+        assert symmetry.unit_cells_are_similar_to.spy_return is True
     cb_ops_as_xyz = [cb_op.as_xyz() for cb_op in cb_ops]
     assert len(set(cb_ops_as_xyz)) == 1
     # Actual cb_ops are machine dependent (sigh)
@@ -319,3 +327,20 @@ def test_median_cell():
 
     median = median_unit_cell(expts)
     assert median.parameters() == pytest.approx((10.1, 11.1, 12, 90, 85, 90))
+
+
+def test_eliminate_sys_absent():
+    refl = flex.reflection_table()
+    refl["miller_index"] = flex.miller_index(
+        [(-31, -5, -3), (-25, -3, -3), (0, 1, 0), (-42, -8, -2)]
+    )
+    sgi = sgtbx.space_group_info("C121")
+    uc = sgi.any_compatible_unit_cell(volume=1000)
+    B = scitbx.matrix.sqr(uc.fractionalization_matrix()).transpose()
+    expt = Experiment(crystal=Crystal(B, space_group=sgi.group(), reciprocal=True))
+    reflections = eliminate_sys_absent([expt], [refl])
+    assert list(reflections[0]["miller_index"]) == [
+        (-31, -5, -3),
+        (-25, -3, -3),
+        (-42, -8, -2),
+    ]

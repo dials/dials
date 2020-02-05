@@ -593,7 +593,7 @@ class IntegrationManager(object):
         reference = self.reference
         reflections = self.manager.split(index)
         if len(reflections) == 0:
-            logger.warning("*** WARNING: no reflections in job %d ***", index)
+            logger.warning("No reflections in job %d ***", index)
             task = NullTask(index=index, reflections=reflections)
         else:
             task = IntegrationJob(
@@ -1059,7 +1059,7 @@ class ReferenceCalculatorManager(object):
         experiments = self.experiments
         reflections = self.manager.split(index)
         if len(reflections) == 0:
-            logger.warning("*** WARNING: no reflections in job %d ***", index)
+            logger.warning("No reflections in job %d ***", index)
             task = NullTask(index=index, reflections=reflections)
         else:
             task = ReferenceCalculatorJob(

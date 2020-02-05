@@ -15,6 +15,7 @@ from dials.algorithms.scaling.plots import (
     plot_outliers,
     normal_probability_plot,
     error_model_variance_plot,
+    error_regression_plot,
 )
 from dials.algorithms.scaling.model.model import plot_scaling_models
 from dials.report.analysis import (
@@ -24,6 +25,9 @@ from dials.report.analysis import (
 from dials.algorithms.scaling.error_model.error_model import (
     calc_sigmaprime,
     calc_deltahl,
+)
+from dials.algorithms.scaling.error_model.error_model_target import (
+    calculate_regression_x_y,
 )
 from dials.report.plots import (
     scale_rmerge_vs_batch_plot,
@@ -110,14 +114,18 @@ class ScalingSummaryGenerator(Observer):
         valid_ranges = get_valid_image_ranges(scaling_script.experiments)
         image_ranges = get_image_ranges(scaling_script.experiments)
         msg = []
-        for (img, valid, exp) in zip(
-            image_ranges, valid_ranges, scaling_script.experiments
+        for (img, valid, refl) in zip(
+            image_ranges, valid_ranges, scaling_script.reflections
         ):
             if valid:
                 if len(valid) > 1 or valid[0][0] != img[0] or valid[-1][1] != img[1]:
                     msg.append(
-                        "Excluded images for experiment identifier: %s, image range: %s, limited range: %s"
-                        % (exp.identifier, list(img), list(valid))
+                        "Excluded images for experiment id: %s, image range: %s, limited range: %s"
+                        % (
+                            refl.experiment_identifiers().keys()[0],
+                            list(img),
+                            list(valid),
+                        )
                     )
         if msg:
             msg = ["Summary of image ranges removed:"] + msg
@@ -193,6 +201,7 @@ class ScalingHTMLGenerator(Observer):
                 page_title="DIALS scaling report",
                 scaling_model_graphs=self.data["scaling_model"],
                 scaling_tables=self.data["scaling_tables"],
+                error_model_summary=self.data["error_model_summary"],
                 resolution_plots=self.data["resolution_plots"],
                 scaling_outlier_graphs=self.data["outlier_plots"],
                 error_model_plots=self.data["error_model_plots"],
@@ -220,9 +229,8 @@ class ScalingModelObserver(Observer):
         active_scalers = getattr(scaler, "active_scalers", False)
         if not active_scalers:
             active_scalers = [scaler]
-        for s in active_scalers:
-            id_ = s.experiment.identifier
-            self.data[id_] = s.experiment.scaling_model.to_dict()
+        for i, s in enumerate(active_scalers):
+            self.data[i] = s.experiment.scaling_model.to_dict()
 
     def make_plots(self):
         """Generate scaling model component plot data."""
@@ -280,23 +288,26 @@ class ScalingOutlierObserver(Observer):
         active_scalers = getattr(scaler, "active_scalers")
         if not active_scalers:
             active_scalers = [scaler]
-        for scaler in active_scalers:
-            id_ = scaler.experiment.identifier
+        for j, scaler in enumerate(active_scalers):
             outlier_isel = scaler.suitable_refl_for_scaling_sel.iselection().select(
                 scaler.outliers
             )
             x, y, z = (
                 scaler.reflection_table["xyzobs.px.value"].select(outlier_isel).parts()
             )
-            self.data[id_] = {
+            if scaler.experiment.scan:
+                zrange = [
+                    i / scaler.experiment.scan.get_oscillation()[1]
+                    for i in scaler.experiment.scan.get_oscillation_range()
+                ]
+            else:
+                zrange = [0, 0]
+            self.data[j] = {
                 "x": list(x),
                 "y": list(y),
                 "z": list(z),
                 "image_size": scaler.experiment.detector[0].get_image_size(),
-                "z_range": [
-                    i / scaler.experiment.scan.get_oscillation()[1]
-                    for i in scaler.experiment.scan.get_oscillation_range()
-                ],
+                "z_range": zrange,
             }
 
     def make_plots(self):
@@ -320,25 +331,37 @@ class ErrorModelObserver(Observer):
     """
 
     def update(self, scaler):
-        if scaler.error_model.filtered_Ih_table:
-            table = scaler.error_model.filtered_Ih_table
-            self.data["intensity"] = table.intensities
-            sigmaprime = calc_sigmaprime(scaler.error_model.parameters, table)
-            self.data["delta_hl"] = calc_deltahl(table, table.calc_nh(), sigmaprime)
-            self.data["inv_scale"] = table.inverse_scale_factors
-            self.data["sigma"] = sigmaprime * self.data["inv_scale"]
-            self.data["binning_info"] = scaler.error_model.components["b"].binning_info
-            scaler.error_model.clear_Ih_table()
+        if scaler.error_model:
+            if scaler.error_model.filtered_Ih_table:
+                table = scaler.error_model.filtered_Ih_table
+                self.data["intensity"] = table.intensities
+                sigmaprime = calc_sigmaprime(scaler.error_model.parameters, table)
+                self.data["delta_hl"] = calc_deltahl(table, table.calc_nh(), sigmaprime)
+                self.data["inv_scale"] = table.inverse_scale_factors
+                self.data["sigma"] = sigmaprime * self.data["inv_scale"]
+                self.data["binning_info"] = scaler.error_model.binner.binning_info
+                scaler.error_model.clear_Ih_table()
+            if scaler.params.weighting.error_model.basic.minimisation == "regression":
+                x, y = calculate_regression_x_y(scaler.error_model.filtered_Ih_table)
+                self.data["regression_x"] = x
+                self.data["regression_y"] = y
+                self.data["model_a"] = scaler.error_model.parameters[0]
+                self.data["model_b"] = scaler.error_model.parameters[1]
+            self.data["summary"] = str(scaler.error_model)
 
     def make_plots(self):
         """Generate normal probability plot data."""
-        d = {"error_model_plots": {}}
+        d = {"error_model_plots": {}, "error_model_summary": "No error model applied"}
         if "delta_hl" in self.data:
             d["error_model_plots"].update(normal_probability_plot(self.data))
             d["error_model_plots"].update(
                 i_over_sig_i_vs_i_plot(self.data["intensity"], self.data["sigma"])
             )
             d["error_model_plots"].update(error_model_variance_plot(self.data))
+            if "regression_x" in self.data:
+                d["error_model_plots"].update(error_regression_plot(self.data))
+        if "summary" in self.data:
+            d["error_model_summary"] = self.data["summary"]
         return d
 
 

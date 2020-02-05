@@ -7,14 +7,15 @@ import math
 
 import pytest
 from dials.algorithms.scaling.error_model.error_model import (
-    get_error_model,
     calc_sigmaprime,
     calc_deltahl,
-    BasicErrorModelParameterisation,
+    BasicErrorModel,
+    ErrorModelB_APM,
 )
 from dials.algorithms.scaling.error_model.error_model_target import ErrorModelTargetB
 from dials.algorithms.scaling.Ih_table import IhTable
-from dials.algorithms.scaling.scaling_refiner import error_model_refinery
+from dials.algorithms.scaling.error_model.engine import ErrorModelRefinery
+
 from dials.array_family import flex
 from dials.util.options import OptionParser
 from libtbx import phil
@@ -161,16 +162,14 @@ def test_error_model_on_simulated_data(
     )
 
     Ih_table = IhTable([data], space_group("P 2ac 2ab"))
-    em = get_error_model("basic")
+
     block = Ih_table.blocked_data_list[0]
-    em.min_reflections_required = 250
+    BasicErrorModel.min_reflections_required = 250
     params = generated_param()
 
-    error_model = em(block, params)
-    assert error_model.components["b"].summation_matrix.n_rows > 400
-    refinery = error_model_refinery(
-        engine="SimpleLBFGS", model=error_model, max_iterations=100
-    )
+    error_model = BasicErrorModel(block, params.weighting.error_model.basic)
+    assert error_model.binner.summation_matrix.n_rows > 400
+    refinery = ErrorModelRefinery(error_model, parameters_to_refine=["a", "b"])
     refinery.run()
     assert refinery.model.parameters[0] == pytest.approx(model_a, abs=abs_tolerances[0])
     assert abs(refinery.model.parameters[1]) == pytest.approx(
@@ -181,24 +180,21 @@ def test_error_model_on_simulated_data(
 def test_errormodel(large_reflection_table, test_sg):
     """Test the initialisation and methods of the error model."""
 
-    # first test get_error_model helper function.
-    with pytest.raises(ValueError):
-        em = get_error_model("bad")
-    em = get_error_model("basic")
+    em = BasicErrorModel
     em.min_reflections_required = 1
     Ih_table = IhTable([large_reflection_table], test_sg, nblocks=1)
     block = Ih_table.blocked_data_list[0]
     params = generated_param()
-    params.weighting.error_model.n_bins = 2
-    params.weighting.error_model.min_Ih = 1.0
-    error_model = em(block, params)
-    assert error_model.components["b"].summation_matrix[0, 1] == 1
-    assert error_model.components["b"].summation_matrix[1, 1] == 1
-    assert error_model.components["b"].summation_matrix[2, 0] == 1
-    assert error_model.components["b"].summation_matrix[3, 0] == 1
-    assert error_model.components["b"].summation_matrix[4, 0] == 1
-    assert error_model.components["b"].summation_matrix.non_zeroes == 5
-    assert list(error_model.components["b"].bin_counts) == [3, 2]
+    params.weighting.error_model.basic.n_bins = 2
+    params.weighting.error_model.basic.min_Ih = 1.0
+    error_model = em(block, params.weighting.error_model.basic)
+    assert error_model.binner.summation_matrix[0, 1] == 1
+    assert error_model.binner.summation_matrix[1, 1] == 1
+    assert error_model.binner.summation_matrix[2, 0] == 1
+    assert error_model.binner.summation_matrix[3, 0] == 1
+    assert error_model.binner.summation_matrix[4, 0] == 1
+    assert error_model.binner.summation_matrix.non_zeroes == 5
+    assert list(error_model.binner.binning_info["refl_per_bin"]) == [3, 2]
 
     # Test calc sigmaprime
     x0 = 1.0
@@ -235,51 +231,47 @@ def test_error_model_target(large_reflection_table, test_sg):
     """Test the error model target."""
     Ih_table = IhTable([large_reflection_table], test_sg, nblocks=1)
     block = Ih_table.blocked_data_list[0]
-    em = get_error_model("basic")
+    em = BasicErrorModel
     em.min_reflections_required = 1
     params = generated_param()
-    params.weighting.error_model.n_bins = 2
-    params.weighting.error_model.min_Ih = 1.0
-    error_model = em(block, params)
+    params.weighting.error_model.basic.n_bins = 2
+    params.weighting.error_model.basic.min_Ih = 1.0
+    error_model = em(block, params.weighting.error_model.basic)
     error_model.parameters = [1.0, 0.05]
-    parameterisation = BasicErrorModelParameterisation(error_model)
-    target = ErrorModelTargetB(error_model, parameterisation)
-    error_model.update_parameters(parameterisation)
+    parameterisation = ErrorModelB_APM(error_model)
+    target = ErrorModelTargetB(error_model)
+    target.predict(parameterisation)
     # Test residual calculation
-    residuals = target.calculate_residuals()
+    residuals = target.calculate_residuals(parameterisation)
     assert (
         residuals
-        == (flex.double(2, 1.0) - error_model.components["b"].bin_variances) ** 2
+        == (flex.double(2, 1.0) - error_model.binner.binning_info["bin_variances"]) ** 2
     )
 
     # Test gradient calculation against finite differences.
-    gradients = target.calculate_gradients()
-    gradient_fd = calculate_gradient_fd(target)
+    gradients = target.calculate_gradients(parameterisation)
+    gradient_fd = calculate_gradient_fd(target, parameterisation)
     assert list(gradients) == pytest.approx(list(gradient_fd))
 
     # Test the method calls
-    r, g = target.compute_functional_gradients()
+    r, g = target.compute_functional_gradients(parameterisation)
     assert r == residuals
     assert list(gradients) == pytest.approx(list(g))
-    r, g = target.compute_functional_gradients()
+    r, g = target.compute_functional_gradients(parameterisation)
     assert r == residuals
     assert list(gradients) == pytest.approx(list(g))
 
 
-def calculate_gradient_fd(target):
+def calculate_gradient_fd(target, parameterisation):
     """Calculate gradient array with finite difference approach."""
     delta = 1.0e-6
-    target.parameterisation.set_param_vals(
-        [target.parameterisation.x[0] - (0.5 * delta)]
-    )
-    target.predict()
-    R_low = target.calculate_residuals()
-    target.parameterisation.set_param_vals([target.parameterisation.x[0] + delta])
-    target.predict()
-    R_upper = target.calculate_residuals()
-    target.parameterisation.set_param_vals(
-        [target.parameterisation.x[0] - (0.5 * delta)]
-    )
-    target.predict()
+    parameterisation.set_param_vals([parameterisation.x[0] - (0.5 * delta)])
+    target.predict(parameterisation)
+    R_low = target.calculate_residuals(parameterisation)
+    parameterisation.set_param_vals([parameterisation.x[0] + delta])
+    target.predict(parameterisation)
+    R_upper = target.calculate_residuals(parameterisation)
+    parameterisation.set_param_vals([parameterisation.x[0] - (0.5 * delta)])
+    target.predict(parameterisation)
     gradients = [(flex.sum(R_upper) - flex.sum(R_low)) / delta]
     return gradients

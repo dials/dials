@@ -154,6 +154,22 @@ phil_scope = parse(
       .type = path
       .help = "The output Nexus file"
 
+    instrument_name = Unknown
+      .type = str
+      .help = "Name of the instrument/beamline"
+
+    instrument_short_name = Unknown
+      .type = str
+      .help = "Short name for instrument/beamline, perhaps the acronym"
+
+    source_name = Unknown
+      .type = str
+      .help = "Name of the source/facility"
+
+    source_short_name = Unknown
+      .type = str
+      .help = "Short name for source, perhaps the acronym"
+
   }
 
   mmcif {
@@ -298,7 +314,7 @@ def export_nexus(params, experiments, reflections):
 
     from dials.util.nexus import dump
 
-    dump(experiments, reflections[0], params.nxs.hklout)
+    dump(experiments, reflections[0], params.nxs)
 
 
 def export_mmcif(params, experiments, reflections):
@@ -403,11 +419,7 @@ def export_json(params, experiments, reflections):
 
 
 if __name__ == "__main__":
-    from dials.util.options import (
-        OptionParser,
-        flatten_experiments,
-        flatten_reflections,
-    )
+    from dials.util.options import OptionParser, reflections_and_experiments_from_files
     from dials.util.version import dials_version
     from dials.util import log
 
@@ -443,8 +455,9 @@ if __name__ == "__main__":
         sys.exit()
 
     # Get the experiments and reflections
-    experiments = flatten_experiments(params.input.experiments)
-    reflections = flatten_reflections(params.input.reflections)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
 
     # do auto intepreting of intensity choice:
     # note that this may still fail certain checks further down the processing,

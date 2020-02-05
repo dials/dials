@@ -11,7 +11,7 @@ def reflections(tmpdir_factory):
     rt = flex.reflection_table.empty_standard(6)
     rt["iobs"] = flex.size_t_range(len(rt))
     rt["panel"] = flex.size_t_range(len(rt))
-    rt["id"] = flex.size_t([0] * 5 + [1])
+    rt["id"] = flex.int([0] * 5 + [1])
     rt["d"] = flex.double([50, 40, 3.0, 2.5, 2.0, 1.0])
     mask1 = flex.bool([True] * 3 + [False] * 3)
     mask2 = flex.bool([True, False] * 3)

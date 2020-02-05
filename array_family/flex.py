@@ -11,6 +11,7 @@ import boost.python
 import cctbx.array_family.flex
 import cctbx.miller
 import dials_array_family_flex_ext
+import dials.util.ext
 import libtbx.smart_open
 import six
 import six.moves.cPickle as pickle
@@ -155,6 +156,8 @@ class _(object):
                 padding=padding,
             )
             rlist["id"] = cctbx.array_family.flex.int(len(rlist), i)
+            if e.identifier:
+                rlist.experiment_identifiers()[i] = e.identifier
             result.extend(rlist)
         return result
 
@@ -222,7 +225,7 @@ class _(object):
         if filename and hasattr(filename, "__fspath__"):
             filename = filename.__fspath__()
         with libtbx.smart_open.for_writing(filename, "wb") as outfile:
-            outfile.write(self.as_msgpack())
+            self.as_msgpack_to_file(dials.util.ext.streambuf(python_file_obj=outfile))
 
     @staticmethod
     def from_msgpack_file(filename):
@@ -1182,7 +1185,7 @@ class _(object):
             values = list(identifiers.values())
             assert len(set(values)) == len(values), (len(set(values)), len(values))
             if "id" in self:
-                index = set(self["id"])
+                index = set(self["id"]).difference({-1})
                 for i in index:
                     assert i in identifiers, (i, list(identifiers))
         if experiments is not None:
@@ -1444,6 +1447,16 @@ Found %s"""
             enterings.set_selected(sel, self["s1"].dot(vec) < 0.0)
 
         self["entering"] = enterings
+
+    def get(self, key, default=None):
+        """
+        Get item from object for given key (ex: reflection_table column).
+
+        Returns default value if not found.
+        """
+        if key in self:
+            return self[key]
+        return default
 
 
 class reflection_table_selector(object):

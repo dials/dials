@@ -209,6 +209,46 @@ def test_scan_varying_with_fixed_crystal(fix, dials_data, tmpdir):
 
 
 @pytest.mark.slow
+def test_scan_varying_missing_segments_multi_crystal(dials_data, tmpdir):
+    # https://github.com/dials/dials/issues/1053
+    location = dials_data("i19_1_pdteet_index")
+    refls = location.join("indexed.refl")
+    expts = location.join("indexed.expt")
+
+    # first remove some reflections to keep dials.refine sharp
+    data = flex.reflection_table.from_file(refls.strpath)
+
+    # prune only indexed reflections
+
+    data = data.select(data.get_flags(data.flags.indexed))
+    z = data["xyzobs.px.value"].parts()[2]
+
+    # take overlapping subsets of reflections from two lattices which do not
+    # fill the entire scan
+
+    sel = ((data["id"] == 0) & (z > 200)) | ((data["id"] == 1) & (z < 650))
+    trimmed = data.select(sel)
+
+    trimmed_filename = tmpdir.join("indexed_trim.refl").strpath
+    trimmed.as_file(trimmed_filename)
+
+    result = procrunner.run(
+        ("dials.refine", expts, trimmed_filename), working_directory=tmpdir
+    )
+    assert not result.returncode and not result.stderr
+
+    el = ExperimentListFactory.from_json_file(
+        tmpdir.join("refined.expt").strpath, check_format=False
+    )
+
+    # verify scans start and finish correctly
+    image_ranges = [e.scan.get_image_range() for e in el]
+
+    assert image_ranges[0][1] == 850
+    assert image_ranges[1][0] == 1
+
+
+@pytest.mark.slow
 def test_scan_varying_multi_scan_one_crystal(dials_data, tmpdir):
     # https://github.com/dials/dials/issues/994
     location = dials_data("l_cysteine_dials_output")

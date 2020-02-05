@@ -63,6 +63,7 @@ def log_cycle_results(results, scaling_script, filter_script):
     if removal_summary["mode"] == "image_group":
         cycle_results["image_ranges_removed"] = removal_summary["image_ranges_removed"]
     cycle_results["removed_datasets"] = removal_summary["experiments_fully_removed"]
+    cycle_results["removed_ids"] = removal_summary["experiment_ids_fully_removed"]
 
     cycle_results["n_removed"] = filter_script.results_summary["dataset_removal"][
         "n_reflections_removed"
@@ -186,8 +187,8 @@ class AnalysisResults(object):
                     )
                     msg += "  Removed image ranges: \n    %s" % removed
             else:
-                if res["removed_datasets"]:
-                    msg += "  Removed datasets: %s\n" % res["removed_datasets"]
+                if res["removed_ids"]:
+                    msg += "  Removed datasets: %s\n" % res["removed_ids"]
             msg += (
                 "  cumulative %% of reflections removed: %.3f\n"
                 % res["cumul_percent_removed"]
@@ -469,7 +470,10 @@ def make_histogram_plots(cycle_results):
         }
     )
     colors = [(color_list * int(math.ceil(n / len(color_list))))[i] for i in range(n)]
-    legends = [ordinal(i) + " Delta CC-half analysis" for i in range(1, n + 1)]
+    if n == 1:
+        legends = ["Delta CC-half analysis"]
+    else:
+        legends = [ordinal(i) + " Delta CC-half analysis" for i in range(1, n + 1)]
     if "image_ranges_removed" in cycle_results[0]:
         n_rej = [len(res["image_ranges_removed"]) for res in cycle_results]
     else:
@@ -519,6 +523,33 @@ def make_histogram_plots(cycle_results):
             flex.double(deltas) * 100, min(deltas) * 100, max(deltas) * 100, n_slots=40
         )
         _add_new_histogram(d, hist, c)
+    return d
+
+
+def make_per_dataset_plot(delta_cchalf_i):
+    """Make a line plot of delta cc half per group."""
+
+    d = OrderedDict()
+    d.update(
+        {
+            "per_dataset_plot": {
+                "data": [
+                    {
+                        "y": [i * 100 for i in list(delta_cchalf_i.values())],
+                        "x": list(delta_cchalf_i.keys()),
+                        "type": "scatter",
+                        "mode": "lines",
+                    }
+                ],
+                "layout": {
+                    "title": "Delta CC-Half vs group",
+                    "xaxis": {"title": "Group number"},
+                    "yaxis": {"title": "Delta CC-Half"},
+                },
+            }
+        }
+    )
+
     return d
 
 

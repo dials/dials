@@ -45,7 +45,7 @@ class _Extension(object):
             if default_index < 0:
                 default_index = 0
             if names:
-                names[default_index] = "*" + names[default_index]
+                names[default_index] = "*" + str(names[default_index])
             return names
 
         exts = cls.extensions()
@@ -134,6 +134,7 @@ class Background(_Extension):
 
     @classmethod
     def extensions(cls):
+        from dials.extensions.auto_background_ext import AutoBackgroundExt
         from dials.extensions.glm_background_ext import GLMBackgroundExt
         from dials.extensions.gmodel_background_ext import GModelBackgroundExt
         from dials.extensions.simple_background_ext import SimpleBackgroundExt
@@ -141,6 +142,7 @@ class Background(_Extension):
         from dials.extensions.median_background_ext import MedianBackgroundExt
 
         return [
+            AutoBackgroundExt,
             GLMBackgroundExt,
             GModelBackgroundExt,
             SimpleBackgroundExt,

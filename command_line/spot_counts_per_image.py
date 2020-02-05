@@ -1,11 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
+import json
 import sys
-from dials.util import tabulate
 
 import iotbx.phil
-from dials.util.options import OptionParser
-from dials.util.options import flatten_reflections, flatten_experiments
+from dials.util import tabulate
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.algorithms.spot_finding import per_image_analysis
 
 help_message = """
@@ -33,8 +33,6 @@ split_json = False
   .type = bool
 joint_json = True
   .type = bool
-individual_plots = False
-  .type = bool
 id = None
   .type = int(value_min=0)
 """
@@ -54,8 +52,9 @@ def run(args):
     )
 
     params, options = parser.parse_args(show_diff_phil=False)
-    reflections = flatten_reflections(params.input.reflections)
-    experiments = flatten_experiments(params.input.experiments)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
 
     if not reflections and not experiments:
         parser.print_help()
@@ -66,42 +65,32 @@ def run(args):
     if len(reflections) != 1:
         sys.exit("Only one reflection list may be passed")
     reflections = reflections[0]
-    expts = set(reflections["id"])
-    if len(expts) and max(expts) >= len(experiments.imagesets()):
-        sys.exit("Unknown experiments in reflection list")
+
+    reflections.centroid_px_to_mm(experiments)
+    reflections.map_centroids_to_reciprocal_space(experiments)
 
     if params.id is not None:
         reflections = reflections.select(reflections["id"] == params.id)
 
     all_stats = []
-    for j, imageset in enumerate(experiments.imagesets()):
-        refl = reflections.select(reflections["id"] == j)
-        stats = per_image_analysis.stats_imageset(
-            imageset,
-            refl,
-            resolution_analysis=params.resolution_analysis,
-            plot=params.individual_plots,
+    for i, expt in enumerate(experiments):
+        refl = reflections.select(reflections["id"] == i)
+        stats = per_image_analysis.stats_per_image(
+            expt, refl, resolution_analysis=params.resolution_analysis
         )
         all_stats.append(stats)
 
     # transpose stats
-    class empty(object):
-        pass
-
-    e = empty()
+    summary_table = {}
     for s in all_stats:
-        for k in dir(s):
-            if k.startswith("_") or k in ["merge", "next"]:
-                continue
-            if not hasattr(e, k):
-                setattr(e, k, [])
-            getattr(e, k).extend(getattr(s, k))
+        for k, value in s._asdict().items():
+            summary_table.setdefault(k, [])
+            summary_table[k].extend(value)
+    stats = per_image_analysis.StatsMultiImage(**summary_table)
+    print(stats)
 
-    per_image_analysis.print_table(e)
-
-    # FIXME this is now probably nonsense...
-    overall_stats = per_image_analysis.stats_single_image(
-        imageset, reflections, resolution_analysis=params.resolution_analysis
+    overall_stats = per_image_analysis.stats_for_reflection_table(
+        reflections, resolution_analysis=params.resolution_analysis
     )
     rows = [
         ("Overall statistics", ""),
@@ -122,16 +111,14 @@ def run(args):
     print(tabulate(rows, headers="firstrow"))
 
     if params.json:
-        import json
-
         if params.split_json:
-            for k in stats.__dict__:
+            for k, v in stats._asdict().items():
                 start, end = params.json.split(".")
-                with open("%s_%s.%s" % (start, k, end), "wb") as fp:
-                    json.dump(stats.__dict__[k], fp)
+                with open("%s_%s.%s" % (start, k, end), "w") as fp:
+                    json.dump(v, fp)
         if params.joint_json:
-            with open(params.json, "wb") as fp:
-                json.dump(stats.__dict__, fp)
+            with open(params.json, "w") as fp:
+                json.dump(stats._asdict(), fp)
     if params.plot:
         import matplotlib
 

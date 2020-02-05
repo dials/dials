@@ -61,16 +61,12 @@ class ProcessorImageBase(object):
         self.manager.initialize()
         mp_method = self.manager.params.integration.mp.method
         mp_nproc = min(len(self.manager), self.manager.params.integration.mp.nproc)
+        mp_njobs = self.manager.params.integration.mp.njobs
         if (
             mp_nproc > 1 and platform.system() == "Windows"
         ):  # platform.system() forks which is bad for MPI, so don't use it unless nproc > 1
             logger.warning(
-                "\n"
-                + "*" * 80
-                + "\n"
-                + "Multiprocessing is not available on windows. Setting nproc = 1\n"
-                + "*" * 80
-                + "\n"
+                "Multiprocessing is not available on windows. Setting nproc = 1\n"
             )
             mp_nproc = 1
         assert mp_nproc > 0, "Invalid number of processors"
@@ -98,7 +94,7 @@ class ProcessorImageBase(object):
                 njobs=mp_njobs,
                 nproc=mp_nproc,
                 callback=process_output,
-                method=mp_method,
+                cluster_method=mp_method,
                 preserve_order=True,
                 preserve_exception_message=True,
             )

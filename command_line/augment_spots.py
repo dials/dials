@@ -1,9 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import iotbx.phil
-from dials.util.options import OptionParser
-from dials.util.options import flatten_experiments
-from dials.util.options import flatten_reflections
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.array_family import flex
 
 help_message = """
@@ -102,8 +100,9 @@ def run(args):
 
     params, options = parser.parse_args(show_diff_phil=True)
 
-    experiments = flatten_experiments(params.input.experiments)
-    reflections = flatten_reflections(params.input.reflections)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
 
     if len(reflections) != 1:
         parser.print_help()

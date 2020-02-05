@@ -3,7 +3,6 @@ from __future__ import absolute_import, division, print_function
 import logging
 import six.moves.cPickle as pickle
 import sys
-from time import time
 
 import dials.util
 import dials.util.log
@@ -209,13 +208,19 @@ class Script(object):
         from dials.util.options import flatten_experiments
         from dials.algorithms.background.modeller import BackgroundModeller
 
-        start_time = time()
-
         # Parse the command line
         params, options = self.parser.parse_args(show_diff_phil=False)
 
         # Configure the logging
         dials.util.log.config(verbosity=options.verbose, logfile=params.output.log)
+
+        if params.integration.mp.nproc != 1 or params.integration.mp.njobs != 1:
+            # https://github.com/dials/dials/issues/1083
+            logger.warning(
+                "Multiprocessing is currently disabled. " "Setting nproc = njobs = 1"
+            )
+            params.integration.mp.nproc = 1
+            params.integration.mp.njobs = 1
 
         from dials.util.version import dials_version
 
@@ -276,9 +281,6 @@ class Script(object):
         image_generator.save_max(params.output.max_image_prefix)
         image_generator.save_model(params.output.model_image_prefix)
         # image_generator.save_polar_model(params.output.polar_model_image_prefix)
-
-        # Print the time
-        logger.info("Time Taken: %f" % (time() - start_time))
 
 
 if __name__ == "__main__":

@@ -6,6 +6,7 @@ def test_run(dials_regression, run_in_tmpdir):
     from dxtbx.model.experiment_list import ExperimentListFactory
     from dials.array_family import flex
     from os.path import join
+    from dials.command_line.export import phil_scope
 
     path = join(dials_regression, "nexus_test_data")
 
@@ -23,7 +24,9 @@ def test_run(dials_regression, run_in_tmpdir):
     del reflections1["background.mse"]
 
     # Dump the reflections
-    dump(experiments1, reflections1, "hklout.nxs")
+    params = phil_scope.extract()
+    params.nxs.hklout = "hklout.nxs"
+    dump(experiments1, reflections1, params.nxs)
 
     # Load them again
     experiments2, reflections2 = load("hklout.nxs")

@@ -9,13 +9,13 @@ import copy
 from libtbx import easy_pickle
 import iotbx.phil
 from cctbx import sgtbx
-from dxtbx.model import Crystal
+from rstbx.symmetry.constraints import parameter_reduction
 
 # from dials.util.command_line import Importer
 from dials.algorithms.indexing.assign_indices import AssignIndicesGlobal
 from dials.array_family import flex
 from dials.util.options import OptionParser
-from dials.util.options import flatten_reflections, flatten_experiments
+from dials.util.options import reflections_and_experiments_from_files
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
 
 help_message = """
@@ -123,6 +123,38 @@ def derive_change_of_basis_op(from_hkl, to_hkl):
     return change_of_basis_op
 
 
+def reindex_experiments(experiments, cb_op, space_group=None):
+    reindexed_experiments = copy.deepcopy(experiments)
+
+    for crystal in reindexed_experiments.crystals():
+        cryst_reindexed = copy.deepcopy(crystal)
+        if space_group is not None:
+            # See also https://github.com/cctbx/cctbx_project/issues/424
+            cryst_reindexed.set_space_group(sgtbx.space_group("P 1"))
+            cryst_reindexed = cryst_reindexed.change_basis(cb_op)
+            cryst_reindexed.set_space_group(space_group)
+            S = parameter_reduction.symmetrize_reduce_enlarge(
+                cryst_reindexed.get_space_group()
+            )
+            S.set_orientation(cryst_reindexed.get_B())
+            S.symmetrize()
+            # Cache the scan-varying A matrices if applicable as these get lost
+            # when we call crystal.set_B()
+            A_varying = [
+                cryst_reindexed.get_A_at_scan_point(i)
+                for i in range(cryst_reindexed.num_scan_points)
+            ]
+            # Update the symmetrized B matrix
+            cryst_reindexed.set_B(S.orientation.reciprocal_matrix())
+            # Reapply the scan-varying A matrices
+            cryst_reindexed.set_A_at_scan_points(A_varying)
+        else:
+            cryst_reindexed = cryst_reindexed.change_basis(cb_op)
+        crystal.update(cryst_reindexed)
+
+    return reindexed_experiments
+
+
 def run(args):
     import libtbx.load_env
     from dials.util import Sorry
@@ -140,8 +172,9 @@ def run(args):
 
     params, options = parser.parse_args(show_diff_phil=True)
 
-    reflections = flatten_reflections(params.input.reflections)
-    experiments = flatten_experiments(params.input.experiments)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
     if len(experiments) == 0 and len(reflections) == 0:
         parser.print_help()
         return
@@ -278,28 +311,12 @@ experiments file must also be specified with the option: reference= """
         change_of_basis_op = sgtbx.change_of_basis_op(params.change_of_basis_op)
 
     if len(experiments):
-        for crystal in experiments.crystals():
-            cryst_orig = copy.deepcopy(crystal)
-            cryst_reindexed = cryst_orig.change_basis(change_of_basis_op)
-            if params.space_group is not None:
-                a, b, c = cryst_reindexed.get_real_space_vectors()
-                A_varying = [
-                    cryst_reindexed.get_A_at_scan_point(i)
-                    for i in range(cryst_reindexed.num_scan_points)
-                ]
-                cryst_reindexed = Crystal(
-                    a, b, c, space_group=params.space_group.group()
-                )
-                cryst_reindexed.set_A_at_scan_points(A_varying)
-            crystal.update(cryst_reindexed)
-
-            print("Old crystal:")
-            print(cryst_orig)
-            print()
-            print("New crystal:")
-            print(cryst_reindexed)
-            print()
-
+        space_group = params.space_group
+        if space_group is not None:
+            space_group = space_group.group()
+        experiments = reindex_experiments(
+            experiments, change_of_basis_op, space_group=space_group
+        )
         print("Saving reindexed experimental models to %s" % params.output.experiments)
         experiments.as_file(params.output.experiments)
 

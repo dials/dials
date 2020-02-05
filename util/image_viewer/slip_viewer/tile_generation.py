@@ -44,7 +44,7 @@ def _get_flex_image(
 
 def _get_flex_image_multipanel(
     panels,
-    raw_data,
+    image_data,
     beam,
     brightness=1.0,
     binning=1,
@@ -64,10 +64,10 @@ def _get_flex_image_multipanel(
     from scitbx.matrix import col, rec, sqr
     from xfel.cftbx.detector.metrology import get_projection_matrix
 
-    assert len(panels) == len(raw_data), (len(panels), len(raw_data))
+    assert len(panels) == len(image_data), (len(panels), len(image_data))
 
     # Determine next multiple of eight of the largest panel size.
-    for data in raw_data:
+    for data in image_data:
         if "data_max_focus" not in locals():
             data_max_focus = data.focus()
         else:
@@ -122,7 +122,7 @@ def _get_flex_image_multipanel(
     for i, panel in enumerate(panels):
         # Determine the pixel size for the panel (in meters), as pixel
         # sizes need not be identical.
-        data = raw_data[i]
+        data = image_data[i]
         pixel_size = (
             panel.get_pixel_size()[0] * 1e-3,
             panel.get_pixel_size()[1] * 1e-3,
@@ -256,7 +256,13 @@ class _Tiles(object):
 
         self.show_untrusted = False
 
-    def set_image(self, file_name_or_data, metrology_matrices=None, get_raw_data=None):
+    def set_image(
+        self,
+        file_name_or_data,
+        metrology_matrices=None,
+        get_image_data=None,
+        show_saturated=True,
+    ):
         self.reset_the_cache()
         if file_name_or_data is None:
             self.raw_image = None
@@ -282,26 +288,30 @@ class _Tiles(object):
         if len(detector) > 1 and metrology_matrices is not None:
             self.raw_image.apply_metrology_from_matrices(metrology_matrices)
 
-        if get_raw_data is not None:
-            self.raw_image.set_raw_data(get_raw_data(self.raw_image))
-        raw_data = self.raw_image.get_raw_data()
-        if not isinstance(raw_data, tuple):
-            raw_data = (raw_data,)
+        if get_image_data is not None:
+            self.raw_image.set_image_data(get_image_data(self.raw_image))
+        image_data = self.raw_image.get_image_data()
+        if not isinstance(image_data, tuple):
+            image_data = (image_data,)
 
         if len(detector) > 1:
             self.flex_image = _get_flex_image_multipanel(
                 brightness=self.current_brightness / 100,
                 panels=detector,
                 show_untrusted=self.show_untrusted,
-                raw_data=raw_data,
+                image_data=image_data,
                 beam=self.raw_image.get_beam(),
                 color_scheme=self.current_color_scheme,
             )
         else:
+            if show_saturated:
+                saturation = self.raw_image.get_detector()[0].get_trusted_range()[1]
+            else:
+                saturation = 1e16
             self.flex_image = _get_flex_image(
                 brightness=self.current_brightness / 100,
-                data=raw_data[0],
-                saturation=self.raw_image.get_detector()[0].get_trusted_range()[1],
+                data=image_data[0],
+                saturation=saturation,
                 vendortype=self.raw_image.get_vendortype(),
                 show_untrusted=self.show_untrusted,
                 color_scheme=self.current_color_scheme,
@@ -310,14 +320,14 @@ class _Tiles(object):
         if self.zoom_level >= 0:
             self.flex_image.adjust(color_scheme=self.current_color_scheme)
 
-    def set_image_data(self, raw_image_data):
+    def set_image_data(self, raw_image_data, show_saturated=True):
         self.reset_the_cache()
         # XXX Since there doesn't seem to be a good way to refresh the
         # image (yet), the metrology has to be applied here, and not
         # in frame.py.
 
         detector = self.raw_image.get_detector()
-        self.raw_image.set_raw_data(raw_image_data)
+        self.raw_image.set_image_data(raw_image_data)
         if len(detector) == 1 and len(raw_image_data) == 1:
             raw_image_data = raw_image_data[0]
 
@@ -325,14 +335,18 @@ class _Tiles(object):
             self.flex_image = _get_flex_image_multipanel(
                 brightness=self.current_brightness / 100,
                 panels=detector,
-                raw_data=raw_image_data,
+                image_data=raw_image_data,
                 beam=self.raw_image.get_beam(),
             )
         else:
+            if show_saturated:
+                saturation = self.raw_image.get_detector()[0].get_trusted_range()[1]
+            else:
+                saturation = 1e16
             self.flex_image = _get_flex_image(
                 brightness=self.current_brightness / 100,
                 data=raw_image_data,
-                saturation=self.raw_image.get_detector()[0].get_trusted_range()[1],
+                saturation=saturation,
                 vendortype=self.raw_image.get_vendortype(),
                 show_untrusted=self.show_untrusted,
             )
@@ -340,9 +354,9 @@ class _Tiles(object):
         self.flex_image.adjust(color_scheme=self.current_color_scheme)
 
     def update_brightness(self, b, color_scheme=0):
-        raw_data = self.raw_image.get_raw_data()
-        if not isinstance(raw_data, tuple):
-            raw_data = (raw_data,)
+        image_data = self.raw_image.get_image_data()
+        if not isinstance(image_data, tuple):
+            image_data = (image_data,)
 
         if len(self.raw_image.get_detector()) > 1:
             # XXX Special-case read of new-style images until multitile
@@ -351,14 +365,14 @@ class _Tiles(object):
                 brightness=b / 100,
                 panels=self.raw_image.get_detector(),
                 show_untrusted=self.show_untrusted,
-                raw_data=raw_data,
+                image_data=image_data,
                 beam=self.raw_image.get_beam(),
                 color_scheme=color_scheme,
             )
         else:
             self.flex_image = _get_flex_image(
                 brightness=b / 100,
-                data=raw_data[0],
+                data=image_data[0],
                 saturation=self.raw_image.get_detector()[0].get_trusted_range()[1],
                 vendortype=self.raw_image.get_vendortype(),
                 show_untrusted=self.show_untrusted,

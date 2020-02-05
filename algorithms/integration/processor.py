@@ -261,12 +261,7 @@ class Processor(object):
             mp_njobs * mp_nproc
         ) > 1 and platform.system() == "Windows":  # platform.system() forks which is bad for MPI, so don't use it unless nproc > 1
             logger.warning(
-                "\n"
-                + "*" * 80
-                + "\n"
-                + "Multiprocessing is not available on windows. Setting nproc = 1\n"
-                + "*" * 80
-                + "\n"
+                "Multiprocessing is not available on windows. Setting nproc = 1\n"
             )
             mp_nproc = 1
             mp_njobs = 1
@@ -412,24 +407,30 @@ class Task(object):
             ), "Task can only handle 1 imageset"
 
         # Get the sub imageset
-        frame00, frame01 = self.job
+        frame0, frame1 = self.job
+
         try:
-            frame10, frame11 = imageset.get_array_range()
+            allowed_range = imageset.get_array_range()
         except Exception:
-            frame10, frame11 = (0, len(imageset))
+            allowed_range = 0, len(imageset)
+
         try:
-            assert frame00 < frame01
-            assert frame10 < frame11
-            assert frame00 >= frame10
-            assert frame01 <= frame11
-            index0 = frame00 - frame10
-            index1 = index0 + (frame01 - frame00)
-            assert index0 < index1
-            assert index0 >= 0
-            assert index1 <= len(imageset)
-            imageset = imageset[index0:index1]
-        except Exception:
-            raise RuntimeError("Programmer Error: bad array range")
+            # range increasing
+            assert frame0 < frame1
+
+            # within an increasing range
+            assert allowed_range[1] > allowed_range[0]
+
+            # we are processing data which is within range
+            assert frame0 >= allowed_range[0]
+            assert frame1 <= allowed_range[1]
+
+            # I am 99% sure this is implied by all the code above
+            assert (frame1 - frame0) <= len(imageset)
+            imageset = imageset[frame0:frame1]
+        except Exception as e:
+            raise RuntimeError("Programmer Error: bad array range: %s" % str(e))
+
         try:
             frame0, frame1 = imageset.get_array_range()
         except Exception:
@@ -622,7 +623,7 @@ class Manager(object):
         experiments = self.experiments  # [expr_id[0]:expr_id[1]]
         reflections = self.manager.split(index)
         if len(reflections) == 0:
-            logger.warning("*** WARNING: no reflections in job %d ***", index)
+            logger.warning("No reflections in job %d ***", index)
             task = NullTask(index=index, reflections=reflections)
         else:
             task = Task(
@@ -808,11 +809,18 @@ class Manager(object):
         decreasing the block size. This could be caused by a highly mosaic
         crystal model.  The average shoebox size is %d * %d * %d pixels - is
         your crystal really this mosaic?
-            Total system memory: %g GB
-            Limit shoebox memory: %g GB
-            Max shoebox memory: %g GB
+            Total system memory: %.1f GB
+            Limit shoebox memory: %.1f GB
+            Max shoebox memory: %.1f GB
         """
-                    % (total_memory / 1e9, limit_memory / 1e9, max_memory / 1e9)
+                    % (
+                        xsize,
+                        ysize,
+                        zsize,
+                        total_memory / 1e9,
+                        limit_memory / 1e9,
+                        max_memory / 1e9,
+                    )
                 )
             else:
                 self.params.mp.nproc = min(self.params.mp.nproc, njobs)

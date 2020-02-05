@@ -10,6 +10,7 @@ import dials.util
 import iotbx.phil
 import libtbx
 from dials.array_family import flex
+from dials.util.multi_dataset_handling import generate_experiment_identifiers
 from dials.algorithms.indexing import assign_indices
 from dials.algorithms.indexing import DialsIndexError, DialsIndexRefineError
 from dials.algorithms.indexing.compare_orientation_matrices import (
@@ -536,10 +537,13 @@ class Indexer(object):
                 self.d_min = self.params.refinement_protocol.d_min_start
 
             if len(experiments) == 0:
-                experiments.extend(self.find_lattices())
+                new_expts = self.find_lattices()
+                generate_experiment_identifiers(new_expts)
+                experiments.extend(new_expts)
             else:
                 try:
                     new = self.find_lattices()
+                    generate_experiment_identifiers(new)
                     experiments.extend(new)
                 except DialsIndexError:
                     logger.info("Indexing remaining reflections failed")
@@ -638,7 +642,7 @@ class Indexer(object):
                         )
                     except (DialsRefineConfigError, DialsRefineRuntimeError) as e:
                         if len(experiments) == 1:
-                            raise DialsIndexRefineError(e.message)
+                            raise DialsIndexRefineError(str(e))
                         had_refinement_error = True
                         logger.info("Refinement failed:")
                         logger.info(e)

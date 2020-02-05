@@ -63,12 +63,7 @@ def test_select_connected_reflections_across_datasets():
         (10, 10, 10, 90, 90, 90)
     )
     indices, datset_ids = select_connected_reflections_across_datasets(
-        table,
-        experiment,
-        min_per_class=5,
-        Isigma_cutoff=0.0,
-        min_total=0,
-        n_resolution_bins=1,
+        table, experiment, Isigma_cutoff=0.0, min_total=30, n_resolution_bins=1
     )
     assert list(indices) == [0, 1, 2, 3, 4, 5, 8, 9] + [0, 1, 2, 3, 4, 5, 6] + [
         0,
@@ -83,12 +78,7 @@ def test_select_connected_reflections_across_datasets():
 
     # now test again with a higher min_total
     indices, datset_ids = select_connected_reflections_across_datasets(
-        table,
-        experiment,
-        min_per_class=10,
-        Isigma_cutoff=0.0,
-        min_total=50,
-        n_resolution_bins=1,
+        table, experiment, Isigma_cutoff=0.0, min_total=10 * 3 * 4, n_resolution_bins=1
     )
     assert list(datset_ids) == [0] * 11 + [1] * 8 + [2] * 13
 

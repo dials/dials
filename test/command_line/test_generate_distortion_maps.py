@@ -98,7 +98,7 @@ def test_elliptical_distortion(run_in_tmpdir):
     b = Beam((0, 0, 1), 1.0)
 
     # Create and write out a experiments
-    imageset = ImageSet(ImageSetData(Reader(["non-existent.cbf"]), None))
+    imageset = ImageSet(ImageSetData(Reader(None, ["non-existent.cbf"]), None))
     imageset.set_detector(d)
     imageset.set_beam(b)
     experiments = ExperimentListFactory.from_imageset_and_crystal(imageset, None)

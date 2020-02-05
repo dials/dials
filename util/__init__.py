@@ -12,6 +12,7 @@ from libtbx.utils import Sorry
 
 # Define the default tablefmt in dials
 tabulate = functools.partial(_tabulate.tabulate, tablefmt="psql")
+functools.update_wrapper(tabulate, _tabulate.tabulate)
 
 
 def debug_console():
@@ -31,7 +32,7 @@ def debug_console():
         # Start IPython console if IPython is available.
         from IPython import embed
 
-        embed(user_ns=namespace)
+        embed(user_ns=namespace, colors="neutral")
     except ImportError:
         # Otherwise use basic python console
         import code

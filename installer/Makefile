@@ -1,10 +1,7 @@
-all :	base build
-
-base :
-	python bootstrap.py --builder=dials base
+all :	build
 
 build :
-	python bootstrap.py --builder=dials build
+	python bootstrap.py
 
 clean :
-	rm -rf base build
+	rm -rf conda_base build

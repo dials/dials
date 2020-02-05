@@ -12,11 +12,10 @@ from cctbx.sgtbx.bravais_types import bravais_lattice
 from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from libtbx import Auto
 import iotbx.phil
-from rstbx.symmetry.constraints import parameter_reduction
 
 from dials.array_family import flex
 from dials.util import log, show_mail_on_error
-from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
@@ -33,11 +32,17 @@ from dials.algorithms.symmetry.absences.run_absences_checks import (
 from dials.algorithms.symmetry.absences.laue_groups_info import (
     laue_groups as laue_groups_for_absence_analysis,
 )
+from dials.command_line.reindex import reindex_experiments
+from dials.util.exclude_images import (
+    exclude_image_ranges_from_scans,
+    get_selection_for_valid_image_ranges,
+)
 
 logger = logging.getLogger("dials.command_line.symmetry")
 
 phil_scope = iotbx.phil.parse(
     """\
+include scope dials.util.exclude_images.phil_scope
 d_min = Auto
   .type = float(value_min=0)
 
@@ -46,10 +51,6 @@ min_i_mean_over_sigma_mean = 4
 
 min_cc_half = 0.6
   .type = float(value_min=0, value_max=1)
-
-batch = None
-  .type = ints(value_min=0, size=2)
-  .help = "Limit batch range for analysis: manually apply results afterwards"
 
 normalisation = kernel quasi ml_iso *ml_aniso
   .type = choice
@@ -204,6 +205,25 @@ def apply_change_of_basis_ops(experiments, reflections, change_of_basis_ops):
     return experiments, reflections
 
 
+def eliminate_sys_absent(experiments, reflections):
+    for i, expt in enumerate(experiments):
+        if expt.crystal.get_space_group().n_ltr() > 1:
+            effective_group = expt.crystal.get_space_group().build_derived_reflection_intensity_group(
+                anomalous_flag=True
+            )
+            sys_absent_flags = effective_group.is_sys_absent(
+                reflections[i]["miller_index"]
+            )
+            if sys_absent_flags.count(True):
+                reflections[i] = reflections[i].select(~sys_absent_flags)
+                logger.info(
+                    "Eliminating %i systematic absences for experiment %s",
+                    sys_absent_flags.count(True),
+                    expt.identifier,
+                )
+    return reflections
+
+
 def symmetry(experiments, reflection_tables, params=None):
     """
     Run symmetry analysis
@@ -216,6 +236,21 @@ def symmetry(experiments, reflection_tables, params=None):
     result = None
     if params is None:
         params = phil_scope.extract()
+    refls_for_sym = []
+
+    def get_refl_for_sym(params, experiments, reflection_tables):
+        """Optionally apply exclude images"""
+        refls_for_sym = []
+        if params.exclude_images:
+            experiments = exclude_image_ranges_from_scans(
+                reflection_tables, experiments, params.exclude_images
+            )
+            for refl, exp in zip(reflection_tables, experiments):
+                sel = get_selection_for_valid_image_ranges(refl, exp)
+                refls_for_sym.append(refl.select(sel))
+        else:
+            refls_for_sym = reflection_tables
+        return refls_for_sym
 
     if params.laue_group is Auto:
         logger.info("=" * 80)
@@ -227,19 +262,25 @@ def symmetry(experiments, reflection_tables, params=None):
         n_datasets = len(experiments)
 
         # Map experiments and reflections to minimum cell
+        # Eliminate reflections that are systematically absent due to centring
+        # of the lattice, otherwise they would lead to non-integer miller indices
+        # when reindexing to a primitive setting
         cb_ops = change_of_basis_ops_to_minimum_cell(
             experiments,
             params.lattice_symmetry_max_delta,
             params.relative_length_tolerance,
             params.absolute_angle_tolerance,
         )
+        reflection_tables = eliminate_sys_absent(experiments, reflection_tables)
         experiments, reflection_tables = apply_change_of_basis_ops(
             experiments, reflection_tables, cb_ops
         )
 
+        refls_for_sym = get_refl_for_sym(params, experiments, reflection_tables)
+
         datasets = filtered_arrays_from_experiments_reflections(
             experiments,
-            reflection_tables,
+            refls_for_sym,
             outlier_rejection_after_filter=True,
             partiality_threshold=params.partiality_threshold,
         )
@@ -307,14 +348,30 @@ def symmetry(experiments, reflection_tables, params=None):
         space_group = experiments[0].crystal.get_space_group()
         laue_group = str(space_group.build_derived_patterson_group().info())
         logger.info("Laue group: %s", laue_group)
-        if laue_group not in laue_groups_for_absence_analysis:
+        if laue_group in ("I m -3", "I m m m"):
+            if laue_group == "I m -3":
+                logger.info(
+                    """Space groups I 2 3 & I 21 3 cannot be distinguished with systematic absence
+analysis, due to lattice centering.
+Using space group I 2 3, space group I 21 3 is equally likely.\n"""
+                )
+            if laue_group == "I m m m":
+                logger.info(
+                    """Space groups I 2 2 2 & I 21 21 21 cannot be distinguished with systematic absence
+analysis, due to lattice centering.
+Using space group I 2 2 2, space group I 21 21 21 is equally likely.\n"""
+                )
+        elif laue_group not in laue_groups_for_absence_analysis:
             logger.info("No absences to check for this laue group\n")
         else:
+            if not refls_for_sym:
+                refls_for_sym = get_refl_for_sym(params, experiments, reflection_tables)
+
             if (params.d_min is Auto) and (result is not None):
                 d_min = result.intensities.resolution_range()[1]
             elif params.d_min is Auto:
                 d_min = resolution_filter_from_reflections_experiments(
-                    reflection_tables,
+                    refls_for_sym,
                     experiments,
                     params.min_i_mean_over_sigma_mean,
                     params.min_cc_half,
@@ -326,10 +383,10 @@ def symmetry(experiments, reflection_tables, params=None):
             # multiple input files.
             if len(reflection_tables) > 1:
                 joint_reflections = flex.reflection_table()
-                for table in reflection_tables:
+                for table in refls_for_sym:
                     joint_reflections.extend(table)
             else:
-                joint_reflections = reflection_tables[0]
+                joint_reflections = refls_for_sym[0]
 
             merged_reflections = prepare_merged_reflection_table(
                 experiments, joint_reflections, d_min
@@ -366,26 +423,14 @@ def symmetry(experiments, reflection_tables, params=None):
 
 def _reindex_experiments_reflections(experiments, reflections, space_group, cb_op):
     """Reindex the input data."""
-    reindexed_experiments = copy.deepcopy(experiments)
+    reindexed_experiments = reindex_experiments(
+        experiments, cb_op, space_group=space_group
+    )
     reindexed_reflections = flex.reflection_table()
-    for i, expt in enumerate(reindexed_experiments):
-        # Set the space group to the best symmetry and change basis accordingly.
-        # Setting the basis to one incompatible with the initial space group is
-        # forbidden, so we must first change the space group to P1 to be safe`.
-        expt.crystal.set_space_group(sgtbx.space_group("P 1"))
-        expt.crystal = expt.crystal.change_basis(cb_op)
-        expt.crystal.set_space_group(space_group)
-
-        S = parameter_reduction.symmetrize_reduce_enlarge(
-            expt.crystal.get_space_group()
-        )
-        S.set_orientation(expt.crystal.get_B())
-        S.symmetrize()
-        expt.crystal.set_B(S.orientation.reciprocal_matrix())
+    for i in range(len(reindexed_experiments)):
         reindexed_refl = copy.deepcopy(reflections[i])
         reindexed_refl["miller_index"] = cb_op.apply(reindexed_refl["miller_index"])
         reindexed_reflections.extend(reindexed_refl)
-
     return reindexed_experiments, [reindexed_reflections]
 
 
@@ -441,21 +486,11 @@ def run(args=None):
         parser.print_help()
         sys.exit()
 
-    experiments = flatten_experiments(params.input.experiments)
-    reflections = flatten_reflections(params.input.reflections)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
 
     reflections = parse_multiple_datasets(reflections)
-
-    # Cut down reflection lists according to input batch range if set
-    if params.batch is not None:
-        z0, z1 = map(float, params.batch)
-        logger.info("Cutting reflection lists to batch range %d to %d" % (z0, z1))
-        trimmed_reflections = []
-        for refl in reflections:
-            z = refl["xyzcal.px"].parts()[2]
-            keep = (z >= z0) & (z <= z1)
-            trimmed_reflections.append(refl.select(keep))
-        reflections = trimmed_reflections
 
     if len(experiments) != len(reflections):
         sys.exit(

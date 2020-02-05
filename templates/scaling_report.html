@@ -9,6 +9,8 @@
       <div class="panel-body">
           <p><b>Summary of merging statistics</b></p>
           {{ macros.table(scaling_tables[0]) }}
+          <p></p><b>Summary of error model</b></p>
+          <p style="white-space: pre-wrap;">{{ error_model_summary }}</p>
           <p><b>Merging statistics by resolution bin</b></p>
           {{ macros.table(scaling_tables[1]) }}
       </div>

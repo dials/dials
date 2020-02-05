@@ -208,13 +208,20 @@ def _trim_scans_to_observations(experiments, reflections):
             im_stop = min(obs_stop, stop)
 
             logger.warning(
-                "The reflections do not fill the scan range. The scan will be trimmed "
-                "to images {{{0},{1}}} to match the range of observed data".format(
-                    im_start, im_stop
+                "The reflections for experiment {0} do not fill the scan range. The scan will be trimmed "
+                "to images {{{1},{2}}} to match the range of observed data".format(
+                    iexp, im_start, im_stop
                 )
             )
 
+            # Ensure the scan is unique to this experiment and set trimmed limits
+            exp.scan = copy.deepcopy(exp.scan)
+            new_oscillation = (
+                exp.scan.get_angle_from_image_index(im_start),
+                exp.scan.get_oscillation()[1],
+            )
             exp.scan.set_image_range((im_start, im_stop))
+            exp.scan.set_oscillation(new_oscillation)
 
     return experiments
 
@@ -520,7 +527,8 @@ class RefinerFactory(object):
             )
         ):
             return None
-        if params.scan_varying:
+
+        if params.scan_varying and not params.crystal.unit_cell.force_static:
             logger.warning("Restraints will be ignored for scan_varying=True")
             return None
 

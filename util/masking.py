@@ -22,7 +22,7 @@ phil_scope = parse(
     .type = int
     .help = "The border around the edge of the image."
 
-  use_trusted_range = True
+  use_trusted_range = False
     .type = bool
     .help = "Use the trusted range to mask bad pixels."
 
@@ -123,8 +123,8 @@ def generate_ice_ring_resolution_ranges(beam, panel, params):
             d_sq_inv = 1.0 / (d ** 2)
             d_sq_inv_min = d_sq_inv - half_width
             d_sq_inv_max = d_sq_inv + half_width
-            d_min = math.sqrt(1.0 / d_sq_inv_min)
-            d_max = math.sqrt(1.0 / d_sq_inv_max)
+            d_max = math.sqrt(1.0 / d_sq_inv_min)
+            d_min = math.sqrt(1.0 / d_sq_inv_max)
             yield (d_min, d_max)
 
 

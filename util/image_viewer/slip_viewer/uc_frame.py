@@ -361,7 +361,7 @@ class UCSettingsPanel(wx.Panel):
                 uc, False, d_min=self.d_min_ctrl.GetValue()
             )
         except Exception as e:
-            frame.update_statusbar(e.message)
+            frame.update_statusbar(str(e))
             return
 
         frame.update_statusbar(

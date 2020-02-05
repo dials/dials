@@ -13,10 +13,9 @@ from libtbx import phil
 from dxtbx.serialize import load
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
-from dials.util import Sorry
 from dials.array_family import flex
 from dials.util.options import OptionParser
-from dials.command_line.scale import Script
+from dials.algorithms.scaling.algorithm import ScalingAlgorithm, prepare_input
 
 
 def run_one_scaling(working_directory, argument_list):
@@ -153,19 +152,19 @@ def test_scale_script_prepare_input():
     params, exp, reflections = generate_test_input()
     # try to pass in unequal number of reflections and experiments
     reflections.append(generate_test_reflections())
-    with pytest.raises(Sorry):
-        _ = Script(params, exp, reflections)
+    with pytest.raises(ValueError):
+        _ = ScalingAlgorithm(params, exp, reflections)
 
     params, exp, reflections = generate_test_input()
     # Try to use use_datasets when not identifiers set
-    params.dataset_selection.use_datasets = ["0"]
-    with pytest.raises(Sorry):
-        _ = Script(params, exp, reflections)
+    params.dataset_selection.use_datasets = [0]
+    with pytest.raises(ValueError):
+        _ = ScalingAlgorithm(params, exp, reflections)
     # Try to use use_datasets when not identifiers set
     params.dataset_selection.use_datasets = None
-    params.dataset_selection.exclude_datasets = ["0"]
-    with pytest.raises(Sorry):
-        _ = Script(params, exp, reflections)
+    params.dataset_selection.exclude_datasets = [0]
+    with pytest.raises(ValueError):
+        _ = ScalingAlgorithm(params, exp, reflections)
 
     # Now make two experiments with identifiers and select on them
     params, exp, reflections = generate_test_input(n=2)
@@ -177,8 +176,8 @@ def test_scale_script_prepare_input():
     list2 = ExperimentList().append(exp[1])
     reflections[0].assert_experiment_identifiers_are_consistent(list1)
     reflections[1].assert_experiment_identifiers_are_consistent(list2)
-    params.dataset_selection.use_datasets = ["0"]
-    params, exp, script_reflections = Script.prepare_input(params, exp, reflections)
+    params.dataset_selection.use_datasets = [0]
+    params, exp, script_reflections = prepare_input(params, exp, reflections)
 
     assert len(script_reflections) == 1
 
@@ -187,9 +186,9 @@ def test_scale_script_prepare_input():
     exp[0].identifier = "0"
     reflections[0].experiment_identifiers()[0] = "0"
     exp[1].identifier = "1"
-    reflections[1].experiment_identifiers()[0] = "1"
-    params.dataset_selection.exclude_datasets = ["0"]
-    params, exp, script_reflections = Script.prepare_input(params, exp, reflections)
+    reflections[1].experiment_identifiers()[1] = "1"
+    params.dataset_selection.exclude_datasets = [0]
+    params, exp, script_reflections = prepare_input(params, exp, reflections)
 
     assert len(script_reflections) == 1
     assert script_reflections[0] is reflections[1]
@@ -205,13 +204,13 @@ def test_scale_script_prepare_input():
     }
     crystal = Crystal.from_dict(exp_dict)
     exp[0].crystal = crystal
-    with pytest.raises(Sorry):
-        _ = Script.prepare_input(params, exp, reflections)
+    with pytest.raises(ValueError):
+        _ = prepare_input(params, exp, reflections)
 
     # Test cutting data
     params, exp, reflections = generate_test_input(n=1)
     params.cut_data.d_min = 1.5
-    params, _, script_reflections = Script.prepare_input(params, exp, reflections)
+    params, _, script_reflections = prepare_input(params, exp, reflections)
     r = script_reflections[0]
     assert list(r.get_flags(r.flags.user_excluded_in_scaling)) == [
         False,
@@ -220,7 +219,7 @@ def test_scale_script_prepare_input():
         True,
     ]
     params.cut_data.d_max = 2.25
-    params, _, script_reflections = Script.prepare_input(params, exp, reflections)
+    params, _, script_reflections = prepare_input(params, exp, reflections)
     r = script_reflections[0]
     assert list(r.get_flags(r.flags.user_excluded_in_scaling)) == [
         False,
@@ -232,7 +231,7 @@ def test_scale_script_prepare_input():
     params, exp, reflections = generate_test_input(n=1)
     reflections[0]["partiality"] = flex.double([0.5, 0.8, 1.0, 1.0])
     params.cut_data.partiality_cutoff = 0.75
-    _, __, script_reflections = Script.prepare_input(params, exp, reflections)
+    _, __, script_reflections = prepare_input(params, exp, reflections)
     r = script_reflections[0]
     assert list(r.get_flags(r.flags.user_excluded_in_scaling)) == [
         True,
@@ -309,13 +308,32 @@ def vmxi_protk_reindexed(dials_data, tmpdir):
     ("options", "expected", "tolerances"),
     [
         (["error_model=None"], None, None),
-        (["error_model=basic"], (0.73711, 0.04720), (0.05, 0.005)),
+        (
+            ["error_model=basic", "basic.minimisation=individual"],
+            (0.73711, 0.04720),
+            (0.05, 0.005),
+        ),
         (["error_model.basic.a=0.73711"], (0.73711, 0.04720), (1e-6, 0.005)),
         (["error_model.basic.b=0.04720"], (0.73711, 0.04720), (0.05, 1e-6)),
         (
             ["error_model.basic.b=0.02", "error_model.basic.a=1.5"],
             (1.50, 0.02),
             (1e-6, 1e-6),
+        ),
+        (
+            ["error_model=basic", "basic.minimisation=regression"],
+            (0.995, 0.051),
+            (0.05, 0.005),
+        ),
+        (
+            ["error_model.basic.a=0.99", "basic.minimisation=regression"],
+            (0.99, 0.051),
+            (1e-6, 0.005),
+        ),
+        (
+            ["error_model.basic.b=0.051", "basic.minimisation=regression"],
+            (0.99, 0.051),
+            (0.05, 1e-6),
         ),
     ],
 )
@@ -334,6 +352,7 @@ def test_error_model_options(
         assert "error_model_parameters" not in config
     else:
         params = expts[0].scaling_model.configdict["error_model_parameters"]
+        print(list(params))
         assert params[0] == pytest.approx(expected[0], abs=tolerances[0])
         assert params[1] == pytest.approx(expected[1], abs=tolerances[1])
 
@@ -455,18 +474,20 @@ def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
     assert tmpdir.join("scaled.expt").check()
     assert tmpdir.join("analysis_results.json").check()
     result = get_merging_stats(tmpdir.join("unmerged.mtz").strpath)
-    assert result.overall.r_pim < 0.17  # 17/05/19 was 0.1525
-    assert result.overall.cc_one_half > 0.95  # 17/05/19 was 0.9722, 29/07/19 was 0.9557
-    assert result.overall.n_obs > 51400  # 17/05/19 was 51560, 29/07/19 was 51493
-    # for this dataset, expect to have two regions excluded - last 5 images of
-    # datasets _4 & _5
+    assert result.overall.r_pim < 0.17  # 03/02/20 was 0.160
+    assert result.overall.cc_one_half > 0.95  # 03/02/20 was 0.961
+    assert result.overall.n_obs > 50000  # 03/02/20 was 50213
+
     with open(tmpdir.join("analysis_results.json").strpath) as f:
         analysis_results = json.load(f)
     assert analysis_results["cycle_results"]["1"]["image_ranges_removed"] == [
-        [[21, 25], 4]
+        [[16, 24], 4]
     ]
     assert analysis_results["cycle_results"]["2"]["image_ranges_removed"] == [
-        [[21, 25], 3]
+        [[17, 24], 3]
+    ]
+    assert analysis_results["cycle_results"]["3"]["image_ranges_removed"] == [
+        [[21, 25], 5]
     ]
     assert analysis_results["termination_reason"] == "max_percent_removed"
 
@@ -497,7 +518,10 @@ def test_scale_and_filter_dataset_mode(dials_data, tmpdir):
     assert tmpdir.join("analysis_results.json").check()
     with open(tmpdir.join("analysis_results.json").strpath) as f:
         analysis_results = json.load(f)
-    assert analysis_results["cycle_results"]["1"]["removed_datasets"] == ["4"]
+
+    assert analysis_results["cycle_results"]["1"]["removed_datasets"] == [
+        analysis_results["initial_expids_and_image_ranges"][4][0]
+    ]
 
 
 def test_scale_array(dials_data, tmpdir):

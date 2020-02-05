@@ -21,12 +21,14 @@ phil_scope = iotbx.phil.parse(
 )
 
 
-def exclude_image_ranges_from_scans(experiments, exclude_images):
+def exclude_image_ranges_from_scans(reflections, experiments, exclude_images):
     """Using an exclude_images phil option, modify the valid image ranges for each
     experiment in the scan (if it exists). Requires experiment identifiers to be
     set already."""
     experiments = set_initial_valid_image_ranges(experiments)
-    ranges_to_remove = _parse_exclude_images_commands(exclude_images, experiments)
+    ranges_to_remove = _parse_exclude_images_commands(
+        exclude_images, experiments, reflections
+    )
     experiments = _remove_ranges_from_valid_image_ranges(experiments, ranges_to_remove)
     return experiments
 
@@ -73,19 +75,22 @@ def get_selection_for_valid_image_ranges(reflection_table, experiment):
     return flex.bool(reflection_table.size(), True)  # else say all valid
 
 
-def _parse_exclude_images_commands(commands, experiments):
+def _parse_exclude_images_commands(commands, experiments, reflections):
     """Parse a list of list of command line options.
 
     e.g. commands = [['1:101:200'], ['0:201:300']]
     or commands = [[101:200]] allowable for a single experiment.
-    builds and returns a list of tuples (exp_id, (start, stop))"""
+    builds and returns a list of tuples (exp_id, (start, stop))
+
+
+    """
     ranges_to_remove = []
     for com in commands:
         vals = com[0].split(":")
         if len(vals) == 2:
             if len(experiments) > 1:
                 raise ValueError(
-                    "Exclude images must be in the form exp:start:stop for multiple experiments"
+                    "Exclude images must be in the form experimentnumber:start:stop for multiple experiments"
                 )
             else:
                 ranges_to_remove.append(
@@ -94,9 +99,15 @@ def _parse_exclude_images_commands(commands, experiments):
         else:
             if len(vals) != 3:
                 raise ValueError(
-                    "Exclude images must be input in the form exp:start:stop, or start:stop for a single experiment"
+                    "Exclude images must be input in the form experimentnumber:start:stop, or start:stop for a single experiment"
                 )
-            ranges_to_remove.append((vals[0], (int(vals[1]), int(vals[2]))))
+            dataset_id = int(vals[0])
+            for table in reflections:
+                if dataset_id in table.experiment_identifiers():
+                    expid = table.experiment_identifiers()[dataset_id]
+                    ranges_to_remove.append((expid, (int(vals[1]), int(vals[2]))))
+                    break
+
     return ranges_to_remove
 
 
@@ -104,8 +115,10 @@ def _remove_ranges_from_valid_image_ranges(experiments, ranges_to_remove):
     """Update the valid_image_ranges for each experiment in the scans. Uses set
     arithmetic to determine image ranges to keep and sets a new list of ranges in
     the scan.valid_image_ranges dict."""
+    ids = list(experiments.identifiers())
     for r in ranges_to_remove:
-        exp = experiments[experiments.find(r[0])]
+        idx = ids.index(r[0])
+        exp = experiments[idx]
         if not exp.scan:
             raise ValueError("Trying to exclude a scanless experiment")
         current_range = exp.scan.get_valid_image_ranges(
@@ -130,8 +143,8 @@ def _remove_ranges_from_valid_image_ranges(experiments, ranges_to_remove):
                     new_valid_ranges.append(previous)
                     new_valid_ranges.append(i)
                 previous = i
-            if new_valid_ranges[-1] != new_valid_images[-1]:
-                new_valid_ranges.append(new_valid_images[-1])
+            # add end one
+            new_valid_ranges.append(new_valid_images[-1])
             assert len(new_valid_ranges) % 2 == 0
             # convert to list of tuples
             valid_ranges = [
@@ -152,7 +165,9 @@ Functions for scaling
 def exclude_image_ranges_for_scaling(reflections, experiments, exclude_images):
     """Set the initial valid ranges, then exclude in the exp.scan and set
     user_excluded_in_scaling flags."""
-    experiments = exclude_image_ranges_from_scans(experiments, exclude_images)
+    experiments = exclude_image_ranges_from_scans(
+        reflections, experiments, exclude_images
+    )
     for refl, exp in zip(reflections, experiments):
         sel = get_selection_for_valid_image_ranges(refl, exp)
         refl.set_flags(~sel, refl.flags.user_excluded_in_scaling)

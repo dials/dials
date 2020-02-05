@@ -152,12 +152,7 @@ def _perform_quasi_random_selection(
 
 
 def select_connected_reflections_across_datasets(
-    Ih_table,
-    experiment,
-    min_per_class=500,
-    Isigma_cutoff=2.0,
-    min_total=40000,
-    n_resolution_bins=20,
+    Ih_table, experiment, Isigma_cutoff=2.0, min_total=40000, n_resolution_bins=20
 ):
     """Select highly connected reflections across datasets."""
     assert Ih_table.n_work_blocks == 1
@@ -174,18 +169,13 @@ def select_connected_reflections_across_datasets(
 
     # prepare parameters for selection algorithm.
     n_datasets = len(set(sel_Ih_table.Ih_table["dataset_id"]))
-    expected_min = min_per_class * n_datasets
-    if expected_min < min_total:
-        min_per_class *= min_total / expected_min
-        min_per_class = int(min_per_class)
-    min_total = max(min_per_class * n_datasets, min_total)
-    # ^ will give more due to overfilling effect in building class matrix
-    max_total = min_total * 2.0
+    min_per_class = min_total / (n_datasets * 4.0)
+    max_total = min_total * 1.2
     logger.info(
         """
 Using quasi-random reflection selection. Selecting from %s symmetry groups
-with <I/sI> > %s (%s reflections)). Selection target of %s reflections
-from each dataset, with a total number between %s and %s.
+with <I/sI> > %s (%s reflections)). Selection target of %.2f reflections
+from each dataset, with a total number between %.2f and %.2f.
 """,
         sel_Ih_table.n_groups,
         Isigma_cutoff,
@@ -304,8 +294,12 @@ def _loop_over_class_matrix(
     # if we haven't reached the minimum total, then need to add more until we
     # reach it or run out of reflections
     if n < min_per_bin and cols_not_used:
-        multiplier = int(floor(min_per_bin / n) + 1)
-        new_limit = min_per_area * multiplier
+        # how many have deficit? (i.e. no more left?)
+        c = sum(1 for d in defecit if d != 0.0)
+        n_classes = sorted_class_matrix.n_rows
+        multiplier = int(floor(min_per_bin * (n_classes - c) / (n * n_classes)) + 1)
+        new_limit = min_per_area * multiplier  # new limit per area
+
         for i, d in enumerate(defecit):
             if d != 0.0:
                 # don't want to be searching for those classes that we know dont have any left

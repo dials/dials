@@ -5,8 +5,6 @@ from __future__ import absolute_import, division, print_function
 import concurrent.futures
 import math
 import sys
-from PIL import Image
-import numpy
 
 import iotbx.phil
 from scitbx.array_family import flex
@@ -15,13 +13,12 @@ from dials.algorithms.spot_finding.factory import phil_scope as spot_phil
 from dials.util.options import OptionParser
 from dials.util.options import flatten_experiments
 from dxtbx.model.experiment_list import ExperimentList, Experiment
-from libtbx import easy_pickle
 
 help_message = """
 
 Examples::
 
-  dev.dials.find_bad_pixels data_master.h5
+  dev.dials.find_bad_pixels data_master.h5 [nproc=8]
 
 """
 
@@ -75,9 +72,11 @@ def find_constant_signal_pixels(imageset, images):
 
     for idx in images:
         pixels = imageset.get_raw_data(idx - 1)
+        known_mask = imageset.get_mask(idx - 1)
 
         # apply known mask
-        for _pixel, _panel in zip(pixels, panels):
+        for _pixel, _panel, _mask in zip(pixels, panels, known_mask):
+            _pixel.set_selected(~_mask, -1)
             for f0, s0, f1, s1 in _panel.get_mask():
                 blank = flex.int(flex.grid(s1 - s0, f1 - f0), 0)
                 _pixel.matrix_paste_block_in_place(blank, s0, f0)
@@ -150,7 +149,7 @@ def run(args):
     imageset = imagesets[0]
     panels = imageset.get_detector()
     detector = panels[0]
-    trusted = detector.get_trusted_range()
+    nfast, nslow = detector.get_image_size()
 
     first, last = imageset.get_scan().get_image_range()
     images = range(first, last + 1)
@@ -191,53 +190,8 @@ def run(args):
     hot_mask = total >= (len(images) // 2)
     hot_pixels = hot_mask.iselection()
 
-    capricious_pixels = {}
     for h in hot_pixels:
-        capricious_pixels[h] = []
-
-    for idx in images:
-        pixels = imageset.get_raw_data(idx - 1)
-        if len(pixels) == 1:
-            data = pixels[0]
-        else:
-            ny, nx = pixels[0].focus()
-            data = flex.int(flex.grid(24 * ny + 23 * 17, nx), -1)
-            for j in range(24):
-                data.matrix_paste_block_in_place(pixels[j], j * (ny + 17), 0)
-
-        for h in hot_pixels:
-            capricious_pixels[h].append(data[h])
-
-    nslow, nfast = data.focus()
-
-    # save the total image as a PNG
-
-    view = (~(total > (len(images) // 2))).as_int() * 255
-    view.reshape(flex.grid(data.focus()))
-    image = Image.fromarray(view.as_numpy_array().astype(numpy.uint8), mode="L")
-    image.save(params.output.png)
-
-    ffff = 0
-
-    for h in hot_pixels:
-        if total[h] == len(images) and data[h] >= trusted[1]:
-            ffff += 1
-            continue
-        print("Pixel %d at %d %d" % (total[h], h // nfast, h % nfast))
-        if not params.output.print_values:
-            continue
-        if len(set(capricious_pixels[h])) >= len(capricious_pixels[h]) // 2:
-            print("  ... many possible values")
-            continue
-        values = set(capricious_pixels[h])
-        result = [(capricious_pixels[h].count(value), value) for value in values]
-        for count, value in reversed(sorted(result)):
-            print("  %08x %d" % (value, count))
-
-    print("Also found %d very hot pixels" % ffff)
-    hot_mask.reshape(flex.grid(data.focus()))
-
-    easy_pickle.dump(params.output.mask, (~hot_mask,))
+        print("    mask[%d, %d] = 8" % (h % nfast, h // nfast))
 
 
 if __name__ == "__main__":

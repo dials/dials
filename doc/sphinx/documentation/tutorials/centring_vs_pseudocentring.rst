@@ -35,7 +35,7 @@ the challenges that lie ahead.
 
 If we were to integrate this dataset using the oP solution from the first part
 and continue on to the :program:`CCP4` data reduction pipeline, we would see
-that :program:`Pointless` chooses the space group :math:`P 2_1 2_1 2_1` but
+that :program:`Pointless` chooses the space group :math:`P\,2_1\,2_1\,2_1` but
 warns that the ``data were integrated on a primitive lattice, but may belong to
 a centered lattice``. Accordingly, :program:`cTruncate` finds strong evidence
 for translational NCS, for this basis along a vector of :math:`(0.0, 0.5,

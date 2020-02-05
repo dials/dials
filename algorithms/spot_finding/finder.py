@@ -11,13 +11,7 @@ import libtbx
 logger = logging.getLogger(__name__)
 
 _no_multiprocessing_on_windows = (
-    "\n"
-    + "*" * 80
-    + "\n"
-    + "Multiprocessing is not available on windows. Setting nproc = 1, njobs = 1"
-    + "\n"
-    + "*" * 80
-    + "\n"
+    "Multiprocessing is not available on windows. Setting nproc = 1, njobs = 1"
 )
 
 
@@ -745,21 +739,43 @@ class SpotFinder(object):
         import six.moves.cPickle as pickle
         from dxtbx.format.image import ImageBool
 
+        # Loop through all the experiments and get the unique imagesets
+        imagesets = []
+        for experiment in experiments:
+            if experiment.imageset not in imagesets:
+                imagesets.append(experiment.imageset)
+
         # Loop through all the imagesets and find the strong spots
         reflections = flex.reflection_table()
-        for i, experiment in enumerate(experiments):
 
-            imageset = experiment.imageset
+        for j, imageset in enumerate(imagesets):
 
             # Find the strong spots in the sequence
             logger.info("-" * 80)
-            logger.info("Finding strong spots in imageset %d" % i)
+            logger.info("Finding strong spots in imageset %d" % j)
             logger.info("-" * 80)
             logger.info("")
             table, hot_mask = self._find_spots_in_imageset(imageset)
-            table["id"] = flex.int(table.nrows(), i)
-            reflections.extend(table)
 
+            # Fix up the experiment ID's now
+            table["id"] = flex.int(table.nrows(), -1)
+            for i, experiment in enumerate(experiments):
+                if experiment.imageset is not imageset:
+                    continue
+                if experiment.scan:
+                    z0, z1 = experiment.scan.get_array_range()
+                    z = table["xyzobs.px.value"].parts()[2]
+                    table["id"].set_selected((z > z0) & (z < z1), i)
+                    if experiment.identifier:
+                        table.experiment_identifiers()[i] = experiment.identifier
+                else:
+                    table["id"] = flex.int(table.nrows(), j)
+                    if experiment.identifier:
+                        table.experiment_identifiers()[j] = experiment.identifier
+            missed = table["id"] == -1
+            assert missed.count(True) == 0, missed.count(True)
+
+            reflections.extend(table)
             # Write a hot pixel mask
             if self.write_hot_mask:
                 if not imageset.external_lookup.mask.data.empty():
@@ -849,9 +865,6 @@ class SpotFinder(object):
 
             logger.info("\nFinding spots in image {0} to {1}...".format(j0, j1))
             j0 -= 1
-            if isinstance(imageset, ImageSequence):
-                j0 -= imageset.get_array_range()[0]
-                j1 -= imageset.get_array_range()[0]
             r, h = extract_spots(imageset[j0:j1])
             reflections.extend(r)
             if h is not None:

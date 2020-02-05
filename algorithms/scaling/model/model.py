@@ -6,7 +6,6 @@ methods to define how these are composed into one model.
 """
 from __future__ import absolute_import, division, print_function
 
-import itertools
 import logging
 from collections import OrderedDict
 
@@ -968,25 +967,24 @@ def calc_n_param_from_bins(value_min, value_max, n_bins):
 
 
 model_phil_scope = phil.parse("")
-models = []
-for entry_point in itertools.chain(
-    pkg_resources.iter_entry_points("dxtbx.scaling_model_ext")
-):
-    models.append(entry_point.name)
+_dxtbx_scaling_models = {
+    ep.name: ep for ep in pkg_resources.iter_entry_points("dxtbx.scaling_model_ext")
+}
+assert (
+    _dxtbx_scaling_models
+), "No models registered with dxtbx.scaling_model_ext entry point"
 model_phil_scope.adopt_scope(
     phil.parse(
         "model ="
-        + " ".join(m for m in models)
+        + " ".join(_dxtbx_scaling_models)
         + "\n    .type = choice"
         + "\n    .help = Set scaling model to be applied to input datasets"
         + "\n    .expert_level = 0"
     )
 )
-for entry_point in itertools.chain(
-    pkg_resources.iter_entry_points("dxtbx.scaling_model_ext")
-):
-    ext_master_scope = phil.parse("%s .expert_level=1 {}" % entry_point.name)
-    ext_phil_scope = ext_master_scope.get_without_substitution(entry_point.name)
+for entry_point_name, entry_point in _dxtbx_scaling_models.items():
+    ext_master_scope = phil.parse("%s .expert_level=1 {}" % entry_point_name)
+    ext_phil_scope = ext_master_scope.get_without_substitution(entry_point_name)
     assert len(ext_phil_scope) == 1
     ext_phil_scope = ext_phil_scope[0]
     ext_phil_scope.adopt_scope(entry_point.load().phil_scope)
@@ -995,10 +993,8 @@ for entry_point in itertools.chain(
 
 def plot_scaling_models(model_dict):
     """Return a dict of component plots for the model for plotting with plotly."""
-    for entry_point in itertools.chain(
-        pkg_resources.iter_entry_points("dxtbx.scaling_model_ext")
-    ):
-        if model_dict["__id__"] == entry_point.name:
-            model = entry_point.load().from_dict(model_dict)
-            return model.plot_model_components()
+    entry_point = _dxtbx_scaling_models.get(model_dict["__id__"])
+    if entry_point:
+        model = entry_point.load().from_dict(model_dict)
+        return model.plot_model_components()
     return OrderedDict()

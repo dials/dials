@@ -1,13 +1,13 @@
 from __future__ import absolute_import, division, print_function
 
 import abc
+import collections
 import copy
 import logging
 import math
 
 import dials.util
 import libtbx
-from libtbx import group_args
 from scitbx import matrix
 from scitbx.array_family import flex
 from dxtbx.model import Crystal
@@ -20,9 +20,17 @@ from dials.util.log import LoggingContext
 
 logger = logging.getLogger(__name__)
 
-
-class Result(group_args):
-    pass
+Result = collections.namedtuple(
+    "Result",
+    (
+        "model_likelihood",
+        "crystal",
+        "rmsds",
+        "n_indexed",
+        "fraction_indexed",
+        "hkl_offset",
+    ),
+)
 
 
 def filter_doubled_cell(solutions):

@@ -60,6 +60,10 @@ class AssignIndicesGlobal(AssignIndicesStrategy):
                 sel_cryst = crystal_ids == i_cryst
                 for i_expt in experiments.where(crystal=cryst, imageset=imgset):
                     expt_ids.set_selected(sel_cryst, i_expt)
+                    if experiments[i_expt].identifier:
+                        reflections.experiment_identifiers()[i_expt] = experiments[
+                            i_expt
+                        ].identifier
 
             reflections["miller_index"].set_selected(
                 isel.select(sel_imgset), miller_indices

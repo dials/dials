@@ -9,6 +9,7 @@ import procrunner
 from scitbx import matrix
 from cctbx import uctbx
 from dxtbx.serialize import load
+from dxtbx.model import ExperimentList
 from dials.array_family import flex
 
 
@@ -67,6 +68,7 @@ def run_indexing(
     experiments_list = load.experiment_list(out_expts.strpath, check_format=False)
     assert len(experiments_list.crystals()) == n_expected_lattices
     indexed_reflections = flex.reflection_table.from_file(out_refls.strpath)
+    indexed_reflections.assert_experiment_identifiers_are_consistent(experiments_list)
     rmsds = None
 
     for i, experiment in enumerate(experiments_list):
@@ -100,6 +102,10 @@ def run_indexing(
         rmsds = (rmsd_x, rmsd_y, rmsd_z)
         for actual, expected in zip(rmsds, expected_rmsds):
             assert actual <= expected, "%s %s" % (rmsds, expected_rmsds)
+        assert experiment.identifier != ""
+        expt = ExperimentList()
+        expt.append(experiment)
+        reflections.assert_experiment_identifiers_are_consistent(expt)
 
     return _indexing_result(indexed_reflections, experiments_list, rmsds)
 

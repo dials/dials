@@ -63,7 +63,7 @@ the data is sensible and to anticipate any problems in processing::
 
 You will be presented with the main image viewer screen:
 
-.. image:: /figures/process_detail_betalactamase/image_viewer.jpg
+.. image:: https://dials.github.io/images/process_detail_betalactamase/image_viewer.png
    :width: 100%
 
 Play with the brightness slider (①) a little until you can clearly see
@@ -114,7 +114,7 @@ The spot centre-of-mass is usually close to the peak pixel, but slightly
 offset as the algorithm allows calculation of the spot centre at a
 better precision than the pixel size and image angular 'width'.
 
-.. image:: /figures/process_detail_betalactamase/image_viewer_spot.png
+.. image:: https://dials.github.io/images/process_detail_betalactamase/image_viewer_spot.png
 
 The default parameters for spot finding usually do a good job for
 Pilatus images, such as these. However they may not be optimal for data

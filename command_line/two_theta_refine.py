@@ -3,7 +3,6 @@ from __future__ import absolute_import, division, print_function
 import datetime
 import logging
 import math
-from time import time
 import sys
 
 from cctbx import miller, sgtbx
@@ -33,8 +32,7 @@ from dials.util import log
 from dials.util.version import dials_version
 from dials.util import show_mail_on_error
 from dials.util.filter_reflections import filter_reflection_table
-from dials.util.options import flatten_experiments, flatten_reflections
-from dials.util.options import OptionParser
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.multi_dataset_handling import parse_multiple_datasets
 from dials.util import tabulate
 
@@ -422,7 +420,6 @@ class Script(object):
 
     def run(self):
         """Execute the script."""
-        start_time = time()
 
         # Parse the command line
         params, _ = self.parser.parse_args(show_diff_phil=False)
@@ -431,8 +428,9 @@ class Script(object):
         reflections = flex.reflection_table()
 
         # loop through the input, building up the global lists
-        reflections_list = flatten_reflections(params.input.reflections)
-        experiments = flatten_experiments(params.input.experiments)
+        reflections_list, experiments = reflections_and_experiments_from_files(
+            params.input.reflections, params.input.experiments
+        )
 
         reflections_list = parse_multiple_datasets(reflections_list)
         for refs in reflections_list:
@@ -527,9 +525,6 @@ class Script(object):
 
         if params.output.mmcif is not None:
             self.generate_mmcif(crystals[0], refiner, filename=params.output.mmcif)
-
-        # Log the total time taken
-        logger.info("\nTotal time taken: {:.2f}s".format(time() - start_time))
 
 
 if __name__ == "__main__":

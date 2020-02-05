@@ -7,8 +7,7 @@ import libtbx.phil
 
 from dials.util import resolutionizer
 from dials.util import log
-from dials.util.options import OptionParser
-from dials.util.options import flatten_reflections, flatten_experiments
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 from dials.util.multi_dataset_handling import parse_multiple_datasets
 
@@ -33,7 +32,7 @@ output {
 
 def run(args):
     usage = (
-        "dials.resolutionizer [options] scaled.expt scaled.refl | scaled_unmerged.mtz"
+        "dials.resolutionizer [options] (scaled.expt scaled.refl | scaled_unmerged.mtz)"
     )
 
     parser = OptionParser(
@@ -49,8 +48,9 @@ def run(args):
         return_unhandled=True, show_diff_phil=True
     )
 
-    reflections = flatten_reflections(params.input.reflections)
-    experiments = flatten_experiments(params.input.experiments)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
     if (not reflections or not experiments) and not unhandled:
         parser.print_help()
         return
