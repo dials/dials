@@ -623,7 +623,11 @@ def test_multiple_experiments(dials_regression, tmpdir):
     expected_hall_symbol = " P 1"
     expected_rmsds = (0.1, 0.07, 0.0)
 
-    extra_args = ["stills.indexer=sequences", "joint_indexing=False"]
+    extra_args = [
+        "stills.indexer=sequences",
+        "joint_indexing=False",
+        "outlier.algorithm=sauter_poon",
+    ]
 
     run_indexing(
         pickle_path,

@@ -9,7 +9,6 @@ import sys
 
 import iotbx.phil
 from dxtbx.model.experiment_list import ExperimentList
-from dxtbx.imageset import ImageSetFactory
 from dials.algorithms.indexing import indexer
 from dials.algorithms.indexing import DialsIndexError
 from dials.array_family import flex
@@ -156,19 +155,6 @@ def index(experiments, reflections, params):
             if i > 0:
                 reflections[0].extend(reflections[i])
     reflections = reflections[0]
-
-    # If there are scan and goniometer objects present but the oscillation angle is zero
-    # then expt.scan and expt.goniometer to None, as the behaviour of some downstream
-    # algorithms depend on the presence/absence of these objects
-    for expt in experiments:
-        if (
-            expt.goniometer is not None
-            and expt.scan is not None
-            and expt.scan.is_still()
-        ):
-            expt.imageset = ImageSetFactory.imageset_from_anyset(expt.imageset)
-            expt.goniometer = None
-            expt.scan = None
 
     if params.indexing.image_range:
         reflections = slice_reflections(reflections, params.indexing.image_range)
