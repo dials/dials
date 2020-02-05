@@ -500,7 +500,7 @@ def run(args):
         epilog=help_message,
     )
 
-    params, options = parser.parse_args(show_diff_phil=False)
+    params, options = parser.parse_args(args, show_diff_phil=False)
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
