@@ -20,7 +20,6 @@ import iotbx.phil
 from rstbx.indexing_api import dps_extended
 from rstbx.indexing_api.lattice import DPS_primitive_lattice
 from rstbx.dps_core import Direction, Directional_FFT
-from dxtbx.model import Experiment, ExperimentList
 
 from dials.algorithms.indexing.indexer import find_max_cell
 from dials.util import log
@@ -98,8 +97,8 @@ d_min = None
 class better_experimental_model_discovery(object):
     def __init__(
         self,
-        imagesets,
-        spot_lists,
+        experiments,
+        reflection_lists,
         solution_lists,
         amax_lists,
         horizon_phil,
@@ -111,7 +110,7 @@ class better_experimental_model_discovery(object):
         """Local scope: find the optimal origin-offset closest to the current overall detector position
         (local minimum, simple minimization)"""
 
-        beam = self.imagesets[0].get_beam()
+        beam = self.experiments[0].beam
         s0 = matrix.col(beam.get_s0())
         # construct two vectors that are perpendicular to the beam.  Gives a basis for refining beam
         axis = matrix.col((1, 0, 0))
@@ -126,7 +125,7 @@ class better_experimental_model_discovery(object):
 
         if self.horizon_phil.indexing.mm_search_scope:
             scope = self.horizon_phil.indexing.mm_search_scope
-            plot_px_sz = self.imagesets[0].get_detector()[0].get_pixel_size()[0]
+            plot_px_sz = self.experiments[0].detector[0].get_pixel_size()[0]
             plot_px_sz *= self.wide_search_binning
             grid = max(1, int(scope / plot_px_sz))
             widegrid = 2 * grid + 1
@@ -137,13 +136,13 @@ class better_experimental_model_discovery(object):
                         x * plot_px_sz * beamr1 + y * plot_px_sz * beamr2
                     )
                     score = 0
-                    for i in range(len(self.imagesets)):
+                    for i in range(len(self.experiments)):
                         score += self.get_origin_offset_score(
                             new_origin_offset,
                             self.solution_lists[i],
                             self.amax_lists[i],
-                            self.spot_lists[i],
-                            self.imagesets[i],
+                            self.reflection_lists[i],
+                            self.experiments[i],
                         )
                     scores.append(score)
 
@@ -196,13 +195,13 @@ class better_experimental_model_discovery(object):
                 if selfOO.wide_search_offset is not None:
                     trial_origin_offset += selfOO.wide_search_offset
                 target = 0
-                for i in range(len(self.imagesets)):
+                for i in range(len(self.experiments)):
                     target -= self.get_origin_offset_score(
                         trial_origin_offset,
                         self.solution_lists[i],
                         self.amax_lists[i],
-                        self.spot_lists[i],
-                        self.imagesets[i],
+                        self.reflection_lists[i],
+                        self.experiments[i],
                     )
                 return target
 
@@ -211,7 +210,7 @@ class better_experimental_model_discovery(object):
 
         if self.horizon_phil.indexing.plot_search_scope:
             scope = self.horizon_phil.indexing.mm_search_scope
-            plot_px_sz = self.imagesets[0].get_detector()[0].get_pixel_size()[0]
+            plot_px_sz = self.experiments[0].get_detector()[0].get_pixel_size()[0]
             grid = max(1, int(scope / plot_px_sz))
             scores = flex.double()
             for y in range(-grid, grid + 1):
@@ -220,13 +219,13 @@ class better_experimental_model_discovery(object):
                         x * plot_px_sz * beamr1 + y * plot_px_sz * beamr2
                     )
                     score = 0
-                    for i in range(len(self.imagesets)):
+                    for i in range(len(self.experiments)):
                         score += self.get_origin_offset_score(
                             new_origin_offset,
                             self.solution_lists[i],
                             self.amax_lists[i],
-                            self.spot_lists[i],
-                            self.imagesets[i],
+                            self.reflection_lists[i],
+                            self.experiments[i],
                         )
                     scores.append(score)
 
@@ -270,35 +269,27 @@ class better_experimental_model_discovery(object):
 
             show_plot(widegrid=2 * grid + 1, excursi=scores)
 
-        return dps_extended.get_new_detector(
-            self.imagesets[0].get_detector(), new_offset
-        )
+        new_experiments = copy.deepcopy(self.experiments)
+        for expt in new_experiments:
+            expt.detector = dps_extended.get_new_detector(expt.detector, new_offset)
+        return new_experiments
 
     def get_origin_offset_score(
-        self, trial_origin_offset, solutions, amax, spots_mm, imageset
+        self, trial_origin_offset, solutions, amax, spots_mm, experiment
     ):
         trial_detector = dps_extended.get_new_detector(
-            imageset.get_detector(), trial_origin_offset
+            experiment.detector, trial_origin_offset
         )
+        experiment = copy.deepcopy(experiment)
+        experiment.detector = trial_detector
 
         # Key point for this is that the spots must correspond to detector
         # positions not to the correct RS position => reset any fixed rotation
         # to identity - copy in case called from elsewhere
 
-        gonio = copy.deepcopy(imageset.get_goniometer())
+        gonio = copy.deepcopy(experiment.goniometer)
         gonio.set_fixed_rotation((1, 0, 0, 0, 1, 0, 0, 0, 1))
-        spots_mm.map_centroids_to_reciprocal_space(
-            ExperimentList(
-                [
-                    Experiment(
-                        beam=imageset.get_beam(),
-                        detector=trial_detector,
-                        goniometer=gonio,
-                    )
-                ]
-            )
-        )
-
+        spots_mm.map_centroids_to_reciprocal_space([experiment])
         return self.sum_score_detail(spots_mm["rlp"], solutions, amax=amax)
 
     def sum_score_detail(
@@ -344,11 +335,11 @@ class better_experimental_model_discovery(object):
 
 
 def run_dps(args):
-    imageset, spots_mm, max_cell, params = args
+    experiment, spots_mm, max_cell, params = args
 
-    detector = imageset.get_detector()
-    beam = imageset.get_beam()
-    goniometer = imageset.get_goniometer()
+    detector = experiment.detector
+    beam = experiment.beam
+    goniometer = experiment.goniometer
 
     # max_cell: max possible cell in Angstroms; set to None, determine from data
     # recommended_grid_sampling_rad: grid sampling in radians; guess for now
@@ -397,80 +388,58 @@ def run_dps(args):
 
 
 def discover_better_experimental_model(
-    imagesets, spot_lists, params, dps_params, nproc=1, wide_search_binning=1
+    experiments, reflections, params, dps_params, nproc=1, wide_search_binning=1
 ):
-    assert len(imagesets) == len(spot_lists)
-    assert len(imagesets) > 0
+    assert len(experiments) == len(reflections)
+    assert len(experiments) > 0
 
-    spot_lists_mm = []
+    refl_lists = []
     max_cell_list = []
 
-    detector = imagesets[0].get_detector()
-    beam = imagesets[0].get_beam()
-    try:
-        for imageset in imagesets[1:]:
-            assert detector.is_similar_to(imageset.get_detector())
-            assert beam.is_similar_to(imageset.get_beam())
-    except AssertionError:
-        # https://github.com/dials/dials/issues/1126
-        pass
-        # raise Sorry("Detectors and beams are not the same across all imagesets")
-
+    # The detector/beam of the first experiment is used to define the basis for the
+    # optimisation, so assert that the beam intersects with the detector
+    detector = experiments[0].detector
+    beam = experiments[0].beam
     beam_panel = detector.get_panel_intersection(beam.get_s0())
-
     if beam_panel == -1:
-
         raise Sorry("input beam does not intersect detector")
 
-    for imageset, spots in zip(imagesets, spot_lists):
-        spots_mm = copy.deepcopy(spots)
-        spots_mm["imageset_id"] = flex.int(len(spots), 0)
-        expts = ExperimentList(
-            [
-                Experiment(
-                    detector=imageset.get_detector(),
-                    beam=imageset.get_beam(),
-                    goniometer=imageset.get_goniometer(),
-                    scan=imageset.get_scan(),
-                )
-            ]
-        )
-        spots_mm.centroid_px_to_mm(expts)
-        spots_mm.map_centroids_to_reciprocal_space(expts)
+    for expt, refl in zip(experiments, reflections):
+        refl = copy.deepcopy(refl)
+        refl["imageset_id"] = flex.int(len(refl), 0)
+        refl.centroid_px_to_mm([expt])
+        refl.map_centroids_to_reciprocal_space([expt])
 
         if dps_params.d_min is not None:
-            d_spacings = 1 / spots_mm["rlp"].norms()
+            d_spacings = 1 / refl["rlp"].norms()
             sel = d_spacings > dps_params.d_min
-            spots_mm = spots_mm.select(sel)
+            refl = refl.select(sel)
 
         # derive a max_cell from mm spots
         if params.max_cell is None:
             max_cell = find_max_cell(
-                spots_mm, max_cell_multiplier=1.3, step_size=45
+                refl, max_cell_multiplier=1.3, step_size=45
             ).max_cell
             max_cell_list.append(max_cell)
 
-        if (
-            params.max_reflections is not None
-            and spots_mm.size() > params.max_reflections
-        ):
+        if params.max_reflections is not None and refl.size() > params.max_reflections:
             logger.info(
                 "Selecting subset of %i reflections for analysis"
                 % params.max_reflections
             )
-            perm = flex.random_permutation(spots_mm.size())
+            perm = flex.random_permutation(refl.size())
             sel = perm[: params.max_reflections]
-            spots_mm = spots_mm.select(sel)
+            refl = refl.select(sel)
 
-        spot_lists_mm.append(spots_mm)
+        refl_lists.append(refl)
 
     if params.max_cell is None:
         max_cell = flex.median(flex.double(max_cell_list))
     else:
         max_cell = params.max_cell
     args = [
-        (imageset, spots, max_cell, dps_params)
-        for imageset, spots in zip(imagesets, spot_lists_mm)
+        (expt, refl, max_cell, dps_params)
+        for expt, refl in zip(experiments, refl_lists)
     ]
 
     results = easy_mp.parallel_map(
@@ -487,20 +456,19 @@ def discover_better_experimental_model(
     if len(solution_lists) == 0:
         raise Sorry("No solutions found")
 
-    detector = imagesets[0].get_detector()
-    beam = imagesets[0].get_beam()
-
     # perform calculation
     if dps_params.indexing.improve_local_scope == "origin_offset":
         discoverer = better_experimental_model_discovery(
-            imagesets,
-            spot_lists_mm,
+            experiments,
+            refl_lists,
             solution_lists,
             amax_list,
             dps_params,
             wide_search_binning=wide_search_binning,
         )
-        new_detector = discoverer.optimize_origin_offset_local_scope()
+
+        new_experiments = discoverer.optimize_origin_offset_local_scope()
+        new_detector = new_experiments[0].detector
         old_panel, old_beam_centre = detector.get_ray_intersection(beam.get_s0())
         new_panel, new_beam_centre = new_detector.get_ray_intersection(beam.get_s0())
 
@@ -523,7 +491,7 @@ def discover_better_experimental_model(
             + " (%.1f, %.1f px)"
             % (matrix.col(old_beam_centre_px) - matrix.col(new_beam_centre_px)).elems
         )
-        return new_detector, beam
+        return new_experiments
     elif dps_params.indexing.improve_local_scope == "S0_vector":
         raise NotImplementedError()
 
@@ -586,21 +554,18 @@ def run(args):
     for i in range(params.n_macro_cycles):
         if params.n_macro_cycles > 1:
             logger.info("Starting macro cycle %i" % (i + 1))
-        new_detector, new_beam = discover_better_experimental_model(
-            imagesets,
+        new_experiments = discover_better_experimental_model(
+            experiments,
             reflections,
             params,
             dps_params,
             nproc=params.nproc,
             wide_search_binning=params.wide_search_binning,
         )
-        for experiment in experiments:
-            experiment.beam = new_beam
-            experiment.detector = new_detector
         logger.info("")
 
     logger.info("Saving optimised experiments to %s" % params.output.experiments)
-    experiments.as_file(params.output.experiments)
+    new_experiments.as_file(params.output.experiments)
 
 
 if __name__ == "__main__":

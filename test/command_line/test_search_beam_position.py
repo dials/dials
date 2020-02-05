@@ -1,12 +1,17 @@
 from __future__ import absolute_import, division, print_function
 
+import mock
 import os
-
 import procrunner
 import pytest
+import sys
 import scitbx
+from cctbx import uctbx
 
 from dxtbx.serialize import load
+
+import dials.command_line.dials_import
+from dials.algorithms.indexing.test_index import run_indexing
 
 
 def test_search_i04_weak_data_image_range(run_in_tmpdir, dials_regression):
@@ -31,10 +36,9 @@ def test_search_i04_weak_data_image_range(run_in_tmpdir, dials_regression):
     assert os.path.exists("optimised.expt")
 
     experiments = load.experiment_list(experiments_file, check_format=False)
-    original_imageset = experiments.imagesets()[0]
-    optimized_experiments = load.experiment_list("optimised.expt", check_format=False)
-    detector_1 = original_imageset.get_detector()
-    detector_2 = optimized_experiments.detectors()[0]
+    optimised_experiments = load.experiment_list("optimised.expt", check_format=False)
+    detector_1 = experiments[0].detector
+    detector_2 = optimised_experiments[0].detector
     shift = scitbx.matrix.col(detector_1[0].get_origin()) - scitbx.matrix.col(
         detector_2[0].get_origin()
     )
@@ -73,10 +77,9 @@ def test_search_multiple(run_in_tmpdir, dials_regression):
     assert os.path.exists("optimised.expt")
 
     experiments = load.experiment_list(experiments_path1, check_format=False)
-    original_imageset = experiments.imagesets()[0]
-    optimized_experiments = load.experiment_list("optimised.expt", check_format=False)
-    detector_1 = original_imageset.get_detector()
-    detector_2 = optimized_experiments.detectors()[0]
+    optimised_experiments = load.experiment_list("optimised.expt", check_format=False)
+    detector_1 = experiments[0].detector
+    detector_2 = optimised_experiments[0].detector
     shift = scitbx.matrix.col(detector_1[0].get_origin()) - scitbx.matrix.col(
         detector_2[0].get_origin()
     )
@@ -108,13 +111,9 @@ def test_index_after_search(dials_data, tmpdir):
         # Can't run this command on Windows,
         # as it will exceed the maximum Windows command length limits.
         # So, instead:
-        import mock
-        import sys
 
         with tmpdir.as_cwd():
             with mock.patch.object(sys, "argv", args):
-                import dials.command_line.dials_import
-
                 dials.command_line.dials_import.Script().run()
     assert tmpdir.join("imported.expt").check()
 
@@ -138,8 +137,6 @@ def test_index_after_search(dials_data, tmpdir):
     assert tmpdir.join("optimised.expt").check()
 
     # look at the results
-    from dxtbx.serialize import load
-
     experiments = load.experiment_list(
         tmpdir.join("imported.expt").strpath, check_format=False
     )
@@ -155,9 +152,6 @@ def test_index_after_search(dials_data, tmpdir):
     print(shift)
 
     # check we can actually index the resulting optimized experiments
-    from cctbx import uctbx
-    from dials.algorithms.indexing.test_index import run_indexing
-
     expected_unit_cell = uctbx.unit_cell(
         (57.780, 57.800, 150.017, 89.991, 89.990, 90.007)
     )
@@ -196,8 +190,6 @@ def test_search_single(run_in_tmpdir, dials_regression):
     assert not result.returncode and not result.stderr
     assert os.path.exists("optimised.expt")
 
-    from dxtbx.serialize import load
-
     experiments = load.experiment_list(experiments_path, check_format=False)
     original_imageset = experiments.imagesets()[0]
     optimized_experiments = load.experiment_list("optimised.expt", check_format=False)
@@ -223,24 +215,27 @@ def test_search_small_molecule(dials_data, run_in_tmpdir):
     """
 
     data = dials_data("l_cysteine_dials_output")
-    datablock_path = data.join("datablock.json").strpath
-    pickle_path = data.join("strong.pickle").strpath
+    experiments_path = data.join("imported.expt").strpath
+    refl_path = data.join("strong.refl").strpath
 
-    args = ["dials.search_beam_position", datablock_path, pickle_path]
+    args = ["dials.search_beam_position", experiments_path, refl_path]
     print(args)
     result = procrunner.run(args)
     assert not result.returncode and not result.stderr
     assert os.path.exists("optimised.expt")
 
-    from dxtbx.serialize import load
-
-    datablocks = load.datablock(datablock_path, check_format=False)
-    original_imageset = datablocks[0].extract_imagesets()[0]
-    detector_1 = original_imageset.get_detector()
-    optimized_experiments = load.experiment_list("optimised.expt", check_format=False)
-    detector_2 = optimized_experiments[0].detector
-    shift = scitbx.matrix.col(detector_1[0].get_origin()) - scitbx.matrix.col(
-        detector_2[0].get_origin()
-    )
-    print(shift)
-    assert shift.elems == pytest.approx((0.11, -1.03, 0.0), abs=1e-1)
+    experiments = load.experiment_list(experiments_path, check_format=False)
+    optimised_experiments = load.experiment_list("optimised.expt", check_format=False)
+    for old_expt, new_expt in zip(experiments, optimised_experiments):
+        # assert that the detector fast/slow axes are unchanged from the input experiments
+        # the last experiment actually does have a different detector model
+        assert (
+            old_expt.detector[0].get_slow_axis() == new_expt.detector[0].get_slow_axis()
+        )
+        assert (
+            old_expt.detector[0].get_fast_axis() == new_expt.detector[0].get_fast_axis()
+        )
+        shift = scitbx.matrix.col(
+            old_expt.detector[0].get_origin()
+        ) - scitbx.matrix.col(new_expt.detector[0].get_origin())
+        assert shift.elems == pytest.approx((-0.292, -1.063, 0.0), abs=1e-2)
