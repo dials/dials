@@ -18,6 +18,7 @@ from scitbx.array_family import flex
 import iotbx.phil
 from rstbx.indexing_api import dps_extended
 from rstbx.indexing_api.lattice import DPS_primitive_lattice
+from rstbx.phil.phil_preferences import indexing_api_defs
 from rstbx.dps_core import Direction, Directional_FFT
 
 from dials.algorithms.indexing.indexer import find_max_cell
@@ -68,6 +69,8 @@ wide_search_binning = 2
 n_macro_cycles = 1
   .type = int
   .help = "Number of macro cycles for an iterative beam centre search."
+d_min = None
+  .type = float(value_min=0)
 
 seed = 42
   .type = int(value_min=0)
@@ -83,15 +86,6 @@ output {
 
 master_params = phil_scope.fetch().extract()
 
-dps_phil_scope = iotbx.phil.parse(
-    """
-include scope rstbx.phil.phil_preferences.indexing_api_defs
-d_min = None
-  .type = float(value_min=0)
-""",
-    process_includes=True,
-)
-
 
 class better_experimental_model_discovery(object):
     def __init__(
@@ -100,8 +94,9 @@ class better_experimental_model_discovery(object):
         reflection_lists,
         solution_lists,
         amax_lists,
-        horizon_phil,
+        mm_search_scope=4,
         wide_search_binning=1,
+        plot_search_scope=False,
     ):
         adopt_init_args(self, locals())
 
@@ -122,11 +117,10 @@ class better_experimental_model_discovery(object):
         assert approx_equal(beamr2.dot(beamr1), 0.0)
         # so the orthonormal vectors are s0, beamr1 and beamr2
 
-        if self.horizon_phil.indexing.mm_search_scope:
-            scope = self.horizon_phil.indexing.mm_search_scope
+        if self.mm_search_scope:
             plot_px_sz = self.experiments[0].detector[0].get_pixel_size()[0]
             plot_px_sz *= self.wide_search_binning
-            grid = max(1, int(scope / plot_px_sz))
+            grid = max(1, int(self.mm_search_scope / plot_px_sz))
             widegrid = 2 * grid + 1
             scores = flex.double()
             for y in range(-grid, grid + 1):
@@ -207,10 +201,9 @@ class better_experimental_model_discovery(object):
         MIN = test_simplex_method(wide_search_offset=wide_search_offset)
         new_offset = MIN.offset
 
-        if self.horizon_phil.indexing.plot_search_scope:
-            scope = self.horizon_phil.indexing.mm_search_scope
+        if self.plot_search_scope:
             plot_px_sz = self.experiments[0].get_detector()[0].get_pixel_size()[0]
-            grid = max(1, int(scope / plot_px_sz))
+            grid = max(1, int(self.mm_search_scope / plot_px_sz))
             scores = flex.double()
             for y in range(-grid, grid + 1):
                 for x in range(-grid, grid + 1):
@@ -328,12 +321,13 @@ class better_experimental_model_discovery(object):
         return sum_score
 
 
-def run_dps(experiment, spots_mm, max_cell, params):
+def run_dps(experiment, spots_mm, max_cell):
     # max_cell: max possible cell in Angstroms; set to None, determine from data
     # recommended_grid_sampling_rad: grid sampling in radians; guess for now
 
+    horizon_phil = iotbx.phil.parse(input_string=indexing_api_defs).extract()
     DPS = DPS_primitive_lattice(
-        max_cell=max_cell, recommended_grid_sampling_rad=None, horizon_phil=params
+        max_cell=max_cell, recommended_grid_sampling_rad=None, horizon_phil=horizon_phil
     )
 
     DPS.S0_vector = matrix.col(experiment.beam.get_s0())
@@ -376,7 +370,14 @@ def run_dps(experiment, spots_mm, max_cell, params):
 
 
 def discover_better_experimental_model(
-    experiments, reflections, params, dps_params, nproc=1, wide_search_binning=1
+    experiments,
+    reflections,
+    params,
+    nproc=1,
+    d_min=None,
+    mm_search_scope=4.0,
+    wide_search_binning=1,
+    plot_search_scope=False,
 ):
     assert len(experiments) == len(reflections)
     assert len(experiments) > 0
@@ -398,9 +399,9 @@ def discover_better_experimental_model(
         refl.centroid_px_to_mm([expt])
         refl.map_centroids_to_reciprocal_space([expt])
 
-        if dps_params.d_min is not None:
+        if d_min is not None:
             d_spacings = 1 / refl["rlp"].norms()
-            sel = d_spacings > dps_params.d_min
+            sel = d_spacings > d_min
             refl = refl.select(sel)
 
         # derive a max_cell from mm spots
@@ -429,7 +430,7 @@ def discover_better_experimental_model(
     with concurrent.futures.ProcessPoolExecutor(max_workers=nproc) as pool:
         futures = []
         for expt, refl in zip(experiments, refl_lists):
-            futures.append(pool.submit(run_dps, expt, refl, max_cell, dps_params))
+            futures.append(pool.submit(run_dps, expt, refl, max_cell))
         solution_lists = []
         amax_list = []
         for future in concurrent.futures.as_completed(futures):
@@ -441,44 +442,39 @@ def discover_better_experimental_model(
     if len(solution_lists) == 0:
         raise Sorry("No solutions found")
 
-    # perform calculation
-    if dps_params.indexing.improve_local_scope == "origin_offset":
-        discoverer = better_experimental_model_discovery(
-            experiments,
-            refl_lists,
-            solution_lists,
-            amax_list,
-            dps_params,
-            wide_search_binning=wide_search_binning,
-        )
+    discoverer = better_experimental_model_discovery(
+        experiments,
+        refl_lists,
+        solution_lists,
+        amax_list,
+        mm_search_scope=mm_search_scope,
+        wide_search_binning=wide_search_binning,
+        plot_search_scope=plot_search_scope,
+    )
 
-        new_experiments = discoverer.optimize_origin_offset_local_scope()
-        new_detector = new_experiments[0].detector
-        old_panel, old_beam_centre = detector.get_ray_intersection(beam.get_s0())
-        new_panel, new_beam_centre = new_detector.get_ray_intersection(beam.get_s0())
+    new_experiments = discoverer.optimize_origin_offset_local_scope()
+    new_detector = new_experiments[0].detector
+    old_panel, old_beam_centre = detector.get_ray_intersection(beam.get_s0())
+    new_panel, new_beam_centre = new_detector.get_ray_intersection(beam.get_s0())
 
-        old_beam_centre_px = detector[old_panel].millimeter_to_pixel(old_beam_centre)
-        new_beam_centre_px = new_detector[new_panel].millimeter_to_pixel(
-            new_beam_centre
-        )
+    old_beam_centre_px = detector[old_panel].millimeter_to_pixel(old_beam_centre)
+    new_beam_centre_px = new_detector[new_panel].millimeter_to_pixel(new_beam_centre)
 
-        logger.info(
-            "Old beam centre: %.2f, %.2f mm" % old_beam_centre
-            + " (%.1f, %.1f px)" % old_beam_centre_px
-        )
-        logger.info(
-            "New beam centre: %.2f, %.2f mm" % new_beam_centre
-            + " (%.1f, %.1f px)" % new_beam_centre_px
-        )
-        logger.info(
-            "Shift: %.2f, %.2f mm"
-            % (matrix.col(old_beam_centre) - matrix.col(new_beam_centre)).elems
-            + " (%.1f, %.1f px)"
-            % (matrix.col(old_beam_centre_px) - matrix.col(new_beam_centre_px)).elems
-        )
-        return new_experiments
-    elif dps_params.indexing.improve_local_scope == "S0_vector":
-        raise NotImplementedError()
+    logger.info(
+        "Old beam centre: %.2f, %.2f mm" % old_beam_centre
+        + " (%.1f, %.1f px)" % old_beam_centre_px
+    )
+    logger.info(
+        "New beam centre: %.2f, %.2f mm" % new_beam_centre
+        + " (%.1f, %.1f px)" % new_beam_centre_px
+    )
+    logger.info(
+        "Shift: %.2f, %.2f mm"
+        % (matrix.col(old_beam_centre) - matrix.col(new_beam_centre)).elems
+        + " (%.1f, %.1f px)"
+        % (matrix.col(old_beam_centre_px) - matrix.col(new_beam_centre_px)).elems
+    )
+    return new_experiments
 
 
 def run(args):
@@ -534,11 +530,6 @@ def run(args):
             slice_reflections(refl, params.image_range) for refl in reflections
         ]
 
-    dps_params = dps_phil_scope.extract()
-    # for development, we want an exhaustive plot of beam probability map:
-    dps_params.indexing.plot_search_scope = params.plot_search_scope
-    dps_params.indexing.mm_search_scope = params.mm_search_scope
-
     for i in range(params.n_macro_cycles):
         if params.n_macro_cycles > 1:
             logger.info("Starting macro cycle %i" % (i + 1))
@@ -546,9 +537,11 @@ def run(args):
             experiments,
             reflections,
             params,
-            dps_params,
             nproc=params.nproc,
+            d_min=params.d_min,
+            mm_search_scope=params.mm_search_scope,
             wide_search_binning=params.wide_search_binning,
+            plot_search_scope=params.plot_search_scope,
         )
         logger.info("")
 
