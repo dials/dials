@@ -4,6 +4,9 @@ import os
 
 from dxtbx.model.experiment_list import ExperimentListFactory
 import procrunner
+from libtbx import phil
+from dials.array_family import flex
+from dials.algorithms.refinement import RefinerFactory
 
 
 def test1(dials_regression, run_in_tmpdir):
@@ -89,3 +92,61 @@ def test_multi_process_refinement_gives_same_results_as_single_process_refinemen
             slow_axis_tolerance=5e-5,
             origin_tolerance=5e-5,
         )
+
+
+def test_restrained_refinement_with_fixed_parameterisations(
+    dials_regression, run_in_tmpdir
+):
+    # Avoid a regression to https://github.com/dials/dials/issues/1142 by
+    # testing that refinement succeeds when some parameterisations are fixed
+    # by parameter auto reduction code, but restraints are requested for
+    # those parameterisations.
+
+    # The phil scope
+    from dials.algorithms.refinement.refiner import phil_scope
+
+    user_phil = phil.parse(
+        """
+refinement {
+  parameterisation {
+    auto_reduction {
+      min_nref_per_parameter = 90
+      action = fail *fix remove
+    }
+    crystal {
+      unit_cell {
+        restraints {
+          tie_to_target {
+            values = 95 95 132 90 90 120
+            sigmas = 1 1 1 0 0 0
+            id = 0 1 2 3 4 5 6 7 8 9
+          }
+        }
+      }
+    }
+  }
+}
+"""
+    )
+
+    working_phil = phil_scope.fetch(source=user_phil)
+    working_params = working_phil.extract()
+
+    # use the multi stills test data
+    data_dir = os.path.join(dials_regression, "refinement_test_data", "multi_stills")
+    experiments_path = os.path.join(data_dir, "combined_experiments.json")
+    pickle_path = os.path.join(data_dir, "combined_reflections.pickle")
+
+    experiments = ExperimentListFactory.from_json_file(
+        experiments_path, check_format=False
+    )
+    reflections = flex.reflection_table.from_file(pickle_path)
+
+    refiner = RefinerFactory.from_parameters_data_experiments(
+        working_params, reflections, experiments
+    )
+
+    history = refiner.run()
+    rmsd_limits = (0.2044, 0.2220, 0.0063)
+    for a, b in zip(history["rmsd"][-1], rmsd_limits):
+        assert a < b
