@@ -106,55 +106,24 @@ class RestraintsParameterisation(object):
         # Loop over all parameterisations, extract experiment IDs and record
         # global parameter index for each that tells us which parameters have
         # non-zero derivatives
-        iparam = 0
+        self._nparam = 0
 
-        self._exp_to_det_param = {}
-        for detp in self._detector_parameterisations:
-            nfree = detp.num_free()
-            if nfree == 0:
-                continue
-            for iexp in detp.get_experiment_ids():
-                self._exp_to_det_param[iexp] = ParamIndex(detp, iparam)
-            iparam += nfree
+        def process(parameterisation_list):
+            result = {}
+            for parameterisation in parameterisation_list:
+                nfree = parameterisation.num_free()
+                if nfree == 0:
+                    continue
+                for iexp in parameterisation.get_experiment_ids():
+                    result[iexp] = ParamIndex(parameterisation, self._nparam)
+                self._nparam += nfree
+            return result
 
-        self._exp_to_beam_param = {}
-        for beamp in self._beam_parameterisations:
-            nfree = beamp.num_free()
-            if nfree == 0:
-                continue
-            for iexp in beamp.get_experiment_ids():
-                self._exp_to_beam_param[iexp] = ParamIndex(beamp, iparam)
-            iparam += nfree
-
-        self._exp_to_xlo_param = {}
-        for xlop in self._xl_orientation_parameterisations:
-            nfree = xlop.num_free()
-            if nfree == 0:
-                continue
-            for iexp in xlop.get_experiment_ids():
-                self._exp_to_xlo_param[iexp] = ParamIndex(xlop, iparam)
-            iparam += nfree
-
-        self._exp_to_xluc_param = {}
-        for xlucp in self._xl_unit_cell_parameterisations:
-            nfree = xlucp.num_free()
-            if nfree == 0:
-                continue
-            for iexp in xlucp.get_experiment_ids():
-                self._exp_to_xluc_param[iexp] = ParamIndex(xlucp, iparam)
-            iparam += nfree
-
-        self._exp_to_gon_param = {}
-        for gonp in self._goniometer_parameterisations:
-            nfree = gonp.num_free()
-            if nfree == 0:
-                continue
-            for iexp in gonp.get_experiment_ids():
-                self._exp_to_gon_param[iexp] = ParamIndex(gonp, iparam)
-            iparam += nfree
-
-        # the number of free parameters
-        self._nparam = iparam
+        self._exp_to_det_param = process(self._detector_parameterisations)
+        self._exp_to_beam_param = process(self._beam_parameterisations)
+        self._exp_to_xlo_param = process(self._xl_orientation_parameterisations)
+        self._exp_to_xluc_param = process(self._xl_unit_cell_parameterisations)
+        self._exp_to_gon_param = process(self._goniometer_parameterisations)
 
         # keep a set that will ensure every model parameterisation only gets
         # a single restraint.
