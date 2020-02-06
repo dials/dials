@@ -110,33 +110,48 @@ class RestraintsParameterisation(object):
 
         self._exp_to_det_param = {}
         for detp in self._detector_parameterisations:
+            nfree = detp.num_free()
+            if nfree == 0:
+                continue
             for iexp in detp.get_experiment_ids():
                 self._exp_to_det_param[iexp] = ParamIndex(detp, iparam)
-            iparam += detp.num_free()
+            iparam += nfree
 
         self._exp_to_beam_param = {}
         for beamp in self._beam_parameterisations:
+            nfree = beamp.num_free()
+            if nfree == 0:
+                continue
             for iexp in beamp.get_experiment_ids():
                 self._exp_to_beam_param[iexp] = ParamIndex(beamp, iparam)
-            iparam += beamp.num_free()
+            iparam += nfree
 
         self._exp_to_xlo_param = {}
         for xlop in self._xl_orientation_parameterisations:
+            nfree = xlop.num_free()
+            if nfree == 0:
+                continue
             for iexp in xlop.get_experiment_ids():
                 self._exp_to_xlo_param[iexp] = ParamIndex(xlop, iparam)
-            iparam += xlop.num_free()
+            iparam += nfree
 
         self._exp_to_xluc_param = {}
         for xlucp in self._xl_unit_cell_parameterisations:
+            nfree = xlucp.num_free()
+            if nfree == 0:
+                continue
             for iexp in xlucp.get_experiment_ids():
                 self._exp_to_xluc_param[iexp] = ParamIndex(xlucp, iparam)
-            iparam += xlucp.num_free()
+            iparam += nfree
 
         self._exp_to_gon_param = {}
         for gonp in self._goniometer_parameterisations:
+            nfree = gonp.num_free()
+            if nfree == 0:
+                continue
             for iexp in gonp.get_experiment_ids():
                 self._exp_to_gon_param[iexp] = ParamIndex(gonp, iparam)
-            iparam += gonp.num_free()
+            iparam += nfree
 
         # the number of free parameters
         self._nparam = iparam
