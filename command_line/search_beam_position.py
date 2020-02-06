@@ -1,7 +1,5 @@
 from __future__ import absolute_import, division, print_function
 
-# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
-
 import cmath
 import concurrent.futures
 import copy
@@ -122,7 +120,7 @@ class better_experimental_model_discovery(object):
         assert approx_equal(s0.dot(beamr1), 0.0)
         assert approx_equal(s0.dot(beamr2), 0.0)
         assert approx_equal(beamr2.dot(beamr1), 0.0)
-        # so the orthonormal vectors are self.S0_vector, beamr1 and beamr2
+        # so the orthonormal vectors are s0, beamr1 and beamr2
 
         if self.horizon_phil.indexing.mm_search_scope:
             scope = self.horizon_phil.indexing.mm_search_scope
@@ -305,7 +303,6 @@ class better_experimental_model_discovery(object):
         nh = min(solutions.size(), 20)  # extended API
         sum_score = 0.0
         for t in range(nh):
-            # if t!=unique:continue
             dfft = Directional_FFT(
                 angle=Direction(solutions[t]),
                 xyzdata=reciprocal_space_vectors,
@@ -315,9 +312,7 @@ class better_experimental_model_discovery(object):
             )
             kval = dfft.kval()
             kmax = dfft.kmax()
-            # kval_cutoff = self.raw_spot_input.size()/4.0; # deprecate record
             kval_cutoff = reciprocal_space_vectors.size() / 4.0
-            # deprecate record
             if kval > kval_cutoff:
                 ff = dfft.fft_result
                 kbeam = ((-dfft.pmin) / dfft.delta_p) + 0.5
@@ -330,8 +325,6 @@ class better_experimental_model_discovery(object):
                 ### can I do something local to model the cosine wave?
                 ### direction of wave travel.  Period. phase.
                 sum_score += backmax
-            # if t == unique:
-            #  print t, kmax, dfft.pmin, dfft.delta_p, Tkmax,(2*math.pi*kmax*kbeam/(2*ff.size()-1))
         return sum_score
 
 
