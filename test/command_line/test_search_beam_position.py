@@ -16,7 +16,7 @@ from dials.algorithms.indexing.test_index import run_indexing
 from dials.command_line import search_beam_position
 
 
-def test_search_i04_weak_data_image_range(run_in_tmpdir, dials_regression):
+def test_search_i04_weak_data_image_range(mocker, run_in_tmpdir, dials_regression):
     """Perform a beam-centre search and check that the output is sane."""
 
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
@@ -29,10 +29,21 @@ def test_search_i04_weak_data_image_range(run_in_tmpdir, dials_regression):
         "image_range=1,10",
         "image_range=251,260",
         "image_range=531,540",
+        "n_macro_cycles=2",
     ]
+    from rstbx.indexing_api import dps_extended
+
+    mocker.spy(dps_extended, "get_new_detector")
     search_beam_position.run(args)
+    # Check that the last call to get_new_detector was with an offset of close to zero.
+    # The final call was to apply the "best" shift to the detector model before
+    # returning the updated experiments.
+    assert dps_extended.get_new_detector.call_args.args[1].elems == pytest.approx(
+        (0, 0, 0), abs=3e-2
+    )
     assert os.path.exists("optimised.expt")
 
+    # Compare the shifts between the start and final detector models
     experiments = load.experiment_list(experiments_file, check_format=False)
     optimised_experiments = load.experiment_list("optimised.expt", check_format=False)
     detector_1 = experiments[0].detector

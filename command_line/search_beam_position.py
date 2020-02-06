@@ -549,7 +549,7 @@ def run(args):
     for i in range(params.n_macro_cycles):
         if params.n_macro_cycles > 1:
             logger.info("Starting macro cycle %i" % (i + 1))
-        new_experiments = discover_better_experimental_model(
+        experiments = discover_better_experimental_model(
             experiments,
             reflections,
             params,
@@ -560,7 +560,7 @@ def run(args):
         logger.info("")
 
     logger.info("Saving optimised experiments to %s" % params.output.experiments)
-    new_experiments.as_file(params.output.experiments)
+    experiments.as_file(params.output.experiments)
 
 
 if __name__ == "__main__":
