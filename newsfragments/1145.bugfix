@@ -1,0 +1,4 @@
+Fix dials.search_beam_centre to ensure that the correct detector models are
+output when multiple detector models are present in the input.
+Fix dials.search_beam_centre n_macro_cycles option (previously it was starting
+from the original geometry every macro cycle).
