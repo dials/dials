@@ -71,7 +71,6 @@ def sort_tables_to_experiments_order(reflection_tables, experiments):
     exp_id_to_table_idx = {}
     for i, table in enumerate(reflection_tables):
         id_values = table.experiment_identifiers().values()
-        print(list(id_values))
         if id_values:
             identifiers_list.extend(id_values)
             identifiers_by_table_idx[i] = id_values
@@ -151,7 +150,6 @@ def parse_multiple_datasets(reflections):
     dataset_id_list = []
     for refl_table in reflections:
         dataset_ids = set(refl_table["id"]).difference({-1})
-        print(dataset_ids)
         dataset_id_list.extend(list(dataset_ids))
         if len(dataset_ids) > 1:
             logger.info(
