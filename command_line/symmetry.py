@@ -225,13 +225,13 @@ def eliminate_sys_absent(experiments, reflections):
     return reflections
 
 
-def get_subset_for_symmetry(params, experiments, reflection_tables):
+def get_subset_for_symmetry(experiments, reflection_tables, exclude_images=None):
     """Select an image range for symmetry analysis, or just select
     the first 360 degrees of data."""
     refls_for_sym = []
-    if params.exclude_images:
+    if exclude_images:
         experiments = exclude_image_ranges_from_scans(
-            reflection_tables, experiments, params.exclude_images
+            reflection_tables, experiments, exclude_images
         )
         for refl, exp in zip(reflection_tables, experiments):
             sel = get_selection_for_valid_image_ranges(refl, exp)
@@ -239,22 +239,10 @@ def get_subset_for_symmetry(params, experiments, reflection_tables):
     else:
         # use first 360 degrees if <360 deg i.e. first measured data.
         for expt, refl in zip(experiments, reflection_tables):
-            scanwidth = abs(
-                expt.scan.get_oscillation_range()[1]
-                - expt.scan.get_oscillation_range()[0]
-            )
-            if scanwidth <= 360:
-                refls_for_sym.append(refl)
-            else:
-                positive = expt.scan.get_oscillation()[1] > 0
-                phis = refl["xyzobs.mm.value"].parts()[2] * 180.0 / math.pi
-                if positive:
-                    max_allowed_phi = min(phis) + 360.0
-                    sel = phis < max_allowed_phi
-                else:
-                    min_allowed_phi = max(phis) - 360.0
-                    sel = phis > min_allowed_phi
-                refls_for_sym.append(refl.select(sel))
+            scan_end = int(math.ceil(360 / abs(expt.scan.get_oscillation()[1])))
+            if scan_end < len(expt.scan):
+                refl = refl.select(refl["xyzobs.px.value"].parts()[2] <= scan_end)
+            refls_for_sym.append(refl)
     return refls_for_sym
 
 
@@ -296,7 +284,9 @@ def symmetry(experiments, reflection_tables, params=None):
             experiments, reflection_tables, cb_ops
         )
 
-        refls_for_sym = get_subset_for_symmetry(params, experiments, reflection_tables)
+        refls_for_sym = get_subset_for_symmetry(
+            experiments, reflection_tables, params.exclude_images
+        )
 
         datasets = filtered_arrays_from_experiments_reflections(
             experiments,
@@ -386,7 +376,7 @@ Using space group I 2 2 2, space group I 21 21 21 is equally likely.\n"""
         else:
             if not refls_for_sym:
                 refls_for_sym = get_subset_for_symmetry(
-                    params, experiments, reflection_tables
+                    experiments, reflection_tables, params.exclude_images
                 )
 
             if (params.d_min is Auto) and (result is not None):

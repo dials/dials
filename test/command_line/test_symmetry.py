@@ -278,7 +278,7 @@ def test_get_subset_for_symmetry_image_range():
     """Test that first 360 degrees are selected from each sweep with an exclude
     images command."""
     params, expts, tables = _make_input_for_exclude_tests(exclude_images=True)
-    refls = get_subset_for_symmetry(params, expts, tables)
+    refls = get_subset_for_symmetry(expts, tables, params.exclude_images)
     assert refls[0]["i"] == 0
     assert refls[1]["i"] == 0
 
@@ -286,7 +286,7 @@ def test_get_subset_for_symmetry_image_range():
 def test_get_subset_for_symmetry_first_360():
     """Test that first 360 degrees are selected from each sweep"""
     params, expts, tables = _make_input_for_exclude_tests(exclude_images=False)
-    refls = get_subset_for_symmetry(params, expts, tables)
+    refls = get_subset_for_symmetry(expts, tables, params.exclude_images)
     assert refls[0]["i"] == 0
     assert refls[1]["i"] == 0
 
