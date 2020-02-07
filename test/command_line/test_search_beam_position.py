@@ -38,7 +38,7 @@ def test_search_i04_weak_data_image_range(mocker, run_in_tmpdir, dials_regressio
     # Check that the last call to get_new_detector was with an offset of close to zero.
     # The final call was to apply the "best" shift to the detector model before
     # returning the updated experiments.
-    assert dps_extended.get_new_detector.call_args.args[1].elems == pytest.approx(
+    assert dps_extended.get_new_detector.call_args[0][1].elems == pytest.approx(
         (0, 0, 0), abs=3e-2
     )
     assert os.path.exists("optimised.expt")
