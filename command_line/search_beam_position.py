@@ -435,7 +435,7 @@ def discover_better_experimental_model(
         amax_list = []
         for future in concurrent.futures.as_completed(futures):
             result = future.result()
-            if result["solutions"]:
+            if result.get("solutions"):
                 solution_lists.append(result["solutions"])
                 amax_list.append(result["amax"])
 
