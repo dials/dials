@@ -487,7 +487,8 @@ def download_to_file(url, file, quiet=False, cache=True):
                 hr_size = (hr_size[0] / 1024, "MB")
             if not quiet:
                 print("%.1f %s" % hr_size)
-                print("    [0%", end="", flush=True)
+                print("    [0%", end="")
+                sys.stdout.flush()  # becomes print(flush=True) when we move to 3.3+
 
         received = 0
         block_size = 8192
@@ -504,9 +505,11 @@ def download_to_file(url, file, quiet=False, cache=True):
                 while (100 * received / file_size) > progress:
                     progress += 1
                     if (progress % 20) == 0:
-                        print(progress, end="%", flush=True)
+                        print(progress, end="%")
+                        sys.stdout.flush()  # becomes print(flush=True) when we move to 3.3+
                     elif (progress % 2) == 0:
-                        print(".", end="", flush=True)
+                        print(".", end="")
+                        sys.stdout.flush()  # becomes print(flush=True) when we move to 3.3+
             if not block:
                 break
         f.close()
@@ -514,9 +517,10 @@ def download_to_file(url, file, quiet=False, cache=True):
 
         if not quiet:
             if file_size > 0:
-                print("]", flush=True)
+                print("]")
             else:
-                print("%d kB" % (received / 1024), flush=True)
+                print("%d kB" % (received / 1024))
+            sys.stdout.flush()  # becomes print(flush=True) when we move to 3.3+
 
         # Do not overwrite file during the download. If a download temporarily fails we
         # may still have a clean, working (yet older) copy of the file.
