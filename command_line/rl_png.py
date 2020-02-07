@@ -9,6 +9,8 @@ import libtbx.phil
 from scitbx import matrix
 from scitbx.array_family import flex
 
+from dials.algorithms.indexing.indexer import find_max_cell
+from dials.command_line.search_beam_position import run_dps
 from dials.util.reciprocal_lattice import Render3d
 
 try:
@@ -195,11 +197,6 @@ def run():
             f.viewer.plot("rl_%sc.png" % prefix, n=c)
 
     elif n_solutions:
-        from dials.command_line.search_beam_position import run_dps, dps_phil_scope
-
-        hardcoded_phil = dps_phil_scope.extract()
-        hardcoded_phil.d_min = params.d_min
-
         if "imageset_id" not in reflections:
             reflections["imageset_id"] = reflections["id"]
 
@@ -213,16 +210,11 @@ def run():
             reflections = reflections.select(sel)
 
         # derive a max_cell from mm spots
-
-        from dials.algorithms.indexing.indexer import find_max_cell
-
         max_cell = find_max_cell(
             reflections, max_cell_multiplier=1.3, step_size=45
         ).max_cell
 
-        result = run_dps(
-            (experiments[0].imageset, reflections, max_cell, hardcoded_phil)
-        )
+        result = run_dps(experiments[0], reflections, max_cell)
         if result:
             solutions = [matrix.col(v) for v in result["solutions"]]
             for i in range(min(n_solutions, len(solutions))):
