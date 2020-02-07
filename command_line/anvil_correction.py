@@ -27,6 +27,7 @@ from __future__ import absolute_import, division, print_function
 import logging
 import os
 import sys
+import warnings
 
 import numpy as np
 from scipy.spatial.transform import Rotation
@@ -209,10 +210,10 @@ def correct_intensities_for_dac_attenuation(
 
     # Correct the measured intensities and variances for this attenuation.
     methods = {"prf": prf_subsel, "sum": sum_subsel}
-    corrections = {"value": correction, "variance": flex.pow2(correction)}
+    quantities = {"value": correction, "variance": flex.pow2(correction)}
     for method, subsel in methods.items():
         setting_subsel = sel.select(subsel)
-        for quantity, factor in corrections.items():
+        for quantity, factor in quantities.items():
             col = "intensity.%s.%s" % (method, quantity)
             corrected = (refls_sel[col] * factor).select(subsel)
             try:
@@ -246,9 +247,6 @@ def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> 
 
     params, options = parser.parse_args(args=args, show_diff_phil=False)
 
-    # Configure the logging.
-    dials.util.log.config(options.verbose, logfile=params.output.log)
-
     # Log the difference between the PHIL scope definition and the active PHIL scope,
     # which will include the parsed user inputs.
     diff_phil = parser.diff_phil.as_str()
@@ -268,6 +266,19 @@ def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> 
     if input_errors:
         sys.exit("\n".join([parser.format_help()] + input_errors))
 
+    # Check that the anvil surface normal really is normalised.
+    try:
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "error", "invalid value encountered in (true_)*divide", RuntimeWarning
+            )
+            dac_norm = params.anvil.normal / np.linalg.norm(params.anvil.normal)
+    except RuntimeWarning:
+        sys.exit("It seems you have provided a surface normal vector with zero length.")
+
+    # Configure the logging.
+    dials.util.log.config(options.verbose, logfile=params.output.log)
+
     # These functions are commonly used to collate the input.
     experiments = flatten_experiments(params.input.experiments)
     reflections_list = flatten_reflections(params.input.reflections)
@@ -278,12 +289,6 @@ def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> 
     # Get a single reflection table per experiment object.
     reflections_list = parse_multiple_datasets(reflections_list)
     reflections_list = sort_tables_to_experiments_order(reflections_list, experiments)
-
-    # Check that the anvil surface normal really is normalised.
-    try:
-        dac_norm = params.anvil.normal / np.linalg.norm(params.anvil.normal)
-    except ZeroDivisionError:
-        sys.exit("It seems you have provided a surface normal vector with zero length.")
 
     # Record the density of diamond in g·cm⁻³ (for consistency with NIST tables,
     # https://dx.doi.org/10.18434/T4D01F).
