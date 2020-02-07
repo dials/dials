@@ -5,6 +5,7 @@ and experiment lists.
 
 from __future__ import absolute_import, division, print_function
 
+import copy
 import logging
 import uuid
 from dials.array_family import flex
@@ -70,6 +71,7 @@ def sort_tables_to_experiments_order(reflection_tables, experiments):
     exp_id_to_table_idx = {}
     for i, table in enumerate(reflection_tables):
         id_values = table.experiment_identifiers().values()
+        print(list(id_values))
         if id_values:
             identifiers_list.extend(id_values)
             identifiers_by_table_idx[i] = id_values
@@ -113,9 +115,10 @@ def renumber_table_id_columns(reflection_tables):
         expt_ids_dict = table.experiment_identifiers()
         new_ids_dict = {}
         new_id_ = highest_new_id
+        orig_id = copy.deepcopy(table["id"])
         while table_id_values:
             val = table_id_values.pop()
-            sel = table["id"] == val
+            sel = orig_id == val
             if val in expt_ids_dict:
                 # only delete here, add new at end to avoid clashes of new/old ids
                 new_ids_dict[new_id_] = expt_ids_dict[val]
@@ -126,6 +129,7 @@ def renumber_table_id_columns(reflection_tables):
         if new_ids_dict:
             for i, v in new_ids_dict.items():
                 expt_ids_dict[i] = v
+        table_id_values = sorted(list(set(table["id"]).difference({-1})))
     return reflection_tables
 
 
@@ -147,6 +151,7 @@ def parse_multiple_datasets(reflections):
     dataset_id_list = []
     for refl_table in reflections:
         dataset_ids = set(refl_table["id"]).difference({-1})
+        print(dataset_ids)
         dataset_id_list.extend(list(dataset_ids))
         if len(dataset_ids) > 1:
             logger.info(
