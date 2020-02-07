@@ -200,24 +200,25 @@ def correct_intensities_for_dac_attenuation(
     # by the anvils.  This is an array of shape (N).
     l_tot = l0 + l1
     correction = flex.double(np.exp(linear_atten_coeff * l_tot))
-    print(flex.max(correction), flex.min(correction))
     # Remove redundant things that scale with N.
-    del l0, l1
+    del l0, l1, l_tot
 
-    # Correct the measured intensities for this attenuation.
-    for col in "intensity.prf.value", "intensity.sum.value":
-        try:
-            reflections[col].set_selected(sel, refls_sel[col] * correction)
-        except KeyError:
-            pass
-    # Correct the measured variances accordingly.
-    variance_correction = flex.pow2(correction)
-    del correction
-    for col in "intensity.prf.variance", "intensity.sum.variance":
-        try:
-            reflections[col].set_selected(sel, refls_sel[col] * variance_correction)
-        except KeyError:
-            pass
+    # We need only correct non-null values for each integration method.
+    prf_subsel = refls_sel.get_flags(refls_sel.flags.integrated_prf)
+    sum_subsel = refls_sel.get_flags(refls_sel.flags.integrated_sum)
+
+    # Correct the measured intensities and variances for this attenuation.
+    methods = {"prf": prf_subsel, "sum": sum_subsel}
+    corrections = {"value": correction, "variance": flex.pow2(correction)}
+    for method, subsel in methods.items():
+        setting_subsel = sel.select(subsel)
+        for quantity, factor in corrections.items():
+            col = "intensity.%s.%s" % (method, quantity)
+            corrected = (refls_sel[col] * factor).select(subsel)
+            try:
+                reflections[col].set_selected(setting_subsel, corrected)
+            except KeyError:
+                pass
 
 
 def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> None
