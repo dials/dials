@@ -5,7 +5,7 @@ from cctbx.sgtbx.subgroups import subgroups
 import scitbx.matrix
 import scitbx.random
 
-from dxtbx.model import Crystal, Experiment, ExperimentList
+from dxtbx.model import Crystal, Experiment, ExperimentList, Scan
 from dials.array_family import flex
 
 
@@ -45,7 +45,8 @@ def generate_experiments_reflections(
         ).transpose()
         expts.append(
             Experiment(
-                crystal=Crystal(B, space_group=dataset.space_group(), reciprocal=True)
+                crystal=Crystal(B, space_group=dataset.space_group(), reciprocal=True),
+                scan=Scan(image_range=(0, 180), oscillation=(0.0, 1.0)),
             )
         )
         refl = flex.reflection_table()
