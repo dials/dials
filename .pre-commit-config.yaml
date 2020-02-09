@@ -2,7 +2,7 @@ repos:
 
 # Automatic source code formatting
 - repo: https://github.com/psf/black
-  rev: stable
+  rev: 19.10b0
   hooks:
   - id: black
     args: [--safe, --quiet]

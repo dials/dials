@@ -80,7 +80,7 @@ def test_stats_for_reflection_table(centroid_test_data):
 
 
 def test_stats_for_reflection_table_no_resolution_analysis_no_ice_filtering(
-    centroid_test_data
+    centroid_test_data,
 ):
     _, reflections = centroid_test_data
     stats = per_image_analysis.stats_for_reflection_table(
