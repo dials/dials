@@ -6,6 +6,7 @@ import os
 import shutil
 
 from dials.array_family import flex
+from dials.algorithms.integration.processor import _average_bbox_size
 import procrunner
 
 
@@ -339,3 +340,10 @@ def test_integrate_with_kapton(dials_regression, tmpdir):
     assert results[0]["zero"][1] - results[1]["zero"][1] < 0.0001
     assert False not in [results[0]["low"][i] > results[1]["low"][i] for i in (0, 1)]
     assert False not in [results[0]["high"][i] > results[1]["high"][i] for i in (0, 1)]
+
+
+def test_average_bbox_size():
+    """Test behaviour of function for obtaining average bbox size."""
+    reflections = flex.reflection_table()
+    reflections["bbox"] = flex.int6(*(flex.int(10, i) for i in range(6)))
+    assert _average_bbox_size(reflections) == (1, 1, 1)
