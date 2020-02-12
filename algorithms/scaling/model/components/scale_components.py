@@ -262,7 +262,7 @@ class SingleBScaleFactor(ScaleComponentBase):
     @ScaleComponentBase.data.setter
     def data(self, data):
         """Set the data dict in the parent class."""
-        assert set(data.keys()) == {"id", "d"}, set(data.keys())
+        assert set(data.keys()) == {"d"}, set(data.keys())
         self._data = data
 
     def update_reflection_data(self, selection=None, block_selections=None):
@@ -305,6 +305,87 @@ class SingleBScaleFactor(ScaleComponentBase):
         scales = flex.exp(
             flex.double(self._n_refl[block_id], self._parameters[0])
             / (2.0 * (self._d_values[block_id] * self._d_values[block_id]))
+        )
+        return scales
+
+
+class LinearDoseDecay(ScaleComponentBase):
+    """
+    A model component for a decay that depends linearly on dose
+    (see Holton Acta D 2019 D75 113-122)
+
+    For the dose dependent, the form is I = I0 exp(-ln(2) D/ Hd).
+    Parameterise this as linear function of rotation with an overall factor
+    to refine.
+    Including an overall B-factor for nonisomorphism i.e. exp(B0 / 2d^2),
+    gives a scale factor :
+    T(r) = exp(Cr/d + B0/2d^2) - i.e. a two parameter model with the overall
+    'dose' proportional factor C and B0.
+    """
+
+    null_parameter_value = 0.0
+
+    def __init__(self, initial_values, parameter_esds=None):
+        """Set the initial parameter values, parameter esds and n_params."""
+        super(LinearDoseDecay, self).__init__(initial_values, parameter_esds)
+        self._d_values = []
+        self._x = []  # rotation/time
+
+    @property
+    def d_values(self):
+        """Return a list of arrays of d-values associated with this component."""
+        return self._d_values
+
+    @ScaleComponentBase.data.setter
+    def data(self, data):
+        """Set the data dict in the parent class."""
+        assert set(data.keys()) == {"d", "x"}, set(data.keys())
+        self._data = data
+
+    def update_reflection_data(self, selection=None, block_selections=None):
+        """
+        Update the internal n_refl and d_values lists.
+
+        Use the data stored in self.data, optionally with a boolean selection array
+        or list of flex.size_t index selections, to make a lists of n_refl and
+        d_value arrays (of length 1 or len(block_selections)), in order to allow
+        scale and derivative calculations.
+
+        Args:
+            selection: Optional, a flex.bool selection array to select a subset of
+                the internal data.
+            block_selections (list): Optional, a list of flex.size_t arrays to
+                select subsets of the internal data.
+        """
+        d = self.data["d"]
+        x = self.data["x"]
+        if selection:
+            self._d_values = [d.select(selection)]
+            self._x = [x.select(selection)]
+        elif block_selections:
+            self._d_values = [d.select(sel) for sel in block_selections]
+            self._x = [x.select(sel) for sel in block_selections]
+        else:
+            self._d_values = [d]
+            self._x = [x]
+        self._n_refl = [dvalues.size() for dvalues in self._d_values]
+
+    def calculate_scales_and_derivatives(self, block_id=0):
+        """Calculate and return inverse scales and derivatives for a given block."""
+        scales = flex.exp(
+            self._parameters[0] * self._x[block_id] / self._d_values[block_id]
+        )
+        derivatives = sparse.matrix(self._n_refl[block_id], 1)
+        for i in range(self._n_refl[block_id]):
+            derivatives[i, 0] = scales[i] * (
+                self._x[block_id][i] / self._d_values[block_id][i]
+            )
+        return scales, derivatives
+
+    def calculate_scales(self, block_id=0):
+        """Calculate and return inverse scales for a given block."""
+        scales = flex.exp(
+            self._parameters[0] * self._x[block_id] / self._d_values[block_id]
         )
         return scales
 
