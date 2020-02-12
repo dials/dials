@@ -161,12 +161,12 @@ def test_compute_delta_cchalf_returned_results():
     refls = generate_test_reflections(2)
     ids_to_remove = [0, 1]
     image_group_to_expid_and_range = {
-        0: (0, (1, 5)),
-        1: (0, (6, 10)),
-        2: (1, (1, 5)),
-        3: (1, (6, 10)),
+        0: ("0", (1, 5)),
+        1: ("0", (6, 10)),
+        2: ("1", (1, 5)),
+        3: ("1", (6, 10)),
     }
-    expids_to_image_groups = {0: [0, 1], 1: [2, 3]}
+    expids_to_image_groups = {"0": [0, 1], "1": [2, 3]}
     results_summary = {"dataset_removal": {}}
     _ = CCHalfFromDials.remove_image_ranges_below_cutoff(
         exp,

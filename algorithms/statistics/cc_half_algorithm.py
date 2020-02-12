@@ -178,6 +178,7 @@ class CCHalfFromDials(object):
             counter = 0
             for id_ in set(table["dataset"]):
                 sel = table["dataset"] == id_
+                expid = table.experiment_identifiers()[id_]
                 images_in_dataset = table["image"].select(sel)
                 unique_images = set(images_in_dataset)
                 min_img, max_img = (min(unique_images), max(unique_images))
@@ -194,19 +195,19 @@ class CCHalfFromDials(object):
                         (sel.iselection().select(group_sel)), counter
                     )
                     self.group_to_datasetid_and_range[counter] = (
-                        id_,
+                        expid,
                         (start, group_starts[i + 1] - 1),
                     )
-                    self.datasetid_to_groups[id_].append(counter)
+                    self.datasetid_to_groups[expid].append(counter)
                     counter += 1
                 # now do last group
                 group_sel = images_in_dataset >= group_starts[-1]
                 image_groups.set_selected((sel.iselection().select(group_sel)), counter)
                 self.group_to_datasetid_and_range[counter] = (
-                    id_,
+                    expid,
                     (group_starts[-1], max_img),
                 )
-                self.datasetid_to_groups[id_].append(counter)
+                self.datasetid_to_groups[expid].append(counter)
                 counter += 1
 
             table["group"] = image_groups
@@ -310,6 +311,13 @@ class CCHalfFromDials(object):
         n_valid_reflections = reflections.get_flags(
             reflections.flags.bad_for_scaling, all=False
         ).count(False)
+        expid_to_tableid = {
+            v: k
+            for k, v in zip(
+                reflections.experiment_identifiers().keys(),
+                reflections.experiment_identifiers().values(),
+            )
+        }
 
         experiments_to_delete = []
         exclude_images = []
@@ -319,21 +327,21 @@ class CCHalfFromDials(object):
             other_potential_ids_to_remove = []
             n_removed_this_cycle = 0
             for id_ in sorted(ids_to_remove):
-                exp_id, image_range = image_group_to_expid_and_range[
-                    id_
-                ]  # numerical id
+                exp_id, image_range = image_group_to_expid_and_range[id_]  # identifier
                 if (
                     expid_to_image_groups[exp_id][-1] == id_
                     or expid_to_image_groups[exp_id][0] == id_
                 ):  # is at edge of scan.
-                    image_ranges_removed.append([image_range, exp_id])
+                    # loc = list(experiments.identifiers()).index(exp_id)
+                    table_id = expid_to_tableid[exp_id]
+                    image_ranges_removed.append([image_range, table_id])
                     logger.info(
                         "Removing image range %s from experiment %s",
                         image_range,
-                        exp_id,
+                        table_id,
                     )
                     exclude_images.append(
-                        ["%s:%s:%s" % (exp_id, image_range[0], image_range[1])]
+                        ["%s:%s:%s" % (table_id, image_range[0], image_range[1])]
                     )
                     if expid_to_image_groups[exp_id][-1] == id_:
                         del expid_to_image_groups[exp_id][-1]
@@ -345,10 +353,11 @@ class CCHalfFromDials(object):
             ids_to_remove = other_potential_ids_to_remove
         for id_ in other_potential_ids_to_remove:
             exp_id, image_range = image_group_to_expid_and_range[id_]
+            table_id = expid_to_tableid[exp_id]
             logger.info(
                 """Image range %s from experiment %s is below the cutoff, but not at the edge of a sweep.""",
                 image_range,
-                exp_id,
+                table_id,
             )
 
         # Now remove individual batches
@@ -364,15 +373,18 @@ class CCHalfFromDials(object):
         # outliers, which gets filtered out before the analysis but should
         # be set as not a valid image range.
         exclude_images = []
-        for i, exp in enumerate(experiments):
+        for exp in experiments:
             # if any of the image ranges are not in the sets tested, exclude them
             tested = []
             for exp_id, imgrange in image_group_to_expid_and_range.values():
-                if exp_id == i:
+                if exp_id == exp.identifier:
                     tested.extend(list(range(imgrange[0], imgrange[1] + 1)))
             for imgrange in exp.scan.get_valid_image_ranges(exp.identifier):
                 if all([j not in tested for j in range(imgrange[0], imgrange[1] + 1)]):
-                    exclude_images.append(["%s:%s:%s" % (i, imgrange[0], imgrange[1])])
+                    table_id = expid_to_tableid[exp.identifier]
+                    exclude_images.append(
+                        ["%s:%s:%s" % (table_id, imgrange[0], imgrange[1])]
+                    )
                     logger.info(
                         "Removing %s due to scaling outlier group.", exclude_images[-1]
                     )
