@@ -65,12 +65,12 @@ def test_setup_of_CCHalfFromDials():
     # image range, and that all groups will have at least 10 images in.
     script = CCHalfFromDials(params, expts, refls)
     assert script.group_to_datasetid_and_range == {
-        0: (0, (5, 14)),
-        1: (0, (15, 25)),
-        2: (1, (1, 10)),
-        3: (1, (11, 23)),
+        0: ("0", (5, 14)),
+        1: ("0", (15, 25)),
+        2: ("1", (1, 10)),
+        3: ("1", (11, 23)),
     }
-    assert script.datasetid_to_groups == {0: [0, 1], 1: [2, 3]}
+    assert script.datasetid_to_groups == {"0": [0, 1], "1": [2, 3]}
 
 
 def test_exclusion_in_CCHalfFromDials():
@@ -104,7 +104,7 @@ def test_exclusion_in_CCHalfFromDials():
         script = CCHalfFromDials(params, expts, refls)
         script.run()
 
-        assert script.datasetid_to_groups == {0: [], 1: [2]}  # all but 3 removed
+        assert script.datasetid_to_groups == {"0": [], "1": [2]}  # all but 3 removed
         expts = script.experiments
 
         assert list(expts.identifiers()) == ["1"]
