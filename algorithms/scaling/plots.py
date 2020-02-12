@@ -76,6 +76,115 @@ gi = Ci * Ri * Si
 """
 
 
+def plot_dose_decay(dose_decay_model):
+    """Plot the decay and scale corrections for the dose-decay model."""
+    d = {
+        "dose_decay": {
+            "data": [],
+            "layout": {
+                "title": "Dose-decay model corrections",
+                "xaxis": {
+                    "domain": [0, 1],
+                    "anchor": "y",
+                    "title": "rotation angle (degrees)",
+                },
+                "yaxis": {
+                    "domain": [0, 0.45],
+                    "anchor": "x",
+                    "title": "Decay correction <br>scale factor",
+                },
+                "yaxis2": {
+                    "domain": [0.50, 0.95],
+                    "anchor": "x",
+                    "title": "Scale correction <br>scale factor",
+                },
+            },
+        }
+    }
+
+    data = []
+
+    if "scale" in dose_decay_model.components:
+        data = _add_smooth_scales_to_data(dose_decay_model, data, yaxis="y2")
+
+    if "decay" in dose_decay_model.components:
+        data = _add_decay_model_scales_to_data(
+            dose_decay_model, data, yaxis="y", resolution=3.0
+        )
+
+    d["dose_decay"]["data"] = data
+
+    return d
+
+
+def _add_smooth_scales_to_data(physical_model, data, yaxis="y2"):
+    (
+        smoother_phis,
+        parameters,
+        parameter_esds,
+        sample_values,
+        sample_scales,
+    ) = _get_smooth_plotting_data_from_model(physical_model, component="scale")
+
+    data.append(
+        {
+            "x": list(sample_values),
+            "y": list(sample_scales),
+            "type": "line",
+            "name": "smoothly-varying <br>scale correction",
+            "xaxis": "x",
+            "yaxis": yaxis,
+        }
+    )
+    data.append(
+        {
+            "x": list(smoother_phis),
+            "y": list(parameters),
+            "type": "scatter",
+            "mode": "markers",
+            "name": "smoothly-varying <br>scale parameters",
+            "xaxis": "x",
+            "yaxis": yaxis,
+        }
+    )
+    if parameter_esds:
+        data[-1]["error_y"] = {"type": "data", "array": list(parameter_esds)}
+    return data
+
+
+def _add_decay_model_scales_to_data(model, data, yaxis="y", resolution=3.0):
+    configdict = model.configdict
+    valid_osc = configdict["valid_osc_range"]
+
+    sample_values = flex.double(
+        np.linspace(
+            valid_osc[0],
+            valid_osc[1],
+            int((valid_osc[1] - valid_osc[0]) / 0.1) + 1,
+            endpoint=True,
+        )
+    )  # Make a grid of
+    # points with 10 points per degree.
+    d = flex.double(sample_values.size(), resolution)
+
+    if "decay" in model.components:
+        decay_SF = model.components["decay"]
+        decay_SF.data = {"x": sample_values, "d": d}
+        decay_SF.update_reflection_data()
+        s = decay_SF.calculate_scales()
+    data.append(
+        {
+            "x": list(sample_values),
+            "y": list(s),
+            "type": "line",
+            "name": "Decay scale factor <br>at %s Angstrom" % resolution,
+            "xaxis": "x",
+            "yaxis": yaxis,
+        }
+    )
+    return data
+
+
 def plot_smooth_scales(physical_model):
     """Plot smooth scale factors for the physical model."""
 
@@ -90,14 +199,19 @@ def plot_smooth_scales(physical_model):
                     "title": "rotation angle (degrees)",
                 },
                 "yaxis": {
-                    "domain": [0, 0.45],
+                    "domain": [0.0, 0.30],
                     "anchor": "x",
-                    "title": "relative B-factor",
+                    "title": "scale factor",
                 },
                 "yaxis2": {
-                    "domain": [0.5, 0.95],
+                    "domain": [0.35, 0.65],
                     "anchor": "x",
-                    "title": "inverse <br> scale factor",
+                    "title": "relative <br> B-factor",
+                },
+                "yaxis3": {
+                    "domain": [0.70, 1.0],
+                    "anchor": "x",
+                    "title": "scale factor",
                 },
             },
             "help": smooth_help_msg,
@@ -107,38 +221,7 @@ def plot_smooth_scales(physical_model):
     data = []
 
     if "scale" in physical_model.components:
-        (
-            smoother_phis,
-            parameters,
-            parameter_esds,
-            sample_values,
-            sample_scales,
-        ) = _get_smooth_plotting_data_from_model(physical_model, component="scale")
-
-        data.append(
-            {
-                "x": list(sample_values),
-                "y": list(sample_scales),
-                "type": "line",
-                "name": "smoothly-varying <br>scale correction",
-                "xaxis": "x",
-                "yaxis": "y2",
-            }
-        )
-        data.append(
-            {
-                "x": list(smoother_phis),
-                "y": list(parameters),
-                "type": "scatter",
-                "mode": "markers",
-                "name": "smoothly-varying <br>scale parameters",
-                "xaxis": "x",
-                "yaxis": "y2",
-            }
-        )
-        if parameter_esds:
-            data[-1]["error_y"] = {"type": "data", "array": list(parameter_esds)}
-
+        data = _add_smooth_scales_to_data(physical_model, data, yaxis="y3")
     if "decay" in physical_model.components:
         (
             smoother_phis,
@@ -155,7 +238,7 @@ def plot_smooth_scales(physical_model):
                 "type": "line",
                 "name": "smoothly-varying <br>B-factor correction",
                 "xaxis": "x",
-                "yaxis": "y",
+                "yaxis": "y2",
             }
         )
         data.append(
@@ -166,11 +249,15 @@ def plot_smooth_scales(physical_model):
                 "mode": "markers",
                 "name": "smoothly-varying <br>B-factor parameters",
                 "xaxis": "x",
-                "yaxis": "y",
+                "yaxis": "y2",
             }
         )
         if parameter_esds:
             data[-1]["error_y"] = {"type": "data", "array": list(parameter_esds)}
+
+        data = _add_decay_model_scales_to_data(
+            physical_model, data, yaxis="y", resolution=3.0
+        )
     d["smooth_scale_model"]["data"].extend(data)
     return d
 

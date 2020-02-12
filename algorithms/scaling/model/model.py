@@ -15,6 +15,7 @@ from dials.algorithms.scaling.model.components.scale_components import (
     SingleScaleFactor,
     SingleBScaleFactor,
     SHScaleComponent,
+    LinearDoseDecay,
 )
 from dials.algorithms.scaling.model.components.smooth_scale_components import (
     SmoothScaleComponent1D,
@@ -30,6 +31,7 @@ from dials.algorithms.scaling.plots import (
     plot_array_decay_plot,
     plot_array_modulation_plot,
     plot_array_absorption_plot,
+    plot_dose_decay,
 )
 from dials_scaling_ext import (
     calc_theta_phi,
@@ -50,6 +52,43 @@ decay_correction = True
             default models)."
     .expert_level = 1
 """
+
+dose_decay_model_phil_str = """\
+scale_interval = 2.0
+    .type = float(value_min=1.0)
+    .help = "Rotation (phi) interval between model parameters for the scale"
+            "component."
+    .expert_level = 1
+relative_B_correction = True
+    .type = bool
+    .help = "Option to turn off relative B correction."
+    .expert_level = 1
+decay_correction = True
+    .type = bool
+    .help = "Option to turn off decay correction."
+    .expert_level = 1
+absorption_correction = False
+    .type = bool
+    .help = "Option to turn on spherical harmonic absorption correction."
+    .expert_level = 1
+lmax = 4
+    .type = int(value_min=2)
+    .help = "Number of spherical harmonics to include for absorption"
+            "correction, recommended to be no more than 6."
+    .expert_level = 1
+surface_weight = 1e6
+    .type = float(value_min=0.0)
+    .help = "Restraint weight applied to spherical harmonic terms in the"
+            "absorption correction."
+    .expert_level = 1
+fix_initial = True
+    .type = bool
+    .help = "If performing full matrix minimisation, in the final cycle,"
+            "constrain the initial parameter for more reliable parameter and"
+            "scale factor error estimates."
+    .expert_level = 2
+"""
+
 
 physical_model_phil_str = """\
 scale_interval = 15.0
@@ -287,6 +326,241 @@ class ScalingModelBase(object):
         return "\n".join(msg)
 
 
+def _add_absorption_component_to_physically_derived_model(model, reflection_table):
+    lmax = model.configdict["lmax"]
+    if reflection_table.size() > 100000:
+        assert "s0c" in reflection_table
+        assert "s1c" in reflection_table
+        theta_phi_0 = calc_theta_phi(
+            reflection_table["s0c"]
+        )  # array of tuples in radians
+        theta_phi_1 = calc_theta_phi(reflection_table["s1c"])
+        s0_lookup_index = calc_lookup_index(theta_phi_0, points_per_degree=2)
+        s1_lookup_index = calc_lookup_index(theta_phi_1, points_per_degree=2)
+        if SHScaleComponent.coefficients_list is None:
+            SHScaleComponent.coefficients_list = create_sph_harm_lookup_table(
+                lmax, points_per_degree=2
+            )  # set the class variable and share
+        elif len(SHScaleComponent.coefficients_list) < (lmax * (2.0 + lmax)):
+            # this (rare) case can happen if adding a new dataset with a larger lmax!
+            SHScaleComponent.coefficients_list = create_sph_harm_lookup_table(
+                lmax, points_per_degree=2
+            )  # set the class variable and share
+        model.components["absorption"].data = {
+            "s0_lookup": s0_lookup_index,
+            "s1_lookup": s1_lookup_index,
+        }
+    # here just pass in good reflections
+    else:
+        model.components["absorption"].data = {
+            "sph_harm_table": sph_harm_table(reflection_table, lmax)
+        }
+    surface_weight = model.configdict["abs_surface_weight"]
+    parameter_restraints = flex.double([])
+    for i in range(1, lmax + 1):
+        parameter_restraints.extend(flex.double([1.0] * ((2 * i) + 1)))
+    parameter_restraints *= surface_weight
+    model.components["absorption"].parameter_restraints = parameter_restraints
+
+
+class DoseDecay(ScalingModelBase):
+
+    id_ = "dose_decay"
+
+    phil_scope = phil.parse(dose_decay_model_phil_str)
+
+    def __init__(self, parameters_dict, configdict, is_scaled=False):
+        """Create the phyiscal scaling model components."""
+        super(DoseDecay, self).__init__(configdict, is_scaled)
+        if "scale" in configdict["corrections"]:
+            scale_setup = parameters_dict["scale"]
+            self._components["scale"] = SmoothScaleComponent1D(
+                scale_setup["parameters"], scale_setup["parameter_esds"]
+            )
+        if "decay" in configdict["corrections"]:
+            decay_setup = parameters_dict["decay"]
+            self._components["decay"] = LinearDoseDecay(
+                decay_setup["parameters"], decay_setup["parameter_esds"]
+            )
+        if "relative_B" in configdict["corrections"]:
+            B_setup = parameters_dict["relative_B"]
+            self._components["relative_B"] = SingleBScaleFactor(
+                B_setup["parameters"], B_setup["parameter_esds"]
+            )
+        if "absorption" in configdict["corrections"]:
+            absorption_setup = parameters_dict["absorption"]
+            self._components["absorption"] = SHScaleComponent(
+                absorption_setup["parameters"], absorption_setup["parameter_esds"]
+            )
+
+    @property
+    def consecutive_refinement_order(self):
+        """:obj:`list`: a nested list of component names to indicate scaling order."""
+        return [["scale", "relative_B", "decay"], ["absorption"]]
+
+    def fix_initial_parameter(self, params):
+        if "scale" in self.components and params.dose_decay.fix_initial:
+            self.components["scale"].fix_initial_parameter()
+        return True
+
+    def configure_components(self, reflection_table, experiment, params):
+        """Add the required reflection table data to the model components."""
+        phi = reflection_table["xyzobs.px.value"].parts()[2]
+        if "scale" in self.components:
+            norm = phi * self._configdict["s_norm_fac"]
+            self.components["scale"].data = {"x": norm}
+        if "decay" in self.components:
+            self.components["decay"].data = {"x": phi, "d": reflection_table["d"]}
+        if "relative_B" in self.components:
+            self.components["relative_B"].data = {"d": reflection_table["d"]}
+        if "absorption" in self.components:
+            _add_absorption_component_to_physically_derived_model(
+                self, reflection_table
+            )
+
+    def limit_image_range(self, new_image_range):
+        """Modify the model to be suitable for a reduced image range.
+
+        For this model, this involves determining whether the number of parameters
+        should be reduced and may reduce the number of parameters in the scale and
+        decay components.
+
+        Args:
+            new_image_range (tuple): The (start, end) of the new image range.
+        """
+        conf = self.configdict
+        current_image_range = conf["valid_image_range"]
+        current_osc_range = conf["valid_osc_range"]
+        # calculate one osc as don't have access to scan object here
+        one_osc = (conf["valid_osc_range"][1] - conf["valid_osc_range"][0]) / (
+            conf["valid_image_range"][1] - (conf["valid_image_range"][0] - 1)
+        )
+        new_osc_range = (
+            (new_image_range[0] - current_image_range[0]) * one_osc,
+            (new_image_range[1] - current_image_range[0] + 1) * one_osc,
+        )
+        if "scale" in self.components:
+            n_param, s_norm_fac, scale_rot_int = initialise_smooth_input(
+                new_osc_range, one_osc, conf["scale_rot_interval"]
+            )
+            n_old_params = len(self.components["scale"].parameters)
+            conf["scale_rot_interval"] = scale_rot_int
+            conf["s_norm_fac"] = s_norm_fac
+            offset = calculate_new_offset(
+                current_image_range[0],
+                new_image_range[0],
+                s_norm_fac,
+                n_old_params,
+                n_param,
+            )
+            new_params = self.components["scale"].parameters[offset : offset + n_param]
+            self.components["scale"].set_new_parameters(new_params)
+
+        new_osc_range_0 = current_osc_range[0] + (
+            (new_image_range[0] - current_image_range[0]) * one_osc
+        )
+        new_osc_range_1 = current_osc_range[1] + (
+            (new_image_range[1] - current_image_range[1]) * one_osc
+        )
+        self._configdict["valid_osc_range"] = (new_osc_range_0, new_osc_range_1)
+        self.set_valid_image_range(new_image_range)
+
+    @classmethod
+    def from_data(cls, params, experiment, reflection_table):
+        """Create the scaling model defined by the params."""
+
+        params = params.dose_decay
+        configdict = OrderedDict({"corrections": []})
+        parameters_dict = {}
+
+        osc_range = experiment.scan.get_oscillation_range()
+        one_osc_width = experiment.scan.get_oscillation()[1]
+        configdict.update({"valid_osc_range": osc_range})
+
+        configdict["corrections"].append("scale")
+        n_scale_param, s_norm_fac, scale_rot_int = initialise_smooth_input(
+            osc_range, one_osc_width, params.scale_interval
+        )
+        configdict.update(
+            {"s_norm_fac": s_norm_fac, "scale_rot_interval": scale_rot_int}
+        )
+        parameters_dict["scale"] = {
+            "parameters": flex.double(n_scale_param, 1.0),
+            "parameter_esds": None,
+        }
+
+        if params.relative_B_correction:
+            configdict["corrections"].append("relative_B")
+            parameters_dict["relative_B"] = {
+                "parameters": flex.double(1, 0.0),
+                "parameter_esds": None,
+            }
+
+        if params.decay_correction:
+            configdict["corrections"].append("decay")
+            parameters_dict["decay"] = {
+                "parameters": flex.double(1, 0.0),
+                "parameter_esds": None,
+            }
+
+        if params.absorption_correction:
+            configdict["corrections"].append("absorption")
+            n_abs_param = params.lmax * (
+                2 + params.lmax
+            )  # arithmetic sum formula (a1=3, d=2)
+            configdict.update({"lmax": params.lmax})
+            configdict.update({"abs_surface_weight": params.surface_weight})
+            parameters_dict["absorption"] = {
+                "parameters": flex.double(n_abs_param, 0.0),
+                "parameter_esds": None,
+            }
+
+        return cls(parameters_dict, configdict)
+
+    @classmethod
+    def from_dict(cls, obj):
+        """Create a :obj:`PhysicalScalingModel` from a dictionary."""
+        if obj["__id__"] != cls.id_:
+            raise RuntimeError("expected __id__ %s, got %s" % (cls.id_, obj["__id__"]))
+        (s_params, d_params, abs_params) = (None, None, None)
+        (s_params_sds, d_params_sds, a_params_sds) = (None, None, None)
+        configdict = obj["configuration_parameters"]
+        is_scaled = obj["is_scaled"]
+        if "scale" in configdict["corrections"]:
+            s_params = flex.double(obj["scale"]["parameters"])
+            if "est_standard_devs" in obj["scale"]:
+                s_params_sds = flex.double(obj["scale"]["est_standard_devs"])
+        if "relative_B" in configdict["corrections"]:
+            B = flex.double(obj["relative_B"]["parameters"])
+            if "est_standard_devs" in obj["relative_B"]:
+                B_sd = flex.double(obj["relative_B"]["est_standard_devs"])
+        if "decay" in configdict["corrections"]:
+            d_params = flex.double(obj["decay"]["parameters"])
+            if "est_standard_devs" in obj["decay"]:
+                d_params_sds = flex.double(obj["decay"]["est_standard_devs"])
+        if "absorption" in configdict["corrections"]:
+            abs_params = flex.double(obj["absorption"]["parameters"])
+            if "est_standard_devs" in obj["absorption"]:
+                a_params_sds = flex.double(obj["absorption"]["est_standard_devs"])
+
+        parameters_dict = {
+            "scale": {"parameters": s_params, "parameter_esds": s_params_sds},
+            "decay": {"parameters": d_params, "parameter_esds": d_params_sds},
+            "relative_B": {"parameters": B, "parameter_esds": B_sd},
+            "absorption": {"parameters": abs_params, "parameter_esds": a_params_sds},
+        }
+
+        return cls(parameters_dict, configdict, is_scaled)
+
+    def plot_model_components(self):
+        d = OrderedDict()
+        d.update(plot_dose_decay(self))
+        if "absorption" in self.components:
+            d.update(plot_absorption_parameters(self))
+            d.update(plot_absorption_surface(self))
+        return d
+
+
 class PhysicalScalingModel(ScalingModelBase):
     """A scaling model for a physical parameterisation."""
 
@@ -325,57 +599,21 @@ class PhysicalScalingModel(ScalingModelBase):
 
     def configure_components(self, reflection_table, experiment, params):
         """Add the required reflection table data to the model components."""
+        phi = reflection_table["xyzobs.px.value"].parts()[2]
         if "scale" in self.components:
-            norm = (
-                reflection_table["xyzobs.px.value"].parts()[2]
-                * self._configdict["s_norm_fac"]
-            )
+            norm = phi * self._configdict["s_norm_fac"]
             self.components["scale"].data = {"x": norm}
         if "decay" in self.components:
-            norm = (
-                reflection_table["xyzobs.px.value"].parts()[2]
-                * self._configdict["d_norm_fac"]
-            )
+            norm = phi * self._configdict["d_norm_fac"]
             self.components["decay"].parameter_restraints = flex.double(
                 self.components["decay"].parameters.size(),
                 params.physical.decay_restraint,
             )
             self.components["decay"].data = {"x": norm, "d": reflection_table["d"]}
         if "absorption" in self.components:
-            lmax = self._configdict["lmax"]
-            if reflection_table.size() > 100000:
-                assert "s0c" in reflection_table
-                assert "s1c" in reflection_table
-                theta_phi_0 = calc_theta_phi(
-                    reflection_table["s0c"]
-                )  # array of tuples in radians
-                theta_phi_1 = calc_theta_phi(reflection_table["s1c"])
-                s0_lookup_index = calc_lookup_index(theta_phi_0, points_per_degree=2)
-                s1_lookup_index = calc_lookup_index(theta_phi_1, points_per_degree=2)
-                if SHScaleComponent.coefficients_list is None:
-                    SHScaleComponent.coefficients_list = create_sph_harm_lookup_table(
-                        lmax, points_per_degree=2
-                    )  # set the class variable and share
-                elif len(SHScaleComponent.coefficients_list) < (lmax * (2.0 + lmax)):
-                    # this (rare) case can happen if adding a new dataset with a larger lmax!
-                    SHScaleComponent.coefficients_list = create_sph_harm_lookup_table(
-                        lmax, points_per_degree=2
-                    )  # set the class variable and share
-                self.components["absorption"].data = {
-                    "s0_lookup": s0_lookup_index,
-                    "s1_lookup": s1_lookup_index,
-                }
-            # here just pass in good reflections
-            else:
-                self.components["absorption"].data = {
-                    "sph_harm_table": sph_harm_table(reflection_table, lmax)
-                }
-            surface_weight = self._configdict["abs_surface_weight"]
-            parameter_restraints = flex.double([])
-            for i in range(1, lmax + 1):
-                parameter_restraints.extend(flex.double([1.0] * ((2 * i) + 1)))
-            parameter_restraints *= surface_weight
-            self.components["absorption"].parameter_restraints = parameter_restraints
+            _add_absorption_component_to_physically_derived_model(
+                self, reflection_table
+            )
 
     def limit_image_range(self, new_image_range):
         """Modify the model to be suitable for a reduced image range.
