@@ -28,11 +28,6 @@ logger = logging.getLogger(__name__)
 
 __all__ = [
     "Executor",
-    "FinalizerBase",
-    "FinalizerRot",
-    "FinalizerStills",
-    "InitializerRot",
-    "InitializerStills",
     "Integrator",
     "Integrator2D",
     "Integrator3D",
@@ -435,192 +430,151 @@ class Parameters(object):
         return result
 
 
-class InitializerRot(object):
+def _initialize_rotation(experiments, params, reflections):
     """
     A pre-processing class for oscillation data.
     """
 
-    def __init__(self, experiments, params):
-        """
-        Initialise the pre-processor.
-        """
-        self.experiments = experiments
-        self.params = params
+    # Compute some reflection properties
+    reflections.compute_zeta_multi(experiments)
+    reflections.compute_d(experiments)
+    reflections.compute_bbox(experiments)
 
-    def __call__(self, reflections):
-        """
-        Do some pre-processing.
-        """
-        # Compute some reflection properties
-        reflections.compute_zeta_multi(self.experiments)
-        reflections.compute_d(self.experiments)
-        reflections.compute_bbox(self.experiments)
+    # Filter the reflections by zeta
+    mask = flex.abs(reflections["zeta"]) < params.filter.min_zeta
+    reflections.set_flags(mask, reflections.flags.dont_integrate)
 
-        # Filter the reflections by zeta
-        mask = flex.abs(reflections["zeta"]) < self.params.filter.min_zeta
-        reflections.set_flags(mask, reflections.flags.dont_integrate)
-
-        # Filter the reflections by powder ring
-        if self.params.filter.powder_filter is not None:
-            mask = self.params.filter.powder_filter(reflections["d"])
-            reflections.set_flags(mask, reflections.flags.in_powder_ring)
+    # Filter the reflections by powder ring
+    if params.filter.powder_filter is not None:
+        mask = params.filter.powder_filter(reflections["d"])
+        reflections.set_flags(mask, reflections.flags.in_powder_ring)
 
 
-class InitializerStills(object):
+def _initialize_stills(experiments, params, reflections):
     """
     A pre-processing class for stills data.
     """
 
-    def __init__(self, experiments, params):
-        """
-        Initialise the pre-processor.
-        """
-        self.experiments = experiments
-        self.params = params
+    # Compute some reflection properties
+    reflections.compute_d(experiments)
+    reflections.compute_bbox(experiments)
 
-    def __call__(self, reflections):
-        """
-        Do some pre-processing.
-        """
-        # Compute some reflection properties
-        reflections.compute_d(self.experiments)
-        reflections.compute_bbox(self.experiments)
+    # Check the bounding boxes are all 1 frame in width
+    z0, z1 = reflections["bbox"].parts()[4:6]
+    assert (z1 - z0).all_eq(1), "bbox is invalid"
 
-        # Check the bounding boxes are all 1 frame in width
-        z0, z1 = reflections["bbox"].parts()[4:6]
-        assert (z1 - z0).all_eq(1), "bbox is invalid"
-
-        # Filter the reflections by powder ring
-        if self.params.filter.powder_filter is not None:
-            mask = self.params.filter.powder_filter(reflections["d"])
-            reflections.set_flags(mask, reflections.flags.in_powder_ring)
+    # Filter the reflections by powder ring
+    if params.filter.powder_filter is not None:
+        mask = params.filter.powder_filter(reflections["d"])
+        reflections.set_flags(mask, reflections.flags.in_powder_ring)
 
 
-class FinalizerBase(object):
-    def __init__(self, reflections, experiments, params):
-        """
-        Initialise the post processor.
-        """
-        self.reflections = reflections
-        self.experiments = experiments
-        self.params = params
+def _finalize(reflections, experiments, params):
+    """
+    A generic post-processing function.
+    """
+    overlaps_scope = params.integration.overlaps_filter
+    if True in [
+        overlaps_scope.foreground_foreground.enable,
+        overlaps_scope.foreground_background.enable,
+    ]:
+        from dials.algorithms.integration.overlaps_filter import OverlapsFilterMultiExpt
 
-    def __call__(self):
-        overlaps_scope = self.params.integration.overlaps_filter
-        if True in [
-            overlaps_scope.foreground_foreground.enable,
-            overlaps_scope.foreground_background.enable,
-        ]:
-            from dials.algorithms.integration.overlaps_filter import (
-                OverlapsFilterMultiExpt,
+        overlaps_filter = OverlapsFilterMultiExpt(reflections, experiments)
+        if overlaps_scope.foreground_foreground.enable:
+            overlaps_filter.remove_foreground_foreground_overlaps()
+        if overlaps_scope.foreground_background.enable:
+            overlaps_filter.remove_foreground_background_overlaps()
+        reflections = overlaps_filter.refl
+    return reflections, experiments
+
+
+def _finalize_rotation(reflections, experiments, params):
+    """
+    A post-processing function for oscillation data.
+    """
+
+    reflections, experiments = _finalize(reflections, experiments, params)
+
+    # Compute the corrections
+    reflections.compute_corrections(experiments)
+    return reflections, experiments
+
+
+def _finalize_stills(reflections, experiments, params):
+    """
+    A post-processing function for stills data.
+    """
+    reflections, experiments = _finalize(reflections, experiments, params)
+
+    integrated = reflections
+
+    # Select only those reflections which were integrated
+    if "intensity.prf.variance" in integrated:
+        selection = integrated.get_flags(integrated.flags.integrated, all=True)
+    else:
+        selection = integrated.get_flags(integrated.flags.integrated_sum)
+    integrated = integrated.select(selection)
+
+    len_all = len(integrated)
+    integrated = integrated.select(
+        ~integrated.get_flags(integrated.flags.foreground_includes_bad_pixels)
+    )
+    logger.info(
+        "Filtering %d reflections with at least one bad foreground pixel out of %d"
+        % (len_all - len(integrated), len_all)
+    )
+
+    # verify sigmas are sensible
+    if "intensity.prf.value" in integrated:
+        if (integrated["intensity.prf.variance"] <= 0).count(True) > 0:
+            raise Sorry(
+                "Found negative variances (prf). Are bad pixels properly masked out?"
             )
-
-            overlaps_filter = OverlapsFilterMultiExpt(
-                self.reflections, self.experiments
+    if "intensity.sum.value" in integrated:
+        if (integrated["intensity.sum.variance"] <= 0).count(True) > 0:
+            if (integrated["intensity.sum.variance"] < 0).count(True) > 0:
+                raise Sorry(
+                    "Found negative variances (sum). Are bad pixels properly masked out?"
+                )
+            n = (integrated["intensity.sum.variance"] == 0).count(True)
+            sel = (integrated["intensity.sum.variance"] == 0) & (
+                integrated["intensity.sum.value"] == 0
             )
-            if overlaps_scope.foreground_foreground.enable:
-                overlaps_filter.remove_foreground_foreground_overlaps()
-            if overlaps_scope.foreground_background.enable:
-                overlaps_filter.remove_foreground_background_overlaps()
-            self.reflections = overlaps_filter.refl
-
-
-class FinalizerRot(FinalizerBase):
-    """
-    A post-processing class for oscillation data.
-    """
-
-    def __call__(self):
-        """
-        Do some post processing.
-        """
-        super(FinalizerRot, self).__call__()
-
-        # Compute the corrections
-        self.reflections.compute_corrections(self.experiments)
-
-
-class FinalizerStills(FinalizerBase):
-    """
-    A post-processing class for stills data.
-    """
-
-    def __call__(self):
-        """
-        Do some post processing.
-        """
-        super(FinalizerStills, self).__call__()
-
-        integrated = self.reflections
-
-        # Select only those reflections which were integrated
-        if "intensity.prf.variance" in integrated:
-            selection = integrated.get_flags(integrated.flags.integrated, all=True)
-        else:
-            selection = integrated.get_flags(integrated.flags.integrated_sum)
-        integrated = integrated.select(selection)
-
-        len_all = len(integrated)
-        integrated = integrated.select(
-            ~integrated.get_flags(integrated.flags.foreground_includes_bad_pixels)
-        )
-        logger.info(
-            "Filtering %d reflections with at least one bad foreground pixel out of %d"
-            % (len_all - len(integrated), len_all)
-        )
-
-        # verify sigmas are sensible
-        if "intensity.prf.value" in integrated:
-            if (integrated["intensity.prf.variance"] <= 0).count(True) > 0:
-                raise Sorry(
-                    "Found negative variances (prf). Are bad pixels properly masked out?"
-                )
-        if "intensity.sum.value" in integrated:
-            if (integrated["intensity.sum.variance"] <= 0).count(True) > 0:
-                if (integrated["intensity.sum.variance"] < 0).count(True) > 0:
-                    raise Sorry(
-                        "Found negative variances (sum). Are bad pixels properly masked out?"
-                    )
-                n = (integrated["intensity.sum.variance"] == 0).count(True)
-                sel = (integrated["intensity.sum.variance"] == 0) & (
-                    integrated["intensity.sum.value"] == 0
-                )
-                if n == sel.count(True):
-                    logger.info(
-                        "Filtering %d reflections with no integrated signal (sum and variance = 0) out of %d"
-                        % (n, len(integrated))
-                    )
-                    integrated = integrated.select(
-                        integrated["intensity.sum.variance"] > 0
-                    )
-                else:
-                    raise Sorry(
-                        "Found reflections with variances == 0 but summed signal != 0"
-                    )
-
-            # apply detector gain to summation variances
-            integrated[
-                "intensity.sum.variance"
-            ] *= self.params.integration.summation.detector_gain
-        if "background.sum.value" in integrated:
-            if (integrated["background.sum.variance"] < 0).count(True) > 0:
-                raise Sorry(
-                    "Found negative variances (background sum). Are bad pixels properly masked out?"
-                )
-            if (integrated["background.sum.variance"] == 0).count(True) > 0:
+            if n == sel.count(True):
                 logger.info(
-                    "Filtering %d reflections with zero background variance"
-                    % ((integrated["background.sum.variance"] == 0).count(True))
+                    "Filtering %d reflections with no integrated signal (sum and variance = 0) out of %d"
+                    % (n, len(integrated))
                 )
-                integrated = integrated.select(
-                    integrated["background.sum.variance"] > 0
+                integrated = integrated.select(integrated["intensity.sum.variance"] > 0)
+            else:
+                raise Sorry(
+                    "Found reflections with variances == 0 but summed signal != 0"
                 )
-            # apply detector gain to background summation variances
-            integrated[
-                "background.sum.variance"
-            ] *= self.params.integration.summation.detector_gain
 
-        self.reflections = integrated
+        # apply detector gain to summation variances
+        integrated[
+            "intensity.sum.variance"
+        ] *= params.integration.summation.detector_gain
+    if "background.sum.value" in integrated:
+        if (integrated["background.sum.variance"] < 0).count(True) > 0:
+            raise Sorry(
+                "Found negative variances (background sum). Are bad pixels properly masked out?"
+            )
+        if (integrated["background.sum.variance"] == 0).count(True) > 0:
+            logger.info(
+                "Filtering %d reflections with zero background variance"
+                % ((integrated["background.sum.variance"] == 0).count(True))
+            )
+            integrated = integrated.select(integrated["background.sum.variance"] > 0)
+        # apply detector gain to background summation variances
+        integrated[
+            "background.sum.variance"
+        ] *= params.integration.summation.detector_gain
+
+    reflections = integrated
+
+    return reflections, experiments
 
 
 class ProfileModellerExecutor(Executor):
@@ -1049,8 +1003,7 @@ class Integrator(object):
         )
 
         # Initialize the reflections
-        initialize = self.InitializerClass(self.experiments, self.params)
-        initialize(self.reflections)
+        self.initialize_reflections(self.experiments, self.params, self.reflections)
 
         # Check if we want to do some profile fitting
         fitting_class = [e.profile.fitting_class() for e in self.experiments]
@@ -1239,10 +1192,9 @@ class Integrator(object):
         self.reflections, _, time_info = processor.process()
 
         # Finalize the reflections
-        finalize = self.FinalizerClass(self.reflections, self.experiments, self.params)
-        finalize()
-        self.reflections = finalize.reflections
-        self.experiments = finalize.experiments
+        self.reflections, self.experiments = self.finalize_reflections(
+            self.reflections, self.experiments, self.params
+        )
 
         # Create the integration report
         self.integration_report = IntegrationReport(self.experiments, self.reflections)
@@ -1300,9 +1252,9 @@ class Integrator3D(Integrator):
     Integrator for 3D algorithms
     """
 
-    InitializerClass = InitializerRot
+    initialize_reflections = staticmethod(_initialize_rotation)
     ProcessorClass = Processor3D
-    FinalizerClass = FinalizerRot
+    finalize_reflections = staticmethod(_finalize_rotation)
 
 
 class IntegratorFlat3D(Integrator):
@@ -1310,9 +1262,9 @@ class IntegratorFlat3D(Integrator):
     Integrator for flattened 3D algorithms
     """
 
-    InitializerClass = InitializerRot
+    initialize_reflections = staticmethod(_initialize_rotation)
     ProcessorClass = ProcessorFlat3D
-    FinalizerClass = FinalizerRot
+    finalize_reflections = staticmethod(_finalize_rotation)
 
 
 class Integrator2D(Integrator):
@@ -1320,9 +1272,9 @@ class Integrator2D(Integrator):
     Integrator for 2D algorithms
     """
 
-    InitializerClass = InitializerRot
+    initialize_reflections = staticmethod(_initialize_rotation)
     ProcessorClass = Processor2D
-    FinalizerClass = FinalizerRot
+    finalize_reflections = staticmethod(_finalize_rotation)
 
 
 class IntegratorSingle2D(Integrator):
@@ -1330,9 +1282,9 @@ class IntegratorSingle2D(Integrator):
     Integrator for 2D algorithms on a single image
     """
 
-    InitializerClass = InitializerRot
+    initialize_reflections = staticmethod(_initialize_rotation)
     ProcessorClass = ProcessorSingle2D
-    FinalizerClass = FinalizerRot
+    finalize_reflections = staticmethod(_finalize_rotation)
 
 
 class IntegratorStills(Integrator):
@@ -1340,9 +1292,9 @@ class IntegratorStills(Integrator):
     Integrator for still algorithms
     """
 
-    InitializerClass = InitializerStills
+    initialize_reflections = staticmethod(_initialize_stills)
     ProcessorClass = ProcessorStills
-    FinalizerClass = FinalizerStills
+    finalize_reflections = staticmethod(_finalize_stills)
 
 
 class Integrator3DThreaded(object):
