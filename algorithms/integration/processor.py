@@ -27,6 +27,7 @@ from dials_algorithms_integration_integrator_ext import (
 
 __all__ = [
     "Block",
+    "build_processor",
     "Debug",
     "ExecuteParallelTask",
     "Executor",
@@ -45,7 +46,6 @@ __all__ = [
     "Processor",
     "Processor2D",
     "Processor3D",
-    "ProcessorBuilder",
     "ProcessorFlat3D",
     "ProcessorSingle2D",
     "ProcessorStills",
@@ -1018,31 +1018,17 @@ class ProcessorStills(Processor):
         super(ProcessorStills, self).__init__(manager)
 
 
-class ProcessorBuilder(object):
+def build_processor(Class, experiments, reflections, params=None):
     """
-    A class to simplify building the processor
+    A function to simplify building the processor
+
+    :param Class: The input class
+    :param experiments: The input experiments
+    :param reflections: The reflections
+    :param params: Optional input parameters
     """
+    _params = Parameters()
+    if params is not None:
+        _params.update(params)
 
-    def __init__(self, Class, experiments, reflections, params=None):
-        """
-        Initialize with the required input
-
-        :param Class: The input class
-        :param experiments: The input experiments
-        :param reflections: The reflections
-        :param params: Optionally input parameters
-        """
-        self.Class = Class
-        self.experiments = experiments
-        self.reflections = reflections
-        self.params = Parameters()
-        if params is not None:
-            self.params.update(params)
-
-    def build(self):
-        """
-        Build the class
-
-        :return: The processor class
-        """
-        return self.Class(self.experiments, self.reflections, self.params)
+    return Class(experiments, reflections, _params)

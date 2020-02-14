@@ -13,12 +13,12 @@ from dials_algorithms_integration_integrator_ext import (
     JobList,
     ReflectionManager,
 )
+from dials.algorithms.integration.processor import build_processor
 from dials.algorithms.integration.processor import Processor3D
 from dials.algorithms.integration.processor import ProcessorFlat3D
 from dials.algorithms.integration.processor import Processor2D
 from dials.algorithms.integration.processor import ProcessorSingle2D
 from dials.algorithms.integration.processor import ProcessorStills
-from dials.algorithms.integration.processor import ProcessorBuilder
 from dials.algorithms.integration.processor import job
 from dials.array_family import flex
 from dials.util import phil
@@ -41,7 +41,6 @@ __all__ = [
     "Parameters",
     "Processor2D",
     "Processor3D",
-    "ProcessorBuilder",
     "ProcessorFlat3D",
     "ProcessorSingle2D",
     "ProcessorStills",
@@ -1071,12 +1070,12 @@ class Integrator(object):
 
                 # Create the data processor
                 executor = ProfileModellerExecutor(self.experiments, profile_fitter)
-                processor = ProcessorBuilder(
+                processor = build_processor(
                     self.ProcessorClass,
                     self.experiments,
                     reference,
                     self.params.modelling,
-                ).build()
+                )
                 processor.executor = executor
 
                 # Process the reference profiles
@@ -1146,12 +1145,12 @@ class Integrator(object):
                     executor = ProfileValidatorExecutor(
                         self.experiments, profile_fitter
                     )
-                    processor = ProcessorBuilder(
+                    processor = build_processor(
                         self.ProcessorClass,
                         self.experiments,
                         reference,
                         self.params.modelling,
-                    ).build()
+                    )
                     processor.executor = executor
 
                     # Process the reference profiles
@@ -1180,12 +1179,12 @@ class Integrator(object):
 
         # Create the data processor
         executor = IntegratorExecutor(self.experiments, profile_fitter)
-        processor = ProcessorBuilder(
+        processor = build_processor(
             self.ProcessorClass,
             self.experiments,
             self.reflections,
             self.params.integration,
-        ).build()
+        )
         processor.executor = executor
 
         # Process the reflections
