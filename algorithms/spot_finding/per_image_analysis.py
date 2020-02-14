@@ -13,6 +13,7 @@ from scitbx import matrix
 
 Slot = collections.namedtuple("Slot", "d_min d_max")
 _stats_field_names = [
+    "image",
     "d_min_distl_method_1",
     "d_min_distl_method_2",
     "estimated_d_min",
@@ -611,6 +612,7 @@ def stats_for_reflection_table(
         noisiness_method_2 = -1.0
 
     return StatsSingleImage(
+        image=0,
         n_spots_total=n_spots_total,
         n_spots_no_ice=n_spots_no_ice,
         n_spots_4A=n_spot_4A,
@@ -656,7 +658,8 @@ def stats_per_image(experiment, reflections, resolution_analysis=True):
         d_min_distl_method_2.append(stats.d_min_distl_method_2)
         noisiness_method_2.append(stats.noisiness_method_2)
 
-    return StatsMultiImage(
+    smi = StatsMultiImage(
+        image=list(range(start + 1, end + 1)),
         n_spots_total=n_spots_total,
         n_spots_no_ice=n_spots_no_ice,
         n_spots_4A=n_spots_4A,
@@ -667,6 +670,7 @@ def stats_per_image(experiment, reflections, resolution_analysis=True):
         d_min_distl_method_2=d_min_distl_method_2,
         noisiness_method_2=noisiness_method_2,
     )
+    return smi
 
 
 def plot_stats(stats, filename="per_image_analysis.png"):

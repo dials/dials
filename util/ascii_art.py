@@ -30,13 +30,20 @@ def flex_histogram(z, char="*", width=60, height=10):
     min_z = flex.min(z)
     max_z = flex.max(z)
 
+    shift = 0
+    if min_z < 0:
+        min_z += 1
+        max_z += 1
+        z += 1
+        shift = 1
+
     epsilon = flex.double(n % 2 for n in range(len(z)))
     epsilon = (epsilon / 2) - 0.25
     z += epsilon
 
     # image numbers to display on x-axis label
-    xmin = int(round(min_z + 1e-16))
-    xmax = int(round(max_z))
+    xmin = int(round(min_z + 1e-16)) - shift
+    xmax = int(round(max_z + 1e-16)) - shift
 
     # estimate the total number of images
     image_count = xmax - xmin + 1
