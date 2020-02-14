@@ -24,9 +24,6 @@ def flex_histogram(z, char="*", width=60, height=10):
     assert isinstance(char, six.string_types)
     assert len(char) == 1
 
-    # with open('list.json', 'w') as fh:
-    #   json.dump(sorted(list(z)), fh)
-
     min_z = flex.min(z)
     max_z = flex.max(z)
 
@@ -42,8 +39,8 @@ def flex_histogram(z, char="*", width=60, height=10):
     z += epsilon
 
     # image numbers to display on x-axis label
-    xmin = int(round(min_z + 1e-16)) - shift
-    xmax = int(round(max_z + 1e-16)) - shift
+    xmin = int(round(min_z + 0.25)) - shift
+    xmax = int(round(max_z + 0.25)) - shift
 
     # estimate the total number of images
     image_count = xmax - xmin + 1
