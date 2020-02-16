@@ -67,8 +67,9 @@ def _get_flex_image_multipanel(
     assert len(panels) == len(image_data), (len(panels), len(image_data))
 
     # Determine next multiple of eight of the largest panel size.
+    data_max_focus = None
     for data in image_data:
-        if "data_max_focus" not in locals():
+        if data_max_focus is None:
             data_max_focus = data.focus()
         else:
             data_max_focus = (
@@ -84,12 +85,13 @@ def _get_flex_image_multipanel(
     # dxtbx records a separated trusted_range for each panel,
     # generic_flex_image supports only accepts a single common value for
     # the saturation.
+    saturation = None
     for panel in panels:
-        if "saturation" not in locals():
+        if saturation is None:
             saturation = panel.get_trusted_range()[1]
         else:
             assert approx_equal(saturation, panel.get_trusted_range()[1])
-    assert "saturation" in locals() and saturation is not None
+    assert saturation is not None
 
     # Create rawdata and my_flex_image before populating it.
     rawdata = flex.double(flex.grid(len(panels) * data_padded[0], data_padded[1]))
