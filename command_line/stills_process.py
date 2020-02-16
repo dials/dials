@@ -979,7 +979,7 @@ class Processor(object):
                     refls = centroids.select(centroids["id"] == i)
                     refls["id"] = flex.int(len(refls), n)
                     del refls.experiment_identifiers()[i]
-                    refls.experiment_identifiers()[n]=experiment.identifier
+                    refls.experiment_identifiers()[n] = experiment.identifier
                     self.all_indexed_reflections.extend(refls)
                     n += 1
         else:
@@ -1102,7 +1102,7 @@ class Processor(object):
                     refls = integrated.select(integrated["id"] == i)
                     refls["id"] = flex.int(len(refls), n)
                     del refls.experiment_identifiers()[i]
-                    refls.experiment_identifiers()[n]=experiment.identifier
+                    refls.experiment_identifiers()[n] = experiment.identifier
                     self.all_integrated_reflections.extend(refls)
                     n += 1
         else:
