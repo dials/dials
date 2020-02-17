@@ -2,7 +2,7 @@
     "modules_required_for_build": ["boost", "scitbx", "cctbx", "dxtbx", "rstbx"],
     "modules_required_for_use": ["boost_adaptbx", "iotbx", "mmtbx"],
     "optional_modules": ["crys3d", "gltbx", "xfel"],
-    "conda_required": ["dials-dependencies>=0.8.0"],
+    "conda_required": [],
     "python_required": [
         "colorlog",
         "dials-data>=2.0.38",
