@@ -144,10 +144,10 @@ class Script(object):
                 "Overriding maximum trusted value to %.1f", params.maximum_trusted_value
             )
             input_trusted_ranges = {}
-            for detector in experiments.detectors():
-                for panel in detector:
+            for _d, detector in enumerate(experiments.detectors()):
+                for _p, panel in enumerate(detector):
                     trusted = panel.get_trusted_range()
-                    input_trusted_ranges[id(panel)] = trusted
+                    input_trusted_ranges[(_d, _p)] = trusted
                     panel.set_trusted_range((trusted[0], params.maximum_trusted_value))
 
         # Loop through all the imagesets and find the strong spots
@@ -197,9 +197,10 @@ class Script(object):
 
         # Reset the trusted ranges
         if params.maximum_trusted_value is not None:
-            for detector in experiments.detectors():
-                for panel in detector:
-                    panel.set_trusted_range(input_trusted_ranges[id(panel)])
+            for _d, detector in enumerate(experiments.detectors()):
+                for _p, panel in enumerate(detector):
+                    trusted = input_trusted_ranges[(_d, _p)]
+                    panel.set_trusted_range(trusted)
 
         # Save the experiments
         if params.output.experiments:
