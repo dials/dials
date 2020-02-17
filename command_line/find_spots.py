@@ -69,10 +69,11 @@ phil_scope = parse(
       .help = "The log filename"
   }
 
-  maximum_trusted_value = 0
+  maximum_trusted_value = None
     .type = float
     .help = "Override maximum trusted value for spot finding only"
     .expert_level = 2
+    .optional = True
 
   per_image_statistics = False
     .type = bool
@@ -139,7 +140,7 @@ class Script(object):
 
         # If maximum_trusted_value assigned, use this temporarily for the
         # spot finding
-        if params.maximum_trusted_value > 0:
+        if params.maximum_trusted_value:
             logger.info(
                 "Overriding maximum trusted value to %.1f", params.maximum_trusted_value
             )
@@ -202,7 +203,7 @@ class Script(object):
             if params.maximum_trusted_value > 0:
                 for detector in experiments.detectors():
                     for panel in detector:
-                        trusted = input_trusted_ranges[id(panel)] = trusted
+                        trusted = input_trusted_ranges[id(panel)]
                         panel.set_trusted_range(trusted)
 
             logger.info("Saving experiments to {}".format(params.output.experiments))
