@@ -16,18 +16,36 @@ import libtbx.smart_open
 import six
 import six.moves.cPickle as pickle
 from dials.algorithms.centroid import centroid_px_to_mm_panel
+from dials_array_family_flex_ext import (
+    Binner,
+    PixelListShoeboxCreator,
+    int6,
+    observation,
+    reflection_table,
+    reflection_table_to_list_of_reflections,
+    shoebox,
+)
 
 from dials.util import Sorry
 from scitbx import matrix
 
 # Note: Right at the end of this file all names from
 #         cctbx.array_family.flex and
-#         dials_array_family_flex_ext
 #       are imported into the local namespace, and added to __all__.
 #       This is done at the end of the file so that within the body of this
-#       file namessuch as 'int' and 'bool' refer to the python default
+#       file names such as 'int' and 'bool' refer to the python default
 #       definitions rather than the cctbx.flex definitions.
-__all__ = ["reflection_table_selector"]
+__all__ = [
+    "Binner",
+    "PixelListShoeboxCreator",
+    "int6",
+    "observation",
+    "real",
+    "reflection_table",
+    "reflection_table_selector",
+    "reflection_table_to_list_of_reflections",
+    "shoebox",
+]
 
 logger = logging.getLogger(__name__)
 
@@ -1578,16 +1596,12 @@ class reflection_table_selector(object):
         return mask1
 
 
-# Finally, clobber the locals() namespace with cctbx and dials flex elements.
+# Finally, clobber the locals() namespace with cctbx flex elements.
 # This overwrites definitions such as 'bool' and 'int', so should be done at
 # the end of the file.
 for _name in dir(cctbx.array_family.flex):
     if not _name.startswith("_"):
         locals()[_name] = getattr(cctbx.array_family.flex, _name)
-        __all__.append(_name)
-for _name in dir(dials_array_family_flex_ext):
-    if not _name.startswith("_"):
-        locals()[_name] = getattr(dials_array_family_flex_ext, _name)
         __all__.append(_name)
 # Set the 'real' type to either float or double
 if dials_array_family_flex_ext.get_real_type() == "float":
