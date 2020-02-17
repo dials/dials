@@ -9,7 +9,6 @@ import random
 import sys
 
 import libtbx.introspection
-from libtbx import adopt_init_args
 from libtbx.test_utils import approx_equal
 from libtbx.utils import plural_s
 from scitbx import matrix
@@ -87,238 +86,227 @@ output {
 master_params = phil_scope.fetch().extract()
 
 
-class better_experimental_model_discovery(object):
-    def __init__(
-        self,
-        experiments,
-        reflection_lists,
-        solution_lists,
-        amax_lists,
-        mm_search_scope=4,
-        wide_search_binning=1,
-        plot_search_scope=False,
-    ):
-        adopt_init_args(self, locals())
-
-    def optimize_origin_offset_local_scope(self):
-        """Local scope: find the optimal origin-offset closest to the current overall detector position
+def optimize_origin_offset_local_scope(
+    experiments,
+    reflection_lists,
+    solution_lists,
+    amax_lists,
+    mm_search_scope=4,
+    wide_search_binning=1,
+    plot_search_scope=False,
+):
+    """Local scope: find the optimal origin-offset closest to the current overall detector position
         (local minimum, simple minimization)"""
 
-        beam = self.experiments[0].beam
-        s0 = matrix.col(beam.get_s0())
-        # construct two vectors that are perpendicular to the beam.  Gives a basis for refining beam
-        axis = matrix.col((1, 0, 0))
-        beamr0 = s0.cross(axis).normalize()
-        beamr1 = beamr0.cross(s0).normalize()
-        beamr2 = beamr1.cross(s0).normalize()
+    beam = experiments[0].beam
+    s0 = matrix.col(beam.get_s0())
+    # construct two vectors that are perpendicular to the beam.  Gives a basis for refining beam
+    axis = matrix.col((1, 0, 0))
+    beamr0 = s0.cross(axis).normalize()
+    beamr1 = beamr0.cross(s0).normalize()
+    beamr2 = beamr1.cross(s0).normalize()
 
-        assert approx_equal(s0.dot(beamr1), 0.0)
-        assert approx_equal(s0.dot(beamr2), 0.0)
-        assert approx_equal(beamr2.dot(beamr1), 0.0)
-        # so the orthonormal vectors are s0, beamr1 and beamr2
+    assert approx_equal(s0.dot(beamr1), 0.0)
+    assert approx_equal(s0.dot(beamr2), 0.0)
+    assert approx_equal(beamr2.dot(beamr1), 0.0)
+    # so the orthonormal vectors are s0, beamr1 and beamr2
 
-        if self.mm_search_scope:
-            plot_px_sz = self.experiments[0].detector[0].get_pixel_size()[0]
-            plot_px_sz *= self.wide_search_binning
-            grid = max(1, int(self.mm_search_scope / plot_px_sz))
-            widegrid = 2 * grid + 1
-            scores = flex.double()
-            for y in range(-grid, grid + 1):
-                for x in range(-grid, grid + 1):
-                    new_origin_offset = (
-                        x * plot_px_sz * beamr1 + y * plot_px_sz * beamr2
+    if mm_search_scope:
+        plot_px_sz = experiments[0].detector[0].get_pixel_size()[0]
+        plot_px_sz *= wide_search_binning
+        grid = max(1, int(mm_search_scope / plot_px_sz))
+        widegrid = 2 * grid + 1
+        scores = flex.double()
+        for y in range(-grid, grid + 1):
+            for x in range(-grid, grid + 1):
+                new_origin_offset = x * plot_px_sz * beamr1 + y * plot_px_sz * beamr2
+                score = 0
+                for i in range(len(experiments)):
+                    score += _get_origin_offset_score(
+                        new_origin_offset,
+                        solution_lists[i],
+                        amax_lists[i],
+                        reflection_lists[i],
+                        experiments[i],
                     )
-                    score = 0
-                    for i in range(len(self.experiments)):
-                        score += self.get_origin_offset_score(
-                            new_origin_offset,
-                            self.solution_lists[i],
-                            self.amax_lists[i],
-                            self.reflection_lists[i],
-                            self.experiments[i],
-                        )
-                    scores.append(score)
+                scores.append(score)
+
+        def igrid(x):
+            return x - (widegrid // 2)
+
+        idxs = [igrid(i) * plot_px_sz for i in range(widegrid)]
+
+        # if there are several similarly high scores, then choose the closest
+        # one to the current beam centre
+        potential_offsets = flex.vec3_double()
+        if scores.all_eq(0):
+            raise Sorry("No valid scores")
+        sel = scores > (0.9 * flex.max(scores))
+        for i in sel.iselection():
+            offset = (idxs[i % widegrid]) * beamr1 + (idxs[i // widegrid]) * beamr2
+            potential_offsets.append(offset.elems)
+            # print offset.length(), scores[i]
+        wide_search_offset = matrix.col(
+            potential_offsets[flex.min_index(potential_offsets.norms())]
+        )
+
+    else:
+        wide_search_offset = None
+
+    # DO A SIMPLEX MINIMIZATION
+
+    class test_simplex_method(object):
+        def __init__(selfOO, wide_search_offset=None):
+            selfOO.starting_simplex = []
+            selfOO.n = 2
+            selfOO.wide_search_offset = wide_search_offset
+            for ii in range(selfOO.n + 1):
+                selfOO.starting_simplex.append(flex.random_double(selfOO.n))
+            selfOO.optimizer = simplex_opt(
+                dimension=selfOO.n,
+                matrix=selfOO.starting_simplex,
+                evaluator=selfOO,
+                tolerance=1e-7,
+            )
+            selfOO.x = selfOO.optimizer.get_solution()
+            selfOO.offset = selfOO.x[0] * 0.2 * beamr1 + selfOO.x[1] * 0.2 * beamr2
+            if selfOO.wide_search_offset is not None:
+                selfOO.offset += selfOO.wide_search_offset
+
+        def target(selfOO, vector):
+            trial_origin_offset = vector[0] * 0.2 * beamr1 + vector[1] * 0.2 * beamr2
+            if selfOO.wide_search_offset is not None:
+                trial_origin_offset += selfOO.wide_search_offset
+            target = 0
+            for i in range(len(experiments)):
+                target -= _get_origin_offset_score(
+                    trial_origin_offset,
+                    solution_lists[i],
+                    amax_lists[i],
+                    reflection_lists[i],
+                    experiments[i],
+                )
+            return target
+
+    MIN = test_simplex_method(wide_search_offset=wide_search_offset)
+    new_offset = MIN.offset
+
+    if plot_search_scope:
+        plot_px_sz = experiments[0].get_detector()[0].get_pixel_size()[0]
+        grid = max(1, int(mm_search_scope / plot_px_sz))
+        scores = flex.double()
+        for y in range(-grid, grid + 1):
+            for x in range(-grid, grid + 1):
+                new_origin_offset = x * plot_px_sz * beamr1 + y * plot_px_sz * beamr2
+                score = 0
+                for i in range(len(experiments)):
+                    score += _get_origin_offset_score(
+                        new_origin_offset,
+                        solution_lists[i],
+                        amax_lists[i],
+                        reflection_lists[i],
+                        experiments[i],
+                    )
+                scores.append(score)
+
+        def show_plot(widegrid, excursi):
+            excursi.reshape(flex.grid(widegrid, widegrid))
+            idx_max = flex.max_index(excursi)
 
             def igrid(x):
                 return x - (widegrid // 2)
 
             idxs = [igrid(i) * plot_px_sz for i in range(widegrid)]
 
-            # if there are several similarly high scores, then choose the closest
-            # one to the current beam centre
-            potential_offsets = flex.vec3_double()
-            if scores.all_eq(0):
-                raise Sorry("No valid scores")
-            sel = scores > (0.9 * flex.max(scores))
-            for i in sel.iselection():
-                offset = (idxs[i % widegrid]) * beamr1 + (idxs[i // widegrid]) * beamr2
-                potential_offsets.append(offset.elems)
-                # print offset.length(), scores[i]
-            wide_search_offset = matrix.col(
-                potential_offsets[flex.min_index(potential_offsets.norms())]
+            from matplotlib import pyplot as plt
+
+            plt.figure()
+            CS = plt.contour(
+                [igrid(i) * plot_px_sz for i in range(widegrid)],
+                [igrid(i) * plot_px_sz for i in range(widegrid)],
+                excursi.as_numpy_array(),
             )
+            plt.clabel(CS, inline=1, fontsize=10, fmt="%6.3f")
+            plt.title("Wide scope search for detector origin offset")
+            plt.scatter([0.0], [0.0], color="g", marker="o")
+            plt.scatter([new_offset[0]], [new_offset[1]], color="r", marker="*")
+            plt.scatter(
+                [idxs[idx_max % widegrid]],
+                [idxs[idx_max // widegrid]],
+                color="k",
+                marker="s",
+            )
+            plt.axes().set_aspect("equal")
+            plt.xlabel("offset (mm) along beamr1 vector")
+            plt.ylabel("offset (mm) along beamr2 vector")
+            plt.savefig("search_scope.png")
 
-        else:
-            wide_search_offset = None
+            # changing value
+            trial_origin_offset = (idxs[idx_max % widegrid]) * beamr1 + (
+                idxs[idx_max // widegrid]
+            ) * beamr2
+            return trial_origin_offset
 
-        # DO A SIMPLEX MINIMIZATION
+        show_plot(widegrid=2 * grid + 1, excursi=scores)
 
-        class test_simplex_method(object):
-            def __init__(selfOO, wide_search_offset=None):
-                selfOO.starting_simplex = []
-                selfOO.n = 2
-                selfOO.wide_search_offset = wide_search_offset
-                for ii in range(selfOO.n + 1):
-                    selfOO.starting_simplex.append(flex.random_double(selfOO.n))
-                selfOO.optimizer = simplex_opt(
-                    dimension=selfOO.n,
-                    matrix=selfOO.starting_simplex,
-                    evaluator=selfOO,
-                    tolerance=1e-7,
-                )
-                selfOO.x = selfOO.optimizer.get_solution()
-                selfOO.offset = selfOO.x[0] * 0.2 * beamr1 + selfOO.x[1] * 0.2 * beamr2
-                if selfOO.wide_search_offset is not None:
-                    selfOO.offset += selfOO.wide_search_offset
+    new_experiments = copy.deepcopy(experiments)
+    for expt in new_experiments:
+        expt.detector = dps_extended.get_new_detector(expt.detector, new_offset)
+    return new_experiments
 
-            def target(selfOO, vector):
-                trial_origin_offset = (
-                    vector[0] * 0.2 * beamr1 + vector[1] * 0.2 * beamr2
-                )
-                if selfOO.wide_search_offset is not None:
-                    trial_origin_offset += selfOO.wide_search_offset
-                target = 0
-                for i in range(len(self.experiments)):
-                    target -= self.get_origin_offset_score(
-                        trial_origin_offset,
-                        self.solution_lists[i],
-                        self.amax_lists[i],
-                        self.reflection_lists[i],
-                        self.experiments[i],
-                    )
-                return target
 
-        MIN = test_simplex_method(wide_search_offset=wide_search_offset)
-        new_offset = MIN.offset
+def _get_origin_offset_score(
+    trial_origin_offset, solutions, amax, spots_mm, experiment
+):
+    trial_detector = dps_extended.get_new_detector(
+        experiment.detector, trial_origin_offset
+    )
+    experiment = copy.deepcopy(experiment)
+    experiment.detector = trial_detector
 
-        if self.plot_search_scope:
-            plot_px_sz = self.experiments[0].get_detector()[0].get_pixel_size()[0]
-            grid = max(1, int(self.mm_search_scope / plot_px_sz))
-            scores = flex.double()
-            for y in range(-grid, grid + 1):
-                for x in range(-grid, grid + 1):
-                    new_origin_offset = (
-                        x * plot_px_sz * beamr1 + y * plot_px_sz * beamr2
-                    )
-                    score = 0
-                    for i in range(len(self.experiments)):
-                        score += self.get_origin_offset_score(
-                            new_origin_offset,
-                            self.solution_lists[i],
-                            self.amax_lists[i],
-                            self.reflection_lists[i],
-                            self.experiments[i],
-                        )
-                    scores.append(score)
+    # Key point for this is that the spots must correspond to detector
+    # positions not to the correct RS position => reset any fixed rotation
+    # to identity - copy in case called from elsewhere
 
-            def show_plot(widegrid, excursi):
-                excursi.reshape(flex.grid(widegrid, widegrid))
-                idx_max = flex.max_index(excursi)
+    gonio = copy.deepcopy(experiment.goniometer)
+    gonio.set_fixed_rotation((1, 0, 0, 0, 1, 0, 0, 0, 1))
+    spots_mm.map_centroids_to_reciprocal_space([experiment])
+    return _sum_score_detail(spots_mm["rlp"], solutions, amax=amax)
 
-                def igrid(x):
-                    return x - (widegrid // 2)
 
-                idxs = [igrid(i) * plot_px_sz for i in range(widegrid)]
+def _sum_score_detail(reciprocal_space_vectors, solutions, granularity=None, amax=None):
+    """Evaluates the probability that the trial value of (S0_vector | origin_offset) is correct,
+    given the current estimate and the observations.  The trial value comes through the
+    reciprocal space vectors, and the current estimate comes through the short list of
+    DPS solutions. Actual return value is a sum of NH terms, one for each DPS solution, each ranging
+    from -1.0 to 1.0"""
 
-                from matplotlib import pyplot as plt
-
-                plt.figure()
-                CS = plt.contour(
-                    [igrid(i) * plot_px_sz for i in range(widegrid)],
-                    [igrid(i) * plot_px_sz for i in range(widegrid)],
-                    excursi.as_numpy_array(),
-                )
-                plt.clabel(CS, inline=1, fontsize=10, fmt="%6.3f")
-                plt.title("Wide scope search for detector origin offset")
-                plt.scatter([0.0], [0.0], color="g", marker="o")
-                plt.scatter([new_offset[0]], [new_offset[1]], color="r", marker="*")
-                plt.scatter(
-                    [idxs[idx_max % widegrid]],
-                    [idxs[idx_max // widegrid]],
-                    color="k",
-                    marker="s",
-                )
-                plt.axes().set_aspect("equal")
-                plt.xlabel("offset (mm) along beamr1 vector")
-                plt.ylabel("offset (mm) along beamr2 vector")
-                plt.savefig("search_scope.png")
-
-                # changing value
-                trial_origin_offset = (idxs[idx_max % widegrid]) * beamr1 + (
-                    idxs[idx_max // widegrid]
-                ) * beamr2
-                return trial_origin_offset
-
-            show_plot(widegrid=2 * grid + 1, excursi=scores)
-
-        new_experiments = copy.deepcopy(self.experiments)
-        for expt in new_experiments:
-            expt.detector = dps_extended.get_new_detector(expt.detector, new_offset)
-        return new_experiments
-
-    def get_origin_offset_score(
-        self, trial_origin_offset, solutions, amax, spots_mm, experiment
-    ):
-        trial_detector = dps_extended.get_new_detector(
-            experiment.detector, trial_origin_offset
+    nh = min(solutions.size(), 20)  # extended API
+    sum_score = 0.0
+    for t in range(nh):
+        dfft = Directional_FFT(
+            angle=Direction(solutions[t]),
+            xyzdata=reciprocal_space_vectors,
+            granularity=5.0,
+            amax=amax,  # extended API XXX These values have to come from somewhere!
+            F0_cutoff=11,
         )
-        experiment = copy.deepcopy(experiment)
-        experiment.detector = trial_detector
-
-        # Key point for this is that the spots must correspond to detector
-        # positions not to the correct RS position => reset any fixed rotation
-        # to identity - copy in case called from elsewhere
-
-        gonio = copy.deepcopy(experiment.goniometer)
-        gonio.set_fixed_rotation((1, 0, 0, 0, 1, 0, 0, 0, 1))
-        spots_mm.map_centroids_to_reciprocal_space([experiment])
-        return self.sum_score_detail(spots_mm["rlp"], solutions, amax=amax)
-
-    def sum_score_detail(
-        self, reciprocal_space_vectors, solutions, granularity=None, amax=None
-    ):
-        """Evaluates the probability that the trial value of (S0_vector | origin_offset) is correct,
-        given the current estimate and the observations.  The trial value comes through the
-        reciprocal space vectors, and the current estimate comes through the short list of
-        DPS solutions. Actual return value is a sum of NH terms, one for each DPS solution, each ranging
-        from -1.0 to 1.0"""
-
-        nh = min(solutions.size(), 20)  # extended API
-        sum_score = 0.0
-        for t in range(nh):
-            dfft = Directional_FFT(
-                angle=Direction(solutions[t]),
-                xyzdata=reciprocal_space_vectors,
-                granularity=5.0,
-                amax=amax,  # extended API XXX These values have to come from somewhere!
-                F0_cutoff=11,
+        kval = dfft.kval()
+        kmax = dfft.kmax()
+        kval_cutoff = reciprocal_space_vectors.size() / 4.0
+        if kval > kval_cutoff:
+            ff = dfft.fft_result
+            kbeam = ((-dfft.pmin) / dfft.delta_p) + 0.5
+            Tkmax = cmath.phase(ff[kmax])
+            backmax = math.cos(
+                Tkmax + (2 * math.pi * kmax * kbeam / (2 * ff.size() - 1))
             )
-            kval = dfft.kval()
-            kmax = dfft.kmax()
-            kval_cutoff = reciprocal_space_vectors.size() / 4.0
-            if kval > kval_cutoff:
-                ff = dfft.fft_result
-                kbeam = ((-dfft.pmin) / dfft.delta_p) + 0.5
-                Tkmax = cmath.phase(ff[kmax])
-                backmax = math.cos(
-                    Tkmax + (2 * math.pi * kmax * kbeam / (2 * ff.size() - 1))
-                )
-                ### Here it should be possible to calculate a gradient.
-                ### Then minimize with respect to two coordinates.  Use lbfgs?  Have second derivatives?
-                ### can I do something local to model the cosine wave?
-                ### direction of wave travel.  Period. phase.
-                sum_score += backmax
-        return sum_score
+            ### Here it should be possible to calculate a gradient.
+            ### Then minimize with respect to two coordinates.  Use lbfgs?  Have second derivatives?
+            ### can I do something local to model the cosine wave?
+            ### direction of wave travel.  Period. phase.
+            sum_score += backmax
+    return sum_score
 
 
 def run_dps(experiment, spots_mm, max_cell):
@@ -439,10 +427,10 @@ def discover_better_experimental_model(
                 solution_lists.append(result["solutions"])
                 amax_list.append(result["amax"])
 
-    if len(solution_lists) == 0:
+    if not solution_lists:
         raise Sorry("No solutions found")
 
-    discoverer = better_experimental_model_discovery(
+    new_experiments = optimize_origin_offset_local_scope(
         experiments,
         refl_lists,
         solution_lists,
@@ -451,8 +439,6 @@ def discover_better_experimental_model(
         wide_search_binning=wide_search_binning,
         plot_search_scope=plot_search_scope,
     )
-
-    new_experiments = discoverer.optimize_origin_offset_local_scope()
     new_detector = new_experiments[0].detector
     old_panel, old_beam_centre = detector.get_ray_intersection(beam.get_s0())
     new_panel, new_beam_centre = new_detector.get_ray_intersection(beam.get_s0())
