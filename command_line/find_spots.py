@@ -69,6 +69,11 @@ phil_scope = parse(
       .help = "The log filename"
   }
 
+  maximum_trusted_value = 0
+    .type = float
+    .help = "Override maximum trusted value for spot finding only"
+    .expert_level = 2
+
   per_image_statistics = False
     .type = bool
     .help = "Whether or not to print a table of per-image statistics."
@@ -118,6 +123,7 @@ class Script(object):
 
         # Ensure we have a data block
         experiments = flatten_experiments(params.input.experiments)
+
         # did input have identifier?
         had_identifiers = False
         if all(i != "" for i in experiments.identifiers()):
@@ -126,9 +132,23 @@ class Script(object):
             generate_experiment_identifiers(
                 experiments
             )  # add identifier e.g. if coming straight from images
+
         if len(experiments) == 0:
             self.parser.print_help()
             return
+
+        # If maximum_trusted_value assigned, use this temporarily for the
+        # spot finding
+        if params.maximum_trusted_value > 0:
+            logger.info(
+                "Overriding maximum trusted value to %.1f", params.maximum_trusted_value
+            )
+            input_trusted_ranges = {}
+            for detector in experiments.detectors():
+                for panel in detector:
+                    trusted = panel.get_trusted_range()
+                    input_trusted_ranges[id(panel)] = trusted
+                    panel.set_trusted_range((trusted[0], params.maximum_trusted_value))
 
         # Loop through all the imagesets and find the strong spots
         reflections = flex.reflection_table.from_observations(experiments, params)
@@ -177,6 +197,14 @@ class Script(object):
 
         # Save the experiments
         if params.output.experiments:
+
+            # Reset the trusted ranges
+            if params.maximum_trusted_value > 0:
+                for detector in experiments.detectors():
+                    for panel in detector:
+                        trusted = input_trusted_ranges[id(panel)] = trusted
+                        panel.set_trusted_range(trusted)
+
             logger.info("Saving experiments to {}".format(params.output.experiments))
             experiments.as_file(params.output.experiments)
 
