@@ -45,6 +45,31 @@ def test_find_spots_from_images(dials_data, tmpdir):
     )
 
 
+def test_find_spots_from_images_override_maximum(dials_data, tmpdir):
+    result = procrunner.run(
+        [
+            "dials.find_spots",
+            "maximum_trusted_value=100",
+            "output.reflections=spotfinder.refl",
+            "output.shoeboxes=True",
+            "algorithm=dispersion",
+        ]
+        + [
+            f.strpath for f in dials_data("centroid_test_data").listdir("centroid*.cbf")
+        ],
+        working_directory=tmpdir.strpath,
+    )
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("spotfinder.refl").check(file=1)
+
+    reflections = flex.reflection_table.from_file(tmpdir / "spotfinder.refl")
+
+    sbox = reflections["shoebox"]
+
+    for s in sbox:
+        assert flex.max(s.data) <= 100
+
+
 def test_find_spots_from_zero_indexed_cbf(dials_data, tmpdir):
     one_indexed_cbf = dials_data("centroid_test_data").join("centroid_0001.cbf")
     zero_indexed_cbf = tmpdir.join("centroid_0000.cbf")
