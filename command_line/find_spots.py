@@ -139,7 +139,7 @@ class Script(object):
 
         # If maximum_trusted_value assigned, use this temporarily for the
         # spot finding
-        if params.maximum_trusted_value:
+        if params.maximum_trusted_value is not None:
             logger.info(
                 "Overriding maximum trusted value to %.1f", params.maximum_trusted_value
             )
@@ -195,14 +195,14 @@ class Script(object):
             )
         )
 
+        # Reset the trusted ranges
+        if params.maximum_trusted_value is not None:
+            for detector in experiments.detectors():
+                for panel in detector:
+                    panel.set_trusted_range(input_trusted_ranges[id(panel)])
+
         # Save the experiments
         if params.output.experiments:
-
-            # Reset the trusted ranges
-            if params.maximum_trusted_value:
-                for detector in experiments.detectors():
-                    for panel in detector:
-                        panel.set_trusted_range(input_trusted_ranges[id(panel)])
 
             logger.info("Saving experiments to {}".format(params.output.experiments))
             experiments.as_file(params.output.experiments)
