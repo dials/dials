@@ -153,43 +153,43 @@ def optimize_origin_offset_local_scope(
     else:
         wide_search_offset = None
 
-    # DO A SIMPLEX MINIMIZATION
-
-    class test_simplex_method(object):
-        def __init__(selfOO, wide_search_offset=None):
-            selfOO.starting_simplex = []
-            selfOO.n = 2
-            selfOO.wide_search_offset = wide_search_offset
-            for ii in range(selfOO.n + 1):
-                selfOO.starting_simplex.append(flex.random_double(selfOO.n))
-            selfOO.optimizer = simplex_opt(
-                dimension=selfOO.n,
-                matrix=selfOO.starting_simplex,
-                evaluator=selfOO,
+    # Do a simplex minimization
+    class simplex_minimizer(object):
+        def __init__(self, wide_search_offset):
+            self.n = 2
+            self.wide_search_offset = wide_search_offset
+            self.starting_simplex = [  # guaranteed to be random
+                flex.double([0.11505456638977896, 0.6090665392794814]),
+                flex.double([0.13339096418598828, 0.24058961996534878]),
+                flex.double([0.3271390558111398, 0.8591374909485977]),
+            ]
+            self.optimizer = simplex_opt(
+                dimension=self.n,
+                matrix=self.starting_simplex,
+                evaluator=self,
                 tolerance=1e-7,
             )
-            selfOO.x = selfOO.optimizer.get_solution()
-            selfOO.offset = selfOO.x[0] * 0.2 * beamr1 + selfOO.x[1] * 0.2 * beamr2
-            if selfOO.wide_search_offset is not None:
-                selfOO.offset += selfOO.wide_search_offset
+            self.x = self.optimizer.get_solution()
+            self.offset = self.x[0] * 0.2 * beamr1 + self.x[1] * 0.2 * beamr2
+            if self.wide_search_offset is not None:
+                self.offset += self.wide_search_offset
 
-        def target(selfOO, vector):
+        def target(self, vector):
             trial_origin_offset = vector[0] * 0.2 * beamr1 + vector[1] * 0.2 * beamr2
-            if selfOO.wide_search_offset is not None:
-                trial_origin_offset += selfOO.wide_search_offset
+            if self.wide_search_offset is not None:
+                trial_origin_offset += self.wide_search_offset
             target = 0
-            for i in range(len(experiments)):
+            for i, experiment in enumerate(experiments):
                 target -= _get_origin_offset_score(
                     trial_origin_offset,
                     solution_lists[i],
                     amax_lists[i],
                     reflection_lists[i],
-                    experiments[i],
+                    experiment,
                 )
             return target
 
-    MIN = test_simplex_method(wide_search_offset=wide_search_offset)
-    new_offset = MIN.offset
+    new_offset = simplex_minimizer(wide_search_offset).offset
 
     if plot_search_scope:
         plot_px_sz = experiments[0].get_detector()[0].get_pixel_size()[0]
@@ -199,13 +199,13 @@ def optimize_origin_offset_local_scope(
             for x in range(-grid, grid + 1):
                 new_origin_offset = x * plot_px_sz * beamr1 + y * plot_px_sz * beamr2
                 score = 0
-                for i in range(len(experiments)):
+                for i, experiment in enumerate(experiments):
                     score += _get_origin_offset_score(
                         new_origin_offset,
                         solution_lists[i],
                         amax_lists[i],
                         reflection_lists[i],
-                        experiments[i],
+                        experiment,
                     )
                 scores.append(score)
 
