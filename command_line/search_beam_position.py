@@ -421,7 +421,8 @@ def discover_better_experimental_model(
             futures.append(pool.submit(run_dps, expt, refl, max_cell))
         solution_lists = []
         amax_list = []
-        for future in concurrent.futures.as_completed(futures):
+        concurrent.futures.wait(futures, return_when=concurrent.futures.ALL_COMPLETED)
+        for future in futures:
             result = future.result()
             if result.get("solutions"):
                 solution_lists.append(result["solutions"])
