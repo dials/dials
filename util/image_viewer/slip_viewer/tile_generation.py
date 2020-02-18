@@ -11,7 +11,7 @@ from six.moves import range
 ######
 
 
-def _get_flex_image(
+def get_flex_image(
     data,
     vendortype,
     binning=1,
@@ -42,7 +42,7 @@ def _get_flex_image(
     )
 
 
-def _get_flex_image_multipanel(
+def get_flex_image_multipanel(
     panels,
     image_data,
     beam,
@@ -53,7 +53,7 @@ def _get_flex_image_multipanel(
 ):
     # From xfel.cftbx.cspad_detector.readHeader() and
     # xfel.cftbx.cspad_detector.get_flex_image().  XXX Is it possible to
-    # merge this with _get_flex_image() above?  XXX Move to dxtbx Format
+    # merge this with get_flex_image() above?  XXX Move to dxtbx Format
     # class (or a superclass for multipanel images)?
 
     from math import ceil
@@ -297,7 +297,7 @@ class _Tiles(object):
             image_data = (image_data,)
 
         if len(detector) > 1:
-            self.flex_image = _get_flex_image_multipanel(
+            self.flex_image = get_flex_image_multipanel(
                 brightness=self.current_brightness / 100,
                 panels=detector,
                 show_untrusted=self.show_untrusted,
@@ -310,7 +310,7 @@ class _Tiles(object):
                 saturation = self.raw_image.get_detector()[0].get_trusted_range()[1]
             else:
                 saturation = 1e16
-            self.flex_image = _get_flex_image(
+            self.flex_image = get_flex_image(
                 brightness=self.current_brightness / 100,
                 data=image_data[0],
                 saturation=saturation,
@@ -334,7 +334,7 @@ class _Tiles(object):
             raw_image_data = raw_image_data[0]
 
         if len(detector) > 1:
-            self.flex_image = _get_flex_image_multipanel(
+            self.flex_image = get_flex_image_multipanel(
                 brightness=self.current_brightness / 100,
                 panels=detector,
                 image_data=raw_image_data,
@@ -345,7 +345,7 @@ class _Tiles(object):
                 saturation = self.raw_image.get_detector()[0].get_trusted_range()[1]
             else:
                 saturation = 1e16
-            self.flex_image = _get_flex_image(
+            self.flex_image = get_flex_image(
                 brightness=self.current_brightness / 100,
                 data=raw_image_data,
                 saturation=saturation,
@@ -363,7 +363,7 @@ class _Tiles(object):
         if len(self.raw_image.get_detector()) > 1:
             # XXX Special-case read of new-style images until multitile
             # images are fully supported in dxtbx.
-            self.flex_image = _get_flex_image_multipanel(
+            self.flex_image = get_flex_image_multipanel(
                 brightness=b / 100,
                 panels=self.raw_image.get_detector(),
                 show_untrusted=self.show_untrusted,
@@ -372,7 +372,7 @@ class _Tiles(object):
                 color_scheme=color_scheme,
             )
         else:
-            self.flex_image = _get_flex_image(
+            self.flex_image = get_flex_image(
                 brightness=b / 100,
                 data=image_data[0],
                 saturation=self.raw_image.get_detector()[0].get_trusted_range()[1],

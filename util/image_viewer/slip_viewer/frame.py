@@ -770,18 +770,14 @@ class XrayFrame(XFBaseClass):
             if not isinstance(data, tuple):  # XXX should not need this test
                 data = (data,)
             if len(detector) > 1:
-                from .tile_generation import _get_flex_image_multipanel
-
-                flex_img = _get_flex_image_multipanel(
+                flex_img = tile_generation.get_flex_image_multipanel(
                     brightness=self.settings.brightness / 100,
                     panels=detector,
                     raw_data=data,
                     beam=raw_img.get_beam(),
                 )
             else:
-                from .tile_generation import _get_flex_image
-
-                flex_img = _get_flex_image(
+                flex_img = tile_generation.get_flex_image(
                     brightness=self.settings.brightness / 100,
                     data=data[0],
                     saturation=detector[0].get_trusted_range()[1],
@@ -920,18 +916,14 @@ class XrayFrame(XFBaseClass):
             if not isinstance(data, tuple):  # XXX should not need this test
                 data = (data,)
             if len(detector) > 1:
-                from .tile_generation import _get_flex_image_multipanel
-
-                flex_img = _get_flex_image_multipanel(
+                flex_img = tile_generation.get_flex_image_multipanel(
                     brightness=self.settings.brightness / 100,
                     panels=detector,
                     raw_data=data,
                     beam=raw_img.get_beam(),
                 )
             else:
-                from .tile_generation import _get_flex_image
-
-                flex_img = _get_flex_image(
+                flex_img = tile_generation.get_flex_image(
                     brightness=self.settings.brightness / 100,
                     data=data[0],
                     saturation=detector[0].get_trusted_range()[1],
