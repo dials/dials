@@ -30,12 +30,13 @@ from dials.util import Sorry
 from scitbx import matrix
 
 # Note: Right at the end of this file all names from
-#         cctbx.array_family.flex and
-#       are imported into the local namespace, and added to __all__.
+#         cctbx.array_family.flex
+#       are imported into the local namespace, and exported via __all__.
 #       This is done at the end of the file so that within the body of this
 #       file names such as 'int' and 'bool' refer to the python default
 #       definitions rather than the cctbx.flex definitions.
 __all__ = [
+    # from DIALS extension
     "Binner",
     "PixelListShoeboxCreator",
     "int6",
@@ -45,6 +46,128 @@ __all__ = [
     "reflection_table_selector",
     "reflection_table_to_list_of_reflections",
     "shoebox",
+    # clobber from cctbx:
+    "abs",
+    "acos",
+    "arg",
+    "asin",
+    "atan",
+    "atan2",
+    "bool",
+    "ceil",
+    "compare_derivatives",
+    "complex_double",
+    "condense_as_ranges",
+    "conj",
+    "cos",
+    "cosh",
+    "cost_of_m_handle_in_af_shared",
+    "double",
+    "double_from_byte_str",
+    "double_range",
+    "empty_container_sizes_double",
+    "empty_container_sizes_int",
+    "exercise_versa_packed_u_to_flex",
+    "exp",
+    "extract_double_attributes",
+    "fabs",
+    "first_index",
+    "flex_argument_passing",
+    "float",
+    "float_range",
+    "floor",
+    "fmod",
+    "fmod_positive",
+    "get_random_seed",
+    "grid",
+    "hendrickson_lattman",
+    "histogram",
+    "imag",
+    "int",
+    "int_from_byte_str",
+    "int_range",
+    "integer_offsets_vs_pointers",
+    "intersection",
+    "last_index",
+    "linear_correlation",
+    "linear_interpolation",
+    "linear_regression",
+    "linear_regression_core",
+    "log",
+    "log10",
+    "long",
+    "long_range",
+    "mat3_double",
+    "max",
+    "max_absolute",
+    "max_default",
+    "max_index",
+    "mean",
+    "mean_and_variance",
+    "mean_default",
+    "mean_sq",
+    "mean_sq_weighted",
+    "mean_weighted",
+    "median",
+    "median_functor",
+    "median_statistics",
+    "mersenne_twister",
+    "miller_index",
+    "min",
+    "min_default",
+    "min_index",
+    "min_max_mean_double",
+    "nested_loop",
+    "norm",
+    "order",
+    "permutation_generator",
+    "polar",
+    "pow",
+    "pow2",
+    "product",
+    "py_object",
+    "random_bool",
+    "random_double",
+    "random_double_point_on_sphere",
+    "random_double_r3_rotation_matrix",
+    "random_double_r3_rotation_matrix_arvo_1992",
+    "random_double_unit_quaternion",
+    "random_generator",
+    "random_int_gaussian_distribution",
+    "random_permutation",
+    "random_selection",
+    "random_size_t",
+    "reindexing_array",
+    "rows",
+    "select",
+    "set_random_seed",
+    "show",
+    "show_count_stats",
+    "sin",
+    "sinh",
+    "size_t",
+    "size_t_from_byte_str",
+    "size_t_range",
+    "slice_indices",
+    "smart_selection",
+    "sort_permutation",
+    "sorted",
+    "split_lines",
+    "sqrt",
+    "std_string",
+    "sum",
+    "sum_sq",
+    "sym_mat3_double",
+    "tan",
+    "tanh",
+    "tiny_size_t_2",
+    "to_list",
+    "union",
+    "vec2_double",
+    "vec3_double",
+    "vec3_int",
+    "weighted_histogram",
+    "xray_scatterer",
 ]
 
 logger = logging.getLogger(__name__)
@@ -91,7 +214,7 @@ def default_centroid_algorithm():
     return strategy(SimpleCentroidExt)
 
 
-@boost.python.inject_into(dials_array_family_flex_ext.reflection_table)
+@boost.python.inject_into(reflection_table)
 class _(object):
     """
     An injector class to add additional methods to the reflection table.
@@ -163,9 +286,9 @@ class _(object):
         :param padding: Padding in degrees
         :return: The reflection table of predictions
         """
-        result = dials_array_family_flex_ext.reflection_table()
+        result = reflection_table()
         for i, e in enumerate(experiments):
-            rlist = dials_array_family_flex_ext.reflection_table.from_predictions(
+            rlist = reflection_table.from_predictions(
                 e,
                 dmin=dmin,
                 dmax=dmax,
@@ -233,7 +356,7 @@ class _(object):
                 result = pickle.load(infile, encoding="bytes")
             else:
                 result = pickle.load(infile)
-            assert isinstance(result, dials_array_family_flex_ext.reflection_table)
+            assert isinstance(result, reflection_table)
             return result
 
     def as_msgpack_file(self, filename):
@@ -253,9 +376,7 @@ class _(object):
         if filename and hasattr(filename, "__fspath__"):
             filename = filename.__fspath__()
         with libtbx.smart_open.for_reading(filename, "rb") as infile:
-            return dials_array_family_flex_ext.reflection_table.from_msgpack(
-                infile.read()
-            )
+            return reflection_table.from_msgpack(infile.read())
 
     @staticmethod
     def from_h5(filename):
@@ -287,11 +408,9 @@ class _(object):
         Read the reflection table from either pickle or msgpack
         """
         try:
-            return dials_array_family_flex_ext.reflection_table.from_msgpack_file(
-                filename
-            )
+            return reflection_table.from_msgpack_file(filename)
         except RuntimeError:
-            return dials_array_family_flex_ext.reflection_table.from_pickle(filename)
+            return reflection_table.from_pickle(filename)
 
     @staticmethod
     def empty_standard(nrows):
@@ -304,7 +423,7 @@ class _(object):
         """
 
         assert nrows > 0
-        table = dials_array_family_flex_ext.reflection_table(nrows)
+        table = reflection_table(nrows)
 
         # General properties
         table["flags"] = cctbx.array_family.flex.size_t(nrows, 0)
@@ -486,13 +605,13 @@ class _(object):
         :param order: For multi element items specify order
         """
 
-        if type(self[name]) in [
+        if type(self[name]) in (
             cctbx.array_family.flex.vec2_double,
             cctbx.array_family.flex.vec3_double,
             cctbx.array_family.flex.mat3_double,
-            dials_array_family_flex_ext.int6,
+            int6,
             cctbx.array_family.flex.miller_index,
-        ]:
+        ):
             data = self[name]
             if not order:
                 perm = cctbx.array_family.flex.size_t(
@@ -853,7 +972,7 @@ class _(object):
         :param sigma_b_multiplier: Multiplier to cover extra background
         :return: The bounding box for each reflection
         """
-        self["bbox"] = dials_array_family_flex_ext.int6(len(self))
+        self["bbox"] = int6(len(self))
         for expr, indices in self.iterate_experiments_and_indices(experiments):
             self["bbox"].set_selected(
                 indices,
@@ -1110,7 +1229,7 @@ class _(object):
             y1 += border
             z0 -= border
             z1 += border
-            bbox = dials_array_family_flex_ext.int6(x0, x1, y0, y1, z0, z1)
+            bbox = int6(x0, x1, y0, y1, z0, z1)
         else:
             bbox = self["bbox"]
 
@@ -1455,11 +1574,11 @@ Found %s"""
         # rotation axis.
         enterings = cctbx.array_family.flex.bool(len(self), False)
 
-        for iexp, exp in enumerate(experiments):
-            if not exp.goniometer:
+        for iexp, experiment in enumerate(experiments):
+            if not experiment.goniometer:
                 continue
-            axis = matrix.col(exp.goniometer.get_rotation_axis())
-            s0 = matrix.col(exp.beam.get_s0())
+            axis = matrix.col(experiment.goniometer.get_rotation_axis())
+            s0 = matrix.col(experiment.beam.get_s0())
             vec = s0.cross(axis)
             sel = self["id"] == iexp
             enterings.set_selected(sel, self["s1"].dot(vec) < 0.0)
@@ -1580,9 +1699,9 @@ class reflection_table_selector(object):
             raise RuntimeError("Comparison not implemented")
         elif isinstance(data, cctbx.array_family.flex.mat3_double):
             raise RuntimeError("Comparison not implemented")
-        elif isinstance(data, dials_array_family_flex_ext.int6):
+        elif isinstance(data, int6):
             raise RuntimeError("Comparison not implemented")
-        elif isinstance(data, dials_array_family_flex_ext.shoebox):
+        elif isinstance(data, shoebox):
             raise RuntimeError("Comparison not implemented")
         else:
             raise RuntimeError("Unknown column type")
@@ -1599,10 +1718,130 @@ class reflection_table_selector(object):
 # Finally, clobber the locals() namespace with cctbx flex elements.
 # This overwrites definitions such as 'bool' and 'int', so should be done at
 # the end of the file.
-for _name in dir(cctbx.array_family.flex):
-    if not _name.startswith("_"):
-        locals()[_name] = getattr(cctbx.array_family.flex, _name)
-        __all__.append(_name)
+from cctbx.array_family.flex import (
+    abs,
+    acos,
+    arg,
+    asin,
+    atan,
+    atan2,
+    bool,
+    ceil,
+    compare_derivatives,
+    complex_double,
+    condense_as_ranges,
+    conj,
+    cos,
+    cosh,
+    cost_of_m_handle_in_af_shared,
+    double,
+    double_from_byte_str,
+    double_range,
+    empty_container_sizes_double,
+    empty_container_sizes_int,
+    exercise_versa_packed_u_to_flex,
+    exp,
+    extract_double_attributes,
+    fabs,
+    first_index,
+    flex_argument_passing,
+    float,
+    float_range,
+    floor,
+    fmod,
+    fmod_positive,
+    get_random_seed,
+    grid,
+    hendrickson_lattman,
+    histogram,
+    imag,
+    int,
+    int_from_byte_str,
+    int_range,
+    integer_offsets_vs_pointers,
+    intersection,
+    last_index,
+    linear_correlation,
+    linear_interpolation,
+    linear_regression,
+    linear_regression_core,
+    log,
+    log10,
+    long,
+    long_range,
+    mat3_double,
+    max,
+    max_absolute,
+    max_default,
+    max_index,
+    mean,
+    mean_and_variance,
+    mean_default,
+    mean_sq,
+    mean_sq_weighted,
+    mean_weighted,
+    median,
+    median_functor,
+    median_statistics,
+    mersenne_twister,
+    miller_index,
+    min,
+    min_default,
+    min_index,
+    min_max_mean_double,
+    nested_loop,
+    norm,
+    order,
+    permutation_generator,
+    polar,
+    pow,
+    pow2,
+    product,
+    py_object,
+    random_bool,
+    random_double,
+    random_double_point_on_sphere,
+    random_double_r3_rotation_matrix,
+    random_double_r3_rotation_matrix_arvo_1992,
+    random_double_unit_quaternion,
+    random_generator,
+    random_int_gaussian_distribution,
+    random_permutation,
+    random_selection,
+    random_size_t,
+    reindexing_array,
+    rows,
+    select,
+    set_random_seed,
+    show,
+    show_count_stats,
+    sin,
+    sinh,
+    size_t,
+    size_t_from_byte_str,
+    size_t_range,
+    slice_indices,
+    smart_selection,
+    sort_permutation,
+    sorted,
+    split_lines,
+    sqrt,
+    std_string,
+    sum,
+    sum_sq,
+    sym_mat3_double,
+    tan,
+    tanh,
+    tiny_size_t_2,
+    to_list,
+    union,
+    vec2_double,
+    vec3_double,
+    vec3_int,
+    weighted_histogram,
+    xray_scatterer,
+)
+
 # Set the 'real' type to either float or double
 if dials_array_family_flex_ext.get_real_type() == "float":
     real = cctbx.array_family.flex.float
