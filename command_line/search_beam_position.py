@@ -164,14 +164,9 @@ def optimize_origin_offset_local_scope(
         def __init__(self, wide_search_offset):
             self.n = 2
             self.wide_search_offset = wide_search_offset
-            self.starting_simplex = [  # guaranteed to be random
-                flex.double([0.11505456638977896, 0.6090665392794814]),
-                flex.double([0.13339096418598828, 0.24058961996534878]),
-                flex.double([0.3271390558111398, 0.8591374909485977]),
-            ]
             self.optimizer = simplex_opt(
                 dimension=self.n,
-                matrix=self.starting_simplex,
+                matrix=[flex.random_double(self.n) for _ in range(self.n + 1)],
                 evaluator=self,
                 tolerance=1e-7,
             )
