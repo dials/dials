@@ -117,20 +117,25 @@ def optimize_origin_offset_local_scope(
         plot_px_sz *= wide_search_binning
         grid = max(1, int(mm_search_scope / plot_px_sz))
         widegrid = 2 * grid + 1
-        scores = flex.double()
-        for y in range(-grid, grid + 1):
-            for x in range(-grid, grid + 1):
-                new_origin_offset = x * plot_px_sz * beamr1 + y * plot_px_sz * beamr2
-                score = 0
-                for i in range(len(experiments)):
-                    score += _get_origin_offset_score(
-                        new_origin_offset,
-                        solution_lists[i],
-                        amax_lists[i],
-                        reflection_lists[i],
-                        experiments[i],
-                    )
-                scores.append(score)
+
+        def get_experiment_score_for_coord(x, y):
+            new_origin_offset = x * plot_px_sz * beamr1 + y * plot_px_sz * beamr2
+            return sum(
+                _get_origin_offset_score(
+                    new_origin_offset,
+                    solution_lists[i],
+                    amax_lists[i],
+                    reflection_lists[i],
+                    experiment,
+                )
+                for i, experiment in enumerate(experiments)
+            )
+
+        scores = flex.double(
+            get_experiment_score_for_coord(x, y)
+            for y in range(-grid, grid + 1)
+            for x in range(-grid, grid + 1)
+        )
 
         def igrid(x):
             return x - (widegrid // 2)
@@ -269,8 +274,6 @@ def _get_origin_offset_score(
     # positions not to the correct RS position => reset any fixed rotation
     # to identity - copy in case called from elsewhere
 
-    gonio = copy.deepcopy(experiment.goniometer)
-    gonio.set_fixed_rotation((1, 0, 0, 0, 1, 0, 0, 0, 1))
     spots_mm.map_centroids_to_reciprocal_space([experiment])
     return _sum_score_detail(spots_mm["rlp"], solutions, amax=amax)
 
