@@ -251,6 +251,15 @@ def export_mtz(params, experiments, reflections):
 
     from dials.util.export_mtz import export_mtz
 
+    # Handle case where user has passed data before integration
+    if (
+        "intensity.sum.value" not in reflections[0]
+        or "intensity.prf.value" not in reflections[0]
+    ):
+        sys.exit(
+            "Error: No intensity data in reflections; cannot export un-integrated data to MTZ"
+        )
+
     try:
         m = export_mtz(reflections[0], experiments, params)
     except ValueError as e:

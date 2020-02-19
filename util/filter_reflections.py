@@ -105,14 +105,22 @@ def filter_reflection_table(reflection_table, intensity_choice, *args, **kwargs)
                 "(if parsing from command line, multiple choices passed as e.g. profile+sum"
             ).format(intensity_choice)
         )
-    # assert correct form of input data for choice.
-    if "scale" in intensity_choice:
-        assert "inverse_scale_factor" in reflection_table
-        assert "intensity.scale.value" in reflection_table
-    if "profile" in intensity_choice:
-        assert "intensity.prf.value" in reflection_table
-    if "sum" in intensity_choice:
-        assert "intensity.sum.value" in reflection_table
+
+    # Validate that the reflection table has the columns we need
+    required_columns = {
+        "scale": {"inverse_scale_factor", "intensity.scale.value"},
+        "profile": {"intensity.prf.value"},
+        "sum": {"intensity.sum.value"},
+    }
+    for intensity_kind, required_columns in required_columns.items():
+        if intensity_kind in intensity_choice:
+            missing_columns = required_columns - set(reflection_table.keys())
+            if missing_columns:
+                raise ValueError(
+                    "Cannot export intensity kind '{}'; missing column(s): {}".format(
+                        intensity_kind, ", ".join(missing_columns)
+                    )
+                )
 
     # Do the filtering, but with an exception for the case of no profile fitted
     # reflections - in this case, try to reprocess without profile fitted.
