@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import cmath
 import concurrent.futures
 import copy
+import itertools
 import logging
 import math
 import random
@@ -354,7 +355,7 @@ def run_dps(experiment, spots_mm, max_cell):
     # There must be at least 3 solutions to make a set, otherwise return empty result
     if len(solutions) < 3:
         return {}
-    return dict(solutions=flex.vec3_double([s.dvec for s in solutions]), amax=DPS.amax)
+    return dict(solutions=flex.vec3_double(s.dvec for s in solutions), amax=DPS.amax)
 
 
 def discover_better_experimental_model(
@@ -416,14 +417,11 @@ def discover_better_experimental_model(
         max_cell = params.max_cell
 
     with concurrent.futures.ProcessPoolExecutor(max_workers=nproc) as pool:
-        futures = []
-        for expt, refl in zip(experiments, refl_lists):
-            futures.append(pool.submit(run_dps, expt, refl, max_cell))
         solution_lists = []
         amax_list = []
-        concurrent.futures.wait(futures, return_when=concurrent.futures.ALL_COMPLETED)
-        for future in futures:
-            result = future.result()
+        for result in pool.map(
+            run_dps, experiments, refl_lists, itertools.repeat(max_cell)
+        ):
             if result.get("solutions"):
                 solution_lists.append(result["solutions"])
                 amax_list.append(result["amax"])
