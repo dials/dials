@@ -81,7 +81,7 @@ class PychefRunner(object):
             self.params.d_min = r.resolution_completeness(
                 limit=self.params.min_completeness
             )
-            logger.info("Estimated d_min: %.2f", params.d_min)
+            logger.info("Estimated d_min: %.2f", self.params.d_min)
 
         if self.params.d_min or self.params.d_max:
             sel = flex.bool(self.intensities.size(), True)
