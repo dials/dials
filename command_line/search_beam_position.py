@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import cmath
 import concurrent.futures
 import copy
+import itertools
 import logging
 import math
 import random
@@ -116,20 +117,25 @@ def optimize_origin_offset_local_scope(
         plot_px_sz *= wide_search_binning
         grid = max(1, int(mm_search_scope / plot_px_sz))
         widegrid = 2 * grid + 1
-        scores = flex.double()
-        for y in range(-grid, grid + 1):
-            for x in range(-grid, grid + 1):
-                new_origin_offset = x * plot_px_sz * beamr1 + y * plot_px_sz * beamr2
-                score = 0
-                for i in range(len(experiments)):
-                    score += _get_origin_offset_score(
-                        new_origin_offset,
-                        solution_lists[i],
-                        amax_lists[i],
-                        reflection_lists[i],
-                        experiments[i],
-                    )
-                scores.append(score)
+
+        def get_experiment_score_for_coord(x, y):
+            new_origin_offset = x * plot_px_sz * beamr1 + y * plot_px_sz * beamr2
+            return sum(
+                _get_origin_offset_score(
+                    new_origin_offset,
+                    solution_lists[i],
+                    amax_lists[i],
+                    reflection_lists[i],
+                    experiment,
+                )
+                for i, experiment in enumerate(experiments)
+            )
+
+        scores = flex.double(
+            get_experiment_score_for_coord(x, y)
+            for y in range(-grid, grid + 1)
+            for x in range(-grid, grid + 1)
+        )
 
         def igrid(x):
             return x - (widegrid // 2)
@@ -153,43 +159,38 @@ def optimize_origin_offset_local_scope(
     else:
         wide_search_offset = None
 
-    # DO A SIMPLEX MINIMIZATION
-
-    class test_simplex_method(object):
-        def __init__(selfOO, wide_search_offset=None):
-            selfOO.starting_simplex = []
-            selfOO.n = 2
-            selfOO.wide_search_offset = wide_search_offset
-            for ii in range(selfOO.n + 1):
-                selfOO.starting_simplex.append(flex.random_double(selfOO.n))
-            selfOO.optimizer = simplex_opt(
-                dimension=selfOO.n,
-                matrix=selfOO.starting_simplex,
-                evaluator=selfOO,
+    # Do a simplex minimization
+    class simplex_minimizer(object):
+        def __init__(self, wide_search_offset):
+            self.n = 2
+            self.wide_search_offset = wide_search_offset
+            self.optimizer = simplex_opt(
+                dimension=self.n,
+                matrix=[flex.random_double(self.n) for _ in range(self.n + 1)],
+                evaluator=self,
                 tolerance=1e-7,
             )
-            selfOO.x = selfOO.optimizer.get_solution()
-            selfOO.offset = selfOO.x[0] * 0.2 * beamr1 + selfOO.x[1] * 0.2 * beamr2
-            if selfOO.wide_search_offset is not None:
-                selfOO.offset += selfOO.wide_search_offset
+            self.x = self.optimizer.get_solution()
+            self.offset = self.x[0] * 0.2 * beamr1 + self.x[1] * 0.2 * beamr2
+            if self.wide_search_offset is not None:
+                self.offset += self.wide_search_offset
 
-        def target(selfOO, vector):
+        def target(self, vector):
             trial_origin_offset = vector[0] * 0.2 * beamr1 + vector[1] * 0.2 * beamr2
-            if selfOO.wide_search_offset is not None:
-                trial_origin_offset += selfOO.wide_search_offset
+            if self.wide_search_offset is not None:
+                trial_origin_offset += self.wide_search_offset
             target = 0
-            for i in range(len(experiments)):
+            for i, experiment in enumerate(experiments):
                 target -= _get_origin_offset_score(
                     trial_origin_offset,
                     solution_lists[i],
                     amax_lists[i],
                     reflection_lists[i],
-                    experiments[i],
+                    experiment,
                 )
             return target
 
-    MIN = test_simplex_method(wide_search_offset=wide_search_offset)
-    new_offset = MIN.offset
+    new_offset = simplex_minimizer(wide_search_offset).offset
 
     if plot_search_scope:
         plot_px_sz = experiments[0].get_detector()[0].get_pixel_size()[0]
@@ -199,13 +200,13 @@ def optimize_origin_offset_local_scope(
             for x in range(-grid, grid + 1):
                 new_origin_offset = x * plot_px_sz * beamr1 + y * plot_px_sz * beamr2
                 score = 0
-                for i in range(len(experiments)):
+                for i, experiment in enumerate(experiments):
                     score += _get_origin_offset_score(
                         new_origin_offset,
                         solution_lists[i],
                         amax_lists[i],
                         reflection_lists[i],
-                        experiments[i],
+                        experiment,
                     )
                 scores.append(score)
 
@@ -268,8 +269,6 @@ def _get_origin_offset_score(
     # positions not to the correct RS position => reset any fixed rotation
     # to identity - copy in case called from elsewhere
 
-    gonio = copy.deepcopy(experiment.goniometer)
-    gonio.set_fixed_rotation((1, 0, 0, 0, 1, 0, 0, 0, 1))
     spots_mm.map_centroids_to_reciprocal_space([experiment])
     return _sum_score_detail(spots_mm["rlp"], solutions, amax=amax)
 
@@ -354,7 +353,7 @@ def run_dps(experiment, spots_mm, max_cell):
     # There must be at least 3 solutions to make a set, otherwise return empty result
     if len(solutions) < 3:
         return {}
-    return dict(solutions=flex.vec3_double([s.dvec for s in solutions]), amax=DPS.amax)
+    return dict(solutions=flex.vec3_double(s.dvec for s in solutions), amax=DPS.amax)
 
 
 def discover_better_experimental_model(
@@ -416,13 +415,11 @@ def discover_better_experimental_model(
         max_cell = params.max_cell
 
     with concurrent.futures.ProcessPoolExecutor(max_workers=nproc) as pool:
-        futures = []
-        for expt, refl in zip(experiments, refl_lists):
-            futures.append(pool.submit(run_dps, expt, refl, max_cell))
         solution_lists = []
         amax_list = []
-        for future in concurrent.futures.as_completed(futures):
-            result = future.result()
+        for result in pool.map(
+            run_dps, experiments, refl_lists, itertools.repeat(max_cell)
+        ):
             if result.get("solutions"):
                 solution_lists.append(result["solutions"])
                 amax_list.append(result["amax"])
