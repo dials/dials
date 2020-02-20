@@ -135,9 +135,6 @@ from dials_array_family_flex_ext import (  # noqa: F401; lgtm
 )
 
 from dials.array_family.flex_ext import (  # noqa: F401; lgtm
-    default_background_algorithm,
-    default_centroid_algorithm,
     real,
     reflection_table_selector,
-    strategy,
 )

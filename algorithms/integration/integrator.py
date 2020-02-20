@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import collections
+import functools
 import logging
 import math
 import random
@@ -1525,19 +1526,17 @@ class IntegratorFactory(object):
                 else:
                     params.integration.lookup.mask = pickle.load(infile)
 
-        # Initialise the strategy classes
+        # Set algorithms as reflection table defaults
         BackgroundAlgorithm = dials.extensions.Background.load(
             params.integration.background.algorithm
+        )
+        flex.reflection_table.background_algorithm = functools.partial(
+            BackgroundAlgorithm, params
         )
         CentroidAlgorithm = dials.extensions.Centroid.load(
             params.integration.centroid.algorithm
         )
-
-        # Set the algorithms in the reflection table
-        flex.reflection_table._background_algorithm = flex.strategy(
-            BackgroundAlgorithm, params
-        )
-        flex.reflection_table._centroid_algorithm = flex.strategy(
+        flex.reflection_table.centroid_algorithm = functools.partial(
             CentroidAlgorithm, params
         )
 

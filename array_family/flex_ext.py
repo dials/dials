@@ -7,6 +7,7 @@ from __future__ import absolute_import, division, print_function
 
 import collections
 import copy
+import functools
 import itertools
 import logging
 import operator
@@ -16,6 +17,8 @@ import boost.python
 import cctbx.array_family.flex
 import cctbx.miller
 import dials_array_family_flex_ext
+import dials.extensions.glm_background_ext
+import dials.extensions.simple_centroid_ext
 import dials.util.ext
 import libtbx.smart_open
 import six
@@ -25,11 +28,8 @@ from dials.util import Sorry
 from scitbx import matrix
 
 __all__ = [
-    "default_background_algorithm",
-    "default_centroid_algorithm",
     "real",
     "reflection_table_selector",
-    "strategy",
 ]
 
 logger = logging.getLogger(__name__)
@@ -43,47 +43,6 @@ else:
     raise TypeError('unknown "real" type')
 
 
-def strategy(cls, params=None):
-    """
-    Wrap a class that takes params and experiments as a strategy.
-
-    :param cls: The class to wrap
-    :param params: The input parameters
-    :return: A function to instantiate the strategy
-    """
-
-    class Strategy(cls):
-        algorithm = cls
-        name = ""
-
-        def __init__(self, *args):
-            super(Strategy, self).__init__(params, *args)
-
-    return Strategy
-
-
-def default_background_algorithm():
-    """
-    Get the default background algorithm.
-
-    :return: The default background algorithm
-    """
-    from dials.extensions.glm_background_ext import GLMBackgroundExt
-
-    return strategy(GLMBackgroundExt)
-
-
-def default_centroid_algorithm():
-    """
-    Get the default centroid algorithm.
-
-    :return: The default centroid algorithm
-    """
-    from dials.extensions.simple_centroid_ext import SimpleCentroidExt
-
-    return strategy(SimpleCentroidExt)
-
-
 @boost.python.inject_into(dials_array_family_flex_ext.reflection_table)
 class _(object):
     """
@@ -95,8 +54,12 @@ class _(object):
     # the modified algorithms. If these are modified on the instance level, then
     # only the instance will have the modified algorithms and new instances will
     # have the defaults
-    _background_algorithm = default_background_algorithm()
-    _centroid_algorithm = default_centroid_algorithm()
+    background_algorithm = functools.partial(
+        dials.extensions.glm_background_ext.GLMBackgroundExt, None
+    )
+    centroid_algorithm = functools.partial(
+        dials.extensions.simple_centroid_ext.SimpleCentroidExt, None
+    )
 
     @staticmethod
     def from_predictions(
@@ -182,7 +145,6 @@ class _(object):
         :return: The reflection table of observations
         """
         from dials.algorithms.spot_finding.factory import SpotFinderFactory
-        from libtbx import Auto
 
         if params is None:
             from dials.command_line.find_spots import phil_scope
@@ -190,7 +152,7 @@ class _(object):
 
             params = phil_scope.fetch(source=parse("")).extract()
 
-        if params.spotfinder.filter.min_spot_size is Auto:
+        if params.spotfinder.filter.min_spot_size is libtbx.Auto:
             detector = experiments[0].imageset.get_detector()
             if detector[0].get_type() == "SENSOR_PAD":
                 # smaller default value for pixel array detectors
@@ -926,7 +888,7 @@ class _(object):
 
         :param experiments: The list of experiments
         """
-        success = self._background_algorithm(experiments).compute_background(
+        success = self.background_algorithm(experiments).compute_background(
             self, image_volume
         )
         self.set_flags(~success, self.flags.failed_during_background_modelling)
@@ -937,7 +899,7 @@ class _(object):
 
         :param experiments: The list of experiments
         """
-        self._centroid_algorithm(experiments).compute_centroid(
+        self.centroid_algorithm(experiments).compute_centroid(
             self, image_volume=image_volume
         )
 
