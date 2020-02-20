@@ -1,8 +1,14 @@
 from __future__ import absolute_import, division, print_function
 
+# Do not import this file directly. Use
+#
+#   from dials.array_family import flex
+#
+
 import builtins
 import collections
 import copy
+import itertools
 import logging
 import operator
 import os
@@ -16,37 +22,26 @@ import libtbx.smart_open
 import six
 import six.moves.cPickle as pickle
 from dials.algorithms.centroid import centroid_px_to_mm_panel
-from dials_array_family_flex_ext import (
-    Binner,
-    PixelListShoeboxCreator,
-    int6,
-    observation,
-    reflection_table,
-    reflection_table_to_list_of_reflections,
-    shoebox,
-)
-
 from dials.util import Sorry
 from scitbx import matrix
 
 __all__ = [
-    # from DIALS extension
-    "Binner",
-    "PixelListShoeboxCreator",
-    "int6",
-    "observation",
-    "real",
-    "reflection_table",
-    "reflection_table_to_list_of_reflections",
-    "shoebox",
-    # from here
     "default_background_algorithm",
     "default_centroid_algorithm",
+    "real",
     "reflection_table_selector",
     "strategy",
 ]
 
 logger = logging.getLogger(__name__)
+
+# Set the 'real' type to either float or double
+if dials_array_family_flex_ext.get_real_type() == "float":
+    real = cctbx.array_family.flex.float
+elif dials_array_family_flex_ext.get_real_type() == "double":
+    real = cctbx.array_family.flex.double
+else:
+    raise TypeError('unknown "real" type')
 
 
 def strategy(cls, params=None):
@@ -90,7 +85,7 @@ def default_centroid_algorithm():
     return strategy(SimpleCentroidExt)
 
 
-@boost.python.inject_into(reflection_table)
+@boost.python.inject_into(dials_array_family_flex_ext.reflection_table)
 class _(object):
     """
     An injector class to add additional methods to the reflection table.
@@ -162,9 +157,9 @@ class _(object):
         :param padding: Padding in degrees
         :return: The reflection table of predictions
         """
-        result = reflection_table()
+        result = dials_array_family_flex_ext.reflection_table()
         for i, e in enumerate(experiments):
-            rlist = reflection_table.from_predictions(
+            rlist = dials_array_family_flex_ext.reflection_table.from_predictions(
                 e,
                 dmin=dmin,
                 dmax=dmax,
@@ -232,7 +227,7 @@ class _(object):
                 result = pickle.load(infile, encoding="bytes")
             else:
                 result = pickle.load(infile)
-            assert isinstance(result, reflection_table)
+            assert isinstance(result, dials_array_family_flex_ext.reflection_table)
             return result
 
     def as_msgpack_file(self, filename):
@@ -252,7 +247,9 @@ class _(object):
         if filename and hasattr(filename, "__fspath__"):
             filename = filename.__fspath__()
         with libtbx.smart_open.for_reading(filename, "rb") as infile:
-            return reflection_table.from_msgpack(infile.read())
+            return dials_array_family_flex_ext.reflection_table.from_msgpack(
+                infile.read()
+            )
 
     @staticmethod
     def from_h5(filename):
@@ -284,9 +281,11 @@ class _(object):
         Read the reflection table from either pickle or msgpack
         """
         try:
-            return reflection_table.from_msgpack_file(filename)
+            return dials_array_family_flex_ext.reflection_table.from_msgpack_file(
+                filename
+            )
         except RuntimeError:
-            return reflection_table.from_pickle(filename)
+            return dials_array_family_flex_ext.reflection_table.from_pickle(filename)
 
     @staticmethod
     def empty_standard(nrows):
@@ -299,7 +298,7 @@ class _(object):
         """
 
         assert nrows > 0
-        table = reflection_table(nrows)
+        table = dials_array_family_flex_ext.reflection_table(nrows)
 
         # General properties
         table["flags"] = cctbx.array_family.flex.size_t(nrows, 0)
@@ -485,7 +484,7 @@ class _(object):
             cctbx.array_family.flex.vec2_double,
             cctbx.array_family.flex.vec3_double,
             cctbx.array_family.flex.mat3_double,
-            int6,
+            dials_array_family_flex_ext.int6,
             cctbx.array_family.flex.miller_index,
         ):
             data = self[name]
@@ -848,7 +847,7 @@ class _(object):
         :param sigma_b_multiplier: Multiplier to cover extra background
         :return: The bounding box for each reflection
         """
-        self["bbox"] = int6(len(self))
+        self["bbox"] = dials_array_family_flex_ext.int6(len(self))
         for expr, indices in self.iterate_experiments_and_indices(experiments):
             self["bbox"].set_selected(
                 indices,
@@ -1094,7 +1093,6 @@ class _(object):
         :return: The overlap list
         """
         from dials.algorithms.shoebox import OverlapFinder
-        from itertools import groupby
 
         # Expand the bbox if necessary
         if border > 0:
@@ -1105,7 +1103,7 @@ class _(object):
             y1 += border
             z0 -= border
             z1 += border
-            bbox = int6(x0, x1, y0, y1, z0, z1)
+            bbox = dials_array_family_flex_ext.int6(x0, x1, y0, y1, z0, z1)
         else:
             bbox = self["bbox"]
 
@@ -1114,7 +1112,9 @@ class _(object):
 
         # Group according to imageset
         if experiments is not None:
-            groups = groupby(range(len(experiments)), lambda x: experiments[x].imageset)
+            groups = itertools.groupby(
+                range(len(experiments)), lambda x: experiments[x].imageset
+            )
 
             # Get the experiment ids we're to treat together
             lookup = {}
@@ -1575,9 +1575,9 @@ class reflection_table_selector(object):
             raise RuntimeError("Comparison not implemented")
         elif isinstance(data, cctbx.array_family.flex.mat3_double):
             raise RuntimeError("Comparison not implemented")
-        elif isinstance(data, int6):
+        elif isinstance(data, dials_array_family_flex_ext.int6):
             raise RuntimeError("Comparison not implemented")
-        elif isinstance(data, shoebox):
+        elif isinstance(data, dials_array_family_flex_ext.shoebox):
             raise RuntimeError("Comparison not implemented")
         else:
             raise RuntimeError("Unknown column type")
@@ -1589,12 +1589,3 @@ class reflection_table_selector(object):
         else:
             mask1 = mask2
         return mask1
-
-
-# Set the 'real' type to either float or double
-if dials_array_family_flex_ext.get_real_type() == "float":
-    real = cctbx.array_family.flex.float
-elif dials_array_family_flex_ext.get_real_type() == "double":
-    real = cctbx.array_family.flex.double
-else:
-    raise TypeError('unknown "real" type')

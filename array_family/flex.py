@@ -124,17 +124,20 @@ from cctbx.array_family.flex import (  # noqa: F401; lgtm
     xray_scatterer,
 )
 
-from dials.array_family.flex_ext import (  # noqa: F401; lgtm
+from dials_array_family_flex_ext import (  # noqa: F401; lgtm
     Binner,
     PixelListShoeboxCreator,
-    default_background_algorithm,
-    default_centroid_algorithm,
     int6,
     observation,
-    real,
     reflection_table,
-    reflection_table_selector,
     reflection_table_to_list_of_reflections,
     shoebox,
+)
+
+from dials.array_family.flex_ext import (  # noqa: F401; lgtm
+    default_background_algorithm,
+    default_centroid_algorithm,
+    real,
+    reflection_table_selector,
     strategy,
 )
