@@ -101,7 +101,11 @@ class PychefRunner(object):
             params: A dose-analysis phil params object
             mtzfile: Filename of the mtz file.
         """
-        mtz_object = mtz.object(file_name=mtzfile)
+        try:
+            mtz_object = mtz.object(file_name=mtzfile)
+        except RuntimeError as e:
+            # If an error is encountered trying to read the mtzfile
+            raise ValueError(e)
         miller_arrays = mtz_object.as_miller_arrays(
             merge_equivalents=False, anomalous=params.anomalous
         )

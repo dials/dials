@@ -1,21 +1,21 @@
+"""Tests for dials.dose_analysis"""
 import procrunner
 
 
 def test_dose_analysis_dials_data(dials_data, tmpdir):
-    """Test dials.compute_delta_cchalf on scaled data."""
+    """Test dials.dose_analysis on scaled data."""
     location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = location.join("scaled_20_25.refl").strpath
     expts = location.join("scaled_20_25.expt").strpath
 
-    # set cutoff to 0.0 to force one to be 'rejected'
-    command = ["dials.dose_analysis", refls, expts, "min_completeness=0.4"]
+    command = ["dials.dose_analysis", refls, expts, "min_completeness=0.4", "-v"]
     result = procrunner.run(command, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
     assert tmpdir.join("dials.dose_analysis.html").check()
 
 
 def test_dose_analysis_mtz(dials_data, tmpdir):
-    """Test dials.compute_delta_cchalf on scaled data."""
+    """Test dials.dose_analysis on scaled data."""
     location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = location.join("scaled_20_25.refl").strpath
     expts = location.join("scaled_20_25.expt").strpath
@@ -26,10 +26,10 @@ def test_dose_analysis_mtz(dials_data, tmpdir):
     assert not result.returncode and not result.stderr
     assert tmpdir.join("scaled.mtz").check()
 
-    # set cutoff to 0.0 to force one to be 'rejected'
     command = [
         "dials.dose_analysis",
         "mtzfile=%s" % tmpdir.join("scaled.mtz").strpath,
+        "anomalous=True",
     ]
     result = procrunner.run(command, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
@@ -43,18 +43,27 @@ def test_dose_analysis_input_handling(dials_data, tmpdir):
     refls = location.join("scaled_20_25.refl").strpath
     expts = location.join("scaled_20_25.expt").strpath
 
+    # Too many refl files
     command = ["dials.dose_analysis", refls, expts, refls]
     result = procrunner.run(command, working_directory=tmpdir)
     assert result.returncode and result.stderr
 
+    # No refl file
     command = ["dials.dose_analysis", expts]
     result = procrunner.run(command, working_directory=tmpdir)
     assert result.returncode and result.stderr
 
+    # No expt file
     command = ["dials.dose_analysis", refls]
     result = procrunner.run(command, working_directory=tmpdir)
     assert result.returncode and result.stderr
 
+    # Wrongly specified mtzfile
+    command = ["dials.dose_analysis", "mtzfile=%s" % refls]
+    result = procrunner.run(command, working_directory=tmpdir)
+    assert result.returncode and result.stderr
+
+    # Unscaled data
     data_dir = dials_data("l_cysteine_dials_output")
     refls = data_dir / "20_integrated.pickle"
     expts = data_dir / "20_integrated_experiments.json"
