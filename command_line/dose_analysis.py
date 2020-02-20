@@ -22,6 +22,14 @@ number is used as a proxy for dose (i.e. dose is accumulated across sweeps),
 which may not be suitable for multi-sweep mtz files, unless all sweeps are
 measured on the same crystal.
 
+Example usage:
+
+dials.dose_analysis scaled.expt scaled.refl
+
+dials.dose_analysis mtzfile=scaled.mtz
+
+dials.dose_analysis scaled.expt scaled.refl shared_crystal=True
+
 """
 from __future__ import absolute_import, division, print_function
 import json
