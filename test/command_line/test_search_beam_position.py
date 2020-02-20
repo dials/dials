@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+import glob
 import mock
 import os
 import procrunner
@@ -10,6 +11,7 @@ import scitbx
 from cctbx import uctbx
 
 from dxtbx.serialize import load
+from dxtbx.model import ExperimentList
 
 import dials.command_line.dials_import
 from dials.algorithms.indexing.test_index import run_indexing
@@ -224,3 +226,30 @@ def test_search_small_molecule(dials_data, run_in_tmpdir):
             old_expt.detector[0].get_origin()
         ) - scitbx.matrix.col(new_expt.detector[0].get_origin())
         assert shift.elems == pytest.approx((-0.292, -1.063, 0.0), abs=1e-2)
+
+
+def test_multi_sweep_fixed_rotation(dials_regression):
+    data_dir = os.path.join(dials_regression, "indexing_test_data", "multi_sweep")
+    reflection_files = sorted(
+        glob.glob(os.path.join(data_dir, "SWEEP[1,2]", "index", "*_strong.pickle"))
+    )
+    experiment_files = sorted(
+        glob.glob(
+            os.path.join(data_dir, "SWEEP[1,2]", "index", "*_datablock_import.json")
+        )
+    )
+
+    search_beam_position.run(reflection_files + experiment_files)
+    assert os.path.exists("optimised.expt")
+
+    experiments = ExperimentList()
+    for path in experiment_files:
+        experiments.extend(load.experiment_list(path, check_format=False))
+
+    optimised_experiments = load.experiment_list("optimised.expt", check_format=False)
+    for orig_expt, new_expt in zip(experiments, optimised_experiments):
+        shift = scitbx.matrix.col(
+            orig_expt.detector[0].get_origin()
+        ) - scitbx.matrix.col(new_expt.detector[0].get_origin())
+        print(shift)
+        assert shift.elems == pytest.approx((2.310, -0.365, 0), abs=1e-2)

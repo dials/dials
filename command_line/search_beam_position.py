@@ -267,8 +267,9 @@ def _get_origin_offset_score(
 
     # Key point for this is that the spots must correspond to detector
     # positions not to the correct RS position => reset any fixed rotation
-    # to identity - copy in case called from elsewhere
+    # to identity
 
+    experiment.goniometer.set_fixed_rotation((1, 0, 0, 0, 1, 0, 0, 0, 1))
     spots_mm.map_centroids_to_reciprocal_space([experiment])
     return _sum_score_detail(spots_mm["rlp"], solutions, amax=amax)
 
