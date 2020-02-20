@@ -5,14 +5,22 @@ The program dials.dose_analysis calculates dose dependent data quality statistic
 The algorithms and statistics are described in "How best to use photons",
 G. Winter et al. 2019 https://doi.org/10.1107/S2059798319003528
 
-The program makes a noteable assumption which may be unsuitable for particular
-experiments.
-For running on dials datafiles (expt, refl), the image number is
-taken as a proxy for dose (calculated individually on each sweep for multi-
-sweep datasets).
-For mtz file input, if there is no 'dose' column, then the batch number is
-used as a proxy for dose, which may not be suitable for multi-sweep mtz files,
-unless all sweeps are measured on the same crystal.
+Input data can be provided in mtz format or scaled .expt and .refl files.
+
+For dials datafiles, by default, the image number is taken as a proxy for dose.
+For multi-sweep datasets, each experiment is assumed to be a measurement of a
+new crystal, and is assigned a starting dose of zero. If the multi-sweep
+dataset is repeated measurements of one crystal, then the option
+shared_crystal=True can be given, which will accumulate dose across the sweeps.
+Alternatively, a list of starting_doses can be given. The default assumption is
+that each image corresponds to an equivalent dose. This can be overwritten with
+the dose_per_image option, where a list of values can be provided to set a
+different dose per image for each sweep.
+
+For mtz file input, if there is no 'dose' column, then by default the batch
+number is used as a proxy for dose (i.e. dose is accumulated across sweeps),
+which may not be suitable for multi-sweep mtz files, unless all sweeps are
+measured on the same crystal.
 
 """
 from __future__ import absolute_import, division, print_function
