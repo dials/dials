@@ -16,6 +16,7 @@ unless all sweeps are measured on the same crystal.
 
 """
 from __future__ import absolute_import, division, print_function
+import json
 import logging
 import sys
 from libtbx import phil
@@ -25,7 +26,7 @@ from dials.util.version import dials_version
 from dials.util.filter_reflections import filter_reflection_table
 from dials.util.resolutionizer import Resolutionizer, phil_defaults
 from dials.command_line.symmetry import median_unit_cell
-from dials.pychef import batches_to_dose, Statistics
+from dials.pychef import batches_to_dose, Statistics, interpret_images_to_doses_options
 from iotbx import mtz
 from scitbx.array_family import flex
 from cctbx import miller, crystal
@@ -52,6 +53,9 @@ output {
     html = "dials.dose_analysis.html"
         .type = str
         .help = "Filename for the html report."
+    json = None
+        .type = str
+        .help = "Filename for the html report data in json format."
 }
 include scope dials.pychef.phil_scope
 """,
@@ -153,7 +157,7 @@ class PychefRunner(object):
             reflection_table: A reflection table.
         """
         reflection_table = filter_reflection_table(
-            reflection_table, intensity_choice=["scale"]
+            reflection_table, intensity_choice=["scale"], partiality_threshold=0.4
         )
 
         # get scaled intensities
@@ -170,10 +174,32 @@ class PychefRunner(object):
             sigmas=reflection_table["intensity.scale.variance"] ** 0.5,
         )
         intensities.set_observation_type_xray_intensity()
-        dose = reflection_table["xyzobs.px.value"].parts()[2]
-        dose = dose.iround()
 
-        return cls(intensities, dose, params)
+        doses = flex.double()
+        start_doses, doses_per_image = interpret_images_to_doses_options(
+            params, experiments
+        )
+        logger.info(
+            "Interpreting data using:\n  starting_doses=%s\n  dose_per_image=%s",
+            ", ".join("%s" % i for i in start_doses)
+            if len(set(start_doses)) > 1
+            else " all %s" % str(start_doses[0]),
+            ", ".join("%s" % i for i in doses_per_image)
+            if len(set(doses_per_image)) > 1
+            else " all %s" % str(doses_per_image[0]),
+        )
+
+        for expt, starting_dose, dose_per_img in zip(
+            experiments, start_doses, doses_per_image
+        ):
+            refls = reflection_table.select(expt)
+            imgno = refls["xyzobs.px.value"].parts()[2]
+            dose = (imgno * dose_per_img) + starting_dose
+            doses.extend(dose)
+
+        doses = doses.iround()
+
+        return cls(intensities, doses, params)
 
     def run(self):
         """Run the pychef analysis."""
@@ -194,21 +220,25 @@ class PychefRunner(object):
     def make_html_report(self):
         """Generate html report from pychef stats."""
         data = {"dose_plots": self.stats.to_dict()}
-
-        logger.info("Writing html report to: %s", self.params.output.html)
-        loader = ChoiceLoader(
-            [
-                PackageLoader("dials", "templates"),
-                PackageLoader("dials", "static", encoding="utf-8"),
-            ]
-        )
-        env = Environment(loader=loader)
-        template = env.get_template("dose_analysis_report.html")
-        html = template.render(
-            page_title="Dose analysis report", dose_plots=data["dose_plots"]
-        )
-        with open(self.params.output.html, "wb") as f:
-            f.write(html.encode("utf-8", "xmlcharrefreplace"))
+        if self.params.output.html:
+            logger.info("Writing html report to: %s", self.params.output.html)
+            loader = ChoiceLoader(
+                [
+                    PackageLoader("dials", "templates"),
+                    PackageLoader("dials", "static", encoding="utf-8"),
+                ]
+            )
+            env = Environment(loader=loader)
+            template = env.get_template("dose_analysis_report.html")
+            html = template.render(
+                page_title="Dose analysis report", dose_plots=data["dose_plots"]
+            )
+            with open(self.params.output.html, "wb") as f:
+                f.write(html.encode("utf-8", "xmlcharrefreplace"))
+        if self.params.output.json:
+            logger.info("Writing html report data to: %s", self.params.output.json)
+            with open(self.params.output.json, "w") as outfile:
+                json.dump(data, outfile)
 
 
 def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None

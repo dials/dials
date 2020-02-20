@@ -32,6 +32,25 @@ dose {
     dose_step = None
       .type = float(value_min=0)
   }
+  experiments
+  {
+    dose_per_image = 1
+      .type = floats(value_min=0)
+      .help = "The 'dose' accumulated per image. If more than one value is"
+              "given, this indicates the dose per image for each experiment,"
+              "and hence must match the number of experiments."
+    starting_doses = None
+      .type = ints(value_min=0)
+      .help = "The dose values at the start of each sweep. Must match the"
+              "number of experiments. If none given, it is assumed that each"
+              "sweep starts with zero accumulated dose."
+    shared_crystal = False
+      .type = bool
+      .help = "Option to indicate that all sweeps correspond to measurements"
+              "on the same crystal. Therefore the starting doses are"
+              "automatically adjusted to account for previously accumulated dose."
+  }
+
 }
 """
 
@@ -61,6 +80,45 @@ range {
 """
     % dose_phil_str
 )
+
+
+def interpret_images_to_doses_options(params, experiments):
+    """Interpret the dose.experiments options"""
+    dpi = params.dose.experiments.dose_per_image
+    if len(dpi) == 1:
+        doses_per_image = dpi * len(experiments)
+    elif len(dpi) != len(experiments):
+        raise ValueError(
+            """
+The dose_per_image option must provide either one value, or a number of values
+equal to the number of experiments (%s)"""
+            % len(experiments)
+        )
+    else:
+        doses_per_image = dpi
+
+    if params.dose.experiments.shared_crystal:
+        start_doses = [0]
+        accumulated_dose = 0
+        # adjust starting doses to account for a shared crystal.
+        for expt, dose_per_img in zip(experiments, doses_per_image):
+            imgrange = expt.scan.get_image_range()
+            n_images = imgrange[1] - imgrange[0] + 1
+            accumulated_dose += n_images * dose_per_img
+            start_doses.append(accumulated_dose)
+        start_doses = start_doses[:-1]
+    elif params.dose.experiments.starting_doses:
+        if len(params.dose.experiments.starting_doses) != len(experiments):
+            raise ValueError(
+                """
+The number of starting_doses must equal the number of experiments (%s)"""
+                % len(experiments)
+            )
+        start_doses = params.dose.experiments.starting_doses
+    else:
+        start_doses = [0] * len(experiments)
+
+    return start_doses, doses_per_image
 
 
 class Statistics(object):
