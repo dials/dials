@@ -987,8 +987,8 @@ class _(object):
             del image
         assert extractor.finished()
         logger.info("  successfully read %d images", frame1 - frame0)
-        logger.info("  read time: %g seconds", read_time)
-        logger.info("  extract time: %g seconds", extract_time)
+        logger.info("  read time: %.1f seconds", read_time)
+        logger.info("  extract time: %.1f seconds", extract_time)
         return read_time, extract_time
 
     def is_overloaded(self, experiments):
