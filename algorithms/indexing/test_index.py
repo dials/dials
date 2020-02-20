@@ -780,6 +780,23 @@ def test_refinement_failure_on_max_lattices_a15(dials_regression, tmpdir):
     )
     assert len(experiments_list) == 2
 
+    # now try to reindex with existing model
+    result = procrunner.run(
+        [
+            "dials.index",
+            tmpdir.join("indexed.expt").strpath,
+            os.path.join(data_dir, "lpe4-2-a15_strong.pickle"),
+            "max_lattices=2",
+        ],
+        working_directory=tmpdir,
+    )
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("indexed.refl").check() and tmpdir.join("indexed.expt").check()
+    experiments_list = load.experiment_list(
+        tmpdir.join("indexed.expt").strpath, check_format=False
+    )
+    assert len(experiments_list) == 2
+
 
 def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_regression, tmpdir):
     """ Problem: In stills_indexer, before calling the refine function, the experiment list contains a list of
