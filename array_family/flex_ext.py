@@ -24,7 +24,6 @@ import libtbx.smart_open
 import six
 import six.moves.cPickle as pickle
 from dials.algorithms.centroid import centroid_px_to_mm_panel
-from dials.util import Sorry
 from scitbx import matrix
 
 __all__ = [
@@ -160,8 +159,8 @@ class _(object):
             else:
                 params.spotfinder.filter.min_spot_size = 6
             logger.info(
-                "Setting spotfinder.filter.min_spot_size=%i"
-                % (params.spotfinder.filter.min_spot_size)
+                "Setting spotfinder.filter.min_spot_size=%i",
+                params.spotfinder.filter.min_spot_size,
             )
 
         # Get the integrator from the input parameters
@@ -393,7 +392,7 @@ class _(object):
             cctbx.miller.array: A miller array with intensities and sigmas.
 
         Raises:
-            Sorry: If chosen intensity values cannot be found in the table.
+            KeyError: If chosen intensity values cannot be found in the table.
         """
 
         try:
@@ -402,8 +401,8 @@ class _(object):
                 self["intensity." + intensity + ".variance"],
             )
         except KeyError as e:
-            logger.error(e)
-            raise Sorry(
+            logger.error(e, exc_info=True)
+            raise KeyError(
                 "Unable to find %s, %s in reflection table"
                 % (
                     "intensity." + intensity + ".value",
@@ -949,14 +948,13 @@ class _(object):
             self["qe"] = qe
         return lp
 
-    def extract_shoeboxes(self, imageset, mask=None, nthreads=1, verbose=False):
+    def extract_shoeboxes(self, imageset, mask=None, nthreads=1):
         """
         Helper function to read a load of shoebox data.
 
         :param imageset: The imageset
         :param mask: The mask to apply
         :param nthreads: The number of threads to use
-        :param verbose: The verbosity
         :return: A tuple containing read time and extract time
         """
         from dials.model.data import make_image
@@ -975,8 +973,7 @@ class _(object):
         read_time = 0
         extract_time = 0
         for i in range(len(imageset)):
-            if verbose:
-                logger.info("  reading image %d" % i)
+            logger.debug("  reading image %d", i)
             st = time()
             image = imageset.get_corrected_data(i)
             mask2 = imageset.get_mask(i)
@@ -989,9 +986,9 @@ class _(object):
             extract_time += time() - st
             del image
         assert extractor.finished()
-        logger.info("  successfully read %d images" % (frame1 - frame0))
-        logger.info("  read time: %g seconds" % read_time)
-        logger.info("  extract time: %g seconds" % extract_time)
+        logger.info("  successfully read %d images", frame1 - frame0)
+        logger.info("  read time: %g seconds", read_time)
+        logger.info("  extract time: %g seconds", extract_time)
         return read_time, extract_time
 
     def is_overloaded(self, experiments):

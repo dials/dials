@@ -7,7 +7,6 @@ import random
 import pytest
 from cctbx import sgtbx
 from dials.array_family import flex
-from dials.util import Sorry
 from dxtbx.model import ExperimentList, Experiment, Crystal
 from dxtbx.serialize import load
 
@@ -1370,10 +1369,10 @@ def test_as_miller_array():
     assert list(iobs.data()) == list(table["intensity.1.value"])
     assert list(iobs.sigmas()) == list(table["intensity.1.variance"] ** 0.5)
 
-    with pytest.raises(Sorry):
+    with pytest.raises(KeyError):
         _ = table.as_miller_array(experiment, intensity="2")
     table["intensity.2.value"] = flex.double([1.0, 2.0, 3.0])
-    with pytest.raises(Sorry):
+    with pytest.raises(KeyError):
         _ = table.as_miller_array(experiment, intensity="2")
 
 
