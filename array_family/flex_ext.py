@@ -5,7 +5,6 @@ from __future__ import absolute_import, division, print_function
 #   from dials.array_family import flex
 #
 
-import builtins
 import collections
 import copy
 import itertools
@@ -490,14 +489,12 @@ class _(object):
             data = self[name]
             if not order:
                 perm = cctbx.array_family.flex.size_t(
-                    builtins.sorted(
-                        range(len(self)), key=lambda x: data[x], reverse=reverse
-                    )
+                    sorted(range(len(self)), key=lambda x: data[x], reverse=reverse)
                 )
             else:
                 assert len(order) == len(data[0])
                 perm = cctbx.array_family.flex.size_t(
-                    builtins.sorted(
+                    sorted(
                         range(len(self)),
                         key=lambda x: tuple(data[x][i] for i in order),
                         reverse=reverse,
@@ -601,7 +598,7 @@ class _(object):
                         dy = y1[i] - y2[j]
                         dz = z1[i] - z2[j]
                         d.append((i, j, dx ** 2 + dy ** 2 + dz ** 2))
-                    i, j, d = builtins.min(d, key=lambda x: x[2])
+                    i, j, d = min(d, key=lambda x: x[2])
                     if j not in matched:
                         matched[j] = (i, d)
                     elif d < matched[j][1]:
@@ -616,7 +613,7 @@ class _(object):
 
         # Sort by self index
         sort_index = cctbx.array_family.flex.size_t(
-            builtins.sorted(range(len(sind)), key=lambda x: sind[x])
+            sorted(range(len(sind)), key=lambda x: sind[x])
         )
         sind = sind.select(sort_index)
         oind = oind.select(sort_index)
@@ -718,7 +715,7 @@ class _(object):
                         dy = y1[i] - y2[j]
                         dz = z1[i] - z2[j]
                         d.append((i, j, dx ** 2 + dy ** 2 + dz ** 2))
-                    i, j, d = builtins.min(d, key=lambda x: x[2])
+                    i, j, d = min(d, key=lambda x: x[2])
                     if j not in matched:
                         matched[j] = (i, d)
                     elif d < matched[j][1]:
@@ -733,7 +730,7 @@ class _(object):
 
         # Sort by self index
         sort_index = cctbx.array_family.flex.size_t(
-            builtins.sorted(range(len(sind)), key=lambda x: sind[x])
+            sorted(range(len(sind)), key=lambda x: sind[x])
         )
         sind = sind.select(sort_index)
         oind = oind.select(sort_index)
@@ -1562,11 +1559,11 @@ class reflection_table_selector(object):
             mask1 = None
             data = reflections[self.column]
         if isinstance(data, cctbx.array_family.flex.double):
-            value = builtins.float(self.value)
+            value = float(self.value)
         elif isinstance(data, cctbx.array_family.flex.int):
-            value = builtins.int(self.value)
+            value = int(self.value)
         elif isinstance(data, cctbx.array_family.flex.size_t):
-            value = builtins.int(self.value)
+            value = int(self.value)
         elif isinstance(data, cctbx.array_family.flex.std_string):
             value = self.value
         elif isinstance(data, cctbx.array_family.flex.vec3_double):
