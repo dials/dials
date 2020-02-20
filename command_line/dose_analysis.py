@@ -98,18 +98,13 @@ class PychefRunner(object):
             self.dose = self.dose.select(sel)
 
     @classmethod
-    def from_mtzfile(cls, params, mtzfile):
-        """Initialise the class from mtzfile input.
+    def from_mtz(cls, params, mtz_object):
+        """Initialise the class from mtzf input.
 
         Args:
             params: A dose-analysis phil params object
-            mtzfile: Filename of the mtz file.
+            mtz_object: An iotbx.mtz.object.
         """
-        try:
-            mtz_object = mtz.object(file_name=mtzfile)
-        except RuntimeError as e:
-            # If an error is encountered trying to read the mtzfile
-            raise ValueError(e)
         miller_arrays = mtz_object.as_miller_arrays(
             merge_equivalents=False, anomalous=params.anomalous
         )
@@ -273,7 +268,13 @@ def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
                 params, experiments, reflections[0],
             )
         elif params.input.mtzfile:
-            script = PychefRunner.from_mtzfile(params, params.input.mtzfile)
+            try:
+                mtz_object = mtz.object(file_name=params.input.mtzfile)
+            except RuntimeError as e:
+                # If an error is encountered trying to read the mtzfile
+                raise ValueError(e)
+            else:
+                script = PychefRunner.from_mtz(params, mtz_object)
         else:
             parser.print_help()
             raise ValueError("Suitable input datafiles not provided")
