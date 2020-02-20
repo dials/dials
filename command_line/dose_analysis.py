@@ -196,7 +196,7 @@ class PychefRunner(object):
             experiments, start_doses, doses_per_image
         ):
             refls = reflection_table.select(expt)
-            imgno = refls["xyzobs.px.value"].parts()[2]
+            imgno = flex.ceil(refls["xyzobs.px.value"].parts()[2])
             dose = (imgno * dose_per_img) + starting_dose
             doses.extend(dose)
 
