@@ -225,7 +225,7 @@ def test_search_small_molecule(dials_data, run_in_tmpdir):
         shift = scitbx.matrix.col(
             old_expt.detector[0].get_origin()
         ) - scitbx.matrix.col(new_expt.detector[0].get_origin())
-        assert shift.elems == pytest.approx((-0.292, -1.063, 0.0), abs=1e-2)
+        assert shift.elems == pytest.approx((0.091, -1.11, 0), abs=1e-2)
 
 
 def test_multi_sweep_fixed_rotation(dials_regression):
