@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
-from cctbx.array_family.flex import (  # noqa
+from cctbx.array_family.flex import (  # noqa: F401; lgtm
     abs,
     acos,
     arg,
@@ -124,7 +124,7 @@ from cctbx.array_family.flex import (  # noqa
     xray_scatterer,
 )
 
-from dials.array_family.flex_ext import (  # noqa
+from dials.array_family.flex_ext import (  # noqa: F401; lgtm
     Binner,
     PixelListShoeboxCreator,
     default_background_algorithm,
