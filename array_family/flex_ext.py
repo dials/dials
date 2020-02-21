@@ -417,7 +417,7 @@ class _(object):
         )
         i_obs = cctbx.miller.array(miller_set, data=intensities)
         i_obs.set_observation_type_xray_intensity()
-        i_obs.set_sigmas(variances ** 0.5)
+        i_obs.set_sigmas(cctbx.array_family.flex.sqrt(variances))
         i_obs.set_info(
             cctbx.miller.array_info(source="DIALS", source_type="reflection_tables")
         )
@@ -590,7 +590,9 @@ class _(object):
         x1, y1, z1 = s2["xyzcal.px"].parts()
         x2, y2, z2 = o2["xyzcal.px"].parts()
         distance = cctbx.array_family.flex.sqrt(
-            (x1 - x2) ** 2 + (y1 - y2) ** 2 + (z1 - z2) ** 2
+            cctbx.array_family.flex.pow2(x1 - x2)
+            + cctbx.array_family.flex.pow2(y1 - y2)
+            + cctbx.array_family.flex.pow2(z1 - z2)
         )
         mask = distance < 2
         logger.info(" %d reflections matched" % len(o2))
@@ -707,7 +709,9 @@ class _(object):
         x1, y1, z1 = s2["xyzcal.px"].parts()
         x2, y2, z2 = o2["xyzcal.px"].parts()
         distance = cctbx.array_family.flex.sqrt(
-            (x1 - x2) ** 2 + (y1 - y2) ** 2 + (z1 - z2) ** 2
+            cctbx.array_family.flex.pow2(x1 - x2)
+            + cctbx.array_family.flex.pow2(y1 - y2)
+            + cctbx.array_family.flex.pow2(z1 - z2)
         )
         mask = distance < 2
         logger.info(" %d reflections matched" % len(o2))
