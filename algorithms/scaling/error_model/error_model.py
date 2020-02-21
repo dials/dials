@@ -70,8 +70,7 @@ def get_error_parameters_to_refine(model, scope):
 def calc_sigmaprime(x, Ih_table):
     """Calculate the error from the model."""
     sigmaprime = (
-        x[0]
-        * flex.sqrt((Ih_table.variances) + flex.pow2((x[1] * Ih_table.intensities)))
+        x[0] * flex.sqrt(Ih_table.variances + flex.pow2(x[1] * Ih_table.intensities))
     ) / Ih_table.inverse_scale_factors
     return sigmaprime
 
