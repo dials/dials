@@ -4,7 +4,7 @@ import boost.python
 
 ext = boost.python.import_ext("dials_model_data_ext")
 
-from dials_model_data_ext import *  # noqa: F403
+from dials_model_data_ext import *  # noqa: F403; lgtm
 
 __all__ = (  # noqa: F405
     "AdjacencyList",

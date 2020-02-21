@@ -39,7 +39,7 @@ namespace dials { namespace algorithms { namespace background { namespace boost_
   };
 
   BOOST_PYTHON_MODULE(dials_algorithms_background_gmodel_ext) {
-    class_<PolarTransformResult>("PolarTransfrormResult", no_init)
+    class_<PolarTransformResult>("PolarTransformResult", no_init)
       .def("data", &PolarTransformResult::data)
       .def("mask", &PolarTransformResult::mask);
 
