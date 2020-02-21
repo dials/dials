@@ -13,6 +13,7 @@ from cctbx import miller
 from cctbx import crystal as cctbxcrystal
 from iotbx.merging_statistics import dataset_statistics
 from libtbx import Auto
+from scitbx.array_family import flex
 
 logger = logging.getLogger(__name__)
 RAD2DEG = 180.0 / math.pi
@@ -244,20 +245,20 @@ class MMCIFOutputFile(object):
         variables_present = []
         if "scale" in self.params.intensity:
             reflections["scales"] = 1.0 / reflections["inverse_scale_factor"]
-            reflections["intensity.scale.sigma"] = (
-                reflections["intensity.scale.variance"] ** 0.5
+            reflections["intensity.scale.sigma"] = flex.sqrt(
+                reflections["intensity.scale.variance"]
             )
             variables_present.extend(
                 ["scales", "intensity.scale.value", "intensity.scale.sigma"]
             )
         if "sum" in self.params.intensity:
-            reflections["intensity.sum.sigma"] = (
-                reflections["intensity.sum.variance"] ** 0.5
+            reflections["intensity.sum.sigma"] = flex.sqrt(
+                reflections["intensity.sum.variance"]
             )
             variables_present.extend(["intensity.sum.value", "intensity.sum.sigma"])
         if "profile" in self.params.intensity:
-            reflections["intensity.prf.sigma"] = (
-                reflections["intensity.prf.variance"] ** 0.5
+            reflections["intensity.prf.sigma"] = flex.sqrt(
+                reflections["intensity.prf.variance"]
             )
             variables_present.extend(["intensity.prf.value", "intensity.prf.sigma"])
 

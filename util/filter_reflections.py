@@ -644,8 +644,8 @@ class ScaleIntensityReducer(FilterForExportAlgorithm):
         reflection_table["intensity.scale.value"] /= reflection_table[
             "inverse_scale_factor"
         ]
-        reflection_table["intensity.scale.variance"] /= (
-            reflection_table["inverse_scale_factor"] ** 2
+        reflection_table["intensity.scale.variance"] /= flex.pow2(
+            reflection_table["inverse_scale_factor"]
         )
         return reflection_table
 

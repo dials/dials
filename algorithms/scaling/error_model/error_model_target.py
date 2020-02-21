@@ -10,12 +10,13 @@ def calculate_regression_x_y(Ih_table):
     """Calculate regression data points."""
     n = Ih_table.group_multiplicities() - 1.0
     group_variances = (
-        (Ih_table.intensities - (Ih_table.inverse_scale_factors * Ih_table.Ih_values))
-        ** 2
+        flex.pow2(
+            Ih_table.intensities - (Ih_table.inverse_scale_factors * Ih_table.Ih_values)
+        )
         * Ih_table.h_index_matrix
     ) / n
     sigmasq_obs = group_variances * Ih_table.h_expand_matrix
-    isq = Ih_table.intensities ** 2
+    isq = flex.pow2(Ih_table.intensities)
     y = sigmasq_obs / isq
     x = Ih_table.variances / isq
     return x, y
@@ -116,7 +117,9 @@ class ErrorModelTargetA(ErrorModelTarget):
     def calculate_residuals(self, apm):
         """Return the residual vector"""
         x = apm.x
-        R = (self.error_model.sortedy - (x[1] * self.error_model.sortedx) - x[0]) ** 2
+        R = flex.pow2(
+            self.error_model.sortedy - (x[1] * self.error_model.sortedx) - x[0]
+        )
         return R
 
     def calculate_gradients(self, apm):
@@ -144,7 +147,7 @@ class ErrorModelTargetB(ErrorModelTarget):
         bin_vars = self.error_model.binner.bin_variances
         R = (
             (
-                (flex.double(bin_vars.size(), 0.5) - bin_vars) ** 2
+                flex.pow2(flex.double(bin_vars.size(), 0.5) - bin_vars)
                 + (1.0 / bin_vars)
                 - flex.double(bin_vars.size(), 1.25)
             )
@@ -166,9 +169,9 @@ class ErrorModelTargetB(ErrorModelTarget):
         bin_counts = self.error_model.binner.binning_info["refl_per_bin"]
         dsig_dc = (
             b
-            * (I_hl ** 2)
+            * flex.pow2(I_hl)
             * (a ** 2)
-            / (self.error_model.binner.sigmaprime * (g_hl ** 2))
+            / (self.error_model.binner.sigmaprime * flex.pow2(g_hl))
         )
         ddelta_dsigma = (
             -1.0 * self.error_model.binner.delta_hl / self.error_model.binner.sigmaprime
@@ -177,13 +180,13 @@ class ErrorModelTargetB(ErrorModelTarget):
         dphi_by_dvar = -2.0 * (
             flex.double(bin_vars.size(), 0.5)
             - bin_vars
-            + (1.0 / (2.0 * (bin_vars ** 2)))
+            + (1.0 / (2.0 * flex.pow2(bin_vars)))
         )
         term1 = 2.0 * self.error_model.binner.delta_hl * deriv * sum_matrix
         term2a = self.error_model.binner.delta_hl * sum_matrix
         term2b = deriv * sum_matrix
         grad = dphi_by_dvar * (
-            (term1 / bin_counts) - (2.0 * term2a * term2b / (bin_counts ** 2))
+            (term1 / bin_counts) - (2.0 * term2a * term2b / flex.pow2(bin_counts))
         )
         gradients = flex.double([flex.sum(grad * weights) / flex.sum(weights)])
         return gradients

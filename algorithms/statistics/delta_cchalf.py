@@ -209,7 +209,7 @@ class PerGroupCChalfStatistics(object):
             intensities = self.reflection_table["intensity"].select(sel)
             n = intensities.size()
             sum_x = flex.sum(intensities)
-            sum_x2 = flex.sum(intensities ** 2)
+            sum_x2 = flex.sum(flex.pow2(intensities))
             self.reflection_sums[h] = ReflectionSum(sum_x, sum_x2, n)
 
         # Compute some numbers

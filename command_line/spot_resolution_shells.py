@@ -29,7 +29,7 @@ def spot_resolution_shells(experiments, reflections, params):
     reflections.centroid_px_to_mm(experiments)
     reflections.map_centroids_to_reciprocal_space(experiments)
     two_theta_array = reflections["rlp"].norms()
-    h0 = flex.weighted_histogram(two_theta_array ** 2, n_slots=params.shells)
+    h0 = flex.weighted_histogram(flex.pow2(two_theta_array), n_slots=params.shells)
     n = h0.slots()
     d = 1.0 / flex.sqrt(h0.slot_centers())
 

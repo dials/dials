@@ -71,7 +71,7 @@ def prepare_merged_reflection_table(experiments, reflection_table, d_min=None):
     )
     merged_reflections = flex.reflection_table()
     merged_reflections["intensity"] = merged.data()
-    merged_reflections["variance"] = merged.sigmas() ** 2
+    merged_reflections["variance"] = flex.pow2(merged.sigmas())
     merged_reflections["miller_index"] = merged.indices()
     return merged_reflections
 
@@ -183,7 +183,7 @@ def merge_and_truncate(params, experiments, reflections):
     if params.assess_space_group:
         merged_reflections = flex.reflection_table()
         merged_reflections["intensity"] = merged.data()
-        merged_reflections["variance"] = merged.sigmas() ** 2
+        merged_reflections["variance"] = flex.pow2(merged.sigmas())
         merged_reflections["miller_index"] = merged.indices()
         logger.info("Running systematic absences check")
         run_systematic_absences_checks(experiments, merged_reflections)

@@ -581,9 +581,9 @@ class ArrayScalingModel(ScalingModelBase):
         norm_time = xyz[2] * self.configdict["time_norm_fac"]
         if "decay" in self.components:
             d = reflection_table["d"]
-            norm_res = ((1.0 / (d ** 2)) - self.configdict["resmin"]) / self.configdict[
-                "res_bin_width"
-            ]
+            norm_res = (
+                (1.0 / flex.pow2(d)) - self.configdict["resmin"]
+            ) / self.configdict["res_bin_width"]
             self.components["decay"].data = {"x": norm_res, "y": norm_time}
         if "absorption" in self.components:
             norm_x_abs = (xyz[0] - self.configdict["xmin"]) / self.configdict[

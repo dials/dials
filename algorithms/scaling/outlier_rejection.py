@@ -227,14 +227,13 @@ Targeted outlier rejection requires a target Ih_table with nblocks = 1"""
             Ih_table.intensities
             - (Ih_table.inverse_scale_factors * Ih_table.Ih_table["target_Ih_value"])
         ) / (
-            (
+            flex.sqrt(
                 Ih_table.variances
                 + (
-                    (Ih_table.inverse_scale_factors ** 2)
+                    flex.pow2(Ih_table.inverse_scale_factors)
                     * Ih_table.Ih_table["target_Ih_sigmasq"]
                 )
             )
-            ** 0.5
         )
         outliers_sel = flex.abs(norm_dev) > self._zmax
         outliers_isel = nz_sel.iselection().select(outliers_sel)
@@ -268,7 +267,7 @@ class SimpleNormDevOutlierRejection(OutlierRejectionBase):
 
         assert w.all_gt(0)  # guard against division by zero
         norm_dev = (intensity - (g * wgIsum / wg2sum)) / (
-            ((1.0 / w) + ((g / wg2sum) ** 2)) ** 0.5
+            flex.sqrt((1.0 / w) + flex.pow2(g / wg2sum))
         )
         norm_dev.set_selected(zero_sel, 1000)  # to trigger rejection
         outliers_sel = flex.abs(norm_dev) > self._zmax
@@ -364,7 +363,7 @@ class NormDevOutlierRejection(OutlierRejectionBase):
 
         assert w_sel.all_gt(0)  # guard against division by zero
         norm_dev = (I_sel - (g_sel * wgIsum_others_sel / wg2sum_others_sel)) / (
-            ((1.0 / w_sel) + (g_sel ** 2 / wg2sum_others_sel)) ** 0.5
+            flex.sqrt((1.0 / w_sel) + (flex.pow2(g_sel) / wg2sum_others_sel))
         )
         norm_dev.set_selected(zero_sel, 1000)  # to trigger rejection
         z_score = flex.abs(norm_dev)

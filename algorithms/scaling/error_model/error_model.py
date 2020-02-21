@@ -70,7 +70,8 @@ def get_error_parameters_to_refine(model, scope):
 def calc_sigmaprime(x, Ih_table):
     """Calculate the error from the model."""
     sigmaprime = (
-        x[0] * ((Ih_table.variances) + ((x[1] * Ih_table.intensities) ** 2)) ** 0.5
+        x[0]
+        * flex.sqrt((Ih_table.variances) + flex.pow2((x[1] * Ih_table.intensities)))
     ) / Ih_table.inverse_scale_factors
     return sigmaprime
 
@@ -80,7 +81,7 @@ def calc_deltahl(Ih_table, n_h, sigmaprime):
     I_hl = Ih_table.intensities
     g_hl = Ih_table.inverse_scale_factors
     I_h = Ih_table.Ih_values
-    prefactor = ((n_h - flex.double(n_h.size(), 1.0)) / n_h) ** 0.5
+    prefactor = flex.sqrt((n_h - flex.double(n_h.size(), 1.0)) / n_h)
     delta_hl = prefactor * ((I_hl / g_hl) - I_h) / sigmaprime
     return delta_hl
 
@@ -318,10 +319,10 @@ class ErrorModelBinner(object):
 
     def calculate_bin_variances(self):
         """Calculate the variance of each bin."""
-        sum_deltasq = (self.delta_hl ** 2) * self.summation_matrix
-        sum_delta_sq = (self.delta_hl * self.summation_matrix) ** 2
+        sum_deltasq = flex.pow2(self.delta_hl) * self.summation_matrix
+        sum_delta_sq = flex.pow2(self.delta_hl * self.summation_matrix)
         bin_vars = (sum_deltasq / self.binning_info["refl_per_bin"]) - (
-            sum_delta_sq / (self.binning_info["refl_per_bin"] ** 2)
+            sum_delta_sq / flex.pow2(self.binning_info["refl_per_bin"])
         )
         self.binning_info["bin_variances"] = bin_vars
         return bin_vars
@@ -438,7 +439,7 @@ class BasicErrorModel(object):
     def update_variances(self, variances, intensities):
         """Use the error model parameter to calculate new values for the variances."""
         new_variance = (self.parameters[0] ** 2) * (
-            variances + ((self.parameters[1] * intensities) ** 2)
+            variances + flex.pow2(self.parameters[1] * intensities)
         )
         return new_variance
 

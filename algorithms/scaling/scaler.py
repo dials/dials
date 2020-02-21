@@ -235,7 +235,7 @@ class ScalerBase(Subject):
                 scaler.var_cov_matrix.non_zeroes > 0
             ):  # parameters errors have been determined
                 fractional_error = (
-                    scaler.reflection_table["inverse_scale_factor_variance"] ** 0.5
+                    flex.sqrt(scaler.reflection_table["inverse_scale_factor_variance"])
                     / scaler.reflection_table["inverse_scale_factor"]
                 )
                 variance_scaling = (

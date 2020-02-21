@@ -264,7 +264,7 @@ def example_array(reflections):
         anomalous_flag=False,
     )
     ma = miller.array(ms, data=reflections["intensity"])
-    ma.set_sigmas(reflections["variance"] ** 0.5)
+    ma.set_sigmas(flex.sqrt(reflections["variance"]))
     return ma
 
 

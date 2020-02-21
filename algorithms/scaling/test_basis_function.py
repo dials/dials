@@ -60,7 +60,7 @@ def test_RefinerCalculator(small_reflection_table):
     # Now test that the inverse scale factor is correctly calculated.
     calculated_sfs = s
     assert list(calculated_sfs) == pytest.approx(
-        list(new_S * flex.exp(new_B / (2.0 * (decay.d_values[0] ** 2))))
+        list(new_S * flex.exp(new_B / (2.0 * flex.pow2(decay.d_values[0]))))
     )
 
     # Now check that the derivative matrix is correctly calculated.

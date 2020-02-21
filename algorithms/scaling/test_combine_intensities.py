@@ -179,14 +179,14 @@ def test_combine_intensities(test_exp_P1):
     assert list(variance[0:5]) == pytest.approx(
         list(
             reflections["intensity.sum.variance"][0:5]
-            * reflections["prescaling_correction"][0:5] ** 2
+            * flex.pow2(reflections["prescaling_correction"][0:5])
         ),
         rel=2e-2,
     )
     assert list(variance[20:25]) == pytest.approx(
         list(
             reflections["intensity.prf.variance"][20:25]
-            * reflections["prescaling_correction"][20:25] ** 2
+            * flex.pow2(reflections["prescaling_correction"][20:25])
         ),
         rel=2e-2,
     )
@@ -200,7 +200,7 @@ def test_combine_intensities(test_exp_P1):
     assert list(variance) == pytest.approx(
         list(
             reflections["intensity.prf.variance"]
-            * reflections["prescaling_correction"] ** 2
+            * flex.pow2(reflections["prescaling_correction"])
         ),
         rel=2e-2,
     )
@@ -214,7 +214,7 @@ def test_combine_intensities(test_exp_P1):
     assert list(variance) == pytest.approx(
         list(
             reflections["intensity.sum.variance"]
-            * reflections["prescaling_correction"] ** 2
+            * flex.pow2(reflections["prescaling_correction"])
         ),
         rel=2e-2,
     )
