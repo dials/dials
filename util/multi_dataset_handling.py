@@ -109,14 +109,13 @@ def renumber_table_id_columns(reflection_tables):
 
     new_id_ = 0
     for table in reflection_tables:
-        table_id_values = sorted(list(set(table["id"]).difference({-1})))
+        table_id_values = sorted(set(table["id"]).difference({-1}), reverse=True)
         highest_new_id = new_id_ + len(table_id_values) - 1
         expt_ids_dict = table.experiment_identifiers()
         new_ids_dict = {}
         new_id_ = highest_new_id
         orig_id = copy.deepcopy(table["id"])
-        while table_id_values:
-            val = table_id_values.pop()
+        for val in table_id_values:
             sel = orig_id == val
             if val in expt_ids_dict:
                 # only delete here, add new at end to avoid clashes of new/old ids
@@ -128,7 +127,6 @@ def renumber_table_id_columns(reflection_tables):
         if new_ids_dict:
             for i, v in new_ids_dict.items():
                 expt_ids_dict[i] = v
-        table_id_values = sorted(list(set(table["id"]).difference({-1})))
     return reflection_tables
 
 
