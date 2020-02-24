@@ -910,7 +910,7 @@ class DIALSBuilder(object):
 
     def update_sources(self):
         if self.git_reference:
-            reference_base = os.path.expanduser(self.git_reference)
+            reference_base = os.path.abspath(os.path.expanduser(self.git_reference))
         else:
             if os.name == "posix" and pysocket.gethostname().endswith(".diamond.ac.uk"):
                 reference_base = (
