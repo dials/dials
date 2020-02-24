@@ -472,11 +472,11 @@ class Task(object):
         if sbox_memory > limit_memory:
             xsize, ysize, zsize = _average_bbox_size(self.reflections)
             raise RuntimeError(
-                u"""
+                """
         There was a problem allocating memory for shoeboxes.  This could be caused
         by a highly mosaic crystal model.  Possible solutions include increasing the
         percentage of memory allowed for shoeboxes or decreasing the block size.
-        The average shoebox size is %d × %d pixels × %d images - is your crystal
+        The average shoebox size is %d x %d pixels x %d images - is your crystal
         really this mosaic?
         Total system memory: %.1f GB
         Shoebox memory limit: %.1f GB
@@ -807,11 +807,11 @@ class Manager(object):
 
                 xsize, ysize, zsize = _average_bbox_size(self.reflections)
                 raise RuntimeError(
-                    u"""
+                    """
         Not enough memory to run integration jobs.  This could be caused by a
         highly mosaic crystal model.  Possible solutions include increasing the
         percentage of memory allowed for shoeboxes or decreasing the block size.
-        The average shoebox size is %d × %d pixels × %d images - is your crystal
+        The average shoebox size is %d x %d pixels x %d images - is your crystal
         really this mosaic?
             Total system memory: %.1f GB
             Shoebox memory limit: %.1f GB
