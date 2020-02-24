@@ -123,7 +123,14 @@ def show_mail_on_error():
             raise
         elif len(e.args) == 1:
             if isinstance(e.args[0], six.text_type):
-                e.args = (text + u" " + e.args[0],)
+                if six.PY2:
+                    e.args = (
+                        (text + u" " + e.args[0]).encode(
+                            "ascii", errors="xmlcharrefreplace"
+                        ),
+                    )
+                else:
+                    e.args = (text + u" " + e.args[0],)
             else:
                 e.args = (str(text) + " " + str(e.args[0]),)
         else:
