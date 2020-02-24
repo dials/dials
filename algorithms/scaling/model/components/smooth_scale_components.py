@@ -328,7 +328,7 @@ class SmoothBScaleComponent1D(SmoothScaleComponent1D):
 
     def calculate_scales(self, block_id=0):
         s = super(SmoothBScaleComponent1D, self).calculate_scales(block_id)
-        return flex.exp(s / (2.0 * (self._d_values[block_id] ** 2)))
+        return flex.exp(s / (2.0 * flex.pow2(self._d_values[block_id])))
 
     def calculate_restraints(self):
         residual = self.parameter_restraints * (self._parameters * self._parameters)

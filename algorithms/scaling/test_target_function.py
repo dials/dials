@@ -294,7 +294,9 @@ def test_target_fixedIh():
     assert J[1, 0] == pytest.approx(-22.0)
     assert J[2, 0] == pytest.approx(-33.0)
 
-    expected_rmsd = (flex.sum(expected_residuals ** 2) / len(expected_residuals)) ** 0.5
+    expected_rmsd = (
+        flex.sum(flex.pow2(expected_residuals)) / len(expected_residuals)
+    ) ** 0.5
     assert target._rmsds is None
     target.param_restraints = False  # don't try to use apm to get restraints
     assert target.rmsds(mock_Ih_table(), [])
@@ -411,11 +413,11 @@ def calculate_gradient_fd(target, scaler, apm):
         new_x[i] -= 0.5 * delta
         apm.set_param_vals(new_x)
         scaler.update_for_minimisation(apm, 0)
-        R_low = (target.calculate_residuals(Ih_table) ** 2) * Ih_table.weights
+        R_low = flex.pow2(target.calculate_residuals(Ih_table)) * Ih_table.weights
         new_x[i] += delta
         apm.set_param_vals(new_x)
         scaler.update_for_minimisation(apm, 0)
-        R_upper = (target.calculate_residuals(Ih_table) ** 2) * Ih_table.weights
+        R_upper = flex.pow2(target.calculate_residuals(Ih_table)) * Ih_table.weights
         new_x[i] -= 0.5 * delta
         apm.set_param_vals(new_x)
         scaler.update_for_minimisation(apm, 0)

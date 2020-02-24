@@ -19,7 +19,7 @@ def make_test_data_LCY_21c():
     s = [8.64, 0.80, 28.70, 1.87, 248.14, 1.30, 637.42, 1.57, 4.49, 2.05]
     s += [50.27, 3.37, 520.39, 4.84, 24.14]
     r["miller_index"] = flex.miller_index([(0, 0, j) for j in miller_ax_vals])
-    r["variance"] = flex.double(s) ** 2
+    r["variance"] = flex.pow2(flex.double(s))
     r["intensity"] = flex.double(i)
     return r
 
@@ -38,7 +38,7 @@ def make_test_data_thermo_61c():
     s += [0.188, 0.192, 0.144, 0.38, 0.149, 0.146, 0.158, 0.17, 0.185, 1.288]
     s += [0.127, 0.088, 0.086, 0.059, 0.092, 0.975]
     r["miller_index"] = flex.miller_index([(0, 0, j) for j in miller_ax_vals])
-    r["variance"] = flex.double(s) ** 2
+    r["variance"] = flex.pow2(flex.double(s))
     r["intensity"] = flex.double(i)
     return r
 
@@ -68,7 +68,7 @@ def make_test_data_thaumatin_41c():
     s += [1.411, 0.861, 2.561, 1.481, 1.162, 0.918, 3.367, 0.93, 1.03, 0.875]
     s += [1.0, 0.925, 0.918, 0.983, 1.631, 0.821, 1.35]
     r["miller_index"] = flex.miller_index([(0, 0, j) for j in miller_ax_vals])
-    r["variance"] = flex.double(s) ** 2
+    r["variance"] = flex.pow2(flex.double(s))
     r["intensity"] = flex.double(i)
     return r
 

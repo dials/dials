@@ -173,7 +173,7 @@ class SingleDatasetIntensityCombiner(object):
             )
             i_obs.set_observation_type_xray_intensity()
             i_obs.set_sigmas(
-                (Var ** 0.5)
+                flex.sqrt(Var)
                 * self.dataset["prescaling_correction"]
                 / self.dataset["inverse_scale_factor"]
             )
@@ -229,7 +229,7 @@ def _calculate_suitable_combined_intensities(scaler, max_key):
     if max_key == 1:
         if "partiality" in reflections:
             intensity = Isum * suitable_conv * inv_p
-            variance = Vsum * (suitable_conv * inv_p) ** 2
+            variance = Vsum * flex.pow2(suitable_conv * inv_p)
         else:
             intensity = Isum * suitable_conv
             variance = Vsum * suitable_conv * suitable_conv
@@ -347,7 +347,7 @@ class MultiDatasetIntensityCombiner(object):
             for dataset in self.datasets:
                 Int, Var = _get_Is_from_Imidval(dataset, Imid)
                 Int *= dataset["prescaling_correction"]
-                sigma = (Var ** 0.5) * dataset["prescaling_correction"]
+                sigma = flex.sqrt(Var) * dataset["prescaling_correction"]
                 combined_intensities.extend(Int)
                 combined_sigmas.extend(sigma)
                 combined_scales.extend(dataset["inverse_scale_factor"])
@@ -393,8 +393,8 @@ def _get_Is_from_Imidval(reflections, Imid):
     elif Imid == 1:  # special value to trigger sum
         if "partiality" in reflections:
             Int = reflections["intensity.sum.value"] / reflections["partiality"]
-            Var = reflections["intensity.sum.variance"] / (
-                reflections["partiality"] ** 2
+            Var = reflections["intensity.sum.variance"] / flex.pow2(
+                reflections["partiality"]
             )
         else:
             Int = reflections["intensity.sum.value"]
@@ -406,7 +406,7 @@ def _get_Is_from_Imidval(reflections, Imid):
                 reflections["intensity.sum.value"] / reflections["partiality"],
                 reflections["intensity.prf.variance"],
                 reflections["intensity.sum.variance"]
-                / (reflections["partiality"] ** 2),
+                / flex.pow2(reflections["partiality"]),
                 Imid,
             )
         else:

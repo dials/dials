@@ -737,7 +737,7 @@ def plot_array_decay_plot(array_model):
 
     tickvals = flex.double(range(n_y_bins + 1))
     resmin = (tickvals * configdict["res_bin_width"]) + configdict["resmin"]
-    d = 1.0 / ((tickvals * configdict["res_bin_width"]) + resmin) ** 0.5
+    d = 1.0 / flex.sqrt((tickvals * configdict["res_bin_width"]) + resmin)
     ticktext = ["%.3f" % i for i in d]
 
     return {

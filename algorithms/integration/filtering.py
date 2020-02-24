@@ -196,7 +196,7 @@ class IceRingFilter:
         :return: True/False in powder ring
         """
         result = flex.bool(len(d), False)
-        d2 = 1.0 / d ** 2
+        d2 = 1.0 / flex.pow2(d)
         for ice_ring in self.ice_rings:
             result = result | (d2 >= ice_ring[0]) & (d2 <= ice_ring[1])
         return result

@@ -92,7 +92,7 @@ class CCHalfFromMTZ(object):
         table = flex.reflection_table()
         table["miller_index"] = intensities.indices()
         table["intensity"] = intensities.data()
-        table["variance"] = intensities.sigmas() ** 2
+        table["variance"] = flex.pow2(intensities.sigmas())
 
         # Create unit cell list
         zeroed_batches = batches.data() - flex.min(batches.data())

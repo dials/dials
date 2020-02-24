@@ -159,7 +159,7 @@ class TwoThetaTarget(Target):
         reflections["2theta_resid"] = (
             reflections["2theta_cal.rad"] - reflections["2theta_obs.rad"]
         )
-        reflections["2theta_resid2"] = reflections["2theta_resid"] ** 2
+        reflections["2theta_resid2"] = flex.pow2(reflections["2theta_resid"])
 
         # set used_in_refinement flag to all those that had predictions
         mask = reflections.get_flags(reflections.flags.predicted)
@@ -256,7 +256,7 @@ class TwoThetaPredictionParameterisation(PredictionParameterisation):
 
             # 2theta = 2 * arcsin( |r0| / (2 * |s0| ) )
             sintheta = 0.5 * r0len * wl
-            fac = 1.0 / flex.sqrt(flex.double(len(wl), 1.0) - sintheta ** 2)
+            fac = 1.0 / flex.sqrt(flex.double(len(wl), 1.0) - flex.pow2(sintheta))
             val = fac * wl * dr0len
 
             d2theta_dp.append(val)

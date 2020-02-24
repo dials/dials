@@ -885,10 +885,10 @@ class AnomalousPlotter(ResolutionPlotterMixin):
                     dano2 = arr2.anomalous_differences().data()
                     if dano1.size() > 0:
                         rmsd_11 = (
-                            flex.sum((dano1 - dano2) ** 2) / (2.0 * dano1.size())
+                            flex.sum(flex.pow2(dano1 - dano2)) / (2.0 * dano1.size())
                         ) ** 0.5
                         rmsd_1min1 = (
-                            flex.sum((dano1 + dano2) ** 2) / (2.0 * dano1.size())
+                            flex.sum(flex.pow2(dano1 + dano2)) / (2.0 * dano1.size())
                         ) ** 0.5
                         correl_ratios.append(rmsd_1min1 / rmsd_11)
                     else:

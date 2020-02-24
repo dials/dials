@@ -83,7 +83,7 @@ class ComputeEsdBeamDivergence(object):
 
             if flex.sum(values) > 1:
                 variance.append(
-                    flex.sum(values * (angles ** 2)) / (flex.sum(values) - 1)
+                    flex.sum(values * flex.pow2(angles)) / (flex.sum(values) - 1)
                 )
 
         # Return a list of variances
@@ -694,12 +694,12 @@ class ScanVaryingProfileModelCalculator(object):
 
         # Smooth the parameters
         kernel = gaussian_kernel(51)
-        sigma_b_sq_new = convolve(sigma_b ** 2, kernel)
-        sigma_m_sq_new = convolve(sigma_m ** 2, kernel)
+        sigma_b_sq_new = convolve(flex.pow2(sigma_b), kernel)
+        sigma_m_sq_new = convolve(flex.pow2(sigma_m), kernel)
 
         # Print the output - mean as is scan varying
-        mean_sigma_b = math.sqrt(sum(sigma_b ** 2) / len(sigma_b))
-        mean_sigma_m = math.sqrt(sum(sigma_m ** 2) / len(sigma_m))
+        mean_sigma_b = math.sqrt(sum(flex.pow2(sigma_b)) / len(sigma_b))
+        mean_sigma_m = math.sqrt(sum(flex.pow2(sigma_m)) / len(sigma_m))
 
         # Save the smoothed parameters
         self._sigma_b = flex.sqrt(flex.double(sigma_b_sq_new))
