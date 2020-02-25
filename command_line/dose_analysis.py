@@ -111,7 +111,7 @@ class PychefRunner(object):
 
     @classmethod
     def from_mtz(cls, params, mtz_object):
-        """Initialise the class from mtzf input.
+        """Initialise the class from mtz input.
 
         Args:
             params: A dose-analysis phil params object
@@ -155,7 +155,7 @@ class PychefRunner(object):
         return cls(intensities, dose, params)
 
     @classmethod
-    def from_dials_datafiles(cls, params, experiments, reflection_table):
+    def from_dials_data_files(cls, params, experiments, reflection_table):
         """Initialise the class from an experiment list and reflection table.
 
         Args:
@@ -178,13 +178,16 @@ class PychefRunner(object):
                 anomalous_flag=params.anomalous,
             ),
             data=reflection_table["intensity.scale.value"],
-            sigmas=reflection_table["intensity.scale.variance"] ** 0.5,
+            sigmas=flex.sqrt(reflection_table["intensity.scale.variance"]),
         )
         intensities.set_observation_type_xray_intensity()
 
         doses = flex.double()
         start_doses, doses_per_image = interpret_images_to_doses_options(
-            params, experiments
+            experiments,
+            params.dose.experiments.dose_per_image,
+            params.dose.experiments.starting_doses,
+            params.dose.experiments.shared_crystal,
         )
         logger.info(
             "Interpreting data using:\n  starting_doses=%s\n  dose_per_image=%s",
@@ -224,11 +227,11 @@ class PychefRunner(object):
         logger.debug(self.stats.scp_vs_dose_str())
         logger.debug(self.stats.rd_vs_dose_str())
 
-    def make_html_report(self):
+    def make_html_report(self, html_filename=None, json_filename=None):
         """Generate html report from pychef stats."""
         data = {"dose_plots": self.stats.to_dict()}
-        if self.params.output.html:
-            logger.info("Writing html report to: %s", self.params.output.html)
+        if html_filename:
+            logger.info("Writing html report to: %s", html_filename)
             loader = ChoiceLoader(
                 [
                     PackageLoader("dials", "templates"),
@@ -240,11 +243,11 @@ class PychefRunner(object):
             html = template.render(
                 page_title="Dose analysis report", dose_plots=data["dose_plots"]
             )
-            with open(self.params.output.html, "wb") as f:
+            with open(html_filename, "wb") as f:
                 f.write(html.encode("utf-8", "xmlcharrefreplace"))
-        if self.params.output.json:
-            logger.info("Writing html report data to: %s", self.params.output.json)
-            with open(self.params.output.json, "w") as outfile:
+        if json_filename:
+            logger.info("Writing html report data to: %s", json_filename)
+            with open(json_filename, "w") as outfile:
                 json.dump(data, outfile)
 
 
@@ -278,16 +281,18 @@ def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
                 raise ValueError("A single input reflections datafile is required")
             if "inverse_scale_factor" not in reflections[0]:
                 raise KeyError("Input data must be scaled.")
-            script = PychefRunner.from_dials_datafiles(
+            script = PychefRunner.from_dials_data_files(
                 params, experiments, reflections[0],
             )
 
         elif unhandled and os.path.isfile(unhandled[0]):
             try:
                 mtz_object = mtz.object(file_name=unhandled[0])
-            except RuntimeError as e:
-                # If an error is encountered trying to read the mtzfile
-                raise ValueError(e)
+            except RuntimeError:
+                # If an error is encountered trying to read the file as an mtzfile
+                raise ValueError(
+                    "Input file cannot be read as a valid experiment/reflection file or MTZ file"
+                )
             else:
                 script = PychefRunner.from_mtz(params, mtz_object)
         else:
@@ -297,7 +302,7 @@ def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
         sys.exit("Error: %s" % e.message)
     else:
         script.run()
-        script.make_html_report()
+        script.make_html_report(params.output.html, params.output.json)
 
 
 if __name__ == "__main__":

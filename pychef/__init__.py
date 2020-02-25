@@ -82,12 +82,13 @@ range {
 )
 
 
-def interpret_images_to_doses_options(params, experiments):
+def interpret_images_to_doses_options(
+    experiments, dose_per_image, starting_doses=None, shared_crystal=False
+):
     """Interpret the dose.experiments options"""
-    dpi = params.dose.experiments.dose_per_image
-    if len(dpi) == 1:
-        doses_per_image = dpi * len(experiments)
-    elif len(dpi) != len(experiments):
+    if len(dose_per_image) == 1:
+        doses_per_image = dose_per_image * len(experiments)
+    elif len(dose_per_image) != len(experiments):
         raise ValueError(
             """
 The dose_per_image option must provide either one value, or a number of values
@@ -95,9 +96,9 @@ equal to the number of experiments (%s)"""
             % len(experiments)
         )
     else:
-        doses_per_image = dpi
+        doses_per_image = dose_per_image
 
-    if params.dose.experiments.shared_crystal:
+    if shared_crystal:
         start_doses = [0]
         accumulated_dose = 0
         # adjust starting doses to account for a shared crystal.
@@ -107,14 +108,14 @@ equal to the number of experiments (%s)"""
             accumulated_dose += n_images * dose_per_img
             start_doses.append(accumulated_dose)
         start_doses = start_doses[:-1]
-    elif params.dose.experiments.starting_doses:
-        if len(params.dose.experiments.starting_doses) != len(experiments):
+    elif starting_doses:
+        if len(starting_doses) != len(experiments):
             raise ValueError(
                 """
 The number of starting_doses must equal the number of experiments (%s)"""
                 % len(experiments)
             )
-        start_doses = params.dose.experiments.starting_doses
+        start_doses = starting_doses
     else:
         start_doses = [0] * len(experiments)
 

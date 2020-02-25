@@ -1,28 +1,28 @@
 """Tests for dials.dose_analysis"""
+import os
 import procrunner
-from dials.command_line.dose_analysis import PychefRunner, phil_scope
-from dxtbx.serialize import load
+import pytest
 from dials.array_family import flex
+from dials.command_line.dose_analysis import PychefRunner, phil_scope, run
+from dxtbx.serialize import load
 
 
-def test_dose_analysis_dials_data(dials_data, tmpdir):
+def test_dose_analysis_dials_data(dials_data, run_in_tmpdir):
     """Test dials.dose_analysis on scaled data."""
     location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = location.join("scaled_20_25.refl").strpath
     expts = location.join("scaled_20_25.expt").strpath
 
-    command = [
-        "dials.dose_analysis",
+    args = [
         refls,
         expts,
         "min_completeness=0.4",
         "-v",
         "json=dials.dose_analysis.json",
     ]
-    result = procrunner.run(command, working_directory=tmpdir)
-    assert not result.returncode and not result.stderr
-    assert tmpdir.join("dials.dose_analysis.html").check()
-    assert tmpdir.join("dials.dose_analysis.json").check()
+    run(args)
+    assert os.path.isfile("dials.dose_analysis.html")
+    assert os.path.isfile("dials.dose_analysis.json")
 
 
 def test_setup_from_dials_data(dials_data, run_in_tmpdir):
@@ -50,7 +50,7 @@ def test_setup_from_dials_data(dials_data, run_in_tmpdir):
     assert min(runner.dose) == 2 + 10
 
 
-def test_dose_analysis_mtz(dials_data, tmpdir):
+def test_dose_analysis_mtz(dials_data, run_in_tmpdir):
     """Test dials.dose_analysis on scaled data."""
     location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = location.join("scaled_20_25.refl").strpath
@@ -58,23 +58,21 @@ def test_dose_analysis_mtz(dials_data, tmpdir):
 
     # First export the data
     command = ["dials.export", refls, expts]
-    result = procrunner.run(command, working_directory=tmpdir)
+    result = procrunner.run(command)
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("scaled.mtz").check()
+    assert os.path.isfile("scaled.mtz")
 
-    command = [
-        "dials.dose_analysis",
-        tmpdir.join("scaled.mtz").strpath,
+    args = [
+        run_in_tmpdir.join("scaled.mtz").strpath,
         "anomalous=True",
         "json=dials.dose_analysis.json",
     ]
-    result = procrunner.run(command, working_directory=tmpdir)
-    assert not result.returncode and not result.stderr
-    assert tmpdir.join("dials.dose_analysis.html").check()
-    assert tmpdir.join("dials.dose_analysis.json").check()
+    run(args)
+    assert os.path.isfile("dials.dose_analysis.html")
+    assert os.path.isfile("dials.dose_analysis.json")
 
 
-def test_dose_analysis_input_handling(dials_data, tmpdir):
+def test_dose_analysis_input_handling(dials_data, run_in_tmpdir):
     """Test that errors are handled if more than one refl file, no refl/expt
     file or unscaled data."""
     location = dials_data("l_cysteine_4_sweeps_scaled")
@@ -82,25 +80,25 @@ def test_dose_analysis_input_handling(dials_data, tmpdir):
     expts = location.join("scaled_20_25.expt").strpath
 
     # Too many refl files
-    command = ["dials.dose_analysis", refls, expts, refls]
-    result = procrunner.run(command, working_directory=tmpdir)
-    assert result.returncode and result.stderr
+    args = [refls, expts, refls]
+    with pytest.raises(SystemExit):
+        run(args)
 
     # No refl file
-    command = ["dials.dose_analysis", expts]
-    result = procrunner.run(command, working_directory=tmpdir)
-    assert result.returncode and result.stderr
+    args = [expts]
+    with pytest.raises(SystemExit):
+        run(args)
 
     # No expt file
-    command = ["dials.dose_analysis", refls]
-    result = procrunner.run(command, working_directory=tmpdir)
-    assert result.returncode and result.stderr
+    args = [refls]
+    with pytest.raises(SystemExit):
+        run(args)
 
     # Unscaled data
-    data_dir = dials_data("l_cysteine_dials_output")
-    refls = data_dir / "20_integrated.pickle"
-    expts = data_dir / "20_integrated_experiments.json"
+    location = dials_data("l_cysteine_dials_output")
+    refls = location.join("20_integrated.pickle").strpath
+    expts = location.join("20_integrated_experiments.json").strpath
 
-    command = ["dials.dose_analysis", refls, expts]
-    result = procrunner.run(command, working_directory=tmpdir)
-    assert result.returncode and result.stderr
+    args = [refls, expts]
+    with pytest.raises(SystemExit):
+        run(args)
