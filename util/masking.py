@@ -241,9 +241,9 @@ class MaskGenerator(object):
             if self.params.d_max is not None:
                 logger.info("Generating low resolution mask:")
                 logger.info(" d_max = %f" % self.params.d_max)
-                d_min = self.params.d_max
-                d_max = max(d_min + 1, 1e9)
-                mask_resolution(d_min, d_max)
+                d_max = self.params.d_max
+                d_inf = max(d_max + 1, 1e9)
+                mask_resolution(d_max, d_inf)
 
             try:
                 # Mask out the resolution range
