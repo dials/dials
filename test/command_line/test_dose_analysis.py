@@ -36,7 +36,7 @@ def test_setup_from_dials_data(dials_data, run_in_tmpdir):
     params.dose.experiments.shared_crystal = True
     params.dose.experiments.dose_per_image = [1.0, 2.0]
     # First experiment is images 1>1800, second 1>1700 (i.e. dose spans 1>5200)
-    runner = PychefRunner.from_dials_datafiles(params, experiments, table)
+    runner = PychefRunner.from_dials_data_files(params, experiments, table)
     assert max(runner.dose) == 5198  # last reflection measured not quite at end
     assert min(runner.dose) == 2
 
@@ -45,7 +45,7 @@ def test_setup_from_dials_data(dials_data, run_in_tmpdir):
     params.dose.experiments.shared_crystal = False
     params.dose.experiments.dose_per_image = [1.0]
     params.dose.experiments.starting_doses = [10, 10]
-    runner = PychefRunner.from_dials_datafiles(params, experiments, table)
+    runner = PychefRunner.from_dials_data_files(params, experiments, table)
     assert max(runner.dose) == 1800 + 10
     assert min(runner.dose) == 2 + 10
 

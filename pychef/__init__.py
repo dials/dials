@@ -32,24 +32,6 @@ dose {
     dose_step = None
       .type = float(value_min=0)
   }
-  experiments
-  {
-    dose_per_image = 1
-      .type = floats(value_min=0)
-      .help = "The 'dose' accumulated per image. If more than one value is"
-              "given, this indicates the dose per image for each experiment,"
-              "and hence must match the number of experiments."
-    starting_doses = None
-      .type = ints(value_min=0)
-      .help = "The dose values at the start of each sweep. Must match the"
-              "number of experiments. If none given, it is assumed that each"
-              "sweep starts with zero accumulated dose."
-    shared_crystal = False
-      .type = bool
-      .help = "Option to indicate that all sweeps correspond to measurements"
-              "on the same crystal. Therefore the starting doses are"
-              "automatically adjusted to account for previously accumulated dose."
-  }
 
 }
 """
