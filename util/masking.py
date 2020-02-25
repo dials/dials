@@ -233,12 +233,32 @@ class MaskGenerator(object):
                     mask_resolution.masker = ResolutionMaskGenerator(beam, panel)
                 mask_resolution.masker.apply(mask, *args)
 
+            d_min = self.params.d_min
+            d_max = self.params.d_max
+
+            if any([d_min, d_max]):
+                logger.info("Cos^2 masking")
+                cos2 = panel.get_cos2_two_theta_array(beam.get_s0())
+                w = beam.get_wavelength()
+                if d_max is not None:
+                    c = math.cos(2 * math.asin(w / (2 * d_max)))
+                    d_max_cos2 = c
+                if d_min is not None:
+                    c = math.cos(2 * math.asin(w / (2 * d_min)))  # is small
+                    d_min_cos2 = c * c
+                if all((d_min, d_max)):
+                    mask = mask & (cos2 >= d_min_cos2) & (cos2 <= d_max_cos2)
+                elif d_min:
+                    mask = mask & (cos2 >= d_min_cos2)
+                else:
+                    mask = mask & (cos2 <= d_max_cos2)
+
             # Generate high and low resolution masks
-            if self.params.d_min is not None:
+            if self.params.d_min is not None and False:
                 logger.info("Generating high resolution mask:")
                 logger.info(" d_min = %f" % self.params.d_min)
                 mask_resolution(0, self.params.d_min)
-            if self.params.d_max is not None:
+            if self.params.d_max is not None and False:
                 logger.info("Generating low resolution mask:")
                 logger.info(" d_max = %f" % self.params.d_max)
                 d_max = self.params.d_max
