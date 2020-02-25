@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import math
+from collections import namedtuple
 
 from cctbx import crystal
 from iotbx.phil import parse
@@ -93,6 +94,49 @@ phil_scope = parse(
     process_includes=True,
 )
 
+CacheInfo = namedtuple("CacheInfo", ["hits", "misses", "maxsize", "currsize"])
+
+
+def lru_equality_cache(maxsize=10):
+    """LRU cache that compares keys based on equality... inefficiently.
+
+    Used for dxtbx models that don't have unique id values so can't be
+    cached with a normal lru_cache.
+
+    Args:
+        maxsize (int): The maximum number of old results to remember
+    """
+
+    def _decorator(f):
+        cache = []
+        hits, misses = 0, 0
+
+        def _wrapper_function(*args, **kwargs):
+            nonlocal cache, hits, misses
+            for i, (key_args, key_kwargs, key_result) in enumerate(cache):
+                if key_args == args and key_kwargs == kwargs:
+                    cache.append(cache.pop(i))
+                    hits += 1
+                    return key_result
+            result = f(*args, **kwargs)
+            misses += 1
+            cache.append((args, kwargs, result))
+            if len(cache) > maxsize:
+                cache = cache[1:]
+            return result
+
+        def _generate_cache_info():
+            return CacheInfo(
+                hits=hits, misses=misses, maxsize=maxsize, currsize=len(cache)
+            )
+
+        _wrapper_function.__wrapped__ = f
+        _wrapper_function.cache_info = _generate_cache_info
+
+        return _wrapper_function
+
+    return _decorator
+
 
 def generate_ice_ring_resolution_ranges(beam, panel, params):
     """
@@ -126,6 +170,16 @@ def generate_ice_ring_resolution_ranges(beam, panel, params):
             d_max = math.sqrt(1.0 / d_sq_inv_min)
             d_min = math.sqrt(1.0 / d_sq_inv_max)
             yield (d_min, d_max)
+
+
+@lru_equality_cache(maxsize=3)
+def _get_resolution_masker(beam, panel):
+    return ResolutionMaskGenerator(beam, panel)
+
+
+def _apply_resolution_mask(mask, beam, panel, *args):
+    _get_resolution_masker(beam, panel).apply(mask, *args)
+    print(_get_resolution_masker.cache_info())
 
 
 class MaskGenerator(object):
@@ -227,23 +281,17 @@ class MaskGenerator(object):
                     if region.pixel is not None:
                         mask[region.pixel] = False
 
-            # cache ResolutionMaskGenerator instance if used
-            def mask_resolution(*args):
-                if not hasattr(mask_resolution, "masker"):
-                    mask_resolution.masker = ResolutionMaskGenerator(beam, panel)
-                mask_resolution.masker.apply(mask, *args)
-
             # Generate high and low resolution masks
             if self.params.d_min is not None:
                 logger.info("Generating high resolution mask:")
                 logger.info(" d_min = %f" % self.params.d_min)
-                mask_resolution(0, self.params.d_min)
+                _apply_resolution_mask(mask, beam, panel, 0, self.params.d_min)
             if self.params.d_max is not None:
                 logger.info("Generating low resolution mask:")
                 logger.info(" d_max = %f" % self.params.d_max)
                 d_max = self.params.d_max
                 d_inf = max(d_max + 1, 1e9)
-                mask_resolution(d_max, d_inf)
+                _apply_resolution_mask(mask, beam, panel, d_max, d_inf)
 
             try:
                 # Mask out the resolution range
@@ -254,7 +302,7 @@ class MaskGenerator(object):
                     logger.info("Generating resolution range mask:")
                     logger.info(" d_min = %f" % d_min)
                     logger.info(" d_max = %f" % d_max)
-                    mask_resolution(d_min, d_max)
+                    _apply_resolution_mask(mask, beam, panel, d_min, d_max)
             except TypeError:
                 # Catch the default value None of self.params.resolution_range
                 if any(self.params.resolution_range):
@@ -270,7 +318,7 @@ class MaskGenerator(object):
                 logger.info("Generating ice ring mask:")
                 logger.info(" d_min = %f" % d_min)
                 logger.info(" d_max = %f" % d_max)
-                mask_resolution(d_min, d_max)
+                _apply_resolution_mask(mask, beam, panel, d_min, d_max)
 
             # Add to the list
             masks.append(mask)

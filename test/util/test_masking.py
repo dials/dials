@@ -12,6 +12,8 @@ from dxtbx.serialize import load
 from dials.array_family import flex
 from dials.algorithms.shadowing.filter import filter_shadowed_reflections
 
+from dials.util.masking import lru_equality_cache
+
 
 @pytest.mark.parametrize(
     "path,count_only_shadow,count_mask_shadow,count_mask_no_shadow",
@@ -105,3 +107,72 @@ def test_filter_shadowed_reflections(dials_regression):
         )
         assert shadowed.count(True) == 17
         assert shadowed.count(False) == 674
+
+
+def test_lru_equality_cache_basic():
+
+    callargs = []
+    result = [None]
+
+    def _callappend(*arg):
+        callargs.append(arg)
+        return result[-1]
+
+    fun = lru_equality_cache(maxsize=20)(_callappend)
+    hits, misses, maxsize, currsize = fun.cache_info()
+    assert hits == 0
+    assert misses == 0
+    assert maxsize == 20
+    assert currsize == 0
+
+    for i in range(100):
+        fun(i)
+        fun(i)
+    hits, misses, maxsize, currsize = fun.cache_info()
+    assert hits == 100
+    assert misses == 100
+    assert maxsize == 20
+    assert currsize == 20
+    assert len(callargs) == 100
+    assert len(set(callargs)) == 100
+    for i in range(80, 100):
+        fun(i)
+    assert fun.cache_info() == (120, 100, 20, 20)
+    assert len(callargs) == 100
+
+    # Change the return value
+    assert fun(1) is None
+    result.append("test_result")
+    assert fun(1) is None
+    assert fun.__wrapped__(1) == "test_result"
+    assert fun(2) == "test_result"
+
+
+def test_lru_equality_cache_id():
+    callargs = []
+
+    def _callappend(*arg):
+        callargs.append(arg)
+
+    fun = lru_equality_cache(maxsize=1)(_callappend)
+
+    # Now test cacheing of non-id-equal equality
+    callargs.clear()
+
+    class EqTester(object):
+        def __init__(self, a):
+            self.a = a
+
+        def __eq__(self, other):
+            return other.a == self.a
+
+        def __hash__(self):
+            return hash(id(self))
+
+    a, b = EqTester(-424242), EqTester(-424242)
+    assert a == b
+    assert hash(a) != hash(b)
+
+    fun(a)
+    fun(b)
+    assert fun.cache_info() == (1, 1, 1, 1)
