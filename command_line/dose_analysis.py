@@ -26,7 +26,7 @@ Example usage:
 
 dials.dose_analysis scaled.expt scaled.refl
 
-dials.dose_analysis mtzfile=scaled.mtz
+dials.dose_analysis scaled.mtz
 
 dials.dose_analysis scaled.expt scaled.refl shared_crystal=True
 
@@ -34,6 +34,7 @@ dials.dose_analysis scaled.expt scaled.refl shared_crystal=True
 from __future__ import absolute_import, division, print_function
 import json
 import logging
+import os
 import sys
 from libtbx import phil
 from dials.util import log, show_mail_on_error
@@ -57,11 +58,6 @@ logger = logging.getLogger("dials.command_line.dose_analysis")
 
 phil_scope = phil.parse(
     """\
-input {
-    mtzfile = None
-        .type = str
-        .help = "We can also import an MTZ file"
-}
 output {
     log = "dials.dose_analysis.log"
         .type = str
@@ -255,7 +251,7 @@ class PychefRunner(object):
 def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
     """Run the command-line script."""
 
-    usage = "dials.dose_analysis [options] scaled.expt scaled.refl | mtzfile=scaled.mtz"
+    usage = "dials.dose_analysis [options] scaled.expt scaled.refl | scaled.mtz"
 
     parser = OptionParser(
         usage=usage,
@@ -266,7 +262,9 @@ def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
         check_format=False,
     )
 
-    params, _ = parser.parse_args(args=args, show_diff_phil=False)
+    params, _, unhandled = parser.parse_args(
+        args=args, show_diff_phil=False, return_unhandled=True
+    )
 
     log.config(logfile=params.output.log)
     logger.info(dials_version())
@@ -283,9 +281,10 @@ def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
             script = PychefRunner.from_dials_datafiles(
                 params, experiments, reflections[0],
             )
-        elif params.input.mtzfile:
+
+        elif unhandled and os.path.isfile(unhandled[0]):
             try:
-                mtz_object = mtz.object(file_name=params.input.mtzfile)
+                mtz_object = mtz.object(file_name=unhandled[0])
             except RuntimeError as e:
                 # If an error is encountered trying to read the mtzfile
                 raise ValueError(e)

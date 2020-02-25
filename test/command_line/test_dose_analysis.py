@@ -64,7 +64,7 @@ def test_dose_analysis_mtz(dials_data, tmpdir):
 
     command = [
         "dials.dose_analysis",
-        "mtzfile=%s" % tmpdir.join("scaled.mtz").strpath,
+        tmpdir.join("scaled.mtz").strpath,
         "anomalous=True",
         "json=dials.dose_analysis.json",
     ]
@@ -93,11 +93,6 @@ def test_dose_analysis_input_handling(dials_data, tmpdir):
 
     # No expt file
     command = ["dials.dose_analysis", refls]
-    result = procrunner.run(command, working_directory=tmpdir)
-    assert result.returncode and result.stderr
-
-    # Wrongly specified mtzfile
-    command = ["dials.dose_analysis", "mtzfile=%s" % refls]
     result = procrunner.run(command, working_directory=tmpdir)
     assert result.returncode and result.stderr
 
