@@ -101,189 +101,33 @@ def install_miniconda(location):
     run_command(workdir=".", command=command, description="Installing Miniconda")
 
 
-class install_conda(object):
-    def __init__(self):
-        print()
+def install_conda(python):
+    print()
 
-        # Find relevant conda base installation
-        self.conda_base = os.path.realpath("miniconda")
-        if os.name == "nt":
-            self.conda_exe = os.path.join(self.conda_base, "Scripts", "conda.exe")
-        else:
-            self.conda_exe = os.path.join(self.conda_base, "bin", "conda")
-
-        # default environment file for users
-        self.environment_file = os.path.join(
-            os.path.expanduser("~"), ".conda", "environments.txt"
-        )
-
-        if os.path.isdir(self.conda_base) and os.path.isfile(self.conda_exe):
-            print("Using miniconda installation from", self.conda_base)
-        else:
-            print("Installing miniconda into", self.conda_base)
-            install_miniconda(self.conda_base)
-
-        # verify consistency and check conda version
-        if not os.path.isfile(self.conda_exe):
-            sys.exit("Conda executable not found at " + self.conda_exe)
-
-        self.environments = self.get_environments()
-
-        conda_info = json.loads(
-            subprocess.check_output([self.conda_exe, "info", "--json"], env=clean_env)
-        )
-        if self.conda_base != os.path.realpath(conda_info["root_prefix"]):
-            warnings.warn(
-                "Expected conda base differs:",
-                self.conda_base,
-                "!=",
-                os.path.realpath(conda_info["root_prefix"]),
-            )
-        for env in self.environments:
-            if env not in conda_info["envs"]:
-                print("Consistency check:", env, "not in environments:")
-                print(conda_info["envs"])
-                warnings.warn(
-                    """
-There is a mismatch between the conda settings in your home directory
-and what "conda info" is reporting. This is not a fatal error, but if
-an error is encountered, please check that your conda installation and
-environments exist and are working.
-""",
-                    RuntimeWarning,
-                )
-        if conda_info["conda_version"] < "4.4":
-            sys.exit(
-                """
-CCTBX programs require conda version 4.4 and greater to make use of the
-common compilers provided by conda. Please update your version with
-"conda update conda".
-"""
-            )
-
-        # create environment
-        python = "36"
-        if os.name == "nt":
-            conda_platform = "win-64"
-        elif sys.platform == "darwin":
-            conda_platform = "osx-64"
-        else:
-            conda_platform = "linux-64"
-
-        filename = os.path.join(
-            "modules",
-            "dials",
-            ".conda-envs",
-            "dials_py{version}_{platform}.txt".format(
-                version=python, platform=conda_platform
-            ),
-        )
-
-        if not os.path.isfile(filename):
-            raise RuntimeError(
-                """The file {filename} is not available""".format(filename=filename)
-            )
-
-        # make a new environment directory
-        prefix = os.path.realpath("conda_base")
-
-        # install a new environment or update and existing one
-        if prefix in self.environments:
-            command = "install"
-            text_messages = ["Updating", "update of"]
-        else:
-            command = "create"
-            text_messages = ["Installing", "installation into"]
-        command_list = [
-            self.conda_exe,
-            command,
-            "--prefix",
-            prefix,
-            "--file",
-            filename,
-            "--yes",
-            "--channel",
-            "conda-forge",
-            "--override-channels",
-        ]
-        if os.name == "nt":
-            command_list = [
-                "cmd.exe",
-                "/C",
-                " ".join(
-                    [os.path.join(self.conda_base, "Scripts", "activate"), "base", "&&"]
-                    + command_list
-                ),
-            ]
+    if python in ("3.7", "3.8"):
         print(
-            "{text} dials environment with:\n  {filename}".format(
-                text=text_messages[0], filename=filename
-            )
+            "\n",
+            "*" * 80 + "\n",
+            " Python version {python} is not supported yet.\n".format(python=python),
+            "*" * 80 + "\n\n",
         )
-        for retry in range(5):
-            retry += 1
-            try:
-                run_command(
-                    workdir=".",
-                    command=command_list,
-                    description="Installing base directory",
-                )
-            except Exception:
-                print(
-                    """
-*******************************************************************************
-There was a failure in constructing the conda environment.
-Attempt {retry} of 5 will start {retry} minute(s) from {t}.
-*******************************************************************************
-""".format(
-                        retry=retry, t=time.asctime()
-                    )
-                )
-                time.sleep(retry * 60)
-            else:
-                break
-        else:
-            sys.exit(
-                """
-The conda environment could not be constructed. Please check that there is a
-working network connection for downloading conda packages.
-"""
-            )
-        print(
-            "Completed {text}:\n  {prefix}".format(text=text_messages[1], prefix=prefix)
-        )
-        with open(os.path.join(prefix, ".condarc"), "w") as fh:
-            fh.write(
-                """
-channels:
-  - conda-forge
-"""
-            )
 
-        # on Windows, also download the Visual C++ 2008 Redistributable
-        # use the same version as conda-forge
-        # https://github.com/conda-forge/vs2008_runtime-feedstock
-        if os.name == "nt":
-            download_to_file(
-                "https://download.microsoft.com/download/5/D/8/5D8C65CB-C849-4025-8E95-C3966CAFD8AE/vcredist_x64.exe",
-                os.path.join(prefix, "vcredist_x64.exe"),
-            )
+    # Find relevant conda base installation
+    conda_base = os.path.realpath("miniconda")
+    if os.name == "nt":
+        conda_exe = os.path.join(conda_base, "Scripts", "conda.exe")
+    else:
+        conda_exe = os.path.join(conda_base, "bin", "conda")
 
-        # check that environment file is updated
-        if prefix not in self.get_environments():
-            raise RuntimeError(
-                """
-The newly installed environment cannot be found in
-${HOME}/.conda/environments.txt.
-"""
-            )
+    # default environment file for users
+    environment_file = os.path.join(
+        os.path.expanduser("~"), ".conda", "environments.txt"
+    )
 
-    def get_environments(self):
-        """
-        Return a set of existing conda environment paths
-        """
+    def get_environments():
+        """Return a set of existing conda environment paths"""
         try:
-            with open(self.environment_file) as f:
+            with open(environment_file) as f:
                 paths = f.readlines()
         except IOError:
             paths = []
@@ -291,7 +135,7 @@ ${HOME}/.conda/environments.txt.
             os.path.normpath(env.strip()) for env in paths if os.path.isdir(env.strip())
         )
         env_dirs = (
-            os.path.join(self.conda_base, "envs"),
+            os.path.join(conda_base, "envs"),
             os.path.join(os.path.expanduser("~"), ".conda", "envs"),
         )
         for env_dir in env_dirs:
@@ -302,6 +146,173 @@ ${HOME}/.conda/environments.txt.
                         environments.add(d)
 
         return environments
+
+    if os.path.isdir(conda_base) and os.path.isfile(conda_exe):
+        print("Using miniconda installation from", conda_base)
+    else:
+        print("Installing miniconda into", conda_base)
+        install_miniconda(conda_base)
+
+    # verify consistency and check conda version
+    if not os.path.isfile(conda_exe):
+        sys.exit("Conda executable not found at " + conda_exe)
+
+    environments = get_environments()
+
+    conda_info = json.loads(
+        subprocess.check_output([conda_exe, "info", "--json"], env=clean_env)
+    )
+    if conda_base != os.path.realpath(conda_info["root_prefix"]):
+        warnings.warn(
+            "Expected conda base differs:",
+            conda_base,
+            "!=",
+            os.path.realpath(conda_info["root_prefix"]),
+        )
+    for env in environments:
+        if env not in conda_info["envs"]:
+            print("Consistency check:", env, "not in environments:")
+            print(conda_info["envs"])
+            warnings.warn(
+                """
+There is a mismatch between the conda settings in your home directory
+and what "conda info" is reporting. This is not a fatal error, but if
+an error is encountered, please check that your conda installation and
+environments exist and are working.
+""",
+                RuntimeWarning,
+            )
+    if conda_info["conda_version"] < "4.4":
+        sys.exit(
+            """
+CCTBX programs require conda version 4.4 and greater to make use of the
+common compilers provided by conda. Please update your version with
+"conda update conda".
+"""
+        )
+
+    # identify packages required for environment
+    if os.name == "nt":
+        conda_platform = "windows"
+    elif sys.platform == "darwin":
+        conda_platform = "macos"
+    else:
+        conda_platform = "linux"
+    filename = os.path.join(
+        "modules",
+        "dials",
+        ".conda-envs",
+        "{platform}.txt".format(platform=conda_platform),
+    )
+    if not os.path.isfile(filename):
+        raise RuntimeError(
+            "The file {filename} is not available".format(filename=filename)
+        )
+
+    python_requirement = {
+        "3.6": "conda-forge::python>=3.6,<3.7",
+        "3.7": "conda-forge::python>=3.7,<3.8",
+        "3.8": "conda-forge::python>=3.8,<3.9",
+    }.get(python)
+    if not python_requirement:
+        raise RuntimeError(
+            "The requested python version {python} is not available".format(
+                python=python
+            )
+        )
+
+    # make a new environment directory
+    prefix = os.path.realpath("conda_base")
+
+    # install a new environment or update and existing one
+    if prefix in environments:
+        command = "install"
+        text_messages = ["Updating", "update of"]
+    else:
+        command = "create"
+        text_messages = ["Installing", "installation into"]
+    command_list = [
+        conda_exe,
+        command,
+        "--prefix",
+        prefix,
+        "--file",
+        filename,
+        "--yes",
+        "--channel",
+        "conda-forge",
+        "--override-channels",
+        python_requirement,
+    ]
+    if os.name == "nt":
+        command_list = [
+            "cmd.exe",
+            "/C",
+            " ".join(
+                [os.path.join(conda_base, "Scripts", "activate"), "base", "&&"]
+                + command_list
+            ),
+        ]
+    print(
+        "{text} dials environment from {filename} with Python {python}".format(
+            text=text_messages[0], filename=filename, python=python
+        )
+    )
+    for retry in range(5):
+        retry += 1
+        try:
+            run_command(
+                workdir=".",
+                command=command_list,
+                description="Installing base directory",
+            )
+        except Exception:
+            print(
+                """
+*******************************************************************************
+There was a failure in constructing the conda environment.
+Attempt {retry} of 5 will start {retry} minute(s) from {t}.
+*******************************************************************************
+""".format(
+                    retry=retry, t=time.asctime()
+                )
+            )
+            time.sleep(retry * 60)
+        else:
+            break
+    else:
+        sys.exit(
+            """
+The conda environment could not be constructed. Please check that there is a
+working network connection for downloading conda packages.
+"""
+        )
+    print("Completed {text}:\n  {prefix}".format(text=text_messages[1], prefix=prefix))
+    with open(os.path.join(prefix, ".condarc"), "w") as fh:
+        fh.write(
+            """
+channels:
+  - conda-forge
+"""
+        )
+
+    # on Windows, also download the Visual C++ 2008 Redistributable
+    # use the same version as conda-forge
+    # https://github.com/conda-forge/vs2008_runtime-feedstock
+    if os.name == "nt":
+        download_to_file(
+            "https://download.microsoft.com/download/5/D/8/5D8C65CB-C849-4025-8E95-C3966CAFD8AE/vcredist_x64.exe",
+            os.path.join(prefix, "vcredist_x64.exe"),
+        )
+
+    # check that environment file is updated
+    if prefix not in get_environments():
+        raise RuntimeError(
+            """
+The newly installed environment cannot be found in
+${HOME}/.conda/environments.txt.
+"""
+        )
 
 
 _BUILD_DIR = "build"
@@ -852,7 +863,7 @@ class DIALSBuilder(object):
 
         # Build base packages
         if "base" in actions:
-            install_conda()
+            install_conda(python=options.python)
 
         # Configure, make, get revision numbers
         if "build" in actions:
@@ -1109,6 +1120,12 @@ be passed separately with quotes to avoid confusion (e.g
 --config_flags="--build=debug" --config_flags="--enable_cxx11")""",
         action="append",
         default=[],
+    )
+    parser.add_argument(
+        "--python",
+        dest="python",
+        help="Install this minor version of Python (default: 3.6)",
+        default="3.6",
     )
 
     options = parser.parse_args()
