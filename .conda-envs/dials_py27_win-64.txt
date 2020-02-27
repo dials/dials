@@ -59,7 +59,6 @@ https://conda.anaconda.org/cctbx/win-64/pyreadline-2.1-py27_1000.tar.bz2#c2ce2b6
 https://conda.anaconda.org/cctbx/noarch/pytz-2018.9-py_0.tar.bz2#a7ea66fa1d0ead613d29cabb8157e88b
 https://conda.anaconda.org/cctbx/win-64/pywin32-221-py27_0.tar.bz2#3f71370f22bf4ec3b7f376b7278b33bb
 https://conda.anaconda.org/cctbx/win-64/scandir-1.9.0-py27h0c8e037_1000.tar.bz2#edbab415cc0f61ba289440a9670cd012
-https://conda.anaconda.org/cctbx/noarch/send2trash-1.5.0-py_0.tar.bz2#c3779037a635e1150f1c53c28b875949
 https://conda.anaconda.org/cctbx/noarch/simplegeneric-0.8.1-py_1.tar.bz2#a561caf8601e8d85547c77a54ee99333
 https://conda.anaconda.org/cctbx/win-64/six-1.12.0-py27_1000.tar.bz2#3b6e82e055beabdea427eb9e7ca0d122
 https://conda.anaconda.org/cctbx/noarch/snowballstemmer-1.2.1-py_1.tar.bz2#e175d2827715f9c3d44810760e406dc4

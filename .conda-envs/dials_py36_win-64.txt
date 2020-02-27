@@ -58,7 +58,6 @@ https://conda.anaconda.org/cctbx/noarch/pyparsing-2.3.1-py_0.tar.bz2#30d8bc8c897
 https://conda.anaconda.org/cctbx/win-64/pyreadline-2.1-py36_1000.tar.bz2#36654cdcaa9eeb6b69f1f7aca2b639fd
 https://conda.anaconda.org/cctbx/noarch/pytz-2018.9-py_0.tar.bz2#a7ea66fa1d0ead613d29cabb8157e88b
 https://conda.anaconda.org/cctbx/win-64/pywin32-224-py36hfa6e2cd_1000.tar.bz2#4fccf2977d47c8b284a4fd12f5599171
-https://conda.anaconda.org/cctbx/noarch/send2trash-1.5.0-py_0.tar.bz2#c3779037a635e1150f1c53c28b875949
 https://conda.anaconda.org/cctbx/win-64/six-1.12.0-py36_1000.tar.bz2#56043faef487ff0ecf65a38985e9e27e
 https://conda.anaconda.org/cctbx/noarch/snowballstemmer-1.2.1-py_1.tar.bz2#e175d2827715f9c3d44810760e406dc4
 https://conda.anaconda.org/cctbx/noarch/sphinxcontrib-websupport-1.1.0-py_1.tar.bz2#22883e87b5561bee3b069588292e9a50
