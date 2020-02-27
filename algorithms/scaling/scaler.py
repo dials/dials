@@ -296,10 +296,12 @@ uncertainty in the scaling model""" + (
         for scaler in self.active_scalers:
             suitable_isel = scaler.suitable_refl_for_scaling_sel.iselection()
             outlier_isel = suitable_isel.select(scaler.outliers)
-            outliers_mask = flex.bool(
-                scaler.suitable_refl_for_scaling_sel.size(), False
-            )
+            n = scaler.reflection_table.size()
+            outliers_mask = flex.bool(n, False)
             outliers_mask.set_selected(outlier_isel, True)
+            scaler.reflection_table.unset_flags(
+                flex.bool(n, True), scaler.reflection_table.flags.outlier_in_scaling
+            )
             scaler.reflection_table.set_flags(
                 outliers_mask, scaler.reflection_table.flags.outlier_in_scaling
             )
