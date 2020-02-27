@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- mode: python; coding: utf-8; indent-tabs-mode: nil; python-indent: 2 -*-
+# -*- mode: python; coding: utf-8; indent-tabs-mode: nil; python-indent: 4 -*-
 
 # Running bootstrap requires a minimum Python version of 2.7.
 
@@ -789,7 +789,7 @@ def git(
 
 
 ##### Modules #####
-MODULES = {"scons": ["-b 3.1.1", "https://github.com/SCons/scons/archive/3.1.1.zip"]}
+MODULES = {}
 for module in (
     "cctbx/annlib_adaptbx",
     "cctbx/boost",

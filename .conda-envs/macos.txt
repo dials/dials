@@ -36,6 +36,7 @@ conda-forge::pytest-xdist
 conda-forge::requests
 conda-forge::scikit-learn=0.20.2
 conda-forge::scipy=1.2.1
+conda-forge::scons
 conda-forge::setuptools
 conda-forge::six
 conda-forge::sphinx<1.9

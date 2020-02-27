@@ -17,6 +17,7 @@ https://conda.anaconda.org/cctbx/win-64/jpeg-9c-hfa6e2cd_1001.tar.bz2#e4ecbdbea1
 https://conda.anaconda.org/cctbx/win-64/m2w64-gcc-libs-core-5.3.0-7.tar.bz2#276d396bfe8d958f71173b7134f739fa
 https://conda.anaconda.org/cctbx/win-64/openssl-1.0.2q-hfa6e2cd_0.tar.bz2#b572b472a54d1046f436a1d26e49f876
 https://conda.anaconda.org/cctbx/win-64/tk-8.6.9-hfa6e2cd_1000.tar.bz2#d73777998507e2194ae6c2c8b4c1c726
+https://conda.anaconda.org/conda-forge/win-64/scons-3.1.2-py36_0.tar.bz2#15ef5a447e35cf42b7d4dfade46910cb
 https://conda.anaconda.org/cctbx/win-64/zlib-1.2.11-h2fa13f4_1004.tar.bz2#ded13addbb481e758ee71d2a7968c9d7
 https://conda.anaconda.org/cctbx/noarch/alabaster-0.7.12-py_0.tar.bz2#2489a97287f90176ecdc3ca982b4b0a0
 https://conda.anaconda.org/cctbx/noarch/apipkg-1.5-py_0.tar.bz2#4e79696efff4eae6cbcbeddbb5bbb5ee

@@ -32,6 +32,7 @@ conda-forge::pytest-xdist
 conda-forge::requests
 conda-forge::scikit-learn=0.20.2  # needs reviewing for py3.8 compatibility
 conda-forge::scipy=1.2.1  # needs reviewing for py3.8 compatibility
+conda-forge::scons
 conda-forge::setuptools
 conda-forge::six
 conda-forge::sphinx<1.9  # needs reviewing for py3.8 compatibility
