@@ -6,6 +6,7 @@ import os
 import sys
 import tarfile
 import time
+import glob
 import six
 import six.moves.cPickle as pickle
 from six import BytesIO
@@ -16,6 +17,8 @@ from dials.array_family import flex
 from dxtbx.model.experiment_list import ExperimentListFactory
 from dxtbx.model.experiment_list import ExperimentList
 from libtbx.utils import Abort, Sorry
+from collections import OrderedDict
+from libtbx.phil import parse
 
 logger = logging.getLogger("dials.command_line.stills_process")
 
@@ -25,13 +28,15 @@ DIALS script for processing still images. Import, index, refine, and integrate a
 seperately.
 """
 
-from libtbx.phil import parse
-
 control_phil_str = """
   input {
     file_list = None
       .type = path
-      .help = Path to a list of images
+      .help = Path to a text file with a list of images
+    glob = None
+      .type = str
+      .help = For large, multi-file datasets, specify the paths using wildcards (e.g. *.cbf)
+      .multiple = True
     image_tag = None
       .type = str
       .multiple = True
@@ -132,10 +137,6 @@ control_phil_str = """
     nproc = 1
       .type = int(value_min=1)
       .help = "The number of processes to use."
-    glob = None
-      .type = str
-      .help = For MPI, for multifile data, mandatory blobs giving file paths
-      .multiple = True
     composite_stride = None
       .type = int
       .help = For MPI, if using composite mode, specify how many ranks to    \
@@ -298,20 +299,46 @@ class Script(object):
         """Execute the script."""
         from libtbx import easy_mp
 
-        # Parse the command line
-        params, options, all_paths = self.parser.parse_args(
-            show_diff_phil=False, return_unhandled=True, quick_parse=True
-        )
+        try:
+            from mpi4py import MPI
+        except ImportError:
+            rank = 0
+            size = 1
+        else:
+            comm = MPI.COMM_WORLD
+            rank = comm.Get_rank()  # each process in MPI has a unique id, 0-indexed
+            size = comm.Get_size()  # size: number of processes running in this job
 
-        if not all_paths and params.input.file_list is not None:
-            all_paths.extend(
-                [path.strip() for path in open(params.input.file_list).readlines()]
+        if rank == 0:
+            # Parse the command line
+            params, options, all_paths = self.parser.parse_args(
+                show_diff_phil=False, return_unhandled=True, quick_parse=True
             )
+
+            if params.input.glob:
+                all_paths.extend(params.input.glob)
+            globbed = []
+            for p in all_paths:
+                globbed.extend(glob.glob(p))
+            all_paths = globbed
+
+            if not all_paths and params.input.file_list is not None:
+                all_paths.extend(
+                    [path.strip() for path in open(params.input.file_list).readlines()]
+                )
+        if size > 1:
+            if rank == 0:
+                transmitted_info = params, options, all_paths
+            else:
+                transmitted_info = None
+            params, options, all_paths = comm.bcast(transmitted_info, root=0)
 
         # Check we have some filenames
         if not all_paths:
             self.parser.print_help()
             return
+
+        print("Have %d files" % len(all_paths))
 
         # Mask validation
         for mask_path in params.spotfinder.lookup.mask, params.integration.lookup.mask:
@@ -368,22 +395,28 @@ class Script(object):
             # frame using its index
 
             experiments = ExperimentList()
-            for path in all_paths:
+            for path in sorted(all_paths):
                 experiments.extend(do_import(path, load_models=False))
 
             indices = []
             basenames = []
+            basename_counts = {}
             split_experiments = []
             for i, imageset in enumerate(experiments.imagesets()):
                 assert len(imageset) == 1
                 paths = imageset.paths()
                 indices.append(i)
-                basenames.append(os.path.splitext(os.path.basename(paths[0]))[0])
+                basename = os.path.splitext(os.path.basename(paths[0]))[0]
+                basenames.append(basename)
+                if basename in basename_counts:
+                    basename_counts[basename] += 1
+                else:
+                    basename_counts[basename] = 1
                 split_experiments.append(experiments[i : i + 1])
             tags = []
             split_experiments2 = []
             for i, basename in zip(indices, basenames):
-                if basenames.count(basename) > 1:
+                if basename_counts[basename] > 1:
                     tag = "%s_%05d" % (basename, i)
                 else:
                     tag = basename
@@ -436,14 +469,17 @@ class Script(object):
             iterable = list(zip(tags, split_experiments))
 
         else:
-            basenames = [
-                os.path.splitext(os.path.basename(filename))[0]
-                for filename in all_paths
-            ]
+            basenames = OrderedDict()
+            for filename in sorted(all_paths):
+                basename = os.path.splitext(os.path.basename(filename))[0]
+                if basename in basenames:
+                    basenames[basename] += 1
+                else:
+                    basenames[basename] = 1
             tags = []
             all_paths2 = []
-            for i, basename in enumerate(basenames):
-                if basenames.count(basename) > 1:
+            for i, (basename, count) in enumerate(basenames.items()):
+                if count > 1:
                     tag = "%s_%05d" % (basename, i)
                 else:
                     tag = basename
@@ -513,12 +549,6 @@ class Script(object):
 
         # Process the data
         if params.mp.method == "mpi":
-            from mpi4py import MPI
-
-            comm = MPI.COMM_WORLD
-            rank = comm.Get_rank()  # each process in MPI has a unique id, 0-indexed
-            size = comm.Get_size()  # size: number of processes running in this job
-
             # Configure the logging
             if params.output.logging_dir is None:
                 logfile = None
