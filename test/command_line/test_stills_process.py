@@ -125,7 +125,13 @@ def test_sacla_h5(dials_regression, run_in_tmpdir, use_mpi, in_memory=False):
 
     # Call dials.stills_process
     if use_mpi:
-        command = ["mpirun", "-n", "4", "dials.stills_process", "mp.method=mpi mp.composite_stride=4"]
+        command = [
+            "mpirun",
+            "-n",
+            "4",
+            "dials.stills_process",
+            "mp.method=mpi mp.composite_stride=4",
+        ]
     else:
         command = ["dials.stills_process"]
     command += [image_path, "process_sacla.phil"]
