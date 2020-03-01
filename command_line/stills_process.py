@@ -16,6 +16,7 @@ from dials.util import log
 from dials.array_family import flex
 from dxtbx.model.experiment_list import ExperimentListFactory
 from dxtbx.model.experiment_list import ExperimentList
+from dxtbx.model.experiment_list import Experiment
 from libtbx.utils import Abort, Sorry
 from collections import OrderedDict
 from libtbx.phil import parse
@@ -240,17 +241,27 @@ def do_import(filename, load_models=True):
 
     from dxtbx.imageset import ImageSetFactory
 
+    all_experiments = ExperimentList()
     for experiment in experiments:
-        if load_models:
-            experiment.load_models()
+        # Convert from ImageSequence to ImageSet, if needed
         imageset = ImageSetFactory.imageset_from_anyset(experiment.imageset)
-        imageset.set_scan(None)
-        imageset.set_goniometer(None)
-        experiment.imageset = imageset
-        experiment.scan = None
-        experiment.goniometer = None
+        for i in range(len(imageset)):
+            # Preserve original models if they were available (in the case of an image file
+            # they will not be, but in the case of a previously processed experiment list,
+            # then they may be available
+            expt = Experiment(
+                imageset=imageset[i : i + 1],
+                detector=experiment.detector,
+                beam=experiment.beam,
+                scan=experiment.scan,
+                goniometer=experiment.goniometer,
+                crystal=experiment.crystal,
+            )
+            if load_models:
+                expt.load_models()
+            all_experiments.append(expt)
 
-    return experiments
+    return all_experiments
 
 
 class Script(object):
