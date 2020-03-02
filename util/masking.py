@@ -108,26 +108,33 @@ def lru_equality_cache(maxsize=10):
     """
 
     def _decorator(f):
-        cache = []
-        hits, misses = 0, 0
+        class Scope(object):
+            pass
+
+        cache_data = Scope()
+        cache_data.cache = []
+        cache_data.hits = 0
+        cache_data.misses = 0
 
         def _wrapper_function(*args, **kwargs):
-            nonlocal cache, hits, misses
-            for i, (key_args, key_kwargs, key_result) in enumerate(cache):
+            for i, (key_args, key_kwargs, key_result) in enumerate(cache_data.cache):
                 if key_args == args and key_kwargs == kwargs:
-                    cache.append(cache.pop(i))
-                    hits += 1
+                    cache_data.cache.append(cache_data.cache.pop(i))
+                    cache_data.hits += 1
                     return key_result
             result = f(*args, **kwargs)
-            misses += 1
-            cache.append((args, kwargs, result))
-            if len(cache) > maxsize:
-                cache = cache[1:]
+            cache_data.misses += 1
+            cache_data.cache.append((args, kwargs, result))
+            if len(cache_data.cache) > maxsize:
+                cache_data.cache = cache_data.cache[1:]
             return result
 
         def _generate_cache_info():
             return CacheInfo(
-                hits=hits, misses=misses, maxsize=maxsize, currsize=len(cache)
+                hits=cache_data.hits,
+                misses=cache_data.misses,
+                maxsize=maxsize,
+                currsize=len(cache_data.cache),
             )
 
         _wrapper_function.__wrapped__ = f
