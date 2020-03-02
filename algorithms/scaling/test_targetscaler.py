@@ -21,6 +21,8 @@ def generated_target_refl():
     reflections = flex.reflection_table()
     reflections["intensity.prf.value"] = flex.double([1.0, 10.0, 1.0])
     reflections["intensity.prf.variance"] = flex.double([1.0, 10.0, 1.0])
+    reflections["intensity.sum.value"] = flex.double([1.0, 10.0, 1.0])
+    reflections["intensity.sum.variance"] = flex.double([1.0, 10.0, 1.0])
     reflections["miller_index"] = flex.miller_index(
         [(1, 0, 0), (0, 0, 1), (1, 0, 0)]
     )  # don't change
@@ -37,6 +39,8 @@ def generated_refl_to_scale():
     reflections = flex.reflection_table()
     reflections["intensity.prf.value"] = flex.double([2.0, 5.0, 2.0, 1.0])
     reflections["intensity.prf.variance"] = flex.double([2.0, 5.0, 2.0, 1.0])
+    reflections["intensity.sum.value"] = flex.double([2.0, 5.0, 2.0, 1.0])
+    reflections["intensity.sum.variance"] = flex.double([2.0, 5.0, 2.0, 1.0])
     reflections["miller_index"] = flex.miller_index(
         [(1, 0, 0), (0, 0, 1), (1, 0, 0), (10, 0, 0)]
     )  # don't change

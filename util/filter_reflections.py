@@ -60,6 +60,19 @@ class NoProfilesException(Exception):
     pass
 
 
+def filter_reflection_table_selection(
+    reflection_table, intensity_choice, *args, **kwargs
+):
+    """Return the selection mask for filtering."""
+    reflection_table["original_index"] = flex.size_t(range(0, reflection_table.size()))
+    sel = flex.bool(reflection_table.size(), False)
+    filtered_table = filter_reflection_table(
+        reflection_table, intensity_choice, *args, **kwargs
+    )
+    sel.set_selected(filtered_table["original_index"], True)
+    return sel
+
+
 def filter_reflection_table(reflection_table, intensity_choice, *args, **kwargs):
     """Filter the data and delete unneeded intensity columns.
 

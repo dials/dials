@@ -62,10 +62,12 @@ def refl_to_filter():
     """Generate a separate reflection table for filtering"""
     reflections = flex.reflection_table()
     reflections["partiality"] = flex.double([0.1, 1.0, 1.0, 1.0, 1.0, 1.0])
+    reflections["id"] = flex.int(reflections.size(), 0)
+    reflections["intensity.sum.value"] = flex.double([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
+    reflections["intensity.sum.variance"] = flex.double([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
     reflections.set_flags(
         flex.bool([True, False, True, True, True, True]), reflections.flags.integrated
     )
-    reflections["d"] = flex.double([1.0, 1.0, 0.0, 1.0, 1.0, 1.0])
     return reflections
 
 
@@ -208,11 +210,11 @@ def test_SingleScalerFactory(generated_param, refl_to_filter, mock_scaling_compo
     )
 
     # Test reflection filtering
-    rt, _ = SingleScalerFactory.filter_bad_reflections(refl_to_filter)
+    rt = SingleScalerFactory.filter_bad_reflections(refl_to_filter)
     assert list(rt.get_flags(rt.flags.excluded_for_scaling)) == [
+        True,
+        True,
         False,
-        True,
-        True,
         False,
         False,
         False,
@@ -251,7 +253,8 @@ def test_TargetScalerFactory(generated_param, mock_scaling_component):
     # This time make one dataset bad, and check it gets removed
     refl_list, explist = test_refl_and_exp_list(mock_scaling_component, 3)
     generated_param.scaling_options.target_model = False
-    refl_list[1]["d"] = flex.double([-0.1, -0.1, -0.1, -0.1])
+    refl_list[1].unset_flags(flex.bool(4, True), refl_list[1].flags.integrated_prf)
+    refl_list[1].unset_flags(flex.bool(4, True), refl_list[1].flags.integrated_sum)
     explist[0].scaling_model.is_scaled = True
     target = TargetScalerFactory.create(generated_param, explist, refl_list)
     assert isinstance(target, TargetScaler)
@@ -261,7 +264,8 @@ def test_TargetScalerFactory(generated_param, mock_scaling_component):
     assert set(target.unscaled_scalers[0].reflection_table["id"]) == {2}
 
     refl_list, explist = test_refl_and_exp_list(mock_scaling_component, 3)
-    refl_list[0]["d"] = flex.double([-0.1, -0.1, -0.1, -0.1])
+    refl_list[0].unset_flags(flex.bool(4, True), refl_list[0].flags.integrated_prf)
+    refl_list[0].unset_flags(flex.bool(4, True), refl_list[0].flags.integrated_sum)
     explist[0].scaling_model.is_scaled = True
     explist[1].scaling_model.is_scaled = True
     target = TargetScalerFactory.create(generated_param, explist, refl_list)

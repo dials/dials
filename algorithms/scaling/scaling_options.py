@@ -114,6 +114,11 @@ phil_scope = iotbx.phil.parse(
       .help = "Value below which reflections are removed from the dataset due
                to low partiality."
       .expert_level = 1
+    min_isigi = -5
+      .type = float
+      .help = "Value below which reflections are removed from the dataset due"
+              "to low I/sigI in either profile or summation intensity estimates"
+      .expert_level = 1
   }
   scaling_options {
     check_consistent_indexing = False
