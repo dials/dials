@@ -42,7 +42,7 @@ combine_partials = True
     .help = "Combine partials that have the same partial id into one
         reflection, with an updated partiality given by the sum of the
         individual partialities."
-partiality_threshold=0.99
+partiality_threshold=0.95
     .type = float
     .help = "All reflections with partiality values above the partiality
         threshold will be retained. This is done after any combination of
