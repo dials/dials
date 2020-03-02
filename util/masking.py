@@ -179,7 +179,6 @@ def _get_resolution_masker(beam, panel):
 
 def _apply_resolution_mask(mask, beam, panel, *args):
     _get_resolution_masker(beam, panel).apply(mask, *args)
-    print(_get_resolution_masker.cache_info())
 
 
 class MaskGenerator(object):
