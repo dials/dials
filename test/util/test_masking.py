@@ -156,9 +156,6 @@ def test_lru_equality_cache_id():
 
     fun = lru_equality_cache(maxsize=1)(_callappend)
 
-    # Now test cacheing of non-id-equal equality
-    callargs.clear()
-
     class EqTester(object):
         def __init__(self, a):
             self.a = a
