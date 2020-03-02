@@ -147,6 +147,15 @@ control_phil_str = """
               then each group of 25 process will send their results to 4     \
               processes and only N*4 files will be created. Ideally, match   \
               stride to the number of processors per node.
+    debug
+      .expert_level = 2
+    {
+      cProfile = False
+        .type = bool
+        .help = Enable code profiling. Profiling file will be available in  \
+                the debug folder. Use (for example) runsnake to visualize   \
+                processing performance
+    }
   }
 """
 
@@ -348,6 +357,12 @@ class Script(object):
         if not all_paths:
             self.parser.print_help()
             return
+
+        if params.mp.debug.cProfile:
+            import cProfile
+
+            self.pr = cProfile.Profile()
+            self.pr.enable()
 
         print("Have %d files" % len(all_paths))
 
@@ -651,6 +666,14 @@ class Script(object):
         # Total Time
         logger.info("")
         logger.info("Total Time Taken = %f seconds" % (time.time() - st))
+
+        if params.mp.debug.cProfile:
+            self.pr.disable()
+            self.pr.dump_stats(
+                os.path.join(
+                    self.params.output.output_dir, "debug", "cpu_%d.prof" % comm.rank
+                )
+            )
 
 
 class Processor(object):
