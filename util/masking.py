@@ -181,6 +181,7 @@ def generate_ice_ring_resolution_ranges(beam, panel, params):
 
 @lru_equality_cache(maxsize=3)
 def _get_resolution_masker(beam, panel):
+    logger.debug("resolution masker cache miss")
     return ResolutionMaskGenerator(beam, panel)
 
 
