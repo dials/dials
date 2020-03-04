@@ -16,7 +16,7 @@ cython>=0.29,<0.30
 docutils
 future
 h5py
-hdf5
+hdf5<1.11
 jinja2
 jpeg
 matplotlib-base<3.1

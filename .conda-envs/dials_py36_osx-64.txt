@@ -20,7 +20,7 @@ conda-forge::cython>=0.29,<0.30
 conda-forge::docutils
 conda-forge::future
 conda-forge::h5py
-conda-forge::hdf5
+conda-forge::hdf5<1.11
 conda-forge::jinja2
 conda-forge::jpeg
 conda-forge::matplotlib-base>=3.0.2,<3.1
