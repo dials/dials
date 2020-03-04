@@ -18,9 +18,8 @@ def test_dials_show(dials_regression):
     output = result.stdout.decode("latin-1")
     output = [_f for _f in (s.rstrip() for s in output.split("\n")) if _f]
     assert (
-        "\n".join(output[4:])
+        "\n".join(output[6:])
         == """
-Experiment 0:
 Detector:
 Panel:
   name: Panel
@@ -87,9 +86,8 @@ def test_dials_show_i04_weak_data(dials_regression):
     output = result.stdout.decode("latin-1")
     output = [_f for _f in (s.rstrip() for s in output.split("\n")) if _f]
     assert (
-        "\n".join(output[4:])
+        "\n".join(output[6:])
         == """
-Experiment 0:
 Detector:
 Panel:
   name: Panel
@@ -142,10 +140,8 @@ def test_dials_show_centroid_test_data(dials_data):
     output = result.stdout.decode("latin-1")
     output = [_f for _f in (s.rstrip() for s in output.split("\n")) if _f]
     assert (
-        "\n".join(output[4:])
+        "\n".join(output[7:])
         == """
-Experiment 0:
-Format class: FormatCBFMiniPilatus
 Detector:
 Panel:
   name: Panel
@@ -200,12 +196,9 @@ def test_dials_show_multi_panel_i23(dials_regression):
     assert not result.returncode and not result.stderr
     output = result.stdout.decode("latin-1")
     output = [_f for _f in (s.rstrip() for s in output.split("\n")) if _f]
-
     assert (
-        "\n".join(output[4:26])
+        "\n".join(output[7:27])
         == """
-Experiment 0:
-Format class: FormatCBFMiniPilatusDLS12M
 Detector:
 Panel:
   name: row-00
