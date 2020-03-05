@@ -18,6 +18,7 @@ from ..rstbx_frame import XrayFrame as XFBaseClass
 from rstbx.viewer import settings as rv_settings, image as rv_image
 from wxtbx import bitmaps
 from boost.python import c_sizeof
+from rstbx.viewer.frame import SettingsFrame
 
 pyslip._Tiles = tile_generation._Tiles
 
@@ -1148,9 +1149,6 @@ class XrayFrame(XFBaseClass):
             pdf_canvas.save()
 
         self.update_statusbar("Writing " + file_name + "..." + " Done.")
-
-
-from rstbx.viewer.frame import SettingsFrame
 
 
 def override_SF_set_image(self, image):

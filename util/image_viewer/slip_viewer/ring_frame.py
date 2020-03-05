@@ -284,7 +284,6 @@ class RingSettingsPanel(wx.Panel):
             dc.DrawCircle(x, y, radius * scale)
 
     def DrawRing(self):
-        detector = self._pyslip.tiles.raw_image.get_detector()
 
         xrayframe = self.GetParent().GetParent()
         panel_id, beam_pixel_fast, beam_pixel_slow = xrayframe.get_beam_center_px()
