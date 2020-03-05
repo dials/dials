@@ -1,14 +1,14 @@
-"""Tests for dials.dose_analysis"""
+"""Tests for dials.damage_analysis"""
 import os
 import procrunner
 import pytest
 from dials.array_family import flex
-from dials.command_line.dose_analysis import PychefRunner, phil_scope, run
+from dials.command_line.damage_analysis import PychefRunner, phil_scope, run
 from dxtbx.serialize import load
 
 
-def test_dose_analysis_dials_data(dials_data, run_in_tmpdir):
-    """Test dials.dose_analysis on scaled data."""
+def test_damage_analysis_dials_data(dials_data, run_in_tmpdir):
+    """Test dials.damage_analysis on scaled data."""
     location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = location.join("scaled_20_25.refl").strpath
     expts = location.join("scaled_20_25.expt").strpath
@@ -18,15 +18,15 @@ def test_dose_analysis_dials_data(dials_data, run_in_tmpdir):
         expts,
         "min_completeness=0.4",
         "-v",
-        "json=dials.dose_analysis.json",
+        "json=dials.damage_analysis.json",
     ]
     run(args)
-    assert os.path.isfile("dials.dose_analysis.html")
-    assert os.path.isfile("dials.dose_analysis.json")
+    assert os.path.isfile("dials.damage_analysis.html")
+    assert os.path.isfile("dials.damage_analysis.json")
 
 
 def test_setup_from_dials_data(dials_data, run_in_tmpdir):
-    """Test dials.dose_analysis on scaled data."""
+    """Test dials.damage_analysis on scaled data."""
     location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = location.join("scaled_20_25.refl").strpath
     expts = location.join("scaled_20_25.expt").strpath
@@ -50,8 +50,8 @@ def test_setup_from_dials_data(dials_data, run_in_tmpdir):
     assert min(runner.dose) == 2 + 10
 
 
-def test_dose_analysis_mtz(dials_data, run_in_tmpdir):
-    """Test dials.dose_analysis on scaled data."""
+def test_damage_analysis_mtz(dials_data, run_in_tmpdir):
+    """Test dials.damage_analysis on scaled data."""
     location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = location.join("scaled_20_25.refl").strpath
     expts = location.join("scaled_20_25.expt").strpath
@@ -65,14 +65,14 @@ def test_dose_analysis_mtz(dials_data, run_in_tmpdir):
     args = [
         run_in_tmpdir.join("scaled.mtz").strpath,
         "anomalous=True",
-        "json=dials.dose_analysis.json",
+        "json=dials.damage_analysis.json",
     ]
     run(args)
-    assert os.path.isfile("dials.dose_analysis.html")
-    assert os.path.isfile("dials.dose_analysis.json")
+    assert os.path.isfile("dials.damage_analysis.html")
+    assert os.path.isfile("dials.damage_analysis.json")
 
 
-def test_dose_analysis_input_handling(dials_data, run_in_tmpdir):
+def test_damage_analysis_input_handling(dials_data, run_in_tmpdir):
     """Test that errors are handled if more than one refl file, no refl/expt
     file or unscaled data."""
     location = dials_data("l_cysteine_4_sweeps_scaled")

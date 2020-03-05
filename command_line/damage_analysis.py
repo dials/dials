@@ -1,6 +1,6 @@
 # coding: utf-8
 """
-The program dials.dose_analysis calculates dose dependent data quality statistics.
+The program dials.damage_analysis calculates dose dependent data quality statistics.
 
 The algorithms and statistics are described in "How best to use photons",
 G. Winter et al. 2019 https://doi.org/10.1107/S2059798319003528
@@ -24,11 +24,11 @@ measured on the same crystal.
 
 Example usage:
 
-dials.dose_analysis scaled.expt scaled.refl
+dials.damage_analysis scaled.expt scaled.refl
 
-dials.dose_analysis scaled.mtz
+dials.damage_analysis scaled.mtz
 
-dials.dose_analysis scaled.expt scaled.refl shared_crystal=True
+dials.damage_analysis scaled.expt scaled.refl shared_crystal=True
 
 """
 from __future__ import absolute_import, division, print_function
@@ -54,7 +54,7 @@ try:
 except ImportError:
     pass
 
-logger = logging.getLogger("dials.command_line.dose_analysis")
+logger = logging.getLogger("dials.command_line.damage_analysis")
 
 phil_scope = phil.parse(
     """\
@@ -79,10 +79,10 @@ dose {
     }
 }
 output {
-    log = "dials.dose_analysis.log"
+    log = "dials.damage_analysis.log"
         .type = str
         .help = "The log name"
-    html = "dials.dose_analysis.html"
+    html = "dials.damage_analysis.html"
         .type = str
         .help = "Filename for the html report."
     json = None
@@ -134,7 +134,7 @@ class PychefRunner(object):
         """Initialise the class from mtz input.
 
         Args:
-            params: A dose-analysis phil params object
+            params: A damage-analysis phil params object
             mtz_object: An iotbx.mtz.object.
         """
         miller_arrays = mtz_object.as_miller_arrays(
@@ -179,7 +179,7 @@ class PychefRunner(object):
         """Initialise the class from an experiment list and reflection table.
 
         Args:
-            params: A dose-analysis phil params object
+            params: A damage-analysis phil params object
             experiments: An ExperimentList
             reflection_table: A reflection table.
         """
@@ -259,9 +259,9 @@ class PychefRunner(object):
                 ]
             )
             env = Environment(loader=loader)
-            template = env.get_template("dose_analysis_report.html")
+            template = env.get_template("damage_analysis_report.html")
             html = template.render(
-                page_title="Dose analysis report", dose_plots=data["dose_plots"]
+                page_title="Damage analysis report", dose_plots=data["dose_plots"]
             )
             with open(html_filename, "wb") as f:
                 f.write(html.encode("utf-8", "xmlcharrefreplace"))
@@ -274,7 +274,7 @@ class PychefRunner(object):
 def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
     """Run the command-line script."""
 
-    usage = "dials.dose_analysis [options] scaled.expt scaled.refl | scaled.mtz"
+    usage = "dials.damage_analysis [options] scaled.expt scaled.refl | scaled.mtz"
 
     parser = OptionParser(
         usage=usage,
@@ -319,7 +319,7 @@ def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
             parser.print_help()
             raise ValueError("Suitable input datafiles not provided")
     except (ValueError, KeyError) as e:
-        sys.exit("Error: %s" % e.message)
+        sys.exit("Error: %s" % str(e))
     else:
         script.run()
         script.make_html_report(params.output.html, params.output.json)
