@@ -1,15 +1,15 @@
 from __future__ import division, print_function
 import sys
-from dxtbx.datablock import DataBlockFactory, DataBlockDumper
+from dxtbx.model.experiment_list import ExperimentListFactory
 from scitbx.matrix import col
 
 """
-Example script for rotating a detector in a datablock.json
+Example script for rotating a detector in an experiment.json
 """
 
-datablock = DataBlockFactory.from_json_file(sys.argv[1])[0]
+experiments = ExperimentListFactory.from_json_file(sys.argv[1])
 print("Original detector")
-detector = datablock.unique_detectors()[0]
+detector = experiments[0].detector
 print(detector)
 
 h = detector.hierarchy()
@@ -26,5 +26,4 @@ h.set_frame(rotation * fast, rotation * slow, rotation * origin)
 print("Rotated detector")
 print(detector)
 
-dump = DataBlockDumper(datablock)
-dump.as_json("rotated.json")
+experiments.as_json("rotated.expt")
