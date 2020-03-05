@@ -422,8 +422,10 @@ class _Tiles(object):
             wx_image = wx.EmptyImage(w / 2, h / 2)
             import PIL.Image as Image
 
-            I = Image.frombytes("RGB", (512, 512), self.flex_image.as_bytes())
-            J = I.resize((256, 256), Image.ANTIALIAS)
+            Image_from_bytes = Image.frombytes(
+                "RGB", (512, 512), self.flex_image.as_bytes()
+            )
+            J = Image_from_bytes.resize((256, 256), Image.ANTIALIAS)
             wx_image.SetData(J.tostring())
             return wx_image.ConvertToBitmap()
         elif self.raw_image is not None:
@@ -497,7 +499,6 @@ class _Tiles(object):
         )
 
     def get_initial_instrument_centering_within_picture_as_lon_lat(self):
-        detector = self.raw_image.get_detector()
         if sys.platform.lower().find("linux") >= 0:
             if True:  # len(detector) > 1:
                 return 0.0, 0.0
@@ -753,8 +754,8 @@ class _Tiles(object):
     def get_detector_2theta(self):
         detector = self.raw_image.get_detector()
         if False:  # len(detector) == 1:
-            n = col(detector[0].get_normal())
-            s0 = col(self.raw_image.get_beam().get_unit_s0())
+            n = scitbx.matrix.col(detector[0].get_normal())
+            s0 = scitbx.matrix.col(self.raw_image.get_beam().get_unit_s0())
             two_theta = s0.angle(n, deg=False)
         else:
             # XXX Special-case until multitile detectors fully
