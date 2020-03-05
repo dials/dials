@@ -770,9 +770,9 @@ class XrayFrame(XFBaseClass):
             if not isinstance(data, tuple):  # XXX should not need this test
                 data = (data,)
             if True:  # len(detector) > 1:
-                from .tile_generation import _get_flex_image_multipanel
+                from .tile_generation import get_flex_image_multipanel
 
-                flex_img = _get_flex_image_multipanel(
+                flex_img = get_flex_image_multipanel(
                     brightness=self.settings.brightness / 100,
                     panels=detector,
                     raw_data=data,
@@ -918,9 +918,9 @@ class XrayFrame(XFBaseClass):
             if not isinstance(data, tuple):  # XXX should not need this test
                 data = (data,)
             if True:  # len(detector) > 1:
-                from .tile_generation import _get_flex_image_multipanel
+                from .tile_generation import get_flex_image_multipanel
 
-                flex_img = _get_flex_image_multipanel(
+                flex_img = get_flex_image_multipanel(
                     brightness=self.settings.brightness / 100,
                     panels=detector,
                     raw_data=data,

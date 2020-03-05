@@ -296,7 +296,7 @@ class _Tiles(object):
             image_data = (image_data,)
 
         if True:  # len(detector) > 1:
-            self.flex_image = _get_flex_image_multipanel(
+            self.flex_image = get_flex_image_multipanel(
                 brightness=self.current_brightness / 100,
                 panels=detector,
                 show_untrusted=self.show_untrusted,
@@ -333,7 +333,7 @@ class _Tiles(object):
             raw_image_data = raw_image_data[0]
 
         if True:  # len(detector) > 1:
-            self.flex_image = _get_flex_image_multipanel(
+            self.flex_image = get_flex_image_multipanel(
                 brightness=self.current_brightness / 100,
                 panels=detector,
                 image_data=raw_image_data,
