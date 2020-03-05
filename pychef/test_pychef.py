@@ -5,6 +5,7 @@ import pytest
 from cctbx import sgtbx
 from cctbx.array_family import flex
 from iotbx.reflection_file_reader import any_reflection_file
+from dxtbx.model import Experiment, ExperimentList, Scan
 
 
 def test_observations():
@@ -56,3 +57,49 @@ def test_accumulators(dials_data):
     # test Rd
     print(list(stats.rd))
     assert stats.rd[0] == pytest.approx(0.05234416616316846)
+
+
+def test_interpret_images_to_doses_options():
+    """Test handling of command line options for experiments input."""
+    experiments = ExperimentList()
+    experiments.append(Experiment(scan=Scan(image_range=(1, 10), oscillation=(0, 1.0))))
+    experiments.append(Experiment(scan=Scan(image_range=(1, 20), oscillation=(0, 1.0))))
+    experiments.append(Experiment(scan=Scan(image_range=(1, 10), oscillation=(0, 1.0))))
+
+    # Default
+    starting_doses, dpi = dials.pychef.interpret_images_to_doses_options(
+        experiments, dose_per_image=[1]
+    )
+    assert starting_doses == [0, 0, 0]
+    assert dpi == [1.0, 1.0, 1.0]
+
+    # Multi-sweep measurements on same crystal
+    starting_doses, dpi = dials.pychef.interpret_images_to_doses_options(
+        experiments, dose_per_image=[1], shared_crystal=True
+    )
+    assert starting_doses == [0, 10, 30]
+    assert dpi == [1.0, 1.0, 1.0]
+
+    # Specify starting doses
+    starting_doses, dpi = dials.pychef.interpret_images_to_doses_options(
+        experiments, dose_per_image=[1], starting_doses=[0, 20, 0], shared_crystal=False
+    )
+    assert starting_doses == [0, 20, 0]
+    assert dpi == [1.0, 1.0, 1.0]
+
+    # Specify doses per image and shared crystal
+    starting_doses, dpi = dials.pychef.interpret_images_to_doses_options(
+        experiments, dose_per_image=[1.0, 2.0, 1.0], shared_crystal=True
+    )
+    assert starting_doses == [0, 10, 50]
+    assert dpi == [1.0, 2.0, 1.0]
+
+    # Test error is raised if bad input values for starting doses or dose per image.
+    with pytest.raises(ValueError):
+        _, __ = dials.pychef.interpret_images_to_doses_options(
+            experiments, dose_per_image=[1.0], starting_doses=[0, 1]
+        )
+    with pytest.raises(ValueError):
+        _, __ = dials.pychef.interpret_images_to_doses_options(
+            experiments, dose_per_image=[1.0, 2.0]
+        )
