@@ -378,7 +378,7 @@ def test_index_i04_weak_data_fft1d(dials_regression, tmpdir):
         "image_range=250,270",
         "image_range=520,540",
     ]
-    expected_unit_cell = uctbx.unit_cell((58, 58, 150, 90, 90, 90))
+    expected_unit_cell = uctbx.unit_cell((57.7, 57.7, 149.9, 90, 90, 90))
     expected_rmsds = (0.06, 0.05, 0.0005)
     expected_hall_symbol = " P 1"
 
