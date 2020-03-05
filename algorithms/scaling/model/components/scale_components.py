@@ -387,6 +387,36 @@ class LinearDoseDecay(ScaleComponentBase):
         return scales
 
 
+class QuadraticDoseDecay(LinearDoseDecay):
+    """
+    A model component for a decay that depends quadratically on dose
+
+    For the dose dependent, the form is I = I0 exp(-C D/ d^2).
+    Parameterise this as linear function of rotation with an overall factor
+    to refine. T(r) = exp(Cr/d^2) - i.e. a one parameter model with the overall
+    'dose' proportional factor C.
+    """
+
+    def calculate_scales_and_derivatives(self, block_id=0):
+        """Calculate and return inverse scales and derivatives for a given block."""
+        scales = flex.exp(
+            self._parameters[0] * self._x[block_id] / (self._d_values[block_id] ** 2)
+        )
+        derivatives = sparse.matrix(self._n_refl[block_id], 1)
+        for i in range(self._n_refl[block_id]):
+            derivatives[i, 0] = scales[i] * (
+                self._x[block_id][i] / (self._d_values[block_id][i] ** 2)
+            )
+        return scales, derivatives
+
+    def calculate_scales(self, block_id=0):
+        """Calculate and return inverse scales for a given block."""
+        scales = flex.exp(
+            self._parameters[0] * self._x[block_id] / (self._d_values[block_id] ** 2)
+        )
+        return scales
+
+
 class SHScaleComponent(ScaleComponentBase):
     """
     A model component for a spherical harmonic absorption correction.

@@ -16,6 +16,7 @@ from dials.algorithms.scaling.model.components.scale_components import (
     SingleBScaleFactor,
     SHScaleComponent,
     LinearDoseDecay,
+    QuadraticDoseDecay,
 )
 from dials.algorithms.scaling.model.components.smooth_scale_components import (
     SmoothScaleComponent1D,
@@ -71,6 +72,10 @@ decay_correction = True
 share.decay = True
     .type = bool
     .help = "Share the decay model between sweeps."
+    .expert_level = 1
+resolution_dependence = *quadratic linear
+    .type = choice
+    .help = "Use a dose model that depends linearly or quadratically on 1/d"
     .expert_level = 1
 absorption_correction = False
     .type = bool
@@ -391,9 +396,14 @@ class DoseDecay(ScalingModelBase):
             )
         if "decay" in configdict["corrections"]:
             decay_setup = parameters_dict["decay"]
-            self._components["decay"] = LinearDoseDecay(
-                decay_setup["parameters"], decay_setup["parameter_esds"]
-            )
+            if configdict["resolution_dependence"] == "linear":
+                self._components["decay"] = LinearDoseDecay(
+                    decay_setup["parameters"], decay_setup["parameter_esds"]
+                )
+            else:
+                self._components["decay"] = QuadraticDoseDecay(
+                    decay_setup["parameters"], decay_setup["parameter_esds"]
+                )
         if "relative_B" in configdict["corrections"]:
             B_setup = parameters_dict["relative_B"]
             self._components["relative_B"] = SingleBScaleFactor(
@@ -518,6 +528,7 @@ class DoseDecay(ScalingModelBase):
 
         if params.decay_correction:
             configdict["corrections"].append("decay")
+            configdict.update({"resolution_dependence": params.resolution_dependence})
             parameters_dict["decay"] = {
                 "parameters": flex.double(1, 0.0),
                 "parameter_esds": None,
