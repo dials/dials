@@ -32,9 +32,18 @@ def make_image_range_table(experiments, batch_manager):
             image_range = exp.scan.get_image_range()
             template = exp.imageset.get_template()
             b_0 = batch_manager._batch_increments[i]
-            batch_range = batch_manager.batch_params[i]["range"]
+            batch_params = batch_manager.batch_params[i]
+            batch_range = batch_params["range"]
             batches = (b_0, b_0 + (batch_range[1] - batch_range[0]))
-            table.append([str(i), image_range, valid_image_ranges, batches, template])
+            table.append(
+                [
+                    str(batch_params["id"]),
+                    image_range,
+                    valid_image_ranges,
+                    batches,
+                    template,
+                ]
+            )
     return table
 
 
