@@ -665,14 +665,10 @@ class _Tiles(object):
             return None
         beam = beam.get_s0()
 
-        if len(detector) > 1:
-            if readout is None:
-                return None
+        if readout is None:
+            return None
 
-            panel = detector[readout]
-
-        else:
-            panel = detector[0]
+        panel = detector[readout]
 
         if abs(panel.get_distance()) > 0:
             return panel.get_resolution_at_pixel(beam, (x, y))
