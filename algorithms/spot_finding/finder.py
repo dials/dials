@@ -762,7 +762,7 @@ class SpotFinder(object):
             for i, experiment in enumerate(experiments):
                 if experiment.imageset is not imageset:
                     continue
-                if experiment.scan:
+                if experiment.scan and not experiment.scan.is_still():
                     z0, z1 = experiment.scan.get_array_range()
                     z = table["xyzobs.px.value"].parts()[2]
                     table["id"].set_selected((z > z0) & (z < z1), i)
