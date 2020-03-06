@@ -226,13 +226,9 @@ class XrayFrame(XFBaseClass):
                 image_data = fi.get_image_data()
                 if not isinstance(image_data, tuple):
                     image_data = (image_data,)
-                if len(detector) > 1:
-                    if readout >= 0:
-                        if detector[readout].is_coord_valid(ifs):
-                            possible_intensity = image_data[readout][isf]
-                else:
-                    if detector[0].is_coord_valid(ifs):
-                        possible_intensity = image_data[0][isf]
+                if readout >= 0:
+                    if detector[readout].is_coord_valid(ifs):
+                        possible_intensity = image_data[readout][isf]
 
                 if possible_intensity is not None:
                     if possible_intensity == 0:

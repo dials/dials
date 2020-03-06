@@ -362,26 +362,20 @@ class SpotFrame(XrayFrame):
                 self.pyslip.tiles.map_relative_to_picture_fast_slow(*p) for p in point
             ]
 
-            detector = self.pyslip.tiles.raw_image.get_detector()
-            if len(detector) > 1:
-
-                point_ = []
-                panel_id = None
-                for p in point:
-                    p1, p0, p_id = self.pyslip.tiles.flex_image.picture_to_readout(
-                        p[1], p[0]
-                    )
-                    assert p_id >= 0, "Point must be within a panel"
-                    if panel_id is not None:
-                        assert (
-                            panel_id == p_id
-                        ), "All points must be contained within a single panel"
-                    panel_id = p_id
-                    point_.append((p0, p1))
-                point = point_
-
-            else:
-                panel_id = 0
+            point_ = []
+            panel_id = None
+            for p in point:
+                p1, p0, p_id = self.pyslip.tiles.flex_image.picture_to_readout(
+                    p[1], p[0]
+                )
+                assert p_id >= 0, "Point must be within a panel"
+                if panel_id is not None:
+                    assert (
+                        panel_id == p_id
+                    ), "All points must be contained within a single panel"
+                panel_id = p_id
+                point_.append((p0, p1))
+            point = point_
 
             region = masking.phil_scope.extract().untrusted[0]
             region.polygon = flat_list(point)
@@ -429,14 +423,13 @@ class SpotFrame(XrayFrame):
                     y = polygon[2 * i + 1]
                     vertices.append((x, y))
 
-                if len(self.pyslip.tiles.raw_image.get_detector()) > 1:
-                    vertices = [
-                        self.pyslip.tiles.flex_image.tile_readout_to_picture(
-                            int(region.panel), v[1], v[0]
-                        )
-                        for v in vertices
-                    ]
-                    vertices = [(v[1], v[0]) for v in vertices]
+                vertices = [
+                    self.pyslip.tiles.flex_image.tile_readout_to_picture(
+                        int(region.panel), v[1], v[0]
+                    )
+                    for v in vertices
+                ]
+                vertices = [(v[1], v[0]) for v in vertices]
 
                 points_rel = [
                     self.pyslip.tiles.picture_fast_slow_to_map_relative(*v)
@@ -449,10 +442,9 @@ class SpotFrame(XrayFrame):
 
             if circle is not None:
                 x, y, r = circle
-                if len(self.pyslip.tiles.raw_image.get_detector()) > 1:
-                    y, x = self.pyslip.tiles.flex_image.tile_readout_to_picture(
-                        int(region.panel), y, x
-                    )
+                y, x = self.pyslip.tiles.flex_image.tile_readout_to_picture(
+                    int(region.panel), y, x
+                )
                 x, y = self.pyslip.tiles.picture_fast_slow_to_map_relative(x, y)
                 center = matrix.col((x, y))
                 e1 = matrix.col((1, 0))
@@ -708,18 +700,15 @@ class SpotFrame(XrayFrame):
                 cx = (xs1 + t1 * yd1) / 2
                 assert abs(cx - (xs2 + t2 * yd2) / 2) < 0.1
 
-            centre = (cx, cy)
-
-            if len(detector) > 1:
-                centre = self.pyslip.tiles.flex_image.tile_readout_to_picture(
-                    p_id, centre[1], centre[0]
-                )[::-1]
-                dp1 = self.pyslip.tiles.flex_image.tile_readout_to_picture(
-                    p_id, dp1[1], dp1[0]
-                )[::-1]
-                dp3 = self.pyslip.tiles.flex_image.tile_readout_to_picture(
-                    p_id, dp3[1], dp3[0]
-                )[::-1]
+            centre = self.pyslip.tiles.flex_image.tile_readout_to_picture(p_id, cy, cx)[
+                ::-1
+            ]
+            dp1 = self.pyslip.tiles.flex_image.tile_readout_to_picture(
+                p_id, dp1[1], dp1[0]
+            )[::-1]
+            dp3 = self.pyslip.tiles.flex_image.tile_readout_to_picture(
+                p_id, dp3[1], dp3[0]
+            )[::-1]
 
             # translate ellipse centre and four points to map coordinates
             centre = self.pyslip.tiles.picture_fast_slow_to_map_relative(*centre)
@@ -773,10 +762,9 @@ class SpotFrame(XrayFrame):
                         axis=beamvec, angle=angle / 180 * 3.14159
                     )
                     txtpos = pan.get_ray_intersection_px(txtvec)
-                    if len(detector) > 1:
-                        txtpos = self.pyslip.tiles.flex_image.tile_readout_to_picture(
-                            p_id, txtpos[1], txtpos[0]
-                        )[::-1]
+                    txtpos = self.pyslip.tiles.flex_image.tile_readout_to_picture(
+                        p_id, txtpos[1], txtpos[0]
+                    )[::-1]
                     x, y = self.pyslip.tiles.picture_fast_slow_to_map_relative(
                         txtpos[0], txtpos[1]
                     )
@@ -1254,10 +1242,9 @@ class SpotFrame(XrayFrame):
         strong_code = MaskCode.Valid | MaskCode.Strong
 
         def map_coords(x, y, p):
-            if len(self.pyslip.tiles.raw_image.get_detector()) > 1:
-                y, x = self.pyslip.tiles.flex_image.tile_readout_to_picture(
-                    p, y - 0.5, x - 0.5
-                )
+            y, x = self.pyslip.tiles.flex_image.tile_readout_to_picture(
+                p, y - 0.5, x - 0.5
+            )
             return self.pyslip.tiles.picture_fast_slow_to_map_relative(x, y)
 
         shoebox_dict = {"width": 2, "color": "#0000FFA0", "closed": False}
