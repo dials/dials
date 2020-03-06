@@ -1,0 +1,7 @@
+Import("env")
+
+sources = ["boost_python/event_mode_ext.cc"]
+
+env.SharedLibrary(
+    target="#/lib/dials_algorithms_event_mode_ext", source=sources, LIBS=env["LIBS"]
+)
