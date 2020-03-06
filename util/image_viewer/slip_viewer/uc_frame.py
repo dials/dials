@@ -403,10 +403,9 @@ class UCSettingsPanel(wx.Panel):
         xrayframe = self.GetParent().GetParent()
         panel_id, beam_pixel_fast, beam_pixel_slow = xrayframe.get_beam_center_px()
 
-        if True:  # len(detector) > 1:
-            beam_pixel_slow, beam_pixel_fast = xrayframe.pyslip.tiles.flex_image.tile_readout_to_picture(
-                panel_id, beam_pixel_slow - 0.5, beam_pixel_fast - 0.5
-            )
+        beam_pixel_slow, beam_pixel_fast = xrayframe.pyslip.tiles.flex_image.tile_readout_to_picture(
+            panel_id, beam_pixel_slow - 0.5, beam_pixel_fast - 0.5
+        )
 
         center = self._pyslip.tiles.picture_fast_slow_to_map_relative(
             beam_pixel_fast + self._center[0], beam_pixel_slow + self._center[1]
