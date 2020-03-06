@@ -3,7 +3,6 @@ from __future__ import absolute_import, division, print_function
 import http.server as server_base
 import json
 import logging
-import os
 import sys
 import time
 from multiprocessing import Process
@@ -84,8 +83,6 @@ indexing_min_spots = 10
   .type = int(value_min=1)
 """
     )
-    if not os.access(filename, os.R_OK):
-        raise RuntimeError("Server does not have read access to file %s" % filename)
     interp = phil_scope.command_line_argument_interpreter()
     params, unhandled = interp.process_and_fetch(
         cl, custom_processor="collect_remaining"
