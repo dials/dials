@@ -139,6 +139,34 @@ def test_find_spots_from_imported_experiments(dials_data, tmpdir):
     )
 
 
+def test_find_spots_from_imported_as_grid(dials_data, tmpdir):
+    """First run import to generate an imported.expt and use this."""
+    _ = procrunner.run(
+        ["dials.import", "oscillation=0,0"]
+        + [
+            f.strpath for f in dials_data("centroid_test_data").listdir("centroid*.cbf")
+        ],
+        working_directory=tmpdir.strpath,
+    )
+
+    result = procrunner.run(
+        [
+            "dials.find_spots",
+            tmpdir.join("imported.expt").strpath,
+            "output.reflections=spotfinder.refl",
+            "output.shoeboxes=True",
+            "algorithm=dispersion",
+        ],
+        working_directory=tmpdir.strpath,
+    )
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("spotfinder.refl").check(file=1)
+
+    reflections = flex.reflection_table.from_file(tmpdir / "spotfinder.refl")
+
+    assert len(set(reflections["id"])) == 9, len(set(reflections["id"]))
+
+
 def test_find_spots_with_resolution_filter(dials_data, tmpdir):
     result = procrunner.run(
         [
