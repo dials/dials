@@ -20,6 +20,7 @@ from dials.util.multi_dataset_handling import (
     select_datasets_on_identifiers,
 )
 from dials.util.observer import Subject
+from dials.util.exclude_images import get_selection_for_valid_image_ranges
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
 from dials.util import log
 from dials.util.options import OptionParser
@@ -90,8 +91,13 @@ class cosym(Subject):
             params = phil_scope.extract()
         self.params = params
 
+        self._reflections = []
+        for refl, expt in zip(reflections, experiments):
+            sel = get_selection_for_valid_image_ranges(refl, expt)
+            self._reflections.append(refl.select(sel))
+
         self._experiments, self._reflections = self._filter_min_reflections(
-            experiments, reflections
+            experiments, self._reflections
         )
         self.ids_to_identifiers_map = {}
         for table in self._reflections:
