@@ -509,13 +509,14 @@ class ResolutionPlotsAndStats(ResolutionPlotterMixin):
         )
         self.is_centric = is_centric
 
-    def make_all_plots(self):
+    def make_all_plots(self, cc_one_half_method=None):
         """Make a dictionary containing all available resolution-dependent plots."""
         d = OrderedDict()
-        d.update(self.cc_one_half_plot())
+        d.update(self.cc_one_half_plot(method=cc_one_half_method))
         d.update(self.i_over_sig_i_plot())
         d.update(self.completeness_plot())
         d.update(self.multiplicity_vs_resolution_plot())
+        d.update(self.r_pim_plot())
         return d
 
     def cc_one_half_plot(self, method=None):
@@ -651,6 +652,32 @@ class ResolutionPlotsAndStats(ResolutionPlotterMixin):
                         "ticktext": self.d_star_sq_ticktext,
                     },
                     "yaxis": {"title": u"<I/σ(I)>", "rangemode": "tozero"},
+                },
+            }
+        }
+
+    def r_pim_plot(self):
+        """Make a plot of <I/sigI> against resolution."""
+        r_pim_bins = [bin_stats.r_pim for bin_stats in self.dataset_statistics.bins]
+
+        return {
+            "r_pim": {
+                "data": [
+                    {
+                        "x": self.d_star_sq_bins,  # d_star_sq
+                        "y": r_pim_bins,
+                        "type": "scatter",
+                        "name": "R<sub>pim</sub> vs resolution",
+                    }
+                ],
+                "layout": {
+                    "title": u"R<sub>pim</sub> vs resolution",
+                    "xaxis": {
+                        "title": u"Resolution (Å)",
+                        "tickvals": self.d_star_sq_tickvals,
+                        "ticktext": self.d_star_sq_ticktext,
+                    },
+                    "yaxis": {"title": u"R<sub>pim</sub>", "rangemode": "tozero"},
                 },
             }
         }
