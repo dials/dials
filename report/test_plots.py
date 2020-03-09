@@ -178,6 +178,10 @@ def test_ResolutionPlotsAndStats(iobs):
     assert len(d["i_over_sig_i"]["data"]) == 1
     assert len(d["i_over_sig_i"]["data"][0]["y"]) == n_bins
 
+    d = plotter.r_pim_plot()
+    assert len(d["r_pim"]["data"]) == 1
+    assert len(d["r_pim"]["data"][0]["y"]) == n_bins
+
     d = plotter.completeness_plot()
     assert len(d["completeness"]["data"]) == 2
     assert len(d["completeness"]["data"][0]["y"]) == n_bins
@@ -203,6 +207,13 @@ def test_ResolutionPlotsAndStats(iobs):
     assert d["multiplicity_vs_resolution"]["data"][1] == {}
 
     plots = plotter.make_all_plots()
+    assert list(plots.keys()) == [
+        "cc_one_half",
+        "i_over_sig_i",
+        "completeness",
+        "multiplicity_vs_resolution",
+        "r_pim",
+    ]
     for plot in plots.values():
         assert plot["layout"]["xaxis"]["ticktext"] == plotter.d_star_sq_ticktext
         assert plot["layout"]["xaxis"]["tickvals"] == plotter.d_star_sq_tickvals
