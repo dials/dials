@@ -99,7 +99,7 @@ def scale_rmerge_vs_batch_plot(batch_manager, rmerge_vs_b, scales_vs_b=None):
 def i_over_sig_i_vs_batch_plot(batch_manager, i_sig_i_vs_batch):
 
     reduced_batches = batch_manager.reduced_batches
-    shapes, annotations, _ = batch_manager.batch_plot_shapes_and_annotations()
+    shapes, annotations, text = batch_manager.batch_plot_shapes_and_annotations()
     if len(annotations) > 30:
         # at a certain point the annotations become unreadable
         annotations = None
@@ -113,6 +113,7 @@ def i_over_sig_i_vs_batch_plot(batch_manager, i_sig_i_vs_batch):
                     "type": "scatter",
                     "name": "I/sigI vs batch",
                     "opacity": 0.75,
+                    "text": text,
                 }
             ],
             "layout": {
