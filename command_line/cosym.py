@@ -97,7 +97,7 @@ class cosym(Subject):
             self._reflections.append(refl.select(sel))
 
         self._experiments, self._reflections = self._filter_min_reflections(
-            experiments, reflections
+            experiments, self._reflections
         )
         self.ids_to_identifiers_map = {}
         for table in self._reflections:
