@@ -315,8 +315,6 @@ class _Tiles(object):
 
         detector = self.raw_image.get_detector()
         self.raw_image.set_image_data(raw_image_data)
-        if len(detector) == 1 and len(raw_image_data) == 1:
-            raw_image_data = raw_image_data[0]
 
         self.flex_image = get_flex_image_multipanel(
             brightness=self.current_brightness / 100,
