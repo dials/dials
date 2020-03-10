@@ -75,7 +75,6 @@ class ScalerFactory(object):
             )
             logger.disabled = False
             mask = ~good
-            print(mask.count(True))
             reflections.set_flags(mask, reflections.flags.excluded_for_scaling)
         return reflections
 
