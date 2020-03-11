@@ -116,6 +116,10 @@ calibrate_unit_cell{
   space_group = None
     .type=str
     .help = "Specify spacegroup for the unit cell"
+  show_hkl = None
+    .type = ints(size=3)
+    .multiple=True
+    .help = "Limit display of rings to these Miller indices"
 }
 
 include scope dials.util.options.format_phil_scope

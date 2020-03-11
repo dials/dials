@@ -57,6 +57,8 @@ class UCSettingsPanel(wx.Panel):
         else:
             self._spacegroup = "P1"
 
+        self._show_hkl = self.phil_params.calibrate_unit_cell.show_hkl
+
         self._cell_control_names = [
             "uc_a_ctrl",
             "uc_b_ctrl",
@@ -365,6 +367,13 @@ class UCSettingsPanel(wx.Panel):
         except Exception as e:
             frame.update_statusbar(str(e))
             return
+
+        if self._show_hkl:
+            hkl_list = hkl_list.common_set(
+                cctbx.miller.set(
+                    crystal_symmetry=uc, indices=self._show_hkl, anomalous_flag=False
+                )
+            )
 
         frame.update_statusbar(
             "%d %d %d %d %d %d, " % tuple(self._cell)
