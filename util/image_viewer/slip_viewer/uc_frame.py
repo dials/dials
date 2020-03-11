@@ -45,13 +45,15 @@ class UCSettingsPanel(wx.Panel):
         self._wavelength = beam.get_wavelength()
 
         # Unit cell controls.
-        if self.phil_params.calibrate_unitcell.unitcell is not None:
-            self._cell = list(self.phil_params.calibrate_unitcell.unitcell.parameters())
+        if self.phil_params.calibrate_unit_cell.unit_cell is not None:
+            self._cell = list(
+                self.phil_params.calibrate_unit_cell.unit_cell.parameters()
+            )
         else:
             self._cell = [4.18, 4.72, 58.38, 89.44, 89.63, 75.85]
 
-        if self.phil_params.calibrate_unitcell.spacegroup is not None:
-            self._spacegroup = self.phil_params.calibrate_unitcell.spacegroup
+        if self.phil_params.calibrate_unit_cell.space_group is not None:
+            self._spacegroup = self.phil_params.calibrate_unit_cell.space_group
         else:
             self._spacegroup = "P1"
 
@@ -224,8 +226,8 @@ class UCSettingsPanel(wx.Panel):
         sizer.Add(box)
 
         # d_min control
-        if self.phil_params.calibrate_unitcell.d_min is not None:
-            self.d_min = self.phil_params.calibrate_unitcell.d_min
+        if self.phil_params.calibrate_unit_cell.d_min is not None:
+            self.d_min = self.phil_params.calibrate_unit_cell.d_min
         else:
             self.d_min = 3.5
         box = wx.BoxSizer(wx.HORIZONTAL)
