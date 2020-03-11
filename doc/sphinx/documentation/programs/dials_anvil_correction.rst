@@ -21,7 +21,7 @@ The anvils are assumed to have equal thickness :math:`t` and to be perfectly par
 The cell is fixed to the goniometer, so its orientation depends on the goniometer rotation :math:`R`.
 When the goniometer is at the zero datum, the anvils' normal is :math:`\mathbf{\hat{n}}`, so in general, the anvils' normal is :math:`R\mathbf{\hat{n}}`.
 
-.. image:: /figures/diamond_anvil_cell.svg
+.. image:: https://dials.github.io/anvil_correction/diamond_anvil_cell.svg
   :width: 600
   :align: center
   :alt: Schematic of a diamond anvil cell diffraction measurement.
