@@ -25,7 +25,6 @@ Examples::
 from __future__ import absolute_import, division, print_function
 
 import logging
-import os
 import sys
 import warnings
 
@@ -51,7 +50,6 @@ else:
     Vector = Sequence[SupportsFloat]
 
 
-filename_root = os.path.splitext(os.path.basename(__file__))[0]
 logger = logging.getLogger("dials.command_line.anvil_correction")
 
 phil_scope = libtbx.phil.parse(
@@ -81,17 +79,15 @@ phil_scope = libtbx.phil.parse(
     output {
         experiments = None
             .type = path
-            .optional = True
             .help = '''The output experiment list file name.
             If None, don't output an experiment list file.'''
         reflections = corrected.refl
             .type = path
             .help = "The output reflection table file."
-        log = dials.%s.log
+        log = dials.anvil_correction.log
             .type = path
     }
     """
-    % filename_root
 )
 
 # Get the tabulated NIST mass attenuation coefficient data for carbon.
@@ -234,7 +230,7 @@ def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> 
         phil: The PHIL scope definition (default: phil_scope, the master PHIL scope
               for this program).
     """
-    usage = "dials.%s [options] integrated.expt integrated.refl" % filename_root
+    usage = "dials.anvil_correction [options] integrated.expt integrated.refl"
 
     parser = OptionParser(
         usage=usage,
