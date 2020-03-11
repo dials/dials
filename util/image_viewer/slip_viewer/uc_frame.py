@@ -379,7 +379,9 @@ class UCSettingsPanel(wx.Panel):
                 return -1
             return 0
 
-        spacings = sorted(spacings, cmp=cmp, reverse=True)
+        from functools import cmp_to_key  # https://github.com/dials/dials/issues/1190
+
+        spacings = sorted(spacings, key=cmp_to_key(cmp), reverse=True)
 
         for d in spacings:
             print(d)
