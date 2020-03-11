@@ -52,7 +52,7 @@ else:
 
 
 filename_root = os.path.splitext(os.path.basename(__file__))[0]
-logger = logging.getLogger("dials.%s" % filename_root)
+logger = logging.getLogger("dials.command_line.anvil_correction")
 
 phil_scope = libtbx.phil.parse(
     u"""
