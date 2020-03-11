@@ -291,7 +291,7 @@ def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> 
     reflections_list = sort_tables_to_experiments_order(reflections_list, experiments)
 
     # Record the density of diamond in g·cm⁻³ (for consistency with NIST tables,
-    # https://dx.doi.org/10.18434/T4D01F).
+    # https://doi.org/10.18434/T4D01F).
     density = params.anvil.density / 1000  # g·cm⁻³
 
     # Correct for the attenuation of the incident and diffracted beams by the diamond
