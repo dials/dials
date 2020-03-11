@@ -84,7 +84,39 @@ mask = None
   .type = path
   .help = path to mask pickle file
 
-include scope rstbx.phil.phil_preferences.iotbx_defs_viewer_detail
+powder_arcs{
+  show = False
+    .type=bool
+    .help = "show powder arcs calculated from PDB file."
+  code = None
+    .type=str
+    .help = "PDB code (4 characters) for file; fetch it from the Internet."
+}
+calibrate_silver = False
+    .type=bool
+    .help = "Open special GUI for distance/metrology from silver behenate."
+calibrate_pdb{
+  code = None
+    .type=str
+    .help = "Open pdb code (over Internet) to get unit cell & symmetry for powder rings."
+    .help = "Most useful for calibrating low-Q rings on far detector."
+    .help = "Option is mutually exclusive with calibrate silver, unit cell and powder arcs options."
+  d_min = 20.
+    .type=float
+    .help = "Limiting resolution to calculate powder rings"
+}
+calibrate_unitcell{
+  unitcell = None
+    .type=unit_cell
+    .help = "Specify unit cell for powder rings."
+    .help = "Option is mutually exclusive with calibrate silver, pdb and powder arcs options."
+  d_min = 20.
+    .type=float
+    .help = "Limiting resolution to calculate powder rings"
+  spacegroup = None
+    .type=str
+    .help = "Specify spacegroup for the unit cell"
+}
 
 include scope dials.util.options.format_phil_scope
 
