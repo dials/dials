@@ -77,7 +77,7 @@ def test_correct_correction(dials_data):
         | ~reflections.get_flags(reflections.flags.integrated_sum)
     ), "The applied summation intensity correction doesn't seem to be correct."
     # Check the same thing for all other test cases.
-    variance_correction = np.square(intensity_correction)
+    variance_correction = flex.pow2(intensity_correction)
     cases = (
         ("intensity.prf.value", intensity_correction, reflections.flags.integrated_prf),
         (
