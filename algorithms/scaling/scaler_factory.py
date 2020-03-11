@@ -18,7 +18,10 @@ from dials.algorithms.scaling.scaling_utilities import (
     calc_crystal_frame_vectors,
 )
 from dials.algorithms.scaling.scaling_library import choose_scaling_intensities
-from dials.util.filter_reflections import filter_reflection_table_selection
+from dials.util.filter_reflections import (
+    filter_reflection_table_selection,
+    sum_partial_reflections,
+)
 
 logger = logging.getLogger("dials")
 
@@ -112,6 +115,10 @@ class SingleScalerFactory(ScalerFactory):
             )
         except ValueError:
             raise BadDatasetForScalingException
+
+        # combine partial measurements of same reflection, to handle those reflections
+        # that were split by dials.integrate  - changes size of reflection table.
+        reflection_table = sum_partial_reflections(reflection_table)
 
         if "inverse_scale_factor" not in reflection_table:
             reflection_table["inverse_scale_factor"] = flex.double(

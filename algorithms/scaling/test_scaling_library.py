@@ -90,6 +90,7 @@ def generated_refl():
     )
     reflections.set_flags(flex.bool(5, True), reflections.flags.integrated)
     reflections["id"] = flex.int(5, 0)
+    reflections["partial_id"] = flex.int(range(0, 5))
     reflections.experiment_identifiers()[0] = str(0)
     return reflections
 

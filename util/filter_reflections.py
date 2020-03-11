@@ -726,9 +726,13 @@ def sum_partial_reflections(reflection_table):
         if "intensity." + intensity + ".value" in reflection_table:
             intensities.append(intensity)
 
-    isel = (reflection_table["partiality"] < 0.99).iselection()
-    if not isel:
+    sel = reflection_table["partiality"] < 0.99
+    if not sel.count(True):
         return reflection_table
+
+    for intensity in intensities:
+        sel = sel & (reflection_table["intensity." + intensity + ".variance"] > 0)
+    isel = sel.iselection()
 
     # create map of partial_id to reflections
     delete = flex.size_t()
