@@ -5,7 +5,6 @@ Tests for dials.command_line.anvil_correction.
 from __future__ import absolute_import, division, print_function
 
 import copy
-import numpy as np
 import pytest
 
 from dials.array_family import flex
@@ -35,68 +34,47 @@ def test_correct_correction(dials_data):
     old_reflections = copy.deepcopy(reflections)
     correct_intensities_for_dac_attenuation(experiment, reflections, (0, 0, 1), 1.5)
 
-    # Check that the integrated reflections are different and the un-integrated
-    # reflections are unchanged.
-    cases = (
-        ("intensity.sum.value", reflections.flags.integrated_sum),
-        ("intensity.sum.variance", reflections.flags.integrated_sum),
-        ("intensity.prf.value", reflections.flags.integrated_prf),
-        ("intensity.prf.variance", reflections.flags.integrated_prf),
+    cases = {
+        "intensity.sum.value": reflections.flags.integrated_sum,
+        "intensity.sum.variance": reflections.flags.integrated_sum,
+        "intensity.prf.value": reflections.flags.integrated_prf,
+        "intensity.prf.variance": reflections.flags.integrated_prf,
+    }
+    corrections = flex.double(
+        [
+            0,
+            6.653068275094517,
+            6.522657529202368,
+            6.3865190053761,
+            6.587270967838122,
+            6.43403642876391,
+            6.39216742203502,
+            0,
+            6.152148372872684,
+            6.0474840161407375,
+        ]
     )
-    for case, flag in cases:
-        assert np.all(
-            np.isclose(reflections[case], old_reflections[case])
-            ^ reflections.get_flags(flag)
-        ), (
-            "Either integrated reflections have been left uncorrected, "
-            "or un-integrated reflections have been erroneously corrected."
+    for case, flag in cases.items():
+        flagged = reflections.get_flags(flag)
+
+        target_correction = corrections.select(flagged)
+        if "variance" in case:
+            target_correction = flex.pow2(target_correction)
+
+        intensity_correction = (reflections[case] / old_reflections[case]).select(
+            flagged
         )
 
-    # Check that the applied corrections to summation-integrated intensity values are as
-    # expected, except for the un-integrated reflections, to which no correction
-    # should be applied.
-    intensity_correction = (
-        reflections["intensity.sum.value"] / old_reflections["intensity.sum.value"]
-    )
-    assert np.all(
-        np.isclose(
-            intensity_correction,
-            [
-                0,
-                6.653068275094517,
-                6.522657529202368,
-                6.3865190053761,
-                6.587270967838122,
-                6.43403642876391,
-                6.39216742203502,
-                0,
-                6.152148372872684,
-                6.0474840161407375,
-            ],
+        # Check that the un-integrated reflections are unchanged.
+        assert pytest.approx(reflections[case].select(~flagged)) == old_reflections[
+            case
+        ].select(~flagged), (
+            "Un-integrated reflections have been erroneously " "'corrected'."
         )
-        | ~reflections.get_flags(reflections.flags.integrated_sum)
-    ), "The applied summation intensity correction doesn't seem to be correct."
-    # Check the same thing for all other test cases.
-    variance_correction = np.square(intensity_correction)
-    cases = (
-        ("intensity.prf.value", intensity_correction, reflections.flags.integrated_prf),
-        (
-            "intensity.sum.variance",
-            variance_correction,
-            reflections.flags.integrated_sum,
-        ),
-        (
-            "intensity.prf.variance",
-            variance_correction,
-            reflections.flags.integrated_prf,
-        ),
-    )
-    for case, correction, flag in cases:
-        assert np.all(
-            np.isclose(reflections[case] / old_reflections[case], correction)
-            | ~reflections.get_flags(flag)
-        ), (
-            "The applied intensity correction for %s doesn't seem to be correct." % case
+
+        # Check that the applied corrections are correct.
+        assert pytest.approx(intensity_correction) == target_correction, (
+            "The applied intensity correction to %s doesn't seem to be correct." % case
         )
 
 
