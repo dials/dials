@@ -189,6 +189,9 @@ def attenuation_correction(
     # Get the scalar product of the diamond anvil cell orientation with each of
     # ̠̂s₀ & ̠̂s₁ for each reflection.
     incident_cosine = np.dot(dac_orientation, s0_norm)  # An array of shape (N).
+    # Dot product of each of an array of N 3-vectors with its counterpart from another
+    # array of N 3-vectors.  Shape (N, 3) • (N, 3) → N.
+    # Equivalent to np.sum(dac_orientation * s1_norm, axis=1), but quicker.
     diffracted_cosine = np.einsum("ij,ij->i", dac_orientation, s1_norm)  # Shape (N)
 
     # Get the path length through the anvil of the incident and reflected beams.
