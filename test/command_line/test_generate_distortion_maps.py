@@ -51,9 +51,6 @@ def make_detector():
     return d
 
 
-@pytest.mark.skip(
-    reason="dx,dy maps not loaded from json, https://github.com/dials/dials/issues/471"
-)
 def test_translate(dials_regression, run_in_tmpdir):
     """Test as written in https://github.com/dials/dials/issues/471. This
     is pretty slow!"""
@@ -69,8 +66,12 @@ def test_translate(dials_regression, run_in_tmpdir):
     # Import without correction
     cmd = ("dials.import {0}").format(image_path)
     easy_run.fully_buffered(command=cmd).raise_if_errors()
-    # experiments = ExperimentListFactory.from_serialized_format("imported.expt")[0]
-    # det1 = experiments.detectors()[0]
+    expt1 = ExperimentListFactory.from_serialized_format("imported.expt")[0]
+    det1 = expt1.detector
+
+    # Should be no dx/dy lookup files
+    assert not expt1.imageset.external_lookup.dx.filename
+    assert not expt1.imageset.external_lookup.dy.filename
 
     # Import with correction
     cmd = (
@@ -78,11 +79,12 @@ def test_translate(dials_regression, run_in_tmpdir):
         "output.experiments=corrected.expt"
     ).format(image_path)
     easy_run.fully_buffered(command=cmd).raise_if_errors()
-    # experiments2 = ExperimentListFactory.from_serialized_format("corrected.expt")[0]
-    # det2 = experiments2.detectors()[0]
+    expt2 = ExperimentListFactory.from_serialized_format("corrected.expt")[0]
+    det2 = expt2.detector
 
-    # FIXME, why doesn't db2 have dx, dy set?
-    # assert db2.extract_imagesets()[0].external_lookup.dx.filename
+    # Check that dx/dy lookup files have been set
+    assert expt2.imageset.external_lookup.dx.filename
+    assert expt2.imageset.external_lookup.dy.filename
 
     # FIXME finish test by comparing px to mm positions for det1, det2
 

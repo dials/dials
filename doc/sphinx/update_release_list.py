@@ -63,12 +63,12 @@ if __name__ == "__main__":
                     )
 
         long_names = {
-            "macosx.pkg": "Mac installer",
-            "macosx.tar.gz": "Mac tar archive",
-            "macosx-10.6.pkg": "Mac installer (OS X 10.6)",
-            "macosx-10.6.tar.gz": "Mac tar archive (OS X 10.6)",
-            "linux-x86_64.tar.xz": "Linux installer",
-            "linux-x86_64-conda3.tar.xz": "Linux installer (Python 3 preview, unsupported)",
+            "macosx.pkg": "Mac installer (Python 2)",
+            "macosx-conda3.pkg": "Mac installer (Python 3)",
+            "macosx.tar.gz": "Mac tar archive (Python 2)",
+            "macosx-conda3.tar.gz": "Mac tar archive (Python 3)",
+            "linux-x86_64.tar.xz": "Linux installer (Python 2)",
+            "linux-x86_64-conda3.tar.xz": "Linux installer (Python 3)",
             "source.tar.xz": "Source installer",
         }
 

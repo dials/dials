@@ -331,6 +331,18 @@ def test_renumber_table_id_columns():
     assert list(rs[1].experiment_identifiers().keys()) == [1, 2]
     assert list(rs[1].experiment_identifiers().values()) == ["1", "2"]
 
+    rs = [
+        mock_two_reflection_file_object(ids=[1, 2]).data,
+        mock_reflection_file_object(id_=0).data,
+    ]
+    rs = renumber_table_id_columns(rs)
+    assert list(rs[0]["id"]) == [-1, 0, 0, 1, 1]
+    assert list(rs[0].experiment_identifiers().keys()) == [0, 1]
+    assert list(rs[0].experiment_identifiers().values()) == ["1", "2"]
+    assert list(rs[1]["id"]) == [-1, 2, 2]
+    assert list(rs[1].experiment_identifiers().keys()) == [2]
+    assert list(rs[1].experiment_identifiers().values()) == ["0"]
+
 
 def test_sort_tables_to_experiments_order_single_dataset_files():
     """Test reflection table sorting when tables contain a single dataset."""

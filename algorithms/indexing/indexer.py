@@ -19,7 +19,7 @@ from dials.algorithms.indexing.compare_orientation_matrices import (
 from dials.algorithms.indexing.symmetry import SymmetryHandler
 from dials.algorithms.indexing.max_cell import find_max_cell
 from dials.algorithms.refinement import DialsRefineConfigError, DialsRefineRuntimeError
-from dxtbx.model import ExperimentList
+from dxtbx.model import ExperimentList, ImageSequence
 
 logger = logging.getLogger(__name__)
 
@@ -379,19 +379,16 @@ class Indexer(object):
             has_stills = False
             has_sequences = False
             for expt in experiments:
-                if expt.goniometer is None or expt.scan is None or expt.scan.is_still():
-                    if has_sequences:
-                        raise ValueError(
-                            "Please provide only stills or only sequences, not both"
-                        )
-                    has_stills = True
-                else:
-                    if has_stills:
-                        raise ValueError(
-                            "Please provide only stills or only sequences, not both"
-                        )
+                if isinstance(expt.imageset, ImageSequence):
                     has_sequences = True
-            assert not (has_stills and has_sequences)
+                else:
+                    has_stills = True
+
+            if has_stills and has_sequences:
+                raise ValueError(
+                    "Please provide only stills or only sequences, not both"
+                )
+
             use_stills_indexer = has_stills
 
             if not (
@@ -642,7 +639,7 @@ class Indexer(object):
                         )
                     except (DialsRefineConfigError, DialsRefineRuntimeError) as e:
                         if len(experiments) == 1:
-                            raise DialsIndexRefineError(e.message)
+                            raise DialsIndexRefineError(str(e))
                         had_refinement_error = True
                         logger.info("Refinement failed:")
                         logger.info(e)

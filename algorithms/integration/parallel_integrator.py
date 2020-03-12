@@ -296,9 +296,9 @@ def assert_enough_memory(required_memory, max_memory_usage):
     include increasing the percentage of memory allowed for shoeboxes or
     decreasing the block size. This could also be caused by a highly mosaic
     crystal model - is your crystal really this mosaic?
-      Total system memory: %g GB
-      Limit image memory: %g GB
-      Required image memory: %g GB
+      Total system memory: %.1f GB
+      Limit image memory: %.1f GB
+      Required image memory: %.1f GB
     """
             % (total_memory / 1e9, limit_memory / 1e9, required_memory / 1e9)
         )

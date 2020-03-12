@@ -7,6 +7,7 @@ import tabulate as _tabulate
 
 from ._progress import progress  # noqa: F401, exported symbol
 
+import six
 from libtbx.utils import Sorry
 
 
@@ -115,13 +116,23 @@ def show_mail_on_error():
     try:
         yield
     except Exception as e:
-        text = "Please report this error to dials-support@lists.sourceforge.net:"
+        text = u"Please report this error to dials-support@lists.sourceforge.net:"
         if len(e.args) == 0:
             e.args = (text,)
         elif issubclass(e.__class__, Sorry):
             raise
         elif len(e.args) == 1:
-            e.args = (text + " " + str(e.args[0]),)
+            if isinstance(e.args[0], six.text_type):
+                if six.PY2:
+                    e.args = (
+                        (text + u" " + e.args[0]).encode(
+                            "ascii", errors="xmlcharrefreplace"
+                        ),
+                    )
+                else:
+                    e.args = (text + u" " + e.args[0],)
+            else:
+                e.args = (str(text) + " " + str(e.args[0]),)
         else:
             e.args = (text,) + e.args
         raise

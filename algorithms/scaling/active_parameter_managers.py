@@ -120,7 +120,7 @@ class multi_active_parameter_manager(object):
             self.apm_list.append(apm_class(components, selection_list))
             if not all_same_components:
                 logger.info(
-                    "Components to be refined in this cycle for datasest %s: %s",
+                    "Components to be refined in this cycle for dataset %s: %s",
                     j,
                     ",".join(i for i in self.apm_list[j].components_list),
                 )

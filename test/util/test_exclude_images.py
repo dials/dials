@@ -88,6 +88,24 @@ def test_exclude_image_ranges_from_scans():
     assert list(explist[0].scan.get_valid_image_ranges("0")) == [(1, 80)]
     assert list(explist[1].scan.get_valid_image_ranges("1")) == []
 
+    ## test what happens if a single image is left within the scan
+    explist = ExperimentList(
+        [make_scan_experiment(expid="0"), make_scan_experiment(expid="1")]
+    )
+    exclude_images = [["0:81:100"], ["1:76:79"], ["1:81:99"]]
+    r1 = flex.reflection_table()
+    r1.experiment_identifiers()[1] = "1"
+    r0 = flex.reflection_table()
+    r0.experiment_identifiers()[0] = "0"
+    tables = [r0, r1]
+    explist = exclude_image_ranges_from_scans(tables, explist, exclude_images)
+    assert list(explist[0].scan.get_valid_image_ranges("0")) == [(1, 80)]
+    assert list(explist[1].scan.get_valid_image_ranges("1")) == [
+        (1, 75),
+        (80, 80),
+        (100, 100),
+    ]
+
 
 def test_get_selection_for_valid_image_ranges():
     """Test for namesake function"""

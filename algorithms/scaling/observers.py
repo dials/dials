@@ -36,6 +36,7 @@ from dials.report.plots import (
     ResolutionPlotsAndStats,
     IntensityStatisticsPlots,
     AnomalousPlotter,
+    make_image_range_table,
 )
 from dials.algorithms.scaling.scale_and_filter import make_scaling_filtering_plots
 from dials.util.batch_handling import batch_manager, get_image_ranges
@@ -207,6 +208,7 @@ class ScalingHTMLGenerator(Observer):
                 error_model_plots=self.data["error_model_plots"],
                 anom_plots=self.data["anom_plots"],
                 batch_plots=self.data["batch_plots"],
+                image_range_tables=self.data["image_range_tables"],
                 misc_plots=self.data["misc_plots"],
                 filter_plots=self.data["filter_plots"],
             )
@@ -420,6 +422,9 @@ class MergingStatisticsObserver(Observer):
             self.data["r_merge_vs_batch"] = rvb
             self.data["scale_vs_batch"] = svb
             self.data["isigivsbatch"] = isigivb
+            self.data["image_range_tables"] = [
+                make_image_range_table(scaling_script.experiments, self.data["bm"])
+            ]
 
     def make_plots(self):
         """Generate tables of overall and resolution-binned merging statistics."""
@@ -429,6 +434,7 @@ class MergingStatisticsObserver(Observer):
             "batch_plots": OrderedDict(),
             "misc_plots": OrderedDict(),
             "anom_plots": OrderedDict(),
+            "image_range_tables": [],
         }
         if "statistics" in self.data:
             plotter = ResolutionPlotsAndStats(
@@ -472,4 +478,5 @@ class MergingStatisticsObserver(Observer):
             )
             anom_plotter = AnomalousPlotter(intensities_anom, strong_cutoff=d_min)
             d["anom_plots"].update(anom_plotter.make_plots())
+            d["image_range_tables"] = self.data["image_range_tables"]
         return d

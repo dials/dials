@@ -154,6 +154,22 @@ phil_scope = parse(
       .type = path
       .help = "The output Nexus file"
 
+    instrument_name = Unknown
+      .type = str
+      .help = "Name of the instrument/beamline"
+
+    instrument_short_name = Unknown
+      .type = str
+      .help = "Short name for instrument/beamline, perhaps the acronym"
+
+    source_name = Unknown
+      .type = str
+      .help = "Name of the source/facility"
+
+    source_short_name = Unknown
+      .type = str
+      .help = "Short name for source, perhaps the acronym"
+
   }
 
   mmcif {
@@ -235,6 +251,15 @@ def export_mtz(params, experiments, reflections):
 
     from dials.util.export_mtz import export_mtz
 
+    # Handle case where user has passed data before integration
+    if (
+        "intensity.sum.value" not in reflections[0]
+        or "intensity.prf.value" not in reflections[0]
+    ):
+        sys.exit(
+            "Error: No intensity data in reflections; cannot export un-integrated data to MTZ"
+        )
+
     try:
         m = export_mtz(reflections[0], experiments, params)
     except ValueError as e:
@@ -298,7 +323,7 @@ def export_nexus(params, experiments, reflections):
 
     from dials.util.nexus import dump
 
-    dump(experiments, reflections[0], params.nxs.hklout)
+    dump(experiments, reflections[0], params.nxs)
 
 
 def export_mmcif(params, experiments, reflections):

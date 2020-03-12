@@ -1,0 +1,1 @@
+dials.find_spots_server no longer slows down 3x when using resolution filters

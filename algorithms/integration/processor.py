@@ -1,3 +1,5 @@
+# coding: utf-8
+
 from __future__ import absolute_import, division, print_function
 
 import itertools
@@ -25,6 +27,7 @@ from dials_algorithms_integration_integrator_ext import (
 
 __all__ = [
     "Block",
+    "build_processor",
     "Debug",
     "ExecuteParallelTask",
     "Executor",
@@ -43,7 +46,6 @@ __all__ = [
     "Processor",
     "Processor2D",
     "Processor3D",
-    "ProcessorBuilder",
     "ProcessorFlat3D",
     "ProcessorSingle2D",
     "ProcessorStills",
@@ -58,15 +60,16 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
-def _average_shoebox_size(reflections):
-    """Calculate the average shoebox size for debugging"""
+def _average_bbox_size(reflections):
+    """Calculate the average bbox size for debugging"""
 
-    shoebox = reflections["shoebox"]
-    sel = flex.random_selection(len(shoebox), min(len(shoebox), 1000))
-    subset_sb = shoebox.select(sel)
-    xsize = flex.mean(flex.double([s.xsize() for s in subset_sb]))
-    ysize = flex.mean(flex.double([s.ysize() for s in subset_sb]))
-    zsize = flex.mean(flex.double([s.zsize() for s in subset_sb]))
+    bbox = reflections["bbox"]
+    sel = flex.random_selection(len(bbox), min(len(bbox), 1000))
+    subset_bbox = bbox.select(sel)
+    xmin, xmax, ymin, ymax, zmin, zmax = subset_bbox.parts()
+    xsize = flex.mean((xmax - xmin).as_double())
+    ysize = flex.mean((ymax - ymin).as_double())
+    zsize = flex.mean((zmax - zmin).as_double())
     return xsize, ysize, zsize
 
 
@@ -467,17 +470,17 @@ class Task(object):
         ), "maximum memory usage must be <= 1"
         limit_memory = total_memory * self.params.block.max_memory_usage
         if sbox_memory > limit_memory:
-            xsize, ysize, zsize = _average_shoebox_size(self.reflections)
+            xsize, ysize, zsize = _average_bbox_size(self.reflections)
             raise RuntimeError(
                 """
-    There was a problem allocating memory for shoeboxes. Possible solutions
-    include increasing the percentage of memory allowed for shoeboxes or
-    decreasing the block size. This could also be caused by a highly mosaic
-    crystal model. The average shoebox size is %d * %d * %d pixels - is your
-    crystal really this mosaic?
-        Total system memory: %g GB
-        Limit shoebox memory: %g GB
-        Required shoebox memory: %g GB
+        There was a problem allocating memory for shoeboxes.  This could be caused
+        by a highly mosaic crystal model.  Possible solutions include increasing the
+        percentage of memory allowed for shoeboxes or decreasing the block size.
+        The average shoebox size is %d x %d pixels x %d images - is your crystal
+        really this mosaic?
+        Total system memory: %.1f GB
+        Shoebox memory limit: %.1f GB
+        Required shoebox memory: %.1f GB
     """
                 % (
                     xsize,
@@ -801,19 +804,27 @@ class Manager(object):
             limit_memory = total_memory * self.params.block.max_memory_usage
             njobs = int(math.floor(limit_memory / max_memory))
             if njobs < 1:
-                xsize, ysize, zsize = _average_shoebox_size(self.reflections)
+
+                xsize, ysize, zsize = _average_bbox_size(self.reflections)
                 raise RuntimeError(
                     """
-        No enough memory to run integration jobs. Possible solutions
-        include increasing the percentage of memory allowed for shoeboxes or
-        decreasing the block size. This could be caused by a highly mosaic
-        crystal model.  The average shoebox size is %d * %d * %d pixels - is
-        your crystal really this mosaic?
-            Total system memory: %g GB
-            Limit shoebox memory: %g GB
-            Max shoebox memory: %g GB
+        Not enough memory to run integration jobs.  This could be caused by a
+        highly mosaic crystal model.  Possible solutions include increasing the
+        percentage of memory allowed for shoeboxes or decreasing the block size.
+        The average shoebox size is %d x %d pixels x %d images - is your crystal
+        really this mosaic?
+            Total system memory: %.1f GB
+            Shoebox memory limit: %.1f GB
+            Required shoebox memory: %.1f GB
         """
-                    % (total_memory / 1e9, limit_memory / 1e9, max_memory / 1e9)
+                    % (
+                        xsize,
+                        ysize,
+                        zsize,
+                        total_memory / 1e9,
+                        limit_memory / 1e9,
+                        max_memory / 1e9,
+                    )
                 )
             else:
                 self.params.mp.nproc = min(self.params.mp.nproc, njobs)
@@ -1007,31 +1018,17 @@ class ProcessorStills(Processor):
         super(ProcessorStills, self).__init__(manager)
 
 
-class ProcessorBuilder(object):
+def build_processor(Class, experiments, reflections, params=None):
     """
-    A class to simplify building the processor
+    A function to simplify building the processor
+
+    :param Class: The input class
+    :param experiments: The input experiments
+    :param reflections: The reflections
+    :param params: Optional input parameters
     """
+    _params = Parameters()
+    if params is not None:
+        _params.update(params)
 
-    def __init__(self, Class, experiments, reflections, params=None):
-        """
-        Initialize with the required input
-
-        :param Class: The input class
-        :param experiments: The input experiments
-        :param reflections: The reflections
-        :param params: Optionally input parameters
-        """
-        self.Class = Class
-        self.experiments = experiments
-        self.reflections = reflections
-        self.params = Parameters()
-        if params is not None:
-            self.params.update(params)
-
-    def build(self):
-        """
-        Build the class
-
-        :return: The processor class
-        """
-        return self.Class(self.experiments, self.reflections, self.params)
+    return Class(experiments, reflections, _params)

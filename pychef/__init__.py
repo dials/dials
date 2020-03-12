@@ -14,7 +14,6 @@ __all__ = [
     "phil_scope",
     "remove_batch_gaps",
     "resolution_limit",
-    "run",
     "table_data",
 ]
 
@@ -33,6 +32,7 @@ dose {
     dose_step = None
       .type = float(value_min=0)
   }
+
 }
 """
 
@@ -62,6 +62,46 @@ range {
 """
     % dose_phil_str
 )
+
+
+def interpret_images_to_doses_options(
+    experiments, dose_per_image, starting_doses=None, shared_crystal=False
+):
+    """Interpret the dose.experiments options"""
+    if len(dose_per_image) == 1:
+        doses_per_image = dose_per_image * len(experiments)
+    elif len(dose_per_image) != len(experiments):
+        raise ValueError(
+            """
+The dose_per_image option must provide either one value, or a number of values
+equal to the number of experiments (%s)"""
+            % len(experiments)
+        )
+    else:
+        doses_per_image = dose_per_image
+
+    if shared_crystal:
+        start_doses = [0]
+        accumulated_dose = 0
+        # adjust starting doses to account for a shared crystal.
+        for expt, dose_per_img in zip(experiments, doses_per_image):
+            imgrange = expt.scan.get_image_range()
+            n_images = imgrange[1] - imgrange[0] + 1
+            accumulated_dose += n_images * dose_per_img
+            start_doses.append(accumulated_dose)
+        start_doses = start_doses[:-1]
+    elif starting_doses:
+        if len(starting_doses) != len(experiments):
+            raise ValueError(
+                """
+The number of starting_doses must equal the number of experiments (%s)"""
+                % len(experiments)
+            )
+        start_doses = starting_doses
+    else:
+        start_doses = [0] * len(experiments)
+
+    return start_doses, doses_per_image
 
 
 class Statistics(object):
@@ -414,89 +454,6 @@ class Statistics(object):
         return d
 
 
-def run(args):
-    from iotbx.reflection_file_reader import any_reflection_file
-
-    interp = phil_scope.command_line_argument_interpreter()
-    params, unhandled = interp.process_and_fetch(
-        args, custom_processor="collect_remaining"
-    )
-    params = params.extract()
-
-    args = unhandled
-
-    intensities = None
-    batches = None
-    dose = None
-
-    reader = any_reflection_file(args[0])
-    assert reader.file_type() == "ccp4_mtz"
-    arrays = reader.as_miller_arrays(
-        merge_equivalents=False, anomalous=params.anomalous
-    )
-    for ma in arrays:
-        if ma.info().labels == ["BATCH"]:
-            batches = ma
-        elif ma.info().labels == ["DOSE"]:
-            dose = ma
-        elif ma.info().labels == ["I", "SIGI"]:
-            intensities = ma
-        elif ma.info().labels == ["I(+)", "SIGI(+)", "I(-)", "SIGI(-)"]:
-            intensities = ma
-
-    assert intensities is not None
-    assert batches is not None
-    mtz_object = reader.file_content()
-
-    indices = mtz_object.extract_original_index_miller_indices()
-    intensities = intensities.customized_copy(indices=indices)
-    batches = batches.customized_copy(indices=indices)
-
-    if params.anomalous:
-        intensities = intensities.as_anomalous_array()
-        batches = batches.as_anomalous_array()
-
-    if dose is None:
-        dose = batches_to_dose(batches.data(), params.dose)
-    else:
-        dose = dose.data()
-
-    sel = dose > -1
-    intensities = intensities.select(sel)
-    dose = dose.select(sel)
-
-    if not params.d_min and params.min_completeness:
-        params.d_min = resolution_limit(
-            mtz_file=args[0],
-            min_completeness=params.min_completeness,
-            n_bins=params.resolution_bins,
-        )
-        print("Estimated d_min: %.2f" % params.d_min)
-    if params.d_min or params.d_max:
-        sel = flex.bool(intensities.size(), True)
-        d_spacings = intensities.d_spacings().data()
-        if params.d_min:
-            sel &= d_spacings >= params.d_min
-        if params.d_max:
-            sel &= d_spacings <= params.d_max
-        intensities = intensities.select(sel)
-        dose = dose.select(sel)
-
-    stats = Statistics(
-        intensities,
-        dose,
-        n_bins=params.resolution_bins,
-        range_min=params.range.min,
-        range_max=params.range.max,
-        range_width=params.range.width,
-    )
-
-    print(stats.completeness_vs_dose_str())
-    print(stats.rcp_vs_dose_str())
-    print(stats.scp_vs_dose_str())
-    print(stats.rd_vs_dose_str())
-
-
 def batches_to_dose(batches, params):
     if len(params.batch):
         dose = flex.double(batches.size(), -1)
@@ -528,10 +485,10 @@ def remove_batch_gaps(batches):
     return new_batches
 
 
-def resolution_limit(mtz_file, min_completeness, n_bins):
+def resolution_limit(i_obs, min_completeness, n_bins):
     from dials.util.resolutionizer import Resolutionizer, phil_defaults
 
     params = phil_defaults.extract().resolutionizer
     params.nbins = n_bins
-    r = Resolutionizer(mtz_file, params)
+    r = Resolutionizer(i_obs, params)
     return r.resolution_completeness(limit=min_completeness)

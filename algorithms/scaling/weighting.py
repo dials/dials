@@ -57,7 +57,7 @@ class GemanMcClureWeights(WeightingBase):
             self.Ih_table.intensities
             - (self.Ih_table.inverse_scale_factors * self.Ih_table.Ih_values)
         ) / (self.Ih_table.inverse_scale_factors * self.Ih_table.Ih_values)
-        self.Ih_table.weights = 1.0 / ((1.0 + (e_i ** 2)) ** 2)
+        self.Ih_table.weights = 1.0 / flex.pow2(1.0 + flex.pow2(e_i))
 
 
 class CauchyWeights(WeightingBase):
@@ -72,7 +72,7 @@ class CauchyWeights(WeightingBase):
             self.Ih_table.intensities
             - (self.Ih_table.inverse_scale_factors * self.Ih_table.Ih_values)
         ) / (self.Ih_table.inverse_scale_factors * self.Ih_table.Ih_values)
-        self.Ih_table.weights = 1.0 / (1.0 + ((e_i / self.c) ** 2))
+        self.Ih_table.weights = 1.0 / (1.0 + flex.pow2(e_i / self.c))
 
 
 class HuberWeights(WeightingBase):
@@ -87,7 +87,7 @@ class HuberWeights(WeightingBase):
             self.Ih_table.intensities
             - (self.Ih_table.inverse_scale_factors * self.Ih_table.Ih_values)
         ) / (self.Ih_table.inverse_scale_factors * self.Ih_table.Ih_values)
-        abs_ei = (e_i ** 2) ** 0.5
+        abs_ei = flex.abs(e_i)
         self.Ih_table.weights = flex.double(self.Ih_table.size, 1.0)
         sel = abs_ei > self.c
         sel_abs_ei = abs_ei.select(sel)

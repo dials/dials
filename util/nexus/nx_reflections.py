@@ -3,8 +3,6 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 from dials.array_family import flex
 
-schema_url = "https://github.com/nexusformat/definitions/blob/master/contributed_definitions/NXreflections.nxdl.xml"
-
 
 def make_dataset(handle, name, dtype, data, description, units=None):
     dset = handle.create_dataset(
@@ -25,7 +23,7 @@ def make_int(handle, name, data, description, units=None):
 
 
 def make_bool(handle, name, data, description, units=None):
-    return make_dataset(handle, name, "bool", data, description, units)
+    return make_dataset(handle, name, "int8", data, description, units)
 
 
 def make_float(handle, name, data, description, units=None):
@@ -94,6 +92,9 @@ def write(handle, key, data):
         make_float(handle, "predicted_px_x", col1, dsc1)
         make_float(handle, "predicted_px_y", col2, dsc2)
         make_float(handle, "predicted_frame", col3, dsc3)
+        handle["predicted_px_x"].attrs["units"] = ""
+        handle["predicted_px_y"].attrs["units"] = ""
+        handle["predicted_frame"].attrs["units"] = ""
     elif key == "xyzcal.mm":
         col1, col2, col3 = data.parts()
         dsc1 = "The predicted bragg peak fast millimeter location"
@@ -106,6 +107,7 @@ def write(handle, key, data):
         d = data.as_int()
         d.reshape(flex.grid((len(data)), 6))
         make_int(handle, "bounding_box", d, "The reflection bounding box")
+        handle["bounding_box"].attrs["units"] = ""
     elif key == "xyzobs.px.value":
         col1, col2, col3 = data.parts()
         dsc1 = "The observed centroid fast pixel value"
@@ -114,6 +116,9 @@ def write(handle, key, data):
         make_float(handle, "observed_px_x", col1, dsc1)
         make_float(handle, "observed_px_y", col2, dsc2)
         make_float(handle, "observed_frame", col3, dsc3)
+        handle["observed_px_x"].attrs["units"] = ""
+        handle["observed_px_y"].attrs["units"] = ""
+        handle["observed_frame"].attrs["units"] = ""
     elif key == "xyzobs.px.variance":
         col1, col2, col3 = data.parts()
         dsc1 = "The observed centroid fast pixel variance"
@@ -122,6 +127,9 @@ def write(handle, key, data):
         make_float(handle, "observed_px_x_var", col1, dsc1)
         make_float(handle, "observed_px_y_var", col2, dsc2)
         make_float(handle, "observed_frame_var", col3, dsc3)
+        handle["observed_px_x_var"].attrs["units"] = ""
+        handle["observed_px_y_var"].attrs["units"] = ""
+        handle["observed_frame_var"].attrs["units"] = ""
     elif key == "xyzobs.mm.value":
         col1, col2, col3 = data.parts()
         dsc1 = "The observed centroid fast pixel value"
@@ -203,7 +211,7 @@ def read(handle, key):
     elif key == "partial_id":
         return flex.size_t(handle["reflection_id"][:].astype(int))
     elif key == "entering":
-        return flex.bool(handle["entering"][:])
+        return flex.bool(handle["entering"][:].astype(np.bool))
     elif key == "flags":
         return flex.size_t(handle["flags"][:].astype(int))
     elif key == "panel":
@@ -324,15 +332,11 @@ def dump(entry, reflections, experiments):
         )
         features[0] = 7
 
-    # Create the entry
+    # Create the base class
     assert "reflections" not in entry
     refls = entry.create_group("reflections")
-    refls.attrs["NX_class"] = "NXsubentry"
-
-    # Create the definition
-    definition = refls.create_dataset("definition", data="NXreflections")
-    definition.attrs["version"] = 1
-    definition.attrs["URL"] = schema_url
+    refls.attrs["NX_class"] = "NXreflections"
+    refls.attrs["description"] = ""
 
     refls["experiments"] = [np.string_(e) for e in experiments]
 
@@ -347,13 +351,14 @@ def dump(entry, reflections, experiments):
             print(e.args[0])
 
     # FIXME Write the overlaps (for testing at the moment)
-    overlaps = [[] for i in range(len(reflections))]
-    overlaps[0] = [1, 2, 3]
-    overlaps[1] = [0, 4]
-    overlaps[2] = [0, 3]
-    overlaps[3] = [0, 2]
-    overlaps[4] = [1]
-    make_vlen_uint(refls, "overlaps", overlaps, "Reflection overlap list")
+    # Optional and doesn't pass validation, so disable
+    # overlaps = [[] for i in range(len(reflections))]
+    # overlaps[0] = [1, 2, 3]
+    # overlaps[1] = [0, 4]
+    # overlaps[2] = [0, 3]
+    # overlaps[3] = [0, 2]
+    # overlaps[4] = [1]
+    # make_vlen_uint(refls, "overlaps", overlaps, "Reflection overlap list")
 
 
 def load(entry):
@@ -365,12 +370,14 @@ def load(entry):
 
     # Get the entry
     refls = entry["reflections"]
-    assert refls.attrs["NX_class"] == "NXsubentry"
-
-    # Get the definition
-    definition = refls["definition"]
-    assert definition[()] == "NXreflections"
-    assert definition.attrs["version"] == 1
+    if refls.attrs["NX_class"] == "NXsubentry":
+        # Backward compatibility. See https://github.com/nexusformat/definitions/pull/752
+        # Get the definition
+        definition = refls["definition"]
+        assert definition[()] == "NXreflections"
+        assert definition.attrs["version"] == 1
+    else:
+        assert refls.attrs["NX_class"] == "NXreflections"
 
     # The paths to the experiments
     experiments = list(refls["experiments"])

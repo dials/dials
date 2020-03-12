@@ -8,11 +8,12 @@ from dxtbx.model import Crystal, Experiment, Scan
 from dials.util.options import OptionParser
 from dials.algorithms.scaling.model.model import KBScalingModel
 from dials.array_family import flex
-from dials.command_line.compute_delta_cchalf import Script as DeltaCCHalfScript
+from dials.algorithms.statistics.cc_half_algorithm import CCHalfFromDials, DeltaCCHalf
 from dials.algorithms.scaling.scale_and_filter import AnalysisResults, log_cycle_results
 
 
 def generate_test_reflections(n=2):
+    """Generate data for testing."""
     reflections = flex.reflection_table()
     for id_ in range(0, n):
         r = flex.reflection_table()
@@ -24,7 +25,6 @@ def generate_test_reflections(n=2):
     return reflections
 
 
-# @pytest.fixture
 def generated_params():
     """Generate a param phil scope."""
     phil_scope = phil.parse(
@@ -44,10 +44,12 @@ def generated_params():
 
 
 def get_scaling_model():
+    """Make a KB Scaling model instance"""
     return KBScalingModel.from_data(generated_params(), [], [])
 
 
 def generate_test_experiments(n=2):
+    """Make a test experiment list"""
     experiments = ExperimentList()
     exp_dict = {
         "__id__": "crystal",
@@ -56,20 +58,15 @@ def generate_test_experiments(n=2):
         "real_space_c": [0.0, 0.0, 2.0],
         "space_group_hall_symbol": " C 2y",
     }
-    crystal = Crystal.from_dict(exp_dict)
-    scan = Scan(image_range=[1, 10], oscillation=[0.0, 1.0])
-    experiments.append(
-        Experiment(crystal=crystal, scan=scan, scaling_model=get_scaling_model())
-    )
-    experiments[0].identifier = "0"
-    if n > 1:
-        for i in range(n - 1):
-            experiments.append(
-                Experiment(
-                    crystal=crystal, scan=scan, scaling_model=get_scaling_model()
-                )
+    for i in range(n):
+        experiments.append(
+            Experiment(
+                crystal=Crystal.from_dict(exp_dict),
+                scan=Scan(image_range=[1, 10], oscillation=[0.0, 1.0]),
+                scaling_model=get_scaling_model(),
+                identifier=str(i),
             )
-            experiments[i + 1].identifier = str(i + 1)
+        )
     return experiments
 
 
@@ -132,21 +129,11 @@ def test_scale_and_filter_results_logging():
 def test_compute_delta_cchalf_returned_results():
     """Test that delta cchalf return necessary values for scale_and_filter."""
 
-    # First check metadata recorded upon initialisation
-    params = mock.Mock()
-    params.mode = "dataset"
-    params.stdcutoff = 6.0
-    script = DeltaCCHalfScript(params, [], [])
-    assert script.results_summary["dataset_removal"]["stdcutoff"] == 6.0
-    assert script.results_summary["dataset_removal"]["mode"] == "dataset"
-
     # Check for correct recording of
     # results_summary['per_dataset_delta_cc_half_values']['delta_cc_half_values']
     summary = {}
     delta_cc = {0: -4, 1: 2, 2: -3, 3: -5, 4: 1}
-    sorted_data, sorted_ccs = DeltaCCHalfScript.sort_deltacchalf_values(
-        delta_cc, summary
-    )
+    sorted_data, sorted_ccs = DeltaCCHalf.sort_deltacchalf_values(delta_cc, summary)
     expected_data_order = [3, 0, 2, 4, 1]
     expected_cc_order = [-5, -4, -3, 1, 2]
     assert list(sorted_data) == expected_data_order
@@ -161,7 +148,7 @@ def test_compute_delta_cchalf_returned_results():
     refls = generate_test_reflections(2)
     ids_to_remove = [0]
     results_summary = {"dataset_removal": {}}
-    _ = DeltaCCHalfScript.remove_datasets_below_cutoff(
+    _ = CCHalfFromDials.remove_datasets_below_cutoff(
         exp, refls, ids_to_remove, results_summary
     )
     assert "experiments_fully_removed" in results_summary["dataset_removal"]
@@ -174,14 +161,14 @@ def test_compute_delta_cchalf_returned_results():
     refls = generate_test_reflections(2)
     ids_to_remove = [0, 1]
     image_group_to_expid_and_range = {
-        0: (0, (1, 5)),
-        1: (0, (6, 10)),
-        2: (1, (1, 5)),
-        3: (1, (6, 10)),
+        0: ("0", (1, 5)),
+        1: ("0", (6, 10)),
+        2: ("1", (1, 5)),
+        3: ("1", (6, 10)),
     }
-    expids_to_image_groups = {0: [0, 1], 1: [2, 3]}
+    expids_to_image_groups = {"0": [0, 1], "1": [2, 3]}
     results_summary = {"dataset_removal": {}}
-    _ = DeltaCCHalfScript.remove_image_ranges_below_cutoff(
+    _ = CCHalfFromDials.remove_image_ranges_below_cutoff(
         exp,
         refls,
         ids_to_remove,

@@ -7,7 +7,6 @@ from time import time
 import dials.algorithms.integration
 from dials.algorithms.integration.processor import job
 from dials_algorithms_integration_integrator_ext import ReflectionManagerPerImage
-from dials.array_family import flex
 from dials.model.data import make_image
 from dials.model.data import MultiPanelImageVolume
 from dials.model.data import ImageVolume
@@ -123,27 +122,6 @@ class Result(object):
         """
         self.index = index
         self.reflections = reflections
-
-
-class Dataset(object):
-    def __init__(self, frames, size):
-        self.frames = frames
-        nframes = frames[1] - frames[0]
-        self.data = []
-        self.mask = []
-        for sz in size:
-            self.data.append(flex.double(flex.grid(nframes, sz[0], sz[1])))
-            self.mask.append(flex.bool(flex.grid(nframes, sz[0], sz[1])))
-
-    def set_image(self, index, data, mask):
-        for d1, d2 in zip(self.data, data):
-            h, w = d2.all()
-            d2.reshape(flex.grid(1, h, w))
-            d1[index : index + 1, :, :] = d2.as_double()
-        for m1, m2 in zip(self.mask, mask):
-            h, w = m2.all()
-            m2.reshape(flex.grid(1, h, w))
-            m1[index : index + 1, :, :] = m2
 
 
 class Task(object):
@@ -413,55 +391,3 @@ class ProcessorImage(ProcessorImageBase):
 
         # Initialise the processor
         super(ProcessorImage, self).__init__(manager)
-
-
-class InitializerRot(object):
-    """
-    A pre-processing class for oscillation data.
-    """
-
-    def __init__(self, experiments, params):
-        """
-        Initialise the pre-processor.
-        """
-        self.experiments = experiments
-        self.params = params
-
-    def __call__(self, reflections):
-        """
-        Do some pre-processing.
-        """
-        # Compute some reflection properties
-        reflections.compute_zeta_multi(self.experiments)
-        reflections.compute_d(self.experiments)
-        reflections.compute_bbox(self.experiments)
-
-        # Filter the reflections by zeta
-        mask = flex.abs(reflections["zeta"]) < self.params.filter.min_zeta
-        reflections.set_flags(mask, reflections.flags.dont_integrate)
-
-        # Filter the reflections by powder ring
-        if self.params.filter.powder_filter is not None:
-            mask = self.params.filter.powder_filter(reflections["d"])
-            reflections.set_flags(mask, reflections.flags.in_powder_ring)
-
-
-class FinalizerRot(object):
-    """
-    A post-processing class for oscillation data.
-    """
-
-    def __init__(self, experiments, params):
-        """
-        Initialise the post processor.
-        """
-        self.experiments = experiments
-        self.params = params
-
-    def __call__(self, reflections):
-        """
-        Do some post processing.
-        """
-
-        # Compute the corrections
-        reflections.compute_corrections(self.experiments)

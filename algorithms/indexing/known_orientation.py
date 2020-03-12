@@ -13,22 +13,22 @@ class IndexerKnownOrientation(Indexer):
 
     def find_lattices(self):
         experiments = ExperimentList()
-        for cm in self.known_orientations:
+        for cm, expt in zip(self.known_orientations, self.experiments):
             # indexer expects crystals to be in primitive setting
             space_group = cm.get_space_group()
             cb_op_to_primitive = (
                 space_group.info().change_of_basis_op_to_primitive_setting()
             )
             cm = cm.change_basis(cb_op_to_primitive)
-            for expt in self.experiments:
-                experiments.append(
-                    Experiment(
-                        imageset=expt.imageset,
-                        beam=expt.beam,
-                        detector=expt.detector,
-                        goniometer=expt.goniometer,
-                        scan=expt.scan,
-                        crystal=cm,
-                    )
+            experiments.append(
+                Experiment(
+                    imageset=expt.imageset,
+                    beam=expt.beam,
+                    detector=expt.detector,
+                    goniometer=expt.goniometer,
+                    scan=expt.scan,
+                    crystal=cm,
+                    identifier=expt.identifier,
                 )
+            )
         return experiments

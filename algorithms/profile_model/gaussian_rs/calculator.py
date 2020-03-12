@@ -7,10 +7,14 @@
 
 from __future__ import absolute_import, division, print_function
 
+import collections
+import copy
 import logging
 import math
 
+import scitbx.math
 import six
+from dials.array_family import flex
 
 logger = logging.getLogger(__name__)
 
@@ -26,8 +30,6 @@ class ComputeEsdBeamDivergence(object):
             reflections The reflections
             centroid_definition ENUM com or s1
         """
-        from scitbx.array_family import flex
-
         # Calculate the beam direction variances
         variance = self._beam_direction_variance_list(
             detector, reflections, centroid_definition
@@ -53,8 +55,6 @@ class ComputeEsdBeamDivergence(object):
         Returns:
             The list of variances
         """
-        from scitbx.array_family import flex
-
         # Get the reflection columns
         shoebox = reflections["shoebox"]
         xyz = reflections["xyzobs.px.value"]
@@ -72,7 +72,6 @@ class ComputeEsdBeamDivergence(object):
             s1_centroid = reflections["s1"]
 
         for r in range(len(reflections)):
-
             # Get the coordinates and values of valid shoebox pixels
             # FIXME maybe I note in Kabsch (2010) s3.1 step (v) is
             # background subtraction, appears to be missing here.
@@ -84,7 +83,7 @@ class ComputeEsdBeamDivergence(object):
 
             if flex.sum(values) > 1:
                 variance.append(
-                    flex.sum(values * (angles ** 2)) / (flex.sum(values) - 1)
+                    flex.sum(values * flex.pow2(angles)) / (flex.sum(values) - 1)
                 )
 
         # Return a list of variances
@@ -101,8 +100,6 @@ class FractionOfObservedIntensity(object):
             reflections The list of reflections
             experiment The experiment object
         """
-        from dials.array_family import flex
-
         # Get the oscillation width
         dphi2 = scan.get_oscillation(deg=False)[1] / 2.0
 
@@ -127,7 +124,6 @@ class FractionOfObservedIntensity(object):
         Returns:
             (list of tau, list of zeta)
         """
-        from scitbx.array_family import flex
         from dials.algorithms.shoebox import MaskCode
 
         mask_code = MaskCode.Valid | MaskCode.Foreground
@@ -164,9 +160,6 @@ class FractionOfObservedIntensity(object):
         Returns:
             A list of log intensity fractions
         """
-        from scitbx.array_family import flex
-        import scitbx.math
-
         # Tiny value
         TINY = 1e-10
         assert sigma_m > TINY
@@ -198,7 +191,6 @@ class ComputeEsdReflectingRange(object):
         def __init__(self, crystal, beam, detector, goniometer, scan, reflections):
             """Initialise the optmization."""
             from scitbx import simplex
-            from scitbx.array_family import flex
 
             # FIXME in here this code is very unstable or actually broken if
             # we pass in a few lone images i.e. screening shots - propose need
@@ -234,17 +226,12 @@ class ComputeEsdReflectingRange(object):
 
         def target(self, log_sigma):
             """The target for minimization."""
-            from scitbx.array_family import flex
-
             return -flex.sum(self._R(math.exp(log_sigma[0])))
 
     class CrudeEstimator(object):
         """If the main estimator failed make a crude estimate"""
 
         def __init__(self, crystal, beam, detector, goniometer, scan, reflections):
-
-            from dials.array_family import flex
-
             # Calculate a list of angles and zeta's
             tau, zeta = self._calculate_tau_and_zeta(
                 crystal, beam, detector, goniometer, scan, reflections
@@ -267,7 +254,6 @@ class ComputeEsdReflectingRange(object):
             Returns:
                 (list of tau, list of zeta)
             """
-            from scitbx.array_family import flex
             from dials.algorithms.shoebox import MaskCode
 
             mask_code = MaskCode.Valid | MaskCode.Foreground
@@ -308,8 +294,6 @@ class ComputeEsdReflectingRange(object):
             reflections,
             n_macro_cycles=10,
         ):
-
-            from dials.array_family import flex
             from scitbx import simplex
 
             # Get the oscillation width
@@ -355,9 +339,6 @@ class ComputeEsdReflectingRange(object):
 
         def target(self, log_sigma):
             """The target for minimization."""
-            from scitbx.array_family import flex
-            import scitbx.math
-
             sigma_m = math.exp(log_sigma[0])
 
             # Tiny value
@@ -424,7 +405,6 @@ class ComputeEsdReflectingRange(object):
             Returns:
                 (list of tau, list of zeta)
             """
-            from scitbx.array_family import flex
             from dials.algorithms.shoebox import MaskCode
 
             mask_code = MaskCode.Valid | MaskCode.Foreground
@@ -516,7 +496,6 @@ class ProfileModelCalculator(object):
     ):
         """Calculate the profile model."""
         from dxtbx.model.experiment_list import Experiment
-        from dials.array_family import flex
 
         # Check input has what we want
         assert reflections is not None
@@ -609,9 +588,6 @@ class ScanVaryingProfileModelCalculator(object):
         centroid_definition="s1",
     ):
         """Calculate the profile model."""
-        from copy import deepcopy
-        from collections import defaultdict
-        from dials.array_family import flex
         from dxtbx.model.experiment_list import Experiment
 
         # Check input has what we want
@@ -638,12 +614,12 @@ class ScanVaryingProfileModelCalculator(object):
         reflections = reflections.select(mask)
 
         # Split the reflections into partials
-        reflections = deepcopy(reflections)
+        reflections = copy.deepcopy(reflections)
         reflections.split_partials_with_shoebox()
 
         # Get a list of reflections for each frame
         bbox = reflections["bbox"]
-        index_list = defaultdict(list)
+        index_list = collections.defaultdict(list)
         for i, (x0, x1, y0, y1, z0, z1) in enumerate(bbox):
             assert z1 == z0 + 1
             index_list[z0].append(i)
@@ -712,20 +688,18 @@ class ScanVaryingProfileModelCalculator(object):
             assert n & 1
             mid = n // 2
             sigma = mid / 3.0
-            kernel = []
-            for i in range(n):
-                kernel.append(math.exp(-((i - mid) ** 2) / (2 * sigma ** 2)))
+            kernel = [math.exp(-((i - mid) ** 2) / (2 * sigma ** 2)) for i in range(n)]
             kernel = [k / sum(kernel) for k in kernel]
             return kernel
 
         # Smooth the parameters
         kernel = gaussian_kernel(51)
-        sigma_b_sq_new = convolve(sigma_b ** 2, kernel)
-        sigma_m_sq_new = convolve(sigma_m ** 2, kernel)
+        sigma_b_sq_new = convolve(flex.pow2(sigma_b), kernel)
+        sigma_m_sq_new = convolve(flex.pow2(sigma_m), kernel)
 
         # Print the output - mean as is scan varying
-        mean_sigma_b = math.sqrt(sum(sigma_b ** 2) / len(sigma_b))
-        mean_sigma_m = math.sqrt(sum(sigma_m ** 2) / len(sigma_m))
+        mean_sigma_b = math.sqrt(sum(flex.pow2(sigma_b)) / len(sigma_b))
+        mean_sigma_m = math.sqrt(sum(flex.pow2(sigma_m)) / len(sigma_m))
 
         # Save the smoothed parameters
         self._sigma_b = flex.sqrt(flex.double(sigma_b_sq_new))
@@ -760,8 +734,6 @@ class ScanVaryingProfileModelCalculator(object):
 
 def _select_reflections_for_sigma_calc(reflections, min_number_of_refl=10000):
     """Determine a subset of reflections to use for sigma_m calculation."""
-    from dials.array_family import flex
-
     n_ref = reflections.size()
     if n_ref >= min_number_of_refl:
         # ideally use well-sampled selection from refinement

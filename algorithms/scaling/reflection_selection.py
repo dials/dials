@@ -85,7 +85,7 @@ def _build_class_matrix(reflections, class_matrix, offset=0):
 
 def _select_groups_on_Isigma_cutoff(Ih_table, cutoff=2.0):
     """Select groups with multiplicity>1, Isigma>cutoff"""
-    I_over_sigma = Ih_table.intensities / (Ih_table.variances ** 0.5)
+    I_over_sigma = Ih_table.intensities / flex.sqrt(Ih_table.variances)
     sumIsigm = I_over_sigma * Ih_table.h_index_matrix
     n = Ih_table.group_multiplicities()
     avg_Isigma = sumIsigm / n
@@ -319,7 +319,7 @@ def _loop_over_class_matrix(
 
 
 def _determine_Isigma_selection(reflection_table, params):
-    Ioversigma = reflection_table["intensity"] / (reflection_table["variance"] ** 0.5)
+    Ioversigma = reflection_table["intensity"] / flex.sqrt(reflection_table["variance"])
     Isiglow, Isighigh = params.reflection_selection.Isigma_range
     selection = Ioversigma > Isiglow
     if Isighigh != 0.0:

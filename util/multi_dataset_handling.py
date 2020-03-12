@@ -5,6 +5,7 @@ and experiment lists.
 
 from __future__ import absolute_import, division, print_function
 
+import copy
 import logging
 import uuid
 from dials.array_family import flex
@@ -17,12 +18,12 @@ phil_scope = iotbx.phil.parse(
     """
   dataset_selection {
     use_datasets = None
-      .type = strings
+      .type = ints
       .help = "Choose a subset of datasets, based on the dataset id (as defined
                in the reflection table), to use from a multi-dataset input."
       .expert_level = 2
     exclude_datasets = None
-      .type = strings
+      .type = ints
       .help = "Choose a subset of datasets, based on the dataset id (as defined
                in the reflection table), to exclude from a multi-dataset input."
       .expert_level = 2
@@ -108,14 +109,14 @@ def renumber_table_id_columns(reflection_tables):
 
     new_id_ = 0
     for table in reflection_tables:
-        table_id_values = sorted(list(set(table["id"]).difference({-1})))
+        table_id_values = sorted(set(table["id"]).difference({-1}), reverse=True)
         highest_new_id = new_id_ + len(table_id_values) - 1
         expt_ids_dict = table.experiment_identifiers()
         new_ids_dict = {}
         new_id_ = highest_new_id
-        while table_id_values:
-            val = table_id_values.pop()
-            sel = table["id"] == val
+        orig_id = copy.deepcopy(table["id"])
+        for val in table_id_values:
+            sel = orig_id == val
             if val in expt_ids_dict:
                 # only delete here, add new at end to avoid clashes of new/old ids
                 new_ids_dict[new_id_] = expt_ids_dict[val]

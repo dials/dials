@@ -13,6 +13,40 @@ from scitbx.array_family import flex
 from scitbx.math import distributions
 
 
+def make_image_range_table(experiments, batch_manager):
+    """Make a summary table of image ranges."""
+    table = [
+        [
+            "Experiment number",
+            "scan image range",
+            "image range in use",
+            "associated batch range",
+            "Image template",
+        ]
+    ]
+    for i, exp in enumerate(experiments):
+        if exp.scan:
+            valid_image_ranges = ",".join(
+                str(j) for j in exp.scan.get_valid_image_ranges(exp.identifier)
+            )
+            image_range = exp.scan.get_image_range()
+            template = exp.imageset.get_template()
+            b_0 = batch_manager._batch_increments[i]
+            batch_params = batch_manager.batch_params[i]
+            batch_range = batch_params["range"]
+            batches = (b_0, b_0 + (batch_range[1] - batch_range[0]))
+            table.append(
+                [
+                    str(batch_params["id"]),
+                    image_range,
+                    valid_image_ranges,
+                    batches,
+                    template,
+                ]
+            )
+    return table
+
+
 def scale_rmerge_vs_batch_plot(batch_manager, rmerge_vs_b, scales_vs_b=None):
     reduced_batches = batch_manager.reduced_batches
     shapes, annotations, text = batch_manager.batch_plot_shapes_and_annotations()
@@ -65,7 +99,7 @@ def scale_rmerge_vs_batch_plot(batch_manager, rmerge_vs_b, scales_vs_b=None):
 def i_over_sig_i_vs_batch_plot(batch_manager, i_sig_i_vs_batch):
 
     reduced_batches = batch_manager.reduced_batches
-    shapes, annotations, _ = batch_manager.batch_plot_shapes_and_annotations()
+    shapes, annotations, text = batch_manager.batch_plot_shapes_and_annotations()
     if len(annotations) > 30:
         # at a certain point the annotations become unreadable
         annotations = None
@@ -79,6 +113,7 @@ def i_over_sig_i_vs_batch_plot(batch_manager, i_sig_i_vs_batch):
                     "type": "scatter",
                     "name": "I/sigI vs batch",
                     "opacity": 0.75,
+                    "text": text,
                 }
             ],
             "layout": {
@@ -475,13 +510,14 @@ class ResolutionPlotsAndStats(ResolutionPlotterMixin):
         )
         self.is_centric = is_centric
 
-    def make_all_plots(self):
+    def make_all_plots(self, cc_one_half_method=None):
         """Make a dictionary containing all available resolution-dependent plots."""
         d = OrderedDict()
-        d.update(self.cc_one_half_plot())
+        d.update(self.cc_one_half_plot(method=cc_one_half_method))
         d.update(self.i_over_sig_i_plot())
         d.update(self.completeness_plot())
         d.update(self.multiplicity_vs_resolution_plot())
+        d.update(self.r_pim_plot())
         return d
 
     def cc_one_half_plot(self, method=None):
@@ -617,6 +653,32 @@ class ResolutionPlotsAndStats(ResolutionPlotterMixin):
                         "ticktext": self.d_star_sq_ticktext,
                     },
                     "yaxis": {"title": u"<I/σ(I)>", "rangemode": "tozero"},
+                },
+            }
+        }
+
+    def r_pim_plot(self):
+        """Make a plot of <I/sigI> against resolution."""
+        r_pim_bins = [bin_stats.r_pim for bin_stats in self.dataset_statistics.bins]
+
+        return {
+            "r_pim": {
+                "data": [
+                    {
+                        "x": self.d_star_sq_bins,  # d_star_sq
+                        "y": r_pim_bins,
+                        "type": "scatter",
+                        "name": "R<sub>pim</sub> vs resolution",
+                    }
+                ],
+                "layout": {
+                    "title": u"R<sub>pim</sub> vs resolution",
+                    "xaxis": {
+                        "title": u"Resolution (Å)",
+                        "tickvals": self.d_star_sq_tickvals,
+                        "ticktext": self.d_star_sq_ticktext,
+                    },
+                    "yaxis": {"title": u"R<sub>pim</sub>", "rangemode": "tozero"},
                 },
             }
         }
@@ -860,10 +922,10 @@ class AnomalousPlotter(ResolutionPlotterMixin):
                     dano2 = arr2.anomalous_differences().data()
                     if dano1.size() > 0:
                         rmsd_11 = (
-                            flex.sum((dano1 - dano2) ** 2) / (2.0 * dano1.size())
+                            flex.sum(flex.pow2(dano1 - dano2)) / (2.0 * dano1.size())
                         ) ** 0.5
                         rmsd_1min1 = (
-                            flex.sum((dano1 + dano2) ** 2) / (2.0 * dano1.size())
+                            flex.sum(flex.pow2(dano1 + dano2)) / (2.0 * dano1.size())
                         ) ** 0.5
                         correl_ratios.append(rmsd_1min1 / rmsd_11)
                     else:

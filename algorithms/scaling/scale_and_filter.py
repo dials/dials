@@ -470,7 +470,10 @@ def make_histogram_plots(cycle_results):
         }
     )
     colors = [(color_list * int(math.ceil(n / len(color_list))))[i] for i in range(n)]
-    legends = [ordinal(i) + " Delta CC-half analysis" for i in range(1, n + 1)]
+    if n == 1:
+        legends = ["Delta CC-half analysis"]
+    else:
+        legends = [ordinal(i) + " Delta CC-half analysis" for i in range(1, n + 1)]
     if "image_ranges_removed" in cycle_results[0]:
         n_rej = [len(res["image_ranges_removed"]) for res in cycle_results]
     else:
@@ -520,6 +523,33 @@ def make_histogram_plots(cycle_results):
             flex.double(deltas) * 100, min(deltas) * 100, max(deltas) * 100, n_slots=40
         )
         _add_new_histogram(d, hist, c)
+    return d
+
+
+def make_per_dataset_plot(delta_cchalf_i):
+    """Make a line plot of delta cc half per group."""
+
+    d = OrderedDict()
+    d.update(
+        {
+            "per_dataset_plot": {
+                "data": [
+                    {
+                        "y": [i * 100 for i in list(delta_cchalf_i.values())],
+                        "x": list(delta_cchalf_i.keys()),
+                        "type": "scatter",
+                        "mode": "lines",
+                    }
+                ],
+                "layout": {
+                    "title": "Delta CC-Half vs group",
+                    "xaxis": {"title": "Group number"},
+                    "yaxis": {"title": "Delta CC-Half"},
+                },
+            }
+        }
+    )
+
     return d
 
 

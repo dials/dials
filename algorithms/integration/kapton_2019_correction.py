@@ -622,7 +622,7 @@ class multi_kapton_correction(object):
                     # has already been corrected!
                 else:
                     refl_sele["intensity.sum.value"] *= k_corr
-                    refl_sele["intensity.sum.variance"] *= (k_corr) ** 2
+                    refl_sele["intensity.sum.variance"] *= flex.pow2(k_corr)
                 return refl_sele
 
             if len(refl_zero) > 0 and self.params.smart_sigmas:

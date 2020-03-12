@@ -202,7 +202,7 @@ def test_errormodel(large_reflection_table, test_sg):
     sigmaprime = calc_sigmaprime([x0, x1], error_model.filtered_Ih_table)
     cal_sigpr = list(
         x0
-        * ((block.variances + ((x1 * block.intensities) ** 2)) ** 0.5)
+        * flex.sqrt(block.variances + flex.pow2(x1 * block.intensities))
         / block.inverse_scale_factors
     )
     assert list(sigmaprime) == pytest.approx(cal_sigpr[4:7] + cal_sigpr[-2:])
@@ -243,9 +243,9 @@ def test_error_model_target(large_reflection_table, test_sg):
     target.predict(parameterisation)
     # Test residual calculation
     residuals = target.calculate_residuals(parameterisation)
-    assert (
-        residuals
-        == (flex.double(2, 1.0) - error_model.binner.binning_info["bin_variances"]) ** 2
+    assert residuals == (
+        flex.double(2, 1.0)
+        - flex.pow2(error_model.binner.binning_info["bin_variances"])
     )
 
     # Test gradient calculation against finite differences.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- mode: python; coding: utf-8; indent-tabs-mode: nil; python-indent: 2 -*-
+# -*- mode: python; coding: utf-8; indent-tabs-mode: nil; python-indent: 4 -*-
 
 # Running bootstrap requires a minimum Python version of 2.7.
 
@@ -101,189 +101,33 @@ def install_miniconda(location):
     run_command(workdir=".", command=command, description="Installing Miniconda")
 
 
-class install_conda(object):
-    def __init__(self):
-        print()
+def install_conda(python):
+    print()
 
-        # Find relevant conda base installation
-        self.conda_base = os.path.realpath("miniconda")
-        if os.name == "nt":
-            self.conda_exe = os.path.join(self.conda_base, "Scripts", "conda.exe")
-        else:
-            self.conda_exe = os.path.join(self.conda_base, "bin", "conda")
-
-        # default environment file for users
-        self.environment_file = os.path.join(
-            os.path.expanduser("~"), ".conda", "environments.txt"
-        )
-
-        if os.path.isdir(self.conda_base) and os.path.isfile(self.conda_exe):
-            print("Using miniconda installation from", self.conda_base)
-        else:
-            print("Installing miniconda into", self.conda_base)
-            install_miniconda(self.conda_base)
-
-        # verify consistency and check conda version
-        if not os.path.isfile(self.conda_exe):
-            sys.exit("Conda executable not found at " + self.conda_exe)
-
-        self.environments = self.get_environments()
-
-        conda_info = json.loads(
-            subprocess.check_output([self.conda_exe, "info", "--json"], env=clean_env)
-        )
-        if self.conda_base != os.path.realpath(conda_info["root_prefix"]):
-            warnings.warn(
-                "Expected conda base differs:",
-                self.conda_base,
-                "!=",
-                os.path.realpath(conda_info["root_prefix"]),
-            )
-        for env in self.environments:
-            if env not in conda_info["envs"]:
-                print("Consistency check:", env, "not in environments:")
-                print(conda_info["envs"])
-                warnings.warn(
-                    """
-There is a mismatch between the conda settings in your home directory
-and what "conda info" is reporting. This is not a fatal error, but if
-an error is encountered, please check that your conda installation and
-environments exist and are working.
-""",
-                    RuntimeWarning,
-                )
-        if conda_info["conda_version"] < "4.4":
-            sys.exit(
-                """
-CCTBX programs require conda version 4.4 and greater to make use of the
-common compilers provided by conda. Please update your version with
-"conda update conda".
-"""
-            )
-
-        # create environment
-        python = "36"
-        if os.name == "nt":
-            conda_platform = "win-64"
-        elif sys.platform == "darwin":
-            conda_platform = "osx-64"
-        else:
-            conda_platform = "linux-64"
-
-        filename = os.path.join(
-            "modules",
-            "dials",
-            ".conda-envs",
-            "dials_py{version}_{platform}.txt".format(
-                version=python, platform=conda_platform
-            ),
-        )
-
-        if not os.path.isfile(filename):
-            raise RuntimeError(
-                """The file {filename} is not available""".format(filename=filename)
-            )
-
-        # make a new environment directory
-        prefix = os.path.realpath("conda_base")
-
-        # install a new environment or update and existing one
-        if prefix in self.environments:
-            command = "install"
-            text_messages = ["Updating", "update of"]
-        else:
-            command = "create"
-            text_messages = ["Installing", "installation into"]
-        command_list = [
-            self.conda_exe,
-            command,
-            "--prefix",
-            prefix,
-            "--file",
-            filename,
-            "--yes",
-            "--channel",
-            "conda-forge",
-            "--override-channels",
-        ]
-        if os.name == "nt":
-            command_list = [
-                "cmd.exe",
-                "/C",
-                " ".join(
-                    [os.path.join(self.conda_base, "Scripts", "activate"), "base", "&&"]
-                    + command_list
-                ),
-            ]
+    if python in ("3.7", "3.8"):
         print(
-            "{text} dials environment with:\n  {filename}".format(
-                text=text_messages[0], filename=filename
-            )
+            "\n",
+            "*" * 80 + "\n",
+            " Python version {python} is not supported yet.\n".format(python=python),
+            "*" * 80 + "\n\n",
         )
-        for retry in range(5):
-            retry += 1
-            try:
-                run_command(
-                    workdir=".",
-                    command=command_list,
-                    description="Installing base directory",
-                )
-            except Exception:
-                print(
-                    """
-*******************************************************************************
-There was a failure in constructing the conda environment.
-Attempt {retry} of 5 will start {retry} minute(s) from {t}.
-*******************************************************************************
-""".format(
-                        retry=retry, t=time.asctime()
-                    )
-                )
-                time.sleep(retry * 60)
-            else:
-                break
-        else:
-            sys.exit(
-                """
-The conda environment could not be constructed. Please check that there is a
-working network connection for downloading conda packages.
-"""
-            )
-        print(
-            "Completed {text}:\n  {prefix}".format(text=text_messages[1], prefix=prefix)
-        )
-        with open(os.path.join(prefix, ".condarc"), "w") as fh:
-            fh.write(
-                """
-channels:
-  - conda-forge
-"""
-            )
 
-        # on Windows, also download the Visual C++ 2008 Redistributable
-        # use the same version as conda-forge
-        # https://github.com/conda-forge/vs2008_runtime-feedstock
-        if os.name == "nt":
-            download_to_file(
-                "https://download.microsoft.com/download/5/D/8/5D8C65CB-C849-4025-8E95-C3966CAFD8AE/vcredist_x64.exe",
-                os.path.join(prefix, "vcredist_x64.exe"),
-            )
+    # Find relevant conda base installation
+    conda_base = os.path.realpath("miniconda")
+    if os.name == "nt":
+        conda_exe = os.path.join(conda_base, "Scripts", "conda.exe")
+    else:
+        conda_exe = os.path.join(conda_base, "bin", "conda")
 
-        # check that environment file is updated
-        if prefix not in self.get_environments():
-            raise RuntimeError(
-                """
-The newly installed environment cannot be found in
-${HOME}/.conda/environments.txt.
-"""
-            )
+    # default environment file for users
+    environment_file = os.path.join(
+        os.path.expanduser("~"), ".conda", "environments.txt"
+    )
 
-    def get_environments(self):
-        """
-        Return a set of existing conda environment paths
-        """
+    def get_environments():
+        """Return a set of existing conda environment paths"""
         try:
-            with open(self.environment_file) as f:
+            with open(environment_file) as f:
                 paths = f.readlines()
         except IOError:
             paths = []
@@ -291,7 +135,7 @@ ${HOME}/.conda/environments.txt.
             os.path.normpath(env.strip()) for env in paths if os.path.isdir(env.strip())
         )
         env_dirs = (
-            os.path.join(self.conda_base, "envs"),
+            os.path.join(conda_base, "envs"),
             os.path.join(os.path.expanduser("~"), ".conda", "envs"),
         )
         for env_dir in env_dirs:
@@ -302,6 +146,173 @@ ${HOME}/.conda/environments.txt.
                         environments.add(d)
 
         return environments
+
+    if os.path.isdir(conda_base) and os.path.isfile(conda_exe):
+        print("Using miniconda installation from", conda_base)
+    else:
+        print("Installing miniconda into", conda_base)
+        install_miniconda(conda_base)
+
+    # verify consistency and check conda version
+    if not os.path.isfile(conda_exe):
+        sys.exit("Conda executable not found at " + conda_exe)
+
+    environments = get_environments()
+
+    conda_info = json.loads(
+        subprocess.check_output([conda_exe, "info", "--json"], env=clean_env)
+    )
+    if conda_base != os.path.realpath(conda_info["root_prefix"]):
+        warnings.warn(
+            "Expected conda base differs:",
+            conda_base,
+            "!=",
+            os.path.realpath(conda_info["root_prefix"]),
+        )
+    for env in environments:
+        if env not in conda_info["envs"]:
+            print("Consistency check:", env, "not in environments:")
+            print(conda_info["envs"])
+            warnings.warn(
+                """
+There is a mismatch between the conda settings in your home directory
+and what "conda info" is reporting. This is not a fatal error, but if
+an error is encountered, please check that your conda installation and
+environments exist and are working.
+""",
+                RuntimeWarning,
+            )
+    if conda_info["conda_version"] < "4.4":
+        sys.exit(
+            """
+CCTBX programs require conda version 4.4 and greater to make use of the
+common compilers provided by conda. Please update your version with
+"conda update conda".
+"""
+        )
+
+    # identify packages required for environment
+    if os.name == "nt":
+        conda_platform = "windows"
+    elif sys.platform == "darwin":
+        conda_platform = "macos"
+    else:
+        conda_platform = "linux"
+    filename = os.path.join(
+        "modules",
+        "dials",
+        ".conda-envs",
+        "{platform}.txt".format(platform=conda_platform),
+    )
+    if not os.path.isfile(filename):
+        raise RuntimeError(
+            "The file {filename} is not available".format(filename=filename)
+        )
+
+    python_requirement = {
+        "3.6": "conda-forge::python>=3.6,<3.7",
+        "3.7": "conda-forge::python>=3.7,<3.8",
+        "3.8": "conda-forge::python>=3.8,<3.9",
+    }.get(python)
+    if not python_requirement:
+        raise RuntimeError(
+            "The requested python version {python} is not available".format(
+                python=python
+            )
+        )
+
+    # make a new environment directory
+    prefix = os.path.realpath("conda_base")
+
+    # install a new environment or update and existing one
+    if prefix in environments:
+        command = "install"
+        text_messages = ["Updating", "update of"]
+    else:
+        command = "create"
+        text_messages = ["Installing", "installation into"]
+    command_list = [
+        conda_exe,
+        command,
+        "--prefix",
+        prefix,
+        "--file",
+        filename,
+        "--yes",
+        "--channel",
+        "conda-forge",
+        "--override-channels",
+        python_requirement,
+    ]
+    if os.name == "nt":
+        command_list = [
+            "cmd.exe",
+            "/C",
+            " ".join(
+                [os.path.join(conda_base, "Scripts", "activate"), "base", "&&"]
+                + command_list
+            ),
+        ]
+    print(
+        "{text} dials environment from {filename} with Python {python}".format(
+            text=text_messages[0], filename=filename, python=python
+        )
+    )
+    for retry in range(5):
+        retry += 1
+        try:
+            run_command(
+                workdir=".",
+                command=command_list,
+                description="Installing base directory",
+            )
+        except Exception:
+            print(
+                """
+*******************************************************************************
+There was a failure in constructing the conda environment.
+Attempt {retry} of 5 will start {retry} minute(s) from {t}.
+*******************************************************************************
+""".format(
+                    retry=retry, t=time.asctime()
+                )
+            )
+            time.sleep(retry * 60)
+        else:
+            break
+    else:
+        sys.exit(
+            """
+The conda environment could not be constructed. Please check that there is a
+working network connection for downloading conda packages.
+"""
+        )
+    print("Completed {text}:\n  {prefix}".format(text=text_messages[1], prefix=prefix))
+    with open(os.path.join(prefix, ".condarc"), "w") as fh:
+        fh.write(
+            """
+channels:
+  - conda-forge
+"""
+        )
+
+    # on Windows, also download the Visual C++ 2008 Redistributable
+    # use the same version as conda-forge
+    # https://github.com/conda-forge/vs2008_runtime-feedstock
+    if os.name == "nt":
+        download_to_file(
+            "https://download.microsoft.com/download/5/D/8/5D8C65CB-C849-4025-8E95-C3966CAFD8AE/vcredist_x64.exe",
+            os.path.join(prefix, "vcredist_x64.exe"),
+        )
+
+    # check that environment file is updated
+    if prefix not in get_environments():
+        raise RuntimeError(
+            """
+The newly installed environment cannot be found in
+${HOME}/.conda/environments.txt.
+"""
+        )
 
 
 _BUILD_DIR = "build"
@@ -352,7 +363,7 @@ def run_command(command, workdir=_BUILD_DIR, description=None):
         sys.exit("Process failed with return code %s" % p.returncode)
 
 
-def download_to_file(url, file, log=sys.stdout, status=True, cache=True):
+def download_to_file(url, file, quiet=False, cache=True):
     """Downloads a URL to file. Returns the file size.
        Returns -1 if the downloaded file size does not match the expected file
        size
@@ -402,19 +413,22 @@ def download_to_file(url, file, log=sys.stdout, status=True, cache=True):
         if localcopy:
             # Download failed for some reason, but a valid local copy of
             # the file exists, so use that one instead.
-            log.write("%s\n" % str(e))
+            if not quiet:
+                print(str(e))
             return -2
         # otherwise pass on the error message
         raise
     except (pysocket.timeout, HTTPError) as e:
         if isinstance(e, HTTPError) and etag and e.code == 304:
             # When using ETag. a 304 error means everything is fine
-            log.write("local copy is current (etag)\n")
+            if not quiet:
+                print("local copy is current (etag)")
             return -2
         if localcopy:
             # Download failed for some reason, but a valid local copy of
             # the file exists, so use that one instead.
-            log.write("%s\n" % str(e))
+            if not quiet:
+                print(str(e))
             return -2
         # otherwise pass on the error message
         raise
@@ -422,7 +436,8 @@ def download_to_file(url, file, log=sys.stdout, status=True, cache=True):
         if localcopy:
             # Download failed for some reason, but a valid local copy of
             # the file exists, so use that one instead.
-            log.write("%s\n" % str(e))
+            if not quiet:
+                print(str(e))
             return -2
         # if url fails to open, try using curl
         # temporary fix for old OpenSSL in system Python on macOS
@@ -468,7 +483,8 @@ def download_to_file(url, file, log=sys.stdout, status=True, cache=True):
                         ctime,
                     ) = os.stat(file)
                     if (size == file_size) and (remote_mtime == mtime):
-                        log.write("local copy is current\n")
+                        if not quiet:
+                            print("local copy is current")
                         socket.close()
                         return -2
                 except Exception:
@@ -480,10 +496,10 @@ def download_to_file(url, file, log=sys.stdout, status=True, cache=True):
                 hr_size = (hr_size[0] / 1024, "kB")
             if hr_size[0] > 500:
                 hr_size = (hr_size[0] / 1024, "MB")
-            log.write("%.1f %s\n" % hr_size)
-            if status:
-                log.write("    [0%")
-                log.flush()
+            if not quiet:
+                print("%.1f %s" % hr_size)
+                print("    [0%", end="")
+                sys.stdout.flush()  # becomes print(flush=True) when we move to 3.3+
 
         received = 0
         block_size = 8192
@@ -496,25 +512,26 @@ def download_to_file(url, file, log=sys.stdout, status=True, cache=True):
             block = socket.read(block_size)
             received += len(block)
             f.write(block)
-            if status and (file_size > 0):
+            if file_size > 0 and not quiet:
                 while (100 * received / file_size) > progress:
                     progress += 1
                     if (progress % 20) == 0:
-                        log.write("%d%%" % progress)
+                        print(progress, end="%")
+                        sys.stdout.flush()  # becomes print(flush=True) when we move to 3.3+
                     elif (progress % 2) == 0:
-                        log.write(".")
-                    log.flush()
-
+                        print(".", end="")
+                        sys.stdout.flush()  # becomes print(flush=True) when we move to 3.3+
             if not block:
                 break
         f.close()
         socket.close()
 
-        if status and (file_size > 0):
-            log.write("]\n")
-        else:
-            log.write("%d kB\n" % (received / 1024))
-        log.flush()
+        if not quiet:
+            if file_size > 0:
+                print("]")
+            else:
+                print("%d kB" % (received / 1024))
+            sys.stdout.flush()  # becomes print(flush=True) when we move to 3.3+
 
         # Do not overwrite file during the download. If a download temporarily fails we
         # may still have a clean, working (yet older) copy of the file.
@@ -651,6 +668,7 @@ def git(
             #   git clean -dffx
             try:
                 output, _ = p.communicate()
+                output = output.decode("latin-1")
             except KeyboardInterrupt:
                 print("\nReceived CTRL+C, trying to terminate subprocess...\n")
                 p.terminate()
@@ -670,6 +688,7 @@ def git(
             stderr=subprocess.STDOUT,
         )
         output, _ = p.communicate()
+        output = output.decode("latin-1")
         if p.returncode:
             return module, "WARNING", "Can not get git repository revision\n" + output
         return module, "OK", "Checked out revision " + output.strip()
@@ -711,6 +730,7 @@ def git(
                 )
                 try:
                     output, _ = p.communicate()
+                    output = output.decode("latin-1")
                 except KeyboardInterrupt:
                     print("\nReceived CTRL+C, trying to terminate subprocess...\n")
                     p.terminate()
@@ -749,6 +769,7 @@ def git(
                 stderr=subprocess.STDOUT,
             )
             output, _ = p.communicate()
+            output = output.decode("latin-1")
             if p.returncode:
                 return (
                     module,
@@ -758,7 +779,7 @@ def git(
             return module, "OK", "Checked out revision " + output.strip()
         filename = "%s-%s" % (module, urlparse(source_candidate)[2].split("/")[-1])
         filename = os.path.join(destpath, filename)
-        download_to_file(source_candidate, filename, log=devnull)
+        download_to_file(source_candidate, filename, quiet=True)
         unzip(filename, destination, trim_directory=1)
         return module, "OK", "Downloaded from static archive"
 
@@ -768,7 +789,7 @@ def git(
 
 
 ##### Modules #####
-MODULES = {"scons": ["-b 3.1.1", "https://github.com/SCons/scons/archive/3.1.1.zip"]}
+MODULES = {}
 for module in (
     "cctbx/annlib_adaptbx",
     "cctbx/boost",
@@ -842,7 +863,7 @@ class DIALSBuilder(object):
 
         # Build base packages
         if "base" in actions:
-            install_conda()
+            install_conda(python=options.python)
 
         # Configure, make, get revision numbers
         if "build" in actions:
@@ -900,7 +921,7 @@ class DIALSBuilder(object):
 
     def update_sources(self):
         if self.git_reference:
-            reference_base = os.path.expanduser(self.git_reference)
+            reference_base = os.path.abspath(os.path.expanduser(self.git_reference))
         else:
             if os.name == "posix" and pysocket.gethostname().endswith(".diamond.ac.uk"):
                 reference_base = (
@@ -1099,6 +1120,12 @@ be passed separately with quotes to avoid confusion (e.g
 --config_flags="--build=debug" --config_flags="--enable_cxx11")""",
         action="append",
         default=[],
+    )
+    parser.add_argument(
+        "--python",
+        dest="python",
+        help="Install this minor version of Python (default: 3.6)",
+        default="3.6",
     )
 
     options = parser.parse_args()

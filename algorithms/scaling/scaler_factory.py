@@ -18,6 +18,7 @@ from dials.algorithms.scaling.scaling_utilities import (
     calc_crystal_frame_vectors,
 )
 from dials.algorithms.scaling.scaling_library import choose_scaling_intensities
+from dials.util.filter_reflections import filter_reflection_table_selection
 
 logger = logging.getLogger("dials")
 
@@ -51,17 +52,31 @@ class ScalerFactory(object):
     """Base class for Scaler Factories"""
 
     @classmethod
-    def filter_bad_reflections(cls, reflections):
+    def filter_bad_reflections(cls, reflections, partiality_cutoff=0.4, min_isigi=-5.0):
         """Initial filter to select integrated reflections."""
-        reasons = Reasons()
-        mask = ~reflections.get_flags(reflections.flags.integrated, all=False)
-        reasons.add_reason("not integrated by any method", mask.count(True))
-        if "d" in reflections:
-            d_mask = reflections["d"] <= 0.0
-            reasons.add_reason("bad d-value", d_mask.count(True))
-            mask = mask | d_mask
-        reflections.set_flags(mask, reflections.flags.excluded_for_scaling)
-        return reflections, reasons
+        logger.info(
+            "Applying filter of min_isigi > %s, partiality > %s",
+            min_isigi,
+            partiality_cutoff,
+        )
+        logger.disabled = True
+        intensity_choice = []
+        if "intensity.sum.value" in reflections:
+            intensity_choice.append("sum")
+        if "intensity.prf.value" in reflections:
+            intensity_choice.append("profile")
+        if intensity_choice:
+            good = filter_reflection_table_selection(
+                reflections,
+                intensity_choice=intensity_choice,
+                combine_partials=False,
+                partiality_threshold=partiality_cutoff,
+                min_isigi=min_isigi,
+            )
+            logger.disabled = False
+            mask = ~good
+            reflections.set_flags(mask, reflections.flags.excluded_for_scaling)
+        return reflections
 
     @classmethod
     def ensure_experiment_identifier(cls, experiment, reflection_table):
@@ -89,8 +104,14 @@ class SingleScalerFactory(ScalerFactory):
             "The scaling model type being applied is %s. \n",
             experiment.scaling_model.id_,
         )
-
-        reflection_table, reasons = cls.filter_bad_reflections(reflection_table)
+        try:
+            reflection_table = cls.filter_bad_reflections(
+                reflection_table,
+                partiality_cutoff=params.cut_data.partiality_cutoff,
+                min_isigi=params.cut_data.min_isigi,
+            )
+        except ValueError:
+            raise BadDatasetForScalingException
 
         if "inverse_scale_factor" not in reflection_table:
             reflection_table["inverse_scale_factor"] = flex.double(
@@ -113,6 +134,7 @@ class SingleScalerFactory(ScalerFactory):
         user_excluded = reflection_table.get_flags(
             reflection_table.flags.user_excluded_in_scaling
         )
+        reasons = Reasons()
         reasons.add_reason("user excluded", user_excluded.count(True))
         reasons.add_reason("excluded for scaling", excluded_for_scaling.count(True))
         n_excluded = (excluded_for_scaling | user_excluded).count(True)
@@ -124,7 +146,7 @@ class SingleScalerFactory(ScalerFactory):
             )
         else:
             logger.info(
-                "%s/%s reflections not suitable for scaling\n%s",
+                "Excluding %s/%s reflections\n%s",
                 n_excluded,
                 reflection_table.size(),
                 reasons,
@@ -159,7 +181,7 @@ class NullScalerFactory(ScalerFactory):
         """Return Null Scaler."""
 
         logger.info("Preprocessing target dataset for scaling. \n")
-        reflection_table, reasons = cls.filter_bad_reflections(reflection_table)
+        reflection_table = cls.filter_bad_reflections(reflection_table)
         variance_mask = reflection_table["variance"] <= 0.0
         reflection_table.set_flags(
             variance_mask, reflection_table.flags.excluded_for_scaling
@@ -170,7 +192,6 @@ class NullScalerFactory(ScalerFactory):
                 reflection_table.flags.excluded_for_scaling
             ).count(True),
         )
-        logger.info(reasons)
         cls.ensure_experiment_identifier(experiment, reflection_table)
         return NullScaler(params, experiment, reflection_table)
 

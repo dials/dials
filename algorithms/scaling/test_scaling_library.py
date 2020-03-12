@@ -297,7 +297,7 @@ def test_choose_scaling_intensities(test_reflections):
         test_refl["intensity.sum.value"] / test_refl["partiality"]
     )
     assert list(new_rt["variance"]) == pytest.approx(
-        list(test_refl["intensity.sum.variance"] / (test_refl["partiality"] ** 2))
+        list(test_refl["intensity.sum.variance"] / flex.pow2(test_refl["partiality"]))
     )
     # If bad choice, currently return the prf values.
     intstr = "bad"

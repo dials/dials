@@ -264,7 +264,7 @@ def example_array(reflections):
         anomalous_flag=False,
     )
     ma = miller.array(ms, data=reflections["intensity"])
-    ma.set_sigmas(reflections["variance"] ** 0.5)
+    ma.set_sigmas(flex.sqrt(reflections["variance"]))
     return ma
 
 
@@ -276,6 +276,7 @@ def test_MergingStatisticsObserver():
     script.scaled_miller_array = example_array(refls)
     script.experiments = [mock.Mock()]
     script.experiments[0].scan.get_image_range.return_value = [0, 10]
+    script.experiments[0].scan.get_valid_image_ranges.return_value = [0, 10]
     script.reflections = [refls]
     observer = MergingStatisticsObserver()
     observer.update(script)

@@ -86,7 +86,7 @@ class ScrewAxis(Subject):
         miller_idx = refl["miller_index"].select(sel)
         self.miller_axis_vals = miller_idx.as_vec3_double().parts()[self.axis_idx]
         self.intensities = refl["intensity"].select(sel)
-        self.sigmas = refl["variance"].select(sel) ** 0.5
+        self.sigmas = flex.sqrt(refl["variance"].select(sel))
         self.i_over_sigma = self.intensities / self.sigmas
 
         if self.equivalent_axes:
@@ -94,7 +94,7 @@ class ScrewAxis(Subject):
                 sel = a.select_axial_reflections(refl["miller_index"])
                 miller_idx = refl["miller_index"].select(sel)
                 intensities = refl["intensity"].select(sel)
-                sigmas = refl["variance"].select(sel) ** 0.5
+                sigmas = flex.sqrt(refl["variance"].select(sel))
                 self.i_over_sigma.extend(intensities / sigmas)
                 self.miller_axis_vals.extend(
                     miller_idx.as_vec3_double().parts()[a.axis_idx]

@@ -130,9 +130,9 @@ class IntegrateHKLImporter(object):
         table["xyzcal.px"] = xyzcal
         table["xyzobs.px.value"] = xyzobs
         table["intensity.cor.value"] = iobs
-        table["intensity.cor.variance"] = sigma ** 2
+        table["intensity.cor.variance"] = flex.pow2(sigma)
         table["intensity.prf.value"] = iobs * peak / rlp
-        table["intensity.prf.variance"] = (sigma * peak / rlp) ** 2
+        table["intensity.prf.variance"] = flex.pow2(sigma * peak / rlp)
         table["lp"] = 1.0 / rlp
         table["d"] = flex.double(uc.d(h) for h in hkl)
         Command.end("Created table with {} reflections".format(len(table)))

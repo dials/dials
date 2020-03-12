@@ -60,6 +60,19 @@ class NoProfilesException(Exception):
     pass
 
 
+def filter_reflection_table_selection(
+    reflection_table, intensity_choice, *args, **kwargs
+):
+    """Return the selection mask for filtering."""
+    reflection_table["original_index"] = flex.size_t(range(0, reflection_table.size()))
+    sel = flex.bool(reflection_table.size(), False)
+    filtered_table = filter_reflection_table(
+        reflection_table, intensity_choice, *args, **kwargs
+    )
+    sel.set_selected(filtered_table["original_index"], True)
+    return sel
+
+
 def filter_reflection_table(reflection_table, intensity_choice, *args, **kwargs):
     """Filter the data and delete unneeded intensity columns.
 
@@ -105,14 +118,22 @@ def filter_reflection_table(reflection_table, intensity_choice, *args, **kwargs)
                 "(if parsing from command line, multiple choices passed as e.g. profile+sum"
             ).format(intensity_choice)
         )
-    # assert correct form of input data for choice.
-    if "scale" in intensity_choice:
-        assert "inverse_scale_factor" in reflection_table
-        assert "intensity.scale.value" in reflection_table
-    if "profile" in intensity_choice:
-        assert "intensity.prf.value" in reflection_table
-    if "sum" in intensity_choice:
-        assert "intensity.sum.value" in reflection_table
+
+    # Validate that the reflection table has the columns we need
+    required_columns = {
+        "scale": {"inverse_scale_factor", "intensity.scale.value"},
+        "profile": {"intensity.prf.value"},
+        "sum": {"intensity.sum.value"},
+    }
+    for intensity_kind, required_columns in required_columns.items():
+        if intensity_kind in intensity_choice:
+            missing_columns = required_columns - set(reflection_table.keys())
+            if missing_columns:
+                raise ValueError(
+                    "Cannot export intensity kind '{}'; missing column(s): {}".format(
+                        intensity_kind, ", ".join(missing_columns)
+                    )
+                )
 
     # Do the filtering, but with an exception for the case of no profile fitted
     # reflections - in this case, try to reprocess without profile fitted.
@@ -636,8 +657,8 @@ class ScaleIntensityReducer(FilterForExportAlgorithm):
         reflection_table["intensity.scale.value"] /= reflection_table[
             "inverse_scale_factor"
         ]
-        reflection_table["intensity.scale.variance"] /= (
-            reflection_table["inverse_scale_factor"] ** 2
+        reflection_table["intensity.scale.variance"] /= flex.pow2(
+            reflection_table["inverse_scale_factor"]
         )
         return reflection_table
 

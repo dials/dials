@@ -540,7 +540,7 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
     def calc_Ih(self):
         """Calculate the current best estimate for Ih for each reflection group."""
         scale_factors = self.Ih_table["inverse_scale_factor"]
-        gsq = (scale_factors ** 2) * self.Ih_table["weights"]
+        gsq = flex.pow2(scale_factors) * self.Ih_table["weights"]
         sumgsq = gsq * self.h_index_matrix
         gI = (scale_factors * self.Ih_table["intensity"]) * self.Ih_table["weights"]
         sumgI = gI * self.h_index_matrix
@@ -701,6 +701,6 @@ def _reflection_table_to_iobs(table, unit_cell, space_group):
         miller_set, data=table["intensity"] / table["inverse_scale_factor"]
     )
     i_obs.set_observation_type_xray_intensity()
-    i_obs.set_sigmas((table["variance"] ** 0.5) / table["inverse_scale_factor"])
+    i_obs.set_sigmas(flex.sqrt(table["variance"]) / table["inverse_scale_factor"])
     i_obs.set_info(miller.array_info(source="DIALS", source_type="reflection_tables"))
     return i_obs

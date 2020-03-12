@@ -378,7 +378,7 @@ def test_index_i04_weak_data_fft1d(dials_regression, tmpdir):
         "image_range=250,270",
         "image_range=520,540",
     ]
-    expected_unit_cell = uctbx.unit_cell((58, 58, 150, 90, 90, 90))
+    expected_unit_cell = uctbx.unit_cell((57.7, 57.7, 149.9, 90, 90, 90))
     expected_rmsds = (0.06, 0.05, 0.0005)
     expected_hall_symbol = " P 1"
 
@@ -623,7 +623,11 @@ def test_multiple_experiments(dials_regression, tmpdir):
     expected_hall_symbol = " P 1"
     expected_rmsds = (0.1, 0.07, 0.0)
 
-    extra_args = ["stills.indexer=sequences", "joint_indexing=False"]
+    extra_args = [
+        "stills.indexer=sequences",
+        "joint_indexing=False",
+        "outlier.algorithm=sauter_poon",
+    ]
 
     run_indexing(
         pickle_path,
@@ -766,6 +770,23 @@ def test_refinement_failure_on_max_lattices_a15(dials_regression, tmpdir):
             os.path.join(data_dir, "lpe4-2-a15_strong.pickle"),
             os.path.join(data_dir, "lpe4-2-a15_datablock.json"),
             "max_lattices=3",
+        ],
+        working_directory=tmpdir,
+    )
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("indexed.refl").check() and tmpdir.join("indexed.expt").check()
+    experiments_list = load.experiment_list(
+        tmpdir.join("indexed.expt").strpath, check_format=False
+    )
+    assert len(experiments_list) == 2
+
+    # now try to reindex with existing model
+    result = procrunner.run(
+        [
+            "dials.index",
+            tmpdir.join("indexed.expt").strpath,
+            os.path.join(data_dir, "lpe4-2-a15_strong.pickle"),
+            "max_lattices=2",
         ],
         working_directory=tmpdir,
     )

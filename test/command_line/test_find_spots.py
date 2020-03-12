@@ -45,6 +45,44 @@ def test_find_spots_from_images(dials_data, tmpdir):
     )
 
 
+def test_find_spots_from_images_override_maximum(dials_data, tmpdir):
+    result = procrunner.run(
+        [
+            "dials.find_spots",
+            "maximum_trusted_value=100",
+            "output.reflections=spotfinder.refl",
+            "output.shoeboxes=True",
+            "algorithm=dispersion",
+        ]
+        + [
+            f.strpath for f in dials_data("centroid_test_data").listdir("centroid*.cbf")
+        ],
+        working_directory=tmpdir.strpath,
+    )
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("spotfinder.refl").check(file=1)
+
+    reflections = flex.reflection_table.from_file(tmpdir / "spotfinder.refl")
+
+    sbox = reflections["shoebox"]
+
+    for s in sbox:
+        assert flex.max(s.data) <= 100
+
+
+def test_find_spots_from_zero_indexed_cbf(dials_data, tmpdir):
+    one_indexed_cbf = dials_data("centroid_test_data").join("centroid_0001.cbf")
+    zero_indexed_cbf = tmpdir.join("centroid_0000.cbf")
+    one_indexed_cbf.copy(zero_indexed_cbf)
+
+    result = procrunner.run(
+        ["dials.find_spots", zero_indexed_cbf], working_directory=tmpdir
+    )
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("strong.refl").check(file=1)
+    assert b"Saved 0 reflections to" not in result.stdout, "No spots found on 0000.cbf"
+
+
 def test_find_spots_from_images_output_experiments(dials_data, tmpdir):
     result = procrunner.run(
         [
@@ -99,6 +137,34 @@ def test_find_spots_from_imported_experiments(dials_data, tmpdir):
     assert len(reflections.experiment_identifiers().values()) == 1, list(
         reflections.experiment_identifiers().values()
     )
+
+
+def test_find_spots_from_imported_as_grid(dials_data, tmpdir):
+    """First run import to generate an imported.expt and use this."""
+    _ = procrunner.run(
+        ["dials.import", "oscillation=0,0"]
+        + [
+            f.strpath for f in dials_data("centroid_test_data").listdir("centroid*.cbf")
+        ],
+        working_directory=tmpdir.strpath,
+    )
+
+    result = procrunner.run(
+        [
+            "dials.find_spots",
+            tmpdir.join("imported.expt").strpath,
+            "output.reflections=spotfinder.refl",
+            "output.shoeboxes=True",
+            "algorithm=dispersion",
+        ],
+        working_directory=tmpdir.strpath,
+    )
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("spotfinder.refl").check(file=1)
+
+    reflections = flex.reflection_table.from_file(tmpdir / "spotfinder.refl")
+
+    assert len(set(reflections["id"])) == 9, len(set(reflections["id"]))
 
 
 def test_find_spots_with_resolution_filter(dials_data, tmpdir):
@@ -283,3 +349,20 @@ def test_find_spots_with_xfel_stills(dials_regression, tmpdir):
 
     reflections = flex.reflection_table.from_file(tmpdir / "spotfinder.refl")
     assert len(reflections) == 2643
+
+
+def test_find_spots_with_per_image_statistics(dials_data, tmpdir):
+    result = procrunner.run(
+        ["dials.find_spots", "per_image_statistics=True"]
+        + [
+            f.strpath for f in dials_data("centroid_test_data").listdir("centroid*.cbf")
+        ],
+        working_directory=tmpdir.strpath,
+    )
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("strong.refl").check(file=1)
+    assert b"Number of centroids per image for imageset 0:\n" in result.stdout
+    assert (
+        b"|   image |   #spots |   #spots_no_ice |   total_intensity |\n"
+        in result.stdout
+    )

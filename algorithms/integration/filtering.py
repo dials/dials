@@ -1,6 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
+from cctbx import uctbx
+from cctbx.miller import index_generator
 from iotbx.phil import parse
+
+from dials.array_family import flex
+
 
 # The phil scope
 phil_scope = parse(
@@ -44,14 +49,14 @@ class PowderRingFilter:
         :param d_min: The maximum resolution to filter to
         :param width: The resolution width to filter around
         """
-        from cctbx.miller import index_generator
-        from dials.array_family import flex
-
         assert d_min > 0
         assert width > 0
 
         # Correct unit cell
         unit_cell = space_group.average_unit_cell(unit_cell)
+
+        self.half_width = width / 2.0
+        d_min = uctbx.d_star_sq_as_d(uctbx.d_as_d_star_sq(d_min) + self.half_width)
 
         # Generate a load of indices
         generator = index_generator(unit_cell, space_group.type(), False, d_min)
@@ -59,7 +64,6 @@ class PowderRingFilter:
 
         # Compute d spacings and sort by resolution
         self.d_star_sq = flex.sorted(unit_cell.d_star_sq(indices))
-        self.half_width = width / 2.0
 
     def __call__(self, d):
         """
@@ -68,9 +72,6 @@ class PowderRingFilter:
         :param d: The resolution
         :return: True/False in powder ring
         """
-        from dials.array_family import flex
-        from cctbx import uctbx
-
         result = flex.bool(len(d), False)
         d_star_sq = uctbx.d_as_d_star_sq(d)
         for ds2 in self.d_star_sq:
@@ -125,8 +126,6 @@ class MultiPowderRingFilter:
         :param d: The resolution
         :return: True/False if within a powder ring
         """
-        from dials.array_family import flex
-
         result = flex.bool(len(d), False)
         for _filter in self:
             result = result | _filter(d)
@@ -196,10 +195,8 @@ class IceRingFilter:
         :param d: The resolution
         :return: True/False in powder ring
         """
-        from dials.array_family import flex
-
         result = flex.bool(len(d), False)
-        d2 = 1.0 / d ** 2
+        d2 = 1.0 / flex.pow2(d)
         for ice_ring in self.ice_rings:
             result = result | (d2 >= ice_ring[0]) & (d2 <= ice_ring[1])
         return result

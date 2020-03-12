@@ -35,7 +35,7 @@ class ScalingTarget(object):
         R = flex.double([])
         n = 0
         for block in Ih_table.blocked_data_list:
-            R.extend((self.calculate_residuals(block) ** 2) * block.weights)
+            R.extend(flex.pow2(self.calculate_residuals(block)) * block.weights)
             n += block.size
         if self.param_restraints:
             restraints = ScalingRestraintsCalculator.calculate_restraints(apm)
@@ -60,7 +60,7 @@ class ScalingTarget(object):
     @staticmethod
     def calculate_gradients(Ih_table):
         """Return a gradient vector on length len(self.apm.x)."""
-        gsq = Ih_table.inverse_scale_factors ** 2 * Ih_table.weights
+        gsq = flex.pow2(Ih_table.inverse_scale_factors) * Ih_table.weights
         sumgsq = gsq * Ih_table.h_index_matrix
         prefactor = (
             -2.0
@@ -87,7 +87,7 @@ class ScalingTarget(object):
     @staticmethod
     def calculate_jacobian(Ih_table):
         """Calculate the jacobian matrix, size Ih_table.size by len(self.apm.x)."""
-        gsq = Ih_table.inverse_scale_factors ** 2 * Ih_table.weights
+        gsq = flex.pow2(Ih_table.inverse_scale_factors) * Ih_table.weights
         sumgsq = gsq * Ih_table.h_index_matrix
         dIh = (
             Ih_table.intensities
@@ -110,7 +110,7 @@ class ScalingTarget(object):
         resids = cls.calculate_residuals(Ih_table)
         gradients = cls.calculate_gradients(Ih_table)
         weights = Ih_table.weights
-        functional = flex.sum(resids ** 2 * weights)
+        functional = flex.sum(flex.pow2(resids) * weights)
         del Ih_table.derivatives
         return functional, gradients
 

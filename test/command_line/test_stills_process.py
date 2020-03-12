@@ -118,28 +118,32 @@ def test_sacla_h5(dials_regression, run_in_tmpdir, use_mpi, in_memory=False):
           centroid_definition = com
         }
       }
+      output.composite_output = True
       """
             % geometry_path
         )
 
     # Call dials.stills_process
     if use_mpi:
-        command = ["mpirun", "-n", "4", "dials.stills_process", "mp.method=mpi"]
+        command = [
+            "mpirun",
+            "-n",
+            "4",
+            "dials.stills_process",
+            "mp.method=mpi mp.composite_stride=4",
+        ]
     else:
         command = ["dials.stills_process"]
     command += [image_path, "process_sacla.phil"]
     result = easy_run.fully_buffered(command).raise_if_errors()
     result.show_stdout()
 
-    for result_filename, n_refls in zip(
-        [
-            "idx-run266702-0-subset_00000_integrated.refl",
-            "idx-run266702-0-subset_00001_integrated.refl",
-            "idx-run266702-0-subset_00003_integrated.refl",
-        ],
+    result_filename = "idx-0000_integrated.refl"
+    table = flex.reflection_table.from_file(result_filename)
+    for expt_id, n_refls in enumerate(
         [list(range(205, 225)), list(range(565, 580)), list(range(475, 500))],
     ):  # large ranges to handle platform-specific differences
-        table = flex.reflection_table.from_file(result_filename)
-        assert len(table) in n_refls, (result_filename, len(table))
-        assert "id" in table
-        assert (table["id"] == 0).count(False) == 0
+        subset = table.select(table["id"] == expt_id)
+        assert len(subset) in n_refls, (result_filename, expt_id, len(table))
+    assert "id" in table
+    assert set(table["id"]) == set((0, 1, 2))

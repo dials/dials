@@ -1,9 +1,12 @@
 from __future__ import absolute_import, division, print_function
 
 import math
+import sys
 
 import six
 import wx
+from scitbx.array_family import flex
+import scitbx.matrix
 from six.moves import range
 
 ######
@@ -11,7 +14,7 @@ from six.moves import range
 ######
 
 
-def _get_flex_image(
+def get_flex_image(
     data,
     vendortype,
     binning=1,
@@ -42,7 +45,7 @@ def _get_flex_image(
     )
 
 
-def _get_flex_image_multipanel(
+def get_flex_image_multipanel(
     panels,
     image_data,
     beam,
@@ -53,22 +56,19 @@ def _get_flex_image_multipanel(
 ):
     # From xfel.cftbx.cspad_detector.readHeader() and
     # xfel.cftbx.cspad_detector.get_flex_image().  XXX Is it possible to
-    # merge this with _get_flex_image() above?  XXX Move to dxtbx Format
+    # merge this with get_flex_image() above?  XXX Move to dxtbx Format
     # class (or a superclass for multipanel images)?
-
-    from math import ceil
 
     from iotbx.detectors import generic_flex_image
     from libtbx.test_utils import approx_equal
-    from scitbx.array_family import flex
-    from scitbx.matrix import col, rec, sqr
     from xfel.cftbx.detector.metrology import get_projection_matrix
 
     assert len(panels) == len(image_data), (len(panels), len(image_data))
 
     # Determine next multiple of eight of the largest panel size.
+    data_max_focus = None
     for data in image_data:
-        if "data_max_focus" not in locals():
+        if data_max_focus is None:
             data_max_focus = data.focus()
         else:
             data_max_focus = (
@@ -76,20 +76,21 @@ def _get_flex_image_multipanel(
                 max(data_max_focus[1], data.focus()[1]),
             )
     data_padded = (
-        8 * int(ceil(data_max_focus[0] / 8)),
-        8 * int(ceil(data_max_focus[1] / 8)),
+        8 * int(math.ceil(data_max_focus[0] / 8)),
+        8 * int(math.ceil(data_max_focus[1] / 8)),
     )
 
     # Assert that all saturated values are equal and not None.  While
     # dxtbx records a separated trusted_range for each panel,
     # generic_flex_image supports only accepts a single common value for
     # the saturation.
+    saturation = None
     for panel in panels:
-        if "saturation" not in locals():
+        if saturation is None:
             saturation = panel.get_trusted_range()[1]
         else:
             assert approx_equal(saturation, panel.get_trusted_range()[1])
-    assert "saturation" in locals() and saturation is not None
+    assert saturation is not None
 
     # Create rawdata and my_flex_image before populating it.
     rawdata = flex.double(flex.grid(len(panels) * data_padded[0], data_padded[1]))
@@ -106,11 +107,11 @@ def _get_flex_image_multipanel(
 
     # Calculate the average beam center across all panels, in meters
     # not sure this makes sense for detector which is not on a plane?
-    beam_center = col((0, 0, 0))
+    beam_center = scitbx.matrix.col((0, 0, 0))
     npanels = 0
     for panel in panels:
         try:
-            beam_center += col(panel.get_beam_centre_lab(beam.get_s0()))
+            beam_center += scitbx.matrix.col(panel.get_beam_centre_lab(beam.get_s0()))
             npanels += 1
         except RuntimeError:  # catch DXTBX_ASSERT for no intersection
             pass
@@ -159,9 +160,9 @@ def _get_flex_image_multipanel(
         # rotations around the laboratory origin. Related to beam centre above
         # and dials#380 not sure this is right for detectors which are not
         # coplanar since system derived from first panel...
-        fast = col(panel.get_fast_axis())
-        slow = col(panel.get_slow_axis())
-        origin = col(panel.get_origin()) * 1e-3 - beam_center
+        fast = scitbx.matrix.col(panel.get_fast_axis())
+        slow = scitbx.matrix.col(panel.get_slow_axis())
+        origin = scitbx.matrix.col(panel.get_origin()) * 1e-3 - beam_center
 
         center = (
             origin
@@ -173,7 +174,7 @@ def _get_flex_image_multipanel(
         # Determine rotational and translational components of the
         # homogeneous transformation that maps the readout indices to the
         # three-dimensional laboratory frame.
-        Rf = sqr(
+        Rf = scitbx.matrix.sqr(
             (
                 fast(0, 0),
                 fast(1, 0),
@@ -187,7 +188,7 @@ def _get_flex_image_multipanel(
             )
         )
         tf = -Rf * center
-        Tf = sqr(
+        Tf = scitbx.matrix.sqr(
             (
                 Rf(0, 0),
                 Rf(0, 1),
@@ -214,7 +215,7 @@ def _get_flex_image_multipanel(
         # system increases downwards, while the second increases towards
         # the right.  XXX Is this orthographic projection the only one
         # that makes any sense?
-        E = rec(
+        E = scitbx.matrix.rec(
             elems=[0, +pixel_size[1], 0, -pixel_size[0], 0, 0, 0, 0, 0, 0, 0, 1],
             n=[4, 3],
         )
@@ -230,8 +231,8 @@ def _get_flex_image_multipanel(
 
         # Last row of T is always [0, 0, 0, 1].
         T = Pf * Tf * E
-        R = sqr((T(0, 0), T(0, 1), T(1, 0), T(1, 1)))
-        t = col((T(0, 2), T(1, 2)))
+        R = scitbx.matrix.sqr((T(0, 0), T(0, 1), T(1, 0), T(1, 1)))
+        t = scitbx.matrix.col((T(0, 2), T(1, 2)))
         my_flex_image.add_transformation_and_translation(R, t)
     my_flex_image.followup_brightness_scale()
     return my_flex_image
@@ -295,7 +296,7 @@ class _Tiles(object):
             image_data = (image_data,)
 
         if len(detector) > 1:
-            self.flex_image = _get_flex_image_multipanel(
+            self.flex_image = get_flex_image_multipanel(
                 brightness=self.current_brightness / 100,
                 panels=detector,
                 show_untrusted=self.show_untrusted,
@@ -308,7 +309,7 @@ class _Tiles(object):
                 saturation = self.raw_image.get_detector()[0].get_trusted_range()[1]
             else:
                 saturation = 1e16
-            self.flex_image = _get_flex_image(
+            self.flex_image = get_flex_image(
                 brightness=self.current_brightness / 100,
                 data=image_data[0],
                 saturation=saturation,
@@ -332,7 +333,7 @@ class _Tiles(object):
             raw_image_data = raw_image_data[0]
 
         if len(detector) > 1:
-            self.flex_image = _get_flex_image_multipanel(
+            self.flex_image = get_flex_image_multipanel(
                 brightness=self.current_brightness / 100,
                 panels=detector,
                 image_data=raw_image_data,
@@ -343,7 +344,7 @@ class _Tiles(object):
                 saturation = self.raw_image.get_detector()[0].get_trusted_range()[1]
             else:
                 saturation = 1e16
-            self.flex_image = _get_flex_image(
+            self.flex_image = get_flex_image(
                 brightness=self.current_brightness / 100,
                 data=raw_image_data,
                 saturation=saturation,
@@ -361,7 +362,7 @@ class _Tiles(object):
         if len(self.raw_image.get_detector()) > 1:
             # XXX Special-case read of new-style images until multitile
             # images are fully supported in dxtbx.
-            self.flex_image = _get_flex_image_multipanel(
+            self.flex_image = get_flex_image_multipanel(
                 brightness=b / 100,
                 panels=self.raw_image.get_detector(),
                 show_untrusted=self.show_untrusted,
@@ -370,7 +371,7 @@ class _Tiles(object):
                 color_scheme=color_scheme,
             )
         else:
-            self.flex_image = _get_flex_image(
+            self.flex_image = get_flex_image(
                 brightness=b / 100,
                 data=image_data[0],
                 saturation=self.raw_image.get_detector()[0].get_trusted_range()[1],
@@ -496,10 +497,8 @@ class _Tiles(object):
         )
 
     def get_initial_instrument_centering_within_picture_as_lon_lat(self):
-        import sys
-
         detector = self.raw_image.get_detector()
-        if sys.platform.lower().find("linux") >= 0:
+        if sys.platform.startswith("linux"):
             if len(detector) > 1:
                 return 0.0, 0.0
             else:
@@ -752,12 +751,10 @@ class _Tiles(object):
             return dist / math.cos(twotheta)
 
     def get_detector_2theta(self):
-        from scitbx.matrix import col
-
         detector = self.raw_image.get_detector()
         if len(detector) == 1:
-            n = col(detector[0].get_normal())
-            s0 = col(self.raw_image.get_beam().get_unit_s0())
+            n = scitbx.matrix.col(detector[0].get_normal())
+            s0 = scitbx.matrix.col(self.raw_image.get_beam().get_unit_s0())
             two_theta = s0.angle(n, deg=False)
         else:
             # XXX Special-case until multitile detectors fully

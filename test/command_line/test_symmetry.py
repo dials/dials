@@ -4,10 +4,11 @@ import os
 import json
 import procrunner
 import pytest
+import math
 from cctbx import sgtbx, uctbx
 import scitbx.matrix
 from dxtbx.serialize import load
-from dxtbx.model import Crystal, Experiment, ExperimentList
+from dxtbx.model import Crystal, Experiment, ExperimentList, Scan
 
 from dials.array_family import flex
 from dials.algorithms.symmetry.cosym._generate_test_data import (
@@ -19,7 +20,10 @@ from dials.command_line.symmetry import (
     change_of_basis_ops_to_minimum_cell,
     eliminate_sys_absent,
     median_unit_cell,
+    get_subset_for_symmetry,
 )
+from dials.util.multi_dataset_handling import assign_unique_identifiers
+from dials.util.exclude_images import exclude_image_ranges_from_scans
 
 
 def test_symmetry_laue_only(dials_data, tmpdir):
@@ -243,6 +247,67 @@ def test_map_to_minimum_cell():
     for refl, expected_hkl in zip(reflections, expected_output_hkl):
         for hkl, e_hkl in zip(refl["miller_index"], expected_hkl):
             assert [abs(h) for h in hkl] == [abs(eh) for eh in e_hkl]
+
+
+def _make_input_for_exclude_tests(exclude_images=True):
+    """Generate input data, that upon exclusion should leave only the first
+    reflection."""
+    if exclude_images:
+        exclude_images = [["0:360:720"], ["1:360:720"]]
+    expt1 = Experiment(scan=Scan(image_range=(0, 720), oscillation=(0.0, 1.0)))
+    expt2 = Experiment(scan=Scan(image_range=(0, 720), oscillation=(0.0, -1.0)))
+    refls1 = flex.reflection_table()
+    refls2 = flex.reflection_table()
+    refls1["xyzobs.mm.value"] = flex.vec3_double(
+        [(0.0, 0.0, 10.0 * math.pi / 180.0), (0.0, 0.0, 370.0 * math.pi / 180.0)]
+    )
+    refls1["xyzobs.px.value"] = flex.vec3_double([(0.0, 0.0, 10.0), (0.0, 0.0, 370.0)])
+    refls1["i"] = flex.int([0, 1])
+    refls2["xyzobs.mm.value"] = flex.vec3_double(
+        [(0.0, 0.0, -10.0 * math.pi / 180.0), (0.0, 0.0, -370.0 * math.pi / 180.0)]
+    )
+    refls2["xyzobs.px.value"] = flex.vec3_double([(0.0, 0.0, 10.0), (0.0, 0.0, 370.0)])
+    refls2["i"] = flex.int([0, 1])
+    expts = ExperimentList([expt1, expt2])
+    tables = [refls1, refls2]
+    expts, tables = assign_unique_identifiers(expts, tables)
+    return exclude_images, expts, tables
+
+
+def test_get_subset_for_symmetry_image_range():
+    """Test that first 360 degrees are selected from each sweep with an exclude
+    images command."""
+    exclude_images, expts, tables = _make_input_for_exclude_tests(exclude_images=True)
+    refls = get_subset_for_symmetry(expts, tables, exclude_images)
+    assert refls[0]["i"].all_eq(0)
+    assert refls[1]["i"].all_eq(0)
+
+
+def test_get_subset_for_symmetry_prior_image_range():
+    """Test that first 360 degrees are selected from each sweep with an exclude
+    images command."""
+    exclude_images, expts, tables = _make_input_for_exclude_tests(exclude_images=True)
+
+    # Explicitly exclude a different image range
+    expts = exclude_image_ranges_from_scans(tables, expts, [["0:1:360"], ["1:1:360"]])
+    refls = get_subset_for_symmetry(expts, tables)
+    assert refls[0]["i"].all_eq(1)
+    assert refls[1]["i"].all_eq(1)
+
+    # Exclude_images should be cumulative, i.e. the range exclude above should
+    # be excluded in addition to the new range provided explicitly to the
+    # function
+    refls = get_subset_for_symmetry(expts, tables, exclude_images)
+    assert len(refls[0]) == 0
+    assert len(refls[1]) == 0
+
+
+def test_get_subset_for_symmetry_first_360():
+    """Test that first 360 degrees are selected from each sweep"""
+    exclude_images, expts, tables = _make_input_for_exclude_tests(exclude_images=False)
+    refls = get_subset_for_symmetry(expts, tables, exclude_images)
+    assert refls[0]["i"].all_eq(0)
+    assert refls[1]["i"].all_eq(0)
 
 
 def test_change_of_basis_ops_to_minimum_cell_1037(mocker):

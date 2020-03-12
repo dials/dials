@@ -25,6 +25,7 @@ from dials.report.plots import (
     scale_rmerge_vs_batch_plot,
     i_over_sig_i_vs_batch_plot,
     i_over_sig_i_vs_i_plot,
+    make_image_range_table,
 )
 from dials.util import show_mail_on_error
 from dials.util.command_line import Command
@@ -2177,7 +2178,7 @@ class ScalingModelAnalyser(object):
 
 def merging_stats_results(reflections, experiments):
     if "inverse_scale_factor" not in reflections:
-        return [], [], {}, {}
+        return [], [], {}, {}, []
 
     reflections["intensity"] = reflections["intensity.scale.value"]
     reflections["variance"] = reflections["intensity.scale.variance"]
@@ -2186,7 +2187,7 @@ def merging_stats_results(reflections, experiments):
         result, anom_result = merging_stats_from_scaled_array(scaled_array)
     except DialsMergingStatisticsError as e:
         print(e)
-        return [], [], {}, {}
+        return [], [], {}, {}, []
 
     is_centric = experiments[0].crystal.get_space_group().is_centric()
 
@@ -2208,8 +2209,15 @@ def merging_stats_results(reflections, experiments):
     batch_plots = OrderedDict()
     batch_plots.update(scale_rmerge_vs_batch_plot(bm, rvb, svb))
     batch_plots.update(i_over_sig_i_vs_batch_plot(bm, isigivb))
+    image_range_table = make_image_range_table(experiments, bm)
 
-    return summary_table, results_table, resolution_plots, batch_plots
+    return (
+        summary_table,
+        results_table,
+        resolution_plots,
+        batch_plots,
+        image_range_table,
+    )
 
 
 def intensity_statistics(reflections, experiments):
@@ -2281,6 +2289,7 @@ class Analyser(object):
                 scaling_table_by_resolution,
                 resolution_plots,
                 batch_plots,
+                image_range_table,
             ) = merging_stats_results(rlist, experiments)
             rplots, misc_plots, scaled_intensity_plots = intensity_statistics(
                 rlist, experiments
@@ -2317,6 +2326,7 @@ class Analyser(object):
                 scaling_model_graphs=graphs["scaling_model"],
                 resolution_plots=resolution_plots,
                 batch_graphs=batch_plots,
+                image_range_tables=[image_range_table],
                 misc_plots=misc_plots,
                 scaled_intensity_plots=scaled_intensity_plots,
                 strong_graphs=graphs["strong"],

@@ -3,7 +3,6 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
-from six.moves import cStringIO as StringIO
 
 from libtbx.phil import parse
 
@@ -70,6 +69,11 @@ phil_scope = parse(
       .help = "The log filename"
   }
 
+  maximum_trusted_value = None
+    .type = float
+    .help = "Override maximum trusted value for spot finding only"
+    .expert_level = 2
+
   per_image_statistics = False
     .type = bool
     .help = "Whether or not to print a table of per-image statistics."
@@ -119,6 +123,7 @@ class Script(object):
 
         # Ensure we have a data block
         experiments = flatten_experiments(params.input.experiments)
+
         # did input have identifier?
         had_identifiers = False
         if all(i != "" for i in experiments.identifiers()):
@@ -127,9 +132,23 @@ class Script(object):
             generate_experiment_identifiers(
                 experiments
             )  # add identifier e.g. if coming straight from images
+
         if len(experiments) == 0:
             self.parser.print_help()
             return
+
+        # If maximum_trusted_value assigned, use this temporarily for the
+        # spot finding
+        if params.maximum_trusted_value is not None:
+            logger.info(
+                "Overriding maximum trusted value to %.1f", params.maximum_trusted_value
+            )
+            input_trusted_ranges = {}
+            for _d, detector in enumerate(experiments.detectors()):
+                for _p, panel in enumerate(detector):
+                    trusted = panel.get_trusted_range()
+                    input_trusted_ranges[(_d, _p)] = trusted
+                    panel.set_trusted_range((trusted[0], params.maximum_trusted_value))
 
         # Loop through all the imagesets and find the strong spots
         reflections = flex.reflection_table.from_observations(experiments, params)
@@ -176,24 +195,30 @@ class Script(object):
             )
         )
 
+        # Reset the trusted ranges
+        if params.maximum_trusted_value is not None:
+            for _d, detector in enumerate(experiments.detectors()):
+                for _p, panel in enumerate(detector):
+                    trusted = input_trusted_ranges[(_d, _p)]
+                    panel.set_trusted_range(trusted)
+
         # Save the experiments
         if params.output.experiments:
+
             logger.info("Saving experiments to {}".format(params.output.experiments))
             experiments.as_file(params.output.experiments)
 
         # Print some per image statistics
         if params.per_image_statistics:
-            s = StringIO()
             for i, experiment in enumerate(experiments):
-                print("Number of centroids per image for imageset %i:" % i, file=s)
-                imageset = experiment.imageset
-                stats = per_image_analysis.stats_imageset(
-                    imageset,
-                    reflections.select(reflections["id"] == i),
-                    resolution_analysis=False,
+                logger.info("Number of centroids per image for imageset %i:", i)
+                refl = reflections.select(reflections["id"] == i)
+                refl.centroid_px_to_mm([experiment])
+                refl.map_centroids_to_reciprocal_space([experiment])
+                stats = per_image_analysis.stats_per_image(
+                    experiment, refl, resolution_analysis=False
                 )
-                per_image_analysis.print_table(stats, out=s)
-            logger.info(s.getvalue())
+                logger.info(str(stats))
 
         if params.output.experiments:
             return experiments, reflections
