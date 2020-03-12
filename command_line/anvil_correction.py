@@ -92,20 +92,68 @@ phil_scope = libtbx.phil.parse(
 carbon_attenuation_data = attenuation_coefficient.get_table("C")
 
 
-def correct_intensities_for_dac_attenuation(
-    experiment,  # type: Experiment
-    reflections,  # type: flex.reflection_table
-    dac_norm,  # type: Vector
-    thickness,  # type: float
-    density=3.51,  # type: float  # g·cm⁻³
-):  # type: (...) -> None
-    u"""
-    Boost integrated intensities to account for attenuation by a diamond anvil cell.
+def goniometer_rotation(experiment, reflections):
+    # type: (Experiment, flex.reflection_table) -> Rotation
+    """
+    Calculate the goniometer rotation operator for each reflection.
+
+    Following the DXTBX model of a goniometer, whereby a scan is only possible
+    around one physical axis at a time, the rotation operation (conventionally
+    denoted R, here denoted R' to avoid confusion with the notation of
+    dxtbx/model/goniometer.h) can be calculated as R' = S · R · F.
+    Here:
+        * S is the 'setting rotation', the operator denoting the position of all parent
+        axes of the scan axis, which hence defines the orientation of the scan axis;
+        * R is the the operator denoting the scan rotation as if it were performed with
+        all parent axes at zero datum, it has a different value for each reflection,
+        according to the reflection centroid positions.
+        * F is the 'fixed rotation', denoting the orientation of all child axes of the
+        scan axis as if they were performed with all parent axes at zero datum.
+
+    Args:
+        experiment:  The DXTBX experiment object corresponding to the scan.
+        reflections:  A table of reflections at which to calculate the rotations.
+
+    Returns:
+        An array of rotation operators, one per reflection in the reflection table.
+    """
+    # Get the axis of the scan rotation.
+    rotation_axis = experiment.goniometer.get_rotation_axis_datum()
+    # For each reflection, get the angle of the scan rotation.
+    angles = reflections["xyzobs.mm.value"].parts()[2]
+    # Construct a rotation vector (parallel with the rotation axis and with
+    # magnitude equal to the rotation angle) for each reflection.
+    # The shape of this array is (N, 3), where N is the number of reflections.
+    rotvecs = np.outer(angles, rotation_axis)
+    # Create a rotation operator for each scan rotation (i.e. one per reflection).
+    # In the notation of dxtbx/model/goniometer.h, this is R.
+    scan_rotation = Rotation.from_rotvec(rotvecs)
+
+    # Get the setting rotation.
+    # In the notation of dxtbx/model/goniometer.h, this is S.
+    set_rotation = np.array(experiment.goniometer.get_setting_rotation()).reshape(3, 3)
+    set_rotation = Rotation.from_dcm(set_rotation)
+
+    # Create a rotation operator for those axes that are fixed throughout the scan.
+    # In the notation of dxtbx/model/goniometer.h, this is F.
+    fixed_rotation = np.array(experiment.goniometer.get_fixed_rotation()).reshape(3, 3)
+    fixed_rotation = Rotation.from_dcm(fixed_rotation)
+
+    # Calculate the rotation operator representing the goniometer orientation for each
+    # reflection.  In the notation of dxtbx/model/goniometer.h this is S × R × F.
+    return set_rotation * scan_rotation * fixed_rotation
+
+
+def attenuation_correction(
+    experiment, reflections, dac_norm, thickness, density
+):  # type: (Experiment, flex.reflection_table, Vector, float, float) -> flex.double
+    """
+    Calculate the correction factors for attenuation by a diamond anvil cell.
 
     Take an experiment object and reflection table containing integrated but unscaled
-    diffraction data, boost the integrated reflection intensities to correct for the
-    estimated attenuation due to the passage of the incident and diffracted beams
-    through the diamond anvils.
+    diffraction data, estimated the factor by which each of the integrated
+    reflection intensities must be boosted to correct for attenuation of the incident
+    and diffracted beams in the diamond anvils.
 
     Args:
         experiment:  An experiment from integrated data.
@@ -117,7 +165,9 @@ def correct_intensities_for_dac_attenuation(
         density:  The density of the anvil material in g·cm⁻³
                   (units chosen for consistency with the NIST tables of X-ray mass
                   attenuation coefficients, https://dx.doi.org/10.18434/T4D01F).
-                  Defaults to a typical value for synthetic diamond.
+
+    Returns:
+        An array of correction factors for the integrated reflection intensities.
     """
     # Get the wavelength.
     wavelength = experiment.beam.get_wavelength()
@@ -126,77 +176,63 @@ def correct_intensities_for_dac_attenuation(
     # Get the linear attenuation coefficient in mm⁻¹.
     linear_atten_coeff = density * mass_atten_coeff / 10  # mm⁻¹
 
+    # Find the orientation of the diamond anvil cell for each reflection.  Since the
+    # cell is fixed to the goniometer, this is just S × R × F × ̠̂n.
+    # This is an array of shape (N, 3), i.e. a 3-vector for each reflection.
+    dac_orientation = goniometer_rotation(experiment, reflections).apply(dac_norm)
+
+    # Get the normalised incident and diffracted beam vectors ̠̂s₀ and ̠̂s₁.
+    # Naturally, there will be one vale of ̠̂s₁ for each reflection.
+    s0_norm = experiment.beam.get_unit_s0()  # An array of shape (3).
+    s1_norm = reflections["s1"] * wavelength  # Shape (N, 3).
+
+    # Get the scalar product of the diamond anvil cell orientation with each of
+    # ̠̂s₀ & ̠̂s₁ for each reflection.
+    incident_cosine = np.dot(dac_orientation, s0_norm)  # An array of shape (N).
+    diffracted_cosine = np.einsum("ij,ij->i", dac_orientation, s1_norm)  # Shape (N)
+
+    # Get the path length through the anvil of the incident and reflected beams.
+    l0 = thickness / np.abs(incident_cosine)  # mm.  An array of shape (N).
+    l1 = thickness / np.abs(diffracted_cosine)  # mm.  An array of shape (N).
+
+    # Derive the factor by which we estimate the intensities to have been attenuated
+    # by the anvils.  This is an array of shape (N).
+    l_tot = l0 + l1
+    return flex.double(np.exp(linear_atten_coeff * l_tot))
+
+
+def correct_intensities_for_dac_attenuation(
+    experiment, reflections, dac_norm, thickness, density=3.51
+):  # type: (Experiment, flex.reflection_table, Vector, float, float) -> None
+    u"""
+    Boost integrated intensities to account for attenuation by a diamond anvil cell.
+
+    Take an experiment object and reflection table containing integrated but unscaled
+    diffraction data, boost the integrated reflection intensities to correct for the
+    estimated attenuation due to the passage of the incident and diffracted beams
+    through the diamond anvils.
+
+    Args:
+        experiment:  An experiment from integrated data.
+        reflections:  A table of reflections from integrated data.
+        dac_norm:  A 3-vector representing the normal to the anvil surfaces in the
+                   laboratory frame when the goniometer is at zero datum, i.e. the axes
+                   are all at 0°.  The vector is assumed to be normalised.
+        thickness:  The thickness of each diamond anvil (assumed equal).
+        density:  The density of the anvil material in g·cm⁻³
+                  (units chosen for consistency with the NIST tables of X-ray mass
+                  attenuation coefficients, https://dx.doi.org/10.18434/T4D01F).
+                  Defaults to a typical value for synthetic diamond.
+    """
     # Select only those reflections whose intensities after integration ought to be
     # meaningful.
     sel = reflections.get_flags(reflections.flags.integrated, all=False)
     sel = sel.iselection()
     refls_sel = reflections.select(sel)
 
-    # Get the setting rotation.
-    # In the notation of dxtbx/model/goniometer.h, this is S.
-    set_rotation = np.array(experiment.goniometer.get_setting_rotation()).reshape(3, 3)
-    set_rotation = Rotation.from_dcm(set_rotation)
-
-    # Get the axis of the scan rotation.
-    rotation_axis = experiment.goniometer.get_rotation_axis_datum()
-    # For each reflection, get the angle of the scan rotation.
-    angles = refls_sel["xyzobs.mm.value"].parts()[2]
-    # Construct a rotation vector (parallel with the rotation axis and with
-    # magnitude equal to the rotation angle) for each reflection.
-    # The shape of this array is (N, 3), where N is the number of reflections.
-    rotvecs = np.outer(angles, rotation_axis)
-    # Remove redundant things that scale with N.
-    del angles
-    # Create a rotation operator for each scan rotation (i.e. one per reflection).
-    # In the notation of dxtbx/model/goniometer.h, this is R.
-    scan_rotation = Rotation.from_rotvec(rotvecs)
-    # Remove redundant things that scale with N.
-    del rotvecs
-
-    # Create a rotation operator for those axes that are fixed throughout the scan.
-    # In the notation of dxtbx/model/goniometer.h, this is F.
-    fixed_rotation = np.array(experiment.goniometer.get_fixed_rotation()).reshape(3, 3)
-    fixed_rotation = Rotation.from_dcm(fixed_rotation)
-
-    # Get the rotation operator representing the goniometer orientation for each
-    # reflection.  In the notation of dxtbx/model/goniometer.h this is S × R × F.
-    rotation = set_rotation * scan_rotation * fixed_rotation
-    # Remove redundant things that scale with N.
-    del scan_rotation
-
-    # Find the orientation of the diamond anvil cell for each reflection.  Since the
-    # cell is fixed to the goniometer, this is just S × R × F × ̠̂n.
-    # This is an array of shape (N, 3), i.e. a 3-vector for each reflection.
-    dac_orientation = rotation.apply(dac_norm)
-    # Remove redundant things that scale with N.
-    del rotation
-
-    # Get the normalised incident and diffracted beam vectors ̠̂s₀ and ̠̂s₁.
-    # Naturally, there will be one vale of ̠̂s₁ for each reflection.
-    s0_norm = experiment.beam.get_unit_s0()  # An array of shape (3).
-    s1_norm = refls_sel["s1"] * wavelength  # Shape (N, 3).
-
-    # Get the scalar product of the diamond anvil cell orientation with each of
-    # ̠̂s₀ & ̠̂s₁ for each reflection.
-    incident_cosine = np.dot(dac_orientation, s0_norm)  # An array of shape (N).
-    diffracted_cosine = np.einsum("ij,ij->i", dac_orientation, s1_norm)  # Shape (N)
-    # Remove redundant things that scale with N.
-    del s1_norm, dac_orientation
-
-    # Get the path length through the anvil of the incident and reflected beams.
-    l0 = thickness / np.abs(incident_cosine)  # mm.  An array of shape (N).
-    # Remove redundant things that scale with N.
-    del incident_cosine
-    l1 = thickness / np.abs(diffracted_cosine)  # mm.  An array of shape (N).
-    # Remove redundant things that scale with N.
-    del diffracted_cosine
-
-    # Derive the factor by which we estimate the intensities to have been attenuated
-    # by the anvils.  This is an array of shape (N).
-    l_tot = l0 + l1
-    correction = flex.double(np.exp(linear_atten_coeff * l_tot))
-    # Remove redundant things that scale with N.
-    del l0, l1, l_tot
+    correction = attenuation_correction(
+        experiment, refls_sel, dac_norm, thickness, density
+    )
 
     # We need only correct non-null values for each integration method.
     prf_subsel = refls_sel.get_flags(refls_sel.flags.integrated_prf)
