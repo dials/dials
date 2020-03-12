@@ -26,7 +26,6 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import sys
-import warnings
 
 import numpy as np
 from scipy.spatial.transform import Rotation
@@ -59,21 +58,20 @@ phil_scope = libtbx.phil.parse(
     {
         density = 3510
             .type = float
-            .help = '''The density of the anvil material in kg per cubic metre.
-            The default is the typical density of synthetic diamond.'''
+            .help = 'The density of the anvil material in kg per cubic metre.  ' \
+                    'The default is the typical density of synthetic diamond.'
 
         thickness = 1.5925
             .type = float
-            .help = '''The thickness in mm of each anvil in the pressure cell.
-            The default is the thickness of the pressure cells in use on
-            beamline I19 at Diamond Light Source.'''
+            .help = 'The thickness in mm of each anvil in the pressure cell.  ' \
+                    'The default is the thickness of the pressure cells in use on ' \
+                    'beamline I19 at Diamond Light Source.'
 
         normal = 0, 1, 0
             .type = floats(size=3)
-            .help = '''A 3-vector representing the normal to the anvil surfaces in the
-            laboratory frame when the goniometer is at zero datum, i.e. the
-            axes are all at zero degrees.  The vector may be given
-            un-normalised.'''
+            .help = 'A 3-vector orthogonal to the anvil surfaces in the laboratory ' \
+                    'frame when the goniometer is at zero datum, i.e. the axes are ' \
+                    'all at zero degrees.  The vector may be given un-normalised.'
     }
 
     output {
@@ -262,15 +260,11 @@ def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> 
     if input_errors:
         sys.exit("\n".join([parser.format_help()] + input_errors))
 
-    # Check that the anvil surface normal really is normalised.
-    try:
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                "error", "invalid value encountered in (true_)*divide", RuntimeWarning
-            )
-            dac_norm = params.anvil.normal / np.linalg.norm(params.anvil.normal)
-    except RuntimeWarning:
+    if not np.linalg.norm(params.anvil.normal):
         sys.exit("It seems you have provided a surface normal vector with zero length.")
+
+    # Check that the anvil surface normal really is normalised.
+    dac_norm = params.anvil.normal / np.linalg.norm(params.anvil.normal)
 
     # Configure the logging.
     dials.util.log.config(options.verbose, logfile=params.output.log)
