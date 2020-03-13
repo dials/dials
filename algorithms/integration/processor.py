@@ -948,7 +948,7 @@ class Processor3D(Processor):
 
 
 class ProcessorFlat3D(Processor):
-    """Top level processor for flat 2D processing."""
+    """Top level processor for flat 3D processing."""
 
     def __init__(self, experiments, reflections, params):
         """Initialise the manager and the processor."""
