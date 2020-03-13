@@ -1,5 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
+import os
+import re
+
+from dials.array_family import flex
+from libtbx.utils import Sorry
 import libtbx.phil
 
 
@@ -26,13 +31,11 @@ class ExperimentListConverters(object):
 
     def from_string(self, s):
         from dxtbx.model.experiment_list import ExperimentListFactory
-        from os.path import exists
-        from libtbx.utils import Sorry
 
         if s is None:
             return None
         if s not in self.cache:
-            if not exists(s):
+            if not os.path.exists(s):
                 raise Sorry("File %s does not exist" % s)
             self.cache[s] = FilenameDataWrapper(
                 s,
@@ -64,14 +67,10 @@ class ReflectionTableConverters(object):
         return self.phil_type
 
     def from_string(self, s):
-        from dials.array_family import flex
-        from os.path import exists
-        from libtbx.utils import Sorry
-
         if s is None:
             return None
         if s not in self.cache:
-            if not exists(s):
+            if not os.path.exists(s):
                 raise Sorry("File %s does not exist" % s)
             self.cache[s] = FilenameDataWrapper(s, flex.reflection_table.from_file(s))
         return self.cache[s]
@@ -98,12 +97,8 @@ class ReflectionTableSelectorConverters(object):
         return self.phil_type
 
     def from_string(self, s):
-        from dials.array_family import flex
-
         if s is None:
             return None
-        import re
-
         regex = r"^\s*([\w\.]+)\s*(<=|!=|==|>=|<|>|&)\s*(.+)\s*$"
         matches = re.findall(regex, s)
         if len(matches) == 0:
