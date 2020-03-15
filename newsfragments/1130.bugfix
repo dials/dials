@@ -1,1 +1,0 @@
-Fix an issue (#1097) whereby aggregating small numbers of reflections into resolution bins could sometimes result in empty bins and consequent errors.

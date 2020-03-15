@@ -1,3 +1,54 @@
+DIALS 2.2 (2020-03-15)
+======================
+
+Features
+--------
+
+- dials.image_viewer: Add a choice between displaying the raw or the corrected image. (#634)
+- Automatically choose between the `simple` and `glm` background determination
+  algorithms, depending on whether the detector appears to be integrating or
+  counting. (#706)
+- Allow adjustment of font size for overlay text, such as Miller indices and
+  resolution ring values. (#1074)
+- Keep goniometer and scan objects in indexing of still data, if provided in input (#1076)
+- Experimental: ``dials.image_viewer`` can be remotely controlled via a
+  ZeroMQ endpoint with the ``zmq_endpoint`` PHIL parameter. Initially,
+  the viewer can be commanded to load new images. This requires the
+  (optional) ``pyzmq``package. (#1085)
+- Programs now generate a unique identifier for each experiment created, and reflection tables are linked via the experiment_identifiers map (#1086)
+- Introduce `dials.anvil_correction` to correct the absorption of the incident and diffracted X-ray beam by the diamond anvils in a pressure cell.
+  Call `dials.anvil_correction` on the output of `dials.integrate` and then proceed to use post-integration tools as normal, just as though the sample had been measured in air. (#1090)
+- Map of detector efficiency for photon counting detectors as a function of 
+  detector position added to report, based on the qe value applied at the end 
+  of integration. (#1108)
+- Significantly reduce the amount of memory required to write .refl output files (#1115)
+- Add maximum_trusted_value=N option to spot finding to temporarily allow override of trusted range, e.g. to find overloaded spots in spot finding. (#1157)
+- array_family.flex interface has changed: background and centroid algorithms are
+  set via public properties. Instead of flex.strategy use functools.partial with
+  the same signature. as_miller_array() raises KeyError instead of Sorry.
+  .extract_shoeboxes() lost its verbosity parameter, use log levels instead. (#1158)
+- dials.stills_process now supports imagesets of length > 1 (e.g. grid scans) (#1174)
+
+
+Bugfixes
+--------
+
+- Fixed prediction on images numbered zero, so integrating works correctly. (#1128)
+- Fix an issue (#1097) whereby aggregating small numbers of reflections into resolution bins could sometimes result in empty bins and consequent errors. (#1130)
+- Ensure that restraints are ignored for parameterisations that are anyway fixed (#1142)
+- Fix dials.search_beam_centre to ensure that the correct detector models are
+  output when multiple detector models are present in the input.
+  Fix dials.search_beam_centre n_macro_cycles option (previously it was starting
+  from the original geometry every macro cycle). (#1145)
+- dials.find_spots_server no longer slows down 3x when using resolution filters (#1170)
+
+
+Misc
+----
+
+- #932, #1034, #1050, #1077
+
+
 DIALS 2.1 (2019-12-12)
 ======================
 
