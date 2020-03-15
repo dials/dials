@@ -469,7 +469,7 @@ class Task(object):
             self.params.block.max_memory_usage <= 1.0
         ), "maximum memory usage must be <= 1"
         limit_memory = total_memory * self.params.block.max_memory_usage
-        if sbox_memory > limit_memory:
+        if sbox_memory > limit_memory and False:  # FIXME YUK DEBUG
             xsize, ysize, zsize = _average_bbox_size(self.reflections)
             raise RuntimeError(
                 """
@@ -803,6 +803,7 @@ class Manager(object):
             ), "psutil call appears to have given unexpected output"
             limit_memory = total_memory * self.params.block.max_memory_usage
             njobs = int(math.floor(limit_memory / max_memory))
+            njobs = 1  # FIXME YUK DON'T COMMIT!
             if njobs < 1:
 
                 xsize, ysize, zsize = _average_bbox_size(self.reflections)
