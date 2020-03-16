@@ -113,6 +113,10 @@ def debug_context_manager(original_context_manager, name="", log_func=None):
 
 @contextlib.contextmanager
 def show_mail_on_error():
+    if six.PY3:
+        import faulthandler
+
+        faulthandler.enable()
     try:
         yield
     except Exception as e:
