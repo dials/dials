@@ -11,6 +11,8 @@ import numpy as np
 from cctbx import uctbx
 from scitbx.array_family import flex
 from scitbx.math import distributions
+from mmtbx.scaling.absolute_scaling import scattering_information, expected_intensity
+from scipy.optimize import least_squares
 
 
 def make_image_range_table(experiments, batch_manager):
@@ -209,6 +211,8 @@ class IntensityStatisticsPlots(ResolutionPlotterMixin):
         self.binner = intensities.binner()
         self.merged_intensities = merged.array()
         self.multiplicities = merged.redundancies().complete_array(new_data_value=0)
+        intensities.setup_binner_d_star_sq_step(auto_binning=True)
+        self.wilson_plot_result = intensities.wilson_plot(use_binning=True)
         if not self._xanalysis and run_xtriage_analysis:
             # imports needed here or won't work, unsure why.
             from mmtbx.scaling.xtriage import xtriage_analyses
@@ -284,32 +288,43 @@ class IntensityStatisticsPlots(ResolutionPlotterMixin):
     def wilson_plot(self):
         if not self._xanalysis or not self._xanalysis.wilson_scaling:
             return {}
-        wilson_scaling = self._xanalysis.wilson_scaling
-        tickvals_wilson, ticktext_wilson = self._d_star_sq_to_d_ticks(
-            wilson_scaling.d_star_sq, nticks=5
+
+        dstarsq = self.wilson_plot_result.binner.bin_centers(2)
+        observed = flex.double(self.wilson_plot_result.data[1:-1])
+        # XXX unsure on n_residues, using same as xia2 CctbxFrenchWilson.py
+        expected = expected_intensity(
+            scattering_information(n_residues=200),
+            dstarsq,
+            b_wilson=self._xanalysis.iso_b_wilson,
+            p_scale=self._xanalysis.wilson_scaling.iso_p_scale,
         )
+
+        def residuals(k):
+            """Calculate residuals, ignoring the start and ends which may be unreliable"""
+            x1 = observed[1:-3]
+            x2 = expected.mean_intensity[1:-3]
+            return x1 - k * x2
+
+        best = least_squares(residuals, 1.0)
+
+        mean_I_obs_theory = expected.mean_intensity * best.x
+        tickvals_wilson, ticktext_wilson = self._d_star_sq_to_d_ticks(dstarsq, nticks=5)
 
         return {
             "wilson_intensity_plot": {
                 "data": (
                     [
                         {
-                            "x": list(wilson_scaling.d_star_sq),
-                            "y": list(wilson_scaling.mean_I_obs_data),
+                            "x": list(dstarsq),
+                            "y": list(observed),
                             "type": "scatter",
                             "name": "Observed",
                         },
                         {
-                            "x": list(wilson_scaling.d_star_sq),
-                            "y": list(wilson_scaling.mean_I_obs_theory),
+                            "x": list(dstarsq),
+                            "y": list(mean_I_obs_theory),
                             "type": "scatter",
                             "name": "Expected",
-                        },
-                        {
-                            "x": list(wilson_scaling.d_star_sq),
-                            "y": list(wilson_scaling.mean_I_normalisation),
-                            "type": "scatter",
-                            "name": "Smoothed",
                         },
                     ]
                 ),
