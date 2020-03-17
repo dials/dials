@@ -290,7 +290,15 @@ class IntensityStatisticsPlots(ResolutionPlotterMixin):
             return {}
 
         dstarsq = self.wilson_plot_result.binner.bin_centers(2)
-        observed = flex.double(self.wilson_plot_result.data[1:-1])
+        observed = self.wilson_plot_result.data[1:-1]
+        # The binning of the wilson plot can result in some bins with 'None' values
+        if None in observed:
+            observed = [i for i in observed if i is not None]
+            dstarsq = flex.double(
+                [i for i, j in zip(dstarsq, observed) if j is not None]
+            )
+        if not observed:
+            return {}
         # XXX unsure on n_residues, using same as xia2 CctbxFrenchWilson.py
         expected = expected_intensity(
             scattering_information(n_residues=200),
@@ -299,10 +307,15 @@ class IntensityStatisticsPlots(ResolutionPlotterMixin):
             p_scale=self._xanalysis.wilson_scaling.iso_p_scale,
         )
 
+        x1 = observed
+        x2 = expected.mean_intensity
+        # ignore the start and end of the plot, which may be unreliable
+        if len(x1) > 10:
+            x1 = x1[1:-3]
+            x2 = x2[1:-3]
+
         def residuals(k):
-            """Calculate residuals, ignoring the start and ends which may be unreliable"""
-            x1 = observed[1:-3]
-            x2 = expected.mean_intensity[1:-3]
+            """Calculate the residual for an overall scale factor"""
             return x1 - k * x2
 
         best = least_squares(residuals, 1.0)
