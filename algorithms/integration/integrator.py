@@ -904,7 +904,7 @@ class IntegratorExecutor(Executor):
         reflections["num_pixels.background"] = sbox.count_mask_values(code2)
         reflections["num_pixels.background_used"] = sbox.count_mask_values(code3)
         reflections["num_pixels.foreground"] = sbox.count_mask_values(code4)
-
+        del reflections["shoebox"]
         # Print some info
         fmt = " Integrated % 5d (sum) + % 5d (prf) /% 5d reflections on image %d"
         nsum = reflections.get_flags(reflections.flags.integrated_sum).count(True)

@@ -493,7 +493,7 @@ class Task(object):
                 )
             )
         else:
-            logger.info(" Memory usage:")
+            logger.info(" Memory usage phase processor:496:")
             logger.info("  Total system memory: %g GB" % (total_memory / 1e9))
             logger.info("  Limit shoebox memory: %g GB" % (limit_memory / 1e9))
             logger.info("  Required shoebox memory: %g GB" % (sbox_memory / 1e9))
