@@ -5,6 +5,7 @@ import functools
 import logging
 import math
 import random
+import resource
 from dials.util import tabulate
 
 import six
@@ -657,6 +658,9 @@ class ProfileModellerExecutor(Executor):
         fmt = " Modelled % 5d / % 5d reflection profiles on image %d"
         nmod = reflections.get_flags(reflections.flags.used_in_modelling).count(True)
         ntot = len(reflections)
+        logger.info(
+            "Current maxrss: %d" % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        )
         logger.info(fmt % (nmod, ntot, frame))
 
     def finalize(self):
@@ -906,6 +910,9 @@ class IntegratorExecutor(Executor):
         nsum = reflections.get_flags(reflections.flags.integrated_sum).count(True)
         nprf = reflections.get_flags(reflections.flags.integrated_prf).count(True)
         ntot = len(reflections)
+        logger.info(
+            "Current maxrss: %d" % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        )
         logger.info(fmt % (nsum, nprf, ntot, frame))
 
     def finalize(self):

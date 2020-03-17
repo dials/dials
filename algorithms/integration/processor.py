@@ -9,6 +9,7 @@ from dials.util import tabulate
 from time import time
 
 import psutil
+import resource
 
 import boost.python
 import dials.algorithms.integration
@@ -517,6 +518,10 @@ class Task(object):
                     )
 
             read_time += time() - st
+            logger.info(
+                "Current maxrss: %d"
+                % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+            )
             processor.next(make_image(image, mask), self.executor)
             del image
             del mask
