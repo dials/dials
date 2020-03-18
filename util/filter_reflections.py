@@ -826,8 +826,13 @@ def _sum_prf_partials(reflection_table, partials_isel_for_pid):
         variance += _weight * _variance
         total_weight += _weight
     # now write these back into original reflection
-    reflection_table["intensity.prf.value"][j[0]] = value / total_weight
-    reflection_table["intensity.prf.variance"][j[0]] = variance / total_weight
+    if total_weight:
+        reflection_table["intensity.prf.value"][j[0]] = value / total_weight
+        reflection_table["intensity.prf.variance"][j[0]] = variance / total_weight
+    else:
+        variance = sum(reflection_table["intensity.prf.variance"][_j] for _j in j)
+        reflection_table["intensity.prf.value"][j[0]] = 0
+        reflection_table["intensity.prf.variance"][j[0]] = variance
     return reflection_table
 
 
