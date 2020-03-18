@@ -190,7 +190,6 @@ class SetupInstaller(object):
         for i in ["bin", "lib"]:
             makedirs(os.path.join(self.dest_dir, i))
         self.copy_info()
-        self.write_environment_files()
         self.copy_libtbx()
         self.copy_doc()
         self.copy_modules()
@@ -312,37 +311,6 @@ class SetupInstaller(object):
         if sys.platform == "win32":
             return
         subprocess.check_call(["chmod", "-R", "u+rw,a+rX", self.dest_dir])
-
-    def write_environment_files(self):
-        """Generate shell scripts in the top-level installation directory."""
-        if sys.platform == "win32":
-            return
-        if self.install_script:
-            print("Not generating environment setup scripts as installer is provided")
-            return
-        print(
-            "Generating %s environment setup scripts..." % self.installer.product_name
-        )
-        fmt = {
-            "env_prefix": self.installer.product_name.upper(),
-            "version": self.version,
-        }
-        # bash
-        with open(
-            os.path.join(
-                self.dest_dir, "%s_env.sh" % self.installer.product_name.lower()
-            ),
-            "w",
-        ) as f:
-            f.write(BASHRC % fmt)
-        # tcsh
-        with open(
-            os.path.join(
-                self.dest_dir, "%s_env.csh" % self.installer.product_name.lower()
-            ),
-            "w",
-        ) as f:
-            f.write(CSHRC % fmt)
 
     def make_dist(self):
         makedirs(self.dist_dir)
