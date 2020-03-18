@@ -145,7 +145,6 @@ namespace dials { namespace model {
      */
     void deallocate() {
       af::c_grid<3> accessor(0, 0, 0);
-      std::cout << data.weak_count() << "\t" << data.use_count() << std::endl;
       data = af::versa<FloatType, af::c_grid<3> >(accessor);
       mask = af::versa<int, af::c_grid<3> >(accessor);
       background = af::versa<FloatType, af::c_grid<3> >(accessor);
