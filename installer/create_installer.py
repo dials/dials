@@ -23,7 +23,7 @@ import dials
 import libtbx.auto_build.rpath
 
 # XXX HACK
-libtbx_path = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+libtbx_path = os.path.abspath(os.path.dirname(libtbx.auto_build.__file__))
 if libtbx_path not in sys.path:
     sys.path.append(libtbx_path)
 
@@ -153,15 +153,14 @@ def tar(source, tarfile, cwd=None):
 
 class SetupInstaller(object):
     def __init__(self, **kwargs):
+        print(kwargs)
         self.install_script = kwargs.get("install_script")
         self.version = kwargs.get("version")
         self.script = kwargs.get("script")
         #
         self.dest_dir = os.path.abspath(kwargs.get("dest_dir"))
-        self.root_dir = os.path.abspath(kwargs.get("root_dir") or os.getcwd())
-        self.dist_dir = os.path.abspath(
-            kwargs.get("dist_dir") or os.path.join(self.root_dir, "dist")
-        )
+        self.root_dir = os.path.abspath(kwargs.get("root_dir"))
+        self.dist_dir = os.path.abspath(os.path.join(self.root_dir, "dist"))
 
         self.license = kwargs.get("license")
         if self.license:
@@ -490,59 +489,26 @@ class SetupInstaller(object):
 
 
 def run(args):
-    parser = OptionParser()
+    parser = OptionParser(usage="create_installer.py [options] /destination/directory")
     parser.add_option(
         "--version",
         dest="version",
         action="store",
         help="Package version",
-        default=time.strftime("%Y_%m_%d", time.localtime()),
-    )
-    parser.add_option(
-        "--binary",
-        dest="binary",
-        action="store_true",
-        help="Include base and build directories",
-        default=True,
-    )
-    parser.add_option(
-        "--root_dir", dest="root_dir", action="store", help="Environment root"
-    )
-    parser.add_option(
-        "--dist_dir", dest="dist_dir", action="store", help="Archive output directory"
-    )
-    parser.add_option(
-        "--readme",
-        dest="readme",
-        action="append",
-        help="Readme file",
-        default=[os.path.join(dials.__path__[0], "LICENSE")],
-    )
-    parser.add_option(
-        "--license",
-        dest="license",
-        action="store",
-        help="License file",
-        default=os.path.join(dials.__path__[0], "LICENSE"),
-    )
-    parser.add_option(
-        "--install_script",
-        dest="install_script",
-        help="Final installation script",
-        default=os.path.join(dials.__path__[0], "installer", "dials_installer.py"),
-        metavar="FILE",
+        default=time.strftime("dev%Y%m%d", time.localtime()),
     )
     options, args_ = parser.parse_args(args=args)
     assert len(args_) == 1, "Destination directory required argument."
     setup = SetupInstaller(
         dest_dir=args_[0],
-        root_dir=options.root_dir,
-        dist_dir=options.dist_dir,
+        root_dir=os.path.abspath(os.path.join(dials.__path__[0], "..", "..")),
         version=options.version,
-        readme=options.readme,
-        license=options.license,
-        install_script=options.install_script,
-        binary=options.binary,
+        readme=[os.path.join(dials.__path__[0], "LICENSE")],
+        license=os.path.join(dials.__path__[0], "LICENSE"),
+        install_script=os.path.join(
+            dials.__path__[0], "installer", "dials_installer.py"
+        ),
+        binary=True,
     )
     setup.run()
 
