@@ -110,7 +110,8 @@ class installer(install_distribution.installer):
             for dirpath, dirnames, filenames in os.walk(fullpath):
                 for f in filenames:
                     fp = os.path.join(dirpath, f)
-                    total_size += os.path.getsize(fp)
+                    if not os.path.islink(fp):
+                        total_size += os.path.getsize(fp)
                     num_files += 1
             print(
                 "Removing %9s, %4d files from %s"
