@@ -438,7 +438,7 @@ def _initialize_rotation(experiments, params, reflections):
     # Compute some reflection properties
     reflections.compute_zeta_multi(experiments)
     reflections.compute_d(experiments)
-    reflections.compute_bbox(experiments)
+    reflections.compute_bbox(experiments, sigma_b_multiplier=1.0)
 
     # Filter the reflections by zeta
     mask = flex.abs(reflections["zeta"]) < params.filter.min_zeta
@@ -1325,7 +1325,7 @@ class Integrator3DThreaded(object):
         # Compute some reflection properties
         self.reflections.compute_zeta_multi(self.experiments)
         self.reflections.compute_d(self.experiments)
-        self.reflections.compute_bbox(self.experiments)
+        self.reflections.compute_bbox(self.experiments, sigma_b_multiplier=1.0)
 
         # Filter the reflections by zeta
         mask = (
