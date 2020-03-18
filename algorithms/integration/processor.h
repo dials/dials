@@ -247,7 +247,6 @@ namespace dials { namespace algorithms {
         set_selected_rows_index(data_, ind, reflections);
         if (!save_) {
           for (std::size_t i = 0; i < ind.size(); ++i) {
-	    std::cout << "Deallocating" << i << std::endl;
             shoebox[ind[i]].deallocate();
           }
         }
