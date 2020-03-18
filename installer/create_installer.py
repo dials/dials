@@ -23,7 +23,7 @@ import dials
 import libtbx.auto_build.rpath
 
 # XXX HACK
-libtbx_path = os.path.abspath(os.path.dirname(libtbx.auto_build.__file__))
+libtbx_path = os.path.abspath(os.path.dirname(libtbx.__file__))
 if libtbx_path not in sys.path:
     sys.path.append(libtbx_path)
 
