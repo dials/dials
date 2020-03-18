@@ -145,15 +145,11 @@ def tar(source, tarfile, cwd=None):
     # mytar.add(source, arcname=tarfile)
     # tar.close()
     environment = os.environ.copy()
-    environment["GZIP"] = "-9"
-    subprocess.check_call(
-        ["tar", "-cz", "-f", tarfile, source], cwd=cwd, env=environment
-    )
+    subprocess.check_call(["tar", "-cf", tarfile, source], cwd=cwd, env=environment)
 
 
 class SetupInstaller(object):
     def __init__(self, **kwargs):
-        print(kwargs)
         self.install_script = kwargs.get("install_script")
         self.version = kwargs.get("version")
         self.script = kwargs.get("script")
@@ -388,9 +384,7 @@ class SetupInstaller(object):
             print("Creating tar archive of distribution")
             tar(
                 os.path.basename(self.dest_dir),
-                os.path.join(
-                    self.dist_dir, "%s.tar.gz" % os.path.basename(self.dest_dir)
-                ),
+                os.path.join(self.dist_dir, "%s.tar" % os.path.basename(self.dest_dir)),
                 cwd=os.path.join(self.dest_dir, ".."),
             )
 
