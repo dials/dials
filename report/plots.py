@@ -12,6 +12,7 @@ from cctbx import uctbx
 from scitbx.array_family import flex
 from scitbx.math import distributions
 from mmtbx.scaling.absolute_scaling import scattering_information, expected_intensity
+from mmtbx.scaling.matthews import matthews_rupp
 from scipy.optimize import least_squares
 
 
@@ -213,6 +214,8 @@ class IntensityStatisticsPlots(ResolutionPlotterMixin):
         self.multiplicities = merged.redundancies().complete_array(new_data_value=0)
         intensities.setup_binner_d_star_sq_step(auto_binning=True)
         self.wilson_plot_result = intensities.wilson_plot(use_binning=True)
+        mr = matthews_rupp(intensities.crystal_symmetry())
+        self.n_residues = mr.n_residues
         if not self._xanalysis and run_xtriage_analysis:
             # imports needed here or won't work, unsure why.
             from mmtbx.scaling.xtriage import xtriage_analyses
@@ -299,9 +302,8 @@ class IntensityStatisticsPlots(ResolutionPlotterMixin):
             )
         if not observed:
             return {}
-        # XXX unsure on n_residues, using same as xia2 CctbxFrenchWilson.py
         expected = expected_intensity(
-            scattering_information(n_residues=200),
+            scattering_information(n_residues=self.n_residues),
             dstarsq,
             b_wilson=self._xanalysis.iso_b_wilson,
             p_scale=self._xanalysis.wilson_scaling.iso_p_scale,
