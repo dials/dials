@@ -83,6 +83,7 @@ def test_IntensityStatisticsPlots(iobs):
     wilson_scaling.mean_I_obs_data = [1.0, 2.0]
     wilson_scaling.mean_I_obs_theory = [1.0, 2.0]
     wilson_scaling.mean_I_normalisation = [1.0, 2.0]
+    wilson_scaling.iso_p_scale = 1.0
     # mock the twin results
     twin_results = mock.Mock()
     twin_results.nz_test.z = [1.0, 2.0]
@@ -98,6 +99,7 @@ def test_IntensityStatisticsPlots(iobs):
     xtriage_analyses = mock.Mock()
     xtriage_analyses.wilson_scaling = wilson_scaling
     xtriage_analyses.twin_results = twin_results
+    xtriage_analyses.iso_b_wilson = 2.0
 
     plotter = IntensityStatisticsPlots(
         iobs, n_resolution_bins=n_bins, xtriage_analyses=xtriage_analyses
