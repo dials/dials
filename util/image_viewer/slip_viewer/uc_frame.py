@@ -5,8 +5,8 @@ import math
 import cctbx.miller
 import wx
 from cctbx.crystal import symmetry
-from wx.lib.agw.floatspin import EVT_FLOATSPIN, FloatSpin
 from scitbx.matrix import col
+from wx.lib.agw.floatspin import EVT_FLOATSPIN, FloatSpin
 
 
 class UCSettingsFrame(wx.MiniFrame):
@@ -369,19 +369,8 @@ class UCSettingsPanel(wx.Panel):
             + "number of indices: %d" % len(hkl_list.indices())
         )
 
-        spacings = list(hkl_list.d_spacings())
+        spacings = sorted(hkl_list.d_spacings(), key=lambda s: s[1], reverse=True)
         print("Printing spacings, len: %s" % len(spacings))
-
-        def cmp(a, b):
-            if a[1] > b[1]:
-                return 1
-            elif a[1] < b[1]:
-                return -1
-            return 0
-
-        from functools import cmp_to_key  # https://github.com/dials/dials/issues/1190
-
-        spacings = sorted(spacings, key=cmp_to_key(cmp), reverse=True)
 
         for d in spacings:
             print(d)
