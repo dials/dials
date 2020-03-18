@@ -175,10 +175,8 @@ class SetupInstaller(object):
         installer_module = imp.load_source("install_script", self.install_script)
         self.installer = installer_module.installer()
 
-        # check for conda
-        self.base_dir = "base"
-        if os.path.isdir(os.path.join(self.root_dir, "conda_base")):
-            self.base_dir = "conda_base"
+        # we only support conda bases
+        self.base_dir = "conda_base"
 
     def run(self):
         # Setup directory structure
@@ -202,22 +200,11 @@ class SetupInstaller(object):
         if self.binary and sys.platform == "darwin":
             self.make_dist_pkg()
         if self.binary and sys.platform == "win32":
-            if self.base_dir == "base":
-                vcredist = "vcredist_x64.exe"
-                import platform
-
-                if int(platform.architecture()[0][0:2]) < 64:
-                    vcredist = "vcredist_x86.exe"
-                shutil.copyfile(
-                    os.path.join(self.root_dir, "base_tmp", vcredist),
-                    os.path.join(self.dest_dir, vcredist),
-                )
-            else:
-                vcredist = "vcredist_x64.exe"
-                shutil.copyfile(
-                    os.path.join(self.root_dir, "conda_base", vcredist),
-                    os.path.join(self.dest_dir, vcredist),
-                )
+            vcredist = "vcredist_x64.exe"
+            shutil.copyfile(
+                os.path.join(self.root_dir, "conda_base", vcredist),
+                os.path.join(self.dest_dir, vcredist),
+            )
             self.make_windows_installer()
 
     def copy_info(self):
@@ -244,12 +231,11 @@ class SetupInstaller(object):
         )
         if sys.platform != "win32":
             # Write executable Bash script wrapping Python script
-            if self.base_dir == "conda_base":
-                # avoid conflicts with active conda environment during installation
-                global INSTALL_SH
-                INSTALL_SH = INSTALL_SH.replace(
-                    "fi\nfi\n$PYTHON_EXE", "fi\nfi\nunset CONDA_PREFIX\n$PYTHON_EXE"
-                )
+            # avoid conflicts with active conda environment during installation
+            global INSTALL_SH
+            INSTALL_SH = INSTALL_SH.replace(
+                "fi\nfi\n$PYTHON_EXE", "fi\nfi\nunset CONDA_PREFIX\n$PYTHON_EXE"
+            )
             with open(os.path.join(self.dest_dir, "install"), "w") as f:
                 f.write(INSTALL_SH)
             st = os.stat(os.path.join(self.dest_dir, "install"))
@@ -268,14 +254,6 @@ class SetupInstaller(object):
             os.path.join(self.root_dir, self.base_dir),
             os.path.join(self.dest_dir, self.base_dir),
         )
-        if self.base_dir == "base":
-            libtbx.auto_build.rpath.run(
-                [
-                    "--otherroot",
-                    os.path.join(self.root_dir, "base"),
-                    os.path.join(self.dest_dir, "base"),
-                ]
-            )
 
     def copy_build(self):
         # Copy the entire build directory, minus .o files.
@@ -319,12 +297,7 @@ class SetupInstaller(object):
             # This is done during installation on other platforms
             from libtbx.auto_build import installer_utils
 
-            python_exe = os.path.join(
-                self.dest_dir, "base", "bin", "python", "python.exe"
-            )
-            # check for conda
-            if self.base_dir == "conda_base":
-                python_exe = os.path.join(self.dest_dir, self.base_dir, "python.exe")
+            python_exe = os.path.join(self.dest_dir, self.base_dir, "python.exe")
             arg = [
                 python_exe,
                 os.path.join(self.dest_dir, "bin", "install.py"),
@@ -385,9 +358,7 @@ class SetupInstaller(object):
 
             file_list = os.listdir(os.path.join(app_root_dir, "build", "bin"))
             for filename in file_list:
-                patch = '"$LIBTBX_BUILD/../base/Python.framework/Versions/2.7/lib/python2.7/site-packages/certifi/cacert.pem"'
-                if self.base_dir == "conda_base":
-                    patch = '"$LIBTBX_BUILD/../conda_base/lib/python2.7/site-packages/certifi/cacert.pem"'
+                patch = '"$LIBTBX_BUILD/../conda_base/lib/python2.7/site-packages/certifi/cacert.pem"'
                 installer.patch_src(
                     os.path.join(app_root_dir, "build", "bin", filename),
                     '"%s"' % certifi.where(),
