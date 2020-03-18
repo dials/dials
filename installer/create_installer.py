@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 """
 Script to set up an installer directory tree and copy over most of the
 necessary files.  We used to just keep the entire (Phenix) installer in a
@@ -11,15 +9,12 @@ probably need to perform additional modifications to the installer tree
 before it can be tarred.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import imp
 import os
 import shutil
 import stat
 import subprocess
 import sys
-import tarfile
 import time
 import zipfile
 from optparse import OptionParser
@@ -28,7 +23,7 @@ import libtbx.auto_build.rpath
 
 # XXX HACK
 libtbx_path = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-if not libtbx_path in sys.path:
+if libtbx_path not in sys.path:
     sys.path.append(libtbx_path)
 
 INSTALL_SH = """\
