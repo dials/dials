@@ -19,6 +19,7 @@ import time
 import zipfile
 from optparse import OptionParser
 
+import dials
 import libtbx.auto_build.rpath
 
 # XXX HACK
@@ -502,7 +503,7 @@ def run(args):
         dest="binary",
         action="store_true",
         help="Include base and build directories",
-        default=False,
+        default=True,
     )
     parser.add_option(
         "--root_dir", dest="root_dir", action="store", help="Environment root"
@@ -511,20 +512,24 @@ def run(args):
         "--dist_dir", dest="dist_dir", action="store", help="Archive output directory"
     )
     parser.add_option(
-        "--readme", dest="readme", action="append", help="Readme file", default=[]
+        "--readme",
+        dest="readme",
+        action="append",
+        help="Readme file",
+        default=[os.path.join(dials.__path__[0], "LICENSE")],
     )
     parser.add_option(
         "--license",
         dest="license",
         action="store",
         help="License file",
-        default=os.path.join(libtbx_path, "LICENSE_2_0.txt"),
+        default=os.path.join(dials.__path__[0], "LICENSE"),
     )
     parser.add_option(
         "--install_script",
         dest="install_script",
         help="Final installation script",
-        default=None,
+        default=os.path.join(dials.__path__[0], "installer", "dials_installer.py"),
         metavar="FILE",
     )
     options, args_ = parser.parse_args(args=args)
