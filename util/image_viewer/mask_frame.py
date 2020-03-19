@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+import six.moves.cPickle as pickle
 import wx
 from wxtbx.phil_controls.floatctrl import FloatCtrl as _FloatCtrl
 
@@ -662,11 +663,9 @@ class MaskSettingsPanel(wx.Panel):
         else:
             return
 
-        # Save the mask to file
-        from libtbx import easy_pickle
-
         print("Writing mask to %s" % self.params.output.mask)
-        easy_pickle.dump(self.params.output.mask, mask)
+        with open(self.params.output.mask, "wb") as fh:
+            pickle.dump(mask, fh, protocol=pickle.HIGHEST_PROTOCOL)
 
     def OnSaveMaskParams(self, event):
         from dials.util.masking import phil_scope

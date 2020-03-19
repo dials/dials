@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division, print_function
+import six.moves.cPickle as pickle
 from six.moves import range
 
 import rstbx.viewer.display
@@ -8,7 +9,6 @@ from wxtbx import icons
 import wx.lib.colourselect
 from dials.util import Sorry
 from libtbx.utils import to_unicode
-from libtbx import easy_pickle
 import wx
 import os
 
@@ -200,7 +200,8 @@ class XrayFrame(wx.Frame):
         self.Layout()
 
     def load_distl_output(self, file_name):
-        distl = easy_pickle.load(file_name)
+        with open(file_name, "rb") as fh:
+            distl = pickle.load(fh)
         self._distl = distl
         img_files = []
         for img_id in sorted(distl.images.keys()):
