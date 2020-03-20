@@ -18,6 +18,7 @@ from ..rstbx_frame import XrayFrame as XFBaseClass
 from rstbx.viewer import settings as rv_settings, image as rv_image
 from wxtbx import bitmaps
 from boost.python import c_sizeof
+from rstbx.viewer.frame import SettingsFrame
 
 pyslip._Tiles = tile_generation._Tiles
 
@@ -225,13 +226,9 @@ class XrayFrame(XFBaseClass):
                 image_data = fi.get_image_data()
                 if not isinstance(image_data, tuple):
                     image_data = (image_data,)
-                if len(detector) > 1:
-                    if readout >= 0:
-                        if detector[readout].is_coord_valid(ifs):
-                            possible_intensity = image_data[readout][isf]
-                else:
-                    if detector[0].is_coord_valid(ifs):
-                        possible_intensity = image_data[0][isf]
+                if readout >= 0:
+                    if detector[readout].is_coord_valid(ifs):
+                        possible_intensity = image_data[readout][isf]
 
                 if possible_intensity is not None:
                     if possible_intensity == 0:
@@ -368,31 +365,16 @@ class XrayFrame(XFBaseClass):
             if not ("DXTBX_ASSERT(" in str(e) and ") failure" in str(e)):
                 # unknown exception from dxtbx
                 raise e
-            if len(detector) > 1:
-                # find the panel whose center is closest to the beam.
-                panel_id = 0
-                lowest_res = 0
-                for p_id, panel in enumerate(detector):
-                    w, h = panel.get_image_size()
-                    res = panel.get_resolution_at_pixel(beam.get_s0(), (w // 2, h // 2))
-                    if res > lowest_res:
-                        panel_id = p_id
-                        lowest_res = res
-                x_mm, y_mm = detector[panel_id].get_beam_centre(beam.get_s0())
-
-            else:
-                panel_id = 0
-                # FIXME this is horrible but cannot find easier way without
-                # restructuring code - N.B. case I am debugging now is one
-                # panel detector *parallel to beam* for which the question is
-                # ill posed.
-                try:
-                    x_mm, y_mm = detector[0].get_beam_centre(beam.get_s0())
-                except RuntimeError as e:
-                    if "DXTBX_ASSERT" in str(e):
-                        x_mm, y_mm = 0.0, 0.0
-                    else:
-                        raise e
+            # find the panel whose center is closest to the beam.
+            panel_id = 0
+            lowest_res = 0
+            for p_id, panel in enumerate(detector):
+                w, h = panel.get_image_size()
+                res = panel.get_resolution_at_pixel(beam.get_s0(), (w // 2, h // 2))
+                if res > lowest_res:
+                    panel_id = p_id
+                    lowest_res = res
+            x_mm, y_mm = detector[panel_id].get_beam_centre(beam.get_s0())
 
         beam_pixel_fast, beam_pixel_slow = detector[panel_id].millimeter_to_pixel(
             (x_mm, y_mm)
@@ -466,10 +448,9 @@ class XrayFrame(XFBaseClass):
         if abs(detector[0].get_distance()) > 0:
 
             def map_coords(x, y, p):
-                if len(self.pyslip.tiles.raw_image.get_detector()) > 1:
-                    y, x = self.pyslip.tiles.flex_image.tile_readout_to_picture(
-                        p, y - 0.5, x - 0.5
-                    )
+                y, x = self.pyslip.tiles.flex_image.tile_readout_to_picture(
+                    p, y - 0.5, x - 0.5
+                )
                 return self.pyslip.tiles.picture_fast_slow_to_map_relative(x, y)
 
             panel_id, beam_pixel_fast, beam_pixel_slow = self.get_beam_center_px()
@@ -769,20 +750,14 @@ class XrayFrame(XFBaseClass):
             data = raw_img.get_image_data()
             if not isinstance(data, tuple):  # XXX should not need this test
                 data = (data,)
-            if len(detector) > 1:
-                flex_img = tile_generation.get_flex_image_multipanel(
-                    brightness=self.settings.brightness / 100,
-                    panels=detector,
-                    raw_data=data,
-                    beam=raw_img.get_beam(),
-                )
-            else:
-                flex_img = tile_generation.get_flex_image(
-                    brightness=self.settings.brightness / 100,
-                    data=data[0],
-                    saturation=detector[0].get_trusted_range()[1],
-                    vendortype=raw_img.get_vendortype(),
-                )
+            from .tile_generation import get_flex_image_multipanel
+
+            flex_img = get_flex_image_multipanel(
+                brightness=self.settings.brightness / 100,
+                panels=detector,
+                raw_data=data,
+                beam=raw_img.get_beam(),
+            )
 
             if flex_img.supports_rotated_tiles_antialiasing_recommended:
                 currentZoom = self.pyslip.level
@@ -915,20 +890,14 @@ class XrayFrame(XFBaseClass):
             data = raw_img.get_image_data()
             if not isinstance(data, tuple):  # XXX should not need this test
                 data = (data,)
-            if len(detector) > 1:
-                flex_img = tile_generation.get_flex_image_multipanel(
-                    brightness=self.settings.brightness / 100,
-                    panels=detector,
-                    raw_data=data,
-                    beam=raw_img.get_beam(),
-                )
-            else:
-                flex_img = tile_generation.get_flex_image(
-                    brightness=self.settings.brightness / 100,
-                    data=data[0],
-                    saturation=detector[0].get_trusted_range()[1],
-                    vendortype=raw_img.get_vendortype(),
-                )
+            from .tile_generation import get_flex_image_multipanel
+
+            flex_img = get_flex_image_multipanel(
+                brightness=self.settings.brightness / 100,
+                panels=detector,
+                raw_data=data,
+                beam=raw_img.get_beam(),
+            )
 
             flex_img.setWindow(0, 0, 1)
             flex_img.adjust(color_scheme=self.settings.color_scheme)
@@ -1144,9 +1113,6 @@ class XrayFrame(XFBaseClass):
             pdf_canvas.save()
 
         self.update_statusbar("Writing " + file_name + "..." + " Done.")
-
-
-from rstbx.viewer.frame import SettingsFrame
 
 
 def override_SF_set_image(self, image):
