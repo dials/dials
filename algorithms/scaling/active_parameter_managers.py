@@ -8,6 +8,7 @@ import logging
 from collections import OrderedDict
 
 from dials.array_family import flex
+from scitbx import sparse
 import six
 
 logger = logging.getLogger("dials")
@@ -27,6 +28,7 @@ class active_parameter_manager(object):
     """
 
     def __init__(self, components, selection_list):
+        # self.target = target
         self.x = flex.double([])
         self.components = OrderedDict()
         self.derivatives = None
@@ -92,7 +94,24 @@ class active_parameter_manager(object):
             component["object"].free_parameter_esds = esds[start_idx:end_idx]
 
 
-class multi_active_parameter_manager(object):
+class TargetInterface(object):
+    def compute_functional_gradients(self, block):
+        return self.target.compute_functional_gradients(block)
+
+    def compute_restraints_functional_gradients(self, block):
+        return self.target.compute_restraints_functional_gradients(block)
+
+    def compute_residuals_and_gradients(self, block):
+        return self.target.compute_residuals_and_gradients(block)
+
+    def compute_restraints_residuals_and_gradients(self, block):
+        return self.target.compute_restraints_residuals_and_gradients(block)
+
+    def compute_residuals(self, block):
+        return self.target.compute_residuals(block)
+
+
+class multi_active_parameter_manager(TargetInterface):
     """
     Parameter manager to manage the current active parameters during minimisation
     for multiple datasets that are being minimised simultaneously.
@@ -101,7 +120,8 @@ class multi_active_parameter_manager(object):
     is used to initialise an active parameter manager of type apm_class.
     """
 
-    def __init__(self, components_list, selection_lists, apm_class):
+    def __init__(self, target, components_list, selection_lists, apm_class):
+        self.target = target
         self.x = flex.double([])
         self.derivatives = None
         self.components_list = []  # A list of the component names.
@@ -170,6 +190,126 @@ class multi_active_parameter_manager(object):
             i += n
 
 
+class shared_active_parameter_manager(multi_active_parameter_manager):
+
+    """Class to enforce sharing of model components.
+
+    Intercept calls to a multi_apm, to override set_params calls and manage
+    reshaping of gradient/jacobian during minimisation.
+    """
+
+    def __init__(self, target, components_list, selection_lists, apm_class, shared):
+        super(shared_active_parameter_manager, self).__init__(
+            target, components_list, selection_lists, apm_class
+        )
+        n_unique_params = 0
+        found_initial_shared = False
+        # first loop over to work out how many unique parameters overall
+        for i, apm in enumerate(self.apm_list):
+            for name, comp in apm.components.items():
+                if name != shared:
+                    n_unique_params += comp["n_params"]
+                elif name == shared and not found_initial_shared:
+                    n_unique_params += comp["n_params"]
+                    found_initial_shared = True
+
+        self.reducing_matrix = sparse.matrix(self.n_active_params, n_unique_params)
+        # now loop through to work out reducing matrix
+        # also need to update apm_data with a size_t selection
+        found_initial_shared = False
+        shared_params = (0, 0)
+        cumul_params = 0
+        unique_parameters = []
+        for i, apm in enumerate(self.apm_list):
+            apm_sel = flex.size_t()
+            # ^ needs to be size_t to make sure selected in correct order
+            for name, comp in apm.components.items():
+                start_col_idx = cumul_params
+                indiv_start = self.apm_data[i]["start_idx"] + comp["start_idx"]
+                indiv_end = self.apm_data[i]["start_idx"] + comp["end_idx"]
+                if name != shared:
+                    apm_sel.extend(
+                        flex.size_t(
+                            range(cumul_params, cumul_params + comp["n_params"])
+                        )
+                    )
+                    for n, j in enumerate(range(indiv_start, indiv_end)):
+                        self.reducing_matrix[j, start_col_idx + n] = 1
+                        unique_parameters.append(j)
+                    cumul_params += comp["n_params"]  #
+                elif name == shared and not found_initial_shared:
+                    apm_sel.extend(
+                        flex.size_t(
+                            range(cumul_params, cumul_params + comp["n_params"])
+                        )
+                    )
+                    for n, j in enumerate(range(indiv_start, indiv_end)):
+                        self.reducing_matrix[j, start_col_idx + n] = 1
+                        unique_parameters.append(j)
+                    shared_start_column = start_col_idx
+                    found_initial_shared = True
+                    shared_params = (indiv_start, indiv_end)
+                    cumul_params += comp["n_params"]
+                else:  # name == shared and n_shared_found > 0:
+                    assert (
+                        shared_params[1] - shared_params[0] == indiv_end - indiv_start
+                    )
+                    apm_sel.extend(
+                        flex.size_t(range(shared_params[0], shared_params[1]))
+                    )
+                    for n, j in enumerate(range(indiv_start, indiv_end)):
+                        self.reducing_matrix[j, shared_start_column + n] = 1
+            self.apm_data[i]["apm_sel"] = apm_sel
+
+        # also need to reduce self.x to the size of the new params
+        self.x = self.x.select(flex.size_t(unique_parameters))
+
+    def select_parameters(self, apm_number):
+        """Select the subset of self.x corresponding to the apm number."""
+        apm_data = self.apm_data[apm_number]
+        sel = apm_data["apm_sel"]
+        return self.x.select(sel)
+
+    def compute_functional_gradients(self, block):
+        f, g = self.target.compute_functional_gradients(block)
+        return f, g * self.reducing_matrix
+
+    def compute_restraints_functional_gradients(self, block):
+        res = self.target.compute_restraints_functional_gradients(block)
+        if res is not None:
+            return res[0], res[1] * self.reducing_matrix
+        return res
+
+    def compute_residuals_and_gradients(self, block):
+        r, j, w = self.target.compute_residuals_and_gradients(block)
+        return r, j * self.reducing_matrix, w
+
+    def compute_restraints_residuals_and_gradients(self, block):
+        res = self.target.compute_restraints_residuals_and_gradients(block)
+        if res is not None:
+            return res[0], res[1] * self.reducing_matrix, res[2]
+        return res
+
+    def set_param_esds(self, esds):
+        """Set the estimated standard deviations of the parameters."""
+        for apm, apm_data in zip(self.apm_list, self.apm_data.values()):
+            apm.set_param_esds(esds.select(apm_data["apm_sel"]))
+
+    def calculate_model_state_uncertainties(self, var_cov):
+        """Set var_cov matrices for each component, to allow later calculation
+        of errors."""
+        for i, apm in enumerate(self.apm_list):
+            sub_var_cov = sparse.matrix(apm.n_active_params, apm.n_active_params)
+            n_this = 0
+            for comp in apm.components.values():
+                n = comp["n_params"]
+                start_idx = self.apm_data[i]["apm_sel"][n_this]
+                sub = var_cov.matrix_copy_block(start_idx, start_idx, n, n)
+                sub_var_cov.assign_block(sub, n_this, n_this)
+                n_this += n
+            apm.calculate_model_state_uncertainties(sub_var_cov.as_dense_matrix())
+
+
 class ParameterManagerGenerator(object):
     """
     Class to generate multi-dataset parameter managers for minimisation.
@@ -180,15 +320,17 @@ class ParameterManagerGenerator(object):
     on the data_manager.consecutive_refinement_order property).
     """
 
-    def __init__(self, data_managers, apm_type, mode="concurrent"):
+    def __init__(self, data_managers, apm_type, target, mode="concurrent", shared=None):
         if mode not in ["concurrent", "consecutive"]:
             raise ValueError(
                 "Bad value for refinement order mode: %s, expected %s"
                 % (mode, " or ".join(["concurrent", "consecutive"]))
             )
+        self.target = target
         self.data_managers = data_managers
         self.apm_type = apm_type
         self.mode = mode
+        self.shared = shared
         self.param_lists = [None] * len(data_managers)
         if self.mode == "concurrent":
             for i, data_manager in enumerate(self.data_managers):
@@ -216,8 +358,20 @@ class ParameterManagerGenerator(object):
 
     def _parameter_managers_concurrent(self):
         components = [s.components for s in self.data_managers]
+        if self.shared:
+            return [
+                shared_active_parameter_manager(
+                    self.target,
+                    components,
+                    self.param_lists,
+                    self.apm_type,
+                    self.shared,
+                )
+            ]
         return [
-            multi_active_parameter_manager(components, self.param_lists, self.apm_type)
+            multi_active_parameter_manager(
+                self.target, components, self.param_lists, self.apm_type
+            )
         ]
 
     def _parameter_managers_consecutive(self):
@@ -229,4 +383,11 @@ class ParameterManagerGenerator(object):
                     params.append(param_list.pop(0))
                 else:
                     params.append([])
-            yield multi_active_parameter_manager(components, params, self.apm_type)
+            if self.shared:
+                yield shared_active_parameter_manager(
+                    self.target, components, params, self.apm_type, self.shared
+                )
+            else:
+                yield multi_active_parameter_manager(
+                    self.target, components, params, self.apm_type
+                )

@@ -12,6 +12,7 @@ libtbx.pkg_utils.define_entry_points(
             "physical = dials.algorithms.scaling.model.model:PhysicalScalingModel",
             "KB = dials.algorithms.scaling.model.model:KBScalingModel",
             "array = dials.algorithms.scaling.model.model:ArrayScalingModel",
+            "dose_decay = dials.algorithms.scaling.model.model:DoseDecay",
         ],
         "dials.index.basis_vector_search": [
             "fft1d = dials.algorithms.indexing.basis_vector_search:FFT1D",

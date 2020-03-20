@@ -1,0 +1,1 @@
+New scaling model, model=dose_decay, implementing a shared exponential decay component for multicrystal experiments

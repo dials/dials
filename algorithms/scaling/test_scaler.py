@@ -19,6 +19,7 @@ from dials.algorithms.scaling.scaler import (
     NullScaler,
 )
 from dials.algorithms.scaling.parameter_handler import ScalingParameterManagerGenerator
+from dials.algorithms.scaling.target_function import ScalingTarget
 
 
 def side_effect_update_var(variances, intensities):
@@ -577,6 +578,7 @@ def test_SingleScaler_update_for_minimisation():
     single_scaler = SingleScaler(p, exp[0], r)
     pmg = ScalingParameterManagerGenerator(
         single_scaler.active_scalers,
+        ScalingTarget(),
         single_scaler.params.scaling_refinery.refinement_order,
     )
     single_scaler.components["scale"].parameters /= 2.0
@@ -725,7 +727,9 @@ def test_multiscaler_update_for_minimisation():
 
     multiscaler = MultiScaler([singlescaler1, singlescaler2])
     pmg = ScalingParameterManagerGenerator(
-        multiscaler.active_scalers, multiscaler.params.scaling_refinery.refinement_order
+        multiscaler.active_scalers,
+        ScalingTarget,
+        multiscaler.params.scaling_refinery.refinement_order,
     )
     multiscaler.single_scalers[0].components["scale"].parameters /= 2.0
     multiscaler.single_scalers[1].components["scale"].parameters *= 1.5

@@ -2,7 +2,6 @@
 principally ReflectionManager."""
 from __future__ import absolute_import, division, print_function
 
-from past.builtins import cmp
 import copy
 import logging
 import math
@@ -154,7 +153,13 @@ class BlockCalculator(object):
             nblocks = int(abs(stop - start) / width) + 1
             # ensure width has the right sign and is wide enough that all reflections
             # get assigned a block
-            _width = cmp(stop, start) * width + 1e-11
+            if stop > start:
+                _width = width + 1e-11
+            elif stop == start:
+                _width = 1e-11
+            else:
+                _width = -width + 1e-11
+
             half_width = width * (0.5 - 1e-11)  # ensure round down behaviour
 
             block_starts = [start + n * _width for n in range(nblocks)]

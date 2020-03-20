@@ -1236,7 +1236,6 @@ class Processor(object):
             return
 
         if self.params.output.integration_pickle is not None:
-            from libtbx import easy_pickle
             from xfel.command_line.frame_extractor import ConstructFrame
 
             # Split everything into separate experiments for pickling
@@ -1285,7 +1284,8 @@ class Processor(object):
                     self.all_int_pickle_filenames.append(os.path.basename(outfile))
                     self.all_int_pickles.append(frame)
                 else:
-                    easy_pickle.dump(outfile, frame)
+                    with open(outfile, "wb") as fh:
+                        pickle.dump(frame, fh, protocol=pickle.HIGHEST_PROTOCOL)
 
     def process_reference(self, reference):
         """Load the reference spots."""
