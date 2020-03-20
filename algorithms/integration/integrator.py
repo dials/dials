@@ -468,7 +468,9 @@ def _initialize_stills(experiments, params, reflections):
 
     # Compute some reflection properties
     reflections.compute_d(experiments)
-    reflections.compute_bbox(experiments)
+    reflections.compute_bbox(
+        experiments, sigma_b_multiplier=params.profile.sigma_b_multiplier
+    )
 
     # Check the bounding boxes are all 1 frame in width
     z0, z1 = reflections["bbox"].parts()[4:6]
