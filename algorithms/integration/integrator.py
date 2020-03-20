@@ -171,6 +171,11 @@ def generate_phil_scope():
           .type = bool
           .help = "Use profile fitting if available"
 
+        sigma_b_multiplier = 2.0
+          .type = float(value_min=1.0)
+          .help = "Background box expansion factor"
+          .expert_level = 3
+
         validation {
 
           number_of_partitions = 1
@@ -319,7 +324,7 @@ def nframes_hist(bbox, width=80, symbol="#", prefix=""):
 
 class Parameters(object):
     """
-    A class to represent the integration parameters
+    A stack of classes to represent the integration parameters
     """
 
     class Filter(object):
@@ -343,6 +348,7 @@ class Parameters(object):
 
         def __init__(self):
             self.fitting = True
+            self.sigma_b_multiplier = 2.0
             self.validation = Parameters.Profile.Validation()
 
     def __init__(self):
@@ -409,6 +415,9 @@ class Parameters(object):
         result.debug_reference_filename = params.debug.reference.filename
         result.debug_reference_output = params.debug.reference.output
 
+        # Profile parameters
+        result.profile.sigma_b_multiplier = params.profile.sigma_b_multiplier
+
         # Get the min zeta filter
         result.filter.min_zeta = params.filter.min_zeta
         if params.filter.ice_rings is True:
@@ -438,7 +447,9 @@ def _initialize_rotation(experiments, params, reflections):
     # Compute some reflection properties
     reflections.compute_zeta_multi(experiments)
     reflections.compute_d(experiments)
-    reflections.compute_bbox(experiments, sigma_b_multiplier=1.0)
+    reflections.compute_bbox(
+        experiments, sigma_b_multiplier=params.profile.sigma_b_multiplier
+    )
 
     # Filter the reflections by zeta
     mask = flex.abs(reflections["zeta"]) < params.filter.min_zeta
@@ -1325,7 +1336,9 @@ class Integrator3DThreaded(object):
         # Compute some reflection properties
         self.reflections.compute_zeta_multi(self.experiments)
         self.reflections.compute_d(self.experiments)
-        self.reflections.compute_bbox(self.experiments, sigma_b_multiplier=1.0)
+        self.reflections.compute_bbox(
+            self.experiments, sigma_b_multiplier=self.params.profile.sigma_b_multiplier
+        )
 
         # Filter the reflections by zeta
         mask = (
