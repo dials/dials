@@ -406,7 +406,7 @@ noting that no reflections were available to test the 21a screw axis, so this
 possibility should also be tested during structure solution.
 
 Next we scale the data and inspect the results from the log output or the
-:samp:`scaling.html` generated html report::
+:samp:`dials.scale.html` generated html report::
 
   dials.scale symmetrized.expt symmetrized.refl
 
@@ -454,7 +454,7 @@ Next we scale the data and inspect the results from the log output or the
 If required, we can rerun scaling with a resolution limit using the option
 :samp:`d_min=`, however in this case the CC1/2 and <I/sI> are reasonable
 to the highest resolution measured. The "Analysis by image number" plots
-in the :samp:`scaling.html` report also indicate that both datasets are of similar
+in the :samp:`dials.scale.html` report also indicate that both datasets are of similar
 quality.
 
 Once we are happy with the scaled dataset, a merged MTZ file can be generated::

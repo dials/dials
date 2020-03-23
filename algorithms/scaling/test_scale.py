@@ -27,7 +27,7 @@ def run_one_scaling(working_directory, argument_list):
     assert not result.returncode and not result.stderr
     assert working_directory.join("scaled.expt").check()
     assert working_directory.join("scaled.refl").check()
-    assert working_directory.join("scaling.html").check()
+    assert working_directory.join("dials.scale.html").check()
 
     table = flex.reflection_table.from_file(
         working_directory.join("scaled.refl").strpath
@@ -508,7 +508,7 @@ def test_scale_dose_decay_model(dials_data, tmpdir):
     assert not result.returncode and not result.stderr
     assert tmpdir.join("scaled.refl").check()
     assert tmpdir.join("scaled.expt").check()
-    assert tmpdir.join("scaling.html").check()
+    assert tmpdir.join("dials.scale.html").check()
     expts = load.experiment_list(tmpdir.join("scaled.expt").strpath, check_format=False)
     assert expts[0].scaling_model.id_ == "dose_decay"
 
