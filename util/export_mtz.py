@@ -398,9 +398,7 @@ def export_mtz(integrated_data, experiment_list, params):
             "intensity.scale.variance" in integrated_data
         ):
             params.mtz.hklout = "scaled.mtz"
-            logger.info(
-                "Data appears to be scaled, setting mtz.hklout = 'scaled_unmerged.mtz'"
-            )
+            logger.info("Data appears to be scaled, setting mtz.hklout = 'scaled.mtz'")
         else:
             params.mtz.hklout = "integrated.mtz"
             logger.info(
