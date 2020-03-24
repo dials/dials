@@ -209,7 +209,7 @@ class shared_active_parameter_manager(multi_active_parameter_manager):
             for name, comp in apm.components.items():
                 if name != shared:
                     n_unique_params += comp["n_params"]
-                elif name == shared and not found_initial_shared:
+                elif not found_initial_shared:
                     n_unique_params += comp["n_params"]
                     found_initial_shared = True
 
@@ -237,7 +237,7 @@ class shared_active_parameter_manager(multi_active_parameter_manager):
                         self.reducing_matrix[j, start_col_idx + n] = 1
                         unique_parameters.append(j)
                     cumul_params += comp["n_params"]  #
-                elif name == shared and not found_initial_shared:
+                elif not found_initial_shared:
                     apm_sel.extend(
                         flex.size_t(
                             range(cumul_params, cumul_params + comp["n_params"])
