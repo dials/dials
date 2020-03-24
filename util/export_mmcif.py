@@ -36,7 +36,7 @@ class MMCIFOutputFile(object):
         Write the experiments and reflections to file
         """
 
-        # if mmmcif filename is auto, then choose scaled.cif or integrated.cif
+        # if mmcif filename is auto, then choose scaled.cif or integrated.cif
         if self.params.mmcif.hklout in (None, Auto, "auto"):
             if ("intensity.scale.value" in reflections) and (
                 "intensity.scale.variance" in reflections
