@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import logging
 import math
 from collections import namedtuple
+import warnings
 
 from cctbx import crystal
 from iotbx.phil import parse
@@ -214,8 +215,10 @@ class MaskGenerator(object):
             # the trusted range. This identifies bad pixels, but does not include
             # pixels that are overloaded on some images.
             if self.params.use_trusted_range:
-                logger.warn(
-                    "Checking for hot pixels using the trusted_range is deprecated. https://github.com/dials/dials/issues/1156"
+                warnings.warn(
+                    "Checking for hot pixels using the trusted_range is"
+                    " deprecated. https://github.com/dials/dials/issues/1156",
+                    DeprecationWarning,
                 )
                 trusted_mask = None
                 low, high = panel.get_trusted_range()
