@@ -16,21 +16,19 @@ The intention is that all of the code should try to converge towards these.
     Linux/macOS, the current best way to create a fresh installation of DIALS
     and all of its dependencies is with the following commands:
     ```
-    git clone https://github.com/cctbx/cctbx_project modules/cctbx_project
-    ln -s modules/cctbx_project/libtbx/auto_build/bootstrap.py
-    python bootstrap.py hot base update build --builder=dials --use-conda
+    git clone https://github.com/dials/dials modules/dials
+    python modules/dials/installer/bootstrap.py
     ```
 2.  Activate the environment with `source <root>/build/setpaths.sh`. This will
     need to be done every time you work on DIALS code.
-3.  Install pre-commit hooks with `libtbx.precommit install`. This will install
-    hooks for DIALS, dxtbx and xia2.
 
 The DIALS repository is now checked out in `<root>/modules/dials`. During
 development, run tests with pytest with `libtbx.pytest --regression` to ensure
 that all of the tests still pass.
 
-If you update or change dependencies, you may occasionally need to regenerate
-the static libtbx ecosystem by running `libtbx.refresh` - this will also
+If you update source code or change dependencies, you may occasionally need
+to regenerate the static libtbx ecosystem and rebuild any C++ code. You can
+go this by running `make reconf` in the `<root>/build` directory. This will also
 generate an alias to any executable scripts installed by `pip` as
 `libtbx.<script>`. Using these helps ensure that you are using the bundled
 python version instead of your system version.
@@ -47,13 +45,13 @@ message that the code in question is special and care should be taken.
 - **Code should be written with python 3 syntax** - This means "new" exception
   syntax, print functions, new-style classes, and a smattering of other changes
   — the pre-commit hooks check for this.
-- **Try to write code compatible with python 2 and 3** - we have both
+- **Try to write code compatible with python 3 and 2** - we have both
   [six] and [future] available for help with this, but try to use future to
   write idiomatic python 3 wherever possible. If you are unsure how to do this,
-  ask for help. Once we are fully python 3 compatible, this will become a
-  requirement, but for now we don't expect most people to be developing on top
-  of python 3. If you get used to it now, it'll be less of a shock when we
-  require and test it.
+  ask for help. Although the primary DIALS platform is now python 3 we still
+  have limited support for python 2 for development, maintenance and backporting
+  purposes. Please see our [python 2 deprecation timeline] for more information
+  and the current level of python 2 support.
 - Err on the side of [PEP8] when making any style decision. In particular,
   **use PEP8 as a guide for naming** when you aren't sure the correct form to
   use.
@@ -140,4 +138,5 @@ message that the code in question is special and care should be taken.
 [The Seven Rules]: https://chris.beams.io/posts/git-commit/#seven-rules
 [six]: https://six.readthedocs.io/
 [future]: http://python-future.org/
+[python 2 deprecation timeline]: https://github.com/dials/dials/issues/1175
 
