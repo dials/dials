@@ -164,10 +164,9 @@ def install_conda(python):
     )
     if conda_base != os.path.realpath(conda_info["root_prefix"]):
         warnings.warn(
-            "Expected conda base differs:",
-            conda_base,
-            "!=",
-            os.path.realpath(conda_info["root_prefix"]),
+            "Expected conda base differs:{0}!={1}".format(
+                conda_base, os.path.realpath(conda_info["root_prefix"])
+            )
         )
     for env in environments:
         if env not in conda_info["envs"]:
