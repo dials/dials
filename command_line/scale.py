@@ -14,7 +14,7 @@ with dials.merge for downstream structural solution. Alternatively, the
 scaled.expt and scaled.refl files can be passed back to dials.scale, and
 further scaling will be performed, starting from where the previous job finished.
 
-A scaling.html file is also generated, containing interactive plots of merging
+A dials.scale.html file is also generated, containing interactive plots of merging
 statistics and scaling model plots.
 
 Example use cases
@@ -68,7 +68,7 @@ phil_scope = phil.parse(
       .type = str
       .help = "Option to set filepath for output pickle file of scaled
                intensities."
-    html = "scaling.html"
+    html = "dials.scale.html"
       .type = str
       .help = "Filename for html report."
     json = None

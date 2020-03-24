@@ -176,7 +176,7 @@ def generate_multi_crystal_symmetry_and_scaling(options):
         store_command=outdir / "dials.scale_exclude.cmd",
         store_output=outdir / "dials.scale_exclude.log",
     )
-    tmpdir.join("scaling.html").copy(outdir.join("scaling.html"))
+    tmpdir.join("dials.scale.html").copy(outdir.join("dials.scale.html"))
     runcmd(["dials.symmetry", "scaled.expt", "scaled.refl", "laue_group=None"])
     tmpdir.join("dials-symmetry.html").copy(outdir.join("dials-symmetry.html"))
     runcmd(["dials.merge", "symmetrized.expt", "symmetrized.refl"])

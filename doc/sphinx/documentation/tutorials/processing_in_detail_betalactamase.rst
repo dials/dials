@@ -526,7 +526,7 @@ next run to load the existing state of the scaling model):
 .. dials_tutorial_include:: betalactamase/dials.scale_cut.cmd
 
 The merging statistics, as well as a number of scaling and merging plots, are
-output into a html report called :samp:`scaling.html`.
+output into a html report called :samp:`dials.scale.html`.
 This can be opened in your browser - nativigate to the section "scaling model plots" and take a look.
 What is immediately apparent is the periodic nature of the scale term, with peaks
 and troughs 90° apart. This indicates that the illuminated volume was changing
