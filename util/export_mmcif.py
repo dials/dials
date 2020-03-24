@@ -43,13 +43,15 @@ class MMCIFOutputFile(object):
             ):
                 filename = "scaled.cif"
                 logger.info(
-                    "Data appears to be scaled, setting mmcif.hklout = 'scaled_unmerged.cif'"
+                    "Data appears to be scaled, setting mmcif.hklout = 'scaled.cif'"
                 )
             else:
                 filename = "integrated.cif"
                 logger.info(
                     "Data appears to be unscaled, setting mmcif.hklout = 'integrated.cif'"
                 )
+        else:
+            filename = self.params.mmcif.hklout
 
         # Select reflections
         selection = reflections.get_flags(reflections.flags.integrated, all=True)
@@ -58,8 +60,8 @@ class MMCIFOutputFile(object):
         # Filter out bad variances and other issues, but don't filter on ice rings
         # or alter partialities.
 
-        ### Assumes you want to apply the lp and dqe corrections to sum and prf
-        ### Do we want to combine partials?
+        # Assumes you want to apply the lp and dqe corrections to sum and prf
+        # Do we want to combine partials?
         reflections = filter_reflection_table(
             reflections,
             self.params.intensity,
@@ -93,7 +95,7 @@ class MMCIFOutputFile(object):
         # FIXME finish metadata addition - detector and source details needed
         # http://mmcif.wwpdb.org/dictionaries/mmcif_pdbx_v50.dic/Categories/index.html
 
-        ## Add source information;
+        # Add source information;
         # _diffrn_source.pdbx_wavelength_list = (list of wavelengths)
         # _diffrn_source.source = (general class of source e.g. synchrotron)
         # _diffrn_source.type = (specific beamline or instrument e.g DIAMOND BEAMLINE I04)
@@ -108,7 +110,7 @@ class MMCIFOutputFile(object):
             str(w) for w in unique_wls
         )
 
-        ## Add detector information;
+        # Add detector information;
         # _diffrn_detector.detector  = (general class e.g. PIXEL, PLATE etc)
         # _diffrn_detector.pdbx_collection_date = (Date of collection yyyy-mm-dd)
         # _diffrn_detector.type = (full name of detector e.g. DECTRIS PILATUS3 2M)
