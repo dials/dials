@@ -214,6 +214,9 @@ class MaskGenerator(object):
             # the trusted range. This identifies bad pixels, but does not include
             # pixels that are overloaded on some images.
             if self.params.use_trusted_range:
+                raise DeprecationWarning(
+                    "Checking for hot pixels using the trusted_range is deprecated. https://github.com/dials/dials/issues/1156"
+                )
                 trusted_mask = None
                 low, high = panel.get_trusted_range()
 
