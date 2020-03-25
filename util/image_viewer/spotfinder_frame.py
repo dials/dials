@@ -857,38 +857,7 @@ class SpotFrame(XrayFrame):
             image_data = (image_data,)
 
         if self.settings.display != "image":
-
-            image_mask = self.get_mask(image)
-            gain_value = self.settings.gain
-            assert gain_value > 0
-            gain_map = [
-                flex.double(image_data[i].accessor(), gain_value)
-                for i in range(len(detector))
-            ]
-
-            nsigma_b = self.settings.nsigma_b
-            nsigma_s = self.settings.nsigma_s
-            global_threshold = self.settings.global_threshold
-            min_local = self.settings.min_local
-            size = self.settings.kernel_size
-            kabsch_debug_list = []
-            if self.settings.dispersion_extended:
-                algorithm = DispersionExtendedThresholdDebug
-            else:
-                algorithm = DispersionThresholdDebug
-            for i_panel in range(len(detector)):
-                kabsch_debug_list.append(
-                    algorithm(
-                        image_data[i_panel].as_double(),
-                        image_mask[i_panel],
-                        gain_map[i_panel],
-                        size,
-                        nsigma_b,
-                        nsigma_s,
-                        global_threshold,
-                        min_local,
-                    )
-                )
+            kabsch_debug_list = self._calculate_dispersion_debug(image, detector)
 
             if self.settings.display == "mean":
                 mean = [kabsch.mean() for kabsch in kabsch_debug_list]
@@ -935,6 +904,40 @@ class SpotFrame(XrayFrame):
         if self.params.show_mask:
             self.mask_image_data(image_data)
         return image_data
+
+    def _calculate_dispersion_debug(self, image, detector):
+        image_mask = self.get_mask(image)
+        gain_value = self.settings.gain
+        assert gain_value > 0
+        image_data = image.get_image_data()
+        gain_map = [
+            flex.double(image_data[i].accessor(), gain_value)
+            for i in range(len(detector))
+        ]
+        nsigma_b = self.settings.nsigma_b
+        nsigma_s = self.settings.nsigma_s
+        global_threshold = self.settings.global_threshold
+        min_local = self.settings.min_local
+        size = self.settings.kernel_size
+        kabsch_debug_list = []
+        if self.settings.dispersion_extended:
+            algorithm = DispersionExtendedThresholdDebug
+        else:
+            algorithm = DispersionThresholdDebug
+        for i_panel in range(len(detector)):
+            kabsch_debug_list.append(
+                algorithm(
+                    image_data[i_panel].as_double(),
+                    image_mask[i_panel],
+                    gain_map[i_panel],
+                    size,
+                    nsigma_b,
+                    nsigma_s,
+                    global_threshold,
+                    min_local,
+                )
+            )
+        return kabsch_debug_list
 
     def show_filters(self):
         image_data = self.get_image_data(self.pyslip.tiles.raw_image)
