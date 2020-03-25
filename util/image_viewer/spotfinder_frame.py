@@ -847,7 +847,6 @@ class SpotFrame(XrayFrame):
             self.Layout()
 
     def get_image_data(self, image):
-        detector = image.get_detector()
         image.set_image_data(None)
         if self.settings.image_type == "corrected":
             image_data = image.get_image_data()
@@ -857,7 +856,7 @@ class SpotFrame(XrayFrame):
             image_data = (image_data,)
 
         if self.settings.display != "image":
-            kabsch_debug_list = self._calculate_dispersion_debug(image, detector)
+            kabsch_debug_list = self._calculate_dispersion_debug(image)
 
             if self.settings.display == "mean":
                 mean = [kabsch.mean() for kabsch in kabsch_debug_list]
@@ -905,7 +904,8 @@ class SpotFrame(XrayFrame):
             self.mask_image_data(image_data)
         return image_data
 
-    def _calculate_dispersion_debug(self, image, detector):
+    def _calculate_dispersion_debug(self, image):
+        detector = image.get_detector()
         image_mask = self.get_mask(image)
         gain_value = self.settings.gain
         assert gain_value > 0
@@ -1166,7 +1166,46 @@ class SpotFrame(XrayFrame):
                 )
 
         if self.settings.show_thresh_pix:
-            pass
+            image = self.pyslip.tiles.raw_image
+            kabsch_debug_list = self._calculate_dispersion_debug(image)
+            cv = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
+            final_mask = [kabsch.final_mask() for kabsch in kabsch_debug_list]
+            final_mask = [mask.as_1d() for mask in final_mask]
+            value = []
+            for pnl, mask in enumerate(final_mask):
+                mask.reshape(cv[pnl].accessor())
+                width = mask.all()[1]
+                idx = mask.iselection()
+                for i in idx:
+                    y = i // width
+                    x = i % width
+                    y, x = self.pyslip.tiles.flex_image.tile_readout_to_picture(
+                        pnl, y, x
+                    )
+                    value.append(
+                        self.pyslip.tiles.picture_fast_slow_to_map_relative(x, y)
+                    )
+
+            base_color = self.prediction_colours[0][1:]
+            # dim the color so it stands apart from the prediction
+            r = base_color[0:2]
+            g = base_color[2:4]
+            b = base_color[4:6]
+            r = max(int(r, 16) - int("50", 16), 0)
+            g = max(int(g, 16) - int("50", 16), 0)
+            b = max(int(b, 16) - int("50", 16), 0)
+            color = "#%02x%02x%02x" % (r, g, b)
+            self.dials_spotfinder_layers.append(
+                self.pyslip.AddPointLayer(
+                    value,
+                    color=color,
+                    name="<thresh_pix_layer_0>",
+                    radius=2,
+                    renderer=self.pyslip.LightweightDrawPointLayer2,
+                    show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
+                    update=False,
+                )
+            )
 
         self.sum_images()
         # if self.params.sum_images == 1:
