@@ -46,7 +46,7 @@ phil_scope = parse(
     .multiple = True
   {
 
-    panel = 0
+    panel = None
       .type = int
       .help = "The panel number"
       .help = "If no geometric attributes are given (circle, rectangle, etc)"
@@ -254,6 +254,8 @@ class MaskGenerator(object):
 
             # Apply the untrusted regions
             for region in self.params.untrusted:
+                if region.panel is None:
+                    region.panel = 0
                 if region.panel == index:
                     if not any(
                         [region.circle, region.rectangle, region.polygon, region.pixel]
