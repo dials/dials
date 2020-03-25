@@ -1271,7 +1271,6 @@ class MultiScalerBase(ScalerBase):
             random_phil = self.params.reflection_selection.random
             block = self.global_Ih_table.Ih_table_blocks[0]
             sel_block = block.select(block.calc_nh() > 1)
-            avg_multi = flex.mean(sel_block.group_multiplicities())
 
             block = _select_groups_on_Isigma_cutoff(
                 block, random_phil.multi_dataset.Isigma_cutoff
