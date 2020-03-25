@@ -124,6 +124,7 @@ class SpotFrame(XrayFrame):
         self._mask_frame = None
 
         self.show_all_pix_timer = time_log("show_all_pix")
+        self.show_thresh_pix_timer = time_log("show_thresh_pix")
         self.show_shoebox_timer = time_log("show_shoebox")
         self.show_max_pix_timer = time_log("show_max_pix")
         self.show_ctr_mass_timer = time_log("show_ctr_mass")
@@ -1103,6 +1104,8 @@ class SpotFrame(XrayFrame):
                             )
                         )
                 self.draw_all_pix_timer.stop()
+            if self.settings.show_thresh_pix:
+                pass
             if self.settings.show_shoebox and len(shoebox_data):
                 self.draw_shoebox_timer.start()
                 self.shoebox_layer = self.pyslip.AddPolygonLayer(
@@ -1675,6 +1678,7 @@ class SpotSettingsPanel(wx.Panel):
         self.settings.show_ctr_mass = self.params.show_ctr_mass
         self.settings.show_max_pix = self.params.show_max_pix
         self.settings.show_all_pix = self.params.show_all_pix
+        self.settings.show_thresh_pix = self.params.show_thresh_pix
         self.settings.show_shoebox = self.params.show_shoebox
         self.settings.show_indexed = self.params.show_indexed
         self.settings.show_integrated = self.params.show_integrated
@@ -1791,6 +1795,11 @@ class SpotSettingsPanel(wx.Panel):
         self.all_pix = wx.CheckBox(self, -1, "Spot all pixels")
         self.all_pix.SetValue(self.settings.show_all_pix)
         grid.Add(self.all_pix, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+
+        # Threshold control
+        self.thresh_pix = wx.CheckBox(self, -1, "Threshold pixels")
+        self.thresh_pix.SetValue(self.settings.show_thresh_pix)
+        grid.Add(self.thresh_pix, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
 
         # Spot shoebox control
         self.shoebox = wx.CheckBox(self, -1, "Draw reflection shoebox")
@@ -2000,6 +2009,7 @@ class SpotSettingsPanel(wx.Panel):
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.ctr_mass)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.max_pix)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.all_pix)
+        self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.thresh_pix)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.shoebox)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.predictions)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.miller_indices)
@@ -2038,6 +2048,7 @@ class SpotSettingsPanel(wx.Panel):
             self.settings.show_ctr_mass = self.ctr_mass.GetValue()
             self.settings.show_max_pix = self.max_pix.GetValue()
             self.settings.show_all_pix = self.all_pix.GetValue()
+            self.settings.show_thresh_pix = self.thresh_pix.GetValue()
             self.settings.show_shoebox = self.shoebox.GetValue()
             self.settings.show_indexed = self.indexed.GetValue()
             self.settings.show_integrated = self.integrated.GetValue()
@@ -2101,6 +2112,7 @@ class SpotSettingsPanel(wx.Panel):
             self.ctr_mass,
             self.max_pix,
             self.all_pix,
+            self.thresh_pix,
             self.shoebox,
             self.predictions,
             self.miller_indices,
