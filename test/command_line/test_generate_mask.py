@@ -171,3 +171,23 @@ def test_generate_mask_trusted_range(dials_data, tmpdir):
 
     # Overloads should not be included in the mask
     assert (mask1[0] == mask2[0]).all_eq(True)
+
+
+def test_generate_whole_panel_mask(input_experiment_list, tmpdir):
+    params = phil_scope.fetch(
+        phil.parse(
+            """
+untrusted {
+  panel = 0
+}
+"""
+        )
+    ).extract()
+
+    with tmpdir.as_cwd():
+        generate_mask(input_experiment_list, params)
+
+    assert tmpdir.join("pixels.mask").check()
+    with tmpdir.join("pixels.mask").open("rb") as fh:
+        mask = pickle.load(fh)
+    assert mask[0].count(False) == len(mask[0])
