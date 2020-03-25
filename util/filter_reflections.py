@@ -271,6 +271,8 @@ def checkdataremains(func):
             raise ValueError("All data has been filtered from the reflection table")
         return reflections
 
+    return wrapper
+
 
 class FilteringReductionMethods(object):
     """A collection of methods for filtering.
