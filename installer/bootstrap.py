@@ -395,7 +395,7 @@ def download_to_file(url, file, quiet=False, cache=True):
     try:
         from ssl import SSLError
     except ImportError:
-        SSLError = OSError
+        SSLError = None
 
     # Open connection to remote server
     try:
