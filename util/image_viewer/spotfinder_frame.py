@@ -1104,8 +1104,6 @@ class SpotFrame(XrayFrame):
                             )
                         )
                 self.draw_all_pix_timer.stop()
-            if self.settings.show_thresh_pix:
-                pass
             if self.settings.show_shoebox and len(shoebox_data):
                 self.draw_shoebox_timer.start()
                 self.shoebox_layer = self.pyslip.AddPolygonLayer(
@@ -1163,6 +1161,9 @@ class SpotFrame(XrayFrame):
                     update=False,
                     fontsize=self.settings.fontsize,
                 )
+
+        if self.settings.show_thresh_pix:
+            pass
 
         self.sum_images()
         # if self.params.sum_images == 1:
