@@ -1168,12 +1168,9 @@ class SpotFrame(XrayFrame):
         if self.settings.show_thresh_pix:
             image = self.pyslip.tiles.raw_image
             kabsch_debug_list = self._calculate_dispersion_debug(image)
-            cv = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
             final_mask = [kabsch.final_mask() for kabsch in kabsch_debug_list]
-            final_mask = [mask.as_1d() for mask in final_mask]
             value = []
             for pnl, mask in enumerate(final_mask):
-                mask.reshape(cv[pnl].accessor())
                 width = mask.all()[1]
                 idx = mask.iselection()
                 for i in idx:
@@ -1721,7 +1718,7 @@ class SpotSettingsPanel(wx.Panel):
         self.settings.show_ctr_mass = self.params.show_ctr_mass
         self.settings.show_max_pix = self.params.show_max_pix
         self.settings.show_all_pix = self.params.show_all_pix
-        self.settings.show_thresh_pix = self.params.show_thresh_pix
+        self.settings.show_threshold_pix = self.params.show_threshold_pix
         self.settings.show_shoebox = self.params.show_shoebox
         self.settings.show_indexed = self.params.show_indexed
         self.settings.show_integrated = self.params.show_integrated
