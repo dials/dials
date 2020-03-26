@@ -1165,6 +1165,9 @@ class SpotFrame(XrayFrame):
                     fontsize=self.settings.fontsize,
                 )
 
+        self.sum_images()
+        # if self.params.sum_images == 1:
+        # self.show_filters()
         if self.settings.show_threshold_pix:
             image = self.pyslip.tiles.raw_image
             kabsch_debug_list = self._calculate_dispersion_debug(image)
@@ -1204,9 +1207,6 @@ class SpotFrame(XrayFrame):
                 )
             )
 
-        self.sum_images()
-        # if self.params.sum_images == 1:
-        # self.show_filters()
         if self.settings.show_resolution_rings:
             self.draw_resolution_rings()
         elif self.settings.show_ice_rings:
