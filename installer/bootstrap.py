@@ -1041,6 +1041,8 @@ class DIALSBuilder(object):
         else:
             conda_python = os.path.join("..", "conda_base", "bin", "python")
 
+        if not any(flag.startswith("--compiler=") for flag in self.config_flags):
+            self.config_flags.append("--compiler=conda")
         if "--use_conda" not in self.config_flags:
             self.config_flags.append("--use_conda")
 
