@@ -53,7 +53,13 @@ def ssh_allowed_for_connection(connection):
     if connection not in allowed_ssh_connections:
         try:
             returncode = subprocess.call(
-                ["ssh", "-oBatchMode=yes", "-T", connection],
+                [
+                    "ssh",
+                    "-oBatchMode=yes",
+                    "-oStrictHostKeyChecking=no",
+                    "-T",
+                    connection,
+                ],
                 stdout=devnull,
                 stderr=devnull,
             )
