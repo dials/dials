@@ -11,9 +11,12 @@ conda-forge::pyrtf
 conda-forge::alabaster
 conda-forge::biopython=1.73  # needs reviewing for py3.8 compatibility
 conda-forge::bzip2
+conda-forge::c-compiler
 conda-forge::conda
+conda-forge::cxx-compiler
 conda-forge::cython>=0.29,<0.30
 conda-forge::docutils
+conda-forge::fortran-compiler
 conda-forge::future
 conda-forge::h5py
 conda-forge::hdf5<1.11
