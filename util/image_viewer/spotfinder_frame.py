@@ -124,7 +124,7 @@ class SpotFrame(XrayFrame):
         self._mask_frame = None
 
         self.show_all_pix_timer = time_log("show_all_pix")
-        self.show_thresh_pix_timer = time_log("show_thresh_pix")
+        self.show_threshold_pix_timer = time_log("show_threshold_pix")
         self.show_shoebox_timer = time_log("show_shoebox")
         self.show_max_pix_timer = time_log("show_max_pix")
         self.show_ctr_mass_timer = time_log("show_ctr_mass")
@@ -1165,7 +1165,7 @@ class SpotFrame(XrayFrame):
                     fontsize=self.settings.fontsize,
                 )
 
-        if self.settings.show_thresh_pix:
+        if self.settings.show_threshold_pix:
             image = self.pyslip.tiles.raw_image
             kabsch_debug_list = self._calculate_dispersion_debug(image)
             final_mask = [kabsch.final_mask() for kabsch in kabsch_debug_list]
@@ -1838,7 +1838,7 @@ class SpotSettingsPanel(wx.Panel):
 
         # Threshold control
         self.thresh_pix = wx.CheckBox(self, -1, "Threshold pixels")
-        self.thresh_pix.SetValue(self.settings.show_thresh_pix)
+        self.thresh_pix.SetValue(self.settings.show_threshold_pix)
         grid.Add(self.thresh_pix, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
 
         # Spot shoebox control
@@ -2088,7 +2088,7 @@ class SpotSettingsPanel(wx.Panel):
             self.settings.show_ctr_mass = self.ctr_mass.GetValue()
             self.settings.show_max_pix = self.max_pix.GetValue()
             self.settings.show_all_pix = self.all_pix.GetValue()
-            self.settings.show_thresh_pix = self.thresh_pix.GetValue()
+            self.settings.show_threshold_pix = self.thresh_pix.GetValue()
             self.settings.show_shoebox = self.shoebox.GetValue()
             self.settings.show_indexed = self.indexed.GetValue()
             self.settings.show_integrated = self.integrated.GetValue()
