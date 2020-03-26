@@ -2206,8 +2206,8 @@ class SpotSettingsPanel(wx.Panel):
             or self.settings.min_local != self.min_local_ctrl.GetPhilValue()
             or self.settings.gain != self.gain_ctrl.GetPhilValue()
         ):
-            self.OnUpdate(event)
             self.GetParent().GetParent().show_filters()
+            self.OnUpdate(event)
 
     def OnDispersionThresholdDebug(self, event):
         button = event.GetEventObject()
