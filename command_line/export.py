@@ -219,12 +219,12 @@ phil_scope = parse(
 
 def _check_input(experiments, reflections, params=None, check_intensities=False):
     if not experiments:
-        raise TypeError("export requires an experiment list")
+        raise ValueError("export requires an experiment list")
     if len(reflections) != 1:
         raise ValueError("export requires 1 reflection table")
     if check_intensities:
         if not params:
-            raise TypeError("No parameters given")
+            raise ValueError("No parameters given")
         if "profile" not in params.intensity and "sum" not in params.intensity:
             raise ValueError(
                 "Only intensity options containing sum or profile can be exported in this format"
@@ -386,7 +386,7 @@ def export_json(params, experiments, reflections):
     # Check the input
     _check_input(experiments, [None])
     if not reflections:
-        raise TypeError("json exporter requires a reflection table")
+        raise ValueError("json exporter requires a reflection table")
 
     from dials.util import export_json
     from scitbx.array_family import flex
