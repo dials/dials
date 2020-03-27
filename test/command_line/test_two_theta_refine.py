@@ -42,17 +42,17 @@ def test(dials_data, tmpdir):
     )
 
     xls = ref_exp.crystals()
-    assert len(xls) == 1  # crystal models should have been combined
-    xl = xls[0]
-
-    # test refined crystal model against expected values
-    assert xl.get_unit_cell().parameters() == pytest.approx(
-        (5.428022880, 8.144145476, 12.039666971, 90.0, 90.0, 90.0), 1e-4
-    )
-    assert xl.get_cell_parameter_sd() == pytest.approx(
-        (9.58081e-5, 0.000149909, 0.000215765, 0, 0, 0), 1e-4
-    )
-    assert xl.get_cell_volume_sd() == pytest.approx(0.0116254298, 1e-4)
+    assert len(xls) == 4
+    for xl in xls:
+        assert xl.get_unit_cell() != xl.get_recalculated_unit_cell()
+        # test refined crystal model against expected values
+        assert xl.get_recalculated_unit_cell().parameters() == pytest.approx(
+            (5.428022880, 8.144145476, 12.039666971, 90.0, 90.0, 90.0), 1e-4
+        )
+        assert xl.get_recalculated_cell_parameter_sd() == pytest.approx(
+            (9.58081e-5, 0.000149909, 0.000215765, 0, 0, 0), 1e-4
+        )
+        # assert xl.get_recalulated_cell_volume_sd() == pytest.approx(0.0116254298, 1e-4)
 
 
 def test_two_theta_refine_scaled_data(dials_data, tmpdir):
@@ -75,14 +75,13 @@ def test_two_theta_refine_scaled_data(dials_data, tmpdir):
         tmpdir.join("refined_cell.expt").strpath, check_format=False
     )
 
-    assert len(ref_exp.crystals()) == 1  # crystal models should have been combined
-    xl = ref_exp.crystals()[0]
-
-    # test refined crystal model against expected values
-    assert xl.get_unit_cell().parameters() == pytest.approx(
-        (5.426921, 8.146654, 12.037366, 90.0, 90.0, 90.0), 1e-4
-    )
-    assert xl.get_cell_parameter_sd() == pytest.approx(
-        (2.0123e-04, 2.8039e-04, 4.5284e-04, 0, 0, 0), 1e-4
-    )
-    assert xl.get_cell_volume_sd() == pytest.approx(0.0237364, 1e-4)
+    assert len(ref_exp.crystals()) == 2
+    for xl in ref_exp.crystals():
+        # test refined crystal model against expected values
+        assert xl.get_recalculated_unit_cell().parameters() == pytest.approx(
+            (5.426921, 8.146654, 12.037366, 90.0, 90.0, 90.0), 1e-4
+        )
+        assert xl.get_recalculated_cell_parameter_sd() == pytest.approx(
+            (2.0123e-04, 2.8039e-04, 4.5284e-04, 0, 0, 0), 1e-4
+        )
+        # assert xl.get_recalculated_cell_volume_sd() == pytest.approx(0.0237364, 1e-4)
