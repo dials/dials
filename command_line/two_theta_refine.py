@@ -504,6 +504,9 @@ class Script(object):
             expt.crystal.set_recalculated_cell_parameter_sd(
                 refined_expt.crystal.get_cell_parameter_sd()
             )
+            expt.crystal.set_recalculated_cell_volume_sd(
+                refined_expt.crystal.get_cell_volume_sd()
+            )
         crystals = refiner.get_experiments().crystals()
 
         if len(crystals) == 1:

@@ -52,7 +52,7 @@ def test(dials_data, tmpdir):
         assert xl.get_recalculated_cell_parameter_sd() == pytest.approx(
             (9.58081e-5, 0.000149909, 0.000215765, 0, 0, 0), 1e-4
         )
-        # assert xl.get_recalulated_cell_volume_sd() == pytest.approx(0.0116254298, 1e-4)
+        assert xl.get_recalculated_cell_volume_sd() == pytest.approx(0.0116254298, 1e-4)
 
 
 def test_two_theta_refine_scaled_data(dials_data, tmpdir):
@@ -84,4 +84,4 @@ def test_two_theta_refine_scaled_data(dials_data, tmpdir):
         assert xl.get_recalculated_cell_parameter_sd() == pytest.approx(
             (2.0123e-04, 2.8039e-04, 4.5284e-04, 0, 0, 0), 1e-4
         )
-        # assert xl.get_recalculated_cell_volume_sd() == pytest.approx(0.0237364, 1e-4)
+        assert xl.get_recalculated_cell_volume_sd() == pytest.approx(0.0237364, 1e-4)
