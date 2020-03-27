@@ -1,0 +1,2 @@
+Functions from dials.export now raise exceptions on errors rather than exit. This improves their use elsewhere (such as in dials.scale).
+
