@@ -219,21 +219,21 @@ phil_scope = parse(
 
 def _check_input(experiments, reflections, params=None, check_intensities=False):
     if not experiments:
-        sys.exit("export requires an experiment list")
+        raise ValueError("export requires an experiment list")
     if len(reflections) != 1:
-        sys.exit("export requires 1 reflection table")
+        raise ValueError("export requires 1 reflection table")
     if check_intensities:
         if not params:
-            sys.exit("No parameters given")
+            raise ValueError("No parameters given")
         if "profile" not in params.intensity and "sum" not in params.intensity:
-            sys.exit(
+            raise ValueError(
                 "Only intensity options containing sum or profile can be exported in this format"
             )
         if (
             "intensity.sum.value" not in reflections[0]
             and "intensity.prf.value" not in reflections[0]
         ):
-            sys.exit(
+            raise ValueError(
                 "Unable to find 'intensity.sum.value' or 'intensity.prf.value' columns in reflection table."
             )
 
@@ -256,14 +256,11 @@ def export_mtz(params, experiments, reflections):
         "intensity.sum.value" not in reflections[0]
         or "intensity.prf.value" not in reflections[0]
     ):
-        sys.exit(
+        raise ValueError(
             "Error: No intensity data in reflections; cannot export un-integrated data to MTZ"
         )
 
-    try:
-        m = export_mtz(reflections[0], experiments, params)
-    except ValueError as e:
-        sys.exit(e)
+    m = export_mtz(reflections[0], experiments, params)
     from six.moves import cStringIO as StringIO
 
     summary = StringIO()
@@ -285,10 +282,7 @@ def export_sadabs(params, experiments, reflections):
 
     from dials.util.export_sadabs import export_sadabs
 
-    try:
-        export_sadabs(reflections[0], experiments, params)
-    except ValueError as e:
-        sys.exit(e)
+    export_sadabs(reflections[0], experiments, params)
 
 
 def export_xdsascii(params, experiments, reflections):
@@ -304,10 +298,7 @@ def export_xdsascii(params, experiments, reflections):
 
     from dials.util.export_xds_ascii import export_xds_ascii
 
-    try:
-        export_xds_ascii(reflections[0], experiments, params)
-    except ValueError as e:
-        sys.exit(e)
+    export_xds_ascii(reflections[0], experiments, params)
 
 
 def export_nexus(params, experiments, reflections):
@@ -340,10 +331,7 @@ def export_mmcif(params, experiments, reflections):
     from dials.util.export_mmcif import MMCIFOutputFile
 
     outfile = MMCIFOutputFile(params)
-    try:
-        outfile.write(experiments, reflections[0])
-    except ValueError as e:
-        sys.exit(e)
+    outfile.write(experiments, reflections[0])
 
 
 def export_mosflm(params, experiments, reflections):
@@ -376,7 +364,7 @@ def export_xds(params, experiments, reflections):
 
     # Check the input
     if len(reflections) > 1:
-        sys.exit("XDS exporter requires 0 or 1 reflection table")
+        raise ValueError("XDS exporter requires 0 or 1 reflection table")
 
     if reflections:
         reflections = reflections[0]
@@ -398,7 +386,7 @@ def export_json(params, experiments, reflections):
     # Check the input
     _check_input(experiments, [None])
     if not reflections:
-        sys.exit("json exporter requires a reflection table")
+        raise ValueError("json exporter requires a reflection table")
 
     from dials.util import export_json
     from scitbx.array_family import flex
@@ -406,7 +394,7 @@ def export_json(params, experiments, reflections):
     imagesets = [expt.imageset for expt in experiments]
 
     if len(reflections) != len(imagesets):
-        sys.exit(
+        raise ValueError(
             "Mismatch between %d reflections lists and %d imagesets"
             % (len(reflections), len(imagesets))
         )
@@ -496,4 +484,7 @@ if __name__ == "__main__":
         sys.exit("Unknown format: %s" % params.format)
 
     # Export the data
-    exporter(params, experiments, reflections)
+    try:
+        exporter(params, experiments, reflections)
+    except Exception as e:
+        sys.exit(e)
