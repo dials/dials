@@ -1,7 +1,11 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.csv
 from __future__ import absolute_import, division, print_function
 
+import gzip
+import io
+
 import iotbx.phil
+import six
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dxtbx.model import ExperimentList
 
@@ -56,9 +60,12 @@ def run(args):
     assert len(experiments) == len(spots)
 
     if params.output.compress:
-        import gzip
-
         fout = gzip.GzipFile(params.output.csv, "w")
+        if six.PY3:
+            # GzipFile() always provides binary access only.
+            # Replace the file object with one that allows writing text:
+            fout = io.TextIOWrapper(fout)
+            # Rely on garbage collection to close the underlying GzipFile.
     else:
         fout = open(params.output.csv, "w")
 

@@ -123,19 +123,24 @@ def test_mtz_multi_wavelength(dials_data, run_in_tmpdir):
     assert wavelengths == [0, 0.5, 1.0]  # base, dataset1, dataset2
 
 
-def test_mmcif(dials_data, tmpdir):
+@pytest.mark.parametrize("hklout", [None, "my.cif"])
+def test_mmcif(hklout, dials_data, tmpdir):
     # Call dials.export after integration
-    result = procrunner.run(
-        [
-            "dials.export",
-            "format=mmcif",
-            dials_data("centroid_test_data").join("experiments.json").strpath,
-            dials_data("centroid_test_data").join("integrated.pickle").strpath,
-        ],
-        working_directory=tmpdir.strpath,
-    )
+
+    command = [
+        "dials.export",
+        "format=mmcif",
+        dials_data("centroid_test_data").join("experiments.json").strpath,
+        dials_data("centroid_test_data").join("integrated.pickle").strpath,
+    ]
+    if hklout is not None:
+        command.append("mmcif.hklout=%s" % hklout)
+    result = procrunner.run(command, working_directory=tmpdir.strpath)
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("integrated.cif").check(file=1)
+    if hklout is not None:
+        assert tmpdir.join(hklout).check(file=1)
+    else:
+        assert tmpdir.join("integrated.cif").check(file=1)
 
     # TODO include similar test for exporting scaled data in mmcif format
 
