@@ -297,7 +297,7 @@ class SpotFrame(XrayFrame):
             ):
                 return
 
-        # Once we've stopped scrolling, load the selected itemg
+        # Once we've stopped scrolling, load the selected item
         self.load_image(selected_image)
 
     def OnPrevious(self, event):
