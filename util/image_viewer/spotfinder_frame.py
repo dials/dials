@@ -134,6 +134,7 @@ class SpotFrame(XrayFrame):
         self.draw_ctr_mass_timer = time_log("draw_ctr_mass_pix")
 
         self.display_foreground_circles_patch = False  # hard code this option, for now
+        self._dispersion_debug_memo = {}
 
         if (
             self.experiments is not None
@@ -296,7 +297,7 @@ class SpotFrame(XrayFrame):
             ):
                 return
 
-        # Once we've stopped scrolling, load the selected item
+        # Once we've stopped scrolling, load the selected itemg
         self.load_image(selected_image)
 
     def OnPrevious(self, event):
@@ -905,38 +906,51 @@ class SpotFrame(XrayFrame):
         return image_data
 
     def _calculate_dispersion_debug(self, image):
+        request = {}
+        request["index"] = image.index
+        request["sum"] = self.params.sum_images
+        request["gain_value"] = self.settings.gain
+        request["nsigma_b"] = self.settings.nsigma_b
+        request["nsigma_s"] = self.settings.nsigma_s
+        request["global_threshold"] = self.settings.global_threshold
+        request["min_local"] = self.settings.min_local
+        request["size"] = self.settings.kernel_size
+        request["extended"] = self.settings.dispersion_extended
+
+        # If the request was already cached, return the result
+        if request == self._dispersion_debug_memo:
+            return self._kabsch_debug_list
+
         detector = image.get_detector()
         image_mask = self.get_mask(image)
-        gain_value = self.settings.gain
-        assert gain_value > 0
         image_data = image.get_image_data()
+        assert request["gain_value"] > 0
         gain_map = [
-            flex.double(image_data[i].accessor(), gain_value)
+            flex.double(image_data[i].accessor(), request["gain_value"])
             for i in range(len(detector))
         ]
-        nsigma_b = self.settings.nsigma_b
-        nsigma_s = self.settings.nsigma_s
-        global_threshold = self.settings.global_threshold
-        min_local = self.settings.min_local
-        size = self.settings.kernel_size
-        kabsch_debug_list = []
         if self.settings.dispersion_extended:
             algorithm = DispersionExtendedThresholdDebug
         else:
             algorithm = DispersionThresholdDebug
+
+        kabsch_debug_list = []
         for i_panel in range(len(detector)):
             kabsch_debug_list.append(
                 algorithm(
                     image_data[i_panel].as_double(),
                     image_mask[i_panel],
                     gain_map[i_panel],
-                    size,
-                    nsigma_b,
-                    nsigma_s,
-                    global_threshold,
-                    min_local,
+                    self.settings.kernel_size,
+                    self.settings.nsigma_b,
+                    self.settings.nsigma_s,
+                    self.settings.global_threshold,
+                    self.settings.min_local,
                 )
             )
+        # Store the request in cache and return the result
+        self._dispersion_debug_memo = request
+        self._kabsch_debug_list = kabsch_debug_list
         return kabsch_debug_list
 
     def show_filters(self):
