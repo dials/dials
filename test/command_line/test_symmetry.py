@@ -157,7 +157,7 @@ def test_symmetry_absences_only(dials_data, tmpdir):
 
     result = procrunner.run(command, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("dials-symmetry.html").check()
+    assert tmpdir.join("dials.symmetry.html").check()
     assert tmpdir.join("symmetrized.expt").check()
     exps = load.experiment_list(
         tmpdir.join("symmetrized.expt").strpath, check_format=False

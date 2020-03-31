@@ -105,7 +105,7 @@ output {
     .type = path
   json = dials.symmetry.json
     .type = path
-  html = "dials-symmetry.html"
+  html = "dials.symmetry.html"
     .type = path
     .help = "Filename for html report."
 }
