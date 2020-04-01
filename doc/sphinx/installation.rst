@@ -7,10 +7,7 @@ Installation
 Development Builds
 ==================
 
-Nightly build installers are available for Linux and Mac OS and may be
-downloaded from `LBL <http://cci.lbl.gov/dials/installers/>`_ or
-`Diamond <https://dials.diamond.ac.uk/diamond_builds/>`_.
-Builds for Microsoft Windows are experimental and may not work as expected.
+Nightly build installers are available for Linux and Mac OS.
 For instructions on compiling from source or setting up a DIALS development
 environment, see :doc:`/documentation/installation_developer`.
 
@@ -24,10 +21,6 @@ installation please use the stable releases linked above.
 .. button::
    :text: Linux installer
    :link: https://dials.diamond.ac.uk/diamond_builds/dials-linux-x86_64-conda3.tar.gz
-
-.. button::
-   :text: Windows archive
-   :link: https://dials.diamond.ac.uk/diamond_builds/dials-windows.zip
 
 .. button::
    :text: Source installer
