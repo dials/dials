@@ -73,14 +73,3 @@ or to install in a specified directory::
 To use DIALS, open a new terminal window and type, e.g.::
 
   source /path/to/installation/directory/dials-dev/dials_env.sh
-
-
-Windows installation
---------------------
-
-DIALS support on Windows is currently experimental and we do not provide Windows release binaries.
-
-To use DIALS you need to unpack the .zip archive, open a command prompt,
-navigate to the dials-installer directory, and run::
-
-  dials_env
