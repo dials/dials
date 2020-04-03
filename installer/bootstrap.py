@@ -687,7 +687,7 @@ def git(
             )
         # Show the hash for the checked out commit for debugging purposes
         p = subprocess.Popen(
-            args=["git", "rev-parse", "HEAD"],
+            args=["git", "rev-parse", "HEAD", "--abbrev-ref", "HEAD"],
             cwd=destination,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -696,7 +696,10 @@ def git(
         output = output.decode("latin-1")
         if p.returncode:
             return module, "WARNING", "Can not get git repository revision\n" + output
-        return module, "OK", "Checked out revision " + output.strip()
+        output = output.split()
+        if len(output) == 2:
+            return module, "OK", "Checked out revision %s (%s)" % (output[0], output[1])
+        return module, "OK", "Checked out revision " + output[0].strip()
 
     git_parameters = []
     try:
