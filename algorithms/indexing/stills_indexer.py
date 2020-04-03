@@ -488,28 +488,15 @@ class StillsIndexer(Indexer):
                 self.params.stills.refine_candidates_with_known_symmetry
                 and self.params.known_symmetry.space_group is not None
             ):
-                new_crystal, cb_op_to_primitive = self._symmetry_handler.apply_symmetry(
-                    cm
-                )
+                new_crystal, cb_op = self._symmetry_handler.apply_symmetry(cm)
                 if new_crystal is None:
                     logger.info("Cannot convert to target symmetry, candidate %d", icm)
                     continue
-                new_crystal = new_crystal.change_basis(
-                    self._symmetry_handler.cb_op_primitive_inp
-                )
-                cm = new_crystal
+                cm = new_crystal.change_basis(cb_op)
                 experiments = self.experiment_list_for_crystal(cm)
 
-                if not cb_op_to_primitive.is_identity_op():
-                    indexed["miller_index"] = cb_op_to_primitive.apply(
-                        indexed["miller_index"]
-                    )
-                if self._symmetry_handler.cb_op_primitive_inp is not None:
-                    indexed[
-                        "miller_index"
-                    ] = self._symmetry_handler.cb_op_primitive_inp.apply(
-                        indexed["miller_index"]
-                    )
+                if not cb_op.is_identity_op():
+                    indexed["miller_index"] = cb_op.apply(indexed["miller_index"])
 
             if params.indexing.stills.refine_all_candidates:
                 try:
