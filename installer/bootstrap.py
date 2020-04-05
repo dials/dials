@@ -800,6 +800,7 @@ for module in (
     "cctbx/boost",
     "cctbx/cctbx_project",
     "cctbx/dxtbx",
+    "ssrl-px/iota",
     "xia2/xia2",
 ):
     modulename = module.split("/")[1]
