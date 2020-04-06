@@ -521,7 +521,7 @@ class Task(object):
         logger.info("  Required shoebox memory: %.1f GB" % (required_memory / 1e9))
         logger.info("")
         if required_memory > available_immediate_limit:
-            logger.warning("Running this process will rely on swap usage!")
+            logger.warning("Running this process may cause memory swapping!")
 
         # Loop through the imageset, extract pixels and process reflections
         read_time = 0.0
