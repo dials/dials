@@ -504,12 +504,12 @@ class Task(object):
         logger.info(" Memory usage:")
         logger.info(
             "  Available system memory (excluding swap): %.1f GB"
-            % (available_memory_incl_swap / 1e9)
+            % (available_memory / 1e9)
         )
         logger.info("  Available swap memory: %.1f GB" % (available_swap / 1e9))
         logger.info(
             "  Available system memory (including swap): %.1f GB"
-            % (available_memory / 1e9)
+            % (available_memory_incl_swap / 1e9)
         )
         logger.info(
             "  Limit shoebox memory (including swap): %.1f GB" % (available_limit / 1e9)
