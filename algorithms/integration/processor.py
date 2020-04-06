@@ -459,19 +459,21 @@ class Task(object):
             self.params.debug.output,
         )
 
-        # Compute expected memory usage and warn if not enough
-        required_memory = processor.compute_max_memory_usage()
-
-        available_memory = psutil.virtual_memory().available
-        available_swap = psutil.swap_memory().free
-        available_immediate = available_memory - available_swap
         assert (
             self.params.block.max_memory_usage > 0.0
         ), "maximum memory usage must be > 0"
         assert (
             self.params.block.max_memory_usage <= 1.0
         ), "maximum memory usage must be <= 1"
-        available_limit = available_memory * self.params.block.max_memory_usage
+
+        # Compute expected memory usage and warn if not enough
+        required_memory = processor.compute_max_memory_usage()
+        available_memory = psutil.virtual_memory().available
+        available_swap = psutil.swap_memory().free
+        available_memory_incl_swap = available_memory + available_swap
+        available_limit = (
+            available_memory_incl_swap * self.params.block.max_memory_usage
+        )
         if required_memory > available_limit:
             xsize, ysize, zsize = _average_bbox_size(self.reflections)
             raise MemoryError(
@@ -490,24 +492,24 @@ class Task(object):
                     xsize,
                     ysize,
                     zsize,
-                    available_immediate / 1e9,
                     available_memory / 1e9,
+                    available_memory_incl_swap / 1e9,
                     available_limit / 1e9,
                     required_memory / 1e9,
                 )
             )
         available_immediate_limit = (
-            available_immediate * self.params.block.max_memory_usage
+            available_memory * self.params.block.max_memory_usage
         )
         logger.info(" Memory usage:")
         logger.info(
             "  Available system memory (excluding swap): %.1f GB"
-            % (available_memory / 1e9)
+            % (available_memory_incl_swap / 1e9)
         )
         logger.info("  Available swap memory: %.1f GB" % (available_swap / 1e9))
         logger.info(
             "  Available system memory (including swap): %.1f GB"
-            % (available_immediate / 1e9)
+            % (available_memory / 1e9)
         )
         logger.info(
             "  Limit shoebox memory (including swap): %.1f GB" % (available_limit / 1e9)
@@ -826,16 +828,14 @@ class Manager(object):
             # Compute expected memory usage and warn if not enough
             available_memory = psutil.virtual_memory().available
             available_swap = psutil.swap_memory().free
-            available_immediate = available_memory - available_swap
+            available_incl_swap = available_memory + available_swap
             available_immediate_limit = (
-                available_immediate * self.params.block.max_memory_usage
+                available_memory * self.params.block.max_memory_usage
             )
             logger.debug(
-                "Available memory: %.1f GB, swap: %.1f GB, "
-                "immediate: %.1f GB, immediate limit: %.1f GB",
+                "Available memory: %.1f GB, swap: %.1f GB, " "memory limit: %.1f GB",
                 available_memory / 1e9,
                 available_swap / 1e9,
-                available_immediate / 1e9,
                 available_immediate_limit / 1e9,
             )
             rlimit = getattr(resource, "RLIMIT_VMEM", getattr(resource, "RLIMIT_AS"))
@@ -852,17 +852,21 @@ class Manager(object):
                             ulimit,
                             ulimit_used,
                         )
-                        available_immediate = max(
-                            0, min(available_immediate, ulimit - ulimit_used)
+                        available_memory = max(
+                            0, min(available_memory, ulimit - ulimit_used)
+                        )
+                        available_incl_swap = max(
+                            0, min(available_incl_swap, ulimit - ulimit_used)
                         )
                         available_immediate_limit = (
-                            available_immediate * self.params.block.max_memory_usage
+                            available_memory * self.params.block.max_memory_usage
                         )
                         logger.debug(
-                            "Revised immediate memory: %.1f GB, "
+                            "Revised available memory: %.1f GB, "
+                            "revised available memory incl. swap: %.1f GB, "
                             "revised immediate limit: %.1f GB",
-                            ulimit,
-                            available_immediate / 1e9,
+                            available_memory / 1e9,
+                            available_incl_swap / 1e9,
                             available_immediate_limit / 1e9,
                         )
                 except Exception as e:
@@ -883,7 +887,7 @@ class Manager(object):
                 self.params.block.max_memory_usage /= self.params.mp.nproc  # why?
                 return
             if (
-                available_memory * self.params.block.max_memory_usage
+                available_incl_swap * self.params.block.max_memory_usage
                 >= memory_required_per_process
             ):
                 # There is enough memory to run, but only if we count swap.
@@ -912,9 +916,9 @@ class Manager(object):
                     xsize,
                     ysize,
                     zsize,
-                    available_immediate / 1e9,
                     available_memory / 1e9,
-                    available_memory * self.params.block.max_memory_usage / 1e9,
+                    available_incl_swap / 1e9,
+                    available_incl_swap * self.params.block.max_memory_usage / 1e9,
                     memory_required_per_process / 1e9,
                 )
             )
