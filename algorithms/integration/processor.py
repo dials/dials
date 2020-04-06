@@ -130,7 +130,7 @@ class Block(object):
         self.units = "degrees"
         self.threshold = 0.99
         self.force = False
-        self.max_memory_usage = 0.75
+        self.max_memory_usage = 0.90
 
     def update(self, other):
         self.size = other.size

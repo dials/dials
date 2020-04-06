@@ -96,9 +96,9 @@ def generate_phil_scope():
                   "number of blocks may be set to 1. If force is True then the"
                   "block size is always calculated."
 
-        max_memory_usage = 0.75
+        max_memory_usage = 0.90
           .type = float(value_min=0.0,value_max=1.0)
-          .help = "The maximum percentage of total physical memory to use for"
+          .help = "The maximum percentage of available memory to use for"
                   "allocating shoebox arrays."
 
       }
