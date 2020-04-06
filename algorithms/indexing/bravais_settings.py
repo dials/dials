@@ -108,7 +108,7 @@ class RefinedSettingsList(list):
                 "nspots": item.Nmatches,
                 "bravais": item["bravais"],
                 "unit_cell": uc.parameters(),
-                "cb_op": item["cb_op_inp_best"].as_abc(),
+                "cb_op": item.cb_op.as_abc(),
                 "max_cc": item.max_cc,
                 "min_cc": item.min_cc,
                 "correlation_coefficients": list(item.correlation_coefficients),
@@ -118,7 +118,7 @@ class RefinedSettingsList(list):
 
         return result
 
-    def as_str(self):
+    def __str__(self):
         table_data = [
             [
                 "Solution",
@@ -152,7 +152,7 @@ class RefinedSettingsList(list):
                     "%(bravais)s" % item,
                     "%6.2f %6.2f %6.2f %6.2f %6.2f %6.2f" % P,
                     "%.0f" % uc.volume(),
-                    "%s" % item["cb_op_inp_best"].as_abc(),
+                    "%s" % item.cb_op.as_abc(),
                 ]
             )
 
