@@ -5,6 +5,7 @@ from __future__ import absolute_import, division, print_function
 import itertools
 import logging
 import math
+import resource
 from dials.util import tabulate
 from time import time
 
@@ -837,6 +838,35 @@ class Manager(object):
                 available_immediate / 1e9,
                 available_immediate_limit / 1e9,
             )
+            rlimit = getattr(resource, "RLIMIT_VMEM", getattr(resource, "RLIMIT_AS"))
+            if rlimit:
+                # try to check for process limit values
+                try:
+                    ulimit = resource.getrlimit(rlimit)[0]
+                    if ulimit <= 0:
+                        logger.debug("No memory ulimit set")
+                    else:
+                        ulimit_used = psutil.Process().memory_info().rss
+                        logger.debug(
+                            "Detected ulimit of %d bytes, of which %d are used",
+                            ulimit,
+                            ulimit_used,
+                        )
+                        available_immediate = max(
+                            0, min(available_immediate, ulimit - ulimit_used)
+                        )
+                        available_immediate_limit = (
+                            available_immediate * self.params.block.max_memory_usage
+                        )
+                        logger.debug(
+                            "Revised immediate memory: %.1f GB, "
+                            "revised immediate limit: %.1f GB",
+                            ulimit,
+                            available_immediate / 1e9,
+                            available_immediate_limit / 1e9,
+                        )
+                except Exception as e:
+                    logger.debug("Could not obtain ulimit values due to %s", str(e))
             njobs = available_immediate_limit / memory_required_per_process
             if njobs >= self.params.mp.nproc:
                 # There is enough memory. Take no action
