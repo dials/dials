@@ -170,21 +170,30 @@ def test_refine_bravais_settings_554(dials_regression, tmpdir):
 
 
 @pytest.mark.parametrize(
-    "setting,expected_space_group,expected_unit_cell",
+    "best_monoclinic_beta,expected_space_group,expected_unit_cell",
     [
-        ("best", "I 1 2 1", (44.47, 52.85, 111.46, 90.00, 99.91, 90.00)),
-        ("reference", "C 1 2 1", (112.67, 52.85, 44.47, 90.00, 102.97, 90.00)),
+        (True, "I 1 2 1", (44.47, 52.85, 111.46, 90.00, 99.91, 90.00)),
+        (False, "C 1 2 1", (112.67, 52.85, 44.47, 90.00, 102.97, 90.00)),
     ],
 )
 def test_setting_c2_vs_i2(
-    setting, expected_space_group, expected_unit_cell, dials_data, tmpdir, capsys
+    best_monoclinic_beta,
+    expected_space_group,
+    expected_unit_cell,
+    dials_data,
+    tmpdir,
+    capsys,
 ):
     data_dir = dials_data("mpro_x0305_processed")
     refl_path = data_dir.join("indexed.refl")
     experiments_path = data_dir.join("indexed.expt")
     with tmpdir.as_cwd():
         refine_bravais_settings.run(
-            [experiments_path.strpath, refl_path.strpath, "setting=%s" % setting]
+            [
+                experiments_path.strpath,
+                refl_path.strpath,
+                "best_monoclinic_beta=%s" % best_monoclinic_beta,
+            ]
         )
     expts_orig = load.experiment_list(experiments_path.strpath, check_format=False)
 
