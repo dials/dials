@@ -38,7 +38,7 @@ def test_shoebox_memory_is_a_reasonable_guesstimate(dials_data):
 @mock.patch("dials.algorithms.integration.processor.psutil.virtual_memory")
 def test_runtime_error_raised_when_not_enough_memory(mock_psutil_vm, mock_flex_max):
     mock_flex_max.return_value = 750001
-    mock_psutil_vm.return_value.total = 1000000
+    mock_psutil_vm.return_value.available = 1000000
 
     phil_mock = mock.Mock()
     phil_mock.mp.method = "multiprocessing"
@@ -51,7 +51,7 @@ def test_runtime_error_raised_when_not_enough_memory(mock_psutil_vm, mock_flex_m
     )
     manager.jobs = mock.Mock(autospec=JobList)
 
-    with pytest.raises(RuntimeError) as exc_info:
+    with pytest.raises(MemoryError) as exc_info:
         manager.compute_processors()
     assert "Not enough memory to run integration jobs." in exc_info.value.args[0]
     mock_flex_max.assert_called_once_with(manager.jobs.shoebox_memory.return_value)
