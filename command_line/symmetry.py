@@ -83,6 +83,11 @@ laue_group = auto
 change_of_basis_op = None
   .type = str
 
+best_monoclinic_beta = True
+  .type = bool
+  .help = "If True, then for monoclinic centered cells, I2 will be preferred over C2 if"
+          "it gives a more oblique cell (i.e. smaller beta angle)."
+
 systematic_absences {
 
   check = True
@@ -312,6 +317,7 @@ def symmetry(experiments, reflection_tables, params=None):
             lattice_symmetry_max_delta=params.lattice_symmetry_max_delta,
             relative_length_tolerance=params.relative_length_tolerance,
             absolute_angle_tolerance=params.absolute_angle_tolerance,
+            best_monoclinic_beta=params.best_monoclinic_beta,
         )
         logger.info("")
         logger.info(result)

@@ -36,6 +36,7 @@ class LaueGroupAnalysis(symmetry_base):
         min_cc_half=0.6,
         relative_length_tolerance=None,
         absolute_angle_tolerance=None,
+        best_monoclinic_beta=True,
     ):
         """Intialise a LaueGroupAnalysis object.
 
@@ -59,6 +60,9 @@ class LaueGroupAnalysis(symmetry_base):
             consistency of input unit cells against the median unit cell.
           absolute_angle_tolerance (float): Absolute angle tolerance in checking
             consistency of input unit cells against the median unit cell.
+          best_monoclinic_beta (bool): If True, then for monoclinic centered cells, I2
+            will be preferred over C2 if it gives a more oblique cell (i.e. smaller
+            beta angle).
         """
         super(LaueGroupAnalysis, self).__init__(
             intensities,
@@ -69,6 +73,7 @@ class LaueGroupAnalysis(symmetry_base):
             min_cc_half=min_cc_half,
             relative_length_tolerance=relative_length_tolerance,
             absolute_angle_tolerance=absolute_angle_tolerance,
+            best_monoclinic_beta=best_monoclinic_beta,
         )
 
         self._estimate_cc_sig_fac()
