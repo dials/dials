@@ -518,7 +518,7 @@ class Task(object):
             "  Limit shoebox memory (excluding swap): %.1f GB"
             % (available_immediate_limit / 1e9)
         )
-        logger.info("  Required shoebox memory: %g GB" % (required_memory / 1e9))
+        logger.info("  Required shoebox memory: %.1f GB" % (required_memory / 1e9))
         logger.info("")
         if required_memory > available_immediate_limit:
             logger.warning("Running this process will rely on swap usage!")
