@@ -167,3 +167,32 @@ def test_refine_bravais_settings_554(dials_regression, tmpdir):
     assert bravais_summary["5"]["bravais"] == "hR"
     assert bravais_summary["5"]["rmsd"] == pytest.approx(0.104, abs=1e-2)
     assert bravais_summary["5"]["recommended"] is True
+
+
+@pytest.mark.parametrize(
+    "setting,expected_space_group,expected_unit_cell",
+    [
+        ("best", "I 1 2 1", (44.47, 52.85, 111.46, 90.00, 99.91, 90.00)),
+        ("reference", "C 1 2 1", (112.67, 52.85, 44.47, 90.00, 102.97, 90.00)),
+    ],
+)
+def test_setting_c2_vs_i2(
+    setting, expected_space_group, expected_unit_cell, dials_data, tmpdir
+):
+    data_dir = dials_data("mpro_x0305_processed")
+    refl_path = os.path.join(data_dir, "indexed.refl")
+    experiments_path = os.path.join(data_dir, "indexed.expt")
+    with tmpdir.as_cwd():
+        refine_bravais_settings.run(
+            [experiments_path, refl_path, "setting=%s" % setting]
+        )
+
+    experiments_list = load.experiment_list(
+        tmpdir.join("bravais_setting_2.expt").strpath, check_format=False
+    )
+    experiments_list[
+        0
+    ].crystal.get_space_group().type().lookup_symbol() == expected_space_group
+    assert experiments_list[0].crystal.get_unit_cell().parameters() == pytest.approx(
+        expected_unit_cell, abs=1e-2
+    )

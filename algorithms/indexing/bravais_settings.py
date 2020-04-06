@@ -37,6 +37,12 @@ nproc = Auto
 cc_n_bins = None
   .type = int(value_min=1)
   .help = "Number of resolution bins to use for calculation of correlation coefficients"
+setting = reference *best
+  .type = choice
+  .help = "This affects the chosen Laue group setting for centered monoclinic lattices."
+          "'reference' will always choose the C-centered setting, whereas 'best' may"
+          "choose the I-centered setting if it leads to a less oblique cell than the"
+          "C-centred setting."
 
 include scope dials.algorithms.refinement.refiner.phil_scope
 """,
@@ -219,24 +225,29 @@ def refined_settings_from_refined_triclinic(experiments, reflections, params):
     for j in range(Nset):
         refined_settings[j].setting_number = Nset - j
 
-    for j in range(Nset):
-        cb_op = refined_settings[j]["cb_op_inp_best"].c().as_double_array()[0:9]
-        orient = crystal_orientation(crystal.get_A(), True)
-        orient_best = orient.change_basis(scitbx.matrix.sqr(cb_op).transpose())
-        constrain_orient = orient_best.constrain(refined_settings[j]["system"])
-        bravais = refined_settings[j]["bravais"]
-        cb_op_best_ref = refined_settings[j][
-            "best_subsym"
-        ].change_of_basis_op_to_reference_setting()
+    for subgroup in refined_settings:
+        bravais = subgroup["bravais"]
         space_group = sgtbx.space_group_info(
             number=bravais_lattice_to_lowest_symmetry_spacegroup_number[bravais]
         ).group()
-        space_group = space_group.change_basis(cb_op_best_ref.inverse())
-        bravais = str(bravais_types.bravais_lattice(group=space_group))
-        refined_settings[j]["bravais"] = bravais
-        refined_settings[j].unrefined_crystal = dxtbx_crystal_from_orientation(
+        cb_op_inp_best = subgroup["cb_op_inp_best"]
+        cb_op_ref_best = subgroup["ref_subsym"].change_of_basis_op_to_best_cell()
+        cb_op_best_ref = cb_op_ref_best.inverse()
+        cb_op_inp_ref = cb_op_ref_best.inverse() * cb_op_inp_best
+        if params.setting == "reference":
+            cb_op = cb_op_inp_ref
+        else:
+            cb_op = cb_op_inp_best
+            space_group = space_group.change_basis(cb_op_best_ref.inverse())
+        orient = crystal_orientation(crystal.get_A(), True).change_basis(
+            scitbx.matrix.sqr(cb_op.c().as_double_array()[0:9]).transpose()
+        )
+        constrain_orient = orient.constrain(subgroup["system"])
+        subgroup["bravais"] = str(bravais_types.bravais_lattice(group=space_group))
+        subgroup.unrefined_crystal = dxtbx_crystal_from_orientation(
             constrain_orient, space_group
         )
+        subgroup.cb_op = cb_op
 
     with concurrent.futures.ProcessPoolExecutor(max_workers=params.nproc) as pool:
         for i, result in enumerate(
@@ -291,7 +302,7 @@ def refine_subgroup(args):
 
     used_reflections = copy.deepcopy(used_reflections)
     triclinic_miller = used_reflections["miller_index"]
-    cb_op = subgroup["cb_op_inp_best"]
+    cb_op = subgroup.cb_op
     higher_symmetry_miller = cb_op.apply(triclinic_miller)
     used_reflections["miller_index"] = higher_symmetry_miller
     unrefined_crystal = copy.deepcopy(subgroup.unrefined_crystal)
