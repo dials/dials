@@ -7,7 +7,7 @@ import math
 
 import libtbx
 import libtbx.phil
-from cctbx import crystal, miller
+from cctbx import crystal, miller, sgtbx
 from cctbx.crystal_orientation import crystal_orientation
 from cctbx.sgtbx import bravais_types
 from libtbx.introspection import number_of_processors
@@ -227,9 +227,11 @@ def refined_settings_from_refined_triclinic(experiments, reflections, params):
         refined_settings[j].setting_number = Nset - j
 
     for subgroup in refined_settings:
-        space_group = (
-            subgroup["best_subsym"].space_group().build_derived_acentric_group()
-        )
+        space_group = sgtbx.space_group_info(
+            number=bravais_lattice_to_lowest_symmetry_spacegroup_number[
+                subgroup["bravais"]
+            ]
+        ).group()
         orient = crystal_orientation(crystal.get_A(), True).change_basis(
             scitbx.matrix.sqr(
                 subgroup["cb_op_inp_best"].c().as_double_array()[0:9]
