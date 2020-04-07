@@ -376,10 +376,6 @@ class LaueGroupAnalysis(symmetry_base):
                 "unit_cell": self.median_unit_cell.parameters(),
             },
             "cb_op_inp_min": self.cb_op_inp_min.as_xyz(),
-            "min_cell_symmetry": {
-                "hall_symbol": self.intensities.space_group().type().hall_symbol(),
-                "unit_cell": self.intensities.unit_cell().parameters(),
-            },
             "lattice_point_group": self.lattice_group.type().hall_symbol(),
             "cc_unrelated_pairs": self.corr_unrelated.coefficient(),
             "n_unrelated_pairs": self.corr_unrelated.n(),

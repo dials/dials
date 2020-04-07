@@ -325,8 +325,9 @@ def symmetry(experiments, reflection_tables, params=None):
         if params.output.json is not None:
             d = result.as_dict()
             d["cb_op_inp_min"] = [str(cb_op) for cb_op in cb_ops]
-            # This is not the input symmetry as we have already mapped it to minimum
-            # cell, so delete from the output dictionary to avoid confusion
+            # Copy the "input_symmetry" to "min_cell_symmetry" as it isn't technically
+            # the input symmetry to dials.symmetry
+            d["min_cell_symmetry"] = d["input_symmetry"]
             del d["input_symmetry"]
             json_str = json.dumps(d, indent=2)
             with open(params.output.json, "w") as f:
