@@ -45,6 +45,7 @@ def test_determine_space_group_best_monoclinic_beta():
         unit_cell=(44.66208171, 53.12629403, 62.53397661, 64.86329707, 78.27343894, 90),
         space_group_symbol="C 1 2/m 1 (z,x+y,-2*x)",
     )
+    cs = cs.best_cell().primitive_setting()
     intensities = generate_fake_intensities(cs)
     result = LaueGroupAnalysis([intensities], normalisation=None)
     print(result)
@@ -54,6 +55,10 @@ def test_determine_space_group_best_monoclinic_beta():
             space_group_symbol="I 1 2/m 1",
         )
     )
+    d = result.as_dict()
+    assert cs.change_basis(
+        sgtbx.change_of_basis_op(d["subgroup_scores"][0]["cb_op"])
+    ).is_similar_symmetry(result.best_solution.subgroup["best_subsym"])
     result = LaueGroupAnalysis(
         [intensities], best_monoclinic_beta=False, normalisation=None
     )
@@ -64,3 +69,7 @@ def test_determine_space_group_best_monoclinic_beta():
             space_group_symbol="C 1 2/m 1",
         )
     )
+    d = result.as_dict()
+    assert cs.change_basis(
+        sgtbx.change_of_basis_op(d["subgroup_scores"][0]["cb_op"])
+    ).is_similar_symmetry(result.best_solution.subgroup["best_subsym"])
