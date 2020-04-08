@@ -44,7 +44,7 @@ def test_combinations(setup_rlp):
         )
         filtered_crystal_models = list(filtered_crystal_models)
 
-        assert len(filtered_crystal_models)
+        assert filtered_crystal_models
         for model in filtered_crystal_models:
             best_subgroup = find_matching_symmetry(
                 model.get_unit_cell(), target_symmetry.space_group()
