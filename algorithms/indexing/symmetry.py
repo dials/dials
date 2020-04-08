@@ -143,9 +143,7 @@ class SymmetryHandler(object):
 
         if unit_cell is not None:
 
-            assert (
-                space_group is not None
-            ), "space_group must be provided in combination with unit_cell"
+            assert space_group, "space_group must be provided in combination with unit_cell"
 
             if unit_cell is not None and target_space_group is not None:
                 self.target_symmetry_inp = crystal.symmetry(
