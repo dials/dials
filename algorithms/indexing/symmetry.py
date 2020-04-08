@@ -143,7 +143,9 @@ class SymmetryHandler(object):
 
         if unit_cell is not None:
 
-            assert space_group, "space_group must be provided in combination with unit_cell"
+            assert (
+                space_group
+            ), "space_group must be provided in combination with unit_cell"
 
             if target_space_group:
                 self.target_symmetry_inp = crystal.symmetry(
@@ -172,7 +174,7 @@ class SymmetryHandler(object):
         cb_op_reference_to_primitive = (
             self.target_symmetry_reference_setting.change_of_basis_op_to_primitive_setting()
         )
-        if unit_cell is not None:
+        if unit_cell:
             self.target_symmetry_primitive = self.target_symmetry_reference_setting.change_basis(
                 cb_op_reference_to_primitive
             )
