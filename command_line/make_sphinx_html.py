@@ -101,7 +101,7 @@ if __name__ == "__main__":
     if options.logs:
         command.extend(["-D", "dials_logs=" + options.logs])
         for report in ("betalactamase", "thaumatin"):
-            py.path.local(options.logs).join(report).join("dials-report.html").copy(
+            py.path.local(options.logs).join(report).join("dials.report.html").copy(
                 tutorial_doc_dir.join(report + "-report.html")
             )
     else:
