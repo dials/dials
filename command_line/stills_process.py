@@ -78,6 +78,11 @@ control_phil_str = """
       .expert_level = 2
       .type = bool
       .help = Integrate indexed images. Ignored if index=False or find_spots=False
+    coset = False
+      .expert_level = 2
+      .type = bool
+      .help = Within the integrate dispatcher, integrate a sublattice coset intended to represent
+      .help = negative control spots with no Bragg diffraction.
     hit_finder{
       enable = True
         .type = bool
@@ -123,6 +128,12 @@ control_phil_str = """
     integrated_experiments_filename = %s_integrated.expt
       .type = str
       .help = The filename for saving final experimental models.
+    coset_filename = %s_coset%d.refl
+      .type = str
+      .help = The filename for final coset reflections.
+    coset_experiments_filename = %s_coset%d.expt
+      .type = str
+      .help = The filename for saving final coset experimental models.
     profile_filename = None
       .type = str
       .help = The filename for output reflection profile parameters
@@ -196,6 +207,13 @@ dials_phil_str = """
 
   integration {
     include scope dials.algorithms.integration.kapton_correction.absorption_phil_scope
+    coset {
+      transformation = 6
+        .type = int(value_min=0, value_max=6)
+        .help = The index number of the modulus=2 sublattice transformation.
+        .help = The only supported value is 6, representing body-centered cell doubling.
+        .help = See Sauter and Zwart, Acta D (2009) 65:553
+    }
   }
 """
 
@@ -693,6 +711,11 @@ class Processor(object):
         self.integrated_experiments_filename_template = (
             params.output.integrated_experiments_filename
         )
+        if params.dispatch.coset:
+            self.coset_filename_template = params.output.coset_filename
+            self.coset_experiments_filename_template = (
+                params.output.coset_experiments_filename
+            )
 
         debug_dir = os.path.join(params.output.output_dir, "debug")
         if not os.path.exists(debug_dir):
@@ -717,6 +740,9 @@ class Processor(object):
             self.all_integrated_reflections = flex.reflection_table()
             self.all_int_pickle_filenames = []
             self.all_int_pickles = []
+            if params.dispatch.coset:
+                self.all_coset_experiments = ExperimentList()
+                self.all_coset_reflections = flex.reflection_table()
 
             self.setup_filenames(composite_tag)
 
@@ -769,6 +795,26 @@ class Processor(object):
             self.params.output.integrated_experiments_filename = os.path.join(
                 self.params.output.output_dir,
                 self.integrated_experiments_filename_template % ("idx-" + tag),
+            )
+        if (
+            self.params.dispatch.coset
+            and self.coset_filename_template is not None
+            and "%s" in self.coset_filename_template
+        ):
+            self.params.output.coset_filename = os.path.join(
+                self.params.output.output_dir,
+                self.coset_filename_template
+                % ("idx-" + tag, self.params.integration.coset.transformation),
+            )
+        if (
+            self.params.dispatch.coset
+            and self.coset_experiments_filename_template is not None
+            and "%s" in self.coset_experiments_filename_template
+        ):
+            self.params.output.coset_experiments_filename = os.path.join(
+                self.params.output.output_dir,
+                self.coset_experiments_filename_template
+                % ("idx-" + tag, self.params.integration.coset.transformation),
             )
 
     def debug_start(self, tag):
@@ -1069,6 +1115,11 @@ class Processor(object):
         logger.info("*" * 80)
 
         indexed, _ = self.process_reference(indexed)
+
+        if self.params.dispatch.coset:
+            from xfel.util.sublattice_helper import integrate_coset
+
+            integrate_coset(self, experiments, indexed)
 
         # Get the integrator from the input parameters
         logger.info("Configuring integrator from input parameters")
