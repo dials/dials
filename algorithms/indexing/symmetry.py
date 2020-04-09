@@ -5,14 +5,13 @@ import logging
 import scitbx.matrix
 from cctbx import crystal, sgtbx
 from cctbx.crystal_orientation import crystal_orientation
-from cctbx.sgtbx import change_of_basis_op, lattice_symmetry, subgroups
+from cctbx.sgtbx import change_of_basis_op, subgroups
 from cctbx.sgtbx.bravais_types import bravais_lattice
 from rstbx.dps_core.lepage import iotbx_converter
 from scitbx.array_family import flex
 
 from dxtbx.model import Crystal
 
-from dials.algorithms.indexing import DialsIndexError
 
 logger = logging.getLogger(__name__)
 
@@ -136,126 +135,87 @@ class SymmetryHandler(object):
         self.target_symmetry_primitive = None
         self.target_symmetry_reference_setting = None
         self.cb_op_inp_ref = None
+        self.cb_op_inp_best = None
 
-        target_unit_cell = unit_cell
         target_space_group = space_group
         if target_space_group is not None:
             target_space_group = target_space_group.build_derived_patterson_group()
 
-        if target_unit_cell is not None or target_space_group is not None:
+        if unit_cell is not None:
 
-            if target_unit_cell is not None and target_space_group is not None:
-                self._setup_target_unit_cell_and_space_group(
-                    target_unit_cell, target_space_group
+            assert (
+                space_group
+            ), "space_group must be provided in combination with unit_cell"
+
+            if target_space_group:
+                self.target_symmetry_inp = crystal.symmetry(
+                    unit_cell=unit_cell, space_group=target_space_group
                 )
-
-            elif target_unit_cell is not None:
-                self.target_symmetry_reference_setting = crystal.symmetry(
-                    unit_cell=target_unit_cell, space_group=sgtbx.space_group()
-                )
-                self.cb_op_inp_ref = sgtbx.change_of_basis_op()
-
-            elif target_space_group is not None:
                 self.cb_op_inp_ref = (
-                    target_space_group.info().change_of_basis_op_to_reference_setting()
+                    self.target_symmetry_inp.change_of_basis_op_to_reference_setting()
                 )
-                self.target_symmetry_reference_setting = crystal.symmetry(
-                    space_group=target_space_group.change_basis(self.cb_op_inp_ref)
+                self.target_symmetry_reference_setting = self.target_symmetry_inp.change_basis(
+                    self.cb_op_inp_ref
+                )
+                self.cb_op_inp_best = (
+                    self.target_symmetry_reference_setting.change_of_basis_op_to_best_cell()
+                    * self.cb_op_inp_ref
                 )
 
-            self.cb_op_reference_to_primitive = (
-                self.target_symmetry_reference_setting.change_of_basis_op_to_primitive_setting()
+        elif target_space_group is not None:
+            self.target_symmetry_inp = crystal.symmetry(space_group=target_space_group)
+            self.cb_op_inp_ref = (
+                target_space_group.info().change_of_basis_op_to_reference_setting()
             )
-            if target_unit_cell is not None:
-                self.target_symmetry_primitive = self.target_symmetry_reference_setting.change_basis(
-                    self.cb_op_reference_to_primitive
-                )
-            else:
-                self.target_symmetry_primitive = crystal.symmetry(
-                    space_group=self.target_symmetry_reference_setting.space_group().change_basis(
-                        self.cb_op_reference_to_primitive
-                    )
-                )
-            self.cb_op_ref_inp = self.cb_op_inp_ref.inverse()
-            self.cb_op_primitive_inp = (
-                self.cb_op_ref_inp * self.cb_op_reference_to_primitive.inverse()
+            self.target_symmetry_reference_setting = crystal.symmetry(
+                space_group=target_space_group.change_basis(self.cb_op_inp_ref)
             )
 
-            if self.target_symmetry_reference_setting:
-                logger.debug(
-                    "Target symmetry (reference setting):\n%s",
-                    self.target_symmetry_reference_setting,
+        cb_op_reference_to_primitive = (
+            self.target_symmetry_reference_setting.change_of_basis_op_to_primitive_setting()
+        )
+        if unit_cell:
+            self.target_symmetry_primitive = self.target_symmetry_reference_setting.change_basis(
+                cb_op_reference_to_primitive
+            )
+        else:
+            self.target_symmetry_primitive = crystal.symmetry(
+                space_group=self.target_symmetry_reference_setting.space_group().change_basis(
+                    cb_op_reference_to_primitive
                 )
-            if self.target_symmetry_primitive:
-                logger.debug(
-                    "Target symmetry (primitive cell):\n%s",
-                    self.target_symmetry_primitive,
-                )
+            )
+        self.cb_op_ref_inp = self.cb_op_inp_ref.inverse()
+        self.cb_op_primitive_inp = (
+            self.cb_op_ref_inp * cb_op_reference_to_primitive.inverse()
+        )
+
+        if self.target_symmetry_reference_setting:
             logger.debug(
-                "cb_op reference->primitive: %s", self.cb_op_reference_to_primitive
+                "Target symmetry (reference setting):\n%s",
+                self.target_symmetry_reference_setting,
             )
-            logger.debug("cb_op primitive->input: %s", self.cb_op_primitive_inp)
-
-    def _setup_target_unit_cell_and_space_group(
-        self, target_unit_cell, target_space_group
-    ):
-
-        target_bravais_t = bravais_lattice(
-            group=target_space_group.info().reference_setting().group()
-        )
-        best_subgroup = None
-        best_angular_difference = 1e8
-
-        space_groups = [target_space_group]
-        if target_space_group.conventional_centring_type_symbol() != "P":
-            space_groups.append(sgtbx.space_group())
-        for target in space_groups:
-            cs = crystal.symmetry(
-                unit_cell=target_unit_cell,
-                space_group=target,
-                assert_is_compatible_unit_cell=False,
+        if self.target_symmetry_primitive:
+            logger.debug(
+                "Target symmetry (primitive cell):\n%s", self.target_symmetry_primitive,
             )
-            target_best_cell = cs.best_cell().unit_cell()
-            subgroups = lattice_symmetry.metric_subgroups(cs, max_delta=0.1)
-            for subgroup in subgroups.result_groups:
-                bravais_t = bravais_lattice(group=subgroup["ref_subsym"].space_group())
-                if bravais_t == target_bravais_t:
-                    # allow for the cell to be given as best cell, reference setting
-                    # primitive settings, or minimum cell
-                    best_subsym = subgroup["best_subsym"]
-                    ref_subsym = best_subsym.as_reference_setting()
-                    if not (
-                        best_subsym.unit_cell().is_similar_to(target_unit_cell)
-                        or ref_subsym.unit_cell().is_similar_to(target_unit_cell)
-                        or ref_subsym.primitive_setting()
-                        .unit_cell()
-                        .is_similar_to(target_unit_cell)
-                        or best_subsym.primitive_setting()
-                        .unit_cell()
-                        .is_similar_to(target_unit_cell)
-                        or best_subsym.minimum_cell()
-                        .unit_cell()
-                        .is_similar_to(target_unit_cell.minimum_cell())
-                        or best_subsym.unit_cell().is_similar_to(target_best_cell)
-                    ):
-                        continue
-                    if subgroup["max_angular_difference"] < best_angular_difference:
-                        best_subgroup = subgroup
-                        best_angular_difference = subgroup["max_angular_difference"]
-
-        if best_subgroup is None:
-            raise DialsIndexError("Unit cell incompatible with space group")
-
-        cb_op_inp_best = best_subgroup["cb_op_inp_best"]
-        best_subsym = best_subgroup["best_subsym"]
-        cb_op_best_ref = best_subsym.change_of_basis_op_to_reference_setting()
-        self.cb_op_inp_ref = cb_op_best_ref * cb_op_inp_best
-        self.target_symmetry_reference_setting = crystal.symmetry(
-            unit_cell=target_unit_cell.change_basis(self.cb_op_inp_ref),
-            space_group=target_space_group.info().as_reference_setting().group(),
-        )
+        logger.debug("cb_op primitive->input: %s", self.cb_op_primitive_inp)
 
     def apply_symmetry(self, crystal_model):
+        """Apply symmetry constraints to a crystal model.
+
+        Returns the crystal model (with symmetry constraints applied) in the same
+        setting as provided as input. The cb_op returned by the method is
+        that necessary to transform that model to the user-provided
+        target symmetry.
+
+        Args:
+            crystal_model (dxtbx.model.Crystal): The input crystal model to which to
+              apply symmetry constraints.
+
+        Returns: (dxtbx.model.Crystal, cctbx.sgtbx.change_of_basis_op):
+        The crystal model with symmetry constraints applied, and the change_of_basis_op
+        that transforms the returned model to the user-specified target symmetry.
+        """
         if not (
             self.target_symmetry_primitive
             and self.target_symmetry_primitive.space_group()
@@ -270,11 +230,9 @@ class SymmetryHandler(object):
         items = iotbx_converter(crystal_model.get_unit_cell(), max_delta=max_delta)
         target_sg_ref = target_space_group.info().reference_setting().group()
         best_angular_difference = 1e8
-        best_subgroup = None
+
         for item in items:
-            if bravais_lattice(group=target_sg_ref) != bravais_lattice(
-                group=item["ref_subsym"].space_group()
-            ):
+            if bravais_lattice(group=target_sg_ref) != item["bravais"]:
                 continue
             if item["max_angular_difference"] < best_angular_difference:
                 best_angular_difference = item["max_angular_difference"]
@@ -284,27 +242,37 @@ class SymmetryHandler(object):
             return None, None
 
         cb_op_inp_best = best_subgroup["cb_op_inp_best"]
-        orient = crystal_orientation(A, True)
-        orient_best = orient.change_basis(
-            scitbx.matrix.sqr(cb_op_inp_best.c().as_double_array()[0:9]).transpose()
-        )
-        constrain_orient = orient_best.constrain(best_subgroup["system"])
-
         best_subsym = best_subgroup["best_subsym"]
-        cb_op_best_ref = best_subsym.change_of_basis_op_to_reference_setting()
-        target_sg_best = target_sg_ref.change_basis(cb_op_best_ref.inverse())
-        ref_subsym = best_subsym.change_basis(cb_op_best_ref)
-        cb_op_ref_primitive = ref_subsym.change_of_basis_op_to_primitive_setting()
-        cb_op_best_primitive = cb_op_ref_primitive * cb_op_best_ref
-        cb_op_inp_primitive = cb_op_ref_primitive * cb_op_best_ref * cb_op_inp_best
+        ref_subsym = best_subgroup["ref_subsym"]
+        cb_op_ref_best = ref_subsym.change_of_basis_op_to_best_cell()
+        cb_op_best_ref = cb_op_ref_best.inverse()
+        cb_op_inp_ref = cb_op_best_ref * cb_op_inp_best
+        cb_op_ref_inp = cb_op_inp_ref.inverse()
 
+        orient = crystal_orientation(A, True)
+        orient_ref = orient.change_basis(
+            scitbx.matrix.sqr((cb_op_inp_ref).c().as_double_array()[0:9]).transpose()
+        )
+        constrain_orient = orient_ref.constrain(best_subgroup["system"])
         direct_matrix = constrain_orient.direct_matrix()
 
         a = scitbx.matrix.col(direct_matrix[:3])
         b = scitbx.matrix.col(direct_matrix[3:6])
         c = scitbx.matrix.col(direct_matrix[6:9])
-        model = Crystal(a, b, c, space_group=target_sg_best)
-        assert target_sg_best.is_compatible_unit_cell(model.get_unit_cell())
+        model = Crystal(a, b, c, space_group=target_sg_ref)
+        assert target_sg_ref.is_compatible_unit_cell(model.get_unit_cell())
 
-        model = model.change_basis(cb_op_best_primitive)
-        return model, cb_op_inp_primitive
+        model = model.change_basis(cb_op_ref_inp)
+
+        if self.cb_op_inp_best is not None:
+            # Then the unit cell has been provided: this is the cb_op to map to the
+            # user-provided input unit cell
+            return model, self.cb_op_inp_best.inverse() * cb_op_inp_best
+        if not self.cb_op_ref_inp.is_identity_op():
+            if self.target_symmetry_inp.space_group() == best_subsym.space_group():
+                # Handle where e.g. the user has requested I2 instead of the reference C2
+                return model, cb_op_inp_best
+            # The user has specified a setting that is not the reference setting
+            return model, self.cb_op_ref_inp * cb_op_inp_ref
+        # Default to reference setting
+        return model, cb_op_inp_ref
