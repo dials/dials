@@ -4,7 +4,7 @@ import json
 import os
 import pytest
 
-from cctbx import uctbx
+from cctbx import sgtbx, uctbx
 from dxtbx.serialize import load
 from dials.command_line import refine_bravais_settings
 
@@ -167,3 +167,56 @@ def test_refine_bravais_settings_554(dials_regression, tmpdir):
     assert bravais_summary["5"]["bravais"] == "hR"
     assert bravais_summary["5"]["rmsd"] == pytest.approx(0.104, abs=1e-2)
     assert bravais_summary["5"]["recommended"] is True
+
+
+@pytest.mark.parametrize(
+    "best_monoclinic_beta,expected_space_group,expected_unit_cell",
+    [
+        (True, "I 1 2 1", (44.47, 52.85, 111.46, 90.00, 99.91, 90.00)),
+        (False, "C 1 2 1", (112.67, 52.85, 44.47, 90.00, 102.97, 90.00)),
+    ],
+)
+def test_setting_c2_vs_i2(
+    best_monoclinic_beta,
+    expected_space_group,
+    expected_unit_cell,
+    dials_data,
+    tmpdir,
+    capsys,
+):
+    data_dir = dials_data("mpro_x0305_processed")
+    refl_path = data_dir.join("indexed.refl")
+    experiments_path = data_dir.join("indexed.expt")
+    with tmpdir.as_cwd():
+        refine_bravais_settings.run(
+            [
+                experiments_path.strpath,
+                refl_path.strpath,
+                "best_monoclinic_beta=%s" % best_monoclinic_beta,
+            ]
+        )
+    expts_orig = load.experiment_list(experiments_path.strpath, check_format=False)
+
+    expts = load.experiment_list(
+        tmpdir.join("bravais_setting_2.expt").strpath, check_format=False
+    )
+    expts[0].crystal.get_space_group().type().lookup_symbol() == expected_space_group
+    assert expts[0].crystal.get_unit_cell().parameters() == pytest.approx(
+        expected_unit_cell, abs=1e-2
+    )
+    with tmpdir.join("bravais_summary.json").open("rb") as fh:
+        bravais_summary = json.load(fh)
+    # Verify that the cb_op converts from the input setting to the refined setting
+    cb_op = sgtbx.change_of_basis_op(bravais_summary["2"]["cb_op"])
+    assert (
+        expts_orig[0]
+        .crystal.change_basis(cb_op)
+        .get_unit_cell()
+        .is_similar_to(
+            expts[0].crystal.get_unit_cell(),
+            relative_length_tolerance=0.1,
+            absolute_angle_tolerance=1,
+        )
+    )
+    captured = capsys.readouterr()
+    assert bravais_summary["2"]["cb_op"] in captured.out

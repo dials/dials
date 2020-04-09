@@ -37,6 +37,7 @@ class symmetry_base(object):
         min_cc_half=0.6,
         relative_length_tolerance=None,
         absolute_angle_tolerance=None,
+        best_monoclinic_beta=True,
     ):
         u"""Initialise a symmetry_base object.
 
@@ -60,6 +61,9 @@ class symmetry_base(object):
             consistency of input unit cells against the median unit cell.
           absolute_angle_tolerance (float): Absolute angle tolerance in checking
             consistency of input unit cells against the median unit cell.
+          best_monoclinic_beta (bool): If True, then for monoclinic centered cells, I2
+            will be preferred over C2 if it gives a more oblique cell (i.e. smaller
+            beta angle).
         """
         self.input_intensities = intensities
 
@@ -94,6 +98,7 @@ class symmetry_base(object):
             self.intensities.crystal_symmetry(),
             max_delta=self.lattice_symmetry_max_delta,
             bravais_types_only=False,
+            best_monoclinic_beta=best_monoclinic_beta,
         )
 
         self.cb_op_inp_min = self.subgroups.cb_op_inp_minimum
