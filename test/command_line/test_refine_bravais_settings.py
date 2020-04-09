@@ -207,7 +207,7 @@ def test_setting_c2_vs_i2(
     with tmpdir.join("bravais_summary.json").open("rb") as fh:
         bravais_summary = json.load(fh)
     # Verify that the cb_op converts from the input setting to the refined setting
-    cb_op = sgtbx.change_of_basis_op(bravais_summary["2"]["cb_op"])
+    cb_op = sgtbx.change_of_basis_op(str(bravais_summary["2"]["cb_op"]))
     assert (
         expts_orig[0]
         .crystal.change_basis(cb_op)
