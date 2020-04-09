@@ -6,7 +6,7 @@ from __future__ import absolute_import, division, print_function
 import pytest
 from libtbx import phil
 from mock import Mock, patch
-from cctbx import miller, crystal
+from cctbx import crystal, miller, uctbx
 from cctbx.sgtbx import space_group
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
@@ -21,6 +21,7 @@ from dials.algorithms.scaling.scaling_library import (
     # calculate_single_merging_stats,
     choose_scaling_intensities,
     create_auto_scaling_model,
+    determine_best_unit_cell,
 )
 from dials.algorithms.scaling.model.model import KBScalingModel, PhysicalScalingModel
 
@@ -347,3 +348,15 @@ def test_auto_scaling_model():
     params.model = "KB"
     newer_exp = create_scaling_model(params, new_exp, [rt])
     assert isinstance(newer_exp[0].scaling_model, KBScalingModel)
+
+
+def test_determine_best_unit_cell(test_experiments):
+    assert determine_best_unit_cell(test_experiments).parameters() == pytest.approx(
+        test_experiments[0].crystal.get_unit_cell().parameters()
+    )
+
+    recalc_uc = uctbx.unit_cell((1.1, 1.1, 2.1, 90, 90, 90))
+    test_experiments[0].crystal.set_recalculated_unit_cell(recalc_uc)
+    assert determine_best_unit_cell(test_experiments).parameters() == pytest.approx(
+        recalc_uc.parameters()
+    )
