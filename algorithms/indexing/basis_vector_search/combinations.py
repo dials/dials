@@ -4,7 +4,6 @@ import logging
 import math
 
 from scitbx.array_family import flex
-from cctbx import sgtbx
 from dxtbx.model import Crystal
 
 from dials.algorithms.indexing.symmetry import find_matching_symmetry
@@ -103,81 +102,31 @@ def filter_known_symmetry(
 
     if target_symmetry.unit_cell() is not None:
         target_symmetry_primitive = target_symmetry.change_basis(cb_op_ref_to_primitive)
-        target_min_cell = target_symmetry_primitive.minimum_cell().unit_cell()
     else:
         target_symmetry_primitive = target_symmetry.customized_copy(
             space_group_info=target_symmetry.space_group_info().change_basis(
                 cb_op_ref_to_primitive
             )
         )
-        target_min_cell = None
-
-    transformations = [sgtbx.change_of_basis_op()]
 
     for model in crystal_models:
-        best_model = None
-        for T in transformations:
-            uc = model.get_unit_cell()
-            det = T.c().r().determinant()
-            if target_symmetry_primitive.unit_cell() is None:
-                if det > 1:
-                    break
-            else:
-                primitive_volume = target_symmetry_primitive.unit_cell().volume()
-            if det > 1 and abs(uc.volume() / primitive_volume - det) < 1e-1:
-                uc = uc.change_basis(T)
-            best_subgroup = find_matching_symmetry(
-                uc, target_symmetry_primitive.space_group(), max_delta=max_delta
-            )
-            cb_op_extra = None
-            if best_subgroup is None:
-                if not cb_op_ref_to_primitive.is_identity_op():
-                    # if we have been told we have a centred unit cell check that
-                    # indexing hasn't found the centred unit cell instead of the
-                    # primitive cell
-                    best_subgroup = find_matching_symmetry(
-                        uc,
-                        target_symmetry.space_group().build_derived_point_group(),
-                        max_delta=max_delta,
-                    )
-                    cb_op_extra = cb_op_ref_to_primitive
-                    if best_subgroup is None:
-                        continue
-                else:
-                    continue
-            cb_op_inp_best = best_subgroup["cb_op_inp_best"]
-            best_subsym = best_subgroup["best_subsym"]
-            cb_op_best_ref = best_subsym.change_of_basis_op_to_reference_setting()
-            ref_subsym = best_subsym.change_basis(cb_op_best_ref)
-            cb_op_ref_primitive = ref_subsym.change_of_basis_op_to_primitive_setting()
-            cb_op_to_primitive = (
-                cb_op_ref_primitive * cb_op_best_ref * cb_op_inp_best * T
-            )
-            if cb_op_extra is not None:
-                cb_op_to_primitive = cb_op_extra * cb_op_to_primitive
-            best_model = model.change_basis(cb_op_to_primitive)
-
-            if target_symmetry_primitive.unit_cell() is not None and not (
-                best_model.get_unit_cell().is_similar_to(
-                    target_symmetry_primitive.unit_cell(),
-                    relative_length_tolerance=relative_length_tolerance,
-                    absolute_angle_tolerance=absolute_angle_tolerance,
-                )
-                or best_model.get_unit_cell()
-                .minimum_cell()
+        uc = model.get_unit_cell()
+        best_subgroup = find_matching_symmetry(
+            uc, target_symmetry_primitive.space_group(), max_delta=max_delta
+        )
+        if best_subgroup is not None:
+            if target_symmetry.unit_cell() is not None and not (
+                best_subgroup["best_subsym"]
+                .unit_cell()
                 .is_similar_to(
-                    target_min_cell,
+                    target_symmetry.as_reference_setting().best_cell().unit_cell(),
                     relative_length_tolerance=relative_length_tolerance,
                     absolute_angle_tolerance=absolute_angle_tolerance,
                 )
             ):
-                best_model = None
                 continue
-            else:
-                break
 
-        if best_model is not None:
-            yield best_model
+            yield model
 
 
 def filter_similar_orientations(
