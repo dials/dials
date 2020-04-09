@@ -47,6 +47,7 @@ def test_cosym(
         d_min=1.5,
         map_to_p1=True,
         sample_size=sample_size,
+        seed=1,
     )
     expected_space_group = sgtbx.space_group_info(symbol=space_group).group()
 
