@@ -275,4 +275,9 @@ class SymmetryHandler(object):
             # The user has specified a setting that is not the reference setting
             return model, self.cb_op_ref_inp * cb_op_inp_ref
         # Default to reference setting
-        return model, cb_op_inp_ref
+        # This change of basis op will ensure that we get the best beta angle without
+        # changing the centring (e.g. from C2 to I2)
+        cb_op_ref_best = ref_subsym.change_of_basis_op_to_best_cell(
+            best_monoclinic_beta=False
+        )
+        return model, cb_op_ref_best * cb_op_inp_ref
