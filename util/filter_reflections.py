@@ -356,9 +356,20 @@ class FilteringReductionMethods(object):
     @checkdataremains
     def filter_on_d_min(reflection_table, d_min):
         """Filter reflections below a d-value."""
-        selection = reflection_table["d"] < d_min
+        selection = reflection_table["d"] <= d_min
         logger.info(
-            "Removed %d reflections with d < %.2f" % (selection.count(True), d_min)
+            "Removed %d reflections with d <= %.2f" % (selection.count(True), d_min)
+        )
+        reflection_table.del_selected(selection)
+        return reflection_table
+
+    @staticmethod
+    @checkdataremains
+    def filter_on_d_max(reflection_table, d_max):
+        """Filter reflections above a d-value."""
+        selection = reflection_table["d"] >= d_max
+        logger.info(
+            "Removed %d reflections with d >= %.2f" % (selection.count(True), d_max)
         )
         reflection_table.del_selected(selection)
         return reflection_table
@@ -427,6 +438,7 @@ class FilterForExportAlgorithm(FilteringReductionMethods):
         combine_partials=True,
         partiality_threshold=0.99,
         d_min=None,
+        d_max=None,
     ):
         """Apply the filtering methods to reflection table."""
         assert (
@@ -450,6 +462,8 @@ class FilterForExportAlgorithm(FilteringReductionMethods):
             reflection_table = cls.filter_ice_rings(reflection_table)
         if d_min:
             reflection_table = cls.filter_on_d_min(reflection_table, d_min)
+        if d_max:
+            reflection_table = cls.filter_on_d_max(reflection_table, d_max)
 
         reflection_table = cls.apply_scaling_factors(reflection_table)
 
