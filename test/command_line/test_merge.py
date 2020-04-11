@@ -75,6 +75,40 @@ def test_merge(dials_data, tmpdir, anomalous, truncate):
     validate_mtz(mtz_file, expected_labels, unexpected_labels)
 
 
+def test_merge_dmin_dmax(dials_data, tmpdir):
+    """Test the d_min, d_max"""
+
+    location = dials_data("l_cysteine_4_sweeps_scaled")
+    refls = location.join("scaled_20_25.refl")
+    expts = location.join("scaled_20_25.expt")
+
+    mtz_file = tmpdir.join("merge.mtz")
+
+    command = [
+        "dials.merge",
+        refls,
+        expts,
+        "truncate=False",
+        "anomalous=False",
+        "d_min=1.0",
+        "d_max=8.0",
+        "output.mtz=%s" % mtz_file.strpath,
+        "project_name=ham",
+        "crystal_name=jam",
+        "dataset_name=spam",
+    ]
+    result = procrunner.run(command, working_directory=tmpdir)
+    assert not result.returncode and not result.stderr
+
+    # check we only have reflections in range 8 - 1A
+    m = mtz.object(mtz_file.strpath)
+
+    max_min_resolution = m.max_min_resolution()
+
+    assert max_min_resolution[0] <= 8
+    assert max_min_resolution[1] >= 1
+
+
 def test_merge_multi_wavelength(dials_data, tmpdir):
     """Test that merge handles multi-wavelength data suitably - should be
     exported into an mtz with seprate columns for each wavelength."""
