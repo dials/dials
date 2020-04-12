@@ -381,7 +381,9 @@ def determine_best_unit_cell(experiments):
     experiments."""
     uc_params = [flex.double() for i in range(6)]
     for exp in experiments:
-        unit_cell = exp.crystal.get_recalculated_unit_cell() or exp.crystal.get_unit_cell()
+        unit_cell = (
+            exp.crystal.get_recalculated_unit_cell() or exp.crystal.get_unit_cell()
+        )
         for i, p in enumerate(unit_cell.parameters()):
             uc_params[i].append(p)
     best_unit_cell = uctbx.unit_cell(parameters=[flex.median(p) for p in uc_params])
