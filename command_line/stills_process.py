@@ -81,8 +81,8 @@ control_phil_str = """
     coset = False
       .expert_level = 2
       .type = bool
-      .help = Within the integrate dispatcher, integrate a sublattice coset intended to represent
-      .help = negative control spots with no Bragg diffraction.
+      .help = Within the integrate dispatcher, integrate a sublattice coset intended to represent \
+              negative control spots with no Bragg diffraction.
     hit_finder{
       enable = True
         .type = bool
@@ -210,9 +210,10 @@ dials_phil_str = """
     coset {
       transformation = 6
         .type = int(value_min=0, value_max=6)
-        .help = The index number of the modulus=2 sublattice transformation.
-        .help = The only supported value is 6, representing body-centered cell doubling.
-        .help = See Sauter and Zwart, Acta D (2009) 65:553
+        .multiple = False
+        .help = The index number(s) of the modulus=2 sublattice transformation(s) used to produce distince coset results. \
+                0=Double a, 1=Double b, 2=Double c, 3=C-face centering, 4=B-face centering, 5=A-face centering, 6=Body centering \
+                See Sauter and Zwart, Acta D (2009) 65:553
     }
   }
 """
