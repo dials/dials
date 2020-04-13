@@ -1501,6 +1501,24 @@ class Processor(object):
                     self.params.output.integrated_filename,
                 )
 
+            if self.params.dispatch.coset:
+                if (
+                    len(self.all_coset_experiments) > 0
+                    and self.params.output.coset_experiments_filename
+                ):
+
+                    self.all_coset_experiments.as_json(
+                        self.params.output.coset_experiments_filename
+                    )
+
+                if (
+                    len(self.all_coset_reflections) > 0
+                    and self.params.output.coset_filename
+                ):
+                    self.save_reflections(
+                        self.all_coset_reflections, self.params.output.coset_filename
+                    )
+
             # Create a tar archive of the integration dictionary pickles
             if len(self.all_int_pickles) > 0 and self.params.output.integration_pickle:
                 tar_template_integration_pickle = self.params.output.integration_pickle.replace(
