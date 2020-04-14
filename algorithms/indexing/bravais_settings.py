@@ -117,6 +117,9 @@ class RefinedSettingsList(list):
 
         return result
 
+    def as_str(self):
+        return str(self)
+
     def __str__(self):
         table_data = [
             [
