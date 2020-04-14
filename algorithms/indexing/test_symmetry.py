@@ -19,15 +19,9 @@ def test_SymmetryHandler(space_group_symbol):
 
     handler = symmetry.SymmetryHandler(unit_cell=uc, space_group=sg)
 
-    assert handler.target_symmetry_primitive.unit_cell().parameters() == pytest.approx(
-        cs.best_cell().primitive_setting().unit_cell().parameters()
-    )
     assert (
         handler.target_symmetry_primitive.space_group()
         == sg.build_derived_patterson_group().info().primitive_setting().group()
-    )
-    assert handler.target_symmetry_reference_setting.unit_cell().parameters() == pytest.approx(
-        cs.best_cell().as_reference_setting().unit_cell().parameters()
     )
     assert (
         handler.target_symmetry_reference_setting.space_group()
@@ -73,17 +67,74 @@ def test_SymmetryHandler(space_group_symbol):
     crystal_new, cb_op = handler.apply_symmetry(crystal)
     crystal_new.get_crystal_symmetry(assert_is_compatible_unit_cell=True)
 
-    handler = symmetry.SymmetryHandler(unit_cell=cs.minimum_cell().unit_cell())
+    handler = symmetry.SymmetryHandler(
+        unit_cell=cs.minimum_cell().unit_cell(), space_group=sgtbx.space_group(),
+    )
     assert handler.target_symmetry_primitive.unit_cell().parameters() == pytest.approx(
         cs.minimum_cell().unit_cell().parameters()
     )
-    assert handler.target_symmetry_primitive.space_group() == sgtbx.space_group()
+    assert handler.target_symmetry_primitive.space_group() == sgtbx.space_group("P-1")
     assert handler.target_symmetry_reference_setting.unit_cell().parameters() == pytest.approx(
         cs.minimum_cell().unit_cell().parameters()
     )
-    assert (
-        handler.target_symmetry_reference_setting.space_group() == sgtbx.space_group()
+    assert handler.target_symmetry_reference_setting.space_group() == sgtbx.space_group(
+        "P-1"
     )
+
+
+# https://github.com/dials/dials/issues/1217
+@pytest.mark.parametrize(
+    "crystal_symmetry",
+    [
+        crystal.symmetry(
+            unit_cell=(
+                44.66208171,
+                53.12629403,
+                62.53397661,
+                64.86329707,
+                78.27343894,
+                90,
+            ),
+            space_group_symbol="C 1 2/m 1 (z,x+y,-2*x)",
+        ),
+        crystal.symmetry(
+            unit_cell=(44.3761, 52.5042, 61.88555952, 115.1002877, 101.697107, 90),
+            space_group_symbol="C 1 2/m 1 (-z,x+y,2*x)",
+        ),
+    ],
+)
+def test_symmetry_handler_c2_i2(crystal_symmetry):
+    cs_ref = crystal_symmetry.as_reference_setting()
+    cs_ref = cs_ref.change_basis(
+        cs_ref.change_of_basis_op_to_best_cell(best_monoclinic_beta=False)
+    )
+    cs_best = cs_ref.best_cell()
+    # best -> ref is different to cs_ref above
+    cs_best_ref = cs_best.as_reference_setting()
+    assert not cs_ref.is_similar_symmetry(cs_best_ref)
+
+    B = scitbx.matrix.sqr(
+        crystal_symmetry.unit_cell().fractionalization_matrix()
+    ).transpose()
+    cryst = Crystal(B, sgtbx.space_group())
+
+    for cs in (crystal_symmetry, cs_ref, cs_best):
+        print(cs)
+        handler = symmetry.SymmetryHandler(space_group=cs.space_group())
+        new_cryst, cb_op = handler.apply_symmetry(cryst)
+        assert (
+            new_cryst.change_basis(cb_op).get_crystal_symmetry().is_similar_symmetry(cs)
+        )
+
+    for cs in (crystal_symmetry, cs_ref, cs_best, cs_best_ref):
+        print(cs)
+        handler = symmetry.SymmetryHandler(
+            unit_cell=cs.unit_cell(), space_group=cs.space_group()
+        )
+        new_cryst, cb_op = handler.apply_symmetry(cryst)
+        assert (
+            new_cryst.change_basis(cb_op).get_crystal_symmetry().is_similar_symmetry(cs)
+        )
 
 
 crystal_symmetries = []
