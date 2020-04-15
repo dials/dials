@@ -85,10 +85,7 @@ LIBTBX_BUILD=$(cd -P -- "${LIBTBX_BUILD}" && pwd -P)
 
 # enable conda environment
 source ${LIBTBX_BUILD}/../conda_base/etc/profile.d/conda.sh
-LIBTBX_OLD_PS1=$PS1
 conda activate $(dirname -- "${LIBTBX_BUILD}")/conda_base
-PS1=$LIBTBX_OLD_PS1
-unset LIBTBX_OLD_PS1
 
 # prepend cctbx /build/bin directory to PATH
 PATH="${LIBTBX_BUILD}/bin:${PATH}"

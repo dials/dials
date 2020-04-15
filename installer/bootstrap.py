@@ -296,9 +296,10 @@ working network connection for downloading conda packages.
     with open(os.path.join(prefix, ".condarc"), "w") as fh:
         fh.write(
             """
+changeps1: False
 channels:
   - conda-forge
-"""
+""".lstrip()
         )
 
     # on Windows, also download the Visual C++ 2008 Redistributable
