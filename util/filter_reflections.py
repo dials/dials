@@ -369,7 +369,7 @@ class FilteringReductionMethods(object):
         """Filter reflections above a d-value."""
         selection = reflection_table["d"] >= d_max
         logger.info(
-            "Removed %d reflections with d >= %.2f" % (selection.count(True), d_max)
+            "Removed %d reflections with d >= %.2f", selection.count(True), d_max
         )
         reflection_table.del_selected(selection)
         return reflection_table
