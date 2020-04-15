@@ -358,7 +358,7 @@ class FilteringReductionMethods(object):
         """Filter reflections below a d-value."""
         selection = reflection_table["d"] <= d_min
         logger.info(
-            "Removed %d reflections with d <= %.2f" % (selection.count(True), d_min)
+            "Removed %d reflections with d <= %.2f", selection.count(True), d_min
         )
         reflection_table.del_selected(selection)
         return reflection_table
