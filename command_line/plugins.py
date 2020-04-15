@@ -49,6 +49,10 @@ known_entry_points = {
         "description": "Lattice search strategies",
         "required": ["low_res_spot_match"],
     },
+    "dials.spotfinder.threshold": {
+        "description": "Spotfinding threshold algorithms",
+        "required": ["dispersion", "dispersion_extended"],
+    },
 }
 
 if __name__ == "__main__":

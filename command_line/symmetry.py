@@ -83,6 +83,11 @@ laue_group = auto
 change_of_basis_op = None
   .type = str
 
+best_monoclinic_beta = True
+  .type = bool
+  .help = "If True, then for monoclinic centered cells, I2 will be preferred over C2 if"
+          "it gives a more oblique cell (i.e. smaller beta angle)."
+
 systematic_absences {
 
   check = True
@@ -105,7 +110,7 @@ output {
     .type = path
   json = dials.symmetry.json
     .type = path
-  html = "dials-symmetry.html"
+  html = "dials.symmetry.html"
     .type = path
     .help = "Filename for html report."
 }
@@ -312,6 +317,7 @@ def symmetry(experiments, reflection_tables, params=None):
             lattice_symmetry_max_delta=params.lattice_symmetry_max_delta,
             relative_length_tolerance=params.relative_length_tolerance,
             absolute_angle_tolerance=params.absolute_angle_tolerance,
+            best_monoclinic_beta=params.best_monoclinic_beta,
         )
         logger.info("")
         logger.info(result)
@@ -319,8 +325,9 @@ def symmetry(experiments, reflection_tables, params=None):
         if params.output.json is not None:
             d = result.as_dict()
             d["cb_op_inp_min"] = [str(cb_op) for cb_op in cb_ops]
-            # This is not the input symmetry as we have already mapped it to minimum
-            # cell, so delete from the output dictionary to avoid confusion
+            # Copy the "input_symmetry" to "min_cell_symmetry" as it isn't technically
+            # the input symmetry to dials.symmetry
+            d["min_cell_symmetry"] = d["input_symmetry"]
             del d["input_symmetry"]
             json_str = json.dumps(d, indent=2)
             with open(params.output.json, "w") as f:

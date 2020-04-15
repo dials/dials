@@ -558,9 +558,12 @@ def export_mtz(integrated_data, experiment_list, params):
         else:
             experiment.data["ROT"] = z
 
-    mtz_writer.add_crystal(
-        params.mtz.crystal_name, unit_cell=experiment_list[0].crystal.get_unit_cell()
-    )  # Note: add unit cell here as may have changed basis since creating mtz.
+    unit_cell = (
+        experiment_list[0].crystal.get_recalculated_unit_cell()
+        or experiment_list[0].crystal.get_unit_cell()
+    )
+    mtz_writer.add_crystal(params.mtz.crystal_name, unit_cell=unit_cell)
+    # Note: add unit cell here as may have changed basis since creating mtz.
     # For multi-wave unmerged mtz, we add an empty dataset for each wavelength,
     # but only write the data into the final dataset (for unmerged the batches
     # link the unmerged data to the individual wavelengths).

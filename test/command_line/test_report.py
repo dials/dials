@@ -16,7 +16,7 @@ def test_report_integrated_data(dials_data, tmpdir):
         working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("dials-report.html").check()
+    assert tmpdir.join("dials.report.html").check()
 
 
 def test_report_scaled_data(dials_data, tmpdir):
@@ -30,4 +30,4 @@ def test_report_scaled_data(dials_data, tmpdir):
         working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("dials-report.html").check()
+    assert tmpdir.join("dials.report.html").check()

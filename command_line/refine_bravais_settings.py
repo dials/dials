@@ -203,7 +203,7 @@ def run(args=None):
     )
     possible_bravais_settings = {solution["bravais"] for solution in refined_settings}
     bravais_lattice_to_space_group_table(possible_bravais_settings)
-    logger.info(refined_settings.as_str())
+    logger.info(refined_settings)
 
     prefix = params.output.prefix
     if prefix is None:

@@ -62,7 +62,7 @@ def generate_processing_detail_text_thaumatin(options):
     )
     runcmd(["dials.integrate", "refined.expt", "refined.refl", "nproc=4"])
     runcmd(["dials.report", "integrated.expt", "integrated.refl"])
-    tmpdir.join("dials-report.html").copy(outdir.join("dials-report.html"))
+    tmpdir.join("dials.report.html").copy(outdir.join("dials.report.html"))
     runcmd(["dials.export", "integrated.refl", "integrated.expt"])
 
     print("Updated result files written to {}".format(outdir.strpath))
@@ -131,7 +131,7 @@ def generate_processing_detail_text_betalactamase(options):
         store_output=outdir / "dials.scale_cut.log",
     )
     runcmd(["dials.report", "scaled.expt", "scaled.refl"])
-    tmpdir.join("dials-report.html").copy(outdir.join("dials-report.html"))
+    tmpdir.join("dials.report.html").copy(outdir.join("dials.report.html"))
 
     print("Updated result files written to {}".format(outdir.strpath))
     if not options.keep:
@@ -178,7 +178,7 @@ def generate_multi_crystal_symmetry_and_scaling(options):
     )
     tmpdir.join("dials.scale.html").copy(outdir.join("dials.scale.html"))
     runcmd(["dials.symmetry", "scaled.expt", "scaled.refl", "laue_group=None"])
-    tmpdir.join("dials-symmetry.html").copy(outdir.join("dials-symmetry.html"))
+    tmpdir.join("dials.symmetry.html").copy(outdir.join("dials.symmetry.html"))
     runcmd(["dials.merge", "symmetrized.expt", "symmetrized.refl"])
 
     print("Updated result files written to {}".format(outdir.strpath))

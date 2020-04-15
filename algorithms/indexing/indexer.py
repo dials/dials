@@ -6,6 +6,8 @@ import logging
 import math
 import pkg_resources
 
+from cctbx import sgtbx
+
 import dials.util
 import iotbx.phil
 import libtbx
@@ -466,6 +468,8 @@ class Indexer(object):
         target_space_group = self.params.known_symmetry.space_group
         if target_space_group is not None:
             target_space_group = target_space_group.group()
+        else:
+            target_space_group = sgtbx.space_group()
         self._symmetry_handler = SymmetryHandler(
             unit_cell=target_unit_cell,
             space_group=target_space_group,
@@ -736,31 +740,18 @@ class Indexer(object):
         # now apply the space group symmetry only after the first indexing
         # need to make sure that the symmetrized orientation is similar to the P1 model
         for cryst in experiments.crystals()[n_lattices_previous_cycle:]:
-            new_cryst, cb_op_to_primitive = self._symmetry_handler.apply_symmetry(cryst)
-            if self._symmetry_handler.cb_op_primitive_inp is not None:
-                new_cryst = new_cryst.change_basis(
-                    self._symmetry_handler.cb_op_primitive_inp
-                )
+            new_cryst, cb_op = self._symmetry_handler.apply_symmetry(cryst)
+            new_cryst = new_cryst.change_basis(cb_op)
             cryst.update(new_cryst)
             cryst.set_space_group(self.params.known_symmetry.space_group.group())
             for i_expt, expt in enumerate(experiments):
                 if expt.crystal is not cryst:
                     continue
-                if not cb_op_to_primitive.is_identity_op():
+                if not cb_op.is_identity_op():
                     miller_indices = reflections["miller_index"].select(
                         reflections["id"] == i_expt
                     )
-                    miller_indices = cb_op_to_primitive.apply(miller_indices)
-                    reflections["miller_index"].set_selected(
-                        reflections["id"] == i_expt, miller_indices
-                    )
-                if self._symmetry_handler.cb_op_primitive_inp is not None:
-                    miller_indices = reflections["miller_index"].select(
-                        reflections["id"] == i_expt
-                    )
-                    miller_indices = self._symmetry_handler.cb_op_primitive_inp.apply(
-                        miller_indices
-                    )
+                    miller_indices = cb_op.apply(miller_indices)
                     reflections["miller_index"].set_selected(
                         reflections["id"] == i_expt, miller_indices
                     )

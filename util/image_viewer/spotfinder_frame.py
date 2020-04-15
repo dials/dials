@@ -23,7 +23,7 @@ from dials.util.image_viewer.spotfinder_wrap import chooser_wrapper
 from dxtbx.imageset import ImageSet
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model.experiment_list import ExperimentListFactory
-from libtbx.utils import flat_list, time_log
+from libtbx.utils import flat_list
 from rstbx.slip_viewer import pyslip
 from rstbx.viewer.frame import SettingsFrame
 from scitbx import matrix
@@ -123,16 +123,8 @@ class SpotFrame(XrayFrame):
         self.mask_image_viewer = None
         self._mask_frame = None
 
-        self.show_all_pix_timer = time_log("show_all_pix")
-        self.show_shoebox_timer = time_log("show_shoebox")
-        self.show_max_pix_timer = time_log("show_max_pix")
-        self.show_ctr_mass_timer = time_log("show_ctr_mass")
-        self.draw_all_pix_timer = time_log("draw_all_pix")
-        self.draw_shoebox_timer = time_log("draw_shoebox")
-        self.draw_max_pix_timer = time_log("draw_max_pix")
-        self.draw_ctr_mass_timer = time_log("draw_ctr_mass_pix")
-
         self.display_foreground_circles_patch = False  # hard code this option, for now
+        self._dispersion_debug_memo = {}
 
         if (
             self.experiments is not None
@@ -846,7 +838,6 @@ class SpotFrame(XrayFrame):
             self.Layout()
 
     def get_image_data(self, image):
-        detector = image.get_detector()
         image.set_image_data(None)
         if self.settings.image_type == "corrected":
             image_data = image.get_image_data()
@@ -856,38 +847,7 @@ class SpotFrame(XrayFrame):
             image_data = (image_data,)
 
         if self.settings.display != "image":
-
-            image_mask = self.get_mask(image)
-            gain_value = self.settings.gain
-            assert gain_value > 0
-            gain_map = [
-                flex.double(image_data[i].accessor(), gain_value)
-                for i in range(len(detector))
-            ]
-
-            nsigma_b = self.settings.nsigma_b
-            nsigma_s = self.settings.nsigma_s
-            global_threshold = self.settings.global_threshold
-            min_local = self.settings.min_local
-            size = self.settings.kernel_size
-            kabsch_debug_list = []
-            if self.settings.dispersion_extended:
-                algorithm = DispersionExtendedThresholdDebug
-            else:
-                algorithm = DispersionThresholdDebug
-            for i_panel in range(len(detector)):
-                kabsch_debug_list.append(
-                    algorithm(
-                        image_data[i_panel].as_double(),
-                        image_mask[i_panel],
-                        gain_map[i_panel],
-                        size,
-                        nsigma_b,
-                        nsigma_s,
-                        global_threshold,
-                        min_local,
-                    )
-                )
+            kabsch_debug_list = self._calculate_dispersion_debug(image)
 
             if self.settings.display == "mean":
                 mean = [kabsch.mean() for kabsch in kabsch_debug_list]
@@ -934,6 +894,54 @@ class SpotFrame(XrayFrame):
         if self.params.show_mask:
             self.mask_image_data(image_data)
         return image_data
+
+    def _calculate_dispersion_debug(self, image):
+        request = {}
+        request["index"] = image.index
+        request["sum"] = self.params.sum_images
+        request["gain_value"] = self.settings.gain
+        request["nsigma_b"] = self.settings.nsigma_b
+        request["nsigma_s"] = self.settings.nsigma_s
+        request["global_threshold"] = self.settings.global_threshold
+        request["min_local"] = self.settings.min_local
+        request["size"] = self.settings.kernel_size
+        request["extended"] = self.settings.dispersion_extended
+
+        # If the request was already cached, return the result
+        if request == self._dispersion_debug_memo:
+            return self._kabsch_debug_list
+
+        detector = image.get_detector()
+        image_mask = self.get_mask(image)
+        image_data = image.get_image_data()
+        assert request["gain_value"] > 0
+        gain_map = [
+            flex.double(image_data[i].accessor(), request["gain_value"])
+            for i in range(len(detector))
+        ]
+        if self.settings.dispersion_extended:
+            algorithm = DispersionExtendedThresholdDebug
+        else:
+            algorithm = DispersionThresholdDebug
+
+        kabsch_debug_list = []
+        for i_panel in range(len(detector)):
+            kabsch_debug_list.append(
+                algorithm(
+                    image_data[i_panel].as_double(),
+                    image_mask[i_panel],
+                    gain_map[i_panel],
+                    self.settings.kernel_size,
+                    self.settings.nsigma_b,
+                    self.settings.nsigma_s,
+                    self.settings.global_threshold,
+                    self.settings.min_local,
+                )
+            )
+        # Store the request in cache and return the result
+        self._dispersion_debug_memo = request
+        self._kabsch_debug_list = kabsch_debug_list
+        return kabsch_debug_list
 
     def show_filters(self):
         image_data = self.get_image_data(self.pyslip.tiles.raw_image)
@@ -1031,7 +1039,6 @@ class SpotFrame(XrayFrame):
                     update=False,
                 )
             if self.settings.show_all_pix:
-                self.draw_all_pix_timer.start()
                 if len(all_pix_data) > 1:
                     if not self.display_foreground_circles_patch:
                         for key, value in all_pix_data.items():
@@ -1102,9 +1109,7 @@ class SpotFrame(XrayFrame):
                                 update=False,
                             )
                         )
-                self.draw_all_pix_timer.stop()
             if self.settings.show_shoebox and len(shoebox_data):
-                self.draw_shoebox_timer.start()
                 self.shoebox_layer = self.pyslip.AddPolygonLayer(
                     shoebox_data,
                     map_rel=True,
@@ -1114,9 +1119,7 @@ class SpotFrame(XrayFrame):
                     name="<shoebox_layer>",
                     update=False,
                 )
-                self.draw_shoebox_timer.stop()
             if self.settings.show_ctr_mass and len(ctr_mass_data):
-                self.draw_ctr_mass_timer.start()
                 self.ctr_mass_layer = self.pyslip.AddPolygonLayer(
                     ctr_mass_data,
                     map_rel=True,
@@ -1126,9 +1129,7 @@ class SpotFrame(XrayFrame):
                     name="<ctr_mass_layer>",
                     update=False,
                 )
-                self.draw_ctr_mass_timer.stop()
             if self.settings.show_max_pix and len(max_pix_data):
-                self.draw_max_pix_timer.start()
                 self.max_pix_layer = self.pyslip.AddPointLayer(
                     max_pix_data,
                     color="pink",
@@ -1138,7 +1139,6 @@ class SpotFrame(XrayFrame):
                     show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
                     update=False,
                 )
-                self.draw_max_pix_timer.stop()
             if len(vector_data) and len(vector_text_data):
                 self.vector_layer = self.pyslip.AddPolygonLayer(
                     vector_data,
@@ -1164,6 +1164,45 @@ class SpotFrame(XrayFrame):
         self.sum_images()
         # if self.params.sum_images == 1:
         # self.show_filters()
+        if self.settings.show_threshold_pix:
+            image = self.pyslip.tiles.raw_image
+            kabsch_debug_list = self._calculate_dispersion_debug(image)
+            final_mask = [kabsch.final_mask() for kabsch in kabsch_debug_list]
+            value = []
+            for pnl, mask in enumerate(final_mask):
+                width = mask.all()[1]
+                idx = mask.iselection()
+                for i in idx:
+                    y = i // width
+                    x = i % width
+                    y, x = self.pyslip.tiles.flex_image.tile_readout_to_picture(
+                        pnl, y, x
+                    )
+                    value.append(
+                        self.pyslip.tiles.picture_fast_slow_to_map_relative(x, y)
+                    )
+
+            base_color = self.prediction_colours[0][1:]
+            # dim the color so it stands apart from the prediction
+            r = base_color[0:2]
+            g = base_color[2:4]
+            b = base_color[4:6]
+            r = max(int(r, 16) - int("50", 16), 0)
+            g = max(int(g, 16) - int("50", 16), 0)
+            b = max(int(b, 16) - int("50", 16), 0)
+            color = "#%02x%02x%02x" % (r, g, b)
+            self.dials_spotfinder_layers.append(
+                self.pyslip.AddPointLayer(
+                    value,
+                    color=color,
+                    name="<thresh_pix_layer_0>",
+                    radius=2,
+                    renderer=self.pyslip.LightweightDrawPointLayer2,
+                    show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
+                    update=False,
+                )
+            )
+
         if self.settings.show_resolution_rings:
             self.draw_resolution_rings()
         elif self.settings.show_ice_rings:
@@ -1325,7 +1364,6 @@ class SpotFrame(XrayFrame):
                         and reflection["shoebox"].mask.size() > 0
                         and n == 0
                     ):
-                        self.show_all_pix_timer.start()
                         shoebox = reflection["shoebox"]
                         iz = i_frame - z0
                         if not reflection["id"] in all_pix_data:
@@ -1380,10 +1418,8 @@ class SpotFrame(XrayFrame):
                                     ),
                                 )
                             )
-                        self.show_all_pix_timer.stop()
 
                     if self.settings.show_shoebox:
-                        self.show_shoebox_timer.start()
                         x0_, y0_ = map_coords(x0, y0, panel)
                         x1_, y1_ = map_coords(x1, y1, panel)
                         # Change shoebox colour depending on index id
@@ -1400,14 +1436,12 @@ class SpotFrame(XrayFrame):
                             (((x1_, y0_), (x0_, y0_)), my_attrs),
                         ]
                         shoebox_data.extend(lines)
-                        self.show_shoebox_timer.stop()
 
                     if (
                         self.settings.show_max_pix
                         and "shoebox" in reflection
                         and reflection["shoebox"].data.size() > 0
                     ):
-                        self.show_max_pix_timer.start()
                         shoebox = reflection["shoebox"].data
                         offset = flex.max_index(shoebox)
                         offset, k = divmod(offset, shoebox.all()[2])
@@ -1421,10 +1455,8 @@ class SpotFrame(XrayFrame):
                                 reflection["panel"],
                             )
                             max_pix_data.append((x, y))
-                        self.show_max_pix_timer.stop()
 
                     if self.settings.show_ctr_mass and "xyzobs.px.value" in reflection:
-                        self.show_ctr_mass_timer.start()
                         centroid = reflection["xyzobs.px.value"]
                         # ticket #107
                         if centroid[2] >= i_frame and centroid[2] <= (
@@ -1444,7 +1476,6 @@ class SpotFrame(XrayFrame):
                                 (((xm1, y), (xp1, y)), ctr_mass_dict),
                             ]
                             ctr_mass_data.extend(lines)
-                        self.show_ctr_mass_timer.stop()
 
             if ("xyzcal.px" in ref_list or "xyzcal.mm" in ref_list) and (
                 self.settings.show_predictions
@@ -1675,6 +1706,7 @@ class SpotSettingsPanel(wx.Panel):
         self.settings.show_ctr_mass = self.params.show_ctr_mass
         self.settings.show_max_pix = self.params.show_max_pix
         self.settings.show_all_pix = self.params.show_all_pix
+        self.settings.show_threshold_pix = self.params.show_threshold_pix
         self.settings.show_shoebox = self.params.show_shoebox
         self.settings.show_indexed = self.params.show_indexed
         self.settings.show_integrated = self.params.show_integrated
@@ -1791,6 +1823,11 @@ class SpotSettingsPanel(wx.Panel):
         self.all_pix = wx.CheckBox(self, -1, "Spot all pixels")
         self.all_pix.SetValue(self.settings.show_all_pix)
         grid.Add(self.all_pix, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+
+        # Threshold control
+        self.thresh_pix = wx.CheckBox(self, -1, "Threshold pixels")
+        self.thresh_pix.SetValue(self.settings.show_threshold_pix)
+        grid.Add(self.thresh_pix, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
 
         # Spot shoebox control
         self.shoebox = wx.CheckBox(self, -1, "Draw reflection shoebox")
@@ -2000,6 +2037,7 @@ class SpotSettingsPanel(wx.Panel):
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.ctr_mass)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.max_pix)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.all_pix)
+        self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.thresh_pix)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.shoebox)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.predictions)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.miller_indices)
@@ -2038,6 +2076,7 @@ class SpotSettingsPanel(wx.Panel):
             self.settings.show_ctr_mass = self.ctr_mass.GetValue()
             self.settings.show_max_pix = self.max_pix.GetValue()
             self.settings.show_all_pix = self.all_pix.GetValue()
+            self.settings.show_threshold_pix = self.thresh_pix.GetValue()
             self.settings.show_shoebox = self.shoebox.GetValue()
             self.settings.show_indexed = self.indexed.GetValue()
             self.settings.show_integrated = self.integrated.GetValue()
@@ -2101,6 +2140,7 @@ class SpotSettingsPanel(wx.Panel):
             self.ctr_mass,
             self.max_pix,
             self.all_pix,
+            self.thresh_pix,
             self.shoebox,
             self.predictions,
             self.miller_indices,
@@ -2154,8 +2194,8 @@ class SpotSettingsPanel(wx.Panel):
             or self.settings.min_local != self.min_local_ctrl.GetPhilValue()
             or self.settings.gain != self.gain_ctrl.GetPhilValue()
         ):
-            self.OnUpdate(event)
             self.GetParent().GetParent().show_filters()
+            self.OnUpdate(event)
 
     def OnDispersionThresholdDebug(self, event):
         button = event.GetEventObject()

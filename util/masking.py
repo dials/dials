@@ -46,9 +46,11 @@ phil_scope = parse(
     .multiple = True
   {
 
-    panel = 0
+    panel = None
       .type = int
       .help = "The panel number"
+      .help = "If no geometric attributes are given (circle, rectangle, etc)"
+      .help = "then the whole panel is masked out"
 
     circle = None
       .type = ints(3)
@@ -252,7 +254,15 @@ class MaskGenerator(object):
 
             # Apply the untrusted regions
             for region in self.params.untrusted:
+                if region.panel is None:
+                    region.panel = 0
                 if region.panel == index:
+                    if not any(
+                        [region.circle, region.rectangle, region.polygon, region.pixel]
+                    ):
+                        mask[:, :] = flex.bool(flex.grid(mask.focus()), False)
+                        continue
+
                     if region.circle is not None:
                         xc, yc, radius = region.circle
                         logger.info("Generating circle mask:")
