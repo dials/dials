@@ -90,6 +90,7 @@ def test_sacla_h5(dials_regression, run_in_tmpdir, use_mpi, in_memory=False):
         f.write(
             """
       dispatch.squash_errors = True
+      dispatch.coset = True
       input.reference_geometry=%s
       indexing {
         known_symmetry {
@@ -138,12 +139,21 @@ def test_sacla_h5(dials_regression, run_in_tmpdir, use_mpi, in_memory=False):
     result = easy_run.fully_buffered(command).raise_if_errors()
     result.show_stdout()
 
-    result_filename = "idx-0000_integrated.refl"
-    table = flex.reflection_table.from_file(result_filename)
-    for expt_id, n_refls in enumerate(
+    def test_refl_table(result_filename, ranges):
+        table = flex.reflection_table.from_file(result_filename)
+        for expt_id, n_refls in enumerate(ranges):
+            subset = table.select(table["id"] == expt_id)
+            assert len(subset) in n_refls, (result_filename, expt_id, len(table))
+        assert "id" in table
+        assert set(table["id"]) == set((0, 1, 2))
+
+    # large ranges to handle platform-specific differences
+    test_refl_table(
+        "idx-0000_integrated.refl",
         [list(range(205, 225)), list(range(565, 580)), list(range(475, 500))],
-    ):  # large ranges to handle platform-specific differences
-        subset = table.select(table["id"] == expt_id)
-        assert len(subset) in n_refls, (result_filename, expt_id, len(table))
-    assert "id" in table
-    assert set(table["id"]) == set((0, 1, 2))
+    )
+
+    test_refl_table(
+        "idx-0000_coset6.refl",
+        [list(range(215, 245)), list(range(525, 555)), list(range(515, 545))],
+    )
