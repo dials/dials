@@ -1039,7 +1039,7 @@ class DIALSBuilder(object):
             functools.partial(
                 run_command,
                 command=["./indirection.sh", os.path.join(*dots)] + (args or []),
-                description="(indirect) " + command,
+                description="(via conda environment) " + command,
                 workdir=os.path.join(*workdir),
             )
         )
@@ -1070,6 +1070,9 @@ class DIALSBuilder(object):
         if "--use_conda" not in self.config_flags:
             self.config_flags.append("--use_conda")
 
+        with open("dials", "w"):
+            pass  # ensure we write a new-style environment setup script
+
         configcmd = (
             [
                 conda_python,
@@ -1088,25 +1091,7 @@ class DIALSBuilder(object):
                 workdir=_BUILD_DIR,
             )
         )
-        self.steps.append(self.add_conda_clobber)
         self.steps.append(self.generate_environment_indirector)
-
-    def add_conda_clobber(self):
-        for filename in (
-            "setpaths_all.csh",
-            "setpaths_all.sh",
-            "setpaths.csh",
-            "setpaths_debug.csh",
-            "setpaths_debug.sh",
-            "setpaths.sh",
-        ):
-            with open(os.path.join(_BUILD_DIR, filename), "w") as fh:
-                fh.write("echo '%s'\n" % ("*" * 74))
-                fh.write(
-                    "echo The script to set up the DIALS environment has changed\n"
-                )
-                fh.write("echo Please source or run 'dials' instead\n")
-                fh.write("echo '%s'\n" % ("*" * 74))
 
     def generate_environment_indirector(self):
         filename = os.path.join(os.getcwd(), _BUILD_DIR, "indirection.sh")
