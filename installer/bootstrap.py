@@ -1023,6 +1023,27 @@ class DIALSBuilder(object):
             )
         )
 
+    def add_indirect_command(self, command, args=None):
+        if os.name == "nt":
+            command = command + ".bat"
+        # Relative path to workdir.
+        workdir = [_BUILD_DIR]
+        dots = [".."] * len(workdir)
+        if workdir[0] == ".":
+            dots = []
+        if os.name == "nt":
+            dots.extend([os.getcwd(), _BUILD_DIR, "bin", command])
+        else:
+            dots.extend([_BUILD_DIR, "bin", command])
+        self.steps.append(
+            functools.partial(
+                run_command,
+                command=["./indirection.sh", os.path.join(*dots)] + (args or []),
+                description="(indirect) " + command,
+                workdir=os.path.join(*workdir),
+            )
+        )
+
     def add_refresh(self):
         self.add_command("libtbx.refresh", description="libtbx.refresh", workdir=["."])
 
@@ -1068,6 +1089,7 @@ class DIALSBuilder(object):
             )
         )
         self.steps.append(self.add_conda_clobber)
+        self.steps.append(self.generate_environment_indirector)
 
     def add_conda_clobber(self):
         for filename in (
@@ -1086,14 +1108,25 @@ class DIALSBuilder(object):
                 fh.write("echo Please source or run 'dials' instead\n")
                 fh.write("echo '%s'\n" % ("*" * 74))
 
+    def generate_environment_indirector(self):
+        filename = os.path.join(os.getcwd(), _BUILD_DIR, "indirection.sh")
+        with open(filename, "w") as fh:
+            fh.write("#!/bin/bash\n")
+            fh.write("source %s/conda_base/etc/profile.d/conda.sh\n" % os.getcwd())
+            fh.write("conda activate %s/conda_base\n" % os.getcwd())
+            fh.write('"$@"\n')
+        mode = os.stat(filename).st_mode
+        mode |= (mode & 0o444) >> 2  # copy R bits to X
+        os.chmod(filename, mode)
+
     def add_make(self):
         try:
             nproc = len(os.sched_getaffinity(0))
         except AttributeError:
             nproc = multiprocessing.cpu_count()
-        self.add_command("libtbx.scons", args=["-j", str(nproc)])
+        self.add_indirect_command("libtbx.scons", args=["-j", str(nproc)])
         # run build again to make sure everything is built
-        self.add_command("libtbx.scons", args=["-j", str(nproc)])
+        self.add_indirect_command("libtbx.scons", args=["-j", str(nproc)])
 
     def add_tests(self):
         self.add_command(
