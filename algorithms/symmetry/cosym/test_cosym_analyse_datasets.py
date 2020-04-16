@@ -17,14 +17,51 @@ from dials.algorithms.symmetry.cosym import CosymAnalysis
         "sample_size",
         "use_known_space_group",
         "use_known_lattice_group",
+        "best_monoclinic_beta",
     ),
     [
-        ("P2", None, None, 10, False, False),
-        ("P3", None, None, 20, False, False),
-        ("I23", None, libtbx.Auto, 10, False, False),
-        ("I23", None, libtbx.Auto, 10, True, False),
-        ("P422", (79, 79, 37, 90, 90, 90), None, 20, True, True),
-        ("P321", (59.39, 59.39, 28.35, 90, 90, 120), None, 5, False, False),
+        ("P2", None, None, 10, False, False, True),
+        ("P3", None, None, 20, False, False, True),
+        ("I23", None, libtbx.Auto, 10, False, False, True),
+        ("I23", None, libtbx.Auto, 10, True, False, True),
+        ("P422", (79, 79, 37, 90, 90, 90), None, 20, True, True, True),
+        ("P321", (59.39, 59.39, 28.35, 90, 90, 120), None, 5, False, False, True),
+        (
+            "C121",
+            (112.67, 52.85, 44.47, 90.00, 102.97, 90.00),
+            None,
+            5,
+            False,
+            False,
+            False,
+        ),
+        (
+            "C121",
+            (112.67, 52.85, 44.47, 90.00, 102.97, 90.00),
+            None,
+            5,
+            True,
+            True,
+            False,
+        ),
+        (
+            "I121",
+            (44.47, 52.85, 111.46, 90.00, 99.91, 90.00),
+            None,
+            5,
+            False,
+            False,
+            True,
+        ),
+        (
+            "I121",
+            (44.47, 52.85, 111.46, 90.00, 99.91, 90.00),
+            None,
+            5,
+            True,
+            True,
+            True,
+        ),
     ],
 )
 def test_cosym(
@@ -34,6 +71,7 @@ def test_cosym(
     sample_size,
     use_known_space_group,
     use_known_lattice_group,
+    best_monoclinic_beta,
     run_in_tmpdir,
 ):
     import matplotlib
@@ -66,6 +104,7 @@ def test_cosym(
     params = phil_scope.extract()
     params.cluster.n_clusters = len(expected_reindexing_ops)
     params.dimensions = dimensions
+    params.best_monoclinic_beta = best_monoclinic_beta
     if use_known_space_group:
         params.space_group = expected_space_group.info()
     if use_known_lattice_group:
@@ -116,7 +155,7 @@ def test_cosym(
         for d_id in ridx_set:
             reindexed = (
                 datasets[d_id]
-                .change_basis(cb_op)
+                .change_basis(sgtbx.change_of_basis_op(cb_op) * cb_op_inp_min)
                 .customized_copy(space_group_info=space_group_info)
             )
             assert reindexed.is_compatible_unit_cell(), str(
