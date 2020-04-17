@@ -1068,6 +1068,8 @@ class DIALSBuilder(object):
 
         if not any(flag.startswith("--compiler=") for flag in self.config_flags):
             self.config_flags.append("--compiler=conda")
+        if "--enable_cxx11" not in self.config_flags:
+            self.config_flags.append("--enable_cxx11")
         if "--use_conda" not in self.config_flags:
             self.config_flags.append("--use_conda")
 
