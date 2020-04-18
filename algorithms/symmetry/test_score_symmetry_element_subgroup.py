@@ -72,9 +72,14 @@ def test_score_symmetry_element_subgroup(space_group):
     subgroups = metric_subgroups(
         intensities.crystal_symmetry(), max_delta=2.0, bravais_types_only=False
     )
+    intensities = intensities.change_basis(subgroups.cb_op_inp_minimum)
+    cs = cs.change_basis(subgroups.cb_op_inp_minimum)
+
     cb_op_inp_best = subgroups.result_groups[0]["cb_op_inp_best"]
     lattice_group = subgroups.result_groups[0]["best_subsym"].space_group()
     lattice_group = lattice_group.change_basis(cb_op_inp_best.inverse())
+
+    lattice_group = subgroups.result_groups[0]["subsym"].space_group()
 
     sym_op_scores = []
     for sym_op in lattice_group.smx():

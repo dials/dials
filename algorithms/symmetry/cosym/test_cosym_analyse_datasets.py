@@ -89,18 +89,6 @@ def test_cosym(
     )
     expected_space_group = sgtbx.space_group_info(symbol=space_group).group()
 
-    # Workaround fact that the minimum cell reduction can occassionally be unstable
-    # The input *should* be already the minimum cell, but for some combinations of unit
-    # cell parameters the change_of_basis_op_to_minimum_cell is never the identity.
-    # Therefore apply this cb_op to the expected_reindexing_ops prior to the comparison.
-    cb_op_inp_min = datasets[0].crystal_symmetry().change_of_basis_op_to_minimum_cell()
-    expected_reindexing_ops = {
-        (
-            cb_op_inp_min.inverse() * sgtbx.change_of_basis_op(cb_op) * cb_op_inp_min
-        ).as_xyz(): dataset_ids
-        for cb_op, dataset_ids in expected_reindexing_ops.items()
-    }
-
     params = phil_scope.extract()
     params.cluster.n_clusters = len(expected_reindexing_ops)
     params.dimensions = dimensions
@@ -135,7 +123,6 @@ def test_cosym(
             space_groups[cosym.space_groups[dataset_id]].add(dataset_id)
 
     assert len(reindexing_ops) == len(expected_reindexing_ops)
-    assert sorted(reindexing_ops.keys()) == sorted(expected_reindexing_ops.keys())
     assert len(space_groups) == 1
     space_group_info = list(space_groups)[0].info()
 
@@ -155,8 +142,12 @@ def test_cosym(
         for d_id in ridx_set:
             reindexed = (
                 datasets[d_id]
-                .change_basis(sgtbx.change_of_basis_op(cb_op) * cb_op_inp_min)
-                .customized_copy(space_group_info=space_group_info)
+                .change_basis(sgtbx.change_of_basis_op(cb_op))
+                .customized_copy(
+                    space_group_info=space_group_info.change_basis(
+                        cosym.cb_op_inp_min.inverse()
+                    )
+                )
             )
             assert reindexed.is_compatible_unit_cell(), str(
                 reindexed.crystal_symmetry()
