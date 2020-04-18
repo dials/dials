@@ -624,22 +624,17 @@ def set_git_repository_config_to_rebase(config):
 
 
 def git(
-    module,
-    parameters,
-    git_available,
-    destination=None,
-    reference=None,
-    reference_base=None,
-    branch_override=None,
+    module, source_list, branch=None, git_available=True, reference_base=None,
 ):
     """Retrieve a git repository, either by running git directly
        or by downloading and unpacking an archive."""
-    if destination is None:
-        destination = os.path.join("modules", module)
+    destination = os.path.join("modules", module)
     destpath, destdir = os.path.split(destination)
 
-    if reference_base and not reference:
+    if reference_base:
         reference = os.path.join(reference_base, module)
+    else:
+        reference = None
 
     if os.path.exists(destination):
         if not os.path.exists(os.path.join(destination, ".git")):
@@ -700,14 +695,13 @@ def git(
         return module, "OK", "Checked out revision " + output[0].strip()
 
     git_parameters = []
+    if branch:
+        git_parameters.extend(["-b", branch])
     try:
         os.makedirs(destpath)
     except OSError:
         pass
-    for source_candidate in parameters:
-        if source_candidate.startswith("-"):
-            git_parameters = source_candidate.split(" ")
-            continue
+    for source_candidate in source_list:
         if not source_candidate.lower().startswith("http"):
             connection = source_candidate.split(":")[0]
             if not ssh_allowed_for_connection(connection):
@@ -794,38 +788,22 @@ def git(
     return module, "ERROR", "Sources not available. No git installation available"
 
 
-##### Modules #####
-MODULES = {}
-for module in (
+REPOSITORIES = (
     "cctbx/annlib_adaptbx",
     "cctbx/boost",
     "cctbx/cctbx_project",
     "cctbx/dxtbx",
+    "dials/annlib",
+    "dials/cbflib",
+    "dials/ccp4io",
+    "dials/ccp4io_adaptbx",
+    "dials/clipper",
+    "dials/dials",
+    "dials/eigen",
+    "dials/gui_resources",
+    "dials/tntbx",
     "xia2/xia2",
-):
-    modulename = module.split("/")[1]
-    MODULES[modulename] = [
-        "git@github.com:%s.git" % module,
-        "https://github.com/%s.git" % module,
-        "https://github.com/%s/archive/master.zip" % module,
-    ]
-for module in (
-    "annlib",
-    "cbflib",
-    "ccp4io",
-    "ccp4io_adaptbx",
-    "clipper",
-    "dials",
-    "eigen",
-    "gui_resources",
-    "tntbx",
-):
-    MODULES[module] = [
-        "git@github.com:dials/%s.git" % module,
-        "https://github.com/dials/%s.git" % module,
-        "https://github.com/dials/%s/archive/master.zip" % module,
-    ]
-
+)
 
 ###################################
 ##### Base Configuration      #####
@@ -855,7 +833,7 @@ class DIALSBuilder(object):
     def __init__(self, options):
         """Create and add all the steps."""
         self.git_reference = options.git_reference
-        self.git_branches = dict(options.set_branch or [])
+        self.git_branches = dict(options.branch or [])
         self.steps = []
         # self.config_flags are only from the command line
         # LIBTBX can still be used to always set flags specific to a builder
@@ -943,18 +921,28 @@ class DIALSBuilder(object):
         except OSError:
             git_available = False
 
-        def git_fn(module):
+        def git_fn(repository):
+            modulename = repository.split("/")[1]
+            branch = self.git_branches.get(modulename)
+            git_source = [
+                "git@github.com:%s.git" % repository,
+                "https://github.com/%s.git" % repository,
+                "https://github.com/%s/archive/%s.zip"
+                % (repository, branch or "master"),
+            ]
             return git(
-                module,
-                MODULES[module],
+                modulename,
+                git_source,
+                branch=branch,
                 git_available=git_available,
                 reference_base=reference_base,
-                branch_override=self.git_branches.get(module),
             )
 
         update_pool = multiprocessing.pool.ThreadPool(20)
         try:
-            for result in update_pool.imap_unordered(git_fn, MODULES):
+            for result in update_pool.imap_unordered(git_fn, REPOSITORIES):
+                # for r in REPOSITORIES:
+                #  result = git_fn(r)
                 module, result, output = result
                 output = (result + " - " + output).replace(
                     "\n", "\n" + " " * (len(module + result) + 5)
@@ -967,7 +955,6 @@ class DIALSBuilder(object):
                     elif result == "ERROR":
                         output = "\x1b[31m" + output + "\x1b[0m"
                 print(module + ": " + output)
-        # results = update_pool.map(git_fn, MODULES)
         except KeyboardInterrupt:
             update_pool.terminate()
             sys.exit("\naborted with Ctrl+C")
@@ -1206,11 +1193,13 @@ be passed separately with quotes to avoid confusion (e.g
         choices=["3.6", "3.7", "3.8"],
     )
     parser.add_argument(
-        "--set-branch",
-        nargs="*",
+        "--branch",
         type=repository_at_tag,
-        # help="during 'update' step move a repository to a given branch. Specify as repository@branch, eg. 'dials@dials-next'",
-        help=argparse.SUPPRESS,
+        action="append",
+        help=(
+            "during 'update' step when a repository is newly cloned set it to a given branch."
+            "Specify as repository@branch, eg. 'dials@dials-next'"
+        ),
     )
 
     options = parser.parse_args()
