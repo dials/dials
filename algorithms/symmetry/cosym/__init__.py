@@ -52,6 +52,11 @@ space_group = None
 lattice_symmetry_max_delta = 5.0
   .type = float(value_min=0)
 
+best_monoclinic_beta = True
+  .type = bool
+  .help = "If True, then for monoclinic centered cells, I2 will be preferred over C2 if"
+          "it gives a more oblique cell (i.e. smaller beta angle)."
+
 dimensions = Auto
   .type = int(value_min=2)
 
@@ -137,6 +142,7 @@ class CosymAnalysis(symmetry_base, Subject):
             min_cc_half=params.min_cc_half,
             relative_length_tolerance=None,
             absolute_angle_tolerance=None,
+            best_monoclinic_beta=params.best_monoclinic_beta,
         )
         Subject.__init__(
             self, events=["optimised", "analysed_symmetry", "analysed_clusters"]
@@ -146,23 +152,25 @@ class CosymAnalysis(symmetry_base, Subject):
         if self.params.space_group is not None:
 
             def _map_space_group_to_input_cell(intensities, space_group):
+                from cctbx.sgtbx.bravais_types import bravais_lattice
+
                 best_subgroup = find_matching_symmetry(
-                    intensities.unit_cell(), space_group
+                    intensities.unit_cell(),
+                    space_group,
+                    best_monoclinic_beta=str(bravais_lattice(group=space_group))
+                    == "mI",
                 )
                 cb_op_inp_best = best_subgroup["cb_op_inp_best"]
                 best_subsym = best_subgroup["best_subsym"]
-                cb_op_best_ref = best_subsym.change_of_basis_op_to_reference_setting()
-                ref_subsym = best_subsym.change_basis(cb_op_best_ref)
-                cb_op_ref_primitive = (
-                    ref_subsym.change_of_basis_op_to_primitive_setting()
+                cb_op_best_primitive = (
+                    best_subsym.change_of_basis_op_to_primitive_setting()
                 )
+
                 sg_cb_op_inp_primitive = (
                     space_group.info().change_of_basis_op_to_primitive_setting()
                 )
                 sg_primitive = space_group.change_basis(sg_cb_op_inp_primitive)
-                sg_best = sg_primitive.change_basis(
-                    (cb_op_ref_primitive * cb_op_best_ref).inverse()
-                )
+                sg_best = sg_primitive.change_basis(cb_op_best_primitive.inverse())
                 # best_subgroup above is the bravais type, so create thin copy here with the
                 # user-input space group instead
                 best_subgroup = {
@@ -181,6 +189,9 @@ class CosymAnalysis(symmetry_base, Subject):
 
             self.intensities, self.best_subgroup = _map_space_group_to_input_cell(
                 self.intensities, self.params.space_group.group()
+            )
+            self.best_subgroup["cb_op_inp_best"] = (
+                self.best_subgroup["cb_op_inp_best"] * self.cb_op_inp_min
             )
             self.input_space_group = self.intensities.space_group()
 

@@ -25,7 +25,9 @@ def metric_supergroup(group):
     )
 
 
-def find_matching_symmetry(unit_cell, target_space_group, max_delta=5):
+def find_matching_symmetry(
+    unit_cell, target_space_group, max_delta=5, best_monoclinic_beta=True
+):
     cs = crystal.symmetry(unit_cell=unit_cell, space_group=sgtbx.space_group())
     target_bravais_t = bravais_lattice(
         group=target_space_group.info().reference_setting().group()
@@ -83,7 +85,7 @@ def find_matching_symmetry(unit_cell, target_space_group, max_delta=5):
 
         # Choose best setting for monoclinic and orthorhombic systems
         cb_op_best_cell = ref_subsym.change_of_basis_op_to_best_cell(
-            best_monoclinic_beta=True
+            best_monoclinic_beta=best_monoclinic_beta
         )
 
         best_subsym = ref_subsym.change_basis(cb_op_best_cell)

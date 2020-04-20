@@ -309,6 +309,9 @@ def symmetry(experiments, reflection_tables, params=None):
     input data and filtering settings e.g partiality_threshold"""
             )
 
+        datasets = [
+            ma.as_anomalous_array().merge_equivalents().array() for ma in datasets
+        ]
         result = LaueGroupAnalysis(
             datasets,
             normalisation=params.normalisation,

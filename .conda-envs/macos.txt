@@ -35,6 +35,7 @@ conda-forge::pytest>=4.5,<5.0
 conda-forge::pytest-forked
 conda-forge::pytest-mock<2.0
 conda-forge::pytest-xdist
+conda-forge::python<3.6.10
 conda-forge::requests
 conda-forge::scikit-learn=0.20.2
 conda-forge::scipy=1.2.1

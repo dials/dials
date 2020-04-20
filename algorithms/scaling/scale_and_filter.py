@@ -471,9 +471,11 @@ def make_histogram_plots(cycle_results):
     )
     colors = [(color_list * int(math.ceil(n / len(color_list))))[i] for i in range(n)]
     if n == 1:
-        legends = ["Delta CC-half analysis"]
+        legends = ["Delta CC<sub>½</sub> analysis"]
     else:
-        legends = [ordinal(i) + " Delta CC-half analysis" for i in range(1, n + 1)]
+        legends = [
+            ordinal(i) + " Delta CC<sub>½</sub> analysis" for i in range(1, n + 1)
+        ]
     if "image_ranges_removed" in cycle_results[0]:
         n_rej = [len(res["image_ranges_removed"]) for res in cycle_results]
     else:
@@ -542,9 +544,9 @@ def make_per_dataset_plot(delta_cchalf_i):
                     }
                 ],
                 "layout": {
-                    "title": "Delta CC-Half vs group",
+                    "title": "Delta CC<sub>½</sub> vs group",
                     "xaxis": {"title": "Group number"},
-                    "yaxis": {"title": "Delta CC-Half"},
+                    "yaxis": {"title": "Delta CC<sub>½</sub>"},
                 },
             }
         }
