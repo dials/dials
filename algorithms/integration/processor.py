@@ -373,7 +373,6 @@ class Task(object):
         :param params: The processing parameters
         :param job: The frames to integrate
         :param flatten: Flatten the shoeboxes
-        :param save_shoeboxes: Save the shoeboxes to file
         :param executor: The executor class
         """
         assert executor is not None, "No executor given"
