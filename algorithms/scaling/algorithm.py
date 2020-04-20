@@ -450,7 +450,7 @@ Scaling and filtering can only be performed in multi-dataset scaling mode
             register_scaler_observers(self.scaler)
         self.filtering_results = results
         # Print summary of results
-        logger.info(results.make_summary())
+        logger.info(results)
         with open(self.params.filtering.output.scale_and_filter_results, "w") as f:
             json.dump(self.filtering_results.to_dict(), f, indent=2)
         # All done!
