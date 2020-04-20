@@ -12,6 +12,7 @@ import psutil
 
 import boost.python
 import dials.algorithms.integration
+import dials.util
 import libtbx
 from dials.array_family import flex
 from dials_algorithms_integration_integrator_ext import (
@@ -29,7 +30,6 @@ __all__ = [
     "Block",
     "build_processor",
     "Debug",
-    "ExecuteParallelTask",
     "Executor",
     "Group",
     "GroupList",
@@ -197,19 +197,16 @@ class Parameters(object):
         self.debug.update(other.debug)
 
 
-class ExecuteParallelTask(object):
+def execute_parallel_task(task):
     """
-    Helper class to run things on cluster
+    Helper function to run things on cluster
     """
 
-    def __call__(self, task):
-        from dials.util import log
-
-        log.config_simple_cached()
-        result = task()
-        handlers = logging.getLogger("dials").handlers
-        assert len(handlers) == 1, "Invalid number of logging handlers"
-        return result, handlers[0].messages()
+    dials.util.log.config_simple_cached()
+    result = task()
+    handlers = logging.getLogger("dials").handlers
+    assert len(handlers) == 1, "Invalid number of logging handlers"
+    return result, handlers[0].messages()
 
 
 class Processor(object):
@@ -291,7 +288,7 @@ class Processor(object):
                 result[0].data = None
 
             multi_node_parallel_map(
-                func=ExecuteParallelTask(),
+                func=execute_parallel_task,
                 iterable=list(self.manager.tasks()),
                 njobs=mp_njobs,
                 nproc=mp_nproc,

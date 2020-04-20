@@ -9,7 +9,7 @@ import psutil
 from libtbx import Auto
 
 from dials.array_family import flex
-from dials.algorithms.integration.processor import ExecuteParallelTask
+from dials.algorithms.integration.processor import execute_parallel_task
 from dials.util.mp import multi_node_parallel_map
 
 from dials_algorithms_integration_parallel_integrator_ext import (
@@ -1280,7 +1280,7 @@ class ReferenceCalculatorProcessor(object):
                 result[0].data = None
 
             multi_node_parallel_map(
-                func=ExecuteParallelTask(),
+                func=execute_parallel_task,
                 iterable=reference_manager.tasks(),
                 nproc=params.integration.mp.nproc,
                 njobs=params.integration.mp.njobs,
@@ -1360,7 +1360,7 @@ class IntegratorProcessor(object):
                 result[0].data = None
 
             multi_node_parallel_map(
-                func=ExecuteParallelTask(),
+                func=execute_parallel_task,
                 iterable=integration_manager.tasks(),
                 nproc=params.integration.mp.nproc,
                 njobs=params.integration.mp.njobs,
