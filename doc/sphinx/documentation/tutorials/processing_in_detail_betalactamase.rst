@@ -558,7 +558,7 @@ This is run simply with::
 
   dials.report scaled.expt scaled.refl
 
-which produces the file :download:`dials-report.html <betalactamase-report.html>`.
+which produces the file :download:`dials.report.html <betalactamase-report.html>`.
 
 This report includes plots showing the scan-varying crystal orientation
 and unit cell parameters. The latter of these is useful to check that

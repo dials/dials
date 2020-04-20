@@ -372,7 +372,7 @@ def test_change_of_basis_ops_to_minimum_cell_1037(mocker):
     cb_ops_as_xyz = [cb_op.as_xyz() for cb_op in cb_ops]
     assert len(set(cb_ops_as_xyz)) == 1
     # Actual cb_ops are machine dependent (sigh)
-    assert cb_ops_as_xyz[0] in ("x,y,z", "-x,y,-z")
+    assert cb_ops_as_xyz[0] in ("x,y,z", "-x,y,-z", "x-y,-y,-z")
 
 
 def test_median_cell():

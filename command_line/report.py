@@ -60,7 +60,7 @@ import libtbx.phil
 phil_scope = libtbx.phil.parse(
     """
   output {
-    html = dials-report.html
+    html = dials.report.html
       .type = path
       .help = "The name of the output html file"
     json = None

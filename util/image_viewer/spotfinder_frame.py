@@ -23,7 +23,7 @@ from dials.util.image_viewer.spotfinder_wrap import chooser_wrapper
 from dxtbx.imageset import ImageSet
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model.experiment_list import ExperimentListFactory
-from libtbx.utils import flat_list, time_log
+from libtbx.utils import flat_list
 from rstbx.slip_viewer import pyslip
 from rstbx.viewer.frame import SettingsFrame
 from scitbx import matrix
@@ -122,16 +122,6 @@ class SpotFrame(XrayFrame):
         self.mask_input = self.params.mask
         self.mask_image_viewer = None
         self._mask_frame = None
-
-        self.show_all_pix_timer = time_log("show_all_pix")
-        self.show_threshold_pix_timer = time_log("show_threshold_pix")
-        self.show_shoebox_timer = time_log("show_shoebox")
-        self.show_max_pix_timer = time_log("show_max_pix")
-        self.show_ctr_mass_timer = time_log("show_ctr_mass")
-        self.draw_all_pix_timer = time_log("draw_all_pix")
-        self.draw_shoebox_timer = time_log("draw_shoebox")
-        self.draw_max_pix_timer = time_log("draw_max_pix")
-        self.draw_ctr_mass_timer = time_log("draw_ctr_mass_pix")
 
         self.display_foreground_circles_patch = False  # hard code this option, for now
         self._dispersion_debug_memo = {}
@@ -1049,7 +1039,6 @@ class SpotFrame(XrayFrame):
                     update=False,
                 )
             if self.settings.show_all_pix:
-                self.draw_all_pix_timer.start()
                 if len(all_pix_data) > 1:
                     if not self.display_foreground_circles_patch:
                         for key, value in all_pix_data.items():
@@ -1120,9 +1109,7 @@ class SpotFrame(XrayFrame):
                                 update=False,
                             )
                         )
-                self.draw_all_pix_timer.stop()
             if self.settings.show_shoebox and len(shoebox_data):
-                self.draw_shoebox_timer.start()
                 self.shoebox_layer = self.pyslip.AddPolygonLayer(
                     shoebox_data,
                     map_rel=True,
@@ -1132,9 +1119,7 @@ class SpotFrame(XrayFrame):
                     name="<shoebox_layer>",
                     update=False,
                 )
-                self.draw_shoebox_timer.stop()
             if self.settings.show_ctr_mass and len(ctr_mass_data):
-                self.draw_ctr_mass_timer.start()
                 self.ctr_mass_layer = self.pyslip.AddPolygonLayer(
                     ctr_mass_data,
                     map_rel=True,
@@ -1144,9 +1129,7 @@ class SpotFrame(XrayFrame):
                     name="<ctr_mass_layer>",
                     update=False,
                 )
-                self.draw_ctr_mass_timer.stop()
             if self.settings.show_max_pix and len(max_pix_data):
-                self.draw_max_pix_timer.start()
                 self.max_pix_layer = self.pyslip.AddPointLayer(
                     max_pix_data,
                     color="pink",
@@ -1156,7 +1139,6 @@ class SpotFrame(XrayFrame):
                     show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
                     update=False,
                 )
-                self.draw_max_pix_timer.stop()
             if len(vector_data) and len(vector_text_data):
                 self.vector_layer = self.pyslip.AddPolygonLayer(
                     vector_data,
@@ -1382,7 +1364,6 @@ class SpotFrame(XrayFrame):
                         and reflection["shoebox"].mask.size() > 0
                         and n == 0
                     ):
-                        self.show_all_pix_timer.start()
                         shoebox = reflection["shoebox"]
                         iz = i_frame - z0
                         if not reflection["id"] in all_pix_data:
@@ -1437,10 +1418,8 @@ class SpotFrame(XrayFrame):
                                     ),
                                 )
                             )
-                        self.show_all_pix_timer.stop()
 
                     if self.settings.show_shoebox:
-                        self.show_shoebox_timer.start()
                         x0_, y0_ = map_coords(x0, y0, panel)
                         x1_, y1_ = map_coords(x1, y1, panel)
                         # Change shoebox colour depending on index id
@@ -1457,14 +1436,12 @@ class SpotFrame(XrayFrame):
                             (((x1_, y0_), (x0_, y0_)), my_attrs),
                         ]
                         shoebox_data.extend(lines)
-                        self.show_shoebox_timer.stop()
 
                     if (
                         self.settings.show_max_pix
                         and "shoebox" in reflection
                         and reflection["shoebox"].data.size() > 0
                     ):
-                        self.show_max_pix_timer.start()
                         shoebox = reflection["shoebox"].data
                         offset = flex.max_index(shoebox)
                         offset, k = divmod(offset, shoebox.all()[2])
@@ -1478,10 +1455,8 @@ class SpotFrame(XrayFrame):
                                 reflection["panel"],
                             )
                             max_pix_data.append((x, y))
-                        self.show_max_pix_timer.stop()
 
                     if self.settings.show_ctr_mass and "xyzobs.px.value" in reflection:
-                        self.show_ctr_mass_timer.start()
                         centroid = reflection["xyzobs.px.value"]
                         # ticket #107
                         if centroid[2] >= i_frame and centroid[2] <= (
@@ -1501,7 +1476,6 @@ class SpotFrame(XrayFrame):
                                 (((xm1, y), (xp1, y)), ctr_mass_dict),
                             ]
                             ctr_mass_data.extend(lines)
-                        self.show_ctr_mass_timer.stop()
 
             if ("xyzcal.px" in ref_list or "xyzcal.mm" in ref_list) and (
                 self.settings.show_predictions

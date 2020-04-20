@@ -199,7 +199,7 @@ class ImageSetImporter(object):
                     "dynamic_shadowing": self.params.format.dynamic_shadowing,
                     "multi_panel": self.params.format.multi_panel,
                 }
-            except Exception:
+            except AttributeError:
                 format_kwargs = None
 
             # Check if a template has been set and print help if not, otherwise try to
@@ -224,7 +224,7 @@ class ImageSetImporter(object):
                         % self.params.input.directory
                     )
             else:
-                raise Sorry("No experimetns found")
+                raise Sorry("No experiments found")
 
         if self.params.identifier_type:
             generate_experiment_identifiers(experiments, self.params.identifier_type)

@@ -252,17 +252,12 @@ class LatticeSearch(indexer.Indexer):
                     continue
 
             if self.params.known_symmetry.space_group is not None:
-                new_crystal, cb_op_to_primitive = self._symmetry_handler.apply_symmetry(
+                new_crystal, _ = self._symmetry_handler.apply_symmetry(
                     experiments[0].crystal
                 )
                 if new_crystal is None:
                     continue
                 experiments[0].crystal.update(new_crystal)
-                if not cb_op_to_primitive.is_identity_op():
-                    sel = refl["id"] > -1
-                    miller_indices = refl["miller_index"].select(sel)
-                    miller_indices = cb_op_to_primitive.apply(miller_indices)
-                    refl["miller_index"].set_selected(sel, miller_indices)
 
             args.append((experiments, refl))
             if len(args) == self.params.basis_vector_combinations.max_refine:

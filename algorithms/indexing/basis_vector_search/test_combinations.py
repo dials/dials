@@ -6,6 +6,7 @@ from cctbx import sgtbx
 import scitbx.matrix
 from scitbx.math import euler_angles_as_matrix
 from dxtbx.model import Crystal
+from dials.algorithms.indexing.symmetry import find_matching_symmetry
 
 from . import combinations, FFT1D
 
@@ -15,34 +16,55 @@ def test_combinations(setup_rlp):
     strategy = FFT1D(max_cell)
     basis_vectors, used = strategy.find_basis_vectors(setup_rlp["rlp"])
 
+    target_symmetry_primitive = (
+        setup_rlp["crystal_symmetry"]
+        .primitive_setting()
+        .customized_copy(space_group_info=sgtbx.space_group().info())
+    )
+    target_symmetry_sg_only = (
+        setup_rlp["crystal_symmetry"]
+        .primitive_setting()
+        .customized_copy(unit_cell=None)
+    )
+    target_symmetry_ref = setup_rlp["crystal_symmetry"].as_reference_setting()
+
     for target_symmetry in (
         setup_rlp["crystal_symmetry"],
-        setup_rlp["crystal_symmetry"]
-        .primitive_setting()
-        .customized_copy(space_group_info=sgtbx.space_group().info()),
-        setup_rlp["crystal_symmetry"]
-        .primitive_setting()
-        .customized_copy(unit_cell=None),
-        setup_rlp["crystal_symmetry"].as_reference_setting(),
+        target_symmetry_primitive,
+        target_symmetry_sg_only,
+        target_symmetry_ref,
     ):
 
         crystal_models = combinations.candidate_orientation_matrices(
             basis_vectors, max_combinations=50
         )
+        crystal_models = list(crystal_models)
         filtered_crystal_models = combinations.filter_known_symmetry(
             crystal_models, target_symmetry=target_symmetry
         )
         filtered_crystal_models = list(filtered_crystal_models)
 
-        assert len(filtered_crystal_models)
+        assert filtered_crystal_models
         for model in filtered_crystal_models:
+            best_subgroup = find_matching_symmetry(
+                model.get_unit_cell(), target_symmetry.space_group()
+            )
             if target_symmetry.unit_cell() is not None:
-                assert model.get_unit_cell().minimum_cell().is_similar_to(
-                    target_symmetry.minimum_cell().unit_cell(),
+                assert best_subgroup["best_subsym"].unit_cell().is_similar_to(
+                    setup_rlp["crystal_symmetry"]
+                    .as_reference_setting()
+                    .best_cell()
+                    .unit_cell(),
                     relative_length_tolerance=0.1,
                     absolute_angle_tolerance=5,
-                ) or model.get_unit_cell().is_similar_to(
-                    target_symmetry.unit_cell(),
+                ) or best_subgroup[
+                    "best_subsym"
+                ].minimum_cell().unit_cell().is_similar_to(
+                    setup_rlp["crystal_symmetry"]
+                    .as_reference_setting()
+                    .best_cell()
+                    .minimum_cell()
+                    .unit_cell(),
                     relative_length_tolerance=0.1,
                     absolute_angle_tolerance=5,
                 )
