@@ -38,9 +38,11 @@ import libtbx.scheduling.stacktrace as _lss
 def _stacktrace_tracer(error, trace, intercepted_call=_lss.set_last_exception):
     """Intercepts and prints ephemeral stacktraces."""
     if error and trace:
-        print(
-            "\n\neasy_mp crash detected; subprocess trace: ----\n%s%s\n%s\n\n"
-            % ("".join(trace), error, "-" * 46)
+        logging.getLogger("dials").error(
+            "\n\neasy_mp crash detected; subprocess trace: ----\n%s%s\n%s\n\n",
+            "".join(trace),
+            error,
+            "-" * 46,
         )
     return intercepted_call(error, trace)
 
