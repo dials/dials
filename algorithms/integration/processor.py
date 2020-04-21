@@ -840,8 +840,8 @@ class Manager(object):
                 # There is enough memory to run, but only if we count swap.
                 output_level = logging.WARNING
                 report.append(
-                    "Reducing number of processes from %d to 1 due to memory constraints.",
-                    self.params.mp.nproc,
+                    "Reducing number of processes from %d to 1 due to memory constraints."
+                    % self.params.mp.nproc,
                 )
                 report.append("Running this process will rely on swap usage!")
                 self.params.mp.nproc = 1
