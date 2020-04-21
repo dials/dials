@@ -379,8 +379,6 @@ class Task(object):
         """
         assert executor is not None, "No executor given"
         assert len(reflections) > 0, "Zero reflections given"
-        assert params.block.max_memory_usage > 0.0, "Max memory % must be > 0"
-        assert params.block.max_memory_usage <= 1.0, "Max memory % must be < 1"
         self.index = index
         self.job = job
         self.experiments = experiments
@@ -458,70 +456,6 @@ class Task(object):
             frame1,
             self.params.debug.output,
         )
-
-        assert (
-            self.params.block.max_memory_usage > 0.0
-        ), "maximum memory usage must be > 0"
-        assert (
-            self.params.block.max_memory_usage <= 1.0
-        ), "maximum memory usage must be <= 1"
-
-        # Compute expected memory usage and warn if not enough
-        required_memory = processor.compute_max_memory_usage()
-        available_memory = psutil.virtual_memory().available
-        available_swap = psutil.swap_memory().free
-        available_memory_incl_swap = available_memory + available_swap
-        available_limit = (
-            available_memory_incl_swap * self.params.block.max_memory_usage
-        )
-        if required_memory > available_limit:
-            xsize, ysize, zsize = _average_bbox_size(self.reflections)
-            raise MemoryError(
-                """
-        There was a problem allocating memory for shoeboxes.  This could be caused
-        by a highly mosaic crystal model.  Possible solutions include increasing the
-        percentage of memory allowed for shoeboxes or decreasing the block size.
-        The average shoebox size is %d x %d pixels x %d images - is your crystal
-        really this mosaic?
-            Available system memory (excluding swap): %.1f GB
-            Available system memory (including swap): %.1f GB
-            Shoebox memory limit: %.1f GB
-            Required shoebox memory: %.1f GB
-    """
-                % (
-                    xsize,
-                    ysize,
-                    zsize,
-                    available_memory / 1e9,
-                    available_memory_incl_swap / 1e9,
-                    available_limit / 1e9,
-                    required_memory / 1e9,
-                )
-            )
-        available_immediate_limit = (
-            available_memory * self.params.block.max_memory_usage
-        )
-        logger.info(" Memory usage:")
-        logger.info(
-            "  Available system memory (excluding swap): %.1f GB"
-            % (available_memory / 1e9)
-        )
-        logger.info("  Available swap memory: %.1f GB" % (available_swap / 1e9))
-        logger.info(
-            "  Available system memory (including swap): %.1f GB"
-            % (available_memory_incl_swap / 1e9)
-        )
-        logger.info(
-            "  Limit shoebox memory (including swap): %.1f GB" % (available_limit / 1e9)
-        )
-        logger.info(
-            "  Limit shoebox memory (excluding swap): %.1f GB"
-            % (available_immediate_limit / 1e9)
-        )
-        logger.info("  Required shoebox memory: %.1f GB" % (required_memory / 1e9))
-        logger.info("")
-        if required_memory > available_immediate_limit:
-            logger.warning("Running this process may cause memory swapping!")
 
         # Loop through the imageset, extract pixels and process reflections
         read_time = 0.0
@@ -813,114 +747,121 @@ class Manager(object):
         Compute the number of processors
         """
 
-        # Set the memory usage per processor
+        # Get the maximum shoebox memory to estimate memory use for one process
+        memory_required_per_process = flex.max(
+            self.jobs.shoebox_memory(self.reflections, self.params.shoebox.flatten)
+        )
+
+        # Obtain information about system memory
+        available_memory = psutil.virtual_memory().available
+        available_swap = psutil.swap_memory().free
+        available_incl_swap = available_memory + available_swap
+        available_limit = available_incl_swap * self.params.block.max_memory_usage
+        available_immediate_limit = (
+            available_memory * self.params.block.max_memory_usage
+        )
+
+        # Compile a memory report
+        report = [
+            "Memory situation report:",
+        ]
+
+        def _report(description, value):
+            report.append("  %-50s:%5.1f GB" % (description, value))
+
+        _report("Available system memory (excluding swap)", available_memory / 1e9)
+        _report("Available swap memory", available_swap / 1e9)
+        _report("Available system memory (including swap)", available_incl_swap / 1e9)
+        _report(
+            "Maximum memory for processing (including swap)", available_limit / 1e9,
+        )
+        _report(
+            "Maximum memory for processing (excluding swap)",
+            available_immediate_limit / 1e9,
+        )
+        _report("Memory required per process", memory_required_per_process / 1e9)
+
+        # Check if a ulimit applies
+        rlimit = getattr(resource, "RLIMIT_VMEM", getattr(resource, "RLIMIT_AS"))
+        if rlimit:
+            try:
+                ulimit = resource.getrlimit(rlimit)[0]
+                if ulimit <= 0:
+                    report.append("  no memory ulimit set")
+                else:
+                    ulimit_used = psutil.Process().memory_info().rss
+                    _report("Memory ulimit detected", ulimit / 1e9)
+                    _report("Memory ulimit in use", ulimit_used / 1e9)
+                    available_memory = max(
+                        0, min(available_memory, ulimit - ulimit_used)
+                    )
+                    available_incl_swap = max(
+                        0, min(available_incl_swap, ulimit - ulimit_used)
+                    )
+                    available_immediate_limit = (
+                        available_memory * self.params.block.max_memory_usage
+                    )
+                    _report("Available system memory (limited)", available_memory / 1e9)
+                    _report(
+                        "Available system memory (incl. swap; limited)",
+                        available_incl_swap / 1e9,
+                    )
+                    _report(
+                        "Maximum memory for processing (exc. swap; limited)",
+                        available_immediate_limit / 1e9,
+                    )
+            except Exception as e:
+                logger.debug(
+                    "Could not obtain ulimit values due to %s", str(e), exc_info=True
+                )
+
+        output_level = logging.INFO
+
+        # Limit the number of parallel processes by amount of available memory
         if self.params.mp.method == "multiprocessing" and self.params.mp.nproc > 1:
 
-            # Get the maximum shoebox memory
-            memory_required_per_process = flex.max(
-                self.jobs.shoebox_memory(self.reflections, self.params.shoebox.flatten)
-            )
-            logger.debug(
-                "Memory required per process: %.1f GB",
-                memory_required_per_process / 1e9,
-            )
-
             # Compute expected memory usage and warn if not enough
-            available_memory = psutil.virtual_memory().available
-            available_swap = psutil.swap_memory().free
-            available_incl_swap = available_memory + available_swap
-            available_immediate_limit = (
-                available_memory * self.params.block.max_memory_usage
-            )
-            logger.debug(
-                "Available memory: %.1f GB, swap: %.1f GB, " "memory limit: %.1f GB",
-                available_memory / 1e9,
-                available_swap / 1e9,
-                available_immediate_limit / 1e9,
-            )
-            rlimit = getattr(resource, "RLIMIT_VMEM", getattr(resource, "RLIMIT_AS"))
-            if rlimit:
-                # try to check for process limit values
-                try:
-                    ulimit = resource.getrlimit(rlimit)[0]
-                    if ulimit <= 0:
-                        logger.debug("No memory ulimit set")
-                    else:
-                        ulimit_used = psutil.Process().memory_info().rss
-                        logger.debug(
-                            "Detected ulimit of %d bytes, of which %d are used",
-                            ulimit,
-                            ulimit_used,
-                        )
-                        available_memory = max(
-                            0, min(available_memory, ulimit - ulimit_used)
-                        )
-                        available_incl_swap = max(
-                            0, min(available_incl_swap, ulimit - ulimit_used)
-                        )
-                        available_immediate_limit = (
-                            available_memory * self.params.block.max_memory_usage
-                        )
-                        logger.debug(
-                            "Revised available memory: %.1f GB, "
-                            "revised available memory incl. swap: %.1f GB, "
-                            "revised immediate limit: %.1f GB",
-                            available_memory / 1e9,
-                            available_incl_swap / 1e9,
-                            available_immediate_limit / 1e9,
-                        )
-                except Exception as e:
-                    logger.debug("Could not obtain ulimit values due to %s", str(e))
             njobs = available_immediate_limit / memory_required_per_process
             if njobs >= self.params.mp.nproc:
                 # There is enough memory. Take no action
-                self.params.block.max_memory_usage /= self.params.mp.nproc  # why?
-                return
-            if njobs >= 1:
+                pass
+            elif njobs >= 1:
                 # There is enough memory to run, but not as many processes as requested
-                logger.info(
-                    "Reducing number of processes from %d to %d due to memory constraints",
-                    self.params.mp.nproc,
-                    int(njobs),
+                output_level = logging.WARNING
+                report.append(
+                    "Reducing number of processes from %d to %d due to memory constraints."
+                    % (self.params.mp.nproc, int(njobs))
                 )
                 self.params.mp.nproc = int(njobs)
-                self.params.block.max_memory_usage /= self.params.mp.nproc  # why?
-                return
-            if (
+            elif (
                 available_incl_swap * self.params.block.max_memory_usage
                 >= memory_required_per_process
             ):
                 # There is enough memory to run, but only if we count swap.
-                logger.info(
+                output_level = logging.WARNING
+                report.append(
                     "Reducing number of processes from %d to 1 due to memory constraints.",
                     self.params.mp.nproc,
                 )
-                logger.warning("Running this process will rely on swap usage!")
+                report.append("Running this process will rely on swap usage!")
                 self.params.mp.nproc = 1
-                return
-            # There is not enough memory to run
-            xsize, ysize, zsize = _average_bbox_size(self.reflections)
+            else:
+                # There is not enough memory to run
+                output_level = logging.ERROR
+
+        report.append("")
+        logger.log(output_level, "\n".join(report))
+
+        if output_level >= logging.ERROR:
             raise MemoryError(
                 """
-        Not enough memory to run integration jobs.  This could be caused by a
-        highly mosaic crystal model.  Possible solutions include increasing the
-        percentage of memory allowed for shoeboxes or decreasing the block size.
-        The average shoebox size is %d x %d pixels x %d images - is your crystal
-        really this mosaic?
-            Available system memory (excluding swap): %.1f GB
-            Available system memory (including swap): %.1f GB
-            Shoebox memory limit: %.1f GB
-            Required shoebox memory: %.1f GB
-        """
-                % (
-                    xsize,
-                    ysize,
-                    zsize,
-                    available_memory / 1e9,
-                    available_incl_swap / 1e9,
-                    available_incl_swap * self.params.block.max_memory_usage / 1e9,
-                    memory_required_per_process / 1e9,
-                )
+          Not enough memory to run integration jobs.  This could be caused by a
+          highly mosaic crystal model.  Possible solutions include increasing the
+          percentage of memory allowed for shoeboxes or decreasing the block size.
+          The average shoebox size is %d x %d pixels x %d images - is your crystal
+          really this mosaic?
+          """
+                % _average_bbox_size(self.reflections)
             )
 
     def summary(self):
