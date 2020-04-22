@@ -658,7 +658,7 @@ class IntegrationManager(object):
         """
         Compute the required memory
         """
-        total_memory = psutil.virtual_memory().total
+        total_memory = psutil.virtual_memory().available
         max_memory_usage = self.params.integration.block.max_memory_usage
         assert max_memory_usage > 0.0, "maximum memory usage must be > 0"
         assert max_memory_usage <= 1.0, "maximum memory usage must be <= 1"
@@ -1126,7 +1126,7 @@ class ReferenceCalculatorManager(object):
         """
         Compute the required memory
         """
-        total_memory = psutil.virtual_memory().total
+        total_memory = psutil.virtual_memory().available
         max_memory_usage = self.params.integration.block.max_memory_usage
         assert max_memory_usage > 0.0, "maximum memory usage must be > 0"
         assert max_memory_usage <= 1.0, "maximum memory usage must be <= 1"

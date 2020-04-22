@@ -456,10 +456,10 @@ class RefinerFactory(object):
             dense_jacobian_gigabytes = (
                 nparam * nref * ndim * flex.double.element_size()
             ) / 1e9
-            tot_memory_gigabytes = psutil.virtual_memory().total / 1e9
+            avail_memory_gigabytes = psutil.virtual_memory().available / 1e9
             # Report if the Jacobian requires a large amount of storage
             if (
-                dense_jacobian_gigabytes > 0.2 * tot_memory_gigabytes
+                dense_jacobian_gigabytes > 0.2 * avail_memory_gigabytes
                 or dense_jacobian_gigabytes > 0.5
             ):
                 logger.info(
