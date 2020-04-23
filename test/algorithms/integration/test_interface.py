@@ -456,7 +456,7 @@ def test_summation(dials_data):
     rlist["id"] = flex.int(len(rlist), 0)
 
     def integrate(integrator_type, rlist):
-        from dials.algorithms.integration.integrator import IntegratorFactory
+        from dials.algorithms.integration.integrator import create_integrator
         from dials.algorithms.integration.integrator import (
             phil_scope as master_phil_scope,
         )
@@ -477,7 +477,7 @@ def test_summation(dials_data):
 
         params = master_phil_scope.fetch(source=phil_scope).extract()
 
-        integrator = IntegratorFactory.create(params, exlist, rlist)
+        integrator = create_integrator.create(params, exlist, rlist)
 
         result = integrator.integrate()
         return result

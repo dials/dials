@@ -34,7 +34,6 @@ __all__ = [
     "Integrator3D",
     "Integrator3DThreaded",
     "IntegratorExecutor",
-    "IntegratorFactory",
     "IntegratorFlat3D",
     "IntegratorSingle2D",
     "IntegratorStills",
@@ -1501,85 +1500,73 @@ class Integrator3DThreaded(object):
         return tabulate(rows, headers="firstrow")
 
 
-class IntegratorFactory(object):
+def create_integrator(params, experiments, reflections):
     """
-    A factory for creating integrators.
+    Create an integrator object with a given configuration.
+
+    :param params: The input phil parameters
+    :param experiments: The list of experiments
+    :param reflections: The reflections to integrate
+    :return: An integrator object
     """
+    import dials.extensions
+    from dials.util import Sorry
 
-    @staticmethod
-    def create(params, experiments, reflections):
-        """
-        Create the integrator from the input configuration.
+    # Check each experiment has an imageset
+    for exp in experiments:
+        if exp.imageset is None:
+            raise Sorry(
+                """
+      One or more experiment does not contain an imageset. Access to the
+      image data is crucial for integration.
+    """
+            )
 
-        :param params: The input phil parameters
-        :param experiments: The list of experiments
-        :param reflections: The reflections to integrate
-        :return: The integrator class
-        """
-        import dials.extensions
-        from dials.util import Sorry
-
-        # Check each experiment has an imageset
-        for exp in experiments:
-            if exp.imageset is None:
-                raise Sorry(
-                    """
-          One or more experiment does not contain an imageset. Access to the
-          image data is crucial for integration.
-        """
-                )
-
-        # Read the mask in if necessary
-        if params.integration.lookup.mask and isinstance(
-            params.integration.lookup.mask, str
-        ):
-            with open(params.integration.lookup.mask, "rb") as infile:
-                if six.PY3:
-                    params.integration.lookup.mask = pickle.load(
-                        infile, encoding="bytes"
-                    )
-                else:
-                    params.integration.lookup.mask = pickle.load(infile)
-
-        # Set algorithms as reflection table defaults
-        BackgroundAlgorithm = dials.extensions.Background.load(
-            params.integration.background.algorithm
-        )
-        flex.reflection_table.background_algorithm = functools.partial(
-            BackgroundAlgorithm, params
-        )
-        CentroidAlgorithm = dials.extensions.Centroid.load(
-            params.integration.centroid.algorithm
-        )
-        flex.reflection_table.centroid_algorithm = functools.partial(
-            CentroidAlgorithm, params
-        )
-
-        # Get the classes we need
-        if params.integration.integrator == "auto":
-            if experiments.all_stills():
-                params.integration.integrator = "stills"
+    # Read the mask in if necessary
+    if params.integration.lookup.mask and isinstance(
+        params.integration.lookup.mask, str
+    ):
+        with open(params.integration.lookup.mask, "rb") as infile:
+            if six.PY3:
+                params.integration.lookup.mask = pickle.load(infile, encoding="bytes")
             else:
-                params.integration.integrator = "3d"
-        if params.integration.integrator == "3d":
-            IntegratorClass = Integrator3D
-        elif params.integration.integrator == "flat3d":
-            IntegratorClass = IntegratorFlat3D
-        elif params.integration.integrator == "2d":
-            IntegratorClass = Integrator2D
-        elif params.integration.integrator == "single2d":
-            IntegratorClass = IntegratorSingle2D
-        elif params.integration.integrator == "stills":
-            IntegratorClass = IntegratorStills
-        elif params.integration.integrator == "3d_threaded":
-            IntegratorClass = Integrator3DThreaded
-        else:
-            raise RuntimeError("Unknown integration type")
+                params.integration.lookup.mask = pickle.load(infile)
 
-        # Remove scan if stills
+    # Set algorithms as reflection table defaults
+    BackgroundAlgorithm = dials.extensions.Background.load(
+        params.integration.background.algorithm
+    )
+    flex.reflection_table.background_algorithm = functools.partial(
+        BackgroundAlgorithm, params
+    )
+    CentroidAlgorithm = dials.extensions.Centroid.load(
+        params.integration.centroid.algorithm
+    )
+    flex.reflection_table.centroid_algorithm = functools.partial(
+        CentroidAlgorithm, params
+    )
+
+    # Get the classes we need
+    if params.integration.integrator == "auto":
         if experiments.all_stills():
-            for experiment in experiments:
-                experiment.scan = None
+            params.integration.integrator = "stills"
+        else:
+            params.integration.integrator = "3d"
+    IntegratorClass = {
+        "3d": Integrator3D,
+        "flat3d": IntegratorFlat3D,
+        "2d": Integrator2D,
+        "single2d": IntegratorSingle2D,
+        "stills": IntegratorStills,
+        "3d_threaded": Integrator3DThreaded,
+    }.get(params.integration.integrator)
+    if not IntegratorClass:
+        raise ValueError("Unknown integration type %s" % params.integration.integrator)
 
-        # Return an instantiation of the class
-        return IntegratorClass(experiments, reflections, params)
+    # Remove scan if stills
+    if experiments.all_stills():
+        for experiment in experiments:
+            experiment.scan = None
+
+    # Return an instantiation of the class
+    return IntegratorClass(experiments, reflections, params)

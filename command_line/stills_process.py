@@ -1073,7 +1073,7 @@ class Processor(object):
         # Get the integrator from the input parameters
         logger.info("Configuring integrator from input parameters")
         from dials.algorithms.profile_model.factory import ProfileModelFactory
-        from dials.algorithms.integration.integrator import IntegratorFactory
+        from dials.algorithms.integration.integrator import create_integrator
 
         # Compute the profile model
         # Predict the reflections
@@ -1094,7 +1094,7 @@ class Processor(object):
         )
         predicted.match_with_reference(indexed)
         logger.info("")
-        integrator = IntegratorFactory.create(self.params, experiments, predicted)
+        integrator = create_integrator(self.params, experiments, predicted)
 
         # Integrate the reflections
         integrated = integrator.integrate()

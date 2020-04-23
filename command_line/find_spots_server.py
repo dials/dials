@@ -180,7 +180,7 @@ indexing_min_spots = 10
         if integrate and "lattices" in stats:
 
             from dials.algorithms.profile_model.factory import ProfileModelFactory
-            from dials.algorithms.integration.integrator import IntegratorFactory
+            from dials.algorithms.integration.integrator import create_integrator
             from dials.command_line.integrate import phil_scope as integrate_phil_scope
 
             interp = integrate_phil_scope.command_line_argument_interpreter()
@@ -234,7 +234,7 @@ indexing_min_spots = 10
                 predicted.compute_bbox(experiments)
 
                 # Create the integrator
-                integrator = IntegratorFactory.create(params, experiments, predicted)
+                integrator = create_integrator(params, experiments, predicted)
 
                 # Integrate the reflections
                 reflections = integrator.integrate()
