@@ -8,6 +8,7 @@ import psutil
 
 from libtbx import Auto
 
+import dials.algorithms.integration
 from dials.array_family import flex
 from dials.algorithms.integration.processor import execute_parallel_task
 from dials.util.mp import multi_node_parallel_map
@@ -52,7 +53,6 @@ __all__ = [
     "ReferenceCalculatorManager",
     "ReferenceCalculatorProcessor",
     "ReferenceProfileData",
-    "Result",
     "SimpleBackgroundCalculator",
     "SimpleBlockList",
     "SimpleReflectionManager",
@@ -311,23 +311,6 @@ def assert_enough_memory(required_memory, max_memory_usage):
         logger.info("")
 
 
-class Result(object):
-    """
-    A class representing a processing result.
-    """
-
-    def __init__(self, index, reflections, reference=None):
-        """
-        Initialise the data.
-
-        :param index: The processing job index
-        :param reflections: The processed reflections
-        """
-        self.index = index
-        self.reflections = reflections
-        self.reference = reference
-
-
 class IntegrationJob(object):
     """
     A class to represent an integration job
@@ -415,7 +398,15 @@ class IntegrationJob(object):
         self.write_debug_files()
 
         # Return the result
-        return Result(self.index, self.reflections)
+        return dials.algorithms.integration.Result(
+            index=self.index,
+            reflections=self.reflections,
+            data=None,
+            read_time=0,
+            extract_time=0,
+            process_time=0,
+            total_time=0,
+        )
 
     def compute_required_memory(self, imageset):
         """
@@ -863,7 +854,15 @@ class ReferenceCalculatorJob(object):
         self.write_debug_files()
 
         # Return the result
-        return Result(self.index, self.reflections, self.reference)
+        return dials.algorithms.integration.Result(
+            index=self.index,
+            reflections=self.reflections,
+            data=self.reference,
+            read_time=0,
+            extract_time=0,
+            process_time=0,
+            total_time=0,
+        )
 
     def compute_required_memory(self, imageset):
         return MultiThreadedIntegrator.compute_required_memory(
@@ -1081,9 +1080,9 @@ class ReferenceCalculatorManager(object):
         self.manager.accumulate(result.index, result.reflections)
 
         if self.reference is None:
-            self.reference = result.reference
+            self.reference = result.data
         else:
-            self.reference.accumulate(result.reference)
+            self.reference.accumulate(result.data)
 
     def finalize(self):
         """

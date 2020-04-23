@@ -48,7 +48,6 @@ __all__ = [
     "ProcessorStills",
     "ReflectionManager",
     "ReflectionManagerPerImage",
-    "Result",
     "Shoebox",
     "ShoeboxProcessor",
     "Task",
@@ -330,24 +329,6 @@ class _ProcessorRot(_Processor):
         super(_ProcessorRot, self).__init__(manager)
 
 
-class Result(object):
-    """
-    A class representing a processing result.
-    """
-
-    def __init__(self, index, reflections, data=None):
-        """
-        Initialise the data.
-
-        :param index: The processing job index
-        :param reflections: The processed reflections
-        :param data: Other processed data
-        """
-        self.index = index
-        self.reflections = reflections
-        self.data = data
-
-
 class NullTask(object):
     """
     A class to perform a null task.
@@ -370,12 +351,15 @@ class NullTask(object):
 
         :return: The processed data
         """
-        result = Result(self.index, self.reflections, None)
-        result.read_time = 0
-        result.extract_time = 0
-        result.process_time = 0
-        result.total_time = 0
-        return result
+        return dials.algorithms.integration.Result(
+            index=self.index,
+            reflections=self.reflections,
+            data=None,
+            read_time=0,
+            extract_time=0,
+            process_time=0,
+            total_time=0,
+        )
 
 
 class Task(object):
@@ -520,12 +504,15 @@ class Task(object):
         self.executor.finalize()
 
         # Return the result
-        result = Result(self.index, self.reflections, self.executor.data())
-        result.read_time = read_time
-        result.extract_time = processor.extract_time()
-        result.process_time = processor.process_time()
-        result.total_time = time() - start_time
-        return result
+        return dials.algorithms.integration.Result(
+            index=self.index,
+            reflections=self.reflections,
+            data=self.executor.data(),
+            read_time=read_time,
+            extract_time=processor.extract_time(),
+            process_time=processor.process_time(),
+            total_time=time() - start_time,
+        )
 
 
 class _Manager(object):

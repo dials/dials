@@ -477,7 +477,7 @@ def test_summation(dials_data):
 
         params = master_phil_scope.fetch(source=phil_scope).extract()
 
-        integrator = create_integrator.create(params, exlist, rlist)
+        integrator = create_integrator(params, exlist, rlist)
 
         result = integrator.integrate()
         return result

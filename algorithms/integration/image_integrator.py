@@ -108,23 +108,6 @@ class ProcessorImage(object):
         return result, self.manager.time
 
 
-class Result(object):
-    """
-    A class representing a processing result.
-    """
-
-    def __init__(self, index, reflections):
-        """
-        Initialise the data.
-
-        :param index: The processing job index
-        :param reflections: The processed reflections
-        :param data: Other processed data
-        """
-        self.index = index
-        self.reflections = reflections
-
-
 class Task(object):
     """
     A class to perform a null task.
@@ -226,12 +209,15 @@ class Task(object):
         process_time = time() - st
 
         # Set the result values
-        result = Result(self.index, self.reflections)
-        result.read_time = read_time
-        result.process_time = process_time
-        result.total_time = time() - start_time
-        result.data = data
-        return result
+        return dials.algorithms.integration.Result(
+            index=self.index,
+            reflections=self.reflections,
+            read_time=read_time,
+            process_time=process_time,
+            total_time=time() - start_time,
+            extract_time=0,
+            data=data,
+        )
 
 
 class ManagerImage(object):
