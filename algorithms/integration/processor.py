@@ -672,7 +672,7 @@ class Manager(object):
 
     def compute_jobs(self):
         """
-        Compute the jobs
+        Sets up a JobList() object in self.jobs
         """
         groups = itertools.groupby(
             range(len(self.experiments)),
