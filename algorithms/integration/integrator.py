@@ -5,25 +5,43 @@ import functools
 import logging
 import math
 import random
-from dials.util import tabulate
 
 import six
 import six.moves.cPickle as pickle
+
+import dials.extensions
+from dials.algorithms.integration import processor
+from dials.algorithms.integration.filtering import IceRingFilter
+from dials.algorithms.integration.parallel_integrator import (
+    IntegratorProcessor,
+    ReferenceCalculatorProcessor,
+)
+from dials.algorithms.integration.processor import (
+    Processor2D,
+    Processor3D,
+    ProcessorFlat3D,
+    ProcessorSingle2D,
+    ProcessorStills,
+    build_processor,
+    job,
+)
+from dials.algorithms.integration.report import (
+    IntegrationReport,
+    ProfileModelReport,
+    ProfileValidationReport,
+)
+from dials.algorithms.integration.validation import ValidatedMultiExpProfileModeller
+from dials.algorithms.profile_model.modeller import MultiExpProfileModeller
+from dials.algorithms.shoebox import MaskCode
+from dials.array_family import flex
+from dials.util import Sorry, phil, pprint, tabulate
+from dials.util.command_line import heading
+from dials.util.report import Report
 from dials_algorithms_integration_integrator_ext import (
     Executor,
     JobList,
     ReflectionManager,
 )
-from dials.algorithms.integration.processor import build_processor
-from dials.algorithms.integration.processor import Processor3D
-from dials.algorithms.integration.processor import ProcessorFlat3D
-from dials.algorithms.integration.processor import Processor2D
-from dials.algorithms.integration.processor import ProcessorSingle2D
-from dials.algorithms.integration.processor import ProcessorStills
-from dials.algorithms.integration.processor import job
-from dials.array_family import flex
-from dials.util import phil
-from dials.util import Sorry
 
 logger = logging.getLogger(__name__)
 
@@ -62,8 +80,6 @@ def generate_phil_scope():
 
     :return: The phil scope
     """
-    import dials.extensions
-
     phil_scope = phil.parse(
         """
 
@@ -344,8 +360,6 @@ class Parameters(object):
         """
         Initialize
         """
-        from dials.algorithms.integration import processor
-
         self.modelling = processor.Parameters()
         self.integration = processor.Parameters()
         self.filter = Parameters.Filter()
@@ -358,9 +372,6 @@ class Parameters(object):
         """
         Convert the phil parameters
         """
-        from dials.algorithms.integration import processor
-        from dials.algorithms.integration.filtering import IceRingFilter
-
         # Init the parameters
         result = Parameters()
 
@@ -851,8 +862,6 @@ class IntegratorExecutor(Executor):
         :param frame: The frame to process
         :param reflections: The reflections to process
         """
-        from dials.algorithms.shoebox import MaskCode
-
         # Check if pixels are overloaded
         reflections.is_overloaded(self.experiments)
 
@@ -954,16 +963,6 @@ class Integrator(object):
         """
         Integrate the data
         """
-        from dials.algorithms.integration.report import IntegrationReport
-        from dials.algorithms.integration.report import ProfileModelReport
-        from dials.algorithms.integration.report import ProfileValidationReport
-        from dials.util.command_line import heading
-        from dials.util import pprint
-        from dials.algorithms.profile_model.modeller import MultiExpProfileModeller
-        from dials.algorithms.integration.validation import (
-            ValidatedMultiExpProfileModeller,
-        )
-
         # Ensure we get the same random sample each time
         random.seed(0)
 
@@ -1218,8 +1217,6 @@ class Integrator(object):
         """
         Return the report of the processing
         """
-        from dials.util.report import Report
-
         result = Report()
         if self.profile_model_report is not None:
             result.combine(self.profile_model_report)
@@ -1357,13 +1354,6 @@ class Integrator3DThreaded(object):
         """
         Integrate the data
         """
-        from dials.algorithms.integration.parallel_integrator import (
-            ReferenceCalculatorProcessor,
-        )
-        from dials.algorithms.integration.parallel_integrator import IntegratorProcessor
-        from dials.algorithms.integration.report import IntegrationReport
-        from dials.util.command_line import heading
-
         # Init the report
         self.profile_model_report = None
         self.integration_report = None
@@ -1459,8 +1449,6 @@ class Integrator3DThreaded(object):
         """
         Return the report of the processing
         """
-        from dials.util.report import Report
-
         result = Report()
         if self.profile_model_report is not None:
             result.combine(self.profile_model_report)
@@ -1502,9 +1490,6 @@ def create_integrator(params, experiments, reflections):
     :param reflections: The reflections to integrate
     :return: An integrator object
     """
-    import dials.extensions
-    from dials.util import Sorry
-
     # Check each experiment has an imageset
     for exp in experiments:
         if exp.imageset is None:

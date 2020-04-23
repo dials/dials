@@ -5,17 +5,21 @@ from __future__ import absolute_import, division, print_function
 import itertools
 import logging
 import math
+import platform
 import resource
-from dials.util import tabulate
 from time import time
 
 import psutil
 
 import boost.python
+import libtbx
+
 import dials.algorithms.integration
 import dials.util
-import libtbx
 from dials.array_family import flex
+from dials.model.data import make_image
+from dials.util import tabulate
+from dials.util.mp import multi_node_parallel_map
 from dials_algorithms_integration_integrator_ext import (
     Executor,
     Group,
@@ -245,9 +249,6 @@ class _Processor(object):
 
         :return: The processing results
         """
-        from dials.util.mp import multi_node_parallel_map
-        import platform
-
         start_time = time()
         self.manager.initialize()
         mp_method = self.manager.params.mp.method
@@ -394,8 +395,6 @@ class Task(object):
 
         :return: The processed data
         """
-        from dials.model.data import make_image
-
         # Get the start time
         start_time = time()
 

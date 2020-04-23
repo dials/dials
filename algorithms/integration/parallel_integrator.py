@@ -14,6 +14,10 @@ from dials.array_family import flex
 from dials.util import tabulate
 from dials.util.mp import multi_node_parallel_map
 
+# Need this import first because loads extension that parallel_integrator_ext
+# relies on - it assumes the binding for EmpiricalProfileModeller exists
+import dials.algorithms.profile_model.modeller  # noqa: F401
+
 from dials_algorithms_integration_parallel_integrator_ext import (
     Logger,
     GaussianRSIntensityCalculator,
