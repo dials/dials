@@ -196,8 +196,9 @@ def run(args):
             hot_mask.reshape(flex.grid(reversed(detector.get_image_size())))
             pickle.dump(~hot_mask, fh)
 
-    for h in hot_pixels:
-        print("    mask[%d, %d] = 8" % (h % nfast, h // nfast))
+    if params.output.print_values:
+        for h in hot_pixels:
+            print("    mask[%d, %d] = 8" % (h % nfast, h // nfast))
 
 
 if __name__ == "__main__":
