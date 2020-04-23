@@ -229,8 +229,8 @@ def _trim_scans_to_observations(experiments, reflections):
 class RefinerFactory(object):
     """Factory class to create refiners"""
 
-    @classmethod
-    def _filter_reflections(cls, reflections):
+    @staticmethod
+    def _filter_reflections(reflections):
         """Return a copy of the input reflections filtered to keep only
         those columns that are required by refinement"""
 

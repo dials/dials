@@ -8,14 +8,14 @@ class GaussianRSProfileModelExt(object):
 
     default = True
 
-    @classmethod
-    def phil(cls):
+    @staticmethod
+    def phil():
         from dials.algorithms.profile_model.gaussian_rs import phil_scope
 
         return phil_scope
 
-    @classmethod
-    def algorithm(cls):
+    @staticmethod
+    def algorithm():
         from dials.algorithms.profile_model.gaussian_rs import Model
 
         return Model

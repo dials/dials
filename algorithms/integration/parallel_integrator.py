@@ -1,16 +1,17 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
-from math import ceil, floor
-from dials.util import tabulate
+import math
 
 import psutil
 
 from libtbx import Auto
 
 import dials.algorithms.integration
-from dials.array_family import flex
 from dials.algorithms.integration.processor import execute_parallel_task
+from dials.algorithms.integration.processor import NullTask
+from dials.array_family import flex
+from dials.util import tabulate
 from dials.util.mp import multi_node_parallel_map
 
 from dials_algorithms_integration_parallel_integrator_ext import (
@@ -29,7 +30,6 @@ from dials_algorithms_integration_parallel_integrator_ext import (
     SimpleBlockList,
     SimpleReflectionManager,
 )
-from dials.algorithms.integration.processor import NullTask
 
 __all__ = [
     "BackgroundCalculatorFactory",
@@ -56,7 +56,6 @@ __all__ = [
     "SimpleBackgroundCalculator",
     "SimpleBlockList",
     "SimpleReflectionManager",
-    "assert_enough_memory",
 ]
 
 logger = logging.getLogger(__name__)
@@ -67,8 +66,8 @@ class MaskCalculatorFactory(object):
     A factory function to return a mask calculator object
     """
 
-    @classmethod
-    def create(cls, experiments, params=None):
+    @staticmethod
+    def create(experiments, params=None):
         """
         Select the mask calculator
         """
@@ -98,8 +97,8 @@ class BackgroundCalculatorFactory(object):
     A factory function to return a background calculator object
     """
 
-    @classmethod
-    def create(cls, experiments, params=None):
+    @staticmethod
+    def create(experiments, params=None):
         """
         Select the background calculator
         """
@@ -192,8 +191,8 @@ class IntensityCalculatorFactory(object):
     A factory function to return an intensity calculator object
     """
 
-    @classmethod
-    def create(cls, experiments, reference_profiles, params=None):
+    @staticmethod
+    def create(experiments, reference_profiles, params=None):
         """
         Select the intensity calculator
         """
@@ -241,8 +240,8 @@ class ReferenceCalculatorFactory(object):
     A factory function to return an reference calculator object
     """
 
-    @classmethod
-    def create(cls, experiments, params=None):
+    @staticmethod
+    def create(experiments, params=None):
         """
         Select the reference calculator
         """
@@ -278,7 +277,7 @@ class ReferenceCalculatorFactory(object):
         return algorithm
 
 
-def assert_enough_memory(required_memory, max_memory_usage):
+def _assert_enough_memory(required_memory, max_memory_usage):
     """
     Check there is enough memory available or fail
 
@@ -386,7 +385,7 @@ class IntegrationJob(object):
             raise RuntimeError("Programmer Error: bad array range")
 
         # Check the memory requirements
-        assert_enough_memory(
+        _assert_enough_memory(
             self.compute_required_memory(imageset),
             self.params.integration.block.max_memory_usage,
         )
@@ -653,7 +652,7 @@ class IntegrationManager(object):
         max_memory_usage = self.params.integration.block.max_memory_usage
         assert max_memory_usage > 0.0, "maximum memory usage must be > 0"
         assert max_memory_usage <= 1.0, "maximum memory usage must be <= 1"
-        limit_memory = int(floor(total_memory * max_memory_usage))
+        limit_memory = int(math.floor(total_memory * max_memory_usage))
         return MultiThreadedIntegrator.compute_max_block_size(
             self.experiments[0].imageset, max_memory_usage=limit_memory
         )
@@ -684,12 +683,12 @@ class IntegrationManager(object):
             scan = self.experiments[0].scan
             if block.units == "radians":
                 phi0, dphi = scan.get_oscillation(deg=False)
-                block_size = int(ceil(block.size / dphi))
+                block_size = int(math.ceil(block.size / dphi))
             elif block.units == "degrees":
                 phi0, dphi = scan.get_oscillation()
-                block_size = int(ceil(block.size / dphi))
+                block_size = int(math.ceil(block.size / dphi))
             elif block.units == "frames":
-                block_size = int(ceil(block.size))
+                block_size = int(math.ceil(block.size))
             else:
                 raise RuntimeError("Unknown block_size unit %r" % block.units)
             if block_size > max_block_size:
@@ -842,7 +841,7 @@ class ReferenceCalculatorJob(object):
             raise RuntimeError("Programmer Error: bad array range")
 
         # Check the memory requirements
-        assert_enough_memory(
+        _assert_enough_memory(
             self.compute_required_memory(imageset),
             self.params.integration.block.max_memory_usage,
         )
@@ -1129,7 +1128,7 @@ class ReferenceCalculatorManager(object):
         max_memory_usage = self.params.integration.block.max_memory_usage
         assert max_memory_usage > 0.0, "maximum memory usage must be > 0"
         assert max_memory_usage <= 1.0, "maximum memory usage must be <= 1"
-        limit_memory = int(floor(total_memory * max_memory_usage))
+        limit_memory = int(math.floor(total_memory * max_memory_usage))
         return MultiThreadedReferenceProfiler.compute_max_block_size(
             self.experiments[0].imageset, max_memory_usage=limit_memory
         )
@@ -1160,12 +1159,12 @@ class ReferenceCalculatorManager(object):
             scan = self.experiments[0].scan
             if block.units == "radians":
                 phi0, dphi = scan.get_oscillation(deg=False)
-                block_size = int(ceil(block.size / dphi))
+                block_size = int(math.ceil(block.size / dphi))
             elif block.units == "degrees":
                 phi0, dphi = scan.get_oscillation()
-                block_size = int(ceil(block.size / dphi))
+                block_size = int(math.ceil(block.size / dphi))
             elif block.units == "frames":
-                block_size = int(ceil(block.size))
+                block_size = int(math.ceil(block.size))
             else:
                 raise RuntimeError("Unknown block_size unit %r" % block.units)
             if block_size > max_block_size:
@@ -1263,7 +1262,7 @@ class ReferenceCalculatorProcessor(object):
         if params.integration.mp.njobs > 1:
 
             if params.integration.mp.method == "multiprocessing":
-                assert_enough_memory(
+                _assert_enough_memory(
                     params.integration.mp.njobs
                     * compute_required_memory(
                         experiments[0].imageset, params.integration.block.size
@@ -1343,7 +1342,7 @@ class IntegratorProcessor(object):
         if params.integration.mp.njobs > 1:
 
             if params.integration.mp.method == "multiprocessing":
-                assert_enough_memory(
+                _assert_enough_memory(
                     params.integration.mp.njobs
                     * compute_required_memory(
                         experiments[0].imageset, params.integration.block.size
@@ -1406,8 +1405,8 @@ def split_partials_over_boundaries(reflections, block_size):
             bbox = item["bbox"][0]
             size = bbox[5] - bbox[4]
             assert size > block_size
-            nsplits = int(ceil(float(size) / float(block_size)))
-            partsize = int(ceil(float(size) / float(nsplits)))
+            nsplits = int(math.ceil(float(size) / float(block_size)))
+            partsize = int(math.ceil(float(size) / float(nsplits)))
             bbox0 = bbox[0:4] + (bbox[4], bbox[4] + partsize)
             subset["bbox"][i] = bbox0  # set the updated bbox in the subset
             for _ in range(1, nsplits):

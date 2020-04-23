@@ -77,8 +77,8 @@ def test_glm_background_calculator(data):
 
 
 class IntensityCalculatorFactory(object):
-    @classmethod
-    def create(cls, data, detector_space=False, deconvolution=False):
+    @staticmethod
+    def create(data, detector_space=False, deconvolution=False):
         from dials.algorithms.profile_model.gaussian_rs.algorithm import (
             GaussianRSIntensityCalculatorFactory,
         )

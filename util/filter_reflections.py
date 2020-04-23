@@ -659,8 +659,8 @@ class ScaleIntensityReducer(FilterForExportAlgorithm):
             )
         return reflection_table
 
-    @classmethod
-    def apply_scaling_factors(cls, reflection_table):
+    @staticmethod
+    def apply_scaling_factors(reflection_table):
         """Apply the inverse scale factor to the scale intensities."""
         if "partiality" in reflection_table:
             reflection_table = reflection_table.select(
@@ -694,8 +694,8 @@ class AllSumPrfScaleIntensityReducer(FilterForExportAlgorithm):
         reflection_table = ScaleIntensityReducer.reduce_on_intensities(reflection_table)
         return reflection_table
 
-    @classmethod
-    def apply_scaling_factors(cls, reflection_table):
+    @staticmethod
+    def apply_scaling_factors(reflection_table):
         """Apply corrections to the intensities and variances."""
         reflection_table = SumAndPrfIntensityReducer.apply_scaling_factors(
             reflection_table
@@ -719,8 +719,8 @@ class SumAndScaleIntensityReducer(FilterForExportAlgorithm):
         reflection_table = ScaleIntensityReducer.reduce_on_intensities(reflection_table)
         return reflection_table
 
-    @classmethod
-    def apply_scaling_factors(cls, reflection_table):
+    @staticmethod
+    def apply_scaling_factors(reflection_table):
         """Apply corrections to the intensities and variances."""
         reflection_table = SumIntensityReducer.apply_scaling_factors(reflection_table)
         reflection_table = ScaleIntensityReducer.apply_scaling_factors(reflection_table)

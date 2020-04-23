@@ -91,8 +91,8 @@ class BackgroundAlgorithm(object):
 class SimpleBackgroundCalculatorFactory(object):
     """Class to do background subtraction."""
 
-    @classmethod
-    def create(cls, experiments, outlier="nsigma", model="constant3d", **kwargs):
+    @staticmethod
+    def create(experiments, outlier="nsigma", model="constant3d", **kwargs):
         """
         Initialise the algorithm.
 
