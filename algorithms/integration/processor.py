@@ -38,9 +38,6 @@ __all__ = [
     "job",
     "JobList",
     "Lookup",
-    "Manager",
-    "ManagerRot",
-    "ManagerStills",
     "MultiProcessing",
     "NullTask",
     "Parameters",
@@ -217,7 +214,7 @@ class Processor(object):
         """
         Initialise the processor.
 
-        The processor requires a manager class implementing the Manager interface.
+        The processor requires a manager class implementing the _Manager interface.
         This class executes all the workers in separate threads and accumulates the
         results to expose to the user.
 
@@ -506,7 +503,7 @@ class Task(object):
         return result
 
 
-class Manager(object):
+class _Manager(object):
     """
     A class to manage processing book-keeping
     """
@@ -918,7 +915,7 @@ class Manager(object):
         return fmt % (block_size, self.params.block.units, task_table)
 
 
-class ManagerRot(Manager):
+class _ManagerRot(_Manager):
     """Specialize the manager for oscillation data using the oscillation pre and
     post processors."""
 
@@ -936,10 +933,10 @@ class ManagerRot(Manager):
             )
 
         # Initialise the manager
-        super(ManagerRot, self).__init__(experiments, reflections, params)
+        super(_ManagerRot, self).__init__(experiments, reflections, params)
 
 
-class ManagerStills(Manager):
+class _ManagerStills(_Manager):
     """Specialize the manager for stills data using the stills pre and post
     processors."""
 
@@ -957,7 +954,7 @@ class ManagerStills(Manager):
             )
 
         # Initialise the manager
-        super(ManagerStills, self).__init__(experiments, reflections, params)
+        super(_ManagerStills, self).__init__(experiments, reflections, params)
 
 
 class Processor3D(Processor):
@@ -971,7 +968,7 @@ class Processor3D(Processor):
         params.shoebox.flatten = False
 
         # Create the processing manager
-        manager = ManagerRot(experiments, reflections, params)
+        manager = _ManagerRot(experiments, reflections, params)
 
         # Initialise the processor
         super(Processor3D, self).__init__(manager)
@@ -988,7 +985,7 @@ class ProcessorFlat3D(Processor):
         params.shoebox.partials = False
 
         # Create the processing manager
-        manager = ManagerRot(experiments, reflections, params)
+        manager = _ManagerRot(experiments, reflections, params)
 
         # Initialise the processor
         super(ProcessorFlat3D, self).__init__(manager)
@@ -1004,7 +1001,7 @@ class Processor2D(Processor):
         params.shoebox.partials = True
 
         # Create the processing manager
-        manager = ManagerRot(experiments, reflections, params)
+        manager = _ManagerRot(experiments, reflections, params)
 
         # Initialise the processor
         super(Processor2D, self).__init__(manager)
@@ -1023,7 +1020,7 @@ class ProcessorSingle2D(Processor):
         params.shoebox.flatten = False
 
         # Create the processing manager
-        manager = ManagerRot(experiments, reflections, params)
+        manager = _ManagerRot(experiments, reflections, params)
 
         # Initialise the processor
         super(ProcessorSingle2D, self).__init__(manager)
@@ -1042,7 +1039,7 @@ class ProcessorStills(Processor):
         params.shoebox.flatten = False
 
         # Create the processing manager
-        manager = ManagerStills(experiments, reflections, params)
+        manager = _ManagerStills(experiments, reflections, params)
 
         # Initialise the processor
         super(ProcessorStills, self).__init__(manager)
