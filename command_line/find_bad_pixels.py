@@ -1,17 +1,23 @@
 from __future__ import absolute_import, division, print_function
 
 import concurrent.futures
+import logging
 import math
 import pickle
 import sys
 
 import iotbx.phil
 from scitbx.array_family import flex
+from dxtbx.model.experiment_list import ExperimentList, Experiment
 from dials.algorithms.spot_finding.factory import SpotFinderFactory
 from dials.algorithms.spot_finding.factory import phil_scope as spot_phil
+from dials.util import log
 from dials.util.options import OptionParser
 from dials.util.options import flatten_experiments
-from dxtbx.model.experiment_list import ExperimentList, Experiment
+from dials.util.version import dials_version
+
+
+logger = logging.getLogger("dials.find_bad_pixels")
 
 help_message = """
 
@@ -129,7 +135,17 @@ def run(args):
         epilog=help_message,
     )
 
-    params, options = parser.parse_args(args=args, show_diff_phil=True)
+    params, options = parser.parse_args(args=args, show_diff_phil=False)
+
+    # Configure the logging
+    log.config(verbosity=options.verbose, logfile="dials.find_bad_pixels.log")
+    logger.info(dials_version())
+
+    # Log the diff phil
+    diff_phil = parser.diff_phil.as_str()
+    if diff_phil != "":
+        logger.info("The following parameters have been modified:\n")
+        logger.info(diff_phil)
 
     experiments = flatten_experiments(params.input.experiments)
     if len(experiments) != 1:
@@ -186,7 +202,7 @@ def run(args):
     hot_mask = total >= (len(images) // 2)
     hot_pixels = hot_mask.iselection()
 
-    print("Found %s bad pixels" % hot_pixels.size())
+    logger.info("Found %s bad pixels", hot_pixels.size())
     if params.output.mask:
         with open(params.output.mask, "wb") as fh:
             hot_mask.reshape(flex.grid(reversed(detector.get_image_size())))
@@ -194,7 +210,7 @@ def run(args):
 
     if params.output.print_values:
         for h in hot_pixels:
-            print("    mask[%d, %d] = 8" % (h % nfast, h // nfast))
+            logger.info("    mask[%d, %d] = 8", h % nfast, h // nfast)
 
 
 if __name__ == "__main__":
