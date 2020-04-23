@@ -39,9 +39,6 @@ output {
     mask = pixels.mask
         .type = path
         .help = "Output mask file name"
-    png = pixels.png
-        .type = path
-        .help = "Bad pixel mask as image"
     print_values = False
         .type = bool
         .help = "Print bad pixel values"
