@@ -198,16 +198,6 @@ def generate_phil_scope():
                   "positive value is used as the minimum permissable value."
           .type = float(value_min=0.0, value_max=1.0)
 
-        max_shoebox_overlap = 1.0
-          .type = float(value_min=0.0, value_max=1.0)
-          .help = "Filter reflections whose shoeboxes are overlapped by greater"
-                  "than the requested amount. Note that this is not the"
-                  "percentage of the peak that is overlapped but rather the"
-                  "percentage of the shoebox (background and foreground). This"
-                  "can be useful when the detector is too close and many"
-                  "overlapping reflections are predicted at high resolution"
-                  "causing memory issues."
-
         ice_rings = False
           .help = "Set the ice ring flags"
           .type = bool
