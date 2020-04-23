@@ -1,9 +1,10 @@
-# LIBTBX_SET_DISPATCHER_NAME dev.dials.find_bad_pixels
+# LIBTBX_SET_DISPATCHER_NAME dials.find_bad_pixels
 
 from __future__ import absolute_import, division, print_function
 
 import concurrent.futures
 import math
+import pickle
 import sys
 
 import iotbx.phil
@@ -18,7 +19,7 @@ help_message = """
 
 Examples::
 
-  dev.dials.find_bad_pixels data_master.h5 [nproc=8]
+  dials.find_bad_pixels data_master.h5 [nproc=8]
 
 """
 
@@ -133,7 +134,7 @@ def run(args):
         epilog=help_message,
     )
 
-    params, options = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(args=args, show_diff_phil=True)
 
     experiments = flatten_experiments(params.input.experiments)
     if len(experiments) != 1:
@@ -189,6 +190,11 @@ def run(args):
 
     hot_mask = total >= (len(images) // 2)
     hot_pixels = hot_mask.iselection()
+
+    if params.output.mask:
+        with open(params.output.mask, "wb") as fh:
+            hot_mask.reshape(flex.grid(reversed(detector.get_image_size())))
+            pickle.dump(~hot_mask, fh)
 
     for h in hot_pixels:
         print("    mask[%d, %d] = 8" % (h % nfast, h // nfast))
