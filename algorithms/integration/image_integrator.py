@@ -16,21 +16,22 @@ from dials.util.mp import multi_node_parallel_map
 logger = logging.getLogger(__name__)
 
 
-class ProcessorImageBase(object):
-    """Processor interface class."""
+class ProcessorImage(object):
+    """Top level processor for per image processing."""
 
-    def __init__(self, manager):
+    def __init__(self, experiments, reflections, params):
         """
-        Initialise the processor.
+        Initialise the manager and the processor.
 
         The processor requires a manager class implementing the Manager interface.
         This class executes all the workers in separate threads and accumulates the
         results to expose to the user.
 
-        :param manager: The processing manager
         :param params: The phil parameters
         """
-        self.manager = manager
+
+        # Create the processing manager
+        self.manager = ManagerImage(experiments, reflections, params)
 
     @property
     def executor(self):
@@ -378,16 +379,3 @@ class ManagerImage(object):
                 " Split %d reflections into %d partial reflections\n"
                 % (num_full, num_partial)
             )
-
-
-class ProcessorImage(ProcessorImageBase):
-    """Top level processor for per image processing."""
-
-    def __init__(self, experiments, reflections, params):
-        """Initialise the manager and the processor."""
-
-        # Create the processing manager
-        manager = ManagerImage(experiments, reflections, params)
-
-        # Initialise the processor
-        super(ProcessorImage, self).__init__(manager)

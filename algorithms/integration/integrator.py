@@ -1064,15 +1064,18 @@ class Integrator(object):
                     num_folds = 1
 
                 # Create the profile fitter
-                profile_fitter = ValidatedMultiExpProfileModeller()
+                profile_modellers = []
                 for i in range(num_folds):
                     profile_fitter_single = MultiExpProfileModeller()  # (num_folds)
                     for expr in self.experiments:
                         profile_fitter_single.add(expr.profile.fitting_class()(expr))
-                    profile_fitter.add(profile_fitter_single)
+                    profile_modellers.append(profile_fitter_single)
 
                 # Create the data processor
-                executor = ProfileModellerExecutor(self.experiments, profile_fitter)
+                executor = ProfileModellerExecutor(
+                    self.experiments,
+                    ValidatedMultiExpProfileModeller(profile_modellers),
+                )
                 processor = build_processor(
                     self.ProcessorClass,
                     self.experiments,
