@@ -1,5 +1,3 @@
-# LIBTBX_SET_DISPATCHER_NAME dials.find_bad_pixels
-
 from __future__ import absolute_import, division, print_function
 
 import concurrent.futures
@@ -188,6 +186,7 @@ def run(args):
     hot_mask = total >= (len(images) // 2)
     hot_pixels = hot_mask.iselection()
 
+    print("Found %s bad pixels" % hot_pixels.size())
     if params.output.mask:
         with open(params.output.mask, "wb") as fh:
             hot_mask.reshape(flex.grid(reversed(detector.get_image_size())))

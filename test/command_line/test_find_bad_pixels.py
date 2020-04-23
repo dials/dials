@@ -16,6 +16,7 @@ def test_x4wide(dials_data, run_in_tmpdir, capsys):
         mask = pickle.load(fh)
     out, _ = capsys.readouterr()
     assert "mask[1482, 1484] = 8" in out
+    assert "Found 27 bad pixels" in out
     assert mask.all() == (2527, 2463)
     assert mask.count(False) == 27
     # Test that the output pixels.mask is compatible with dials.import
