@@ -218,7 +218,7 @@ class MaskGenerator(object):
                 warnings.warn(
                     "Checking for hot pixels using the trusted_range is"
                     " deprecated. https://github.com/dials/dials/issues/1156",
-                    DeprecationWarning,
+                    FutureWarning,
                 )
                 trusted_mask = None
                 low, high = panel.get_trusted_range()
