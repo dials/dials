@@ -41,7 +41,6 @@ __all__ = [
     "MultiProcessing",
     "NullTask",
     "Parameters",
-    "Processor",
     "Processor2D",
     "Processor3D",
     "ProcessorFlat3D",
@@ -207,7 +206,7 @@ def execute_parallel_task(task):
     return result, handlers[0].messages()
 
 
-class Processor(object):
+class _Processor(object):
     """Processor interface class."""
 
     def __init__(self, manager):
@@ -303,6 +302,32 @@ class Processor(object):
         self.manager.time.user_time = end_time - start_time
         result1, result2 = self.manager.result()
         return result1, result2, self.manager.time
+
+
+class _ProcessorRot(_Processor):
+    """Processor interface class for rotation data only."""
+
+    def __init__(self, experiments, manager):
+        """
+        Initialise the processor.
+
+        The processor requires a manager class implementing the _Manager interface.
+        This class executes all the workers in separate threads and accumulates the
+        results to expose to the user.
+
+        :param manager: The processing manager
+        """
+        # Ensure we have the correct type of data
+        if not experiments.all_sequences():
+            raise RuntimeError(
+                """
+        An inappropriate processing algorithm may have been selected!
+         Trying to perform rotation processing when not all experiments
+         are indicated as rotation experiments.
+      """
+            )
+
+        super(_ProcessorRot, self).__init__(manager)
 
 
 class Result(object):
@@ -915,49 +940,7 @@ class _Manager(object):
         return fmt % (block_size, self.params.block.units, task_table)
 
 
-class _ManagerRot(_Manager):
-    """Specialize the manager for oscillation data using the oscillation pre and
-    post processors."""
-
-    def __init__(self, experiments, reflections, params):
-        """Initialise the pre-processor, post-processor and manager."""
-
-        # Ensure we have the correct type of data
-        if not experiments.all_sequences():
-            raise RuntimeError(
-                """
-        An inappropriate processing algorithm may have been selected!
-         Trying to perform rotation processing when not all experiments
-         are indicated as rotation experiments.
-      """
-            )
-
-        # Initialise the manager
-        super(_ManagerRot, self).__init__(experiments, reflections, params)
-
-
-class _ManagerStills(_Manager):
-    """Specialize the manager for stills data using the stills pre and post
-    processors."""
-
-    def __init__(self, experiments, reflections, params):
-        """Initialise the pre-processor, post-processor and manager."""
-
-        # Ensure we have the correct type of data
-        if not experiments.all_stills():
-            raise RuntimeError(
-                """
-        An inappropriate processing algorithm may have been selected!
-         Trying to perform stills processing when not all experiments
-         are indicated as stills experiments.
-      """
-            )
-
-        # Initialise the manager
-        super(_ManagerStills, self).__init__(experiments, reflections, params)
-
-
-class Processor3D(Processor):
+class Processor3D(_ProcessorRot):
     """Top level processor for 3D processing."""
 
     def __init__(self, experiments, reflections, params):
@@ -968,13 +951,13 @@ class Processor3D(Processor):
         params.shoebox.flatten = False
 
         # Create the processing manager
-        manager = _ManagerRot(experiments, reflections, params)
+        manager = _Manager(experiments, reflections, params)
 
         # Initialise the processor
-        super(Processor3D, self).__init__(manager)
+        super(Processor3D, self).__init__(experiments, manager)
 
 
-class ProcessorFlat3D(Processor):
+class ProcessorFlat3D(_ProcessorRot):
     """Top level processor for flat 3D processing."""
 
     def __init__(self, experiments, reflections, params):
@@ -985,13 +968,13 @@ class ProcessorFlat3D(Processor):
         params.shoebox.partials = False
 
         # Create the processing manager
-        manager = _ManagerRot(experiments, reflections, params)
+        manager = _Manager(experiments, reflections, params)
 
         # Initialise the processor
-        super(ProcessorFlat3D, self).__init__(manager)
+        super(ProcessorFlat3D, self).__init__(experiments, manager)
 
 
-class Processor2D(Processor):
+class Processor2D(_ProcessorRot):
     """Top level processor for 2D processing."""
 
     def __init__(self, experiments, reflections, params):
@@ -1001,13 +984,13 @@ class Processor2D(Processor):
         params.shoebox.partials = True
 
         # Create the processing manager
-        manager = _ManagerRot(experiments, reflections, params)
+        manager = _Manager(experiments, reflections, params)
 
         # Initialise the processor
-        super(Processor2D, self).__init__(manager)
+        super(Processor2D, self).__init__(experiments, manager)
 
 
-class ProcessorSingle2D(Processor):
+class ProcessorSingle2D(_ProcessorRot):
     """Top level processor for still image processing."""
 
     def __init__(self, experiments, reflections, params):
@@ -1020,13 +1003,13 @@ class ProcessorSingle2D(Processor):
         params.shoebox.flatten = False
 
         # Create the processing manager
-        manager = _ManagerRot(experiments, reflections, params)
+        manager = _Manager(experiments, reflections, params)
 
         # Initialise the processor
-        super(ProcessorSingle2D, self).__init__(manager)
+        super(ProcessorSingle2D, self).__init__(experiments, manager)
 
 
-class ProcessorStills(Processor):
+class ProcessorStills(_Processor):
     """Top level processor for still image processing."""
 
     def __init__(self, experiments, reflections, params):
@@ -1038,8 +1021,18 @@ class ProcessorStills(Processor):
         params.shoebox.partials = False
         params.shoebox.flatten = False
 
+        # Ensure we have the correct type of data
+        if not experiments.all_stills():
+            raise RuntimeError(
+                """
+        An inappropriate processing algorithm may have been selected!
+         Trying to perform stills processing when not all experiments
+         are indicated as stills experiments.
+      """
+            )
+
         # Create the processing manager
-        manager = _ManagerStills(experiments, reflections, params)
+        manager = _Manager(experiments, reflections, params)
 
         # Initialise the processor
         super(ProcessorStills, self).__init__(manager)

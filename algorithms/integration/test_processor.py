@@ -50,7 +50,7 @@ def test_runtime_error_raised_when_not_enough_memory(
     phil_mock.block.max_memory_usage = 0.75
 
     reflections = {"bbox": flex.int6(1000, (0, 1, 0, 1, 0, 1))}
-    manager = dials.algorithms.integration.processor.Manager(
+    manager = dials.algorithms.integration.processor._Manager(
         None, reflections, phil_mock
     )
     manager.jobs = mock.Mock(autospec=JobList)
