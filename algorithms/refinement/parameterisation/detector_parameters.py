@@ -711,32 +711,7 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
         # call compose to calculate all the derivatives
         self.compose()
 
-    def get_panel_ids_by_group(self):
-        """Return the panel IDs for each panel group of the detector.
-
-        Provides access to a result calculated once during initialisation of the
-        class, for use during parameterisation auto reduction tasks.
-
-        Returns:
-            A list over the panel groups. Each element of the list is itself a list,
-                containing the panel IDs for that group.
-        """
-        return self._panel_ids_by_group
-
-    def get_param_panel_groups(self):
-        """Return the panel group ID for each parameter of the parameterisation.
-
-        Provides access to a result calculated once during initialisation of the
-        class, for use during parameterisation auto reduction tasks.
-
-        Returns:
-            A list over the parameters. Each element of the list contains the panel
-                group ID of the panel group affected by that parameter.
-        """
-        return self._group_ids_by_parameter
-
     def compose(self):
-
         # reset the list that holds derivatives
         for i in range(len(self._model)):
             self._multi_state_derivatives[i] = [None] * len(self._dstate_dp)

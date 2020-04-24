@@ -110,10 +110,6 @@ class Creator(object):
             self.params.nsigma,
         )
 
-    def next_image(self, frame, image, mask, reflections):
-        assert self.initialized()
-        self.modeller.add_image(frame, image, mask, reflections)
-
     def finalize(self):
         assert self.initialized()
         self.background = self.modeller.compute()
