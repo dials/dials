@@ -492,7 +492,7 @@ namespace dials { namespace algorithms {
   };
 
   /**
-   * A class to managing spliting and mergin data
+   * A class to manage splitting and merging data
    */
   class ReflectionManager {
   public:

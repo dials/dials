@@ -281,8 +281,6 @@ class _Processor(object):
                 for message in result[1]:
                     logger.log(message.levelno, message.msg)
                 self.manager.accumulate(result[0])
-                result[0].reflections = None
-                result[0].data = None
 
             multi_node_parallel_map(
                 func=execute_parallel_task,
