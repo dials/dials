@@ -992,8 +992,6 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
             # d2, dn. We need also each Panel's plane directions dir1 and dir2 in
             # terms of d1, d2 and dn.
             offsets, dir1s, dir2s = [], [], []
-            # FIXME these dot products would be more efficiently done using a change of
-            # basis matrix instead
             for p in [detector[i] for i in pnl_ids]:
                 offset = matrix.col(p.get_origin()) - dorg
                 offsets.append(
@@ -1016,7 +1014,6 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
             # Set up the initial state for this group. This is the basis d1, d2, dn,
             # plus the offset locating the origin of the initial group frame
             gp_offset = go - dorg  # lab frame basis
-            # FIXME another set of dot products better done by a matrix multiplication
             gp_offset = matrix.col(
                 (gp_offset.dot(d1), gp_offset.dot(d2), gp_offset.dot(dn))
             )  # d1,d2,dn basis

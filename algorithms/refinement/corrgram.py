@@ -108,7 +108,6 @@ def corrgram(corrmat, labels):
     # need this otherwise text gets clipped
     plt.tight_layout()
 
-    # FIXME should this also have a colorbar as legend?
     return plt
 
 

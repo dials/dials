@@ -547,11 +547,7 @@ class RefinerFactory(object):
         )
 
         # Shorten params path
-        # FIXME Only unit cell restraints currently supported
-        # beam_r = params.beam.restraints
         cell_r = params.crystal.unit_cell.restraints
-        # orientation_r = params.crystal.orientation.restraints
-        # detector_r = params.detector.restraints
 
         for tie in cell_r.tie_to_target:
             if len(tie.values) != 6:
@@ -750,8 +746,6 @@ class Refiner(object):
     def get_matches(self):
         """Delegated to the reflection manager"""
 
-        # FIXME Consider: Does this information really need to be exposed by the
-        # public API (indexing code seems to use it, but is it necessary?)
         return self._refman.get_matches()
 
     def get_free_reflections(self):
