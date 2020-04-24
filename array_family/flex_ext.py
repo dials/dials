@@ -907,13 +907,13 @@ class _(object):
         )
 
     def compute_summed_intensity(self, image_volume=None):
+        # type: (dials.model.data.MultiPanelImageVolume) -> None
         """
         Compute intensity via summation integration.
         """
-        from dials.algorithms.integration.sum import IntegrationAlgorithm
+        from dials.algorithms.integration.sum import sum_integrate_and_update_table
 
-        algorithm = IntegrationAlgorithm()
-        success = algorithm(self, image_volume=image_volume)
+        success = sum_integrate_and_update_table(self, image_volume=image_volume)
         self.set_flags(~success, self.flags.failed_during_summation)
 
     def compute_fitted_intensity(self, fitter):
