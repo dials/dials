@@ -140,35 +140,6 @@ format
 )
 
 
-class ConfigWriter(object):
-    """Class to write configuration to file."""
-
-    def __init__(self, master_phil):
-        """
-        Initialise with the master phil.
-
-        :param master_phil: The master phil scope
-        """
-        self._master_phil = master_phil
-
-    def write(self, params, filename):
-        """
-        Write the configuration to file.
-
-        :param params: The input phil parameters
-        :param filename: The output filename
-        """
-        # Get the modified phil
-        modified_phil = self._master_phil.format(python_object=params)
-
-        # Get the phil as text
-        text = modified_phil.as_str()
-
-        # Write the text to file
-        with open(filename, "w") as f:
-            f.write(text)
-
-
 # Simple tuple to hold basic information on why an argument failed
 ArgumentHandlingErrorInfo = namedtuple(
     "ArgumentHandlingErrorInfo",

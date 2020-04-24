@@ -9,7 +9,6 @@ from dxtbx.model.experiment_list import Experiment, ExperimentList
 from dials.array_family import flex
 from dials.algorithms.indexing.indexer import Indexer
 from dials.util.multi_dataset_handling import generate_experiment_identifiers
-from dials.algorithms.indexing.known_orientation import IndexerKnownOrientation
 from dials.algorithms.indexing.lattice_search import BasisVectorSearch, LatticeSearch
 from dials.algorithms.indexing.nave_parameters import NaveParameters
 from dials.algorithms.indexing import DialsIndexError, DialsIndexRefineError
@@ -788,10 +787,6 @@ class StillsIndexer(Indexer):
 
 
 """Mixin class definitions that override the dials indexing class methods specific to stills"""
-
-
-class StillsIndexerKnownOrientation(IndexerKnownOrientation, StillsIndexer):
-    pass
 
 
 class StillsIndexerBasisVectorSearch(StillsIndexer, BasisVectorSearch):
