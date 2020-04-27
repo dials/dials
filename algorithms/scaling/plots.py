@@ -4,6 +4,7 @@ Make plotly plots for html output by dials.scale, dials.report or xia2.report.
 """
 from __future__ import absolute_import, division, print_function
 
+import itertools
 import math
 
 import numpy as np
@@ -671,8 +672,13 @@ def plot_array_absorption_plot(array_model):
         ),
         len(sample_x_values) * len(sample_y_values),
     )
-    ys = np.tile(
-        range(len(sample_x_values) * len(sample_y_values)), len((sample_time_values))
+    ys = list(
+        itertools.chain(
+            *itertools.repeat(
+                range(len(sample_x_values) * len(sample_y_values)),
+                len(sample_time_values),
+            )
+        )
     )
 
     return {
