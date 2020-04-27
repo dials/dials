@@ -1,0 +1,1 @@
+dials.integrate: change the way we calculate available memory and limit the number of parallel processes
