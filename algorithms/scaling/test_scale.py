@@ -138,11 +138,6 @@ def generate_test_input(n=1):
     return generated_param(), generated_exp(n), reflections
 
 
-def return_first_arg_side_effect(*args):
-    """Side effect for overriding the call to reject_outliers."""
-    return args[0]
-
-
 def test_scale_script_prepare_input():
     """Test prepare_input method of scaling script."""
 

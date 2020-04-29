@@ -134,12 +134,6 @@ class ScalerBase(Subject):
             return self.Ih_table.blocked_data_list[:-1]
         return self.Ih_table.blocked_data_list
 
-    def update_free_block(self, parameter_manager):
-        """Update the scales in the free block."""
-        if self.Ih_table.free_Ih_table:
-            free_block_id = len(self.Ih_table.blocked_data_list) - 1
-            self.update_for_minimisation(parameter_manager, free_block_id)
-
     ## Interface for algorithms using the scaler
 
     def round_of_outlier_rejection(self):

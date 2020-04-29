@@ -78,18 +78,6 @@ class PowderRingFilter:
             result = result | (flex.abs(d_star_sq - ds2) < self.half_width)
         return result
 
-    @staticmethod
-    def from_params(params):
-        """
-        Factory method from phil.
-
-        :param params: The input phil parameters
-        :return: The powder ring filter
-        """
-        return PowderRingFilter(
-            params.unit_cell, params.space_group.group(), params.d_min, params.width
-        )
-
 
 class IceRingFilter:
     """

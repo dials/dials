@@ -44,14 +44,6 @@ def mock_data_manager(components):
     return dm
 
 
-def mock_multiscaler(mock_data_managers):
-    """Return a mock data manager of a general model."""
-    multi_dm = Mock()
-    multi_dm.active_scalers = mock_data_managers
-    multi_dm.id_ = "multi"
-    return multi_dm
-
-
 def test_general_apm():
     """Test for the general active_parameter_manage class."""
     components = {

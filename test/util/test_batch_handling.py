@@ -15,7 +15,6 @@ from dials.util.batch_handling import (
     get_image_ranges,
     _next_epoch,
 )
-from mock import Mock
 from dials.array_family import flex
 from dxtbx.model import Experiment, Scan
 
@@ -41,30 +40,6 @@ def reflections_3():
     r = flex.reflection_table()
     r["xyzobs.px.value"] = flex.vec3_double([(0, 0, 0.5), (0, 0, 1.5)])
     return r
-
-
-def mock_experiments():
-    """Mock experiments list with 2 experiments"""
-    explist = []
-    explist.append(Mock())
-    explist[0].identifier = "0"
-    explist.append(Mock())
-    explist[1].identifier = "1"
-    return explist
-
-
-def mock_experiment_with_scaling_model(batch_range=(1, 50)):
-    """Mock experiment with a scaling model valid_batch_range"""
-    exp = Mock()
-    exp.scaling_model.configdict = {"valid_batch_range": batch_range}
-    return exp
-
-
-def mock_experiment_without_scaling_model():
-    """Mock experiment with no scaling model or scan"""
-    exp = Mock()
-    exp.scaling_model = None
-    return exp
 
 
 def test_assign_batches_to_reflections():
