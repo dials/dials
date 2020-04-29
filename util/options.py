@@ -908,7 +908,9 @@ class OptionParser(OptionParserBase):
                             "{}:".format(err.type).ljust(slen + 1), err.message
                         )
                     )
-
+        # The others
+        for arg in [x for x in unhandled if x not in self._phil_parser.handling_errors]:
+            msg.append("  " + str(arg))
         return "\n".join(msg)
 
     @property
