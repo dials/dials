@@ -345,6 +345,12 @@ class _Tiles(object):
         self.current_brightness = b
         self.flex_image.adjust(color_scheme)
 
+    def update_color_scheme(self, color_scheme=0):
+        self.flex_image.adjust(color_scheme)
+        self.reset_the_cache()
+        self.UseLevel(self.zoom_level)
+        self.current_color_scheme = color_scheme
+
     def reset_the_cache(self):
         # setup the tile caches and Least Recently Used lists
         self.cache = {}
@@ -395,6 +401,11 @@ class _Tiles(object):
         else:
             wx_image = wx.EmptyImage(256, 256)
             return wx_image.ConvertToBitmap()
+
+    def get_binning(self):
+        if self.zoom_level >= 0:
+            return 1.0
+        return 2.0 ** -self.zoom_level
 
     def UseLevel(self, n):
         """Prepare to serve tiles from the required level.
@@ -505,6 +516,16 @@ class _Tiles(object):
             (size1 / 2.0) - (latitude - self.center_y_lat),
         )
 
+    def picture_fast_slow_to_lon_lat(self, pic_fast_pixel, pic_slow_pixel):
+        # inverse of the preceding function
+
+        (size1, size2) = (self.flex_image.size1(), self.flex_image.size2())
+
+        return (
+            (size2 / 2.0) - self.center_x_lon - pic_fast_pixel,
+            (size1 / 2.0) + self.center_y_lat - pic_slow_pixel,
+        )
+
     def picture_fast_slow_to_map_relative(self, pic_fast_pixel, pic_slow_pixel):
         # return up/down, left/right map relative coords for pyslip layers
         return pic_fast_pixel + self.extent[0], -pic_slow_pixel + self.extent[3]
@@ -520,6 +541,7 @@ class _Tiles(object):
         return value
 
     def get_spotfinder_data(self, params):
+
         pointdata = []
         test_pattern = False
         if (

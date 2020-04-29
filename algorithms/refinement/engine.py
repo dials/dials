@@ -786,6 +786,17 @@ class AdaptLstbx(Refinery, normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_
         s = flex.sqrt(s2)
         self._parameters.set_param_esds(s)
 
+    def _print_normal_matrix(self):
+        """Print the full normal matrix at the current step. For debugging only"""
+        logger.debug("The normal matrix for the current step is:")
+        logger.debug(
+            self.normal_matrix_packed_u()
+            .matrix_packed_u_as_symmetric()
+            .as_scitbx_matrix()
+            .matlab_form(format=None, one_row_per_line=True)
+        )
+        logger.debug("\n")
+
 
 class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
     """Refinery implementation, using lstbx Gauss Newton iterations"""
@@ -933,8 +944,6 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
         self.history.add_column("mu")
         self.history.add_column("nu")
 
-        # FIXME need a much neater way of doing this stuff through
-        # inheritance
         # set max iterations if not already.
         if self._max_iterations is None:
             self._max_iterations = 100
