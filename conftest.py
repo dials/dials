@@ -7,8 +7,26 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+import warnings
 
 import pytest
+import six
+
+
+collect_ignore = []
+if six.PY2:
+    collect_ignore.append("test/python3/test_syntaxerror_on_import.py")
+    warnings.warn(
+        "%d test files were excluded as they can only be interpreted with Python 3"
+        % len(collect_ignore),
+        UserWarning,
+    )
+
+
+@pytest.fixture(scope="session")
+def python3():
+    if six.PY2:
+        pytest.skip("Test requires a Python 3 installation")
 
 
 def pytest_addoption(parser):
