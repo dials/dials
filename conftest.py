@@ -7,6 +7,7 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+import sys
 import warnings
 
 import pytest
@@ -21,6 +22,13 @@ if six.PY2:
         % len(collect_ignore),
         UserWarning,
     )
+
+
+def filter_list_for_travis():
+    for line in sorted(sys.stdin):
+        if line.lstrip("./").rstrip() not in collect_ignore:
+            print(line, end="")
+    exit()
 
 
 @pytest.fixture(scope="session")

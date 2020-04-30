@@ -47,7 +47,7 @@ jobs:
       cache: false
       before_cache: false
       script:
-         - python -m compileall -q *
+         - find . -name "*.py" | python -W ignore -c 'from conftest import filter_list_for_travis as flft; flft()' | python -m compileall -i -
 
     - name: "Syntax validation - Python 3.7"
       addons: false
