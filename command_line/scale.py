@@ -139,6 +139,7 @@ def _export_unmerged_mtz(params, experiments, reflection_table):
     export_params.intensity = ["scale"]
     export_params.mtz.partiality_threshold = params.cut_data.partiality_cutoff
     export_params.mtz.crystal_name = params.output.crystal_name
+    export_params.mtz.best_unit_cell = params.reflection_selection.best_unit_cell
     if params.cut_data.d_min:
         export_params.mtz.d_min = params.cut_data.d_min
     logger.info(

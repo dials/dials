@@ -43,7 +43,7 @@ phil_scope = iotbx.phil.parse(
         .expert_level=1
     }
     best_unit_cell = None
-      .type = floats(size=6)
+      .type = unit_cell
       .help = "Best unit cell value, to use when performing resolution cutting"
               "and merging statistics. If None, the median cell will be used."
     E2_range = 0.8, 5.0

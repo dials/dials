@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function
 import logging
 import sys
 
-from libtbx.phil import parse
+from iotbx.phil import parse
 from libtbx import Auto
 
 logger = logging.getLogger("dials.command_line.export")
@@ -124,6 +124,13 @@ phil_scope = parse(
     crystal_name = XTAL
       .type = str
       .help = "The name of the crystal, for the mtz file metadata"
+
+    best_unit_cell = None
+    .type = unit_cell
+    .help = "Best unit cell value, to use when performing resolution cutting,"
+            "and as the overall unit cell in the exported mtz. If None, the median"
+            "cell will be used."
+
   }
 
   sadabs {
