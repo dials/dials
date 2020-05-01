@@ -5,6 +5,10 @@ import os
 import sys
 import warnings
 
+from future.standard_library import install_aliases
+
+install_aliases()
+
 if sys.version_info.major == 2:
     warnings.warn(
         "Python 2 is no longer fully supported. Please consider using the DIALS 2.2 release branch. "
