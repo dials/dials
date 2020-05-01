@@ -5,6 +5,7 @@ import os
 
 import procrunner
 import pytest
+from cctbx import uctbx
 from dials.array_family import flex
 from dials.util.multi_dataset_handling import assign_unique_identifiers
 from dxtbx.serialize.load import _decode_dict
@@ -40,13 +41,10 @@ def test_mtz(dials_data, tmpdir):
 def test_mtz_recalculated_cell(dials_data, tmpdir):
     # First run dials.two_theta_refine to ensure that the crystals have
     # recalculated_unit_cell set
+    scaled_expt = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled.expt")
+    scaled_refl = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled.refl")
     result = procrunner.run(
-        [
-            "dials.two_theta_refine",
-            dials_data("centroid_test_data").join("experiments.json"),
-            dials_data("centroid_test_data").join("integrated.pickle"),
-        ],
-        working_directory=tmpdir,
+        ["dials.two_theta_refine", scaled_expt, scaled_refl], working_directory=tmpdir,
     )
     assert tmpdir.join("refined_cell.expt").check(file=1)
     refined_expt = load.experiment_list(
@@ -54,21 +52,48 @@ def test_mtz_recalculated_cell(dials_data, tmpdir):
     )
     ttr_cell = refined_expt.crystals()[0].get_recalculated_unit_cell()
 
+    d_min = 1.3
     result = procrunner.run(
         [
             "dials.export",
             "format=mtz",
             tmpdir.join("refined_cell.expt"),
-            dials_data("centroid_test_data").join("integrated.pickle"),
+            scaled_refl,
+            "d_min=%f" % d_min,
         ],
         working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("integrated.mtz").check(file=1)
+    assert tmpdir.join("scaled.mtz").check(file=1)
     # The resulting mtz should have the same unit cell set as the recalculated_unit_cell
     # from dials.two_theta_refine
-    for ma in mtz.object(tmpdir.join("integrated.mtz").strpath).as_miller_arrays():
+    for ma in mtz.object(tmpdir.join("scaled.mtz").strpath).as_miller_arrays():
         assert ttr_cell.parameters() == pytest.approx(ma.unit_cell().parameters())
+        assert ma.d_min() >= d_min
+
+
+def test_mtz_best_unit_cell(dials_data, tmpdir):
+    scaled_expt = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled.expt")
+    scaled_refl = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled.refl")
+    best_unit_cell = uctbx.unit_cell((42, 42, 39, 90, 90, 90))
+    d_min = 1.5
+    result = procrunner.run(
+        [
+            "dials.export",
+            "format=mtz",
+            scaled_expt,
+            scaled_refl,
+            "d_min=%f" % d_min,
+            "best_unit_cell=%g,%g,%g,%g,%g,%g" % best_unit_cell.parameters(),
+        ],
+        working_directory=tmpdir,
+    )
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("scaled.mtz").check(file=1)
+    # The resulting mtz should have the best_unit_cell as input to dials.export
+    for ma in mtz.object(tmpdir.join("scaled.mtz").strpath).as_miller_arrays():
+        assert best_unit_cell.parameters() == pytest.approx(ma.unit_cell().parameters())
+        assert ma.d_min() >= d_min
 
 
 def test_multi_sequence_integrated_mtz(dials_data, tmpdir):
