@@ -7,7 +7,7 @@ import itertools
 import optparse
 import pickle
 import traceback
-from urllib.parse import urlparse
+from six.moves.urllib.parse import urlparse
 from collections import defaultdict, namedtuple
 
 from orderedset import OrderedSet
