@@ -19,7 +19,7 @@ The intention is that all of the code should try to converge towards these.
     git clone https://github.com/dials/dials modules/dials
     python modules/dials/installer/bootstrap.py
     ```
-2.  Activate the environment with `source <root>/build/setpaths.sh`. This will
+2.  Activate the environment with `source <root>/dials`. This will
     need to be done every time you work on DIALS code.
 
 The DIALS repository is now checked out in `<root>/modules/dials`. During
@@ -28,10 +28,7 @@ that all of the tests still pass.
 
 If you update source code or change dependencies, you may occasionally need
 to regenerate the static libtbx ecosystem and rebuild any C++ code. You can
-go this by running `make reconf` in the `<root>/build` directory. This will also
-generate an alias to any executable scripts installed by `pip` as
-`libtbx.<script>`. Using these helps ensure that you are using the bundled
-python version instead of your system version.
+go this by running `make reconf` in the `<root>/build` directory.
 
 ## Code Development Guidelines
 
