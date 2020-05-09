@@ -77,7 +77,6 @@ class ScanVaryingGoniometerParameterisation(
         )
 
         # calculate derivatives of angles wrt underlying parameters.
-        # FIXME write up notes in orange notebook
         dgamma1_dp = gamma1_weights * (1.0 / gamma1_sumweights)
         dgamma2_dp = gamma2_weights * (1.0 / gamma2_sumweights)
 

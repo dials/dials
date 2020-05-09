@@ -229,8 +229,8 @@ def _trim_scans_to_observations(experiments, reflections):
 class RefinerFactory(object):
     """Factory class to create refiners"""
 
-    @classmethod
-    def _filter_reflections(cls, reflections):
+    @staticmethod
+    def _filter_reflections(reflections):
         """Return a copy of the input reflections filtered to keep only
         those columns that are required by refinement"""
 
@@ -456,10 +456,10 @@ class RefinerFactory(object):
             dense_jacobian_gigabytes = (
                 nparam * nref * ndim * flex.double.element_size()
             ) / 1e9
-            tot_memory_gigabytes = psutil.virtual_memory().total / 1e9
+            avail_memory_gigabytes = psutil.virtual_memory().available / 1e9
             # Report if the Jacobian requires a large amount of storage
             if (
-                dense_jacobian_gigabytes > 0.2 * tot_memory_gigabytes
+                dense_jacobian_gigabytes > 0.2 * avail_memory_gigabytes
                 or dense_jacobian_gigabytes > 0.5
             ):
                 logger.info(
@@ -547,11 +547,7 @@ class RefinerFactory(object):
         )
 
         # Shorten params path
-        # FIXME Only unit cell restraints currently supported
-        # beam_r = params.beam.restraints
         cell_r = params.crystal.unit_cell.restraints
-        # orientation_r = params.crystal.orientation.restraints
-        # detector_r = params.detector.restraints
 
         for tie in cell_r.tie_to_target:
             if len(tie.values) != 6:
@@ -750,8 +746,6 @@ class Refiner(object):
     def get_matches(self):
         """Delegated to the reflection manager"""
 
-        # FIXME Consider: Does this information really need to be exposed by the
-        # public API (indexing code seems to use it, but is it necessary?)
         return self._refman.get_matches()
 
     def get_free_reflections(self):

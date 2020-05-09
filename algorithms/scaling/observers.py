@@ -50,6 +50,30 @@ from scitbx.array_family import flex
 logger = logging.getLogger("dials")
 
 
+def assert_is_json_serialisable(thing, name, path=None):
+    path = path or []
+    if isinstance(thing, list):
+        for n, element in enumerate(thing):
+            assert_is_json_serialisable(element, name, path + [n])
+    elif isinstance(thing, dict):
+        for key, value in thing.items():
+            assert_is_json_serialisable(value, name, path + [repr(key)])
+    else:
+        try:
+            json.dumps(thing)
+        except TypeError as e:
+            raise TypeError(
+                "JSON serialisation error '%s' for value '%s' type %s in %s%s"
+                % (
+                    e,
+                    str(thing),
+                    type(thing),
+                    name,
+                    "".join("[%s]" % step for step in path),
+                )
+            )
+
+
 def register_default_scaling_observers(script):
     """Register the standard observers to the scaling script."""
     script.register_observer(
@@ -201,6 +225,7 @@ class ScalingHTMLGenerator(Observer):
             )
             env = Environment(loader=loader)
             template = env.get_template("scaling_report.html")
+            assert_is_json_serialisable(self.data, "self.data")
             html = template.render(
                 page_title="DIALS scaling report",
                 scaling_model_graphs=self.data["scaling_model"],

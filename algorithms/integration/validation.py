@@ -1,23 +1,19 @@
 from __future__ import absolute_import, division, print_function
 
+from dials.array_family import flex
+
 
 class ValidatedMultiExpProfileModeller(object):
     """
     A class to wrap profile modeller for validation
     """
 
-    def __init__(self):
+    def __init__(self, modellers):
         """
-        Init the list of modellers
+        Init the list of MultiExpProfileModeller modellers
         """
-        self.modellers = []
+        self.modellers = modellers
         self.finalized_modeller = None
-
-    def add(self, modeller):
-        """
-        Add a MultiExpProfileModeller
-        """
-        self.modellers.append(modeller)
 
     def __getitem__(self, index):
         """
@@ -29,7 +25,6 @@ class ValidatedMultiExpProfileModeller(object):
         """
         Do the modelling for all modellers
         """
-        from dials.array_family import flex
 
         if "profile.index" not in reflections:
             assert len(self.modellers) == 1
@@ -47,7 +42,6 @@ class ValidatedMultiExpProfileModeller(object):
         """
         Do the validation.
         """
-        from dials.array_family import flex
 
         results = []
         for i, modeller in enumerate(self.modellers):

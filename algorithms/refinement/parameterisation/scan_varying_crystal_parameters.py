@@ -73,7 +73,6 @@ class ScanVaryingCrystalOrientationParameterisation(
         phi3, phi3_weights, phi3_sumweights = self._smoother.value_weight(t, phi3_set)
 
         # calculate derivatives of angles wrt underlying parameters.
-        # FIXME write up notes in orange notebook
         dphi1_dp = phi1_weights * (1.0 / phi1_sumweights)
         dphi2_dp = phi2_weights * (1.0 / phi2_sumweights)
         dphi3_dp = phi3_weights * (1.0 / phi3_sumweights)

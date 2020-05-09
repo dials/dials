@@ -7,6 +7,7 @@ import itertools
 import optparse
 import pickle
 import traceback
+from six.moves.urllib.parse import urlparse
 from collections import defaultdict, namedtuple
 
 from orderedset import OrderedSet
@@ -140,35 +141,6 @@ format
 )
 
 
-class ConfigWriter(object):
-    """Class to write configuration to file."""
-
-    def __init__(self, master_phil):
-        """
-        Initialise with the master phil.
-
-        :param master_phil: The master phil scope
-        """
-        self._master_phil = master_phil
-
-    def write(self, params, filename):
-        """
-        Write the configuration to file.
-
-        :param params: The input phil parameters
-        :param filename: The output filename
-        """
-        # Get the modified phil
-        modified_phil = self._master_phil.format(python_object=params)
-
-        # Get the phil as text
-        text = modified_phil.as_str()
-
-        # Write the text to file
-        with open(filename, "w") as f:
-            f.write(text)
-
-
 # Simple tuple to hold basic information on why an argument failed
 ArgumentHandlingErrorInfo = namedtuple(
     "ArgumentHandlingErrorInfo",
@@ -289,7 +261,8 @@ class Importer(object):
         # If filenames contain wildcards, expand
         args_new = []
         for arg in args:
-            if "*" in arg:
+            # Don't expand wildcards if URI-style filename
+            if "*" in arg and not urlparse(arg).scheme:
                 args_new.extend(glob(arg))
             else:
                 args_new.append(arg)
@@ -481,7 +454,8 @@ class PhilCommandParser(object):
                         unhandled.append(arg)
                     else:
                         raise
-            elif arg.find("=") >= 0:
+            # Treat "has a schema" as "looks like a URL (not phil)
+            elif "=" in arg and not urlparse(arg).scheme:
                 try:
                     user_phils.append(interpretor.process_arg(arg=arg))
                 except Exception:
@@ -937,7 +911,9 @@ class OptionParser(OptionParserBase):
                             "{}:".format(err.type).ljust(slen + 1), err.message
                         )
                     )
-
+        # The others
+        for arg in [x for x in unhandled if x not in self._phil_parser.handling_errors]:
+            msg.append("  " + str(arg))
         return "\n".join(msg)
 
     @property

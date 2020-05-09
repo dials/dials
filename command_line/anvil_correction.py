@@ -58,27 +58,27 @@ phil_scope = libtbx.phil.parse(
     {
         density = 3510
             .type = float
-            .help = 'The density of the anvil material in kg per cubic metre.  ' \
-                    'The default is the typical density of synthetic diamond.'
+            .help = "The density of the anvil material in kg per cubic metre.  " \
+                    "The default is the typical density of synthetic diamond."
 
         thickness = 1.5925
             .type = float
-            .help = 'The thickness in mm of each anvil in the pressure cell.  ' \
-                    'The default is the thickness of the pressure cells in use on ' \
-                    'beamline I19 at Diamond Light Source.'
+            .help = "The thickness in mm of each anvil in the pressure cell.  " \
+                    "The default is the thickness of the pressure cells in use on " \
+                    "beamline I19 at Diamond Light Source."
 
         normal = 0, 1, 0
             .type = floats(size=3)
-            .help = 'A 3-vector orthogonal to the anvil surfaces in the laboratory ' \
-                    'frame when the goniometer is at zero datum, i.e. the axes are ' \
-                    'all at zero degrees.  The vector may be given un-normalised.'
+            .help = "A 3-vector orthogonal to the anvil surfaces in the laboratory " \
+                    "frame when the goniometer is at zero datum, i.e. the axes are " \
+                    "all at zero degrees.  The vector may be given un-normalised."
     }
 
     output {
         experiments = None
             .type = path
-            .help = '''The output experiment list file name.
-            If None, don't output an experiment list file.'''
+            .help = "The output experiment list file name. If None, don't output an " \
+                    "experiment list file."
         reflections = corrected.refl
             .type = path
             .help = "The output reflection table file."

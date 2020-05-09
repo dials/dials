@@ -251,16 +251,6 @@ def test_get_intensities_from_cif(_, test_reflections, test_experiments, mock_ci
     assert exp.scaling_model.is_scaled is True
 
 
-def return_len_refl_side_effect(*args):
-    """Side effect for overriding the call to reject_outliers."""
-    return args[0].size()
-
-
-def return_data_side_effect(*args, **kwargs):
-    """Side effect to return data from a miller array."""
-    return kwargs["i_obs"].data()
-
-
 def test_create_Ih_table(test_experiments, test_reflections):
     """Test the create_Ih_table function."""
     test_reflections["intensity"] = test_reflections["intensity.prf.value"]

@@ -211,21 +211,6 @@ class _(object):
                 infile.read()
             )
 
-    @staticmethod
-    def from_h5(filename):
-        """
-        Read the reflections table from a HDF5 file.
-
-        :param filename: The hdf5 filename
-        :return: The reflection table
-        """
-        from dials.util.nexus_old import NexusFile
-
-        handle = NexusFile(filename, "r")
-        self = handle.get_reflections()
-        handle.close()
-        return self
-
     def as_file(self, filename):
         """
         Write the reflection table to file in either msgpack or pickle format
@@ -498,125 +483,6 @@ class _(object):
         match = SpotMatcher(max_separation=2)
         oind, sind = match(other, self)
         return sind, oind
-
-    def match_with_reference_without_copying_columns(self, other):
-        """
-        Match reflections with another set of reflections.
-
-        :param other: The reflection table to match against
-        :return: The matches
-        """
-        logger.info("Matching reference spots with predicted reflections")
-        logger.info(" %d observed reflections input" % len(other))
-        logger.info(" %d reflections predicted" % len(self))
-
-        # Get the miller index, entering flag and turn number for
-        # Both sets of reflections
-        i1 = self["id"]
-        h1 = self["miller_index"]
-        e1 = self["entering"].as_int()
-        x1, y1, z1 = self["xyzcal.px"].parts()
-        p1 = self["panel"]
-
-        i2 = other["id"]
-        h2 = other["miller_index"]
-        e2 = other["entering"].as_int()
-        x2, y2, z2 = other["xyzcal.px"].parts()
-        p2 = other["panel"]
-
-        class Match(object):
-            def __init__(self):
-                self.a = []
-                self.b = []
-
-        # Create the match lookup
-        lookup = collections.defaultdict(Match)
-        for i in range(len(self)):
-            item = h1[i] + (e1[i], i1[i], p1[i])
-            lookup[item].a.append(i)
-
-        # Add matches from input reflections
-        for i in range(len(other)):
-            item = h2[i] + (e2[i], i2[i], p2[i])
-            if item in lookup:
-                lookup[item].b.append(i)
-
-        # Create the list of matches
-        match1 = []
-        match2 = []
-        for item, value in lookup.items():
-            if len(value.b) == 0:
-                continue
-            elif len(value.a) == 1 and len(value.b) == 1:
-                match1.append(value.a[0])
-                match2.append(value.b[0])
-            else:
-                matched = {}
-                for i in value.a:
-                    d = []
-                    for j in value.b:
-                        dx = x1[i] - x2[j]
-                        dy = y1[i] - y2[j]
-                        dz = z1[i] - z2[j]
-                        d.append((i, j, dx ** 2 + dy ** 2 + dz ** 2))
-                    i, j, d = min(d, key=lambda x: x[2])
-                    if j not in matched:
-                        matched[j] = (i, d)
-                    elif d < matched[j][1]:
-                        matched[j] = (i, d)
-                for key1, value1 in matched.items():
-                    match1.append(value1[0])
-                    match2.append(key1)
-
-        # Select everything which matches
-        sind = cctbx.array_family.flex.size_t(match1)
-        oind = cctbx.array_family.flex.size_t(match2)
-
-        # Sort by self index
-        sort_index = cctbx.array_family.flex.size_t(
-            sorted(range(len(sind)), key=lambda x: sind[x])
-        )
-        sind = sind.select(sort_index)
-        oind = oind.select(sort_index)
-
-        s2 = self.select(sind)
-        o2 = other.select(oind)
-        h1 = s2["miller_index"]
-        h2 = o2["miller_index"]
-        e1 = s2["entering"]
-        e2 = o2["entering"]
-        assert (h1 == h2).all_eq(True)
-        assert (e1 == e2).all_eq(True)
-        x1, y1, z1 = s2["xyzcal.px"].parts()
-        x2, y2, z2 = o2["xyzcal.px"].parts()
-        distance = cctbx.array_family.flex.sqrt(
-            cctbx.array_family.flex.pow2(x1 - x2)
-            + cctbx.array_family.flex.pow2(y1 - y2)
-            + cctbx.array_family.flex.pow2(z1 - z2)
-        )
-        mask = distance < 2
-        logger.info(" %d reflections matched" % len(o2))
-        logger.info(" %d reflections accepted" % mask.count(True))
-        self.set_flags(sind.select(mask), self.flags.reference_spot)
-        self.set_flags(sind.select(o2.get_flags(self.flags.strong)), self.flags.strong)
-        self.set_flags(
-            sind.select(o2.get_flags(self.flags.indexed)), self.flags.indexed
-        )
-        self.set_flags(
-            sind.select(o2.get_flags(self.flags.used_in_refinement)),
-            self.flags.used_in_refinement,
-        )
-        other_matched_indices = oind.select(mask)
-        other_unmatched_mask = cctbx.array_family.flex.bool(len(other), True)
-        other_unmatched_mask.set_selected(
-            other_matched_indices,
-            cctbx.array_family.flex.bool(len(other_matched_indices), False),
-        )
-        other_matched = other.select(other_matched_indices)
-        other_unmatched = other.select(other_unmatched_mask)
-        mask2 = cctbx.array_family.flex.bool(len(self), False)
-        mask2.set_selected(sind.select(mask), True)
-        return mask2, other_matched, other_unmatched
 
     def match_with_reference(self, other):
         """
@@ -907,13 +773,13 @@ class _(object):
         )
 
     def compute_summed_intensity(self, image_volume=None):
+        # type: (dials.model.data.MultiPanelImageVolume) -> None
         """
         Compute intensity via summation integration.
         """
-        from dials.algorithms.integration.sum import IntegrationAlgorithm
+        from dials.algorithms.integration.sum import sum_integrate_and_update_table
 
-        algorithm = IntegrationAlgorithm()
-        success = algorithm(self, image_volume=image_volume)
+        success = sum_integrate_and_update_table(self, image_volume=image_volume)
         self.set_flags(~success, self.flags.failed_during_summation)
 
     def compute_fitted_intensity(self, fitter):
@@ -1098,56 +964,6 @@ class _(object):
 
         # Return the overlaps
         return overlaps
-
-    def compute_shoebox_overlap_fraction(self, overlaps):
-        """
-        Compute the fraction of shoebox overlapping.
-
-        :param overlaps: The list of overlaps
-        :return: The fraction of shoebox overlapped with other reflections
-        """
-        result = cctbx.array_family.flex.double(len(self))
-        bbox = self["bbox"]
-        for i in range(len(self)):
-            b1 = bbox[i]
-            xs = b1[1] - b1[0]
-            ys = b1[3] - b1[2]
-            zs = b1[5] - b1[4]
-            assert xs > 0
-            assert ys > 0
-            assert zs > 0
-            mask = cctbx.array_family.flex.bool(
-                cctbx.array_family.flex.grid(zs, ys, xs), False
-            )
-            for edge in overlaps.adjacent_vertices(i):
-                b2 = bbox[edge]
-                x0 = b2[0] - b1[0]
-                x1 = b2[1] - b1[0]
-                y0 = b2[2] - b1[2]
-                y1 = b2[3] - b1[2]
-                z0 = b2[4] - b1[4]
-                z1 = b2[5] - b1[4]
-                if x0 < 0:
-                    x0 = 0
-                if y0 < 0:
-                    y0 = 0
-                if z0 < 0:
-                    z0 = 0
-                if x1 > xs:
-                    x1 = xs
-                if y1 > ys:
-                    y1 = ys
-                if z1 > zs:
-                    z1 = zs
-                assert x1 > x0
-                assert y1 > y0
-                assert z1 > z0
-                m2 = cctbx.array_family.flex.bool(
-                    cctbx.array_family.flex.grid(z1 - z0, y1 - y0, x1 - x0), True
-                )
-                mask[z0:z1, y0:y1, x0:x1] = m2
-            result[i] = (1.0 * mask.count(True)) / mask.size()
-        return result
 
     def assert_experiment_identifiers_are_consistent(self, experiments=None):
         """

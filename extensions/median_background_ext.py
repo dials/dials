@@ -6,8 +6,8 @@ class MedianBackgroundExt(object):
 
     name = "median"
 
-    @classmethod
-    def phil(cls):
+    @staticmethod
+    def phil():
         from libtbx.phil import parse
 
         return parse("")

@@ -2,7 +2,6 @@
 principally ReflectionManager."""
 from __future__ import absolute_import, division, print_function
 
-import copy
 import logging
 import math
 import random
@@ -650,23 +649,6 @@ class ReflectionManager(object):
         used for refinement"""
 
         return len(self._reflections)
-
-    def _sort_obs_by_residual(self, obs, angular=False):
-        """For diagnostic purposes, sort the obs-pred matches so that the
-        highest residuals are first. By default, sort by positional
-        residual, unless angular=True.
-
-        The earliest entries in the return list may be those that are
-        causing problems in refinement.
-        """
-        sort_obs = copy.deepcopy(obs)
-        if angular:
-            sort_obs.sort("phi_resid", reverse=True)
-        else:
-            sort_obs["key"] = sort_obs["x_resid"] ** 2 + sort_obs["y_resid"] ** 2
-            sort_obs.sort("key", reverse=True)
-            del sort_obs["key"]
-        return sort_obs
 
     def get_indexed(self):
         """Return the reflections passed in as input"""

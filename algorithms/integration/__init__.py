@@ -1,11 +1,26 @@
 from __future__ import absolute_import, division, print_function
 
+import collections
 from dials.util import tabulate
 
-import boost.python
-from dials_algorithms_integration_ext import *
-from dials_algorithms_integration_kapton_ext import *
-from dials.algorithms.integration.integrator_stills import *
+from dials_algorithms_integration_ext import *  # noqa: F403; lgtm
+from dials_algorithms_integration_kapton_ext import *  # noqa: F403; lgtm
+
+__all__ = (  # noqa: F405
+    "Corrections",
+    "CorrectionsMulti",
+    "lp_correction",
+    "qe_correction",
+    "Result",
+)
+
+Result = collections.namedtuple(
+    "Result",
+    "index, reflections, data, read_time, extract_time, process_time, total_time",
+)
+#        :param index: The processing job index
+#        :param reflections: The processed reflections
+#        :param data: Other processed data
 
 
 class TimingInfo(object):

@@ -7,6 +7,7 @@ import time
 from collections import OrderedDict, Counter
 
 import dials.util.ext
+from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
 from dials.array_family import flex
 from dials.util.version import dials_version
 from dials.util.filter_reflections import filter_reflection_table
@@ -452,6 +453,11 @@ def export_mtz(integrated_data, experiment_list, params):
     if any(len(experiment.detector) != 1 for experiment in experiment_list):
         logger.warning("Ignoring multiple panels in output MTZ")
 
+    best_unit_cell = params.mtz.best_unit_cell
+    if best_unit_cell is None:
+        best_unit_cell = determine_best_unit_cell(experiment_list)
+    integrated_data["d"] = best_unit_cell.d(integrated_data["miller_index"])
+
     # Clean up the data with the passed in options
     integrated_data = filter_reflection_table(
         integrated_data,
@@ -558,11 +564,7 @@ def export_mtz(integrated_data, experiment_list, params):
         else:
             experiment.data["ROT"] = z
 
-    unit_cell = (
-        experiment_list[0].crystal.get_recalculated_unit_cell()
-        or experiment_list[0].crystal.get_unit_cell()
-    )
-    mtz_writer.add_crystal(params.mtz.crystal_name, unit_cell=unit_cell)
+    mtz_writer.add_crystal(params.mtz.crystal_name, unit_cell=best_unit_cell)
     # Note: add unit cell here as may have changed basis since creating mtz.
     # For multi-wave unmerged mtz, we add an empty dataset for each wavelength,
     # but only write the data into the final dataset (for unmerged the batches

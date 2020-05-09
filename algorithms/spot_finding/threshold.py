@@ -19,45 +19,6 @@ class ThresholdStrategy(object):
         raise RuntimeError("Overload Me!")
 
 
-class UnimodalThresholdStrategy(ThresholdStrategy):
-    """
-    Unimodal histogram thresholding strategy.
-    """
-
-    def __init__(self, **kwargs):
-        """
-        Initialise the threshold.
-        """
-
-        # Initialise the base class
-        ThresholdStrategy.__init__(self, **kwargs)
-
-        # Get the arguments
-        trusted_range = kwargs.get("trusted_range", (0, 20000))
-
-        # Make sure the range is valid
-        self._hrange = (0, int(trusted_range[1]))
-
-    def __call__(self, image):
-        """
-        Calculate the threshold for this image.
-
-        :param image: The image to process
-        :return: The thresholded image
-        """
-        from dials.algorithms.image.threshold import maximum_deviation
-        from dials.algorithms.image.threshold import probability_distribution
-
-        # Get the probability distribution from the image
-        p = probability_distribution(image, self._hrange)
-
-        # Calculate the threshold and add to list
-        threshold = maximum_deviation(p)
-
-        # Return a threshold mask
-        return image >= threshold
-
-
 class DispersionThresholdStrategy(ThresholdStrategy):
     """
     A class implementing a 'gain' threshold.

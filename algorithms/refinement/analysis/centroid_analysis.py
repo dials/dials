@@ -22,9 +22,6 @@ class CentroidAnalyser(object):
 
         # Remove invalid reflections
         reflections = reflections.select(~(reflections["miller_index"] == (0, 0, 0)))
-
-        # FIXME - better way to recognise non-predictions. Can't rely on flags
-        # in e.g. indexed.refl I think.
         x, y, z = reflections["xyzcal.mm"].parts()
         sel = (x == 0) & (y == 0)
         reflections = reflections.select(~sel)

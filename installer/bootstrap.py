@@ -802,6 +802,7 @@ REPOSITORIES = (
     "dials/eigen",
     "dials/gui_resources",
     "dials/tntbx",
+    "ssrl-px/iota",
     "xia2/xia2",
 )
 
@@ -883,26 +884,6 @@ class DIALSBuilder(object):
             result = i()
             if result:
                 print(result)
-
-    def _add_download(self, url, to_file):
-        if not isinstance(url, list):
-            url = [url]
-
-        def _download():
-            for _url in url:
-                for retry in (3, 3, 0):
-                    print("===== Downloading %s: " % _url, end=" ")
-                    try:
-                        download_to_file(_url, to_file)
-                        return
-                    except Exception as e:
-                        print("Download failed with", e)
-                        if retry:
-                            print("Retrying in %d seconds" % retry)
-                            time.sleep(retry)
-            raise RuntimeError("Could not download " + to_file)
-
-        self.steps.append(_download)
 
     def update_sources(self):
         if self.git_reference:

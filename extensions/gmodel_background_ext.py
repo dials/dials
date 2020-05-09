@@ -6,8 +6,8 @@ class GModelBackgroundExt(object):
 
     name = "gmodel"
 
-    @classmethod
-    def phil(cls):
+    @staticmethod
+    def phil():
         from libtbx.phil import parse
 
         phil = parse(

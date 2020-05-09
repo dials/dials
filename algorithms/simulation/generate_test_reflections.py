@@ -356,10 +356,9 @@ def background_inclined(rlist):
 
 
 def integrate_3d_summation(rlist):
-    from dials.algorithms.integration.sum import IntegrationAlgorithm
+    from dials.algorithms.integration.sum import sum_integrate_and_update_table
 
-    integration = IntegrationAlgorithm()
-    integration(rlist)
+    sum_integrate_and_update_table(rlist)
 
 
 def main(params):

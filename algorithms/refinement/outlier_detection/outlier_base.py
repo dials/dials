@@ -406,8 +406,8 @@ phil_scope = parse(phil_str)
 
 
 class CentroidOutlierFactory(object):
-    @classmethod
-    def from_parameters_and_colnames(cls, params, colnames):
+    @staticmethod
+    def from_parameters_and_colnames(params, colnames):
 
         # id the relevant scope for the requested method
         method = params.outlier.algorithm

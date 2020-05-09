@@ -54,10 +54,8 @@ class BackgroundAlgorithm(object):
 class GLMBackgroundCalculatorFactory(object):
     """Class to do background subtraction."""
 
-    @classmethod
-    def create(
-        cls, experiments, model="constant3d", tuning_constant=1.345, min_pixels=10
-    ):
+    @staticmethod
+    def create(experiments, model="constant3d", tuning_constant=1.345, min_pixels=10):
         """
         Initialise the algorithm.
 

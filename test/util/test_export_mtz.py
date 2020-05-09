@@ -9,11 +9,6 @@ import itertools
 from dials.util.batch_handling import calculate_batch_offsets
 
 
-def in_ranges(value, ranges):
-    """Check if a value is in a list of ranges"""
-    return all(low <= value <= high for low, high in ranges)
-
-
 def range_to_set(ranges):
     """Convert a list of ranges to a set of numbers"""
     return set().union(*[set(range(l, h + 1)) for l, h in ranges])

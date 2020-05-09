@@ -5,25 +5,43 @@ import functools
 import logging
 import math
 import random
-from dials.util import tabulate
 
 import six
 import six.moves.cPickle as pickle
+
+import dials.extensions
+from dials.algorithms.integration import processor
+from dials.algorithms.integration.filtering import IceRingFilter
+from dials.algorithms.integration.parallel_integrator import (
+    IntegratorProcessor,
+    ReferenceCalculatorProcessor,
+)
+from dials.algorithms.integration.processor import (
+    Processor2D,
+    Processor3D,
+    ProcessorFlat3D,
+    ProcessorSingle2D,
+    ProcessorStills,
+    build_processor,
+    job,
+)
+from dials.algorithms.integration.report import (
+    IntegrationReport,
+    ProfileModelReport,
+    ProfileValidationReport,
+)
+from dials.algorithms.integration.validation import ValidatedMultiExpProfileModeller
+from dials.algorithms.profile_model.modeller import MultiExpProfileModeller
+from dials.algorithms.shoebox import MaskCode
+from dials.array_family import flex
+from dials.util import Sorry, phil, pprint, tabulate
+from dials.util.command_line import heading
+from dials.util.report import Report
 from dials_algorithms_integration_integrator_ext import (
     Executor,
     JobList,
     ReflectionManager,
 )
-from dials.algorithms.integration.processor import build_processor
-from dials.algorithms.integration.processor import Processor3D
-from dials.algorithms.integration.processor import ProcessorFlat3D
-from dials.algorithms.integration.processor import Processor2D
-from dials.algorithms.integration.processor import ProcessorSingle2D
-from dials.algorithms.integration.processor import ProcessorStills
-from dials.algorithms.integration.processor import job
-from dials.array_family import flex
-from dials.util import phil
-from dials.util import Sorry
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +52,6 @@ __all__ = [
     "Integrator3D",
     "Integrator3DThreaded",
     "IntegratorExecutor",
-    "IntegratorFactory",
     "IntegratorFlat3D",
     "IntegratorSingle2D",
     "IntegratorStills",
@@ -63,8 +80,6 @@ def generate_phil_scope():
 
     :return: The phil scope
     """
-    import dials.extensions
-
     phil_scope = phil.parse(
         """
 
@@ -96,9 +111,9 @@ def generate_phil_scope():
                   "number of blocks may be set to 1. If force is True then the"
                   "block size is always calculated."
 
-        max_memory_usage = 0.75
+        max_memory_usage = 0.90
           .type = float(value_min=0.0,value_max=1.0)
-          .help = "The maximum percentage of total physical memory to use for"
+          .help = "The maximum percentage of available memory to use for"
                   "allocating shoebox arrays."
 
       }
@@ -198,16 +213,6 @@ def generate_phil_scope():
                   "than or equal to zero indicates that this will not be used. A"
                   "positive value is used as the minimum permissable value."
           .type = float(value_min=0.0, value_max=1.0)
-
-        max_shoebox_overlap = 1.0
-          .type = float(value_min=0.0, value_max=1.0)
-          .help = "Filter reflections whose shoeboxes are overlapped by greater"
-                  "than the requested amount. Note that this is not the"
-                  "percentage of the peak that is overlapped but rather the"
-                  "percentage of the shoebox (background and foreground). This"
-                  "can be useful when the detector is too close and many"
-                  "overlapping reflections are predicted at high resolution"
-                  "causing memory issues."
 
         ice_rings = False
           .help = "Set the ice ring flags"
@@ -355,8 +360,6 @@ class Parameters(object):
         """
         Initialize
         """
-        from dials.algorithms.integration import processor
-
         self.modelling = processor.Parameters()
         self.integration = processor.Parameters()
         self.filter = Parameters.Filter()
@@ -369,9 +372,6 @@ class Parameters(object):
         """
         Convert the phil parameters
         """
-        from dials.algorithms.integration import processor
-        from dials.algorithms.integration.filtering import IceRingFilter
-
         # Init the parameters
         result = Parameters()
 
@@ -862,8 +862,6 @@ class IntegratorExecutor(Executor):
         :param frame: The frame to process
         :param reflections: The reflections to process
         """
-        from dials.algorithms.shoebox import MaskCode
-
         # Check if pixels are overloaded
         reflections.is_overloaded(self.experiments)
 
@@ -965,16 +963,6 @@ class Integrator(object):
         """
         Integrate the data
         """
-        from dials.algorithms.integration.report import IntegrationReport
-        from dials.algorithms.integration.report import ProfileModelReport
-        from dials.algorithms.integration.report import ProfileValidationReport
-        from dials.util.command_line import heading
-        from dials.util import pprint
-        from dials.algorithms.profile_model.modeller import MultiExpProfileModeller
-        from dials.algorithms.integration.validation import (
-            ValidatedMultiExpProfileModeller,
-        )
-
         # Ensure we get the same random sample each time
         random.seed(0)
 
@@ -1075,15 +1063,18 @@ class Integrator(object):
                     num_folds = 1
 
                 # Create the profile fitter
-                profile_fitter = ValidatedMultiExpProfileModeller()
+                profile_modellers = []
                 for i in range(num_folds):
                     profile_fitter_single = MultiExpProfileModeller()  # (num_folds)
                     for expr in self.experiments:
                         profile_fitter_single.add(expr.profile.fitting_class()(expr))
-                    profile_fitter.add(profile_fitter_single)
+                    profile_modellers.append(profile_fitter_single)
 
                 # Create the data processor
-                executor = ProfileModellerExecutor(self.experiments, profile_fitter)
+                executor = ProfileModellerExecutor(
+                    self.experiments,
+                    ValidatedMultiExpProfileModeller(profile_modellers),
+                )
                 processor = build_processor(
                     self.ProcessorClass,
                     self.experiments,
@@ -1226,8 +1217,6 @@ class Integrator(object):
         """
         Return the report of the processing
         """
-        from dials.util.report import Report
-
         result = Report()
         if self.profile_model_report is not None:
             result.combine(self.profile_model_report)
@@ -1365,13 +1354,6 @@ class Integrator3DThreaded(object):
         """
         Integrate the data
         """
-        from dials.algorithms.integration.parallel_integrator import (
-            ReferenceCalculatorProcessor,
-        )
-        from dials.algorithms.integration.parallel_integrator import IntegratorProcessor
-        from dials.algorithms.integration.report import IntegrationReport
-        from dials.util.command_line import heading
-
         # Init the report
         self.profile_model_report = None
         self.integration_report = None
@@ -1467,8 +1449,6 @@ class Integrator3DThreaded(object):
         """
         Return the report of the processing
         """
-        from dials.util.report import Report
-
         result = Report()
         if self.profile_model_report is not None:
             result.combine(self.profile_model_report)
@@ -1501,85 +1481,70 @@ class Integrator3DThreaded(object):
         return tabulate(rows, headers="firstrow")
 
 
-class IntegratorFactory(object):
+def create_integrator(params, experiments, reflections):
     """
-    A factory for creating integrators.
+    Create an integrator object with a given configuration.
+
+    :param params: The input phil parameters
+    :param experiments: The list of experiments
+    :param reflections: The reflections to integrate
+    :return: An integrator object
     """
+    # Check each experiment has an imageset
+    for exp in experiments:
+        if exp.imageset is None:
+            raise Sorry(
+                """
+      One or more experiment does not contain an imageset. Access to the
+      image data is crucial for integration.
+    """
+            )
 
-    @staticmethod
-    def create(params, experiments, reflections):
-        """
-        Create the integrator from the input configuration.
-
-        :param params: The input phil parameters
-        :param experiments: The list of experiments
-        :param reflections: The reflections to integrate
-        :return: The integrator class
-        """
-        import dials.extensions
-        from dials.util import Sorry
-
-        # Check each experiment has an imageset
-        for exp in experiments:
-            if exp.imageset is None:
-                raise Sorry(
-                    """
-          One or more experiment does not contain an imageset. Access to the
-          image data is crucial for integration.
-        """
-                )
-
-        # Read the mask in if necessary
-        if params.integration.lookup.mask and isinstance(
-            params.integration.lookup.mask, str
-        ):
-            with open(params.integration.lookup.mask, "rb") as infile:
-                if six.PY3:
-                    params.integration.lookup.mask = pickle.load(
-                        infile, encoding="bytes"
-                    )
-                else:
-                    params.integration.lookup.mask = pickle.load(infile)
-
-        # Set algorithms as reflection table defaults
-        BackgroundAlgorithm = dials.extensions.Background.load(
-            params.integration.background.algorithm
-        )
-        flex.reflection_table.background_algorithm = functools.partial(
-            BackgroundAlgorithm, params
-        )
-        CentroidAlgorithm = dials.extensions.Centroid.load(
-            params.integration.centroid.algorithm
-        )
-        flex.reflection_table.centroid_algorithm = functools.partial(
-            CentroidAlgorithm, params
-        )
-
-        # Get the classes we need
-        if params.integration.integrator == "auto":
-            if experiments.all_stills():
-                params.integration.integrator = "stills"
+    # Read the mask in if necessary
+    if params.integration.lookup.mask and isinstance(
+        params.integration.lookup.mask, str
+    ):
+        with open(params.integration.lookup.mask, "rb") as infile:
+            if six.PY3:
+                params.integration.lookup.mask = pickle.load(infile, encoding="bytes")
             else:
-                params.integration.integrator = "3d"
-        if params.integration.integrator == "3d":
-            IntegratorClass = Integrator3D
-        elif params.integration.integrator == "flat3d":
-            IntegratorClass = IntegratorFlat3D
-        elif params.integration.integrator == "2d":
-            IntegratorClass = Integrator2D
-        elif params.integration.integrator == "single2d":
-            IntegratorClass = IntegratorSingle2D
-        elif params.integration.integrator == "stills":
-            IntegratorClass = IntegratorStills
-        elif params.integration.integrator == "3d_threaded":
-            IntegratorClass = Integrator3DThreaded
-        else:
-            raise RuntimeError("Unknown integration type")
+                params.integration.lookup.mask = pickle.load(infile)
 
-        # Remove scan if stills
+    # Set algorithms as reflection table defaults
+    BackgroundAlgorithm = dials.extensions.Background.load(
+        params.integration.background.algorithm
+    )
+    flex.reflection_table.background_algorithm = functools.partial(
+        BackgroundAlgorithm, params
+    )
+    CentroidAlgorithm = dials.extensions.Centroid.load(
+        params.integration.centroid.algorithm
+    )
+    flex.reflection_table.centroid_algorithm = functools.partial(
+        CentroidAlgorithm, params
+    )
+
+    # Get the classes we need
+    if params.integration.integrator == "auto":
         if experiments.all_stills():
-            for experiment in experiments:
-                experiment.scan = None
+            params.integration.integrator = "stills"
+        else:
+            params.integration.integrator = "3d"
+    IntegratorClass = {
+        "3d": Integrator3D,
+        "flat3d": IntegratorFlat3D,
+        "2d": Integrator2D,
+        "single2d": IntegratorSingle2D,
+        "stills": IntegratorStills,
+        "3d_threaded": Integrator3DThreaded,
+    }.get(params.integration.integrator)
+    if not IntegratorClass:
+        raise ValueError("Unknown integration type %s" % params.integration.integrator)
 
-        # Return an instantiation of the class
-        return IntegratorClass(experiments, reflections, params)
+    # Remove scan if stills
+    if experiments.all_stills():
+        for experiment in experiments:
+            experiment.scan = None
+
+    # Return an instantiation of the class
+    return IntegratorClass(experiments, reflections, params)

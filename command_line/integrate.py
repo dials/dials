@@ -233,7 +233,7 @@ class Script(object):
 
         # Initialise the integrator
         from dials.algorithms.profile_model.factory import ProfileModelFactory
-        from dials.algorithms.integration.integrator import IntegratorFactory
+        from dials.algorithms.integration.integrator import create_integrator
 
         # Modify experiment list if scan range is set.
         experiments, reference = self.split_for_scan_range(
@@ -347,7 +347,7 @@ class Script(object):
 
         # Create the integrator
         logger.info("")
-        integrator = IntegratorFactory.create(params, experiments, predicted)
+        integrator = create_integrator(params, experiments, predicted)
 
         # Integrate the reflections
         reflections = integrator.integrate()

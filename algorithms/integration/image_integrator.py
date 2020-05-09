@@ -16,21 +16,22 @@ from dials.util.mp import multi_node_parallel_map
 logger = logging.getLogger(__name__)
 
 
-class ProcessorImageBase(object):
-    """Processor interface class."""
+class ProcessorImage(object):
+    """Top level processor for per image processing."""
 
-    def __init__(self, manager):
+    def __init__(self, experiments, reflections, params):
         """
-        Initialise the processor.
+        Initialise the manager and the processor.
 
         The processor requires a manager class implementing the Manager interface.
         This class executes all the workers in separate threads and accumulates the
         results to expose to the user.
 
-        :param manager: The processing manager
         :param params: The phil parameters
         """
-        self.manager = manager
+
+        # Create the processing manager
+        self.manager = ManagerImage(experiments, reflections, params)
 
     @property
     def executor(self):
@@ -105,23 +106,6 @@ class ProcessorImageBase(object):
         self.manager.time.user_time = end_time - start_time
         result = self.manager.result()
         return result, self.manager.time
-
-
-class Result(object):
-    """
-    A class representing a processing result.
-    """
-
-    def __init__(self, index, reflections):
-        """
-        Initialise the data.
-
-        :param index: The processing job index
-        :param reflections: The processed reflections
-        :param data: Other processed data
-        """
-        self.index = index
-        self.reflections = reflections
 
 
 class Task(object):
@@ -225,12 +209,15 @@ class Task(object):
         process_time = time() - st
 
         # Set the result values
-        result = Result(self.index, self.reflections)
-        result.read_time = read_time
-        result.process_time = process_time
-        result.total_time = time() - start_time
-        result.data = data
-        return result
+        return dials.algorithms.integration.Result(
+            index=self.index,
+            reflections=self.reflections,
+            read_time=read_time,
+            process_time=process_time,
+            total_time=time() - start_time,
+            extract_time=0,
+            data=data,
+        )
 
 
 class ManagerImage(object):
@@ -378,16 +365,3 @@ class ManagerImage(object):
                 " Split %d reflections into %d partial reflections\n"
                 % (num_full, num_partial)
             )
-
-
-class ProcessorImage(ProcessorImageBase):
-    """Top level processor for per image processing."""
-
-    def __init__(self, experiments, reflections, params):
-        """Initialise the manager and the processor."""
-
-        # Create the processing manager
-        manager = ManagerImage(experiments, reflections, params)
-
-        # Initialise the processor
-        super(ProcessorImage, self).__init__(manager)

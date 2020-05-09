@@ -36,9 +36,13 @@ def test_shoebox_memory_is_a_reasonable_guesstimate(dials_data):
 
 @mock.patch("dials.algorithms.integration.processor.flex.max")
 @mock.patch("dials.algorithms.integration.processor.psutil.virtual_memory")
-def test_runtime_error_raised_when_not_enough_memory(mock_psutil_vm, mock_flex_max):
+@mock.patch("dials.algorithms.integration.processor.psutil.swap_memory")
+def test_runtime_error_raised_when_not_enough_memory(
+    mock_psutil_swap, mock_psutil_vm, mock_flex_max
+):
     mock_flex_max.return_value = 750001
-    mock_psutil_vm.return_value.total = 1000000
+    mock_psutil_vm.return_value.available = 1000000
+    mock_psutil_swap.return_value.free = 0
 
     phil_mock = mock.Mock()
     phil_mock.mp.method = "multiprocessing"
@@ -46,12 +50,12 @@ def test_runtime_error_raised_when_not_enough_memory(mock_psutil_vm, mock_flex_m
     phil_mock.block.max_memory_usage = 0.75
 
     reflections = {"bbox": flex.int6(1000, (0, 1, 0, 1, 0, 1))}
-    manager = dials.algorithms.integration.processor.Manager(
+    manager = dials.algorithms.integration.processor._Manager(
         None, reflections, phil_mock
     )
     manager.jobs = mock.Mock(autospec=JobList)
 
-    with pytest.raises(RuntimeError) as exc_info:
+    with pytest.raises(MemoryError) as exc_info:
         manager.compute_processors()
     assert "Not enough memory to run integration jobs." in exc_info.value.args[0]
     mock_flex_max.assert_called_once_with(manager.jobs.shoebox_memory.return_value)

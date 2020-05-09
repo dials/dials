@@ -174,7 +174,7 @@ class AnalysisResults(object):
         results.final_stats = dictionary["final_stats"]
         return results
 
-    def make_summary(self):
+    def __str__(self):
         """Make summary of results."""
         msg = "\nSummary of data removed:\n"
         for i, res in enumerate(self.get_cycle_results()):

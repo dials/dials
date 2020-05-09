@@ -181,14 +181,19 @@ def change_of_basis_ops_to_minimum_cell(
             groups = metric_subgroups(
                 expt.crystal.get_crystal_symmetry(),
                 max_delta,
+                best_monoclinic_beta=False,
                 enforce_max_delta_for_generated_two_folds=True,
             )
             group = groups.result_groups[0]
-            cb_op_best_to_min = group[
-                "best_subsym"
-            ].change_of_basis_op_to_minimum_cell()
-            cb_op_inp_min = cb_op_best_to_min * group["cb_op_inp_best"]
-            cb_ops.append(cb_op_inp_min)
+            cb_ops.append(group["cb_op_inp_best"])
+        ref_expts = experiments.change_basis(cb_ops)
+        cb_op_ref_min = (
+            ref_expts[0]
+            .crystal.get_crystal_symmetry()
+            .customized_copy(unit_cell=median_unit_cell(ref_expts))
+            .change_of_basis_op_to_minimum_cell()
+        )
+        cb_ops = [cb_op_ref_min * cb_op for cb_op in cb_ops]
     return cb_ops
 
 
