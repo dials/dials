@@ -82,6 +82,19 @@ def test_SymmetryHandler(space_group_symbol):
     )
 
 
+# https://github.com/dials/dials/issues/1254
+def test_SymmetryHandler_no_match():
+    sgi = sgtbx.space_group_info(symbol="P422")
+    cs = sgi.any_compatible_crystal_symmetry(volume=10000)
+    B = scitbx.matrix.sqr(cs.unit_cell().fractionalization_matrix()).transpose()
+    crystal = Crystal(B, sgtbx.space_group())
+
+    handler = symmetry.SymmetryHandler(
+        unit_cell=None, space_group=sgtbx.space_group_info("I23").group()
+    )
+    assert handler.apply_symmetry(crystal) == (None, None)
+
+
 # https://github.com/dials/dials/issues/1217
 @pytest.mark.parametrize(
     "crystal_symmetry",

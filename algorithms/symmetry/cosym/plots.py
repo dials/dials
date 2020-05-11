@@ -26,6 +26,8 @@ def plot_coords(coords, labels=None, key="cosym_coordinates"):
 
     colours = plt.cm.Spectral(numpy.linspace(0, 1, n_clusters)).tolist()
 
+    if -1 in unique_labels:
+        colours.insert(0, (0, 0, 0, 1))
     data = []
     for k, col in zip(unique_labels, colours):
         isel = (labels == k).iselection()
@@ -42,7 +44,7 @@ def plot_coords(coords, labels=None, key="cosym_coordinates"):
                     "alpha": 0.5,
                     "color": "rgb(%f,%f,%f)" % tuple(col[:3]),
                 },
-                "name": "Cluster %i" % k,
+                "name": "Cluster %i" % k if k >= 0 else "Noise",
             }
         )
     d = {

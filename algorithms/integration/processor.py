@@ -5,7 +5,6 @@ from __future__ import absolute_import, division, print_function
 import itertools
 import logging
 import math
-import resource
 from dials.util import tabulate
 from time import time
 
@@ -25,6 +24,12 @@ from dials_algorithms_integration_integrator_ext import (
     ReflectionManagerPerImage,
     ShoeboxProcessor,
 )
+
+try:
+    import resource
+except ImportError:
+    # resource does not exist on non-Linux, so can't float the import
+    resource = None
 
 __all__ = [
     "Block",
@@ -782,7 +787,10 @@ class Manager(object):
         _report("Memory required per process", memory_required_per_process / 1e9)
 
         # Check if a ulimit applies
-        rlimit = getattr(resource, "RLIMIT_VMEM", getattr(resource, "RLIMIT_AS"))
+        # Note that resource may be None on non-Linux platforms.
+        # We can't use psutil as platform-independent solution in this instance due to
+        # https://github.com/conda-forge/psutil-feedstock/issues/47
+        rlimit = getattr(resource, "RLIMIT_VMEM", getattr(resource, "RLIMIT_AS", None))
         if rlimit:
             try:
                 ulimit = resource.getrlimit(rlimit)[0]
