@@ -55,6 +55,16 @@ def pytest_collection_modifyitems(config, items):
                 item.add_marker(skip_slow)
 
 
+def pytest_configure(config):
+    if not config.pluginmanager.hasplugin("dials_data"):
+
+        @pytest.fixture(scope="session")
+        def dials_data():
+            pytest.skip("This test requires the dials_data package to be installed")
+
+        globals()["dials_data"] = dials_data
+
+
 @pytest.fixture(scope="session")
 def dials_regression():
     """Return the absolute path to the dials_regression module as a string.
