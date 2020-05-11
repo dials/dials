@@ -57,7 +57,7 @@ def blank_counts_analysis(reflections, scan, phi_step, fractional_loss):
     phi_max = scan.get_angle_from_array_index(array_range[1])
     assert phi_min <= flex.min(phi)
     assert phi_max >= flex.max(phi)
-    n_steps = int(round((phi_max - phi_min) / phi_step))
+    n_steps = max(int(round((phi_max - phi_min) / phi_step)), 1)
     hist = flex.histogram(
         z_px, data_min=array_range[0], data_max=array_range[1], n_slots=n_steps
     )
