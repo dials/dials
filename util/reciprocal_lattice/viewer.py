@@ -307,9 +307,13 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
 
         self.Bind(wx.EVT_CHECKBOX, self.OnChangeSettings, self.reverse_phi_ctrl)
 
+        self.crystal_frame_tooltip = wx.ToolTip(
+            "Show the reciprocal lattice(s) in the crystal rather than the laboratory frame"
+        )
         self.crystal_frame_ctrl = self.create_controls(
             setting="crystal_frame", label="Show in crystal frame"
         )[0]
+        self.crystal_frame_ctrl.SetToolTip(self.crystal_frame_tooltip)
         self.panel_sizer.Add(self.crystal_frame_ctrl, 0, wx.ALL, 5)
 
         self.Bind(wx.EVT_CHECKBOX, self.OnChangeSettings, self.crystal_frame_ctrl)
