@@ -90,6 +90,16 @@ class Render3d(object):
                 for c in crystals
             ]
             self.viewer.set_reciprocal_lattice_vectors(vecs)
+            vecs = [
+                [
+                    matrix.col(l)
+                    for l in (100 * matrix.sqr(c.get_B()))
+                    .transpose()
+                    .as_list_of_lists()
+                ]
+                for c in crystals
+            ]
+            self.viewer.set_reciprocal_crystal_vectors(vecs)
         self.map_points_to_reciprocal_space()
         self.set_points()
 

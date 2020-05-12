@@ -447,6 +447,7 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
         self.rotation_axis = None
         self.beam_vector = None
         self.recip_latt_vectors = None
+        self.recip_crystal_vectors = None
         self.flag_show_minimum_covering_sphere = False
         self.minimum_covering_sphere = None
         self.field_of_view_y = 0.001
@@ -490,6 +491,9 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
     def set_reciprocal_lattice_vectors(self, vectors_per_crystal):
         self.recip_latt_vectors = vectors_per_crystal
 
+    def set_reciprocal_crystal_vectors(self, vectors_per_crystal):
+        self.recip_crystal_vectors = vectors_per_crystal
+
     # --- user input and settings
     def update_settings(self):
         self.points_display_list = None
@@ -514,14 +518,24 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
             self.draw_axis(self.rotation_axis, "phi")
         if self.beam_vector is not None and self.settings.show_beam_vector:
             self.draw_axis(self.beam_vector, "beam")
-        if self.recip_latt_vectors is not None and self.settings.show_reciprocal_cell:
-            for i, axes in enumerate(self.recip_latt_vectors):
-                if self.settings.experiment_ids:
-                    if i not in self.settings.experiment_ids:
-                        continue
-                j = (i + 1) % self.palette.size()
-                color = self.palette[j]
-                self.draw_cell(axes, color)
+
+        if self.settings.show_reciprocal_cell:
+            if self.settings.crystal_frame and self.recip_crystal_vectors:
+                for i, axes in enumerate(self.recip_crystal_vectors):
+                    if self.settings.experiment_ids:
+                        if i not in self.settings.experiment_ids:
+                            continue
+                    j = (i + 1) % self.palette.size()
+                    color = self.palette[j]
+                    self.draw_cell(axes, color)
+            elif self.recip_latt_vectors:
+                for i, axes in enumerate(self.recip_latt_vectors):
+                    if self.settings.experiment_ids:
+                        if i not in self.settings.experiment_ids:
+                            continue
+                    j = (i + 1) % self.palette.size()
+                    color = self.palette[j]
+                    self.draw_cell(axes, color)
         self.GetParent().update_statusbar()
 
     def draw_axis(self, axis, label):
