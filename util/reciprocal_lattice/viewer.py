@@ -299,11 +299,20 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
             setting="show_reciprocal_cell", label="Show reciprocal cell"
         )
         self.panel_sizer.Add(ctrls[0], 0, wx.ALL, 5)
+
         self.reverse_phi_ctrl = self.create_controls(
             setting="reverse_phi", label="Invert rotation axis"
         )[0]
         self.panel_sizer.Add(self.reverse_phi_ctrl, 0, wx.ALL, 5)
+
         self.Bind(wx.EVT_CHECKBOX, self.OnChangeSettings, self.reverse_phi_ctrl)
+
+        self.crystal_frame_ctrl = self.create_controls(
+            setting="crystal_frame", label="Show in crystal frame"
+        )[0]
+        self.panel_sizer.Add(self.crystal_frame_ctrl, 0, wx.ALL, 5)
+
+        self.Bind(wx.EVT_CHECKBOX, self.OnChangeSettings, self.crystal_frame_ctrl)
 
         self.beam_fast_ctrl = floatspin.FloatSpin(parent=self, increment=0.01, digits=2)
         self.beam_fast_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
@@ -406,6 +415,7 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
             self.beam_slow_ctrl.GetValue(),
         )
         self.settings.reverse_phi = self.reverse_phi_ctrl.GetValue()
+        self.settings.crystal_frame = self.crystal_frame_ctrl.GetValue()
         self.settings.marker_size = self.marker_size_ctrl.GetValue()
         for i, display in enumerate(("all", "indexed", "unindexed", "integrated")):
             if self.btn.values[i]:

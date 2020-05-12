@@ -1151,7 +1151,9 @@ Found %s"""
                 self["xyzobs.mm.value"].set_selected(sel, centroid_position)
                 self["xyzobs.mm.variance"].set_selected(sel, centroid_variance)
 
-    def map_centroids_to_reciprocal_space(self, experiments, calculated=False):
+    def map_centroids_to_reciprocal_space(
+        self, experiments, calculated=False, crystal_frame=False
+    ):
         """Map mm/radian spot centroids to reciprocal space.
 
         Used to convert spot centroids provided in mm/radian units to reciprocal space
@@ -1160,6 +1162,8 @@ Found %s"""
 
         Args:
           experiments (dxtbx.model.ExperimentList): A list of experiments.
+          calculated (Bool): use calculated positions.
+          crystal_frame (Bool): return x, y, z positions as divided by U matrix
         """
 
         self["s1"] = cctbx.array_family.flex.vec3_double(len(self))
@@ -1171,6 +1175,11 @@ Found %s"""
                 sel_expt = self["imageset_id"] == i
             else:
                 sel_expt = self["id"] == i
+
+            u_mat = matrix.sqr((1, 0, 0, 0, 1, 0, 0, 0, 1))
+
+            if expt.crystal and crystal_frame:
+                u_mat = matrix.sqr(expt.crystal.get_U())
 
             for i_panel in range(len(expt.detector)):
                 sel = sel_expt & (panel_numbers == i_panel)
@@ -1198,7 +1207,9 @@ Found %s"""
                         .rotate_around_origin(rotation_axis, -rot_angle),
                     )
                     self["rlp"].set_selected(
-                        sel, tuple(fixed_rotation.inverse()) * self["rlp"].select(sel)
+                        sel,
+                        tuple((fixed_rotation * u_mat).inverse())
+                        * self["rlp"].select(sel),
                     )
                 else:
                     self["rlp"].set_selected(sel, S)
