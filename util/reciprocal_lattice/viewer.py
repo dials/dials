@@ -524,22 +524,21 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
             self.draw_axis(self.beam_vector, "beam")
 
         if self.settings.show_reciprocal_cell:
+            vectors = None
             if self.settings.crystal_frame and self.recip_crystal_vectors:
-                for i, axes in enumerate(self.recip_crystal_vectors):
-                    if self.settings.experiment_ids:
-                        if i not in self.settings.experiment_ids:
-                            continue
-                    j = (i + 1) % self.palette.size()
-                    color = self.palette[j]
-                    self.draw_cell(axes, color)
+                vectors = self.recip_crystal_vectors
             elif self.recip_latt_vectors:
-                for i, axes in enumerate(self.recip_latt_vectors):
+                vectors = self.recip_latt_vectors
+
+            if vectors:
+                for i, axes in enumerate(vectors):
                     if self.settings.experiment_ids:
                         if i not in self.settings.experiment_ids:
                             continue
                     j = (i + 1) % self.palette.size()
                     color = self.palette[j]
                     self.draw_cell(axes, color)
+
         self.GetParent().update_statusbar()
 
     def draw_axis(self, axis, label):
