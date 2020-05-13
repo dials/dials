@@ -1176,11 +1176,6 @@ Found %s"""
             else:
                 sel_expt = self["id"] == i
 
-            u_mat = matrix.sqr((1, 0, 0, 0, 1, 0, 0, 0, 1))
-
-            if expt.crystal and crystal_frame:
-                u_mat = matrix.sqr(expt.crystal.get_U())
-
             for i_panel in range(len(expt.detector)):
                 sel = sel_expt & (panel_numbers == i_panel)
                 if calculated:
@@ -1198,7 +1193,10 @@ Found %s"""
                         expt.goniometer.get_setting_rotation()
                     )
                     rotation_axis = expt.goniometer.get_rotation_axis_datum()
-                    fixed_rotation = matrix.sqr(expt.goniometer.get_fixed_rotation())
+                    sample_rotation = matrix.sqr(expt.goniometer.get_fixed_rotation())
+                    if expt.crystal and crystal_frame:
+                        sample_rotation *= matrix.sqr(expt.crystal.get_U())
+
                     self["rlp"].set_selected(sel, tuple(setting_rotation.inverse()) * S)
                     self["rlp"].set_selected(
                         sel,
@@ -1207,9 +1205,7 @@ Found %s"""
                         .rotate_around_origin(rotation_axis, -rot_angle),
                     )
                     self["rlp"].set_selected(
-                        sel,
-                        tuple((fixed_rotation * u_mat).inverse())
-                        * self["rlp"].select(sel),
+                        sel, tuple(sample_rotation.inverse()) * self["rlp"].select(sel),
                     )
                 else:
                     self["rlp"].set_selected(sel, S)
