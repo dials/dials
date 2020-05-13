@@ -1,8 +1,6 @@
 Import("env")
 
 sources = [
-    "boost_python/quadtree.cc",
-    "boost_python/octree.cc",
     "boost_python/spatial_indexing_ext.cc",
 ]
 
