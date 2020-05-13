@@ -207,15 +207,23 @@ grid = None
 if __name__ == "__main__":
     import select
 
-    args = sys.argv[1:]
-
+    mixed_args = sys.argv[1:]
     if os.name != "nt":
         r, w, x = select.select([sys.stdin], [], [], 0)
         if len(r) > 0:
-            args.extend([l.strip() for rr in r for l in rr.readlines()])
+            mixed_args.extend([l.strip() for rr in r for l in rr.readlines()])
 
-    filenames = [arg for arg in args if os.path.isfile(arg)]
-    args = [arg for arg in args if arg not in filenames]
+    filenames = []
+    args = []
+    for arg in mixed_args:
+        if urllib.parse.urlparse(arg).scheme:
+            # Make this look like a path. If you squint. And are looking away.
+            filenames.append("/" + urllib.parse.quote(arg))
+        else:
+            if os.path.isfile(arg):
+                filenames.append(arg)
+            else:
+                args.append(arg)
 
     interp = phil_scope.command_line_argument_interpreter()
     params, unhandled = interp.process_and_fetch(
