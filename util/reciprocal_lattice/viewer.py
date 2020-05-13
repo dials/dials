@@ -524,11 +524,10 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
             self.draw_axis(self.beam_vector, "beam")
 
         if self.settings.show_reciprocal_cell:
-            vectors = None
-            if self.settings.crystal_frame and self.recip_crystal_vectors:
+            # if we don't have one sort of vector we don't have the other either
+            vectors = self.recip_latt_vectors
+            if self.settings.crystal_frame:
                 vectors = self.recip_crystal_vectors
-            elif self.recip_latt_vectors:
-                vectors = self.recip_latt_vectors
 
             if vectors:
                 for i, axes in enumerate(vectors):
