@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 from __future__ import division, print_function
 
 import dxtbx  # noqa: F401; import dependency to find HDF5 library
