@@ -283,9 +283,10 @@ class Importer(object):
             format_kwargs=format_kwargs,
             load_models=load_models,
         )
-        if len(experiments) > 0:
-            filename = "<image files>"
-            self.experiments.append(FilenameDataWrapper(filename, experiments))
+        if experiments:
+            self.experiments.append(
+                FilenameDataWrapper(filename="<image files>", data=experiments)
+            )
         return unhandled
 
     def try_read_experiments(self, args, check_format, verbose):

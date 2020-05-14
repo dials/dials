@@ -28,10 +28,15 @@ class ExperimentListConverters(object):
         s = libtbx.phil.str_from_words(words=words)
         if s is None:
             return None
+        if s == "<image files>":
+            return FilenameDataWrapper(filename=s, data=None)
         if not os.path.exists(s):
             raise Sorry("File %s does not exist" % s)
         return FilenameDataWrapper(
-            s, ExperimentListFactory.from_json_file(s, check_format=self._check_format),
+            filename=s,
+            data=ExperimentListFactory.from_json_file(
+                s, check_format=self._check_format
+            ),
         )
 
     def as_words(self, python_object, master):
@@ -56,7 +61,7 @@ class ReflectionTableConverters(object):
             return None
         if not os.path.exists(s):
             raise Sorry("File %s does not exist" % s)
-        return FilenameDataWrapper(s, flex.reflection_table.from_file(s))
+        return FilenameDataWrapper(filename=s, data=flex.reflection_table.from_file(s))
 
     def as_words(self, python_object, master):
         if python_object is None:
