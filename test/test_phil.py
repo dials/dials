@@ -5,7 +5,7 @@ import dials.util.phil
 import mock
 
 
-@mock.patch("dxtbx.model.experiment_list.ExperimentListFactory")
+@mock.patch("dials.util.phil.ExperimentListFactory")
 def test(ExperimentListFactory, dials_data):
     # Only use these filenames for verification
     path = dials_data("centroid_test_data")
