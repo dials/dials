@@ -21,8 +21,6 @@ class ExperimentListConverters(object):
 
     phil_type = "experiment_list"
 
-    cache = {}
-
     def __init__(self, check_format=True):
         self._check_format = check_format
 
@@ -34,16 +32,11 @@ class ExperimentListConverters(object):
 
         if s is None:
             return None
-        if s not in self.cache:
-            if not os.path.exists(s):
-                raise Sorry("File %s does not exist" % s)
-            self.cache[s] = FilenameDataWrapper(
-                s,
-                ExperimentListFactory.from_json_file(
-                    s, check_format=self._check_format
-                ),
-            )
-        return self.cache[s]
+        if not os.path.exists(s):
+            raise Sorry("File %s does not exist" % s)
+        return FilenameDataWrapper(
+            s, ExperimentListFactory.from_json_file(s, check_format=self._check_format),
+        )
 
     def from_words(self, words, master):
         return self.from_string(libtbx.phil.str_from_words(words=words))
@@ -61,19 +54,15 @@ class ReflectionTableConverters(object):
 
     phil_type = "reflection_table"
 
-    cache = {}
-
     def __str__(self):
         return self.phil_type
 
     def from_string(self, s):
         if s is None:
             return None
-        if s not in self.cache:
-            if not os.path.exists(s):
-                raise Sorry("File %s does not exist" % s)
-            self.cache[s] = FilenameDataWrapper(s, flex.reflection_table.from_file(s))
-        return self.cache[s]
+        if not os.path.exists(s):
+            raise Sorry("File %s does not exist" % s)
+        return FilenameDataWrapper(s, flex.reflection_table.from_file(s))
 
     def from_words(self, words, master):
         return self.from_string(libtbx.phil.str_from_words(words=words))
@@ -90,8 +79,6 @@ class ReflectionTableSelectorConverters(object):
     """A phil converter for the reflection table selector class."""
 
     phil_type = "reflection_table_selector"
-
-    cache = {}
 
     def __str__(self):
         return self.phil_type
