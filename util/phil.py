@@ -4,6 +4,7 @@ import os
 import re
 
 from dials.array_family import flex
+from dxtbx.model.experiment_list import ExperimentListFactory
 from libtbx.utils import Sorry
 import libtbx.phil
 
@@ -29,9 +30,8 @@ class ExperimentListConverters(object):
     def __str__(self):
         return self.phil_type
 
-    def from_string(self, s):
-        from dxtbx.model.experiment_list import ExperimentListFactory
-
+    def from_words(self, words, master):
+        s = libtbx.phil.str_from_words(words=words)
         if s is None:
             return None
         if s not in self.cache:
@@ -44,9 +44,6 @@ class ExperimentListConverters(object):
                 ),
             )
         return self.cache[s]
-
-    def from_words(self, words, master):
-        return self.from_string(libtbx.phil.str_from_words(words=words))
 
     def as_words(self, python_object, master):
         if python_object is None:
@@ -66,7 +63,8 @@ class ReflectionTableConverters(object):
     def __str__(self):
         return self.phil_type
 
-    def from_string(self, s):
+    def from_words(self, words, master):
+        s = libtbx.phil.str_from_words(words=words)
         if s is None:
             return None
         if s not in self.cache:
@@ -74,9 +72,6 @@ class ReflectionTableConverters(object):
                 raise Sorry("File %s does not exist" % s)
             self.cache[s] = FilenameDataWrapper(s, flex.reflection_table.from_file(s))
         return self.cache[s]
-
-    def from_words(self, words, master):
-        return self.from_string(libtbx.phil.str_from_words(words=words))
 
     def as_words(self, python_object, master):
         if python_object is None:
@@ -96,7 +91,8 @@ class ReflectionTableSelectorConverters(object):
     def __str__(self):
         return self.phil_type
 
-    def from_string(self, s):
+    def from_words(self, words, master):
+        s = libtbx.phil.str_from_words(words=words)
         if s is None:
             return None
         regex = r"^\s*([\w\.]+)\s*(<=|!=|==|>=|<|>|&)\s*(.+)\s*$"
@@ -110,9 +106,6 @@ class ReflectionTableSelectorConverters(object):
         assert len(match) == 3
         col, op, value = match
         return flex.reflection_table_selector(col, op, value)
-
-    def from_words(self, words, master):
-        return self.from_string(libtbx.phil.str_from_words(words=words))
 
     def as_words(self, python_object, master):
         if python_object is None:
