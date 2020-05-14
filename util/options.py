@@ -304,17 +304,14 @@ class Importer(object):
         unhandled = []
         for argument in args:
             try:
-                if argument is None:
-                    self.experiments.append(None)
-                else:
-                    self.experiments.append(
-                        FilenameDataWrapper(
-                            filename=argument,
-                            data=ExperimentListFactory.from_json_file(
-                                argument, check_format=check_format
-                            ),
-                        )
+                self.experiments.append(
+                    FilenameDataWrapper(
+                        filename=argument,
+                        data=ExperimentListFactory.from_json_file(
+                            argument, check_format=check_format
+                        ),
                     )
+                )
             except InvalidExperimentListError as e:
                 # This is a validation-related error: The file appears not to be in the correct format
                 self._handle_converter_error(
@@ -336,17 +333,14 @@ class Importer(object):
         unhandled = []
         for argument in args:
             try:
-                if argument is None:
-                    self.reflections.append(None)
-                else:
-                    if not os.path.exists(argument):
-                        raise Sorry("File %s does not exist" % argument)
-                    self.reflections.append(
-                        FilenameDataWrapper(
-                            filename=argument,
-                            data=flex.reflection_table.from_file(argument),
-                        )
+                if not os.path.exists(argument):
+                    raise Sorry("File %s does not exist" % argument)
+                self.reflections.append(
+                    FilenameDataWrapper(
+                        filename=argument,
+                        data=flex.reflection_table.from_file(argument),
                     )
+                )
             except pickle_errors:
                 self._handle_converter_error(
                     argument,
