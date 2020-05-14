@@ -6,6 +6,9 @@ import os
 import itertools
 import optparse
 import pickle
+
+from dials.array_family import flex
+from dxtbx.model.experiment_list import ExperimentListFactory
 import traceback
 from six.moves.urllib.parse import urlparse
 from collections import defaultdict, namedtuple
@@ -21,6 +24,7 @@ except ImportError:
 
 import libtbx.phil
 from dials.util import Sorry
+from dials.util.phil import FilenameDataWrapper
 from dials.util.multi_dataset_handling import (
     sort_tables_to_experiments_order,
     renumber_table_id_columns,
@@ -296,14 +300,22 @@ class Importer(object):
         :param verbose: Print verbose output
         :returns: Unhandled arguments
         """
-        from dials.util.phil import ExperimentListConverters
         from dxtbx.model.experiment_list import InvalidExperimentListError
 
-        converter = ExperimentListConverters(check_format)
         unhandled = []
         for argument in args:
             try:
-                self.experiments.append(converter.from_string(argument))
+                if argument is None:
+                    self.experiments.append(None)
+                else:
+                    self.experiments.append(
+                        FilenameDataWrapper(
+                            argument,
+                            ExperimentListFactory.from_json_file(
+                                argument, check_format=check_format
+                            ),
+                        )
+                    )
             except InvalidExperimentListError as e:
                 # This is a validation-related error: The file appears not to be in the correct format
                 self._handle_converter_error(
@@ -322,13 +334,19 @@ class Importer(object):
         :param verbose: Print verbose output
         :returns: Unhandled arguments
         """
-        from dials.util.phil import ReflectionTableConverters
-
-        converter = ReflectionTableConverters()
         unhandled = []
         for argument in args:
             try:
-                self.reflections.append(converter.from_string(argument))
+                if argument is None:
+                    self.reflections.append(None)
+                else:
+                    if not os.path.exists(argument):
+                        raise Sorry("File %s does not exist" % argument)
+                    self.reflections.append(
+                        FilenameDataWrapper(
+                            argument, flex.reflection_table.from_file(argument)
+                        )
+                    )
             except pickle_errors:
                 self._handle_converter_error(
                     argument,
