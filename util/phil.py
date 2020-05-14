@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+import collections
 import os
 import re
 
@@ -9,12 +10,7 @@ from libtbx.utils import Sorry
 import libtbx.phil
 
 
-class FilenameDataWrapper(object):
-    """A wrapper class to store data with a filename."""
-
-    def __init__(self, filename, data):
-        self.filename = filename
-        self.data = data
+FilenameDataWrapper = collections.namedtuple("FilenameDataWrapper", "filename, data")
 
 
 class ExperimentListConverters(object):
@@ -38,8 +34,8 @@ class ExperimentListConverters(object):
             if not os.path.exists(s):
                 raise Sorry("File %s does not exist" % s)
             self.cache[s] = FilenameDataWrapper(
-                s,
-                ExperimentListFactory.from_json_file(
+                filename=s,
+                data=ExperimentListFactory.from_json_file(
                     s, check_format=self._check_format
                 ),
             )
@@ -70,7 +66,9 @@ class ReflectionTableConverters(object):
         if s not in self.cache:
             if not os.path.exists(s):
                 raise Sorry("File %s does not exist" % s)
-            self.cache[s] = FilenameDataWrapper(s, flex.reflection_table.from_file(s))
+            self.cache[s] = FilenameDataWrapper(
+                filename=s, data=flex.reflection_table.from_file(s)
+            )
         return self.cache[s]
 
     def as_words(self, python_object, master):

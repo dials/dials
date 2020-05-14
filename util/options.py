@@ -1,19 +1,28 @@
 from __future__ import absolute_import, division, print_function
 
 import copy
-import sys
-import os
 import itertools
 import optparse
+import os
 import pickle
-
-from dials.array_family import flex
-from dxtbx.model.experiment_list import ExperimentListFactory
+import sys
 import traceback
-from six.moves.urllib.parse import urlparse
 from collections import defaultdict, namedtuple
+from glob import glob
 
 from orderedset import OrderedSet
+from six.moves.urllib.parse import urlparse
+
+import libtbx.phil
+from dials.array_family import flex
+from dials.util import Sorry
+from dials.util.multi_dataset_handling import (
+    sort_tables_to_experiments_order,
+    renumber_table_id_columns,
+)
+from dials.util.phil import ExperimentListConverters, FilenameDataWrapper
+from dxtbx.model import ExperimentList
+from dxtbx.model.experiment_list import ExperimentListFactory
 
 try:
     import cPickle  # deliberately not using six.moves
@@ -22,14 +31,6 @@ try:
 except ImportError:
     pickle_errors = (pickle.UnpicklingError,)
 
-import libtbx.phil
-from dials.util import Sorry
-from dials.util.phil import FilenameDataWrapper
-from dials.util.multi_dataset_handling import (
-    sort_tables_to_experiments_order,
-    renumber_table_id_columns,
-)
-from dxtbx.model import ExperimentList
 
 tolerance_phil_scope = libtbx.phil.parse(
     """
@@ -259,8 +260,6 @@ class Importer(object):
         :return: Unhandled arguments
         """
         from dxtbx.model.experiment_list import ExperimentListFactory
-        from dials.util.phil import FilenameDataWrapper, ExperimentListConverters
-        from glob import glob
 
         # If filenames contain wildcards, expand
         args_new = []
@@ -286,7 +285,7 @@ class Importer(object):
         )
         if len(experiments) > 0:
             filename = "<image files>"
-            obj = FilenameDataWrapper(filename, experiments)
+            obj = FilenameDataWrapper(filename=filename, data=experiments)
             ExperimentListConverters.cache[filename] = obj
             self.experiments.append(obj)
         return unhandled
@@ -310,8 +309,8 @@ class Importer(object):
                 else:
                     self.experiments.append(
                         FilenameDataWrapper(
-                            argument,
-                            ExperimentListFactory.from_json_file(
+                            filename=argument,
+                            data=ExperimentListFactory.from_json_file(
                                 argument, check_format=check_format
                             ),
                         )
@@ -344,7 +343,8 @@ class Importer(object):
                         raise Sorry("File %s does not exist" % argument)
                     self.reflections.append(
                         FilenameDataWrapper(
-                            argument, flex.reflection_table.from_file(argument)
+                            filename=argument,
+                            data=flex.reflection_table.from_file(argument),
                         )
                     )
             except pickle_errors:
