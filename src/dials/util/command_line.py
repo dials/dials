@@ -1,11 +1,85 @@
 from __future__ import annotations
 
+import argparse
+import glob
+import time
 import sys
 import time
 
 from dials.util import debug_console
 
 interactive_console = debug_console
+
+
+from libtbx.phil import parse
+from dxtbx.model.experiment_list import ExperimentListFactory
+from dials.array_family.flex import reflection_table
+
+
+standard_scope = parse(
+    """
+  input {
+    experiments = None
+      .type = path
+      .multiple = True
+    reflections = None
+      .type = path
+      .multiple = True
+  }
+
+  output {
+    experiments = None
+      .type = path
+      .multiple = True
+    reflections = None
+      .type = path
+      .multiple = True
+  }
+"""
+)
+
+
+class OptionParser:
+    """Thin wrapper around argparse and phil to get DIALS arguments
+    parsed without actually loading all the data files."""
+
+    def __init__(self, phil=None):
+        parser = argparse.ArgumentParser()
+        parser.add_argument("phil", nargs="+")
+        args = parser.parse_args()
+
+        if phil:
+            standard_scope.adopt_scope(phil)
+        clai = standard_scope.command_line_argument_interpreter()
+        self._phil = standard_scope.fetch(clai.process_and_fetch(args.phil))
+        self._params = self._phil.extract()
+
+    def __repr__(self):
+        return self._phil.format(python_object=self._params).as_str()
+
+    def params(self):
+        return self._params
+
+    def input_experiments(self):
+        return sum(map(glob.glob, self._params.input.experiments), [])
+
+    def input_reflections(self):
+        return sum(map(glob.glob, self._params.input.reflections), [])
+
+    def output_experiments(self):
+        return self._params.output.experiments
+
+    def output_reflections(self):
+        return self._params.output.reflections
+
+    def input_experiments_as_data(self):
+        return ExperimentListFactory.from_filenames(self.input_experiments())
+
+    def input_reflections_as_data(self):
+        return [
+            reflection_table.from_file(reflection_file)
+            for reflection_file in self.input_reflections()
+        ]
 
 
 class ProgressBarTimer:
