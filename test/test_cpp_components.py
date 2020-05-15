@@ -8,8 +8,6 @@ import pytest
 cpp_tests = [
     # Paths are under /build/
     "test/algorithms/spatial_indexing/tst_collision_detection",
-    "test/algorithms/spatial_indexing/tst_octree",
-    "test/algorithms/spatial_indexing/tst_quadtree",
     "test/algorithms/spot_prediction/tst_reeke_model",
 ]
 
