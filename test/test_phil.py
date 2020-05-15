@@ -39,12 +39,3 @@ def test(ExperimentListFactory, dials_data):
     assert isinstance(params.input.reflections2.data, flex.reflection_table)
     # Check we had the correct calls made
     assert ExperimentListFactory.from_json_file.call_args[0] == (experiments_path,)
-
-    # We now need to clear the phil converter caches
-    # as they are polluted by MagicMock() objects
-    for conv in (
-        dials.util.phil.ExperimentListConverters,
-        dials.util.phil.ReflectionTableConverters,
-        dials.util.phil.ReflectionTableSelectorConverters,
-    ):
-        conv.cache.clear()

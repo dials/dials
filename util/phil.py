@@ -18,8 +18,6 @@ class ExperimentListConverters(object):
 
     phil_type = "experiment_list"
 
-    cache = {}
-
     def __init__(self, check_format=True):
         self._check_format = check_format
 
@@ -30,16 +28,16 @@ class ExperimentListConverters(object):
         s = libtbx.phil.str_from_words(words=words)
         if s is None:
             return None
-        if s not in self.cache:
-            if not os.path.exists(s):
-                raise Sorry("File %s does not exist" % s)
-            self.cache[s] = FilenameDataWrapper(
-                filename=s,
-                data=ExperimentListFactory.from_json_file(
-                    s, check_format=self._check_format
-                ),
-            )
-        return self.cache[s]
+        if s == "<image files>":
+            return FilenameDataWrapper(filename=s, data=None)
+        if not os.path.exists(s):
+            raise Sorry("File %s does not exist" % s)
+        return FilenameDataWrapper(
+            filename=s,
+            data=ExperimentListFactory.from_json_file(
+                s, check_format=self._check_format
+            ),
+        )
 
     def as_words(self, python_object, master):
         if python_object is None:
@@ -54,8 +52,6 @@ class ReflectionTableConverters(object):
 
     phil_type = "reflection_table"
 
-    cache = {}
-
     def __str__(self):
         return self.phil_type
 
@@ -63,13 +59,9 @@ class ReflectionTableConverters(object):
         s = libtbx.phil.str_from_words(words=words)
         if s is None:
             return None
-        if s not in self.cache:
-            if not os.path.exists(s):
-                raise Sorry("File %s does not exist" % s)
-            self.cache[s] = FilenameDataWrapper(
-                filename=s, data=flex.reflection_table.from_file(s)
-            )
-        return self.cache[s]
+        if not os.path.exists(s):
+            raise Sorry("File %s does not exist" % s)
+        return FilenameDataWrapper(filename=s, data=flex.reflection_table.from_file(s))
 
     def as_words(self, python_object, master):
         if python_object is None:
@@ -83,8 +75,6 @@ class ReflectionTableSelectorConverters(object):
     """A phil converter for the reflection table selector class."""
 
     phil_type = "reflection_table_selector"
-
-    cache = {}
 
     def __str__(self):
         return self.phil_type

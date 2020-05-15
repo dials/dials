@@ -20,7 +20,7 @@ from dials.util.multi_dataset_handling import (
     sort_tables_to_experiments_order,
     renumber_table_id_columns,
 )
-from dials.util.phil import ExperimentListConverters, FilenameDataWrapper
+from dials.util.phil import FilenameDataWrapper
 from dxtbx.model import ExperimentList
 from dxtbx.model.experiment_list import ExperimentListFactory
 
@@ -283,11 +283,10 @@ class Importer(object):
             format_kwargs=format_kwargs,
             load_models=load_models,
         )
-        if len(experiments) > 0:
-            filename = "<image files>"
-            obj = FilenameDataWrapper(filename=filename, data=experiments)
-            ExperimentListConverters.cache[filename] = obj
-            self.experiments.append(obj)
+        if experiments:
+            self.experiments.append(
+                FilenameDataWrapper(filename="<image files>", data=experiments)
+            )
         return unhandled
 
     def try_read_experiments(self, args, check_format, verbose):
