@@ -1,7 +1,14 @@
 #!/bin/bash
 
 # Identify all python files added or modified in pull request
-CHANGED_FILES=$(git diff --name-only --diff-filter=AM $TRAVIS_BRANCH...HEAD -- "*.py")
+if [ python -c "import sys;exit(sys.hexversion<0x3000000)" ]; then
+  echo Running in Python 3 environment
+  CHANGED_FILES=$(git diff --name-only --diff-filter=AM $TRAVIS_BRANCH...HEAD -- "*.py")
+else
+  echo Running in Python 2 environment
+  # cut down list of checked files to list of files supporting Python 2
+  CHANGED_FILES=$(git diff --name-only --diff-filter=AM $TRAVIS_BRANCH...HEAD -- "*.py" | grep -Ff <(cut -c3- .travis/python2-supported-files))
+fi
 
 # List is empty if this is not a pull request run or if no python files have changed
 [ -z "$CHANGED_FILES" ] && echo There are no relevant changes. Skipping test. && exit 0
