@@ -45,7 +45,31 @@ class OptionParser:
 
     def __init__(self, phil=None):
         parser = argparse.ArgumentParser()
-        parser.add_argument("phil", nargs="+")
+        parser.add_argument(
+            "-c",
+            "--show-config",
+            action="store_true",
+            dest="show_config",
+            help="Show the configuration parameters.",
+        )
+        parser.add_argument(
+            "-a",
+            "--attributes-level",
+            type=int,
+            default=0,
+            dest="attributes_level",
+            help="Set the attributes level for showing configuration parameters",
+        )
+        parser.add_argument(
+            "-e",
+            "--expert-level",
+            type=int,
+            default=0,
+            dest="expert_level",
+            help="Set the expert level for showing configuration parameters",
+        )
+
+        parser.add_argument("phil", nargs="*")
         args = parser.parse_args()
 
         if phil:
@@ -53,6 +77,20 @@ class OptionParser:
         clai = standard_scope.command_line_argument_interpreter()
         self._phil = standard_scope.fetch(clai.process_and_fetch(args.phil))
         self._params = self._phil.extract()
+
+        if hasattr(args, "show_config") and args.show_config:
+            print(
+                "Showing configuration parameters with:\n"
+                "  attributes_level = %d\n"
+                "  expert_level = %d\n" % (args.attributes_level, args.expert_level)
+            )
+            print(
+                self._phil.as_str(
+                    expert_level=args.expert_level,
+                    attributes_level=args.attributes_level,
+                )
+            )
+            sys.exit(0)
 
     def __repr__(self):
         return self._phil.format(python_object=self._params).as_str()
