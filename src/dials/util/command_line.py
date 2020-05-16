@@ -78,7 +78,7 @@ class OptionParser:
         self._phil = standard_scope.fetch(clai.process_and_fetch(args.phil))
         self._params = self._phil.extract()
 
-        if hasattr(args, "show_config") and args.show_config:
+        if args.phil == [] or hasattr(args, "show_config") and args.show_config:
             print(
                 "Showing configuration parameters with:\n"
                 "  attributes_level = %d\n"
