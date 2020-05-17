@@ -16,27 +16,30 @@ from dxtbx.model.experiment_list import ExperimentListFactory
 from dials.array_family.flex import reflection_table
 
 
-standard_scope = parse(
-    """
-  input {
-    experiments = None
-      .type = path
-      .multiple = True
-    reflections = None
-      .type = path
-      .multiple = True
-  }
+def standard_scope():
+    """Define the standard scope as a function so every instance is unique,
+    not global."""
+    return parse(
+        """
+    input {
+      experiments = None
+        .type = path
+        .multiple = True
+      reflections = None
+        .type = path
+        .multiple = True
+      }
 
-  output {
-    experiments = None
-      .type = path
-      .multiple = True
-    reflections = None
-      .type = path
-      .multiple = True
-  }
-"""
-)
+      output {
+      experiments = None
+        .type = path
+        .multiple = True
+      reflections = None
+        .type = path
+        .multiple = True
+      }
+    """
+    )
 
 
 class OptionParser:
@@ -44,6 +47,9 @@ class OptionParser:
     parsed without actually loading all the data files."""
 
     def __init__(self, phil=None):
+        self._input_experiments = None
+        self._input_reflections = None
+
         parser = argparse.ArgumentParser()
         parser.add_argument(
             "-c",
@@ -72,10 +78,12 @@ class OptionParser:
         parser.add_argument("phil", nargs="*")
         args = parser.parse_args()
 
+        standard = standard_scope()
+
         if phil:
-            standard_scope.adopt_scope(phil)
-        clai = standard_scope.command_line_argument_interpreter()
-        self._phil = standard_scope.fetch(clai.process_and_fetch(args.phil))
+            standard.adopt_scope(phil)
+        clai = standard.command_line_argument_interpreter()
+        self._phil = standard.fetch(clai.process_and_fetch(args.phil))
         self._params = self._phil.extract()
 
         if args.phil == [] or hasattr(args, "show_config") and args.show_config:
@@ -110,14 +118,22 @@ class OptionParser:
     def output_reflections(self):
         return self._params.output.reflections
 
-    def input_experiments_as_data(self):
-        return ExperimentListFactory.from_filenames(self.input_experiments())
+    @property
+    def experiments(self):
+        if self._input_experiments is None:
+            self._input_experiments = ExperimentListFactory.from_filenames(
+                self.input_experiments()
+            )
+        return self._input_experiments
 
-    def input_reflections_as_data(self):
-        return [
-            reflection_table.from_file(reflection_file)
-            for reflection_file in self.input_reflections()
-        ]
+    @property
+    def reflections(self):
+        if self._input_reflections is None:
+            self._input_reflections = [
+                reflection_table.from_file(reflection_file)
+                for reflection_file in self.input_reflections()
+            ]
+        return self._input_reflections
 
 
 class ProgressBarTimer:
