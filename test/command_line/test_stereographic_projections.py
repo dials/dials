@@ -28,4 +28,4 @@ def test_stereographic_projection(dials_regression, tmpdir):
         d = json.load(f)
     assert set(d) == {"data", "layout"}
     assert d["data"][0]["name"] == "stereographic_projections"
-    assert len(d["data"][0]["x"]) == 578
+    assert len(d["data"][0]["x"]) == 289

@@ -204,7 +204,6 @@ def run(args):
         d_spacings = d_spacings.eliminate_sys_absent()
     if params.expand_to_p1:
         d_spacings = d_spacings.as_non_anomalous_array().expand_to_p1()
-        d_spacings = d_spacings.generate_bijvoet_mates()
     miller_indices = d_spacings.indices()
 
     # find the greatest common factor (divisor) between miller indices
