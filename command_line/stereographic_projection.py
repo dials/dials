@@ -26,11 +26,11 @@ before generating the projection.
 
 Examples::
 
-  dials.stereographic_projection experiments.json hkl=1,0,0 hkl=0,1,0
+  dials.stereographic_projection indexed.expt hkl=1,0,0 hkl=0,1,0
 
-  dials.stereographic_projection experiments.json hkl_limit=2
+  dials.stereographic_projection indexed.expt hkl_limit=2
 
-  dials.stereographic_projection experiments_1.json experiments_2.json hkl=1,0,0 expand_to_p1=True
+  dials.stereographic_projection indexed_1.expt indexed_2.expt hkl=1,0,0 expand_to_p1=True
 """
 
 phil_scope = iotbx.phil.parse(
@@ -161,7 +161,7 @@ def run(args):
     from dials.util.options import flatten_experiments
 
     # The script usage
-    usage = "dials.stereographic_projection [options] [param.phil] experiments.json"
+    usage = "dials.stereographic_projection [options] [param.phil] indexed.expt"
 
     parser = OptionParser(
         usage=usage,
