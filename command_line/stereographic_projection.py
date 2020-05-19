@@ -74,6 +74,8 @@ plot {
     .type = str
   gridsize = None
     .type = int
+  labels = None
+    .type = strings
 }
 json {
   filename = None
@@ -169,7 +171,7 @@ def run(args):
         epilog=help_message,
     )
 
-    params, options = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(args=args, show_diff_phil=True)
     experiments = flatten_experiments(params.input.experiments)
 
     if not experiments:
@@ -178,6 +180,12 @@ def run(args):
 
     if not params.hkl and params.hkl_limit is None:
         sys.exit("Please provide hkl or hkl_limit parameters.")
+
+    if params.plot.labels and len(params.plot.labels) != len(experiments):
+        sys.exit(
+            "Number of labels (%i) must equal number of experiments (%i)"
+            % (len(params.plot.labels), len(experiments))
+        )
 
     if params.hkl is not None and len(params.hkl):
         miller_indices = flex.miller_index(params.hkl)
@@ -311,7 +319,9 @@ def run(args):
         )
 
     if params.json.filename:
-        projections_as_json(projections_all, filename=params.json.filename)
+        projections_as_json(
+            projections_all, filename=params.json.filename, labels=params.plot.labels
+        )
 
 
 def plot_projections(
@@ -384,10 +394,15 @@ def plot_projections(
         pyplot.savefig(filename, size_inches=(24, 18), dpi=300)
 
 
-def projections_as_dict(projections):
+def projections_as_dict(projections, labels):
     projections_all = flex.vec2_double()
-    for proj in projections:
+    if labels:
+        labels_all = []
+        assert len(projections) == len(labels)
+    for i, proj in enumerate(projections):
         projections_all.extend(proj)
+        if labels:
+            labels_all.extend([labels[i]] * len(proj))
 
     data = []
     x, y = projections_all.parts()
@@ -399,6 +414,8 @@ def projections_as_dict(projections):
             "type": "scatter",
             "name": "stereographic_projections",
             "showlegend": False,
+            "hovertext": labels_all if labels else "",
+            "hoverinfo": "text",
         }
     )
     data.append(
@@ -420,7 +437,7 @@ def projections_as_dict(projections):
         "data": data,
         "layout": {
             "title": "Stereographic projections",
-            "hovermode": False,
+            "hovermode": "closest",
             "xaxis": {
                 "range": [-1.0, 1.0],
                 "showgrid": False,
@@ -454,8 +471,8 @@ def projections_as_dict(projections):
     return d
 
 
-def projections_as_json(projections, filename=None):
-    d = projections_as_dict(projections)
+def projections_as_json(projections, filename=None, labels=None):
+    d = projections_as_dict(projections, labels=labels)
 
     json_str = json.dumps(d)
     if filename is not None:
