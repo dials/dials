@@ -142,24 +142,19 @@ class OptionParser:
         clai = standard.command_line_argument_interpreter()
 
         phil_params = [arg for arg in args.phil if "=" in arg]
+
         other = OptionParser.guess_input_file_type(
             [arg for arg in args.phil if "=" not in arg]
         )
 
-        if other["experiments"]:
-            standard = standard.fetch(
-                clai.process("input.experiments=" + " ".join(other["experiments"]))
-            )
+        for expt in other["experiments"]:
+            standard = standard.fetch(clai.process(f"input.experiments={expt}"))
 
-        if other["reflections"]:
-            standard = standard.fetch(
-                clai.process("input.reflections=" + " ".join(other["reflections"]))
-            )
+        for refl in other["reflections"]:
+            standard = standard.fetch(clai.process(f"input.reflections={refl}"))
 
-        if other["images"]:
-            standard = standard.fetch(
-                clai.process("input.experiments=" + " ".join(other["images"]))
-            )
+        for image in other["images"]:
+            standard = standard.fetch(clai.process(f"input.experiments={image}"))
 
         self._phil = standard.fetch(clai.process_and_fetch(phil_params))
         self._params = self._phil.extract()
@@ -196,30 +191,22 @@ class OptionParser:
     def output_reflections(self):
         return self._params.output.reflections
 
-    @property
-    def experiments(self):
-        if self._input_experiments is None:
+    @staticmethod
+    def read_experiments(experiment_filenames, check_format=True):
+        inputs = OptionParser.guess_input_file_type(experiment_filenames)
+        experiments = ExperimentListFactory.from_filenames(inputs["images"])
+        for experimentlist in [
+            ExperimentListFactory.from_json_file(filename, check_format=check_format)
+            for filename in inputs["experiments"]
+        ]:
+            experiments.extend(experimentlist)
+        return experiments
 
-            inputs = OptionParser.guess_input_file_type(self.input_experiments())
-
-            self._input_experiments = ExperimentListFactory.from_filenames(
-                inputs["images"]
-            )
-            for experimentlist in [
-                ExperimentListFactory.from_json_file(filename)
-                for filename in inputs["experiments"]
-            ]:
-                self._input_experiments.extend(experimentlist)
-        return self._input_experiments
-
-    @property
-    def reflections(self):
-        if self._input_reflections is None:
-            self._input_reflections = [
-                reflection_table.from_file(reflection_file)
-                for reflection_file in self.input_reflections()
-            ]
-        return self._input_reflections
+    @staticmethod
+    def read_reflections(reflection_filenames):
+        return [
+            reflection_table.from_file(filename) for filename in reflection_filenames
+        ]
 
 
 class ProgressBarTimer:
