@@ -60,8 +60,6 @@ plane_normal = None
 save_coordinates = True
   .type = bool
 plot {
-  show = False
-    .type = bool
   filename = stereographic_projection.png
     .type = path
   label_indices = False
@@ -293,7 +291,7 @@ def run(args):
                     f.write("%i %i %i " % hkl)
                     f.write(("%f %f" + os.linesep) % proj)
 
-    if params.plot.show or params.plot.filename:
+    if params.plot.filename:
         epochs = None
         if params.plot.colour_map is not None:
             if experiments[0].scan is not None:
@@ -303,7 +301,6 @@ def run(args):
         plot_projections(
             projections_all,
             filename=params.plot.filename,
-            show=params.plot.show,
             colours=params.plot.colours,
             marker_size=params.plot.marker_size,
             font_size=params.plot.font_size,
@@ -320,7 +317,6 @@ def run(args):
 def plot_projections(
     projections,
     filename=None,
-    show=None,
     colours=None,
     marker_size=3,
     font_size=6,
@@ -329,12 +325,10 @@ def plot_projections(
     epochs=None,
     colour_map=None,
 ):
-    assert [filename, show].count(None) < 2
     projections_all = projections
 
-    if not show:
-        # http://matplotlib.org/faq/howto_faq.html#generate-images-without-having-a-window-appear
-        matplotlib.use("Agg")  # use a non-interactive backend
+    # http://matplotlib.org/faq/howto_faq.html#generate-images-without-having-a-window-appear
+    matplotlib.use("Agg")  # use a non-interactive backend
     from matplotlib import pyplot
     from matplotlib import pylab
 
@@ -388,8 +382,6 @@ def plot_projections(
     pyplot.ylim(-1.1, 1.1)
     if filename is not None:
         pyplot.savefig(filename, size_inches=(24, 18), dpi=300)
-    if show:
-        pyplot.show()
 
 
 def projections_as_dict(projections):

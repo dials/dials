@@ -13,7 +13,6 @@ def test_stereographic_projection(dials_regression, tmpdir):
             "dials.stereographic_projection",
             "%s/experiment_1.json" % path,
             "hkl_limit=4",
-            "plot.show=False",
             "plot.filename=proj.png",
             "json.filename=proj.json",
         ),
