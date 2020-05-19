@@ -46,6 +46,63 @@ class OptionParser:
     """Thin wrapper around argparse and phil to get DIALS arguments
     parsed without actually loading all the data files."""
 
+    @staticmethod
+    def guess_input_file_type(filenames):
+        """Guess if input filenames are experiment-like, reflection-like or
+        param-like, or optionally image like. Return dictionary."""
+
+        experiment_file_endings = ".expt".split()
+        reflection_file_endings = ".refl".split()
+        parameter_file_endings = ".params .phil".split()
+        image_file_endings = ".h5 .nxs .cbf .img".split()
+        image_compression = ["", ".gz", ".bz2"]
+
+        experiment_files = [
+            filename
+            for filename in filenames
+            if any(filename.endswith(exten) for exten in experiment_file_endings)
+        ]
+        reflection_files = [
+            filename
+            for filename in filenames
+            if any(filename.endswith(exten) for exten in reflection_file_endings)
+        ]
+        parameter_files = [
+            filename
+            for filename in filenames
+            if any(filename.endswith(exten) for exten in parameter_file_endings)
+        ]
+        image_files = [
+            filename
+            for filename in filenames
+            if any(
+                filename.endswith(exten + compression)
+                for exten in image_file_endings
+                for compression in image_compression
+            )
+        ]
+
+        unknown = [
+            filename
+            for filename in filenames
+            if not any(
+                (
+                    filename in experiment_files,
+                    filename in reflection_files,
+                    filename in parameter_files,
+                    filename in image_files,
+                )
+            )
+        ]
+
+        return {
+            "experiments": experiment_files,
+            "reflections": reflection_files,
+            "parameters": parameter_files,
+            "images": image_files,
+            "unknown": unknown,
+        }
+
     def __init__(self, phil=None):
         self._input_experiments = None
         self._input_reflections = None
@@ -83,7 +140,28 @@ class OptionParser:
         if phil:
             standard.adopt_scope(phil)
         clai = standard.command_line_argument_interpreter()
-        self._phil = standard.fetch(clai.process_and_fetch(args.phil))
+
+        phil_params = [arg for arg in args.phil if "=" in arg]
+        other = OptionParser.guess_input_file_type(
+            [arg for arg in args.phil if "=" not in arg]
+        )
+
+        if other["experiments"]:
+            standard = standard.fetch(
+                clai.process("input.experiments=" + " ".join(other["experiments"]))
+            )
+
+        if other["reflections"]:
+            standard = standard.fetch(
+                clai.process("input.reflections=" + " ".join(other["reflections"]))
+            )
+
+        if other["images"]:
+            standard = standard.fetch(
+                clai.process("input.experiments=" + " ".join(other["images"]))
+            )
+
+        self._phil = standard.fetch(clai.process_and_fetch(phil_params))
         self._params = self._phil.extract()
 
         if args.phil == [] or hasattr(args, "show_config") and args.show_config:
@@ -121,9 +199,17 @@ class OptionParser:
     @property
     def experiments(self):
         if self._input_experiments is None:
+
+            inputs = OptionParser.guess_input_file_type(self.input_experiments())
+
             self._input_experiments = ExperimentListFactory.from_filenames(
-                self.input_experiments()
+                inputs["images"]
             )
+            for experimentlist in [
+                ExperimentListFactory.from_json_file(filename)
+                for filename in inputs["experiments"]
+            ]:
+                self._input_experiments.extend(experimentlist)
         return self._input_experiments
 
     @property
