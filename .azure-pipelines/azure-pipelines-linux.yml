@@ -1,0 +1,27 @@
+jobs:
+- job: linux
+  pool:
+    vmImage: ubuntu-latest
+  dependsOn: setup
+  variables:
+    CURRENT_WEEK: $[ dependencies.setup.outputs['constants.CURRENT_WEEK'] ]
+    TODAY_ISO: $[ dependencies.setup.outputs['constants.TODAY_ISO'] ]
+
+  strategy:
+    matrix:
+      python36:
+        PYTHON_VERSION: 3.6
+#     python37:
+#       PYTHON_VERSION: 3.7
+#     python38:
+#       PYTHON_VERSION: 3.8
+  timeoutInMinutes: 90
+
+  steps:
+
+  # Dependencies required for building gltbx
+  - script: |
+      sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev
+    displayName: Install dependencies
+
+  - template: ./unix-build.yml
