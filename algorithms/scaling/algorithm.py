@@ -209,6 +209,8 @@ class ScalingAlgorithm(Subject):
         start_time = time.time()
         self.scale()
         self.remove_bad_data()
+        if not self.experiments:
+            raise ValueError("All data sets have been rejected as bad.")
         self.scaled_miller_array = scaled_data_as_miller_array(
             self.reflections,
             self.experiments,
@@ -264,11 +266,9 @@ class ScalingAlgorithm(Subject):
         if removed_ids:
             logger.info("deleting removed datasets from memory: %s", removed_ids)
             expids = list(self.experiments.identifiers())
-            locs_in_list = []
-            for id_ in removed_ids:
-                locs_in_list.append(expids.index(id_))
+            locs_in_list = [expids.index(expid) for expid in removed_ids]
             self.experiments, self.reflections = select_datasets_on_ids(
-                self.experiments, self.reflections, exclude_datasets=removed_ids
+                self.experiments, self.reflections, exclude_datasets=locs_in_list
             )
         # also remove negative scales (or scales below 0.001)
         n = 0
