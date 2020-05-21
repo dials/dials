@@ -291,7 +291,7 @@ class ScalingAlgorithm(Subject):
                 self.params.output.use_internal_variance,
             )
         except DialsMergingStatisticsError as e:
-            logger.info(e)
+            logger.warning(e, exc_info=True)
 
     def finish(self):
         """Save the experiments json and scaled pickle file."""

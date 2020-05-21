@@ -725,10 +725,11 @@ class ResolutionPlotsAndStats(ResolutionPlotterMixin):
         completeness_bins = [
             bin_stats.completeness for bin_stats in self.dataset_statistics.bins
         ]
-        anom_completeness_bins = [
-            bin_stats.anom_completeness
-            for bin_stats in self.anomalous_dataset_statistics.bins
-        ]
+        if self.anomalous_dataset_statistics:
+            anom_completeness_bins = [
+                bin_stats.anom_completeness
+                for bin_stats in self.anomalous_dataset_statistics.bins
+            ]
 
         return {
             "completeness": {
@@ -746,7 +747,7 @@ class ResolutionPlotsAndStats(ResolutionPlotterMixin):
                             "type": "scatter",
                             "name": "Anomalous completeness",
                         }
-                        if not self.is_centric
+                        if not self.is_centric and self.anomalous_dataset_statistics
                         else {}
                     ),
                 ],
@@ -767,10 +768,11 @@ class ResolutionPlotsAndStats(ResolutionPlotterMixin):
         multiplicity_bins = [
             bin_stats.mean_redundancy for bin_stats in self.dataset_statistics.bins
         ]
-        anom_multiplicity_bins = [
-            bin_stats.mean_redundancy
-            for bin_stats in self.anomalous_dataset_statistics.bins
-        ]
+        if self.anomalous_dataset_statistics:
+            anom_multiplicity_bins = [
+                bin_stats.mean_redundancy
+                for bin_stats in self.anomalous_dataset_statistics.bins
+            ]
 
         return {
             "multiplicity_vs_resolution": {
@@ -788,7 +790,7 @@ class ResolutionPlotsAndStats(ResolutionPlotterMixin):
                             "type": "scatter",
                             "name": "Anomalous multiplicity",
                         }
-                        if not self.is_centric
+                        if not self.is_centric and self.anomalous_dataset_statistics
                         else {}
                     ),
                 ],

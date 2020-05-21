@@ -399,7 +399,8 @@ def merging_stats_from_scaled_array(
 
     if scaled_miller_array.is_unique_set_under_symmetry():
         raise DialsMergingStatisticsError(
-            "Dataset contains no equivalent reflections, merging statistics cannot be calculated."
+            "Dataset contains no equivalent reflections, merging statistics "
+            "cannot be calculated."
         )
     try:
         result = iotbx.merging_statistics.dataset_statistics(
@@ -411,28 +412,43 @@ def merging_stats_from_scaled_array(
             use_internal_variance=use_internal_variance,
             cc_one_half_significance_level=0.01,
         )
-        if anomalous:
-            intensities_anom = scaled_miller_array.as_anomalous_array()
-            intensities_anom = intensities_anom.map_to_asu().customized_copy(
-                info=scaled_miller_array.info()
-            )
-            anom_result = iotbx.merging_statistics.dataset_statistics(
-                i_obs=intensities_anom,
-                n_bins=n_bins,
-                anomalous=True,
-                sigma_filtering=None,
-                cc_one_half_significance_level=0.01,
-                eliminate_sys_absent=False,
-                use_internal_variance=use_internal_variance,
-            )
-        else:
-            anom_result = False
     except (RuntimeError, Sorry) as e:
         raise DialsMergingStatisticsError(
             "Error encountered during merging statistics calculation:\n%s" % e
         )
-    else:
-        return result, anom_result
+
+    anom_result = None
+
+    if anomalous:
+        intensities_anom = scaled_miller_array.as_anomalous_array()
+        intensities_anom = intensities_anom.map_to_asu().customized_copy(
+            info=scaled_miller_array.info()
+        )
+        if intensities_anom.is_unique_set_under_symmetry():
+            logger.warning(
+                "Anomalous dataset contains no equivalent reflections, anomalous "
+                "merging statistics cannot be calculated."
+            )
+        else:
+            try:
+                anom_result = iotbx.merging_statistics.dataset_statistics(
+                    i_obs=intensities_anom,
+                    n_bins=n_bins,
+                    anomalous=True,
+                    sigma_filtering=None,
+                    cc_one_half_significance_level=0.01,
+                    eliminate_sys_absent=False,
+                    use_internal_variance=use_internal_variance,
+                )
+            except (RuntimeError, Sorry) as e:
+                logger.warning(
+                    "Error encountered during anomalous merging statistics "
+                    "calculation:\n%s",
+                    e,
+                    exc_info=True,
+                )
+
+    return result, anom_result
 
 
 def intensity_array_from_cif_file(cif_file):

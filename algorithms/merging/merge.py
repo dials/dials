@@ -248,9 +248,9 @@ def merge_and_truncate(params, experiments, reflections):
                 params.merging.use_internal_variance,
             )
         except DialsMergingStatisticsError as e:
-            logger.info(e)
+            logger.error(e, exc_info=True)
         else:
-            if params.merging.anomalous:
+            if params.merging.anomalous and anom_stats:
                 logger.info(make_merging_statistics_summary(anom_stats))
             else:
                 logger.info(make_merging_statistics_summary(stats))
