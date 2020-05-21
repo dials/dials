@@ -1,27 +1,30 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.generate_events
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
-from dials.util.options import OptionParser
-from dials.util.options import flatten_experiments
-from dials.util import show_mail_on_error
-from dials.array_family import flex
-import iotbx.phil
+import argparse
 
-import dxtbx  # noqa: F401; import dependency to find HDF5 library
-import h5py
-import sys
+from libtbx import phil
+from dials.util import show_mail_on_error
+from dials.algorithms.event_mode import image_to_events
 
 """
 
 """
 
 # Create phil parameters
-phil_scope = iotbx.phil.parse(
+phil_scope = phil.parse(
     """
         input {
+          experiments = None
+            .type = path
+            .multiple = True
+            .help = "Input experiment files"
+
           mask = None
-            .type = str
-            .help = "Bad pixels mask"
+          `.type = path
+           .multiple = True
+           .help = "Bad pixels mask, HDF5 file"
+
           image_range = None
             .type = ints(value_min = 0, size = 2)
             .help = "Image range e.g. 1,1000"
@@ -29,8 +32,8 @@ phil_scope = iotbx.phil.parse(
 
         output {
           events = None
-            .type = str
-            .help = "The output HDF5 file name"
+            .type = path
+            .help = "The output HDF5 file"
         }
         """
 )
@@ -38,47 +41,18 @@ phil_scope = iotbx.phil.parse(
 
 def run():
     # Parse command line arguments
-    parser = OptionParser(
-        phil=phil_scope, read_experiments=True, read_experiments_from_images=True
-    )
-    params, options = parser.parse_args(show_diff_phil=True)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--debug", action="store_const", const=True)
+    parser.add_argument("phil", nargs="+")
 
-    if params.output.events:
-        fout = h5py.File(params.output.events, "x")
-    else:
-        print("No output file created\n")
+    args = parser.parse_args()
+    # debug = args.debug
 
-    experiments = flatten_experiments(params.input.experiments)
-    if len(experiments) != 1:
-        parser.print_help()
-        sys.exit("Please pass images\n")
-        return
+    cl = phil_scope.command_line_argument_interpreter()
+    working_phil = phil_scope.fetch(cl.process_and_fetch(args.phil))
+    params = working_phil.extract()
 
-    imagesets = experiments.imagesets()
-    if len(imagesets) != 1:
-        sys.exit("Please pass only one set of images\n")
-        return
-
-    imageset = imagesets[0]
-
-    if params.input.mask:
-        with h5py.File(params.input.mask, "r") as fh:
-            bad_pixels = flex.bool(fh["mask"][()])
-
-    if params.input.image_range:
-        image_range = params.input.image_range
-    else:
-        image_range = 0, len(imageset)
-
-    for j in range(*image_range):
-        img = imageset.get_raw_data(j)[0]
-        msk = imageset.get_mask(j)
-
-        img.set_selected(~msk, -1)
-        if params.input.mask:
-            img.set_selected(~bad_pixels, -2)
-
-    fout.close()
+    image_to_events.images_to_events(params).run()
 
 
 if __name__ == "__main__":

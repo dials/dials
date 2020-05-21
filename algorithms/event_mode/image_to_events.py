@@ -1,12 +1,13 @@
 from __future__ import division, print_function
 
+from dxtbx.model.experiment_list import ExperimentListFactory
+from dials.array_family import flex
+import dials_algorithms_event_mode_ext
+
 import dxtbx  # noqa: F401; import dependency to find HDF5 library
 
-import sys
 import h5py
-
-from dials.array_family import flex
-import dials_research_events
+import glob
 
 
 class images_to_events(object):
@@ -14,43 +15,45 @@ class images_to_events(object):
     Class to wrap/manage conversion of images to events.
     """
 
-    def __init__(self, h5_in, h5_out, h5_pix_mask, h5_meta):
-        # h5_in -> nxs
-        self._fin = h5py.File(h5_in, "r")
-        self._data = self._fin["/entry/data/data"]
-        self._shape = self._data.shape
+    def __init__(self, params):
+        self._params = params
+        self._expt = ExperimentListFactory.from_filenames(self.input_expt_names())[0]
+        self._imageset = self._expt.imageset
 
-        # h5_out
-        self._fout = h5py.File(h5_out, "x")
-        self._d_position = self._fout.create_dataset(
-            "position",
-            (0,),
-            maxshape=(None,),
-            dtype="i4",
-            chunks=(100000,),
-            compression="lzf",
-        )
-        self._d_time = self._fout.create_dataset(
-            "time",
-            (0,),
-            maxshape=(None,),
-            dtype="i4",
-            chunks=(100000,),
-            compression="lzf",
-        )
+        if self._params.input.image_range:
+            self._n_img = self._params.input.image_range[-1]
+        else:
+            self._n_img = self._imageset.size()
 
-        # pix_mask
-        with h5py.File(h5_pix_mask, "r") as f1:
-            self._pix_msk = flex.bool(f1["bad_pixel_mask"][()])
+        if self._params.input.mask:
+            with h5py.File(self._params.input.mask[0], "r") as fh:
+                self._msk = flex.bool(fh["bad_pixel_mask"][()])
+        else:
+            self._msk = None
 
-        # det_mask
-        with h5py.File(h5_meta, "r") as f2:
-            m = flex.int(f2["mask"][()])
-            self._det_msk = m == 0
+        if self._params.output.events:
+            self._fout = h5py.File(self._params.output.events, "x")
+            self._d_position = self._fout.create_dataset(
+                "position",
+                (0,),
+                maxshape=(None,),
+                dtype="i4",
+                chunks=(100000,),
+                compression="lzf",
+            )
+            self._d_time = self._fout.create_dataset(
+                "time",
+                (0,),
+                maxshape=(None,),
+                dtype="i4",
+                chunks=(100000,),
+                compression="lzf",
+            )
+        else:
+            print("No output file")
 
-        # module shape, gap size (x,y)
-        self._module = (1028, 512)
-        self._gap = (12, 38)
+    def input_expt_names(self):
+        return sum(map(glob.glob, self._params.input.experiments), [])
 
     def output(self, events_position, events_time):
         n = events_time.size()
@@ -67,46 +70,28 @@ class images_to_events(object):
 
         self._fout.flush()
 
-    def img_input(self, n):
-        image = flex.int(self._data[n].astype("i4"))
-        image.set_selected(~self._det_msk, -1)
-        image.set_selected(~self._pix_msk, -2)
+    def img_input(self, i):
+        image = self._imageset.get_raw_data(i)[0]
+        image.set_selected(~self._imageset.get_mask(i)[0], -1)
+        if self._msk is not None:
+            image.set_selected(~self._msk, -2)
         return image
 
-    def events(self, n):
-        image = self.img_input(n)
+    def events(self, i):
+        img = self.input_img(i)
 
-        mod_x = self._module[0]
-        mod_y = self._module[1]
-        gap_x = self._gap[0]
-        gap_y = self._gap[1]
+        sel = img > 0
+        idx = sel.iselection()
+        counts = img.select(idx)
 
-        # 8x4 m
-        for i in range(8):
-            for j in range(4):
-                mod = image[
-                    i * (mod_y + gap_y) : i * (mod_y + gap_y) + mod_y,
-                    j * (mod_x + gap_x) : j * (mod_x + gap_x) + mod_x,
-                ]
-                sel = mod > 0
-                idx = sel.iselection()
-                counts = mod.select(idx)
-
-                pos, t = dials_research_events.event_list(n, idx, counts)
-                self.output(pos, t)
-
-        return
+        pos, t = dials_algorithms_event_mode_ext.event_list(i, idx, counts)
+        return pos, t
 
     def run(self):
-        for k in range(0, self._shape[0], 32):
-            for _k in range(k, k + 32):
-                if _k == self._shape[0]:
-                    break
-
-                self.events(_k)
-
-        self._fout.close()
-
-
-if __name__ == "__main__":
-    i2e = images_to_events(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]).run()
+        n = self._n_img
+        for j in range(n):
+            pos, t = self.events(j)
+            if self._params.output.events:
+                self.output(pos, t)
+        if self._params.output.events:
+            self._fout.close()

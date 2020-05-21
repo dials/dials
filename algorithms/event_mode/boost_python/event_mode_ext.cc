@@ -23,7 +23,8 @@ namespace dials { namespace algorithms { namespace event_mode {
     for (size_t j = 0; j < idx.size(); j++) {
       for (size_t c = 0; c < counts[j]; c++) {
         position.push_back(idx[j]);
-        time.push_back(1000 * (image_n + dist(rng)));
+        //time.push_back(expTime * (image_n + dist(rng)));
+        time.push_back(1000 * (image_n + dist(rng)));  
       }
     }
     return boost::python::make_tuple(position, time);
