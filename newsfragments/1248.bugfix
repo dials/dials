@@ -1,2 +1,0 @@
-Fix propagation of best_unit_cell and application of resolution cutoffs in dials.scale and export_mtz.
-Add a new mtz.best_unit_cell parameter to dials.export
