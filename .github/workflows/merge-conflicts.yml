@@ -22,3 +22,4 @@ jobs:
         dirtyLabel: "PR: merge conflicts"
         removeOnDirtyLabel: "PR: ready to ship"
         repoToken: ${{ secrets.GITHUB_TOKEN }}
+      continue-on-error: true
