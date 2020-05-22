@@ -18,9 +18,10 @@ jobs:
       - bash: |
           mkdir repository
           cd repository
+          echo Checking out $(Build.SourceBranch) from $(Build.Repository.Uri)
           git init
           git remote add origin $(Build.Repository.Uri)
-          git fetch --depth 1 --no-recurse-submodules origin $(Build.SourceBranchName)
+          git fetch --depth 1 --no-recurse-submodules origin $(Build.SourceBranch)
           git checkout FETCH_HEAD
           python .azure-pipelines/syntax-validation.py
         displayName: Syntax validation
