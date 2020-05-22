@@ -78,10 +78,6 @@ class wxbitmap_convert(object):
                 # might be a good idea to raise a runtime error here
                 print("Got mixture of different type of data")
 
-    def get_np(self):
-        # returning numpy arrays in the rare case where they might be needed
-        return self.lst_3d_data
-
     def get_wxbitmap_lst(self, show_nums=True, palette="black2white", scale=1.0):
         # returning wxbitmaps needed to be shown
         self.local_bmp = wxbmp_from_np_array(

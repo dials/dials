@@ -214,17 +214,13 @@ common compilers provided by conda. Please update your version with
             "The file {filename} is not available".format(filename=filename)
         )
 
-    python_requirement = {
-        "3.6": "conda-forge::python>=3.6,<3.7",
-        "3.7": "conda-forge::python>=3.7,<3.8",
-        "3.8": "conda-forge::python>=3.8,<3.9",
-    }.get(python)
-    if not python_requirement:
-        raise RuntimeError(
-            "The requested python version {python} is not available".format(
-                python=python
-            )
-        )
+    python_version = tuple(int(i) for i in python.split(".", 1))
+    python_requirement = "conda-forge::python>=%d.%d,<%d.%d" % (
+        python_version[0],
+        python_version[1],
+        python_version[0],
+        python_version[1] + 1,
+    )
 
     # make a new environment directory
     prefix = os.path.realpath("conda_base")
@@ -394,9 +390,8 @@ def download_to_file(url, file, quiet=False, cache=True):
             # Having an ETag without a file is pointless
             os.remove(tagfile)
         else:
-            tf = open(tagfile, "r")
-            etag = tf.readline()
-            tf.close()
+            with open(tagfile, "r") as tf:
+                etag = tf.readline()
 
     try:
         from ssl import SSLError
@@ -553,7 +548,8 @@ def download_to_file(url, file, quiet=False, cache=True):
 
         if cache and socket.info().get("ETag"):
             # If the server sent an ETAG, then keep it alongside the file
-            open(tagfile, "w").write(socket.info().get("ETag"))
+            with open(tagfile, "w") as tf:
+                tf.write(socket.info().get("ETag"))
 
     return received
 
@@ -633,6 +629,7 @@ def git(
     destination=None,
     reference=None,
     reference_base=None,
+    branch_override=None,
 ):
     """Retrieve a git repository, either by running git directly
        or by downloading and unpacking an archive."""
@@ -800,6 +797,7 @@ for module in (
     "cctbx/boost",
     "cctbx/cctbx_project",
     "cctbx/dxtbx",
+    "ssrl-px/iota",
     "xia2/xia2",
 ):
     modulename = module.split("/")[1]
@@ -851,35 +849,36 @@ class DIALSBuilder(object):
         "--skip_phenix_dispatchers",
     ]
 
-    def __init__(self, actions, options):
+    def __init__(self, options):
         """Create and add all the steps."""
         self.git_reference = options.git_reference
+        self.git_branches = dict(options.set_branch or [])
         self.steps = []
         # self.config_flags are only from the command line
         # LIBTBX can still be used to always set flags specific to a builder
         self.config_flags = options.config_flags or []
 
         # Add sources
-        if "update" in actions:
+        if "update" in options.actions:
             self.update_sources()
 
         # always remove .pyc files
         self.remove_pycs()
 
         # Build base packages
-        if "base" in actions:
+        if "base" in options.actions:
             install_conda(python=options.python)
 
         # Configure, make, get revision numbers
-        if "build" in actions:
+        if "build" in options.actions:
             self.add_configure()
             self.add_make()
 
         # Tests, tests
-        if "tests" in actions:
+        if "tests" in options.actions:
             self.add_tests()
 
-        if "build" in actions:
+        if "build" in options.actions:
             self.add_refresh()
             self.add_precommit()
 
@@ -904,26 +903,6 @@ class DIALSBuilder(object):
             if result:
                 print(result)
 
-    def _add_download(self, url, to_file):
-        if not isinstance(url, list):
-            url = [url]
-
-        def _download():
-            for _url in url:
-                for retry in (3, 3, 0):
-                    print("===== Downloading %s: " % _url, end=" ")
-                    try:
-                        download_to_file(_url, to_file)
-                        return
-                    except Exception as e:
-                        print("Download failed with", e)
-                        if retry:
-                            print("Retrying in %d seconds" % retry)
-                            time.sleep(retry)
-            raise RuntimeError("Could not download " + to_file)
-
-        self.steps.append(_download)
-
     def update_sources(self):
         if self.git_reference:
             reference_base = os.path.abspath(os.path.expanduser(self.git_reference))
@@ -947,6 +926,7 @@ class DIALSBuilder(object):
                 MODULES[module],
                 git_available=git_available,
                 reference_base=reference_base,
+                branch_override=self.git_branches.get(module),
             )
 
         update_pool = multiprocessing.pool.ThreadPool(20)
@@ -1087,6 +1067,30 @@ class DIALSBuilder(object):
         )
 
 
+def repository_at_tag(string):
+    try:
+        repository, tag = string.split("@", 1)
+        return (repository, tag)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            "%s does not follow the repository@branch format" % string
+        )
+
+
+class Choices(tuple):
+    # Python bug https://bugs.python.org/issue27227, https://bugs.python.org/issue9625
+    def __new__(cls, *args, **kwargs):
+        x = tuple.__new__(cls, *args, **kwargs)
+        Choices.__init__(x, *args, **kwargs)
+        return x
+
+    def __init__(self, *args, **kwargs):
+        self.default = []
+
+    def __contains__(self, item):
+        return tuple.__contains__(self, item) or item is self.default
+
+
 def run():
     prog = os.environ.get("LIBTBX_DISPATCHER_NAME")
     if prog is None or prog.startswith("python") or prog.endswith("python"):
@@ -1099,7 +1103,7 @@ def run():
     build - Build
     tests - Run tests
 
-  The default action is to run: update, base, build
+  The default actions are: update, base, build
 
   Example:
 
@@ -1111,15 +1115,21 @@ def run():
         description=description,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("action", nargs="*", help="Actions for building")
+    action_choices = Choices(("update", "base", "build", "tests"))
+    action_choices.default = ["update", "base", "build"]
+    parser.add_argument(
+        "actions",
+        nargs="*",
+        help="actions for building as described above",
+        choices=action_choices,
+        default=action_choices.default,
+    )
     parser.add_argument(
         "--git-reference",
-        dest="git_reference",
         help="Path to a directory containing reference copies of repositories for faster checkouts.",
     )
     parser.add_argument(
         "--config-flags",
-        dest="config_flags",
         help="""Pass flags to the configuration step. Flags should
 be passed separately with quotes to avoid confusion (e.g
 --config_flags="--build=debug" --config_flags="--enable_cxx11")""",
@@ -1128,22 +1138,22 @@ be passed separately with quotes to avoid confusion (e.g
     )
     parser.add_argument(
         "--python",
-        dest="python",
-        help="Install this minor version of Python (default: 3.6)",
+        help="Install this minor version of Python (default: %(default)s)",
         default="3.6",
+        choices=["3.6", "3.7", "3.8"],
+    )
+    parser.add_argument(
+        "--set-branch",
+        nargs="*",
+        type=repository_at_tag,
+        # help="during 'update' step move a repository to a given branch. Specify as repository@branch, eg. 'dials@dials-next'",
+        help=argparse.SUPPRESS,
     )
 
     options = parser.parse_args()
-
-    # Check actions
-    allowed_actions = {"update", "base", "build", "tests"}
-    actions = set(options.action or ["update", "base", "build"])
-    unknown_actions = actions - allowed_actions
-    if unknown_actions:
-        sys.exit("Unknown action: %s" % ", ".join(unknown_actions))
-    print("Performing actions:", " ".join(actions))
-    DIALSBuilder(actions=actions, options=options).run()
-    print("\nBootstrap success: %s" % ", ".join(actions))
+    print("Performing actions:", " ".join(options.actions))
+    DIALSBuilder(options=options).run()
+    print("\nBootstrap success: %s" % ", ".join(options.actions))
 
 
 if __name__ == "__main__":

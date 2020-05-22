@@ -31,17 +31,17 @@ class Script(object):
         # The phil scope
         phil_scope = parse(
             """
-      scale = unit *max_cell ewald_sphere_radius
-        .type = choice
-        .help = "Choose the scale for the direction vector in orthogonal"
-                "coordinates prior to transformation into fractional"
-                "coordinates [uvw]"
+scale = unit *max_cell ewald_sphere_radius
+    .type = choice
+    .help = "Choose the scale for the direction vector in orthogonal"
+            "coordinates prior to transformation into fractional"
+            "coordinates [uvw]"
 
-      plot_filename = None
-        .type = str
-        .help = "Filename for a plot of angle between neighbouring frames"
-                "(set to None for no plot)"
-    """,
+plot_filename = None
+    .type = str
+    .help = "Filename for a plot of angle between neighbouring frames"
+            "(set to None for no plot)"
+""",
             process_includes=True,
         )
 
@@ -81,7 +81,8 @@ class Script(object):
             "Image",
             "Beam direction (xyz)",
             "Zone axis [uvw]",
-            "Angle from\nprevious (deg)",
+            "Angles between beam\nand axes a, b, c (deg)",
+            "Angle from\nprevious image (deg)",
         ]
         for iexp, exp in enumerate(experiments):
             print("For Experiment id = {}".format(iexp))
@@ -105,6 +106,13 @@ class Script(object):
             images = dat["images"]
             directions = dat["directions"]
             zone_axes = dat["zone_axes"]
+            real_space_axes = dat["real_space_axes"]
+
+            # calculate the angle between the beam and each crystal axis
+            axis_angles = []
+            for d, rsa in zip(directions, real_space_axes):
+                angles = [d.angle(a, deg=True) for a in rsa]
+                axis_angles.append("{:.2f} {:.2f} {:.2f}".format(*angles))
 
             # calculate the orientation offset between each image
             offset = [
@@ -113,12 +121,15 @@ class Script(object):
             str_off = ["---"] + ["{:.8f}".format(e) for e in offset]
 
             rows = []
-            for i, d, z, a in zip(images, directions, zone_axes, str_off):
+            for i, d, z, a, o in zip(
+                images, directions, zone_axes, axis_angles, str_off,
+            ):
                 row = [
                     str(i),
                     "{:.8f} {:.8f} {:.8f}".format(*d.elems),
                     "{:.8f} {:.8f} {:.8f}".format(*z.elems),
                     a,
+                    o,
                 ]
                 rows.append(row)
 
@@ -195,11 +206,22 @@ def extract_experiment_data(exp, scale=1):
     # SFRUB is the orthogonalisation matrix for the reciprocal space laboratory
     # frame. We want the real space fractionalisation matrix, which is its
     # transpose (https://dials.github.io/documentation/conventions.html)
-    frac_mats = (m.transpose() for m in SRFUB)
-
+    frac_mats = [m.transpose() for m in SRFUB]
     zone_axes = [frac * (d * scale) for frac, d in zip(frac_mats, directions)]
 
-    return {"images": images, "directions": directions, "zone_axes": zone_axes}
+    # Now get the real space orthogonalisation matrix to calculate the real
+    # space cell vectors at each image
+    orthog_mats = (frac.inverse() for frac in frac_mats)
+    h = matrix.col((1, 0, 0))
+    k = matrix.col((0, 1, 0))
+    l = matrix.col((0, 0, 1))
+    real_space_axes = [(o * h, o * k, o * l) for o in orthog_mats]
+    return {
+        "images": images,
+        "directions": directions,
+        "zone_axes": zone_axes,
+        "real_space_axes": real_space_axes,
+    }
 
 
 if __name__ == "__main__":

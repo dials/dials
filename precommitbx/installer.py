@@ -171,14 +171,6 @@ class Progress(object):
             ProgressOverall.done_part(self.step, self.pbar.n / self.pbar.total)
 
 
-def stop_with_error(message, result):
-    if result.stdout:
-        print("\n".join(result.stdout.split("\n")[-10:]))
-    if result.stderr:
-        print("\n".join(result.stderr.split("\n")[-10:]))
-    sys.exit(message)
-
-
 def precommitbx_template(python):
     if conda_base:
         file_content = (
@@ -253,12 +245,6 @@ def check_precommitbx_hook(path, python):
     if hook:
         return repo_precommit_conflict
     return False
-
-
-def clean_precommit_home():
-    if precommit_home.check():
-        print("Cleaning out existing pre-commit installation")
-        precommit_home.remove(rec=1)
 
 
 def python_version(python):

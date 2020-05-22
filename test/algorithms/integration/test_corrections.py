@@ -1,19 +1,17 @@
 from __future__ import absolute_import, division, print_function
+from dxtbx.model.experiment_list import ExperimentListFactory
+from dials.algorithms.integration import CorrectionsMulti, Corrections
+from dials.array_family import flex
+from scitbx import matrix
 
 
 def test_run(dials_data):
     filename = dials_data("centroid_test_data").join("experiments.json").strpath
 
-    from dxtbx.model.experiment_list import ExperimentListFactory
-
     exlist = ExperimentListFactory.from_json_file(filename)
     assert len(exlist) == 1
 
-    from dials.array_family import flex
-
     rlist = flex.reflection_table.from_predictions_multi(exlist)
-
-    from dials.algorithms.integration import CorrectionsMulti, Corrections
 
     corrector = CorrectionsMulti()
     for experiment in exlist:
@@ -39,11 +37,6 @@ def LP_calculations(experiment, s1):
     tpl_m2 = experiment.goniometer.get_rotation_axis()
     tpl_s1 = s1
     p = experiment.beam.get_polarization_fraction()
-
-    # FIXME hack for testing
-    # p = 0.5
-
-    from scitbx import matrix
 
     n = matrix.col(tpl_n)
     s0 = matrix.col(tpl_s0)

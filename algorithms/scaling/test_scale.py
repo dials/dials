@@ -9,6 +9,7 @@ import json
 import iotbx.merging_statistics
 import pytest
 import procrunner
+from cctbx import uctbx
 from libtbx import phil
 from dxtbx.serialize import load
 from dxtbx.model.experiment_list import ExperimentList
@@ -136,11 +137,6 @@ def generate_test_input(n=1):
     for _ in range(n):
         reflections.append(generate_test_reflections())
     return generated_param(), generated_exp(n), reflections
-
-
-def return_first_arg_side_effect(*args):
-    """Side effect for overriding the call to reject_outliers."""
-    return args[0]
 
 
 def test_scale_script_prepare_input():
@@ -511,6 +507,30 @@ def test_scale_dose_decay_model(dials_data, tmpdir):
     assert tmpdir.join("dials.scale.html").check()
     expts = load.experiment_list(tmpdir.join("scaled.expt").strpath, check_format=False)
     assert expts[0].scaling_model.id_ == "dose_decay"
+
+
+def test_scale_best_unit_cell_d_min(dials_data, tmpdir):
+    location = dials_data("multi_crystal_proteinase_k")
+    best_unit_cell = uctbx.unit_cell((42, 42, 39, 90, 90, 90))
+    d_min = 2
+    command = [
+        "dials.scale",
+        "best_unit_cell=%g,%g,%g,%g,%g,%g" % best_unit_cell.parameters(),
+        "d_min=%g" % d_min,
+        "unmerged_mtz=unmerged.mtz",
+    ]
+    for i in [1, 2, 3, 4, 5, 7, 10]:
+        command.append(location.join("experiments_" + str(i) + ".json").strpath)
+        command.append(location.join("reflections_" + str(i) + ".pickle").strpath)
+    result = procrunner.run(command, working_directory=tmpdir)
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("scaled.refl").check()
+    assert tmpdir.join("scaled.expt").check()
+    stats = get_merging_stats(tmpdir.join("unmerged.mtz").strpath)
+    assert stats.overall.d_min >= d_min
+    assert stats.crystal_symmetry.unit_cell().parameters() == pytest.approx(
+        best_unit_cell.parameters()
+    )
 
 
 def test_scale_and_filter_dataset_mode(dials_data, tmpdir):

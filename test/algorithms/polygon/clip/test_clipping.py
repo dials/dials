@@ -7,20 +7,6 @@ from dials.algorithms.polygon import clip
 from scitbx.array_family import flex
 
 
-def point_in_polygon(point, poly):
-    inside = False
-    j = len(poly) - 1
-    polyj = poly[j]
-    for polyi in poly:
-        if ((polyi[1] > point[1]) != (polyj[1] > point[1])) and (
-            point[0]
-            < (polyj[0] - polyi[0]) * (point[1] - polyi[1]) / (polyj[1] - polyi[1])
-            + polyi[0]
-        ):
-            inside = not inside
-    return inside
-
-
 def generate_intersecting(subject_size=None, target_size=4):
     if subject_size is None:
         subject_size = random.randint(3, 10)

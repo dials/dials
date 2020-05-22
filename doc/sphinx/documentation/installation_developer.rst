@@ -32,11 +32,6 @@ For subsequent login sessions, be sure to set the environment in order to use th
 
   source build/setpaths.sh # or setpaths.csh for tcsh
 
-Additional packages can be installed in the modules directory, e.g., download the dials_regression tarball from the main dials web
-page. Additional modules may be configured as in this example::
-
-  libtbx.configure dials_regression
-
 Creating a Relocatable Installer Bundle on Linux
 ------------------------------------------------
 
@@ -60,18 +55,15 @@ Downloading the DIALS regression test data
 ==========================================
 
 The DIALS regression test data, needed for some of the DIALS tests, can be
-obtained `here <http://dials.diamond.ac.uk/developers/dials_regression.tgz>`_::
+obtained using the `dials-data package <https://pypi.org/project/dials-data/>`_.
+See the `dials-data instructions <https://dials-data.readthedocs.io/en/latest/installation.html>`_
+for more information.
 
-  cd ../modules
-  curl http://dials.diamond.ac.uk/developers/dials_regression.tgz > dials_regression.tgz
-  tar -xzvf dials_regression.tgz
-  libtbx.configure dials_regression
+There is also a private dials_regression repository that is still used for
+some historic tests.
+For those with svn access to the CCI server, this can be obtained as
+follows, replacing "USERNAME" for your username::
 
-For those with svn access to the CCI server, it can also be obtained as
-follows. Checkout the data into the cctbx source
-directory and configure as follows, replacing "USERNAME" for your username::
-
-
-  cd ../modules
+  cd modules
   svn checkout svn+ssh://USERNAME@cci.lbl.gov/dials_regression/trunk dials_regression
   libtbx.configure dials_regression

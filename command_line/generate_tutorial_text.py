@@ -62,7 +62,7 @@ def generate_processing_detail_text_thaumatin(options):
     )
     runcmd(["dials.integrate", "refined.expt", "refined.refl", "nproc=4"])
     runcmd(["dials.report", "integrated.expt", "integrated.refl"])
-    tmpdir.join("dials-report.html").copy(outdir.join("dials-report.html"))
+    tmpdir.join("dials.report.html").copy(outdir.join("dials.report.html"))
     runcmd(["dials.export", "integrated.refl", "integrated.expt"])
 
     print("Updated result files written to {}".format(outdir.strpath))
@@ -131,7 +131,7 @@ def generate_processing_detail_text_betalactamase(options):
         store_output=outdir / "dials.scale_cut.log",
     )
     runcmd(["dials.report", "scaled.expt", "scaled.refl"])
-    tmpdir.join("dials-report.html").copy(outdir.join("dials-report.html"))
+    tmpdir.join("dials.report.html").copy(outdir.join("dials.report.html"))
 
     print("Updated result files written to {}".format(outdir.strpath))
     if not options.keep:

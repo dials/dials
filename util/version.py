@@ -4,7 +4,7 @@ from __future__ import absolute_import, division, print_function
 #  1. a common prefix
 __dials_version_format = "DIALS %s"
 #  2. the most recent annotated git tag (or failing that: a default string)
-__dials_version_default = "2.dev"
+__dials_version_default = "3.dev"
 #  3. a dash followed by the number of commits since that tag
 #  4. a dash followed by a lowercase 'g' and the current commit id
 
@@ -25,7 +25,7 @@ def get_git_version(dials_path, treat_merges_as_single_commit=False):
             .rstrip()
             .decode("latin-1")
         )
-        releasebranch = "dials-2" in branch
+        releasebranch = "dials-3" in branch
 
         # Always treat merges as single commit on release branches
         if releasebranch:

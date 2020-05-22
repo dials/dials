@@ -149,7 +149,9 @@ def prepare_input(params, experiments, reflections):
         reflections.append(reflection_table)
 
     #### Perform any non-batch cutting of the datasets, including the target dataset
-    best_unit_cell = determine_best_unit_cell(experiments)
+    best_unit_cell = params.reflection_selection.best_unit_cell
+    if best_unit_cell is None:
+        best_unit_cell = determine_best_unit_cell(experiments)
     for reflection in reflections:
         if params.cut_data.d_min or params.cut_data.d_max:
             d = best_unit_cell.d(reflection["miller_index"])
@@ -208,7 +210,10 @@ class ScalingAlgorithm(Subject):
         self.scale()
         self.remove_bad_data()
         self.scaled_miller_array = scaled_data_as_miller_array(
-            self.reflections, self.experiments, anomalous_flag=False
+            self.reflections,
+            self.experiments,
+            anomalous_flag=False,
+            best_unit_cell=self.params.reflection_selection.best_unit_cell,
         )
         try:
             self.calculate_merging_stats()
@@ -450,7 +455,7 @@ Scaling and filtering can only be performed in multi-dataset scaling mode
             register_scaler_observers(self.scaler)
         self.filtering_results = results
         # Print summary of results
-        logger.info(results.make_summary())
+        logger.info(results)
         with open(self.params.filtering.output.scale_and_filter_results, "w") as f:
             json.dump(self.filtering_results.to_dict(), f, indent=2)
         # All done!
@@ -467,7 +472,10 @@ Scaling and filtering can only be performed in multi-dataset scaling mode
         self.scaler.params.scaling_options.full_matrix = initial_full_matrix
         self.remove_bad_data()
         self.scaled_miller_array = scaled_data_as_miller_array(
-            self.reflections, self.experiments, anomalous_flag=False
+            self.reflections,
+            self.experiments,
+            anomalous_flag=False,
+            best_unit_cell=self.params.reflection_selection.best_unit_cell,
         )
         try:
             self.calculate_merging_stats()

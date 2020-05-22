@@ -60,7 +60,7 @@ import libtbx.phil
 phil_scope = libtbx.phil.parse(
     """
   output {
-    html = dials-report.html
+    html = dials.report.html
       .type = path
       .help = "The name of the output html file"
     json = None
@@ -131,19 +131,6 @@ def ensure_required(rlist, required):
             print("  %s" % k)
         return False
     return True
-
-
-def determine_grid_size(rlist, grid_size=None):
-    from libtbx import Auto
-
-    panel_ids = rlist["panel"]
-    n_panels = flex.max(panel_ids) + 1
-    if grid_size is not None and grid_size is not Auto:
-        assert (grid_size[0] * grid_size[1]) >= n_panels, n_panels
-        return grid_size
-    n_cols = int(math.floor(math.sqrt(n_panels)))
-    n_rows = int(math.ceil(n_panels / n_cols))
-    return n_cols, n_rows
 
 
 def color_repeats(n=1):

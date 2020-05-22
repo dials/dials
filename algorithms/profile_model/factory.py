@@ -21,8 +21,8 @@ class ProfileModelFactory(object):
     Factory for creating profile models
     """
 
-    @classmethod
-    def create(cls, params, experiments, reflections=None):
+    @staticmethod
+    def create(params, experiments, reflections=None):
         """
         Compute or load the profile model.
 

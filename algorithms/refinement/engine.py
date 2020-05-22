@@ -944,8 +944,6 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
         self.history.add_column("mu")
         self.history.add_column("nu")
 
-        # FIXME need a much neater way of doing this stuff through
-        # inheritance
         # set max iterations if not already.
         if self._max_iterations is None:
             self._max_iterations = 100

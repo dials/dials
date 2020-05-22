@@ -1,7 +1,5 @@
 from __future__ import absolute_import, division, print_function
 
-import json
-
 import six
 from dials.array_family import flex
 
@@ -12,12 +10,6 @@ def spot_counts_per_image_plot(reflections, **kwargs):
 
     x, y, z = reflections["xyzobs.px.value"].parts()
     return flex_histogram(z, **kwargs)
-
-
-def histogram_from_json(filename):
-    with open(filename, "r") as fh:
-        z = json.load(fh)
-    return flex_histogram(flex.double(z))
 
 
 def flex_histogram(z, char="*", width=60, height=10):

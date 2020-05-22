@@ -6,8 +6,8 @@ class GaussianRSMaskCalculatorFactory(object):
     Factory class for mask calculator
     """
 
-    @classmethod
-    def create(cls, experiments):
+    @staticmethod
+    def create(experiments):
         """
         Create the mask calculator
         """
@@ -37,8 +37,8 @@ class GaussianRSIntensityCalculatorFactory(object):
     A class to create the intensity calculator
     """
 
-    @classmethod
-    def create(cls, data, detector_space=False, deconvolution=False):
+    @staticmethod
+    def create(data, detector_space=False, deconvolution=False):
         """
         Create the intensity calculator
         """
@@ -55,8 +55,8 @@ class GaussianRSReferenceCalculatorFactory(object):
     A class to create the reference calculator
     """
 
-    @classmethod
-    def create(cls, experiments, grid_size=5, scan_step=5, grid_method="circular_grid"):
+    @staticmethod
+    def create(experiments, grid_size=5, scan_step=5, grid_method="circular_grid"):
         """
         Create the intensity calculator
         """
@@ -95,14 +95,6 @@ class GaussianRSReferenceCalculatorFactory(object):
         elif grid_method == "circular_grid":
             sampler = CircleSampler(
                 detector[0].get_image_size(), scan.get_array_range(), num_scan_points
-            )
-        elif grid_method == "spherical_grid":
-            sampler = EwaldSphereGridSampler(
-                experiments[0].beam,
-                experiments[0].detector,
-                experiments[0].goniometer,
-                experiments[0].scan,
-                num_scan_points,
             )
         else:
             raise RuntimeError("Unknown grid type")

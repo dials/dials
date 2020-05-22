@@ -6,9 +6,9 @@ class ProfileModelExt(object):
     The definition for a profile model.
     """
 
-    @classmethod
+    @staticmethod
     def create(
-        cls, params, reflections, crystal, beam, detector, goniometer=None, scan=None
+        params, reflections, crystal, beam, detector, goniometer=None, scan=None
     ):
         """
         Create the profile model from data.

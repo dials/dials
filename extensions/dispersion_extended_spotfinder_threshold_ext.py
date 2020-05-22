@@ -20,8 +20,8 @@ class DispersionExtendedSpotFinderThresholdExt(object):
 
     default = True
 
-    @classmethod
-    def phil(cls):
+    @staticmethod
+    def phil():
         return None
 
     def __init__(self, params):

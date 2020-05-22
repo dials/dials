@@ -26,6 +26,8 @@ def plot_coords(coords, labels=None, key="cosym_coordinates"):
 
     colours = plt.cm.Spectral(numpy.linspace(0, 1, n_clusters)).tolist()
 
+    if -1 in unique_labels:
+        colours.insert(0, (0, 0, 0, 1))
     data = []
     for k, col in zip(unique_labels, colours):
         isel = (labels == k).iselection()
@@ -42,7 +44,7 @@ def plot_coords(coords, labels=None, key="cosym_coordinates"):
                     "alpha": 0.5,
                     "color": "rgb(%f,%f,%f)" % tuple(col[:3]),
                 },
-                "name": "Cluster %i" % k,
+                "name": "Cluster %i" % k if k >= 0 else "Noise",
             }
         )
     d = {
@@ -53,6 +55,15 @@ def plot_coords(coords, labels=None, key="cosym_coordinates"):
                 "xaxis": {"range": [-1, 1], "constrain": "domain"},
                 "yaxis": {"range": [-1, 1], "scaleanchor": "x", "constrain": "domain"},
             },
+            "help": """\
+The outcome of the dials.cosym multi-dimensional scaling procedure projected on to two
+dimensions. Each point corresponds to an individual data set, or symmetry copy of a data
+set. The lengths of the vectors are inversely related to the amount of random error in
+each data set, and can be interpreted as an estimate of the CC* values. The angular
+separation between any pair, or groups, of vectors is a measure of the systematic
+differences between the data sets, for example as a result of an indexing ambiguity,
+or the presence of non-isomorphism.
+""",
         }
     }
 
@@ -91,6 +102,12 @@ def plot_rij_histogram(rij_matrix, key="cosym_rij_histogram"):
                 "yaxis": {"title": "Frequency"},
                 "bargap": 0,
             },
+            "help": """\
+A histogram of the values of the Rij matrix of pairwise correlation coefficients. A
+unimodal distribution of values may suggest that no indexing ambiguity is evident,
+whereas a bimodal distribution can be indicative of the presence of an indexing
+ambiguity.
+""",
         }
     }
     return d

@@ -120,23 +120,6 @@ class Test(object):
 
         return result
 
-    def generate_single_central_non_negative_profiles(self):
-        from dials.array_family import flex
-
-        rlist = flex.reflection_table(1)
-
-        profile = gaussian(self.grid_size, 1000, (4, 4, 4), (1.5, 1.5, 1.5))
-
-        x = 500
-        y = 500
-        z = 5
-        xyz = flex.vec3_double(1)
-        xyz[0] = (x, y, z)
-        profiles = [profile.deep_copy()]
-        rlist["xyzcal.px"] = xyz
-
-        return rlist, profiles, profile
-
     def generate_identical_non_negative_profiles(self):
         from dials.array_family import flex
         from random import uniform

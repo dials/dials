@@ -1,10 +1,15 @@
 from __future__ import absolute_import, division, print_function
 
+from future import standard_library
+
+standard_library.install_aliases()
+
 import http.server as server_base
 import json
 import logging
 import sys
 import time
+import urllib.parse
 from multiprocessing import Process
 
 import libtbx.phil
@@ -180,7 +185,7 @@ indexing_min_spots = 10
         if integrate and "lattices" in stats:
 
             from dials.algorithms.profile_model.factory import ProfileModelFactory
-            from dials.algorithms.integration.integrator import IntegratorFactory
+            from dials.algorithms.integration.integrator import create_integrator
             from dials.command_line.integrate import phil_scope as integrate_phil_scope
 
             interp = integrate_phil_scope.command_line_argument_interpreter()
@@ -234,7 +239,7 @@ indexing_min_spots = 10
                 predicted.compute_bbox(experiments)
 
                 # Create the integrator
-                integrator = IntegratorFactory.create(params, experiments, predicted)
+                integrator = create_integrator(params, experiments, predicted)
 
                 # Integrate the reflections
                 reflections = integrator.integrate()
@@ -264,8 +269,13 @@ class handler(server_base.BaseHTTPRequestHandler):
             global stop
             stop = True
             return
+
         filename = s.path.split(";")[0]
         params = s.path.split(";")[1:]
+
+        # If we're passing a url through, then unquote and ignore leading /
+        if "%3A//" in filename:
+            filename = urllib.parse.unquote(filename[1:])
 
         d = {"image": filename}
 

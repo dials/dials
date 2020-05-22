@@ -47,7 +47,7 @@ jobs:
       cache: false
       before_cache: false
       script:
-         - python -m compileall -q *
+         - python -m compileall -q -i .travis/python2-supported-files
 
     - name: "Syntax validation - Python 3.7"
       addons: false

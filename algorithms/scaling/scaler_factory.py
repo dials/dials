@@ -54,8 +54,8 @@ def create_scaler(params, experiments, reflections):
 class ScalerFactory(object):
     """Base class for Scaler Factories"""
 
-    @classmethod
-    def filter_bad_reflections(cls, reflections, partiality_cutoff=0.4, min_isigi=-5.0):
+    @staticmethod
+    def filter_bad_reflections(reflections, partiality_cutoff=0.4, min_isigi=-5.0):
         """Initial filter to select integrated reflections."""
         logger.info(
             "Applying filter of min_isigi > %s, partiality > %s",
@@ -81,8 +81,8 @@ class ScalerFactory(object):
             reflections.set_flags(mask, reflections.flags.excluded_for_scaling)
         return reflections
 
-    @classmethod
-    def ensure_experiment_identifier(cls, experiment, reflection_table):
+    @staticmethod
+    def ensure_experiment_identifier(experiment, reflection_table):
         """Check for consistent experiment identifier, and if not set then set it
         using scaled_id."""
         id_vals = list(reflection_table.experiment_identifiers().values())
@@ -206,8 +206,8 @@ class NullScalerFactory(ScalerFactory):
 class MultiScalerFactory(object):
     "Factory for creating a scaler for multiple datasets"
 
-    @classmethod
-    def create(cls, params, experiments, reflections):
+    @staticmethod
+    def create(params, experiments, reflections):
         """create a list of single scalers to pass to a MultiScaler."""
         single_scalers = []
         idx_to_remove = []
@@ -232,8 +232,8 @@ class MultiScalerFactory(object):
         assert n_exp == n_refl, (n_exp, n_refl)
         return MultiScaler(single_scalers)
 
-    @classmethod
-    def create_from_targetscaler(cls, targetscaler):
+    @staticmethod
+    def create_from_targetscaler(targetscaler):
         """method to pass scalers from TargetScaler to a MultiScaler"""
         single_scalers = []
         for scaler in targetscaler.unscaled_scalers:
@@ -247,8 +247,8 @@ class MultiScalerFactory(object):
 class TargetScalerFactory(object):
     "Factory for creating a targeted scaler for multiple datasets"
 
-    @classmethod
-    def create_for_target_against_reference(cls, params, experiments, reflections):
+    @staticmethod
+    def create_for_target_against_reference(params, experiments, reflections):
         """Create TargetScaler for case where have a target_mtz or target_model."""
         scaled_scalers = []
         unscaled_scalers = []
@@ -280,8 +280,8 @@ class TargetScalerFactory(object):
         assert n_exp == n_refl, (n_exp, n_refl)
         return TargetScaler(scaled_scalers, unscaled_scalers)
 
-    @classmethod
-    def create(cls, params, experiments, reflections):
+    @staticmethod
+    def create(params, experiments, reflections):
         """sort scaled and unscaled datasets to pass to TargetScaler"""
         scaled_experiments = []
         scaled_scalers = []

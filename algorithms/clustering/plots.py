@@ -56,6 +56,9 @@ def plot_uc_histograms(uc_params):
             "xaxis3": {"title": "c (Å)"},
             "yaxis3": {"title": "a (Å)"},
         },
+        "help": """\
+The distribution of the unit cell parameters: a vs. b, b vs. c and c vs.a respectively.
+""",
     }
 
     d["uc_hist"] = {
@@ -97,12 +100,15 @@ def plot_uc_histograms(uc_params):
             "xaxis2": {"title": "b (Å)"},
             "xaxis3": {"title": "c (Å)"},
         },
+        "help": """\
+Histograms of unit cell parameters, a, b and c.
+""",
     }
 
     return d
 
 
-def scipy_dendrogram_to_plotly_json(ddict, title, xtitle=None, ytitle=None):
+def scipy_dendrogram_to_plotly_json(ddict, title, xtitle=None, ytitle=None, help=None):
     colors = {
         "b": "rgb(31, 119, 180)",
         "g": "rgb(44, 160, 44)",
@@ -170,4 +176,6 @@ def scipy_dendrogram_to_plotly_json(ddict, title, xtitle=None, ytitle=None):
             "hovermode": "closest",
         },
     }
+    if help:
+        d["help"] = help
     return d

@@ -22,7 +22,8 @@ class SimpleCentroidExt(object):
 
         :param reflections: The list of reflections
         """
-        from dials.algorithms.centroid.simple.algorithm import Algorithm
+        import dials.algorithms.centroid.simple
 
-        algorithm = Algorithm(self.experiments)
-        return algorithm(reflections, image_volume=image_volume)
+        return dials.algorithms.centroid.simple.centroid(
+            self.experiments, reflections, image_volume=image_volume
+        )

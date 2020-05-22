@@ -1,8 +1,8 @@
 .. raw:: html
 
-  <a href="https://dials.github.io/dials-1.14/documentation/tutorials/processing_in_detail_betalactamase.html" class="new-documentation">
-  This tutorial requires a DIALS 2.0 installation.<br/>
-  Please click here to go to the tutorial for DIALS 1.14.
+  <a href="https://dials.github.io/dials-2.2/documentation/tutorials/processing_in_detail_betalactamase.html" class="new-documentation">
+  This tutorial requires a DIALS 3 installation.<br/>
+  Please click here to go to the tutorial for DIALS 2.2.
   </a>
 
 Processing in Detail
@@ -558,7 +558,7 @@ This is run simply with::
 
   dials.report scaled.expt scaled.refl
 
-which produces the file :download:`dials-report.html <betalactamase-report.html>`.
+which produces the file :download:`dials.report.html <betalactamase-report.html>`.
 
 This report includes plots showing the scan-varying crystal orientation
 and unit cell parameters. The latter of these is useful to check that

@@ -80,15 +80,6 @@ output {
 )
 
 
-def dump_text(filename, set0, set1):
-    i0 = set0.as_double()
-    i1 = set1.as_double()
-    with open(filename, "w") as fout:
-        for _0, _1 in zip(i0, i1):
-            assert _0[0] == _1[0]
-            fout.write("%f %f\n" % (_0[1], _1[1]))
-
-
 def standard_error_of_pearson_cc(corr_coeffs, n):
     """Calculate the standard error of Pearson's correlation coefficient.
 

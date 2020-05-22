@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+import copy
 import datetime
 import logging
 import math
@@ -428,10 +429,11 @@ class Script(object):
         reflections = flex.reflection_table()
 
         # loop through the input, building up the global lists
-        reflections_list, experiments = reflections_and_experiments_from_files(
+        reflections_list, input_experiments = reflections_and_experiments_from_files(
             params.input.reflections, params.input.experiments
         )
 
+        experiments = copy.deepcopy(input_experiments)
         reflections_list = parse_multiple_datasets(reflections_list)
         for refs in reflections_list:
             reflections.extend(refs)
@@ -494,8 +496,18 @@ class Script(object):
         refiner.run()
 
         # get the refined experiments
-        experiments = refiner.get_experiments()
-        crystals = experiments.crystals()
+        experiments = copy.deepcopy(input_experiments)
+        for expt, refined_expt in zip(experiments, refiner.get_experiments()):
+            expt.crystal.set_recalculated_unit_cell(
+                refined_expt.crystal.get_unit_cell()
+            )
+            expt.crystal.set_recalculated_cell_parameter_sd(
+                refined_expt.crystal.get_cell_parameter_sd()
+            )
+            expt.crystal.set_recalculated_cell_volume_sd(
+                refined_expt.crystal.get_cell_volume_sd()
+            )
+        crystals = refiner.get_experiments().crystals()
 
         if len(crystals) == 1:
             # output the refined model for information

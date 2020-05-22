@@ -372,7 +372,34 @@ def test_change_of_basis_ops_to_minimum_cell_1037(mocker):
     cb_ops_as_xyz = [cb_op.as_xyz() for cb_op in cb_ops]
     assert len(set(cb_ops_as_xyz)) == 1
     # Actual cb_ops are machine dependent (sigh)
-    assert cb_ops_as_xyz[0] in ("x,y,z", "-x,y,-z")
+    assert cb_ops_as_xyz[0] in ("x,y,z", "-x,y,-z", "x-y,-y,-z")
+
+
+def test_change_of_basis_ops_to_minimum_cell_mpro():
+    input_ucs = [
+        (46.023, 55.001, 64.452, 64.744, 78.659, 89.824),
+        (44.747, 53.916, 62.554, 114.985, 99.610, 90.736),
+    ]
+
+    # Setup the input experiments and reflection tables
+    expts = ExperimentList()
+    for uc in input_ucs:
+        uc = uctbx.unit_cell(uc)
+        sg = sgtbx.space_group_info("P1").group()
+        B = scitbx.matrix.sqr(uc.fractionalization_matrix()).transpose()
+        expts.append(Experiment(crystal=Crystal(B, space_group=sg, reciprocal=True)))
+
+    # Actually run the method we are testing
+    cb_ops = change_of_basis_ops_to_minimum_cell(
+        expts, max_delta=5, relative_length_tolerance=0.05, absolute_angle_tolerance=2
+    )
+    expts.change_basis(cb_ops, in_place=True)
+    assert symmetry.unit_cells_are_similar_to(
+        expts,
+        median_unit_cell(expts),
+        relative_length_tolerance=0.05,
+        absolute_angle_tolerance=2,
+    )
 
 
 def test_median_cell():

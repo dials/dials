@@ -44,6 +44,8 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 from collections import defaultdict
+from typing import Any, List, Type
+
 from dials.util import tabulate
 
 from cctbx import crystal, miller
@@ -74,6 +76,7 @@ def filter_reflection_table_selection(
 
 
 def filter_reflection_table(reflection_table, intensity_choice, *args, **kwargs):
+    # type: (flex.reflection_table, List[str], Any, Any) -> flex.reflection_table
     """Filter the data and delete unneeded intensity columns.
 
     A list of which intensities to filter on e.g "sum", "scale", "profile" or
@@ -96,8 +99,11 @@ def filter_reflection_table(reflection_table, intensity_choice, *args, **kwargs)
             causes no reflections to remain, if no profile reflections remain
             after filtering and the choice is "profile".
     """
+    if not isinstance(intensity_choice, list):
+        raise ValueError("intensity_choice must be List[str]")
+
     if intensity_choice == ["scale"]:
-        reducer = ScaleIntensityReducer
+        reducer = ScaleIntensityReducer  # type: Type[FilterForExportAlgorithm]
     elif intensity_choice == ["sum"]:
         reducer = SumIntensityReducer
     elif intensity_choice == ["profile"]:
@@ -120,12 +126,12 @@ def filter_reflection_table(reflection_table, intensity_choice, *args, **kwargs)
         )
 
     # Validate that the reflection table has the columns we need
-    required_columns = {
+    required_columns_lookup = {
         "scale": {"inverse_scale_factor", "intensity.scale.value"},
         "profile": {"intensity.prf.value"},
         "sum": {"intensity.sum.value"},
     }
-    for intensity_kind, required_columns in required_columns.items():
+    for intensity_kind, required_columns in required_columns_lookup.items():
         if intensity_kind in intensity_choice:
             missing_columns = required_columns - set(reflection_table.keys())
             if missing_columns:
@@ -356,9 +362,20 @@ class FilteringReductionMethods(object):
     @checkdataremains
     def filter_on_d_min(reflection_table, d_min):
         """Filter reflections below a d-value."""
-        selection = reflection_table["d"] < d_min
+        selection = reflection_table["d"] <= d_min
         logger.info(
-            "Removed %d reflections with d < %.2f" % (selection.count(True), d_min)
+            "Removed %d reflections with d <= %.2f", selection.count(True), d_min
+        )
+        reflection_table.del_selected(selection)
+        return reflection_table
+
+    @staticmethod
+    @checkdataremains
+    def filter_on_d_max(reflection_table, d_max):
+        """Filter reflections above a d-value."""
+        selection = reflection_table["d"] >= d_max
+        logger.info(
+            "Removed %d reflections with d >= %.2f", selection.count(True), d_max
         )
         reflection_table.del_selected(selection)
         return reflection_table
@@ -427,6 +444,7 @@ class FilterForExportAlgorithm(FilteringReductionMethods):
         combine_partials=True,
         partiality_threshold=0.99,
         d_min=None,
+        d_max=None,
     ):
         """Apply the filtering methods to reflection table."""
         assert (
@@ -450,6 +468,8 @@ class FilterForExportAlgorithm(FilteringReductionMethods):
             reflection_table = cls.filter_ice_rings(reflection_table)
         if d_min:
             reflection_table = cls.filter_on_d_min(reflection_table, d_min)
+        if d_max:
+            reflection_table = cls.filter_on_d_max(reflection_table, d_max)
 
         reflection_table = cls.apply_scaling_factors(reflection_table)
 
@@ -645,8 +665,8 @@ class ScaleIntensityReducer(FilterForExportAlgorithm):
             )
         return reflection_table
 
-    @classmethod
-    def apply_scaling_factors(cls, reflection_table):
+    @staticmethod
+    def apply_scaling_factors(reflection_table):
         """Apply the inverse scale factor to the scale intensities."""
         if "partiality" in reflection_table:
             reflection_table = reflection_table.select(
@@ -680,8 +700,8 @@ class AllSumPrfScaleIntensityReducer(FilterForExportAlgorithm):
         reflection_table = ScaleIntensityReducer.reduce_on_intensities(reflection_table)
         return reflection_table
 
-    @classmethod
-    def apply_scaling_factors(cls, reflection_table):
+    @staticmethod
+    def apply_scaling_factors(reflection_table):
         """Apply corrections to the intensities and variances."""
         reflection_table = SumAndPrfIntensityReducer.apply_scaling_factors(
             reflection_table
@@ -705,8 +725,8 @@ class SumAndScaleIntensityReducer(FilterForExportAlgorithm):
         reflection_table = ScaleIntensityReducer.reduce_on_intensities(reflection_table)
         return reflection_table
 
-    @classmethod
-    def apply_scaling_factors(cls, reflection_table):
+    @staticmethod
+    def apply_scaling_factors(reflection_table):
         """Apply corrections to the intensities and variances."""
         reflection_table = SumIntensityReducer.apply_scaling_factors(reflection_table)
         reflection_table = ScaleIntensityReducer.apply_scaling_factors(reflection_table)

@@ -5,7 +5,7 @@ import dials.util.phil
 import mock
 
 
-@mock.patch("dxtbx.model.experiment_list.ExperimentListFactory")
+@mock.patch("dials.util.phil.ExperimentListFactory")
 def test(ExperimentListFactory, dials_data):
     # Only use these filenames for verification
     path = dials_data("centroid_test_data")
@@ -39,12 +39,3 @@ def test(ExperimentListFactory, dials_data):
     assert isinstance(params.input.reflections2.data, flex.reflection_table)
     # Check we had the correct calls made
     assert ExperimentListFactory.from_json_file.call_args[0] == (experiments_path,)
-
-    # We now need to clear the phil converter caches
-    # as they are polluted by MagicMock() objects
-    for conv in (
-        dials.util.phil.ExperimentListConverters,
-        dials.util.phil.ReflectionTableConverters,
-        dials.util.phil.ReflectionTableSelectorConverters,
-    ):
-        conv.cache.clear()

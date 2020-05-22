@@ -5,15 +5,20 @@ from __future__ import absolute_import, division, print_function
 import itertools
 import logging
 import math
-from dials.util import tabulate
+import platform
 from time import time
 
 import psutil
 
 import boost.python
-import dials.algorithms.integration
 import libtbx
+
+import dials.algorithms.integration
+import dials.util
 from dials.array_family import flex
+from dials.model.data import make_image
+from dials.util import tabulate
+from dials.util.mp import multi_node_parallel_map
 from dials_algorithms_integration_integrator_ext import (
     Executor,
     Group,
@@ -25,11 +30,16 @@ from dials_algorithms_integration_integrator_ext import (
     ShoeboxProcessor,
 )
 
+try:
+    import resource
+except ImportError:
+    # resource does not exist on non-Linux, so can't float the import
+    resource = None
+
 __all__ = [
     "Block",
     "build_processor",
     "Debug",
-    "ExecuteParallelTask",
     "Executor",
     "Group",
     "GroupList",
@@ -37,13 +47,9 @@ __all__ = [
     "job",
     "JobList",
     "Lookup",
-    "Manager",
-    "ManagerRot",
-    "ManagerStills",
     "MultiProcessing",
     "NullTask",
     "Parameters",
-    "Processor",
     "Processor2D",
     "Processor3D",
     "ProcessorFlat3D",
@@ -51,7 +57,6 @@ __all__ = [
     "ProcessorStills",
     "ReflectionManager",
     "ReflectionManagerPerImage",
-    "Result",
     "Shoebox",
     "ShoeboxProcessor",
     "Task",
@@ -129,7 +134,7 @@ class Block(object):
         self.units = "degrees"
         self.threshold = 0.99
         self.force = False
-        self.max_memory_usage = 0.75
+        self.max_memory_usage = 0.90
 
     def update(self, other):
         self.size = other.size
@@ -197,29 +202,26 @@ class Parameters(object):
         self.debug.update(other.debug)
 
 
-class ExecuteParallelTask(object):
+def execute_parallel_task(task):
     """
-    Helper class to run things on cluster
+    Helper function to run things on cluster
     """
 
-    def __call__(self, task):
-        from dials.util import log
-
-        log.config_simple_cached()
-        result = task()
-        handlers = logging.getLogger("dials").handlers
-        assert len(handlers) == 1, "Invalid number of logging handlers"
-        return result, handlers[0].messages()
+    dials.util.log.config_simple_cached()
+    result = task()
+    handlers = logging.getLogger("dials").handlers
+    assert len(handlers) == 1, "Invalid number of logging handlers"
+    return result, handlers[0].messages()
 
 
-class Processor(object):
+class _Processor(object):
     """Processor interface class."""
 
     def __init__(self, manager):
         """
         Initialise the processor.
 
-        The processor requires a manager class implementing the Manager interface.
+        The processor requires a manager class implementing the _Manager interface.
         This class executes all the workers in separate threads and accumulates the
         results to expose to the user.
 
@@ -252,9 +254,6 @@ class Processor(object):
 
         :return: The processing results
         """
-        from dials.util.mp import multi_node_parallel_map
-        import platform
-
         start_time = time()
         self.manager.initialize()
         mp_method = self.manager.params.mp.method
@@ -287,11 +286,9 @@ class Processor(object):
                 for message in result[1]:
                     logger.log(message.levelno, message.msg)
                 self.manager.accumulate(result[0])
-                result[0].reflections = None
-                result[0].data = None
 
             multi_node_parallel_map(
-                func=ExecuteParallelTask(),
+                func=execute_parallel_task,
                 iterable=list(self.manager.tasks()),
                 njobs=mp_njobs,
                 nproc=mp_nproc,
@@ -310,22 +307,30 @@ class Processor(object):
         return result1, result2, self.manager.time
 
 
-class Result(object):
-    """
-    A class representing a processing result.
-    """
+class _ProcessorRot(_Processor):
+    """Processor interface class for rotation data only."""
 
-    def __init__(self, index, reflections, data=None):
+    def __init__(self, experiments, manager):
         """
-        Initialise the data.
+        Initialise the processor.
 
-        :param index: The processing job index
-        :param reflections: The processed reflections
-        :param data: Other processed data
+        The processor requires a manager class implementing the _Manager interface.
+        This class executes all the workers in separate threads and accumulates the
+        results to expose to the user.
+
+        :param manager: The processing manager
         """
-        self.index = index
-        self.reflections = reflections
-        self.data = data
+        # Ensure we have the correct type of data
+        if not experiments.all_sequences():
+            raise RuntimeError(
+                """
+        An inappropriate processing algorithm may have been selected!
+         Trying to perform rotation processing when not all experiments
+         are indicated as rotation experiments.
+      """
+            )
+
+        super(_ProcessorRot, self).__init__(manager)
 
 
 class NullTask(object):
@@ -350,12 +355,15 @@ class NullTask(object):
 
         :return: The processed data
         """
-        result = Result(self.index, self.reflections, None)
-        result.read_time = 0
-        result.extract_time = 0
-        result.process_time = 0
-        result.total_time = 0
-        return result
+        return dials.algorithms.integration.Result(
+            index=self.index,
+            reflections=self.reflections,
+            data=None,
+            read_time=0,
+            extract_time=0,
+            process_time=0,
+            total_time=0,
+        )
 
 
 class Task(object):
@@ -373,13 +381,10 @@ class Task(object):
         :param params: The processing parameters
         :param job: The frames to integrate
         :param flatten: Flatten the shoeboxes
-        :param save_shoeboxes: Save the shoeboxes to file
         :param executor: The executor class
         """
         assert executor is not None, "No executor given"
         assert len(reflections) > 0, "Zero reflections given"
-        assert params.block.max_memory_usage > 0.0, "Max memory % must be > 0"
-        assert params.block.max_memory_usage <= 1.0, "Max memory % must be < 1"
         self.index = index
         self.job = job
         self.experiments = experiments
@@ -393,8 +398,6 @@ class Task(object):
 
         :return: The processed data
         """
-        from dials.model.data import make_image
-
         # Get the start time
         start_time = time()
 
@@ -439,10 +442,9 @@ class Task(object):
         except Exception:
             frame0, frame1 = (0, len(imageset))
 
-        # Initlize the executor
         self.executor.initialize(frame0, frame1, self.reflections)
 
-        # Set the shoeboxes (dont't allocate)
+        # Set the shoeboxes (don't allocate)
         self.reflections["shoebox"] = flex.shoebox(
             self.reflections["panel"],
             self.reflections["bbox"],
@@ -458,45 +460,6 @@ class Task(object):
             frame1,
             self.params.debug.output,
         )
-
-        # Compute expected memory usage and warn if not enough
-        total_memory = psutil.virtual_memory().total
-        sbox_memory = processor.compute_max_memory_usage()
-        assert (
-            self.params.block.max_memory_usage > 0.0
-        ), "maximum memory usage must be > 0"
-        assert (
-            self.params.block.max_memory_usage <= 1.0
-        ), "maximum memory usage must be <= 1"
-        limit_memory = total_memory * self.params.block.max_memory_usage
-        if sbox_memory > limit_memory:
-            xsize, ysize, zsize = _average_bbox_size(self.reflections)
-            raise RuntimeError(
-                """
-        There was a problem allocating memory for shoeboxes.  This could be caused
-        by a highly mosaic crystal model.  Possible solutions include increasing the
-        percentage of memory allowed for shoeboxes or decreasing the block size.
-        The average shoebox size is %d x %d pixels x %d images - is your crystal
-        really this mosaic?
-        Total system memory: %.1f GB
-        Shoebox memory limit: %.1f GB
-        Required shoebox memory: %.1f GB
-    """
-                % (
-                    xsize,
-                    ysize,
-                    zsize,
-                    total_memory / 1e9,
-                    limit_memory / 1e9,
-                    sbox_memory / 1e9,
-                )
-            )
-        else:
-            logger.info(" Memory usage:")
-            logger.info("  Total system memory: %g GB" % (total_memory / 1e9))
-            logger.info("  Limit shoebox memory: %g GB" % (limit_memory / 1e9))
-            logger.info("  Required shoebox memory: %g GB" % (sbox_memory / 1e9))
-            logger.info("")
 
         # Loop through the imageset, extract pixels and process reflections
         read_time = 0.0
@@ -543,15 +506,18 @@ class Task(object):
         self.executor.finalize()
 
         # Return the result
-        result = Result(self.index, self.reflections, self.executor.data())
-        result.read_time = read_time
-        result.extract_time = processor.extract_time()
-        result.process_time = processor.process_time()
-        result.total_time = time() - start_time
-        return result
+        return dials.algorithms.integration.Result(
+            index=self.index,
+            reflections=self.reflections,
+            data=self.executor.data(),
+            read_time=read_time,
+            extract_time=processor.extract_time(),
+            process_time=processor.process_time(),
+            total_time=time() - start_time,
+        )
 
 
-class Manager(object):
+class _Manager(object):
     """
     A class to manage processing book-keeping
     """
@@ -717,7 +683,7 @@ class Manager(object):
 
     def compute_jobs(self):
         """
-        Compute the jobs
+        Sets up a JobList() object in self.jobs
         """
         groups = itertools.groupby(
             range(len(self.experiments)),
@@ -788,47 +754,125 @@ class Manager(object):
         Compute the number of processors
         """
 
-        # Set the memory usage per processor
+        # Get the maximum shoebox memory to estimate memory use for one process
+        memory_required_per_process = flex.max(
+            self.jobs.shoebox_memory(self.reflections, self.params.shoebox.flatten)
+        )
+
+        # Obtain information about system memory
+        available_memory = psutil.virtual_memory().available
+        available_swap = psutil.swap_memory().free
+        available_incl_swap = available_memory + available_swap
+        available_limit = available_incl_swap * self.params.block.max_memory_usage
+        available_immediate_limit = (
+            available_memory * self.params.block.max_memory_usage
+        )
+
+        # Compile a memory report
+        report = [
+            "Memory situation report:",
+        ]
+
+        def _report(description, value):
+            report.append("  %-50s:%5.1f GB" % (description, value))
+
+        _report("Available system memory (excluding swap)", available_memory / 1e9)
+        _report("Available swap memory", available_swap / 1e9)
+        _report("Available system memory (including swap)", available_incl_swap / 1e9)
+        _report(
+            "Maximum memory for processing (including swap)", available_limit / 1e9,
+        )
+        _report(
+            "Maximum memory for processing (excluding swap)",
+            available_immediate_limit / 1e9,
+        )
+        _report("Memory required per process", memory_required_per_process / 1e9)
+
+        # Check if a ulimit applies
+        # Note that resource may be None on non-Linux platforms.
+        # We can't use psutil as platform-independent solution in this instance due to
+        # https://github.com/conda-forge/psutil-feedstock/issues/47
+        rlimit = getattr(resource, "RLIMIT_VMEM", getattr(resource, "RLIMIT_AS", None))
+        if rlimit:
+            try:
+                ulimit = resource.getrlimit(rlimit)[0]
+                if ulimit <= 0:
+                    report.append("  no memory ulimit set")
+                else:
+                    ulimit_used = psutil.Process().memory_info().rss
+                    _report("Memory ulimit detected", ulimit / 1e9)
+                    _report("Memory ulimit in use", ulimit_used / 1e9)
+                    available_memory = max(
+                        0, min(available_memory, ulimit - ulimit_used)
+                    )
+                    available_incl_swap = max(
+                        0, min(available_incl_swap, ulimit - ulimit_used)
+                    )
+                    available_immediate_limit = (
+                        available_memory * self.params.block.max_memory_usage
+                    )
+                    _report("Available system memory (limited)", available_memory / 1e9)
+                    _report(
+                        "Available system memory (incl. swap; limited)",
+                        available_incl_swap / 1e9,
+                    )
+                    _report(
+                        "Maximum memory for processing (exc. swap; limited)",
+                        available_immediate_limit / 1e9,
+                    )
+            except Exception as e:
+                logger.debug(
+                    "Could not obtain ulimit values due to %s", str(e), exc_info=True
+                )
+
+        output_level = logging.INFO
+
+        # Limit the number of parallel processes by amount of available memory
         if self.params.mp.method == "multiprocessing" and self.params.mp.nproc > 1:
 
-            # Get the maximum shoebox memory
-            max_memory = flex.max(
-                self.jobs.shoebox_memory(self.reflections, self.params.shoebox.flatten)
-            )
-
             # Compute expected memory usage and warn if not enough
-            total_memory = psutil.virtual_memory().total
-            assert (
-                total_memory is not None and total_memory > 0
-            ), "psutil call appears to have given unexpected output"
-            limit_memory = total_memory * self.params.block.max_memory_usage
-            njobs = int(math.floor(limit_memory / max_memory))
-            if njobs < 1:
-
-                xsize, ysize, zsize = _average_bbox_size(self.reflections)
-                raise RuntimeError(
-                    """
-        Not enough memory to run integration jobs.  This could be caused by a
-        highly mosaic crystal model.  Possible solutions include increasing the
-        percentage of memory allowed for shoeboxes or decreasing the block size.
-        The average shoebox size is %d x %d pixels x %d images - is your crystal
-        really this mosaic?
-            Total system memory: %.1f GB
-            Shoebox memory limit: %.1f GB
-            Required shoebox memory: %.1f GB
-        """
-                    % (
-                        xsize,
-                        ysize,
-                        zsize,
-                        total_memory / 1e9,
-                        limit_memory / 1e9,
-                        max_memory / 1e9,
-                    )
+            njobs = available_immediate_limit / memory_required_per_process
+            if njobs >= self.params.mp.nproc:
+                # There is enough memory. Take no action
+                pass
+            elif njobs >= 1:
+                # There is enough memory to run, but not as many processes as requested
+                output_level = logging.WARNING
+                report.append(
+                    "Reducing number of processes from %d to %d due to memory constraints."
+                    % (self.params.mp.nproc, int(njobs))
                 )
+                self.params.mp.nproc = int(njobs)
+            elif (
+                available_incl_swap * self.params.block.max_memory_usage
+                >= memory_required_per_process
+            ):
+                # There is enough memory to run, but only if we count swap.
+                output_level = logging.WARNING
+                report.append(
+                    "Reducing number of processes from %d to 1 due to memory constraints."
+                    % self.params.mp.nproc,
+                )
+                report.append("Running this process will rely on swap usage!")
+                self.params.mp.nproc = 1
             else:
-                self.params.mp.nproc = min(self.params.mp.nproc, njobs)
-                self.params.block.max_memory_usage /= self.params.mp.nproc
+                # There is not enough memory to run
+                output_level = logging.ERROR
+
+        report.append("")
+        logger.log(output_level, "\n".join(report))
+
+        if output_level >= logging.ERROR:
+            raise MemoryError(
+                """
+          Not enough memory to run integration jobs.  This could be caused by a
+          highly mosaic crystal model.  Possible solutions include increasing the
+          percentage of memory allowed for shoeboxes or decreasing the block size.
+          The average shoebox size is %d x %d pixels x %d images - is your crystal
+          really this mosaic?
+          """
+                % _average_bbox_size(self.reflections)
+            )
 
     def summary(self):
         """
@@ -888,49 +932,7 @@ class Manager(object):
         return fmt % (block_size, self.params.block.units, task_table)
 
 
-class ManagerRot(Manager):
-    """Specialize the manager for oscillation data using the oscillation pre and
-    post processors."""
-
-    def __init__(self, experiments, reflections, params):
-        """Initialise the pre-processor, post-processor and manager."""
-
-        # Ensure we have the correct type of data
-        if not experiments.all_sequences():
-            raise RuntimeError(
-                """
-        An inappropriate processing algorithm may have been selected!
-         Trying to perform rotation processing when not all experiments
-         are indicated as rotation experiments.
-      """
-            )
-
-        # Initialise the manager
-        super(ManagerRot, self).__init__(experiments, reflections, params)
-
-
-class ManagerStills(Manager):
-    """Specialize the manager for stills data using the stills pre and post
-    processors."""
-
-    def __init__(self, experiments, reflections, params):
-        """Initialise the pre-processor, post-processor and manager."""
-
-        # Ensure we have the correct type of data
-        if not experiments.all_stills():
-            raise RuntimeError(
-                """
-        An inappropriate processing algorithm may have been selected!
-         Trying to perform stills processing when not all experiments
-         are indicated as stills experiments.
-      """
-            )
-
-        # Initialise the manager
-        super(ManagerStills, self).__init__(experiments, reflections, params)
-
-
-class Processor3D(Processor):
+class Processor3D(_ProcessorRot):
     """Top level processor for 3D processing."""
 
     def __init__(self, experiments, reflections, params):
@@ -941,13 +943,13 @@ class Processor3D(Processor):
         params.shoebox.flatten = False
 
         # Create the processing manager
-        manager = ManagerRot(experiments, reflections, params)
+        manager = _Manager(experiments, reflections, params)
 
         # Initialise the processor
-        super(Processor3D, self).__init__(manager)
+        super(Processor3D, self).__init__(experiments, manager)
 
 
-class ProcessorFlat3D(Processor):
+class ProcessorFlat3D(_ProcessorRot):
     """Top level processor for flat 3D processing."""
 
     def __init__(self, experiments, reflections, params):
@@ -958,13 +960,13 @@ class ProcessorFlat3D(Processor):
         params.shoebox.partials = False
 
         # Create the processing manager
-        manager = ManagerRot(experiments, reflections, params)
+        manager = _Manager(experiments, reflections, params)
 
         # Initialise the processor
-        super(ProcessorFlat3D, self).__init__(manager)
+        super(ProcessorFlat3D, self).__init__(experiments, manager)
 
 
-class Processor2D(Processor):
+class Processor2D(_ProcessorRot):
     """Top level processor for 2D processing."""
 
     def __init__(self, experiments, reflections, params):
@@ -974,13 +976,13 @@ class Processor2D(Processor):
         params.shoebox.partials = True
 
         # Create the processing manager
-        manager = ManagerRot(experiments, reflections, params)
+        manager = _Manager(experiments, reflections, params)
 
         # Initialise the processor
-        super(Processor2D, self).__init__(manager)
+        super(Processor2D, self).__init__(experiments, manager)
 
 
-class ProcessorSingle2D(Processor):
+class ProcessorSingle2D(_ProcessorRot):
     """Top level processor for still image processing."""
 
     def __init__(self, experiments, reflections, params):
@@ -993,13 +995,13 @@ class ProcessorSingle2D(Processor):
         params.shoebox.flatten = False
 
         # Create the processing manager
-        manager = ManagerRot(experiments, reflections, params)
+        manager = _Manager(experiments, reflections, params)
 
         # Initialise the processor
-        super(ProcessorSingle2D, self).__init__(manager)
+        super(ProcessorSingle2D, self).__init__(experiments, manager)
 
 
-class ProcessorStills(Processor):
+class ProcessorStills(_Processor):
     """Top level processor for still image processing."""
 
     def __init__(self, experiments, reflections, params):
@@ -1011,8 +1013,18 @@ class ProcessorStills(Processor):
         params.shoebox.partials = False
         params.shoebox.flatten = False
 
+        # Ensure we have the correct type of data
+        if not experiments.all_stills():
+            raise RuntimeError(
+                """
+        An inappropriate processing algorithm may have been selected!
+         Trying to perform stills processing when not all experiments
+         are indicated as stills experiments.
+      """
+            )
+
         # Create the processing manager
-        manager = ManagerStills(experiments, reflections, params)
+        manager = _Manager(experiments, reflections, params)
 
         # Initialise the processor
         super(ProcessorStills, self).__init__(manager)

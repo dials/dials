@@ -228,7 +228,7 @@ def test_search_small_molecule(dials_data, run_in_tmpdir):
         assert shift.elems == pytest.approx((0.091, -1.11, 0), abs=1e-2)
 
 
-def test_multi_sweep_fixed_rotation(dials_regression):
+def test_multi_sweep_fixed_rotation(dials_regression, run_in_tmpdir):
     data_dir = os.path.join(dials_regression, "indexing_test_data", "multi_sweep")
     reflection_files = sorted(
         glob.glob(os.path.join(data_dir, "SWEEP[1,2]", "index", "*_strong.pickle"))
