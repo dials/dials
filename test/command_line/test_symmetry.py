@@ -1,3 +1,5 @@
+# coding: utf-8
+
 from __future__ import absolute_import, division, print_function
 
 import os
@@ -24,6 +26,7 @@ from dials.command_line.symmetry import (
 )
 from dials.util.multi_dataset_handling import assign_unique_identifiers
 from dials.util.exclude_images import exclude_image_ranges_from_scans
+from dials.util.phil import parse
 
 
 def test_symmetry_laue_only(dials_data, tmpdir):
@@ -436,3 +439,27 @@ def test_eliminate_sys_absent():
         (-25, -3, -3),
         (-42, -8, -2),
     ]
+
+
+def test_few_reflections(dials_data, run_in_tmpdir):
+    u"""
+    Test that dials.symmetry does something sensible if given few reflections.
+
+    Use some example integrated data generated from a ten-image 1° sweep.  These
+    contain a few dozen integrated reflections.
+
+    Args:
+        dials_data: DIALS custom Pytest fixture for access to test data.
+        run_in_tmpdir: DIALS custom Pytest fixture to run this test in a temporary
+                       directory.
+    """
+    # Get and use the default parameters for dials.symmetry.
+    params = symmetry.phil_scope.fetch(source=parse("")).extract()
+
+    # Use the integrated data from the first ten images of the first sweep.
+    data_dir = dials_data("l_cysteine_dials_output")
+    experiments = ExperimentList.from_file(data_dir / "11_integrated.expt")
+    reflections = [flex.reflection_table.from_file(data_dir / "11_integrated.refl")]
+
+    # Run dials.symmetry on the above data files.
+    symmetry.symmetry(experiments, reflections, params)

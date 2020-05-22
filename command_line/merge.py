@@ -65,7 +65,7 @@ merging {
 reporting {
     wilson_stats = True
         .type = bool
-        .help = "Option to turn off reporting of wilson statistics"
+        .help = "Option to turn off reporting of Wilson statistics"
     merging_stats = True
         .type = bool
         .help = "Option to turn off reporting of merging statistics."

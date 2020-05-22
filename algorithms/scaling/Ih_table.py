@@ -676,7 +676,8 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
         relative_tolerance = 1e-6
         d_star_sq_max += span * relative_tolerance
         d_star_sq_min -= span * relative_tolerance
-        step = (d_star_sq_max - d_star_sq_min) / n_resolution_bins
+        # Avoid a zero-size step that would otherwise anger the d_star_sq_step binner.
+        step = max((d_star_sq_max - d_star_sq_min) / n_resolution_bins, 0.004)
 
         self.binner = ma.setup_binner_d_star_sq_step(
             auto_binning=False,

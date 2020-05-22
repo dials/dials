@@ -6,6 +6,7 @@ for reports of several programs.
 from __future__ import absolute_import, division, print_function
 
 from collections import OrderedDict
+import logging
 
 import numpy as np
 from cctbx import uctbx
@@ -14,6 +15,9 @@ from scitbx.math import distributions
 from mmtbx.scaling.absolute_scaling import scattering_information, expected_intensity
 from mmtbx.scaling.matthews import matthews_rupp
 from scipy.optimize import least_squares
+
+
+logger = logging.getLogger("dials")
 
 
 def make_image_range_table(experiments, batch_manager):
@@ -223,13 +227,16 @@ class IntensityStatisticsPlots(ResolutionPlotterMixin):
 
             xtriage_params = xtriage_master_params.fetch(sources=[]).extract()
             xtriage_params.scaling.input.xray_data.skip_sanity_checks = True
-            xanalysis = xtriage_analyses(
-                miller_obs=self.merged_intensities,
-                unmerged_obs=intensities,
-                text_out="silent",
-                params=xtriage_params,
-            )
-            self._xanalysis = xanalysis
+            try:
+                self._xanalysis = xtriage_analyses(
+                    miller_obs=self.merged_intensities,
+                    unmerged_obs=intensities,
+                    text_out="silent",
+                    params=xtriage_params,
+                )
+            except RuntimeError:
+                logger.warning("Xtriage analysis failed.", exc_info=True)
+                self._xanalysis = None
 
     def generate_resolution_dependent_plots(self):
         d = OrderedDict()
@@ -718,10 +725,11 @@ class ResolutionPlotsAndStats(ResolutionPlotterMixin):
         completeness_bins = [
             bin_stats.completeness for bin_stats in self.dataset_statistics.bins
         ]
-        anom_completeness_bins = [
-            bin_stats.anom_completeness
-            for bin_stats in self.anomalous_dataset_statistics.bins
-        ]
+        if self.anomalous_dataset_statistics:
+            anom_completeness_bins = [
+                bin_stats.anom_completeness
+                for bin_stats in self.anomalous_dataset_statistics.bins
+            ]
 
         return {
             "completeness": {
@@ -739,7 +747,7 @@ class ResolutionPlotsAndStats(ResolutionPlotterMixin):
                             "type": "scatter",
                             "name": "Anomalous completeness",
                         }
-                        if not self.is_centric
+                        if not self.is_centric and self.anomalous_dataset_statistics
                         else {}
                     ),
                 ],
@@ -760,10 +768,11 @@ class ResolutionPlotsAndStats(ResolutionPlotterMixin):
         multiplicity_bins = [
             bin_stats.mean_redundancy for bin_stats in self.dataset_statistics.bins
         ]
-        anom_multiplicity_bins = [
-            bin_stats.mean_redundancy
-            for bin_stats in self.anomalous_dataset_statistics.bins
-        ]
+        if self.anomalous_dataset_statistics:
+            anom_multiplicity_bins = [
+                bin_stats.mean_redundancy
+                for bin_stats in self.anomalous_dataset_statistics.bins
+            ]
 
         return {
             "multiplicity_vs_resolution": {
@@ -781,7 +790,7 @@ class ResolutionPlotsAndStats(ResolutionPlotterMixin):
                             "type": "scatter",
                             "name": "Anomalous multiplicity",
                         }
-                        if not self.is_centric
+                        if not self.is_centric and self.anomalous_dataset_statistics
                         else {}
                     ),
                 ],

@@ -217,14 +217,25 @@ def merge_and_truncate(params, experiments, reflections):
 
     if params.reporting.wilson_stats:
         if not intensities.space_group().is_centric():
-            wilson_scaling = data_statistics.wilson_scaling(
-                miller_array=intensities, n_residues=params.n_residues
-            )  # XXX default n_residues?
-            # Divert output through logger - do with StringIO rather than
-            # info_handle else get way too much whitespace in output.
-            out = StringIO()
-            wilson_scaling.show(out=out)
-            logger.info(out.getvalue())
+            try:
+                wilson_scaling = data_statistics.wilson_scaling(
+                    miller_array=intensities, n_residues=params.n_residues
+                )  # XXX default n_residues?
+            except (IndexError, RuntimeError) as e:
+                logger.error(
+                    "\n"
+                    "Error encountered during Wilson statistics calculation:\n"
+                    "Perhaps there are too few unique reflections.\n"
+                    "%s",
+                    e,
+                    exc_info=True,
+                )
+            else:
+                # Divert output through logger - do with StringIO rather than
+                # info_handle else get way too much whitespace in output.
+                out = StringIO()
+                wilson_scaling.show(out=out)
+                logger.info(out.getvalue())
 
     # Apply wilson B to give absolute scale?
 
@@ -237,9 +248,9 @@ def merge_and_truncate(params, experiments, reflections):
                 params.merging.use_internal_variance,
             )
         except DialsMergingStatisticsError as e:
-            logger.info(e)
+            logger.error(e, exc_info=True)
         else:
-            if params.merging.anomalous:
+            if params.merging.anomalous and anom_stats:
                 logger.info(make_merging_statistics_summary(anom_stats))
             else:
                 logger.info(make_merging_statistics_summary(stats))
