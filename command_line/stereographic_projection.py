@@ -26,11 +26,11 @@ before generating the projection.
 
 Examples::
 
-  dials.stereographic_projection experiments.json hkl=1,0,0 hkl=0,1,0
+  dials.stereographic_projection indexed.expt hkl=1,0,0 hkl=0,1,0
 
-  dials.stereographic_projection experiments.json hkl_limit=2
+  dials.stereographic_projection indexed.expt hkl_limit=2
 
-  dials.stereographic_projection experiments_1.json experiments_2.json hkl=1,0,0 expand_to_p1=True
+  dials.stereographic_projection indexed_1.expt indexed_2.expt hkl=1,0,0 expand_to_p1=True
 """
 
 phil_scope = iotbx.phil.parse(
@@ -60,8 +60,6 @@ plane_normal = None
 save_coordinates = True
   .type = bool
 plot {
-  show = False
-    .type = bool
   filename = stereographic_projection.png
     .type = path
   label_indices = False
@@ -76,6 +74,8 @@ plot {
     .type = str
   gridsize = None
     .type = int
+  labels = None
+    .type = strings
 }
 json {
   filename = None
@@ -161,7 +161,7 @@ def run(args):
     from dials.util.options import flatten_experiments
 
     # The script usage
-    usage = "dials.stereographic_projection [options] [param.phil] experiments.json"
+    usage = "dials.stereographic_projection [options] [param.phil] indexed.expt"
 
     parser = OptionParser(
         usage=usage,
@@ -171,7 +171,7 @@ def run(args):
         epilog=help_message,
     )
 
-    params, options = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(args=args, show_diff_phil=True)
     experiments = flatten_experiments(params.input.experiments)
 
     if not experiments:
@@ -180,6 +180,12 @@ def run(args):
 
     if not params.hkl and params.hkl_limit is None:
         sys.exit("Please provide hkl or hkl_limit parameters.")
+
+    if params.plot.labels and len(params.plot.labels) != len(experiments):
+        sys.exit(
+            "Number of labels (%i) must equal number of experiments (%i)"
+            % (len(params.plot.labels), len(experiments))
+        )
 
     if params.hkl is not None and len(params.hkl):
         miller_indices = flex.miller_index(params.hkl)
@@ -204,7 +210,6 @@ def run(args):
         d_spacings = d_spacings.eliminate_sys_absent()
     if params.expand_to_p1:
         d_spacings = d_spacings.as_non_anomalous_array().expand_to_p1()
-        d_spacings = d_spacings.generate_bijvoet_mates()
     miller_indices = d_spacings.indices()
 
     # find the greatest common factor (divisor) between miller indices
@@ -294,7 +299,7 @@ def run(args):
                     f.write("%i %i %i " % hkl)
                     f.write(("%f %f" + os.linesep) % proj)
 
-    if params.plot.show or params.plot.filename:
+    if params.plot.filename:
         epochs = None
         if params.plot.colour_map is not None:
             if experiments[0].scan is not None:
@@ -304,7 +309,6 @@ def run(args):
         plot_projections(
             projections_all,
             filename=params.plot.filename,
-            show=params.plot.show,
             colours=params.plot.colours,
             marker_size=params.plot.marker_size,
             font_size=params.plot.font_size,
@@ -315,13 +319,14 @@ def run(args):
         )
 
     if params.json.filename:
-        projections_as_json(projections_all, filename=params.json.filename)
+        projections_as_json(
+            projections_all, filename=params.json.filename, labels=params.plot.labels
+        )
 
 
 def plot_projections(
     projections,
     filename=None,
-    show=None,
     colours=None,
     marker_size=3,
     font_size=6,
@@ -330,12 +335,10 @@ def plot_projections(
     epochs=None,
     colour_map=None,
 ):
-    assert [filename, show].count(None) < 2
     projections_all = projections
 
-    if not show:
-        # http://matplotlib.org/faq/howto_faq.html#generate-images-without-having-a-window-appear
-        matplotlib.use("Agg")  # use a non-interactive backend
+    # http://matplotlib.org/faq/howto_faq.html#generate-images-without-having-a-window-appear
+    matplotlib.use("Agg")  # use a non-interactive backend
     from matplotlib import pyplot
     from matplotlib import pylab
 
@@ -389,14 +392,17 @@ def plot_projections(
     pyplot.ylim(-1.1, 1.1)
     if filename is not None:
         pyplot.savefig(filename, size_inches=(24, 18), dpi=300)
-    if show:
-        pyplot.show()
 
 
-def projections_as_dict(projections):
+def projections_as_dict(projections, labels):
     projections_all = flex.vec2_double()
-    for proj in projections:
+    if labels:
+        labels_all = []
+        assert len(projections) == len(labels)
+    for i, proj in enumerate(projections):
         projections_all.extend(proj)
+        if labels:
+            labels_all.extend([labels[i]] * len(proj))
 
     data = []
     x, y = projections_all.parts()
@@ -408,6 +414,8 @@ def projections_as_dict(projections):
             "type": "scatter",
             "name": "stereographic_projections",
             "showlegend": False,
+            "hovertext": labels_all if labels else "",
+            "hoverinfo": "text",
         }
     )
     data.append(
@@ -429,7 +437,7 @@ def projections_as_dict(projections):
         "data": data,
         "layout": {
             "title": "Stereographic projections",
-            "hovermode": False,
+            "hovermode": "closest",
             "xaxis": {
                 "range": [-1.0, 1.0],
                 "showgrid": False,
@@ -463,8 +471,8 @@ def projections_as_dict(projections):
     return d
 
 
-def projections_as_json(projections, filename=None):
-    d = projections_as_dict(projections)
+def projections_as_json(projections, filename=None, labels=None):
+    d = projections_as_dict(projections, labels=labels)
 
     json_str = json.dumps(d)
     if filename is not None:

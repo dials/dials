@@ -1,8 +1,8 @@
 .. raw:: html
 
-  <a href="https://dials.github.io/dials-1.14/documentation/tutorials/diamond.html" class="new-documentation">
-  This tutorial requires a DIALS 2.0 installation.<br/>
-  Please click here to go to the tutorial for DIALS 1.14.
+  <a href="https://dials.github.io/dials-2.2/documentation/tutorials/diamond.html" class="new-documentation">
+  This tutorial requires a DIALS 3 installation.<br/>
+  Please click here to go to the tutorial for DIALS 2.2.
   </a>
 
 ###################################
@@ -16,9 +16,9 @@ load the default version of DIALS by typing at the command line::
 
    $ module load dials
 
-DIALS 1.14 is available by typing::
+DIALS 2.2 is available by typing::
 
-   $ module load dials/1
+   $ module load dials/2
 
 The default version of DIALS (and xia2, etc.) is usually fixed at the start of
 a run, however a more recent nightly build of DIALS may be available::

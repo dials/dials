@@ -160,12 +160,25 @@ class symmetry_base(object):
             logger.info("\n" + "-" * 80 + "\n")
             logger.info("Normalising intensities for dataset %i\n" % (i + 1))
             intensities = self.intensities.select(self.dataset_ids == i)
-            if i == 0:
-                normalised_intensities = normalise(intensities)
-            else:
-                normalised_intensities = normalised_intensities.concatenate(
-                    normalise(intensities)
+            try:
+                intensities = normalise(intensities)
+            # Catch any of the several errors that can occur when there are too few
+            # reflections for the selected normalisation routine.
+            except (AttributeError, IndexError, RuntimeError):
+                logger.warning(
+                    "A problem occurred when trying to normalise the intensities by "
+                    "the %s method.\n"
+                    "There may be too few unique reflections. Resorting to using "
+                    "un-normalised intensities instead.",
+                    method,
+                    exc_info=True,
                 )
+                return
+            if i == 0:
+                normalised_intensities = intensities
+            else:
+                normalised_intensities = normalised_intensities.concatenate(intensities)
+
         self.intensities = normalised_intensities.set_info(
             self.intensities.info()
         ).set_observation_type_xray_intensity()

@@ -47,3 +47,9 @@ def test_extract_experiment_data():
     # now c is orthogonal to the beam while b is anti-parallel to it. The zone
     # axis is now expected to be [uvw] = [0 -100/90 0]
     assert za[-1].elems == pytest.approx((0, -100 / 90, 0))
+
+    rsa = dat["real_space_axes"]
+    a, b, c = rsa[0]
+    assert a.elems == pytest.approx(crystal.get_real_space_vectors()[0])
+    assert b.elems == pytest.approx(crystal.get_real_space_vectors()[1])
+    assert c.elems == pytest.approx(crystal.get_real_space_vectors()[2])

@@ -7,7 +7,6 @@
 from __future__ import absolute_import, division, print_function
 
 import os
-import sys
 import warnings
 
 import pytest
@@ -16,19 +15,23 @@ import six
 
 collect_ignore = []
 if six.PY2:
-    collect_ignore.append("test/python3/test_syntaxerror_on_import.py")
+    _base = os.path.dirname(__file__)
+    with open(os.path.join(_base, ".travis", "python2-supported-files"), "r") as fh:
+        allowed_testfiles = {tuple(f.strip()[2:].split("/")) for f in fh}
+    for root, dirs, files in os.walk(_base):
+        relroot = os.path.relpath(root, _base).split(os.path.sep)
+        if relroot == ["."]:
+            relroot = []
+        for f in files:
+            if f.endswith(".py"):
+                filetuple = tuple(relroot + [f])
+                if filetuple not in allowed_testfiles:
+                    collect_ignore.append(os.path.join(*filetuple))
     warnings.warn(
         "%d test files were excluded as they can only be interpreted with Python 3"
         % len(collect_ignore),
         UserWarning,
     )
-
-
-def filter_list_for_travis():
-    for line in sorted(sys.stdin):
-        if line.lstrip("./").rstrip() not in collect_ignore:
-            print(line, end="")
-    exit()
 
 
 @pytest.fixture(scope="session")
@@ -53,6 +56,16 @@ def pytest_collection_modifyitems(config, items):
         for item in items:
             if "slow" in item.keywords:
                 item.add_marker(skip_slow)
+
+
+def pytest_configure(config):
+    if not config.pluginmanager.hasplugin("dials_data"):
+
+        @pytest.fixture(scope="session")
+        def dials_data():
+            pytest.skip("This test requires the dials_data package to be installed")
+
+        globals()["dials_data"] = dials_data
 
 
 @pytest.fixture(scope="session")

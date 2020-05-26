@@ -1,3 +1,5 @@
+# coding: utf-8
+
 """
 Test the command line script dials.scale, for successful completion.
 """
@@ -17,6 +19,7 @@ from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
 from dials.array_family import flex
 from dials.util.options import OptionParser
 from dials.algorithms.scaling.algorithm import ScalingAlgorithm, prepare_input
+from dials.command_line import merge, report, scale
 
 
 def run_one_scaling(working_directory, argument_list):
@@ -491,11 +494,7 @@ def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
 def test_scale_dose_decay_model(dials_data, tmpdir):
     """Test the scale and filter command line program."""
     location = dials_data("multi_crystal_proteinase_k")
-    command = [
-        "dials.scale",
-        "d_min=2.0",
-        "model=dose_decay",
-    ]
+    command = ["dials.scale", "d_min=2.0", "model=dose_decay"]
     for i in [1, 2, 3, 4, 5, 7, 10]:
         command.append(location.join("experiments_" + str(i) + ".json").strpath)
         command.append(location.join("reflections_" + str(i) + ".pickle").strpath)
@@ -765,3 +764,54 @@ def test_scale_cross_validate(dials_data, tmpdir, mode, parameter, parameter_val
     command = ["dials.scale", refl, expt] + extra_args
     result = procrunner.run(command, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
+
+
+@pytest.mark.xfail(
+    reason="test state leakage, cf. https://github.com/dials/dials/issues/1271",
+)
+def test_few_reflections(dials_data):
+    u"""
+    Test that dials.symmetry does something sensible if given few reflections.
+
+    Use some example integrated data generated from two ten-image 1° sweeps.  These
+    each contain a few dozen integrated reflections.
+
+    Also test the behaviour of dials.merge and dials.report on the output.
+
+    By suppressing the output from dials.scale and dials.report, we obviate the need to
+    run in a temporary directory.
+
+    Args:
+        dials_data: DIALS custom Pytest fixture for access to test data.
+    """
+    # Get the input experiment lists and reflection tables.
+    data_dir = dials_data("l_cysteine_dials_output")
+    experiments = ExperimentList.from_file(data_dir / "11_integrated.expt")
+    experiments.extend(ExperimentList.from_file(data_dir / "23_integrated.expt"))
+    refls = "11_integrated.refl", "23_integrated.refl"
+    reflections = [flex.reflection_table.from_file(data_dir / refl) for refl in refls]
+
+    # Get and use the default parameters for dials.scale, suppressing HTML output.
+    scale_params = scale.phil_scope.fetch(
+        source=phil.parse("output.html=None")
+    ).extract()
+    # Does what it says on the tin.  Run scaling.
+    scaled_expt, scaled_refl = scale.run_scaling(scale_params, experiments, reflections)
+
+    # Get and use the default parameters for dials.merge.
+    merge_params = merge.phil_scope.fetch(source=phil.parse("")).extract()
+    # Run dials.merge on the scaling output.
+    merge.merge_data_to_mtz(merge_params, scaled_expt, [scaled_refl])
+
+    # Get and use the default parameters for dials.report, suppressing HTML output.
+    report_params = report.phil_scope.fetch(
+        source=phil.parse("output.html=None")
+    ).extract()
+    # Get an Analyser object, which does the dials.report stuff.
+    analyse = report.Analyser(
+        report_params,
+        grid_size=report_params.grid_size,
+        centroid_diff_max=report_params.centroid_diff_max,
+    )
+    # Run dials.report on scaling output.
+    analyse(scaled_refl, scaled_expt)

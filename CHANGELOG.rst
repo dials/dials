@@ -1,3 +1,44 @@
+DIALS 3.0 (2020-05-22)
+======================
+
+Features
+--------
+
+- Show more useful output when crashing in C++ code (#659)
+- dials.image_viewer: for the unit cell tool, rename parameters for consistency and add a new show_hkl option to filter displayed powder rings to select only those of interest. (#1192)
+- In dials.integrate: changed the background box size multiplier to be a parameter (sigma_b_multiplier) - setting to small values significantly reduces memory requirements. (#1195)
+- dials.image_viewer: add an overlaying showing pixels marked as strong by the spot-finding operations. That is, the pixels picked out by the "threshold" image. (#1200)
+- dials.scale report file was renamed from scaling.html to dials.scale.html
+  dials.symmetry report file was renamed from dials-symmetry.html to dials.symmetry.html (#1202)
+- dials.report output file was renamed from dials-report.html to dials.report.html (#1206)
+- dials.image_viewer: faster navigation between different image types. (#1213)
+- Crystal model now has a new recalculated_unit_cell attribute. This allows it to store
+  a post-refined unit cell (e.g. from dials.two_theta_refine) in addition to that from
+  traditional geometry refinement (which was used for prediction). Downstream programs
+  such as dials.scale and dials.export will now use the recalculated unit cell 
+  where appropriate. (#1214)
+- New best_monoclinic_beta parameter for dials.refine_bravais_settings and dials.symmetry.
+  Setting this to False will ensure that C2 is selected in preference to I2, where I2
+  would lead to a less oblique cell (i.e. smaller beta angle). (#1226)
+
+
+Bugfixes
+--------
+
+- Avoid empty "Unable to handle" messages on failed dials.import (#600)
+- Functions from dials.export now raise exceptions on errors rather than exit. This improves their use elsewhere (such as in dials.scale). (#1205)
+- Ensure dials.index chooses the C2 setting with the smallest beta angle (#1217)
+- Fix propagation of best_unit_cell and application of resolution cutoffs in dials.scale and export_mtz.
+  Add a new mtz.best_unit_cell parameter to dials.export (#1248)
+- Make some of the DIALS tools furthest downstream (``dials.scale``, ``dials.symmetry``, ``dials.merge`` and ``dials.report``) more robust in the case of very few reflections. (#1263)
+
+
+Misc
+----
+
+- #1221
+
+
 DIALS 2.2 (2020-03-15)
 ======================
 

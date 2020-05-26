@@ -1,16 +1,28 @@
 from __future__ import absolute_import, division, print_function
 
 import copy
-import sys
-import os
 import itertools
 import optparse
+import os
 import pickle
+import sys
 import traceback
-from six.moves.urllib.parse import urlparse
 from collections import defaultdict, namedtuple
+from glob import glob
 
 from orderedset import OrderedSet
+from six.moves.urllib.parse import urlparse
+
+import libtbx.phil
+from dials.array_family import flex
+from dials.util import Sorry
+from dials.util.multi_dataset_handling import (
+    sort_tables_to_experiments_order,
+    renumber_table_id_columns,
+)
+from dials.util.phil import FilenameDataWrapper
+from dxtbx.model import ExperimentList
+from dxtbx.model.experiment_list import ExperimentListFactory
 
 try:
     import cPickle  # deliberately not using six.moves
@@ -19,13 +31,6 @@ try:
 except ImportError:
     pickle_errors = (pickle.UnpicklingError,)
 
-import libtbx.phil
-from dials.util import Sorry
-from dials.util.multi_dataset_handling import (
-    sort_tables_to_experiments_order,
-    renumber_table_id_columns,
-)
-from dxtbx.model import ExperimentList
 
 tolerance_phil_scope = libtbx.phil.parse(
     """
@@ -255,8 +260,6 @@ class Importer(object):
         :return: Unhandled arguments
         """
         from dxtbx.model.experiment_list import ExperimentListFactory
-        from dials.util.phil import FilenameDataWrapper, ExperimentListConverters
-        from glob import glob
 
         # If filenames contain wildcards, expand
         args_new = []
@@ -280,11 +283,10 @@ class Importer(object):
             format_kwargs=format_kwargs,
             load_models=load_models,
         )
-        if len(experiments) > 0:
-            filename = "<image files>"
-            obj = FilenameDataWrapper(filename, experiments)
-            ExperimentListConverters.cache[filename] = obj
-            self.experiments.append(obj)
+        if experiments:
+            self.experiments.append(
+                FilenameDataWrapper(filename="<image files>", data=experiments)
+            )
         return unhandled
 
     def try_read_experiments(self, args, check_format, verbose):
@@ -296,14 +298,19 @@ class Importer(object):
         :param verbose: Print verbose output
         :returns: Unhandled arguments
         """
-        from dials.util.phil import ExperimentListConverters
         from dxtbx.model.experiment_list import InvalidExperimentListError
 
-        converter = ExperimentListConverters(check_format)
         unhandled = []
         for argument in args:
             try:
-                self.experiments.append(converter.from_string(argument))
+                self.experiments.append(
+                    FilenameDataWrapper(
+                        filename=argument,
+                        data=ExperimentListFactory.from_json_file(
+                            argument, check_format=check_format
+                        ),
+                    )
+                )
             except InvalidExperimentListError as e:
                 # This is a validation-related error: The file appears not to be in the correct format
                 self._handle_converter_error(
@@ -322,13 +329,17 @@ class Importer(object):
         :param verbose: Print verbose output
         :returns: Unhandled arguments
         """
-        from dials.util.phil import ReflectionTableConverters
-
-        converter = ReflectionTableConverters()
         unhandled = []
         for argument in args:
             try:
-                self.reflections.append(converter.from_string(argument))
+                if not os.path.exists(argument):
+                    raise Sorry("File %s does not exist" % argument)
+                self.reflections.append(
+                    FilenameDataWrapper(
+                        filename=argument,
+                        data=flex.reflection_table.from_file(argument),
+                    )
+                )
             except pickle_errors:
                 self._handle_converter_error(
                     argument,

@@ -44,6 +44,8 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 from collections import defaultdict
+from typing import Any, List, Type
+
 from dials.util import tabulate
 
 from cctbx import crystal, miller
@@ -74,6 +76,7 @@ def filter_reflection_table_selection(
 
 
 def filter_reflection_table(reflection_table, intensity_choice, *args, **kwargs):
+    # type: (flex.reflection_table, List[str], Any, Any) -> flex.reflection_table
     """Filter the data and delete unneeded intensity columns.
 
     A list of which intensities to filter on e.g "sum", "scale", "profile" or
@@ -96,8 +99,11 @@ def filter_reflection_table(reflection_table, intensity_choice, *args, **kwargs)
             causes no reflections to remain, if no profile reflections remain
             after filtering and the choice is "profile".
     """
+    if not isinstance(intensity_choice, list):
+        raise ValueError("intensity_choice must be List[str]")
+
     if intensity_choice == ["scale"]:
-        reducer = ScaleIntensityReducer
+        reducer = ScaleIntensityReducer  # type: Type[FilterForExportAlgorithm]
     elif intensity_choice == ["sum"]:
         reducer = SumIntensityReducer
     elif intensity_choice == ["profile"]:
@@ -120,12 +126,12 @@ def filter_reflection_table(reflection_table, intensity_choice, *args, **kwargs)
         )
 
     # Validate that the reflection table has the columns we need
-    required_columns = {
+    required_columns_lookup = {
         "scale": {"inverse_scale_factor", "intensity.scale.value"},
         "profile": {"intensity.prf.value"},
         "sum": {"intensity.sum.value"},
     }
-    for intensity_kind, required_columns in required_columns.items():
+    for intensity_kind, required_columns in required_columns_lookup.items():
         if intensity_kind in intensity_choice:
             missing_columns = required_columns - set(reflection_table.keys())
             if missing_columns:

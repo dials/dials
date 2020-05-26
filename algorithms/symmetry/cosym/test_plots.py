@@ -10,7 +10,7 @@ def test_plot_coords():
     labels = flex.int([-1, 0, 0, 1, 1])
     d = plots.plot_coords(coords, labels=labels)
     assert "cosym_coordinates" in d
-    assert set(d["cosym_coordinates"]) == {"layout", "data"}
+    assert set(d["cosym_coordinates"]) == {"data", "help", "layout"}
     assert (
         d["cosym_coordinates"]["data"][0]["marker"]["color"]
         == "rgb(0.000000,0.000000,0.000000)"

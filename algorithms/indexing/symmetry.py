@@ -233,6 +233,7 @@ class SymmetryHandler(object):
         target_sg_ref = target_space_group.info().reference_setting().group()
         best_angular_difference = 1e8
 
+        best_subgroup = None
         for item in items:
             if bravais_lattice(group=target_sg_ref) != item["bravais"]:
                 continue
