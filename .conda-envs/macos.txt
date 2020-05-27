@@ -6,6 +6,7 @@ conda-forge::libcxx
 
 conda-forge::colorlog
 conda-forge::dials-data
+conda-forge::iota
 conda-forge::mrcfile
 conda-forge::msgpack-python=0.6.2
 conda-forge::orderedset

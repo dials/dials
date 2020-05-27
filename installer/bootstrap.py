@@ -795,32 +795,33 @@ MODULES = {}
 for module in (
     "cctbx/annlib_adaptbx",
     "cctbx/boost",
-    "cctbx/cctbx_project",
-    "cctbx/dxtbx",
-    "ssrl-px/iota",
     "xia2/xia2",
 ):
     modulename = module.split("/")[1]
     MODULES[modulename] = [
+        "-b dials-3.0",
         "git@github.com:%s.git" % module,
         "https://github.com/%s.git" % module,
-        "https://github.com/%s/archive/master.zip" % module,
+        "https://github.com/%s/archive/dials-3.0.zip" % module,
     ]
 for module in (
     "annlib",
     "cbflib",
     "ccp4io",
     "ccp4io_adaptbx",
+    "cctbx_project",
     "clipper",
     "dials",
+    "dxtbx",
     "eigen",
     "gui_resources",
     "tntbx",
 ):
     MODULES[module] = [
+        "-b dials-3.0",
         "git@github.com:dials/%s.git" % module,
         "https://github.com/dials/%s.git" % module,
-        "https://github.com/dials/%s/archive/master.zip" % module,
+        "https://github.com/dials/%s/archive/dials-3.0.zip" % module,
     ]
 
 
