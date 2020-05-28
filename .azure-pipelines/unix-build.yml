@@ -139,6 +139,7 @@ steps:
       "data" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(DIALS_DATA_VERSION)" | "$(TODAY_ISO)"
       "data" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(DIALS_DATA_VERSION)"
     path: $(Pipeline.Workspace)/data
+    cacheHitVar: DATA_CACHED
   displayName: Restore regression data cache
 
 # Finally, run the full regression test suite
@@ -147,9 +148,26 @@ steps:
     export DIALS_DATA=$(pwd)/data
     . dials
     cd modules/dials
-    pytest -ra -n auto --runslow --regression || echo "##vso[task.complete result=Failed;]Some tests failed"
+    pytest -ra -n auto --basetemp="$(Pipeline.Workspace)/tests" \
+        --runslow --regression || echo "##vso[task.complete result=Failed;]Some tests failed"
   displayName: Run tests
   workingDirectory: $(Pipeline.Workspace)
+
+# Recover disk space after testing
+# This is only relevant if we had cache misses, as free disk space is required to create cache archives
+- bash: |
+    echo Disk space usage:
+    du -sh *
+    echo
+    echo Test artefacts:
+    du -h tests
+    rm -rf tests
+  displayName: Recover disk space
+  workingDirectory: $(Pipeline.Workspace)
+  condition: or(ne(variables.BASE_CACHED, 'true'),
+                ne(variables.BUILD_CACHED, 'true'),
+                ne(variables.DATA_CACHED, 'true'),
+                ne(variables.REPOSITORIES_CACHED, 'true'))
 
 # If the downloaded repositories are to be cached then clean them up before the
 # snapshot is made

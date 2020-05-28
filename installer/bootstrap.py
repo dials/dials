@@ -919,6 +919,7 @@ class DIALSBuilder(object):
                 reference_base=reference_base,
             )
 
+        success = True
         update_pool = multiprocessing.pool.ThreadPool(20)
         try:
             for result in update_pool.imap_unordered(git_fn, REPOSITORIES):
@@ -935,6 +936,7 @@ class DIALSBuilder(object):
                         output = "\x1b[33m" + output + "\x1b[0m"
                     elif result == "ERROR":
                         output = "\x1b[31m" + output + "\x1b[0m"
+                        success = False
                 print(module + ": " + output)
         except KeyboardInterrupt:
             update_pool.terminate()
@@ -944,6 +946,8 @@ class DIALSBuilder(object):
             raise
         update_pool.close()
         update_pool.join()
+        if not success:
+            sys.exit("\nFailed to update one or more repositories")
 
         msgpack = "msgpack-3.1.1.tar.gz"
         for retry in range(5):
