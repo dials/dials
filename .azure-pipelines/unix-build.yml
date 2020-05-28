@@ -104,7 +104,7 @@ steps:
 # do an incremental build
 - bash: |
     set -e
-    . setpaths.sh
+    . ../dials
     make reconf
   displayName: DIALS build (incremental)
   workingDirectory: $(Pipeline.Workspace)/build
@@ -114,8 +114,8 @@ steps:
 # Extract the dials-data version so we can correctly cache regression data.
 - bash: |
     set -e
-    . build/setpaths.sh
-    libtbx.conda install -p conda_base -y dials-data pytest-azurepipelines
+    . dials
+    conda install -p conda_base -y dials-data pytest-azurepipelines
     dials.data info -v
     echo "##vso[task.setvariable variable=DIALS_DATA_VERSION_FULL]$(dials.data info -v | grep version.full)"
     echo "##vso[task.setvariable variable=DIALS_DATA_VERSION]$(dials.data info -v | grep version.major)"
@@ -145,9 +145,9 @@ steps:
 - bash: |
     set -e
     export DIALS_DATA=$(pwd)/data
-    . build/setpaths.sh
+    . dials
     cd modules/dials
-    libtbx.pytest -ra -n auto --runslow --regression || echo "##vso[task.complete result=Failed;]Some tests failed"
+    pytest -ra -n auto --runslow --regression || echo "##vso[task.complete result=Failed;]Some tests failed"
   displayName: Run tests
   workingDirectory: $(Pipeline.Workspace)
 
