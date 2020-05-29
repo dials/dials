@@ -88,8 +88,6 @@ namespace kapton { namespace boost_python { namespace {
 
   void kapton_init_module() {
     using namespace boost::python;
-    typedef return_value_policy<return_by_value> rbv;
-    typedef default_call_policies dcp;
 
     def("get_kapton_path_cpp", &kapton::get_kapton_path_cpp);
   }

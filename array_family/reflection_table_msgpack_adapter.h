@@ -393,8 +393,6 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
     struct convert<scitbx::af::ref<T> > {
       msgpack::object const& operator()(msgpack::object const& o,
                                         scitbx::af::ref<T>& v) const {
-        typedef typename scitbx::af::ref<T>::iterator iterator;
-
         // Ensure the type is an array
         if (o.type != msgpack::type::BIN) {
           throw DIALS_ERROR("scitbx::af::ref: msgpack type is not BIN");
