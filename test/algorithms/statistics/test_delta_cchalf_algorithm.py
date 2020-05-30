@@ -1,4 +1,4 @@
-"""Tests for delta cc half algorithms."""
+"""Tests for ΔCC½ algorithms."""
 from __future__ import absolute_import, division, print_function
 
 import mock

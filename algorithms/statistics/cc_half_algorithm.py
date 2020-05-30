@@ -1,4 +1,4 @@
-"""Delta CC half algorithm definitions"""
+"""ΔCC½ algorithm definitions"""
 
 from __future__ import absolute_import, division, print_function
 
@@ -215,7 +215,7 @@ class CCHalfFromDials(object):
         self.algorithm = DeltaCCHalf(table, unit_cell, space_group, params)
 
     def run(self):
-        """Run the delta cc half algorithm and then exclude data as appropriate"""
+        """Run the ΔCC½ algorithm and then exclude data as appropriate"""
         self.algorithm.run()
 
         # now do the exclusion
@@ -466,7 +466,7 @@ class CCHalfFromDials(object):
 class DeltaCCHalf(object):
 
     """
-    Implementation of a delta cc-half algorithm.
+    Implementation of a ΔCC½ algorithm.
     """
 
     def __init__(self, reflection_table, median_unit_cell, space_group, params):
@@ -498,7 +498,7 @@ class DeltaCCHalf(object):
 
         self.delta_cchalf_i = statistics.delta_cchalf_i()
         self.results_summary["mean_cc_half"] = statistics._cchalf_mean
-        # Print out the datasets in order of delta cc 1/2
+        # Print out the datasets in order of ΔCC½
         self.sort_deltacchalf_values(self.delta_cchalf_i, self.results_summary)
 
         cutoff_value = self._calculate_cutoff_value(
@@ -537,7 +537,7 @@ class DeltaCCHalf(object):
         sorted_datasets = flex.int([])
         for i in sorted_index:
             val = delta_cchalf_i[datasets[i]]
-            logger.info("Dataset: %d, Delta CC 1/2: %.3f", datasets[i], 100 * val)
+            logger.info("Dataset: %d, ΔCC½: %.3f", datasets[i], 100 * val)
             sorted_cc_half_values.append(val)
             sorted_datasets.append(datasets[i])
 
@@ -590,7 +590,7 @@ class DeltaCCHalf(object):
             env = Environment(loader=loader)
             template = env.get_template("delta_cc_half_report.html")
             html = template.render(
-                page_title="Delta CC Half report", cc_half_plots=data["cc_half_plots"]
+                page_title="ΔCC½ report", cc_half_plots=data["cc_half_plots"]
             )
             with open(self.params.output.html, "wb") as f:
                 f.write(html.encode("utf-8", "xmlcharrefreplace"))
