@@ -1,3 +1,5 @@
+# -*- coding: utf8 -*-
+
 """Tests for ΔCC½ algorithms."""
 from __future__ import absolute_import, division, print_function
 

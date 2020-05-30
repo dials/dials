@@ -1,3 +1,5 @@
+# -*- coding: utf8 -*-
+
 """ΔCC½ algorithm definitions"""
 
 from __future__ import absolute_import, division, print_function
