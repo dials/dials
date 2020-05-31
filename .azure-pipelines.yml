@@ -1,6 +1,20 @@
 variables:
   CACHE_VERSION: 20200522
 
+schedules:
+  # nightly builds to populate caches
+  - cron: "3 0 * * Mon"
+    displayName: Weekly midnight build
+    branches:
+      include:
+      - master
+    always: true
+  - cron: "3 0 * * Tue-Sat,Sun"
+    displayName: Daily midnight build
+    branches:
+      include:
+      - master
+
 jobs:
   - job: setup
     pool:
