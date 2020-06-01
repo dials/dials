@@ -35,7 +35,22 @@ def test_nxs(dials_data, tmpdir):
 
 
 def test_mtz(dials_data, tmpdir):
-    run_export("mtz", dials_data, tmpdir)
+    result = procrunner.run(
+        [
+            "dials.export",
+            "format=mtz",
+            "project_name=ham",
+            "crystal_name=spam",
+            dials_data("centroid_test_data").join("experiments.json"),
+            dials_data("centroid_test_data").join("integrated.pickle"),
+        ],
+        working_directory=tmpdir,
+    )
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("integrated.mtz").check(file=1)
+    mtz_obj = mtz.object(tmpdir.join("integrated.mtz").strpath)
+    assert mtz_obj.crystals()[1].name() == "spam"
+    assert mtz_obj.crystals()[1].project_name() == "ham"
 
 
 def test_mtz_recalculated_cell(dials_data, tmpdir):

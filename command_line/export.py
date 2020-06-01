@@ -125,6 +125,10 @@ phil_scope = parse(
       .type = str
       .help = "The name of the crystal, for the mtz file metadata"
 
+    project_name = DIALS
+      .type = str
+      .help = "The project name for the mtz file metadata"
+
     best_unit_cell = None
     .type = unit_cell
     .help = "Best unit cell value, to use when performing resolution cutting,"
