@@ -472,8 +472,8 @@ class Script(object):
                     # Re-orthagonalize the slow and the fast vectors by rotating around the cross product
                     c = sum_fast.cross(sum_slow)
                     a = sum_fast.angle(sum_slow, deg=True) / 2
-                    sum_fast = sum_fast.rotate(c, a - 45, deg=True)
-                    sum_slow = sum_slow.rotate(c, -(a - 45), deg=True)
+                    sum_fast = sum_fast.rotate_around_origin(c, a - 45, deg=True)
+                    sum_slow = sum_slow.rotate_around_origin(c, -(a - 45), deg=True)
 
                     target.set_local_frame(sum_fast, sum_slow, sum_ori)
 
