@@ -17,18 +17,19 @@ schedules:
 
 jobs:
   - job: setup
+    displayName: syntax validation
     pool:
       vmImage: ubuntu-latest
     steps:
       - checkout: none
 
-      # Use this version of Python for syntax validation
+      # Use Python >=3.7 for syntax validation
       - task: UsePythonVersion@0
         displayName: Set up python
         inputs:
           versionSpec: 3.7
 
-      # Download shallow clone and run syntax validation
+      # Run syntax validation on a shallow clone
       - bash: |
           mkdir repository
           cd repository
@@ -39,7 +40,6 @@ jobs:
           git checkout FETCH_HEAD
           python .azure-pipelines/syntax-validation.py
         displayName: Syntax validation
-        workingDirectory: $(Pipeline.Workspace)
 
       # Set up date constants for caching in further build jobs
       - bash: |
@@ -48,6 +48,34 @@ jobs:
         displayName: Set up build constants
         name: constants
 
-  - template: ./.azure-pipelines/azure-pipelines-linux.yml
+  - job: flake8
+    displayName: flake8 validation
+    dependsOn: setup
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+      - checkout: none
 
-  - template: ./.azure-pipelines/azure-pipelines-mac.yml
+      # Use Python >=3.7 for flake8
+      - task: UsePythonVersion@0
+        displayName: Set up python
+        inputs:
+          versionSpec: 3.7
+
+      # Run flake8 validation on a shallow clone
+      - bash: |
+          pip install flake8 &
+          mkdir repository
+          cd repository
+          echo Checking out $(Build.SourceBranch) from $(Build.Repository.Uri)
+          git init
+          git remote add origin $(Build.Repository.Uri)
+          git fetch --depth 1 --no-recurse-submodules origin $(Build.SourceBranch)
+          git checkout FETCH_HEAD
+          wait
+          python .azure-pipelines/flake8-validation.py
+        displayName: Flake8 validation
+
+  - template: .azure-pipelines/azure-pipelines-linux.yml
+
+  - template: .azure-pipelines/azure-pipelines-mac.yml
