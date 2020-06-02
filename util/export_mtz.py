@@ -301,7 +301,7 @@ class UnmergedMTZWriter(MTZWriterBase):
             )
 
         self.mtz_file.replace_original_index_miller_indices(
-            integrated_data["miller_index_rebase"]
+            integrated_data["miller_index"]
         )
 
         dataset.add_column("BATCH", type_table["BATCH"]).set_values(
@@ -527,17 +527,6 @@ def export_mtz(integrated_data, experiment_list, params):
         image_range = image_ranges[loc]
         reflections = assign_batches_to_reflections([reflections], [batch_offset])[0]
         experiment.data = dict(reflections)
-
-        # Do any crystal transformations for the experiment
-        cb_op_to_ref = (
-            experiment.crystal.get_space_group()
-            .info()
-            .change_of_basis_op_to_reference_setting()
-        )
-        experiment.crystal = experiment.crystal.change_basis(cb_op_to_ref)
-        experiment.data["miller_index_rebase"] = cb_op_to_ref.apply(
-            experiment.data["miller_index"]
-        )
 
         s0n = matrix.col(experiment.beam.get_s0()).normalize().elems
         logger.debug("Beam vector: %.4f %.4f %.4f" % s0n)
