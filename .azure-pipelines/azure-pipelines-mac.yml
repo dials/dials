@@ -1,7 +1,7 @@
 jobs:
-- job: linux
+- job: macos
   pool:
-    vmImage: ubuntu-latest
+    vmImage: macOS-latest
   dependsOn: setup
   variables:
     CURRENT_WEEK: $[ dependencies.setup.outputs['constants.CURRENT_WEEK'] ]
@@ -19,11 +19,6 @@ jobs:
 
   steps:
 
-  # Dependencies required for building gltbx
-  - script: |
-      sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev
-    displayName: Install dependencies
-
   - template: unix-build.yml
     parameters:
-      conda_environment: .conda-envs/linux.txt
+      conda_environment: .conda-envs/macos.txt

@@ -30,7 +30,7 @@ steps:
 - bash: |
     set -e
     mkdir -p modules
-    ln ../dials-checkout modules/dials -nsf
+    ln -nsf ../dials-checkout modules/dials
     python modules/dials/installer/bootstrap.py update
   displayName: Repository checkout (initial)
   workingDirectory: $(Pipeline.Workspace)
@@ -41,20 +41,13 @@ steps:
 - bash: |
     set -e
     for repository in cctbx_project dxtbx; do
-      if [ ! -e $(Pipeline.Workspace)/modules/${repository} ]; then
-        echo Cloning ${repository} from scratch
-        git clone https://github.com/cctbx/${repository}.git --depth=1 $(Pipeline.Workspace)/modules/${repository}
-      fi
-
-      echo Checking out latest ${repository} commit
-      cd $(Pipeline.Workspace)/modules/${repository} || exit 1
-      git fetch origin master --depth=1 || exit 2
-      git checkout FETCH_HEAD || exit 3
-      echo -n "${repository} is at commit "
-      git show --oneline -s --no-abbrev-commit || exit 4
+      echo ""
+      echo "Checking out latest ${repository} commit"
+      cd $(Pipeline.Workspace)/modules/${repository}
+      git fetch origin master --depth=1
+      git checkout FETCH_HEAD
     done
   displayName: Repository update (incremental)
-  workingDirectory: $(Pipeline.Workspace)
   condition: ne(variables.REPOSITORIES_CACHED, 'false')
 
 # Get a ready-made DIALS conda environment from cache if available
@@ -63,9 +56,9 @@ steps:
 # Cache is not shared across operating systems and python versions
 - task: Cache@2
   inputs:
-    key: '"base" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(Agent.OS)" | "$(PYTHON_VERSION)" | .conda-envs/linux.txt | "$(TODAY_ISO)"'
+    key: '"base" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(Agent.OS)" | "$(PYTHON_VERSION)" | ${{ parameters.conda_environment }} | "$(TODAY_ISO)"'
     restoreKeys: |
-      "base" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(Agent.OS)" | "$(PYTHON_VERSION)" | .conda-envs/linux.txt
+      "base" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(Agent.OS)" | "$(PYTHON_VERSION)" | ${{ parameters.conda_environment }}
     path: $(Pipeline.Workspace)/conda_base
     cacheHitVar: BASE_CACHED
   displayName: Restore environment cache
@@ -85,9 +78,9 @@ steps:
 # Cache is not shared across operating systems and python versions
 - task: Cache@2
   inputs:
-    key: '"build" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(Agent.OS)" | "$(PYTHON_VERSION)" | installer/bootstrap.py | .conda-envs/linux.txt | "$(TODAY_ISO)"'
+    key: '"build" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(Agent.OS)" | "$(PYTHON_VERSION)" | installer/bootstrap.py | ${{ parameters.conda_environment }} | "$(TODAY_ISO)"'
     restoreKeys: |
-      "build" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(Agent.OS)" | "$(PYTHON_VERSION)" | installer/bootstrap.py | .conda-envs/linux.txt
+      "build" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(Agent.OS)" | "$(PYTHON_VERSION)" | installer/bootstrap.py | ${{ parameters.conda_environment }}
     path: $(Pipeline.Workspace)/build
     cacheHitVar: BUILD_CACHED
   displayName: Restore cached build
@@ -115,7 +108,7 @@ steps:
 - bash: |
     set -e
     . build/setpaths.sh
-    libtbx.conda install -p conda_base -y dials-data pytest-azurepipelines
+    libtbx.conda install -p conda_base -y dials-data pytest-azurepipelines pytest-timeout
     dials.data info -v
     echo "##vso[task.setvariable variable=DIALS_DATA_VERSION_FULL]$(dials.data info -v | grep version.full)"
     echo "##vso[task.setvariable variable=DIALS_DATA_VERSION]$(dials.data info -v | grep version.major)"
@@ -148,8 +141,8 @@ steps:
     export DIALS_DATA=$(pwd)/data
     . build/setpaths.sh
     cd modules/dials
-    libtbx.pytest -ra -n auto --basetemp="$(Pipeline.Workspace)/tests" \
-        --runslow --regression || echo "##vso[task.complete result=Failed;]Some tests failed"
+    libtbx.pytest -v -ra -n auto --basetemp="$(Pipeline.Workspace)/tests" --durations=10 \
+        --timeout=5400 --regression --runslow || echo "##vso[task.complete result=Failed;]Some tests failed"
   displayName: Run tests
   workingDirectory: $(Pipeline.Workspace)
 
@@ -171,19 +164,31 @@ steps:
 
 # If the downloaded repositories are to be cached then clean them up before the
 # snapshot is made
-- script: |
-    echo Preparing cache
-    for repository in modules/*; do
-      if [ -e ${repository}/.git ]; then
-        echo Cleaning directory ${repository}
-        cd ${repository}
-        git reset --hard HEAD
-        git clean -dffxq
-        git repack -a -d
-        cd -
+- bash: |
+    set -e
+    echo Preparing repository cache
+    for repository in *; do
+      if [[ "${repository}" == "dials" ]]; then
+        echo "  - Skipping dials"
+      elif [ -f ${repository} ]; then
+        echo "  - Deleting file ${repository}"
+        rm ${repository}
+      elif [ -e ${repository}/.git ]; then
+        if [[ "${repository}" == "cctbx_project" ]] || [[ "${repository}" == "dxtbx" ]]; then
+          echo "  - Cleaning up ${repository}"
+          cd ${repository}
+          git reset --hard HEAD
+          git clean -dffxq
+          git repack -a -d
+          cd -
+        else
+          echo "  - Removing version control from ${repository}"
+          rm -rf ${repository}/.git
+        fi
       fi
     done
-    ls -la modules
+    echo Completed
+    ls -la
   displayName: Preparing cache
-  workingDirectory: $(Pipeline.Workspace)
+  workingDirectory: $(Pipeline.Workspace)/modules
   condition: ne(variables.REPOSITORIES_CACHED, 'true')
