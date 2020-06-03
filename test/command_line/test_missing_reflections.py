@@ -32,4 +32,5 @@ def test_insulin_scaled(dials_data, capsys):
         ]
     )
     captured = capsys.readouterr()
-    assert "No connected regions of missing reflections identified" in captured.out
+    assert "2925 reflections (20.6%): 1.84-1.45 Å" in captured.out
+    assert "163 reflections (1.1%): 1.57-1.45 Å" in captured.out

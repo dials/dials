@@ -29,6 +29,12 @@ def connected_components(
         first item in the list will be the complete set of all possible miller indices.
     """
 
+    # Map to primitive setting for centred cells, otherwise true missing reflections
+    # won't be identified as connected as a result of being separated by systematically
+    # absent reflections.
+    cb_op_to_primitive = miller_array.change_of_basis_op_to_primitive_setting()
+    miller_array = miller_array.change_basis(cb_op_to_primitive)
+
     # First generate the missing_set of reflections. We want the full sphere of missing
     # reflections to allow us to find connected regions that cross the boundary of the
     # asu.
@@ -80,7 +86,12 @@ def connected_components(
             unique_ms.append(ms)
             unique_mi.append(mi)
 
+    # Sort connected regions by size
+    unique_ms = sorted(unique_ms, key=lambda ms: ms.size(), reverse=True)
+
+    # Map indices back to input setting
+    cb_op_primitive_inp = cb_op_to_primitive.inverse()
     return (
-        unique.as_non_anomalous_set().complete_set(),
-        sorted(unique_ms, key=lambda ms: ms.size(), reverse=True),
+        unique.as_non_anomalous_set().complete_set().change_basis(cb_op_primitive_inp),
+        [ms.change_basis(cb_op_primitive_inp) for ms in unique_ms],
     )
