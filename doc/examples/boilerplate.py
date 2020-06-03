@@ -23,6 +23,9 @@ import dials.util
 # sets up handlers and filters for a consistent logging style across DIALS.
 import dials.util.log
 
+# Useful to know what version of DIALS we are running
+from dials.util.version import dials_version
+
 # The DIALS option parser is based on the (old) standard Python option parser,
 # but contains customisations such as the parsing of PHIL parameters.
 # flatten_experiments & flatten_reflections are useful for combining multiple input
@@ -131,6 +134,9 @@ def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> 
 
     # Configure the logging.
     dials.util.log.config(options.verbose, logfile=params.output.log)
+
+    # Log the dials version
+    logger.info(dials_version())
 
     # Log the difference between the PHIL scope definition and the active PHIL scope,
     # which will include the parsed user inputs.
