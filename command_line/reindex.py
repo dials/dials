@@ -311,6 +311,12 @@ experiments file must also be specified with the option: reference= """
     else:
         change_of_basis_op = sgtbx.change_of_basis_op(params.change_of_basis_op)
 
+    # validate cb_op
+    try:
+        _ = sgtbx.rt_mx(change_of_basis_op.as_xyz())
+    except RuntimeError:
+        sys.exit("Unsuitable change of basis: %s" % params.change_of_basis_op)
+
     if len(experiments):
         space_group = params.space_group
         if space_group is not None:
