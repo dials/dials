@@ -218,14 +218,27 @@ def test_scale_script_prepare_input():
         True,
         True,
     ]
-    params.cut_data.d_max = 2.25
-    params, _, script_reflections = prepare_input(params, exp, reflections)
+
+    # Ensure that the user_excluded_in_scaling flags are reset before applying any new
+    # cutoffs by re-passing script_reflections to prepare_input
+    params.cut_data.d_min = None
+    params, _, script_reflections = prepare_input(params, exp, script_reflections)
     r = script_reflections[0]
     assert list(r.get_flags(r.flags.user_excluded_in_scaling)) == [
         False,
         False,
+        False,
+        False,
+    ]
+
+    params.cut_data.d_max = 1.25
+    params, _, script_reflections = prepare_input(params, exp, reflections)
+    r = script_reflections[0]
+    assert list(r.get_flags(r.flags.user_excluded_in_scaling)) == [
         True,
         True,
+        False,
+        False,
     ]
 
     params, exp, reflections = generate_test_input(n=1)

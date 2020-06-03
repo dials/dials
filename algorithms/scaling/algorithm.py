@@ -2,6 +2,7 @@
 Definitions of the scaling algorithm.
 """
 from __future__ import absolute_import, division, print_function
+import itertools
 import logging
 import json
 from libtbx import Auto
@@ -94,10 +95,12 @@ def prepare_input(params, experiments, reflections):
 
     #### Assign experiment identifiers.
     experiments, reflections = assign_unique_identifiers(experiments, reflections)
-    ids = flex.size_t()
-    for r in reflections:
-        ids.extend(r.experiment_identifiers().keys())
+    ids = itertools.chain.from_iterable(
+        r.experiment_identifiers().keys() for r in reflections
+    )
     logger.info("\nDataset ids are: %s \n", ",".join(str(i) for i in ids))
+    for r in reflections:
+        r.unset_flags(flex.bool(len(r), True), r.flags.bad_for_scaling)
     reflections, experiments = exclude_image_ranges_for_scaling(
         reflections, experiments, params.exclude_images
     )
