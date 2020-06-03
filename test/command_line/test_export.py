@@ -204,7 +204,7 @@ def test_mtz_primitive_cell(dials_data):
     scaled_refl = dials_data("insulin_processed") / "scaled.refl"
 
     # First reindex to the primitive setting
-    expts = ExperimentList.from_file(scaled_expt.strpath)
+    expts = ExperimentList.from_file(scaled_expt.strpath, check_format=False)
     cs = expts[0].crystal.get_crystal_symmetry()
     cb_op = cs.change_of_basis_op_to_primitive_setting()
     procrunner.run(
@@ -220,12 +220,11 @@ def test_mtz_primitive_cell(dials_data):
     procrunner.run(["dials.export", "reindexed.expt", "reindexed.refl"])
 
     mtz_obj = mtz.object("scaled.mtz")
-    assert mtz_obj.space_group() == expts[0].crystal.get_space_group()
     cs_primitive = cs.change_basis(cb_op)
+    assert mtz_obj.space_group() == cs_primitive.space_group()
     refl = flex.reflection_table.from_file(scaled_refl.strpath)
     refl = refl.select(~refl.get_flags(refl.flags.bad_for_scaling, all=False))
     for ma in mtz_obj.as_miller_arrays():
-        print(ma.crystal_symmetry(), cs_primitive)
         assert ma.crystal_symmetry().is_similar_symmetry(cs_primitive)
         assert ma.d_max_min() == pytest.approx(
             (flex.max(refl["d"]), flex.min(refl["d"]))
