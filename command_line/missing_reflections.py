@@ -99,7 +99,7 @@ def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> 
     # Print some output for user
     if len(unique_ms):
         n_expected = complete_set.size()
-        unique_ms = [ms for ms in unique_ms if ms.size() > params.min_component_size]
+        unique_ms = [ms for ms in unique_ms if ms.size() >= params.min_component_size]
         for ms in unique_ms:
             d_max, d_min = (uctbx.d_star_sq_as_d(ds2) for ds2 in ms.min_max_d_star_sq())
             logger.info(
