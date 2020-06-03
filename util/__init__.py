@@ -117,6 +117,10 @@ def show_mail_on_error():
         import faulthandler
 
         faulthandler.enable()
+        with contextlib.suppress(AttributeError, ImportError):
+            import signal
+
+            faulthandler.register(signal.SIGUSR2, all_threads=True)
     try:
         yield
     except Exception as e:
