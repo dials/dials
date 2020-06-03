@@ -1,0 +1,1 @@
+dials.reindex: if a bad reindex op passed, show error not stack trace. 
