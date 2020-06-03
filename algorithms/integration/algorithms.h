@@ -552,7 +552,6 @@ namespace dials { namespace algorithms {
                       const std::vector<af::Reflection> &adjacent_reflections) const {
       // Typedefs
       typedef af::const_ref<double, af::c_grid<3> > data_const_reference;
-      typedef af::const_ref<bool, af::c_grid<3> > mask_const_reference;
 
       // Get the index of the reflection
       int experiment_id = reflection.get<int>("id");
@@ -573,8 +572,6 @@ namespace dials { namespace algorithms {
       std::size_t index = data_spec.sampler()->nearest(sbox.panel, xyz);
       data_const_reference transformed_reference_data =
         data_spec.reference().data(index);
-      // mask_const_reference transformed_reference_mask =
-      // data_spec.reference().mask(index);
 
       // Create the coordinate system
       vec3<double> m2 = data_spec.spec().goniometer().get_rotation_axis();
@@ -681,7 +678,6 @@ namespace dials { namespace algorithms {
                       const std::vector<af::Reflection> &adjacent_reflections) const {
       // Typedefs
       typedef af::const_ref<double, af::c_grid<3> > data_const_reference;
-      typedef af::const_ref<bool, af::c_grid<3> > mask_const_reference;
 
       // Get the index of the reflection
       int experiment_id = reflection.get<int>("id");
@@ -721,8 +717,6 @@ namespace dials { namespace algorithms {
       std::size_t index = data_spec.sampler()->nearest(sbox.panel, xyz);
       data_const_reference transformed_reference_data =
         data_spec.reference().data(index);
-      // mask_const_reference transformed_reference_mask =
-      // data_spec.reference().mask(index);
 
       // The profile grid with all adjacent reflections
       af::versa<double, af::c_grid<4> > profile(

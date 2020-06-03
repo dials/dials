@@ -1,3 +1,5 @@
+# -*- coding: utf8 -*-
+
 from __future__ import absolute_import, division, print_function
 
 import logging
@@ -253,7 +255,7 @@ Summary of input data:
         self.reflection_table.select(sel)
 
     def run(self):
-        """Compute the delta CC 1/2 for all the data"""
+        """Compute the ΔCC½ for all the data"""
         self._cchalf_mean = compute_cchalf_from_reflection_sums(
             self.reflection_sums, self.binner
         )
@@ -339,6 +341,6 @@ Summary of input data:
 
     def delta_cchalf_i(self):
         """
-        Return the Delta CC 1/2 for each image excluded
+        Return the ΔCC½ for each image excluded
         """
         return {k: self._cchalf_mean - v for k, v in six.iteritems(self._cchalf)}

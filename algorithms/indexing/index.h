@@ -209,8 +209,6 @@ namespace dials { namespace algorithms {
       AnnAdaptor ann = AnnAdaptor(rlps_double, 3, nearest_neighbours);
       ann.query(rlps_double);
 
-      typedef std::pair<const int, const int> pair_t;
-
       const double one_over_epsilon = 1.0 / epsilon;
 
       // loop over crystals and assign one hkl per crystal per reflection

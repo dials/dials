@@ -1,3 +1,5 @@
+# -*- coding: utf8 -*-
+
 from __future__ import absolute_import, division, print_function
 
 import logging
@@ -74,7 +76,7 @@ phil_scope = parse(
 
   stdcutoff = 4.0
     .type = float
-    .help = "Datasets with a delta cc half below (mean - stdcutoff*std) are removed"
+    .help = "Datasets with a ΔCC½ below (mean - stdcutoff*std) are removed"
 
   output {
     log = 'dials.compute_delta_cchalf.log'

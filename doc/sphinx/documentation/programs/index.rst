@@ -18,7 +18,7 @@ Main processing commands:
    dials_symmetry
    dials_scale
    dials_export
-
+   xia2_multiplex
 
 Utilities:
 

@@ -13,7 +13,7 @@ def check_cchalf_result(fileobj):
     assert lines[1] == "0 0.001234\n"
 
 
-def test_compute_delta_cchalf_scaled_data(dials_data, tmpdir):
+def test_compute_delta_cchalf_scaled_data(python3, dials_data, tmpdir):
     """Test dials.compute_delta_cchalf on scaled data."""
     location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = location.join("scaled_20_25.refl").strpath
@@ -38,7 +38,7 @@ def test_compute_delta_cchalf_scaled_data(dials_data, tmpdir):
         check_cchalf_result(f)
 
 
-def test_compute_delta_cchalf_scaled_data_mtz(dials_data, tmpdir):
+def test_compute_delta_cchalf_scaled_data_mtz(python3, dials_data, tmpdir):
     """Test dials.compute_delta_cchalf on scaled data."""
     location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = location.join("scaled_20_25.refl").strpath

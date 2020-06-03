@@ -32,7 +32,7 @@ filtering {
                     "cchalf in image_group mode"
         stdcutoff = 4.0
             .type = float
-            .help = "Datasets with a delta cc half below (mean - stdcutoff*std) are removed"
+            .help = "Datasets with a ΔCC½ below (mean - stdcutoff*std) are removed"
     }
     output {
         scale_and_filter_results = "scale_and_filter_results.json"
@@ -471,11 +471,9 @@ def make_histogram_plots(cycle_results):
     )
     colors = [(color_list * int(math.ceil(n / len(color_list))))[i] for i in range(n)]
     if n == 1:
-        legends = ["Delta CC<sub>½</sub> analysis"]
+        legends = ["ΔCC<sub>½</sub> analysis"]
     else:
-        legends = [
-            ordinal(i) + " Delta CC<sub>½</sub> analysis" for i in range(1, n + 1)
-        ]
+        legends = [ordinal(i) + " ΔCC<sub>½</sub> analysis" for i in range(1, n + 1)]
     if "image_ranges_removed" in cycle_results[0]:
         n_rej = [len(res["image_ranges_removed"]) for res in cycle_results]
     else:
@@ -509,7 +507,7 @@ def make_histogram_plots(cycle_results):
                     ],
                     "layout": {
                         "title": "%s" % legends[index],
-                        "xaxis": {"title": u"Delta CC<sub>½</sub>"},
+                        "xaxis": {"title": u"ΔCC<sub>½</sub>"},
                         "yaxis": {
                             "title": "Number of datasets/groups",
                             "range": [0, min(max(hist.slots()), 50)],
@@ -529,7 +527,7 @@ def make_histogram_plots(cycle_results):
 
 
 def make_per_dataset_plot(delta_cchalf_i):
-    """Make a line plot of delta cc half per group."""
+    """Make a line plot of ΔCC½ per group."""
 
     d = OrderedDict()
     d.update(
@@ -544,9 +542,9 @@ def make_per_dataset_plot(delta_cchalf_i):
                     }
                 ],
                 "layout": {
-                    "title": "Delta CC<sub>½</sub> vs group",
+                    "title": "ΔCC<sub>½</sub> vs group",
                     "xaxis": {"title": "Group number"},
-                    "yaxis": {"title": "Delta CC<sub>½</sub>"},
+                    "yaxis": {"title": "ΔCC<sub>½</sub>"},
                 },
             }
         }

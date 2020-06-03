@@ -84,6 +84,9 @@ phil_scope = phil.parse(
       .type = str
       .help = "The crystal name to be exported in the mtz file metadata"
       .expert_level = 1
+    project_name = DIALS
+      .type = str
+      .help = "The project name for the mtz file metadata"
     use_internal_variance = False
       .type = bool
       .help = "Option to use internal spread of the intensities when merging
@@ -122,6 +125,8 @@ def _export_merged_mtz(params, experiments, joint_table):
     merge_params.reporting.merging_stats = False
     merge_params.assess_space_group = False
     merge_params.partiality_threshold = params.cut_data.partiality_cutoff
+    merge_params.output.crystal_names = [params.output.crystal_name]
+    merge_params.output.project_name = params.output.project_name
     mtz_file = merge_data_to_mtz(merge_params, experiments, [joint_table])
     logger.info("\nWriting merged data to %s", (params.output.merged_mtz))
     out = StringIO()
@@ -139,6 +144,7 @@ def _export_unmerged_mtz(params, experiments, reflection_table):
     export_params.intensity = ["scale"]
     export_params.mtz.partiality_threshold = params.cut_data.partiality_cutoff
     export_params.mtz.crystal_name = params.output.crystal_name
+    export_params.mtz.project_name = params.output.project_name
     export_params.mtz.best_unit_cell = params.reflection_selection.best_unit_cell
     if params.cut_data.d_min:
         export_params.mtz.d_min = params.cut_data.d_min

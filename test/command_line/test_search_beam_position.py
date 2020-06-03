@@ -97,7 +97,7 @@ def test_index_after_search(dials_data, run_in_tmpdir):
     3. Run dials.search_beam_centre on the resultant datablock and pickled
     reflection table, check for expected output;
     4. Run dials.index, using the datablock from the beam centre search,
-    and check that the expected unit ecll is obtained and that the RMSDs are
+    and check that the expected unit cell is obtained and that the RMSDs are
     smaller than or equal to some expected values."""
 
     dials_data = dials_data("thaumatin_i04").listdir(sort=True)

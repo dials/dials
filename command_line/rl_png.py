@@ -89,6 +89,10 @@ class PngScene(object):
         # we do not draw reciprocal lattice vectors at this time
         pass
 
+    def set_reciprocal_crystal_vectors(self, *args, **kwargs):
+        # we do not draw reciprocal crystal vectors at this time either
+        pass
+
     def project_2d(self, n):
         d = self.points.dot(n.elems)
         p = d * flex.vec3_double(len(d), n.elems)
