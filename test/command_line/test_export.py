@@ -212,7 +212,7 @@ def test_mtz_primitive_cell(dials_data):
             "dials.reindex",
             scaled_expt.strpath,
             scaled_refl.strpath,
-            f'change_of_basis_op="{cb_op}"',
+            'change_of_basis_op="%s"' % cb_op,
         ]
     )
 
