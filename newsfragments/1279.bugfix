@@ -1,0 +1,1 @@
+Bug fix for dials.export format=mtz when given input in non-reference setting (e.g. I2, or primitive setting of a centred cell). Previously the batches, miller indices and overall mtz space group and unit cell were inconsistent.
