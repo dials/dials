@@ -90,7 +90,7 @@ class PngScene(object):
         pass
 
     def set_reciprocal_crystal_vectors(self, *args, **kwargs):
-        # we do not draw reciprocal crystak vectors at this time either
+        # we do not draw reciprocal crystal vectors at this time either
         pass
 
     def project_2d(self, n):
