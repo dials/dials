@@ -13,6 +13,9 @@ phil_scope = libtbx.phil.parse(
 reverse_phi = False
   .type = bool
   .optional = True
+crystal_frame = False
+  .type = bool
+  .optional = True
 beam_centre = None
   .type = floats(size=2)
   .help = "Fast, slow beam centre coordinates (mm)."
@@ -87,6 +90,16 @@ class Render3d(object):
                 for c in crystals
             ]
             self.viewer.set_reciprocal_lattice_vectors(vecs)
+            vecs = [
+                [
+                    matrix.col(l)
+                    for l in (100 * matrix.sqr(c.get_B()))
+                    .transpose()
+                    .as_list_of_lists()
+                ]
+                for c in crystals
+            ]
+            self.viewer.set_reciprocal_crystal_vectors(vecs)
         self.map_points_to_reciprocal_space()
         self.set_points()
 
@@ -106,7 +119,9 @@ class Render3d(object):
                 )
 
         self.reflections.map_centroids_to_reciprocal_space(
-            experiments, calculated=calculated
+            experiments,
+            calculated=calculated,
+            crystal_frame=self.settings.crystal_frame,
         )
 
     def set_points(self):
