@@ -25,6 +25,17 @@ steps:
     cacheHitVar: REPOSITORIES_CACHED
   displayName: Restore repository cache
 
+# Copy libGL/libGLU into a place where they can be found during the
+# build. We don't include system libraries so that we don't accidentally
+# pick up libc and friends
+- bash: |
+    mkdir -p modules/lib
+    cp -av /usr/lib/x86_64-linux-gnu/libGL.so* modules/lib
+    cp -av /usr/lib/x86_64-linux-gnu/libGLU.so* modules/lib
+  displayName: Set up GL/GLU libraries
+  workingDirectory: $(Pipeline.Workspace)
+  condition: eq(variables['Agent.OS'], 'Linux')
+
 # If other source repositories are not cached then download
 # them using the bootstrap script
 - bash: |
@@ -84,6 +95,19 @@ steps:
     path: $(Pipeline.Workspace)/build
     cacheHitVar: BUILD_CACHED
   displayName: Restore cached build
+
+# Copy GL/GLU/KHR header into a place where they can be found during the
+# build. We don't include system headers so that we don't accidentally
+# pick up libc and friends
+- bash: |
+    set -e
+    mkdir -p build/include
+    cp -av /usr/include/GL build/include
+    cp -av /usr/include/KHR build/include
+  displayName: Set up GL/GLU headers
+  workingDirectory: $(Pipeline.Workspace)
+  condition: and(eq(variables.BUILD_CACHED, 'false'),
+                 eq(variables['Agent.OS'], 'Linux'))
 
 # If the build directory could not be loaded from cache then
 # create a new one using the bootstrap script
