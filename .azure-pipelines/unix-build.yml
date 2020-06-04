@@ -96,7 +96,7 @@ steps:
     cacheHitVar: BUILD_CACHED
   displayName: Restore cached build
 
-# Copy GL/GLU/KHR header into a place where they can be found during the
+# Copy GL/GLU/KHR headers into a place where they can be found during the
 # build. We don't include system headers so that we don't accidentally
 # pick up libc and friends
 - bash: |
