@@ -1,16 +1,12 @@
-from __future__ import absolute_import, division, print_function
-
 import json
 import logging
-import math
 import sys
 
 import libtbx.phil
-from libtbx.math_utils import iceil
-from dials.util import Sorry
-from scitbx.array_family import flex
 
-logger = logging.getLogger("dials.command_line.detect_blanks")
+from dials.util import detect_blanks
+
+logger = logging.getLogger("dials.detect_blanks")
 
 phil_scope = libtbx.phil.parse(
     """\
@@ -40,162 +36,6 @@ help_message = """\
 """
 
 
-def blank_counts_analysis(reflections, scan, phi_step, fractional_loss):
-    if not len(reflections):
-        raise Sorry("Input contains no reflections")
-
-    xyz_px = reflections["xyzobs.px.value"]
-    x_px, y_px, z_px = xyz_px.parts()
-    phi = scan.get_angle_from_array_index(z_px)
-
-    osc = scan.get_oscillation()[1]
-    n_images_per_step = iceil(phi_step / osc)
-    phi_step = n_images_per_step * osc
-
-    array_range = scan.get_array_range()
-    phi_min = scan.get_angle_from_array_index(array_range[0])
-    phi_max = scan.get_angle_from_array_index(array_range[1])
-    assert phi_min <= flex.min(phi)
-    assert phi_max >= flex.max(phi)
-    n_steps = max(int(round((phi_max - phi_min) / phi_step)), 1)
-    hist = flex.histogram(
-        z_px, data_min=array_range[0], data_max=array_range[1], n_slots=n_steps
-    )
-    logger.debug("Histogram:")
-    logger.debug(hist.as_str())
-
-    counts = hist.slots()
-    fractional_counts = counts.as_double() / flex.max(counts)
-
-    potential_blank_sel = fractional_counts <= fractional_loss
-
-    xmin, xmax = zip(
-        *[
-            (slot_info.low_cutoff, slot_info.high_cutoff)
-            for slot_info in hist.slot_infos()
-        ]
-    )
-
-    d = {
-        "data": [
-            {
-                "x": list(hist.slot_centers()),
-                "y": list(hist.slots()),
-                "xlow": xmin,
-                "xhigh": xmax,
-                "blank": list(potential_blank_sel),
-                "type": "bar",
-                "name": "blank_counts_analysis",
-            }
-        ],
-        "layout": {
-            "xaxis": {"title": "z observed (images)"},
-            "yaxis": {"title": "Number of reflections"},
-            "bargap": 0,
-        },
-    }
-
-    blank_regions = blank_regions_from_sel(d["data"][0])
-    d["blank_regions"] = blank_regions
-
-    return d
-
-
-def blank_integrated_analysis(reflections, scan, phi_step, fractional_loss):
-    prf_sel = reflections.get_flags(reflections.flags.integrated_prf)
-    if prf_sel.count(True) > 0:
-        reflections = reflections.select(prf_sel)
-        intensities = reflections["intensity.prf.value"]
-        variances = reflections["intensity.prf.variance"]
-    else:
-        sum_sel = reflections.get_flags(reflections.flags.integrated_sum)
-        reflections = reflections.select(sum_sel)
-        intensities = reflections["intensity.sum.value"]
-        variances = reflections["intensity.sum.variance"]
-
-    i_sigi = intensities / flex.sqrt(variances)
-
-    xyz_px = reflections["xyzobs.px.value"]
-    x_px, y_px, z_px = xyz_px.parts()
-    phi = scan.get_angle_from_array_index(z_px)
-
-    osc = scan.get_oscillation()[1]
-    n_images_per_step = iceil(phi_step / osc)
-    phi_step = n_images_per_step * osc
-
-    array_range = scan.get_array_range()
-    phi_min = flex.min(phi)
-    phi_max = flex.max(phi)
-    n_steps = int(round((phi_max - phi_min) / phi_step))
-    hist = flex.histogram(
-        z_px, data_min=array_range[0], data_max=array_range[1], n_slots=n_steps
-    )
-    logger.debug("Histogram:")
-    logger.debug(hist.as_str())
-
-    mean_i_sigi = flex.double()
-    for i, slot_info in enumerate(hist.slot_infos()):
-        sel = (z_px >= slot_info.low_cutoff) & (z_px < slot_info.high_cutoff)
-        if sel.count(True) == 0:
-            mean_i_sigi.append(0)
-        else:
-            mean_i_sigi.append(flex.mean(i_sigi.select(sel)))
-
-    potential_blank_sel = mean_i_sigi <= (fractional_loss * flex.max(mean_i_sigi))
-
-    xmin, xmax = zip(
-        *[
-            (slot_info.low_cutoff, slot_info.high_cutoff)
-            for slot_info in hist.slot_infos()
-        ]
-    )
-
-    d = {
-        "data": [
-            {
-                "x": list(hist.slot_centers()),
-                "y": list(mean_i_sigi),
-                "xlow": xmin,
-                "xhigh": xmax,
-                "blank": list(potential_blank_sel),
-                "type": "bar",
-                "name": "blank_counts_analysis",
-            }
-        ],
-        "layout": {
-            "xaxis": {"title": "z observed (images)"},
-            "yaxis": {"title": "Number of reflections"},
-            "bargap": 0,
-        },
-    }
-
-    blank_regions = blank_regions_from_sel(d["data"][0])
-    d["blank_regions"] = blank_regions
-
-    return d
-
-
-def blank_regions_from_sel(d):
-    blank_sel = d["blank"]
-    xlow = d["xlow"]
-    xhigh = d["xhigh"]
-
-    blank_regions = []
-    n = len(blank_sel)
-
-    for i in range(len(blank_sel)):
-        if blank_sel[i]:
-            if i == 0 or not blank_sel[i - 1]:
-                blank_start = math.floor(xlow[i])
-            blank_end = math.ceil(xhigh[i])
-        if (not blank_sel[i] and i > 0 and blank_sel[i - 1]) or (
-            i == (n - 1) and blank_sel[i - 1]
-        ):
-            blank_regions.append((blank_start, blank_end))
-
-    return blank_regions
-
-
 def run(args):
     from dials.util.options import OptionParser, reflections_and_experiments_from_files
     from dials.util import log
@@ -211,7 +51,7 @@ def run(args):
         epilog=help_message,
     )
 
-    params, options = parser.parse_args()
+    params, options = parser.parse_args(args)
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
@@ -243,45 +83,39 @@ def run(args):
     strong_sel = reflections.get_flags(reflections.flags.strong)
     indexed_sel &= ~centroid_outlier_sel
 
-    logger.info("Analysis of %i strong reflections:" % strong_sel.count(True))
-    strong_results = blank_counts_analysis(
+    logger.info(f"Analysis of {strong_sel.count(True)} strong reflections:")
+    strong_results = detect_blanks.blank_counts_analysis(
         reflections.select(strong_sel),
         scan,
         phi_step=params.phi_step,
         fractional_loss=params.counts_fractional_loss,
     )
     for blank_start, blank_end in strong_results["blank_regions"]:
-        logger.info("Potential blank images: %i -> %i" % (blank_start + 1, blank_end))
+        logger.info(f"Potential blank images: {blank_start + 1} -> {blank_end}")
 
     indexed_results = None
     if indexed_sel.count(True) > 0:
-        logger.info("Analysis of %i indexed reflections:" % indexed_sel.count(True))
-        indexed_results = blank_counts_analysis(
+        logger.info(f"Analysis of {indexed_sel.count(True)} indexed reflections:")
+        indexed_results = detect_blanks.blank_counts_analysis(
             reflections.select(indexed_sel),
             scan,
             phi_step=params.phi_step,
             fractional_loss=params.counts_fractional_loss,
         )
         for blank_start, blank_end in indexed_results["blank_regions"]:
-            logger.info(
-                "Potential blank images: %i -> %i" % (blank_start + 1, blank_end)
-            )
+            logger.info(f"Potential blank images: {blank_start + 1} -> {blank_end}")
 
     integrated_results = None
     if integrated_sel.count(True) > 0:
-        logger.info(
-            "Analysis of %i integrated reflections:" % integrated_sel.count(True)
-        )
-        integrated_results = blank_integrated_analysis(
+        logger.info(f"Analysis of {integrated_sel.count(True)} integrated reflections:")
+        integrated_results = detect_blanks.blank_integrated_analysis(
             reflections.select(integrated_sel),
             scan,
             phi_step=params.phi_step,
             fractional_loss=params.misigma_fractional_loss,
         )
         for blank_start, blank_end in integrated_results["blank_regions"]:
-            logger.info(
-                "Potential blank images: %i -> %i" % (blank_start + 1, blank_end)
-            )
+            logger.info(f"Potential blank images: {blank_start + 1} -> {blank_end}")
 
     d = {
         "strong": strong_results,
@@ -314,7 +148,7 @@ def run(args):
             pyplot.plot(
                 *zip(*[(x, y) for x, y, blank in zip(xs, ys, blanks) if blank]),
                 color="red",
-                linestyle=linestyle
+                linestyle=linestyle,
             )
         pyplot.ylim(0)
         pyplot.show()
