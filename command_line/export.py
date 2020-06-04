@@ -124,6 +124,11 @@ phil_scope = parse(
     crystal_name = XTAL
       .type = str
       .help = "The name of the crystal, for the mtz file metadata"
+
+    project_name = DIALS
+      .type = str
+      .help = "The project name for the mtz file metadata"
+
   }
 
   sadabs {
