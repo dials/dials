@@ -111,8 +111,10 @@ steps:
 
 # If the build directory could not be loaded from cache then
 # create a new one using the bootstrap script
-- script: |
+- bash: |
+    set -e
     python modules/dials/installer/bootstrap.py build
+    cp -v dials build/activate  # ensure a copy is kept in the cache
   displayName: DIALS build (initial)
   workingDirectory: $(Pipeline.Workspace)
   condition: eq(variables.BUILD_CACHED, 'false')
@@ -121,10 +123,12 @@ steps:
 # do an incremental build
 - bash: |
     set -e
-    . ../dials
+    cp -v build/activate dials  # restore copy from the cache
+    . dials
+    cd build
     make reconf
   displayName: DIALS build (incremental)
-  workingDirectory: $(Pipeline.Workspace)/build
+  workingDirectory: $(Pipeline.Workspace)
   condition: ne(variables.BUILD_CACHED, 'false')
 
 # Ensure we are using up-to-date testing packages.
