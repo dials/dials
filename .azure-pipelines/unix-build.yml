@@ -25,6 +25,17 @@ steps:
     cacheHitVar: REPOSITORIES_CACHED
   displayName: Restore repository cache
 
+# Copy libGL/libGLU into a place where they can be found during the
+# build. We don't include system libraries so that we don't accidentally
+# pick up libc and friends
+- bash: |
+    mkdir -p modules/lib
+    cp -av /usr/lib/x86_64-linux-gnu/libGL.so* modules/lib
+    cp -av /usr/lib/x86_64-linux-gnu/libGLU.so* modules/lib
+  displayName: Set up GL/GLU libraries
+  workingDirectory: $(Pipeline.Workspace)
+  condition: eq(variables['Agent.OS'], 'Linux')
+
 # If other source repositories are not cached then download
 # them using the bootstrap script
 - bash: |
@@ -85,10 +96,25 @@ steps:
     cacheHitVar: BUILD_CACHED
   displayName: Restore cached build
 
+# Copy GL/GLU/KHR headers into a place where they can be found during the
+# build. We don't include system headers so that we don't accidentally
+# pick up libc and friends
+- bash: |
+    set -e
+    mkdir -p build/include
+    cp -av /usr/include/GL build/include
+    cp -av /usr/include/KHR build/include
+  displayName: Set up GL/GLU headers
+  workingDirectory: $(Pipeline.Workspace)
+  condition: and(eq(variables.BUILD_CACHED, 'false'),
+                 eq(variables['Agent.OS'], 'Linux'))
+
 # If the build directory could not be loaded from cache then
 # create a new one using the bootstrap script
-- script: |
+- bash: |
+    set -e
     python modules/dials/installer/bootstrap.py build
+    cp -v dials build/activate  # ensure a copy is kept in the cache
   displayName: DIALS build (initial)
   workingDirectory: $(Pipeline.Workspace)
   condition: eq(variables.BUILD_CACHED, 'false')
@@ -97,18 +123,20 @@ steps:
 # do an incremental build
 - bash: |
     set -e
-    . setpaths.sh
+    cp -v build/activate dials  # restore copy from the cache
+    . dials
+    cd build
     make reconf
   displayName: DIALS build (incremental)
-  workingDirectory: $(Pipeline.Workspace)/build
+  workingDirectory: $(Pipeline.Workspace)
   condition: ne(variables.BUILD_CACHED, 'false')
 
 # Ensure we are using up-to-date testing packages.
 # Extract the dials-data version so we can correctly cache regression data.
 - bash: |
     set -e
-    . build/setpaths.sh
-    libtbx.conda install -p conda_base -y dials-data pytest-azurepipelines pytest-timeout
+    . dials
+    conda install -p conda_base -y dials-data pytest-azurepipelines pytest-timeout
     dials.data info -v
     echo "##vso[task.setvariable variable=DIALS_DATA_VERSION_FULL]$(dials.data info -v | grep version.full)"
     echo "##vso[task.setvariable variable=DIALS_DATA_VERSION]$(dials.data info -v | grep version.major)"
@@ -139,9 +167,9 @@ steps:
 - bash: |
     set -e
     export DIALS_DATA=$(pwd)/data
-    . build/setpaths.sh
+    . dials
     cd modules/dials
-    libtbx.pytest -v -ra -n auto --basetemp="$(Pipeline.Workspace)/tests" --durations=10 \
+    pytest -v -ra -n auto --basetemp="$(Pipeline.Workspace)/tests" --durations=10 \
         --timeout=5400 --regression --runslow || echo "##vso[task.complete result=Failed;]Some tests failed"
   displayName: Run tests
   workingDirectory: $(Pipeline.Workspace)

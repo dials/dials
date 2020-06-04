@@ -6,7 +6,7 @@ Setting up a Development Environment on Linux or Mac
 ====================================================
 
 Prerequisites:  make and change to a working directory to contain the new source code
-and build. Then download these bootstrap modules::
+and build. Then download the bootstrap script::
 
   wget https://raw.githubusercontent.com/dials/dials/master/installer/bootstrap.py
 
@@ -30,7 +30,7 @@ Explanation:  Several steps are performed: update, base, build.  If desired, the
 
 For subsequent login sessions, be sure to set the environment in order to use the command-line dispatchers::
 
-  source build/setpaths.sh # or setpaths.csh for tcsh
+  source dials
 
 Creating a Relocatable Installer Bundle on Linux
 ------------------------------------------------

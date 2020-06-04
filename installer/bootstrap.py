@@ -292,9 +292,10 @@ working network connection for downloading conda packages.
     with open(os.path.join(prefix, ".condarc"), "w") as fh:
         fh.write(
             """
+changeps1: False
 channels:
   - conda-forge
-"""
+""".lstrip()
         )
 
     # on Windows, also download the Visual C++ 2008 Redistributable
@@ -623,22 +624,17 @@ def set_git_repository_config_to_rebase(config):
 
 
 def git(
-    module,
-    parameters,
-    git_available,
-    destination=None,
-    reference=None,
-    reference_base=None,
-    branch_override=None,
+    module, source_list, branch=None, git_available=True, reference_base=None,
 ):
     """Retrieve a git repository, either by running git directly
        or by downloading and unpacking an archive."""
-    if destination is None:
-        destination = os.path.join("modules", module)
+    destination = os.path.join("modules", module)
     destpath, destdir = os.path.split(destination)
 
-    if reference_base and not reference:
+    if reference_base:
         reference = os.path.join(reference_base, module)
+    else:
+        reference = None
 
     if os.path.exists(destination):
         if not os.path.exists(os.path.join(destination, ".git")):
@@ -684,7 +680,7 @@ def git(
             )
         # Show the hash for the checked out commit for debugging purposes
         p = subprocess.Popen(
-            args=["git", "rev-parse", "HEAD"],
+            args=["git", "rev-parse", "HEAD", "--abbrev-ref", "HEAD"],
             cwd=destination,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -693,17 +689,19 @@ def git(
         output = output.decode("latin-1")
         if p.returncode:
             return module, "WARNING", "Can not get git repository revision\n" + output
-        return module, "OK", "Checked out revision " + output.strip()
+        output = output.split()
+        if len(output) == 2:
+            return module, "OK", "Checked out revision %s (%s)" % (output[0], output[1])
+        return module, "OK", "Checked out revision " + output[0].strip()
 
     git_parameters = []
+    if branch:
+        git_parameters.extend(["-b", branch])
     try:
         os.makedirs(destpath)
     except OSError:
         pass
-    for source_candidate in parameters:
-        if source_candidate.startswith("-"):
-            git_parameters = source_candidate.split(" ")
-            continue
+    for source_candidate in source_list:
         if not source_candidate.lower().startswith("http"):
             connection = source_candidate.split(":")[0]
             if not ssh_allowed_for_connection(connection):
@@ -790,39 +788,23 @@ def git(
     return module, "ERROR", "Sources not available. No git installation available"
 
 
-##### Modules #####
-MODULES = {}
-for module in (
+REPOSITORIES = (
     "cctbx/annlib_adaptbx",
     "cctbx/boost",
     "cctbx/cctbx_project",
     "cctbx/dxtbx",
+    "dials/annlib",
+    "dials/cbflib",
+    "dials/ccp4io",
+    "dials/ccp4io_adaptbx",
+    "dials/clipper",
+    "dials/dials",
+    "dials/eigen",
+    "dials/gui_resources",
+    "dials/tntbx",
     "ssrl-px/iota",
     "xia2/xia2",
-):
-    modulename = module.split("/")[1]
-    MODULES[modulename] = [
-        "git@github.com:%s.git" % module,
-        "https://github.com/%s.git" % module,
-        "https://github.com/%s/archive/master.zip" % module,
-    ]
-for module in (
-    "annlib",
-    "cbflib",
-    "ccp4io",
-    "ccp4io_adaptbx",
-    "clipper",
-    "dials",
-    "eigen",
-    "gui_resources",
-    "tntbx",
-):
-    MODULES[module] = [
-        "git@github.com:dials/%s.git" % module,
-        "https://github.com/dials/%s.git" % module,
-        "https://github.com/dials/%s/archive/master.zip" % module,
-    ]
-
+)
 
 ###################################
 ##### Base Configuration      #####
@@ -852,7 +834,7 @@ class DIALSBuilder(object):
     def __init__(self, options):
         """Create and add all the steps."""
         self.git_reference = options.git_reference
-        self.git_branches = dict(options.set_branch or [])
+        self.git_branches = dict(options.branch or [])
         self.steps = []
         # self.config_flags are only from the command line
         # LIBTBX can still be used to always set flags specific to a builder
@@ -920,19 +902,29 @@ class DIALSBuilder(object):
         except OSError:
             git_available = False
 
-        def git_fn(module):
+        def git_fn(repository):
+            modulename = repository.split("/")[1]
+            branch = self.git_branches.get(modulename)
+            git_source = [
+                "git@github.com:%s.git" % repository,
+                "https://github.com/%s.git" % repository,
+                "https://github.com/%s/archive/%s.zip"
+                % (repository, branch or "master"),
+            ]
             return git(
-                module,
-                MODULES[module],
+                modulename,
+                git_source,
+                branch=branch,
                 git_available=git_available,
                 reference_base=reference_base,
-                branch_override=self.git_branches.get(module),
             )
 
         success = True
         update_pool = multiprocessing.pool.ThreadPool(20)
         try:
-            for result in update_pool.imap_unordered(git_fn, MODULES):
+            for result in update_pool.imap_unordered(git_fn, REPOSITORIES):
+                # for r in REPOSITORIES:
+                #  result = git_fn(r)
                 module, result, output = result
                 output = (result + " - " + output).replace(
                     "\n", "\n" + " " * (len(module + result) + 5)
@@ -946,7 +938,6 @@ class DIALSBuilder(object):
                         output = "\x1b[31m" + output + "\x1b[0m"
                         success = False
                 print(module + ": " + output)
-        # results = update_pool.map(git_fn, MODULES)
         except KeyboardInterrupt:
             update_pool.terminate()
             sys.exit("\naborted with Ctrl+C")
@@ -1004,6 +995,27 @@ class DIALSBuilder(object):
             )
         )
 
+    def add_indirect_command(self, command, args=None):
+        if os.name == "nt":
+            command = command + ".bat"
+        # Relative path to workdir.
+        workdir = [_BUILD_DIR]
+        dots = [".."] * len(workdir)
+        if workdir[0] == ".":
+            dots = []
+        if os.name == "nt":
+            dots.extend([os.getcwd(), _BUILD_DIR, "bin", command])
+        else:
+            dots.extend([_BUILD_DIR, "bin", command])
+        self.steps.append(
+            functools.partial(
+                run_command,
+                command=["./indirection.sh", os.path.join(*dots)] + (args or []),
+                description="(via conda environment) " + command,
+                workdir=os.path.join(*workdir),
+            )
+        )
+
     def add_refresh(self):
         self.add_command("libtbx.refresh", description="libtbx.refresh", workdir=["."])
 
@@ -1025,8 +1037,15 @@ class DIALSBuilder(object):
         else:
             conda_python = os.path.join("..", "conda_base", "bin", "python")
 
+        if not any(flag.startswith("--compiler=") for flag in self.config_flags):
+            self.config_flags.append("--compiler=conda")
+        if "--enable_cxx11" not in self.config_flags:
+            self.config_flags.append("--enable_cxx11")
         if "--use_conda" not in self.config_flags:
             self.config_flags.append("--use_conda")
+
+        with open("dials", "w"):
+            pass  # ensure we write a new-style environment setup script
 
         configcmd = (
             [
@@ -1046,15 +1065,27 @@ class DIALSBuilder(object):
                 workdir=_BUILD_DIR,
             )
         )
+        self.steps.append(self.generate_environment_indirector)
+
+    def generate_environment_indirector(self):
+        filename = os.path.join(os.getcwd(), _BUILD_DIR, "indirection.sh")
+        with open(filename, "w") as fh:
+            fh.write("#!/bin/bash\n")
+            fh.write("source %s/conda_base/etc/profile.d/conda.sh\n" % os.getcwd())
+            fh.write("conda activate %s/conda_base\n" % os.getcwd())
+            fh.write('"$@"\n')
+        mode = os.stat(filename).st_mode
+        mode |= (mode & 0o444) >> 2  # copy R bits to X
+        os.chmod(filename, mode)
 
     def add_make(self):
         try:
             nproc = len(os.sched_getaffinity(0))
         except AttributeError:
             nproc = multiprocessing.cpu_count()
-        self.add_command("libtbx.scons", args=["-j", str(nproc)])
+        self.add_indirect_command("libtbx.scons", args=["-j", str(nproc)])
         # run build again to make sure everything is built
-        self.add_command("libtbx.scons", args=["-j", str(nproc)])
+        self.add_indirect_command("libtbx.scons", args=["-j", str(nproc)])
 
     def add_tests(self):
         self.add_command(
@@ -1147,11 +1178,13 @@ be passed separately with quotes to avoid confusion (e.g
         choices=["3.6", "3.7", "3.8"],
     )
     parser.add_argument(
-        "--set-branch",
-        nargs="*",
+        "--branch",
         type=repository_at_tag,
-        # help="during 'update' step move a repository to a given branch. Specify as repository@branch, eg. 'dials@dials-next'",
-        help=argparse.SUPPRESS,
+        action="append",
+        help=(
+            "during 'update' step when a repository is newly cloned set it to a given branch."
+            "Specify as repository@branch, eg. 'dials@dials-next'"
+        ),
     )
 
     options = parser.parse_args()
