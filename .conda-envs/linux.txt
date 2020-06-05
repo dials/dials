@@ -33,7 +33,7 @@ conda-forge::pytest-mock<2.0
 conda-forge::pytest-xdist
 conda-forge::requests
 conda-forge::scikit-learn
-conda-forge::scipy
+conda-forge::scipy<1.6
 conda-forge::scons
 conda-forge::setuptools
 conda-forge::six
