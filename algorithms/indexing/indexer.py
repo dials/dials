@@ -192,9 +192,6 @@ indexing {
   multiple_lattice_search
     .expert_level = 1
   {
-    cluster_analysis_search = False
-      .type = bool
-      .help = "Perform cluster analysis search for multiple lattices."
     recycle_unindexed_reflections_cutoff = 0.1
       .type = float(value_min=0, value_max=1)
       .help = "Attempt another cycle of indexing on the unindexed reflections "
