@@ -10,6 +10,7 @@ conda-forge::pyrtf
 
 conda-forge::alabaster
 conda-forge::biopython=1.73  # needs reviewing for py3.8 compatibility
+conda-forge::boost-cpp
 conda-forge::bzip2
 conda-forge::c-compiler
 conda-forge::conda
