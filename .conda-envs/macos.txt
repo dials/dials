@@ -14,8 +14,8 @@ conda-forge::pyrtf
 
 conda-forge::alabaster
 conda-forge::biopython=1.73
-conda-forge::boost
-conda-forge::boost-cpp
+conda-forge::boost<1.71
+conda-forge::boost-cpp<1.71
 conda-forge::bzip2
 conda-forge::c-compiler
 conda-forge::conda
