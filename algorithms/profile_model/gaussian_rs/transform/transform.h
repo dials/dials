@@ -243,9 +243,6 @@ namespace dials {
         y0_ = bbox[2];
         shoebox_size_ = int3(bbox[5] - bbox[4], bbox[3] - bbox[2], bbox[1] - bbox[0]);
         DIALS_ASSERT(shoebox_size_.all_gt(0));
-        DIALS_ASSERT(bbox[0] >= 0 && bbox[2] >= 0);
-        DIALS_ASSERT(bbox[1] <= spec.detector()[panel].get_image_size()[0]);
-        DIALS_ASSERT(bbox[3] <= spec.detector()[panel].get_image_size()[1]);
         step_size_ = spec.step_size();
         grid_size_ = spec.grid_size();
         grid_cent_ = spec.grid_centre();
