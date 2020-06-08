@@ -403,7 +403,7 @@ namespace dials { namespace algorithms {
         flags[i] &= ~af::IntegratedPrf;
 
         // Check if we want to use this reflection
-        if (check2(flags[i], sbox[i])) {
+        if (check3(flags[i], sbox[i])) {
           try {
             // Get the reference profiles
             std::size_t index = sampler_->nearest(sbox[i].panel, xyzpx[i]);
