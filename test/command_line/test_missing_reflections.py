@@ -9,7 +9,10 @@ def test_l_cysteine_4_sweeps_scaled(dials_data, capsys):
         ]
     )
     captured = capsys.readouterr()
-    assert "260 reflections (16.0%): 1.37-0.59 Å" in captured.out
+    assert "Completeness in resolution range: 0.754473" in captured.out
+    assert "Completeness with d_max=infinity: 0.753543" in captured.out
+    assert "# reflections |   % missing | Resolution range (Å)" in captured.out
+    assert "260 |        16   | 1.37-0.59" in captured.out
 
 
 def test_vmxi_proteinase_k_sweeps_integrated(dials_data, capsys):
@@ -20,8 +23,11 @@ def test_vmxi_proteinase_k_sweeps_integrated(dials_data, capsys):
         ]
     )
     captured = capsys.readouterr()
-    assert "6648 reflections (28.2%): 2.51-1.80 Å" in captured.out
-    assert "307 reflections (1.3%): 103.98-1.80 Å" in captured.out
+    assert "Completeness in resolution range: 0.700412" in captured.out
+    assert "Completeness with d_max=infinity: 0.700382" in captured.out
+    assert "# reflections |   % missing | Resolution range (Å)" in captured.out
+    assert "6648 |        28.2 | 2.51-1.80" in captured.out
+    assert "307 |         1.3 | 103.98-1.80" in captured.out
 
 
 def test_insulin_scaled(dials_data, capsys):
@@ -32,5 +38,8 @@ def test_insulin_scaled(dials_data, capsys):
         ]
     )
     captured = capsys.readouterr()
-    assert "2925 reflections (20.6%): 1.84-1.45 Å" in captured.out
-    assert "163 reflections (1.1%): 1.57-1.45 Å" in captured.out
+    assert "Completeness in resolution range: 0.792288" in captured.out
+    assert "Completeness with d_max=infinity: 0.792288" in captured.out
+    assert "# reflections |   % missing | Resolution range (Å)" in captured.out
+    assert "2925 |        20.6 | 1.84-1.45" in captured.out
+    assert "163 |         1.1 | 1.57-1.45" in captured.out

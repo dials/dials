@@ -12,6 +12,7 @@ Examples::
   dials.missing_reflections scaled.expt scaled.refl min_component_size=10
 """
 
+import io
 import logging
 import sys
 from typing import List
@@ -21,6 +22,7 @@ from cctbx import uctbx
 
 import dials.util.log
 from dials.report.analysis import scaled_data_as_miller_array
+from dials.util import tabulate
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
 from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
 from dials.util import missing_reflections
@@ -93,18 +95,37 @@ def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> 
         for ma in miller_arrays[1:]:
             miller_array = miller_array.concatenate(ma)
 
+    # Print overall summary of input miller array
+    s = io.StringIO()
+    ma_unique = miller_array.unique_under_symmetry()
+    ma_unique.show_comprehensive_summary(f=s)
+    logger.info(f"\n{s.getvalue()}")
+
     # Get the regions of missing reflections
     complete_set, unique_ms = missing_reflections.connected_components(miller_array)
 
     # Print some output for user
     if len(unique_ms):
+        logger.info(
+            "The following connected regions of missing reflections have been identified:"
+        )
         n_expected = complete_set.size()
         unique_ms = [ms for ms in unique_ms if ms.size() >= params.min_component_size]
+        rows = []
         for ms in unique_ms:
             d_max, d_min = (uctbx.d_star_sq_as_d(ds2) for ds2 in ms.min_max_d_star_sq())
-            logger.info(
-                f"{ms.size()} reflections ({100 * ms.size() / n_expected:.1f}%): {d_max:.2f}-{d_min:.2f} Å"
+            rows.append(
+                [
+                    ms.size(),
+                    f"{100 * ms.size() / n_expected:.1f}",
+                    f"{d_max:.2f}-{d_min:.2f}",
+                ]
             )
+        logger.info(
+            tabulate(
+                rows, headers=["# reflections", "% missing", "Resolution range (Å)"]
+            )
+        )
     else:
         logger.info("No connected regions of missing reflections identified")
 
