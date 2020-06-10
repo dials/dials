@@ -20,14 +20,16 @@ def test_vmxi_proteinase_k_sweeps_integrated(dials_data, capsys):
         args=[
             (dials_data("vmxi_proteinase_k_sweeps") / "experiments_0.expt").strpath,
             (dials_data("vmxi_proteinase_k_sweeps") / "reflections_0.refl").strpath,
+            (dials_data("vmxi_proteinase_k_sweeps") / "experiments_1.expt").strpath,
+            (dials_data("vmxi_proteinase_k_sweeps") / "reflections_1.refl").strpath,
         ]
     )
     captured = capsys.readouterr()
-    assert "Completeness in resolution range: 0.700412" in captured.out
-    assert "Completeness with d_max=infinity: 0.700382" in captured.out
+    assert "Completeness in resolution range: 0.781833" in captured.out
+    assert "Completeness with d_max=infinity: 0.7818" in captured.out
     assert "# reflections |   % missing | Resolution range (Å)" in captured.out
-    assert "6648 |        28.2 | 2.51-1.80" in captured.out
-    assert "307 |         1.3 | 103.98-1.80" in captured.out
+    assert "4899 |        20.7 | 2.36-1.80" in captured.out
+    assert "190 |         0.8 | 2.36-1.80" in captured.out
 
 
 def test_insulin_scaled(dials_data, capsys):
