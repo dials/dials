@@ -36,6 +36,10 @@ phil_scope = libtbx.phil.parse(
     min_component_size = 0
       .type = int(value_min=0)
       .help = "Only show connected regions larger than or equal to this."
+    d_min = None
+      .type = float(value_min=0)
+    d_max = None
+      .type = float(value_min=0)
     """
 )
 
@@ -95,6 +99,11 @@ def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> 
         for ma in miller_arrays[1:]:
             miller_array = miller_array.concatenate(ma)
 
+    if params.d_min or params.d_max:
+        miller_array = miller_array.resolution_filter(
+            d_min=params.d_min, d_max=params.d_max
+        )
+
     # Print overall summary of input miller array
     s = io.StringIO()
     ma_unique = miller_array.unique_under_symmetry()
@@ -103,6 +112,7 @@ def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> 
 
     # Get the regions of missing reflections
     complete_set, unique_ms = missing_reflections.connected_components(miller_array)
+    unique_ms = [ms for ms in unique_ms if ms.size() >= params.min_component_size]
 
     # Print some output for user
     if len(unique_ms):
@@ -110,7 +120,6 @@ def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> 
             "The following connected regions of missing reflections have been identified:"
         )
         n_expected = complete_set.size()
-        unique_ms = [ms for ms in unique_ms if ms.size() >= params.min_component_size]
         rows = []
         for ms in unique_ms:
             d_max, d_min = (uctbx.d_star_sq_as_d(ds2) for ds2 in ms.min_max_d_star_sq())

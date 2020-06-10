@@ -38,8 +38,26 @@ def test_insulin_scaled(dials_data, capsys):
         ]
     )
     captured = capsys.readouterr()
+    assert "Resolution range: 55.2195 1.45064" in captured.out
     assert "Completeness in resolution range: 0.792288" in captured.out
     assert "Completeness with d_max=infinity: 0.792288" in captured.out
     assert "# reflections |   % missing | Resolution range (Å)" in captured.out
     assert "2925 |        20.6 | 1.84-1.45" in captured.out
     assert "163 |         1.1 | 1.57-1.45" in captured.out
+
+
+def test_insulin_scaled_d_min_d_max(dials_data, capsys):
+    missing_reflections.run(
+        args=[
+            (dials_data("insulin_processed") / "scaled.expt").strpath,
+            (dials_data("insulin_processed") / "scaled.refl").strpath,
+            "d_min=1.863199",  # inscribed circle
+            "d_max=55",
+            "min_component_size=10",
+        ]
+    )
+    captured = capsys.readouterr()
+    assert "Resolution range: 39.0461 1.86463" in captured.out
+    assert "Completeness in resolution range: 0.996462" in captured.out
+    assert "Completeness with d_max=infinity: 0.996315" in captured.out
+    assert "No connected regions of missing reflections identified" in captured.out
