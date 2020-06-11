@@ -13,17 +13,17 @@ conda-forge::procrunner>=1.0.2
 conda-forge::pyrtf
 
 conda-forge::alabaster
-conda-forge::biopython=1.73
+conda-forge::biopython
 conda-forge::bzip2
 conda-forge::conda
-conda-forge::cython>=0.29,<0.30
+conda-forge::cython>=0.29
 conda-forge::docutils
 conda-forge::future
 conda-forge::h5py
 conda-forge::hdf5<1.11
 conda-forge::jinja2
 conda-forge::jpeg
-conda-forge::matplotlib-base>=3.0.2,<3.1
+conda-forge::matplotlib-base>=3.0.2
 conda-forge::mock
 conda-forge::numpy>=1.16
 conda-forge::pillow>=5.4.1
@@ -35,12 +35,12 @@ conda-forge::pytest-mock<2.0
 conda-forge::pytest-xdist
 conda-forge::python>=3.6,<3.7
 conda-forge::requests
-conda-forge::scikit-learn=0.20.2
-conda-forge::scipy=1.2.1
+conda-forge::scikit-learn
+conda-forge::scipy<1.6
 conda-forge::scons
 conda-forge::setuptools
 conda-forge::six
-conda-forge::sphinx<1.9
+conda-forge::sphinx
 conda-forge::sqlite
 conda-forge::tabulate
 conda-forge::tqdm=4.23.4

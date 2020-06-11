@@ -41,7 +41,7 @@ class DialsTutorialInclude(code.LiteralInclude):
             text, lines = reader.read(location=location)
 
             retnode = code.nodes.literal_block(text, text, source=filename)
-            code.set_source_info(self, retnode)
+            self.set_source_info(retnode)
             if self.options.get("diff"):  # if diff is set, set udiff
                 retnode["language"] = "udiff"
             elif "language" in self.options:
@@ -74,4 +74,5 @@ class DialsTutorialInclude(code.LiteralInclude):
 
             return [retnode]
         except Exception as exc:
-            return [document.reporter.warning(code.text_type(exc), line=self.lineno)]
+            print(exc)
+            return [document.reporter.warning(str(exc), line=self.lineno)]

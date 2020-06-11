@@ -61,12 +61,11 @@ def corrgram(corrmat, labels):
     try:
         import matplotlib
 
-        matplotlib.use("Agg", warn=False)
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         import matplotlib.cm as cm
     except ImportError as e:
-        msg = "matplotlib modules not available " + str(e)
-        logger.info(msg)
+        logger.info("matplotlib modules not available " + str(e), exc_info=True)
         return None
 
     plt.figure(1)
