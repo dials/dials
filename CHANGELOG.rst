@@ -1,3 +1,18 @@
+DIALS 3.0.1 (2020-06-11)
+========================
+
+Features
+--------
+
+- dials.reciprocal_lattice_viewer: Add an option to show lattice(s) in the crystal rather than laboratory frame. (#1259)
+- Support for mtz project_name in export and scaling
+
+Bugfixes
+--------
+
+- dials.reciprocal_lattice_viewer: fix multiple experiment view for integrated data (#1284)
+
+
 DIALS 3.0 (2020-05-22)
 ======================
 
