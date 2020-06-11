@@ -15,14 +15,12 @@ import functools
 import json
 import multiprocessing.pool
 import os
-import random
 import re
 import shutil
 import socket as pysocket
 import stat
 import subprocess
 import sys
-import tarfile
 import threading
 import time
 import warnings
