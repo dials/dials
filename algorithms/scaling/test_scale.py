@@ -12,6 +12,7 @@ import iotbx.merging_statistics
 import pytest
 import procrunner
 from cctbx import uctbx
+import iotbx.mtz
 from libtbx import phil
 from dxtbx.serialize import load
 from dxtbx.model.experiment_list import ExperimentList
@@ -392,6 +393,8 @@ def test_scale_physical(dials_data, tmpdir):
         "error_model=None",
         "intensity_choice=profile",
         "unmerged_mtz=unmerged.mtz",
+        "crystal_name=foo",
+        "project_name=bar",
         "use_free_set=1",
         "outlier_rejection=simple",
         "json=scaling.json",
@@ -400,6 +403,10 @@ def test_scale_physical(dials_data, tmpdir):
     assert tmpdir.join("unmerged.mtz").check()
     assert tmpdir.join("merged.mtz").check()
     assert tmpdir.join("scaling.json").check()
+    for f in ("unmerged.mtz", "merged.mtz"):
+        mtz_obj = iotbx.mtz.object(tmpdir.join(f).strpath)
+        assert mtz_obj.crystals()[1].name() == "foo"
+        assert mtz_obj.crystals()[1].project_name() == "bar"
 
     # Now inspect output, check it hasn't changed drastically, or if so verify
     # that the new behaviour is more correct and update test accordingly.

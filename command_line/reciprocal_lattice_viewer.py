@@ -52,7 +52,6 @@ def run(args):
                 reflections[0].extend(reflections[i])
     elif "imageset_id" not in reflections[0]:
         reflections[0]["imageset_id"] = reflections[0]["id"]
-        reflections[0]["id"] = flex.int(reflections[0].size(), -1)
 
     reflections = reflections[0]
 
