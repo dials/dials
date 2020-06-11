@@ -26,7 +26,7 @@ conda-forge::hdf5<1.11
 conda-forge::jinja2
 conda-forge::jpeg
 conda-forge::matplotlib-base>=3.0.2
-conda-forge::msgpack-c=3.1.1
+conda-forge::msgpack-c
 conda-forge::mock
 conda-forge::numpy>=1.16,<1.17
 conda-forge::pillow>=5.4.1
