@@ -48,6 +48,7 @@ Utilities:
    dials_combine_experiments
    dials_align_crystal
    dials_anvil_correction
+   dials_missing_reflections
 
 Printable command line reference:
 
