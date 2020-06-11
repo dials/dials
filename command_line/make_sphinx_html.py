@@ -6,6 +6,7 @@ import sys
 from optparse import SUPPRESS_HELP, OptionParser
 
 import dials
+import os
 import procrunner
 import py
 
@@ -99,7 +100,7 @@ if __name__ == "__main__":
             print("Using DIALS logs from", options.logs)
 
     if options.logs:
-        command.extend(["-D", "dials_logs=" + options.logs])
+        command.extend(["-D", "dials_logs=" + os.path.abspath(options.logs)])
         for report in ("betalactamase", "thaumatin"):
             py.path.local(options.logs).join(report).join("dials.report.html").copy(
                 tutorial_doc_dir.join(report + "-report.html")
