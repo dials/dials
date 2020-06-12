@@ -12,6 +12,9 @@ import warnings
 import pytest
 import six
 
+# https://stackoverflow.com/a/40846742
+warnings.filterwarnings("ignore", message="numpy.dtype size changed")
+warnings.filterwarnings("ignore", message="numpy.ufunc size changed")
 
 collect_ignore = []
 if six.PY2:
