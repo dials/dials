@@ -830,6 +830,11 @@ class SpotFrame(XrayFrame):
                 for j, rd in enumerate(image_data):
                     rd += image_data_i[j]
 
+            # /= sum_images to put on consistent scale with single image
+            # so that -1 etc. handled correctly
+
+            image_data = tuple(i / self.params.sum_images for i in image_data)
+
             # Don't show summed images with overloads
             self.pyslip.tiles.set_image_data(image_data, show_saturated=False)
 
