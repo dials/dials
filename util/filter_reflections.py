@@ -112,6 +112,8 @@ def filter_reflection_table(reflection_table, intensity_choice, *args, **kwargs)
         reducer = AllSumPrfScaleIntensityReducer
     elif all(i in intensity_choice for i in ["sum", "profile"]):
         reducer = SumAndPrfIntensityReducer
+    elif all(i in intensity_choice for i in ["sum | profile"]):
+        reducer = SumORPrfIntensityReducer
     elif all(i in intensity_choice for i in ["sum", "scale"]):
         reducer = SumAndScaleIntensityReducer
     else:
@@ -124,7 +126,6 @@ def filter_reflection_table(reflection_table, intensity_choice, *args, **kwargs)
                 "(if parsing from command line, multiple choices passed as e.g. profile+sum"
             ).format(intensity_choice)
         )
-
     # Validate that the reflection table has the columns we need
     required_columns_lookup = {
         "scale": {"inverse_scale_factor", "intensity.scale.value"},
@@ -147,7 +148,7 @@ def filter_reflection_table(reflection_table, intensity_choice, *args, **kwargs)
         reflection_table = reducer.filter_for_export(reflection_table, *args, **kwargs)
     except NoProfilesException as e:
         logger.warning(e, exc_info=True)
-        intensity_choice.remove("profile")
+        intensity_choice = ["sum"]
         logger.info(
             "Attempting to reprocess with intensity choice: %s"
             % " + ".join(i for i in intensity_choice)
@@ -313,6 +314,14 @@ class FilteringReductionMethods(object):
     def _filter_bad_variances(reflection_table, intensity):
         """Filter reflections with a variance <= 0."""
         selection = reflection_table["intensity." + intensity + ".variance"] <= 0
+        if intensity == "prf":
+            selection &= reflection_table.get_flags(
+                reflection_table.flags.integrated_prf
+            )
+        elif intensity == "sum":
+            selection &= reflection_table.get_flags(
+                reflection_table.flags.integrated_sum
+            )
         if selection.count(True) > 0:
             reflection_table.del_selected(selection)
             logger.info(
@@ -613,6 +622,58 @@ class SumAndPrfIntensityReducer(FilterForExportAlgorithm):
         reflection_table = reflection_table.select(selection)
         logger.info(
             "Selected %d reflections integrated by profile and summation methods"
+            % reflection_table.size()
+        )
+        return reflection_table
+
+    @classmethod
+    def apply_scaling_factors(cls, reflection_table):
+        """Apply corrections to the intensities and variances (partiality, lp, qe)."""
+        reflection_table, conversion = cls.calculate_lp_qe_correction_and_filter(
+            reflection_table
+        )
+        sum_conversion = conversion
+
+        if "partiality" in reflection_table:
+            nonzero_sel = reflection_table["partiality"] > 0.0
+            reflection_table = reflection_table.select(nonzero_sel)
+            conversion = conversion.select(nonzero_sel)
+            sum_conversion = conversion / reflection_table["partiality"]
+
+        reflection_table["intensity.sum.value"] *= sum_conversion
+        reflection_table["intensity.sum.variance"] *= sum_conversion * sum_conversion
+        reflection_table["intensity.prf.value"] *= conversion
+        reflection_table["intensity.prf.variance"] *= conversion * conversion
+        return reflection_table
+
+
+class SumORPrfIntensityReducer(FilterForExportAlgorithm):
+    """Reduction methods for data with sum or profile intensities.
+
+    Reflections with valid values for either intensity type are retained.
+    """
+
+    intensities = ["sum", "prf"]
+
+    @staticmethod
+    @checkdataremains
+    def reduce_on_intensities(reflection_table):
+        """Select reflections successfully integrated by sum and prf methods."""
+        if (
+            reflection_table.get_flags(reflection_table.flags.integrated_prf).count(
+                True
+            )
+            == 0
+        ):
+            raise NoProfilesException(
+                "WARNING: No profile-integrated reflections found"
+            )
+        selection = reflection_table.get_flags(
+            reflection_table.flags.integrated, all=False
+        )
+        reflection_table = reflection_table.select(selection)
+        logger.info(
+            "Selected %d reflections integrated by profile or summation methods"
             % reflection_table.size()
         )
         return reflection_table
