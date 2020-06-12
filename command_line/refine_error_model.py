@@ -24,7 +24,7 @@ from dials.algorithms.scaling.error_model.error_model import (
     calc_deltahl,
 )
 from dials.algorithms.scaling.Ih_table import IhTable
-from dials.algorithms.scaling.scaling_library import choose_scaling_intensities
+from dials.algorithms.scaling.scaling_library import choose_initial_scaling_intensities
 from dials.algorithms.scaling.plots import (
     normal_probability_plot,
     error_model_variance_plot,
@@ -90,7 +90,7 @@ def refine_error_model(params, experiments, reflection_tables):
             table["intensity"] = I
             table["variance"] = V
         else:
-            table = choose_scaling_intensities(
+            table = choose_initial_scaling_intensities(
                 table, intensity_choice=params.intensity_choice
             )
         reflection_tables[i] = table

@@ -195,8 +195,11 @@ class SingleDatasetIntensityCombiner(object):
         return rows, results
 
 
-def _calculate_suitable_combined_intensities(scaler, max_key):
-    reflections = scaler.reflection_table.select(scaler.suitable_refl_for_scaling_sel)
+def combine_intensities(reflections, Imid):
+    """Take unscaled data, and apply intensity combination with a given Imid."""
+    assert "intensity.prf.value" in reflections
+    assert "intensity.sum.value" in reflections
+    assert "prescaling_correction" in reflections
 
     conv = reflections["prescaling_correction"]
     Isum = reflections["intensity.sum.value"]
@@ -214,7 +217,7 @@ def _calculate_suitable_combined_intensities(scaler, max_key):
     else:
         sum_conv = conv
 
-    if max_key == 1:  # i.e. sum is best, so use sum if exists, else prf
+    if Imid == 1:  # i.e. sum is best, so use sum if exists, else prf
         intensity = Isum * sum_conv
         variance = Vsum * sum_conv * sum_conv
         # get not summation successful
@@ -229,22 +232,27 @@ def _calculate_suitable_combined_intensities(scaler, max_key):
         variance.set_selected(
             not_prf.iselection(), (Vsum * sum_conv * sum_conv).select(not_prf)
         )
-        if max_key == 0:  # done all we need to do.
+        if Imid == 0:  # done all we need to do.
             pass
         else:
             # calculate combined intensities, but only set for those where both prf and sum good
             if "partiality" in reflections:
                 Int, Var = _calculate_combined_raw_intensities(
-                    Ipr, Isum * inv_p, Vpr, Vsum * inv_p * inv_p, max_key
+                    Ipr, Isum * inv_p, Vpr, Vsum * inv_p * inv_p, Imid
                 )
             else:
                 Int, Var = _calculate_combined_raw_intensities(
-                    Ipr, Isum, Vpr, Vsum, max_key
+                    Ipr, Isum, Vpr, Vsum, Imid
                 )
             intensity.set_selected(both.iselection(), (Int * conv).select(both))
             variance.set_selected(both.iselection(), (Var * conv * conv).select(both))
 
     return intensity, variance
+
+
+def _calculate_suitable_combined_intensities(scaler, max_key):
+    reflections = scaler.reflection_table.select(scaler.suitable_refl_for_scaling_sel)
+    return combine_intensities(reflections, max_key)
 
 
 class MultiDatasetIntensityCombiner(object):
