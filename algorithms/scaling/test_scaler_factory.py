@@ -66,7 +66,8 @@ def refl_to_filter():
     reflections["intensity.sum.value"] = flex.double([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
     reflections["intensity.sum.variance"] = flex.double([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
     reflections.set_flags(
-        flex.bool([True, False, True, True, True, True]), reflections.flags.integrated
+        flex.bool([True, False, True, True, True, True]),
+        reflections.flags.integrated_sum,
     )
     return reflections
 
