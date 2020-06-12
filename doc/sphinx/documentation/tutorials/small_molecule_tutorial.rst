@@ -5,8 +5,8 @@
   Please click here to go to the tutorial for DIALS 1.14.
   </a>
 
-Small Molecule Tutorial
-=======================
+Small-molecule data reduction tutorial
+======================================
 
 .. highlight:: none
 
@@ -18,33 +18,34 @@ While the conventional use of DIALS for small molecule data could be to run xia2
 Data
 ----
 
-The data for this tutorial are on Zenodo at https://zenodo.org/record/51405 - l-cyst_0[1-4].tar.gz i.e first four files. For this tutorial it will be assumed you have the data linked to a directory ../data - however this only matters for the import step.
+The data for this tutorial are on Zenodo at https://zenodo.org/record/51405 — we will use ``l-cyst_0[1-4].tar.gz`` i.e. the first four files. For this tutorial it will be assumed you have the data linked to a directory ``../data`` — however this only matters for the import step.
 
 Import
 ------
 
-Usually DIALS processing is run on a sequence-by-sequence basis - for small molecule data however where multiple sequences from one sample are routinely collected, with different experimental configurations, it is helpful to process all sequences at once, therefore starting with:
+Usually DIALS processing is run on a sequence-by-sequence basis.
+For small molecule data however where multiple sequences from one sample are routinely collected, with different experimental configurations, it is helpful to process all sequences at once, therefore starting with:
 
 .. code-block:: bash
 
    dials.import ../data/*cbf
 
-This will create a DIALS datablock.expt file with details of the 4 sequences within it.
+This will create a DIALS ``imported.expt`` file with details of the 4 sequences within it.
 
-Spot Finding
+Spot finding
 ------------
 
 This is identical to the routine usage i.e.
 
 .. code-block:: bash
 
-   dials.find_spots datablock.expt nproc=8
+   dials.find_spots imported.expt nproc=8
 
-Though will of course take a little longer to work through four sequences. Here nproc=8 was assigned (for a core i7 machine.) The spot finding is independent from sequence to sequence but the spots from all sequences may be viewed with
+Though will of course take a little longer to work through four sequences. Here ``nproc=8`` was assigned (for a core i7 machine.) The spot finding is independent from sequence to sequence but the spots from all sequences may be viewed with
 
 .. code-block:: bash
 
-   dials.reciprocal_lattice_viewer datablock.expt strong.refl
+   dials.reciprocal_lattice_viewer imported.expt strong.refl
 
 Which will show how the four sequences overlap in reciprocal space, as:
 
@@ -53,18 +54,23 @@ Which will show how the four sequences overlap in reciprocal space, as:
 Indexing
 --------
 
-Indexing here will depend on the model for the experiment being reasonably accurate. Provided that the lattices overlap in the reciprocal lattice view above, the indexing should be straightforward and will guarantee that all lattices are consistently indexed. One detail here is to split the experiments on output: this duplicates the models for the individual components rather than sharing them, which allows greater flexibility in refinement (and is critical for scan varying refinement).
+Indexing here will depend on the model for the experiment being reasonably accurate.
+Provided that the lattices overlap in the reciprocal lattice view above, the indexing should be straightforward and will guarantee that all lattices are consistently indexed.
+One detail here is to split the experiments on output.
+This duplicates the models for the individual components rather than sharing them, which allows greater flexibility in refinement (and is critical for scan varying refinement).
 
 .. code-block:: bash
 
-   dials.index datablock.expt strong.refl
+   dials.index imported.expt strong.refl
 
 Without any additional input, the indexing will determine the most approproiate primitive lattice parameters and orientation which desctibe the observed reciprocal lattice positions.
 
-Bravais Lattice Determination
+Bravais lattice determination
 -----------------------------
 
-In the single sequence tutorial the determination of the Bravais lattice is performed between indexing and refinement. This step however will only work on a single lattice at a time - therefore in this case the analysis will be performed, the results verified then the conclusion fed back into indexing as follows:
+In the single sequence tutorial the determination of the Bravais lattice is performed between indexing and refinement.
+This step however will only work on a single lattice at a time.
+Therefore in this case the analysis will be performed, the results verified then the conclusion fed back into indexing as follows:
 
 .. code-block:: bash
 
@@ -77,14 +83,14 @@ Inspect the results, conclude that the oP lattice is appropriate then assign thi
 
 .. code-block:: bash
 
-   dials.index datablock.expt strong.refl space_group=P222
+   dials.index imported.expt strong.refl space_group=P222
 
 This will once again consistently index the data, this time enforcing the lattice constraints.
 
 Refinement
 ----------
 
-Prior to integration we want to refine the experimental geometry and the scan varying crystal orientation and unit cell. This is performed in two steps - the first is to perform static refinement on each indexed sequence, the second to take this refined model and refine the unit cell and orientation allowing for time varying parameters:
+Prior to integration we want to refine the experimental geometry and the scan varying crystal orientation and unit cell. This is performed in two steps — the first is to perform static refinement on each indexed sequence, the second to take this refined model and refine the unit cell and orientation allowing for time varying parameters:
 
 .. code-block:: bash
 
@@ -101,7 +107,7 @@ At this stage the reciprocal lattice view will show a much improved level of agr
 Integration
 -----------
 
-At this stage the reflections may be integrated - this is run with:
+At this stage the reflections may be integrated.  This is done by running
 
 .. code-block:: bash
 
@@ -109,7 +115,7 @@ At this stage the reflections may be integrated - this is run with:
 
 which will integrate each sequence in sequence, again using 8 cores.
 
-Unit Cell Refinement
+Unit cell refinement
 --------------------
 
 After integration the unit cell for downstream analysis may be derived from refinement of the cell against observed two-theta angles from the reflections, across the four sequences:
@@ -134,4 +140,4 @@ Note that SADABS requires the batches and file names to be numbered from 1:
    dials.export format=sadabs reflections_2.refl experiments_2.expt sadabs.hklout=integrated_3.sad run=3
    dials.export format=sadabs reflections_3.refl experiments_3.expt sadabs.hklout=integrated_4.sad run=4
 
-If desired, p4p files for each combination of reflections_[0-3].refl, experiments_[0-3].expt could also be generated.
+If desired, ``p4p`` files for each combination of ``reflections_[0-3].refl``, ``experiments_[0-3].expt`` could also be generated.
