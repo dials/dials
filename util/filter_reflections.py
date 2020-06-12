@@ -152,11 +152,11 @@ def filter_reflection_table(reflection_table, intensity_choice, *args, **kwargs)
             intensity_choice.remove("profile")
         else:
             intensity_choice = None
-        logger.info(
-            "Attempting to reprocess with intensity choice: %s"
-            % " + ".join(i for i in intensity_choice)
-        )
         if intensity_choice:
+            logger.info(
+                "Attempting to reprocess with intensity choice: %s"
+                % " + ".join(i for i in intensity_choice)
+            )
             reflection_table = filter_reflection_table(
                 reflection_table, intensity_choice, *args, **kwargs
             )
