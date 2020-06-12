@@ -811,7 +811,7 @@ class SpotFrame(XrayFrame):
                 update=False,
             )
 
-    def sum_images(self):
+    def stack_images(self):
         if self.params.sum_images > 1:
             image = self.pyslip.tiles.raw_image
             image_data = image.get_image_data()
@@ -1166,7 +1166,7 @@ class SpotFrame(XrayFrame):
                     fontsize=self.settings.fontsize,
                 )
 
-        self.sum_images()
+        self.stack_images()
         # if self.params.sum_images == 1:
         # self.show_filters()
         if self.settings.show_threshold_pix:
