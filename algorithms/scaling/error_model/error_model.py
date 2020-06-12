@@ -360,6 +360,7 @@ class BasicErrorModel(object):
         self.free_components = []
         self.sortedy = None
         self.sortedx = None
+        self.binner = None
         self.filtered_Ih_table = self.filter_unsuitable_reflections(
             Ih_table, basic_params, min_partiality
         )
@@ -444,7 +445,8 @@ class BasicErrorModel(object):
 
     def clear_Ih_table(self):
         """Delete the Ih_table, to free memory."""
-        del self.binner.Ih_table
+        if self.binner:
+            self.binner.Ih_table = None
 
     def __str__(self):
         a = abs(self.parameters[0])
