@@ -812,6 +812,7 @@ class SpotFrame(XrayFrame):
             )
 
     def stack_images(self):
+        mode = self.settings.stack_type
         if self.params.sum_images > 1:
             image = self.pyslip.tiles.raw_image
             image_data = image.get_image_data()
@@ -828,12 +829,17 @@ class SpotFrame(XrayFrame):
                     break
                 image_data_i = imageset[i_frame + i]
                 for j, rd in enumerate(image_data):
-                    rd += image_data_i[j]
+                    data = image_data_i[j]
+                    if mode == "mean":
+                        rd += data
+                    else:
+                        sel = data > rd
+                        rd = rd.as_1d().set_selected(sel.as_1d(), data.as_1d())
 
             # /= sum_images to put on consistent scale with single image
-            # so that -1 etc. handled correctly
-
-            image_data = tuple(i / self.params.sum_images for i in image_data)
+            # so that -1 etc. handled correctly (mean mode)
+            if mode == "mean":
+                image_data = tuple(i / self.params.sum_images for i in image_data)
 
             # Don't show summed images with overloads
             self.pyslip.tiles.set_image_data(image_data, show_saturated=False)
@@ -1700,6 +1706,7 @@ class SpotSettingsPanel(wx.Panel):
 
         # CONTROLS 4: additional settings for derived class
         self.settings.image_type = "corrected"
+        self.settings.stack_type = "max"
         self.settings.brightness = self.params.brightness
         self.settings.color_scheme = self.params.color_scheme
         self.settings.show_spotfinder_spots = False
@@ -1886,6 +1893,18 @@ class SpotSettingsPanel(wx.Panel):
         # box.Add(txtd, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
         # s.Add(box)
 
+        # Stack type choice
+        grid = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
+        txt1 = wx.StaticText(self, -1, "Stack type:")
+        grid.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.stack_types = ["max", "mean"]
+        self.stack_type_ctrl = wx.Choice(self, -1, choices=self.stack_types)
+        self.stack_type_ctrl.SetSelection(
+            self.stack_types.index(self.settings.stack_type)
+        )
+        grid.Add(self.stack_type_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        s.Add(grid)
+
         # Image type choice
         grid = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
         txt1 = wx.StaticText(self, -1, "Image type:")
@@ -2035,6 +2054,7 @@ class SpotSettingsPanel(wx.Panel):
 
         self.Bind(wx.EVT_CHOICE, self.OnUpdateZoomLevel, self.zoom_ctrl)
         self.Bind(wx.EVT_CHOICE, self.OnUpdateImage, self.image_type_ctrl)
+        self.Bind(wx.EVT_CHOICE, self.OnUpdateImage, self.stack_type_ctrl)
         self.Bind(wx.EVT_CHOICE, self.OnUpdate, self.color_ctrl)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.resolution_rings_ctrl)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.ice_rings_ctrl)
@@ -2063,6 +2083,9 @@ class SpotSettingsPanel(wx.Panel):
         if self.settings.enable_collect_values:
             self.settings.image_type = self.image_types[
                 self.image_type_ctrl.GetSelection()
+            ]
+            self.settings.stack_type = self.stack_types[
+                self.stack_type_ctrl.GetSelection()
             ]
             self.settings.show_resolution_rings = self.resolution_rings_ctrl.GetValue()
             self.settings.show_ice_rings = self.ice_rings_ctrl.GetValue()
