@@ -236,7 +236,7 @@ class SpotFrame(XrayFrame):
 
         self.stack = PhilIntCtrl(self.toolbar, -1, name="stack", size=(65, -1))
         self.stack.SetMin(1)
-        self.stack.SetValue(1)
+        self.stack.SetValue(self.params.stack_images)
         self.toolbar.AddControl(self.stack)
         self.Bind(EVT_PHIL_CONTROL, self.OnStack, self.stack)
 
@@ -307,8 +307,8 @@ class SpotFrame(XrayFrame):
 
     def OnStack(self, event):
         value = self.stack.GetPhilValue()
-        if value != self.params.sum_images:
-            self.params.sum_images = value
+        if value != self.params.stack_images:
+            self.params.stack_images = value
             self.reload_image()
 
     def GetBoxCorners(self, layer, p1, p2):
@@ -813,7 +813,7 @@ class SpotFrame(XrayFrame):
 
     def stack_images(self):
         mode = self.settings.stack_type
-        if self.params.sum_images > 1:
+        if self.params.stack_images > 1:
             image = self.pyslip.tiles.raw_image
             image_data = image.get_image_data()
             if not isinstance(image_data, tuple):
@@ -824,7 +824,7 @@ class SpotFrame(XrayFrame):
             ).index
             imageset = self.image_chooser.GetClientData(i_frame).image_set
 
-            for i in range(1, self.params.sum_images):
+            for i in range(1, self.params.stack_images):
                 if (i_frame + i) >= len(imageset):
                     break
                 image_data_i = imageset[i_frame + i]
@@ -836,10 +836,10 @@ class SpotFrame(XrayFrame):
                         sel = data > rd
                         rd = rd.as_1d().set_selected(sel.as_1d(), data.as_1d())
 
-            # /= sum_images to put on consistent scale with single image
+            # /= stack_images to put on consistent scale with single image
             # so that -1 etc. handled correctly (mean mode)
             if mode == "mean":
-                image_data = tuple(i / self.params.sum_images for i in image_data)
+                image_data = tuple(i / self.params.stack_images for i in image_data)
 
             # Don't show summed images with overloads
             self.pyslip.tiles.set_image_data(image_data, show_saturated=False)
@@ -909,7 +909,7 @@ class SpotFrame(XrayFrame):
     def _calculate_dispersion_debug(self, image):
         request = {}
         request["index"] = image.index
-        request["sum"] = self.params.sum_images
+        request["sum"] = self.params.stack_images
         request["gain_value"] = self.settings.gain
         request["nsigma_b"] = self.settings.nsigma_b
         request["nsigma_s"] = self.settings.nsigma_s
@@ -1173,7 +1173,7 @@ class SpotFrame(XrayFrame):
                 )
 
         self.stack_images()
-        # if self.params.sum_images == 1:
+        # if self.params.stack_images == 1:
         # self.show_filters()
         if self.settings.show_threshold_pix:
             image = self.pyslip.tiles.raw_image
@@ -1360,7 +1360,7 @@ class SpotFrame(XrayFrame):
                 bbox = ref_list["bbox"]
                 x0, x1, y0, y1, z0, z1 = bbox.parts()
                 # ticket #107
-                n = self.params.sum_images - 1
+                n = self.params.stack_images - 1
                 bbox_sel = ~((i_frame >= z1) | ((i_frame + n) < z0))
                 selected = ref_list.select(bbox_sel)
                 for reflection in selected.rows():
@@ -1471,7 +1471,7 @@ class SpotFrame(XrayFrame):
                         centroid = reflection["xyzobs.px.value"]
                         # ticket #107
                         if centroid[2] >= i_frame and centroid[2] <= (
-                            i_frame + self.params.sum_images
+                            i_frame + self.params.stack_images
                         ):
                             x, y = map_coords(
                                 centroid[0], centroid[1], reflection["panel"]
