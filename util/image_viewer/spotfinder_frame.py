@@ -833,6 +833,8 @@ class SpotFrame(XrayFrame):
                     if mode == "mean":
                         rd += data
                     else:
+                        if type(rd) != type(data):
+                            rd = rd.as_double()
                         sel = data > rd
                         rd = rd.as_1d().set_selected(sel.as_1d(), data.as_1d())
 
