@@ -307,6 +307,14 @@ class SpotFrame(XrayFrame):
 
     def OnStack(self, event):
         value = self.stack.GetPhilValue()
+
+        if value == 1:
+            for button in self.settings_frame.panel.kabsch_buttons[1:]:
+                button.Enable()
+        else:
+            for button in self.settings_frame.panel.kabsch_buttons[1:]:
+                button.Disable()
+
         if value != self.params.stack_images:
             self.params.stack_images = value
             self.reload_image()
@@ -2036,6 +2044,9 @@ class SpotSettingsPanel(wx.Panel):
             grid2.Add(btn, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
             self.Bind(wx.EVT_TOGGLEBUTTON, self.OnDispersionThresholdDebug, btn)
 
+        for label, button in zip(self.kabsch_labels, self.kabsch_buttons):
+            if self.params.stack_images > 1 and label != "image":
+                button.Disable()
         for button in self.kabsch_buttons:
             if button.GetLabelText() == self.settings.display:
                 button.SetValue(True)
