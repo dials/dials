@@ -855,8 +855,10 @@ class SpotFrame(XrayFrame):
             image_data = image.get_image_data()
         else:
             image_data = image.get_image_data(corrected=False)
-        if not isinstance(image_data, tuple):
-            image_data = (image_data,)
+        if isinstance(image_data, tuple):
+            image_data = tuple(id.as_double() for id in image_data)
+        else:
+            image_data = (image_data.as_double(),)
 
         if self.settings.display != "image":
             kabsch_debug_list = self._calculate_dispersion_debug(image)
