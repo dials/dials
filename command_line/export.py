@@ -88,7 +88,7 @@ phil_scope = parse(
 
   mtz {
 
-    combine_partials = False
+    combine_partials = True
       .type = bool
       .help = "Combine partials that have the same partial id into one
         reflection, with an updated partiality given by the sum of the
