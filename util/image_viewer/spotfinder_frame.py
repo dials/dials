@@ -812,7 +812,7 @@ class SpotFrame(XrayFrame):
             )
 
     def stack_images(self):
-        mode = self.settings.stack_type
+        mode = self.params.stack_type
         if self.params.stack_images > 1:
             image = self.pyslip.tiles.raw_image
             image_data = image.get_image_data()
@@ -1708,7 +1708,6 @@ class SpotSettingsPanel(wx.Panel):
 
         # CONTROLS 4: additional settings for derived class
         self.settings.image_type = "corrected"
-        self.settings.stack_type = "max"
         self.settings.brightness = self.params.brightness
         self.settings.color_scheme = self.params.color_scheme
         self.settings.show_spotfinder_spots = False
@@ -1902,7 +1901,7 @@ class SpotSettingsPanel(wx.Panel):
         self.stack_types = ["max", "mean"]
         self.stack_type_ctrl = wx.Choice(self, -1, choices=self.stack_types)
         self.stack_type_ctrl.SetSelection(
-            self.stack_types.index(self.settings.stack_type)
+            self.stack_types.index(self.params.stack_type)
         )
         grid.Add(self.stack_type_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         s.Add(grid)
@@ -2086,7 +2085,7 @@ class SpotSettingsPanel(wx.Panel):
             self.settings.image_type = self.image_types[
                 self.image_type_ctrl.GetSelection()
             ]
-            self.settings.stack_type = self.stack_types[
+            self.params.stack_type = self.stack_types[
                 self.stack_type_ctrl.GetSelection()
             ]
             self.settings.show_resolution_rings = self.resolution_rings_ctrl.GetValue()
