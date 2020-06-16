@@ -10,7 +10,6 @@ import iotbx.phil
 from dials.algorithms.spot_finding.factory import SpotFinderFactory
 from dials.algorithms.spot_finding.factory import phil_scope as spot_phil
 from dials.util import Sorry
-from dxtbx.model.experiment_list import ExperimentList, Experiment
 from scitbx.array_family import flex
 
 help_message = """
@@ -150,20 +149,7 @@ def background(imageset, indx, n_bins, mask_params=None):
     data = data.as_double()
 
     spot_params = spot_phil.fetch(source=parse("")).extract()
-    threshold_function = SpotFinderFactory.configure_threshold(
-        spot_params,
-        ExperimentList(
-            [
-                Experiment(
-                    beam=imageset.get_beam(),
-                    detector=imageset.get_detector(),
-                    goniometer=imageset.get_goniometer(),
-                    scan=imageset.get_scan(),
-                    imageset=imageset,
-                )
-            ]
-        ),
-    )
+    threshold_function = SpotFinderFactory.configure_threshold(spot_params)
     peak_pixels = threshold_function.compute_threshold(data, mask)
     signal = data.select(peak_pixels.iselection())
     background_pixels = mask & ~peak_pixels

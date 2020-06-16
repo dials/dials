@@ -442,7 +442,7 @@ class SpotFinderFactory(object):
         filter_spots = SpotFinderFactory.configure_filter(params)
 
         # Create the threshold strategy
-        threshold_function = SpotFinderFactory.configure_threshold(params, experiments)
+        threshold_function = SpotFinderFactory.configure_threshold(params)
 
         # Configure the mask generator
         mask_generator = MaskGenerator(params.spotfinder.filter)
@@ -474,7 +474,7 @@ class SpotFinderFactory(object):
         )
 
     @staticmethod
-    def configure_threshold(params, experiments):
+    def configure_threshold(params):
         """
         Get the threshold strategy
 
