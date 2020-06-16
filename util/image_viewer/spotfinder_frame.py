@@ -812,7 +812,7 @@ class SpotFrame(XrayFrame):
             )
 
     def stack_images(self):
-        mode = self.params.stack_type
+        mode = self.params.stack_mode
         if self.params.stack_images > 1:
             image = self.pyslip.tiles.raw_image
             image_data = image.get_image_data()
@@ -1898,12 +1898,12 @@ class SpotSettingsPanel(wx.Panel):
         grid = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
         txt1 = wx.StaticText(self, -1, "Stack type:")
         grid.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-        self.stack_types = ["max", "mean", "sum"]
-        self.stack_type_ctrl = wx.Choice(self, -1, choices=self.stack_types)
-        self.stack_type_ctrl.SetSelection(
-            self.stack_types.index(self.params.stack_type)
+        self.stack_modes = ["max", "mean", "sum"]
+        self.stack_mode_ctrl = wx.Choice(self, -1, choices=self.stack_modes)
+        self.stack_mode_ctrl.SetSelection(
+            self.stack_modes.index(self.params.stack_mode)
         )
-        grid.Add(self.stack_type_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(self.stack_mode_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         s.Add(grid)
 
         # Image type choice
@@ -2055,7 +2055,7 @@ class SpotSettingsPanel(wx.Panel):
 
         self.Bind(wx.EVT_CHOICE, self.OnUpdateZoomLevel, self.zoom_ctrl)
         self.Bind(wx.EVT_CHOICE, self.OnUpdateImage, self.image_type_ctrl)
-        self.Bind(wx.EVT_CHOICE, self.OnUpdateImage, self.stack_type_ctrl)
+        self.Bind(wx.EVT_CHOICE, self.OnUpdateImage, self.stack_mode_ctrl)
         self.Bind(wx.EVT_CHOICE, self.OnUpdate, self.color_ctrl)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.resolution_rings_ctrl)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.ice_rings_ctrl)
@@ -2085,8 +2085,8 @@ class SpotSettingsPanel(wx.Panel):
             self.settings.image_type = self.image_types[
                 self.image_type_ctrl.GetSelection()
             ]
-            self.params.stack_type = self.stack_types[
-                self.stack_type_ctrl.GetSelection()
+            self.params.stack_mode = self.stack_modes[
+                self.stack_mode_ctrl.GetSelection()
             ]
             self.settings.show_resolution_rings = self.resolution_rings_ctrl.GetValue()
             self.settings.show_ice_rings = self.ice_rings_ctrl.GetValue()
