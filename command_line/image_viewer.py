@@ -80,7 +80,7 @@ gain = 1
 stack_images = 1
   .type = int(value_min=1)
   .expert_level = 2
-stack_type = *max mean
+stack_type = *max mean sum
   .type = choice
 d_min = None
   .type = float(value_min=0)

@@ -830,13 +830,13 @@ class SpotFrame(XrayFrame):
                 image_data_i = imageset[i_frame + i]
                 for j, rd in enumerate(image_data):
                     data = image_data_i[j]
-                    if mode == "mean":
-                        rd += data
-                    else:
+                    if mode == "max":
                         if type(rd) != type(data):
                             rd = rd.as_double()
                         sel = data > rd
                         rd = rd.as_1d().set_selected(sel.as_1d(), data.as_1d())
+                    else:
+                        rd += data
 
             # /= stack_images to put on consistent scale with single image
             # so that -1 etc. handled correctly (mean mode)
@@ -1898,7 +1898,7 @@ class SpotSettingsPanel(wx.Panel):
         grid = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
         txt1 = wx.StaticText(self, -1, "Stack type:")
         grid.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-        self.stack_types = ["max", "mean"]
+        self.stack_types = ["max", "mean", "sum"]
         self.stack_type_ctrl = wx.Choice(self, -1, choices=self.stack_types)
         self.stack_type_ctrl.SetSelection(
             self.stack_types.index(self.params.stack_type)
