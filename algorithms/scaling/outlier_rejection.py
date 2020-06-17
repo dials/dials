@@ -12,7 +12,7 @@ from __future__ import absolute_import, division, print_function
 import logging
 
 from dials.algorithms.scaling.Ih_table import IhTable
-from dials_scaling_ext import determine_outlier_indices
+from dials_scaling_ext import determine_outlier_indices, limit_outlier_weights
 from scitbx.array_family import flex
 
 logger = logging.getLogger("dials")
@@ -247,12 +247,18 @@ class SimpleNormDevOutlierRejection(OutlierRejectionBase):
     the symmetry group excluding the test reflection.
     """
 
+    def __init__(self, Ih_table, zmax):
+        super(SimpleNormDevOutlierRejection, self).__init__(Ih_table, zmax)
+        self.weights = limit_outlier_weights(
+            self._Ih_table_block.weights, self._Ih_table_block.h_index_matrix
+        )
+
     def _do_outlier_rejection(self):
         """Add indices (w.r.t. the Ih_table data) to self._outlier_indices."""
         Ih_table = self._Ih_table_block
         intensity = Ih_table.intensities
         g = Ih_table.inverse_scale_factors
-        w = Ih_table.weights
+        w = self.weights
         wgIsum = (
             (w * g * intensity) * Ih_table.h_index_matrix
         ) * Ih_table.h_expand_matrix
@@ -282,6 +288,12 @@ class NormDevOutlierRejection(OutlierRejectionBase):
     the symmetry group excluding the test reflection.
     """
 
+    def __init__(self, Ih_table, zmax):
+        super(NormDevOutlierRejection, self).__init__(Ih_table, zmax)
+        self.weights = limit_outlier_weights(
+            self._Ih_table_block.weights, self._Ih_table_block.h_index_matrix
+        )
+
     def _do_outlier_rejection(self):
         """Add indices (w.r.t. the Ih_table data) to self._outlier_indices."""
         outlier_indices, other_potential_outliers = self._round_of_outlier_rejection()
@@ -291,6 +303,7 @@ class NormDevOutlierRejection(OutlierRejectionBase):
             good_sel = flex.bool(self._Ih_table_block.Ih_table.size(), False)
             good_sel.set_selected(internal_potential_outliers, True)
             self._Ih_table_block = self._Ih_table_block.select(good_sel)
+            self.weights = self.weights.select(good_sel)
             (
                 other_potential_outliers,
                 internal_potential_outliers,
@@ -338,7 +351,7 @@ class NormDevOutlierRejection(OutlierRejectionBase):
         Ih_table = self._Ih_table_block
         intensity = Ih_table.intensities
         g = Ih_table.inverse_scale_factors
-        w = Ih_table.weights
+        w = self.weights
         wgIsum = (
             (w * g * intensity) * Ih_table.h_index_matrix
         ) * Ih_table.h_expand_matrix
