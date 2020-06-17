@@ -790,7 +790,6 @@ def git(
 
 REPOSITORIES = (
     "cctbx/annlib_adaptbx",
-    "cctbx/boost",
     "cctbx/cctbx_project",
     "cctbx/dxtbx",
     "dials/annlib",
