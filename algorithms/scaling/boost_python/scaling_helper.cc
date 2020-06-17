@@ -59,6 +59,10 @@ namespace dials_scaling { namespace boost_python {
     def("row_multiply", &row_multiply, (arg("m"), arg("v")));
   }
 
+  void export_limit_outlier_weights() {
+    def("limit_outlier_weights", &limit_outlier_weights, (arg("weights"), arg("h_index_mat")));
+  }
+
   void export_calc_lookup_index() {
     def("calc_lookup_index",
         &calc_lookup_index,
