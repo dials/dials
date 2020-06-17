@@ -48,6 +48,8 @@ show_identifiers = False
 show_image_statistics = False
   .type = bool
   .help = "Deprecated option, please use image_statistics instead"
+  .expert_level = 3
+  .deprecated = True
 image_statistics{
   show_corrected = False
     .type = bool
