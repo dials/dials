@@ -31,7 +31,7 @@ conda-forge::numpy>=1.16,<1.17
 conda-forge::pillow>=5.4.1
 conda-forge::pip
 conda-forge::psutil
-conda-forge::pytest>=4.5,<5.0
+conda-forge::pytest>=4.5
 conda-forge::pytest-forked
 conda-forge::pytest-mock<2.0
 conda-forge::pytest-xdist
