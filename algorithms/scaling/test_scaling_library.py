@@ -19,7 +19,7 @@ from dials.algorithms.scaling.scaling_library import (
     create_Ih_table,
     # calculate_merging_statistics,
     # calculate_single_merging_stats,
-    choose_scaling_intensities,
+    choose_initial_scaling_intensities,
     create_auto_scaling_model,
     determine_best_unit_cell,
 )
@@ -276,26 +276,21 @@ def test_create_Ih_table(test_experiments, test_reflections):
         )
 
 
-def test_choose_scaling_intensities(test_reflections):
+def test_choose_initial_scaling_intensities(test_reflections):
     """Test for correct choice of intensities."""
     test_refl = test_reflections
     intstr = "prf"
-    new_rt = choose_scaling_intensities(test_refl, intstr)
+    new_rt = choose_initial_scaling_intensities(test_refl, intstr)
     assert list(new_rt["intensity"]) == list(test_refl["intensity.prf.value"])
     assert list(new_rt["variance"]) == list(test_refl["intensity.prf.variance"])
     intstr = "sum"  # should apply partiality correction
-    new_rt = choose_scaling_intensities(test_refl, intstr)
+    new_rt = choose_initial_scaling_intensities(test_refl, intstr)
     assert list(new_rt["intensity"]) == list(
         test_refl["intensity.sum.value"] / test_refl["partiality"]
     )
     assert list(new_rt["variance"]) == pytest.approx(
         list(test_refl["intensity.sum.variance"] / flex.pow2(test_refl["partiality"]))
     )
-    # If bad choice, currently return the prf values.
-    intstr = "bad"
-    new_rt = choose_scaling_intensities(test_refl, intstr)
-    assert list(new_rt["intensity"]) == list(test_refl["intensity.prf.value"])
-    assert list(new_rt["variance"]) == list(test_refl["intensity.prf.variance"])
 
 
 def test_auto_scaling_model():

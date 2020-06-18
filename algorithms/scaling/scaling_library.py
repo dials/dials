@@ -53,14 +53,16 @@ def set_image_ranges_in_scaling_models(experiments):
     return experiments
 
 
-def choose_scaling_intensities(reflection_table, intensity_choice="profile"):
-    """Choose which intensities to use for scaling. The LP, QE and
+def choose_initial_scaling_intensities(reflection_table, intensity_choice="profile"):
+    """Choose which intensities to initially use for scaling. The LP, QE and
     partiality corrections are also applied. Two new columns are
     added to the reflection table 'intensity' and 'variance', which have
     all corrections applied except an inverse scale factor."""
     if intensity_choice == "profile":
         intensity_choice = "prf"  # rename to allow string matching with refl table
-    if intensity_choice == "prf":
+    if "intensity.prf.value" not in reflection_table:
+        intensity_choice = "sum"
+    elif intensity_choice == "prf":
         if (
             reflection_table.get_flags(reflection_table.flags.integrated_prf).count(
                 True
@@ -73,46 +75,49 @@ def choose_scaling_intensities(reflection_table, intensity_choice="profile"):
             intensity_choice = "sum"
     reflection_table = calculate_prescaling_correction(reflection_table)
     conv = reflection_table["prescaling_correction"]
-    intstr = "intensity." + intensity_choice + ".value"
-    if intstr not in reflection_table:
-        # Can't find selection, try to choose prf, if not then sum (also catches combine
-        # which should not be used at this point)
-        if "intensity.prf.value" in reflection_table:
-            intstr = "intensity.prf.value"
-        else:
-            assert (
-                "intensity.sum.value" in reflection_table
-            ), """No recognised
-        intensity values found."""
-            intstr = "intensity.sum.value"
-        varstr = intstr.rstrip("value") + "variance"
+    # if prf/sum, use those. If combine, use prf else sum for each refl.
+    if intensity_choice == "prf":
+        reflection_table["intensity"] = reflection_table["intensity.prf.value"] * conv
+        reflection_table["variance"] = (
+            reflection_table["intensity.prf.variance"] * conv * conv
+        )
     else:
-        varstr = intstr.rstrip("value") + "variance"
-        logger.info(
-            """%s intensities will be used for scaling (and mtz output if applicable). \n""",
-            intstr,
-        )
-
-    # prf partial intensities are the 'full' intensity values but sum are not
-    if "partiality" in reflection_table and intstr == "intensity.sum.value":
-        inverse_partiality = flex.double(reflection_table.size(), 1.0)
-        nonzero_partiality_sel = reflection_table["partiality"] > 0.0
-        good_refl = reflection_table.select(reflection_table["partiality"] > 0.0)
-        inverse_partiality.set_selected(
-            nonzero_partiality_sel.iselection(), 1.0 / good_refl["partiality"]
-        )
-        conv *= inverse_partiality
-
-    reflection_table["intensity"] = reflection_table[intstr] * conv
-    reflection_table["variance"] = reflection_table[varstr] * conv * conv
-    if (
-        "partiality.inv.variance" in reflection_table
-        and intstr == "intensity.sum.value"
-    ):
-        reflection_table["variance"] += (
-            reflection_table[intstr] * reflection_table["partiality.inv.variance"]
-        )
-
+        # first fill in summation intensities.
+        if "partiality" in reflection_table:
+            inverse_partiality = flex.double(reflection_table.size(), 1.0)
+            nonzero_partiality_sel = reflection_table["partiality"] > 0.0
+            good_refl = reflection_table.select(reflection_table["partiality"] > 0.0)
+            inverse_partiality.set_selected(
+                nonzero_partiality_sel.iselection(), 1.0 / good_refl["partiality"]
+            )
+            reflection_table["intensity"] = (
+                reflection_table["intensity.sum.value"] * conv * inverse_partiality
+            )
+            reflection_table["variance"] = reflection_table[
+                "intensity.sum.variance"
+            ] * flex.pow2(conv * inverse_partiality)
+            if "partiality.inv.variance" in reflection_table:
+                reflection_table["variance"] += (
+                    reflection_table["intensity.sum.value"]
+                    * reflection_table["partiality.inv.variance"]
+                )
+        else:
+            reflection_table["intensity"] = (
+                reflection_table["intensity.sum.value"] * conv
+            )
+            reflection_table["variance"] = (
+                reflection_table["intensity.sum.variance"] * conv * conv
+            )
+        if intensity_choice == "combine":
+            # now overwrite prf if we have it.
+            sel = reflection_table.get_flags(reflection_table.flags.integrated_prf)
+            isel = sel.iselection()
+            Iprf = (reflection_table["intensity.prf.value"] * conv).select(sel)
+            Vprf = (reflection_table["intensity.prf.variance"] * conv * conv).select(
+                sel
+            )
+            reflection_table["intensity"].set_selected(isel, Iprf)
+            reflection_table["variance"].set_selected(isel, Vprf)
     variance_mask = reflection_table["variance"] <= 0.0
     reflection_table.set_flags(
         variance_mask, reflection_table.flags.excluded_for_scaling
