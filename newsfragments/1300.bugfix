@@ -1,0 +1,1 @@
+in dials.scale, don't require both prf/sum intensities to be available for intensity_choice=combine. Use only one if only one available for a given reflection.
