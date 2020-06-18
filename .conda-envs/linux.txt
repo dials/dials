@@ -18,6 +18,7 @@ conda-forge::conda
 conda-forge::cxx-compiler
 conda-forge::cython>=0.29
 conda-forge::docutils
+conda-forge::eigen
 conda-forge::future
 conda-forge::h5py
 conda-forge::hdf5<1.11

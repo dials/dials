@@ -798,7 +798,6 @@ REPOSITORIES = (
     "dials/ccp4io_adaptbx",
     "dials/clipper",
     "dials/dials",
-    "dials/eigen",
     "dials/gui_resources",
     "dials/tntbx",
     "ssrl-px/iota",
