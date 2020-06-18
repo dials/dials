@@ -309,10 +309,10 @@ class SpotFrame(XrayFrame):
         value = self.stack.GetPhilValue()
 
         if value == 1:
-            for button in self.settings_frame.panel.kabsch_buttons[1:]:
+            for button in self.settings_frame.panel.kabsch_buttons:
                 button.Enable()
         else:
-            for button in self.settings_frame.panel.kabsch_buttons[1:]:
+            for button in self.settings_frame.panel.kabsch_buttons:
                 button.Disable()
 
         if value != self.params.stack_images:
@@ -822,6 +822,7 @@ class SpotFrame(XrayFrame):
     def stack_images(self):
         mode = self.params.stack_mode
         if self.params.stack_images > 1:
+            self.settings.display = "image"
             image = self.pyslip.tiles.raw_image
             image_data = image.get_image_data()
             if not isinstance(image_data, tuple):
@@ -2045,7 +2046,7 @@ class SpotSettingsPanel(wx.Panel):
             self.Bind(wx.EVT_TOGGLEBUTTON, self.OnDispersionThresholdDebug, btn)
 
         for label, button in zip(self.kabsch_labels, self.kabsch_buttons):
-            if self.params.stack_images > 1 and label != "image":
+            if self.params.stack_images > 1:
                 button.Disable()
         for button in self.kabsch_buttons:
             if button.GetLabelText() == self.settings.display:
