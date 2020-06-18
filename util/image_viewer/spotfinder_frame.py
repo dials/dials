@@ -840,7 +840,6 @@ class SpotFrame(XrayFrame):
                 for j, rd in enumerate(image_data):
                     data = image_data_i[j]
                     if mode == "max":
-                        rd = rd.as_double()
                         sel = data > rd
                         rd = rd.as_1d().set_selected(sel.as_1d(), data.as_1d())
                     else:
