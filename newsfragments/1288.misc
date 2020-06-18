@@ -1,0 +1,2 @@
+Refactor detect_blanks; add tests.
+Stop gracefully if given still images as input.
