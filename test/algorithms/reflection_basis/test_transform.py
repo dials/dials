@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import math
+import pytest
 import random
 
 from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator3D
@@ -377,3 +378,131 @@ def test_forward_no_model(dials_data):
         # pylab.show()
         # pylab.plot((image.as_double()-image2).as_numpy_array()[(z1-z0)/2,(y1-y0)/2,:])
         # pylab.show()
+
+
+def test_forward_panel_edge(dials_data):
+    expt = ExperimentList.from_file(
+        dials_data("centroid_test_data").join("imported_experiments.json").strpath
+    )[0]
+
+    # Get the models
+    beam = expt.beam
+    detector = expt.detector
+    gonio = expt.goniometer
+    scan = expt.scan
+
+    # Set some parameters
+    sigma_divergence = 0.00101229
+    mosaicity = 0.157 * math.pi / 180
+    n_sigma = 3
+    grid_size = 7
+    delta_divergence = n_sigma * sigma_divergence
+
+    step_size = delta_divergence / grid_size
+    delta_divergence2 = delta_divergence + step_size * 0.5
+    delta_mosaicity = n_sigma * mosaicity
+
+    # Create the bounding box calculator
+    calculate_bbox = BBoxCalculator3D(
+        beam, detector, gonio, scan, delta_divergence2, delta_mosaicity
+    )
+
+    # Initialise the transform
+    spec = transform.TransformSpec(
+        beam, detector, gonio, scan, sigma_divergence, mosaicity, n_sigma + 1, grid_size
+    )
+
+    assert len(detector) == 1
+
+    s0 = beam.get_s0()
+    m2 = gonio.get_rotation_axis()
+    s0_length = matrix.col(beam.get_s0()).length()
+
+    image_size = detector[0].get_image_size()
+    refl_xy = [
+        (0, 0),
+        (2, 3),
+        (4, 1000),
+        (1000, 5),
+        (image_size[0] - 1, image_size[1] - 1),
+        (image_size[0] - 2, 1),
+        (1, image_size[1] - 5),
+        (1000, image_size[1] - 4),
+        (image_size[0] - 3, 1000),
+    ]
+
+    for x, y in refl_xy:
+        z = random.uniform(0, 9)
+
+        # Get random s1, phi, panel
+        s1 = matrix.col(detector[0].get_pixel_lab_coord((x, y))).normalize() * s0_length
+        phi = scan.get_angle_from_array_index(z, deg=False)
+        panel = 0
+
+        # Calculate the bounding box
+        bbox = calculate_bbox(s1, z, panel)
+        x0, x1, y0, y1, z0, z1 = bbox
+
+        # Create the coordinate system
+        cs = CoordinateSystem(m2, s0, s1, phi)
+
+        # Create the image
+        image = gaussian(
+            (z1 - z0, y1 - y0, x1 - x0), 10.0, (z - z0, y - y0, x - x0), (2.0, 2.0, 2.0)
+        )
+
+        # Mask for the foreground pixels
+        refl_mask = image > 1e-3
+        bg = flex.double(image.accessor())
+
+        # Shoebox mask, i.e. mask out pixels that are outside the panel bounds
+        shoebox_mask = flex.bool(image.accessor(), False)
+        for j in range(y1 - y0):
+            for i in range(x1 - x0):
+                if (
+                    j + y0 >= 0
+                    and j + y0 < image_size[1]
+                    and i + x0 >= 0
+                    and i + x0 < image_size[0]
+                ):
+                    for k in range(z1 - z0):
+                        shoebox_mask[k, j, i] = True
+
+        mask = refl_mask & shoebox_mask
+
+        # from matplotlib import pyplot as plt
+        # fig, axes = plt.subplots(ncols=refl_mask.focus()[0], nrows=4)
+        # for i in range(refl_mask.focus()[0]):
+        # axes[0, i].imshow(image.as_numpy_array()[i])
+        # axes[1, i].imshow(refl_mask.as_numpy_array()[i])
+        # axes[2, i].imshow(shoebox_mask.as_numpy_array()[i])
+        # axes[3, i].imshow(mask.as_numpy_array()[i])
+        # plt.show()
+
+        # Transform the image to the grid
+        transformed = transform.TransformForward(
+            spec, cs, bbox, 0, image.as_double(), bg, refl_mask
+        )
+        grid = transformed.profile()
+
+        mask = refl_mask & shoebox_mask
+        # assert only pixels within the panel were transformed
+        assert flex.sum(grid) == pytest.approx(
+            flex.sum(image.select(mask.as_1d())), rel=0.01
+        )
+        # The total transformed counts should be less than the (unmasked) image counts
+        assert flex.sum(grid) < flex.sum(image)
+
+        # Transform the image to the grid, this time without a background
+        transformed = transform.TransformForward(
+            spec, cs, bbox, 0, image.as_double(), refl_mask
+        )
+        grid = transformed.profile()
+
+        mask = refl_mask & shoebox_mask
+        # assert only pixels within the panel were transformed
+        assert flex.sum(grid) == pytest.approx(
+            flex.sum(image.select(mask.as_1d())), rel=0.01
+        )
+        # The total transformed counts should be less than the (unmasked) image counts
+        assert flex.sum(grid) < flex.sum(image)
