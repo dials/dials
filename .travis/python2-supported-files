@@ -268,7 +268,6 @@
 ./command_line/cosym.py
 ./command_line/create_profile_model.py
 ./command_line/damage_analysis.py
-./command_line/detect_blanks.py
 ./command_line/dials_import.py
 ./command_line/estimate_gain.py
 ./command_line/export_best.py
