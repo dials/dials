@@ -328,7 +328,15 @@ namespace dials {
         // frame to the grid point.
         af::c_grid<2> grid_size2(grid_size_[1], grid_size_[2]);
         for (std::size_t j = 0; j < shoebox_size_[1]; ++j) {
+          if (y0_ + j < 0 | y0_ + j >= panel.get_image_size()[1]) {
+            // This y-coordinate is outside the bounds of the panel
+            continue;
+          }
           for (std::size_t i = 0; i < shoebox_size_[2]; ++i) {
+            if (x0_ + i < 0 | x0_ + i >= panel.get_image_size()[0]) {
+              // This x-coordinate is outside the bounds of the panel
+              continue;
+            }
             vert4 input(gc_array(j, i),
                         gc_array(j, i + 1),
                         gc_array(j + 1, i + 1),
@@ -413,7 +421,6 @@ namespace dials {
         for (std::size_t j = 0; j < shoebox_size_[1]; ++j) {
           if (y0_ + j < 0 | y0_ + j >= panel.get_image_size()[1]) {
             // This y-coordinate is outside the bounds of the panel
-            /*printf("pixel y=%lu outside of panel\n", y0_ + j);*/
             continue;
           }
           for (std::size_t i = 0; i < shoebox_size_[2]; ++i) {
