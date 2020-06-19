@@ -86,7 +86,7 @@ def run(args):
     strong_sel = reflections.get_flags(reflections.flags.strong)
     indexed_sel &= ~centroid_outlier_sel
 
-    logger.info(f"Analysis of {strong_sel.count(True)} strong reflections:")
+    logger.info("Analysis of %d strong reflections:", strong_sel.count(True))
     strong_results = detect_blanks.blank_counts_analysis(
         reflections.select(strong_sel),
         scan,
