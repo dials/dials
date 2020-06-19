@@ -7,7 +7,7 @@ from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator3D
 from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
 from dials.algorithms.profile_model.gaussian_rs import transform
 from dials.array_family import flex
-from dials.model.serialize import load
+from dxtbx.serialize import load
 from scitbx import matrix
 
 
@@ -36,7 +36,7 @@ def gaussian(size, a, x0, sx):
 
 
 def test_forward(dials_data):
-    sequence = load.sequence(
+    sequence = load.imageset(
         dials_data("centroid_test_data").join("sweep.json").strpath
     )
 
@@ -230,7 +230,7 @@ def test_forward(dials_data):
 
 
 def test_forward_no_model(dials_data):
-    sequence = load.sequence(
+    sequence = load.imageset(
         dials_data("centroid_test_data").join("sweep.json").strpath
     )
 
