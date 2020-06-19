@@ -617,7 +617,7 @@ def test_multi_scale(dials_data, tmpdir):
     # Now inspect output, check it hasn't changed drastically, or if so verify
     # that the new behaviour is more correct and update test accordingly.
     result = get_merging_stats(tmpdir.join("unmerged.mtz").strpath)
-    expected_nobs = 5460
+    expected_nobs = 5526  # 19/06/20
     assert abs(result.overall.n_obs - expected_nobs) < 30
     assert result.overall.r_pim < 0.0221  # at 22/10/18, value was 0.22037
     assert result.overall.cc_one_half > 0.9975  # at 07/08/18, value was 0.99810
