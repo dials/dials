@@ -7,7 +7,7 @@ from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator3D
 from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
 from dials.algorithms.profile_model.gaussian_rs import transform
 from dials.array_family import flex
-from dxtbx.serialize import load
+from dxtbx.model import ExperimentList
 from scitbx import matrix
 
 
@@ -36,18 +36,18 @@ def gaussian(size, a, x0, sx):
 
 
 def test_forward(dials_data):
-    sequence = load.imageset(
-        dials_data("centroid_test_data").join("sweep.json").strpath
-    )
+    expt = ExperimentList.from_file(
+        dials_data("centroid_test_data").join("imported_experiments.json").strpath
+    )[0]
 
     # Get the models
-    beam = sequence.get_beam()
-    detector = sequence.get_detector()
-    gonio = sequence.get_goniometer()
-    scan = sequence.get_scan()
+    beam = expt.beam
+    detector = expt.detector
+    gonio = expt.goniometer
+    scan = expt.scan
 
     # Set some parameters
-    sigma_divergence = beam.get_sigma_divergence(deg=False)
+    sigma_divergence = 0.00101229
     mosaicity = 0.157 * math.pi / 180
     n_sigma = 3
     grid_size = 7
@@ -230,19 +230,19 @@ def test_forward(dials_data):
 
 
 def test_forward_no_model(dials_data):
-    sequence = load.imageset(
-        dials_data("centroid_test_data").join("sweep.json").strpath
-    )
+    expt = ExperimentList.from_file(
+        dials_data("centroid_test_data").join("imported_experiments.json").strpath
+    )[0]
 
     # Get the models
-    beam = sequence.get_beam()
-    detector = sequence.get_detector()
-    gonio = sequence.get_goniometer()
-    scan = sequence.get_scan()
+    beam = expt.beam
+    detector = expt.detector
+    gonio = expt.goniometer
+    scan = expt.scan
     scan.set_image_range((0, 1000))
 
     # Set some parameters
-    sigma_divergence = beam.get_sigma_divergence(deg=False)
+    sigma_divergence = 0.00101229
     mosaicity = 0.157 * math.pi / 180
     n_sigma = 3
     grid_size = 20
