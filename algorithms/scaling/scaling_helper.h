@@ -123,8 +123,7 @@ scitbx::sparse::matrix<double> elementwise_square(scitbx::sparse::matrix<double>
 
 scitbx::af::shared<double> limit_outlier_weights(
   scitbx::af::shared<double> weights,
-  scitbx::sparse::matrix<double> h_index_mat
-) {
+  scitbx::sparse::matrix<double> h_index_mat) {
   scitbx::math::median_functor med;
   for (int i = 0; i < h_index_mat.n_cols(); ++i) {
     const col_type column = h_index_mat.col(i);
@@ -138,7 +137,7 @@ scitbx::af::shared<double> limit_outlier_weights(
     double ceil = 10.0 * median;
     for (col_type::const_iterator it = column.begin(); it != column.end(); ++it) {
       int refl_idx = it.index();
-      if (weights[refl_idx] > ceil){
+      if (weights[refl_idx] > ceil) {
         weights[refl_idx] = ceil;
       }
     }
