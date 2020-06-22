@@ -13,6 +13,7 @@ from dials.algorithms.scaling.outlier_rejection import (
     SimpleNormDevOutlierRejection,
     determine_outlier_index_arrays,
     TargetedOutlierRejection,
+    limit_outlier_weights,
 )
 
 
@@ -216,6 +217,30 @@ def test_outlier_rejection_with_small_outliers():
     outliers = OutlierRej.final_outlier_arrays
     assert len(outliers) == 1
     assert set(outliers[0]) == set(expected_outliers)
+
+
+def test_limit_outlier_weights():
+
+    rt = flex.reflection_table()
+    rt["intensity"] = flex.double([100.0, 101.0, 109.0, 105.0, 1.0])
+    rt["variance"] = flex.double([100.0, 101.0, 109.0, 105.0, 1.0])
+
+    rt["inverse_scale_factor"] = flex.double(rt.size(), 1.0)
+    rt["miller_index"] = flex.miller_index([(0, 0, 1)] * rt.size())
+    rt2 = flex.reflection_table()
+    rt2["intensity"] = flex.double([100.0, 101.0, 102.0, 105.0, 1.0])
+    rt2["variance"] = flex.double([100.0, 101.0, 102.0, 105.0, 1.0])
+    rt2["inverse_scale_factor"] = flex.double(rt.size(), 1.0)
+    rt2["miller_index"] = flex.miller_index([(0, 0, 1)] * rt.size())
+
+    table = IhTable([rt, rt2], space_group("P 1"))
+    import copy
+
+    new_weights = limit_outlier_weights(
+        copy.deepcopy(table.Ih_table_blocks[0].weights),
+        table.Ih_table_blocks[0].h_index_matrix,
+    )
+    assert all(i <= 0.1 for i in new_weights)
 
 
 def test_multi_dataset_outlier_rejection(test_sg):
