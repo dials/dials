@@ -278,9 +278,9 @@ class ScalingAlgorithm(Subject):
         for table in self.reflections:
             bad_sf = table["inverse_scale_factor"] < 0.001
             n += bad_sf.count(True)
-            table.set_flags(bad_sf, table.flags.outlier_in_scaling)
+            table.set_flags(bad_sf, table.flags.excluded_for_scaling)
         if n > 0:
-            logger.info("%s reflections set as outliers: scale factor < 0.001", n)
+            logger.info("%s reflections excluded: scale factor < 0.001", n)
 
     @Subject.notify_event(event="merging_statistics")
     def calculate_merging_stats(self):
@@ -322,10 +322,12 @@ class ScalingAlgorithm(Subject):
         n_neg = (good_sel & sel).count(True)
         if n_neg > 0:
             logger.warning(
-                "%s non-excluded reflections were assigned scale factors < 0.001 during scaling. These will be set as outliers in the reflection table. It may be best to rerun scaling from this point for an improved model.",
+                """%s non-excluded reflections were assigned scale factors < 0.001 during scaling.
+These will be excluded in the output reflection table. It may be best to rerun
+scaling from this point for an improved model.""",
                 n_neg,
             )
-            joint_table.set_flags(sel, joint_table.flags.outlier_in_scaling)
+            joint_table.set_flags(sel, joint_table.flags.excluded_for_scaling)
 
         to_del = [
             "variance",
