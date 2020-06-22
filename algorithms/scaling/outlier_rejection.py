@@ -9,6 +9,7 @@ Ih_table and returns flex.size_t index arrays of the outlier positions.
 """
 from __future__ import absolute_import, division, print_function
 
+import copy
 import logging
 
 from dials.algorithms.scaling.Ih_table import IhTable
@@ -144,7 +145,7 @@ Outlier rejection algorithms require an Ih_table with nblocks = 1"""
         self._Ih_table_block = Ih_table.blocked_data_list[0]
         self._n_datasets = Ih_table.n_datasets
         self._block_selections = Ih_table.blocked_selection_list[0]
-        self._ids = self._Ih_table_block.Ih_table["dataset_id"]
+        self._datasets = flex.int([])
         self._zmax = zmax
         self._outlier_indices = flex.size_t([])
         self.final_outlier_arrays = None
@@ -168,16 +169,12 @@ Outlier rejection algorithms require an Ih_table with nblocks = 1"""
                 reflection tables used to create the Ih_table.
         """
         if self._n_datasets == 1:
-            return [self._block_selections[0].select(self._outlier_indices)]
+            return [self._outlier_indices]
         final_outlier_arrays = []
-        ids = self._ids.select(self._outlier_indices)
-        offset = 0
         for i in range(self._n_datasets):
-            outlier_array_i = self._outlier_indices.select(ids == i) - offset
             final_outlier_arrays.append(
-                self._block_selections[i].select(outlier_array_i)
+                self._outlier_indices.select(self._datasets == i)
             )
-            offset += self._block_selections[i].size()
         return final_outlier_arrays
 
     def _do_outlier_rejection(self):
@@ -237,7 +234,16 @@ Targeted outlier rejection requires a target Ih_table with nblocks = 1"""
         )
         outliers_sel = flex.abs(norm_dev) > self._zmax
         outliers_isel = nz_sel.iselection().select(outliers_sel)
-        self._outlier_indices.extend(outliers_isel)
+
+        outliers = flex.bool(self._Ih_table_block.size, False)
+        outliers.set_selected(outliers_isel, True)
+
+        self._outlier_indices.extend(
+            self._Ih_table_block.Ih_table["loc_indices"].select(outliers)
+        )
+        self._datasets.extend(
+            self._Ih_table_block.Ih_table["dataset_id"].select(outliers)
+        )
 
 
 class SimpleNormDevOutlierRejection(OutlierRejectionBase):
@@ -250,7 +256,8 @@ class SimpleNormDevOutlierRejection(OutlierRejectionBase):
     def __init__(self, Ih_table, zmax):
         super(SimpleNormDevOutlierRejection, self).__init__(Ih_table, zmax)
         self.weights = limit_outlier_weights(
-            self._Ih_table_block.weights, self._Ih_table_block.h_index_matrix
+            copy.deepcopy(self._Ih_table_block.weights),
+            self._Ih_table_block.h_index_matrix,
         )
 
     def _do_outlier_rejection(self):
@@ -276,9 +283,12 @@ class SimpleNormDevOutlierRejection(OutlierRejectionBase):
             flex.sqrt((1.0 / w) + flex.pow2(g / wg2sum))
         )
         norm_dev.set_selected(zero_sel, 1000)  # to trigger rejection
-        outliers_sel = flex.abs(norm_dev) > self._zmax
+        outliers = flex.abs(norm_dev) > self._zmax
 
-        self._outlier_indices.extend(outliers_sel.iselection())
+        self._outlier_indices.extend(Ih_table.Ih_table["loc_indices"].select(outliers))
+        self._datasets.extend(
+            self._Ih_table_block.Ih_table["dataset_id"].select(outliers)
+        )
 
 
 class NormDevOutlierRejection(OutlierRejectionBase):
@@ -291,62 +301,23 @@ class NormDevOutlierRejection(OutlierRejectionBase):
     def __init__(self, Ih_table, zmax):
         super(NormDevOutlierRejection, self).__init__(Ih_table, zmax)
         self.weights = limit_outlier_weights(
-            self._Ih_table_block.weights, self._Ih_table_block.h_index_matrix
+            copy.deepcopy(self._Ih_table_block.weights),
+            self._Ih_table_block.h_index_matrix,
         )
 
     def _do_outlier_rejection(self):
         """Add indices (w.r.t. the Ih_table data) to self._outlier_indices."""
-        outlier_indices, other_potential_outliers = self._round_of_outlier_rejection()
-        self._outlier_indices.extend(outlier_indices)
-        internal_potential_outliers = other_potential_outliers
-        while other_potential_outliers:
-            good_sel = flex.bool(self._Ih_table_block.Ih_table.size(), False)
-            good_sel.set_selected(internal_potential_outliers, True)
-            self._Ih_table_block = self._Ih_table_block.select(good_sel)
-            self.weights = self.weights.select(good_sel)
-            (
-                other_potential_outliers,
-                internal_potential_outliers,
-            ) = self._check_for_more_outliers(other_potential_outliers)
-
-    def _check_for_more_outliers(self, other_potential_outliers):
-        """
-        Recursive check for further outliers.
-
-        Each iteration creates a new reduced-size Ih_table_block, which retains
-        only symmetry groups that need further testing. Outlier indices must be
-        transformed to give indices with respect to the initial Ih_table_block.
-
-        Args:
-            other_potential_outliers: A flex.size_t array of indices with respect
-                to the initial Ih_table data
-        """
-        # Find outlier indices with respect to reduced Ih_table block
-        (
-            internal_outlier_indices,
-            internal_other_potential_outliers,
-        ) = self._round_of_outlier_rejection()
-        outliers_wrt_original = other_potential_outliers.select(
-            internal_outlier_indices
-        )
-        self._outlier_indices.extend(outliers_wrt_original)
-        new_other_potential_outliers = other_potential_outliers.select(
-            internal_other_potential_outliers
-        )  # still wrt original Ih_table data
-        return new_other_potential_outliers, internal_other_potential_outliers
+        self._round_of_outlier_rejection()
+        n_outliers = len(self._outlier_indices)
+        n_new_outliers = n_outliers
+        while n_new_outliers:
+            self._round_of_outlier_rejection()
+            n_new_outliers = len(self._outlier_indices) - n_outliers
+            n_outliers = len(self._outlier_indices)
 
     def _round_of_outlier_rejection(self):
         """
         Calculate normal deviations from the data in the Ih_table.
-
-        Returns:
-            (tuple): tuple containing:
-                outlier_indices: A flex.size_t array of outlier indices w.r.t
-                    the current Ih_table
-                other_potential_outliers: A flex.size_t array of indices from
-                    the symmetry groups where outliers were found, excluding the
-                    indices of the outliers themselves (indices w.r.t current
-                    Ih_table).
         """
         Ih_table = self._Ih_table_block
         intensity = Ih_table.intensities
@@ -386,4 +357,13 @@ class NormDevOutlierRejection(OutlierRejectionBase):
         outlier_indices, other_potential_outliers = determine_outlier_indices(
             Ih_table.h_index_matrix, all_z_scores, self._zmax
         )
-        return outlier_indices, other_potential_outliers
+        self._outlier_indices.extend(
+            self._Ih_table_block.Ih_table["loc_indices"].select(outlier_indices)
+        )
+        self._datasets.extend(
+            self._Ih_table_block.Ih_table["dataset_id"].select(outlier_indices)
+        )
+        sel = flex.bool(Ih_table.size, False)
+        sel.set_selected(other_potential_outliers, True)
+        self._Ih_table_block = self._Ih_table_block.select(sel)
+        self.weights = self.weights.select(sel)
