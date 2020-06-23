@@ -720,6 +720,7 @@ attempting to use all reflections for minimisation."""
             self.experiment.crystal.get_space_group(),
             indices_lists=[self.scaling_selection.iselection()],
             nblocks=self.params.scaling_options.nproc,
+            anomalous=self.params.anomalous,
         )
         if self.error_model:
             variance = self.reflection_table["variance"].select(
@@ -754,6 +755,7 @@ attempting to use all reflections for minimisation."""
             nblocks=1,
             free_set_percentage=free_set_percentage,
             free_set_offset=self.params.scaling_options.free_set_offset,
+            anomalous=self.params.anomalous,
         )
         if free_set_percentage:
             loc_indices = self.global_Ih_table.blocked_data_list[-1].Ih_table[
@@ -766,12 +768,14 @@ attempting to use all reflections for minimisation."""
                 self.experiment.crystal.get_space_group(),
                 [(~self.free_set_selection).iselection()],
                 nblocks=1,
+                anomalous=self.params.anomalous,
             )
             self._free_Ih_table = IhTable(
                 [sel_reflections.select(self.free_set_selection)],
                 self.experiment.crystal.get_space_group(),
                 [self.free_set_selection.iselection()],
                 nblocks=1,
+                anomalous=self.params.anomalous,
             )
         rows = [[key, str(val.n_params)] for key, val in six.iteritems(self.components)]
         logger.info("The following corrections will be applied to this dataset: \n")
@@ -962,6 +966,7 @@ class MultiScalerBase(ScalerBase):
             additional_cols=["partiality"],
             free_set_percentage=free_set_percentage,
             free_set_offset=self.params.scaling_options.free_set_offset,
+            anomalous=self.params.anomalous,
         )
         if free_set_percentage:
             # need to set free_set_selection in individual scalers
@@ -982,10 +987,18 @@ class MultiScalerBase(ScalerBase):
                 free_indices_list.append(scaler.free_set_selection.iselection())
                 indices_list.append((~scaler.free_set_selection).iselection())
             self._global_Ih_table = IhTable(
-                tables, space_group, indices_list, nblocks=1
+                tables,
+                space_group,
+                indices_list,
+                nblocks=1,
+                anomalous=self.params.anomalous,
             )
             self._free_Ih_table = IhTable(
-                free_tables, space_group, free_indices_list, nblocks=1
+                free_tables,
+                space_group,
+                free_indices_list,
+                nblocks=1,
+                anomalous=self.params.anomalous,
             )
 
     def _create_Ih_table(self):
@@ -999,6 +1012,7 @@ class MultiScalerBase(ScalerBase):
             self.active_scalers[0].experiment.crystal.get_space_group(),
             indices_lists=indices_lists,
             nblocks=self.params.scaling_options.nproc,
+            anomalous=self.params.anomalous,
         )
         if self.error_model:
             for i, scaler in enumerate(self.active_scalers):
@@ -1443,6 +1457,7 @@ class TargetScaler(MultiScalerBase):
             tables,
             self.active_scalers[0].experiment.crystal.get_space_group(),
             nblocks=1,
+            anomalous=self.params.anomalous,
         )  # Keep in one table for matching below
         self._create_Ih_table()
         self._update_model_data()

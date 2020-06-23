@@ -286,7 +286,9 @@ def create_scaling_model(params, experiments, reflection_tables):
     return experiments
 
 
-def create_Ih_table(experiments, reflections, selections=None, n_blocks=1):
+def create_Ih_table(
+    experiments, reflections, selections=None, n_blocks=1, anomalous=False
+):
     """Create an Ih table from a list of experiments and reflections. Optionally,
     a selection list can also be given, to select data from each reflection table.
     Allow an unequal number of experiments and reflections, as only need to
@@ -313,7 +315,13 @@ def create_Ih_table(experiments, reflections, selections=None, n_blocks=1):
         else:
             input_tables.append(reflection)
             indices_lists = None
-    Ih_table = IhTable(input_tables, space_group_0, indices_lists, nblocks=n_blocks)
+    Ih_table = IhTable(
+        input_tables,
+        space_group_0,
+        indices_lists,
+        nblocks=n_blocks,
+        anomalous=anomalous,
+    )
     return Ih_table
 
 
@@ -514,7 +522,9 @@ def create_datastructures_for_target_mtz(experiments, mtz_file):
                 flex.bool(r_tplus.size(), False), r_tplus.flags.bad_for_scaling
             )
             r_tplus = r_tplus.select(r_tplus["variance"] != 0.0)
-            Ih_table = create_Ih_table([experiments[0]], [r_tplus]).blocked_data_list[0]
+            Ih_table = create_Ih_table(
+                [experiments[0]], [r_tplus], anomalous=True
+            ).blocked_data_list[0]
             r_t["intensity"] = Ih_table.Ih_values
             inv_var = (
                 Ih_table.weights * Ih_table.h_index_matrix

@@ -379,6 +379,7 @@ def test_error_model_options(
         "reflection_selection.method=random",
         "reflection_selection.method=intensity_ranges",
         "reflection_selection.method=use_all",
+        "anomalous=True",
     ],
 )
 def test_scale_multiple_datasets_with_options(dials_data, tmpdir, option):
