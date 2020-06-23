@@ -1,3 +1,12 @@
+DIALS 3.0.2 (2020-06-23)
+========================
+
+Bugfixes
+--------
+
+- Fix crash in scaling error model handling (#1243)
+
+
 DIALS 3.0.1 (2020-06-11)
 ========================
 
