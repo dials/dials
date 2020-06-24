@@ -181,6 +181,10 @@ def run(args=None):
     assert len(reflections) == 1
     reflections = reflections[0]
 
+    # Reduce what we pickle and send to workers by removing unused data
+    if "shoebox" in reflections:
+        del reflections["shoebox"]
+
     if len(experiments) == 0:
         parser.print_help()
         return
