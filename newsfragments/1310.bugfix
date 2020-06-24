@@ -1,0 +1,1 @@
+dials.refine_bravais_settings: delete shoeboxes before analysis to reduce the memory use when splitting into many parallel tasks
