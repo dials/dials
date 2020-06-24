@@ -165,9 +165,10 @@ def install_conda(python):
 
     environments = get_environments()
 
-    conda_info = json.loads(
-        subprocess.check_output([conda_exe, "info", "--json"], env=clean_env)
-    )
+    conda_info = subprocess.check_output([conda_exe, "info", "--json"], env=clean_env)
+    if sys.version_info.major > 2:
+        conda_info = conda_info.decode("latin-1")
+    conda_info = json.loads(conda_info)
     if conda_base != os.path.realpath(conda_info["root_prefix"]):
         warnings.warn(
             "Expected conda base differs:{0}!={1}".format(
@@ -252,7 +253,7 @@ common compilers provided by conda. Please update your version with
             " ".join(
                 [os.path.join(conda_base, "Scripts", "activate"), "base", "&&"]
                 + command_list
-            ),
+            ).replace("<", "^<").replace(">", "^>"),
         ]
     print(
         "{text} dials environment from {filename} with Python {python}".format(
