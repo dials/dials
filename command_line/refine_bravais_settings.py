@@ -181,9 +181,7 @@ def run(args=None):
     assert len(reflections) == 1
     reflections = reflections[0]
 
-    # delete the bits we don't need from the reflection table to save
-    # memory (particularly when pickling, see dials/dials#1274)
-
+    # Reduce what we pickle and send to workers by removing unused data
     if "shoebox" in reflections:
         del reflections["shoebox"]
 
