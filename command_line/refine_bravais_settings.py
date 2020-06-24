@@ -181,6 +181,12 @@ def run(args=None):
     assert len(reflections) == 1
     reflections = reflections[0]
 
+    # delete the bits we don't need from the reflection table to save
+    # memory (particularly when pickling, see dials/dials#1274)
+
+    if "shoebox" in reflections:
+        del reflections["shoebox"]
+
     if len(experiments) == 0:
         parser.print_help()
         return
