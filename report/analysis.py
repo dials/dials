@@ -1,7 +1,9 @@
 """Calculations relevant to reporting."""
 from __future__ import absolute_import, division, print_function
 
+import collections
 from cctbx import miller
+from six.moves import cStringIO as StringIO
 from dials.algorithms.scaling.scaling_library import scaled_data_as_miller_array
 from dials.util.batch_handling import (
     calculate_batch_offsets,
@@ -10,7 +12,6 @@ from dials.util.batch_handling import (
 )
 from libtbx.str_utils import make_sub_header
 from scitbx.array_family import flex
-from six.moves import cStringIO as StringIO
 
 
 def batch_dependent_properties(batches, intensities, scales=None):
@@ -182,7 +183,119 @@ def _batch_bins_and_data(batches, values, function_to_apply):
     return batch_bins, data
 
 
-def make_merging_statistics_summary(dataset_statistics):
+formats = collections.OrderedDict(
+    [
+        ("High resolution limit", " %7.2f"),
+        ("Low resolution limit", " %7.2f"),
+        ("Completeness", "%7.1f"),
+        ("Multiplicity", "%7.1f"),
+        ("I/sigma", "%7.1f"),
+        ("Rmerge(I)", "%7.3f"),
+        ("Rmerge(I+/-)", "%7.3f"),
+        ("Rmeas(I)", "%7.3f"),
+        ("Rmeas(I+/-)", "%7.3f"),
+        ("Rpim(I)", "%7.3f"),
+        ("Rpim(I+/-)", "%7.3f"),
+        ("CC half", "%7.3f"),
+        ("Wilson B factor", "%7.3f"),
+        ("Partial bias", "%7.3f"),
+        ("Anomalous completeness", "%7.1f"),
+        ("Anomalous multiplicity", "%7.1f"),
+        ("Anomalous correlation", "%7.3f"),
+        ("Anomalous slope", "%7.3f"),
+        ("dF/F", "%7.3f"),
+        ("dI/s(dI)", "%7.3f"),
+        ("Total observations", "%7d"),
+        ("Total unique", "%7d"),
+    ]
+)
+
+
+def format_statistics(statistics):
+    """Format for printing statistics from data processing"""
+
+    available = list(statistics.keys())
+
+    result = ""
+    columns = len(statistics.get("Completeness", [1, 2, 3]))
+
+    for k, format_str in formats.items():
+        if k in available:
+            try:
+                row_data = statistics[k]
+                if columns == 4 and len(row_data) == 1:  # place value in suggest column
+                    row_data = [None] * (columns - 1) + row_data
+                row_format = [format_str] + [format_str.strip()] * (len(row_data) - 1)
+                formatted = " ".join(
+                    (f % k) if k is not None else (" " * len(f % 0))
+                    for f, k in zip(row_format, row_data)
+                )
+            except TypeError:
+                formatted = "(error)"
+            result += k.ljust(44) + formatted + "\n"
+
+    return result
+
+
+def make_xia2_style_statistics_summary(merging_statistics, anomalous_statistics=None):
+    key_to_var = {
+        "I/sigma": "i_over_sigma_mean",
+        "Completeness": "completeness",
+        "Low resolution limit": "d_max",
+        "Multiplicity": "mean_redundancy",
+        "Rmerge(I)": "r_merge",
+        "Rmeas(I)": "r_meas",
+        "High resolution limit": "d_min",
+        "Total observations": "n_obs",
+        "Rpim(I)": "r_pim",
+        "CC half": "cc_one_half",
+        "Total unique": "n_uniq",
+    }
+
+    anom_key_to_var = {
+        "Rmerge(I+/-)": "r_merge",
+        "Rpim(I+/-)": "r_pim",
+        "Rmeas(I+/-)": "r_meas",
+        "Anomalous completeness": "anom_completeness",
+        "Anomalous correlation": "anom_half_corr",
+        "Anomalous multiplicity": "mean_redundancy",
+    }
+
+    stats = {}
+
+    result = merging_statistics
+    anom_result = anomalous_statistics
+
+    if anom_result:
+        anom_probability_plot = anom_result.overall.anom_probability_plot_expected_delta
+        if anom_probability_plot is not None:
+            stats["Anomalous slope"] = [anom_probability_plot.slope]
+        stats["dF/F"] = [anom_result.overall.anom_signal]
+        stats["dI/s(dI)"] = [anom_result.overall.delta_i_mean_over_sig_delta_i_mean]
+
+    for d, r in (
+        (key_to_var, result),
+        (anom_key_to_var, anom_result),
+    ):
+        for k, v in d.items():
+            values = (
+                getattr(r.overall, v),
+                getattr(r.bins[0], v),
+                getattr(r.bins[-1], v),
+            )
+            if "completeness" in v:
+                values = [v_ * 100 for v_ in values]
+            if values[0] is not None:
+                stats[k] = values
+
+    result = "".ljust(44)
+    result += " Overall    Low     High\n"
+    result += format_statistics(stats,)
+
+    return result
+
+
+def make_merging_statistics_summary(dataset_statistics, anomalous_statistics=None):
     """Format merging statistics information into an output string."""
 
     # Here use a StringIO to get around excessive padding/whitespace.
@@ -190,12 +303,8 @@ def make_merging_statistics_summary(dataset_statistics):
     out = StringIO()
 
     # First make summary
-    make_sub_header("Merging statistics", out=out)
-    dataset_statistics.overall.show_summary(out=out)
-
-    # Next make statistics by resolution bin.
-    msg = "\n\nStatistics by resolution bin:\n"
-    msg += (
+    make_sub_header("Merging statistics by resolution bin", out=out)
+    msg = (
         " d_max  d_min   #obs  #uniq   mult.  %comp       <I>  <I/sI>"
         + "    r_mrg   r_meas    r_pim   cc1/2   cc_ano\n"
     )
@@ -204,6 +313,9 @@ def make_merging_statistics_summary(dataset_statistics):
     msg += dataset_statistics.overall.format() + "\n\n"
     out.write(msg)
 
-    # Finally show estimated cutoffs
-    dataset_statistics.show_estimated_cutoffs(out=out)
+    make_sub_header("Summary of merging statistics", out=out)
+    out.write(
+        make_xia2_style_statistics_summary(dataset_statistics, anomalous_statistics)
+    )
+
     return out.getvalue()

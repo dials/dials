@@ -193,7 +193,8 @@ were considered for use when refining the scaling model.
         if MergingStatisticsObserver().data:
             logger.info(
                 make_merging_statistics_summary(
-                    MergingStatisticsObserver().data["statistics"]
+                    MergingStatisticsObserver().data["statistics"],
+                    MergingStatisticsObserver().data["anomalous_statistics"],
                 )
             )
 
@@ -216,7 +217,7 @@ class ScalingHTMLGenerator(Observer):
         self.data.update(MergingStatisticsObserver().make_plots())
         self.data.update(FilteringObserver().make_plots())
         if html_file:
-            logger.info("Writing html report to: %s", html_file)
+            logger.info("Writing html report to %s", html_file)
             loader = ChoiceLoader(
                 [
                     PackageLoader("dials", "templates"),
@@ -243,7 +244,7 @@ class ScalingHTMLGenerator(Observer):
             with open(html_file, "wb") as f:
                 f.write(html.encode("utf-8", "xmlcharrefreplace"))
         if json_file:
-            logger.info("Writing html report data to: %s", json_file)
+            logger.info("Writing html report data to %s", json_file)
             with open(json_file, "w") as outfile:
                 json.dump(self.data, outfile)
 

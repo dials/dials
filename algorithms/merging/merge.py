@@ -251,8 +251,8 @@ def merge_and_truncate(params, experiments, reflections):
             logger.error(e, exc_info=True)
         else:
             if params.merging.anomalous and anom_stats:
-                logger.info(make_merging_statistics_summary(anom_stats))
+                logger.info(make_merging_statistics_summary(anom_stats, anom_stats))
             else:
-                logger.info(make_merging_statistics_summary(stats))
+                logger.info(make_merging_statistics_summary(stats, anom_stats))
 
     return merged, merged_anom, amplitudes, anom_amplitudes
