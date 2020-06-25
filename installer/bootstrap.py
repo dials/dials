@@ -110,7 +110,7 @@ def install_miniconda(location):
 def install_conda(python):
     print()
 
-    if python in ("3.7", "3.8"):
+    if python in ("3.7", "3.8") and not sys.platform.startswith("linux"):
         print(
             "\n",
             "*" * 80 + "\n",
@@ -253,7 +253,9 @@ common compilers provided by conda. Please update your version with
             " ".join(
                 [os.path.join(conda_base, "Scripts", "activate"), "base", "&&"]
                 + command_list
-            ).replace("<", "^<").replace(">", "^>"),
+            )
+            .replace("<", "^<")
+            .replace(">", "^>"),
         ]
     print(
         "{text} dials environment from {filename} with Python {python}".format(
@@ -1174,7 +1176,7 @@ be passed separately with quotes to avoid confusion (e.g
         "--python",
         help="Install this minor version of Python (default: %(default)s)",
         default="3.6",
-        choices=["3.6", "3.7", "3.8"],
+        choices=("3.6", "3.7", "3.8"),
     )
     parser.add_argument(
         "--branch",

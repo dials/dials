@@ -78,6 +78,10 @@ steps:
 # create a new one using the bootstrap script
 - script: |
     python modules/dials/installer/bootstrap.py base --python $(PYTHON_VERSION)
+
+    # Immediately recover disk space used by miniconda installation
+    du -sh miniconda
+    rm -r miniconda
   displayName: Create python $(PYTHON_VERSION) environment
   workingDirectory: $(Pipeline.Workspace)
   condition: eq(variables.BASE_CACHED, 'false')
@@ -178,6 +182,7 @@ steps:
 # This is only relevant if we had cache misses, as free disk space is required to create cache archives
 - bash: |
     echo Disk space usage:
+    df -h
     du -sh *
     echo
     echo Test artefacts:
