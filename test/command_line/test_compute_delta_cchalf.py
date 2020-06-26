@@ -45,7 +45,7 @@ def test_compute_delta_cchalf_scaled_data_mtz(python3, dials_data, tmpdir):
     expts = location.join("scaled_20_25.expt").strpath
 
     # First export the data
-    command = ["dials.export", refls, expts]
+    command = ["dials.export", refls, expts, "partiality_threshold=0.99"]
     result = procrunner.run(command, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
     assert tmpdir.join("scaled.mtz").check()

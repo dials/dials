@@ -136,16 +136,6 @@ jobs:
          - .travis/run-flake8
       if: type = pull_request
 
-    - name: "Flake8 - Python 3.7"
-      addons: false
-      cache: false
-      before_cache: false
-      dist: xenial
-      python: 3.7
-      script:
-         - .travis/run-flake8
-      if: type = pull_request
-
 before_cache:
   - $HOME/build_dials/modules/dials/.travis/clean-cctbx-dxtbx
   - cd $HOME

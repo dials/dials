@@ -108,7 +108,7 @@ def install_miniconda(location):
 def install_conda(python):
     print()
 
-    if python in ("3.7", "3.8"):
+    if python in ("3.7", "3.8") and not sys.platform.startswith("linux"):
         print(
             "\n",
             "*" * 80 + "\n",
@@ -163,9 +163,10 @@ def install_conda(python):
 
     environments = get_environments()
 
-    conda_info = json.loads(
-        subprocess.check_output([conda_exe, "info", "--json"], env=clean_env)
-    )
+    conda_info = subprocess.check_output([conda_exe, "info", "--json"], env=clean_env)
+    if sys.version_info.major > 2:
+        conda_info = conda_info.decode("latin-1")
+    conda_info = json.loads(conda_info)
     if conda_base != os.path.realpath(conda_info["root_prefix"]):
         warnings.warn(
             "Expected conda base differs:{0}!={1}".format(
@@ -250,7 +251,9 @@ common compilers provided by conda. Please update your version with
             " ".join(
                 [os.path.join(conda_base, "Scripts", "activate"), "base", "&&"]
                 + command_list
-            ),
+            )
+            .replace("<", "^<")
+            .replace(">", "^>"),
         ]
     print(
         "{text} dials environment from {filename} with Python {python}".format(
@@ -771,7 +774,6 @@ def git(
 
 REPOSITORIES = (
     "cctbx/annlib_adaptbx",
-    "cctbx/boost",
     "cctbx/cctbx_project",
     "cctbx/dxtbx",
     "dials/annlib",
@@ -780,7 +782,6 @@ REPOSITORIES = (
     "dials/ccp4io_adaptbx",
     "dials/clipper",
     "dials/dials",
-    "dials/eigen",
     "dials/gui_resources",
     "dials/tntbx",
     "ssrl-px/iota",
@@ -1131,7 +1132,7 @@ be passed separately with quotes to avoid confusion (e.g
         "--python",
         help="Install this minor version of Python (default: %(default)s)",
         default="3.6",
-        choices=["3.6", "3.7", "3.8"],
+        choices=("3.6", "3.7", "3.8"),
     )
     parser.add_argument(
         "--branch",

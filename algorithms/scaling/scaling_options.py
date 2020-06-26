@@ -6,6 +6,10 @@ import iotbx.phil
 
 phil_scope = iotbx.phil.parse(
     """
+  anomalous = False
+    .type = bool
+    .help = "Separate anomalous pairs in scaling and error model optimisation."
+    .expert_level=0
   overwrite_existing_models = False
     .type = bool
     .help = "If True, create new scaling models for all datasets"

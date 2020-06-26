@@ -14,12 +14,15 @@ conda-forge::pyrtf
 
 conda-forge::alabaster
 conda-forge::biopython
+conda-forge::boost<1.71
+conda-forge::boost-cpp<1.71
 conda-forge::bzip2
 conda-forge::c-compiler
 conda-forge::conda
 conda-forge::cxx-compiler
 conda-forge::cython>=0.29
 conda-forge::docutils
+conda-forge::eigen
 conda-forge::future
 conda-forge::h5py
 conda-forge::hdf5<1.11
@@ -32,13 +35,13 @@ conda-forge::numpy>=1.16,<1.17
 conda-forge::pillow>=5.4.1
 conda-forge::pip
 conda-forge::psutil
-conda-forge::pytest>=4.5,<5.0
+conda-forge::pytest>=4.5
 conda-forge::pytest-forked
 conda-forge::pytest-mock<2.0
 conda-forge::pytest-xdist
 conda-forge::requests
 conda-forge::scikit-learn
-conda-forge::scipy<1.6
+conda-forge::scipy
 conda-forge::scons
 conda-forge::setuptools
 conda-forge::six

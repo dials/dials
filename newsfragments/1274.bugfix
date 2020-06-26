@@ -1,0 +1,1 @@
+dials.refine_bravais_settings: Fix crash with large (>2gb) reflection tables and reduce memory use

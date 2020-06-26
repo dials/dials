@@ -6,11 +6,11 @@ conda-forge::hdf5-external-filter-plugins
 cctbx::wxpython<4
 
 conda-forge::colorlog
-conda-forge::dials-data
+conda-forge::dials-data<2.1
 conda-forge::mrcfile
 conda-forge::msgpack-python=0.6.2
 conda-forge::orderedset
-conda-forge::procrunner>=1.0.2
+conda-forge::procrunner>=1.0.2,<2
 conda-forge::pyrtf
 
 conda-forge::alabaster

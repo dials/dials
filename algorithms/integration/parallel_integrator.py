@@ -306,12 +306,7 @@ def _assert_enough_memory(required_memory, max_memory_usage):
             % (total_memory / 1e9, limit_memory / 1e9, required_memory / 1e9)
         )
     else:
-        logger.info("")
-        logger.info(" Memory usage:")
-        logger.info("  Total system memory: %g GB" % (total_memory / 1e9))
-        logger.info("  Limit image memory: %g GB" % (limit_memory / 1e9))
-        logger.info("  Required image memory: %g GB" % (required_memory / 1e9))
-        logger.info("")
+        logger.info("Allocating %.1f MB memory", required_memory / 1e6)
 
 
 class IntegrationJob(object):

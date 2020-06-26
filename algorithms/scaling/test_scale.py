@@ -379,6 +379,7 @@ def test_error_model_options(
         "reflection_selection.method=random",
         "reflection_selection.method=intensity_ranges",
         "reflection_selection.method=use_all",
+        "anomalous=True",
     ],
 )
 def test_scale_multiple_datasets_with_options(dials_data, tmpdir, option):
@@ -493,7 +494,7 @@ def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
     assert tmpdir.join("scaled.expt").check()
     assert tmpdir.join("analysis_results.json").check()
     result = get_merging_stats(tmpdir.join("unmerged.mtz").strpath)
-    assert result.overall.r_pim < 0.17  # 03/02/20 was 0.160
+    assert result.overall.r_pim < 0.175  # 12/06/20 was 0.171,
     assert result.overall.cc_one_half > 0.95  # 03/02/20 was 0.961
     assert result.overall.n_obs > 50000  # 03/02/20 was 50213
 
@@ -617,7 +618,7 @@ def test_multi_scale(dials_data, tmpdir):
     # Now inspect output, check it hasn't changed drastically, or if so verify
     # that the new behaviour is more correct and update test accordingly.
     result = get_merging_stats(tmpdir.join("unmerged.mtz").strpath)
-    expected_nobs = 5460
+    expected_nobs = 5526  # 19/06/20
     assert abs(result.overall.n_obs - expected_nobs) < 30
     assert result.overall.r_pim < 0.0221  # at 22/10/18, value was 0.22037
     assert result.overall.cc_one_half > 0.9975  # at 07/08/18, value was 0.99810
@@ -635,12 +636,12 @@ def test_multi_scale(dials_data, tmpdir):
     # that the new behaviour is more correct and update test accordingly.
     # Note: error optimisation currently appears to give worse results here!
     result = get_merging_stats(tmpdir.join("unmerged.mtz").strpath)
-    expected_nobs = 5411
+    expected_nobs = 5560  # 22/06/20
     print(result.overall.r_pim)
     print(result.overall.cc_one_half)
     assert abs(result.overall.n_obs - expected_nobs) < 100
-    assert result.overall.r_pim < 0.023  # at 07/08/18, value was 0.022722
-    assert result.overall.cc_one_half > 0.9965  # at 07/08/18, value was 0.996925
+    assert result.overall.r_pim < 0.016  # at #22/06/20, value was 0.015
+    assert result.overall.cc_one_half > 0.997  # at #22/06/20, value was 0.999
 
 
 def test_multi_scale_exclude_images(dials_data, tmpdir):

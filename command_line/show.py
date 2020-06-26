@@ -45,9 +45,6 @@ show_flags = False
 show_identifiers = False
   .type = bool
   .help = "Show experiment identifiers map if set"
-show_image_statistics = False
-  .type = bool
-  .help = "Deprecated option, please use image_statistics instead"
 image_statistics{
   show_corrected = False
     .type = bool
@@ -216,12 +213,6 @@ def run(args):
         if not all(e.beam for e in experiments):
             sys.exit("Error: experiment has no beam")
         print(show_experiments(experiments, show_scan_varying=params.show_scan_varying))
-
-        if params.show_image_statistics:
-            print(
-                "WARNING: show_image_statistics is deprecated. Please use image_statistics.show_raw or image_statistics.show_corrected instead"
-            )
-            params.image_statistics.show_raw = True
 
         if params.image_statistics.show_raw:
             show_image_statistics(experiments, "raw")

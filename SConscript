@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import libtbx.load_env
 import os
 import platform
+from libtbx.env_config import get_boost_library_with_python_version
 
 Import("env_etc")
 
@@ -24,10 +25,18 @@ if not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include"):
         env_etc.dxtbx_include,
         env_etc.dials_include,
     ]
+    if libtbx.env.build_options.use_conda:
+        boost_python = get_boost_library_with_python_version(
+            "boost_python", env_etc.conda_libpath
+        )
+        env.Append(LIBPATH=env_etc.conda_libpath)
+        include_paths.extend(env_etc.conda_cpppath)
+    else:
+        boost_python = "boost_python"
     env_etc.include_registry.append(env=env, paths=include_paths)
     env.Append(
         LIBS=env_etc.libm
-        + ["scitbx_boost_python", "boost_python", "boost_thread", "cctbx"]
+        + ["scitbx_boost_python", boost_python, "boost_thread", "cctbx"],
     )
     env.SConscript("model/SConscript", exports={"env": env})
     env.SConscript("array_family/SConscript", exports={"env": env})

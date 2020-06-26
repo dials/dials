@@ -6,8 +6,8 @@ import os
 import sys
 
 from cctbx import crystal
+import iotbx.mtz
 import iotbx.phil
-from iotbx.reflection_file_reader import any_reflection_file
 from xfel.clustering.cluster import Cluster
 from xfel.clustering.cluster_groups import unit_cell_info
 
@@ -53,18 +53,16 @@ def run(args):
     crystal_symmetries = []
 
     if len(experiments) == 0:
-        if len(args):
-            for arg in args:
-                assert os.path.isfile(arg), arg
-                reader = any_reflection_file(arg)
-                assert reader.file_type() == "ccp4_mtz"
-                arrays = reader.as_miller_arrays(
-                    merge_equivalents=False, anomalous=False
-                )
-                crystal_symmetries.append(arrays[0].crystal_symmetry())
-        else:
+        if not args:
             parser.print_help()
             exit(0)
+        for arg in args:
+            assert os.path.isfile(arg), arg
+            mtz_object = iotbx.mtz.object(file_name=arg)
+            arrays = mtz_object.as_miller_arrays(
+                merge_equivalents=False, anomalous=False
+            )
+            crystal_symmetries.append(arrays[0].crystal_symmetry())
     else:
         crystal_symmetries = [
             crystal.symmetry(

@@ -796,7 +796,7 @@ class _Manager(object):
         if rlimit:
             try:
                 ulimit = resource.getrlimit(rlimit)[0]
-                if ulimit <= 0:
+                if ulimit <= 0 or ulimit > (2 ** 62):
                     report.append("  no memory ulimit set")
                 else:
                     ulimit_used = psutil.Process().memory_info().rss

@@ -422,6 +422,8 @@ def test_SumAndPrfIntensityReducer():
     r["intensity.prf.variance"] = flex.double([0.0, 1.0, 1.0])
     r["intensity.sum.value"] = flex.double([1.0, 2.0, 3.0])
     r["intensity.sum.variance"] = flex.double([1.0, 0.0, 1.0])
+    r.set_flags(flex.bool([True, True, True]), r.flags.integrated_prf)
+    r.set_flags(flex.bool([True, True, True]), r.flags.integrated_sum)
     r = SumAndPrfIntensityReducer.filter_bad_variances(r)
     assert list(r["intensity.prf.value"]) == [3.0]
 
