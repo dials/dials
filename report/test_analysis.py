@@ -4,6 +4,7 @@ import pytest
 from mock import mock
 from cctbx import miller
 from dxtbx.model import Crystal
+from dxtbx.serialize import load
 from dials.array_family import flex
 from dials.report.analysis import (
     scales_vs_batch,
@@ -12,6 +13,11 @@ from dials.report.analysis import (
     batch_dependent_properties,
     reflection_tables_to_batch_dependent_properties,
     combined_table_to_batch_dependent_properties,
+    make_xia2_style_statistics_summary,
+)
+from dials.algorithms.scaling.scaling_library import (
+    merging_stats_from_scaled_array,
+    scaled_data_as_miller_array,
 )
 
 
@@ -200,3 +206,28 @@ def test_batch_dependent_properties(batch_array, data_array):
         _ = batch_dependent_properties(batch_array, Is, data_array[0:-1])
     with pytest.raises(AssertionError):
         _ = batch_dependent_properties(batch_array[0:-1], Is)
+
+
+def test_make_xia2_style_statistics_summary(dials_data):
+
+    location = dials_data("l_cysteine_4_sweeps_scaled")
+    expts = load.experiment_list(location.join("scaled_20_25.expt"), check_format=False)
+    refls = flex.reflection_table.from_file(location.join("scaled_20_25.refl"))
+    # Get a miller array of real data and calculate an iotbx.merging_statistics
+    ma = scaled_data_as_miller_array([refls], expts)
+    arr, anom = merging_stats_from_scaled_array(ma)
+
+    # Test that something is returned in each case
+    ### Case of overall statistics summary
+    out = make_xia2_style_statistics_summary(arr, anom)
+    assert out
+    assert all(a in out for a in ("Overall", "Low", "High"))
+    assert "Suggested" not in out
+    ### Case of overall and suggested statistics summary (with anom)
+    out = make_xia2_style_statistics_summary(arr, anom, arr, anom)
+    assert out
+    assert all(a in out for a in ("Overall", "Suggested", "Low", "High"))
+    ### Case of no anomalous, but with suggested as well as overall.
+    out = make_xia2_style_statistics_summary(arr, selected_statistics=arr)
+    assert out
+    assert all(a in out for a in ("Overall", "Suggested", "Low", "High"))
