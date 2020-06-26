@@ -100,8 +100,8 @@ def install_miniconda(location):
     else:
         command = ["/bin/sh", filename, "-b", "-u", "-p", location]
 
-    print()
-    run_command(workdir=".", command=command, description="Installing Miniconda")
+    print("Installing Miniconda")
+    run_command(command=command, workdir=".")
 
 
 def install_conda(python):
@@ -263,9 +263,7 @@ common compilers provided by conda. Please update your version with
         retry += 1
         try:
             run_command(
-                workdir=".",
-                command=command_list,
-                description="Installing base directory",
+                command=command_list, workdir=".",
             )
         except Exception:
             print(
@@ -317,16 +315,13 @@ ${HOME}/.conda/environments.txt.
         )
 
 
-_BUILD_DIR = "build"
-
-
-def run_command(command, workdir=_BUILD_DIR, description=None):
-    print("===== Running in %s:" % workdir, description or " ".join(command))
-    if workdir:
-        try:
-            os.makedirs(workdir)
-        except OSError:
-            pass
+def run_command(command, workdir):
+    print("Running %s (in %s)" % (" ".join(command), workdir))
+    workdir = os.path.abspath(workdir)
+    try:
+        os.makedirs(workdir)
+    except OSError:
+        pass
     try:
         p = subprocess.Popen(args=command, cwd=workdir, env=clean_env)
     except Exception as e:
@@ -341,11 +336,20 @@ def run_command(command, workdir=_BUILD_DIR, description=None):
     try:
         p.wait()
     except KeyboardInterrupt:
-        print("\nReceived CTRL+C, trying to terminate subprocess...\n")
+        print("\nReceived CTRL+C, trying to stop subprocess...\n")
         p.terminate()
         raise
     if p.returncode:
         sys.exit("Process failed with return code %s" % p.returncode)
+
+
+def run_indirect_command(command, args):
+    if os.name == "nt":
+        command = command + ".bat"
+    print("(via conda environment) " + command)
+    run_command(
+        command=["./indirection.sh", command] + args, workdir="build",
+    )
 
 
 def download_to_file(url, file, quiet=False, cache=True):
@@ -792,6 +796,15 @@ REPOSITORIES = (
 ###################################
 
 
+def add_command(command, description=None, workdir=None, args=None):
+    if os.name == "nt":
+        command = command + ".bat"
+    print(description or command)
+    run_command(
+        command=[command] + (args or []), workdir=os.path.join(*workdir),
+    )
+
+
 class DIALSBuilder(object):
     @staticmethod
     def update_sources(git_reference, git_branches):
@@ -864,57 +877,23 @@ class DIALSBuilder(object):
         self.add_refresh()
         self.add_precommit()
 
-    @staticmethod
-    def add_command(command, description=None, workdir=None, args=None):
-        if os.name == "nt":
-            command = command + ".bat"
-        # Relative path to workdir.
-        workdir = workdir or [_BUILD_DIR]
-        dots = [".."] * len(workdir)
-        if workdir[0] == ".":
-            dots = []
-        if os.name == "nt":
-            dots.extend([os.getcwd(), _BUILD_DIR, "bin", command])
-        else:
-            dots.extend([_BUILD_DIR, "bin", command])
-        result = run_command(
-            command=[os.path.join(*dots)] + (args or []),
-            description=description or command,
-            workdir=os.path.join(*workdir),
-        )
-        if result:
-            print(result)
-
-    @staticmethod
-    def add_indirect_command(command, args=None):
-        if os.name == "nt":
-            command = command + ".bat"
-        # Relative path to workdir.
-        workdir = [_BUILD_DIR]
-        dots = [".."] * len(workdir)
-        if workdir[0] == ".":
-            dots = []
-        if os.name == "nt":
-            dots.extend([os.getcwd(), _BUILD_DIR, "bin", command])
-        else:
-            dots.extend([_BUILD_DIR, "bin", command])
-        result = run_command(
-            command=["./indirection.sh", os.path.join(*dots)] + (args or []),
-            description="(via conda environment) " + command,
-            workdir=os.path.join(*workdir),
-        )
-        if result:
-            print(result)
-
     def add_refresh(self):
-        self.add_command("libtbx.refresh", description="libtbx.refresh", workdir=["."])
+        print("Running libtbx.refresh")
+        dispatch_extension = ".bat" if os.name == "nt" else ""
+        run_command(
+            [os.path.join("build", "bin", "libtbx.refresh" + dispatch_extension)],
+            workdir=".",
+        )
 
     def add_precommit(self):
-        self.add_command(
-            "libtbx.precommit",
-            description="libtbx.precommit install",
-            workdir=["."],
-            args=["install"],
+        print("Installing precommits")
+        dispatch_extension = ".bat" if os.name == "nt" else ""
+        run_command(
+            [
+                os.path.join("build", "bin", "libtbx.precommit" + dispatch_extension),
+                "install",
+            ],
+            workdir=".",
         )
 
     def add_configure(self, config_flags):
@@ -956,18 +935,15 @@ class DIALSBuilder(object):
             "iota",
             "--skip_phenix_dispatchers",
         ] + config_flags
-        result = run_command(
-            command=configcmd, description="run configure.py", workdir=_BUILD_DIR,
+        print("Setting up build directory")
+        run_command(
+            command=configcmd, workdir="build",
         )
-        if result:
-            print(result)
-        result = self.generate_environment_indirector()
-        if result:
-            print(result)
+        self.generate_environment_indirector()
 
     @staticmethod
     def generate_environment_indirector():
-        filename = os.path.join(os.getcwd(), _BUILD_DIR, "indirection.sh")
+        filename = os.path.join(os.getcwd(), "build", "indirection.sh")
         with open(filename, "w") as fh:
             fh.write("#!/bin/bash\n")
             fh.write("source %s/conda_base/etc/profile.d/conda.sh\n" % os.getcwd())
@@ -982,22 +958,39 @@ class DIALSBuilder(object):
             nproc = len(os.sched_getaffinity(0))
         except AttributeError:
             nproc = multiprocessing.cpu_count()
-        self.add_indirect_command("libtbx.scons", args=["-j", str(nproc)])
+        run_indirect_command(
+            os.path.join("bin", "libtbx.scons"), args=["-j", str(nproc)]
+        )
         # run build again to make sure everything is built
-        self.add_indirect_command("libtbx.scons", args=["-j", str(nproc)])
+        run_indirect_command(
+            os.path.join("bin", "libtbx.scons"), args=["-j", str(nproc)]
+        )
 
     def run_tests(self):
-        self.add_command(
-            "libtbx.pytest",
-            args=["--regression", "-n", "auto"],
-            description="test dxtbx",
-            workdir=["modules", "dxtbx"],
+        dispatch_extension = ".bat" if os.name == "nt" else ""
+        print("Running dxtbx tests")
+        run_command(
+            [
+                os.path.join(
+                    "..", "..", "build", "bin", "libtbx.pytest" + dispatch_extension
+                ),
+                "--regression",
+                "-n",
+                "auto",
+            ],
+            workdir=os.path.join("modules", "dxtbx"),
         )
-        self.add_command(
-            "libtbx.pytest",
-            args=["--regression", "-n", "auto"],
-            description="test DIALS",
-            workdir=["modules", "dials"],
+        print("Running dials tests")
+        add_command(
+            [
+                os.path.join(
+                    "..", "..", "build", "bin", "libtbx.pytest" + dispatch_extension
+                ),
+                "--regression",
+                "-n",
+                "auto",
+            ],
+            workdir=os.path.join("modules", "dials"),
         )
 
 
