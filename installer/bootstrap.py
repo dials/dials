@@ -11,7 +11,6 @@
 from __future__ import absolute_import, division, print_function
 
 import argparse
-import functools
 import json
 import multiprocessing.pool
 import os
@@ -813,82 +812,10 @@ REPOSITORIES = (
 
 
 class DIALSBuilder(object):
-    # Configure these cctbx packages
-    LIBTBX = [
-        "cctbx",
-        "cbflib",
-        "dxtbx",
-        "scitbx",
-        "libtbx",
-        "iotbx",
-        "mmtbx",
-        "smtbx",
-        "gltbx",
-        "wxtbx",
-        "dials",
-        "xia2",
-        "prime",
-        "iota",
-        "--skip_phenix_dispatchers",
-    ]
-
-    def __init__(self, options):
-        """Create and add all the steps."""
-        self.git_reference = options.git_reference
-        self.git_branches = dict(options.branch or [])
-        self.steps = []
-        # self.config_flags are only from the command line
-        # LIBTBX can still be used to always set flags specific to a builder
-        self.config_flags = options.config_flags or []
-
-        # Add sources
-        if "update" in options.actions:
-            self.update_sources()
-
-        # always remove .pyc files
-        self.remove_pycs()
-
-        # Build base packages
-        if "base" in options.actions:
-            install_conda(python=options.python)
-
-        # Configure, make, get revision numbers
-        if "build" in options.actions:
-            self.add_configure()
-            self.add_make()
-
-        # Tests, tests
-        if "tests" in options.actions:
-            self.add_tests()
-
-        if "build" in options.actions:
-            self.add_refresh()
-            self.add_precommit()
-
     @staticmethod
-    def remove_pycs():
-        if not os.path.exists("modules"):
-            return
-        print("\n  removing .pyc files in %s" % os.path.join(os.getcwd(), "modules"))
-        i = 0
-        for root, dirs, files in os.walk("modules"):
-            if ".git" in dirs:
-                del dirs[dirs.index(".git")]
-            for name in files:
-                if name.endswith(".pyc"):
-                    os.remove(os.path.join(root, name))
-                    i += 1
-        print("  removed %d files" % i)
-
-    def run(self):
-        for i in self.steps:
-            result = i()
-            if result:
-                print(result)
-
-    def update_sources(self):
-        if self.git_reference:
-            reference_base = os.path.abspath(os.path.expanduser(self.git_reference))
+    def update_sources(git_reference, git_branches):
+        if git_reference:
+            reference_base = os.path.abspath(os.path.expanduser(git_reference))
         else:
             if os.name == "posix" and pysocket.gethostname().endswith(".diamond.ac.uk"):
                 reference_base = (
@@ -905,7 +832,7 @@ class DIALSBuilder(object):
 
         def git_fn(repository):
             modulename = repository.split("/")[1]
-            branch = self.git_branches.get(modulename)
+            branch = git_branches.get(modulename)
             git_source = [
                 "git@github.com:%s.git" % repository,
                 "https://github.com/%s.git" % repository,
@@ -975,7 +902,14 @@ class DIALSBuilder(object):
             sys.exit("Could not download msgpack")
         tar_extract("modules", msgpack)
 
-    def add_command(self, command, description=None, workdir=None, args=None):
+    def build(self, options):
+        self.add_configure(options.config_flags)
+        self.add_make()
+        self.add_refresh()
+        self.add_precommit()
+
+    @staticmethod
+    def add_command(command, description=None, workdir=None, args=None):
         if os.name == "nt":
             command = command + ".bat"
         # Relative path to workdir.
@@ -987,16 +921,16 @@ class DIALSBuilder(object):
             dots.extend([os.getcwd(), _BUILD_DIR, "bin", command])
         else:
             dots.extend([_BUILD_DIR, "bin", command])
-        self.steps.append(
-            functools.partial(
-                run_command,
-                command=[os.path.join(*dots)] + (args or []),
-                description=description or command,
-                workdir=os.path.join(*workdir),
-            )
+        result = run_command(
+            command=[os.path.join(*dots)] + (args or []),
+            description=description or command,
+            workdir=os.path.join(*workdir),
         )
+        if result:
+            print(result)
 
-    def add_indirect_command(self, command, args=None):
+    @staticmethod
+    def add_indirect_command(command, args=None):
         if os.name == "nt":
             command = command + ".bat"
         # Relative path to workdir.
@@ -1008,14 +942,13 @@ class DIALSBuilder(object):
             dots.extend([os.getcwd(), _BUILD_DIR, "bin", command])
         else:
             dots.extend([_BUILD_DIR, "bin", command])
-        self.steps.append(
-            functools.partial(
-                run_command,
-                command=["./indirection.sh", os.path.join(*dots)] + (args or []),
-                description="(via conda environment) " + command,
-                workdir=os.path.join(*workdir),
-            )
+        result = run_command(
+            command=["./indirection.sh", os.path.join(*dots)] + (args or []),
+            description="(via conda environment) " + command,
+            workdir=os.path.join(*workdir),
         )
+        if result:
+            print(result)
 
     def add_refresh(self):
         self.add_command("libtbx.refresh", description="libtbx.refresh", workdir=["."])
@@ -1028,7 +961,7 @@ class DIALSBuilder(object):
             args=["install"],
         )
 
-    def add_configure(self):
+    def add_configure(self, config_flags):
         if os.name == "nt":
             conda_python = os.path.join(os.getcwd(), "conda_base", "python.exe")
         elif sys.platform.startswith("darwin"):
@@ -1038,37 +971,46 @@ class DIALSBuilder(object):
         else:
             conda_python = os.path.join("..", "conda_base", "bin", "python")
 
-        if not any(flag.startswith("--compiler=") for flag in self.config_flags):
-            self.config_flags.append("--compiler=conda")
-        if "--enable_cxx11" not in self.config_flags:
-            self.config_flags.append("--enable_cxx11")
-        if "--use_conda" not in self.config_flags:
-            self.config_flags.append("--use_conda")
+        if not any(flag.startswith("--compiler=") for flag in config_flags):
+            config_flags.append("--compiler=conda")
+        if "--enable_cxx11" not in config_flags:
+            config_flags.append("--enable_cxx11")
+        if "--use_conda" not in config_flags:
+            config_flags.append("--use_conda")
 
         with open("dials", "w"):
             pass  # ensure we write a new-style environment setup script
 
-        configcmd = (
-            [
-                conda_python,
-                os.path.join(
-                    "..", "modules", "cctbx_project", "libtbx", "configure.py"
-                ),
-            ]
-            + self.LIBTBX
-            + self.config_flags
+        configcmd = [
+            conda_python,
+            os.path.join("..", "modules", "cctbx_project", "libtbx", "configure.py"),
+            "cctbx",
+            "cbflib",
+            "dxtbx",
+            "scitbx",
+            "libtbx",
+            "iotbx",
+            "mmtbx",
+            "smtbx",
+            "gltbx",
+            "wxtbx",
+            "dials",
+            "xia2",
+            "prime",
+            "iota",
+            "--skip_phenix_dispatchers",
+        ] + config_flags
+        result = run_command(
+            command=configcmd, description="run configure.py", workdir=_BUILD_DIR,
         )
-        self.steps.append(
-            functools.partial(
-                run_command,
-                command=configcmd,
-                description="run configure.py",
-                workdir=_BUILD_DIR,
-            )
-        )
-        self.steps.append(self.generate_environment_indirector)
+        if result:
+            print(result)
+        result = self.generate_environment_indirector()
+        if result:
+            print(result)
 
-    def generate_environment_indirector(self):
+    @staticmethod
+    def generate_environment_indirector():
         filename = os.path.join(os.getcwd(), _BUILD_DIR, "indirection.sh")
         with open(filename, "w") as fh:
             fh.write("#!/bin/bash\n")
@@ -1088,7 +1030,7 @@ class DIALSBuilder(object):
         # run build again to make sure everything is built
         self.add_indirect_command("libtbx.scons", args=["-j", str(nproc)])
 
-    def add_tests(self):
+    def run_tests(self):
         self.add_command(
             "libtbx.pytest",
             args=["--regression", "-n", "auto"],
@@ -1137,13 +1079,13 @@ def run():
     update - Update source repositories (cctbx, cbflib, etc.)
     base - Create conda environment
     build - Build
-    tests - Run tests
+    test - Run tests
 
   The default actions are: update, base, build
 
   Example:
 
-    python bootstrap.py update base build tests
+    python bootstrap.py update base build test
   """
 
     parser = argparse.ArgumentParser(
@@ -1151,7 +1093,7 @@ def run():
         description=description,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    action_choices = Choices(("update", "base", "build", "tests"))
+    action_choices = Choices(("update", "base", "build", "test"))
     action_choices.default = ["update", "base", "build"]
     parser.add_argument(
         "actions",
@@ -1168,7 +1110,7 @@ def run():
         "--config-flags",
         help="""Pass flags to the configuration step. Flags should
 be passed separately with quotes to avoid confusion (e.g
---config_flags="--build=debug" --config_flags="--enable_cxx11")""",
+--config_flags="--build=debug" --config_flags="--another_flag")""",
         action="append",
         default=[],
     )
@@ -1182,6 +1124,7 @@ be passed separately with quotes to avoid confusion (e.g
         "--branch",
         type=repository_at_tag,
         action="append",
+        default=[],
         help=(
             "during 'update' step when a repository is newly cloned set it to a given branch."
             "Specify as repository@branch, eg. 'dials@dials-next'"
@@ -1190,7 +1133,24 @@ be passed separately with quotes to avoid confusion (e.g
 
     options = parser.parse_args()
     print("Performing actions:", " ".join(options.actions))
-    DIALSBuilder(options=options).run()
+    builder = DIALSBuilder()
+
+    # Add sources
+    if "update" in options.actions:
+        builder.update_sources(options.git_reference, dict(options.branch))
+
+    # Build base packages
+    if "base" in options.actions:
+        install_conda(options.python)
+
+    # Configure, make, get revision numbers
+    if "build" in options.actions:
+        builder.build(options)
+
+    # Tests, tests
+    if "test" in options.actions:
+        builder.run_tests()
+
     print("\nBootstrap success: %s" % ", ".join(options.actions))
 
 
