@@ -19,7 +19,7 @@ from dials.util.filter_reflections import filter_reflection_table
 from dials.util.export_mtz import MADMergedMTZWriter, MergedMTZWriter
 from dials.report.analysis import (
     make_merging_statistics_summary,
-    make_xia2_style_statistics_summary,
+    table_1_summary,
 )
 from dxtbx.model import ExperimentList
 from mmtbx.scaling import data_statistics
@@ -257,6 +257,6 @@ def merge_and_truncate(params, experiments, reflections):
                 logger.info(make_merging_statistics_summary(anom_stats))
             else:
                 logger.info(make_merging_statistics_summary(stats))
-            logger.info(make_xia2_style_statistics_summary(stats, anom_stats))
+            logger.info(table_1_summary(stats, anom_stats))
 
     return merged, merged_anom, amplitudes, anom_amplitudes

@@ -24,7 +24,7 @@ from dials.algorithms.scaling.model.model import (
 from dials.report.analysis import (
     reflection_tables_to_batch_dependent_properties,
     make_merging_statistics_summary,
-    make_xia2_style_statistics_summary,
+    table_1_summary,
 )
 from dials.algorithms.scaling.error_model.error_model import (
     calc_sigmaprime,
@@ -141,16 +141,14 @@ class ScalingSummaryGenerator(Observer):
     Observer to summarise data
     """
 
-    def print_scaling_summary(self, scaling_script):
+    def print_scaling_summary(self, script):
         """Log summary information after scaling."""
         if ScalingModelObserver().data:
             logger.info(ScalingModelObserver().return_model_error_summary())
-        valid_ranges = get_valid_image_ranges(scaling_script.experiments)
-        image_ranges = get_image_ranges(scaling_script.experiments)
+        valid_ranges = get_valid_image_ranges(script.experiments)
+        image_ranges = get_image_ranges(script.experiments)
         msg = []
-        for (img, valid, refl) in zip(
-            image_ranges, valid_ranges, scaling_script.reflections
-        ):
+        for (img, valid, refl) in zip(image_ranges, valid_ranges, script.reflections):
             if valid:
                 if len(valid) > 1 or valid[0][0] != img[0] or valid[-1][1] != img[1]:
                     msg.append(
@@ -167,7 +165,7 @@ class ScalingSummaryGenerator(Observer):
 
         # report on partiality of dataset
         partials = flex.double()
-        for r in scaling_script.reflections:
+        for r in script.reflections:
             if "partiality" in r:
                 partials.extend(r["partiality"])
         not_full_sel = partials < 0.99
@@ -193,43 +191,34 @@ part of the scaling analysis or for the reporting of merging statistics.
 Additionally, if applicable, only reflections with a min_partiality > %s
 were considered for use when refining the scaling model.
 """,
-            scaling_script.params.cut_data.partiality_cutoff,
-            scaling_script.params.reflection_selection.min_partiality,
+            script.params.cut_data.partiality_cutoff,
+            script.params.reflection_selection.min_partiality,
         )
-        if MergingStatisticsObserver().data:
-            merging_stats = MergingStatisticsObserver().data["statistics"]
-            logger.info(make_merging_statistics_summary(merging_stats))
-            vals = cc_half_fit(merging_stats, limit=0.3)
-            r_cc = vals[0]
-            max_current_res = merging_stats.bins[-1].d_min
-            cut_merging_statistics_result = None
-            cut_anom_merging_statistics_result = None
+        data = MergingStatisticsObserver().data
+        if data:
+            stats, anom_stats = data["statistics"], data["anomalous_statistics"]
+            cut_stats, cut_anom_stats = (None, None)
+            logger.info(make_merging_statistics_summary(stats))
+            r_cc = cc_half_fit(stats, limit=0.3)[0]
+            max_current_res = stats.bins[-1].d_min
             if r_cc - max_current_res > 0.005:
                 logger.info(
-                    "Resolution limit suggested from cc1/2 fit (limit cc1/2=0.3): %.2f",
+                    "Resolution limit suggested from CC"
+                    + u"\u00BD"
+                    + " fit (limit CC"
+                    + u"\u00BD"
+                    + "=0.3): %.2f",
                     r_cc,
                 )
                 try:
-                    (
-                        cut_merging_statistics_result,
-                        cut_anom_merging_statistics_result,
-                    ) = merging_stats_from_scaled_array(
-                        scaling_script.scaled_miller_array.resolution_filter(
-                            d_min=r_cc
-                        ),
-                        scaling_script.params.output.merging.nbins,
-                        scaling_script.params.output.use_internal_variance,
+                    cut_stats, cut_anom_stats = merging_stats_from_scaled_array(
+                        script.scaled_miller_array.resolution_filter(d_min=r_cc),
+                        script.params.output.merging.nbins,
+                        script.params.output.use_internal_variance,
                     )
                 except DialsMergingStatisticsError:
                     pass
-            logger.info(
-                make_xia2_style_statistics_summary(
-                    merging_stats,
-                    MergingStatisticsObserver().data["anomalous_statistics"],
-                    cut_merging_statistics_result,
-                    cut_anom_merging_statistics_result,
-                )
-            )
+            logger.info(table_1_summary(stats, anom_stats, cut_stats, cut_anom_stats))
 
 
 @singleton

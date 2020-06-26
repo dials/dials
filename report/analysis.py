@@ -3,14 +3,12 @@ from __future__ import absolute_import, division, print_function
 
 import collections
 from cctbx import miller
-from six.moves import cStringIO as StringIO
 from dials.algorithms.scaling.scaling_library import scaled_data_as_miller_array
 from dials.util.batch_handling import (
     calculate_batch_offsets,
     get_batch_ranges,
     assign_batches_to_reflections,
 )
-from libtbx.str_utils import make_sub_header
 from scitbx.array_family import flex
 
 
@@ -246,15 +244,15 @@ def format_statistics(statistics):
     return result
 
 
-def make_xia2_style_statistics_summary(
+def table_1_summary(
     merging_statistics,
     anomalous_statistics=None,
     selected_statistics=None,
     selected_anomalous_statistics=None,
 ):
+    """Make a summary table of the merging statistics."""
 
-    out = StringIO()
-    make_sub_header("Summary of merging statistics", out=out)
+    text = "\n            -------------Summary of merging statistics--------------           \n\n"
 
     key_to_var = {
         "I/sigma": "i_over_sigma_mean",
@@ -332,26 +330,20 @@ def make_xia2_style_statistics_summary(
                 values = [v_ * 100 for v_ in values]
             if values[0] is not None:
                 stats[k] = values
-    text = format_statistics(stats)
-    out.write(text)
-    return out.getvalue()
+    text += format_statistics(stats)
+    return text
 
 
 def make_merging_statistics_summary(dataset_statistics):
     """Format merging statistics information into an output string."""
 
-    # Here use a StringIO to get around excessive padding/whitespace.
-    # Avoid using result.show as don't want redundancies printed.
-    out = StringIO()
-
-    make_sub_header("Merging statistics by resolution bin", out=out)
-    msg = (
+    text = "\n            ----------Merging statistics by resolution bin----------           \n\n"
+    text += (
         " d_max  d_min   #obs  #uniq   mult.  %comp       <I>  <I/sI>"
         + "    r_mrg   r_meas    r_pim   cc1/2   cc_ano\n"
     )
     for bin_stats in dataset_statistics.bins:
-        msg += bin_stats.format() + "\n"
-    msg += dataset_statistics.overall.format() + "\n\n"
-    out.write(msg)
+        text += bin_stats.format() + "\n"
+    text += dataset_statistics.overall.format() + "\n\n"
 
-    return out.getvalue()
+    return text

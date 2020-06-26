@@ -13,7 +13,7 @@ from dials.report.analysis import (
     batch_dependent_properties,
     reflection_tables_to_batch_dependent_properties,
     combined_table_to_batch_dependent_properties,
-    make_xia2_style_statistics_summary,
+    table_1_summary,
 )
 from dials.algorithms.scaling.scaling_library import (
     merging_stats_from_scaled_array,
@@ -208,7 +208,7 @@ def test_batch_dependent_properties(batch_array, data_array):
         _ = batch_dependent_properties(batch_array[0:-1], Is)
 
 
-def test_make_xia2_style_statistics_summary(dials_data):
+def test_table_1_summary(dials_data):
 
     location = dials_data("l_cysteine_4_sweeps_scaled")
     expts = load.experiment_list(location.join("scaled_20_25.expt"), check_format=False)
@@ -219,15 +219,15 @@ def test_make_xia2_style_statistics_summary(dials_data):
 
     # Test that something is returned in each case
     ### Case of overall statistics summary
-    out = make_xia2_style_statistics_summary(arr, anom)
+    out = table_1_summary(arr, anom)
     assert out
     assert all(a in out for a in ("Overall", "Low", "High"))
     assert "Suggested" not in out
     ### Case of overall and suggested statistics summary (with anom)
-    out = make_xia2_style_statistics_summary(arr, anom, arr, anom)
+    out = table_1_summary(arr, anom, arr, anom)
     assert out
     assert all(a in out for a in ("Overall", "Suggested", "Low", "High"))
     ### Case of no anomalous, but with suggested as well as overall.
-    out = make_xia2_style_statistics_summary(arr, selected_statistics=arr)
+    out = table_1_summary(arr, selected_statistics=arr)
     assert out
     assert all(a in out for a in ("Overall", "Suggested", "Low", "High"))
