@@ -14,14 +14,12 @@ import argparse
 import json
 import multiprocessing.pool
 import os
-import random
 import re
 import shutil
 import socket as pysocket
 import stat
 import subprocess
 import sys
-import tarfile
 import threading
 import time
 import warnings
@@ -320,23 +318,6 @@ ${HOME}/.conda/environments.txt.
 
 
 _BUILD_DIR = "build"
-
-
-def tar_extract(workdir, archive):
-    # using tarfile module rather than unix tar command which is not platform independent
-    with tarfile.open(os.path.join(workdir, archive), errorlevel=2) as tar:
-        tar.extractall(path=workdir)
-        tarfoldername = os.path.join(
-            workdir, os.path.commonprefix(tar.getnames()).split("/")[0]
-        )
-    # take full permissions on all extracted files
-    module = os.path.join(workdir, tarfoldername)
-    for root, dirs, files in os.walk(module):
-        for fname in files:
-            full_path = os.path.join(root, fname)
-            os.chmod(
-                full_path, stat.S_IREAD | stat.S_IWRITE | stat.S_IRGRP | stat.S_IROTH
-            )
 
 
 def run_command(command, workdir=_BUILD_DIR, description=None):
@@ -876,31 +857,6 @@ class DIALSBuilder(object):
         update_pool.join()
         if not success:
             sys.exit("\nFailed to update one or more repositories")
-
-        msgpack = "msgpack-3.1.1.tar.gz"
-        for retry in range(5):
-            try:
-                print("Downloading msgpack:", end=" ")
-                result = download_to_file(
-                    random.choice(
-                        [
-                            "https://gitcdn.xyz/repo/dials/dependencies/dials-1.13/",
-                            "https://gitcdn.link/repo/dials/dependencies/dials-1.13/",
-                            "https://github.com/dials/dependencies/raw/dials-1.13/",
-                        ]
-                    )
-                    + msgpack,
-                    os.path.join("modules", msgpack),
-                )
-                assert result > 0 or result == -2
-            except Exception as err:
-                print("Error downloading msgpack. (%s) Retrying..." % err)
-                time.sleep(3)
-            else:
-                break
-        else:
-            sys.exit("Could not download msgpack")
-        tar_extract("modules", msgpack)
 
     def build(self, options):
         self.add_configure(options.config_flags)

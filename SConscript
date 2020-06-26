@@ -25,13 +25,6 @@ if not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include"):
         env_etc.dxtbx_include,
         env_etc.dials_include,
     ]
-    # following lines can be removed once Python2.7 compatibility is dropped
-    msgpack = os.path.join(env_etc.dials_include, "msgpack-3.1.1", "include")
-    if os.path.exists(str(msgpack)):
-        include_paths.append(msgpack)
-    else:
-        print("msgpack header files not installed, please run libtbx.install msgpack")
-    ########################################################################
     if libtbx.env.build_options.use_conda:
         boost_python = get_boost_library_with_python_version(
             "boost_python", env_etc.conda_libpath
