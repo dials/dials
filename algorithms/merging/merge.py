@@ -17,7 +17,10 @@ from dials.algorithms.symmetry.absences.run_absences_checks import (
 )
 from dials.util.filter_reflections import filter_reflection_table
 from dials.util.export_mtz import MADMergedMTZWriter, MergedMTZWriter
-from dials.report.analysis import make_merging_statistics_summary
+from dials.report.analysis import (
+    make_merging_statistics_summary,
+    make_xia2_style_statistics_summary,
+)
 from dxtbx.model import ExperimentList
 from mmtbx.scaling import data_statistics
 from six.moves import cStringIO as StringIO
@@ -251,8 +254,9 @@ def merge_and_truncate(params, experiments, reflections):
             logger.error(e, exc_info=True)
         else:
             if params.merging.anomalous and anom_stats:
-                logger.info(make_merging_statistics_summary(anom_stats, anom_stats))
+                logger.info(make_merging_statistics_summary(anom_stats))
             else:
-                logger.info(make_merging_statistics_summary(stats, anom_stats))
+                logger.info(make_merging_statistics_summary(stats))
+            logger.info(make_xia2_style_statistics_summary(stats, anom_stats))
 
     return merged, merged_anom, amplitudes, anom_amplitudes

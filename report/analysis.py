@@ -216,15 +216,24 @@ def format_statistics(statistics):
 
     available = list(statistics.keys())
 
-    result = ""
     columns = len(statistics.get("Completeness", [1, 2, 3]))
+    result = "".ljust(44)
+    if columns == 3:
+        result += " Overall    Low     High"
+    elif columns == 4:
+        result += "Suggested   Low    High  Overall"
+    result += "\n"
 
     for k, format_str in formats.items():
         if k in available:
             try:
                 row_data = statistics[k]
-                if columns == 4 and len(row_data) == 1:  # place value in suggest column
+                if columns == 4 and len(row_data) == 1:  # place value in overall column
                     row_data = [None] * (columns - 1) + row_data
+                if (
+                    columns == 4 and len(row_data) == 2
+                ):  # place value in overall & suggest column
+                    row_data = [row_data[1]] + ([None] * (columns - 2)) + [row_data[0]]
                 row_format = [format_str] + [format_str.strip()] * (len(row_data) - 1)
                 formatted = " ".join(
                     (f % k) if k is not None else (" " * len(f % 0))
@@ -237,7 +246,16 @@ def format_statistics(statistics):
     return result
 
 
-def make_xia2_style_statistics_summary(merging_statistics, anomalous_statistics=None):
+def make_xia2_style_statistics_summary(
+    merging_statistics,
+    anomalous_statistics=None,
+    selected_statistics=None,
+    selected_anomalous_statistics=None,
+):
+
+    out = StringIO()
+    make_sub_header("Summary of merging statistics", out=out)
+
     key_to_var = {
         "I/sigma": "i_over_sigma_mean",
         "Completeness": "completeness",
@@ -265,6 +283,8 @@ def make_xia2_style_statistics_summary(merging_statistics, anomalous_statistics=
 
     result = merging_statistics
     anom_result = anomalous_statistics
+    select_result = selected_statistics
+    select_anom_result = selected_anomalous_statistics
 
     if anom_result:
         anom_probability_plot = anom_result.overall.anom_probability_plot_expected_delta
@@ -272,37 +292,58 @@ def make_xia2_style_statistics_summary(merging_statistics, anomalous_statistics=
             stats["Anomalous slope"] = [anom_probability_plot.slope]
         stats["dF/F"] = [anom_result.overall.anom_signal]
         stats["dI/s(dI)"] = [anom_result.overall.delta_i_mean_over_sig_delta_i_mean]
+        if select_anom_result:
+            anom_probability_plot = (
+                select_anom_result.overall.anom_probability_plot_expected_delta
+            )
+            if anom_probability_plot is not None:
+                stats["Anomalous slope"].append(anom_probability_plot.slope)
+            stats["dF/F"].append(select_anom_result.overall.anom_signal)
+            stats["dI/s(dI)"].append(
+                select_anom_result.overall.delta_i_mean_over_sig_delta_i_mean
+            )
+    else:
+        anom_key_to_var = {}
+        select_anom_result = None
 
-    for d, r in (
-        (key_to_var, result),
-        (anom_key_to_var, anom_result),
+    four_column_output = False
+    if select_result:
+        four_column_output = True
+
+    for d, r, s in (
+        (key_to_var, result, select_result),
+        (anom_key_to_var, anom_result, select_anom_result),
     ):
         for k, v in d.items():
-            values = (
-                getattr(r.overall, v),
-                getattr(r.bins[0], v),
-                getattr(r.bins[-1], v),
-            )
+            if four_column_output:
+                values = (
+                    getattr(s.overall, v),
+                    getattr(s.bins[0], v),
+                    getattr(s.bins[-1], v),
+                    getattr(r.overall, v),
+                )
+            else:
+                values = (
+                    getattr(r.overall, v),
+                    getattr(r.bins[0], v),
+                    getattr(r.bins[-1], v),
+                )
             if "completeness" in v:
                 values = [v_ * 100 for v_ in values]
             if values[0] is not None:
                 stats[k] = values
-
-    result = "".ljust(44)
-    result += " Overall    Low     High\n"
-    result += format_statistics(stats,)
-
-    return result
+    text = format_statistics(stats)
+    out.write(text)
+    return out.getvalue()
 
 
-def make_merging_statistics_summary(dataset_statistics, anomalous_statistics=None):
+def make_merging_statistics_summary(dataset_statistics):
     """Format merging statistics information into an output string."""
 
     # Here use a StringIO to get around excessive padding/whitespace.
     # Avoid using result.show as don't want redundancies printed.
     out = StringIO()
 
-    # First make summary
     make_sub_header("Merging statistics by resolution bin", out=out)
     msg = (
         " d_max  d_min   #obs  #uniq   mult.  %comp       <I>  <I/sI>"
@@ -312,10 +353,5 @@ def make_merging_statistics_summary(dataset_statistics, anomalous_statistics=Non
         msg += bin_stats.format() + "\n"
     msg += dataset_statistics.overall.format() + "\n\n"
     out.write(msg)
-
-    make_sub_header("Summary of merging statistics", out=out)
-    out.write(
-        make_xia2_style_statistics_summary(dataset_statistics, anomalous_statistics)
-    )
 
     return out.getvalue()

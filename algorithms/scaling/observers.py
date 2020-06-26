@@ -24,6 +24,7 @@ from dials.algorithms.scaling.model.model import (
 from dials.report.analysis import (
     reflection_tables_to_batch_dependent_properties,
     make_merging_statistics_summary,
+    make_xia2_style_statistics_summary,
 )
 from dials.algorithms.scaling.error_model.error_model import (
     calc_sigmaprime,
@@ -42,8 +43,13 @@ from dials.report.plots import (
     make_image_range_table,
 )
 from dials.algorithms.scaling.scale_and_filter import make_scaling_filtering_plots
+from dials.algorithms.scaling.scaling_library import (
+    merging_stats_from_scaled_array,
+    DialsMergingStatisticsError,
+)
 from dials.util.batch_handling import batch_manager, get_image_ranges
 from dials.util.exclude_images import get_valid_image_ranges
+from dials.util.resolutionizer import cc_half_fit
 from jinja2 import Environment, ChoiceLoader, PackageLoader
 from scitbx.array_family import flex
 
@@ -191,10 +197,37 @@ were considered for use when refining the scaling model.
             scaling_script.params.reflection_selection.min_partiality,
         )
         if MergingStatisticsObserver().data:
+            merging_stats = MergingStatisticsObserver().data["statistics"]
+            logger.info(make_merging_statistics_summary(merging_stats))
+            vals = cc_half_fit(merging_stats, limit=0.3)
+            r_cc = vals[0]
+            max_current_res = merging_stats.bins[-1].d_min
+            cut_merging_statistics_result = None
+            cut_anom_merging_statistics_result = None
+            if r_cc - max_current_res > 0.005:
+                logger.info(
+                    "Resolution limit suggested from cc1/2 fit (limit cc1/2=0.3): %.2f",
+                    r_cc,
+                )
+                try:
+                    (
+                        cut_merging_statistics_result,
+                        cut_anom_merging_statistics_result,
+                    ) = merging_stats_from_scaled_array(
+                        scaling_script.scaled_miller_array.resolution_filter(
+                            d_min=r_cc
+                        ),
+                        scaling_script.params.output.merging.nbins,
+                        scaling_script.params.output.use_internal_variance,
+                    )
+                except DialsMergingStatisticsError:
+                    pass
             logger.info(
-                make_merging_statistics_summary(
-                    MergingStatisticsObserver().data["statistics"],
+                make_xia2_style_statistics_summary(
+                    merging_stats,
                     MergingStatisticsObserver().data["anomalous_statistics"],
+                    cut_merging_statistics_result,
+                    cut_anom_merging_statistics_result,
                 )
             )
 
