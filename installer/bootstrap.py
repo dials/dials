@@ -796,15 +796,6 @@ REPOSITORIES = (
 ###################################
 
 
-def add_command(command, description=None, workdir=None, args=None):
-    if os.name == "nt":
-        command = command + ".bat"
-    print(description or command)
-    run_command(
-        command=[command] + (args or []), workdir=os.path.join(*workdir),
-    )
-
-
 class DIALSBuilder(object):
     @staticmethod
     def update_sources(git_reference, git_branches):
@@ -981,7 +972,7 @@ class DIALSBuilder(object):
             workdir=os.path.join("modules", "dxtbx"),
         )
         print("Running dials tests")
-        add_command(
+        run_command(
             [
                 os.path.join(
                     "..", "..", "build", "bin", "libtbx.pytest" + dispatch_extension
