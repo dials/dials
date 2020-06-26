@@ -21,8 +21,11 @@ class DialsLogfileFormatter:
         self.prefix = ""
 
     def format(self, record):
-        elapsed_seconds = record.created - self.start_time
-        prefix = "{:6.1f}: ".format(elapsed_seconds)
+        if "NO_TIME" in os.environ:
+            prefix = ""
+        else:
+            elapsed_seconds = record.created - self.start_time
+            prefix = "{:6.1f}: ".format(elapsed_seconds)
         indent = len(prefix)
         msg = record.getMessage()
 
