@@ -140,7 +140,7 @@ steps:
 - bash: |
     set -e
     . dials
-    conda install -p conda_base -y dials-data pytest-azurepipelines pytest-timeout
+    conda install -p conda_base -y dials-data pytest-azurepipelines pytest-cov pytest-timeout
     dials.data info -v
     echo "##vso[task.setvariable variable=DIALS_DATA_VERSION_FULL]$(dials.data info -v | grep version.full)"
     echo "##vso[task.setvariable variable=DIALS_DATA_VERSION]$(dials.data info -v | grep version.major)"
@@ -174,6 +174,7 @@ steps:
     . dials
     cd modules/dials
     pytest -v -ra -n auto --basetemp="$(Pipeline.Workspace)/tests" --durations=10 \
+        --cov=dials --cov-report=html \
         --timeout=5400 --regression --runslow || echo "##vso[task.complete result=Failed;]Some tests failed"
   displayName: Run tests
   workingDirectory: $(Pipeline.Workspace)
