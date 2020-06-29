@@ -209,13 +209,16 @@ formats = collections.OrderedDict(
 )
 
 
-def format_statistics(statistics):
+def format_statistics(statistics, caption=None):
     """Format for printing statistics from data processing"""
 
     available = list(statistics.keys())
 
     columns = len(statistics.get("Completeness", [1, 2, 3]))
-    result = "".ljust(44)
+    if caption:
+        result = caption.ljust(44)
+    else:
+        result = "".ljust(44)
     if columns == 3:
         result += " Overall    Low     High"
     elif columns == 4:
@@ -226,12 +229,10 @@ def format_statistics(statistics):
         if k in available:
             try:
                 row_data = statistics[k]
-                if columns == 4 and len(row_data) == 1:  # place value in overall column
-                    row_data = [None] * (columns - 1) + row_data
                 if (
-                    columns == 4 and len(row_data) == 2
-                ):  # place value in overall & suggest column
-                    row_data = [row_data[1]] + ([None] * (columns - 2)) + [row_data[0]]
+                    columns == 4 and len(row_data) == 1
+                ):  # place value in leftmost overall/suggest column
+                    row_data = row_data + [None] * (columns - 1)
                 row_format = [format_str] + [format_str.strip()] * (len(row_data) - 1)
                 formatted = " ".join(
                     (f % k) if k is not None else (" " * len(f % 0))
@@ -251,9 +252,24 @@ def table_1_summary(
     selected_anomalous_statistics=None,
 ):
     """Make a summary table of the merging statistics."""
-
     text = "\n            -------------Summary of merging statistics--------------           \n\n"
+    stats = table_1_stats(
+        merging_statistics,
+        anomalous_statistics,
+        selected_statistics,
+        selected_anomalous_statistics,
+    )
+    text += format_statistics(stats)
+    return text
 
+
+def table_1_stats(
+    merging_statistics,
+    anomalous_statistics=None,
+    selected_statistics=None,
+    selected_anomalous_statistics=None,
+):
+    """Extract a statistics dict from merging stats objects"""
     key_to_var = {
         "I/sigma": "i_over_sigma_mean",
         "Completeness": "completeness",
@@ -295,11 +311,11 @@ def table_1_summary(
                 select_anom_result.overall.anom_probability_plot_expected_delta
             )
             if anom_probability_plot is not None:
-                stats["Anomalous slope"].append(anom_probability_plot.slope)
-            stats["dF/F"].append(select_anom_result.overall.anom_signal)
-            stats["dI/s(dI)"].append(
+                stats["Anomalous slope"] = [anom_probability_plot.slope]
+            stats["dF/F"] = [select_anom_result.overall.anom_signal]
+            stats["dI/s(dI)"] = [
                 select_anom_result.overall.delta_i_mean_over_sig_delta_i_mean
-            )
+            ]
     else:
         anom_key_to_var = {}
         select_anom_result = None
@@ -330,8 +346,7 @@ def table_1_summary(
                 values = [v_ * 100 for v_ in values]
             if values[0] is not None:
                 stats[k] = values
-    text += format_statistics(stats)
-    return text
+    return stats
 
 
 def make_merging_statistics_summary(dataset_statistics):
