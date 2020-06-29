@@ -783,7 +783,6 @@ REPOSITORIES = (
     "dials/dials",
     "dials/gui_resources",
     "dials/tntbx",
-    "ssrl-px/iota",
     "xia2/xia2",
 )
 
@@ -953,7 +952,6 @@ class DIALSBuilder(object):
             "dials",
             "xia2",
             "prime",
-            "iota",
             "--skip_phenix_dispatchers",
         ] + config_flags
         result = run_command(
