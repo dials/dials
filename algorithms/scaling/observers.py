@@ -196,8 +196,10 @@ were considered for use when refining the scaling model.
         )
         data = MergingStatisticsObserver().data
         if data:
-            stats, anom_stats = data["statistics"], data["anomalous_statistics"]
-            cut_stats, cut_anom_stats = (None, None)
+            stats = data["statistics"]
+            anom_stats, cut_stats, cut_anom_stats = (None, None, None)
+            if not script.scaled_miller_array.space_group().is_centric():
+                anom_stats = data["anomalous_statistics"]
             logger.info(make_merging_statistics_summary(stats))
             r_cc = cc_half_fit(stats, limit=0.3)[0]
             max_current_res = stats.bins[-1].d_min
@@ -218,6 +220,9 @@ were considered for use when refining the scaling model.
                     )
                 except DialsMergingStatisticsError:
                     pass
+                else:
+                    if script.scaled_miller_array.space_group().is_centric():
+                        cut_anom_stats = None
             logger.info(table_1_summary(stats, anom_stats, cut_stats, cut_anom_stats))
 
 
