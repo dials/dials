@@ -104,7 +104,7 @@ jobs:
       script:
          # Finally. Do what we are here for. Run tests. Yay.
          - cd $HOME/build_dials/modules/dials
-         - pytest -ra -n 2 --runslow
+         - pytest -ra -n 2
          - .travis/check-working-directory-is-clean
 
     - name: "Test - Python 3.6"
@@ -127,14 +127,6 @@ jobs:
          - cd $HOME/build_dials/modules/dials
          - pytest -ra -n 2 --runslow --disable-warnings
          - .travis/check-working-directory-is-clean
-
-    - name: "Flake8 - Python 2.7"
-      addons: false
-      cache: false
-      before_cache: false
-      script:
-         - .travis/run-flake8
-      if: type = pull_request
 
 before_cache:
   - $HOME/build_dials/modules/dials/.travis/clean-cctbx-dxtbx

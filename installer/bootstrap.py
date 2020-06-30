@@ -819,7 +819,6 @@ def update_sources(options):
         "dials/dials",
         "dials/gui_resources",
         "dials/tntbx",
-        "ssrl-px/iota",
         "xia2/xia2",
     )
 
@@ -997,7 +996,6 @@ def configure_build(config_flags):
         "dials",
         "xia2",
         "prime",
-        "iota",
         "--skip_phenix_dispatchers",
     ] + config_flags
     print("Setting up build directory")

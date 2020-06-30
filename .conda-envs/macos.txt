@@ -26,6 +26,7 @@ conda-forge::eigen
 conda-forge::future
 conda-forge::h5py
 conda-forge::hdf5<1.11
+conda-forge::iota
 conda-forge::jinja2
 conda-forge::jpeg
 conda-forge::matplotlib-base>=3.0.2
