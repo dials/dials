@@ -317,13 +317,13 @@ def run_indirect_command(command, args):
     )
 
 
-def download_to_file(url, file, quiet=False, cache=True):
+def download_to_file(url, file, quiet=False):
     """Downloads a URL to file. Returns the file size.
        Returns -1 if the downloaded file size does not match the expected file
        size
        Returns -2 if the download is skipped due to the file at the URL not
-       being newer than the local copy (identified by A. matching timestamp and
-       size, or B. matching etag).
+       being newer than the local copy (identified by matching timestamp and
+       size)
     """
 
     # Create directory structure if necessary
@@ -335,17 +335,6 @@ def download_to_file(url, file, quiet=False, cache=True):
 
     localcopy = os.path.isfile(file)
 
-    # Get existing ETag, if present
-    etag = None
-    tagfile = "%s/.%s.etag" % os.path.split(os.path.abspath(file))
-    if cache and os.path.isfile(tagfile):
-        if not localcopy:
-            # Having an ETag without a file is pointless
-            os.remove(tagfile)
-        else:
-            with open(tagfile, "r") as tf:
-                etag = tf.readline()
-
     try:
         from ssl import SSLError
     except ImportError:
@@ -354,8 +343,6 @@ def download_to_file(url, file, quiet=False, cache=True):
     # Open connection to remote server
     try:
         url_request = Request(url)
-        if etag:
-            url_request.add_header("If-None-Match", etag)
         if localcopy:
             # Shorten timeout to 7 seconds if a copy of the file is already present
             socket = urlopen(url_request, None, 7)
@@ -372,11 +359,6 @@ def download_to_file(url, file, quiet=False, cache=True):
         # otherwise pass on the error message
         raise
     except (pysocket.timeout, HTTPError) as e:
-        if isinstance(e, HTTPError) and etag and e.code == 304:
-            # When using ETag. a 304 error means everything is fine
-            if not quiet:
-                print("local copy is current (etag)")
-            return -2
         if localcopy:
             # Download failed for some reason, but a valid local copy of
             # the file exists, so use that one instead.
@@ -408,10 +390,6 @@ def download_to_file(url, file, quiet=False, cache=True):
             file_size = int(socket.info().get("Content-Length"))
         except Exception:
             file_size = 0
-
-        if os.path.isfile(tagfile):
-            # ETag did not match, so delete any existing ETag.
-            os.remove(tagfile)
 
         remote_mtime = 0
         try:
@@ -498,11 +476,6 @@ def download_to_file(url, file, quiet=False, cache=True):
             st = os.stat(file)
             atime = st[stat.ST_ATIME]  # current access time
             os.utime(file, (atime, remote_mtime))
-
-        if cache and socket.info().get("ETag"):
-            # If the server sent an ETAG, then keep it alongside the file
-            with open(tagfile, "w") as tf:
-                tf.write(socket.info().get("ETag"))
 
     return received
 
