@@ -174,10 +174,17 @@ steps:
     . dials
     cd modules/dials
     pytest -v -ra -n auto --basetemp="$(Pipeline.Workspace)/tests" --durations=10 \
-        --cov=dials --cov-report=html \
+        --cov=dials \
         --timeout=5400 --regression --runslow || echo "##vso[task.complete result=Failed;]Some tests failed"
   displayName: Run tests
   workingDirectory: $(Pipeline.Workspace)
+
+- script: |
+    bash <(curl -s https://codecov.io/bash)
+  displayName: 'Publish coverage stats'
+  continueOnError: True
+  timeoutInMinutes: 3
+  workingDirectory: $(Pipeline.Workspace)/modules/dials
 
 # Recover disk space after testing
 # This is only relevant if we had cache misses, as free disk space is required to create cache archives
