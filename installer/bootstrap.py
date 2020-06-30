@@ -26,11 +26,9 @@ import warnings
 import zipfile
 
 try:  # Python 3
-    from urllib.parse import urlparse
     from urllib.request import urlopen, Request
     from urllib.error import HTTPError, URLError
 except ImportError:  # Python 2
-    from urlparse import urlparse
     from urllib2 import urlopen, Request, HTTPError, URLError
 
 # Clean environment for subprocesses
@@ -44,27 +42,6 @@ devnull = open(os.devnull, "wb")  # to redirect unwanted subprocess output
 
 allowed_ssh_connections = {}
 concurrent_git_connection_limit = threading.Semaphore(5)
-
-
-def ssh_allowed_for_connection(connection):
-    if connection not in allowed_ssh_connections:
-        try:
-            returncode = subprocess.call(
-                [
-                    "ssh",
-                    "-oBatchMode=yes",
-                    "-oStrictHostKeyChecking=no",
-                    "-T",
-                    connection,
-                ],
-                stdout=devnull,
-                stderr=devnull,
-            )
-            # SSH errors lead to 255
-            allowed_ssh_connections[connection] = returncode in (0, 1)
-        except OSError:
-            allowed_ssh_connections[connection] = False
-    return allowed_ssh_connections[connection]
 
 
 def install_miniconda(location):
@@ -598,18 +575,11 @@ def set_git_repository_config_to_rebase(config):
         fh.write("".join(cfg))
 
 
-def git(
-    module, source_list, branch=None, git_available=True, reference_base=None,
-):
+def git(module, git_available, ssh_available, reference_base, settings):
     """Retrieve a git repository, either by running git directly
-       or by downloading and unpacking an archive."""
+       or by downloading and unpacking an archive.
+    """
     destination = os.path.join("modules", module)
-    destpath, destdir = os.path.split(destination)
-
-    if reference_base:
-        reference = os.path.join(reference_base, module)
-    else:
-        reference = None
 
     if os.path.exists(destination):
         if not os.path.exists(os.path.join(destination, ".git")):
@@ -669,115 +639,164 @@ def git(
             return module, "OK", "Checked out revision %s (%s)" % (output[0], output[1])
         return module, "OK", "Checked out revision " + output[0].strip()
 
-    git_parameters = []
-    if branch:
-        git_parameters.extend(["-b", branch])
     try:
-        os.makedirs(destpath)
+        os.makedirs("modules")
     except OSError:
         pass
-    for source_candidate in source_list:
-        if not source_candidate.lower().startswith("http"):
-            connection = source_candidate.split(":")[0]
-            if not ssh_allowed_for_connection(connection):
-                continue
-        if source_candidate.lower().endswith(".git"):
-            if not git_available:
-                continue
-            if (
-                reference
-                and os.path.exists(reference)
-                and os.path.exists(os.path.join(reference, ".git"))
-            ):
-                reference_parameters = ["--reference", reference]
-            else:
-                reference_parameters = []
-            with concurrent_git_connection_limit:
-                p = subprocess.Popen(
-                    args=["git", "clone", "--recursive"]
-                    + git_parameters
-                    + [source_candidate, destdir]
-                    + reference_parameters,
-                    cwd=destpath,
-                    env=clean_env,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                )
-                try:
-                    output, _ = p.communicate()
-                    output = output.decode("latin-1")
-                except KeyboardInterrupt:
-                    print("\nReceived CTRL+C, trying to terminate subprocess...\n")
-                    p.terminate()
-                    raise
-            if p.returncode:
-                return (module, "ERROR", "Can not checkout git repository\n" + output)
-            if reference_parameters:
-                # Sever the link between checked out and reference repository
-                returncode = subprocess.call(
-                    ["git", "repack", "-a", "-d"],
-                    cwd=destination,
-                    env=clean_env,
-                    stdout=devnull,
-                    stderr=devnull,
-                )
-                if returncode:
-                    return (
-                        module,
-                        "ERROR",
-                        "Could not detach git repository from reference. Repository may be in invalid state!\n"
-                        "Run 'git repack -a -d' in the repository, or delete and recreate it",
-                    )
-                alternates = os.path.join(
-                    destination, ".git", "objects", "info", "alternates"
-                )
-                if os.path.exists(alternates):
-                    os.remove(alternates)
-            set_git_repository_config_to_rebase(
-                os.path.join(destination, ".git", "config")
-            )
-            # Show the hash for the checked out commit for debugging purposes
-            p = subprocess.Popen(
-                args=["git", "rev-parse", "HEAD"],
-                cwd=destination,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-            )
+
+    remote_branch = settings.get("branch-remote", settings.get("branch-local"))
+
+    if not git_available:
+        # Fall back to downloading a static archive
+        url = "https://github.com/%s/archive/%s.zip" % (
+            settings.get("effective-repository", settings.get("base-repository")),
+            remote_branch,
+        )
+        filename = os.path.join("modules", "%s-%s.zip" % (module, remote_branch))
+        try:
+            download_to_file(url, filename, quiet=True)
+        except Exception:
+            print("Error downloading", url)
+            raise
+        unzip(filename, destination, trim_directory=1)
+        return module, "OK", "Downloaded branch %s from static archive" % remote_branch
+
+    if ssh_available:
+        remote_pattern = "git@github.com:%s.git"
+    else:
+        remote_pattern = "https://github.com/%s.git"
+
+    secondary_remote = settings.get("effective-repository") and (
+        settings["effective-repository"] != settings.get("base-repository")
+    )
+    direct_branch_checkout = []
+    if not secondary_remote and remote_branch == settings["branch-local"]:
+        direct_branch_checkout = ["-b", remote_branch]
+    reference_parameters = []
+    if reference_base and os.path.exists(os.path.join(reference_base, module, ".git")):
+        reference_parameters = ["--reference", os.path.join(reference_base, module)]
+
+    with concurrent_git_connection_limit:
+        p = subprocess.Popen(
+            args=["git", "clone", "--recursive"]
+            + direct_branch_checkout
+            + [
+                remote_pattern
+                % settings.get("base-repository", settings.get("effective-repository")),
+                module,
+            ]
+            + reference_parameters,
+            cwd="modules",
+            env=clean_env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        try:
             output, _ = p.communicate()
             output = output.decode("latin-1")
-            if p.returncode:
-                return (
-                    module,
-                    "WARNING",
-                    "Can not get git repository revision\n" + output,
-                )
-            return module, "OK", "Checked out revision " + output.strip()
-        filename = "%s-%s" % (module, urlparse(source_candidate)[2].split("/")[-1])
-        filename = os.path.join(destpath, filename)
-        download_to_file(source_candidate, filename, quiet=True)
-        unzip(filename, destination, trim_directory=1)
-        return module, "OK", "Downloaded from static archive"
+        except KeyboardInterrupt:
+            print("\nReceived CTRL+C, trying to terminate subprocess...\n")
+            p.terminate()
+            raise
+        if p.returncode:
+            return (module, "ERROR", "Can not checkout git repository\n" + output)
 
-    if git_available:
-        return module, "ERROR", "Sources not available"
-    return module, "ERROR", "Sources not available. No git installation available"
+    if reference_parameters:
+        # Sever the link between checked out and reference repository
+        returncode = subprocess.call(
+            ["git", "repack", "-a", "-d"],
+            cwd=destination,
+            env=clean_env,
+            stdout=devnull,
+            stderr=devnull,
+        )
+        if returncode:
+            return (
+                module,
+                "ERROR",
+                "Could not detach git repository from reference. Repository may be in invalid state!\n"
+                "Run 'git repack -a -d' in the repository, or delete and recreate it",
+            )
+        alternates = os.path.join(destination, ".git", "objects", "info", "alternates")
+        if os.path.exists(alternates):
+            os.remove(alternates)
 
+    if secondary_remote:
+        returncode = subprocess.call(
+            [
+                "git",
+                "remote",
+                "add",
+                "upstream",
+                remote_pattern % settings["effective-repository"],
+            ],
+            cwd=destination,
+            env=clean_env,
+            stdout=devnull,
+            stderr=devnull,
+        )
+        if returncode:
+            return (
+                module,
+                "ERROR",
+                "Could not add upstream remote to repository. Repository may be in invalid state!",
+            )
+        with concurrent_git_connection_limit:
+            returncode = subprocess.call(
+                ["git", "fetch", "upstream"],
+                cwd=destination,
+                env=clean_env,
+                stdout=devnull,
+                stderr=devnull,
+            )
+        if returncode:
+            return (
+                module,
+                "ERROR",
+                "Could not fetch upstream repository %s. Repository may be in invalid state!"
+                % settings["effective-repository"],
+            )
 
-REPOSITORIES = (
-    "cctbx/annlib_adaptbx",
-    "cctbx/cctbx_project",
-    "cctbx/dxtbx",
-    "dials/annlib",
-    "dials/cbflib",
-    "dials/ccp4io",
-    "dials/ccp4io_adaptbx",
-    "dials/clipper",
-    "dials/dials",
-    "dials/gui_resources",
-    "dials/tntbx",
-    "ssrl-px/iota",
-    "xia2/xia2",
-)
+    set_git_repository_config_to_rebase(os.path.join(destination, ".git", "config"))
+
+    if not direct_branch_checkout:
+        # set up the local branch with tracking
+        returncode = subprocess.call(
+            [
+                "git",
+                "checkout",
+                "-B",
+                settings["branch-local"],
+                "--track",
+                "%s/%s" % ("upstream" if secondary_remote else "origin", remote_branch),
+            ],
+            cwd=destination,
+            env=clean_env,
+            stdout=devnull,
+            stderr=devnull,
+        )
+
+    # Show the hash for the checked out commit for debugging purposes
+    p = subprocess.Popen(
+        args=["git", "rev-parse", "HEAD"],
+        cwd=destination,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    output, _ = p.communicate()
+    output = output.decode("latin-1")
+    if p.returncode:
+        return (
+            module,
+            "WARNING",
+            "Can not get git repository revision\n" + output,
+        )
+    git_status = settings["branch-local"]
+    if settings["branch-local"] != remote_branch:
+        git_status += " tracking " + remote_branch
+    if secondary_remote:
+        git_status += " at " + settings["effective-repository"]
+    return module, "OK", "Checked out revision %s (%s)" % (output.strip(), git_status)
 
 
 def update_sources(options):
@@ -796,31 +815,86 @@ def update_sources(options):
         )
     except OSError:
         git_available = False
+    ssh_available = False
+    if git_available:
+        try:
+            returncode = subprocess.call(
+                [
+                    "ssh",
+                    "-oBatchMode=yes",
+                    "-oStrictHostKeyChecking=no",
+                    "-T",
+                    "git@github.com",
+                ],
+                stdout=devnull,
+                stderr=devnull,
+            )
+            # SSH errors lead to 255
+            ssh_available = returncode in (0, 1)
+        except OSError:
+            pass
 
-    git_branches = dict(options.branch)
+    repositories = (
+        "cctbx/annlib_adaptbx",
+        "cctbx/cctbx_project",
+        "cctbx/dxtbx",
+        "dials/annlib",
+        "dials/cbflib",
+        "dials/ccp4io",
+        "dials/ccp4io_adaptbx",
+        "dials/clipper",
+        "dials/dials",
+        "dials/gui_resources",
+        "dials/tntbx",
+        "ssrl-px/iota",
+        "xia2/xia2",
+    )
 
-    def git_fn(repository):
-        modulename = repository.split("/")[1]
-        branch = git_branches.get(modulename)
-        git_source = [
-            "git@github.com:%s.git" % repository,
-            "https://github.com/%s.git" % repository,
-            "https://github.com/%s/archive/%s.zip" % (repository, branch or "master"),
-        ]
+    repositories = {
+        source.split("/")[1]: {"base-repository": source, "branch-local": "master"}
+        for source in repositories
+    }
+    repositories["cctbx_project"] = {
+        "base-repository": "cctbx/cctbx_project",
+        "effective-repository": "dials/cctbx",
+        "branch-remote": "master",
+        "branch-local": "stable",
+    }
+
+    for source, setting in options.branch:
+        if source not in repositories:
+            sys.exit("Unknown repository %s" % source)
+        setting = re.match(
+            r"^(?:(\w+/\w+)@?)?([a-zA-Z0-9._\-]+)?(?::([a-zA-Z0-9._\-]+))?$", setting
+        )
+        if not setting:
+            sys.exit("Could not parse the branch setting for repository %s" % source)
+        _repository, _branch_remote, _branch_local = setting.groups()
+        if _repository:
+            repositories[source] = {
+                "base-repository": _repository,
+                "branch-remote": _branch_remote or "master",
+                "branch-local": _branch_local or _branch_remote or "master",
+            }
+        elif _branch_remote:
+            repositories[source]["branch-remote"] = _branch_remote
+            repositories[source]["branch-local"] = _branch_local or _branch_remote
+        elif _branch_local:
+            repositories[source]["branch-local"] = _branch_local
+
+    def _git_fn(repository):
         return git(
-            modulename,
-            git_source,
-            branch=branch,
-            git_available=git_available,
-            reference_base=reference_base,
+            repository,
+            git_available,
+            ssh_available,
+            reference_base,
+            repositories[repository],
         )
 
     success = True
     update_pool = multiprocessing.pool.ThreadPool(20)
     try:
-        for result in update_pool.imap_unordered(git_fn, REPOSITORIES):
-            # for r in REPOSITORIES:
-            #  result = git_fn(r)
+        for result in update_pool.imap_unordered(_git_fn, repositories):
             module, result, output = result
             output = (result + " - " + output).replace(
                 "\n", "\n" + " " * (len(module + result) + 5)
@@ -844,6 +918,25 @@ def update_sources(options):
     update_pool.join()
     if not success:
         sys.exit("\nFailed to update one or more repositories")
+
+
+'''   fh.write("""
+#!/bin/sh
+
+#
+# Reject commits to 'stable' to avoid accidental
+# commits to the DIALS mirror of cctbx_project.
+#
+
+if [ "$(git rev-parse --abbrev-ref HEAD)" == "stable" ]
+then
+    echo "Please do not commit to the 'stable' branch."
+    echo "You can create a new branch or commit directly to master."
+    echo
+    exit 1
+fi
+""")
+'''
 
 
 def run_tests():
