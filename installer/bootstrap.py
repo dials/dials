@@ -310,7 +310,13 @@ def run_command(command, workdir):
 def run_indirect_command(command, args):
     print("(via conda environment) " + command)
     if os.name == "nt":
+        filename = os.path.join("build", "indirection.cmd")
+        with open(filename, "w") as fh:
+            fh.write("call %s\\conda_base\\condabin\\activate.bat\r\n" % os.getcwd())
+            fh.write("shift\r\n")
+            fh.write("%*\r\n")
         command = command + ".bat"
+        indirection = ["cmd.exe", "/C", "indirection.cmd"]
     else:
         filename = os.path.join("build", "indirection.sh")
         with open(filename, "w") as fh:
@@ -319,8 +325,9 @@ def run_indirect_command(command, args):
             fh.write("conda activate %s/conda_base\n" % os.getcwd())
             fh.write('"$@"\n')
         make_executable(filename)
+        indirection = ["./indirection.sh"]
     run_command(
-        command=["./indirection.sh", command] + args, workdir="build",
+        command=[indirection, command] + args, workdir="build",
     )
 
 
