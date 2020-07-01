@@ -327,7 +327,7 @@ def run_indirect_command(command, args):
         make_executable(filename)
         indirection = ["./indirection.sh"]
     run_command(
-        command=[indirection, command] + args, workdir="build",
+        command=indirection + [command] + args, workdir="build",
     )
 
 
