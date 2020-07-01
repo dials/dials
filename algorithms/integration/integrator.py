@@ -913,7 +913,7 @@ class IntegratorExecutor(Executor):
         reflections["num_pixels.foreground"] = sbox.count_mask_values(code4)
 
         # Print some info
-        fmt = " Integrated % 5d (sum) + % 5d (prf) /% 5d reflections on image %d"
+        fmt = " Integrated % 5d (sum) + % 5d (prf) / %5d reflections on image %d"
         nsum = reflections.get_flags(reflections.flags.integrated_sum).count(True)
         nprf = reflections.get_flags(reflections.flags.integrated_prf).count(True)
         ntot = len(reflections)
