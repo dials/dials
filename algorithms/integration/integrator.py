@@ -624,6 +624,7 @@ class ProfileModellerExecutor(Executor):
         ntot = len(reflections)
 
         # Write some output
+        logger.info("")
         logger.info(" Beginning modelling job %d" % job.index)
         logger.info("")
         logger.info(" Frames: %d -> %d" % (frame0 + 1, frame1))
@@ -670,7 +671,7 @@ class ProfileModellerExecutor(Executor):
         fmt = " Modelled % 5d / % 5d reflection profiles on image %d"
         nmod = reflections.get_flags(reflections.flags.used_in_modelling).count(True)
         ntot = len(reflections)
-        logger.info(fmt % (nmod, ntot, frame))
+        logger.debug(fmt % (nmod, ntot, frame + 1))
 
     def finalize(self):
         """
@@ -725,6 +726,7 @@ class ProfileValidatorExecutor(Executor):
         ntot = len(reflections)
 
         # Write some output
+        logger.info("")
         logger.info(" Beginning modelling job %d" % job.index)
         logger.info("")
         logger.info(" Frames: %d -> %d" % (frame0, frame1))
@@ -773,7 +775,7 @@ class ProfileValidatorExecutor(Executor):
         fmt = " Validated % 5d / % 5d reflection profiles on image %d"
         nmod = reflections.get_flags(reflections.flags.used_in_modelling).count(True)
         ntot = len(reflections)
-        logger.info(fmt % (nmod, ntot, frame))
+        logger.debug(fmt % (nmod, ntot, frame + 1))
 
     def finalize(self):
         """
@@ -830,6 +832,7 @@ class IntegratorExecutor(Executor):
         ntot = len(reflections)
 
         # Write some output
+        logger.info("")
         logger.info(" Beginning integration job %d" % job.index)
         logger.info("")
         logger.info(" Frames: %d -> %d" % (frame0, frame1))
@@ -894,7 +897,7 @@ class IntegratorExecutor(Executor):
         nsum = reflections.get_flags(reflections.flags.integrated_sum).count(True)
         nprf = reflections.get_flags(reflections.flags.integrated_prf).count(True)
         ntot = len(reflections)
-        logger.info(fmt % (nsum, nprf, ntot, frame + 1))
+        logger.debug(fmt % (nsum, nprf, ntot, frame + 1))
 
     def finalize(self):
         """
