@@ -917,7 +917,7 @@ class IntegratorExecutor(Executor):
         nsum = reflections.get_flags(reflections.flags.integrated_sum).count(True)
         nprf = reflections.get_flags(reflections.flags.integrated_prf).count(True)
         ntot = len(reflections)
-        logger.info(fmt % (nsum, nprf, ntot, frame))
+        logger.info(fmt % (nsum, nprf, ntot, frame + 1))
 
     def finalize(self):
         """

@@ -339,7 +339,7 @@ class IntegrationReport(Report):
                 table.rows.append(
                     [
                         "%d" % j,
-                        "%d" % report["bins"][i],
+                        "%d" % (report["bins"][i] + 1),
                         "%d" % report["n_full"][i],
                         "%d" % report["n_partial"][i],
                         "%d" % report["n_overload"][i],
