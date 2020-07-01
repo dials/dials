@@ -626,7 +626,7 @@ class ProfileModellerExecutor(Executor):
         # Write some output
         logger.info(" Beginning modelling job %d" % job.index)
         logger.info("")
-        logger.info(" Frames: %d -> %d" % (frame0, frame1))
+        logger.info(" Frames: %d -> %d" % (frame0 + 1, frame1))
         logger.info("")
         logger.info(" Number of reflections")
         logger.info("  Partial:     %d" % npart)
@@ -917,7 +917,7 @@ class IntegratorExecutor(Executor):
         nsum = reflections.get_flags(reflections.flags.integrated_sum).count(True)
         nprf = reflections.get_flags(reflections.flags.integrated_prf).count(True)
         ntot = len(reflections)
-        logger.info(fmt % (nsum, nprf, ntot, frame))
+        logger.info(fmt % (nsum, nprf, ntot, frame + 1))
 
     def finalize(self):
         """
@@ -1243,7 +1243,9 @@ class Integrator(object):
                 scan = self._experiments[expr[0]].scan
                 p0 = scan.get_angle_from_array_index(f0)
                 p1 = scan.get_angle_from_array_index(f1)
-                rows.append([str(i), str(group), str(f0), str(f1), str(p0), str(p1)])
+                rows.append(
+                    [str(i), str(group), str(f0 + 1), str(f1), str(p0), str(p1)]
+                )
         else:
             raise RuntimeError("Experiments must be all sequences or all stills")
         return tabulate(rows, headers="firstrow")
