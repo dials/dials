@@ -637,13 +637,13 @@ class ProfileModellerExecutor(Executor):
 
         # Print a histogram of reflections on frames
         if frame1 - frame0 > 1:
-            logger.info(
+            logger.debug(
                 " The following histogram shows the number of reflections predicted"
             )
-            logger.info(" to have all or part of their intensity on each frame.")
-            logger.info("")
-            logger.info(frame_hist(reflections["bbox"], prefix=" ", symbol="*"))
-            logger.info("")
+            logger.debug(" to have all or part of their intensity on each frame.")
+            logger.debug("")
+            logger.debug(frame_hist(reflections["bbox"], prefix=" ", symbol="*"))
+            logger.debug("")
 
     def process(self, frame, reflections):
         """
@@ -738,13 +738,13 @@ class ProfileValidatorExecutor(Executor):
 
         # Print a histogram of reflections on frames
         if frame1 - frame0 > 1:
-            logger.info(
+            logger.debug(
                 " The following histogram shows the number of reflections predicted"
             )
-            logger.info(" to have all or part of their intensity on each frame.")
-            logger.info("")
-            logger.info(frame_hist(reflections["bbox"], prefix=" ", symbol="*"))
-            logger.info("")
+            logger.debug(" to have all or part of their intensity on each frame.")
+            logger.debug("")
+            logger.debug(frame_hist(reflections["bbox"], prefix=" ", symbol="*"))
+            logger.debug("")
 
         self.results = None
 
@@ -844,13 +844,13 @@ class IntegratorExecutor(Executor):
 
         # Print a histogram of reflections on frames
         if frame1 - frame0 > 1:
-            logger.info(
+            logger.debug(
                 " The following histogram shows the number of reflections predicted"
             )
-            logger.info(" to have all or part of their intensity on each frame.")
-            logger.info("")
-            logger.info(frame_hist(reflections["bbox"], prefix=" ", symbol="*"))
-            logger.info("")
+            logger.debug(" to have all or part of their intensity on each frame.")
+            logger.debug("")
+            logger.debug(frame_hist(reflections["bbox"], prefix=" ", symbol="*"))
+            logger.debug("")
 
         # Find any overlaps
         self.overlaps = reflections.find_overlaps(self.experiments)
