@@ -40,6 +40,15 @@ clean_env = {
 
 devnull = open(os.devnull, "wb")  # to redirect unwanted subprocess output
 
+
+def make_executable(filepath):
+    if os.name == "posix":
+        mode = os.stat(filepath).st_mode
+        mode |= (mode & 0o444) >> 2  # copy R bits to X
+        # r--r--r-- => 0o444
+        os.chmod(filepath, mode)
+
+
 allowed_ssh_connections = {}
 concurrent_git_connection_limit = threading.Semaphore(5)
 
@@ -309,9 +318,7 @@ def run_indirect_command(command, args):
             fh.write("source %s/conda_base/etc/profile.d/conda.sh\n" % os.getcwd())
             fh.write("conda activate %s/conda_base\n" % os.getcwd())
             fh.write('"$@"\n')
-        mode = os.stat(filename).st_mode
-        mode |= (mode & 0o444) >> 2  # copy R bits to X
-        os.chmod(filename, mode)
+        make_executable(filename)
     run_command(
         command=["./indirection.sh", command] + args, workdir="build",
     )
@@ -513,10 +520,7 @@ def unzip(archive, directory, trim_directory=0):
                 unix_executable = member.external_attr >> 16 & 0o111
                 # rwxrwxrwx => --x--x--x => 0o111
                 if unix_executable:
-                    mode = os.stat(filename).st_mode
-                    mode |= (mode & 0o444) >> 2  # copy R bits to X
-                    # r--r--r-- => 0o444
-                    os.chmod(filename, mode)
+                    make_executable(filename)
     z.close()
 
 
@@ -752,9 +756,8 @@ def git(module, git_available, ssh_available, reference_base, settings):
             # When checking out a branch from a secondary repository under a
             # different name set up a git pre-commit hook to write protect
             # this branch.
-            with open(
-                os.path.join(destination, ".git", "hooks", "pre-commit"), "w"
-            ) as fh:
+            hookfile = os.path.join(destination, ".git", "hooks", "pre-commit")
+            with open(hookfile, "w") as fh:
                 fh.write(
                     """
 #!/bin/sh
@@ -776,6 +779,7 @@ fi
                         repository=settings["effective-repository"],
                     )
                 )
+            make_executable(hookfile)
 
     # Show the hash for the checked out commit for debugging purposes
     p = subprocess.Popen(
