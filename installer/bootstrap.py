@@ -435,26 +435,25 @@ def download_to_file(url, file, quiet=False):
         received = 0
         block_size = 8192
         progress = 1
-        # Allow for writing the file immediately so we can empty the buffer
+        # Write to the file immediately so we can empty the buffer
         tmpfile = file + ".tmp"
 
-        f = open(tmpfile, "wb")
-        while True:
-            block = socket.read(block_size)
-            received += len(block)
-            f.write(block)
-            if file_size > 0 and not quiet:
-                while (100 * received / file_size) > progress:
-                    progress += 1
-                    if (progress % 20) == 0:
-                        print(progress, end="%")
-                        sys.stdout.flush()  # becomes print(flush=True) when we move to 3.3+
-                    elif (progress % 2) == 0:
-                        print(".", end="")
-                        sys.stdout.flush()  # becomes print(flush=True) when we move to 3.3+
-            if not block:
-                break
-        f.close()
+        with open(tmpfile, "wb") as fh:
+            while True:
+                block = socket.read(block_size)
+                received += len(block)
+                fh.write(block)
+                if file_size > 0 and not quiet:
+                    while (100 * received / file_size) > progress:
+                        progress += 1
+                        if (progress % 20) == 0:
+                            print(progress, end="%")
+                            sys.stdout.flush()  # becomes print(flush=True) when we move to 3.3+
+                        elif (progress % 2) == 0:
+                            print(".", end="")
+                            sys.stdout.flush()  # becomes print(flush=True) when we move to 3.3+
+                if not block:
+                    break
         socket.close()
 
         if not quiet:
@@ -617,7 +616,7 @@ def git(module, git_available, ssh_available, reference_base, settings):
     except OSError:
         pass
 
-    remote_branch = settings.get("branch-remote", settings.get("branch-local"))
+    remote_branch = settings.get("branch-remote", settings["branch-local"])
 
     if not git_available:
         # Fall back to downloading a static archive
@@ -807,24 +806,22 @@ def update_sources(options):
         except OSError:
             pass
 
-    repositories = (
-        "cctbx/annlib_adaptbx",
-        "cctbx/cctbx_project",
-        "cctbx/dxtbx",
-        "dials/annlib",
-        "dials/cbflib",
-        "dials/ccp4io",
-        "dials/ccp4io_adaptbx",
-        "dials/clipper",
-        "dials/dials",
-        "dials/gui_resources",
-        "dials/tntbx",
-        "xia2/xia2",
-    )
-
     repositories = {
         source.split("/")[1]: {"base-repository": source, "branch-local": "master"}
-        for source in repositories
+        for source in (
+            "cctbx/annlib_adaptbx",
+            "cctbx/cctbx_project",
+            "cctbx/dxtbx",
+            "dials/annlib",
+            "dials/cbflib",
+            "dials/ccp4io",
+            "dials/ccp4io_adaptbx",
+            "dials/clipper",
+            "dials/dials",
+            "dials/gui_resources",
+            "dials/tntbx",
+            "xia2/xia2",
+        )
     }
     repositories["cctbx_project"] = {
         "base-repository": "cctbx/cctbx_project",
