@@ -624,8 +624,8 @@ class ProfileModellerExecutor(Executor):
         ntot = len(reflections)
 
         # Write some output
-        logger.info("")
-        logger.info(" Beginning modelling job %d" % job.index)
+        logger.debug("")
+        logger.debug(" Beginning modelling job %d" % job.index)
         logger.info("")
         logger.info(" Frames: %d -> %d" % (frame0 + 1, frame1))
         logger.info("")
@@ -726,8 +726,8 @@ class ProfileValidatorExecutor(Executor):
         ntot = len(reflections)
 
         # Write some output
-        logger.info("")
-        logger.info(" Beginning modelling job %d" % job.index)
+        logger.debug("")
+        logger.debug(" Beginning modelling job %d" % job.index)
         logger.info("")
         logger.info(" Frames: %d -> %d" % (frame0, frame1))
         logger.info("")
@@ -832,8 +832,8 @@ class IntegratorExecutor(Executor):
         ntot = len(reflections)
 
         # Write some output
-        logger.info("")
-        logger.info(" Beginning integration job %d" % job.index)
+        logger.debug("")
+        logger.debug(" Beginning integration job %d" % job.index)
         logger.info("")
         logger.info(" Frames: %d -> %d" % (frame0, frame1))
         logger.info("")
