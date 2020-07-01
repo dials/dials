@@ -1,11 +1,20 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
+import dials.util.log
 
 from dials.array_family import flex
 from dials.util import show_mail_on_error, Sorry
 from dials.util.slice import slice_crystal
-import dials.util.log
+from dials.util.options import OptionParser
+from dials.util.command_line import heading
+from dials.util.options import reflections_and_experiments_from_files
+from dials.util.version import dials_version
+from libtbx.phil import parse
+from dials.algorithms.profile_model.factory import ProfileModelFactory
+from dials.algorithms.integration.integrator import create_integrator
+from dxtbx.model.experiment_list import ExperimentList
+from dxtbx.model.experiment_list import Experiment
 
 logger = logging.getLogger("dials.command_line.integrate")
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
@@ -32,7 +41,7 @@ Examples::
 """
 
 # Create the phil scope
-from libtbx.phil import parse
+
 
 phil_scope = parse(
     """
@@ -115,10 +124,6 @@ phil_scope = parse(
 """,
     process_includes=True,
 )
-
-from dials.util.options import OptionParser
-from dials.util.command_line import heading
-from dials.util.options import reflections_and_experiments_from_files
 
 
 def process_reference(reference):
@@ -253,8 +258,6 @@ def exclude_images(experiments, exclude_images):
 
 def split_for_scan_range(experiments, reference, scan_range):
     """Update experiments when scan range is set."""
-    from dxtbx.model.experiment_list import ExperimentList
-    from dxtbx.model.experiment_list import Experiment
 
     # Only do anything is the scan range is set
     if scan_range is not None and len(scan_range) > 0:
@@ -338,15 +341,17 @@ def split_for_scan_range(experiments, reference, scan_range):
         # Print some information
         logger.info("Modified experiment list to integrate over requested scan range")
         for scan_start, scan_end in scan_range:
-            logger.info(" scan_range = %d -> %d" % (scan_start, scan_end))
+            logger.info(" scan_range = %d -> %d", scan_start, scan_end)
         logger.info("")
 
     # Return the experiments
     return experiments, reference
 
 
-def run_script(params, experiments, reference):
+def run_script(params, experiments, reference=None):
     """Perform the integration."""
+    predicted = None
+    rubbish = None
 
     for abs_params in params.absorption_correction:
         if abs_params.apply:
@@ -365,25 +370,20 @@ def run_script(params, experiments, reference):
         mask = exp.imageset.external_lookup.mask
         if mask.filename is not None:
             if mask.data:
-                logger.info("Using external mask: %s" % mask.filename)
+                logger.info("Using external mask: %s", mask.filename)
                 for tile in mask.data:
-                    logger.info(" Mask has %d pixels masked" % tile.data().count(False))
+                    logger.info(" Mask has %d pixels masked", tile.data().count(False))
 
     # Print the experimental models
     for i, exp in enumerate(experiments):
-        logger.info("=" * 80)
-        logger.info("")
-        logger.info("Experiments")
-        logger.info("")
-        logger.info("Models for experiment %d" % i)
-        logger.info("")
-        logger.info(str(exp.beam))
-        logger.info(str(exp.detector))
+        summary = "=" * 80 + "\nExperiments\nModels for experiment %d\n" % i
+        summary += str(exp.beam) + str(exp.detector)
         if exp.goniometer:
-            logger.info(str(exp.goniometer))
+            summary += str(exp.goniometer)
         if exp.scan:
-            logger.info(str(exp.scan))
-        logger.info(str(exp.crystal))
+            summary += str(exp.scan)
+        summary += str(exp.crystal) + "\n"
+        logger.info(summary)
 
     logger.info("=" * 80)
     logger.info("")
@@ -391,22 +391,18 @@ def run_script(params, experiments, reference):
     logger.info("")
 
     # Load the data
-    reference, rubbish = process_reference(reference)
+    if reference:
+        reference, rubbish = process_reference(reference)
 
-    # Check pixels don't belong to neighbours
-    if reference is not None:
+        # Check pixels don't belong to neighbours
         if exp.goniometer is not None and exp.scan is not None:
             reference = filter_reference_pixels(reference, experiments)
-    logger.info("")
+        logger.info("")
 
-    # Initialise the integrator
-    from dials.algorithms.profile_model.factory import ProfileModelFactory
-    from dials.algorithms.integration.integrator import create_integrator
-
-    # Modify experiment list if scan range is set.
-    experiments, reference = split_for_scan_range(
-        experiments, reference, params.scan_range
-    )
+        # Modify experiment list if scan range is set.
+        experiments, reference = split_for_scan_range(
+            experiments, reference, params.scan_range
+        )
 
     # Modify experiment list if exclude images is set
     experiments = exclude_images(experiments, params.exclude_images)
@@ -442,8 +438,8 @@ def run_script(params, experiments, reference):
             logger.info("")
             logger.info("*" * 80)
             logger.info(
-                "Warning: %d reference spots were not matched to predictions"
-                % (len(unmatched))
+                "Warning: %d reference spots were not matched to predictions",
+                len(unmatched),
             )
             logger.info("*" * 80)
             logger.info("")
@@ -452,7 +448,6 @@ def run_script(params, experiments, reference):
         if len(experiments) > 1:
             # filter out any experiments without matched reference reflections
             # f_: filtered
-            from dxtbx.model.experiment_list import ExperimentList
 
             f_reference = flex.reflection_table()
             f_predicted = flex.reflection_table()
@@ -480,8 +475,8 @@ def run_script(params, experiments, reference):
                     good_expt_count += 1
                 else:
                     logger.info(
-                        "Removing experiment %d: no reference reflections matched to predictions"
-                        % expt_id
+                        "Removing experiment %d: no reference reflections matched to predictions",
+                        expt_id,
                     )
 
             reference = f_reference
@@ -493,14 +488,12 @@ def run_script(params, experiments, reference):
     if not params.sampling.integrate_all_reflections:
         predicted = sample_predictions(experiments, predicted, params)
 
-    # Compute the profile model
-    if params.create_profile_model and reference is not None and "shoebox" in reference:
+    # Compute the profile model - either load existing or compute
+    try:
         experiments = ProfileModelFactory.create(params, experiments, reference)
+    except RuntimeError as e:
+        raise Sorry(e)
     else:
-        try:
-            experiments = ProfileModelFactory.create(params, experiments)
-        except RuntimeError as e:
-            raise Sorry(e)
         for expr in experiments:
             if expr.profile is None:
                 raise Sorry("No profile information in experiment list")
@@ -539,7 +532,6 @@ def run_script(params, experiments, reference):
         from dials.algorithms.integration.stills_significance_filter import (
             SignificanceFilter,
         )
-        from dxtbx.model.experiment_list import ExperimentList
 
         sig_filter = SignificanceFilter(params)
         filtered_refls = sig_filter(experiments, reflections)
@@ -576,10 +568,10 @@ def run_script(params, experiments, reference):
         del reflections["shoebox"]
 
     logger.info(
-        "Saving %d reflections to %s" % (len(reflections), params.output.reflections)
+        "Saving %d reflections to %s", len(reflections), params.output.reflections
     )
     reflections.as_file(params.output.reflections)
-    logger.info("Saving the experiments to %s" % params.output.experiments)
+    logger.info("Saving the experiments to %s", params.output.experiments)
     experiments.as_file(params.output.experiments)
 
     # Write a report if requested
@@ -608,8 +600,6 @@ def run(args=None, phil=phil_scope):
     dials.util.log.config(
         verbosity=options.verbose, logfile=params.output.log,
     )
-
-    from dials.util.version import dials_version
 
     logger.info(dials_version())
 
