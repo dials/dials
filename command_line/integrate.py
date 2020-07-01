@@ -1,26 +1,5 @@
-from __future__ import absolute_import, division, print_function
-
-import logging
-import dials.util.log
-
-from dials.array_family import flex
-from dials.util import show_mail_on_error, Sorry
-from dials.util.slice import slice_crystal
-from dials.util.options import OptionParser
-from dials.util.command_line import heading
-from dials.util.options import reflections_and_experiments_from_files
-from dials.util.version import dials_version
-from libtbx.phil import parse
-from dials.algorithms.profile_model.factory import ProfileModelFactory
-from dials.algorithms.integration.integrator import create_integrator
-from dxtbx.model.experiment_list import ExperimentList
-from dxtbx.model.experiment_list import Experiment
-
-logger = logging.getLogger("dials.command_line.integrate")
-# DIALS_ENABLE_COMMAND_LINE_COMPLETION
-
-help_message = """
-
+# coding: utf-8
+"""
 This program is used to integrate the reflections on the diffraction images. It
 is called with an experiment list outputted from dials.index or dials.refine and
 a corresponding set of strong spots from which a profile model is calculated.
@@ -40,8 +19,29 @@ Examples::
   dials.integrate models.expt refined.refl background.algorithm=glm
 """
 
-# Create the phil scope
+from __future__ import absolute_import, division, print_function
 
+import logging
+import sys
+import dials.util.log
+
+from dials.array_family import flex
+from dials.util import show_mail_on_error
+from dials.util.slice import slice_crystal
+from dials.util.options import OptionParser
+from dials.util.command_line import heading
+from dials.util.options import reflections_and_experiments_from_files
+from dials.util.version import dials_version
+from libtbx.phil import parse
+from dials.algorithms.profile_model.factory import ProfileModelFactory
+from dials.algorithms.integration.integrator import create_integrator
+from dxtbx.model.experiment_list import ExperimentList
+from dxtbx.model.experiment_list import Experiment
+
+logger = logging.getLogger("dials.command_line.integrate")
+# DIALS_ENABLE_COMMAND_LINE_COMPLETION
+
+# Create the phil scope
 
 phil_scope = parse(
     """
@@ -127,54 +127,64 @@ phil_scope = parse(
 
 
 def process_reference(reference):
-    """Load the reference spots."""
+    """
+    Remove bad reflections from the reference.
+
+    Remove unindexed, bad_for_refinement, bad miller index.
+
+    Raises:
+        ValueError: If no indexed spots, bad id, unmatched panel.
+
+    Returns:
+        reference: A reduction of the input reference reflection table.
+        rubbish: Bad reflections filtered out of the input table.
+    """
 
     if reference is None:
         return None, None
     assert "miller_index" in reference
     assert "id" in reference
-    logger.info("Processing reference reflections")
-    logger.info(" read %d strong spots" % len(reference))
+    logger.info(
+        "Processing reference reflections\n read %d strong spots", reference.size()
+    )
     mask = reference.get_flags(reference.flags.indexed)
     rubbish = reference.select(~mask)
-    if mask.count(False) > 0:
+    n_unindexed = mask.count(False)
+    if n_unindexed > 0:
         reference.del_selected(~mask)
-        logger.info(" removing %d unindexed reflections" % mask.count(False))
-    if len(reference) == 0:
-        raise Sorry(
-            """
-    Invalid input for reference reflections.
-    Expected > %d indexed spots, got %d
-    """
-            % (0, len(reference))
+        logger.info(" removing %d unindexed reflections", n_unindexed)
+    if reference.size() == 0:
+        raise ValueError(
+            "Invalid input for reference reflections. No indexed spots found."
         )
     mask = reference.get_flags(reference.flags.bad_for_refinement, all=False)
-    if mask.count(True) > 0:
+    n_masked = mask.count(True)
+    if n_masked:
         rubbish.extend(reference.select(mask))
         reference.del_selected(mask)
-        logger.info(
-            " removing %d reflections marked as bad for refinement" % mask.count(True)
-        )
+        logger.info(" removing %d reflections marked as bad for refinement", n_masked)
     mask = reference["miller_index"] == (0, 0, 0)
-    if mask.count(True) > 0:
+    n_masked = mask.count(True)
+    if n_masked > 0:
         rubbish.extend(reference.select(mask))
         reference.del_selected(mask)
-        logger.info(" removing %d reflections with hkl (0,0,0)" % mask.count(True))
+        logger.info(" removing %d reflections with hkl (0,0,0)", n_masked)
     mask = reference["id"] < 0
-    if mask.count(True) > 0:
-        raise Sorry(
+    n_masked = mask.count(True)
+    if n_masked > 0:
+        raise ValueError(
             """
     Invalid input for reference reflections.
     %d reference spots have an invalid experiment id
     """
-            % mask.count(True)
+            % n_masked
         )
     if (reference["panel"] == reference["shoebox"].panels()).count(False) > 0:
-        raise RuntimeError(
+        raise ValueError(
             'reflection table "panel" column does not match "shoebox" panel'
         )
-    logger.info(" using %d indexed reflections" % len(reference))
-    logger.info(" found %d junk reflections" % len(rubbish))
+    logger.info(" using %d indexed reflections", reference.size())
+    logger.info(" found %d junk reflections", rubbish.size())
     return reference, rubbish
 
 
@@ -195,7 +205,7 @@ def filter_reference_pixels(reference, experiments):
         )
         modified_count += modified.count(True)
         reference.set_selected(indices, subset)
-    logger.info(" masked neighbouring pixels in %d shoeboxes" % modified_count)
+    logger.info(" masked neighbouring pixels in %d shoeboxes", modified_count)
     return reference
 
 
@@ -218,7 +228,6 @@ def sample_predictions(experiments, predicted, params):
 
         sel = predicted["id"] == iexp
         isel = sel.iselection()
-        # refs = self._reflections.select(sel)
         nrefs = sample_size = len(isel)
 
         # set sample size according to nref_per_degree (per experiment)
@@ -246,6 +255,7 @@ def sample_predictions(experiments, predicted, params):
 
 
 def exclude_images(experiments, exclude_images):
+    """Mark images for rejection within the imageset."""
 
     if exclude_images is not None and len(exclude_images) > 0:
         for experiment in experiments:
@@ -257,7 +267,15 @@ def exclude_images(experiments, exclude_images):
 
 
 def split_for_scan_range(experiments, reference, scan_range):
-    """Update experiments when scan range is set."""
+    """Update experiments when scan range is set.
+
+    Returns:
+        experiments: A new experiment list with the requested scan ranges
+        reference: A reflection table with data from the scan ranges
+
+    Raises:
+        ValueError: If bad input for scan range.
+    """
 
     # Only do anything is the scan range is set
     if scan_range is not None and len(scan_range) > 0:
@@ -292,15 +310,15 @@ def split_for_scan_range(experiments, reference, scan_range):
         for scan_start, scan_end in scan_range:
             # Validate the requested scan range
             if scan_end == scan_start:
-                raise Sorry(
+                raise ValueError(
                     "Scan range end must be higher than start; pass {},{} for single image".format(
                         scan_start, scan_start + 1
                     )
                 )
             if scan_end < scan_start:
-                raise Sorry("Scan range must be in ascending order")
+                raise ValueError("Scan range must be in ascending order")
             elif scan_start < frames_start or scan_end > frames_end:
-                raise Sorry(
+                raise ValueError(
                     "Scan range must be within image range {}..{}".format(
                         frames_start, frames_end
                     )
@@ -348,8 +366,18 @@ def split_for_scan_range(experiments, reference, scan_range):
     return experiments, reference
 
 
-def run_script(params, experiments, reference=None):
-    """Perform the integration."""
+def run_integration(params, experiments, reference=None):
+    """Perform the integration.
+
+    Returns:
+        experiments: The integrated experiments
+        reflections: The integrated reflections
+        report(optional): An integration report.
+
+    Raises:
+        ValueError: For a number of bad inputs
+        RuntimeError: If the profile model creation fails
+    """
     predicted = None
     rubbish = None
 
@@ -359,7 +387,7 @@ def run_script(params, experiments, reference=None):
                 params.integration.debug.output
                 and not params.integration.debug.separate_files
             ):
-                raise Sorry(
+                raise ValueError(
                     "Shoeboxes must be saved to integration intermediates to apply an absorption correction. "
                     + "Set integration.debug.output=True, integration.debug.separate_files=False and "
                     + "integration.debug.delete_shoeboxes=True to temporarily store shoeboxes."
@@ -428,18 +456,18 @@ def run_script(params, experiments, reference=None):
         assert len(matched) == len(predicted)
         assert matched.count(True) <= len(reference)
         if matched.count(True) == 0:
-            raise Sorry(
+            raise ValueError(
                 """
         Invalid input for reference reflections.
         Zero reference spots were matched to predictions
     """
             )
-        elif len(unmatched) != 0:
+        elif unmatched:
             logger.info("")
             logger.info("*" * 80)
             logger.info(
                 "Warning: %d reference spots were not matched to predictions",
-                len(unmatched),
+                unmatched.size(),
             )
             logger.info("*" * 80)
             logger.info("")
@@ -489,14 +517,11 @@ def run_script(params, experiments, reference=None):
         predicted = sample_predictions(experiments, predicted, params)
 
     # Compute the profile model - either load existing or compute
-    try:
-        experiments = ProfileModelFactory.create(params, experiments, reference)
-    except RuntimeError as e:
-        raise Sorry(e)
-    else:
-        for expr in experiments:
-            if expr.profile is None:
-                raise Sorry("No profile information in experiment list")
+    # can raise RuntimeError
+    experiments = ProfileModelFactory.create(params, experiments, reference)
+    for expr in experiments:
+        if expr.profile is None:
+            raise ValueError("No profile information in experiment list")
     del reference
 
     # Compute the bounding box
@@ -538,12 +563,13 @@ def run_script(params, experiments, reference=None):
         accepted_expts = ExperimentList()
         accepted_refls = flex.reflection_table()
         logger.info(
-            "Removed %d reflections out of %d when applying significance filter"
-            % (len(reflections) - len(filtered_refls), len(reflections))
+            "Removed %d reflections out of %d when applying significance filter",
+            (reflections.size() - filtered_refls.size()),
+            reflections.size(),
         )
         for expt_id, expt in enumerate(experiments):
             refls = filtered_refls.select(filtered_refls["id"] == expt_id)
-            if len(refls) > 0:
+            if refls:
                 accepted_expts.append(expt)
                 current_id = expt_id
                 new_id = len(accepted_expts) - 1
@@ -554,42 +580,32 @@ def run_script(params, experiments, reference=None):
                 accepted_refls.extend(refls)
             else:
                 logger.info(
-                    "Removed experiment %d which has no reflections left after applying significance filter"
-                    % expt_id
+                    "Removed experiment %d which has no reflections left after applying significance filter",
+                    expt_id,
                 )
 
-        if len(accepted_refls) == 0:
-            raise Sorry("No reflections left after applying significance filter")
+        if not accepted_refls:
+            raise ValueError("No reflections left after applying significance filter")
         experiments = accepted_expts
         reflections = accepted_refls
 
-    # Delete the shoeboxes used for intermediate calculations, if requested
-    if params.integration.debug.delete_shoeboxes and "shoebox" in reflections:
-        del reflections["shoebox"]
-
-    logger.info(
-        "Saving %d reflections to %s", len(reflections), params.output.reflections
-    )
-    reflections.as_file(params.output.reflections)
-    logger.info("Saving the experiments to %s", params.output.experiments)
-    experiments.as_file(params.output.experiments)
-
     # Write a report if requested
+    report = None
     if params.output.report is not None:
-        integrator.report().as_file(params.output.report)
+        report = integrator.report()
 
-    return experiments, reflections
+    return experiments, reflections, report
 
 
 def run(args=None, phil=phil_scope):
-
+    """Run the integration command line script."""
     usage = "usage: dials.integrate [options] models.expt"
 
     # Create the parser
     parser = OptionParser(
         usage=usage,
         phil=phil,
-        epilog=help_message,
+        epilog=__doc__,
         read_experiments=True,
         read_reflections=True,
     )
@@ -617,19 +633,38 @@ def run(args=None, phil=phil_scope):
         params.input.reflections, params.input.experiments
     )
 
-    if len(reference) == 0 and len(experiments) == 0:
+    if not reference and not experiments:
         parser.print_help()
         return
-    if len(reference) == 0:
+    if not experiments:
+        sys.exit("No experiment list was specified")
+    if not reference:
         reference = None
     elif len(reference) != 1:
-        raise Sorry("more than 1 reflection file was given")
+        sys.exit("More than 1 reflection file was given")
     else:
         reference = reference[0]
-    if len(experiments) == 0:
-        raise Sorry("no experiment list was specified")
 
-    run_script(params, experiments, reference)
+    try:
+        experiments, reflections, report = run_integration(
+            params, experiments, reference
+        )
+    except (ValueError, RuntimeError) as e:
+        sys.exit(e)
+    else:
+        # Delete the shoeboxes used for intermediate calculations, if requested
+        if params.integration.debug.delete_shoeboxes and "shoebox" in reflections:
+            del reflections["shoebox"]
+
+        logger.info(
+            "Saving %d reflections to %s", reflections.size(), params.output.reflections
+        )
+        reflections.as_file(params.output.reflections)
+        logger.info("Saving the experiments to %s", params.output.experiments)
+        experiments.as_file(params.output.experiments)
+
+        if report:
+            report.as_file(params.output.report)
 
 
 if __name__ == "__main__":
