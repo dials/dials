@@ -360,7 +360,6 @@ def split_for_scan_range(experiments, reference, scan_range):
         logger.info("Modified experiment list to integrate over requested scan range")
         for scan_start, scan_end in scan_range:
             logger.info(" scan_range = %d -> %d", scan_start, scan_end)
-        logger.info("")
 
     # Return the experiments
     return experiments, reference
@@ -404,19 +403,28 @@ def run_integration(params, experiments, reference=None):
 
     # Print the experimental models
     for i, exp in enumerate(experiments):
-        summary = "=" * 80 + "\nExperiments\nModels for experiment %d\n" % i
-        summary += str(exp.beam) + str(exp.detector)
+        summary = "\n".join(
+            (
+                "",
+                "=" * 80,
+                "",
+                "Experiments",
+                "",
+                "Models for experiment %d" % i,
+                "",
+                str(exp.beam),
+                str(exp.detector),
+            )
+        )
         if exp.goniometer:
-            summary += str(exp.goniometer)
+            summary += str(exp.goniometer) + "\n"
         if exp.scan:
-            summary += str(exp.scan)
-        summary += str(exp.crystal) + "\n"
+            summary += str(exp.scan) + "\n"
+        summary += str(exp.crystal)
         logger.info(summary)
 
-    logger.info("=" * 80)
-    logger.info("")
+    logger.info("\n".join(("", "=" * 80, "")))
     logger.info(heading("Initialising"))
-    logger.info("")
 
     # Load the data
     if reference:
@@ -425,7 +433,6 @@ def run_integration(params, experiments, reference=None):
         # Check pixels don't belong to neighbours
         if exp.goniometer is not None and exp.scan is not None:
             reference = filter_reference_pixels(reference, experiments)
-        logger.info("")
 
         # Modify experiment list if scan range is set.
         experiments, reference = split_for_scan_range(
@@ -436,11 +443,8 @@ def run_integration(params, experiments, reference=None):
     experiments = exclude_images(experiments, params.exclude_images)
 
     # Predict the reflections
-    logger.info("")
-    logger.info("=" * 80)
-    logger.info("")
+    logger.info("\n".join(("", "=" * 80, "")))
     logger.info(heading("Predicting reflections"))
-    logger.info("")
     predicted = flex.reflection_table.from_predictions_multi(
         experiments,
         dmin=params.prediction.d_min,
@@ -463,15 +467,13 @@ def run_integration(params, experiments, reference=None):
     """
             )
         elif unmatched:
-            logger.info("")
-            logger.info("*" * 80)
-            logger.info(
-                "Warning: %d reference spots were not matched to predictions",
-                unmatched.size(),
+            msg = (
+                "Warning: %d reference spots were not matched to predictions"
+                % unmatched.size()
             )
-            logger.info("*" * 80)
-            logger.info("")
-        rubbish.extend(unmatched)
+            border = "\n".join(("", "*" * 80, ""))
+            logger.info("".join((border, msg, border)))
+            rubbish.extend(unmatched)
 
         if len(experiments) > 1:
             # filter out any experiments without matched reference reflections
@@ -528,7 +530,6 @@ def run_integration(params, experiments, reference=None):
     predicted.compute_bbox(experiments)
 
     # Create the integrator
-    logger.info("")
     integrator = create_integrator(params, experiments, predicted)
 
     # Integrate the reflections
