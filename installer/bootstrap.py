@@ -748,6 +748,35 @@ def git(module, git_available, ssh_available, reference_base, settings):
             stderr=devnull,
         )
 
+        if secondary_remote:
+            # When checking out a branch from a secondary repository under a
+            # different name set up a git pre-commit hook to write protect
+            # this branch.
+            with open(
+                os.path.join(destination, ".git", "hooks", "pre-commit"), "w"
+            ) as fh:
+                fh.write(
+                    """
+#!/bin/sh
+
+#
+# Reject commits to '{branch}' to avoid accidental
+# commits to the alternate repository {repository}
+#
+
+if [ "$(git rev-parse --abbrev-ref HEAD)" == "{branch}" ]
+then
+    echo "Please do not commit to the '{branch}' branch."
+    echo "You can create a new branch or commit directly to master."
+    echo
+    exit 1
+fi
+""".format(
+                        branch=settings["branch-local"],
+                        repository=settings["effective-repository"],
+                    )
+                )
+
     # Show the hash for the checked out commit for debugging purposes
     p = subprocess.Popen(
         args=["git", "rev-parse", "HEAD"],
@@ -887,25 +916,6 @@ def update_sources(options):
     update_pool.join()
     if not success:
         sys.exit("\nFailed to update one or more repositories")
-
-
-'''   fh.write("""
-#!/bin/sh
-
-#
-# Reject commits to 'stable' to avoid accidental
-# commits to the DIALS mirror of cctbx_project.
-#
-
-if [ "$(git rev-parse --abbrev-ref HEAD)" == "stable" ]
-then
-    echo "Please do not commit to the 'stable' branch."
-    echo "You can create a new branch or commit directly to master."
-    echo
-    exit 1
-fi
-""")
-'''
 
 
 def run_tests():
