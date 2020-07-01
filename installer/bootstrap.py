@@ -758,6 +758,13 @@ def git(module, git_available, ssh_available, reference_base, settings):
             stdout=devnull,
             stderr=devnull,
         )
+        if returncode:
+            return (
+                module,
+                "ERROR",
+                "Could not check out alternate branch %s. Repository may be in invalid state!"
+                % remote_branch,
+            )
 
         if secondary_remote:
             # When checking out a branch from a secondary repository under a
