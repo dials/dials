@@ -909,7 +909,7 @@ class _Manager(object):
                 p1 = scan.get_angle_from_array_index(f1)
                 n = self.manager.num_reflections(i)
                 rows.append(
-                    [str(i), str(group), str(f0), str(f1), str(p0), str(p1), str(n)]
+                    [str(i), str(group), str(f0), str(f1 + 1), str(p0), str(p1), str(n)]
                 )
         else:
             raise RuntimeError("Experiments must be all sequences or all stills")
