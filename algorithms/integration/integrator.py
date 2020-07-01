@@ -1477,7 +1477,9 @@ class Integrator3DThreaded(object):
                 scan = self._experiments[expr[0]].scan
                 p0 = scan.get_angle_from_array_index(f0)
                 p1 = scan.get_angle_from_array_index(f1)
-                rows.append([str(i), str(group), str(f0), str(f1), str(p0), str(p1)])
+                rows.append(
+                    [str(i), str(group), str(f0 + 1), str(f1), str(p0), str(p1)]
+                )
         else:
             raise RuntimeError("Experiments must be all sequences or all stills")
         return tabulate(rows, headers="firstrow")
