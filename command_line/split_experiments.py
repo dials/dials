@@ -125,14 +125,14 @@ class Script(object):
         experiments_template = functools.partial(
             params.output.template.format,
             prefix=params.output.experiments_prefix,
-            maxindexlength=len(str(len(experiments))),
+            maxindexlength=len(str(len(experiments) - 1)),
             extension="expt",
         )
 
         reflections_template = functools.partial(
             params.output.template.format,
             prefix=params.output.reflections_prefix,
-            maxindexlength=len(str(len(experiments))),
+            maxindexlength=len(str(len(experiments) - 1)),
             extension="refl",
         )
 
