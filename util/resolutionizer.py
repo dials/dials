@@ -16,6 +16,7 @@ from dials.util.batch_handling import (
     assign_batches_to_reflections,
 )
 from dials.util.filter_reflections import filter_reflection_table
+from dials.util import tabulate
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +94,6 @@ def fit(x, y, order):
     be iterables containing floats of the same size. The order is the order
     of polynomial to use for this fit. This will be useful for e.g. I/sigma."""
 
-    logger.debug("fitter: %s %s %s", (x, y, order))
     pf = poly_fitter(x, y, order)
     logger.debug("fitter: refine")
     pf.refine()
@@ -505,10 +505,17 @@ class Resolutionizer(object):
         else:
             rmerge_f = log_inv_fit(s_s, rmerge_s, 6)
 
-            for j, s in enumerate(s_s):
-                logger.debug(
-                    "%f %f %f %f\n", s, 1.0 / math.sqrt(s), rmerge_s[j], rmerge_f[j]
-                )
+            logger.debug(
+                "rmerge: fits\n%s",
+                tabulate(
+                    [("d*2", "d", "rmerge_s", "rmerge_f")]
+                    + [
+                        (s, 1.0 / math.sqrt(s), rmerge_s[j], rmerge_f[j])
+                        for j, s in enumerate(s_s)
+                    ],
+                    headers="firstrow",
+                ),
+            )
 
             try:
                 r_rmerge = 1.0 / math.sqrt(interpolate_value(s_s, rmerge_f, limit))
@@ -550,10 +557,17 @@ class Resolutionizer(object):
         else:
             isigma_f = log_fit(s_s, isigma_s, 6)
 
-            for j, s in enumerate(s_s):
-                logger.debug(
-                    "%f %f %f %f\n", s, 1.0 / math.sqrt(s), isigma_s[j], isigma_f[j]
-                )
+            logger.debug(
+                "isigma: fits\n%s",
+                tabulate(
+                    [("d*2", "d", "isigma_s", "isigma_f")]
+                    + [
+                        (s, 1.0 / math.sqrt(s), isigma_s[j], isigma_f[j])
+                        for j, s in enumerate(s_s)
+                    ],
+                    headers="firstrow",
+                ),
+            )
 
             try:
                 r_isigma = 1.0 / math.sqrt(interpolate_value(s_s, isigma_f, limit))
@@ -616,10 +630,17 @@ class Resolutionizer(object):
         else:
             isigma_f = log_fit(s_s, isigma_s, 6)
 
-            for j, s in enumerate(s_s):
-                logger.debug(
-                    "%f %f %f %f\n", s, 1.0 / math.sqrt(s), isigma_s[j], isigma_f[j]
-                )
+            logger.debug(
+                "isigma: fits\n%s",
+                tabulate(
+                    [("d*2", "d", "isigma_s", "isigma_f")]
+                    + [
+                        (s, 1.0 / math.sqrt(s), isigma_s[j], isigma_f[j])
+                        for j, s in enumerate(s_s)
+                    ],
+                    headers="firstrow",
+                ),
+            )
 
             try:
                 r_isigma = 1.0 / math.sqrt(interpolate_value(s_s, isigma_f, limit))
@@ -659,13 +680,19 @@ class Resolutionizer(object):
         else:
             comp_f = fit(s_s, comp_s, 6)
 
+            logger.debug(
+                "comp: fits\n%s",
+                tabulate(
+                    [("d*2", "d", "comp_s", "comp_f")]
+                    + [
+                        (s, 1.0 / math.sqrt(s), comp_s[j], comp_f[j])
+                        for j, s in enumerate(s_s)
+                    ],
+                    headers="firstrow",
+                ),
+            )
+
             rlimit = limit * max(comp_s)
-
-            for j, s in enumerate(s_s):
-                logger.debug(
-                    "%f %f %f %f\n", s, 1.0 / math.sqrt(s), comp_s[j], comp_f[j]
-                )
-
             try:
                 r_comp = 1.0 / math.sqrt(interpolate_value(s_s, comp_f, rlimit))
             except Exception:
@@ -738,12 +765,19 @@ class Resolutionizer(object):
         else:
             cc_f = fit(s_s[i:], cc_s[i:], 6)
 
-        logger.debug("rch: fits")
+        logger.debug(
+            "rch: fits\n%s",
+            tabulate(
+                [("d*2", "d", "cc_s", "cc_f")]
+                + [
+                    (s, 1.0 / math.sqrt(s), cc_s[j], cc_f[j])
+                    for j, s in enumerate(s_s[i:])
+                ],
+                headers="firstrow",
+            ),
+        )
+
         rlimit = limit * max(cc_s)
-
-        for j, s in enumerate(s_s[i:]):
-            logger.debug("%f %f %f %f\n", s, 1.0 / math.sqrt(s), cc_s[i + j], cc_f[j])
-
         try:
             r_cc = 1.0 / math.sqrt(interpolate_value(s_s[i:], cc_f, rlimit))
         except Exception:
@@ -794,12 +828,18 @@ class Resolutionizer(object):
         else:
             cc_f = fit(s_s, cc_s, 6)
 
-        logger.debug("rch: fits")
+        logger.debug(
+            "rch: fits\n%s",
+            tabulate(
+                [("d*2", "d", "cc_s", "cc_f")]
+                + [
+                    (s, 1.0 / math.sqrt(s), cc_s[j], cc_f[j]) for j, s in enumerate(s_s)
+                ],
+                headers="firstrow",
+            ),
+        )
+
         rlimit = limit * max(cc_s)
-
-        for j, s in enumerate(s_s):
-            logger.debug("%f %f %f %f\n", s, 1.0 / math.sqrt(s), cc_s[j], cc_f[j])
-
         try:
             r_cc = 1.0 / math.sqrt(interpolate_value(s_s, cc_f, rlimit))
         except Exception:
