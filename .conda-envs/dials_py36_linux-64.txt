@@ -21,7 +21,7 @@ conda-forge::jinja2
 conda-forge::jpeg
 conda-forge::matplotlib-base>=3.0.2
 conda-forge::mock
-conda-forge::numpy>=1.16,<1.18
+conda-forge::numpy>=1.16,<1.17
 conda-forge::pillow>=5.4.1
 conda-forge::pip
 conda-forge::psutil
