@@ -61,7 +61,7 @@ def run(args):
         )
 
     # Configure the logging
-    log.config(logfile=params.output.log)
+    log.config(logfile=params.output.log, verbosity=options.verbose)
     logger.info(dials_version())
 
     if len(unhandled) == 1:
