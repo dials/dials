@@ -851,7 +851,7 @@ def plot_array_decay_plot(array_model):
     configdict = array_model.configdict
 
     valid_osc = configdict["valid_osc_range"]
-    n_points = max(valid_osc[1] - valid_osc[0], 50)
+    n_points = max(int(math.ceil(valid_osc[1] - valid_osc[0])), 50)
     sample_x_values = flex.double(
         np.linspace(valid_osc[0], valid_osc[1], n_points + 1, endpoint=True)
     )
