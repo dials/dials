@@ -269,15 +269,6 @@ channels:
             os.path.join(prefix, "vcredist_x64.exe"),
         )
 
-    # check that environment file is updated
-    if prefix not in get_environments():
-        raise RuntimeError(
-            """
-The newly installed environment cannot be found in
-${HOME}/.conda/environments.txt.
-"""
-        )
-
 
 def run_command(command, workdir):
     print("Running %s (in %s)" % (" ".join(command), workdir))
