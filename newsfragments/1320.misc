@@ -1,0 +1,7 @@
+Newly created development environments will by default check out the master branch from dials/cctbx
+rather than from cctbx_project/cctbx, with the local branch name 'stable'. This branch follows the
+cctbx_project/cctbx master branch, and automatically advances whenever the cctbx CI tests pass.
+Therefore the checked out copy will not be known unstable.
+A local pre-commit is set up to reject local commits to the stable branch. All other branches will behave normally.
+One can at any time git checkout master to get access to the regular cctbx_project master
+branch, and similarly check out any other branch from the cctbx_project/cctbx remote.
