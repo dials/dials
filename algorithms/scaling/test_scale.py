@@ -491,10 +491,8 @@ def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
         [[16, 24], 4]
     ]
     assert analysis_results["cycle_results"]["2"]["image_ranges_removed"] == [
-        [[17, 24], 3]
-    ]
-    assert analysis_results["cycle_results"]["3"]["image_ranges_removed"] == [
-        [[21, 25], 5]
+        [[17, 24], 3],
+        [[21, 25], 5],
     ]
     assert analysis_results["termination_reason"] == "max_percent_removed"
 
