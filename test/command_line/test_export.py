@@ -8,9 +8,11 @@ import pytest
 from cctbx import uctbx
 from dials.array_family import flex
 from dials.util.multi_dataset_handling import assign_unique_identifiers
+from dxtbx.model import ExperimentList
 from dxtbx.serialize.load import _decode_dict
 from dxtbx.serialize import load
 from iotbx import mtz
+
 
 # Tests used to check for h5py
 # May need to add this again if lack of this check causes issues.
@@ -195,6 +197,38 @@ def test_mtz_multi_wavelength(dials_data, run_in_tmpdir):
             n_batches.append(dataset.n_batches())
     assert n_batches == [0, 25, 25]  # base, dataset1, dataset2
     assert wavelengths == [0, 0.5, 1.0]  # base, dataset1, dataset2
+
+
+def test_mtz_primitive_cell(dials_data):
+    scaled_expt = dials_data("insulin_processed") / "scaled.expt"
+    scaled_refl = dials_data("insulin_processed") / "scaled.refl"
+
+    # First reindex to the primitive setting
+    expts = ExperimentList.from_file(scaled_expt.strpath, check_format=False)
+    cs = expts[0].crystal.get_crystal_symmetry()
+    cb_op = cs.change_of_basis_op_to_primitive_setting()
+    procrunner.run(
+        [
+            "dials.reindex",
+            scaled_expt.strpath,
+            scaled_refl.strpath,
+            'change_of_basis_op="%s"' % cb_op,
+        ]
+    )
+
+    # Now export the reindexed experiments/reflections
+    procrunner.run(["dials.export", "reindexed.expt", "reindexed.refl"])
+
+    mtz_obj = mtz.object("scaled.mtz")
+    cs_primitive = cs.change_basis(cb_op)
+    assert mtz_obj.space_group() == cs_primitive.space_group()
+    refl = flex.reflection_table.from_file(scaled_refl.strpath)
+    refl = refl.select(~refl.get_flags(refl.flags.bad_for_scaling, all=False))
+    for ma in mtz_obj.as_miller_arrays():
+        assert ma.crystal_symmetry().is_similar_symmetry(cs_primitive)
+        assert ma.d_max_min() == pytest.approx(
+            (flex.max(refl["d"]), flex.min(refl["d"]))
+        )
 
 
 @pytest.mark.parametrize("hklout", [None, "my.cif"])

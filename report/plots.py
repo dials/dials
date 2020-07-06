@@ -540,7 +540,8 @@ class ResolutionPlotsAndStats(ResolutionPlotterMixin):
         self.dataset_statistics = dataset_statistics
         self.anomalous_dataset_statistics = anomalous_dataset_statistics
         self.d_star_sq_bins = [
-            (1 / bin_stats.d_min ** 2) for bin_stats in self.dataset_statistics.bins
+            0.5 * (uctbx.d_as_d_star_sq(b.d_max) + uctbx.d_as_d_star_sq(b.d_min))
+            for b in self.dataset_statistics.bins
         ]
         self.d_star_sq_tickvals, self.d_star_sq_ticktext = self._d_star_sq_to_d_ticks(
             self.d_star_sq_bins, nticks=5
