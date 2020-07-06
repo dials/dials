@@ -2,7 +2,49 @@ from __future__ import absolute_import, division, print_function
 
 import pytest
 
-from dials.command_line import resolutionizer
+from scitbx.array_family import flex
+from scitbx.math import curve_fitting
+
+from dials.command_line import resolutionizer as cmdline
+from dials.util import resolutionizer
+
+
+def test_polynomial_fit():
+    x = flex.double(range(-50, 50))
+    p = (2, 3, 5)
+    yo = flex.double(x.size())
+    for i in range(len(p)):
+        yo += p[i] * flex.pow(x, i)
+    yf = resolutionizer.polynomial_fit(x, yo, degree=2)
+    assert yo == pytest.approx(yf)
+
+
+def test_log_fit():
+    x = flex.double(range(0, 100)) * 0.01
+    p = (1, 2)
+    yo = flex.double(x.size())
+    for i in range(len(p)):
+        yo += flex.exp(p[i] * flex.pow(x, i))
+    yf = resolutionizer.log_fit(x, yo, degree=2)
+    assert yo == pytest.approx(yf, abs=1e-2)
+
+
+def test_log_inv_fit():
+    x = flex.double(range(0, 100)) * 0.01
+    p = (1, 2)
+    yo = flex.double(x.size())
+    for i in range(len(p)):
+        yo += 1 / flex.exp(p[i] * flex.pow(x, i))
+    yf = resolutionizer.log_inv_fit(x, yo, degree=2)
+    assert yo == pytest.approx(yf, abs=1e-2)
+
+
+def test_tanh_fit():
+    x = flex.double(range(0, 100)) * 0.01
+    f = curve_fitting.tanh(0.5, 1.5)
+    yo = f(x)
+    yf = resolutionizer.tanh_fit(x, yo)
+    assert yo == pytest.approx(yf, abs=1e-5)
 
 
 @pytest.mark.parametrize(
@@ -15,7 +57,7 @@ from dials.command_line import resolutionizer
 def test_resolutionizer(input_files, dials_data, run_in_tmpdir, capsys):
     paths = [dials_data("x4wide_processed").join(p).strpath for p in input_files]
     reference_mtz = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled.mtz")
-    resolutionizer.run(
+    cmdline.run(
         [
             "plot=True",
             "cc_half=0.9",
@@ -66,11 +108,8 @@ def test_resolutionizer_multi_sequence_with_batch_range(
     refls = location.join("scaled_20_25.refl")
     expts = location.join("scaled_20_25.expt")
 
-    result = resolutionizer.run(
-        ["batch_range=1900,3600", refls.strpath, expts.strpath],
-    )
+    cmdline.run(["batch_range=1900,3600", refls.strpath, expts.strpath],)
     captured = capsys.readouterr()
-    assert not result.returncode and not result.stderr
 
     expected_output = (
         "Resolution cc_half:       0.61",
