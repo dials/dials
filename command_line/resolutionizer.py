@@ -45,7 +45,7 @@ def run(args):
     )
 
     params, options, unhandled = parser.parse_args(
-        return_unhandled=True, show_diff_phil=True
+        args=args, return_unhandled=True, show_diff_phil=True
     )
 
     reflections, experiments = reflections_and_experiments_from_files(

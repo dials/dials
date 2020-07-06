@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import pytest
 
-import procrunner
+from dials.command_line import resolutionizer
 
 
 @pytest.mark.parametrize(
@@ -12,12 +12,11 @@ import procrunner
         ("AUTOMATIC_DEFAULT_scaled.refl", "AUTOMATIC_DEFAULT_scaled.expt"),
     ],
 )
-def test_resolutionizer(input_files, dials_data, tmpdir):
-    paths = [dials_data("x4wide_processed").join(p) for p in input_files]
+def test_resolutionizer(input_files, dials_data, run_in_tmpdir, capsys):
+    paths = [dials_data("x4wide_processed").join(p).strpath for p in input_files]
     reference_mtz = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled.mtz")
-    result = procrunner.run(
+    resolutionizer.run(
         [
-            "dials.resolutionizer",
             "plot=True",
             "cc_half=0.9",
             "isigma=2",
@@ -33,21 +32,19 @@ def test_resolutionizer(input_files, dials_data, tmpdir):
             "labels=IMEAN,SIGIMEAN",
         ]
         + paths,
-        working_directory=tmpdir,
     )
-    assert not result.returncode and not result.stderr
-
+    captured = capsys.readouterr()
     expected_output = (
-        b"Resolution rmerge:       1.34",
-        b"Resolution completeness: 1.20",
-        b"Resolution cc_half:      1.56",
-        b"Resolution cc_ref:       1.3",
-        b"Resolution I/sig:        1.53",
-        b"Resolution Mn(I/sig):    1.51",
-        b"Resolution Mn(I)/Mn(sig):    1.50",
+        "Resolution rmerge:        1.34",
+        "Resolution completeness:  1.20",
+        "Resolution cc_half:       1.56",
+        "Resolution cc_ref:        1.3",
+        "Resolution I/sig:         1.53",
+        "Resolution Mn(I/sig):     1.51",
+        "Resolution Mn(I)/Mn(sig): 1.50",
     )
     for line in expected_output:
-        assert line in result.stdout
+        assert line in captured.out
 
     expected_png = (
         "cc_half.png",
@@ -59,24 +56,26 @@ def test_resolutionizer(input_files, dials_data, tmpdir):
         "i_mean_over_sigma_mean.png",
     )
     for png in expected_png:
-        assert tmpdir.join(png).check()
+        assert run_in_tmpdir.join(png).check()
 
 
-def test_resolutionizer_multi_sequence_with_batch_range(dials_data, tmpdir):
+def test_resolutionizer_multi_sequence_with_batch_range(
+    dials_data, run_in_tmpdir, capsys
+):
     location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = location.join("scaled_20_25.refl")
     expts = location.join("scaled_20_25.expt")
 
-    result = procrunner.run(
-        ["dials.resolutionizer", "batch_range=1900,3600", refls.strpath, expts.strpath],
-        working_directory=tmpdir,
+    result = resolutionizer.run(
+        ["batch_range=1900,3600", refls.strpath, expts.strpath],
     )
+    captured = capsys.readouterr()
     assert not result.returncode and not result.stderr
 
     expected_output = (
-        b"Resolution cc_half:      0.61",
-        b"Resolution I/sig:        0.59",
-        b"Resolution Mn(I/sig):    0.59",
+        "Resolution cc_half:       0.61",
+        "Resolution I/sig:         0.59",
+        "Resolution Mn(I/sig):     0.59",
     )
     for line in expected_output:
-        assert line in result.stdout
+        assert line in captured.out

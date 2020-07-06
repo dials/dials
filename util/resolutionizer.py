@@ -446,8 +446,55 @@ class Resolutionizer(object):
 
         return cls(i_obs, params, batches=batch_array, reference=reference)
 
+    def resolution(self, metric, limit=None):
+        if metric == "cc_half":
+            return resolution_cc_half(
+                self._merging_statistics,
+                limit,
+                cc_half_method=self._params.cc_half_method,
+                model=tanh_fit
+                if self._params.cc_half_fit == "tanh"
+                else polynomial_fit,
+            )
+        elif metric == "cc_ref":
+            return self._resolution_cc_ref(limit=self._params.cc_ref)
+        else:
+            model = {
+                "r_merge": log_inv_fit,
+                "completeness": polynomial_fit,
+                "unmerged_i_over_sigma_mean": log_fit,
+                "i_over_sigma_mean": log_fit,
+                "i_mean_over_sigi_mean": log_fit,
+            }[metric]
+            return resolution_fit_from_merging_stats(
+                self._merging_statistics, metric, model, limit
+            )
+
     def resolution_auto(self):
         """Compute resolution limits based on the current self._params set."""
+
+        metrics = {
+            "rmerge",
+            "completeness",
+            "cc_half",
+            "cc_ref",
+            "isigma",
+            "misigma",
+            "i_mean_over_sigma_mean",
+        }
+
+        translate_metric = {
+            "rmerge": "r_merge",
+            "isigma": "unmerged_i_over_sigma_mean",
+            "misigma": "i_over_sigma_mean",
+            "i_mean_over_sigma_mean": "i_mean_over_sigi_mean",
+        }
+
+        metric_to_output = {
+            "isigma": "I/sig",
+            "misigma": "Mn(I/sig)",
+            "i_mean_over_sigma_mean": "Mn(I)/Mn(sig)",
+        }
 
         if self._params.plot:
             import matplotlib
@@ -456,129 +503,21 @@ class Resolutionizer(object):
 
             from matplotlib import pyplot as plt
 
-        if self._params.rmerge:
-            result = self.resolution_rmerge()
-            if self._params.plot:
-                plot_resolution_result(result, "Rmerge")
-                plt.savefig("rmerge.png")
-            logger.info("Resolution rmerge:       %.2f", result.d_min)
+        for metric in metrics:
+            limit = getattr(self._params, metric)
+            if metric == "cc_ref" and not self._reference:
+                limit = None
+            if limit:
+                result = self.resolution(
+                    translate_metric.get(metric, metric), limit=limit
+                )
+                name = metric_to_output.get(metric, metric)
+                logger.info(f"Resolution {name}:{result.d_min:{18 - len(name)}.2f}")
+                if self._params.plot:
+                    plot_resolution_result(result, metric)
+                    plt.savefig(f"{metric}.png")
 
-        if self._params.completeness:
-            result = self.resolution_completeness()
-            if self._params.plot:
-                plot_resolution_result(result, "Completeness")
-                plt.savefig("completeness.png")
-            logger.info("Resolution completeness: %.2f", result.d_min)
-
-        if self._params.cc_half:
-            result = self.resolution_cc_half()
-            if self._params.plot:
-                plot_resolution_result(result, "CC½")
-                plt.savefig("cc_half.png")
-            logger.info("Resolution cc_half:      %.2f", result.d_min)
-
-        if self._params.cc_ref and self._reference is not None:
-            result = self.resolution_cc_ref()
-            if self._params.plot:
-                plot_resolution_result(result, "CCref")
-                plt.savefig("cc_ref.png")
-            logger.info("Resolution cc_ref:       %.2f", result.d_min)
-
-        if self._params.isigma:
-            result = self.resolution_unmerged_isigma()
-            if self._params.plot:
-                plot_resolution_result(result, "Unmerged I/sigma")
-                plt.savefig("isigma.png")
-            logger.info("Resolution I/sig:        %.2f", result.d_min)
-
-        if self._params.misigma:
-            result = self.resolution_merged_isigma()
-            if self._params.plot:
-                plot_resolution_result(result, "Merged I/sigma")
-                plt.savefig("misigma.png")
-            logger.info("Resolution Mn(I/sig):    %.2f", result.d_min)
-
-        if self._params.i_mean_over_sigma_mean:
-            result = self.resolution_i_mean_over_sigma_mean()
-            if self._params.plot:
-                plot_resolution_result(result, "Unmerged <I>/<sigma>")
-                plt.savefig("i_mean_over_sigma_mean.png")
-            logger.info(
-                "Resolution Mn(I)/Mn(sig):    %.2f", result.d_min,
-            )
-
-    def resolution_rmerge(self, limit=None):
-        """Compute a resolution limit where either rmerge = 1.0 (limit if
-        set) or the full extent of the data. N.B. this fit is only meaningful
-        for positive values."""
-
-        if limit is None:
-            limit = self._params.rmerge
-
-        return resolution_fit_from_merging_stats(
-            self._merging_statistics, "r_merge", log_inv_fit, limit
-        )
-
-    def resolution_i_mean_over_sigma_mean(self, limit=None):
-        """Compute a resolution limit where either <I>/<sigma> = 1.0 (limit if
-        set) or the full extent of the data."""
-
-        if limit is None:
-            limit = self._params.i_mean_over_sigma_mean
-
-        return resolution_fit_from_merging_stats(
-            self._merging_statistics, "i_mean_over_sigi_mean", log_fit, limit
-        )
-
-    def resolution_unmerged_isigma(self, limit=None):
-        """Compute a resolution limit where either I/sigma = 1.0 (limit if
-        set) or the full extent of the data."""
-
-        if limit is None:
-            limit = self._params.isigma
-
-        return resolution_fit_from_merging_stats(
-            self._merging_statistics, "unmerged_i_over_sigma_mean", log_fit, limit
-        )
-
-    def resolution_merged_isigma(self, limit=None):
-        """Compute a resolution limit where either Mn(I/sigma) = 1.0 (limit if
-        set) or the full extent of the data."""
-
-        if limit is None:
-            limit = self._params.misigma
-
-        return resolution_fit_from_merging_stats(
-            self._merging_statistics, "i_over_sigma_mean", log_fit, limit
-        )
-
-    def resolution_completeness(self, limit=None):
-        """Compute a resolution limit where completeness < 0.5 (limit if
-        set) or the full extent of the data. N.B. this completeness is
-        with respect to the *maximum* completeness in a shell, to reflect
-        triclinic cases."""
-
-        if limit is None:
-            limit = self._params.completeness
-
-        return resolution_fit_from_merging_stats(
-            self._merging_statistics, "completeness", polynomial_fit, limit
-        )
-
-    def resolution_cc_half(self, limit=None):
-        """Compute a resolution limit where cc_half < 0.5 (limit if
-        set) or the full extent of the data."""
-
-        if limit is None:
-            limit = self._params.cc_half
-        return resolution_cc_half(
-            self._merging_statistics,
-            limit,
-            cc_half_method=self._params.cc_half_method,
-            model=tanh_fit if self._params.cc_half_fit == "tanh" else polynomial_fit,
-        )
-
-    def resolution_cc_ref(self, limit=None):
+    def _resolution_cc_ref(self, limit=None):
         """Compute a resolution limit where cc_ref < 0.5 (limit if
         set) or the full extent of the data."""
 
