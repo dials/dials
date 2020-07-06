@@ -212,6 +212,7 @@ class ScalerBase(Subject):
                 self.params.weighting.error_model, Ih_table
             )
         except (ValueError, RuntimeError) as e:
+            logger.info(e)
             logger.debug(e, exc_info=True)
         else:
             self._update_error_model(model, update_Ih=update_Ih)
