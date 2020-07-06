@@ -1,18 +1,20 @@
 from __future__ import absolute_import, division, print_function
 
-import collections
 import logging
 import math
+from dataclasses import dataclass
 
 import iotbx.mtz
 import iotbx.phil
+import iotbx.merging_statistics
 from cctbx.array_family import flex
 from cctbx import miller, uctbx
-from dials.util import Sorry
+from iotbx.reflection_file_utils import label_table
 from scitbx.math import curve_fitting
 from scitbx.math import five_number_summary
 
 from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
+from dials.util import Sorry
 from dials.util.batch_handling import (
     calculate_batch_offsets,
     assign_batches_to_reflections,
@@ -120,14 +122,41 @@ def resolution_fit(d_star_sq, y_obs, model, limit, sel=None):
 
 def get_cc_half_significance(merging_stats, cc_half_method):
     if cc_half_method == "sigma_tau":
-        significance = flex.bool(
-            [b.cc_one_half_sigma_tau_significance for b in merging_stats.bins]
+        return flex.bool(
+            b.cc_one_half_sigma_tau_significance for b in merging_stats.bins
         ).reversed()
     else:
-        significance = flex.bool(
-            [b.cc_one_half_significance for b in merging_stats.bins]
+        return flex.bool(
+            b.cc_one_half_significance for b in merging_stats.bins
         ).reversed()
-    return significance
+
+
+def get_cc_half_critical_values(merging_stats, cc_half_method):
+    if cc_half_method == "sigma_tau":
+        return flex.double(
+            b.cc_one_half_sigma_tau_critical_value for b in merging_stats.bins
+        ).reversed()
+    else:
+        return flex.double(
+            b.cc_one_half_critical_value for b in merging_stats.bins
+        ).reversed()
+
+
+def resolution_cc_half(
+    merging_stats, limit, cc_half_method="half_dataset", model=tanh_fit
+):
+    """Compute a resolution limit where cc_half < 0.5 (limit if
+    set) or the full extent of the data."""
+
+    sel = get_cc_half_significance(merging_stats, cc_half_method)
+    metric = "cc_one_half_sigma_tau" if cc_half_method == "sigma_tau" else "cc_one_half"
+    result = resolution_fit_from_merging_stats(
+        merging_stats, metric, model, limit, sel=sel
+    )
+    result.critical_values = get_cc_half_critical_values(
+        merging_stats, cc_half_method
+    ).select(sel)
+    return result
 
 
 def interpolate_value(x, y, t):
@@ -167,8 +196,6 @@ def miller_array_from_mtz(unmerged_mtz, params):
             raise Sorry("No intensities found")
         elif len(all_i_obs) > 1:
             if params.labels is not None:
-                from iotbx.reflection_file_utils import label_table
-
                 lab_tab = label_table(all_i_obs)
                 i_obs = lab_tab.select_array(
                     label=params.labels[0], command_line_switch="labels"
@@ -276,17 +303,21 @@ resolutionizer {
 )
 
 
-def plot_resolution_result(result, ylabel, filename):
-    from matplotlib import pyplot
+def plot_resolution_result(result, ylabel, ax=None):
+    from matplotlib import pyplot as plt
 
-    pyplot.style.use("ggplot")
+    plt.style.use("ggplot")
     ylabel = ylabel
-    fig = pyplot.figure()
-    ax = fig.add_subplot(111)
+    if ax is None:
+        fig, ax = plt.subplots()
+    else:
+        ax = ax.figure
 
     if result.y_fit:
         ax.plot(result.d_star_sq, result.y_fit, label="Fit")
     ax.plot(result.d_star_sq, result.y_obs, label="Raw")
+    if result.critical_values:
+        ax.plot(result.d_star_sq, result.critical_values, label="Critical values")
     if ylabel.startswith("CC"):
         ylim = ax.get_ylim()
         ax.set_ylim(0, max(ylim[1], 1.05))
@@ -300,50 +331,16 @@ def plot_resolution_result(result, ylabel, filename):
     ax.set_xlabel("Resolution (A)")
     ax.set_ylabel(ylabel)
     ax.legend(loc="best")
-    fig.savefig(filename)
+    return ax
 
 
-class resolution_plot(object):
-    def __init__(self, ylabel):
-        import matplotlib
-
-        matplotlib.use("Agg")
-        from matplotlib import pyplot
-
-        pyplot.style.use("ggplot")
-        self.ylabel = ylabel
-        self.fig = pyplot.figure()
-        self.ax = self.fig.add_subplot(111)
-
-    def plot(self, d_star_sq, values, label):
-        self.ax.plot(d_star_sq, values, label=label)
-        if label.startswith("CC"):
-            ylim = self.ax.get_ylim()
-            self.ax.set_ylim(0, max(ylim[1], 1.05))
-
-    def plot_resolution_limit(self, d):
-        from cctbx import uctbx
-
-        d_star_sq = uctbx.d_as_d_star_sq(d)
-        self.ax.plot([d_star_sq, d_star_sq], self.ax.get_ylim(), linestyle="--")
-
-    def savefig(self, filename):
-        from cctbx import uctbx
-
-        xticks = self.ax.get_xticks()
-        xticks_d = [
-            "%.2f" % uctbx.d_star_sq_as_d(ds2) if ds2 > 0 else 0 for ds2 in xticks
-        ]
-        self.ax.set_xticklabels(xticks_d)
-        self.ax.set_xlabel("Resolution (A)")
-        self.ax.set_ylabel(self.ylabel)
-        self.ax.legend(loc="best")
-        self.fig.savefig(filename)
-
-
-ResolutionResult = collections.namedtuple(
-    "ResolutionResult", ["d_star_sq", "y_obs", "y_fit", "d_min"]
-)
+@dataclass
+class ResolutionResult:
+    d_star_sq: flex.double
+    y_obs: flex.double
+    y_fit: flex.double
+    d_min: float
+    critical_values: flex.double = None
 
 
 class Resolutionizer(object):
@@ -375,8 +372,6 @@ class Resolutionizer(object):
             )
 
         self._intensities = i_obs
-
-        import iotbx.merging_statistics
 
         self._merging_statistics = iotbx.merging_statistics.dataset_statistics(
             i_obs=i_obs,
@@ -454,48 +449,60 @@ class Resolutionizer(object):
     def resolution_auto(self):
         """Compute resolution limits based on the current self._params set."""
 
+        if self._params.plot:
+            import matplotlib
+
+            matplotlib.use("Agg")
+
+            from matplotlib import pyplot as plt
+
         if self._params.rmerge:
             result = self.resolution_rmerge()
             if self._params.plot:
-                plot_resolution_result(result, "Rmerge", "rmerge.png")
+                plot_resolution_result(result, "Rmerge")
+                plt.savefig("rmerge.png")
             logger.info("Resolution rmerge:       %.2f", result.d_min)
 
         if self._params.completeness:
             result = self.resolution_completeness()
             if self._params.plot:
-                plot_resolution_result(result, "Completeness", "completeness.png")
+                plot_resolution_result(result, "Completeness")
+                plt.savefig("completeness.png")
             logger.info("Resolution completeness: %.2f", result.d_min)
 
         if self._params.cc_half:
             result = self.resolution_cc_half()
             if self._params.plot:
-                plot_resolution_result(result, "CC½", "cc_half.png")
+                plot_resolution_result(result, "CC½")
+                plt.savefig("cc_half.png")
             logger.info("Resolution cc_half:      %.2f", result.d_min)
 
         if self._params.cc_ref and self._reference is not None:
             result = self.resolution_cc_ref()
             if self._params.plot:
-                plot_resolution_result(result, "CCref", "cc_ref.png")
+                plot_resolution_result(result, "CCref")
+                plt.savefig("cc_ref.png")
             logger.info("Resolution cc_ref:       %.2f", result.d_min)
 
         if self._params.isigma:
             result = self.resolution_unmerged_isigma()
             if self._params.plot:
-                plot_resolution_result(result, "Unmerged I/sigma", "isigma.png")
+                plot_resolution_result(result, "Unmerged I/sigma")
+                plt.savefig("isigma.png")
             logger.info("Resolution I/sig:        %.2f", result.d_min)
 
         if self._params.misigma:
             result = self.resolution_merged_isigma()
             if self._params.plot:
-                plot_resolution_result(result, "Merged I/sigma", "misigma.png")
+                plot_resolution_result(result, "Merged I/sigma")
+                plt.savefig("misigma.png")
             logger.info("Resolution Mn(I/sig):    %.2f", result.d_min)
 
         if self._params.i_mean_over_sigma_mean:
             result = self.resolution_i_mean_over_sigma_mean()
             if self._params.plot:
-                plot_resolution_result(
-                    result, "Unmerged <I>/<sigma>", "i_mean_over_sigma_mean.png"
-                )
+                plot_resolution_result(result, "Unmerged <I>/<sigma>")
+                plt.savefig("i_mean_over_sigma_mean.png")
             logger.info(
                 "Resolution Mn(I)/Mn(sig):    %.2f", result.d_min,
             )
@@ -564,18 +571,11 @@ class Resolutionizer(object):
 
         if limit is None:
             limit = self._params.cc_half
-
-        sel = get_cc_half_significance(
-            self._merging_statistics, self._params.cc_half_method
-        )
-        fit = tanh_fit if self._params.cc_half_fit == "tanh" else polynomial_fit
-        metric = (
-            "cc_one_half_sigma_tau"
-            if self._params.cc_half_method == "sigma_tau"
-            else "cc_one_half"
-        )
-        return resolution_fit_from_merging_stats(
-            self._merging_statistics, metric, fit, limit, sel=sel
+        return resolution_cc_half(
+            self._merging_statistics,
+            limit,
+            cc_half_method=self._params.cc_half_method,
+            model=tanh_fit if self._params.cc_half_fit == "tanh" else polynomial_fit,
         )
 
     def resolution_cc_ref(self, limit=None):
