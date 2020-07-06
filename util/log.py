@@ -73,7 +73,7 @@ def config(verbosity=0, logfile=None):
     dials_logger = logging.getLogger("dials")
     dials_logger.addHandler(console)
 
-    if verbosity:
+    if verbosity > 1:
         loglevel = logging.DEBUG
     else:
         loglevel = logging.INFO
