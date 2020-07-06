@@ -67,9 +67,9 @@ steps:
 # Cache is not shared across operating systems and python versions
 - task: Cache@2
   inputs:
-    key: '"base" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(Agent.OS)-$(Agent.Version)" | "$(PYTHON_VERSION)" | ${{ parameters.conda_environment }} | "$(TODAY_ISO)"'
+    key: '"base" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(Agent.OS)-$(Agent.Version)-$(Pipeline.Workspace)" | "$(PYTHON_VERSION)" | ${{ parameters.conda_environment }} | "$(TODAY_ISO)"'
     restoreKeys: |
-      "base" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(Agent.OS)-$(Agent.Version)" | "$(PYTHON_VERSION)" | ${{ parameters.conda_environment }}
+      "base" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(Agent.OS)-$(Agent.Version)-$(Pipeline.Workspace)" | "$(PYTHON_VERSION)" | ${{ parameters.conda_environment }}
     path: $(Pipeline.Workspace)/conda_base
     cacheHitVar: BASE_CACHED
   displayName: Restore environment cache
@@ -93,9 +93,9 @@ steps:
 # Cache is not shared across operating systems and python versions
 - task: Cache@2
   inputs:
-    key: '"build" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(Agent.OS)-$(Agent.Version)" | "$(PYTHON_VERSION)" | installer/bootstrap.py | ${{ parameters.conda_environment }} | "$(TODAY_ISO)"'
+    key: '"build" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(Agent.OS)-$(Agent.Version)-$(Pipeline.Workspace)" | "$(PYTHON_VERSION)" | installer/bootstrap.py | ${{ parameters.conda_environment }} | "$(TODAY_ISO)"'
     restoreKeys: |
-      "build" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(Agent.OS)-$(Agent.Version)" | "$(PYTHON_VERSION)" | installer/bootstrap.py | ${{ parameters.conda_environment }}
+      "build" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(Agent.OS)-$(Agent.Version)-$(Pipeline.Workspace)" | "$(PYTHON_VERSION)" | installer/bootstrap.py | ${{ parameters.conda_environment }}
     path: $(Pipeline.Workspace)/build
     cacheHitVar: BUILD_CACHED
   displayName: Restore cached build
