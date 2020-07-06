@@ -30,9 +30,9 @@ def polynomial_fit(x, y, degree=5):
     be iterables containing floats of the same size. The order is the order
     of polynomial to use for this fit. This will be useful for e.g. I/sigma."""
 
-    fit = curve_fitting.univariate_polynomial_fit(x, flex.log(y), degree=degree)
+    fit = curve_fitting.univariate_polynomial_fit(x, y, degree=degree)
     f = curve_fitting.univariate_polynomial(*fit.params)
-    return flex.exp(f(x))
+    return f(x)
 
 
 def tanh_fit(x, y, iqr_multiplier=None):
