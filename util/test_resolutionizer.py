@@ -2,6 +2,8 @@ from __future__ import absolute_import, division, print_function
 
 import pytest
 
+from cctbx import uctbx
+import iotbx.merging_statistics
 from scitbx.array_family import flex
 from scitbx.math import curve_fitting
 
@@ -45,6 +47,51 @@ def test_tanh_fit():
     yo = f(x)
     yf = resolutionizer.tanh_fit(x, yo)
     assert yo == pytest.approx(yf, abs=1e-5)
+
+
+@pytest.fixture
+def merging_stats(dials_data):
+    mtz = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled_unmerged.mtz")
+    i_obs, _ = resolutionizer.miller_array_from_mtz(mtz.strpath)
+    return iotbx.merging_statistics.dataset_statistics(
+        i_obs=i_obs,
+        n_bins=20,
+        binning_method="counting_sorted",
+        use_internal_variance=False,
+        eliminate_sys_absent=False,
+        assert_is_not_unique_set_under_symmetry=False,
+    )
+
+
+def test_resolution_fit(merging_stats):
+    d_star_sq = flex.double(uctbx.d_as_d_star_sq(b.d_min) for b in merging_stats.bins)
+    y_obs = flex.double(b.r_merge for b in merging_stats.bins)
+    result = resolutionizer.resolution_fit(
+        d_star_sq, y_obs, resolutionizer.log_inv_fit, 0.6
+    )
+    assert result.d_min == pytest.approx(1.278, abs=1e-3)
+    assert flex.max(flex.abs(result.y_obs - result.y_fit)) < 0.05
+
+
+def test_resolution_cc_half(merging_stats):
+    result = resolutionizer.resolution_cc_half(merging_stats, limit=0.82)
+    assert result.d_min == pytest.approx(1.242, abs=1e-3)
+    result = resolutionizer.resolution_cc_half(
+        merging_stats,
+        limit=0.82,
+        cc_half_method="sigma_tau",
+        model=resolutionizer.polynomial_fit,
+    )
+    assert result.d_min == pytest.approx(1.23, abs=1e-3)
+    assert flex.max(flex.abs(result.y_obs - result.y_fit)) < 0.04
+
+
+def test_resolution_fit_from_merging_stats(merging_stats):
+    result = resolutionizer.resolution_fit_from_merging_stats(
+        merging_stats, "i_over_sigma_mean", resolutionizer.log_fit, limit=1.5
+    )
+    assert result.d_min == pytest.approx(1.295, abs=1e-3)
+    assert flex.max(flex.abs(result.y_obs - result.y_fit)) < 1
 
 
 @pytest.mark.parametrize(

@@ -113,30 +113,36 @@ def resolution_fit(d_star_sq, y_obs, model, limit, sel=None):
         # rlimit = limit * max(y_obs)
         try:
             d_min = 1.0 / math.sqrt(interpolate_value(d_star_sq, y_fit, limit))
-        except Exception as e:
-            logger.info(e)
+        except RuntimeError as e:
+            logger.debug(f"Error interpolating value: {e}")
             d_min = uctbx.d_star_sq_as_d(flex.max(d_star_sq))
 
     return ResolutionResult(d_star_sq, y_obs, y_fit, d_min)
 
 
 def get_cc_half_significance(merging_stats, cc_half_method):
-    if cc_half_method == "sigma_tau":
+    if (
+        cc_half_method == "sigma_tau"
+        and merging_stats.overall.cc_one_half_sigma_tau_significance is not None
+    ):
         return flex.bool(
             b.cc_one_half_sigma_tau_significance for b in merging_stats.bins
         ).reversed()
-    else:
+    elif merging_stats.overall.cc_one_half_significance is not None:
         return flex.bool(
             b.cc_one_half_significance for b in merging_stats.bins
         ).reversed()
 
 
 def get_cc_half_critical_values(merging_stats, cc_half_method):
-    if cc_half_method == "sigma_tau":
+    if (
+        cc_half_method == "sigma_tau"
+        and merging_stats.overall.cc_one_half_sigma_tau_critical_value is not None
+    ):
         return flex.double(
             b.cc_one_half_sigma_tau_critical_value for b in merging_stats.bins
         ).reversed()
-    else:
+    elif merging_stats.overall.cc_one_half_critical_value is not None:
         return flex.double(
             b.cc_one_half_critical_value for b in merging_stats.bins
         ).reversed()
@@ -153,9 +159,9 @@ def resolution_cc_half(
     result = resolution_fit_from_merging_stats(
         merging_stats, metric, model, limit, sel=sel
     )
-    result.critical_values = get_cc_half_critical_values(
-        merging_stats, cc_half_method
-    ).select(sel)
+    critical_values = get_cc_half_critical_values(merging_stats, cc_half_method)
+    if critical_values:
+        result.critical_values = critical_values.select(sel)
     return result
 
 
@@ -176,10 +182,10 @@ def interpolate_value(x, y, t):
             return x0 + (t - y0) * (x1 - x0) / (y1 - y0)
 
 
-def miller_array_from_mtz(unmerged_mtz, params):
+def miller_array_from_mtz(unmerged_mtz, anomalous=False, labels=None):
     mtz_object = iotbx.mtz.object(file_name=unmerged_mtz)
     miller_arrays = mtz_object.as_miller_arrays(
-        merge_equivalents=False, anomalous=params.anomalous
+        merge_equivalents=False, anomalous=anomalous
     )
     i_obs = None
     batches = None
@@ -195,10 +201,10 @@ def miller_array_from_mtz(unmerged_mtz, params):
         if len(all_i_obs) == 0:
             raise Sorry("No intensities found")
         elif len(all_i_obs) > 1:
-            if params.labels is not None:
+            if labels is not None:
                 lab_tab = label_table(all_i_obs)
                 i_obs = lab_tab.select_array(
-                    label=params.labels[0], command_line_switch="labels"
+                    label=labels[0], command_line_switch="labels"
                 )
             if i_obs is None:
                 raise Sorry(
@@ -390,9 +396,13 @@ class Resolutionizer(object):
     def from_unmerged_mtz(cls, scaled_unmerged, params):
         """Construct the resolutionizer from an mtz file."""
 
-        i_obs, batches = miller_array_from_mtz(scaled_unmerged, params)
+        i_obs, batches = miller_array_from_mtz(
+            scaled_unmerged, anomalous=params.anomalous, labels=params.labels
+        )
         if params.reference is not None:
-            reference, _ = miller_array_from_mtz(params.reference, params)
+            reference, _ = miller_array_from_mtz(
+                params.reference, anomalous=params.anomalous, labels=params.labels
+            )
         else:
             reference = None
 
@@ -440,7 +450,9 @@ class Resolutionizer(object):
         batch_array = miller.array(ms, data=batches)
 
         if params.reference is not None:
-            reference, _ = miller_array_from_mtz(params.reference, params)
+            reference, _ = miller_array_from_mtz(
+                params.reference, anomalous=params.anomalous, labels=params.labels
+            )
         else:
             reference = None
 
