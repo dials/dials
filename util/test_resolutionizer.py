@@ -41,7 +41,7 @@ def test_resolutionizer(input_files, dials_data, tmpdir):
         b"Resolution rmerge:       1.34",
         b"Resolution completeness: 1.20",
         b"Resolution cc_half:      1.56",
-        b"Resolution cc_ref:       1.32",
+        b"Resolution cc_ref:       1.3",
         b"Resolution I/sig:        1.53",
         b"Resolution Mn(I/sig):    1.51",
         b"Resolution Mn(I)/Mn(sig):    1.50",

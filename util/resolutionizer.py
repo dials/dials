@@ -1,14 +1,16 @@
 from __future__ import absolute_import, division, print_function
 
+import collections
 import logging
 import math
 
 import iotbx.mtz
 import iotbx.phil
 from cctbx.array_family import flex
-from cctbx import miller
+from cctbx import miller, uctbx
 from dials.util import Sorry
-from scitbx import lbfgs
+from scitbx.math import curve_fitting
+from scitbx.math import five_number_summary
 
 from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
 from dials.util.batch_handling import (
@@ -21,100 +23,24 @@ from dials.util import tabulate
 logger = logging.getLogger(__name__)
 
 
-def poly_residual(xp, y, params):
-    """Compute the residual between the observations y[i] and sum_j
-    params[j] x[i]^j. For efficiency, x[i]^j are pre-calculated in xp."""
-
-    c = len(y)
-
-    e = flex.double([flex.sum(xp[j] * params) for j in range(c)])
-
-    return flex.sum(flex.pow2(y - e))
-
-
-def poly_gradients(xp, y, params):
-    """Compute the gradient of the residual w.r.t. the parameters, N.B.
-    will be performed using a finite difference method. N.B. this should
-    be trivial to do algebraicly."""
-
-    eps = 1.0e-6
-
-    g = flex.double()
-
-    n = len(params)
-
-    for j in range(n):
-        rs = []
-        for signed_eps in [-eps, eps]:
-            params_eps = params[:]
-            params_eps[j] += signed_eps
-            rs.append(poly_residual(xp, y, params_eps))
-        g.append((rs[1] - rs[0]) / (2 * eps))
-
-    return g
-
-
-class poly_fitter(object):
-    """A class to do the polynomial fit. This will fit observations y
-    at points x with a polynomial of order n."""
-
-    def __init__(self, points, values, order):
-        self.x = flex.double([1.0 for j in range(order)])
-        self._x = flex.double(points)
-        self._y = flex.double(values)
-
-        # precalculate x[j]^[0-(n - 1)] values
-
-        self._xp = [
-            flex.double([math.pow(x, j) for j in range(order)]) for x in self._x
-        ]
-
-    def refine(self):
-        """Actually perform the parameter refinement."""
-
-        tp = lbfgs.termination_parameters(max_iterations=1000)
-        r = lbfgs.run(target_evaluator=self, termination_params=tp)
-        return r
-
-    def compute_functional_and_gradients(self):
-
-        return (
-            poly_residual(self._xp, self._y, self.x),
-            poly_gradients(self._xp, self._y, self.x),
-        )
-
-    def evaluate(self, x):
-        """Evaluate the resulting fit at point x."""
-
-        return sum(math.pow(x, k) * sxk for k, sxk in enumerate(self.x))
-
-
-def fit(x, y, order):
+def polynomial_fit(x, y, degree=5):
     """Fit the values y(x) then return this fit. x, y should
     be iterables containing floats of the same size. The order is the order
     of polynomial to use for this fit. This will be useful for e.g. I/sigma."""
 
-    pf = poly_fitter(x, y, order)
-    logger.debug("fitter: refine")
-    pf.refine()
-    logger.debug("fitter: done")
-
-    return [pf.evaluate(_x) for _x in x]
+    fit = curve_fitting.univariate_polynomial_fit(x, flex.log(y), degree=degree)
+    f = curve_fitting.univariate_polynomial(*fit.params)
+    return flex.exp(f(x))
 
 
 def tanh_fit(x, y, iqr_multiplier=None):
-
-    from scitbx.math import curve_fitting
-
     tf = curve_fitting.tanh_fit(x, y)
     f = curve_fitting.tanh(*tf.params)
 
-    if iqr_multiplier is not None:
+    if iqr_multiplier:
         assert iqr_multiplier > 0
         yc = f(x)
         dy = y - yc
-
-        from scitbx.math import five_number_summary
 
         min_x, q1_x, med_x, q3_x, max_x = five_number_summary(dy)
         iqr_x = q3_x - q1_x
@@ -129,30 +55,79 @@ def tanh_fit(x, y, iqr_multiplier=None):
     return f(x)
 
 
-def log_fit(x, y, order):
+def log_fit(x, y, degree=5):
     """Fit the values log(y(x)) then return exp() to this fit. x, y should
     be iterables containing floats of the same size. The order is the order
     of polynomial to use for this fit. This will be useful for e.g. I/sigma."""
 
-    ly = [math.log(_y) for _y in y]
-
-    pf = poly_fitter(x, ly, order)
-    pf.refine()
-
-    return [math.exp(pf.evaluate(_x)) for _x in x]
+    fit = curve_fitting.univariate_polynomial_fit(x, flex.log(y), degree=degree)
+    f = curve_fitting.univariate_polynomial(*fit.params)
+    return flex.exp(f(x))
 
 
-def log_inv_fit(x, y, order):
+def log_inv_fit(x, y, degree=5):
     """Fit the values log(1 / y(x)) then return the inverse of this fit.
     x, y should be iterables, the order of the polynomial for the transformed
     fit needs to be specified. This will be useful for e.g. Rmerge."""
 
-    ly = [math.log(1.0 / _y) for _y in y]
+    fit = curve_fitting.univariate_polynomial_fit(x, flex.log(1 / y), degree=degree)
+    f = curve_fitting.univariate_polynomial(*fit.params)
+    return 1 / flex.exp(f(x))
 
-    pf = poly_fitter(x, ly, order)
-    pf.refine()
 
-    return [(1.0 / math.exp(pf.evaluate(_x))) for _x in x]
+def resolution_fit_from_merging_stats(merging_stats, metric, model, limit, sel=None):
+    y_obs = flex.double(getattr(b, metric) for b in merging_stats.bins).reversed()
+    d_star_sq = flex.double(
+        uctbx.d_as_d_star_sq(b.d_min) for b in merging_stats.bins
+    ).reversed()
+    return resolution_fit(d_star_sq, y_obs, model, limit, sel=sel)
+
+
+def resolution_fit(d_star_sq, y_obs, model, limit, sel=None):
+    if not sel:
+        sel = flex.bool(len(d_star_sq), True)
+    sel &= y_obs > 0
+    y_obs = y_obs.select(sel)
+    d_star_sq = d_star_sq.select(sel)
+
+    if flex.min(y_obs) > limit:
+        d_min = 1.0 / math.sqrt(flex.max(d_star_sq))
+        y_fit = None
+
+    else:
+        y_fit = model(d_star_sq, y_obs, 6)
+
+        logger.debug(
+            tabulate(
+                [("d*2", "d", "obs", "fit")]
+                + [
+                    (ds2, uctbx.d_star_sq_as_d(ds2), yo, yf)
+                    for ds2, yo, yf in zip(d_star_sq, y_obs, y_fit)
+                ],
+                headers="firstrow",
+            )
+        )
+
+        # rlimit = limit * max(y_obs)
+        try:
+            d_min = 1.0 / math.sqrt(interpolate_value(d_star_sq, y_fit, limit))
+        except Exception as e:
+            logger.info(e)
+            d_min = uctbx.d_star_sq_as_d(flex.max(d_star_sq))
+
+    return ResolutionResult(d_star_sq, y_obs, y_fit, d_min)
+
+
+def get_cc_half_significance(merging_stats, cc_half_method):
+    if cc_half_method == "sigma_tau":
+        significance = flex.bool(
+            [b.cc_one_half_sigma_tau_significance for b in merging_stats.bins]
+        ).reversed()
+    else:
+        significance = flex.bool(
+            [b.cc_one_half_significance for b in merging_stats.bins]
+        ).reversed()
+    return significance
 
 
 def interpolate_value(x, y, t):
@@ -301,6 +276,33 @@ resolutionizer {
 )
 
 
+def plot_resolution_result(result, ylabel, filename):
+    from matplotlib import pyplot
+
+    pyplot.style.use("ggplot")
+    ylabel = ylabel
+    fig = pyplot.figure()
+    ax = fig.add_subplot(111)
+
+    if result.y_fit:
+        ax.plot(result.d_star_sq, result.y_fit, label="Fit")
+    ax.plot(result.d_star_sq, result.y_obs, label="Raw")
+    if ylabel.startswith("CC"):
+        ylim = ax.get_ylim()
+        ax.set_ylim(0, max(ylim[1], 1.05))
+
+    d_star_sq = uctbx.d_as_d_star_sq(result.d_min)
+    ax.plot([d_star_sq, d_star_sq], ax.get_ylim(), linestyle="--")
+
+    xticks = ax.get_xticks()
+    xticks_d = ["%.2f" % uctbx.d_star_sq_as_d(ds2) if ds2 > 0 else 0 for ds2 in xticks]
+    ax.set_xticklabels(xticks_d)
+    ax.set_xlabel("Resolution (A)")
+    ax.set_ylabel(ylabel)
+    ax.legend(loc="best")
+    fig.savefig(filename)
+
+
 class resolution_plot(object):
     def __init__(self, ylabel):
         import matplotlib
@@ -337,6 +339,11 @@ class resolution_plot(object):
         self.ax.set_ylabel(self.ylabel)
         self.ax.legend(loc="best")
         self.fig.savefig(filename)
+
+
+ResolutionResult = collections.namedtuple(
+    "ResolutionResult", ["d_star_sq", "y_obs", "y_fit", "d_min"]
+)
 
 
 class Resolutionizer(object):
@@ -448,31 +455,49 @@ class Resolutionizer(object):
         """Compute resolution limits based on the current self._params set."""
 
         if self._params.rmerge:
-            logger.info("Resolution rmerge:       %.2f", self.resolution_rmerge())
+            result = self.resolution_rmerge()
+            if self._params.plot:
+                plot_resolution_result(result, "Rmerge", "rmerge.png")
+            logger.info("Resolution rmerge:       %.2f", result.d_min)
 
         if self._params.completeness:
-            logger.info("Resolution completeness: %.2f", self.resolution_completeness())
+            result = self.resolution_completeness()
+            if self._params.plot:
+                plot_resolution_result(result, "Completeness", "completeness.png")
+            logger.info("Resolution completeness: %.2f", result.d_min)
 
         if self._params.cc_half:
-            logger.info("Resolution cc_half:      %.2f", self.resolution_cc_half())
+            result = self.resolution_cc_half()
+            if self._params.plot:
+                plot_resolution_result(result, "CC½", "cc_half.png")
+            logger.info("Resolution cc_half:      %.2f", result.d_min)
 
         if self._params.cc_ref and self._reference is not None:
-            logger.info("Resolution cc_ref:       %.2f", self.resolution_cc_ref())
+            result = self.resolution_cc_ref()
+            if self._params.plot:
+                plot_resolution_result(result, "CCref", "cc_ref.png")
+            logger.info("Resolution cc_ref:       %.2f", result.d_min)
 
         if self._params.isigma:
-            logger.info(
-                "Resolution I/sig:        %.2f", self.resolution_unmerged_isigma()
-            )
+            result = self.resolution_unmerged_isigma()
+            if self._params.plot:
+                plot_resolution_result(result, "Unmerged I/sigma", "isigma.png")
+            logger.info("Resolution I/sig:        %.2f", result.d_min)
 
         if self._params.misigma:
-            logger.info(
-                "Resolution Mn(I/sig):    %.2f", self.resolution_merged_isigma()
-            )
+            result = self.resolution_merged_isigma()
+            if self._params.plot:
+                plot_resolution_result(result, "Merged I/sigma", "misigma.png")
+            logger.info("Resolution Mn(I/sig):    %.2f", result.d_min)
 
         if self._params.i_mean_over_sigma_mean:
+            result = self.resolution_i_mean_over_sigma_mean()
+            if self._params.plot:
+                plot_resolution_result(
+                    result, "Unmerged <I>/<sigma>", "i_mean_over_sigma_mean.png"
+                )
             logger.info(
-                "Resolution Mn(I)/Mn(sig):    %.2f",
-                self.resolution_i_mean_over_sigma_mean(),
+                "Resolution Mn(I)/Mn(sig):    %.2f", result.d_min,
             )
 
     def resolution_rmerge(self, limit=None):
@@ -483,54 +508,9 @@ class Resolutionizer(object):
         if limit is None:
             limit = self._params.rmerge
 
-        rmerge_s = flex.double(
-            [b.r_merge for b in self._merging_statistics.bins]
-        ).reversed()
-        s_s = flex.double(
-            [1 / b.d_min ** 2 for b in self._merging_statistics.bins]
-        ).reversed()
-
-        sel = rmerge_s > 0
-        rmerge_s = rmerge_s.select(sel)
-        s_s = s_s.select(sel)
-
-        if limit == 0.0:
-            r_rmerge = 1.0 / math.sqrt(flex.max(s_s))
-            rmerge_f = None
-
-        elif limit > flex.max(rmerge_s):
-            r_rmerge = 1.0 / math.sqrt(flex.max(s_s))
-            rmerge_f = None
-
-        else:
-            rmerge_f = log_inv_fit(s_s, rmerge_s, 6)
-
-            logger.debug(
-                "rmerge: fits\n%s",
-                tabulate(
-                    [("d*2", "d", "rmerge_s", "rmerge_f")]
-                    + [
-                        (s, 1.0 / math.sqrt(s), rmerge_s[j], rmerge_f[j])
-                        for j, s in enumerate(s_s)
-                    ],
-                    headers="firstrow",
-                ),
-            )
-
-            try:
-                r_rmerge = 1.0 / math.sqrt(interpolate_value(s_s, rmerge_f, limit))
-            except Exception:
-                r_rmerge = 1.0 / math.sqrt(flex.max(s_s))
-
-        if self._params.plot:
-            plot = resolution_plot(ylabel="Rmerge")
-            if rmerge_f is not None:
-                plot.plot(s_s, rmerge_f, label="fit")
-            plot.plot(s_s, rmerge_s, label="Rmerge")
-            plot.plot_resolution_limit(r_rmerge)
-            plot.savefig("rmerge.png")
-
-        return r_rmerge
+        return resolution_fit_from_merging_stats(
+            self._merging_statistics, "r_merge", log_inv_fit, limit
+        )
 
     def resolution_i_mean_over_sigma_mean(self, limit=None):
         """Compute a resolution limit where either <I>/<sigma> = 1.0 (limit if
@@ -539,53 +519,9 @@ class Resolutionizer(object):
         if limit is None:
             limit = self._params.i_mean_over_sigma_mean
 
-        isigma_s = flex.double(
-            [b.i_mean_over_sigi_mean for b in self._merging_statistics.bins]
-        ).reversed()
-        s_s = flex.double(
-            [1 / b.d_min ** 2 for b in self._merging_statistics.bins]
-        ).reversed()
-
-        sel = isigma_s > 0
-        isigma_s = isigma_s.select(sel)
-        s_s = s_s.select(sel)
-
-        if flex.min(isigma_s) > limit:
-            r_isigma = 1.0 / math.sqrt(flex.max(s_s))
-            isigma_f = None
-
-        else:
-            isigma_f = log_fit(s_s, isigma_s, 6)
-
-            logger.debug(
-                "isigma: fits\n%s",
-                tabulate(
-                    [("d*2", "d", "isigma_s", "isigma_f")]
-                    + [
-                        (s, 1.0 / math.sqrt(s), isigma_s[j], isigma_f[j])
-                        for j, s in enumerate(s_s)
-                    ],
-                    headers="firstrow",
-                ),
-            )
-
-            try:
-                r_isigma = 1.0 / math.sqrt(interpolate_value(s_s, isigma_f, limit))
-            except Exception:
-                if limit > max(isigma_f):
-                    r_isigma = 1.0 / math.sqrt(flex.min(s_s))
-                else:
-                    r_isigma = 1.0 / math.sqrt(flex.max(s_s))
-
-        if self._params.plot:
-            plot = resolution_plot(ylabel="Unmerged <I>/<sigma>")
-            if isigma_f is not None:
-                plot.plot(s_s, isigma_f, label="fit")
-            plot.plot(s_s, isigma_s, label="Unmerged <I>/<sigma>")
-            plot.plot_resolution_limit(r_isigma)
-            plot.savefig("i_mean_over_sigma_mean.png")
-
-        return r_isigma
+        return resolution_fit_from_merging_stats(
+            self._merging_statistics, "i_mean_over_sigi_mean", log_fit, limit
+        )
 
     def resolution_unmerged_isigma(self, limit=None):
         """Compute a resolution limit where either I/sigma = 1.0 (limit if
@@ -593,11 +529,9 @@ class Resolutionizer(object):
 
         if limit is None:
             limit = self._params.isigma
-        return self._resolution_sigma(
-            limit,
-            get_mean=lambda b: b.unmerged_i_over_sigma_mean,
-            label="Unmerged I/sigma",
-            fig_filename="isigma.png",
+
+        return resolution_fit_from_merging_stats(
+            self._merging_statistics, "unmerged_i_over_sigma_mean", log_fit, limit
         )
 
     def resolution_merged_isigma(self, limit=None):
@@ -606,56 +540,10 @@ class Resolutionizer(object):
 
         if limit is None:
             limit = self._params.misigma
-        return self._resolution_sigma(
-            limit,
-            get_mean=lambda b: b.i_over_sigma_mean,
-            label="Merged I/sigma",
-            fig_filename="misigma.png",
+
+        return resolution_fit_from_merging_stats(
+            self._merging_statistics, "i_over_sigma_mean", log_fit, limit
         )
-
-    def _resolution_sigma(self, limit, get_mean, label, fig_filename):
-        isigma_s = flex.double(map(get_mean, self._merging_statistics.bins)).reversed()
-        s_s = flex.double(
-            1 / b.d_min ** 2 for b in self._merging_statistics.bins
-        ).reversed()
-
-        sel = isigma_s > 0
-        isigma_s = isigma_s.select(sel)
-        s_s = s_s.select(sel)
-
-        if flex.min(isigma_s) > limit:
-            r_isigma = 1.0 / math.sqrt(flex.max(s_s))
-            isigma_f = None
-
-        else:
-            isigma_f = log_fit(s_s, isigma_s, 6)
-
-            logger.debug(
-                "isigma: fits\n%s",
-                tabulate(
-                    [("d*2", "d", "isigma_s", "isigma_f")]
-                    + [
-                        (s, 1.0 / math.sqrt(s), isigma_s[j], isigma_f[j])
-                        for j, s in enumerate(s_s)
-                    ],
-                    headers="firstrow",
-                ),
-            )
-
-            try:
-                r_isigma = 1.0 / math.sqrt(interpolate_value(s_s, isigma_f, limit))
-            except Exception:
-                r_isigma = 1.0 / math.sqrt(flex.max(s_s))
-
-        if self._params.plot:
-            plot = resolution_plot(ylabel=label)
-            if isigma_f is not None:
-                plot.plot(s_s, isigma_f, label="fit")
-            plot.plot(s_s, isigma_s, label=label)
-            plot.plot_resolution_limit(r_isigma)
-            plot.savefig(fig_filename)
-
-        return r_isigma
 
     def resolution_completeness(self, limit=None):
         """Compute a resolution limit where completeness < 0.5 (limit if
@@ -666,47 +554,9 @@ class Resolutionizer(object):
         if limit is None:
             limit = self._params.completeness
 
-        comp_s = flex.double(
-            [b.completeness for b in self._merging_statistics.bins]
-        ).reversed()
-        s_s = flex.double(
-            [1 / b.d_min ** 2 for b in self._merging_statistics.bins]
-        ).reversed()
-
-        if flex.min(comp_s) > limit:
-            r_comp = 1.0 / math.sqrt(flex.max(s_s))
-            comp_f = None
-
-        else:
-            comp_f = fit(s_s, comp_s, 6)
-
-            logger.debug(
-                "comp: fits\n%s",
-                tabulate(
-                    [("d*2", "d", "comp_s", "comp_f")]
-                    + [
-                        (s, 1.0 / math.sqrt(s), comp_s[j], comp_f[j])
-                        for j, s in enumerate(s_s)
-                    ],
-                    headers="firstrow",
-                ),
-            )
-
-            rlimit = limit * max(comp_s)
-            try:
-                r_comp = 1.0 / math.sqrt(interpolate_value(s_s, comp_f, rlimit))
-            except Exception:
-                r_comp = 1.0 / math.sqrt(flex.max(s_s))
-
-        if self._params.plot:
-            plot = resolution_plot(ylabel="Completeness")
-            if comp_f is not None:
-                plot.plot(s_s, comp_f, label="fit")
-            plot.plot(s_s, comp_s, label="Completeness")
-            plot.plot_resolution_limit(r_comp)
-            plot.savefig("completeness.png")
-
-        return r_comp
+        return resolution_fit_from_merging_stats(
+            self._merging_statistics, "completeness", polynomial_fit, limit
+        )
 
     def resolution_cc_half(self, limit=None):
         """Compute a resolution limit where cc_half < 0.5 (limit if
@@ -715,87 +565,18 @@ class Resolutionizer(object):
         if limit is None:
             limit = self._params.cc_half
 
-        if self._params.cc_half_method == "sigma_tau":
-            cc_s = flex.double(
-                [b.cc_one_half_sigma_tau for b in self._merging_statistics.bins]
-            ).reversed()
-        else:
-            cc_s = flex.double(
-                [b.cc_one_half for b in self._merging_statistics.bins]
-            ).reversed()
-        s_s = flex.double(
-            [1 / b.d_min ** 2 for b in self._merging_statistics.bins]
-        ).reversed()
-
-        p = self._params.cc_half_significance_level
-        if p is not None:
-            if self._params.cc_half_method == "sigma_tau":
-                significance = flex.bool(
-                    [
-                        b.cc_one_half_sigma_tau_significance
-                        for b in self._merging_statistics.bins
-                    ]
-                ).reversed()
-                cc_half_critical_value = flex.double(
-                    [
-                        b.cc_one_half_sigma_tau_critical_value
-                        for b in self._merging_statistics.bins
-                    ]
-                ).reversed()
-            else:
-                significance = flex.bool(
-                    [b.cc_one_half_significance for b in self._merging_statistics.bins]
-                ).reversed()
-                cc_half_critical_value = flex.double(
-                    [
-                        b.cc_one_half_critical_value
-                        for b in self._merging_statistics.bins
-                    ]
-                ).reversed()
-            # index of last insignificant bin
-            i = flex.last_index(significance, False)
-            if i is None or i == len(significance) - 1:
-                i = 0
-            else:
-                i += 1
-        else:
-            i = 0
-        if self._params.cc_half_fit == "tanh":
-            cc_f = tanh_fit(s_s[i:], cc_s[i:], iqr_multiplier=4)
-        else:
-            cc_f = fit(s_s[i:], cc_s[i:], 6)
-
-        logger.debug(
-            "rch: fits\n%s",
-            tabulate(
-                [("d*2", "d", "cc_s", "cc_f")]
-                + [
-                    (s, 1.0 / math.sqrt(s), cc_s[j], cc_f[j])
-                    for j, s in enumerate(s_s[i:])
-                ],
-                headers="firstrow",
-            ),
+        sel = get_cc_half_significance(
+            self._merging_statistics, self._params.cc_half_method
         )
-
-        rlimit = limit * max(cc_s)
-        try:
-            r_cc = 1.0 / math.sqrt(interpolate_value(s_s[i:], cc_f, rlimit))
-        except Exception:
-            r_cc = 1.0 / math.sqrt(max(s_s[i:]))
-        logger.debug("rch: done : %s", r_cc)
-
-        if self._params.plot:
-            plot = resolution_plot("CC1/2")
-            plot.plot(s_s[i:], cc_f, label="fit")
-            plot.plot(s_s, cc_s, label="CC1/2")
-            if p is not None:
-                plot.plot(
-                    s_s, cc_half_critical_value, label="Confidence limit (p=%g)" % p
-                )
-            plot.plot_resolution_limit(r_cc)
-            plot.savefig("cc_half.png")
-
-        return r_cc
+        fit = tanh_fit if self._params.cc_half_fit == "tanh" else polynomial_fit
+        metric = (
+            "cc_one_half_sigma_tau"
+            if self._params.cc_half_method == "sigma_tau"
+            else "cc_one_half"
+        )
+        return resolution_fit_from_merging_stats(
+            self._merging_statistics, metric, fit, limit, sel=sel
+        )
 
     def resolution_cc_ref(self, limit=None):
         """Compute a resolution limit where cc_ref < 0.5 (limit if
@@ -809,48 +590,18 @@ class Resolutionizer(object):
         ).array()
         cc_s = flex.double()
         for b in self._merging_statistics.bins:
-            sel = intensities.resolution_filter_selection(d_min=b.d_min, d_max=b.d_max)
-            sel_ref = self._reference.resolution_filter_selection(
+            cc = intensities.resolution_filter(
                 d_min=b.d_min, d_max=b.d_max
+            ).correlation(
+                self._reference.resolution_filter(d_min=b.d_min, d_max=b.d_max),
+                assert_is_similar_symmetry=False,
             )
-            d = intensities.select(sel)
-            dref = self._reference.select(sel_ref)
-            cc = d.correlation(dref, assert_is_similar_symmetry=False)
             cc_s.append(cc.coefficient())
         cc_s = cc_s.reversed()
 
-        s_s = flex.double(
-            [1 / b.d_min ** 2 for b in self._merging_statistics.bins]
+        fit = tanh_fit if self._params.cc_half_fit == "tanh" else polynomial_fit
+        d_star_sq = flex.double(
+            1 / b.d_min ** 2 for b in self._merging_statistics.bins
         ).reversed()
 
-        if self._params.cc_half_fit == "tanh":
-            cc_f = tanh_fit(s_s, cc_s, iqr_multiplier=4)
-        else:
-            cc_f = fit(s_s, cc_s, 6)
-
-        logger.debug(
-            "rch: fits\n%s",
-            tabulate(
-                [("d*2", "d", "cc_s", "cc_f")]
-                + [
-                    (s, 1.0 / math.sqrt(s), cc_s[j], cc_f[j]) for j, s in enumerate(s_s)
-                ],
-                headers="firstrow",
-            ),
-        )
-
-        rlimit = limit * max(cc_s)
-        try:
-            r_cc = 1.0 / math.sqrt(interpolate_value(s_s, cc_f, rlimit))
-        except Exception:
-            r_cc = 1.0 / math.sqrt(max(s_s))
-        logger.debug("rch: done : %s", r_cc)
-
-        if self._params.plot:
-            plot = resolution_plot("CCref")
-            plot.plot(s_s, cc_f, label="fit")
-            plot.plot(s_s, cc_s, label="CCref")
-            plot.plot_resolution_limit(r_cc)
-            plot.savefig("cc_ref.png")
-
-        return r_cc
+        return resolution_fit(d_star_sq, cc_s, fit, limit)
