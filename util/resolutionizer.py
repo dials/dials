@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import math
+from collections import OrderedDict
 from dataclasses import dataclass
 
 import iotbx.mtz
@@ -14,6 +15,7 @@ from scitbx.math import curve_fitting
 from scitbx.math import five_number_summary
 
 from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
+from dials.report import plots
 from dials.util import Sorry
 from dials.util.batch_handling import (
     calculate_batch_offsets,
@@ -25,12 +27,26 @@ from dials.util import tabulate
 logger = logging.getLogger(__name__)
 
 
+# supported metrics for resolution estimate
+metrics = (
+    "cc_half",
+    "cc_ref",
+    "isigma",
+    "misigma",
+    "i_mean_over_sigma_mean",
+    "rmerge",
+    "completeness",
+)
+
+
 def polynomial_fit(x, y, degree=5):
     """Fit the values y(x) then return this fit. x, y should
     be iterables containing floats of the same size. The order is the order
     of polynomial to use for this fit. This will be useful for e.g. I/sigma."""
 
-    fit = curve_fitting.univariate_polynomial_fit(x, y, degree=degree)
+    fit = curve_fitting.univariate_polynomial_fit(
+        x, y, degree=degree, max_iterations=100
+    )
     f = curve_fitting.univariate_polynomial(*fit.params)
     return f(x)
 
@@ -62,7 +78,9 @@ def log_fit(x, y, degree=5):
     be iterables containing floats of the same size. The order is the order
     of polynomial to use for this fit. This will be useful for e.g. I/sigma."""
 
-    fit = curve_fitting.univariate_polynomial_fit(x, flex.log(y), degree=degree)
+    fit = curve_fitting.univariate_polynomial_fit(
+        x, flex.log(y), degree=degree, max_iterations=100
+    )
     f = curve_fitting.univariate_polynomial(*fit.params)
     return flex.exp(f(x))
 
@@ -72,7 +90,9 @@ def log_inv_fit(x, y, degree=5):
     x, y should be iterables, the order of the polynomial for the transformed
     fit needs to be specified. This will be useful for e.g. Rmerge."""
 
-    fit = curve_fitting.univariate_polynomial_fit(x, flex.log(1 / y), degree=degree)
+    fit = curve_fitting.univariate_polynomial_fit(
+        x, flex.log(1 / y), degree=degree, max_iterations=100
+    )
     f = curve_fitting.univariate_polynomial(*fit.params)
     return 1 / flex.exp(f(x))
 
@@ -92,25 +112,21 @@ def resolution_fit(d_star_sq, y_obs, model, limit, sel=None):
     y_obs = y_obs.select(sel)
     d_star_sq = d_star_sq.select(sel)
 
+    y_fit = model(d_star_sq, y_obs, 6)
+    logger.debug(
+        tabulate(
+            [("d*2", "d", "obs", "fit")]
+            + [
+                (ds2, uctbx.d_star_sq_as_d(ds2), yo, yf)
+                for ds2, yo, yf in zip(d_star_sq, y_obs, y_fit)
+            ],
+            headers="firstrow",
+        )
+    )
+
     if flex.min(y_obs) > limit:
         d_min = 1.0 / math.sqrt(flex.max(d_star_sq))
-        y_fit = None
-
     else:
-        y_fit = model(d_star_sq, y_obs, 6)
-
-        logger.debug(
-            tabulate(
-                [("d*2", "d", "obs", "fit")]
-                + [
-                    (ds2, uctbx.d_star_sq_as_d(ds2), yo, yf)
-                    for ds2, yo, yf in zip(d_star_sq, y_obs, y_fit)
-                ],
-                headers="firstrow",
-            )
-        )
-
-        # rlimit = limit * max(y_obs)
         try:
             d_min = 1.0 / math.sqrt(interpolate_value(d_star_sq, y_fit, limit))
         except RuntimeError as e:
@@ -300,44 +316,81 @@ resolutionizer {
 %s
   batch_range = None
     .type = ints(size=2, value_min=0)
-  plot = False
-    .type = bool
-    .expert_level = 2
 }
 """
     % phil_str
 )
 
 
-def plot_resolution_result(result, ylabel, ax=None):
-    from matplotlib import pyplot as plt
-
-    plt.style.use("ggplot")
-    ylabel = ylabel
-    if ax is None:
-        fig, ax = plt.subplots()
+def plot_result(metric, result):
+    if metric == "cc_half":
+        return plots.cc_half_plot(
+            result.d_star_sq,
+            result.y_obs,
+            cc_half_critical_values=result.critical_values,
+            cc_half_fit=result.y_fit,
+            d_min=result.d_min,
+        )
     else:
-        ax = ax.figure
-
-    if result.y_fit:
-        ax.plot(result.d_star_sq, result.y_fit, label="Fit")
-    ax.plot(result.d_star_sq, result.y_obs, label="Raw")
-    if result.critical_values:
-        ax.plot(result.d_star_sq, result.critical_values, label="Critical values")
-    if ylabel.startswith("CC"):
-        ylim = ax.get_ylim()
-        ax.set_ylim(0, max(ylim[1], 1.05))
-
-    d_star_sq = uctbx.d_as_d_star_sq(result.d_min)
-    ax.plot([d_star_sq, d_star_sq], ax.get_ylim(), linestyle="--")
-
-    xticks = ax.get_xticks()
-    xticks_d = ["%.2f" % uctbx.d_star_sq_as_d(ds2) if ds2 > 0 else 0 for ds2 in xticks]
-    ax.set_xticklabels(xticks_d)
-    ax.set_xlabel("Resolution (A)")
-    ax.set_ylabel(ylabel)
-    ax.legend(loc="best")
-    return ax
+        d = {
+            "isigma": "Merged <I/σ(I)>",
+            "misigma": "Unmerged <I/σ(I)>",
+            "i_mean_over_sigma_mean": "&lt;I&gt;/<σ(I)>",
+            "rmerge": "R<sub>merge</sub> ",
+            "completeness": "Completeness",
+        }
+        d_star_sq_tickvals, d_star_sq_ticktext = plots.d_star_sq_to_d_ticks(
+            result.d_star_sq, 5
+        )
+        return {
+            "data": [
+                {
+                    "x": list(result.d_star_sq),  # d_star_sq
+                    "y": list(result.y_obs),
+                    "type": "scatter",
+                    "name": "y_obs",
+                },
+                (
+                    {
+                        "x": list(result.d_star_sq),
+                        "y": list(result.y_fit),
+                        "type": "scatter",
+                        "name": "y_fit",
+                        "line": {"color": "rgb(47, 79, 79)"},
+                    }
+                    if result.y_fit
+                    else {}
+                ),
+                (
+                    {
+                        "x": [uctbx.d_as_d_star_sq(result.d_min)] * 2,
+                        "y": [
+                            0,
+                            max(
+                                1,
+                                flex.max(result.y_obs),
+                                flex.max(result.y_fit) if result.y_fit else 0,
+                            ),
+                        ],
+                        "type": "scatter",
+                        "name": "d_min = %.2f Å" % result.d_min,
+                        "mode": "lines",
+                        "line": {"color": "rgb(169, 169, 169)", "dash": "dot"},
+                    }
+                    if result.d_min
+                    else {}
+                ),
+            ],
+            "layout": {
+                "title": f"{d.get(metric)} vs. resolution",
+                "xaxis": {
+                    "title": "Resolution (Å)",
+                    "tickvals": d_star_sq_tickvals,
+                    "ticktext": d_star_sq_ticktext,
+                },
+                "yaxis": {"title": d.get(metric), "rangemode": "tozero"},
+            },
+        }
 
 
 @dataclass
@@ -485,16 +538,6 @@ class Resolutionizer(object):
     def resolution_auto(self):
         """Compute resolution limits based on the current self._params set."""
 
-        metrics = {
-            "rmerge",
-            "completeness",
-            "cc_half",
-            "cc_ref",
-            "isigma",
-            "misigma",
-            "i_mean_over_sigma_mean",
-        }
-
         translate_metric = {
             "rmerge": "r_merge",
             "isigma": "unmerged_i_over_sigma_mean",
@@ -508,12 +551,7 @@ class Resolutionizer(object):
             "i_mean_over_sigma_mean": "Mn(I)/Mn(sig)",
         }
 
-        if self._params.plot:
-            import matplotlib
-
-            matplotlib.use("Agg")
-
-            from matplotlib import pyplot as plt
+        plot_d = OrderedDict()
 
         for metric in metrics:
             limit = getattr(self._params, metric)
@@ -525,9 +563,8 @@ class Resolutionizer(object):
                 )
                 name = metric_to_output.get(metric, metric)
                 logger.info(f"Resolution {name}:{result.d_min:{18 - len(name)}.2f}")
-                if self._params.plot:
-                    plot_resolution_result(result, metric)
-                    plt.savefig(f"{metric}.png")
+                plot_d[metric] = plot_result(metric, result)
+        return plot_d
 
     def _resolution_cc_ref(self, limit=None):
         """Compute a resolution limit where cc_ref < 0.5 (limit if

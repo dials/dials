@@ -94,6 +94,20 @@ def test_resolution_fit_from_merging_stats(merging_stats):
     assert flex.max(flex.abs(result.y_obs - result.y_fit)) < 1
 
 
+def test_plot_result(merging_stats):
+    result = resolutionizer.resolution_cc_half(merging_stats, limit=0.82)
+    d = resolutionizer.plot_result("cc_half", result)
+    assert "data" in d
+    assert "layout" in d
+
+    result = resolutionizer.resolution_fit_from_merging_stats(
+        merging_stats, "unmerged_i_over_sigma_mean", resolutionizer.log_fit, limit=0.82
+    )
+    d = resolutionizer.plot_result("isigma", result)
+    assert "data" in d
+    assert "layout" in d
+
+
 @pytest.mark.parametrize(
     "input_files",
     [
@@ -104,9 +118,8 @@ def test_resolution_fit_from_merging_stats(merging_stats):
 def test_resolutionizer(input_files, dials_data, run_in_tmpdir, capsys):
     paths = [dials_data("x4wide_processed").join(p).strpath for p in input_files]
     reference_mtz = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled.mtz")
-    cmdline.run(
+    result = cmdline.run(
         [
-            "plot=True",
             "cc_half=0.9",
             "isigma=2",
             "misigma=3",
@@ -119,6 +132,7 @@ def test_resolutionizer(input_files, dials_data, run_in_tmpdir, capsys):
             "reference=%s" % reference_mtz,
             "cc_ref=0.9",
             "labels=IMEAN,SIGIMEAN",
+            "html=resolutionizer.html",
         ]
         + paths,
     )
@@ -134,18 +148,16 @@ def test_resolutionizer(input_files, dials_data, run_in_tmpdir, capsys):
     )
     for line in expected_output:
         assert line in captured.out
-
-    expected_png = (
-        "cc_half.png",
-        "isigma.png",
-        "misigma.png",
-        "completeness.png",
-        "rmerge.png",
-        "cc_ref.png",
-        "i_mean_over_sigma_mean.png",
-    )
-    for png in expected_png:
-        assert run_in_tmpdir.join(png).check()
+    assert run_in_tmpdir.join("resolutionizer.html").check(file=1)
+    assert set(result.keys()) == {
+        "cc_half",
+        "cc_ref",
+        "isigma",
+        "misigma",
+        "i_mean_over_sigma_mean",
+        "rmerge",
+        "completeness",
+    }
 
 
 def test_resolutionizer_multi_sequence_with_batch_range(
@@ -165,3 +177,4 @@ def test_resolutionizer_multi_sequence_with_batch_range(
     )
     for line in expected_output:
         assert line in captured.out
+    assert run_in_tmpdir.join("dials.resolutionizer.html").check(file=1)

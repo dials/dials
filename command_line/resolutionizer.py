@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import sys
+from jinja2 import Environment, ChoiceLoader, PackageLoader
 
 import libtbx.phil
 
@@ -23,6 +24,8 @@ include scope dials.util.resolutionizer.phil_defaults
 
 output {
   log = dials.resolutionizer.log
+    .type = path
+  html = dials.resolutionizer.html
     .type = path
 }
 """,
@@ -75,7 +78,29 @@ def run(args):
             reflections, experiments, params.resolutionizer
         )
 
-    m.resolution_auto()
+    plots = m.resolution_auto()
+    if params.output.html:
+        output_html_report(plots, params.output.html)
+    return plots
+
+
+def output_html_report(plots, filename):
+    loader = ChoiceLoader(
+        [
+            PackageLoader("dials", "templates"),
+            PackageLoader("dials", "static", encoding="utf-8"),
+        ]
+    )
+    env = Environment(loader=loader)
+    template = env.get_template("simple_report.html")
+    html = template.render(
+        page_title="dials.resolutionizer report",
+        panel_title="Analysis by resolution",
+        panel_id="dials_resolutionizer",
+        graphs=plots,
+    )
+    with open(filename, "wb") as f:
+        f.write(html.encode("utf-8", "xmlcharrefreplace"))
 
 
 if __name__ == "__main__":
