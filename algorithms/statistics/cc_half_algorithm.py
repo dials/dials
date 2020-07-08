@@ -542,7 +542,7 @@ class DeltaCCHalf(object):
         sorted_datasets = flex.int([])
         for i in sorted_index:
             val = delta_cchalf_i[datasets[i]]
-            logger.info("Dataset: %d, ΔCC½: %.3f", datasets[i], 100 * val)
+            logger.info("Dataset: %d, ΔCC½: %.3f", datasets[i], val)
             sorted_cc_half_values.append(val)
             sorted_datasets.append(datasets[i])
 
@@ -569,10 +569,10 @@ class DeltaCCHalf(object):
         Y = list(delta_cchalf_i.values())
         mean = sum(Y) / len(Y)
         sdev = sqrt(sum((yy - mean) ** 2 for yy in Y) / len(Y))
-        logger.info("\nmean delta_cc_half %s", (mean * 100))
-        logger.info("stddev delta_cc_half %s", (sdev * 100))
+        logger.info("\nmean delta_cc_half %.3f", mean)
+        logger.info("stddev delta_cc_half %.3f", sdev)
         cutoff_value = mean - stdcutoff * sdev
-        logger.info("cutoff value: %s \n", (cutoff_value * 100))
+        logger.info("cutoff value: %.3f\n", cutoff_value)
         return cutoff_value
 
     def output_html_report(self):

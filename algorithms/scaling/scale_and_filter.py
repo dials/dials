@@ -521,9 +521,7 @@ def make_histogram_plots(cycle_results):
         )
 
     for c, deltas in enumerate(delta_cc_half_lists):
-        hist = flex.histogram(
-            flex.double(deltas) * 100, min(deltas) * 100, max(deltas) * 100, n_slots=40
-        )
+        hist = flex.histogram(flex.double(deltas), min(deltas), max(deltas), n_slots=40)
         _add_new_histogram(d, hist, c)
     return d
 
@@ -537,7 +535,7 @@ def make_per_dataset_plot(delta_cchalf_i):
             "per_dataset_plot": {
                 "data": [
                     {
-                        "y": [i * 100 for i in list(delta_cchalf_i.values())],
+                        "y": list(delta_cchalf_i.values()),
                         "x": list(delta_cchalf_i.keys()),
                         "type": "scatter",
                         "mode": "lines",

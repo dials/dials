@@ -259,7 +259,7 @@ Summary of input data:
         self._cchalf_mean = compute_cchalf_from_reflection_sums(
             self.reflection_sums, self.binner
         )
-        logger.info("CC 1/2 mean: %.3f", (100 * self._cchalf_mean))
+        logger.info("CC 1/2 mean: %.3f", self._cchalf_mean)
         self._cchalf = self._compute_cchalf_excluding_each_group()
 
     def _compute_cchalf_excluding_each_group(self):
@@ -305,7 +305,7 @@ Summary of input data:
                 dataset_reflection_sums, self.binner
             )
             cchalf_i[dataset] = cchalf
-            logger.info("CC 1/2 excluding group %d: %.3f", dataset, 100 * cchalf)
+            logger.info("CC 1/2 excluding group %d: %.3f", dataset, cchalf)
 
         return cchalf_i
 
