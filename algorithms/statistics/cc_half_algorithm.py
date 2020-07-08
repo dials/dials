@@ -501,7 +501,10 @@ class DeltaCCHalf(object):
         self.delta_cchalf_i = statistics.delta_cchalf_i()
         self.results_summary["mean_cc_half"] = statistics._cchalf_mean
         # Print out the datasets in order of ΔCC½
-        self.sort_deltacchalf_values(self.delta_cchalf_i, self.results_summary)
+        _, sorted_cc_half_values = self.sort_deltacchalf_values(
+            self.delta_cchalf_i, self.results_summary
+        )
+        self.normalised_deltacchalf_values(sorted_cc_half_values, self.results_summary)
 
         cutoff_value = self._calculate_cutoff_value(
             self.delta_cchalf_i, self.params.stdcutoff
@@ -551,6 +554,17 @@ class DeltaCCHalf(object):
         return sorted_datasets, sorted_cc_half_values
 
     @staticmethod
+    def normalised_deltacchalf_values(deltacchalf_values, results_summary):
+        mav = flex.mean_and_variance(deltacchalf_values)
+        normalised = (
+            deltacchalf_values - mav.mean()
+        ) / mav.unweighted_sample_standard_deviation()
+        results_summary["per_dataset_delta_cc_half_values"][
+            "normalised_delta_cc_half_values"
+        ] = list(normalised)
+        return normalised
+
+    @staticmethod
     def _calculate_cutoff_value(delta_cchalf_i, stdcutoff):
         Y = list(delta_cchalf_i.values())
         mean = sum(Y) / len(Y)
@@ -568,6 +582,9 @@ class DeltaCCHalf(object):
                 "delta_cc_half_values": self.results_summary[
                     "per_dataset_delta_cc_half_values"
                 ]["delta_cc_half_values"],
+                "normalised_delta_cc_half_values": self.results_summary[
+                    "per_dataset_delta_cc_half_values"
+                ]["normalised_delta_cc_half_values"],
                 "mean_cc_half": self.results_summary["mean_cc_half"],
             }
             if "image_ranges_removed" in self.results_summary["dataset_removal"]:

@@ -88,7 +88,7 @@ def test_scale_and_filter_results_logging():
         },
         "mean_cc_half": 80.0,
         "per_dataset_delta_cc_half_values": {
-            "delta_cc_half_values": [-0.1, 0.1, -0.2, 0.2]
+            "normalised_delta_cc_half_values": [-0.1, 0.1, -0.2, 0.2]
         },
     }
 
@@ -106,7 +106,12 @@ def test_scale_and_filter_results_logging():
         assert cycle_results[0]["n_removed"] == 50
         assert cycle_results[0]["image_ranges_removed"] == [[(6, 10), 0]]
         assert cycle_results[0]["removed_datasets"] == []
-        assert cycle_results[0]["delta_cc_half_values"] == [-0.1, 0.1, -0.2, 0.2]
+        assert cycle_results[0]["normalised_delta_cc_half_values"] == [
+            -0.1,
+            0.1,
+            -0.2,
+            0.2,
+        ]
         assert res.get_merging_stats()[0] == "stats_results"
         assert res.initial_n_reflections == 1000
 
@@ -121,7 +126,12 @@ def test_scale_and_filter_results_logging():
         assert cycle_results[1]["n_removed"] == 50
         assert cycle_results[1]["image_ranges_removed"] == [[(6, 10), 0]]
         assert cycle_results[1]["removed_datasets"] == []
-        assert cycle_results[0]["delta_cc_half_values"] == [-0.1, 0.1, -0.2, 0.2]
+        assert cycle_results[0]["normalised_delta_cc_half_values"] == [
+            -0.1,
+            0.1,
+            -0.2,
+            0.2,
+        ]
         assert res.get_merging_stats()[1] == "stats_results"
         assert res.initial_n_reflections == 1000
 
