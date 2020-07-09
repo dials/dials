@@ -5,15 +5,41 @@ import functools
 import sys
 import tabulate as _tabulate
 
-from ._progress import progress  # noqa: F401, exported symbol
-
 import six
+import tqdm
 from libtbx.utils import Sorry
 
+__all__ = [
+    "debug_console",
+    "debug_context_manager",
+    "progress",
+    "show_mail_on_error",
+    "Sorry",
+    "tabulate",
+]
 
 # Define the default tablefmt in dials
 tabulate = functools.partial(_tabulate.tabulate, tablefmt="psql")
 functools.update_wrapper(tabulate, _tabulate.tabulate)
+
+# Customisable progressbar decorator for iterators.
+#
+# Utilizes the progress bar from the tqdm package, with modified defaults:
+#   - By default, resize when terminal is resized (dynamic-columns)
+#   - By default, disables the progress bar for non-tty output
+#   - By default, the progress bar will be removed after completion
+#
+# Usage:
+#   >>> from dials.util import progress
+#   >>> for i in progress(range(10)):
+#   ...     ...
+#
+# See https://github.com/tqdm/tqdm for more in-depth usage and options.
+progress = functools.partial(tqdm.tqdm, disable=None, dynamic_ncols=True, leave=False)
+functools.update_wrapper(
+    functools.partial(tqdm.tqdm, disable=None, dynamic_ncols=True, leave=False),
+    tqdm.tqdm,
+)
 
 
 def debug_console():
