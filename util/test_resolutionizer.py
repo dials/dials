@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+import json
 import pytest
 
 from cctbx import uctbx
@@ -133,6 +134,7 @@ def test_resolutionizer(input_files, dials_data, run_in_tmpdir, capsys):
             "cc_ref=0.9",
             "labels=IMEAN,SIGIMEAN",
             "html=resolutionizer.html",
+            "json=resolutionizer.json",
         ]
         + paths,
     )
@@ -149,7 +151,7 @@ def test_resolutionizer(input_files, dials_data, run_in_tmpdir, capsys):
     for line in expected_output:
         assert line in captured.out
     assert run_in_tmpdir.join("resolutionizer.html").check(file=1)
-    assert set(result.keys()) == {
+    expected_keys = {
         "cc_half",
         "cc_ref",
         "isigma",
@@ -158,6 +160,11 @@ def test_resolutionizer(input_files, dials_data, run_in_tmpdir, capsys):
         "rmerge",
         "completeness",
     }
+    assert set(result.keys()) == expected_keys
+    assert run_in_tmpdir.join("resolutionizer.json").check(file=1)
+    with run_in_tmpdir.join("resolutionizer.json").open("r") as fh:
+        d = json.load(fh)
+    assert set(d.keys()) == expected_keys
 
 
 def test_resolutionizer_multi_sequence_with_batch_range(

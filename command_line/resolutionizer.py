@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+import json
 import logging
 import sys
 from jinja2 import Environment, ChoiceLoader, PackageLoader
@@ -26,6 +27,8 @@ output {
   log = dials.resolutionizer.log
     .type = path
   html = dials.resolutionizer.html
+    .type = path
+  json = None
     .type = path
 }
 """,
@@ -79,8 +82,14 @@ def run(args):
         )
 
     plots = m.resolution_auto()
+
     if params.output.html:
         output_html_report(plots, params.output.html)
+
+    if params.output.json:
+        with open(params.output.json, "w") as fh:
+            json.dump(plots, fh)
+
     return plots
 
 
