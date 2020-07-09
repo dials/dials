@@ -51,13 +51,14 @@ steps:
 # unless they were just freshly cloned
 - bash: |
     set -e
-    for repository in cctbx_project dxtbx; do
-      echo ""
-      echo "Checking out latest ${repository} commit"
-      cd $(Pipeline.Workspace)/modules/${repository}
-      git fetch origin master --depth=1
-      git checkout FETCH_HEAD
-    done
+    echo "##[command]Updating cctbx_project"
+    cd $(Pipeline.Workspace)/modules/cctbx_project
+    git fetch upstream master --depth=1
+    git checkout FETCH_HEAD
+    echo "##[command]Updating dxtbx"
+    cd $(Pipeline.Workspace)/modules/dxtbx
+    git fetch origin master --depth=1
+    git checkout FETCH_HEAD
   displayName: Repository update (incremental)
   condition: ne(variables.REPOSITORIES_CACHED, 'false')
 
