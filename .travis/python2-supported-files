@@ -573,7 +573,6 @@
 ./test/util/test_nexus.py
 ./test/util/test_observer.py
 ./test/util/test_options.py
-./test/util/test_progress.py
 ./util/add_hash.py
 ./util/ascii_art.py
 ./util/batch_handling.py
@@ -623,7 +622,6 @@
 ./util/options.py
 ./util/phil.py
 ./util/pprint.py
-./util/_progress.py
 ./util/pycbf_extra.py
 ./util/rebin_images.py
 ./util/reciprocal_lattice/conftest.py

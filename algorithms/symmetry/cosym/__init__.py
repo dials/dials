@@ -237,9 +237,14 @@ class CosymAnalysis(symmetry_base, Subject):
             )
             dimensions = []
             functional = []
+            termination_params = copy.deepcopy(self.params.termination_params)
+            termination_params.max_iterations = min(
+                20, termination_params.max_iterations
+            )
             for dim in range(1, self.target.dim + 1):
+                logger.debug("Testing dimension: %i", dim)
                 self.target.set_dimensions(dim)
-                self._optimise()
+                self._optimise(termination_params)
                 dimensions.append(dim)
                 functional.append(self.minimizer.f)
 
@@ -280,14 +285,14 @@ class CosymAnalysis(symmetry_base, Subject):
     def run(self):
         self._intialise_target()
         self._determine_dimensions()
-        self._optimise()
+        self._optimise(self.params.termination_params)
         self._principal_component_analysis()
 
         self._analyse_symmetry()
         self._cluster_analysis()
 
     @Subject.notify_event(event="optimised")
-    def _optimise(self):
+    def _optimise(self, termination_params):
         NN = len(self.input_intensities)
         dim = self.target.dim
         n_sym_ops = len(self.target.get_sym_ops())
@@ -295,7 +300,7 @@ class CosymAnalysis(symmetry_base, Subject):
 
         import scitbx.lbfgs
 
-        tp = self.params.termination_params
+        tp = termination_params
         termination_params = scitbx.lbfgs.termination_parameters(
             traditional_convergence_test=tp.traditional_convergence_test,
             traditional_convergence_test_eps=tp.traditional_convergence_test_eps,

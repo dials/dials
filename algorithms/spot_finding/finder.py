@@ -773,7 +773,9 @@ class SpotFinder(object):
                     if experiment.identifier:
                         table.experiment_identifiers()[j] = experiment.identifier
             missed = table["id"] == -1
-            assert missed.count(True) == 0, missed.count(True)
+            assert missed.count(True) == 0, "Failed to remap {} experiment IDs".format(
+                missed.count(True)
+            )
 
             reflections.extend(table)
             # Write a hot pixel mask

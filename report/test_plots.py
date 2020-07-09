@@ -8,7 +8,7 @@ import random
 
 import mock as mock
 import pytest
-from cctbx import miller, crystal
+from cctbx import miller, crystal, uctbx
 from cctbx.array_family import flex
 from dials.report.plots import (
     ResolutionPlotsAndStats,
@@ -162,10 +162,17 @@ def test_ResolutionPlotsAndStats(iobs):
     )
     plotter = ResolutionPlotsAndStats(result, anom_result)
 
-    assert plotter.d_star_sq_ticktext == ["1.26", "1.19", "1.13", "1.08", "1.04"]
+    assert plotter.d_star_sq_ticktext == ["1.74", "1.53", "1.38", "1.27", "1.18"]
 
     assert plotter.d_star_sq_tickvals == pytest.approx(
-        [0.6319, 0.7055, 0.7792, 0.8528, 0.9264], 1e-4
+        [
+            0.32984033277048164,
+            0.42706274943714834,
+            0.524285166103815,
+            0.6215075827704818,
+            0.7187299994371485,
+        ],
+        1e-4,
     )
 
     tables = plotter.statistics_tables()
@@ -175,6 +182,10 @@ def test_ResolutionPlotsAndStats(iobs):
     d = plotter.cc_one_half_plot()
     assert len(d["cc_one_half"]["data"]) == 6
     assert all(len(x["x"]) == n_bins for x in d["cc_one_half"]["data"][:4])
+    d["cc_one_half"]["data"][0]["x"] == [
+        0.5 * (uctbx.d_as_d_star_sq(b.d_max) + uctbx.d_as_d_star_sq(b.d_min))
+        for b in result.bins
+    ]
 
     d = plotter.i_over_sig_i_plot()
     assert len(d["i_over_sig_i"]["data"]) == 1

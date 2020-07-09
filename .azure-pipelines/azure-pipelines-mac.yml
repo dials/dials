@@ -11,8 +11,8 @@ jobs:
     matrix:
       python36:
         PYTHON_VERSION: 3.6
-#     python37:
-#       PYTHON_VERSION: 3.7
+      python37:
+        PYTHON_VERSION: 3.7
 #     python38:
 #       PYTHON_VERSION: 3.8
   timeoutInMinutes: 150

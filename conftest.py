@@ -6,7 +6,9 @@
 
 from __future__ import absolute_import, division, print_function
 
+import multiprocessing
 import os
+import sys
 import warnings
 
 import pytest
@@ -15,6 +17,9 @@ import six
 # https://stackoverflow.com/a/40846742
 warnings.filterwarnings("ignore", message="numpy.dtype size changed")
 warnings.filterwarnings("ignore", message="numpy.ufunc size changed")
+
+if sys.version_info[:2] == (3, 7) and sys.platform == "darwin":
+    multiprocessing.set_start_method("forkserver")
 
 collect_ignore = []
 if six.PY2:
