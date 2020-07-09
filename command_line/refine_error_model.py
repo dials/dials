@@ -144,10 +144,12 @@ def make_output(model, params):
             ]
         )
         env = Environment(loader=loader)
-        template = env.get_template("error_model_report.html")
+        template = env.get_template("simple_report.html")
         html = template.render(
             page_title="DIALS error model refinement report",
-            error_model_plots=d["error_model_plots"],
+            panel_title="Error distribution plots",
+            panel_id="error_model_plots",
+            graphs=d["error_model_plots"],
         )
         with open(params.output.html, "wb") as f:
             f.write(html.encode("utf-8", "xmlcharrefreplace"))

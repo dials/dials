@@ -259,9 +259,12 @@ class PychefRunner(object):
                 ]
             )
             env = Environment(loader=loader)
-            template = env.get_template("damage_analysis_report.html")
+            template = env.get_template("simple_report.html")
             html = template.render(
-                page_title="Damage analysis report", dose_plots=data["dose_plots"]
+                page_title="Damage analysis report",
+                panel_title="Damage analysis plots",
+                panel_id="dose_plots",
+                graphs=data["dose_plots"],
             )
             with open(html_filename, "wb") as f:
                 f.write(html.encode("utf-8", "xmlcharrefreplace"))
