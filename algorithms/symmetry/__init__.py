@@ -349,7 +349,6 @@ def resolution_filter_from_array(intensities, min_i_mean_over_sigma_mean, min_cc
     """Run the resolution filter using miller array data format."""
     rparams = phil_defaults.extract().resolutionizer
     rparams.nbins = 20
-    rparams.plot = False
     resolutionizer = Resolutionizer(intensities, rparams)
     return _resolution_filter(resolutionizer, min_i_mean_over_sigma_mean, min_cc_half)
 
@@ -360,7 +359,6 @@ def resolution_filter_from_reflections_experiments(
     """Run the resolution filter using native dials data formats."""
     rparams = phil_defaults.extract().resolutionizer
     rparams.nbins = 20
-    rparams.plot = False
     resolutionizer = Resolutionizer.from_reflections_and_experiments(
         reflections, experiments, rparams
     )
@@ -373,9 +371,9 @@ def _resolution_filter(resolutionizer, min_i_mean_over_sigma_mean, min_cc_half):
     d_min_cc_half = 0
     if min_i_mean_over_sigma_mean is not None:
         try:
-            d_min_isigi = resolutionizer.resolution_i_mean_over_sigma_mean(
-                min_i_mean_over_sigma_mean
-            )
+            d_min_isigi = resolutionizer.resolution(
+                "i_mean_over_sigi_mean", limit=min_i_mean_over_sigma_mean
+            ).d_min
         except RuntimeError as e:
             logger.info(u"I/σ(I) resolution filter failed with the following error:")
             logger.error(e)
@@ -387,7 +385,9 @@ def _resolution_filter(resolutionizer, min_i_mean_over_sigma_mean, min_cc_half):
             )
     if min_cc_half is not None:
         try:
-            d_min_cc_half = resolutionizer.resolution_cc_half(min_cc_half)
+            d_min_cc_half = resolutionizer.resolution(
+                "cc_half", limit=min_cc_half
+            ).d_min
         except RuntimeError as e:
             logger.info(u"CC½ resolution filter failed with the following error:")
             logger.error(e)

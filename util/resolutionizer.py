@@ -112,6 +112,8 @@ def resolution_fit(d_star_sq, y_obs, model, limit, sel=None):
     y_obs = y_obs.select(sel)
     d_star_sq = d_star_sq.select(sel)
 
+    if not len(y_obs):
+        raise RuntimeError("No reflections left for fitting")
     y_fit = model(d_star_sq, y_obs, 6)
     logger.debug(
         tabulate(

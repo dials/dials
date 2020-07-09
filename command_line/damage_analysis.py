@@ -114,9 +114,9 @@ class PychefRunner(object):
             params = phil_defaults.extract().resolutionizer
             params.nbins = self.params.resolution_bins
             r = Resolutionizer(self.intensities, params)
-            self.params.d_min = r.resolution_completeness(
-                limit=self.params.min_completeness
-            )
+            self.params.d_min = r.resolution(
+                "completeness", limit=self.params.min_completeness
+            ).d_min
             logger.info("Estimated d_min: %.2f", self.params.d_min)
 
         if self.params.d_min or self.params.d_max:
