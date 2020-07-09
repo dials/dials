@@ -595,9 +595,11 @@ class ResolutionPlotsAndStats:
             "cc_one_half": cc_half_plot(
                 d_star_sq=self.d_star_sq_bins,
                 cc_half=cc_one_half_bins,
-                cc_anom=cc_anom_bins,
+                cc_anom=cc_anom_bins if not self.is_centric else None,
                 cc_half_critical_values=cc_one_half_critical_value_bins,
-                cc_anom_critical_values=cc_anom_critical_value_bins,
+                cc_anom_critical_values=cc_anom_critical_value_bins
+                if not self.is_centric
+                else None,
                 cc_half_fit=None,
                 d_min=None,
             )
