@@ -300,6 +300,40 @@ def test_extrapolate_scan(dials_data, tmpdir):
     assert exp[0].identifier != ""
 
 
+def test_template_with_missing_image(dials_data, tmpdir):
+    # All the images except image #4
+    images = dials_data("centroid_test_data").listdir(
+        fil="centroid_*[1,2,3,5,6,7,8,9].cbf", sort=True
+    )
+    for image in images:
+        image.copy(tmpdir)
+
+    # This should fail because image #4 is missing
+    for image_range in (None, (3, 5)):
+        result = procrunner.run(
+            ["dials.import", f"template={tmpdir.join('centroid_####.cbf').strpath}",]
+            + (["image_range=%i,%i" % image_range] if image_range else []),
+            working_directory=tmpdir.strpath,
+        )
+        assert result.returncode
+        assert b"Missing image 4 from imageset" in result.stderr
+
+    # Explicitly pass an image_range that doesn't include the missing image
+    for image_range in ((1, 3), (5, 9)):
+        result = procrunner.run(
+            [
+                "dials.import",
+                f"template={tmpdir.join('centroid_####.cbf').strpath}",
+                "image_range=%i,%i" % image_range,
+                "output.experiments=imported_%i_%i.expt" % image_range,
+            ],
+            working_directory=tmpdir.strpath,
+        )
+        assert not result.returncode
+        expts = load.experiment_list(tmpdir.join("imported_%i_%i.expt" % image_range))
+        assert expts[0].scan.get_image_range() == image_range
+
+
 def test_import_still_sequence_as_experiments(dials_data, tmpdir):
     # Find the image files
     image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
