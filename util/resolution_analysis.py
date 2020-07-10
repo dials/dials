@@ -3,8 +3,8 @@ from __future__ import absolute_import, division, print_function
 import enum
 import logging
 import math
+import typing
 from collections import OrderedDict
-from dataclasses import dataclass
 
 import iotbx.mtz
 import iotbx.phil
@@ -178,7 +178,7 @@ def resolution_cc_half(
     )
     critical_values = get_cc_half_critical_values(merging_stats, cc_half_method)
     if critical_values:
-        result.critical_values = critical_values.select(sel)
+        result._replace(critical_values=critical_values.select(sel))
     return result
 
 
@@ -394,8 +394,7 @@ def plot_result(metric, result):
         }
 
 
-@dataclass
-class ResolutionResult:
+class ResolutionResult(typing.NamedTuple):
     d_star_sq: flex.double
     y_obs: flex.double
     y_fit: flex.double
