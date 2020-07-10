@@ -57,6 +57,7 @@ def merging_stats(dials_data):
         use_internal_variance=False,
         eliminate_sys_absent=False,
         assert_is_not_unique_set_under_symmetry=False,
+        cc_one_half_significance_level=0.1,
     )
 
 
@@ -81,6 +82,8 @@ def test_resolution_cc_half(merging_stats):
     )
     assert result.d_min == pytest.approx(1.23, abs=1e-3)
     assert flex.max(flex.abs(result.y_obs - result.y_fit)) < 0.04
+    assert result.critical_values is not None
+    assert len(result.critical_values) == len(result.d_star_sq)
 
 
 def test_resolution_fit_from_merging_stats(merging_stats):

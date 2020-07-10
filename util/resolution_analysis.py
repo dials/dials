@@ -178,7 +178,7 @@ def resolution_cc_half(
     )
     critical_values = get_cc_half_critical_values(merging_stats, cc_half_method)
     if critical_values:
-        result._replace(critical_values=critical_values.select(sel))
+        result = result._replace(critical_values=critical_values.select(sel))
     return result
 
 
