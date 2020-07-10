@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+import enum
 import logging
 import math
 from collections import OrderedDict
@@ -27,16 +28,14 @@ from dials.util import tabulate
 logger = logging.getLogger(__name__)
 
 
-# supported metrics for resolution estimate
-metrics = (
-    "cc_half",
-    "cc_ref",
-    "isigma",
-    "misigma",
-    "i_mean_over_sigma_mean",
-    "rmerge",
-    "completeness",
-)
+class metrics(enum.Enum):
+    CC_HALF = "cc_half"
+    CC_REF = "cc_ref"
+    ISIGMA = "unmerged_i_over_sigma_mean"
+    MISIGMA = "i_over_sigma_mean"
+    I_MEAN_OVER_SIGMA_MEAN = "i_mean_over_sigi_mean"
+    RMERGE = "r_merge"
+    COMPLETENESS = "completeness"
 
 
 def polynomial_fit(x, y, degree=5):
@@ -325,7 +324,7 @@ resolutionizer {
 
 
 def plot_result(metric, result):
-    if metric == "cc_half":
+    if metric == metrics.CC_HALF:
         return plots.cc_half_plot(
             result.d_star_sq,
             result.y_obs,
@@ -335,11 +334,11 @@ def plot_result(metric, result):
         )
     else:
         d = {
-            "isigma": "Merged <I/σ(I)>",
-            "misigma": "Unmerged <I/σ(I)>",
-            "i_mean_over_sigma_mean": "&lt;I&gt;/<σ(I)>",
-            "rmerge": "R<sub>merge</sub> ",
-            "completeness": "Completeness",
+            metrics.MISIGMA: "Merged <I/σ(I)>",
+            metrics.ISIGMA: "Unmerged <I/σ(I)>",
+            metrics.I_MEAN_OVER_SIGMA_MEAN: "&lt;I&gt;/<σ(I)>",
+            metrics.RMERGE: "R<sub>merge</sub> ",
+            metrics.COMPLETENESS: "Completeness",
         }
         d_star_sq_tickvals, d_star_sq_ticktext = plots.d_star_sq_to_d_ticks(
             result.d_star_sq, 5
@@ -514,7 +513,7 @@ class Resolutionizer(object):
         return cls(i_obs, params, batches=batch_array, reference=reference)
 
     def resolution(self, metric, limit=None):
-        if metric == "cc_half":
+        if metric == metrics.CC_HALF:
             return resolution_cc_half(
                 self._merging_statistics,
                 limit,
@@ -523,49 +522,43 @@ class Resolutionizer(object):
                 if self._params.cc_half_fit == "tanh"
                 else polynomial_fit,
             )
-        elif metric == "cc_ref":
+        elif metric == metrics.CC_REF:
             return self._resolution_cc_ref(limit=self._params.cc_ref)
         else:
             model = {
-                "r_merge": log_inv_fit,
-                "completeness": polynomial_fit,
-                "unmerged_i_over_sigma_mean": log_fit,
-                "i_over_sigma_mean": log_fit,
-                "i_mean_over_sigi_mean": log_fit,
+                metrics.RMERGE: log_inv_fit,
+                metrics.COMPLETENESS: polynomial_fit,
+                metrics.ISIGMA: log_fit,
+                metrics.MISIGMA: log_fit,
+                metrics.I_MEAN_OVER_SIGMA_MEAN: log_fit,
             }[metric]
             return resolution_fit_from_merging_stats(
-                self._merging_statistics, metric, model, limit
+                self._merging_statistics, metric.value, model, limit
             )
 
     def resolution_auto(self):
         """Compute resolution limits based on the current self._params set."""
 
-        translate_metric = {
-            "rmerge": "r_merge",
-            "isigma": "unmerged_i_over_sigma_mean",
-            "misigma": "i_over_sigma_mean",
-            "i_mean_over_sigma_mean": "i_mean_over_sigi_mean",
-        }
-
         metric_to_output = {
-            "isigma": "I/sig",
-            "misigma": "Mn(I/sig)",
-            "i_mean_over_sigma_mean": "Mn(I)/Mn(sig)",
+            metrics.ISIGMA: "I/sig",
+            metrics.MISIGMA: "Mn(I/sig)",
+            metrics.I_MEAN_OVER_SIGMA_MEAN: "Mn(I)/Mn(sig)",
         }
 
         plot_d = OrderedDict()
 
         for metric in metrics:
-            limit = getattr(self._params, metric)
-            if metric == "cc_ref" and not self._reference:
+            name = metric.name.lower()
+            limit = getattr(self._params, name)
+            if metric == metrics.CC_REF and not self._reference:
                 limit = None
             if limit:
-                result = self.resolution(
-                    translate_metric.get(metric, metric), limit=limit
+                result = self.resolution(metric, limit=limit)
+                pretty_name = metric_to_output.get(metric, name)
+                logger.info(
+                    f"Resolution {pretty_name}:{result.d_min:{18 - len(pretty_name)}.2f}"
                 )
-                name = metric_to_output.get(metric, metric)
-                logger.info(f"Resolution {name}:{result.d_min:{18 - len(name)}.2f}")
-                plot_d[metric] = plot_result(metric, result)
+                plot_d[name] = plot_result(metric, result)
         return plot_d
 
     def _resolution_cc_ref(self, limit=None):
