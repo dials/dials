@@ -513,7 +513,6 @@
 ./test/command_line/test_generate_distortion_maps.py
 ./test/command_line/test_generate_mask.py
 ./test/command_line/test_goniometer_calibration.py
-./test/command_line/test_import.py
 ./test/command_line/test_import_xds.py
 ./test/command_line/test_integrate.py
 ./test/command_line/test_merge_cbf.py
