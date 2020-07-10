@@ -7,7 +7,7 @@ from jinja2 import Environment, ChoiceLoader, PackageLoader
 
 import libtbx.phil
 
-from dials.util import resolutionizer
+from dials.util import resolution_analysis
 from dials.util import log
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
@@ -21,7 +21,7 @@ help_message = """
 
 phil_scope = libtbx.phil.parse(
     """
-include scope dials.util.resolutionizer.phil_defaults
+include scope dials.util.resolution_analysis.phil_defaults
 
 output {
   log = dials.resolutionizer.log
@@ -72,12 +72,12 @@ def run(args):
 
     if len(unhandled) == 1:
         scaled_unmerged = unhandled[0]
-        m = resolutionizer.Resolutionizer.from_unmerged_mtz(
+        m = resolution_analysis.Resolutionizer.from_unmerged_mtz(
             scaled_unmerged, params.resolutionizer
         )
     else:
         reflections = parse_multiple_datasets(reflections)
-        m = resolutionizer.Resolutionizer.from_reflections_and_experiments(
+        m = resolution_analysis.Resolutionizer.from_reflections_and_experiments(
             reflections, experiments, params.resolutionizer
         )
 

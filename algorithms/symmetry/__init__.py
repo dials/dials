@@ -21,7 +21,7 @@ from mmtbx import scaling
 from mmtbx.scaling import absolute_scaling
 from mmtbx.scaling import matthews
 
-import dials.util.resolutionizer
+from dials.util import resolution_analysis
 
 
 class symmetry_base(object):
@@ -347,9 +347,9 @@ class symmetry_base(object):
 
 def resolution_filter_from_array(intensities, min_i_mean_over_sigma_mean, min_cc_half):
     """Run the resolution filter using miller array data format."""
-    rparams = dials.util.resolutionizer.phil_defaults.extract().resolutionizer
+    rparams = resolution_analysis.phil_defaults.extract().resolutionizer
     rparams.nbins = 20
-    resolutionizer = dials.util.resolutionizer.Resolutionizer(intensities, rparams)
+    resolutionizer = resolution_analysis.Resolutionizer(intensities, rparams)
     return _resolution_filter(resolutionizer, min_i_mean_over_sigma_mean, min_cc_half)
 
 
@@ -357,9 +357,9 @@ def resolution_filter_from_reflections_experiments(
     reflections, experiments, min_i_mean_over_sigma_mean, min_cc_half
 ):
     """Run the resolution filter using native dials data formats."""
-    rparams = dials.util.resolutionizer.phil_defaults.extract().resolutionizer
+    rparams = resolution_analysis.phil_defaults.extract().resolutionizer
     rparams.nbins = 20
-    resolutionizer = dials.util.resolutionizer.Resolutionizer.from_reflections_and_experiments(
+    resolutionizer = resolution_analysis.Resolutionizer.from_reflections_and_experiments(
         reflections, experiments, rparams
     )
     return _resolution_filter(resolutionizer, min_i_mean_over_sigma_mean, min_cc_half)
@@ -372,7 +372,7 @@ def _resolution_filter(resolutionizer, min_i_mean_over_sigma_mean, min_cc_half):
     if min_i_mean_over_sigma_mean is not None:
         try:
             d_min_isigi = resolutionizer.resolution(
-                dials.util.resolutionizer.metrics.I_MEAN_OVER_SIGMA_MEAN,
+                resolution_analysis.metrics.I_MEAN_OVER_SIGMA_MEAN,
                 limit=min_i_mean_over_sigma_mean,
             ).d_min
         except RuntimeError as e:
@@ -387,7 +387,7 @@ def _resolution_filter(resolutionizer, min_i_mean_over_sigma_mean, min_cc_half):
     if min_cc_half is not None:
         try:
             d_min_cc_half = resolutionizer.resolution(
-                dials.util.resolutionizer.metrics.CC_HALF, limit=min_cc_half
+                resolution_analysis.metrics.CC_HALF, limit=min_cc_half
             ).d_min
         except RuntimeError as e:
             logger.info(u"CC½ resolution filter failed with the following error:")

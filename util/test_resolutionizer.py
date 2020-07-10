@@ -9,7 +9,7 @@ from scitbx.array_family import flex
 from scitbx.math import curve_fitting
 
 from dials.command_line import resolutionizer as cmdline
-from dials.util import resolutionizer
+from dials.util import resolution_analysis
 
 
 def test_polynomial_fit():
@@ -18,7 +18,7 @@ def test_polynomial_fit():
     yo = flex.double(x.size())
     for i in range(len(p)):
         yo += p[i] * flex.pow(x, i)
-    yf = resolutionizer.polynomial_fit(x, yo, degree=2)
+    yf = resolution_analysis.polynomial_fit(x, yo, degree=2)
     assert yo == pytest.approx(yf)
 
 
@@ -28,7 +28,7 @@ def test_log_fit():
     yo = flex.double(x.size())
     for i in range(len(p)):
         yo += flex.exp(p[i] * flex.pow(x, i))
-    yf = resolutionizer.log_fit(x, yo, degree=2)
+    yf = resolution_analysis.log_fit(x, yo, degree=2)
     assert yo == pytest.approx(yf, abs=1e-2)
 
 
@@ -38,7 +38,7 @@ def test_log_inv_fit():
     yo = flex.double(x.size())
     for i in range(len(p)):
         yo += 1 / flex.exp(p[i] * flex.pow(x, i))
-    yf = resolutionizer.log_inv_fit(x, yo, degree=2)
+    yf = resolution_analysis.log_inv_fit(x, yo, degree=2)
     assert yo == pytest.approx(yf, abs=1e-2)
 
 
@@ -46,14 +46,14 @@ def test_tanh_fit():
     x = flex.double(range(0, 100)) * 0.01
     f = curve_fitting.tanh(0.5, 1.5)
     yo = f(x)
-    yf = resolutionizer.tanh_fit(x, yo)
+    yf = resolution_analysis.tanh_fit(x, yo)
     assert yo == pytest.approx(yf, abs=1e-5)
 
 
 @pytest.fixture
 def merging_stats(dials_data):
     mtz = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled_unmerged.mtz")
-    i_obs, _ = resolutionizer.miller_array_from_mtz(mtz.strpath)
+    i_obs, _ = resolution_analysis.miller_array_from_mtz(mtz.strpath)
     return iotbx.merging_statistics.dataset_statistics(
         i_obs=i_obs,
         n_bins=20,
@@ -67,44 +67,47 @@ def merging_stats(dials_data):
 def test_resolution_fit(merging_stats):
     d_star_sq = flex.double(uctbx.d_as_d_star_sq(b.d_min) for b in merging_stats.bins)
     y_obs = flex.double(b.r_merge for b in merging_stats.bins)
-    result = resolutionizer.resolution_fit(
-        d_star_sq, y_obs, resolutionizer.log_inv_fit, 0.6
+    result = resolution_analysis.resolution_fit(
+        d_star_sq, y_obs, resolution_analysis.log_inv_fit, 0.6
     )
     assert result.d_min == pytest.approx(1.278, abs=1e-3)
     assert flex.max(flex.abs(result.y_obs - result.y_fit)) < 0.05
 
 
 def test_resolution_cc_half(merging_stats):
-    result = resolutionizer.resolution_cc_half(merging_stats, limit=0.82)
+    result = resolution_analysis.resolution_cc_half(merging_stats, limit=0.82)
     assert result.d_min == pytest.approx(1.242, abs=1e-3)
-    result = resolutionizer.resolution_cc_half(
+    result = resolution_analysis.resolution_cc_half(
         merging_stats,
         limit=0.82,
         cc_half_method="sigma_tau",
-        model=resolutionizer.polynomial_fit,
+        model=resolution_analysis.polynomial_fit,
     )
     assert result.d_min == pytest.approx(1.23, abs=1e-3)
     assert flex.max(flex.abs(result.y_obs - result.y_fit)) < 0.04
 
 
 def test_resolution_fit_from_merging_stats(merging_stats):
-    result = resolutionizer.resolution_fit_from_merging_stats(
-        merging_stats, "i_over_sigma_mean", resolutionizer.log_fit, limit=1.5
+    result = resolution_analysis.resolution_fit_from_merging_stats(
+        merging_stats, "i_over_sigma_mean", resolution_analysis.log_fit, limit=1.5
     )
     assert result.d_min == pytest.approx(1.295, abs=1e-3)
     assert flex.max(flex.abs(result.y_obs - result.y_fit)) < 1
 
 
 def test_plot_result(merging_stats):
-    result = resolutionizer.resolution_cc_half(merging_stats, limit=0.82)
-    d = resolutionizer.plot_result("cc_half", result)
+    result = resolution_analysis.resolution_cc_half(merging_stats, limit=0.82)
+    d = resolution_analysis.plot_result("cc_half", result)
     assert "data" in d
     assert "layout" in d
 
-    result = resolutionizer.resolution_fit_from_merging_stats(
-        merging_stats, "unmerged_i_over_sigma_mean", resolutionizer.log_fit, limit=0.82
+    result = resolution_analysis.resolution_fit_from_merging_stats(
+        merging_stats,
+        "unmerged_i_over_sigma_mean",
+        resolution_analysis.log_fit,
+        limit=0.82,
     )
-    d = resolutionizer.plot_result("isigma", result)
+    d = resolution_analysis.plot_result("isigma", result)
     assert "data" in d
     assert "layout" in d
 

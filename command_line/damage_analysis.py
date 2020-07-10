@@ -41,7 +41,7 @@ from dials.util import log, show_mail_on_error
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 from dials.util.filter_reflections import filter_reflection_table
-from dials.util import resolutionizer
+from dials.util import resolution_analysis
 from dials.command_line.symmetry import median_unit_cell
 from dials.pychef import batches_to_dose, Statistics, interpret_images_to_doses_options
 from iotbx import mtz
@@ -111,11 +111,12 @@ class PychefRunner(object):
         """Filter arrays on resolution."""
         if not self.params.d_min and self.params.min_completeness:
             # Update self.params.d_min using resolution estimate
-            params = resolutionizer.phil_defaults.extract().resolutionizer
+            params = resolution_analysis.phil_defaults.extract().resolutionizer
             params.nbins = self.params.resolution_bins
-            r = resolutionizer.Resolutionizer(self.intensities, params)
+            r = resolution_analysis.Resolutionizer(self.intensities, params)
             self.params.d_min = r.resolution(
-                resolutionizer.metrics.COMPLETENESS, limit=self.params.min_completeness
+                resolution_analysis.metrics.COMPLETENESS,
+                limit=self.params.min_completeness,
             ).d_min
             logger.info("Estimated d_min: %.2f", self.params.d_min)
 
