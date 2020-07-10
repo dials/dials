@@ -239,7 +239,6 @@
 ./algorithms/symmetry/laue_group.py
 ./algorithms/symmetry/origin.py
 ./algorithms/symmetry/reindex_to_reference.py
-./algorithms/symmetry/test_laue_group.py
 ./algorithms/symmetry/test_reindex_to_reference.py
 ./algorithms/symmetry/test_score_symmetry_element_subgroup.py
 ./array_family/flex_ext.py
