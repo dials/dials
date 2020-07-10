@@ -1,8 +1,11 @@
+# LIBTBX_SET_DISPATCHER_NAME dials.estimate_resolution
+# LIBTBX_SET_DISPATCHER_NAME dials.resolutionizer
 from __future__ import absolute_import, division, print_function
 
 import json
 import logging
 import sys
+import warnings
 from jinja2 import Environment, ChoiceLoader, PackageLoader
 
 import libtbx.phil
@@ -13,7 +16,7 @@ from dials.util.options import OptionParser, reflections_and_experiments_from_fi
 from dials.util.version import dials_version
 from dials.util.multi_dataset_handling import parse_multiple_datasets
 
-logger = logging.getLogger("dials.resolutionizer")
+logger = logging.getLogger("dials.estimate_resolution")
 
 help_message = """
 """
@@ -24,9 +27,9 @@ phil_scope = libtbx.phil.parse(
 include scope dials.util.resolution_analysis.phil_defaults
 
 output {
-  log = dials.resolutionizer.log
+  log = dials.estimate_resolution.log
     .type = path
-  html = dials.resolutionizer.html
+  html = dials.estimate_resolution.html
     .type = path
   json = None
     .type = path
@@ -37,9 +40,14 @@ output {
 
 
 def run(args):
-    usage = (
-        "dials.resolutionizer [options] (scaled.expt scaled.refl | scaled_unmerged.mtz)"
-    )
+    usage = "dials.estimate_resolution [options] (scaled.expt scaled.refl | scaled_unmerged.mtz)"
+
+    import libtbx.load_env
+
+    if libtbx.env.dispatcher_name == "dials.resolutionizer":
+        warnings.warn(
+            "dials.resolutionizer is now deprecated, please use dials.estimate_resolution instead"
+        )
 
     parser = OptionParser(
         usage=usage,
@@ -103,9 +111,9 @@ def output_html_report(plots, filename):
     env = Environment(loader=loader)
     template = env.get_template("simple_report.html")
     html = template.render(
-        page_title="dials.resolutionizer report",
+        page_title="dials.estimate_resolution report",
         panel_title="Analysis by resolution",
-        panel_id="dials_resolutionizer",
+        panel_id="dials_estimate_resolution",
         graphs=plots,
     )
     with open(filename, "wb") as f:
