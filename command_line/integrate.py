@@ -132,12 +132,18 @@ def process_reference(reference):
 
     Remove unindexed, bad_for_refinement, bad miller index.
 
-    Raises:
-        ValueError: If no indexed spots, bad id, unmatched panel.
+    Args:
+        reference: A reflection table.
 
     Returns:
-        reference: A reduction of the input reference reflection table.
-        rubbish: Bad reflections filtered out of the input table.
+        (tuple): tuple containing:
+
+            reference: A reduction of the input reference reflection table.
+            rubbish: A reflection table containing the reflections filtered out of
+                the input table.
+
+    Raises:
+        ValueError: If no indexed spots, bad id, unmatched panel.
     """
 
     if reference is None:
@@ -190,7 +196,14 @@ def process_reference(reference):
 
 def filter_reference_pixels(reference, experiments):
     """
-    Set any pixel closer to other reflections to background
+    Set any pixel closer to other reflections to background.
+
+    Args:
+        reference: A reflection table
+        experiments: The experiment list
+
+    Returns:
+        The input reflection table with modified shoeboxes.
     """
     modified_count = 0
     for experiment, indices in reference.iterate_experiments_and_indices(experiments):
@@ -210,7 +223,17 @@ def filter_reference_pixels(reference, experiments):
 
 
 def sample_predictions(experiments, predicted, params):
-    """Select a random sample of the predicted reflections to integrate."""
+    """
+    Select a random sample of the predicted reflections to integrate.
+
+    Args:
+        experiments: The experiment list
+        predicted: A reflection table of predicted reflections
+        params: The integration phil parameters
+
+    Returns:
+        A subset of the original predicted table.
+    """
 
     nref_per_degree = params.sampling.reflections_per_degree
     min_sample_size = params.sampling.minimum_sample_size
@@ -254,20 +277,13 @@ def sample_predictions(experiments, predicted, params):
     return predicted.select(working_isel)
 
 
-def exclude_images(experiments, exclude_images):
-    """Mark images for rejection within the imageset."""
-
-    if exclude_images is not None and len(exclude_images) > 0:
-        for experiment in experiments:
-            imageset = experiment.imageset
-            for index in exclude_images:
-                imageset.mark_for_rejection(index, True)
-
-    return experiments
-
-
 def split_for_scan_range(experiments, reference, scan_range):
     """Update experiments when scan range is set.
+
+    Args:
+        experiments: An experiment list
+        reference: A reflection table of reference reflections
+        scan_range (tuple): Range of scan images to be processed
 
     Returns:
         experiments: A new experiment list with the requested scan ranges
@@ -440,7 +456,10 @@ def run_integration(params, experiments, reference=None):
         )
 
     # Modify experiment list if exclude images is set
-    experiments = exclude_images(experiments, params.exclude_images)
+    if params.exclude_images:
+        for experiment in experiments:
+            for index in params.exclude_images:
+                experiment.imageset.mark_for_rejection(index, True)
 
     # Predict the reflections
     logger.info("\n".join(("", "=" * 80, "")))
