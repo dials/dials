@@ -132,7 +132,7 @@ def resolution_fit(d_star_sq, y_obs, model, limit, sel=None):
         try:
             d_min = 1.0 / math.sqrt(interpolate_value(d_star_sq, y_fit, limit))
         except RuntimeError as e:
-            logger.debug("Error interpolating value: %s", e)
+            logger.debug(f"Error interpolating value: {e}")
             d_min = uctbx.d_star_sq_as_d(flex.max(d_star_sq))
 
     return ResolutionResult(d_star_sq, y_obs, y_fit, d_min)
@@ -384,7 +384,7 @@ def plot_result(metric, result):
                 ),
             ],
             "layout": {
-                "title": "%s vs. resolution" % d.get(metric),
+                "title": f"{d.get(metric)} vs. resolution",
                 "xaxis": {
                     "title": "Resolution (Å)",
                     "tickvals": d_star_sq_tickvals,
