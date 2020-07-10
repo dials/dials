@@ -1,4 +1,7 @@
 # coding: utf-8
+"""
+Algorithms for analysis of resolution limits.
+"""
 from __future__ import absolute_import, division, print_function
 
 import enum
@@ -30,6 +33,8 @@ logger = logging.getLogger(__name__)
 
 
 class metrics(enum.Enum):
+    """Supported metrics for estimation of resolution limits."""
+
     CC_HALF = "cc_half"
     CC_REF = "cc_ref"
     ISIGMA = "unmerged_i_over_sigma_mean"
@@ -40,9 +45,12 @@ class metrics(enum.Enum):
 
 
 def polynomial_fit(x, y, degree=5):
-    """Fit the values y(x) then return this fit. x, y should
-    be iterables containing floats of the same size. The order is the order
-    of polynomial to use for this fit. This will be useful for e.g. I/sigma."""
+    """
+    Fit a polynomial to the values y(x) and return this fit
+
+    x, y should be iterables containing floats of the same size. The order is the order
+    of polynomial to use for this fit. This will be useful for e.g. I/sigma.
+    """
 
     fit = curve_fitting.univariate_polynomial_fit(
         x, y, degree=degree, max_iterations=100
@@ -52,6 +60,13 @@ def polynomial_fit(x, y, degree=5):
 
 
 def tanh_fit(x, y, iqr_multiplier=None):
+    """
+    Fit a tanh function to the values y(x) and return this fit
+
+    x, y should be iterables containing floats of the same size. The order is the order
+    of polynomial to use for this fit. This is used for fitting a curve to CC½.
+    """
+
     tf = curve_fitting.tanh_fit(x, y)
     f = curve_fitting.tanh(*tf.params)
 
@@ -74,8 +89,9 @@ def tanh_fit(x, y, iqr_multiplier=None):
 
 
 def log_fit(x, y, degree=5):
-    """Fit the values log(y(x)) then return exp() to this fit. x, y should
-    be iterables containing floats of the same size. The order is the order
+    """Fit the values log(y(x)) then return exp() to this fit.
+
+    x, y should be iterables containing floats of the same size. The order is the order
     of polynomial to use for this fit. This will be useful for e.g. I/sigma."""
 
     fit = curve_fitting.univariate_polynomial_fit(
@@ -87,6 +103,7 @@ def log_fit(x, y, degree=5):
 
 def log_inv_fit(x, y, degree=5):
     """Fit the values log(1 / y(x)) then return the inverse of this fit.
+
     x, y should be iterables, the order of the polynomial for the transformed
     fit needs to be specified. This will be useful for e.g. Rmerge."""
 
@@ -98,6 +115,29 @@ def log_inv_fit(x, y, degree=5):
 
 
 def resolution_fit_from_merging_stats(merging_stats, metric, model, limit, sel=None):
+    """Estimate a resolution limit based on the input `metric`
+
+    The function defined by `model` will be fit to the selected `metric` which has been
+    pre-calculated by the `merging_stats` object. The estimated resolution limit is
+    chosen as the `d_star_sq` value at which the fitted function equals `limit`.
+
+    Args:
+        merging_stats (iotbx.merging_statistics.dataset_statistics): Pre-calculated
+            merging statistics object
+        metric (str): The metric to use for estimating a resolution limit. Must be a
+            metric calculated by `iotbx.merging_statistics.merging_stats` and
+            available as an attribute on the `bins` attribute of the input
+            `merging_stats` object.
+        model: The function to fit to the selected metric. Must be callable, taking as
+            input x (d_star_sq) and y (the metric to be fitted) values, returning the
+            fitted y(x) values.
+        limit (float): The resolution limit criterion.
+        sel (scitbx.array_family.flex.bool): An optional selection to apply to the
+            `merging_stats` bins.
+
+    Returns: The estimated resolution limit in units of Å^-1
+    """
+
     y_obs = flex.double(getattr(b, metric) for b in merging_stats.bins).reversed()
     d_star_sq = flex.double(
         uctbx.d_as_d_star_sq(b.d_min) for b in merging_stats.bins
@@ -106,6 +146,30 @@ def resolution_fit_from_merging_stats(merging_stats, metric, model, limit, sel=N
 
 
 def resolution_fit(d_star_sq, y_obs, model, limit, sel=None):
+    """Estimate a resolution limit based on the input merging statistics
+
+    The function defined by `model` will be fit to the input `d_star_sq` and `y_obs`.
+    The estimated resolution limit is chosen as the `d_star_sq` value at which the
+    fitted function equals `limit`.
+
+    Args:
+        d_star_sq (scitbx.array_family.flex.double): The high resolution limits of the
+            resolution bins in units 1/d*2
+        y_obs (scitbx.array_family.flex.double): The statistic against which to fit the
+            function `model`
+        model: The function to fit against `y_obs`. Must be callable, taking as input x
+            (d_star_sq) and y (the metric to be fitted) values, returning the fitted
+            y(x) values.
+        limit (float): The resolution limit criterion.
+        sel (scitbx.array_family.flex.bool): An optional selection to apply to the
+            `d_star_sq` and `y_obs` values.
+
+    Returns: The estimated resolution limit in units of Å^-1
+
+    Raises:
+        RuntimeError: Raised if no `y_obs` values remain after application of the
+        selection `sel`
+    """
     if not sel:
         sel = flex.bool(len(d_star_sq), True)
     sel &= y_obs > 0
@@ -138,7 +202,8 @@ def resolution_fit(d_star_sq, y_obs, model, limit, sel=None):
     return ResolutionResult(d_star_sq, y_obs, y_fit, d_min)
 
 
-def get_cc_half_significance(merging_stats, cc_half_method):
+def _get_cc_half_significance(merging_stats, cc_half_method):
+    """Get the CC½ significance values from the input merging_stats object"""
     if (
         cc_half_method == "sigma_tau"
         and merging_stats.overall.cc_one_half_sigma_tau_significance is not None
@@ -152,7 +217,8 @@ def get_cc_half_significance(merging_stats, cc_half_method):
         ).reversed()
 
 
-def get_cc_half_critical_values(merging_stats, cc_half_method):
+def _get_cc_half_critical_values(merging_stats, cc_half_method):
+    """Get the CC½ critical values from the input merging_stats object"""
     if (
         cc_half_method == "sigma_tau"
         and merging_stats.overall.cc_one_half_sigma_tau_critical_value is not None
@@ -169,15 +235,30 @@ def get_cc_half_critical_values(merging_stats, cc_half_method):
 def resolution_cc_half(
     merging_stats, limit, cc_half_method="half_dataset", model=tanh_fit
 ):
-    """Compute a resolution limit where cc_half < 0.5 (limit if
-    set) or the full extent of the data."""
+    """Estimate a resolution limit based on CC½
 
-    sel = get_cc_half_significance(merging_stats, cc_half_method)
+    The function defined by `model` will be fit to the CC½ values that have been
+    pre-calculated by the `merging_stats` object. The estimated resolution limit is
+    chosen as the `d_star_sq` value at which the fitted function equals `limit`.
+
+    Args:
+        merging_stats (iotbx.merging_statistics.dataset_statistics): Pre-calculated
+            merging statistics object
+        cc_half_method (str): The method for calculating CC½. Either "half_dataset" or
+            "sigma_tau" (See Assmann et al., J. Appl. Cryst. (2016). 49, 1021–1028).
+        model: The function to fit to the selected metric. Must be callable, taking as
+            input x (d_star_sq) and y (the metric to be fitted) values, returning the
+            fitted y(x) values. Default is `tanh_fit`.
+        limit (float): The resolution limit criterion.
+
+    Returns: The estimated resolution limit in units of Å^-1
+    """
+    sel = _get_cc_half_significance(merging_stats, cc_half_method)
     metric = "cc_one_half_sigma_tau" if cc_half_method == "sigma_tau" else "cc_one_half"
     result = resolution_fit_from_merging_stats(
         merging_stats, metric, model, limit, sel=sel
     )
-    critical_values = get_cc_half_critical_values(merging_stats, cc_half_method)
+    critical_values = _get_cc_half_critical_values(merging_stats, cc_half_method)
     if critical_values:
         result = result._replace(critical_values=critical_values.select(sel))
     return result
@@ -259,8 +340,8 @@ phil_str = """
     .expert_level = 1
   cc_half = 0.3
     .type = float(value_min=0)
-    .help = "Minimum value of CC1/2 in the outer resolution shell"
-    .short_caption = "Outer shell CC1/2"
+    .help = "Minimum value of CC½ in the outer resolution shell"
+    .short_caption = "Outer shell CC½"
     .expert_level = 1
   cc_half_method = *half_dataset sigma_tau
     .type = choice
