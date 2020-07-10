@@ -187,6 +187,7 @@
 ./algorithms/scaling/test_reflection_selection.py
 ./algorithms/scaling/test_scale_and_filter.py
 ./algorithms/scaling/test_scale_components.py
+./algorithms/scaling/test_scale.py
 ./algorithms/scaling/test_scaler_factory.py
 ./algorithms/scaling/test_scaler.py
 ./algorithms/scaling/test_scaling_library.py
@@ -242,6 +243,7 @@
 ./algorithms/symmetry/laue_group.py
 ./algorithms/symmetry/origin.py
 ./algorithms/symmetry/reindex_to_reference.py
+./algorithms/symmetry/test_correlation_coefficient_accumulator.py
 ./algorithms/symmetry/test_laue_group.py
 ./algorithms/symmetry/test_reindex_to_reference.py
 ./algorithms/symmetry/test_score_symmetry_element_subgroup.py
@@ -479,6 +481,7 @@
 ./test/algorithms/spot_prediction/test_stills_reflection_predictor.py
 ./test/algorithms/statistics/test_delta_cchalf_algorithm.py
 ./test/algorithms/statistics/test_fast_mcd.py
+./test/algorithms/symmetry/test_origin.py
 ./test/array_family/test_flex_shoebox.py
 ./test/array_family/test_identifiers_handling.py
 ./test/array_family/test_reflection_table.py
@@ -493,7 +496,9 @@
 ./test/command_line/test_compare_orientation_matrices.py
 ./test/command_line/test_compute_delta_cchalf.py
 ./test/command_line/test_convert_to_cbf.py
+./test/command_line/test_cosym.py
 ./test/command_line/test_create_profile_model.py
+./test/command_line/test_damage_analysis.py
 ./test/command_line/test_estimate_gain.py
 ./test/command_line/test_export_best.py
 ./test/command_line/test_export_bitmaps.py
@@ -520,6 +525,7 @@
 ./test/command_line/test_plugins.py
 ./test/command_line/test_predict.py
 ./test/command_line/test_preservation_of_experiment_identifiers.py
+./test/command_line/test_refine_bravais_settings.py
 ./test/command_line/test_refine_error_model.py
 ./test/command_line/test_refine.py
 ./test/command_line/test_reindex.py
@@ -536,6 +542,7 @@
 ./test/command_line/test_spot_counts_per_image.py
 ./test/command_line/test_stereographic_projections.py
 ./test/command_line/test_stills_process.py
+./test/command_line/test_symmetry.py
 ./test/command_line/test_two_theta_refine.py
 ./test/framework/test_interface.py
 ./test/__init__.py
