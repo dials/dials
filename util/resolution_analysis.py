@@ -395,7 +395,7 @@ phil_str = """
 
 phil_defaults = iotbx.phil.parse(
     """
-resolutionizer {
+resolution {
 %s
   batch_range = None
     .type = ints(size=2, value_min=0)

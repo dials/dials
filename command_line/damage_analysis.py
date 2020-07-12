@@ -111,7 +111,7 @@ class PychefRunner(object):
         """Filter arrays on resolution."""
         if not self.params.d_min and self.params.min_completeness:
             # Update self.params.d_min using resolution estimate
-            params = resolution_analysis.phil_defaults.extract().resolutionizer
+            params = resolution_analysis.phil_defaults.extract().resolution
             params.nbins = self.params.resolution_bins
             r = resolution_analysis.Resolutionizer(self.intensities, params)
             self.params.d_min = r.resolution(

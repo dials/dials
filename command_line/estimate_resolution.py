@@ -81,12 +81,12 @@ def run(args):
     if len(unhandled) == 1:
         scaled_unmerged = unhandled[0]
         m = resolution_analysis.Resolutionizer.from_unmerged_mtz(
-            scaled_unmerged, params.resolutionizer
+            scaled_unmerged, params.resolution
         )
     else:
         reflections = parse_multiple_datasets(reflections)
         m = resolution_analysis.Resolutionizer.from_reflections_and_experiments(
-            reflections, experiments, params.resolutionizer
+            reflections, experiments, params.resolution
         )
 
     plots = m.resolution_auto()
