@@ -239,7 +239,6 @@
 ./algorithms/symmetry/laue_group.py
 ./algorithms/symmetry/origin.py
 ./algorithms/symmetry/reindex_to_reference.py
-./algorithms/symmetry/test_reindex_to_reference.py
 ./algorithms/symmetry/test_score_symmetry_element_subgroup.py
 ./array_family/flex_ext.py
 ./array_family/flex.py
@@ -369,7 +368,6 @@
 ./precommitbx/_precommitbx/main.py
 ./precommitbx/setup.py
 ./pychef/__init__.py
-./pychef/test_pychef.py
 ./report/analysis.py
 ./report/html_report.py
 ./report/__init__.py
