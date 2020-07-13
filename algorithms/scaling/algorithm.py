@@ -350,11 +350,14 @@ scaling from this point for an improved model.""",
 class ScaleAndFilterAlgorithm(ScalingAlgorithm):
     def __init__(self, params, experiments, reflections):
         super(ScaleAndFilterAlgorithm, self).__init__(params, experiments, reflections)
-        if self.scaler.id_ != "multi":
+        if (
+            params.filtering.deltacchalf.mode == "dataset"
+            and self.scaler.id_ != "multi"
+        ):
             raise ValueError(
-                """
-Scaling and filtering can only be performed in multi-dataset scaling mode
-(not single dataset or scaling against a reference)"""
+                """\
+Whole dataset deltacchalf scaling and filtering can only be performed in
+multi-dataset scaling mode (not single dataset or scaling against a reference)"""
             )
 
     @Subject.notify_event(event="run_scale_and_filter")
