@@ -4,7 +4,7 @@ import collections
 import os
 
 import iotbx.phil
-import numpy
+import numpy as np
 from cctbx import uctbx
 from dials.array_family import flex
 from dials.util import Sorry, tabulate
@@ -381,7 +381,7 @@ def _create_flag_count_table(table):
     # Calculate the counts of entries that match each flag
     numpy_flags = table["flags"].as_numpy_array()
     flag_count = {
-        flag: numpy.sum(numpy_flags & value != 0)
+        flag: np.sum(numpy_flags & value != 0)
         for value, flag in table.flags.values.items()
     }
 
