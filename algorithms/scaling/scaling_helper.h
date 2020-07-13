@@ -4,6 +4,7 @@
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <scitbx/sparse/matrix.h>
 #include <scitbx/math/zernike.h>
+#include <scitbx/math/basic_statistics.h>
 #include <dials/error.h>
 #include <math.h>
 #include <dials/algorithms/refinement/gaussian_smoother.h>
@@ -118,6 +119,31 @@ scitbx::sparse::matrix<double> elementwise_square(scitbx::sparse::matrix<double>
     }
   }
   return result;
+}
+
+scitbx::af::shared<double> limit_outlier_weights(
+  scitbx::af::shared<double> weights,
+  scitbx::sparse::matrix<double> h_index_mat
+) {
+  scitbx::math::median_functor med;
+  for (int i = 0; i < h_index_mat.n_cols(); ++i) {
+    const col_type column = h_index_mat.col(i);
+    scitbx::af::shared<double> theseweights;
+    for (col_type::const_iterator it = column.begin(); it != column.end(); ++it) {
+      int refl_idx = it.index();
+      theseweights.push_back(weights[refl_idx]);
+    }
+    // now get the median
+    double median = med(theseweights.ref());
+    double ceil = 10.0 * median;
+    for (col_type::const_iterator it = column.begin(); it != column.end(); ++it) {
+      int refl_idx = it.index();
+      if (weights[refl_idx] > ceil){
+        weights[refl_idx] = ceil;
+      }
+    }
+  }
+  return weights;
 }
 
 scitbx::sparse::matrix<double> calculate_dIh_by_dpi(
