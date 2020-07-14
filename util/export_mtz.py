@@ -438,7 +438,7 @@ def export_mtz(
             )
 
         wavelengths = match_wavelengths(experiment_list)
-        if len(wavelengths.keys()) > 1:
+        if len(wavelengths) > 1:
             logger.info(
                 "Multiple wavelengths found: \n%s",
                 "\n".join(
@@ -513,7 +513,7 @@ def export_mtz(
             expids_in_table[id_]
         )  # get strid and use to find loc in list
         experiment = experiment_list[loc]
-        if len(list(wavelengths.keys())) > 1:
+        if len(wavelengths) > 1:
             for i, (wl, exps) in enumerate(wavelengths.items()):
                 if loc in exps:
                     wavelength = wl

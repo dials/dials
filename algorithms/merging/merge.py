@@ -108,16 +108,16 @@ def make_MAD_merged_mtz_file(
     )
 
     # now add each wavelength.
-    if not dataset_names or len(dataset_names) != len(wavelengths.keys()):
+    if not dataset_names or len(dataset_names) != len(wavelengths):
         logger.info(
             "Unequal number of dataset names and wavelengths, using default naming."
         )
-        dataset_names = [None] * len(wavelengths.keys())
-    if not crystal_names or len(crystal_names) != len(wavelengths.keys()):
+        dataset_names = [None] * len(wavelengths)
+    if not crystal_names or len(crystal_names) != len(wavelengths):
         logger.info(
             "Unequal number of crystal names and wavelengths, using default naming."
         )
-        crystal_names = [None] * len(wavelengths.keys())
+        crystal_names = [None] * len(wavelengths)
 
     for dname, cname, (wavelength, exp_nos) in zip(
         dataset_names, crystal_names, wavelengths.items()
