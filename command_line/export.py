@@ -271,7 +271,21 @@ def export_mtz(params, experiments, reflections):
             "Error: No intensity data in reflections; cannot export un-integrated data to MTZ"
         )
 
-    m = export_mtz(reflections[0], experiments, params)
+    m = export_mtz(
+        reflections[0],
+        experiments,
+        intensity_choice=params.intensity,
+        filename=params.mtz.hklout,
+        best_unit_cell=params.mtz.best_unit_cell,
+        partiality_threshold=params.mtz.partiality_threshold,
+        combine_partials=params.mtz.combine_partials,
+        min_isigi=params.mtz.min_isigi,
+        filter_ice_rings=params.mtz.filter_ice_rings,
+        d_min=params.mtz.d_min,
+        force_static_model=params.mtz.force_static_model,
+        crystal_name=params.mtz.crystal_name,
+        project_name=params.mtz.project_name,
+    )
     from six.moves import cStringIO as StringIO
 
     summary = StringIO()
