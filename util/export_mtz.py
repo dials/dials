@@ -401,8 +401,8 @@ def export_mtz(
     filter_ice_rings=False,
     d_min=None,
     force_static_model=False,
-    crystal_name="XTAL",
-    project_name="DIALS",
+    crystal_name=None,
+    project_name=None,
 ):
     """Export data from reflection_table corresponding to experiment_list to an
     MTZ file hklout."""

@@ -160,9 +160,9 @@ def make_merged_mtz_file(
     merged_anomalous_array=None,
     amplitudes=None,
     anomalous_amplitudes=None,
-    crystal_name="XTAL",
-    dataset_name="NATIVE",
-    project_name="AUTOMATIC",
+    crystal_name=None,
+    dataset_name=None,
+    project_name=None,
 ):
     """Make an mtz object for the data, adding the date, time and program."""
 
