@@ -87,6 +87,7 @@ def make_panel_in_array(array_elt, reference_panel):
         pixel_size=px_size,
         image_size=reference_panel.get_image_size(),
         trusted_range=(0, 1.0e6),
+        maximum_pixel=0.0,
         thickness=0.0,
         material="",
     )

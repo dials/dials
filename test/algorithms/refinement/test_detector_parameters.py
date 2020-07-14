@@ -54,9 +54,10 @@ def random_panel(lim=(0, 50)):
         o,
         (lim[1] / 200, lim[1] / 200),
         (200, 200),
-        (0, 2e20),
-        0.0,
-        "",
+        trusted_range=(0, 2e20),
+        maximum_pixel=0.0,
+        thickness=0.0,
+        material="",
     )
 
 

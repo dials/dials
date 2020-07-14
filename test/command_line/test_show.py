@@ -28,6 +28,7 @@ Panel:
   pixel_size:{0.172,0.172}
   image_size: {2463,2527}
   trusted_range: {-1,495976}
+  maximum_pixel: 495976
   thickness: 0
   material:
   mu: 0
@@ -96,6 +97,7 @@ Panel:
   pixel_size:{0.172,0.172}
   image_size: {2463,2527}
   trusted_range: {-1,161977}
+  maximum_pixel: 0
   thickness: 0
   material:
   mu: 0
@@ -150,6 +152,7 @@ Panel:
   pixel_size:{0.172,0.172}
   image_size: {2463,2527}
   trusted_range: {-1,495976}
+  maximum_pixel: 495976
   thickness: 0.32
   material: Si
   mu: 3.96038
@@ -207,6 +210,7 @@ Panel:
   pixel_size:{0.172,0.172}
   image_size: {2463,195}
   trusted_range: {-1,1e+06}
+  maximum_pixel: 0
   thickness: 0.32
   material: Si
   mu: 3.663
@@ -232,6 +236,7 @@ Panel:
   pixel_size:{0.172,0.172}
   image_size: {2463,195}
   trusted_range: {-1,1e+06}
+  maximum_pixel: 0
   thickness: 0.32
   material: Si
   mu: 3.663
