@@ -106,7 +106,12 @@ def merge_data_to_mtz(params, experiments, reflections):
             ),
         )
         return make_MAD_merged_mtz_file(params, experiments, reflections, wavelengths)
-    merged_data = merge_and_truncate(
+    (
+        merged_array,
+        merged_anomalous_array,
+        amplitudes,
+        anomalous_amplitudes,
+    ) = merge_and_truncate(
         experiments,
         reflections,
         d_min=params.d_min,
@@ -122,7 +127,14 @@ def merge_data_to_mtz(params, experiments, reflections):
         show_wilson_stats=params.reporting.wilson_stats,
         show_merging_stats=params.reporting.merging_stats,
     )
-    return make_merged_mtz_file(*((params, list(wavelengths)[0]) + merged_data))
+    return make_merged_mtz_file(
+        params,
+        list(wavelengths)[0],
+        merged_array,
+        merged_anomalous_array=merged_anomalous_array,
+        amplitudes=amplitudes,
+        anomalous_amplitudes=anomalous_amplitudes,
+    )
 
 
 def run(args=None):
