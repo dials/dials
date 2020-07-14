@@ -140,12 +140,14 @@ def make_MAD_merged_mtz_file(params, experiments, reflections, wavelengths):
 
 
 def make_merged_mtz_file(
-    params,
     wavelength,
     merged_array,
     merged_anomalous_array=None,
     amplitudes=None,
     anomalous_amplitudes=None,
+    crystal_name="XTAL",
+    dataset_name="NATIVE",
+    project_name="AUTOMATIC",
 ):
     """Make an mtz object for the data, adding the date, time and program."""
 
@@ -153,10 +155,9 @@ def make_merged_mtz_file(
 
     mtz_writer = MergedMTZWriter(merged_array.space_group(), merged_array.unit_cell())
     mtz_writer.add_crystal(
-        crystal_name=params.output.crystal_names[0],
-        project_name=params.output.project_name,
+        crystal_name=crystal_name, project_name=project_name,
     )
-    mtz_writer.add_empty_dataset(wavelength, name=params.output.dataset_names[0])
+    mtz_writer.add_empty_dataset(wavelength, name=dataset_name)
     mtz_writer.add_dataset(
         merged_array, merged_anomalous_array, amplitudes, anomalous_amplitudes
     )

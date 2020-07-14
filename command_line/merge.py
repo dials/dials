@@ -128,12 +128,14 @@ def merge_data_to_mtz(params, experiments, reflections):
         show_merging_stats=params.reporting.merging_stats,
     )
     return make_merged_mtz_file(
-        params,
         list(wavelengths)[0],
         merged_array,
         merged_anomalous_array=merged_anomalous_array,
         amplitudes=amplitudes,
         anomalous_amplitudes=anomalous_amplitudes,
+        crystal_name=params.output.crystal_names[0],
+        dataset_name=params.output.dataset_names[0],
+        project_name=params.output.project_name,
     )
 
 
