@@ -22,7 +22,7 @@ from dials.util.multi_dataset_handling import (
 )
 from iotbx import mtz
 from scitbx import matrix
-from libtbx import env, Auto
+from libtbx import env
 
 try:
     from math import isclose
@@ -393,7 +393,7 @@ def export_mtz(
     reflection_table,
     experiment_list,
     intensity_choice,
-    filename=None,
+    filename,
     best_unit_cell=None,
     partiality_threshold=0.4,
     combine_partials=True,
@@ -406,19 +406,6 @@ def export_mtz(
 ):
     """Export data from reflection_table corresponding to experiment_list to an
     MTZ file hklout."""
-
-    # if mtz filename is auto, then choose scaled.mtz or integrated.mtz
-    if filename in (None, Auto, "auto"):
-        if ("intensity.scale.value" in reflection_table) and (
-            "intensity.scale.variance" in reflection_table
-        ):
-            filename = "scaled.mtz"
-            logger.info("Data appears to be scaled, setting mtz.hklout = 'scaled.mtz'")
-        else:
-            filename = "integrated.mtz"
-            logger.info(
-                "Data appears to be unscaled, setting mtz.hklout = 'integrated.mtz'"
-            )
 
     # First get the experiment identifier information out of the data
     expids_in_table = reflection_table.experiment_identifiers()
