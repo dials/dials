@@ -114,7 +114,20 @@ def make_MAD_merged_mtz_file(params, experiments, reflections, wavelengths):
 
         logger.info("Running merge for wavelength: %s", wavelength)
         merged, anom, amplitudes, anom_amp = merge_and_truncate(
-            params, new_exps, [refls]
+            new_exps,
+            [refls],
+            d_min=params.d_min,
+            d_max=params.d_max,
+            combine_partials=params.combine_partials,
+            partiality_threshold=params.partiality_threshold,
+            anomalous=params.anomalous,
+            assess_space_group=params.assess_space_group,
+            truncate=params.truncate,
+            n_residues=params.n_residues,
+            n_bins=params.merging.n_bins,
+            use_internal_variance=params.merging.use_internal_variance,
+            show_wilson_stats=params.reporting.wilson_stats,
+            show_merging_stats=params.reporting.merging_stats,
         )
         #### Add each wavelength as a new crystal.
         mtz_writer.add_crystal(
@@ -151,7 +164,22 @@ def make_merged_mtz_file(
     return mtz_writer.mtz_file
 
 
-def merge_and_truncate(params, experiments, reflections):
+def merge_and_truncate(
+    experiments,
+    reflections,
+    d_min=None,
+    d_max=None,
+    combine_partials=True,
+    partiality_threshold=0.4,
+    anomalous=True,
+    use_internal_variance=False,
+    assess_space_group=False,
+    truncate=True,
+    n_residues=200,
+    n_bins=20,
+    show_wilson_stats=False,
+    show_merging_stats=False,
+):
     """Filter data, assess space group, run french wilson and Wilson stats."""
 
     logger.info("\nMerging scaled reflection data\n")
@@ -159,10 +187,10 @@ def merge_and_truncate(params, experiments, reflections):
     reflections = filter_reflection_table(
         reflections[0],
         intensity_choice=["scale"],
-        d_min=params.d_min,
-        d_max=params.d_max,
-        combine_partials=params.combine_partials,
-        partiality_threshold=params.partiality_threshold,
+        d_min=d_min,
+        d_max=d_max,
+        combine_partials=combine_partials,
+        partiality_threshold=partiality_threshold,
     )
     # ^ scale factor has been applied, so now set to 1.0 - okay as not
     # going to output scale factor in merged mtz.
@@ -170,20 +198,20 @@ def merge_and_truncate(params, experiments, reflections):
 
     scaled_array = scaled_data_as_miller_array([reflections], experiments)
     # Note, merge_equivalents does not raise an error if data is unique.
-    if params.anomalous:
+    if anomalous:
         anomalous_scaled = scaled_array.as_anomalous_array()
 
     merged = scaled_array.merge_equivalents(
-        use_internal_variance=params.merging.use_internal_variance
+        use_internal_variance=use_internal_variance
     ).array()
     merged_anom = None
-    if params.anomalous:
+    if anomalous:
         merged_anom = anomalous_scaled.merge_equivalents(
-            use_internal_variance=params.merging.use_internal_variance
+            use_internal_variance=use_internal_variance
         ).array()
 
     # Before merge, do some assessment of the space_group
-    if params.assess_space_group:
+    if assess_space_group:
         merged_reflections = flex.reflection_table()
         merged_reflections["intensity"] = merged.data()
         merged_reflections["variance"] = flex.pow2(merged.sigmas())
@@ -192,7 +220,7 @@ def merge_and_truncate(params, experiments, reflections):
         run_systematic_absences_checks(experiments, merged_reflections)
 
     # Run the stats on truncating on anomalous or non anomalous?
-    if params.anomalous:
+    if anomalous:
         intensities = merged_anom
     else:
         intensities = merged
@@ -200,27 +228,27 @@ def merge_and_truncate(params, experiments, reflections):
     assert intensities.is_xray_intensity_array()
     amplitudes = None
     anom_amplitudes = None
-    if params.truncate:
+    if truncate:
         logger.info("\nScaling input intensities via French-Wilson Method")
         out = StringIO()
-        if params.anomalous:
-            anom_amplitudes = intensities.french_wilson(params=params, log=out)
+        if anomalous:
+            anom_amplitudes = intensities.french_wilson(log=out)
             n_removed = intensities.size() - anom_amplitudes.size()
             assert anom_amplitudes.is_xray_amplitude_array()
             amplitudes = anom_amplitudes.as_non_anomalous_array()
             amplitudes = amplitudes.merge_equivalents().array()
         else:
-            amplitudes = intensities.french_wilson(params=params, log=out)
+            amplitudes = intensities.french_wilson(log=out)
             n_removed = intensities.size() - amplitudes.size()
         logger.info("Total number of rejected intensities %s", n_removed)
         logger.debug(out.getvalue())
 
-    if params.reporting.wilson_stats:
+    if show_wilson_stats:
         if not intensities.space_group().is_centric():
             try:
                 wilson_scaling = data_statistics.wilson_scaling(
-                    miller_array=intensities, n_residues=params.n_residues
-                )  # XXX default n_residues?
+                    miller_array=intensities, n_residues=n_residues
+                )
             except (IndexError, RuntimeError) as e:
                 logger.error(
                     "\n"
@@ -240,17 +268,15 @@ def merge_and_truncate(params, experiments, reflections):
     # Apply wilson B to give absolute scale?
 
     # Show merging stats again.
-    if params.reporting.merging_stats:
+    if show_merging_stats:
         try:
             stats, anom_stats = merging_stats_from_scaled_array(
-                scaled_array,
-                params.merging.n_bins,
-                params.merging.use_internal_variance,
+                scaled_array, n_bins, use_internal_variance,
             )
         except DialsMergingStatisticsError as e:
             logger.error(e, exc_info=True)
         else:
-            if params.merging.anomalous and anom_stats:
+            if anomalous and anom_stats:
                 logger.info(make_merging_statistics_summary(anom_stats))
             else:
                 logger.info(make_merging_statistics_summary(stats))

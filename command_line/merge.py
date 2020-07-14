@@ -88,7 +88,6 @@ output {
         .help = "Dataset name to be used in MTZ file output (multiple names
             allowed for MAD datasets)"
 }
-include scope cctbx.french_wilson.master_phil
 """,
     process_includes=True,
 )
@@ -107,7 +106,22 @@ def merge_data_to_mtz(params, experiments, reflections):
             ),
         )
         return make_MAD_merged_mtz_file(params, experiments, reflections, wavelengths)
-    merged_data = merge_and_truncate(params, experiments, reflections)
+    merged_data = merge_and_truncate(
+        experiments,
+        reflections,
+        d_min=params.d_min,
+        d_max=params.d_max,
+        combine_partials=params.combine_partials,
+        partiality_threshold=params.partiality_threshold,
+        anomalous=params.anomalous,
+        assess_space_group=params.assess_space_group,
+        truncate=params.truncate,
+        n_residues=params.n_residues,
+        n_bins=params.merging.n_bins,
+        use_internal_variance=params.merging.use_internal_variance,
+        show_wilson_stats=params.reporting.wilson_stats,
+        show_merging_stats=params.reporting.merging_stats,
+    )
     return make_merged_mtz_file(*((params, list(wavelengths)[0]) + merged_data))
 
 
