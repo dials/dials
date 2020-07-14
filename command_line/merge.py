@@ -62,14 +62,6 @@ merging {
         .type = bool
         .help = "Option to control whether reported merging stats are anomalous."
 }
-reporting {
-    wilson_stats = True
-        .type = bool
-        .help = "Option to turn off reporting of Wilson statistics"
-    merging_stats = True
-        .type = bool
-        .help = "Option to turn off reporting of merging statistics."
-}
 output {
     log = dials.merge.log
         .type = str
@@ -119,8 +111,6 @@ def merge_data_to_mtz(params, experiments, reflections):
             n_residues=params.n_residues,
             n_bins=params.merging.n_bins,
             use_internal_variance=params.merging.use_internal_variance,
-            show_wilson_stats=params.reporting.wilson_stats,
-            show_merging_stats=params.reporting.merging_stats,
             crystal_names=params.output.crystal_names,
             dataset_names=params.output.dataset_names,
             project_name=params.output.project_name,
@@ -143,8 +133,6 @@ def merge_data_to_mtz(params, experiments, reflections):
         n_residues=params.n_residues,
         n_bins=params.merging.n_bins,
         use_internal_variance=params.merging.use_internal_variance,
-        show_wilson_stats=params.reporting.wilson_stats,
-        show_merging_stats=params.reporting.merging_stats,
     )
     return make_merged_mtz_file(
         list(wavelengths)[0],

@@ -92,8 +92,6 @@ def make_MAD_merged_mtz_file(
     truncate=True,
     n_residues=200,
     n_bins=20,
-    show_wilson_stats=False,
-    show_merging_stats=False,
     crystal_names=None,
     dataset_names=None,
     project_name=None,
@@ -143,8 +141,6 @@ def make_MAD_merged_mtz_file(
             n_residues=n_residues,
             n_bins=n_bins,
             use_internal_variance=use_internal_variance,
-            show_wilson_stats=show_wilson_stats,
-            show_merging_stats=show_merging_stats,
         )
         #### Add each wavelength as a new crystal.
         mtz_writer.add_crystal(crystal_name=cname, project_name=project_name)
@@ -193,8 +189,6 @@ def merge_and_truncate(
     truncate=True,
     n_residues=200,
     n_bins=20,
-    show_wilson_stats=False,
-    show_merging_stats=False,
 ):
     """Filter data, assess space group, run french wilson and Wilson stats."""
 
@@ -259,42 +253,40 @@ def merge_and_truncate(
         logger.info("Total number of rejected intensities %s", n_removed)
         logger.debug(out.getvalue())
 
-    if show_wilson_stats:
-        if not intensities.space_group().is_centric():
-            try:
-                wilson_scaling = data_statistics.wilson_scaling(
-                    miller_array=intensities, n_residues=n_residues
-                )
-            except (IndexError, RuntimeError) as e:
-                logger.error(
-                    "\n"
-                    "Error encountered during Wilson statistics calculation:\n"
-                    "Perhaps there are too few unique reflections.\n"
-                    "%s",
-                    e,
-                    exc_info=True,
-                )
-            else:
-                # Divert output through logger - do with StringIO rather than
-                # info_handle else get way too much whitespace in output.
-                out = StringIO()
-                wilson_scaling.show(out=out)
-                logger.info(out.getvalue())
+    if not intensities.space_group().is_centric():
+        try:
+            wilson_scaling = data_statistics.wilson_scaling(
+                miller_array=intensities, n_residues=n_residues
+            )
+        except (IndexError, RuntimeError) as e:
+            logger.error(
+                "\n"
+                "Error encountered during Wilson statistics calculation:\n"
+                "Perhaps there are too few unique reflections.\n"
+                "%s",
+                e,
+                exc_info=True,
+            )
+        else:
+            # Divert output through logger - do with StringIO rather than
+            # info_handle else get way too much whitespace in output.
+            out = StringIO()
+            wilson_scaling.show(out=out)
+            logger.info(out.getvalue())
 
     # Apply wilson B to give absolute scale?
 
     # Show merging stats again.
-    if show_merging_stats:
-        try:
-            stats, anom_stats = merging_stats_from_scaled_array(
-                scaled_array, n_bins, use_internal_variance,
-            )
-        except DialsMergingStatisticsError as e:
-            logger.error(e, exc_info=True)
+    try:
+        stats, anom_stats = merging_stats_from_scaled_array(
+            scaled_array, n_bins, use_internal_variance,
+        )
+    except DialsMergingStatisticsError as e:
+        logger.error(e, exc_info=True)
+    else:
+        if anomalous and anom_stats:
+            logger.info(make_merging_statistics_summary(anom_stats))
         else:
-            if anomalous and anom_stats:
-                logger.info(make_merging_statistics_summary(anom_stats))
-            else:
-                logger.info(make_merging_statistics_summary(stats))
+            logger.info(make_merging_statistics_summary(stats))
 
     return merged, merged_anom, amplitudes, anom_amplitudes
