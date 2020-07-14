@@ -16,7 +16,7 @@ def start_server(server_command, working_directory):
 
 def test_find_spots_server_client(dials_data, tmpdir):
     if sys.hexversion >= 0x3080000 and sys.platform == "darwin":
-        pytest.skip("find_sports server known to be broken on MacOS with Python 3.8+")
+        pytest.skip("find_spots server known to be broken on MacOS with Python 3.8+")
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind(("", 0))
