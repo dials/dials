@@ -105,7 +105,26 @@ def merge_data_to_mtz(params, experiments, reflections):
                 for k, v in wavelengths.items()
             ),
         )
-        return make_MAD_merged_mtz_file(params, experiments, reflections, wavelengths)
+        return make_MAD_merged_mtz_file(
+            experiments,
+            reflections,
+            wavelengths,
+            d_min=params.d_min,
+            d_max=params.d_max,
+            combine_partials=params.combine_partials,
+            partiality_threshold=params.partiality_threshold,
+            anomalous=params.anomalous,
+            assess_space_group=params.assess_space_group,
+            truncate=params.truncate,
+            n_residues=params.n_residues,
+            n_bins=params.merging.n_bins,
+            use_internal_variance=params.merging.use_internal_variance,
+            show_wilson_stats=params.reporting.wilson_stats,
+            show_merging_stats=params.reporting.merging_stats,
+            crystal_names=params.output.crystal_names,
+            dataset_names=params.output.dataset_names,
+            project_name=params.output.project_name,
+        )
     (
         merged_array,
         merged_anomalous_array,

@@ -78,7 +78,26 @@ def prepare_merged_reflection_table(
     return merged_reflections
 
 
-def make_MAD_merged_mtz_file(params, experiments, reflections, wavelengths):
+def make_MAD_merged_mtz_file(
+    experiments,
+    reflections,
+    wavelengths,
+    d_min=None,
+    d_max=None,
+    combine_partials=True,
+    partiality_threshold=0.4,
+    anomalous=True,
+    use_internal_variance=False,
+    assess_space_group=False,
+    truncate=True,
+    n_residues=200,
+    n_bins=20,
+    show_wilson_stats=False,
+    show_merging_stats=False,
+    crystal_names=None,
+    dataset_names=None,
+    project_name=None,
+):
     """Make a multi wavelength merged mtz file from experiments and reflections."""
     # need to add a crystal to the mtz object
     # now go through data selecting on wavelength - loop over each to get mtz_object
@@ -89,22 +108,20 @@ def make_MAD_merged_mtz_file(params, experiments, reflections, wavelengths):
     )
 
     # now add each wavelength.
-    if len(params.output.dataset_names) != len(wavelengths.keys()):
+    if not dataset_names or len(dataset_names) != len(wavelengths.keys()):
         logger.info(
             "Unequal number of dataset names and wavelengths, using default naming."
         )
-        dnames = [None] * len(wavelengths.keys())
-    else:
-        dnames = params.output.dataset_names
-    if len(params.output.crystal_names) != len(wavelengths.keys()):
+        dataset_names = [None] * len(wavelengths.keys())
+    if not crystal_names or len(crystal_names) != len(wavelengths.keys()):
         logger.info(
             "Unequal number of crystal names and wavelengths, using default naming."
         )
-        cnames = [None] * len(wavelengths.keys())
-    else:
-        cnames = params.output.crystal_names
+        crystal_names = [None] * len(wavelengths.keys())
 
-    for dname, cname, (wavelength, exp_nos) in zip(dnames, cnames, wavelengths.items()):
+    for dname, cname, (wavelength, exp_nos) in zip(
+        dataset_names, crystal_names, wavelengths.items()
+    ):
         expids = []
         new_exps = ExperimentList()
         for i in exp_nos:
@@ -116,23 +133,21 @@ def make_MAD_merged_mtz_file(params, experiments, reflections, wavelengths):
         merged, anom, amplitudes, anom_amp = merge_and_truncate(
             new_exps,
             [refls],
-            d_min=params.d_min,
-            d_max=params.d_max,
-            combine_partials=params.combine_partials,
-            partiality_threshold=params.partiality_threshold,
-            anomalous=params.anomalous,
-            assess_space_group=params.assess_space_group,
-            truncate=params.truncate,
-            n_residues=params.n_residues,
-            n_bins=params.merging.n_bins,
-            use_internal_variance=params.merging.use_internal_variance,
-            show_wilson_stats=params.reporting.wilson_stats,
-            show_merging_stats=params.reporting.merging_stats,
+            d_min=d_min,
+            d_max=d_max,
+            combine_partials=combine_partials,
+            partiality_threshold=partiality_threshold,
+            anomalous=anomalous,
+            assess_space_group=assess_space_group,
+            truncate=truncate,
+            n_residues=n_residues,
+            n_bins=n_bins,
+            use_internal_variance=use_internal_variance,
+            show_wilson_stats=show_wilson_stats,
+            show_merging_stats=show_merging_stats,
         )
         #### Add each wavelength as a new crystal.
-        mtz_writer.add_crystal(
-            crystal_name=cname, project_name=params.output.project_name
-        )
+        mtz_writer.add_crystal(crystal_name=cname, project_name=project_name)
         mtz_writer.add_empty_dataset(wavelength, name=dname)
         mtz_writer.add_dataset(merged, anom, amplitudes, anom_amp)
 
