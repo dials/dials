@@ -49,7 +49,7 @@ from dials.algorithms.scaling.scaling_library import (
 )
 from dials.util.batch_handling import batch_manager, get_image_ranges
 from dials.util.exclude_images import get_valid_image_ranges
-from dials.util.resolutionizer import cc_half_fit
+from dials.util.resolution_analysis import resolution_cc_half
 from jinja2 import Environment, ChoiceLoader, PackageLoader
 from scitbx.array_family import flex
 
@@ -201,20 +201,20 @@ were considered for use when refining the scaling model.
             if not script.scaled_miller_array.space_group().is_centric():
                 anom_stats = data["anomalous_statistics"]
             logger.info(make_merging_statistics_summary(stats))
-            r_cc = cc_half_fit(stats, limit=0.3)[0]
+            d_min = resolution_cc_half(stats, limit=0.3).d_min
             max_current_res = stats.bins[-1].d_min
-            if r_cc - max_current_res > 0.005:
+            if d_min - max_current_res > 0.005:
                 logger.info(
                     "Resolution limit suggested from CC"
                     + u"\u00BD"
                     + " fit (limit CC"
                     + u"\u00BD"
                     + "=0.3): %.2f",
-                    r_cc,
+                    d_min,
                 )
                 try:
                     cut_stats, cut_anom_stats = merging_stats_from_scaled_array(
-                        script.scaled_miller_array.resolution_filter(d_min=r_cc),
+                        script.scaled_miller_array.resolution_filter(d_min=d_min),
                         script.params.output.merging.nbins,
                         script.params.output.use_internal_variance,
                     )
