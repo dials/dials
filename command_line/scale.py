@@ -121,13 +121,13 @@ def _export_merged_mtz(params, experiments, joint_table):
     from dials.command_line.merge import phil_scope as merge_phil_scope
 
     merge_params = merge_phil_scope.extract()
-    merge_params.reporting.wilson_stats = False
-    merge_params.reporting.merging_stats = False
+    logger.disabled = True
     merge_params.assess_space_group = False
     merge_params.partiality_threshold = params.cut_data.partiality_cutoff
     merge_params.output.crystal_names = [params.output.crystal_name]
     merge_params.output.project_name = params.output.project_name
     mtz_file = merge_data_to_mtz(merge_params, experiments, [joint_table])
+    logger.disabled = False
     logger.info("\nWriting merged data to %s", (params.output.merged_mtz))
     out = StringIO()
     mtz_file.show_summary(out=out)
