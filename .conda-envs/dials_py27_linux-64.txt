@@ -40,6 +40,6 @@ six
 sphinx<1.9
 sqlite
 tabulate
-tqdm=4.23.4
+tqdm
 urllib3
 xz

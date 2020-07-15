@@ -15,6 +15,7 @@ from collections import OrderedDict
 
 import dials.util
 import iotbx.phil
+import numpy as np
 from cctbx import sgtbx
 from dials.algorithms.indexing.symmetry import find_matching_symmetry
 from dials.algorithms.symmetry.cosym import target
@@ -346,9 +347,7 @@ class CosymAnalysis(symmetry_base, Subject):
             pca.n_components = 3
         x_reduced = pca.fit_transform(X)
 
-        import numpy
-
-        self.coords_reduced = flex.double(numpy.ascontiguousarray(x_reduced))
+        self.coords_reduced = flex.double(np.ascontiguousarray(x_reduced))
 
     @Subject.notify_event(event="analysed_symmetry")
     def _analyse_symmetry(self):
@@ -478,7 +477,6 @@ class CosymAnalysis(symmetry_base, Subject):
             eps=self.params.cluster.dbscan.eps,
             min_samples=self.params.cluster.dbscan.min_samples,
         ).fit(X)
-        import numpy as np
 
         return flex.int(db.labels_.astype(np.int32))
 
@@ -507,7 +505,6 @@ class CosymAnalysis(symmetry_base, Subject):
 
         # Perform cluster analysis
         from sklearn.cluster import AgglomerativeClustering
-        import numpy as np
 
         model = AgglomerativeClustering(
             n_clusters=self.params.cluster.n_clusters,
