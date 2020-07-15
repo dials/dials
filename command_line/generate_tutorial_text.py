@@ -163,8 +163,8 @@ def generate_multi_crystal_symmetry_and_scaling(options):
     runcmd(["dials.cosym"] + input_files)
     tmpdir.join("dials.cosym.html").copy(outdir.join("dials.cosym.html"))
     runcmd(["dials.scale", "symmetrized.expt", "symmetrized.refl"])
-    runcmd(["dials.resolutionizer", "scaled.expt", "scaled.refl"])
-    d_min = extract_resolution(outdir / "dials.resolutionizer.log", "cc_half")
+    runcmd(["dials.estimate_resolution", "scaled.expt", "scaled.refl"])
+    d_min = extract_resolution(outdir / "dials.estimate_resolution.log", "cc_half")
     runcmd(
         ["dials.scale", "scaled.expt", "scaled.refl", "d_min=%.2f" % d_min],
         store_command=outdir / "dials.scale_cut.cmd",
@@ -230,7 +230,7 @@ def extract_last_indexed_spot_count(source, destination):
 
 
 def extract_resolution(source, method):
-    """Extract the resolution from a dials.resolutionizer log."""
+    """Extract the resolution from a dials.estimate_resolution log."""
     lines = source.read_text("latin-1").split("\n")
 
     # Find the Resolution line

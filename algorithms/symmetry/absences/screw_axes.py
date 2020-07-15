@@ -34,10 +34,12 @@ class ScrewAxisObserver(Observer):
             ]
         )
         env = Environment(loader=loader)
-        template = env.get_template("systematic_absences_report.html")
+        template = env.get_template("simple_report.html")
         html = template.render(
             page_title="DIALS systematic absences report",
-            screw_axes_graphs=self.data["screw_axes"],
+            panel_title="Screw axes analysis",
+            panel_id="screw_axes",
+            graphs=self.data["screw_axes"],
         )
         with open(filename, "wb") as f:
             f.write(html.encode("utf-8", "xmlcharrefreplace"))
