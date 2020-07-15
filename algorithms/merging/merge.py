@@ -18,7 +18,6 @@ from dials.algorithms.symmetry.absences.run_absences_checks import (
 from dials.util.filter_reflections import filter_reflection_table
 from dials.util.export_mtz import MADMergedMTZWriter, MergedMTZWriter
 from dials.report.analysis import make_merging_statistics_summary
-from dxtbx.model import ExperimentList
 from mmtbx.scaling import data_statistics
 from six.moves import cStringIO as StringIO
 
@@ -78,110 +77,68 @@ def prepare_merged_reflection_table(
     return merged_reflections
 
 
-def make_MAD_merged_mtz_file(
-    experiments,
-    reflections,
-    wavelengths,
-    d_min=None,
-    d_max=None,
-    combine_partials=True,
-    partiality_threshold=0.4,
-    anomalous=True,
-    use_internal_variance=False,
-    assess_space_group=False,
-    truncate_intensities=True,
-    n_residues=200,
-    n_bins=20,
-    crystal_names=None,
-    dataset_names=None,
-    project_name=None,
-):
-    """Make a multi wavelength merged mtz file from experiments and reflections."""
-    # need to add a crystal to the mtz object
-    # now go through data selecting on wavelength - loop over each to get mtz_object
-    # Create the mtz file
+class MTZDataClass(object):
+    def __init__(
+        self,
+        wavelength=0.0,
+        project_name="AUTOMATIC",
+        dataset_name="NATIVE",
+        crystal_name="XTAL",
+        merged_array=None,
+        merged_anomalous_array=None,
+        amplitudes=None,
+        anomalous_amplitudes=None,
+    ):
+        self.wavelength = wavelength
+        self.project_name = project_name
+        self.dataset_name = dataset_name
+        self.crystal_name = crystal_name
+        self.merged_array = merged_array
+        self.merged_anomalous_array = merged_anomalous_array
+        self.amplitudes = amplitudes
+        self.anomalous_amplitudes = anomalous_amplitudes
 
+
+def make_MAD_merged_mtz_file(mtz_datasets):
+    """Make a multi wavelength merged mtz file from experiments and reflections."""
     mtz_writer = MADMergedMTZWriter(
-        experiments[0].crystal.get_space_group(), experiments[0].crystal.get_unit_cell()
+        mtz_datasets[0].merged_array.space_group(),
+        mtz_datasets[0].merged_array.unit_cell(),
     )
 
-    # now add each wavelength.
-    if not dataset_names or len(dataset_names) != len(wavelengths):
-        logger.info(
-            "Unequal number of dataset names and wavelengths, using default naming."
+    #### Add each wavelength as a new crystal.
+    for dataset in mtz_datasets:
+        mtz_writer.add_crystal(
+            crystal_name=dataset.crystal_name, project_name=dataset.project_name
         )
-        dataset_names = [None] * len(wavelengths)
-    if not crystal_names or len(crystal_names) != len(wavelengths):
-        logger.info(
-            "Unequal number of crystal names and wavelengths, using default naming."
-        )
-        crystal_names = [None] * len(wavelengths)
-
-    for dname, cname, (wavelength, exp_nos) in zip(
-        dataset_names, crystal_names, wavelengths.items()
-    ):
-        expids = [experiments[i].identifier for i in exp_nos]
-        new_exps = ExperimentList([experiments[i] for i in exp_nos])
-        sel_reflections = reflections[0].select_on_experiment_identifiers(expids)
-
-        logger.info("Running merge for wavelength: %s", wavelength)
-
-        # merge and truncate the data
-        amplitudes, anomalous_amplitudes = None, None
-        merged_array, merged_anomalous_array, stats_summary = merge(
-            new_exps,
-            [sel_reflections],
-            d_min=d_min,
-            d_max=d_max,
-            combine_partials=combine_partials,
-            partiality_threshold=partiality_threshold,
-            anomalous=anomalous,
-            assess_space_group=assess_space_group,
-            n_bins=n_bins,
-            use_internal_variance=use_internal_variance,
-        )
-        if anomalous:
-            merged_intensities = merged_anomalous_array
-        else:
-            merged_intensities = merged_array
-
-        if truncate_intensities:
-            amplitudes, anomalous_amplitudes = truncate(merged_intensities)
-        show_wilson_scaling_analysis(merged_intensities, n_residues=n_residues)
-        if stats_summary:
-            logger.info(stats_summary)
-
-        #### Add each wavelength as a new crystal.
-        mtz_writer.add_crystal(crystal_name=cname, project_name=project_name)
-        mtz_writer.add_empty_dataset(wavelength, name=dname)
+        mtz_writer.add_empty_dataset(dataset.wavelength, name=dataset.dataset_name)
         mtz_writer.add_dataset(
-            merged_array, merged_anomalous_array, amplitudes, anomalous_amplitudes
+            dataset.merged_array,
+            dataset.merged_anomalous_array,
+            dataset.amplitudes,
+            dataset.anomalous_amplitudes,
         )
 
     return mtz_writer.mtz_file
 
 
-def make_merged_mtz_file(
-    wavelength,
-    merged_array,
-    merged_anomalous_array=None,
-    amplitudes=None,
-    anomalous_amplitudes=None,
-    crystal_name=None,
-    dataset_name=None,
-    project_name=None,
-):
-    """Make an mtz object for the data, adding the date, time and program."""
+def make_merged_mtz_file(mtz_dataset):
+    """Make an mtz object for the mtz_dataset, adding the date, time and program."""
 
-    assert merged_array.is_xray_intensity_array()
+    assert mtz_dataset.merged_array.is_xray_intensity_array()
 
-    mtz_writer = MergedMTZWriter(merged_array.space_group(), merged_array.unit_cell())
-    mtz_writer.add_crystal(
-        crystal_name=crystal_name, project_name=project_name,
+    mtz_writer = MergedMTZWriter(
+        mtz_dataset.merged_array.space_group(), mtz_dataset.merged_array.unit_cell()
     )
-    mtz_writer.add_empty_dataset(wavelength, name=dataset_name)
+    mtz_writer.add_crystal(
+        crystal_name=mtz_dataset.crystal_name, project_name=mtz_dataset.project_name,
+    )
+    mtz_writer.add_empty_dataset(mtz_dataset.wavelength, name=mtz_dataset.dataset_name)
     mtz_writer.add_dataset(
-        merged_array, merged_anomalous_array, amplitudes, anomalous_amplitudes
+        mtz_dataset.merged_array,
+        mtz_dataset.merged_anomalous_array,
+        mtz_dataset.amplitudes,
+        mtz_dataset.anomalous_amplitudes,
     )
 
     return mtz_writer.mtz_file
@@ -204,7 +161,7 @@ def merge(
     logger.info("\nMerging scaled reflection data\n")
     # first filter bad reflections using dials.util.filter methods
     reflections = filter_reflection_table(
-        reflections[0],
+        reflections,
         intensity_choice=["scale"],
         d_min=d_min,
         d_max=d_max,
