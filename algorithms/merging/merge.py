@@ -78,6 +78,9 @@ def prepare_merged_reflection_table(
 
 
 class MTZDataClass(object):
+
+    """Container class (i.e. Pythom3.7 dataclass) for per-wavelength mtz dataset."""
+
     def __init__(
         self,
         wavelength=0.0,
@@ -156,7 +159,13 @@ def merge(
     assess_space_group=False,
     n_bins=20,
 ):
-    """Filter data, assess space group, run french wilson and Wilson stats."""
+    """
+    Merge reflection table data and generate a summary of the merging statistics.
+
+    This procedure filters the input data, merges the data (normal and optionally
+    anomalous), assesses the space group symmetry and generates a summary
+    of the merging statistics.
+    """
 
     logger.info("\nMerging scaled reflection data\n")
     # first filter bad reflections using dials.util.filter methods
@@ -185,7 +194,7 @@ def merge(
             use_internal_variance=use_internal_variance
         ).array()
 
-    # Before merge, do some assessment of the space_group
+    # Before merge, do assessment of the space_group
     if assess_space_group:
         merged_reflections = flex.reflection_table()
         merged_reflections["intensity"] = merged.data()
@@ -194,8 +203,6 @@ def merge(
         logger.info("Running systematic absences check")
         run_systematic_absences_checks(experiments, merged_reflections)
 
-    # here return merged arrays?
-    # Show merging stats again.
     try:
         stats, anom_stats = merging_stats_from_scaled_array(
             scaled_array, n_bins, use_internal_variance,
@@ -213,6 +220,13 @@ def merge(
 
 
 def show_wilson_scaling_analysis(merged_intensities, n_residues=200):
+    """
+    Report the wilson statistics for a merged intensity array
+
+    Args:
+        merged_intensities: A merged miller intensity array.
+        n_residues: The number of residues to use for the wilson analysis.
+    """
     if not merged_intensities.space_group().is_centric():
         try:
             wilson_scaling = data_statistics.wilson_scaling(
@@ -236,7 +250,19 @@ def show_wilson_scaling_analysis(merged_intensities, n_residues=200):
 
 
 def truncate(merged_intensities):
-    logger.info("\nScaling input intensities via French-Wilson Method")
+    """
+    Perform French-Wilson truncation procedure on merged intensities.
+
+    Args:
+        merged_intensities: A merged miller intensity array (normal or anomalous).
+
+    Returns:
+        (tuple): tuple containing:
+            amplitudes: A normal all-positive miller amplitude array
+            anom_amplitudes: An anomalous all-positive amplitude array, if the
+                input array has the anomalous_flag set, else None.
+    """
+    logger.info("\nPerforming French-Wilson treatment of scaled intensities")
     out = StringIO()
     if merged_intensities.anomalous_flag():
         anom_amplitudes = merged_intensities.french_wilson(log=out)
