@@ -102,9 +102,26 @@ class MTZDataClass(object):
         self.anomalous_amplitudes = anomalous_amplitudes
 
 
-def make_MAD_merged_mtz_file(mtz_datasets):
-    """Make a multi wavelength merged mtz file from experiments and reflections."""
-    mtz_writer = MADMergedMTZWriter(
+def make_merged_mtz_file(mtz_datasets):
+    """
+    Make an mtz file object for the data, adding the date, time and program.
+
+    For multi-wavelength data, each wavelength is added as a new crystal.
+
+    Args:
+        mtz_datasets: A list of MTZDataClass objects, one per wavelength of the
+            experiment.
+
+    Returns:
+        An iotbx mtz file object.
+    """
+
+    if len(mtz_datasets) > 1:
+        writer = MADMergedMTZWriter
+    else:
+        writer = MergedMTZWriter
+
+    mtz_writer = writer(
         mtz_datasets[0].merged_array.space_group(),
         mtz_datasets[0].merged_array.unit_cell(),
     )
@@ -121,28 +138,6 @@ def make_MAD_merged_mtz_file(mtz_datasets):
             dataset.amplitudes,
             dataset.anomalous_amplitudes,
         )
-
-    return mtz_writer.mtz_file
-
-
-def make_merged_mtz_file(mtz_dataset):
-    """Make an mtz object for the mtz_dataset, adding the date, time and program."""
-
-    assert mtz_dataset.merged_array.is_xray_intensity_array()
-
-    mtz_writer = MergedMTZWriter(
-        mtz_dataset.merged_array.space_group(), mtz_dataset.merged_array.unit_cell()
-    )
-    mtz_writer.add_crystal(
-        crystal_name=mtz_dataset.crystal_name, project_name=mtz_dataset.project_name,
-    )
-    mtz_writer.add_empty_dataset(mtz_dataset.wavelength, name=mtz_dataset.dataset_name)
-    mtz_writer.add_dataset(
-        mtz_dataset.merged_array,
-        mtz_dataset.merged_anomalous_array,
-        mtz_dataset.amplitudes,
-        mtz_dataset.anomalous_amplitudes,
-    )
 
     return mtz_writer.mtz_file
 

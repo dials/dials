@@ -12,7 +12,6 @@ from dials.util.options import OptionParser, reflections_and_experiments_from_fi
 from dials.util.version import dials_version
 from dials.util.export_mtz import match_wavelengths
 from dials.algorithms.merging.merge import (
-    make_MAD_merged_mtz_file,
     make_merged_mtz_file,
     merge,
     truncate,
@@ -167,9 +166,7 @@ def merge_data_to_mtz(params, experiments, reflections):
         if stats_summary:
             logger.info(stats_summary)
 
-    if len(wavelengths) > 1:
-        return make_MAD_merged_mtz_file(mtz_datasets)
-    return make_merged_mtz_file(mtz_datasets[0])
+    return make_merged_mtz_file(mtz_datasets)
 
 
 def run(args=None):
