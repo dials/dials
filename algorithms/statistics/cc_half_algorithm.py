@@ -590,9 +590,12 @@ class DeltaCCHalf(object):
                 ]
             )
             env = Environment(loader=loader)
-            template = env.get_template("delta_cc_half_report.html")
+            template = env.get_template("simple_report.html")
             html = template.render(
-                page_title="ΔCC½ report", cc_half_plots=data["cc_half_plots"]
+                page_title="ΔCC½ report",
+                panel_title="Delta CC-Half plots",
+                panel_id="cc_half_plots",
+                graphs=data["cc_half_plots"],
             )
             with open(self.params.output.html, "wb") as f:
                 f.write(html.encode("utf-8", "xmlcharrefreplace"))
