@@ -95,7 +95,9 @@ def refine_error_model(params, experiments, reflection_tables):
             )
         reflection_tables[i] = table
     space_group = experiments[0].crystal.get_space_group()
-    Ih_table = IhTable(reflection_tables, space_group, additional_cols=["partiality"])
+    Ih_table = IhTable(
+        reflection_tables, space_group, additional_cols=["partiality"], anomalous=True
+    )
 
     # now do the error model refinement
     try:
