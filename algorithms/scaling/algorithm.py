@@ -298,7 +298,6 @@ class ScalingAlgorithm(Subject):
 
     def finish(self):
         """Save the experiments json and scaled pickle file."""
-        logger.info("%s%s%s", "\n", "=" * 80, "\n")
 
         # Now create a joint reflection table. Delete all other data before
         # joining reflection tables - just need experiments for mtz export

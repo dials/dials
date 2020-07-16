@@ -24,6 +24,7 @@ from dials.algorithms.scaling.model.model import (
 from dials.report.analysis import (
     reflection_tables_to_batch_dependent_properties,
     make_merging_statistics_summary,
+    table_1_summary,
 )
 from dials.algorithms.scaling.error_model.error_model import (
     calc_sigmaprime,
@@ -42,8 +43,13 @@ from dials.report.plots import (
     make_image_range_table,
 )
 from dials.algorithms.scaling.scale_and_filter import make_scaling_filtering_plots
+from dials.algorithms.scaling.scaling_library import (
+    merging_stats_from_scaled_array,
+    DialsMergingStatisticsError,
+)
 from dials.util.batch_handling import batch_manager, get_image_ranges
 from dials.util.exclude_images import get_valid_image_ranges
+from dials.util.resolution_analysis import resolution_cc_half
 from jinja2 import Environment, ChoiceLoader, PackageLoader
 from scitbx.array_family import flex
 
@@ -135,16 +141,14 @@ class ScalingSummaryGenerator(Observer):
     Observer to summarise data
     """
 
-    def print_scaling_summary(self, scaling_script):
+    def print_scaling_summary(self, script):
         """Log summary information after scaling."""
         if ScalingModelObserver().data:
             logger.info(ScalingModelObserver().return_model_error_summary())
-        valid_ranges = get_valid_image_ranges(scaling_script.experiments)
-        image_ranges = get_image_ranges(scaling_script.experiments)
+        valid_ranges = get_valid_image_ranges(script.experiments)
+        image_ranges = get_image_ranges(script.experiments)
         msg = []
-        for (img, valid, refl) in zip(
-            image_ranges, valid_ranges, scaling_script.reflections
-        ):
+        for (img, valid, refl) in zip(image_ranges, valid_ranges, script.reflections):
             if valid:
                 if len(valid) > 1 or valid[0][0] != img[0] or valid[-1][1] != img[1]:
                     msg.append(
@@ -161,7 +165,7 @@ class ScalingSummaryGenerator(Observer):
 
         # report on partiality of dataset
         partials = flex.double()
-        for r in scaling_script.reflections:
+        for r in script.reflections:
             if "partiality" in r:
                 partials.extend(r["partiality"])
         not_full_sel = partials < 0.99
@@ -187,15 +191,39 @@ part of the scaling analysis or for the reporting of merging statistics.
 Additionally, if applicable, only reflections with a min_partiality > %s
 were considered for use when refining the scaling model.
 """,
-            scaling_script.params.cut_data.partiality_cutoff,
-            scaling_script.params.reflection_selection.min_partiality,
+            script.params.cut_data.partiality_cutoff,
+            script.params.reflection_selection.min_partiality,
         )
-        if MergingStatisticsObserver().data:
-            logger.info(
-                make_merging_statistics_summary(
-                    MergingStatisticsObserver().data["statistics"]
+        data = MergingStatisticsObserver().data
+        if data:
+            stats = data["statistics"]
+            anom_stats, cut_stats, cut_anom_stats = (None, None, None)
+            if not script.scaled_miller_array.space_group().is_centric():
+                anom_stats = data["anomalous_statistics"]
+            logger.info(make_merging_statistics_summary(stats))
+            d_min = resolution_cc_half(stats, limit=0.3).d_min
+            max_current_res = stats.bins[-1].d_min
+            if d_min - max_current_res > 0.005:
+                logger.info(
+                    "Resolution limit suggested from CC"
+                    + u"\u00BD"
+                    + " fit (limit CC"
+                    + u"\u00BD"
+                    + "=0.3): %.2f",
+                    d_min,
                 )
-            )
+                try:
+                    cut_stats, cut_anom_stats = merging_stats_from_scaled_array(
+                        script.scaled_miller_array.resolution_filter(d_min=d_min),
+                        script.params.output.merging.nbins,
+                        script.params.output.use_internal_variance,
+                    )
+                except DialsMergingStatisticsError:
+                    pass
+                else:
+                    if script.scaled_miller_array.space_group().is_centric():
+                        cut_anom_stats = None
+            logger.info(table_1_summary(stats, anom_stats, cut_stats, cut_anom_stats))
 
 
 @singleton
@@ -216,7 +244,7 @@ class ScalingHTMLGenerator(Observer):
         self.data.update(MergingStatisticsObserver().make_plots())
         self.data.update(FilteringObserver().make_plots())
         if html_file:
-            logger.info("Writing html report to: %s", html_file)
+            logger.info("Writing html report to %s", html_file)
             loader = ChoiceLoader(
                 [
                     PackageLoader("dials", "templates"),
@@ -243,7 +271,7 @@ class ScalingHTMLGenerator(Observer):
             with open(html_file, "wb") as f:
                 f.write(html.encode("utf-8", "xmlcharrefreplace"))
         if json_file:
-            logger.info("Writing html report data to: %s", json_file)
+            logger.info("Writing html report data to %s", json_file)
             with open(json_file, "w") as outfile:
                 json.dump(self.data, outfile)
 
