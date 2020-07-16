@@ -91,14 +91,6 @@ def install_miniconda(location):
 
 
 def install_conda(python):
-    if python in ("3.7", "3.8") and not sys.platform.startswith("linux"):
-        print(
-            "\n",
-            "*" * 80 + "\n",
-            " Python version {python} is not supported yet.\n".format(python=python),
-            "*" * 80 + "\n\n",
-        )
-
     # Find relevant conda base installation
     conda_base = os.path.realpath("miniconda")
     if os.name == "nt":
