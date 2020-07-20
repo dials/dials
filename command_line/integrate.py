@@ -51,9 +51,9 @@ phil_scope = parse(
       .type = str
       .help = "The experiments output filename"
 
-    copy_input_reflections = False
+    output_unintegrated_reflections = False
       .type = bool
-      .help = "Copy input reflections to output"
+      .help = "Include unintegrated reflections in output file"
 
     reflections = 'integrated.refl'
       .type = str
@@ -559,7 +559,7 @@ def run_integration(params, experiments, reference=None):
     reflections = integrator.integrate()
 
     # Remove unintegrated reflections
-    if not params.output.copy_input_reflections:
+    if not params.output.output_unintegrated_reflections:
         keep = reflections.get_flags(reflections.flags.integrated, all=False)
         logger.info(
             "Removing %d unintegrated reflections of %d total"
@@ -647,9 +647,7 @@ def run(args=None, phil=phil_scope):
     params, options = parser.parse_args(args=args, show_diff_phil=False)
 
     # Configure the logging
-    dials.util.log.config(
-        verbosity=options.verbose, logfile=params.output.log,
-    )
+    dials.util.log.config(verbosity=options.verbose, logfile=params.output.log)
 
     logger.info(dials_version())
 
