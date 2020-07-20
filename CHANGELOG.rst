@@ -1,3 +1,13 @@
+DIALS 3.0.4 (2020-07-20)
+========================
+
+- ``dials.scale``: Allow usage of ``mode=image_group`` with ``filtering.method=deltacchalf`` when
+  only providing a single data set (#1334)
+- ``dials.import``: When using a template and specifying an image_range, missing images outside of
+  the range will not cause a failure (#1333)
+- ``dials.stills_process``: Show better error message in specific spotfinding failure case (#1180)
+
+
 DIALS 3.0.3 (2020-07-06)
 ========================
 
@@ -9,10 +19,10 @@ Features
 Bugfixes
 --------
 - HTML reports: Plot bin centres instead bin minimum for d_min line plots vs. resolution (#1323)
-- `dials.export`: Fix inconsistency in mtz export when given a non-reference (e.g. I2 or primitive) setting (#1279)
-- `dials.refine_bravais_settings`: Fix crash with large (>2gb) reflection tables and reduce memory use (#1274)
-- `dials.scale`: Fix bug in outlier rejection code causing misidentification of outliers (with outlier_rejection=standard).
-- `dials.scale`: Fix outlier rejection formula to avoid overconfidence in spuriously low values
+- ``dials.export``: Fix inconsistency in mtz export when given a non-reference (e.g. I2 or primitive) setting (#1279)
+- ``dials.refine_bravais_settings``: Fix crash with large (>2gb) reflection tables and reduce memory use (#1274)
+- ``dials.scale``: Fix bug in outlier rejection code causing misidentification of outliers (with outlier_rejection=standard).
+- ``dials.scale``: Fix outlier rejection formula to avoid overconfidence in spuriously low values
 
 
 DIALS 3.0.2 (2020-06-23)

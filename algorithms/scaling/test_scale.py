@@ -498,6 +498,34 @@ def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
     assert analysis_results["termination_reason"] == "max_percent_removed"
 
 
+def test_scale_and_filter_image_group_single_dataset(dials_data, tmpdir):
+    """Test the scale and filter deltacchalf.mode=image_group on a
+       single data set."""
+    data_dir = dials_data("l_cysteine_dials_output")
+    command = [
+        "dials.scale",
+        data_dir / "20_integrated.pickle",
+        data_dir / "20_integrated_experiments.json",
+        "filtering.method=deltacchalf",
+        "stdcutoff=3.0",
+        "mode=image_group",
+        "max_cycles=1",
+        "scale_and_filter_results=analysis_results.json",
+        "error_model=None",
+    ]
+    result = procrunner.run(command, working_directory=tmpdir)
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("scaled.refl").check()
+    assert tmpdir.join("scaled.expt").check()
+    assert tmpdir.join("analysis_results.json").check()
+
+    with open(tmpdir.join("analysis_results.json").strpath) as f:
+        analysis_results = json.load(f)
+    assert analysis_results["cycle_results"]["1"]["image_ranges_removed"] == []
+    assert len(analysis_results["cycle_results"].keys()) == 1
+    assert analysis_results["termination_reason"] == "no_more_removed"
+
+
 def test_scale_dose_decay_model(dials_data, tmpdir):
     """Test the scale and filter command line program."""
     location = dials_data("multi_crystal_proteinase_k")
