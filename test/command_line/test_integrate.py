@@ -11,7 +11,7 @@ from dials.algorithms.integration.processor import _average_bbox_size
 import procrunner
 
 
-def test2(dials_data, tmpdir):
+def test_basic_integrate(dials_data, tmpdir):
     # Call dials.integrate
 
     exp = load.experiment_list(
@@ -26,6 +26,7 @@ def test2(dials_data, tmpdir):
             "modified_input.json",
             "profile.fitting=False",
             "integration.integrator=3d",
+            "output_unintegrated_reflections=True",
             "prediction.padding=0",
         ],
         working_directory=tmpdir,
@@ -73,6 +74,7 @@ def test2(dials_data, tmpdir):
             "models.expt",
             "profile.fitting=False",
             "integration.integrator=3d",
+            "output_unintegrated_reflections=True",
             "prediction.padding=0",
         ],
         working_directory=tmpdir,
@@ -125,6 +127,7 @@ def test_integration_with_sampling(dials_data, tmpdir):
             "modified_input.json",
             "profile.fitting=False",
             "sampling.integrate_all_reflections=False",
+            "output_unintegrated_reflections=True",
             "prediction.padding=0",
         ],
         working_directory=tmpdir,
@@ -153,6 +156,7 @@ def test_integration_with_sample_size(dials_data, tmpdir):
             "profile.fitting=False",
             "sampling.integrate_all_reflections=False",
             "sampling.minimum_sample_size=500",
+            "output_unintegrated_reflections=True",
             "prediction.padding=0",
         ],
         working_directory=tmpdir,
@@ -181,7 +185,13 @@ def test_multi_sweep(dials_regression, tmpdir):
     )
 
     result = procrunner.run(
-        ["dials.integrate", "modified_input.json", refls, "prediction.padding=0"],
+        [
+            "dials.integrate",
+            "output_unintegrated_reflections=True",
+            "modified_input.json",
+            refls,
+            "prediction.padding=0",
+        ],
         working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
@@ -236,6 +246,7 @@ def test_multi_lattice(dials_regression, tmpdir):
                 "multi_lattice",
                 "indexed.pickle",
             ),
+            "output_unintegrated_reflections=True",
             "prediction.padding=0",
         ],
         working_directory=tmpdir,
