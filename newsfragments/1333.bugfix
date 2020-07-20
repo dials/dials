@@ -1,1 +1,0 @@
-dials.import: when using template and image_range is specified don't complain about missing images that are outside of the defined image_range
