@@ -51,6 +51,10 @@ phil_scope = parse(
       .type = str
       .help = "The experiments output filename"
 
+    copy_input_reflections = False
+      .type = bool
+      .help = "Copy input reflections to output"
+
     reflections = 'integrated.refl'
       .type = str
       .help = "The integrated output filename"
@@ -553,6 +557,16 @@ def run_integration(params, experiments, reference=None):
 
     # Integrate the reflections
     reflections = integrator.integrate()
+
+    # Remove unintegrated reflections
+    if not params.output.copy_input_reflections:
+        keep = reflections.get_flags(reflections.flags.integrated, all=False)
+        logger.info(
+            "Removing %d unintegrated reflections of %d total"
+            % (keep.count(False), keep.size())
+        )
+
+        reflections = reflections.select(keep)
 
     # Append rubbish data onto the end
     if rubbish is not None and params.output.include_bad_reference:
