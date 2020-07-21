@@ -165,7 +165,15 @@ def run(args):
     pyplot.axes().set_aspect("equal")
     marker_size = params.output.marker_size
     if obs_x.size():
-        pyplot.scatter(obs_x, obs_y, marker="o", c="white", s=marker_size, alpha=1)
+        pyplot.scatter(
+            obs_x,
+            obs_y,
+            marker="o",
+            edgecolors="black",
+            c="white",
+            s=marker_size,
+            alpha=1,
+        )
     if pred_x.size():
         pyplot.scatter(pred_x, pred_y, marker="+", s=marker_size, c="blue")
     xmax = max(
