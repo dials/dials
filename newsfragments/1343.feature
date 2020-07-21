@@ -1,2 +1,2 @@
-dials.integrate: by default remove unintegrated data from output reflection file, restore with output_unintegrated_reflections=True
+dials.integrate: add option to remove unintegrated data from output reflection file, output_unintegrated_reflections=False
 

@@ -51,7 +51,7 @@ phil_scope = parse(
       .type = str
       .help = "The experiments output filename"
 
-    output_unintegrated_reflections = False
+    output_unintegrated_reflections = True
       .type = bool
       .help = "Include unintegrated reflections in output file"
 
