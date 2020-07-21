@@ -155,17 +155,17 @@ def run(args):
         if not params.output.show_plot:
             # http://matplotlib.org/faq/howto_faq.html#generate-images-without-having-a-window-appear
             matplotlib.use("Agg")  # use a non-interactive backend
-        from matplotlib import pyplot
+        import matplotlib.pyplot as plt
     except ImportError:
         raise Sorry("matplotlib must be installed to generate a plot.")
 
-    fig = pyplot.figure()
+    fig = plt.figure()
     fig.set_size_inches(params.output.size_inches)
     fig.set_dpi(params.output.dpi)
-    pyplot.axes().set_aspect("equal")
+    plt.axes().set_aspect("equal")
     marker_size = params.output.marker_size
     if obs_x.size():
-        pyplot.scatter(
+        plt.scatter(
             obs_x,
             obs_y,
             marker="o",
@@ -175,7 +175,7 @@ def run(args):
             alpha=1,
         )
     if pred_x.size():
-        pyplot.scatter(pred_x, pred_y, marker="+", s=marker_size, c="blue")
+        plt.scatter(pred_x, pred_y, marker="+", s=marker_size, c="blue")
     xmax = max(
         [
             detector[i_panel].get_image_size_mm()[0] + panel_origin_shifts[i_panel][0]
@@ -192,22 +192,22 @@ def run(args):
         beam_centre = hierarchy.get_beam_centre(imageset.get_beam().get_s0())
     except Exception:
         beam_centre = detector[0].get_beam_centre(imageset.get_beam().get_s0())
-    pyplot.scatter([beam_centre[0]], [beam_centre[1]], marker="+", c="blue", s=100)
-    pyplot.xlim(0, xmax)
-    pyplot.ylim(0, ymax)
-    pyplot.gca().invert_yaxis()
-    pyplot.title("Centroid x,y-coordinates")
-    pyplot.xlabel("x-coordinate (mm)")
-    pyplot.ylabel("y-coordinate (mm)")
+    plt.scatter([beam_centre[0]], [beam_centre[1]], marker="+", c="blue", s=100)
+    plt.xlim(0, xmax)
+    plt.ylim(0, ymax)
+    plt.gca().invert_yaxis()
+    plt.title("Centroid x,y-coordinates")
+    plt.xlabel("x-coordinate (mm)")
+    plt.ylabel("y-coordinate (mm)")
     if params.output.file_name is not None:
-        pyplot.savefig(
+        plt.savefig(
             params.output.file_name,
             size_inches=params.output.size_inches,
             dpi=params.output.dpi,
             bbox_inches="tight",
         )
     if params.output.show_plot:
-        pyplot.show()
+        plt.show()
 
 
 if __name__ == "__main__":
