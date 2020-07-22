@@ -6,6 +6,7 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import copy
+import sys
 import six.moves.cPickle as pickle
 
 import iotbx.phil
@@ -171,7 +172,7 @@ def run(args):
         epilog=help_message,
     )
 
-    params, options = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(args, show_diff_phil=True)
 
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
@@ -357,6 +358,4 @@ experiments file must also be specified with the option: reference= """
 
 
 if __name__ == "__main__":
-    import sys
-
     run(sys.argv[1:])
