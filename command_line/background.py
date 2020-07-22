@@ -121,7 +121,7 @@ def run(args):
         pyplot.show()
 
 
-def background(imageset, indx, n_bins, corrected, mask_params=None):
+def background(imageset, indx, n_bins, corrected=False, mask_params=None):
     from dials.array_family import flex
     from libtbx.phil import parse
     from scitbx import matrix
