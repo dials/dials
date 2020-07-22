@@ -1,21 +1,15 @@
-from __future__ import absolute_import, division, print_function
-
-import os
-
-from libtbx import easy_run
+import subprocess
 
 
-def test_run(dials_regression, run_in_tmpdir):
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
-
-    cmd = " ".join(
-        [
+def test_run(dials_data, tmp_path):
+    subprocess.run(
+        (
             "dials.plot_reflections",
-            os.path.join(data_dir, "datablock_orig.json"),
-            os.path.join(data_dir, "full.pickle"),
+            dials_data("centroid_test_data") / "experiments.json",
+            dials_data("centroid_test_data") / "integrated.refl",
             "scan_range=0,5",
-        ]
+        ),
+        check=True,
+        cwd=tmp_path,
     )
-    print(cmd)
-    easy_run.fully_buffered(cmd).raise_if_errors()
-    assert os.path.exists("centroids.png")
+    assert (tmp_path / "centroids.png").is_file()
