@@ -241,7 +241,7 @@ def test_reindex_experiments():
         assert cryst.num_scan_points == n_scan_points
 
 
-def test_reindex_cob_op_exit(dials_data):
+def test_reindex_cb_op_exit(dials_data):
     data_dir = dials_data("insulin_processed")
 
     # Want a SystemExit, rather than an uncaught exception
