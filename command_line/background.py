@@ -28,6 +28,9 @@ n_bins = 100
 images = None
   .type = ints
   .help = "Images on which to perform the analysis (otherwise use all images)"
+corrected = False
+  .type = bool
+  .help = "Use corrected data (i.e after applying pedestal and gain) in analysis"
 plot = False
   .type = bool
 
@@ -83,7 +86,11 @@ def run(args):
         print("For image %d:" % indx)
         indx -= first  # indices passed to imageset.get_raw_data start from zero
         d, I, sig = background(
-            imageset, indx, n_bins=params.n_bins, mask_params=params.masking
+            imageset,
+            indx,
+            n_bins=params.n_bins,
+            corrected=params.corrected,
+            mask_params=params.masking,
         )
 
         print("%8s %8s %8s" % ("d", "I", "sig"))
@@ -114,7 +121,7 @@ def run(args):
         pyplot.show()
 
 
-def background(imageset, indx, n_bins, mask_params=None):
+def background(imageset, indx, n_bins, corrected, mask_params=None):
     from dials.array_family import flex
     from libtbx.phil import parse
     from scitbx import matrix
@@ -142,7 +149,10 @@ def background(imageset, indx, n_bins, mask_params=None):
     if math.fabs(b.dot(n)) < 0.95:
         raise Sorry("Detector not perpendicular to beam")
 
-    data = imageset.get_raw_data(indx)
+    if corrected:
+        data = imageset.get_corrected_data(indx)
+    else:
+        data = imageset.get_raw_data(indx)
     assert len(data) == 1
     data = data[0]
 
