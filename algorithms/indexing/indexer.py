@@ -716,7 +716,7 @@ class Indexer(object):
             refl["id"].set_selected(sel, -1)
             refl.unset_flags(sel, refl.flags.indexed)
 
-        self._xyzcal_mm_to_px(self.experiments, self.refined_reflections)
+        self._xyzcal_mm_to_px(expt, refl)
 
     def _unit_cell_volume_sanity_check(self, original_experiments, refined_experiments):
         # sanity check for unrealistic unit cell volume increase during refinement
