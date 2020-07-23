@@ -1,1 +1,1 @@
-dials.index: if multi-lattice indexing and last lattice not refined, remove experiment ids that correspond to that lattice. 
+dials.index: In multi-lattice indexing, ensure that reflections corresponding to lattices where refinement failed are flagged as unindexed.
