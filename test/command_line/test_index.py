@@ -26,6 +26,4 @@ def test_all_expt_ids_have_expts(dials_data, tmpdir):
     refl = flex.reflection_table.from_file(tmpdir / "indexed.refl")
     expt = ExperimentList.from_file(tmpdir / "indexed.expt")
 
-    ids = set(refl["id"]) - set([-1])
-
-    assert max(ids) + 1 == len(expt)
+    assert flex.max(refl["id"]) + 1 == len(expt)
