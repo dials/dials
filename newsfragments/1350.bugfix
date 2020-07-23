@@ -1,0 +1,1 @@
+dials.index: if multi-lattice indexing and last lattice not refined, remove experiment ids that correspond to that lattice. 
