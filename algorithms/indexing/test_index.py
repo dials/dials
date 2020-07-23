@@ -784,6 +784,6 @@ def test_all_expt_ids_have_expts(dials_data, tmpdir):
     assert tmpdir.join("indexed.refl").check(file=1)
 
     refl = flex.reflection_table.from_file(tmpdir / "indexed.refl")
-    expt = ExperimentList.from_file(tmpdir / "indexed.expt")
+    expt = ExperimentList.from_file(tmpdir / "indexed.expt", check_format=False)
 
     assert flex.max(refl["id"]) + 1 == len(expt)
