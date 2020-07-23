@@ -645,6 +645,18 @@ class Indexer(object):
                         logger.info("Refinement failed:")
                         logger.info(e)
                         del experiments[-1]
+
+                        # remove experiment id from the reflections associated
+                        # with this deleted experiment - indexed flag removed
+                        # below
+                        last = len(experiments)
+                        sel = refined_reflections["id"] == last
+                        logger.info(
+                            "Removing %d reflections with id %d"
+                            % (sel.count(True), last)
+                        )
+                        refined_reflections["id"].set_selected(sel, -1)
+
                         break
 
                 self._unit_cell_volume_sanity_check(experiments, refined_experiments)
@@ -705,18 +717,7 @@ class Indexer(object):
                 rotation_matrix_differences(self.refined_experiments.crystals())
             )
 
-        # in case refinement failed, clean the reflections which may have had
-        # indices assigned to an experiment which was not saved...
-        refl = self.refined_reflections
-        expt = self.refined_experiments
-        spare = set(refl["id"]) - set(range(len(expt))) - set([-1])
-        for s in spare:
-            sel = refl["id"] == s
-            logger.info("Removing %d reflections with id %d" % (sel.count(True), s))
-            refl["id"].set_selected(sel, -1)
-            refl.unset_flags(sel, refl.flags.indexed)
-
-        self._xyzcal_mm_to_px(expt, refl)
+        self._xyzcal_mm_to_px(self.refined_experiments, self.refined_reflections)
 
     def _unit_cell_volume_sanity_check(self, original_experiments, refined_experiments):
         # sanity check for unrealistic unit cell volume increase during refinement
