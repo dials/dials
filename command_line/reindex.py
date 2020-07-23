@@ -321,7 +321,7 @@ experiments file must also be specified with the option: reference= """
                 experiments, change_of_basis_op, space_group=space_group
             )
         except RuntimeError as e:
-            sys.exit("%s" % str(e).split(":")[-1].strip())
+            sys.exit("Error: %s" % str(e).split(":")[-1].strip())
 
         print("Saving reindexed experimental models to %s" % params.output.experiments)
         experiments.as_file(params.output.experiments)
