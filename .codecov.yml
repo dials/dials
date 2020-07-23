@@ -9,3 +9,8 @@ coverage:
         target: 0%
         threshold: 100%
 
+comment:
+  layout: "diff, flags"
+  branches:
+    - master
+  after_n_builds: 6
