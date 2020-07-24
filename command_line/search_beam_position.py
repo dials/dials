@@ -84,8 +84,6 @@ output {
 """
 )
 
-master_params = phil_scope.fetch().extract()
-
 
 def optimize_origin_offset_local_scope(
     experiments,
