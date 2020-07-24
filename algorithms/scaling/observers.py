@@ -201,28 +201,32 @@ were considered for use when refining the scaling model.
             if not script.scaled_miller_array.space_group().is_centric():
                 anom_stats = data["anomalous_statistics"]
             logger.info(make_merging_statistics_summary(stats))
-            d_min = resolution_cc_half(stats, limit=0.3).d_min
-            max_current_res = stats.bins[-1].d_min
-            if d_min - max_current_res > 0.005:
-                logger.info(
-                    "Resolution limit suggested from CC"
-                    + u"\u00BD"
-                    + " fit (limit CC"
-                    + u"\u00BD"
-                    + "=0.3): %.2f",
-                    d_min,
-                )
-                try:
-                    cut_stats, cut_anom_stats = merging_stats_from_scaled_array(
-                        script.scaled_miller_array.resolution_filter(d_min=d_min),
-                        script.params.output.merging.nbins,
-                        script.params.output.use_internal_variance,
+            try:
+                d_min = resolution_cc_half(stats, limit=0.3).d_min
+            except RuntimeError as e:
+                logger.debug(f"Resolution fit failed: {e}")
+            else:
+                max_current_res = stats.bins[-1].d_min
+                if d_min - max_current_res > 0.005:
+                    logger.info(
+                        "Resolution limit suggested from CC"
+                        + "\u00BD"
+                        + " fit (limit CC"
+                        + "\u00BD"
+                        + "=0.3): %.2f",
+                        d_min,
                     )
-                except DialsMergingStatisticsError:
-                    pass
-                else:
-                    if script.scaled_miller_array.space_group().is_centric():
-                        cut_anom_stats = None
+                    try:
+                        cut_stats, cut_anom_stats = merging_stats_from_scaled_array(
+                            script.scaled_miller_array.resolution_filter(d_min=d_min),
+                            script.params.output.merging.nbins,
+                            script.params.output.use_internal_variance,
+                        )
+                    except DialsMergingStatisticsError:
+                        pass
+                    else:
+                        if script.scaled_miller_array.space_group().is_centric():
+                            cut_anom_stats = None
             logger.info(table_1_summary(stats, anom_stats, cut_stats, cut_anom_stats))
 
 
