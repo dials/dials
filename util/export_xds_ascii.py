@@ -47,7 +47,7 @@ def export_xds_ascii(integrated_data, experiment_list, params, var_model=(1, 0))
 
 
 def _export_experiment(filename, integrated_data, experiment, params, var_model=(1, 0)):
-    # type: (str, flex.reflection_table, dxtbx.model.Experiment, libtbx.phil.scope_extract, Tuple)
+    # type: (str, flex.reflection_table, dxtbx.model.Experiment, libtbx.phil.scope_extract, Tuple) -> None
     """Export a single experiment to an XDS_ASCII.HKL format file.
 
     Args:
