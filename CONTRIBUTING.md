@@ -117,6 +117,10 @@ message that the code in question is special and care should be taken.
   to resolve any other valid warnings shown with a normal run of flake8. The
   configuration in the repository turns off any that disagree with black's
   interpretation of the rules or standard practice in our repositories.
+- **We use type checking with [mypy]**. When you commit new code this will be
+  checked by a pre-commit hook, and also by a GitHub action in your pull request.
+  At this stage this is experimental, so please get in contact if this causes
+  any issues.
 - **We format C++ code with [clang-format]**. We use a configuration for style
   broadly compatible with what our existing prevailing style was. We don't
   require that everyone has clang-format installed - the weekly cleaning job
@@ -126,6 +130,7 @@ message that the code in question is special and care should be taken.
 
 [pre-commit]: https://github.com/pre-commit/pre-commit
 [black]: https://github.com/python/black
+[mypy]: https://mypy.readthedocs.io/en/stable/
 [clang-format]: https://clang.llvm.org/docs/ClangFormat.html
 [noqa]: http://flake8.pycqa.org/en/3.7.7/user/violations.html#in-line-ignoring-errors
 [PEP8]: https://www.python.org/dev/peps/pep-0008
@@ -136,4 +141,3 @@ message that the code in question is special and care should be taken.
 [six]: https://six.readthedocs.io/
 [future]: http://python-future.org/
 [python 2 deprecation timeline]: https://github.com/dials/dials/issues/1175
-
