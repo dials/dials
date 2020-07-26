@@ -1,0 +1,23 @@
+# This workflow will run static type checking on all source files
+
+name: type checking
+on: [ push ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: mypy
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        path: dials
+    - name: Set up Python 3.6
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.6  # keep in sync with the default version
+    - name: Install dependencies
+      run: |
+        pip install mypy==0.782  # keep in sync with /.pre-commit-config.yaml
+    - name: Run type checking
+      run: |
+        mypy --no-strict-optional --ignore-missing-imports dials/

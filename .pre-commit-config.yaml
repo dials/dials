@@ -23,7 +23,7 @@ repos:
 
 # Type checking
 - repo: https://github.com/pre-commit/mirrors-mypy
-  rev: v0.782
+  rev: v0.782  # keep in sync with .github/workflows/mypy.yml
   hooks:
   - id: mypy
     args: [--no-strict-optional, --ignore-missing-imports] # --show-traceback to debug
