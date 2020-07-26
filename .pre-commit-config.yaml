@@ -21,6 +21,14 @@ repos:
   - id: check-added-large-files
     args: ['--maxkb=200']
 
+# Type checking
+- repo: https://github.com/pre-commit/mirrors-mypy
+  rev: v0.782
+  hooks:
+  - id: mypy
+    args: [--no-strict-optional, --ignore-missing-imports] # --show-traceback to debug
+#   additional_dependencies: [tokenize-rt==3.2.0]
+
 - repo: local
   hooks:
   - id: no-images
