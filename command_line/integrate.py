@@ -53,6 +53,7 @@ phil_scope = parse(
 
     output_unintegrated_reflections = True
       .type = bool
+      .expert_level = 2
       .help = "Include unintegrated reflections in output file"
 
     reflections = 'integrated.refl'
