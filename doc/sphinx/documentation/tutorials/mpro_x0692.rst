@@ -16,23 +16,15 @@ checking the output as we go. We will also enforce the correct lattice symmetry.
 Tutorial data
 -------------
 
-The following example uses a Mpro dataset collected using
-beamline I04-1 at Diamond Light Source, and reprocessed especially for
+The following example uses a SARS-CoV-2 main protease (Mpro) dataset collected
+using beamline I04-1 at Diamond Light Source, and reprocessed especially for
 these tutorials.
 
 ..  hint::
-    If you are physically at Diamond on the CCP4 Workshop, then
-    this data is already available in your training data area. After
-    typing :samp:`module load ccp4-workshop` you'll be moved to a working
-    folder, with the data already located in the :samp:`tutorial-data/summed`
-    subdirectory.
+    The data can be found under the directory /dls/i04/data/2020/mx27124-1/Mpro-x0692
+    on the Diamond computer system. Make a new directory under
+    /dls/i04/data/2020/mx27124-1/processing in which to run processing commands
 
-The data is otherwise available for download from |lactamase|.
-We'll only be using the first run of data in this tutorial,
-:samp:`C2sum_1.tar`, extracted to a :samp:`tutorial-data/summed` subdirectory.
-
-.. |lactamase|  image::  https://zenodo.org/badge/DOI/10.5281/zenodo.3730940.svg
-                :target: https://doi.org/10.5281/zenodo.3730940
 
 Import
 ^^^^^^
@@ -44,7 +36,7 @@ describing their contents (:ref:`imported.expt <experiments_json>`) is written::
 .. dials_tutorial_include:: mpro_x0692/dials.import.log
 
 The output just describes what the software understands of the images it was
-passed, in this case one sequence of data containing 720 images:
+passed, in this case one sequence of data containing 400 images:
 
 .. dials_tutorial_include:: mpro_x0692/dials.import.log
 
@@ -171,7 +163,7 @@ the '-v' option to a dials command line program, but this is probably only
 helpful if something has gone wrong and you are trying to track down why.
 
 Inspecting the beginning of the log shows that the indexing step is done
-at a resolution lower than the full dataset; 1.84 Å:
+at a resolution lower than the full dataset; 1.56 Å:
 
 .. dials_tutorial_include:: mpro_x0692/dials.index.log
     :start-at: Found max_cell
@@ -189,9 +181,6 @@ is first tuned to get the best possible fit from the data, and then the
 resolution limit is reduced to cover more data than the previous cycle.  16
 parameters of the diffraction geometry are tuned - 6 for the detector, one for
 beam angle, 3 crystal orientation angles and the 6 triclinic cell parameters.
-At each stage only 36000 reflections are used in the refinement job. In order
-to save time, a subset of the input reflections are used - by default using 100
-reflections for every degree of the 360° scan.
 
 We see that the first macrocycle of refinement makes a big improvement in
 the positional RMSDs:
@@ -210,12 +199,12 @@ applied to higher resolution reflections. As long as each macrocyle
 shows a reduction in RMSDs then refinement is doing its job of extending
 the applicability of the model out to a new resolution limit, until
 eventually the highest resolution strong spots have been included. The
-final macrocycle includes data out to 1.30 Å and produces a final model
-with RMSDs of 0.050 mm in X, 0.049 mm in Y and 0.104° in φ,
-corresponding to 0.29 pixels in X, 0.28 pixels in Y and 0.21 image
+final macrocycle includes data out to 1.55 Å and produces a final model
+with RMSDs of 0.076 mm in X, 0.081 mm in Y and 0.218° in φ,
+corresponding to 0.44 pixels in X, 0.47 pixels in Y and 0.44 image
 widths in φ.
 
-Despite the high quality of this data, we notice from the log that at each
+We also notice from the log that at each
 macrocycle there were some outliers identified and removed from
 refinement as resolution increases. Large outliers can dominate refinement
 using a least squares target, so it is important to be able to remove these.
@@ -275,15 +264,14 @@ operators.
 
 A separate ``bravais_setting_N.expt`` experiments file is written for
 each plausible lattice type, corresponding to the solution index. In this
-example we choose to continue processing with
-:samp:`bravais_setting_2.expt`, which is the highest symmetry suggested
-result - the options 3, 4, 5 have higher symmetries, but at the cost of
-a steep jump in RMSd's and worsening of fit.
+example there is only one option other than P1. We choose to continue processing
+with
+:samp:`bravais_setting_2.expt`, the C2 solution.
 
 In cases where the change of basis operator to the chosen setting is the
 identity operator (:samp:`a,b,c`) we can proceed directly to further
 refinement. However, we notice that the change of basis operator for our
-chosen solution is :samp:`a+b,-a+b,c`, so it is necessary to reindex the
+chosen solution is :samp:`a,-b,-a-b-2*c`, so it is necessary to reindex the
 :ref:`indexed.refl <reflection_pickle>` file output by using
 :doc:`dials.reindex<../programs/dials_reindex>`:
 
@@ -310,6 +298,11 @@ use this command::
 and descriptions of each of the options can be included by adding ``-a1`` to
 the command. All of the main DIALS tools have equivalent command-line options
 to list available options.
+
+To automatically refine a scan-static model followed by a scan-varying model
+for the crystal we would use the command
+:samp:`dials.refine bravais_setting_2.expt reindexed.refl`. However to explore
+the steps in more detail here we will run each stage separately.
 
 To refine a static model including the monoclinic constraints
 from ``dials.refine_bravais_settings`` run:
@@ -457,9 +450,9 @@ score the potential laue groups.
 Here we see clearly that the best solution is given by C 1 2/m 1, with
 a high likelihood. For macromolecules, their chirality means that mirror symmetry
 is not allowed (the 'm' in C 1 2/m 1), therefore the determined symmetry
-relevant for MX at this point is C2. For some laue groups, there are multiple
+relevant for MX at this point is C2. For some Laue groups, there are multiple
 space groups possible due additional translational symmetries
-(e.g P 2, P 2\ :sub:`1` for laue group P2/m), which requires an additional
+(e.g P 2, P 2\ :sub:`1` for Laue group P2/m), which requires an additional
 analysis of systematic absences. However this is not the case for C 1 2/m 1,
 therefore the final result of the analysis is the space group C2, in agreement
 with the result from :samp:`dials.refine_bravais_settings`.
@@ -497,7 +490,7 @@ and scattered beam vector relative to the crystal.
     .. dials_tutorial_include:: mpro_x0692/dials.scale.log
         :linenos:
 
-As can be seen from the output text, 70 parameters are used to parameterise the
+As can be seen from the output text, 52 parameters are used to parameterise the
 scaling model for this dataset. Outlier rejection is performed at several stages,
 as outliers have a disproportionately large effect during scaling and can lead
 to poor scaling results. During scaling, the distribution of the intensity
@@ -511,7 +504,7 @@ of the quality of the scaled dataset:
     :end-before: Writing html report to dials.scale.html
 
 Looking at the resolution-dependent merging statistics, we can see that the
-completeness falls significantly beyond 1.4 Angstrom resolution.
+CC1/2 falls significantly beyond about 1.65 Å resolution.
 If desired, a resolution cutoff can be applied and the
 data rescaled (using the output of the previous scaling run as input to the
 next run to load the existing state of the scaling model):
@@ -520,13 +513,14 @@ next run to load the existing state of the scaling model):
 
 The merging statistics, as well as a number of scaling and merging plots, are
 output into a html report called :samp:`dials.scale.html`.
-This can be opened in your browser - nativigate to the section "scaling model plots" and take a look.
-What is immediately apparent is the periodic nature of the scale term, with peaks
-and troughs 90° apart. This indicates that the illuminated volume was changing
+This can be opened in your browser - navigate to the section "scaling model plots" and take a look.
+The two peaks in the scale term are at angles 180° apart. This indicates that
+the way the illuminated volume changed during the experiment, with the volumes
+at positions 180° apart being very similar.
 significantly during the experiment: a reflection would be measured as almost
 twice as intense if it was measured at rotation angle of ~120° compared to at ~210°.
-The absorption surface also shows a similar periodicity, as may be expected.
-The relative B-factor shows low overall variation, suggesting little overall
+The absorption surface parameters are fairly flat across the whole experiment and
+the relative B-factor shows low overall variation, suggesting little overall
 radiation damage.
 
 Once we are happy with the dataset quality, the final step of dials processing
