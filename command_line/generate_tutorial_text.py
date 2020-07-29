@@ -83,16 +83,9 @@ def generate_processing_detail_text_mpro_x0692(options):
     # Find/validate the data input - until we've decided to integrate this
     # into the main release, have a DLS default or otherwise let it be
     # specified via an environment variable.
-    datadir = os.getenv("MPRO_X0692_DATA")
-    if datadir:
-        datadir = py.path.local(datadir)
-    else:
-        datadir = py.path.local(
-            os.getenv(
-                "CCP4_TUTORIAL_DATA",
-                "/dls/i03/data/2017/mx19576-1/tutorial_data/summed/summed/C2sum_1*.cbf.gz",
-            )
-        ).dirpath()
+    datadir = py.path.local(
+        os.getenv("MPRO_X0692_DATA", "/dls/i04/data/2020/mx27124-1/Mpro-x0692")
+    )
     if not datadir.check(dir=1) or not datadir.listdir("Mpro-x0692_1_0*.cbf"):
         sys.exit(
             """Error:  Could not find Mpro-x0692 data: skipping text generation.
