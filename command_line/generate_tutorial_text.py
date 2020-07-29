@@ -70,6 +70,78 @@ def generate_processing_detail_text_thaumatin(options):
         tmpdir.remove(rec=1)
 
 
+def generate_processing_detail_text_mpro_x0692(options):
+    print("Generating mpro-x0692 / PDB ID 5REL processing tutorial output")
+    # See: https://www.ebi.ac.uk/pdbe/entry/pdb/5REL
+    #      https://doi.org/10.5281/zenodo.3730940
+
+    tmpdir = py.path.local("./tmp-mpro_x0692")
+    tmpdir.ensure(dir=1)
+    outdir = py.path.local(options.output).join("mpro_x0692")
+    runcmd = functools.partial(run, output_directory=outdir, working_directory=tmpdir)
+
+    # Find/validate the data input - until we've decided to integrate this
+    # into the main release, have a DLS default or otherwise let it be
+    # specified via an environment variable.
+    datadir = os.getenv("MPRO_X0692_DATA")
+    if datadir:
+        datadir = py.path.local(datadir)
+    else:
+        datadir = py.path.local(
+            os.getenv(
+                "CCP4_TUTORIAL_DATA",
+                "/dls/i03/data/2017/mx19576-1/tutorial_data/summed/summed/C2sum_1*.cbf.gz",
+            )
+        ).dirpath()
+    if not datadir.check(dir=1) or not datadir.listdir("Mpro-x0692_1_0*.cbf"):
+        sys.exit(
+            """Error:  Could not find Mpro-x0692 data: skipping text generation.
+        Please download data from https://zenodo.org/record/3730940 and extract,
+        then set environment variable MPRO_X0692_DATA to the folder with Mpro-x0692_1_0*.cbf"""
+        )
+    print("Using data: {}".format(datadir.strpath))
+
+    runcmd(["dials.import", datadir / "Mpro-x0692_1_0*.cbf"])
+    runcmd(["dials.find_spots", "imported.expt", "nproc=4"])
+    runcmd(["dials.index", "imported.expt", "strong.refl"])
+    # Because it's hard to robustly extract the *final* unindexed count
+    # using sphinx's built-in literalinclude, we extract it specially here
+    extract_last_indexed_spot_count(
+        outdir / "dials.index.log", outdir / "dials.index.log.extract_unindexed"
+    )
+    runcmd(["dials.refine_bravais_settings", "indexed.expt", "indexed.refl"])
+    runcmd(["dials.reindex", "indexed.refl", "change_of_basis_op=a,-b,-a-b-2*c"])
+    runcmd(
+        [
+            "dials.refine",
+            "bravais_setting_2.expt",
+            "reindexed.refl",
+            "scan_varying=false",
+        ]
+    )
+    runcmd(
+        ["dials.refine", "refined.expt", "refined.refl", "scan_varying=true"],
+        store_command=outdir / "dials.sv_refine.cmd",
+        store_output=outdir / "dials.sv_refine.log",
+    )
+    runcmd(["dials.integrate", "refined.expt", "refined.refl", "nproc=4"])
+    runcmd(["dials.symmetry", "integrated.expt", "integrated.refl"])
+    runcmd(["dials.scale", "symmetrized.expt", "symmetrized.refl"])
+    runcmd(["dials.estimate_resolution", "scaled.expt", "scaled.refl"])
+    d_min = extract_resolution(outdir / "dials.estimate_resolution.log", "cc_half")
+    runcmd(
+        ["dials.scale", "scaled.expt", "scaled.refl", "d_min=%.2f" % d_min],
+        store_command=outdir / "dials.scale_cut.cmd",
+        store_output=outdir / "dials.scale_cut.log",
+    )
+    runcmd(["dials.report", "scaled.expt", "scaled.refl"])
+    tmpdir.join("dials.report.html").copy(outdir.join("dials.report.html"))
+
+    print("Updated result files written to {}".format(outdir.strpath))
+    if not options.keep:
+        tmpdir.remove(rec=1)
+
+
 def generate_processing_detail_text_betalactamase(options):
     print("Generating Beta-lactamase processing tutorial output")
 
@@ -252,6 +324,13 @@ if __name__ == "__main__":
         help="Generate betalactamase tutorial logs",
     )
     parser.add_option(
+        "--mpro_x0692",
+        dest="mpro_x0692",
+        action="store_true",
+        default=False,
+        help="Generate Mpro x0692 tutorial logs",
+    )
+    parser.add_option(
         "--thaum",
         dest="thaum",
         action="store_true",
@@ -285,6 +364,8 @@ if __name__ == "__main__":
     targets = []
     if options.beta:
         targets.append(generate_processing_detail_text_betalactamase)
+    if options.mpro_x0692:
+        targets.append(generate_processing_detail_text_mpro_x0692)
     if options.thaum:
         targets.append(generate_processing_detail_text_thaumatin)
     if options.multi_crystal:
