@@ -16,15 +16,20 @@ checking the output as we go. We will also enforce the correct lattice symmetry.
 Tutorial data
 -------------
 
-The following example uses a SARS-CoV-2 main protease (Mpro) dataset collected
-using beamline I04-1 at Diamond Light Source, and reprocessed especially for
-these tutorials.
+The following example uses raw diffraction data for SARS-CoV-2 main protease in complex
+with PCM-0102340 collected as part of an XChem crystallographic fragment screening
+campaign on beamline I04-1 at Diamond Light Source (ID: mpro-x0692 / PDB: 5REL). Images
+are available for download from https://doi.org/10.5281/zenodo.3730940.
 
 ..  hint::
     The data can be found under the directory /dls/i04/data/2020/mx27124-1/Mpro-x0692
     on the Diamond computer system. Make a new directory under
     /dls/i04/data/2020/mx27124-1/processing in which to run processing commands
 
+The data is otherwise available for download from |mpro_x0692|.
+
+.. |mpro_x0692|  image::  https://zenodo.org/badge/DOI/10.5281/zenodo.3730940.svg
+                 :target: https://doi.org/10.5281/zenodo.3730940
 
 Import
 ^^^^^^
