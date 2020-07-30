@@ -1,5 +1,5 @@
-Processing in Detail
-====================
+SARS-CoV-2 main protease (Mpro)
+===============================
 
 .. highlight:: none
 
@@ -31,9 +31,9 @@ Import
 
 The first stage of step-by-step DIALS processing is to import the data - all
 that happens here is that metadata are read for all the images, and a file
-describing their contents (:ref:`imported.expt <experiments_json>`) is written::
+describing their contents (:ref:`imported.expt <experiments_json>`) is written:
 
-.. dials_tutorial_include:: mpro_x0692/dials.import.log
+.. dials_tutorial_include:: mpro_x0692/dials.import.cmd
 
 The output just describes what the software understands of the images it was
 passed, in this case one sequence of data containing 400 images:
