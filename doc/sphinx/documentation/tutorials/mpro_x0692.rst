@@ -48,7 +48,7 @@ the data is sensible and to anticipate any problems in processing::
 
 You will be presented with the main image viewer screen:
 
-.. image:: https://dials.github.io/images/process_detail_betalactamase/image_viewer.png
+.. image:: https://dials.github.io/images/mpro_x0692/image_viewer.png
    :width: 100%
 
 Play with the brightness slider (①) a little until you can clearly see
@@ -79,10 +79,7 @@ speed this up:
 
 Once this has completed, a new :ref:`reflection file <reflection_pickle>`
 '``strong.refl``' is written, containing a record of every spot found.
-
-The :doc:`dials.image_viewer<../programs/dials_image_viewer>` tool is
-not as fast as viewers such as ADXV, however it does integrate well with
-DIALS data files. Having found strong spots open the image viewer again,
+Having found strong spots open the image viewer again,
 but giving it the newly found reflection list::
 
   dials.image_viewer imported.expt strong.refl
@@ -99,7 +96,7 @@ The spot centre-of-mass is usually close to the peak pixel, but slightly
 offset as the algorithm allows calculation of the spot centre at a
 better precision than the pixel size and image angular 'width'.
 
-.. image:: https://dials.github.io/images/process_detail_betalactamase/image_viewer_spot.png
+.. image:: https://dials.github.io/images/mpro_x0692/image_viewer_spot.png
 
 The default parameters for spot finding usually do a good job for
 Pilatus images, such as these. However they may not be optimal for data
@@ -120,7 +117,7 @@ orientation that shows off the periodicity in reciprocal lattice positions::
 
   dials.reciprocal_lattice_viewer imported.expt strong.refl
 
-.. image:: /figures/process_detail_betalactamase/reciprocal_lattice_strong.png
+.. image:: https://dials.github.io/images/mpro_x0692/reciprocal_lattice_strong.png
 
 Although the reciprocal spacing is visible, in this data, there are clearly
 some systematic distortions. These will be solved in the indexing.
@@ -234,7 +231,7 @@ In this case, we can see that the refinement has clearly resolved whatever
 systematic error was causing distortions in the reciprocal space view, and the
 determined reciprocal unit cell fits the data well:
 
-.. image:: /figures/process_detail_betalactamase/reciprocal_lattice_indexed.png
+.. image:: https://dials.github.io/images/mpro_x0692/reciprocal_lattice_indexed.png
 
 
 Bravais Lattice Refinement
@@ -353,7 +350,7 @@ parameter can be tuned. We can use the :ref:`mpro_x0692-html-report`,
 described shortly, to
 view the results of fitting to smoothly varying crystal cell parameters:
 
-.. image:: /figures/process_detail_betalactamase/scan_varying.png
+.. image:: https://dials.github.io/images/mpro_x0692/scan_varying.png
 
 In this tutorial, we see no overall increase in all three cell parameters. If
 significant cell volume increases had been observed that might be indicative of
