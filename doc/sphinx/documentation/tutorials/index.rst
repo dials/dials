@@ -26,6 +26,7 @@ Introductory command-line tutorials
    processing_in_detail_betalactamase
    diamond
    small_molecule_tutorial
+   mpro_x0692
 
 Advanced command-line tutorials
 
