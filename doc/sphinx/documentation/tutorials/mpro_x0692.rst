@@ -272,7 +272,7 @@ chosen solution is :samp:`a,-b,-a-b-2*c`, so it is necessary to reindex the
 :ref:`indexed.refl <reflection_pickle>` file output by using
 :doc:`dials.reindex<../programs/dials_reindex>`:
 
-.. dials_tutorial_include:: betalactamase/dials.reindex.cmd
+.. dials_tutorial_include:: mpro_x0692/dials.reindex.cmd
 
 This outputs the file :file:`reindexed.refl` which we now
 use as input to downstream programs, in place of the original
@@ -542,7 +542,8 @@ This is run simply with::
 
   dials.report scaled.expt scaled.refl
 
-which produces the file :download:`dials.report.html <betalactamase-report.html>`.
+which produces the file
+:download:`dials.report.html <https://dials.github.io/images/mpro_x0692/mpro-x0692-report.html>`.
 
 This report includes plots showing the scan-varying crystal orientation
 and unit cell parameters. The latter of these is useful to check that
