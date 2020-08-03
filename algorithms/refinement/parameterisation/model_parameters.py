@@ -421,4 +421,4 @@ class ModelParameterisation(object):
 
         # To be implemented by the derived class, where it is clear what aspect
         # of the model under parameterisation is considered its state.
-        raise NotImplementedError()
+        pass
