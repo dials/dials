@@ -1,7 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
 from scitbx.array_family import flex
-import abc
 
 
 class Parameter(object):
@@ -121,8 +120,6 @@ class ModelParameterisation(object):
     all states and calculate all derivatives of these states.
     """
 
-    __metaclass__ = abc.ABCMeta
-
     def __init__(
         self, model, initial_state, param_list, experiment_ids, is_multi_state=False
     ):
@@ -179,7 +176,6 @@ class ModelParameterisation(object):
         """Get the model that is parameterised"""
         return self._model
 
-    @abc.abstractmethod
     def compose(self):
         """Compose the current model state.
 
@@ -190,7 +186,7 @@ class ModelParameterisation(object):
         """
 
         # Specific methods for each model are defined by derived classes.
-        pass
+        raise NotImplementedError()
 
     def get_params(self, only_free=True):
         """Get the internal list of parameters. It is intended that this function
@@ -304,7 +300,6 @@ class ModelParameterisation(object):
 
         return
 
-    @abc.abstractmethod
     def get_state(self, multi_state_elt=None):
         """Get the current state of the model under parameterisation.
 
@@ -321,7 +316,7 @@ class ModelParameterisation(object):
         # of the model under parameterisation is considered its state. The
         # type of this result should match the type of one element of the return
         # value of get_ds_dp.
-        pass
+        raise NotImplementedError()
 
     def get_ds_dp(self, only_free=True, multi_state_elt=None, use_none_as_null=False):
         """Get a list of derivatives of the state wrt each parameter.
@@ -426,4 +421,4 @@ class ModelParameterisation(object):
 
         # To be implemented by the derived class, where it is clear what aspect
         # of the model under parameterisation is considered its state.
-        pass
+        raise NotImplementedError()
