@@ -22,13 +22,13 @@ from dials.array_family import flex
 from dials.util.options import OptionParser
 from dials.util import Sorry
 from dials.algorithms.scaling.Ih_table import IhTable
-from dials.algorithms.scaling.model.model import KBScalingModel
+from dials.algorithms.scaling.model.model import KBScalingModel, PhysicalScalingModel
 from dials.algorithms.scaling.scaling_utilities import (
     calculate_prescaling_correction,
     DialsMergingStatisticsError,
 )
 from iotbx import cif, mtz
-from libtbx import phil
+from libtbx import phil, Auto
 from mock import Mock
 
 logger = logging.getLogger("dials")
@@ -200,78 +200,13 @@ def scale_single_dataset(reflection_table, experiment, params=None, model="physi
     return scaler.reflection_table
 
 
-def create_auto_scaling_model(params, experiments, reflections):
-    """Create a scaling model with auto determined parameterisation.
+def create_scaling_model(params, experiments, reflections):
+    """Loop through the experiments, creating the scaling models."""
+    autos = [None, Auto, "auto", "Auto"]
+    use_auto_model = params.model in autos
 
-    Assumes that only called when model parameter not specified by user."""
-    models = experiments.scaling_models()
-    if None in models or params.overwrite_existing_models:
-        phil_scope = phil.parse(
-            """
-        include scope dials.command_line.scale.phil_scope
-        """,
-            process_includes=True,
-        )
-        optionparser = OptionParser(phil=phil_scope, check_format=False)
-        default_params, _ = optionparser.parse_args(args=[], quick_parse=True)
-        for exp, refl in zip(experiments, reflections):
-            model = exp.scaling_model
-            if not model or params.overwrite_existing_models:
-                if not exp.scan:
-                    params.model = "KB"
-                else:  # set model physical unless scan < 1.0 degree
-                    osc_range = (
-                        exp.scan.get_oscillation_range()[1]
-                        - exp.scan.get_oscillation_range()[0]
-                    )
-                    params.model = "physical"
-                    if osc_range < 1.0:
-                        params.model = "KB"
-                    elif osc_range < 10.0:
-                        scale_interval, decay_interval = (2.0, 3.0)
-                    elif osc_range < 25.0:
-                        scale_interval, decay_interval = (4.0, 5.0)
-                    elif osc_range < 90.0:
-                        scale_interval, decay_interval = (8.0, 10.0)
-                    else:
-                        scale_interval, decay_interval = (15.0, 20.0)
-                    if params.model == "physical":
-                        # only set these if not changed by the user
-                        if (
-                            default_params.physical.scale_interval
-                            == params.physical.scale_interval
-                        ):
-                            params.physical.scale_interval = scale_interval
-                        if (
-                            default_params.physical.decay_interval
-                            == params.physical.decay_interval
-                        ):
-                            params.physical.decay_interval = decay_interval
-                        if (
-                            osc_range < 60.0
-                            and default_params.physical.absorption_correction
-                            == params.physical.absorption_correction
-                        ):
-                            params.physical.absorption_correction = False
-
-                # now load correct factory and make scaling model.
-                model_class = None
-                for entry_point in pkg_resources.iter_entry_points(
-                    "dxtbx.scaling_model_ext"
-                ):
-                    if entry_point.name == params.model:
-                        model_class = entry_point.load()
-                        break
-                exp.scaling_model = model_class.from_data(params, exp, refl)
-    return experiments
-
-
-def create_scaling_model(params, experiments, reflection_tables):
-    """Create or load a scaling model for multiple datasets."""
-    models = experiments.scaling_models()
-    if (
-        None in models or params.overwrite_existing_models
-    ):  # else, don't need to anything if all have models
+    # Determine non-auto model to use outside the loop over datasets.
+    if not use_auto_model:
         model_class = None
         for entry_point in pkg_resources.iter_entry_points("dxtbx.scaling_model_ext"):
             if entry_point.name == params.model:
@@ -279,10 +214,23 @@ def create_scaling_model(params, experiments, reflection_tables):
                 break
         if not model_class:
             raise ValueError("Unable to create scaling model of type %s" % params.model)
-        for (expt, refl) in zip(experiments, reflection_tables):
-            model = expt.scaling_model
-            if not model or params.overwrite_existing_models:
-                expt.scaling_model = model_class.from_data(params, expt, refl)
+
+    for expt, refl in zip(experiments, reflections):
+        if not expt.scaling_model or params.overwrite_existing_models:
+            # need to make a new model
+            if use_auto_model:
+                if not expt.scan:
+                    model = KBScalingModel
+                else:  # set model as physical unless scan < 1.0 degree
+                    osc_range = expt.scan.get_oscillation_range()
+                    abs_osc_range = abs(osc_range[1] - osc_range[0])
+                    if abs_osc_range < 1.0:
+                        model = KBScalingModel
+                    else:
+                        model = PhysicalScalingModel
+            else:
+                model = model_class
+            expt.scaling_model = model.from_data(params, expt, refl)
     return experiments
 
 
