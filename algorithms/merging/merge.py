@@ -21,7 +21,6 @@ from dials.report.analysis import (
     make_merging_statistics_summary,
     table_1_summary,
 )
-from dxtbx.model import ExperimentList
 from mmtbx.scaling import data_statistics
 from six.moves import cStringIO as StringIO
 
@@ -214,7 +213,7 @@ def merge(
             stats_summary = make_merging_statistics_summary(anom_stats)
         else:
             stats_summary = make_merging_statistics_summary(stats)
-        logger.info(table_1_summary(stats, anom_stats))
+        stats_summary += table_1_summary(stats, anom_stats)
 
     return merged, merged_anom, stats_summary
 
@@ -247,6 +246,7 @@ def show_wilson_scaling_analysis(merged_intensities, n_residues=200):
             out = StringIO()
             wilson_scaling.show(out=out)
             logger.info(out.getvalue())
+
 
 def truncate(merged_intensities):
     """
