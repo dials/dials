@@ -25,8 +25,6 @@ output {
 """
 )
 
-master_params = phil_scope.fetch().extract()
-
 
 def run(args):
     usage = "dev.dials.csv [options] imported.expt strong.refl output.csv=rl.csv"

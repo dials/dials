@@ -180,8 +180,8 @@ def test_ResolutionPlotsAndStats(iobs):
 
     # test plots individually
     d = plotter.cc_one_half_plot()
-    assert len(d["cc_one_half"]["data"]) == 4
-    assert all(len(x["x"]) == n_bins for x in d["cc_one_half"]["data"])
+    assert len(d["cc_one_half"]["data"]) == 6
+    assert all(len(x["x"]) == n_bins for x in d["cc_one_half"]["data"][:4])
     d["cc_one_half"]["data"][0]["x"] == [
         0.5 * (uctbx.d_as_d_star_sq(b.d_max) + uctbx.d_as_d_star_sq(b.d_min))
         for b in result.bins
@@ -206,10 +206,12 @@ def test_ResolutionPlotsAndStats(iobs):
     # now try centric options and sigma tau for cc_one_half
     plotter = ResolutionPlotsAndStats(result, anom_result, is_centric=True)
     d = plotter.cc_one_half_plot(method="sigma_tau")
-    assert len(d["cc_one_half"]["data"]) == 4
+    assert len(d["cc_one_half"]["data"]) == 6
     assert all(len(x["x"]) == n_bins for x in d["cc_one_half"]["data"][:2])
     assert d["cc_one_half"]["data"][2] == {}  # no anomalous plots
     assert d["cc_one_half"]["data"][3] == {}  # no anomalous plots
+    assert d["cc_one_half"]["data"][4] == {}  # no cc_fit
+    assert d["cc_one_half"]["data"][5] == {}  # no d_min
     d = plotter.completeness_plot()
     assert len(d["completeness"]["data"]) == 2
     assert len(d["completeness"]["data"][0]["y"]) == n_bins

@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function
 
 from scitbx import matrix
 import pycbf
-import numpy
+import numpy as np
 
 
 def compute_central_rotation_matrix(gonio):
@@ -44,7 +44,7 @@ def get_image(cbf_handle, category="array_data", column="data", row=0, element=0
 
         # Read the image data into an array
         image_string = cbf_handle.get_integerarray_as_string()
-        image = numpy.fromstring(image_string, numpy.int32)
+        image = np.fromstring(image_string, np.int32)
 
         # Get the size of the image data (either 2d or 3d)
         image_size = cbf_handle.get_image_size(element)
@@ -78,7 +78,7 @@ def get_image_volume(cbf_paths):
 
     # Initialise the image volume
     num_slices = len(cbf_paths)
-    volume = numpy.zeros(shape=(num_slices, height, width), dtype=numpy.int32)
+    volume = np.zeros(shape=(num_slices, height, width), dtype=np.int32)
     volume[0, :, :] = image
 
     # For each CBF file, read the image and put into the image volume

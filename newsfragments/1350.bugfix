@@ -1,0 +1,1 @@
+dials.index: In multi-lattice indexing, ensure that reflections corresponding to lattices where refinement failed are flagged as unindexed.

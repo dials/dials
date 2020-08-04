@@ -1,5 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
+import numpy as np
+
 
 class reader:
     """A class to read the CBF files used in DIALS"""
@@ -14,7 +16,6 @@ class reader:
 
     def get_data(self):
         """Get the gain array from the file"""
-        import numpy
         from scitbx.array_family import flex
 
         # Select the first datablock and rewind all the categories
@@ -28,7 +29,7 @@ class reader:
         if "bnry" in self.cbf_handle.get_typeofvalue():
             # Read the image data into an array
             image_string = self.cbf_handle.get_integerarray_as_string()
-            image = flex.int(numpy.fromstring(image_string, numpy.int32))
+            image = flex.int(np.fromstring(image_string, np.int32))
 
             # Get the array parameters
             parameters = self.cbf_handle.get_integerarrayparameters_wdims()

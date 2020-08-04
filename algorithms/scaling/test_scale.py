@@ -323,11 +323,11 @@ def vmxi_protk_reindexed(dials_data, tmpdir):
         (["error_model=None"], None, None),
         (
             ["error_model=basic", "basic.minimisation=individual"],
-            (0.73711, 0.04720),
+            (0.61, 0.049),
             (0.05, 0.005),
         ),
-        (["error_model.basic.a=0.73711"], (0.73711, 0.04720), (1e-6, 0.005)),
-        (["error_model.basic.b=0.04720"], (0.73711, 0.04720), (0.05, 1e-6)),
+        (["error_model.basic.a=0.61"], (0.61, 0.049), (1e-6, 0.005)),
+        (["error_model.basic.b=0.049"], (0.61, 0.049), (0.05, 1e-6)),
         (
             ["error_model.basic.b=0.02", "error_model.basic.a=1.5"],
             (1.50, 0.02),

@@ -391,7 +391,7 @@ def plot_projections(
     pyplot.xlim(-1.1, 1.1)
     pyplot.ylim(-1.1, 1.1)
     if filename is not None:
-        pyplot.savefig(filename, size_inches=(24, 18), dpi=300)
+        pyplot.savefig(filename, dpi=300)
 
 
 def projections_as_dict(projections, labels):

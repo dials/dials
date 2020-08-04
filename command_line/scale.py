@@ -242,7 +242,9 @@ def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
     else:
         # Note, cross validation mode does not produce scaled datafiles
         if scaled_experiments and joint_table:
-            logger.info("Saving the experiments to %s", params.output.experiments)
+            logger.info(
+                "Saving the scaled experiments to %s", params.output.experiments
+            )
             scaled_experiments.as_file(params.output.experiments)
             logger.info(
                 "Saving the scaled reflections to %s", params.output.reflections

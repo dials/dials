@@ -206,7 +206,9 @@ class ImageSetImporter(object):
             # import the images based on the template input
             if len(self.params.input.template) > 0:
                 importer = ExperimentListTemplateImporter(
-                    self.params.input.template, format_kwargs=format_kwargs
+                    self.params.input.template,
+                    image_range=self.params.geometry.scan.image_range,
+                    format_kwargs=format_kwargs,
                 )
                 experiments = importer.experiments
                 if len(experiments) == 0:
