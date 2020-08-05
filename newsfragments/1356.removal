@@ -1,0 +1,3 @@
+No longer use the ``abc`` module for abstract base classes. Until more
+sophisticated behaviour is required, simply raise ``NotImplementedError`` where
+methods are not implemented.

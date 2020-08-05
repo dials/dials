@@ -3,7 +3,6 @@ from dials.algorithms.refinement.parameterisation.model_parameters import (
     Parameter,
     ModelParameterisation,
 )
-import abc
 from scitbx.array_family import flex
 from dials_refinement_helpers_ext import GaussianSmoother as GS
 
@@ -129,8 +128,6 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
     # time static version of the parameterisation, as it is assumed that we
     # start with a flat model wrt rotation angle.
 
-    __metaclass__ = abc.ABCMeta
-
     def __init__(
         self,
         model,
@@ -182,7 +179,6 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
         """the number of parameter sets"""
         return self._num_sets
 
-    @abc.abstractmethod
     def compose(self, t):
         """compose the model state at image number t from its initial state and
         its parameter list. Also calculate the derivatives of the state wrt
@@ -191,7 +187,7 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
         Unlike ModelParameterisation, does not automatically update the actual
         model class. This should be done once refinement is complete."""
 
-        pass
+        raise NotImplementedError()
 
     def get_param_vals(self, only_free=True):
         """export the values of the internal list of parameters as a
