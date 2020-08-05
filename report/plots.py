@@ -15,7 +15,7 @@ from scitbx.math import distributions
 from mmtbx.scaling.absolute_scaling import scattering_information, expected_intensity
 from mmtbx.scaling.matthews import matthews_rupp
 from scipy.optimize import least_squares
-
+from six.moves import cStringIO as StringIO
 
 logger = logging.getLogger("dials")
 
@@ -214,7 +214,7 @@ class IntensityStatisticsPlots:
         self.multiplicities = merged.redundancies().complete_array(new_data_value=0)
         intensities.setup_binner_d_star_sq_step(auto_binning=True)
         self.wilson_plot_result = intensities.wilson_plot(use_binning=True)
-        mr = matthews_rupp(intensities.crystal_symmetry())
+        mr = matthews_rupp(intensities.crystal_symmetry(), out=StringIO())
         self.n_residues = mr.n_residues
         if not self._xanalysis and run_xtriage_analysis:
             # imports needed here or won't work, unsure why.
