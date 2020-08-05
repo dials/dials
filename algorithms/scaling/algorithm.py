@@ -5,7 +5,6 @@ from __future__ import absolute_import, division, print_function
 import itertools
 import logging
 import json
-from libtbx import Auto
 import time
 import gc
 from dials.array_family import flex
@@ -13,7 +12,6 @@ from dials.algorithms.scaling.scaling_library import (
     create_scaling_model,
     create_datastructures_for_structural_model,
     create_datastructures_for_target_mtz,
-    create_auto_scaling_model,
     set_image_ranges_in_scaling_models,
     scaled_data_as_miller_array,
     determine_best_unit_cell,
@@ -191,14 +189,9 @@ class ScalingAlgorithm(Subject):
 
     def _create_model_and_scaler(self):
         """Create the scaling models and scaler."""
-        if self.params.model in (None, Auto, "auto", "Auto"):
-            self.experiments = create_auto_scaling_model(
-                self.params, self.experiments, self.reflections
-            )
-        else:
-            self.experiments = create_scaling_model(
-                self.params, self.experiments, self.reflections
-            )
+        self.experiments = create_scaling_model(
+            self.params, self.experiments, self.reflections
+        )
         logger.info("\nScaling models have been initialised for all experiments.")
         logger.info("%s%s%s", "\n", "=" * 80, "\n")
 

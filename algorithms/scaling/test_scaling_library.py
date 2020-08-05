@@ -17,10 +17,7 @@ from dials.algorithms.scaling.scaling_library import (
     create_scaling_model,
     create_datastructures_for_structural_model,
     create_Ih_table,
-    # calculate_merging_statistics,
-    # calculate_single_merging_stats,
     choose_initial_scaling_intensities,
-    create_auto_scaling_model,
     determine_best_unit_cell,
 )
 from dials.algorithms.scaling.model.model import KBScalingModel, PhysicalScalingModel
@@ -294,35 +291,36 @@ def test_choose_initial_scaling_intensities(test_reflections):
 
 
 def test_auto_scaling_model():
+    """Test auto options for scaling model creation."""
     params = generated_param()
     exp = generated_exp(scan=False)
     rt = generated_refl()
     params.model = "auto"
-    new_exp = create_auto_scaling_model(params, exp, [rt])
+    new_exp = create_scaling_model(params, exp, [rt])
     assert new_exp[0].scaling_model.id_ == "KB"
 
-    params = generated_param(absorption_term=True)
+    params = generated_param(absorption_term="auto")
     exp = generated_exp(image_range=[1, 5])  # 5 degree wedge
     params.model = "auto"
-    new_exp = create_auto_scaling_model(params, exp, [rt])
+    new_exp = create_scaling_model(params, exp, [rt])
     assert new_exp[0].scaling_model.id_ == "physical"
     assert len(new_exp[0].scaling_model.components["scale"].parameters) == 5
     assert len(new_exp[0].scaling_model.components["decay"].parameters) == 3
     assert "absorption" not in new_exp[0].scaling_model.components
 
-    params = generated_param(absorption_term=True)
+    params = generated_param(absorption_term="auto")
     exp = generated_exp(image_range=[1, 20])  # 20 degree wedge
     params.model = "auto"
-    new_exp = create_auto_scaling_model(params, exp, [rt])
+    new_exp = create_scaling_model(params, exp, [rt])
     assert new_exp[0].scaling_model.id_ == "physical"
     assert len(new_exp[0].scaling_model.components["scale"].parameters) == 7
     assert len(new_exp[0].scaling_model.components["decay"].parameters) == 6
     assert "absorption" not in new_exp[0].scaling_model.components
 
-    params = generated_param(absorption_term=True)
+    params = generated_param(absorption_term="auto")
     exp = generated_exp(image_range=[1, 75])  # 20 degree wedge
     params.model = "auto"
-    new_exp = create_auto_scaling_model(params, exp, [rt])
+    new_exp = create_scaling_model(params, exp, [rt])
     assert new_exp[0].scaling_model.id_ == "physical"
     assert len(new_exp[0].scaling_model.components["scale"].parameters) == 12
     assert len(new_exp[0].scaling_model.components["decay"].parameters) == 10
