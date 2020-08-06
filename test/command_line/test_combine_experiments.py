@@ -299,6 +299,38 @@ def narrow_wedge_input_with_identifiers(dials_regression, tmpdir):
     return phil_input
 
 
+@pytest.mark.parametrize("min_refl", ["None", "100"])
+@pytest.mark.parametrize("max_refl", ["None", "150"])
+def test_min_max_reflections_per_experiment(
+    dials_regression, run_in_tmpdir, min_refl, max_refl
+):
+
+    expected_results = {
+        ("None", "None"): 10,
+        ("None", "150"): 9,
+        ("100", "None"): 6,
+        ("100", "150"): 5,
+    }
+
+    data_dir = os.path.join(dials_regression, "refinement_test_data", "multi_stills")
+    input_phil = (
+        " input.experiments={0}/combined_experiments.json\n"
+        + " input.reflections={0}/combined_reflections.pickle\n"
+        + " output.min_reflections_per_experiment={1}\n"
+        + " output.max_reflections_per_experiment={2}\n"
+    ).format(data_dir, min_refl, max_refl)
+    with open("input.phil", "w") as phil_file:
+        phil_file.writelines(input_phil)
+
+    result = procrunner.run(["dials.combine_experiments", "input.phil"])
+    assert not result.returncode and not result.stderr
+
+    # load results
+    exp = ExperimentListFactory.from_json_file("combined.expt", check_format=False)
+
+    assert len(exp) == expected_results[(min_refl, max_refl)]
+
+
 @pytest.mark.parametrize("with_identifiers", ["True", "False"])
 @pytest.mark.parametrize("method", ["random", "n_refl", "significance_filter"])
 def test_combine_nsubset(
