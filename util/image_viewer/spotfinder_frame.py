@@ -1441,8 +1441,10 @@ class SpotFrame(XrayFrame):
                             )
 
                     if self.settings.show_shoebox:
-                        x0_, y0_ = map_coords(x0, y0, panel)
-                        x1_, y1_ = map_coords(x1, y1, panel)
+                        x0y0 = map_coords(x0, y0, panel)
+                        x0y1 = map_coords(x0, y1, panel)
+                        x1y0 = map_coords(x1, y0, panel)
+                        x1y1 = map_coords(x1, y1, panel)
                         # Change shoebox colour depending on index id
                         my_attrs = dict(shoebox_dict)
                         # Reflections with *only* strong set should get default
@@ -1451,10 +1453,10 @@ class SpotFrame(XrayFrame):
                                 reflection["id"]
                             ]
                         lines = [
-                            (((x0_, y0_), (x0_, y1_)), my_attrs),
-                            (((x0_, y1_), (x1_, y1_)), my_attrs),
-                            (((x1_, y1_), (x1_, y0_)), my_attrs),
-                            (((x1_, y0_), (x0_, y0_)), my_attrs),
+                            ((x0y0, x0y1), my_attrs),
+                            ((x0y1, x1y1), my_attrs),
+                            ((x1y1, x1y0), my_attrs),
+                            ((x1y0, x0y0), my_attrs),
                         ]
                         shoebox_data.extend(lines)
 
