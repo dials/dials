@@ -496,10 +496,8 @@ class DeltaCCHalf(object):
             self.params.nbins,
         )
 
-        statistics.run()
-
-        self.delta_cchalf_i = statistics.delta_cchalf_i()
-        self.results_summary["mean_cc_half"] = statistics._cchalf_mean
+        self.delta_cchalf_i = statistics.delta_cchalf_i
+        self.results_summary["mean_cc_half"] = statistics.mean_cchalf
         # Print out the datasets in order of ΔCC½
         _, sorted_cc_half_values = self.sort_deltacchalf_values(
             self.delta_cchalf_i, self.results_summary

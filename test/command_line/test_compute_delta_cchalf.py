@@ -9,8 +9,8 @@ from dials.command_line.compute_delta_cchalf import phil_scope, CCHalfFromMTZ
 def check_cchalf_result(fileobj):
     """Inspect the result"""
     lines = fileobj.readlines()
-    assert lines[0] == "1 -0.004673\n"
-    assert lines[1] == "0 0.001234\n"
+    assert lines[0] == "1 -0.004778\n"
+    assert lines[1] == "0 0.001337\n"
 
 
 def test_compute_delta_cchalf_scaled_data(dials_data, tmpdir):
