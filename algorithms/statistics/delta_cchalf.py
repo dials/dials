@@ -7,7 +7,6 @@ import logging
 from cctbx import miller
 from cctbx import crystal
 from dials.array_family import flex
-import six
 
 logger = logging.getLogger("dials.command_line.compute_delta_cchalf")
 
@@ -64,24 +63,30 @@ class PerGroupCChalfStatistics(object):
         self.cchalf_i = self._compute_cchalf_excluding_each_group()
 
     def _compute_cchalf_excluding_each_group(self):
-        """
-        Compute the CC 1/2 with an image excluded.
+        """Compute the CC½ with each group excluded in turn
 
-        For each image, update the sums by removing the contribution from the image
-        and then compute the CC 1/2 of the remaining data
+        For each group, compute the CC½ excluding reflections in that group.
+
+        Returns (flex.double): The list of CC½ values excluding each group.
         """
 
-        cchalf_i = {}
-        for i_group in self._groups.counts().keys():
+        cchalf_i = flex.double()
+        for i_group in self._groups.counts():
             intensities = self._intensities.select(self._groups != i_group)
             intensities.use_binning_of(self._intensities)
-            cchalf_i[i_group] = compute_mean_weighted_cc_half(intensities)
-            logger.info(f"CC 1/2 excluding group {i_group}: {cchalf_i[i_group]:.3f}")
+            cchalf_i.append(compute_mean_weighted_cc_half(intensities))
+            logger.info(f"CC½ excluding group {i_group}: {cchalf_i[-1]:.3f}")
         return cchalf_i
 
     @property
     def delta_cchalf_i(self):
+        """Return the ΔCC½ for each group excluded
+
+        Returns (flex.double): The list of ΔCC½ values excluding each group.
         """
-        Return the ΔCC½ for each image excluded
-        """
-        return {k: self.mean_cchalf - v for k, v in six.iteritems(self.cchalf_i)}
+        return self.mean_cchalf - self.cchalf_i
+
+    @property
+    def group_ids(self):
+        """The group ids corresponding to the ΔCC½ values"""
+        return flex.size_t(self._groups.counts().keys())

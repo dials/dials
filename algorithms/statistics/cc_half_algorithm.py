@@ -6,7 +6,6 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 from collections import defaultdict
-from math import sqrt
 from iotbx import mtz
 from cctbx import uctbx
 
@@ -497,16 +496,24 @@ class DeltaCCHalf(object):
         )
 
         self.delta_cchalf_i = statistics.delta_cchalf_i
+        self.group_ids = statistics.group_ids
         self.results_summary["mean_cc_half"] = statistics.mean_cchalf
         # Print out the datasets in order of ΔCC½
-        _, sorted_cc_half_values = self.sort_deltacchalf_values(
-            self.delta_cchalf_i, self.results_summary
+        group_ids, deltacc_half_i = self.sort_deltacchalf_values(
+            statistics.group_ids, self.delta_cchalf_i
         )
-        self.normalised_deltacchalf_values(sorted_cc_half_values, self.results_summary)
+        self.results_summary["per_dataset_delta_cc_half_values"] = {
+            "datasets": list(group_ids),
+            "delta_cc_half_values": list(deltacc_half_i),
+        }
 
-        cutoff_value = self._calculate_cutoff_value(
-            self.delta_cchalf_i, self.params.stdcutoff
+        normalised, cutoff_value = self.normalised_deltacchalf_values(
+            deltacc_half_i, self.params.stdcutoff
         )
+        self.results_summary["per_dataset_delta_cc_half_values"][
+            "normalised_delta_cc_half_values"
+        ] = list(normalised)
+
         self.results_summary["dataset_removal"].update({"cutoff_value": cutoff_value})
 
     def output_table(self):
@@ -525,53 +532,30 @@ class DeltaCCHalf(object):
                     outfile.write("%d %f\n" % (dataset, cchalf))
 
     @staticmethod
-    def sort_deltacchalf_values(delta_cchalf_i, results_summary):
+    def sort_deltacchalf_values(group_ids, delta_cchalf_i):
         """Return the sorted datasets and cchalf values.
 
-        Also add the sorted lists to the results summary. Datasets are sorted
-        from low to high based on deltacchalf values."""
-        datasets = list(delta_cchalf_i.keys())
-        sorted_index = sorted(
-            range(len(datasets)), key=lambda x: delta_cchalf_i[datasets[x]]
-        )
-
-        # sorted by deltacchalf from low to high
-        sorted_cc_half_values = flex.double([])
-        sorted_datasets = flex.int([])
-        for i in sorted_index:
-            val = delta_cchalf_i[datasets[i]]
-            logger.info("Dataset: %d, ΔCC½: %.3f", datasets[i], val)
-            sorted_cc_half_values.append(val)
-            sorted_datasets.append(datasets[i])
-
-        results_summary["per_dataset_delta_cc_half_values"] = {
-            "datasets": list(sorted_datasets),
-            "delta_cc_half_values": list(sorted_cc_half_values),
-        }
-
-        return sorted_datasets, sorted_cc_half_values
+        Datasets are sorted from low to high based on deltacchalf values."""
+        perm = flex.sort_permutation(delta_cchalf_i)
+        for i in perm:
+            logger.info(f"Dataset: {group_ids[i]}, ΔCC½: {delta_cchalf_i[i]:.3f}")
+        return group_ids.select(perm), delta_cchalf_i.select(perm)
 
     @staticmethod
-    def normalised_deltacchalf_values(deltacchalf_values, results_summary):
+    def normalised_deltacchalf_values(deltacchalf_values, stdcutoff):
         mav = flex.mean_and_variance(deltacchalf_values)
         normalised = (
             deltacchalf_values - mav.mean()
         ) / mav.unweighted_sample_standard_deviation()
-        results_summary["per_dataset_delta_cc_half_values"][
-            "normalised_delta_cc_half_values"
-        ] = list(normalised)
-        return normalised
-
-    @staticmethod
-    def _calculate_cutoff_value(delta_cchalf_i, stdcutoff):
-        Y = list(delta_cchalf_i.values())
-        mean = sum(Y) / len(Y)
-        sdev = sqrt(sum((yy - mean) ** 2 for yy in Y) / len(Y))
-        logger.info("\nmean delta_cc_half %.3f", mean)
-        logger.info("stddev delta_cc_half %.3f", sdev)
-        cutoff_value = mean - stdcutoff * sdev
+        logger.info("\nmean delta_cc_half %.3f", mav.mean())
+        logger.info(
+            "stddev delta_cc_half %.3f", mav.unweighted_sample_standard_deviation()
+        )
+        cutoff_value = (
+            mav.mean() - stdcutoff * mav.unweighted_sample_standard_deviation()
+        )
         logger.info("cutoff value: %.3f\n", cutoff_value)
-        return cutoff_value
+        return normalised, cutoff_value
 
     def output_html_report(self):
         if self.params.output.html:
@@ -595,7 +579,9 @@ class DeltaCCHalf(object):
                 ]
             data["cc_half_plots"].update(make_histogram_plots([res]))
             del data["cc_half_plots"]["mean_cc_one_half_vs_cycle"]
-            data["cc_half_plots"].update(make_per_dataset_plot(self.delta_cchalf_i))
+            data["cc_half_plots"].update(
+                make_per_dataset_plot(self.group_ids, self.delta_cchalf_i)
+            )
 
             logger.info("Writing html report to: %s", self.params.output.html)
             loader = ChoiceLoader(

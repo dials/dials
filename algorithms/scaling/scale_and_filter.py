@@ -461,7 +461,7 @@ def make_histogram_plots(cycle_results):
                         "x": list(range(1, n + 1)),
                         "type": "scatter",
                         "mode": "lines",
-                    }
+                    },
                 ],
                 "layout": {
                     "title": u"Resolution-averaged CC<sub>½</sub> (σ-τ) vs cycle",
@@ -526,7 +526,7 @@ def make_histogram_plots(cycle_results):
     return d
 
 
-def make_per_dataset_plot(delta_cchalf_i):
+def make_per_dataset_plot(group_ids, delta_cchalf_i):
     """Make a line plot of ΔCC½ per group."""
 
     d = OrderedDict()
@@ -535,8 +535,8 @@ def make_per_dataset_plot(delta_cchalf_i):
             "per_dataset_plot": {
                 "data": [
                     {
-                        "y": list(delta_cchalf_i.values()),
-                        "x": list(delta_cchalf_i.keys()),
+                        "y": list(group_ids),
+                        "x": list(delta_cchalf_i),
                         "type": "scatter",
                         "mode": "lines",
                     }
