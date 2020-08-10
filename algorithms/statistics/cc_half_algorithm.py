@@ -509,21 +509,24 @@ class DeltaCCHalf(object):
         self.fisher_transformed_delta_cchalf_i = self.fisher_transformed_delta_cchalf_i.select(
             perm
         )
-        for i in perm:
-            logger.info(
-                f"Dataset: {self.group_ids[i]}, ΔCC½: {self.delta_cchalf_i[i]:.3f}"
-            )
+        if self.params.fisher_transformation:
+            delta_cchalf_i = self.fisher_transformed_delta_cchalf_i
+        else:
+            delta_cchalf_i = self.delta_cchalf_i
+        for g, delta in zip(self.group_ids, delta_cchalf_i):
+            logger.info(f"Group: {g}, ΔCC½: {delta:.3f}")
 
         normalised, cutoff_value = self.normalised_deltacchalf_values(
-            self.delta_cchalf_i, self.params.stdcutoff
+            delta_cchalf_i, self.params.stdcutoff
         )
+        if self.params.deltacchalf_cutoff is not None:
+            cutoff_value = self.params.deltacchalf_cutoff
+
+        logger.info("cutoff value: %.3f\n", cutoff_value)
 
         self.results_summary["per_dataset_delta_cc_half_values"] = {
             "datasets": list(self.group_ids),
-            "delta_cc_half_values": list(self.delta_cchalf_i),
-            "fisher_transformed_delta_cc_half_values": list(
-                self.fisher_transformed_delta_cchalf_i
-            ),
+            "delta_cc_half_values": list(delta_cchalf_i),
             "normalised_delta_cc_half_values": list(normalised),
         }
         self.results_summary["dataset_removal"].update({"cutoff_value": cutoff_value})
@@ -549,14 +552,13 @@ class DeltaCCHalf(object):
         normalised = (
             deltacchalf_values - mav.mean()
         ) / mav.unweighted_sample_standard_deviation()
-        logger.info("\nmean delta_cc_half %.3f", mav.mean())
-        logger.info(
+        logger.debug("\nmean delta_cc_half %.3f", mav.mean())
+        logger.debug(
             "stddev delta_cc_half %.3f", mav.unweighted_sample_standard_deviation()
         )
         cutoff_value = (
             mav.mean() - stdcutoff * mav.unweighted_sample_standard_deviation()
         )
-        logger.info("cutoff value: %.3f\n", cutoff_value)
         return normalised, cutoff_value
 
     def output_html_report(self):
@@ -566,12 +568,6 @@ class DeltaCCHalf(object):
                 "delta_cc_half_values": self.results_summary[
                     "per_dataset_delta_cc_half_values"
                 ]["delta_cc_half_values"],
-                "fisher_transformed_delta_cc_half_values": self.results_summary[
-                    "per_dataset_delta_cc_half_values"
-                ]["fisher_transformed_delta_cc_half_values"],
-                "normalised_delta_cc_half_values": self.results_summary[
-                    "per_dataset_delta_cc_half_values"
-                ]["normalised_delta_cc_half_values"],
                 "mean_cc_half": self.results_summary["mean_cc_half"],
             }
             if "image_ranges_removed" in self.results_summary["dataset_removal"]:
@@ -582,7 +578,14 @@ class DeltaCCHalf(object):
                 res["removed_datasets"] = self.results_summary["dataset_removal"][
                     "experiments_fully_removed"
                 ]
-            data["cc_half_plots"].update(make_histogram_plots([res]))
+            data["cc_half_plots"].update(
+                make_histogram_plots(
+                    [res],
+                    cutoff_value=self.results_summary["dataset_removal"][
+                        "cutoff_value"
+                    ],
+                )
+            )
             del data["cc_half_plots"]["mean_cc_one_half_vs_cycle"]
             data["cc_half_plots"].update(
                 make_per_dataset_plot(self.group_ids, self.delta_cchalf_i)

@@ -33,6 +33,13 @@ filtering {
         stdcutoff = 4.0
             .type = float
             .help = "Datasets with a ΔCC½ below (mean - stdcutoff*std) are removed"
+        deltacchalf_cutoff = None
+            .type = float
+            .help = "Datasets with a ΔCC½ below this value are removed"
+        fisher_transformation = False
+            .type = bool
+            .help = "Apply a Fisher transformation to the raw ΔCC½ values"
+
     }
     output {
         scale_and_filter_results = "scale_and_filter_results.json"
@@ -55,14 +62,9 @@ def log_cycle_results(results, scaling_script, filter_script):
     if not results.get_cycle_results():
         results.initial_n_reflections = scaling_script.scaled_miller_array.size()
 
-    cycle_results["normalised_delta_cc_half_values"] = filter_script.results_summary[
+    cycle_results["delta_cc_half_values"] = filter_script.results_summary[
         "per_dataset_delta_cc_half_values"
-    ]["normalised_delta_cc_half_values"]
-    cycle_results[
-        "fisher_transformed_delta_cc_half_values"
-    ] = filter_script.results_summary["per_dataset_delta_cc_half_values"][
-        "fisher_transformed_delta_cc_half_values"
-    ]
+    ]["delta_cc_half_values"]
     cycle_results["mean_cc_half"] = filter_script.results_summary["mean_cc_half"]
     removal_summary = filter_script.results_summary["dataset_removal"]
     if removal_summary["mode"] == "image_group":
@@ -260,9 +262,9 @@ def make_filtering_merging_stats_plots(merging_stats):
                     }
                 ],
                 "layout": {
-                    "title": u"CC<sub>½</sub> vs cycle",
+                    "title": "CC<sub>½</sub> vs cycle",
                     "xaxis": {"title": "Cycle number"},
-                    "yaxis": {"title": u"CC<sub>½</sub>"},
+                    "yaxis": {"title": "CC<sub>½</sub>"},
                 },
             }
         }
@@ -298,9 +300,9 @@ def make_filtering_merging_stats_plots(merging_stats):
                     }
                 ],
                 "layout": {
-                    "title": u"<I/σ(I)> vs cycle",
+                    "title": "<I/σ(I)> vs cycle",
                     "xaxis": {"title": "Cycle number"},
-                    "yaxis": {"title": u"<I/σ(I)>"},
+                    "yaxis": {"title": "<I/σ(I)>"},
                 },
             }
         }
@@ -343,13 +345,13 @@ def make_filtering_merging_stats_plots(merging_stats):
                     }
                 ],
                 "layout": {
-                    "title": u"CC<sub>½</sub> vs resolution",
+                    "title": "CC<sub>½</sub> vs resolution",
                     "xaxis": {
-                        "title": u"Resolution (Å)",
+                        "title": "Resolution (Å)",
                         "tickvals": vals,
                         "ticktext": txt,
                     },
-                    "yaxis": {"title": u"CC<sub>½</sub>", "range": [0, 1]},
+                    "yaxis": {"title": "CC<sub>½</sub>", "range": [0, 1]},
                 },
             }
         }
@@ -370,7 +372,7 @@ def make_filtering_merging_stats_plots(merging_stats):
                 "layout": {
                     "title": "R-pim vs resolution",
                     "xaxis": {
-                        "title": u"Resolution (Å)",
+                        "title": "Resolution (Å)",
                         "tickvals": vals,
                         "ticktext": txt,
                     },
@@ -398,7 +400,7 @@ def make_filtering_merging_stats_plots(merging_stats):
                 "layout": {
                     "title": "R-merge vs resolution",
                     "xaxis": {
-                        "title": u"Resolution (Å)",
+                        "title": "Resolution (Å)",
                         "tickvals": vals,
                         "ticktext": txt,
                     },
@@ -445,11 +447,9 @@ def make_filtering_merging_stats_plots(merging_stats):
     return d
 
 
-def make_histogram_plots(cycle_results):
+def make_histogram_plots(cycle_results, cutoff_value=None):
     """Make the histogram plots."""
-    delta_cc_half_lists = [
-        res["fisher_transformed_delta_cc_half_values"] for res in cycle_results
-    ]
+    delta_cc_half_lists = [res["delta_cc_half_values"] for res in cycle_results]
     if not delta_cc_half_lists:
         return {}
 
@@ -462,16 +462,16 @@ def make_histogram_plots(cycle_results):
             "mean_cc_one_half_vs_cycle": {
                 "data": [
                     {
-                        "y": overall_mean_ccs,
                         "x": list(range(1, n + 1)),
+                        "y": overall_mean_ccs,
                         "type": "scatter",
                         "mode": "lines",
                     },
                 ],
                 "layout": {
-                    "title": u"Resolution-averaged CC<sub>½</sub> (σ-τ) vs cycle",
+                    "title": "Resolution-averaged CC<sub>½</sub> (σ-τ) vs cycle",
                     "xaxis": {"title": "Cycle number"},
-                    "yaxis": {"title": u"Resolution-averaged CC<sub>½</sub> (σ-τ)"},
+                    "yaxis": {"title": "Resolution-averaged CC<sub>½</sub> (σ-τ)"},
                 },
             }
         }
@@ -510,11 +510,23 @@ def make_histogram_plots(cycle_results):
                             "type": "bar",
                             "name": legends[index],
                             "marker": {"color": _color_bar_charts(hist.slots(), index)},
-                        }
+                        },
+                        (
+                            {
+                                "x": [cutoff_value, cutoff_value],
+                                "y": [0, max(hist.slots())],
+                                "type": "scatter",
+                                "name": f"cutoff={cutoff_value:.3f}",
+                                "mode": "lines",
+                                "line": {"color": "rgb(169, 169, 169)", "dash": "dot"},
+                            }
+                            if cutoff_value is not None
+                            else {}
+                        ),
                     ],
                     "layout": {
                         "title": "%s" % legends[index],
-                        "xaxis": {"title": u"σ"},
+                        "xaxis": {"title": "σ"},
                         "yaxis": {
                             "title": "Number of datasets/groups",
                             "range": [0, min(max(hist.slots()), 50)],

@@ -76,10 +76,15 @@ phil_scope = parse(
 
   fisher_transformation = False
     .type = bool
+    .help = "Apply a Fisher transformation to the raw ΔCC½ values"
 
   stdcutoff = 4.0
     .type = float
     .help = "Datasets with a ΔCC½ below (mean - stdcutoff*std) are removed"
+
+  deltacchalf_cutoff = None
+    .type = float
+    .help = "Datasets with a ΔCC½ below this value are removed"
 
   output {
     log = 'dials.compute_delta_cchalf.log'
