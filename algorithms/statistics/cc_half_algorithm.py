@@ -496,24 +496,36 @@ class DeltaCCHalf(object):
         )
 
         self.delta_cchalf_i = statistics.delta_cchalf_i
+        self.fisher_transformed_delta_cchalf_i = (
+            statistics.fisher_transformed_delta_cchalf_i
+        )
         self.group_ids = statistics.group_ids
         self.results_summary["mean_cc_half"] = statistics.mean_cchalf
+
         # Print out the datasets in order of ΔCC½
-        group_ids, deltacc_half_i = self.sort_deltacchalf_values(
-            statistics.group_ids, self.delta_cchalf_i
+        perm = flex.sort_permutation(self.delta_cchalf_i)
+        self.group_ids = self.group_ids.select(perm)
+        self.delta_cchalf_i = self.delta_cchalf_i.select(perm)
+        self.fisher_transformed_delta_cchalf_i = self.fisher_transformed_delta_cchalf_i.select(
+            perm
         )
-        self.results_summary["per_dataset_delta_cc_half_values"] = {
-            "datasets": list(group_ids),
-            "delta_cc_half_values": list(deltacc_half_i),
-        }
+        for i in perm:
+            logger.info(
+                f"Dataset: {self.group_ids[i]}, ΔCC½: {self.delta_cchalf_i[i]:.3f}"
+            )
 
         normalised, cutoff_value = self.normalised_deltacchalf_values(
-            deltacc_half_i, self.params.stdcutoff
+            self.delta_cchalf_i, self.params.stdcutoff
         )
-        self.results_summary["per_dataset_delta_cc_half_values"][
-            "normalised_delta_cc_half_values"
-        ] = list(normalised)
 
+        self.results_summary["per_dataset_delta_cc_half_values"] = {
+            "datasets": list(self.group_ids),
+            "delta_cc_half_values": list(self.delta_cchalf_i),
+            "fisher_transformed_delta_cc_half_values": list(
+                self.fisher_transformed_delta_cchalf_i
+            ),
+            "normalised_delta_cc_half_values": list(normalised),
+        }
         self.results_summary["dataset_removal"].update({"cutoff_value": cutoff_value})
 
     def output_table(self):
@@ -530,16 +542,6 @@ class DeltaCCHalf(object):
                     ],
                 ):
                     outfile.write("%d %f\n" % (dataset, cchalf))
-
-    @staticmethod
-    def sort_deltacchalf_values(group_ids, delta_cchalf_i):
-        """Return the sorted datasets and cchalf values.
-
-        Datasets are sorted from low to high based on deltacchalf values."""
-        perm = flex.sort_permutation(delta_cchalf_i)
-        for i in perm:
-            logger.info(f"Dataset: {group_ids[i]}, ΔCC½: {delta_cchalf_i[i]:.3f}")
-        return group_ids.select(perm), delta_cchalf_i.select(perm)
 
     @staticmethod
     def normalised_deltacchalf_values(deltacchalf_values, stdcutoff):
@@ -564,6 +566,9 @@ class DeltaCCHalf(object):
                 "delta_cc_half_values": self.results_summary[
                     "per_dataset_delta_cc_half_values"
                 ]["delta_cc_half_values"],
+                "fisher_transformed_delta_cc_half_values": self.results_summary[
+                    "per_dataset_delta_cc_half_values"
+                ]["fisher_transformed_delta_cc_half_values"],
                 "normalised_delta_cc_half_values": self.results_summary[
                     "per_dataset_delta_cc_half_values"
                 ]["normalised_delta_cc_half_values"],

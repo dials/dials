@@ -58,6 +58,11 @@ def log_cycle_results(results, scaling_script, filter_script):
     cycle_results["normalised_delta_cc_half_values"] = filter_script.results_summary[
         "per_dataset_delta_cc_half_values"
     ]["normalised_delta_cc_half_values"]
+    cycle_results[
+        "fisher_transformed_delta_cc_half_values"
+    ] = filter_script.results_summary["per_dataset_delta_cc_half_values"][
+        "fisher_transformed_delta_cc_half_values"
+    ]
     cycle_results["mean_cc_half"] = filter_script.results_summary["mean_cc_half"]
     removal_summary = filter_script.results_summary["dataset_removal"]
     if removal_summary["mode"] == "image_group":
@@ -443,7 +448,7 @@ def make_filtering_merging_stats_plots(merging_stats):
 def make_histogram_plots(cycle_results):
     """Make the histogram plots."""
     delta_cc_half_lists = [
-        res["normalised_delta_cc_half_values"] for res in cycle_results
+        res["fisher_transformed_delta_cc_half_values"] for res in cycle_results
     ]
     if not delta_cc_half_lists:
         return {}

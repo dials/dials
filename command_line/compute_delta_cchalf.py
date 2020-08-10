@@ -74,6 +74,9 @@ phil_scope = parse(
     .type = float
     .help = "The minimum resolution"
 
+  fisher_transformation = False
+    .type = bool
+
   stdcutoff = 4.0
     .type = float
     .help = "Datasets with a ΔCC½ below (mean - stdcutoff*std) are removed"

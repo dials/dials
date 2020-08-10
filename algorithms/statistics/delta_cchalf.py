@@ -3,6 +3,7 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
+import math
 
 from cctbx import miller
 from cctbx import crystal
@@ -85,6 +86,10 @@ class PerGroupCChalfStatistics(object):
         Returns (flex.double): The list of ΔCC½ values excluding each group.
         """
         return self.mean_cchalf - self.cchalf_i
+
+    @property
+    def fisher_transformed_delta_cchalf_i(self):
+        return flex.tanh(math.atan(self.mean_cchalf) - flex.atan(self.cchalf_i))
 
     @property
     def group_ids(self):
