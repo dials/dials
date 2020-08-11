@@ -8,7 +8,7 @@ from dxtbx.model import Crystal, Experiment, Scan
 from dials.util.options import OptionParser
 from dials.algorithms.scaling.model.model import KBScalingModel
 from dials.array_family import flex
-from dials.algorithms.statistics.cc_half_algorithm import CCHalfFromDials, DeltaCCHalf
+from dials.algorithms.statistics.cc_half_algorithm import CCHalfFromDials
 from dials.algorithms.scaling.scale_and_filter import AnalysisResults, log_cycle_results
 
 
@@ -85,10 +85,11 @@ def test_scale_and_filter_results_logging():
             "experiments_fully_removed": [],
             "experiment_ids_fully_removed": [],
             "n_reflections_removed": 50,
+            "cutoff_value": -0.1,
         },
         "mean_cc_half": 80.0,
         "per_dataset_delta_cc_half_values": {
-            "normalised_delta_cc_half_values": [-0.1, 0.1, -0.2, 0.2]
+            "delta_cc_half_values": [-0.1, 0.1, -0.2, 0.2]
         },
     }
 
@@ -106,12 +107,13 @@ def test_scale_and_filter_results_logging():
         assert cycle_results[0]["n_removed"] == 50
         assert cycle_results[0]["image_ranges_removed"] == [[(6, 10), 0]]
         assert cycle_results[0]["removed_datasets"] == []
-        assert cycle_results[0]["normalised_delta_cc_half_values"] == [
+        assert cycle_results[0]["delta_cc_half_values"] == [
             -0.1,
             0.1,
             -0.2,
             0.2,
         ]
+        assert cycle_results[0]["cutoff_value"] == -0.1
         assert res.get_merging_stats()[0] == "stats_results"
         assert res.initial_n_reflections == 1000
 
@@ -126,7 +128,7 @@ def test_scale_and_filter_results_logging():
         assert cycle_results[1]["n_removed"] == 50
         assert cycle_results[1]["image_ranges_removed"] == [[(6, 10), 0]]
         assert cycle_results[1]["removed_datasets"] == []
-        assert cycle_results[0]["normalised_delta_cc_half_values"] == [
+        assert cycle_results[0]["delta_cc_half_values"] == [
             -0.1,
             0.1,
             -0.2,
@@ -138,20 +140,6 @@ def test_scale_and_filter_results_logging():
 
 def test_compute_delta_cchalf_returned_results():
     """Test that delta cchalf return necessary values for scale_and_filter."""
-
-    # Check for correct recording of
-    # results_summary['per_dataset_delta_cc_half_values']['delta_cc_half_values']
-    summary = {}
-    delta_cc = {0: -4, 1: 2, 2: -3, 3: -5, 4: 1}
-    sorted_data, sorted_ccs = DeltaCCHalf.sort_deltacchalf_values(delta_cc, summary)
-    expected_data_order = [3, 0, 2, 4, 1]
-    expected_cc_order = [-5, -4, -3, 1, 2]
-    assert list(sorted_data) == expected_data_order
-    assert list(sorted_ccs) == expected_cc_order
-    assert (
-        summary["per_dataset_delta_cc_half_values"]["delta_cc_half_values"]
-        == expected_cc_order
-    )
 
     # Check for correct recording for dataset mode
     exp = generate_test_experiments(2)
