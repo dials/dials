@@ -80,7 +80,7 @@ def test_resolution_cc_half(merging_stats):
         cc_half_method="sigma_tau",
         model=resolution_analysis.polynomial_fit,
     )
-    assert result.d_min == pytest.approx(1.23, abs=1e-3)
+    assert result.d_min == pytest.approx(1.233, abs=1e-3)
     assert flex.max(flex.abs(result.y_obs - result.y_fit)) < 0.04
     assert result.critical_values is not None
     assert len(result.critical_values) == len(result.d_star_sq)
