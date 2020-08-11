@@ -578,14 +578,10 @@ class DeltaCCHalf(object):
                 res["removed_datasets"] = self.results_summary["dataset_removal"][
                     "experiments_fully_removed"
                 ]
-            data["cc_half_plots"].update(
-                make_histogram_plots(
-                    [res],
-                    cutoff_value=self.results_summary["dataset_removal"][
-                        "cutoff_value"
-                    ],
-                )
-            )
+            res["cutoff_value"] = self.results_summary["dataset_removal"][
+                "cutoff_value"
+            ]
+            data["cc_half_plots"].update(make_histogram_plots([res]))
             del data["cc_half_plots"]["mean_cc_one_half_vs_cycle"]
             data["cc_half_plots"].update(
                 make_per_dataset_plot(self.group_ids, self.delta_cchalf_i)

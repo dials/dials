@@ -65,6 +65,9 @@ def log_cycle_results(results, scaling_script, filter_script):
     cycle_results["delta_cc_half_values"] = filter_script.results_summary[
         "per_dataset_delta_cc_half_values"
     ]["delta_cc_half_values"]
+    cycle_results["cutoff_value"] = filter_script.results_summary["dataset_removal"][
+        "cutoff_value"
+    ]
     cycle_results["mean_cc_half"] = filter_script.results_summary["mean_cc_half"]
     removal_summary = filter_script.results_summary["dataset_removal"]
     if removal_summary["mode"] == "image_group":
@@ -447,9 +450,10 @@ def make_filtering_merging_stats_plots(merging_stats):
     return d
 
 
-def make_histogram_plots(cycle_results, cutoff_value=None):
+def make_histogram_plots(cycle_results):
     """Make the histogram plots."""
     delta_cc_half_lists = [res["delta_cc_half_values"] for res in cycle_results]
+    cutoff_values = [res["cutoff_value"] for res in cycle_results]
     if not delta_cc_half_lists:
         return {}
 
@@ -498,7 +502,7 @@ def make_histogram_plots(cycle_results, cutoff_value=None):
                 n += count
         return bar_colors
 
-    def _add_new_histogram(d, hist, index):
+    def _add_new_histogram(d, hist, cutoff, index):
         d.update(
             {
                 "scale_filter_histograms_%s"
@@ -511,22 +515,18 @@ def make_histogram_plots(cycle_results, cutoff_value=None):
                             "name": legends[index],
                             "marker": {"color": _color_bar_charts(hist.slots(), index)},
                         },
-                        (
-                            {
-                                "x": [cutoff_value, cutoff_value],
-                                "y": [0, max(hist.slots())],
-                                "type": "scatter",
-                                "name": f"cutoff={cutoff_value:.3f}",
-                                "mode": "lines",
-                                "line": {"color": "rgb(169, 169, 169)", "dash": "dot"},
-                            }
-                            if cutoff_value is not None
-                            else {}
-                        ),
+                        {
+                            "x": [cutoff, cutoff],
+                            "y": [0, max(hist.slots())],
+                            "type": "scatter",
+                            "name": f"cutoff={cutoff:.3f}",
+                            "mode": "lines",
+                            "line": {"color": "rgb(169, 169, 169)", "dash": "dot"},
+                        },
                     ],
                     "layout": {
                         "title": "%s" % legends[index],
-                        "xaxis": {"title": "σ"},
+                        "xaxis": {"title": "ΔCC<sub>½</sub>"},
                         "yaxis": {
                             "title": "Number of datasets/groups",
                             "range": [0, min(max(hist.slots()), 50)],
@@ -537,9 +537,9 @@ def make_histogram_plots(cycle_results, cutoff_value=None):
             }
         )
 
-    for c, deltas in enumerate(delta_cc_half_lists):
+    for c, (deltas, cutoff) in enumerate(zip(delta_cc_half_lists, cutoff_values)):
         hist = flex.histogram(flex.double(deltas), min(deltas), max(deltas), n_slots=40)
-        _add_new_histogram(d, hist, c)
+        _add_new_histogram(d, hist, cutoff, c)
     return d
 
 
