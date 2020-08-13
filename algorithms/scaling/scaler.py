@@ -843,6 +843,10 @@ attempting to use all reflections for minimisation."""
         for key in self.reflection_table.keys():
             if key not in self._initial_keys:
                 del self._reflection_table[key]
+        bad = self._reflection_table.get_flags(
+            self._reflection_table.flags.bad_for_scaling, all=False
+        )
+        self._reflection_table.set_flags(~bad, self.reflection_table.flags.scaled)
 
 
 class MultiScalerBase(ScalerBase):

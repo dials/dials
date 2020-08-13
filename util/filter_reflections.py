@@ -711,13 +711,10 @@ class ScaleIntensityReducer(FilterForExportAlgorithm):
     @checkdataremains
     def reduce_on_intensities(reflection_table):
         """Select intensities used for scaling and remove scaling outliers."""
-        selection = ~(
-            reflection_table.get_flags(
-                reflection_table.flags.bad_for_scaling, all=False
-            )
+        selection = ~reflection_table.get_flags(
+            reflection_table.flags.bad_for_scaling, all=False
         )
-        outliers = reflection_table.get_flags(reflection_table.flags.outlier_in_scaling)
-        reflection_table = reflection_table.select(selection & ~outliers)
+        reflection_table = reflection_table.select(selection)
         logger.info("Selected %d scaled reflections" % reflection_table.size())
         assert "inverse_scale_factor" in reflection_table
         selection = reflection_table["inverse_scale_factor"] <= 0.0
