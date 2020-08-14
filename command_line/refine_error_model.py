@@ -76,7 +76,7 @@ def refine_error_model(params, experiments, reflection_tables):
     # prepare relevant data for datastructures
     for i, table in enumerate(reflection_tables):
         # First get the good data
-        table = table.select(table.get_flags(table.flags.scaled))
+        table = table.select(~table.get_flags(table.flags.bad_for_scaling, all=False))
 
         # Now chose intensities, ideally these two options could be combined
         # with a smart refactor

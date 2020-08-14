@@ -78,7 +78,7 @@ def reflection_tables_to_batch_dependent_properties(
     batches = flex.int()
     scales = flex.double()
     for r in reflection_tables:
-        sel = r.get_flags(r.flags.scaled)
+        sel = ~r.get_flags(r.flags.bad_for_scaling, all=False)
         sel &= r["inverse_scale_factor"] > 0
         batches.extend(r["batch"].select(sel))
         scales.extend(r["inverse_scale_factor"].select(sel))
