@@ -348,7 +348,6 @@ class symmetry_base(object):
 def resolution_filter_from_array(intensities, min_i_mean_over_sigma_mean, min_cc_half):
     """Run the resolution filter using miller array data format."""
     rparams = resolution_analysis.phil_defaults.extract().resolution
-    rparams.nbins = 20
     resolutionizer = resolution_analysis.Resolutionizer(intensities, rparams)
     return _resolution_filter(resolutionizer, min_i_mean_over_sigma_mean, min_cc_half)
 
@@ -358,7 +357,6 @@ def resolution_filter_from_reflections_experiments(
 ):
     """Run the resolution filter using native dials data formats."""
     rparams = resolution_analysis.phil_defaults.extract().resolution
-    rparams.nbins = 20
     resolutionizer = resolution_analysis.Resolutionizer.from_reflections_and_experiments(
         reflections, experiments, rparams
     )
