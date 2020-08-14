@@ -207,7 +207,7 @@ were considered for use when refining the scaling model.
                 logger.debug(f"Resolution fit failed: {e}")
             else:
                 max_current_res = stats.bins[-1].d_min
-                if d_min - max_current_res > 0.005:
+                if d_min and d_min - max_current_res > 0.005:
                     logger.info(
                         "Resolution limit suggested from CC"
                         + "\u00BD"
