@@ -242,6 +242,7 @@ def example_refls():
         [(0.0, 0.0, 0.5), (0.0, 0.0, 5.5), (0.0, 0.0, 8.5)]
     )
     refls.set_flags(flex.bool(3, False), refls.flags.outlier_in_scaling)
+    refls.set_flags(flex.bool(3, True), refls.flags.scaled)
     refls["intensity"] = flex.double([1.0, 1.0, 1.0])
     refls["variance"] = flex.double([1.0, 1.0, 1.0])
     refls["miller_index"] = flex.miller_index([(1, 1, 1), (1, 1, 1), (1, 1, 1)])
