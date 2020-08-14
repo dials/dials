@@ -379,11 +379,12 @@ def _resolution_filter(resolutionizer, min_i_mean_over_sigma_mean, min_cc_half):
             logger.info(u"I/σ(I) resolution filter failed with the following error:")
             logger.error(e)
         else:
-            logger.info(
-                u"Resolution estimate from <I>/<σ(I)> > %.1f : %.2f",
-                min_i_mean_over_sigma_mean,
-                d_min_isigi,
-            )
+            if d_min_cc_half:
+                logger.info(
+                    u"Resolution estimate from <I>/<σ(I)> > %.1f : %.2f",
+                    min_i_mean_over_sigma_mean,
+                    d_min_isigi,
+                )
     if min_cc_half is not None:
         try:
             d_min_cc_half = resolutionizer.resolution(
@@ -393,10 +394,12 @@ def _resolution_filter(resolutionizer, min_i_mean_over_sigma_mean, min_cc_half):
             logger.info(u"CC½ resolution filter failed with the following error:")
             logger.error(e)
         else:
-            logger.info(
-                u"Resolution estimate from CC½ > %.2f: %.2f", min_cc_half, d_min_cc_half
-            )
-    valid_d_mins = list({d_min_cc_half, d_min_isigi}.difference({0}))
-    if valid_d_mins:
-        d_min = min(valid_d_mins)
-    return d_min
+            if d_min_cc_half:
+                logger.info(
+                    u"Resolution estimate from CC½ > %.2f: %.2f",
+                    min_cc_half,
+                    d_min_cc_half,
+                )
+    valid = [d for d in (d_min_cc_half, d_min_isigi) if d]
+    if valid:
+        return min(valid)
