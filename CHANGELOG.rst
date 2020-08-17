@@ -1,3 +1,69 @@
+DIALS 3.1 (2020-08-17)
+======================
+
+Features
+--------
+
+- Supports Python 3.7 and 3.8. Python 3.6 remains the default. (#1236)
+- Switch DIALS environment to use conda compilers. For development environments,
+  a new ``dials`` script, located above the build directory, replaces the
+  existing 'setpaths'-family of scripts. This means that all commands within
+  the conda environment will now be available. (#1235)
+- New command: ``dials.missing_reflections`` to identify connected regions of
+  missing reflections in the asymmetric unit. (#1285)
+- Improvements to image stacking in ``dials.image_viewer``:
+  - add pull-down selector for stacking mode
+  - add modes for mean and max
+  - add command-line selection for stacking mode
+  - rename ``sum_images`` command-line option to ``stack_images`` (#1302)
+- Reduce volume of output in ``dials.integrate``; histograms and other less
+  important information only shows in debug output. Pass the ``-vv`` option
+  to restore the previous behaviour (#1319)
+- ``dials.integrate``: Experimental feature: Specifying
+  ``output_unintegrated_reflections=False`` discards unintegrated data from
+  output reflection file, for smaller output and faster post-processing (#1343)
+- Rename ``dials.resolutionizer`` command to ``dials.estimate_resolution``,
+  and includes a html report. Writing png plot output is now turned off by
+  default (passing ``plot=True`` will restore this behaviour). (#1330)
+- ``dials.scale`` now separates anomalous pairs during error model analysis (#1332)
+- ``dials.background``: Add parameter ``corrected=`` to optionally use
+  pedestal-and-gain corrected data (#1348)
+- ``dials.combine_experiments``: Add option ``output.max_reflections_per_experiment=``,
+  to reject experiments with too many reflections (#1369)
+
+
+Bugfixes
+--------
+
+- ``dials.image_viewer``: Shoeboxes are now shown rotated with rotated detector panels. (#1189)
+- ``dials.index``: In multi-lattice indexing, ensure that reflections where
+  refinement fails are flagged as unindexed. (#1350)
+- ``dials.scale``: Reflections excluded from scaling are no longer permanently
+  excluded from any subsequent ``dials.scale`` jobs. (#1275)
+- ``dials.scale``: When using ``intensity_choice=combine`` (the default), don't
+  exclude reflections that only have one of summed or profiled intensities
+  available, but not both. (#1300)
+- ``dials.split_experiments``: Don't generate extra leading zeros in the output
+  filename when not required e.g. ``output_09.expt`` -> ``output_9.expt`` (#1316)
+- ``dials.plot_reflections``: Fix invisible white spots on white background. (#1346)
+
+
+Deprecations and Removals
+-------------------------
+
+- ``dials.find_spots``: Deprecate ``spotfinder.filter.use_trusted_range=`` (#1156)
+- ``setpaths.sh`` and related scripts in newly created DIALS development
+  environments are made obsolete and will no longer work. (#1235)
+- ``dials.show``: Remove ``show_image_statistics=`` parameter. Use
+  ``image_statistics.show_raw=`` for equivalent output (#1306)
+- Log files will omit timings unless the relevant dials program was run with ``-v`` (#1313)
+
+Misc
+----
+
+- #1184, #1216, #1288, #1312, #1320, #1322, #1325, #1328, #1352, #1365, #1366, #1370
+
+
 DIALS 3.0.4 (2020-07-20)
 ========================
 
