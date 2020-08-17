@@ -1,0 +1,1 @@
+``dials.find_spots``: Deprecate ``spotfinder.filter.use_trusted_range=`` parameter
