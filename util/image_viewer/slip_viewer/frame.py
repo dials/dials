@@ -17,7 +17,7 @@ from ..rstbx_frame import EVT_EXTERNAL_UPDATE
 from ..rstbx_frame import XrayFrame as XFBaseClass
 from rstbx.viewer import settings as rv_settings, image as rv_image
 from wxtbx import bitmaps
-from boost.python import c_sizeof
+from boost_adaptbx.boost.python import c_sizeof
 from rstbx.viewer.frame import SettingsFrame
 
 pyslip._Tiles = tile_generation._Tiles

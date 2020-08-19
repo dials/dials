@@ -10,7 +10,7 @@ from time import time
 
 import psutil
 
-import boost.python
+import boost_adaptbx.boost.python
 import libtbx
 
 import dials.algorithms.integration
@@ -78,7 +78,7 @@ def _average_bbox_size(reflections):
     return xsize, ysize, zsize
 
 
-@boost.python.inject_into(Executor)
+@boost_adaptbx.boost.python.inject_into(Executor)
 class _(object):
     @staticmethod
     def __getinitargs__():
