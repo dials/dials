@@ -7,7 +7,14 @@ Usage: dials.plot_Fo_vs_Fc hklin=refined.mtz
 """
 
 from __future__ import absolute_import, division, print_function
+
 import sys
+from math import sqrt
+
+from iotbx import mtz
+from scitbx.array_family import flex
+from scitbx.lstbx import normal_eqns, normal_eqns_solving
+
 from dials.util import Sorry, show_mail_on_error
 from dials.util.options import OptionParser
 
@@ -16,10 +23,6 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator
-from iotbx import mtz
-from scitbx.array_family import flex
-from scitbx.lstbx import normal_eqns, normal_eqns_solving
-from math import sqrt
 
 
 class HyperbolaFit(normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_mixin):

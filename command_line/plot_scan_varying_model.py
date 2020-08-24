@@ -4,9 +4,6 @@ import errno
 import os
 import matplotlib
 
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
 
 from dials.algorithms.refinement.rotation_decomposition import (
     solve_r3_rotation_for_angles_given_axes,
@@ -14,6 +11,10 @@ from dials.algorithms.refinement.rotation_decomposition import (
 
 import dials.util
 from libtbx.phil import parse
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 
 phil_scope = parse(
     """
