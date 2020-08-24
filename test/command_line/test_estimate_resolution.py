@@ -35,7 +35,6 @@ def test_x4wide(input_files, dials_data, run_in_tmpdir, capsys):
     captured = capsys.readouterr()
     expected_output = (
         "Resolution rmerge:        1.34",
-        "Resolution completeness:  1.20",
         "Resolution cc_half:       1.56",
         "Resolution cc_ref:        1.3",
         "Resolution I/sig:         1.53",
