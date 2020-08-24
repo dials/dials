@@ -94,6 +94,13 @@ def test_resolution_fit_from_merging_stats(merging_stats):
     assert flex.max(flex.abs(result.y_obs - result.y_fit)) < 1
 
 
+def test_resolution_fit_interpolation_error(merging_stats):
+    result = resolution_analysis.resolution_fit_from_merging_stats(
+        merging_stats, "i_over_sigma_mean", resolution_analysis.log_fit, limit=25
+    )
+    assert result.d_min is None
+
+
 def test_plot_result(merging_stats):
     result = resolution_analysis.resolution_cc_half(merging_stats, limit=0.82)
     d = resolution_analysis.plot_result("cc_half", result)
