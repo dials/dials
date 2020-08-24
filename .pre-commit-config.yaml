@@ -1,5 +1,11 @@
 repos:
 
+# Automatically sort imports
+- repo: https://github.com/PyCQA/isort.git
+  rev: 5.5.0
+  hooks:
+  - id: isort
+
 # Automatic source code formatting
 - repo: https://github.com/psf/black
   rev: 20.8b1

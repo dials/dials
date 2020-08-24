@@ -7,12 +7,9 @@ package_dir = ".."
 filename = "CHANGELOG.rst"
 
 [tool.isort]
+sections="FUTURE,STDLIB,THIRDPARTY,CCTBX,DXTBX,FIRSTPARTY,LOCALFOLDER"
+known_firstparty="dials_*"
+known_dxtbx="dxtbx"
 known_cctbx="boost,boost_adaptbx,cbflib_adaptbx,cctbx,chiltbx,clipper_adaptbx,cma_es,cootbx,crys3d,cudatbx,fable,fast_linalg,fftw3tbx,gltbx,iota,iotbx,libtbx,mmtbx,omptbx,prime,rstbx,scitbx,simtbx,smtbx,spotfinder,tbxx,ucif,wxtbx,xfel"
-sections="FUTURE,STDLIB,THIRDPARTY,CCTBX,FIRSTPARTY,LOCALFOLDER"
-# Explicitly black-compatible settings
-multi_line_output=3
-include_trailing_comma=true
-force_grid_wrap=0
-use_parentheses=true
-line_length=88
-ensure_newline_before_comments=true
+profile="black"
+
