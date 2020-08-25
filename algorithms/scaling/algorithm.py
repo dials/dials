@@ -32,7 +32,10 @@ from dials.util.exclude_images import (
     get_valid_image_ranges,
 )
 from dials.util.observer import Subject
-from dials.algorithms.scaling.observers import register_scaler_observers
+from dials.algorithms.scaling.observers import (
+    register_scaler_observers,
+    ScalingSummaryContextManager,
+)
 from dials.algorithms.scaling.scale_and_filter import AnalysisResults, log_cycle_results
 from dials.command_line.cosym import cosym
 from dials.command_line.cosym import phil_scope as cosym_phil_scope
@@ -202,25 +205,26 @@ class ScalingAlgorithm(Subject):
     @Subject.notify_event(event="run_script")
     def run(self):
         """Run the scaling script."""
-        start_time = time.time()
-        self.scale()
-        self.remove_bad_data()
-        if not self.experiments:
-            raise ValueError("All data sets have been rejected as bad.")
-        self.scaled_miller_array = scaled_data_as_miller_array(
-            self.reflections,
-            self.experiments,
-            anomalous_flag=False,
-            best_unit_cell=self.params.reflection_selection.best_unit_cell,
-        )
-        try:
-            self.calculate_merging_stats()
-        except DialsMergingStatisticsError as e:
-            logger.info(e)
+        with ScalingSummaryContextManager(self):
+            start_time = time.time()
+            self.scale()
+            self.remove_bad_data()
+            if not self.experiments:
+                raise ValueError("All data sets have been rejected as bad.")
+            self.scaled_miller_array = scaled_data_as_miller_array(
+                self.reflections,
+                self.experiments,
+                anomalous_flag=False,
+                best_unit_cell=self.params.reflection_selection.best_unit_cell,
+            )
+            try:
+                self.calculate_merging_stats()
+            except DialsMergingStatisticsError as e:
+                logger.info(e)
 
-        # All done!
-        logger.info("\nTotal time taken: {:.4f}s ".format(time.time() - start_time))
-        logger.info("%s%s%s", "\n", "=" * 80, "\n")
+            # All done!
+            logger.info("\nTotal time taken: {:.4f}s ".format(time.time() - start_time))
+            logger.info("%s%s%s", "\n", "=" * 80, "\n")
 
     def scale(self):
         """The main scaling algorithm."""

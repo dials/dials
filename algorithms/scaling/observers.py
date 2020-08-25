@@ -85,11 +85,11 @@ def register_default_scaling_observers(script):
     script.register_observer(
         event="merging_statistics", observer=MergingStatisticsObserver()
     )
-    script.register_observer(
-        event="run_script",
-        observer=ScalingSummaryGenerator(),
-        callback="print_scaling_summary",
-    )
+    # script.register_observer(
+    #    event="run_script",
+    #    observer=ScalingSummaryGenerator(),
+    #    callback="print_scaling_summary",
+    # )
     script.register_observer(
         event="run_script",
         observer=ScalingHTMLGenerator(),
@@ -115,11 +115,11 @@ def register_merging_stats_observers(script):
     script.register_observer(
         event="merging_statistics", observer=MergingStatisticsObserver()
     )
-    script.register_observer(
-        event="run_script",
-        observer=ScalingSummaryGenerator(),
-        callback="print_scaling_summary",
-    )
+    # script.register_observer(
+    #    event="run_script",
+    #    observer=ScalingSummaryGenerator(),
+    #    callback="print_scaling_summary",
+    # )
 
 
 def register_scale_and_filter_observers(script):
@@ -135,11 +135,23 @@ def register_scale_and_filter_observers(script):
         pass
 
 
-@singleton
-class ScalingSummaryGenerator(Observer):
-    """
-    Observer to summarise data
-    """
+# @singleton
+# class ScalingSummaryGenerator(Observer):
+#    """
+#    Observer to summarise data
+#    """
+
+
+class ScalingSummaryContextManager(object):
+    def __init__(self, script):
+        self.script = script
+        self.data = {}
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        self.print_scaling_summary(self.script)
 
     def print_scaling_summary(self, script):
         """Log summary information after scaling."""
