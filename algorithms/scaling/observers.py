@@ -90,8 +90,6 @@ def register_scaler_observers(scaler):
     scaler.register_observer(
         event="performed_error_analysis", observer=ErrorModelObserver()
     )
-
-    scaler.register_observer(event="performed_scaling", observer=ScalingModelObserver())
     scaler.register_observer(
         event="performed_outlier_rejection", observer=ScalingOutlierObserver()
     )
@@ -110,8 +108,7 @@ class ScalingSummaryContextManager(object):
 
     def print_scaling_summary(self, script):
         """Log summary information after scaling."""
-        if ScalingModelObserver().data:
-            logger.info(ScalingModelObserver().return_model_error_summary())
+        logger.info(print_scaling_model_error_summary(script.experiments))
         valid_ranges = get_valid_image_ranges(script.experiments)
         image_ranges = get_image_ranges(script.experiments)
         msg = []
@@ -213,7 +210,7 @@ class ScalingHTMLContextManager(object):
         json_file = scaling_script.params.output.json
         if not (html_file or json_file):
             return
-        self.data.update(ScalingModelObserver().make_plots())
+        self.data.update(make_scaling_model_plots(scaling_script.experiments))
         self.data.update(ScalingOutlierObserver().make_plots())
         self.data.update(ErrorModelObserver().make_plots())
         self.data.update(make_merging_stats_plots(scaling_script))
@@ -251,67 +248,54 @@ class ScalingHTMLContextManager(object):
                 json.dump(self.data, outfile)
 
 
-@singleton
-class ScalingModelObserver(Observer):
-    """
-    Observer to record scaling model data and make model plots.
-    """
+def make_scaling_model_plots(experiments):
+    data = {i: e.scaling_model.to_dict() for i, e in enumerate(experiments)}
+    """Generate scaling model component plot data."""
+    d = OrderedDict()
+    combined_plots = make_combined_plots(data)
+    if combined_plots:
+        d.update(combined_plots)
+    for key in sorted(data.keys()):
+        scaling_model_plots = plot_scaling_models(data[key])
+        for plot in scaling_model_plots.values():
+            plot["layout"]["title"] += " (dataset %s)" % key
+        for name, plot in six.iteritems(scaling_model_plots):
+            d[name + "_" + str(key)] = plot
+    graphs = {"scaling_model": d}
+    return graphs
 
-    def update(self, scaler):
-        """Update the data in the observer."""
-        active_scalers = getattr(scaler, "active_scalers", False)
-        if not active_scalers:
-            active_scalers = [scaler]
-        for i, s in enumerate(active_scalers):
-            self.data[i] = s.experiment.scaling_model.to_dict()
 
-    def make_plots(self):
-        """Generate scaling model component plot data."""
-        d = OrderedDict()
-        combined_plots = make_combined_plots(self.data)
-        if combined_plots:
-            d.update(combined_plots)
-        for key in sorted(self.data.keys()):
-            scaling_model_plots = plot_scaling_models(self.data[key])
-            for plot in scaling_model_plots.values():
-                plot["layout"]["title"] += " (dataset %s)" % key
-            for name, plot in six.iteritems(scaling_model_plots):
-                d[name + "_" + str(key)] = plot
-        graphs = {"scaling_model": d}
-        return graphs
-
-    def return_model_error_summary(self):
-        """Get a summary of the error distribution of the models."""
-        first_model = list(self.data.values())[0]
-        component = first_model["configuration_parameters"]["corrections"][0]
-        msg = ""
-        if "est_standard_devs" in first_model[component]:
-            p_sigmas = flex.double()
-            for model in self.data.values():
-                for component in model["configuration_parameters"]["corrections"]:
-                    if "est_standard_devs" in model[component]:
-                        params = flex.double(model[component]["parameters"])
-                        sigmas = flex.double(model[component]["est_standard_devs"])
-                        null_value = flex.double(
-                            len(params), model[component]["null_parameter_value"]
-                        )
-                        p_sigmas.extend(flex.abs(params - null_value) / sigmas)
-            log_p_sigmas = flex.log(p_sigmas)
-            frac_high_uncertainty = (log_p_sigmas < 0.69315).count(True) / len(
-                log_p_sigmas
-            )
-            if frac_high_uncertainty > 0.5:
-                msg = (
-                    "Warning: Over half ({0:.2f}%) of model parameters have signficant\n"
-                    "uncertainty (sigma/abs(parameter) > 0.5), which could indicate a\n"
-                    "poorly-determined scaling problem or overparameterisation.\n"
-                ).format(frac_high_uncertainty * 100)
-            else:
-                msg = (
-                    "{0:.2f}% of model parameters have signficant uncertainty\n"
-                    "(sigma/abs(parameter) > 0.5)\n"
-                ).format(frac_high_uncertainty * 100)
-        return msg
+def print_scaling_model_error_summary(experiments):
+    """Get a summary of the error distribution of the models."""
+    models = [e.scaling_model.to_dict() for e in experiments]
+    first_model = models[0]
+    component = first_model["configuration_parameters"]["corrections"][0]
+    msg = ""
+    if "est_standard_devs" in first_model[component]:
+        p_sigmas = flex.double()
+        for model in models:
+            for component in model["configuration_parameters"]["corrections"]:
+                if "est_standard_devs" in model[component]:
+                    params = flex.double(model[component]["parameters"])
+                    sigmas = flex.double(model[component]["est_standard_devs"])
+                    null_value = flex.double(
+                        len(params), model[component]["null_parameter_value"]
+                    )
+                    p_sigmas.extend(flex.abs(params - null_value) / sigmas)
+        log_p_sigmas = flex.log(p_sigmas)
+        frac_high_uncertainty = (log_p_sigmas < 0.69315).count(True) / len(log_p_sigmas)
+        if frac_high_uncertainty > 0.5:
+            msg = (
+                "Warning: Over half ({0:.2f}%) of model parameters have signficant\n"
+                "uncertainty (sigma/abs(parameter) > 0.5), which could indicate a\n"
+                "poorly-determined scaling problem or overparameterisation.\n"
+            ).format(frac_high_uncertainty * 100)
+        else:
+            msg = (
+                "{0:.2f}% of model parameters have signficant uncertainty\n"
+                "(sigma/abs(parameter) > 0.5)\n"
+            ).format(frac_high_uncertainty * 100)
+    return msg
 
 
 @singleton
