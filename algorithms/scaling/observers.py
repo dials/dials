@@ -107,10 +107,6 @@ def register_merging_stats_observers(script):
     )
 
 
-def register_scale_and_filter_observers(script):
-    script.register_observer(event="run_scale_and_filter", observer=FilteringObserver())
-
-
 class ScalingSummaryContextManager(object):
     def __init__(self, script):
         self.script = script
@@ -232,7 +228,7 @@ class ScalingHTMLContextManager(object):
         self.data.update(ScalingOutlierObserver().make_plots())
         self.data.update(ErrorModelObserver().make_plots())
         self.data.update(MergingStatisticsObserver().make_plots())
-        self.data.update(FilteringObserver().make_plots())
+        self.data.update(make_filtering_plots(scaling_script))
         if html_file:
             logger.info("Writing html report to %s", html_file)
             loader = ChoiceLoader(
@@ -416,29 +412,18 @@ class ErrorModelObserver(Observer):
         return d
 
 
-@singleton
-class FilteringObserver(Observer):
-    """
-    Observer to record data from the scaling and filtering algorithm.
-    """
-
-    def update(self, scaling_script):
-        if scaling_script.filtering_results:
-            self.data = {
-                "merging_stats": scaling_script.filtering_results.get_merging_stats(),
-                "initial_expids_and_image_ranges": scaling_script.filtering_results.initial_expids_and_image_ranges,
-                "cycle_results": scaling_script.filtering_results.get_cycle_results(),
-                "expids_and_image_ranges": scaling_script.filtering_results.expids_and_image_ranges,
-                "mode": scaling_script.params.filtering.deltacchalf.mode,
-            }
-
-    def make_plots(self):
-        """Make plots for scale and filter."""
-        if not self.data:
-            return {"filter_plots": {}}
-        # Make merging stats plots, histograms and image ranges.
-        d = make_scaling_filtering_plots(self.data)
+def make_filtering_plots(scaling_script):
+    if scaling_script.filtering_results:
+        data = {
+            "merging_stats": scaling_script.filtering_results.get_merging_stats(),
+            "initial_expids_and_image_ranges": scaling_script.filtering_results.initial_expids_and_image_ranges,
+            "cycle_results": scaling_script.filtering_results.get_cycle_results(),
+            "expids_and_image_ranges": scaling_script.filtering_results.expids_and_image_ranges,
+            "mode": scaling_script.params.filtering.deltacchalf.mode,
+        }
+        d = make_scaling_filtering_plots(data)
         return {"filter_plots": d}
+    return {"filter_plots": {}}
 
 
 @singleton

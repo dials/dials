@@ -176,9 +176,7 @@ def prepare_input(params, experiments, reflections):
 
 class ScalingAlgorithm(Subject):
     def __init__(self, params, experiments, reflections):
-        super(ScalingAlgorithm, self).__init__(
-            events=["merging_statistics", "run_scale_and_filter"]
-        )
+        super(ScalingAlgorithm, self).__init__(events=["merging_statistics"])
         self.scaler = None
         self.scaled_miller_array = None
         self.merging_statistics_result = None
@@ -356,7 +354,6 @@ Whole dataset deltacchalf scaling and filtering can only be performed in
 multi-dataset scaling mode (not single dataset or scaling against a reference)"""
             )
 
-    @Subject.notify_event(event="run_scale_and_filter")
     def run(self):
         """Run cycles of scaling and filtering."""
         with ScalingHTMLContextManager(self):

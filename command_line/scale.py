@@ -45,7 +45,6 @@ from dials.algorithms.scaling.algorithm import ScalingAlgorithm, ScaleAndFilterA
 from dials.algorithms.scaling.observers import (
     register_default_scaling_observers,
     register_merging_stats_observers,
-    register_scale_and_filter_observers,
 )
 
 try:
@@ -189,7 +188,6 @@ def run_scaling(params, experiments, reflections):
         # Register the observers at the highest level
         if params.filtering.method:
             algorithm = ScaleAndFilterAlgorithm(params, experiments, reflections)
-            register_scale_and_filter_observers(algorithm)
         else:
             algorithm = ScalingAlgorithm(params, experiments, reflections)
 
