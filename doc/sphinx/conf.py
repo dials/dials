@@ -1,6 +1,4 @@
 # coding: utf-8
-from __future__ import absolute_import, division, print_function
-
 # DIALS documentation build configuration file, created by
 # sphinx-quickstart on Thu Jul 24 15:08:40 2014.
 #
@@ -12,6 +10,8 @@ from __future__ import absolute_import, division, print_function
 #
 # All configuration values have a default; values that are commented out
 # serve to show the default.
+
+from __future__ import absolute_import, division, print_function
 
 import datetime
 import sys

@@ -1,6 +1,6 @@
+"""Tests for RestraintsParameterisation and associated classes used in refinement"""
 from __future__ import absolute_import, division, print_function
 
-# Tests for RestraintsParameterisation and associated classes used in refinement
 
 import os
 import random
@@ -18,8 +18,6 @@ def test_single_crystal_restraints_gradients():
 
     from dials.test.algorithms.refinement.setup_geometry import Extract
     from dxtbx.model.experiment_list import ExperimentList, Experiment
-
-    #### Import model parameterisations
 
     from dials.algorithms.refinement.parameterisation.prediction_parameters import (
         XYPhiPredictionParameterisation,

@@ -11,8 +11,6 @@ from dials.algorithms.scaling.model.components.scale_components import (
 from dials.algorithms.scaling.basis_functions import RefinerCalculator
 from dials.algorithms.scaling.parameter_handler import scaling_active_parameter_manager
 
-# from dials.algorithms.scaling.target_function import ScalingTarget
-
 
 @pytest.fixture
 def small_reflection_table():

@@ -14,10 +14,6 @@ from dxtbx.serialize import load
 from iotbx import mtz
 
 
-# Tests used to check for h5py
-# May need to add this again if lack of this check causes issues.
-
-
 def run_export(export_format, dials_data, tmpdir):
     result = procrunner.run(
         [

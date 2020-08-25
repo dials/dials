@@ -1,8 +1,7 @@
 # coding: utf-8
+# DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
 from __future__ import absolute_import, division, print_function
-
-# DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
 import os
 import copy
@@ -12,7 +11,6 @@ import iotbx.phil
 from cctbx import sgtbx
 from rstbx.symmetry.constraints import parameter_reduction
 
-# from dials.util.command_line import Importer
 from dials.algorithms.indexing.assign_indices import AssignIndicesGlobal
 from dials.array_family import flex
 from dials.util.options import OptionParser

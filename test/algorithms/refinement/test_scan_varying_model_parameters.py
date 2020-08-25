@@ -6,7 +6,6 @@ import textwrap
 
 import pytest
 
-# CCTBX imports
 from libtbx.test_utils import approx_equal
 from scitbx import matrix
 from scitbx.array_family import flex
@@ -14,7 +13,6 @@ from dxtbx.model import Crystal
 from dxtbx.model import Beam
 from dxtbx.model import Goniometer
 
-# DIALS imports
 from dials.algorithms.refinement.refinement_helpers import (
     get_fd_gradients,
     random_param_shift,

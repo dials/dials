@@ -6,7 +6,6 @@ logger = logging.getLogger(__name__)
 from scitbx.array_family import flex
 from dials.algorithms.refinement import DialsRefineConfigError
 
-# PHIL
 from libtbx.phil import parse
 
 phil_str = """

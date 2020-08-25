@@ -1,7 +1,6 @@
 """Contains classes used to construct a target function for refinement,
 principally Target and ReflectionManager."""
 
-# python and cctbx imports
 from __future__ import absolute_import, division, print_function
 
 import math
@@ -9,7 +8,6 @@ import math
 from scitbx.array_family import flex
 from scitbx import sparse
 
-# PHIL
 from libtbx.phil import parse
 
 phil_str = """

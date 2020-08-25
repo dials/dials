@@ -1,9 +1,8 @@
-from __future__ import absolute_import, division, print_function
-
 # Do not import this file directly. Use
 #
 #   from dials.array_family import flex
 #
+from __future__ import absolute_import, division, print_function
 
 import collections
 import copy

@@ -1,6 +1,5 @@
 """Setup experimental geometry for refinement test cases"""
 
-# Python and cctbx imports
 from __future__ import absolute_import, division, print_function
 from libtbx.phil import parse, command_line
 

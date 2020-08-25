@@ -1,4 +1,5 @@
 # coding: utf-8
+# DIALS_ENABLE_COMMAND_LINE_COMPLETION
 """
 This program is used to integrate the reflections on the diffraction images. It
 is called with an experiment list outputted from dials.index or dials.refine and
@@ -40,7 +41,6 @@ from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model.experiment_list import Experiment
 
 logger = logging.getLogger("dials.command_line.integrate")
-# DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
 # Create the phil scope
 

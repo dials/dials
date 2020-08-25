@@ -3,13 +3,11 @@ from __future__ import absolute_import, division, print_function
 import logging
 import re
 
-import libtbx  # for libtbx.Auto
+import libtbx
 from dials.algorithms.refinement import DialsRefineConfigError
 
-# Function to convert fix_lists into to_fix selections
 from dials.algorithms.refinement.refinement_helpers import string_sel
 
-# Import model parameterisations
 from .beam_parameters import BeamParameterisation
 from .scan_varying_beam_parameters import ScanVaryingBeamParameterisation
 from .crystal_parameters import CrystalOrientationParameterisation
@@ -27,7 +25,6 @@ from .scan_varying_detector_parameters import (
 from .goniometer_parameters import GoniometerParameterisation
 from .scan_varying_goniometer_parameters import ScanVaryingGoniometerParameterisation
 
-# Import parameterisations of the prediction equation
 from .prediction_parameters import XYPhiPredictionParameterisation
 from .prediction_parameters import XYPhiPredictionParameterisationSparse
 from .scan_varying_prediction_parameters import ScanVaryingPredictionParameterisation
@@ -41,7 +38,6 @@ from .prediction_parameters_stills import (
     SphericalRelpStillsPredictionParameterisationSparse,
 )
 
-# PHIL
 from libtbx.phil import parse
 from dials.algorithms.refinement.parameterisation.autoreduce import (
     phil_str as autoreduce_phil_str,
