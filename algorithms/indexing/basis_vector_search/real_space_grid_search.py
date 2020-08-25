@@ -11,7 +11,7 @@ from rstbx.array_family import (
 from rstbx.dps_core import SimpleSamplerTool
 
 from dials.algorithms.indexing import DialsIndexError
-from . import Strategy
+from .strategy import Strategy
 from .utils import group_vectors
 
 

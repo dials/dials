@@ -4,7 +4,7 @@ from libtbx import phil
 from scitbx.array_family import flex
 from scitbx import matrix
 
-from . import Strategy
+from .strategy import Strategy
 
 
 fft1d_phil_str = """\

@@ -15,7 +15,7 @@ from scitbx import matrix
 from dials.algorithms import indexing
 import dials_algorithms_indexing_ext
 
-from . import Strategy
+from .strategy import Strategy
 from .utils import is_approximate_integer_multiple, group_vectors
 
 
