@@ -44,7 +44,7 @@ from dials.util.version import dials_version
 from dials.algorithms.scaling.algorithm import ScalingAlgorithm, ScaleAndFilterAlgorithm
 from dials.algorithms.scaling.observers import (
     register_default_scaling_observers,
-    register_merging_stats_observers,
+    # register_merging_stats_observers,
 )
 
 try:
@@ -193,8 +193,8 @@ def run_scaling(params, experiments, reflections):
 
         if params.output.html:
             register_default_scaling_observers(algorithm)
-        else:
-            register_merging_stats_observers(algorithm)
+        # else:
+        #    register_merging_stats_observers(algorithm)
 
         algorithm.run()
 

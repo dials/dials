@@ -277,7 +277,7 @@ class ScalingAlgorithm(Subject):
         if n > 0:
             logger.info("%s reflections excluded: scale factor < 0.001", n)
 
-    @Subject.notify_event(event="merging_statistics")
+    # @Subject.notify_event(event="merging_statistics")
     def calculate_merging_stats(self):
         try:
             (

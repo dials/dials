@@ -82,9 +82,6 @@ def assert_is_json_serialisable(thing, name, path=None):
 
 def register_default_scaling_observers(script):
     """Register the standard observers to the scaling script."""
-    script.register_observer(
-        event="merging_statistics", observer=MergingStatisticsObserver()
-    )
     register_scaler_observers(script.scaler)
 
 
@@ -97,13 +94,6 @@ def register_scaler_observers(scaler):
     scaler.register_observer(event="performed_scaling", observer=ScalingModelObserver())
     scaler.register_observer(
         event="performed_outlier_rejection", observer=ScalingOutlierObserver()
-    )
-
-
-def register_merging_stats_observers(script):
-    """Register only obsevers needed to record and print merging stats."""
-    script.register_observer(
-        event="merging_statistics", observer=MergingStatisticsObserver()
     )
 
 
@@ -171,12 +161,11 @@ were considered for use when refining the scaling model.
             script.params.cut_data.partiality_cutoff,
             script.params.reflection_selection.min_partiality,
         )
-        data = MergingStatisticsObserver().data
-        if data:
-            stats = data["statistics"]
+        stats = script.merging_statistics_result
+        if stats:
             anom_stats, cut_stats, cut_anom_stats = (None, None, None)
             if not script.scaled_miller_array.space_group().is_centric():
-                anom_stats = data["anomalous_statistics"]
+                anom_stats = script.anom_merging_statistics_result
             logger.info(make_merging_statistics_summary(stats))
             try:
                 d_min = resolution_cc_half(stats, limit=0.3).d_min
@@ -227,7 +216,7 @@ class ScalingHTMLContextManager(object):
         self.data.update(ScalingModelObserver().make_plots())
         self.data.update(ScalingOutlierObserver().make_plots())
         self.data.update(ErrorModelObserver().make_plots())
-        self.data.update(MergingStatisticsObserver().make_plots())
+        self.data.update(make_merging_stats_plots(scaling_script))
         self.data.update(make_filtering_plots(scaling_script))
         if html_file:
             logger.info("Writing html report to %s", html_file)
@@ -412,105 +401,76 @@ class ErrorModelObserver(Observer):
         return d
 
 
-def make_filtering_plots(scaling_script):
-    if scaling_script.filtering_results:
+def make_filtering_plots(script):
+    """Make filtering plots for HTML report"""
+    if script.filtering_results:
         data = {
-            "merging_stats": scaling_script.filtering_results.get_merging_stats(),
-            "initial_expids_and_image_ranges": scaling_script.filtering_results.initial_expids_and_image_ranges,
-            "cycle_results": scaling_script.filtering_results.get_cycle_results(),
-            "expids_and_image_ranges": scaling_script.filtering_results.expids_and_image_ranges,
-            "mode": scaling_script.params.filtering.deltacchalf.mode,
+            "merging_stats": script.filtering_results.get_merging_stats(),
+            "initial_expids_and_image_ranges": script.filtering_results.initial_expids_and_image_ranges,
+            "cycle_results": script.filtering_results.get_cycle_results(),
+            "expids_and_image_ranges": script.filtering_results.expids_and_image_ranges,
+            "mode": script.params.filtering.deltacchalf.mode,
         }
         d = make_scaling_filtering_plots(data)
         return {"filter_plots": d}
     return {"filter_plots": {}}
 
 
-@singleton
-class MergingStatisticsObserver(Observer):
-    """
-    Observer to record merging statistics data and make tables.
-    """
+def make_merging_stats_plots(script):
+    """Make merging stats plots for HTML report"""
+    d = {
+        "scaling_tables": ([], []),
+        "resolution_plots": OrderedDict(),
+        "batch_plots": OrderedDict(),
+        "misc_plots": OrderedDict(),
+        "anom_plots": OrderedDict(),
+        "image_range_tables": [],
+    }
+    if script.merging_statistics_result:
+        stats = script.merging_statistics_result
+        anom_stats = script.anom_merging_statistics_result
+        is_centric = script.scaled_miller_array.space_group().is_centric()
+        # Now calculate batch data
+        (
+            batches,
+            rvb,
+            isigivb,
+            svb,
+            batch_data,
+        ) = reflection_tables_to_batch_dependent_properties(  # pylint: disable=unbalanced-tuple-unpacking
+            script.reflections, script.experiments, script.scaled_miller_array,
+        )
+        bm = batch_manager(batches, batch_data)
+        image_range_tables = make_image_range_table(script.experiments, bm)
 
-    def update(self, scaling_script):
-        if scaling_script.merging_statistics_result:
-            self.data = {
-                "statistics": scaling_script.merging_statistics_result,
-                "anomalous_statistics": scaling_script.anom_merging_statistics_result,
-                "is_centric": scaling_script.scaled_miller_array.space_group().is_centric(),
-            }
-            # Now calculate batch data
-            (
-                batches,
-                rvb,
-                isigivb,
-                svb,
-                batch_data,
-            ) = reflection_tables_to_batch_dependent_properties(  # pylint: disable=unbalanced-tuple-unpacking
-                scaling_script.reflections,
-                scaling_script.experiments,
-                scaling_script.scaled_miller_array,
-            )
-            self.data["scaled_miller_array"] = scaling_script.scaled_miller_array
-            self.data["bm"] = batch_manager(batches, batch_data)
-            self.data["r_merge_vs_batch"] = rvb
-            self.data["scale_vs_batch"] = svb
-            self.data["isigivsbatch"] = isigivb
-            self.data["image_range_tables"] = [
-                make_image_range_table(scaling_script.experiments, self.data["bm"])
-            ]
-
-    def make_plots(self):
-        """Generate tables of overall and resolution-binned merging statistics."""
-        d = {
-            "scaling_tables": ([], []),
-            "resolution_plots": OrderedDict(),
-            "batch_plots": OrderedDict(),
-            "misc_plots": OrderedDict(),
-            "anom_plots": OrderedDict(),
-            "image_range_tables": [],
-        }
-        if "statistics" in self.data:
-            plotter = ResolutionPlotsAndStats(
-                self.data["statistics"],
-                self.data["anomalous_statistics"],
-                is_centric=self.data["is_centric"],
-            )
-            d["resolution_plots"].update(plotter.make_all_plots())
-            d["scaling_tables"] = plotter.statistics_tables()
-            d["batch_plots"].update(
-                scale_rmerge_vs_batch_plot(
-                    self.data["bm"],
-                    self.data["r_merge_vs_batch"],
-                    self.data["scale_vs_batch"],
-                )
-            )
-            d["batch_plots"].update(
-                i_over_sig_i_vs_batch_plot(self.data["bm"], self.data["isigivsbatch"])
-            )
-            plotter = IntensityStatisticsPlots(
-                self.data["scaled_miller_array"], run_xtriage_analysis=False
-            )
-            d["resolution_plots"].update(plotter.generate_resolution_dependent_plots())
-            if d["resolution_plots"]["cc_one_half"]["data"][2]:
-                cc_anom = d["resolution_plots"]["cc_one_half"]["data"][2]["y"]
-                significance = d["resolution_plots"]["cc_one_half"]["data"][3]["y"]
-                sig = flex.double(cc_anom) > flex.double(significance)
-                max_anom = 0
-                for i, v in enumerate(sig):
-                    if v:
-                        max_anom = i
-                    else:
-                        break
-                d_min = uctbx.d_star_sq_as_d(plotter.binner.limits())[max_anom + 1]
-            else:
-                d_min = 0.0
-            d["misc_plots"].update(plotter.generate_miscellanous_plots())
-            intensities_anom = self.data["scaled_miller_array"].as_anomalous_array()
-            intensities_anom = intensities_anom.map_to_asu().customized_copy(
-                info=self.data["scaled_miller_array"].info()
-            )
-            anom_plotter = AnomalousPlotter(intensities_anom, strong_cutoff=d_min)
-            d["anom_plots"].update(anom_plotter.make_plots())
-            d["image_range_tables"] = self.data["image_range_tables"]
-        return d
+        plotter = ResolutionPlotsAndStats(stats, anom_stats, is_centric)
+        d["resolution_plots"].update(plotter.make_all_plots())
+        d["scaling_tables"] = plotter.statistics_tables()
+        d["batch_plots"].update(scale_rmerge_vs_batch_plot(bm, rvb, svb))
+        d["batch_plots"].update(i_over_sig_i_vs_batch_plot(bm, isigivb))
+        plotter = IntensityStatisticsPlots(
+            script.scaled_miller_array, run_xtriage_analysis=False
+        )
+        d["resolution_plots"].update(plotter.generate_resolution_dependent_plots())
+        if d["resolution_plots"]["cc_one_half"]["data"][2]:
+            cc_anom = d["resolution_plots"]["cc_one_half"]["data"][2]["y"]
+            significance = d["resolution_plots"]["cc_one_half"]["data"][3]["y"]
+            sig = flex.double(cc_anom) > flex.double(significance)
+            max_anom = 0
+            for i, v in enumerate(sig):
+                if v:
+                    max_anom = i
+                else:
+                    break
+            d_min = uctbx.d_star_sq_as_d(plotter.binner.limits())[max_anom + 1]
+        else:
+            d_min = 0.0
+        d["misc_plots"].update(plotter.generate_miscellanous_plots())
+        intensities_anom = script.scaled_miller_array.as_anomalous_array()
+        intensities_anom = intensities_anom.map_to_asu().customized_copy(
+            info=script.scaled_miller_array.info()
+        )
+        anom_plotter = AnomalousPlotter(intensities_anom, strong_cutoff=d_min)
+        d["anom_plots"].update(anom_plotter.make_plots())
+        d["image_range_tables"] = image_range_tables
+    return d
