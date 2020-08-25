@@ -85,16 +85,6 @@ def register_default_scaling_observers(script):
     script.register_observer(
         event="merging_statistics", observer=MergingStatisticsObserver()
     )
-    # script.register_observer(
-    #    event="run_script",
-    #    observer=ScalingSummaryGenerator(),
-    #    callback="print_scaling_summary",
-    # )
-    script.register_observer(
-        event="run_script",
-        observer=ScalingHTMLGenerator(),
-        callback="make_scaling_html",
-    )
     register_scaler_observers(script.scaler)
 
 
@@ -115,31 +105,10 @@ def register_merging_stats_observers(script):
     script.register_observer(
         event="merging_statistics", observer=MergingStatisticsObserver()
     )
-    # script.register_observer(
-    #    event="run_script",
-    #    observer=ScalingSummaryGenerator(),
-    #    callback="print_scaling_summary",
-    # )
 
 
 def register_scale_and_filter_observers(script):
     script.register_observer(event="run_scale_and_filter", observer=FilteringObserver())
-    script.register_observer(
-        event="run_scale_and_filter",
-        observer=ScalingHTMLGenerator(),
-        callback="make_scaling_html",
-    )
-    try:
-        script.unregister_observer(event="run_script", observer=ScalingHTMLGenerator())
-    except KeyError:
-        pass
-
-
-# @singleton
-# class ScalingSummaryGenerator(Observer):
-#    """
-#    Observer to summarise data
-#    """
 
 
 class ScalingSummaryContextManager(object):
@@ -242,11 +211,16 @@ were considered for use when refining the scaling model.
             logger.info(table_1_summary(stats, anom_stats, cut_stats, cut_anom_stats))
 
 
-@singleton
-class ScalingHTMLGenerator(Observer):
-    """
-    Observer to make a html report
-    """
+class ScalingHTMLContextManager(object):
+    def __init__(self, script):
+        self.script = script
+        self.data = {}
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        self.make_scaling_html(self.script)
 
     def make_scaling_html(self, scaling_script):
         """Collect data from the individual observers and write the html."""
