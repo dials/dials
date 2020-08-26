@@ -4,6 +4,10 @@ import copy
 import os
 import pytest
 
+from .test_scan_static_reflection_predictor import (  # noqa: F401, used as test fixture; isort:skip
+    data as static_test,
+)
+
 
 class Data(object):
     def __init__(self, dials_regression):
@@ -196,11 +200,6 @@ def test_regression(data):
     # flex.size_t(len(all_indices), 0))
     # assert(len(r_old) < len(r_new))
     # print 'OK'
-
-
-from dials.test.algorithms.spot_prediction.test_scan_static_reflection_predictor import (  # noqa: F401, used as test fixture
-    data as static_test,
-)
 
 
 def test_scan_varying_results_are_close_to_static_prediction_when_model_is_static(
