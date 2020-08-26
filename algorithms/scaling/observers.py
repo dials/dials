@@ -1,5 +1,5 @@
 """
-Observers for the scaling algorithm.
+Helper functions/classes for making HTML report and scaling summary output.
 """
 from __future__ import absolute_import, division, print_function
 
@@ -82,7 +82,6 @@ def assert_is_json_serialisable(thing, name, path=None):
 class ScalingSummaryContextManager(object):
     def __init__(self, script):
         self.script = script
-        self.data = {}
 
     def __enter__(self):
         return self
@@ -235,8 +234,8 @@ def _make_scaling_html(scaling_script):
 
 
 def make_scaling_model_plots(experiments):
+    """Collect scaling model plots for html report."""
     data = {i: e.scaling_model.to_dict() for i, e in enumerate(experiments)}
-    """Generate scaling model component plot data."""
     d = OrderedDict()
     combined_plots = make_combined_plots(data)
     if combined_plots:
