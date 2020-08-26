@@ -10,7 +10,6 @@ from dials.util import tabulate
 
 import six
 from cctbx import uctbx
-from dials.util.observer import Observer, singleton
 from dials.algorithms.scaling.plots import (
     plot_outliers,
     normal_probability_plot,
@@ -78,18 +77,6 @@ def assert_is_json_serialisable(thing, name, path=None):
                     "".join("[%s]" % step for step in path),
                 )
             )
-
-
-def register_default_scaling_observers(script):
-    """Register the standard observers to the scaling script."""
-    register_scaler_observers(script.scaler)
-
-
-def register_scaler_observers(scaler):
-    """Register observers on the scaler."""
-    scaler.register_observer(
-        event="performed_error_analysis", observer=ErrorModelObserver()
-    )
 
 
 class ScalingSummaryContextManager(object):
@@ -211,7 +198,9 @@ class ScalingHTMLContextManager(object):
         self.data.update(
             make_outlier_plots(scaling_script.reflections, scaling_script.experiments)
         )
-        self.data.update(ErrorModelObserver().make_plots())
+        self.data.update(
+            make_error_model_plots(scaling_script.params, scaling_script.experiments)
+        )
         self.data.update(make_merging_stats_plots(scaling_script))
         self.data.update(make_filtering_plots(scaling_script))
         if html_file:
@@ -329,45 +318,40 @@ def make_outlier_plots(reflection_tables, experiments):
     return graphs
 
 
-@singleton
-class ErrorModelObserver(Observer):
-    """
-    Observer to record scaling error model data and make a plot.
-    """
+def make_error_model_plots(params, experiments):
+    """Generate normal probability plot data."""
+    data = {}
+    if experiments[0].scaling_model.error_model:
+        em = experiments[0].scaling_model.error_model
+        if em.filtered_Ih_table:
+            table = em.filtered_Ih_table
+            data["intensity"] = table.intensities
+            sigmaprime = calc_sigmaprime(em.parameters, table)
+            data["delta_hl"] = calc_deltahl(table, table.calc_nh(), sigmaprime)
+            data["inv_scale"] = table.inverse_scale_factors
+            data["sigma"] = sigmaprime * data["inv_scale"]
+            data["binning_info"] = em.binner.binning_info
+            em.clear_Ih_table()
+            if params.weighting.error_model.basic.minimisation == "regression":
+                x, y = calculate_regression_x_y(em.filtered_Ih_table)
+                data["regression_x"] = x
+                data["regression_y"] = y
+                data["model_a"] = em.parameters[0]
+                data["model_b"] = em.parameters[1]
+        data["summary"] = str(em)
 
-    def update(self, scaler):
-        if scaler.error_model:
-            if scaler.error_model.filtered_Ih_table:
-                table = scaler.error_model.filtered_Ih_table
-                self.data["intensity"] = table.intensities
-                sigmaprime = calc_sigmaprime(scaler.error_model.parameters, table)
-                self.data["delta_hl"] = calc_deltahl(table, table.calc_nh(), sigmaprime)
-                self.data["inv_scale"] = table.inverse_scale_factors
-                self.data["sigma"] = sigmaprime * self.data["inv_scale"]
-                self.data["binning_info"] = scaler.error_model.binner.binning_info
-                scaler.error_model.clear_Ih_table()
-            if scaler.params.weighting.error_model.basic.minimisation == "regression":
-                x, y = calculate_regression_x_y(scaler.error_model.filtered_Ih_table)
-                self.data["regression_x"] = x
-                self.data["regression_y"] = y
-                self.data["model_a"] = scaler.error_model.parameters[0]
-                self.data["model_b"] = scaler.error_model.parameters[1]
-            self.data["summary"] = str(scaler.error_model)
-
-    def make_plots(self):
-        """Generate normal probability plot data."""
-        d = {"error_model_plots": {}, "error_model_summary": "No error model applied"}
-        if "delta_hl" in self.data:
-            d["error_model_plots"].update(normal_probability_plot(self.data))
-            d["error_model_plots"].update(
-                i_over_sig_i_vs_i_plot(self.data["intensity"], self.data["sigma"])
-            )
-            d["error_model_plots"].update(error_model_variance_plot(self.data))
-            if "regression_x" in self.data:
-                d["error_model_plots"].update(error_regression_plot(self.data))
-        if "summary" in self.data:
-            d["error_model_summary"] = self.data["summary"]
-        return d
+    d = {"error_model_plots": {}, "error_model_summary": "No error model applied"}
+    if "delta_hl" in data:
+        d["error_model_plots"].update(normal_probability_plot(data))
+        d["error_model_plots"].update(
+            i_over_sig_i_vs_i_plot(data["intensity"], data["sigma"])
+        )
+        d["error_model_plots"].update(error_model_variance_plot(data))
+        if "regression_x" in data:
+            d["error_model_plots"].update(error_regression_plot(data))
+    if "summary" in data:
+        d["error_model_summary"] = data["summary"]
+    return d
 
 
 def make_filtering_plots(script):

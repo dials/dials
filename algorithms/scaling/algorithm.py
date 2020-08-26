@@ -31,9 +31,7 @@ from dials.util.exclude_images import (
     exclude_image_ranges_for_scaling,
     get_valid_image_ranges,
 )
-from dials.util.observer import Subject
 from dials.algorithms.scaling.observers import (
-    register_scaler_observers,
     ScalingSummaryContextManager,
     ScalingHTMLContextManager,
 )
@@ -174,9 +172,8 @@ def prepare_input(params, experiments, reflections):
     return params, experiments, reflections
 
 
-class ScalingAlgorithm(Subject):
+class ScalingAlgorithm(object):
     def __init__(self, params, experiments, reflections):
-        super(ScalingAlgorithm, self).__init__(events=["merging_statistics"])
         self.scaler = None
         self.scaled_miller_array = None
         self.merging_statistics_result = None
@@ -277,7 +274,6 @@ class ScalingAlgorithm(Subject):
         if n > 0:
             logger.info("%s reflections excluded: scale factor < 0.001", n)
 
-    # @Subject.notify_event(event="merging_statistics")
     def calculate_merging_stats(self):
         try:
             (
@@ -458,7 +454,6 @@ multi-dataset scaling mode (not single dataset or scaling against a reference)""
 
                 # If not finished then need to create new scaler to try again
                 self._create_model_and_scaler()
-                register_scaler_observers(self.scaler)
             self.filtering_results = results
             # Print summary of results
             logger.info(results)
@@ -491,7 +486,6 @@ multi-dataset scaling mode (not single dataset or scaling against a reference)""
 
     def _run_final_scale_cycle(self, results):
         self._create_model_and_scaler()
-        register_scaler_observers(self.scaler)
         super(ScaleAndFilterAlgorithm, self).run()
         results.add_final_stats(self.merging_statistics_result)
         return results
