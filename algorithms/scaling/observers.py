@@ -90,9 +90,6 @@ def register_scaler_observers(scaler):
     scaler.register_observer(
         event="performed_error_analysis", observer=ErrorModelObserver()
     )
-    scaler.register_observer(
-        event="performed_outlier_rejection", observer=ScalingOutlierObserver()
-    )
 
 
 class ScalingSummaryContextManager(object):
@@ -211,7 +208,9 @@ class ScalingHTMLContextManager(object):
         if not (html_file or json_file):
             return
         self.data.update(make_scaling_model_plots(scaling_script.experiments))
-        self.data.update(ScalingOutlierObserver().make_plots())
+        self.data.update(
+            make_outlier_plots(scaling_script.reflections, scaling_script.experiments)
+        )
         self.data.update(ErrorModelObserver().make_plots())
         self.data.update(make_merging_stats_plots(scaling_script))
         self.data.update(make_filtering_plots(scaling_script))
@@ -298,50 +297,36 @@ def print_scaling_model_error_summary(experiments):
     return msg
 
 
-@singleton
-class ScalingOutlierObserver(Observer):
-    """
-    Observer to record scaling outliers and make outlier plots.
-    """
-
-    def update(self, scaler):
-        active_scalers = getattr(scaler, "active_scalers")
-        if not active_scalers:
-            active_scalers = [scaler]
-        for j, scaler in enumerate(active_scalers):
-            outlier_isel = scaler.suitable_refl_for_scaling_sel.iselection().select(
-                scaler.outliers
-            )
-            x, y, z = (
-                scaler.reflection_table["xyzobs.px.value"].select(outlier_isel).parts()
-            )
-            if scaler.experiment.scan:
-                zrange = [
-                    i / scaler.experiment.scan.get_oscillation()[1]
-                    for i in scaler.experiment.scan.get_oscillation_range()
-                ]
-            else:
-                zrange = [0, 0]
-            self.data[j] = {
-                "x": list(x),
-                "y": list(y),
-                "z": list(z),
-                "image_size": scaler.experiment.detector[0].get_image_size(),
-                "z_range": zrange,
-            }
-
-    def make_plots(self):
-        """Generate plot data of outliers on the detector and vs z."""
-        d = OrderedDict()
-        for key in sorted(self.data):
-            outlier_plots = plot_outliers(self.data[key])
-            for plot in outlier_plots.values():
-                if plot:  # may be null if no outliers
-                    plot["layout"]["title"] += " (dataset %s)" % key
-            d["outlier_plot_" + str(key)] = outlier_plots["outlier_xy_positions"]
-            d["outlier_plot_z" + str(key)] = outlier_plots["outliers_vs_z"]
-        graphs = {"outlier_plots": d}
-        return graphs
+def make_outlier_plots(reflection_tables, experiments):
+    """Make outlier plots for the HTML report."""
+    data = {}
+    for j, (table, expt) in enumerate(zip(reflection_tables, experiments)):
+        outliers = table.get_flags(table.flags.outlier_in_scaling)
+        x, y, z = table["xyzobs.px.value"].select(outliers).parts()
+        if expt.scan:
+            zrange = [
+                i / expt.scan.get_oscillation()[1]
+                for i in expt.scan.get_oscillation_range()
+            ]
+        else:
+            zrange = [0, 0]
+        data[j] = {
+            "x": list(x),
+            "y": list(y),
+            "z": list(z),
+            "image_size": expt.detector[0].get_image_size(),
+            "z_range": zrange,
+        }
+    d = OrderedDict()
+    for key in sorted(data):
+        outlier_plots = plot_outliers(data[key])
+        for plot in outlier_plots.values():
+            if plot:  # may be null if no outliers
+                plot["layout"]["title"] += " (dataset %s)" % key
+        d["outlier_plot_" + str(key)] = outlier_plots["outlier_xy_positions"]
+        d["outlier_plot_z" + str(key)] = outlier_plots["outliers_vs_z"]
+    graphs = {"outlier_plots": d}
+    return graphs
 
 
 @singleton
