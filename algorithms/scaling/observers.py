@@ -88,152 +88,150 @@ class ScalingSummaryContextManager(object):
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        self.print_scaling_summary(self.script)
+        print_scaling_summary(self.script)
 
-    def print_scaling_summary(self, script):
-        """Log summary information after scaling."""
-        logger.info(print_scaling_model_error_summary(script.experiments))
-        valid_ranges = get_valid_image_ranges(script.experiments)
-        image_ranges = get_image_ranges(script.experiments)
-        msg = []
-        for (img, valid, refl) in zip(image_ranges, valid_ranges, script.reflections):
-            if valid:
-                if len(valid) > 1 or valid[0][0] != img[0] or valid[-1][1] != img[1]:
-                    msg.append(
-                        "Excluded images for experiment id: %s, image range: %s, limited range: %s"
-                        % (
-                            refl.experiment_identifiers().keys()[0],
-                            list(img),
-                            list(valid),
-                        )
-                    )
-        if msg:
-            msg = ["Summary of image ranges removed:"] + msg
-            logger.info("\n".join(msg))
 
-        # report on partiality of dataset
-        partials = flex.double()
-        for r in script.reflections:
-            if "partiality" in r:
-                partials.extend(r["partiality"])
-        not_full_sel = partials < 0.99
-        not_zero_sel = partials > 0.01
-        gt_half = partials > 0.5
-        lt_half = partials < 0.5
-        partial_gt_half_sel = not_full_sel & gt_half
-        partial_lt_half_sel = not_zero_sel & lt_half
-        logger.info("Summary of dataset partialities")
-        header = ["Partiality (p)", "n_refl"]
-        rows = [
-            ["all reflections", str(partials.size())],
-            ["p > 0.99", str(not_full_sel.count(False))],
-            ["0.5 < p < 0.99", str(partial_gt_half_sel.count(True))],
-            ["0.01 < p < 0.5", str(partial_lt_half_sel.count(True))],
-            ["p < 0.01", str(not_zero_sel.count(False))],
-        ]
-        logger.info(tabulate(rows, header))
-        logger.info(
-            """
+def print_scaling_summary(script):
+    """Log summary information after scaling."""
+    logger.info(print_scaling_model_error_summary(script.experiments))
+    valid_ranges = get_valid_image_ranges(script.experiments)
+    image_ranges = get_image_ranges(script.experiments)
+    msg = []
+    for (img, valid, refl) in zip(image_ranges, valid_ranges, script.reflections):
+        if valid:
+            if len(valid) > 1 or valid[0][0] != img[0] or valid[-1][1] != img[1]:
+                msg.append(
+                    "Excluded images for experiment id: %s, image range: %s, limited range: %s"
+                    % (refl.experiment_identifiers().keys()[0], list(img), list(valid),)
+                )
+    if msg:
+        msg = ["Summary of image ranges removed:"] + msg
+        logger.info("\n".join(msg))
+
+    # report on partiality of dataset
+    partials = flex.double()
+    for r in script.reflections:
+        if "partiality" in r:
+            partials.extend(r["partiality"])
+    not_full_sel = partials < 0.99
+    not_zero_sel = partials > 0.01
+    gt_half = partials > 0.5
+    lt_half = partials < 0.5
+    partial_gt_half_sel = not_full_sel & gt_half
+    partial_lt_half_sel = not_zero_sel & lt_half
+    logger.info("Summary of dataset partialities")
+    header = ["Partiality (p)", "n_refl"]
+    rows = [
+        ["all reflections", str(partials.size())],
+        ["p > 0.99", str(not_full_sel.count(False))],
+        ["0.5 < p < 0.99", str(partial_gt_half_sel.count(True))],
+        ["0.01 < p < 0.5", str(partial_lt_half_sel.count(True))],
+        ["p < 0.01", str(not_zero_sel.count(False))],
+    ]
+    logger.info(tabulate(rows, header))
+    logger.info(
+        """
 Reflections below a partiality_cutoff of %s are not considered for any
 part of the scaling analysis or for the reporting of merging statistics.
 Additionally, if applicable, only reflections with a min_partiality > %s
 were considered for use when refining the scaling model.
 """,
-            script.params.cut_data.partiality_cutoff,
-            script.params.reflection_selection.min_partiality,
-        )
-        stats = script.merging_statistics_result
-        if stats:
-            anom_stats, cut_stats, cut_anom_stats = (None, None, None)
-            if not script.scaled_miller_array.space_group().is_centric():
-                anom_stats = script.anom_merging_statistics_result
-            logger.info(make_merging_statistics_summary(stats))
-            try:
-                d_min = resolution_cc_half(stats, limit=0.3).d_min
-            except RuntimeError as e:
-                logger.debug(f"Resolution fit failed: {e}")
-            else:
-                max_current_res = stats.bins[-1].d_min
-                if d_min and d_min - max_current_res > 0.005:
-                    logger.info(
-                        "Resolution limit suggested from CC"
-                        + "\u00BD"
-                        + " fit (limit CC"
-                        + "\u00BD"
-                        + "=0.3): %.2f",
-                        d_min,
+        script.params.cut_data.partiality_cutoff,
+        script.params.reflection_selection.min_partiality,
+    )
+    stats = script.merging_statistics_result
+    if stats:
+        anom_stats, cut_stats, cut_anom_stats = (None, None, None)
+        if not script.scaled_miller_array.space_group().is_centric():
+            anom_stats = script.anom_merging_statistics_result
+        logger.info(make_merging_statistics_summary(stats))
+        try:
+            d_min = resolution_cc_half(stats, limit=0.3).d_min
+        except RuntimeError as e:
+            logger.debug(f"Resolution fit failed: {e}")
+        else:
+            max_current_res = stats.bins[-1].d_min
+            if d_min and d_min - max_current_res > 0.005:
+                logger.info(
+                    "Resolution limit suggested from CC"
+                    + "\u00BD"
+                    + " fit (limit CC"
+                    + "\u00BD"
+                    + "=0.3): %.2f",
+                    d_min,
+                )
+                try:
+                    cut_stats, cut_anom_stats = merging_stats_from_scaled_array(
+                        script.scaled_miller_array.resolution_filter(d_min=d_min),
+                        script.params.output.merging.nbins,
+                        script.params.output.use_internal_variance,
                     )
-                    try:
-                        cut_stats, cut_anom_stats = merging_stats_from_scaled_array(
-                            script.scaled_miller_array.resolution_filter(d_min=d_min),
-                            script.params.output.merging.nbins,
-                            script.params.output.use_internal_variance,
-                        )
-                    except DialsMergingStatisticsError:
-                        pass
-                    else:
-                        if script.scaled_miller_array.space_group().is_centric():
-                            cut_anom_stats = None
-            logger.info(table_1_summary(stats, anom_stats, cut_stats, cut_anom_stats))
+                except DialsMergingStatisticsError:
+                    pass
+                else:
+                    if script.scaled_miller_array.space_group().is_centric():
+                        cut_anom_stats = None
+        logger.info(table_1_summary(stats, anom_stats, cut_stats, cut_anom_stats))
 
 
 class ScalingHTMLContextManager(object):
     def __init__(self, script):
         self.script = script
-        self.data = {}
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        self.make_scaling_html(self.script)
+        _make_scaling_html(self.script)
 
-    def make_scaling_html(self, scaling_script):
-        """Collect data from the individual observers and write the html."""
-        html_file = scaling_script.params.output.html
-        json_file = scaling_script.params.output.json
-        if not (html_file or json_file):
-            return
-        self.data.update(make_scaling_model_plots(scaling_script.experiments))
-        self.data.update(
-            make_outlier_plots(scaling_script.reflections, scaling_script.experiments)
+
+def _make_scaling_html(scaling_script):
+    """Collect data from the individual observers and write the html."""
+    html_file = scaling_script.params.output.html
+    json_file = scaling_script.params.output.json
+    if not (html_file or json_file):
+        return
+    data = {}
+    data.update(make_scaling_model_plots(scaling_script.experiments))
+    data.update(
+        make_outlier_plots(scaling_script.reflections, scaling_script.experiments)
+    )
+    data.update(
+        make_error_model_plots(scaling_script.params, scaling_script.experiments)
+    )
+    data.update(make_merging_stats_plots(scaling_script))
+    data.update(make_filtering_plots(scaling_script))
+    if html_file:
+        logger.info("Writing html report to %s", html_file)
+        loader = ChoiceLoader(
+            [
+                PackageLoader("dials", "templates"),
+                PackageLoader("dials", "static", encoding="utf-8"),
+            ]
         )
-        self.data.update(
-            make_error_model_plots(scaling_script.params, scaling_script.experiments)
+        env = Environment(loader=loader)
+        template = env.get_template("scaling_report.html")
+        assert_is_json_serialisable(data, "self.data")
+        html = template.render(
+            page_title="DIALS scaling report",
+            scaling_model_graphs=data["scaling_model"],
+            scaling_tables=data["scaling_tables"],
+            error_model_summary=data["error_model_summary"],
+            resolution_plots=data["resolution_plots"],
+            scaling_outlier_graphs=data["outlier_plots"],
+            error_model_plots=data["error_model_plots"],
+            anom_plots=data["anom_plots"],
+            batch_plots=data["batch_plots"],
+            image_range_tables=data["image_range_tables"],
+            misc_plots=data["misc_plots"],
+            filter_plots=data["filter_plots"],
         )
-        self.data.update(make_merging_stats_plots(scaling_script))
-        self.data.update(make_filtering_plots(scaling_script))
-        if html_file:
-            logger.info("Writing html report to %s", html_file)
-            loader = ChoiceLoader(
-                [
-                    PackageLoader("dials", "templates"),
-                    PackageLoader("dials", "static", encoding="utf-8"),
-                ]
-            )
-            env = Environment(loader=loader)
-            template = env.get_template("scaling_report.html")
-            assert_is_json_serialisable(self.data, "self.data")
-            html = template.render(
-                page_title="DIALS scaling report",
-                scaling_model_graphs=self.data["scaling_model"],
-                scaling_tables=self.data["scaling_tables"],
-                error_model_summary=self.data["error_model_summary"],
-                resolution_plots=self.data["resolution_plots"],
-                scaling_outlier_graphs=self.data["outlier_plots"],
-                error_model_plots=self.data["error_model_plots"],
-                anom_plots=self.data["anom_plots"],
-                batch_plots=self.data["batch_plots"],
-                image_range_tables=self.data["image_range_tables"],
-                misc_plots=self.data["misc_plots"],
-                filter_plots=self.data["filter_plots"],
-            )
-            with open(html_file, "wb") as f:
-                f.write(html.encode("utf-8", "xmlcharrefreplace"))
-        if json_file:
-            logger.info("Writing html report data to %s", json_file)
-            with open(json_file, "w") as outfile:
-                json.dump(self.data, outfile)
+        with open(html_file, "wb") as f:
+            f.write(html.encode("utf-8", "xmlcharrefreplace"))
+    if json_file:
+        logger.info("Writing html report data to %s", json_file)
+        with open(json_file, "w") as outfile:
+            json.dump(data, outfile)
 
 
 def make_scaling_model_plots(experiments):
@@ -379,23 +377,23 @@ def make_merging_stats_plots(script):
         "anom_plots": OrderedDict(),
         "image_range_tables": [],
     }
+    (
+        batches,
+        rvb,
+        isigivb,
+        svb,
+        batch_data,
+    ) = reflection_tables_to_batch_dependent_properties(  # pylint: disable=unbalanced-tuple-unpacking
+        script.reflections, script.experiments, script.scaled_miller_array,
+    )
+    bm = batch_manager(batches, batch_data)
+    image_range_tables = make_image_range_table(script.experiments, bm)
+
     if script.merging_statistics_result:
         stats = script.merging_statistics_result
         anom_stats = script.anom_merging_statistics_result
         is_centric = script.scaled_miller_array.space_group().is_centric()
         # Now calculate batch data
-        (
-            batches,
-            rvb,
-            isigivb,
-            svb,
-            batch_data,
-        ) = reflection_tables_to_batch_dependent_properties(  # pylint: disable=unbalanced-tuple-unpacking
-            script.reflections, script.experiments, script.scaled_miller_array,
-        )
-        bm = batch_manager(batches, batch_data)
-        image_range_tables = make_image_range_table(script.experiments, bm)
-
         plotter = ResolutionPlotsAndStats(stats, anom_stats, is_centric)
         d["resolution_plots"].update(plotter.make_all_plots())
         d["scaling_tables"] = plotter.statistics_tables()
@@ -425,5 +423,5 @@ def make_merging_stats_plots(script):
         )
         anom_plotter = AnomalousPlotter(intensities_anom, strong_cutoff=d_min)
         d["anom_plots"].update(anom_plotter.make_plots())
-        d["image_range_tables"] = image_range_tables
+    d["image_range_tables"] = image_range_tables
     return d
