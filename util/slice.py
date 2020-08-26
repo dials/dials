@@ -34,7 +34,10 @@ def slice_experiments(experiments, image_ranges):
         end = sr[1] - arr_start
         exp.scan.swap(exp.scan[beg:end])
         if exp.imageset is not None:
-            exp.imageset = exp.imageset[beg:end]
+            # Gorilla of temporary workarounds for inconsistent scan and imageset slicing
+            # https://github.com/cctbx/dxtbx/issues/213
+            offset = exp.scan.get_batch_offset()
+            exp.imageset = exp.imageset[beg + offset : end + offset]
 
         # account for scan-varying crystal
         if exp.crystal and exp.crystal.num_scan_points > 0:
