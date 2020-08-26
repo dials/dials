@@ -226,24 +226,3 @@ class Simulator(object):
 
         # Return the reflections
         return refl
-
-
-if __name__ == "__main__":
-    import math
-    from dxtbx.model.experiment_list import ExperimentListFactory
-
-    from dials_data.download import DataFetcher
-
-    experiments = ExperimentListFactory.from_json_file(
-        DataFetcher()("centroid_test_data").join("experiments.json").strpath,
-        check_format=False,
-    )
-    sigma_b = 0.058 * math.pi / 180
-    sigma_m = 0.157 * math.pi / 180
-    n_sigma = 3
-
-    N = 100
-    In = 1000
-    B = 10
-    simulate = Simulator(experiments[0], sigma_b, sigma_m, n_sigma)
-    simulate.with_random_intensity(N, In, B, 0, 0, 0)
