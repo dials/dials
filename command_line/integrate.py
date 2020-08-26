@@ -22,6 +22,7 @@ Examples::
 from __future__ import absolute_import, division, print_function
 
 import logging
+import math
 import sys
 import dials.util.log
 
@@ -246,11 +247,6 @@ def sample_predictions(experiments, predicted, params):
 
     # this code is very similar to David's code in algorithms/refinement/reflection_manager.py!
 
-    # constants
-    from math import pi
-
-    RAD2DEG = 180.0 / pi
-
     working_isel = flex.size_t()
     for iexp, exp in enumerate(experiments):
 
@@ -261,7 +257,7 @@ def sample_predictions(experiments, predicted, params):
         # set sample size according to nref_per_degree (per experiment)
         if exp.scan and nref_per_degree:
             sequence_range_rad = exp.scan.get_oscillation_range(deg=False)
-            width = abs(sequence_range_rad[1] - sequence_range_rad[0]) * RAD2DEG
+            width = math.degrees(abs(sequence_range_rad[1] - sequence_range_rad[0]))
             sample_size = int(nref_per_degree * width)
         else:
             sequence_range_rad = None
