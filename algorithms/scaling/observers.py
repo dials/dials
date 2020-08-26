@@ -422,5 +422,5 @@ def make_merging_stats_plots(script):
         )
         anom_plotter = AnomalousPlotter(intensities_anom, strong_cutoff=d_min)
         d["anom_plots"].update(anom_plotter.make_plots())
-    d["image_range_tables"] = image_range_tables
+    d["image_range_tables"] = [image_range_tables]
     return d
