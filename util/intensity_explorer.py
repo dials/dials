@@ -49,7 +49,7 @@ class IntensityDist(object):
           * ``xyzobs.px.value``
         :type rtable: dials.array_family_flex_ext.reflection_table
         :param elist: A corresponding experiment list.
-        :type elist: dxtbx_model_ext.ExperimentList
+        :type elist: dxtbx.model.ExperimentList
         :param calculate_variances: Choose whether to calculate weighted
         aggregate variances.  Doing so incurs a performance penalty.
         Defaullts to False.
