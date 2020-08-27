@@ -197,15 +197,15 @@ class SingleDatasetIntensityCombiner(object):
 
 def combine_intensities(reflections, Imid):
     """Take unscaled data, and apply intensity combination with a given Imid."""
-    assert "intensity.prf.value" in reflections
+    if "intensity.prf.value" in reflections:
+        Ipr = reflections["intensity.prf.value"]
+        Vpr = reflections["intensity.prf.variance"]
     assert "intensity.sum.value" in reflections
     assert "prescaling_correction" in reflections
 
     conv = reflections["prescaling_correction"]
     Isum = reflections["intensity.sum.value"]
     Vsum = reflections["intensity.sum.variance"]
-    Ipr = reflections["intensity.prf.value"]
-    Vpr = reflections["intensity.prf.variance"]
 
     not_prf = ~reflections.get_flags(reflections.flags.integrated_prf)
     not_sum = ~reflections.get_flags(reflections.flags.integrated_sum)
@@ -221,8 +221,11 @@ def combine_intensities(reflections, Imid):
         intensity = Isum * sum_conv
         variance = Vsum * sum_conv * sum_conv
         # get not summation successful
-        intensity.set_selected(not_sum.iselection(), (Ipr * conv).select(not_sum))
-        variance.set_selected(not_sum.iselection(), (Vpr * conv * conv).select(not_sum))
+        if "intensity.prf.value" in reflections:
+            intensity.set_selected(not_sum.iselection(), (Ipr * conv).select(not_sum))
+            variance.set_selected(
+                not_sum.iselection(), (Vpr * conv * conv).select(not_sum)
+            )
     else:
         # first set as prf
         intensity = Ipr * conv
