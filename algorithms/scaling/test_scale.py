@@ -815,9 +815,6 @@ def test_scale_cross_validate(dials_data, tmpdir, mode, parameter, parameter_val
     assert not result.returncode and not result.stderr
 
 
-@pytest.mark.xfail(
-    reason="test state leakage, cf. https://github.com/dials/dials/issues/1271",
-)
 def test_few_reflections(dials_data):
     u"""
     Test that dials.symmetry does something sensible if given few reflections.
