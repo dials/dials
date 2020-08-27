@@ -70,10 +70,10 @@ def clean_run(*args, **kwargs):
     )
     if stop_on_error and result.returncode:
         if result.stdout:
-            print("\n".join(result.stdout.split("\n")[-10:]))
+            print("\n".join(result.stdout.decode("latin-1").split("\n")[-10:]))
             print("---")
         if result.stderr:
-            print("\n".join(result.stderr.split("\n")[-10:]))
+            print("\n".join(result.stderr.decode("latin-1").split("\n")[-10:]))
             print("---")
         sys.exit(stop_on_error)
     return result
