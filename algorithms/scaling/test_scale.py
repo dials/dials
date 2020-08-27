@@ -288,7 +288,7 @@ def test_targeted_scaling_against_mtz(dials_data, tmpdir):
         "reflection_selection.method=intensity_ranges",
         "reflection_selection.method=use_all",
         "intensity_choice=sum",
-        "intensity_choice=profile",
+        "intensity=profile",
     ],
 )
 def test_scale_single_dataset_with_options(dials_data, tmpdir, option):
