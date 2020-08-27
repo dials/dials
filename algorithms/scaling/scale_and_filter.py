@@ -62,22 +62,18 @@ def log_cycle_results(results, scaling_script, filter_script):
     if not results.get_cycle_results():
         results.initial_n_reflections = scaling_script.scaled_miller_array.size()
 
-    cycle_results["delta_cc_half_values"] = filter_script.results_summary[
-        "per_dataset_delta_cc_half_values"
-    ]["delta_cc_half_values"]
-    cycle_results["cutoff_value"] = filter_script.results_summary["dataset_removal"][
-        "cutoff_value"
-    ]
-    cycle_results["mean_cc_half"] = filter_script.results_summary["mean_cc_half"]
-    removal_summary = filter_script.results_summary["dataset_removal"]
-    if removal_summary["mode"] == "image_group":
-        cycle_results["image_ranges_removed"] = removal_summary["image_ranges_removed"]
-    cycle_results["removed_datasets"] = removal_summary["experiments_fully_removed"]
-    cycle_results["removed_ids"] = removal_summary["experiment_ids_fully_removed"]
+    cycle_results["delta_cc_half_values"] = list(
+        filter_script.statistics.delta_cchalf_i
+    )
+    cycle_results["cutoff_value"] = filter_script.cutoff_value
+    cycle_results["mean_cc_half"] = filter_script.statistics.mean_cchalf
+    # removal_summary = filter_script.results_summary["dataset_removal"]
+    if filter_script.params.mode == "image_group":
+        cycle_results["image_ranges_removed"] = filter_script.image_ranges_removed
+    cycle_results["removed_datasets"] = filter_script.datasets_removed
+    cycle_results["removed_ids"] = list(filter_script.ids_removed)
 
-    cycle_results["n_removed"] = filter_script.results_summary["dataset_removal"][
-        "n_reflections_removed"
-    ]
+    cycle_results["n_removed"] = filter_script.n_reflections_removed
 
     n_removed = (
         sum(res["n_removed"] for res in results.get_cycle_results())

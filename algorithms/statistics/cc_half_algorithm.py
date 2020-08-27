@@ -1,5 +1,3 @@
-# -*- coding: utf8 -*-
-
 """ΔCC½ algorithm definitions"""
 
 from __future__ import absolute_import, division, print_function
@@ -37,29 +35,55 @@ class CCHalfFromMTZ(object):
         )
         table["group"] = table["dataset"]
 
-        self.algorithm = DeltaCCHalf(table, unit_cell, space_group, params)
-        self.results_summary = {}
-
-    def run(self):
-        self.algorithm.run()
-        # update results
+        self.statistics = PerGroupCChalfStatistics(
+            table, unit_cell, space_group, params.dmin, params.dmax, params.nbins,
+        )
+        self.cutoff_value = (
+            self.statistics._mean_deltacchalf
+            - self.params.stdcutoff * self.statistics._sigma_deltacchalf
+        )
 
         # now do the exclusion
-        results = self.algorithm.results_summary
-        cc_half_values = results["per_dataset_delta_cc_half_values"]
-        below_cutoff = (
-            flex.double(cc_half_values["delta_cc_half_values"])
-            < results["dataset_removal"]["cutoff_value"]
+        self.ids_removed = self.statistics.group_ids.select(
+            self.statistics.delta_cchalf_i < self.cutoff_value
         )
-        ids_to_remove = flex.int(cc_half_values["datasets"]).select(below_cutoff)
-        for id_ in sorted(ids_to_remove):
+        for id_ in sorted(self.ids_removed):
             logger.info("Dataset %d is below the cutoff", id_)
-        results["dataset_removal"].update({"experiments_fully_removed": ids_to_remove})
-        self.results_summary = results
 
     def output(self):
-        self.algorithm.output_table()
-        self.algorithm.output_html_report()
+        if self.params.output.html:
+            data = {"cc_half_plots": {}}
+            res = {
+                "delta_cc_half_values": self.statistics.delta_cchalf_i,
+                "mean_cc_half": self.statistics.mean_cchalf,
+            }
+            res["removed_datasets"] = self.ids_removed
+            res["cutoff_value"] = self.cutoff_value
+            data = {"cc_half_plots": make_histogram_plots([res])}
+            del data["cc_half_plots"]["mean_cc_one_half_vs_cycle"]
+            data["cc_half_plots"].update(
+                make_per_dataset_plot(
+                    self.statistics.group_ids, self.statistics.delta_cchalf_i
+                )
+            )
+
+            logger.info("Writing html report to: %s", self.params.output.html)
+            loader = ChoiceLoader(
+                [
+                    PackageLoader("dials", "templates"),
+                    PackageLoader("dials", "static", encoding="utf-8"),
+                ]
+            )
+            env = Environment(loader=loader)
+            template = env.get_template("simple_report.html")
+            html = template.render(
+                page_title="ΔCC½ report",
+                panel_title="Delta CC-Half plots",
+                panel_id="cc_half_plots",
+                graphs=data["cc_half_plots"],
+            )
+            with open(self.params.output.html, "wb") as f:
+                f.write(html.encode("utf-8", "xmlcharrefreplace"))
 
     @staticmethod
     def read_mtzfile(filename, batch_offset=None):
@@ -162,7 +186,6 @@ class CCHalfFromDials(object):
         self.reflection_table = reflection_table
         self.filtered_reflection_table = None
         # prepare data
-        self.results_summary = {}
         self.group_to_datasetid_and_range = {}
         self.datasetid_to_groups = defaultdict(list)
 
@@ -213,40 +236,29 @@ class CCHalfFromDials(object):
 
             table["group"] = image_groups
 
-        self.algorithm = DeltaCCHalf(table, unit_cell, space_group, params)
-
-    def run(self):
-        """Run the ΔCC½ algorithm and then exclude data as appropriate"""
-        self.algorithm.run()
+        self.statistics = PerGroupCChalfStatistics(
+            table, unit_cell, space_group, params.dmin, params.dmax, params.nbins,
+        )
+        self.cutoff_value = (
+            self.statistics._mean_deltacchalf
+            - self.params.stdcutoff * self.statistics._sigma_deltacchalf
+        )
 
         # now do the exclusion
-        results = self.algorithm.results_summary
-        cc_half_values = results["per_dataset_delta_cc_half_values"]
-        below_cutoff = (
-            flex.double(cc_half_values["delta_cc_half_values"])
-            < results["dataset_removal"]["cutoff_value"]
-        )
-        ids_to_remove = flex.int(cc_half_values["datasets"]).select(below_cutoff)
-
         if self.params.mode == "dataset":
-            filtered_reflections = self.remove_datasets_below_cutoff(
-                self.experiments, self.reflection_table, ids_to_remove, results
-            )
+            filtered_reflections = self.remove_datasets_below_cutoff()
         elif self.params.mode == "image_group":
-            filtered_reflections = self.remove_image_ranges_below_cutoff(
-                self.experiments,
-                self.reflection_table,
-                ids_to_remove,
-                self.group_to_datasetid_and_range,
-                self.datasetid_to_groups,
-                results,
-            )
+            filtered_reflections = self.remove_image_ranges_below_cutoff()
         self.filtered_reflection_table = filtered_reflections
-        self.results_summary = results
+
+    def _ids_to_remove(self):
+        return self.statistics.group_ids.select(
+            self.statistics.delta_cchalf_i < self.cutoff_value
+        )
 
     def output(self):
         """Save the output data and updated datafiles."""
-        self.algorithm.output_table()
+        logger.info(self.statistics)
         logger.info(
             "Saving %d reflections to %s",
             self.filtered_reflection_table.size(),
@@ -256,59 +268,83 @@ class CCHalfFromDials(object):
 
         logger.info("Saving the experiments to %s", self.params.output.experiments)
         self.experiments.as_file(self.params.output.experiments)
-        self.algorithm.output_html_report()
 
-    @staticmethod
-    def remove_datasets_below_cutoff(
-        experiments, reflections, ids_to_remove, results_summary
-    ):
+        if self.params.output.html:
+            data = {"cc_half_plots": {}}
+            res = {
+                "delta_cc_half_values": self.statistics.delta_cchalf_i,
+                "mean_cc_half": self.statistics.mean_cchalf,
+            }
+            if self.params.mode == "image_group":
+                res["image_ranges_removed"] = self.image_ranges_removed
+            else:
+                res["removed_datasets"] = self.datasets_removed
+            res["cutoff_value"] = self.cutoff_value
+            data = {"cc_half_plots": make_histogram_plots([res])}
+            del data["cc_half_plots"]["mean_cc_one_half_vs_cycle"]
+            data["cc_half_plots"].update(
+                make_per_dataset_plot(
+                    self.statistics.group_ids, self.statistics.delta_cchalf_i
+                )
+            )
+
+            logger.info("Writing html report to: %s", self.params.output.html)
+            loader = ChoiceLoader(
+                [
+                    PackageLoader("dials", "templates"),
+                    PackageLoader("dials", "static", encoding="utf-8"),
+                ]
+            )
+            env = Environment(loader=loader)
+            template = env.get_template("simple_report.html")
+            html = template.render(
+                page_title="ΔCC½ report",
+                panel_title="Delta CC-Half plots",
+                panel_id="cc_half_plots",
+                graphs=data["cc_half_plots"],
+            )
+            with open(self.params.output.html, "wb") as f:
+                f.write(html.encode("utf-8", "xmlcharrefreplace"))
+
+    def remove_datasets_below_cutoff(self):
         """Remove the datasets with ids in ids_to_remove.
 
-        Remove from the experiemnts and reflections and add information to the
+        Remove from the experiments and reflections and add information to the
         results summary dict.
 
         Returns:
           output_reflections: The reflection table with data removed.
         """
-        n_valid_reflections = reflections.get_flags(
-            reflections.flags.bad_for_scaling, all=False
+        n_valid_reflections = self.reflection_table.get_flags(
+            self.reflection_table.flags.bad_for_scaling, all=False
         ).count(False)
 
-        datasets_to_remove = []
-        ids_removed = []
-        for id_ in sorted(ids_to_remove):
+        self.ids_removed = self._ids_to_remove()
+        self.datasets_removed = []
+        for id_ in sorted(self.ids_removed):
             logger.info("Removing dataset %d", id_)
-            datasets_to_remove.append(reflections.experiment_identifiers()[id_])
-            ids_removed.append(id_)
-        output_reflections = reflections.remove_on_experiment_identifiers(
-            datasets_to_remove
+            self.datasets_removed.append(
+                self.reflection_table.experiment_identifiers()[id_]
+            )
+        output_reflections = self.reflection_table.remove_on_experiment_identifiers(
+            self.datasets_removed
         )
-        experiments.remove_on_experiment_identifiers(datasets_to_remove)
-        output_reflections.assert_experiment_identifiers_are_consistent(experiments)
+        self.experiments.remove_on_experiment_identifiers(self.datasets_removed)
+        output_reflections.assert_experiment_identifiers_are_consistent(
+            self.experiments
+        )
 
         n_valid_filtered_reflections = output_reflections.get_flags(
             output_reflections.flags.bad_for_scaling, all=False
         ).count(False)
-        results_summary["dataset_removal"].update(
-            {
-                "experiments_fully_removed": datasets_to_remove,
-                "experiment_ids_fully_removed": ids_removed,
-                "n_reflections_removed": n_valid_reflections
-                - n_valid_filtered_reflections,
-            }
-        )
+        self.n_reflections_removed = n_valid_reflections - n_valid_filtered_reflections
+
         return output_reflections
 
-    @staticmethod
-    def remove_image_ranges_below_cutoff(
-        experiments,
-        reflections,
-        ids_to_remove,
-        image_group_to_expid_and_range,
-        expid_to_image_groups,
-        results_summary,
-    ):
+    def remove_image_ranges_below_cutoff(self):
         """Remove image ranges from the datasets."""
+        reflections = self.reflection_table.select(self.reflection_table["id"] != -1)
+
         n_valid_reflections = reflections.get_flags(
             reflections.flags.bad_for_scaling, all=False
         ).count(False)
@@ -327,11 +363,13 @@ class CCHalfFromDials(object):
         while n_removed_this_cycle != 0:
             other_potential_ids_to_remove = []
             n_removed_this_cycle = 0
-            for id_ in sorted(ids_to_remove):
-                exp_id, image_range = image_group_to_expid_and_range[id_]  # identifier
+            for id_ in sorted(self._ids_to_remove()):
+                exp_id, image_range = self.group_to_datasetid_and_range[
+                    id_
+                ]  # identifier
                 if (
-                    expid_to_image_groups[exp_id][-1] == id_
-                    or expid_to_image_groups[exp_id][0] == id_
+                    self.datasetid_to_groups[exp_id][-1] == id_
+                    or self.datasetid_to_groups[exp_id][0] == id_
                 ):  # is at edge of scan.
                     # loc = list(experiments.identifiers()).index(exp_id)
                     table_id = expid_to_tableid[exp_id]
@@ -344,16 +382,16 @@ class CCHalfFromDials(object):
                     exclude_images.append(
                         ["%s:%s:%s" % (table_id, image_range[0], image_range[1])]
                     )
-                    if expid_to_image_groups[exp_id][-1] == id_:
-                        del expid_to_image_groups[exp_id][-1]
+                    if self.datasetid_to_groups[exp_id][-1] == id_:
+                        del self.datasetid_to_groups[exp_id][-1]
                     else:
-                        del expid_to_image_groups[exp_id][0]
+                        del self.datasetid_to_groups[exp_id][0]
                     n_removed_this_cycle += 1
                 else:
                     other_potential_ids_to_remove.append(id_)
-            ids_to_remove = other_potential_ids_to_remove
+            ids_removed = other_potential_ids_to_remove
         for id_ in other_potential_ids_to_remove:
-            exp_id, image_range = image_group_to_expid_and_range[id_]
+            exp_id, image_range = self.group_to_datasetid_and_range[id_]
             table_id = expid_to_tableid[exp_id]
             logger.info(
                 """Image range %s from experiment %s is below the cutoff, but not at the edge of a sweep.""",
@@ -362,11 +400,9 @@ class CCHalfFromDials(object):
             )
 
         # Now remove individual batches
-        if -1 in reflections["id"]:
-            reflections = reflections.select(reflections["id"] != -1)
         reflection_list = reflections.split_by_experiment_id()
         reflection_list, experiments = exclude_image_ranges_for_scaling(
-            reflection_list, experiments, exclude_images
+            reflection_list, self.experiments, exclude_images
         )
 
         # check if any image groups were all outliers and missed by the analysis
@@ -377,7 +413,7 @@ class CCHalfFromDials(object):
         for exp in experiments:
             # if any of the image ranges are not in the sets tested, exclude them
             tested = []
-            for exp_id, imgrange in image_group_to_expid_and_range.values():
+            for exp_id, imgrange in self.group_to_datasetid_and_range.values():
                 if exp_id == exp.identifier:
                     tested.extend(list(range(imgrange[0], imgrange[1] + 1)))
             for imgrange in exp.scan.get_valid_image_ranges(exp.identifier):
@@ -415,15 +451,10 @@ class CCHalfFromDials(object):
         n_valid_filtered_reflections = output_reflections.get_flags(
             output_reflections.flags.bad_for_scaling, all=False
         ).count(False)
-        results_summary["dataset_removal"].update(
-            {
-                "image_ranges_removed": image_ranges_removed,
-                "experiments_fully_removed": experiments_to_delete,
-                "experiment_ids_fully_removed": ids_removed,
-                "n_reflections_removed": n_valid_reflections
-                - n_valid_filtered_reflections,
-            }
-        )
+        self.image_ranges_removed = image_ranges_removed
+        self.datasets_removed = experiments_to_delete
+        self.ids_removed = ids_removed
+        self.n_reflections_removed = n_valid_reflections - n_valid_filtered_reflections
         return output_reflections
 
     @staticmethod
@@ -462,145 +493,3 @@ class CCHalfFromDials(object):
         )
 
         return filtered_table, mean_unit_cell, space_group
-
-
-class DeltaCCHalf(object):
-
-    """
-    Implementation of a ΔCC½ algorithm.
-    """
-
-    def __init__(self, reflection_table, median_unit_cell, space_group, params):
-        self.reflection_table = reflection_table
-        self.params = params
-        self.median_unit_cell = median_unit_cell
-        self.space_group = space_group
-        self.delta_cchalf_i = {}
-        self.results_summary = {
-            "dataset_removal": {
-                "mode": self.params.mode,
-                "stdcutoff": self.params.stdcutoff,
-            }
-        }
-
-    def run(self):
-        """Run the delta_cc_half algorithm."""
-
-        statistics = PerGroupCChalfStatistics(
-            self.reflection_table,
-            self.median_unit_cell,
-            self.space_group,
-            self.params.dmin,
-            self.params.dmax,
-            self.params.nbins,
-        )
-
-        self.delta_cchalf_i = statistics.delta_cchalf_i
-        self.fisher_transformed_delta_cchalf_i = (
-            statistics.fisher_transformed_delta_cchalf_i
-        )
-        self.group_ids = statistics.group_ids
-        self.results_summary["mean_cc_half"] = statistics.mean_cchalf
-
-        # Print out the datasets in order of ΔCC½
-        perm = flex.sort_permutation(self.delta_cchalf_i)
-        self.group_ids = self.group_ids.select(perm)
-        self.delta_cchalf_i = self.delta_cchalf_i.select(perm)
-        self.fisher_transformed_delta_cchalf_i = self.fisher_transformed_delta_cchalf_i.select(
-            perm
-        )
-        if self.params.fisher_transformation:
-            delta_cchalf_i = self.fisher_transformed_delta_cchalf_i
-        else:
-            delta_cchalf_i = self.delta_cchalf_i
-        for g, delta in zip(self.group_ids, delta_cchalf_i):
-            logger.info(f"Group: {g}, ΔCC½: {delta:.3f}")
-
-        normalised, cutoff_value = self.normalised_deltacchalf_values(
-            delta_cchalf_i, self.params.stdcutoff
-        )
-        if self.params.deltacchalf_cutoff is not None:
-            cutoff_value = self.params.deltacchalf_cutoff
-
-        logger.info("cutoff value: %.3f\n", cutoff_value)
-
-        self.results_summary["per_dataset_delta_cc_half_values"] = {
-            "datasets": list(self.group_ids),
-            "delta_cc_half_values": list(delta_cchalf_i),
-            "normalised_delta_cc_half_values": list(normalised),
-        }
-        self.results_summary["dataset_removal"].update({"cutoff_value": cutoff_value})
-
-    def output_table(self):
-        """Write a text file with delta cchalf value"""
-        if self.params.output.table:
-            logger.info("Writing table to %s", self.params.output.table)
-            with open(self.params.output.table, "w") as outfile:
-                for dataset, cchalf in zip(
-                    self.results_summary["per_dataset_delta_cc_half_values"][
-                        "datasets"
-                    ],
-                    self.results_summary["per_dataset_delta_cc_half_values"][
-                        "delta_cc_half_values"
-                    ],
-                ):
-                    outfile.write("%d %f\n" % (dataset, cchalf))
-
-    @staticmethod
-    def normalised_deltacchalf_values(deltacchalf_values, stdcutoff):
-        mav = flex.mean_and_variance(deltacchalf_values)
-        normalised = (
-            deltacchalf_values - mav.mean()
-        ) / mav.unweighted_sample_standard_deviation()
-        logger.debug("\nmean delta_cc_half %.3f", mav.mean())
-        logger.debug(
-            "stddev delta_cc_half %.3f", mav.unweighted_sample_standard_deviation()
-        )
-        cutoff_value = (
-            mav.mean() - stdcutoff * mav.unweighted_sample_standard_deviation()
-        )
-        return normalised, cutoff_value
-
-    def output_html_report(self):
-        if self.params.output.html:
-            data = {"cc_half_plots": {}}
-            res = {
-                "delta_cc_half_values": self.results_summary[
-                    "per_dataset_delta_cc_half_values"
-                ]["delta_cc_half_values"],
-                "mean_cc_half": self.results_summary["mean_cc_half"],
-            }
-            if "image_ranges_removed" in self.results_summary["dataset_removal"]:
-                res["image_ranges_removed"] = self.results_summary["dataset_removal"][
-                    "image_ranges_removed"
-                ]
-            else:
-                res["removed_datasets"] = self.results_summary["dataset_removal"][
-                    "experiments_fully_removed"
-                ]
-            res["cutoff_value"] = self.results_summary["dataset_removal"][
-                "cutoff_value"
-            ]
-            data["cc_half_plots"].update(make_histogram_plots([res]))
-            del data["cc_half_plots"]["mean_cc_one_half_vs_cycle"]
-            data["cc_half_plots"].update(
-                make_per_dataset_plot(self.group_ids, self.delta_cchalf_i)
-            )
-
-            logger.info("Writing html report to: %s", self.params.output.html)
-            loader = ChoiceLoader(
-                [
-                    PackageLoader("dials", "templates"),
-                    PackageLoader("dials", "static", encoding="utf-8"),
-                ]
-            )
-            env = Environment(loader=loader)
-            template = env.get_template("simple_report.html")
-            html = template.render(
-                page_title="ΔCC½ report",
-                panel_title="Delta CC-Half plots",
-                panel_id="cc_half_plots",
-                graphs=data["cc_half_plots"],
-            )
-            with open(self.params.output.html, "wb") as f:
-                f.write(html.encode("utf-8", "xmlcharrefreplace"))

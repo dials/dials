@@ -1,5 +1,3 @@
-# -*- coding: utf8 -*-
-
 from __future__ import absolute_import, division, print_function
 
 import logging
@@ -63,6 +61,14 @@ class PerGroupCChalfStatistics(object):
         logger.info(f"CC 1/2 mean: {self.mean_cchalf:.3f}")
         self.cchalf_i = self._compute_cchalf_excluding_each_group()
 
+        mav = flex.mean_and_variance(self.delta_cchalf_i)
+        self._mean_deltacchalf = mav.mean()
+        self._sigma_deltacchalf = mav.unweighted_sample_standard_deviation()
+        logger.debug("\nmean delta_cc_half %.3f", mav.mean())
+        logger.debug(
+            "stddev delta_cc_half %.3f", mav.unweighted_sample_standard_deviation()
+        )
+
     def _compute_cchalf_excluding_each_group(self):
         """Compute the CC½ with each group excluded in turn
 
@@ -88,6 +94,10 @@ class PerGroupCChalfStatistics(object):
         return self.mean_cchalf - self.cchalf_i
 
     @property
+    def normalised_deltacchalf(self):
+        return (self.delta_cchalf_i - self._mean_deltacchalf) / self._sigma_deltacchalf
+
+    @property
     def fisher_transformed_delta_cchalf_i(self):
         return flex.tanh(math.atan(self.mean_cchalf) - flex.atan(self.cchalf_i))
 
@@ -95,3 +105,23 @@ class PerGroupCChalfStatistics(object):
     def group_ids(self):
         """The group ids corresponding to the ΔCC½ values"""
         return flex.size_t(self._groups.counts().keys())
+
+    def __str__(self):
+        perm = flex.sort_permutation(self.delta_cchalf_i)
+
+        rows = [
+            ["Group", "CC½", "ΔCC½", "Fisher-transformed ΔCC½", "Normalised ΔCC½"]
+        ] + [
+            [
+                self.group_ids[p],
+                self.cchalf_i[p],
+                self.delta_cchalf_i[p],
+                self.fisher_transformed_delta_cchalf_i[p],
+                self.normalised_deltacchalf[p],
+            ]
+            for p in perm
+        ]
+
+        from dials.util import tabulate
+
+        return str(tabulate(rows, headers="firstrow"))

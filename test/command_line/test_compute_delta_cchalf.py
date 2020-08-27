@@ -3,14 +3,8 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import procrunner
+import pytest
 from dials.command_line.compute_delta_cchalf import phil_scope, CCHalfFromMTZ
-
-
-def check_cchalf_result(fileobj):
-    """Inspect the result"""
-    lines = fileobj.readlines()
-    assert lines[0] == "1 -0.004778\n"
-    assert lines[1] == "0 0.001337\n"
 
 
 def test_compute_delta_cchalf_scaled_data(dials_data, tmpdir):
@@ -32,10 +26,7 @@ def test_compute_delta_cchalf_scaled_data(dials_data, tmpdir):
     assert not result.returncode and not result.stderr
     assert tmpdir.join("filtered.expt").check()
     assert tmpdir.join("filtered.refl").check()
-    assert tmpdir.join("delta_cchalf.dat").check()
     assert tmpdir.join("compute_delta_cchalf.html").check()
-    with open(tmpdir.join("delta_cchalf.dat").strpath, "r") as f:
-        check_cchalf_result(f)
 
 
 def test_compute_delta_cchalf_scaled_data_mtz(dials_data, tmpdir):
@@ -58,10 +49,7 @@ def test_compute_delta_cchalf_scaled_data_mtz(dials_data, tmpdir):
     ]
     result = procrunner.run(command, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("delta_cchalf.dat").check()
     assert tmpdir.join("compute_delta_cchalf.html").check()
-    with open(tmpdir.join("delta_cchalf.dat").strpath, "r") as f:
-        check_cchalf_result(f)
 
 
 def test_compute_delta_cchalf(dials_regression):
@@ -74,18 +62,8 @@ def test_compute_delta_cchalf(dials_regression):
     params.nbins = 1
 
     script = CCHalfFromMTZ(params, filename)
-    script.run()
 
-    cchalf_i = script.results_summary["per_dataset_delta_cc_half_values"][
-        "delta_cc_half_values"
-    ]
-
-    assert abs(100 * script.results_summary["mean_cc_half"] - 94.582) < 1e-3
-    assert (
-        abs(100 * script.results_summary["mean_cc_half"] - 100 * cchalf_i[1] - 79.587)
-        < 1e-3
-    )
-    assert (
-        abs(100 * script.results_summary["mean_cc_half"] - 100 * cchalf_i[0] - 94.238)
-        < 1e-3
+    assert script.statistics.mean_cchalf == pytest.approx(0.9458229988198384)
+    assert list(script.statistics.cchalf_i) == pytest.approx(
+        [0.7958683828042507, 0.9423789245583555]
     )

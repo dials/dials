@@ -141,9 +141,8 @@ of datasets in the reflection table (%s)
                     n_datasets,
                 )
             script = CCHalfFromDials(params, experiments, reflections[0])
-
-    script.run()
     script.output()
+    return script
 
 
 if __name__ == "__main__":
