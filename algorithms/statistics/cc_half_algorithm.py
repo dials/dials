@@ -44,8 +44,15 @@ class CCHalfFromMTZ(object):
         )
 
         # now do the exclusion
+        if (
+            self.params.fisher_transformation
+            and self.params.deltacchalf_cutoff is not None
+        ):
+            self.delta_cchalf_i = self.statistics.fisher_transformed_delta_cchalf_i
+        else:
+            self.delta_cchalf_i = self.statistics.delta_cchalf_i
         self.datasets_removed = self.statistics.group_ids.select(
-            self.statistics.delta_cchalf_i < self.cutoff_value
+            self.delta_cchalf_i < self.cutoff_value
         )
         for id_ in sorted(self.datasets_removed):
             logger.info("Dataset %d is below the cutoff", id_)
@@ -208,12 +215,23 @@ class CCHalfFromDials(object):
         self.statistics = PerGroupCChalfStatistics(
             table, unit_cell, space_group, params.dmin, params.dmax, params.nbins,
         )
-        self.cutoff_value = (
-            self.statistics._mean_deltacchalf
-            - self.params.stdcutoff * self.statistics._sigma_deltacchalf
-        )
+
+        if self.params.deltacchalf_cutoff is not None:
+            self.cutoff_value = self.params.deltacchalf_cutoff
+        else:
+            self.cutoff_value = (
+                self.statistics._mean_deltacchalf
+                - self.params.stdcutoff * self.statistics._sigma_deltacchalf
+            )
 
         # now do the exclusion
+        if (
+            self.params.fisher_transformation
+            and self.params.deltacchalf_cutoff is not None
+        ):
+            self.delta_cchalf_i = self.statistics.fisher_transformed_delta_cchalf_i
+        else:
+            self.delta_cchalf_i = self.statistics.delta_cchalf_i
         if self.params.mode == "dataset":
             filtered_reflections = self.remove_datasets_below_cutoff()
         elif self.params.mode == "image_group":
@@ -221,9 +239,7 @@ class CCHalfFromDials(object):
         self.filtered_reflection_table = filtered_reflections
 
     def _ids_to_remove(self):
-        return self.statistics.group_ids.select(
-            self.statistics.delta_cchalf_i < self.cutoff_value
-        )
+        return self.statistics.group_ids.select(self.delta_cchalf_i < self.cutoff_value)
 
     def output(self):
         """Save the output data and updated datafiles."""
@@ -433,7 +449,7 @@ class CCHalfFromDials(object):
 def delta_cchalf_report(result, filename):
     data = {"cc_half_plots": {}}
     res = {
-        "delta_cc_half_values": result.statistics.delta_cchalf_i,
+        "delta_cc_half_values": result.delta_cchalf_i,
         "mean_cc_half": result.statistics.mean_cchalf,
     }
     if result.params.mode == "image_group":
@@ -444,9 +460,7 @@ def delta_cchalf_report(result, filename):
     data = {"cc_half_plots": make_histogram_plots([res])}
     del data["cc_half_plots"]["mean_cc_one_half_vs_cycle"]
     data["cc_half_plots"].update(
-        make_per_dataset_plot(
-            result.statistics.group_ids, result.statistics.delta_cchalf_i
-        )
+        make_per_dataset_plot(result.statistics.group_ids, result.delta_cchalf_i)
     )
 
     logger.info("Writing html report to: %s", result.params.output.html)
