@@ -383,7 +383,6 @@ multi-dataset scaling mode (not single dataset or scaling against a reference)""
                 script = deltaccscript(
                     delta_cc_params, self.experiments, joined_reflections
                 )
-                script.run()
 
                 valid_image_ranges = get_valid_image_ranges(self.experiments)
                 results.expids_and_image_ranges = [
