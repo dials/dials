@@ -6,6 +6,8 @@ import math
 from cctbx import miller
 from cctbx import crystal
 from dials.array_family import flex
+from dials.util import tabulate
+
 
 logger = logging.getLogger("dials.command_line.compute_delta_cchalf")
 
@@ -24,6 +26,8 @@ class PerGroupCChalfStatistics(object):
         reflection_table,
         mean_unit_cell,
         space_group,
+        cutoff=None,
+        cutoff_method="normalised",
         d_min=None,
         d_max=None,
         n_bins=10,
@@ -33,6 +37,9 @@ class PerGroupCChalfStatistics(object):
         # stats, but can also be different if doing image groups.
 
         required = ["miller_index", "intensity", "variance", "dataset", "group"]
+        assert cutoff_method in ["deltacchalf", "fisher", "normalised"]
+        self.cutoff = cutoff
+        self.cutoff_method = cutoff_method
 
         for r in required:
             if r not in reflection_table:
@@ -68,6 +75,22 @@ class PerGroupCChalfStatistics(object):
         logger.debug(
             "stddev delta_cc_half %.3f", mav.unweighted_sample_standard_deviation()
         )
+
+        if self.cutoff is not None:
+            if self.cutoff_method == "normalised":
+                self.cutoff = (
+                    mav.mean()
+                    - self.cutoff * mav.unweighted_sample_standard_deviation()
+                )
+                self.cutoff_method = "deltacchalf"
+
+            if self.cutoff_method == "fisher":
+                self._exclude_sel = self.fisher_transformed_delta_cchalf_i < self.cutoff
+            else:
+                self._exclude_sel = self.delta_cchalf_i < self.cutoff
+            self.exclude_groups = self.group_ids.select(self._exclude_sel)
+        else:
+            self.exclude_groups = None
 
     def _compute_cchalf_excluding_each_group(self):
         """Compute the CC½ with each group excluded in turn
@@ -113,7 +136,7 @@ class PerGroupCChalfStatistics(object):
             ["Group", "CC½", "ΔCC½", "Fisher-transformed ΔCC½", "Normalised ΔCC½"]
         ] + [
             [
-                self.group_ids[p],
+                f"{self.group_ids[p]}{'*' if self._exclude_sel and self._exclude_sel[p] else ''}",
                 self.cchalf_i[p],
                 self.delta_cchalf_i[p],
                 self.fisher_transformed_delta_cchalf_i[p],
@@ -122,6 +145,9 @@ class PerGroupCChalfStatistics(object):
             for p in perm
         ]
 
-        from dials.util import tabulate
-
-        return str(tabulate(rows, headers="firstrow"))
+        footer = (
+            f"\n*rejected ({'Fisher-transformed ' if self.cutoff_method == 'fisher' else ''}ΔCC½ < {self.cutoff:.3g})"
+            if self.cutoff is not None
+            else ""
+        )
+        return f"{str(tabulate(rows, headers='firstrow'))}{footer}"
