@@ -548,8 +548,8 @@ def make_per_dataset_plot(group_ids, delta_cchalf_i):
             "per_dataset_plot": {
                 "data": [
                     {
-                        "y": list(group_ids),
-                        "x": list(delta_cchalf_i),
+                        "x": list(group_ids),
+                        "y": list(delta_cchalf_i),
                         "type": "scatter",
                         "mode": "lines",
                     }
