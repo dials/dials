@@ -44,46 +44,15 @@ class CCHalfFromMTZ(object):
         )
 
         # now do the exclusion
-        self.ids_removed = self.statistics.group_ids.select(
+        self.datasets_removed = self.statistics.group_ids.select(
             self.statistics.delta_cchalf_i < self.cutoff_value
         )
-        for id_ in sorted(self.ids_removed):
+        for id_ in sorted(self.datasets_removed):
             logger.info("Dataset %d is below the cutoff", id_)
 
     def output(self):
         if self.params.output.html:
-            data = {"cc_half_plots": {}}
-            res = {
-                "delta_cc_half_values": self.statistics.delta_cchalf_i,
-                "mean_cc_half": self.statistics.mean_cchalf,
-            }
-            res["removed_datasets"] = self.ids_removed
-            res["cutoff_value"] = self.cutoff_value
-            data = {"cc_half_plots": make_histogram_plots([res])}
-            del data["cc_half_plots"]["mean_cc_one_half_vs_cycle"]
-            data["cc_half_plots"].update(
-                make_per_dataset_plot(
-                    self.statistics.group_ids, self.statistics.delta_cchalf_i
-                )
-            )
-
-            logger.info("Writing html report to: %s", self.params.output.html)
-            loader = ChoiceLoader(
-                [
-                    PackageLoader("dials", "templates"),
-                    PackageLoader("dials", "static", encoding="utf-8"),
-                ]
-            )
-            env = Environment(loader=loader)
-            template = env.get_template("simple_report.html")
-            html = template.render(
-                page_title="ΔCC½ report",
-                panel_title="Delta CC-Half plots",
-                panel_id="cc_half_plots",
-                graphs=data["cc_half_plots"],
-            )
-            with open(self.params.output.html, "wb") as f:
-                f.write(html.encode("utf-8", "xmlcharrefreplace"))
+            delta_cchalf_report(self, self.params.output.html)
 
     @staticmethod
     def read_mtzfile(filename, batch_offset=None):
@@ -270,41 +239,7 @@ class CCHalfFromDials(object):
         self.experiments.as_file(self.params.output.experiments)
 
         if self.params.output.html:
-            data = {"cc_half_plots": {}}
-            res = {
-                "delta_cc_half_values": self.statistics.delta_cchalf_i,
-                "mean_cc_half": self.statistics.mean_cchalf,
-            }
-            if self.params.mode == "image_group":
-                res["image_ranges_removed"] = self.image_ranges_removed
-            else:
-                res["removed_datasets"] = self.datasets_removed
-            res["cutoff_value"] = self.cutoff_value
-            data = {"cc_half_plots": make_histogram_plots([res])}
-            del data["cc_half_plots"]["mean_cc_one_half_vs_cycle"]
-            data["cc_half_plots"].update(
-                make_per_dataset_plot(
-                    self.statistics.group_ids, self.statistics.delta_cchalf_i
-                )
-            )
-
-            logger.info("Writing html report to: %s", self.params.output.html)
-            loader = ChoiceLoader(
-                [
-                    PackageLoader("dials", "templates"),
-                    PackageLoader("dials", "static", encoding="utf-8"),
-                ]
-            )
-            env = Environment(loader=loader)
-            template = env.get_template("simple_report.html")
-            html = template.render(
-                page_title="ΔCC½ report",
-                panel_title="Delta CC-Half plots",
-                panel_id="cc_half_plots",
-                graphs=data["cc_half_plots"],
-            )
-            with open(self.params.output.html, "wb") as f:
-                f.write(html.encode("utf-8", "xmlcharrefreplace"))
+            delta_cchalf_report(self, self.params.output.html)
 
     def remove_datasets_below_cutoff(self):
         """Remove the datasets with ids in ids_to_remove.
@@ -493,3 +428,41 @@ class CCHalfFromDials(object):
         )
 
         return filtered_table, mean_unit_cell, space_group
+
+
+def delta_cchalf_report(result, filename):
+    data = {"cc_half_plots": {}}
+    res = {
+        "delta_cc_half_values": result.statistics.delta_cchalf_i,
+        "mean_cc_half": result.statistics.mean_cchalf,
+    }
+    if result.params.mode == "image_group":
+        res["image_ranges_removed"] = result.image_ranges_removed
+    else:
+        res["removed_datasets"] = result.datasets_removed
+    res["cutoff_value"] = result.cutoff_value
+    data = {"cc_half_plots": make_histogram_plots([res])}
+    del data["cc_half_plots"]["mean_cc_one_half_vs_cycle"]
+    data["cc_half_plots"].update(
+        make_per_dataset_plot(
+            result.statistics.group_ids, result.statistics.delta_cchalf_i
+        )
+    )
+
+    logger.info("Writing html report to: %s", result.params.output.html)
+    loader = ChoiceLoader(
+        [
+            PackageLoader("dials", "templates"),
+            PackageLoader("dials", "static", encoding="utf-8"),
+        ]
+    )
+    env = Environment(loader=loader)
+    template = env.get_template("simple_report.html")
+    html = template.render(
+        page_title="ΔCC½ report",
+        panel_title="Delta CC-Half plots",
+        panel_id="cc_half_plots",
+        graphs=data["cc_half_plots"],
+    )
+    with open(result.params.output.html, "wb") as f:
+        f.write(html.encode("utf-8", "xmlcharrefreplace"))
