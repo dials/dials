@@ -1205,7 +1205,8 @@ Found %s"""
                         .rotate_around_origin(rotation_axis, -rot_angle),
                     )
                     self["rlp"].set_selected(
-                        sel, tuple(sample_rotation.inverse()) * self["rlp"].select(sel),
+                        sel,
+                        tuple(sample_rotation.inverse()) * self["rlp"].select(sel),
                     )
                 else:
                     self["rlp"].set_selected(sel, S)

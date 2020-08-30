@@ -1002,7 +1002,11 @@ class MultiScalerBase(ScalerBase):
                 free_indices_list.append(scaler.free_set_selection.iselection())
                 indices_list.append((~scaler.free_set_selection).iselection())
             global_Ih_table = IhTable(
-                tables, space_group, indices_list, nblocks=1, anomalous=anomalous,
+                tables,
+                space_group,
+                indices_list,
+                nblocks=1,
+                anomalous=anomalous,
             )
             free_Ih_table = IhTable(
                 free_tables,

@@ -603,15 +603,15 @@ def test_refinement_failure_on_max_lattices_a15(dials_regression, tmpdir):
 
 
 def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_regression, tmpdir):
-    """ Problem: In stills_indexer, before calling the refine function, the
-        experiment list contains a list of dxtbx crystal models (that are not
-        MosaicSauter2014 models). The conversion to MosaicSauter2014 is made
-        during the refine step when functions from nave_parameters is called.
-        If the experiment list contains more than 1 experiment, for eg.
-        multiple lattices, only the first crystal gets assigned mosaicity. In
-        actuality, all crystal models should be assigned mosaicity. This test
-        only compares whether or not all crystal models have been assigned a
-        MosaicSauter2014 model.  """
+    """Problem: In stills_indexer, before calling the refine function, the
+    experiment list contains a list of dxtbx crystal models (that are not
+    MosaicSauter2014 models). The conversion to MosaicSauter2014 is made
+    during the refine step when functions from nave_parameters is called.
+    If the experiment list contains more than 1 experiment, for eg.
+    multiple lattices, only the first crystal gets assigned mosaicity. In
+    actuality, all crystal models should be assigned mosaicity. This test
+    only compares whether or not all crystal models have been assigned a
+    MosaicSauter2014 model."""
 
     import dxtbx.model
     from dxtbx.model.experiment_list import ExperimentListFactory

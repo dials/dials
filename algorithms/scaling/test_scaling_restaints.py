@@ -162,8 +162,10 @@ def test_ScalingRestraints(
     # The jacobian has n_rows equal to the number of restrainted parameters,
     # n_cols equal to the total number of parameters. Check that these are
     # correctly composed.
-    jacobian_restraints = SingleScalingRestraintsCalculator.calculate_jacobian_restraints(
-        mock_parameter_manager
+    jacobian_restraints = (
+        SingleScalingRestraintsCalculator.calculate_jacobian_restraints(
+            mock_parameter_manager
+        )
     )
     abs_restraints = mock_restrained_component.calculate_jacobian_restraints()
     assert list(jacobian_restraints[0]) == list(abs_restraints[0])

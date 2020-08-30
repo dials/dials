@@ -226,11 +226,15 @@ def test_map_to_minimum_cell():
     )
     cb_ops_as_xyz = [cb_op.as_xyz() for cb_op in cb_ops]
     # Actual cb_ops are machine dependent (sigh)
-    assert cb_ops_as_xyz == [
-        "-x+y,-2*y,z",
-        "-x+z,-z,-y",
-        "x+y,-2*x,z",
-    ] or cb_ops_as_xyz == ["x-y,2*y,z", "x-z,z,-y", "-x-y,2*x,z"]
+    assert (
+        cb_ops_as_xyz
+        == [
+            "-x+y,-2*y,z",
+            "-x+z,-z,-y",
+            "x+y,-2*x,z",
+        ]
+        or cb_ops_as_xyz == ["x-y,2*y,z", "x-z,z,-y", "-x-y,2*x,z"]
+    )
 
     expts_min, reflections = apply_change_of_basis_ops(expts, reflections, cb_ops)
     # Verify that the unit cells have been transformed as expected

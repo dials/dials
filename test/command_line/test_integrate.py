@@ -216,7 +216,12 @@ def test_multi_sweep(dials_regression, tmpdir):
     )
 
     result = procrunner.run(
-        ["dials.integrate", "modified_input.json", refls, "prediction.padding=0",],
+        [
+            "dials.integrate",
+            "modified_input.json",
+            refls,
+            "prediction.padding=0",
+        ],
         working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr

@@ -65,7 +65,9 @@ def test_multi_sequence_with_batch_range(dials_data, run_in_tmpdir, capsys):
     refls = location.join("scaled_20_25.refl")
     expts = location.join("scaled_20_25.expt")
 
-    cmdline.run(["batch_range=1900,3600", refls.strpath, expts.strpath],)
+    cmdline.run(
+        ["batch_range=1900,3600", refls.strpath, expts.strpath],
+    )
     captured = capsys.readouterr()
 
     expected_output = (

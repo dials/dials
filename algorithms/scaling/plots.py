@@ -119,7 +119,11 @@ def plot_dose_decay(dose_decay_model):
             "data": [],
             "layout": {
                 "title": "Dose-decay model corrections",
-                "xaxis": {"domain": [0, 1], "anchor": "y", "title": "phi (degrees)",},
+                "xaxis": {
+                    "domain": [0, 1],
+                    "anchor": "y",
+                    "title": "phi (degrees)",
+                },
                 "yaxis": {
                     "domain": [0, 0.45],
                     "anchor": "x",
@@ -141,7 +145,10 @@ def plot_dose_decay(dose_decay_model):
 
     if "decay" in dose_decay_model.components:
         data = _add_decay_model_scales_to_data(
-            dose_decay_model, data, yaxis="y", resolution=3.0,
+            dose_decay_model,
+            data,
+            yaxis="y",
+            resolution=3.0,
         )
 
     d["dose_decay"]["data"] = data

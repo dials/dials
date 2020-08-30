@@ -306,7 +306,9 @@ def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
             if "inverse_scale_factor" not in reflections[0]:
                 raise KeyError("Input data must be scaled.")
             script = PychefRunner.from_dials_data_files(
-                params, experiments, reflections[0],
+                params,
+                experiments,
+                reflections[0],
             )
 
         elif unhandled and os.path.isfile(unhandled[0]):

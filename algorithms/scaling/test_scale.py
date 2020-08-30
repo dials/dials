@@ -514,7 +514,7 @@ def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
 
 def test_scale_and_filter_image_group_single_dataset(dials_data, tmpdir):
     """Test the scale and filter deltacchalf.mode=image_group on a
-       single data set."""
+    single data set."""
     data_dir = dials_data("l_cysteine_dials_output")
     command = [
         "dials.scale",

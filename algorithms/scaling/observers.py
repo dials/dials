@@ -101,7 +101,11 @@ def print_scaling_summary(script):
             if len(valid) > 1 or valid[0][0] != img[0] or valid[-1][1] != img[1]:
                 msg.append(
                     "Excluded images for experiment id: %s, image range: %s, limited range: %s"
-                    % (refl.experiment_identifiers().keys()[0], list(img), list(valid),)
+                    % (
+                        refl.experiment_identifiers().keys()[0],
+                        list(img),
+                        list(valid),
+                    )
                 )
     if msg:
         msg = ["Summary of image ranges removed:"] + msg
@@ -383,7 +387,9 @@ def make_merging_stats_plots(script):
         svb,
         batch_data,
     ) = reflection_tables_to_batch_dependent_properties(  # pylint: disable=unbalanced-tuple-unpacking
-        script.reflections, script.experiments, script.scaled_miller_array,
+        script.reflections,
+        script.experiments,
+        script.scaled_miller_array,
     )
     bm = batch_manager(batches, batch_data)
     image_range_tables = make_image_range_table(script.experiments, bm)

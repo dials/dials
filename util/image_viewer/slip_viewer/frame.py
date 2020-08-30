@@ -937,8 +937,10 @@ class XrayFrame(XFBaseClass):
                         if layer.map_rel:
                             pp = []
                             for pelement in p:
-                                fs = self.pyslip.tiles.map_relative_to_picture_fast_slow(
-                                    pelement[0], pelement[1]
+                                fs = (
+                                    self.pyslip.tiles.map_relative_to_picture_fast_slow(
+                                        pelement[0], pelement[1]
+                                    )
                                 )
                                 pp.append(
                                     (
@@ -1032,8 +1034,10 @@ class XrayFrame(XFBaseClass):
                         path = pdf_canvas.beginPath()
                         for i, pp in enumerate(p):
                             if layer.map_rel:
-                                fs = self.pyslip.tiles.map_relative_to_picture_fast_slow(
-                                    pp[0], pp[1]
+                                fs = (
+                                    self.pyslip.tiles.map_relative_to_picture_fast_slow(
+                                        pp[0], pp[1]
+                                    )
                                 )
                             else:
                                 raise NotImplementedError(

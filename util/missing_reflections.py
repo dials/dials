@@ -57,7 +57,9 @@ def connected_components(
 
     # Construct the graph of connected missing reflections
     g = graph.adjacency_list(
-        graph_type="undirected", vertex_type="vector", edge_type="set",
+        graph_type="undirected",
+        vertex_type="vector",
+        edge_type="set",
     )
     distance_cutoff = 2 ** 0.5
     for i in range(missing_set.size()):

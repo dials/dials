@@ -297,9 +297,10 @@ class StillsIndexer(Indexer):
                             )
                         )
                         assert (
-                            (refined_beam - known_beam).length()
-                            < self.params.stills.isoforms[minindex].rmsd_target_mm
-                        )
+                            refined_beam - known_beam
+                        ).length() < self.params.stills.isoforms[
+                            minindex
+                        ].rmsd_target_mm
                         # future--circle of confusion could be given as a separate length in mm instead of reusing rmsd_target
 
                     experiment = R.get_experiments()[0]

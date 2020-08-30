@@ -205,8 +205,10 @@ class align_crystal(object):
                 for perm in referential_permutations:
                     S = matrix.sqr(perm[0].elems + perm[1].elems + perm[2].elems)
                     R = align_reference_frame(v1_0, S * l1, v2_0, S * l2)
-                    solutions = rotation_decomposition.solve_r3_rotation_for_angles_given_axes(
-                        R, e1, e2, e3, return_both_solutions=True, deg=True
+                    solutions = (
+                        rotation_decomposition.solve_r3_rotation_for_angles_given_axes(
+                            R, e1, e2, e3, return_both_solutions=True, deg=True
+                        )
                     )
 
                     if solutions is None:

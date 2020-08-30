@@ -33,7 +33,7 @@ class Target(object):
         dimensions=None,
         nproc=1,
     ):
-        r""""Intialise a Target object.
+        r""" "Intialise a Target object.
 
         Args:
           intensities (cctbx.miller.array): The intensities on which to perform
