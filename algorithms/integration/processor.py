@@ -545,6 +545,7 @@ class _Manager(object):
 
         # Save some parameters
         self.params = params
+        self.block_overlap_size = 0
 
         # Set the finalized flag to False
         self.finalized = False
@@ -679,9 +680,19 @@ class _Manager(object):
                 assert self.params.block.threshold <= 1.0, "Threshold must be < 1"
                 nframes = sorted([b[5] - b[4] for b in self.reflections["bbox"]])
                 cutoff = int(self.params.block.threshold * len(nframes))
-                block_size = nframes[cutoff] * 2
-                self.params.block.size = block_size
+                block_overlap_size = nframes[cutoff]
+                nframes = len(
+                    self.experiments[0].imageset
+                )  ###FIXME more than one iset?
+                nblocks = self.params.mp.nproc  ###FIXME what about njobs?
+                # want data to be split into n blocks with overlaps
+                # i.e. [x, overlap, y, overlap, y, overlap, ....,y,  overlap, x]
+                # blocks are x + overlap, or overlap + y + overlap.
+                x = (nframes - block_overlap_size) / nblocks
+                block_size = int(math.ceil(x + block_overlap_size))
+                self.params.block.size = max(block_size, 2.0 * block_overlap_size)
                 self.params.block.units = "frames"
+                self.block_overlap_size = block_overlap_size
 
     def compute_jobs(self):
         """
@@ -700,24 +711,53 @@ class _Manager(object):
             scan = expr.scan
             imgs = expr.imageset
             array_range = (0, len(imgs))
+
+            def _block_overlap(params, reflections, block_size_frames):
+                assert params.block.threshold > 0, "Threshold must be > 0"
+                assert params.block.threshold <= 1.0, "Threshold must be < 1"
+                nframes = sorted([b[5] - b[4] for b in reflections["bbox"]])
+                cutoff = int(params.block.threshold * len(nframes))
+                block_overlap_size = min(
+                    nframes[cutoff], int(math.floor(block_size_frames / 2.0))
+                )
+                return block_overlap_size
+
             if scan is not None:
                 assert len(imgs) >= len(scan), "Invalid scan range"
                 array_range = scan.get_array_range()
             if self.params.block.size is None:
                 block_size_frames = array_range[1] - array_range[0]
+                block_overlap = self.block_overlap_size
             elif self.params.block.units == "radians":
                 phi0, dphi = scan.get_oscillation(deg=False)
                 block_size_frames = int(math.ceil(self.params.block.size / dphi))
+                block_overlap = _block_overlap(
+                    self.params, self.reflections, block_size_frames
+                )
             elif self.params.block.units == "degrees":
                 phi0, dphi = scan.get_oscillation()
                 block_size_frames = int(math.ceil(self.params.block.size / dphi))
+                block_overlap = _block_overlap(
+                    self.params, self.reflections, block_size_frames
+                )
             elif self.params.block.units == "frames":
                 block_size_frames = int(math.ceil(self.params.block.size))
+                if not self.block_overlap_size:
+                    block_overlap = _block_overlap(
+                        self.params, self.reflections, block_size_frames
+                    )
+                else:
+                    block_overlap = self.block_overlap_size
             else:
                 raise RuntimeError(
                     "Unknown block_size units %r" % self.params.block.units
                 )
-            self.jobs.add((i0, i1), array_range, block_size_frames)
+            self.jobs.add(
+                (i0, i1),
+                array_range,
+                block_size_frames,
+                block_overlap,
+            )
         assert len(self.jobs) > 0, "Invalid number of jobs"
 
     def split_reflections(self):

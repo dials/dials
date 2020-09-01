@@ -185,9 +185,9 @@ namespace dials { namespace algorithms {
      * @param range The range of frames
      * @param block_size The job block size
      */
-    void add(tiny<int, 2> expr, tiny<int, 2> range, int block_size) {
+    void add(tiny<int, 2> expr, tiny<int, 2> range, int block_size, int block_overlap_size) {
       std::size_t j0 = size();
-      add_jobs(groups_.size(), expr, range, block_size);
+      add_jobs(groups_.size(), expr, range, block_size, block_overlap_size);
       std::size_t j1 = size();
       groups_.add(int2(j0, j1), expr, range);
     }
@@ -218,42 +218,34 @@ namespace dials { namespace algorithms {
     void add_jobs(std::size_t index,
                   tiny<int, 2> expr,
                   tiny<int, 2> range,
-                  int block_size) {
+                  int block_size,
+                  int block_overlap_size) {
       int frame0 = range[0];
       int frame1 = range[1];
       DIALS_ASSERT(frame1 > frame0);
       int nframes = frame1 - frame0;
+      int nblocks = 0;
       DIALS_ASSERT(nframes > 0);
-      if (block_size > nframes) {
+      if (block_size >= nframes) {
         block_size = nframes;
+        nblocks = 1;
       }
       DIALS_ASSERT(block_size > 0);
+      // make sure overlap not larger than half block size.
+      block_overlap_size = (int)std::min(block_overlap_size, block_size / 2);
       if (block_size == 1) {
         for (int f = frame0; f < frame1; ++f) {
           jobs_.push_back(Job(index, expr, tiny<int, 2>(f, f + 1)));
         }
       } else {
-        int nblocks = (int)std::ceil(2.0 * nframes / (double)block_size);
-        DIALS_ASSERT(nblocks > 0 && nblocks <= nframes);
-        int half_block_size = (int)std::ceil((double)nframes / (double)nblocks);
-        af::shared<int> indices;
-        indices.push_back(frame0);
-        for (int i = 0; i < nblocks; ++i) {
-          int frame = frame0 + (i + 1) * half_block_size;
-          if (frame > frame1) {
-            frame = frame1;
-          }
-          indices.push_back(frame);
-          if (frame == frame1) {
-            break;
-          }
+        if (nblocks == 0){
+          double z = ((double)frame1 - frame0 - block_size) / (block_size - block_overlap_size); //avoid integer division
+          nblocks = (int)std::ceil(z) + 1;
         }
-        DIALS_ASSERT(indices.front() == frame0);
-        DIALS_ASSERT(indices.back() == frame1);
-        DIALS_ASSERT(indices.size() > 2);
-        for (std::size_t i = 0; i < indices.size() - 2; ++i) {
-          int i1 = indices[i];
-          int i2 = indices[i + 2];
+        DIALS_ASSERT(nblocks > 0 && nblocks <= nframes);
+        for (std::size_t i = 0; i < nblocks; ++i) {
+          int i1 = (i * (block_size - block_overlap_size)) + frame0;
+          int i2 = std::min(i1 + block_size, frame1);
           DIALS_ASSERT(i2 > i1);
           jobs_.push_back(Job(index, expr, tiny<int, 2>(i1, i2)));
         }

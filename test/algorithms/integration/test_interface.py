@@ -48,7 +48,7 @@ def test_split_blocks_1_frame():
             )
 
     jobs = JobList()
-    jobs.add((0, 1), (0, 111), 1)
+    jobs.add((0, 1), (0, 111), 1, 0)
 
     jobs.split(r)
     assert len(r) == len(expected)
@@ -265,6 +265,7 @@ def test_reflection_manager():
     nrefl = 10000
     array_range = (0, 130)
     block_size = 20
+    block_overlap = 10
 
     random.seed(0)
     processed = [[] for i in range(12)]
@@ -311,7 +312,7 @@ def test_reflection_manager():
     from dials.algorithms.integration.integrator import JobList
 
     jobs = JobList()
-    jobs.add((0, 1), array_range, block_size)
+    jobs.add((0, 1), array_range, block_size, block_overlap)
 
     # Create the executor
     executor = ReflectionManager(jobs, reflections)
