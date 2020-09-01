@@ -182,35 +182,30 @@ class CCHalfFromDials(object):
                 sel = table["dataset"] == id_
                 expid = table.experiment_identifiers()[id_]
                 images_in_dataset = table["image"].select(sel)
-                unique_images = set(images_in_dataset)
-                min_img, max_img = (min(unique_images), max(unique_images))
-                group_starts = list(range(min_img, max_img + 1, self.params.group_size))
-                if len(group_starts) > 1:
-                    if max_img - group_starts[-1] < (self.params.group_size - 1):
-                        del group_starts[-1]
-
-                for i, start in enumerate(group_starts[:-1]):
-                    group_sel = (images_in_dataset >= start) & (
-                        images_in_dataset < group_starts[i + 1]
-                    )
+                min_img = flex.min(images_in_dataset)
+                max_img = flex.max(images_in_dataset)
+                n_groups = (max_img - min_img + 1) // self.params.group_size
+                for n in range(n_groups):
+                    start = min_img + n * self.params.group_size
+                    if (n + 1) < n_groups:
+                        end = min_img + (n + 1) * self.params.group_size - 1
+                    else:
+                        end = max_img
                     image_groups.set_selected(
-                        (sel.iselection().select(group_sel)), counter
+                        (
+                            sel.iselection().select(
+                                (images_in_dataset >= start)
+                                & (images_in_dataset <= end)
+                            )
+                        ),
+                        counter,
                     )
                     self.group_to_datasetid_and_range[counter] = (
                         expid,
-                        (start, group_starts[i + 1] - 1),
+                        (start, end),
                     )
                     self.datasetid_to_groups[expid].append(counter)
                     counter += 1
-                # now do last group
-                group_sel = images_in_dataset >= group_starts[-1]
-                image_groups.set_selected((sel.iselection().select(group_sel)), counter)
-                self.group_to_datasetid_and_range[counter] = (
-                    expid,
-                    (group_starts[-1], max_img),
-                )
-                self.datasetid_to_groups[expid].append(counter)
-                counter += 1
 
             table["group"] = image_groups
 
