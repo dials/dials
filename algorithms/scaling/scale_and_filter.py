@@ -65,7 +65,7 @@ def log_cycle_results(results, scaling_script, filter_script):
     cycle_results["delta_cc_half_values"] = list(
         filter_script.statistics.delta_cchalf_i
     )
-    cycle_results["cutoff_value"] = filter_script.cutoff_value
+    cycle_results["cutoff_value"] = filter_script.statistics.cutoff
     cycle_results["mean_cc_half"] = filter_script.statistics.mean_cchalf
     # removal_summary = filter_script.results_summary["dataset_removal"]
     if filter_script.params.mode == "image_group":
