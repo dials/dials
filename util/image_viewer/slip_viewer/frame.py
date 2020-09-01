@@ -755,7 +755,7 @@ class XrayFrame(XFBaseClass):
             flex_img = get_flex_image_multipanel(
                 brightness=self.settings.brightness / 100,
                 panels=detector,
-                raw_data=data,
+                image_data=data,
                 beam=raw_img.get_beam(),
             )
 
@@ -856,7 +856,7 @@ class XrayFrame(XFBaseClass):
 
                 wximg = wx.ImageFromBitmap(bitmap)
                 imageout = Image.new("RGB", (wximg.GetWidth(), wximg.GetHeight()))
-                imageout.frombytes(wximg.GetData())
+                imageout.frombytes(bytes(wximg.GetData()))
 
                 self.pyslip.tiles.UseLevel(currentZoom)
 
@@ -895,7 +895,7 @@ class XrayFrame(XFBaseClass):
             flex_img = get_flex_image_multipanel(
                 brightness=self.settings.brightness / 100,
                 panels=detector,
-                raw_data=data,
+                image_data=data,
                 beam=raw_img.get_beam(),
             )
 

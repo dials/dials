@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+import collections
 import copy
 import json
 import logging
@@ -14,6 +15,7 @@ from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from libtbx import Auto
 import iotbx.phil
 
+from dxtbx.model import ExperimentList
 from dials.array_family import flex
 from dials.util import log, show_mail_on_error
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
@@ -176,6 +178,19 @@ def change_of_basis_ops_to_minimum_cell(
         cb_op_best_to_min = group["best_subsym"].change_of_basis_op_to_minimum_cell()
         cb_ops = [cb_op_best_to_min * group["cb_op_inp_best"]] * len(experiments)
     else:
+        groups = [
+            metric_subgroups(
+                expt.crystal.get_crystal_symmetry(),
+                max_delta,
+                best_monoclinic_beta=False,
+                enforce_max_delta_for_generated_two_folds=True,
+            )
+            for expt in experiments
+        ]
+        counter = collections.Counter(
+            g.result_groups[0]["best_subsym"].space_group() for g in groups
+        )
+        target_group = counter.most_common()[0][0]
         cb_ops = []
         for expt in experiments:
             groups = metric_subgroups(
@@ -184,16 +199,29 @@ def change_of_basis_ops_to_minimum_cell(
                 best_monoclinic_beta=False,
                 enforce_max_delta_for_generated_two_folds=True,
             )
-            group = groups.result_groups[0]
-            cb_ops.append(group["cb_op_inp_best"])
-        ref_expts = experiments.change_basis(cb_ops)
+            group = None
+            for g in groups.result_groups:
+                if g["best_subsym"].space_group() == target_group:
+                    group = g
+            if group:
+                cb_ops.append(group["cb_op_inp_best"])
+            else:
+                cb_ops.append(None)
+                logger.info(
+                    f"Couldn't match unit cell to target symmetry:\n"
+                    f"{expt.crystal.get_crystal_symmetry()}\n"
+                    f"{target_group}"
+                )
+        ref_expts = ExperimentList(
+            [expt for expt, cb_op in zip(experiments, cb_ops) if cb_op]
+        ).change_basis(list(filter(None, cb_ops)))
         cb_op_ref_min = (
             ref_expts[0]
             .crystal.get_crystal_symmetry()
             .customized_copy(unit_cell=median_unit_cell(ref_expts))
             .change_of_basis_op_to_minimum_cell()
         )
-        cb_ops = [cb_op_ref_min * cb_op for cb_op in cb_ops]
+        cb_ops = [cb_op_ref_min * cb_op if cb_op else None for cb_op in cb_ops]
     return cb_ops
 
 

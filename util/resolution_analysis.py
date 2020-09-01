@@ -197,7 +197,7 @@ def resolution_fit(d_star_sq, y_obs, model, limit, sel=None):
             d_min = 1.0 / math.sqrt(interpolate_value(d_star_sq, y_fit, limit))
         except RuntimeError as e:
             logger.debug(f"Error interpolating value: {e}")
-            d_min = uctbx.d_star_sq_as_d(flex.max(d_star_sq))
+            d_min = None
 
     return ResolutionResult(d_star_sq, y_obs, y_fit, d_min)
 
@@ -636,9 +636,10 @@ class Resolutionizer(object):
             if limit:
                 result = self.resolution(metric, limit=limit)
                 pretty_name = metric_to_output.get(metric, name)
-                logger.info(
-                    f"Resolution {pretty_name}:{result.d_min:{18 - len(pretty_name)}.2f}"
-                )
+                if result.d_min:
+                    logger.info(
+                        f"Resolution {pretty_name}:{result.d_min:{18 - len(pretty_name)}.2f}"
+                    )
                 plot_d[name] = plot_result(metric, result)
         return plot_d
 
