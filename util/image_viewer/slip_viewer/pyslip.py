@@ -186,7 +186,7 @@ class _BufferedCanvas(wx.Panel):
             width = 1
         if height == 0:
             height = 1
-        self.buffer = wx.EmptyBitmap(width, height)
+        self.buffer = wx.Bitmap(width, height)
 
         self.view_width = width
         self.view_height = height
@@ -2129,12 +2129,12 @@ class PySlip(_BufferedCanvas):
 
         if event.ShiftDown():
             self.is_box_select = True
-            self.SetCursor(wx.StockCursor(wx.CURSOR_CROSS))
+            self.SetCursor(wx.Cursor(wx.CURSOR_CROSS))
             (self.sbox_w, self.sbox_h) = (0, 0)
             (self.sbox_1_x, self.sbox_1_y) = click_posn
         else:
             self.is_box_select = False
-            self.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
+            self.SetCursor(wx.Cursor(wx.CURSOR_HAND))
             (self.last_drag_x, self.last_drag_y) = click_posn
         event.Skip()
 
@@ -2152,7 +2152,7 @@ class PySlip(_BufferedCanvas):
             self.ignore_next_up = False
             return
 
-        self.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+        self.SetCursor(wx.Cursor(wx.CURSOR_DEFAULT))
 
         # we need a repaint to remove any selection box, but NOT YET!
         delayed_paint = self.sbox_1_x  # True if box select active
@@ -2268,7 +2268,7 @@ class PySlip(_BufferedCanvas):
 
         if event.ShiftDown():
             self.is_box_select = True
-            self.SetCursor(wx.StockCursor(wx.CURSOR_CROSS))
+            self.SetCursor(wx.Cursor(wx.CURSOR_CROSS))
             (self.sbox_w, self.sbox_h) = (0, 0)
             (self.sbox_1_x, self.sbox_1_y) = click_posn
         event.Skip()
@@ -2285,7 +2285,7 @@ class PySlip(_BufferedCanvas):
             self.ignore_next_right_up = False
             return
 
-        self.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+        self.SetCursor(wx.Cursor(wx.CURSOR_DEFAULT))
 
         # we need a repaint to remove any selection box, but NOT YET!
         delayed_paint = self.sbox_1_x  # True if box select active
