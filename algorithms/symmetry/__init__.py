@@ -379,7 +379,7 @@ def _resolution_filter(resolutionizer, min_i_mean_over_sigma_mean, min_cc_half):
             logger.info(u"I/σ(I) resolution filter failed with the following error:")
             logger.error(e)
         else:
-            if d_min_cc_half:
+            if d_min_isigi:
                 logger.info(
                     u"Resolution estimate from <I>/<σ(I)> > %.1f : %.2f",
                     min_i_mean_over_sigma_mean,
