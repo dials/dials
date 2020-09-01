@@ -1,2 +1,0 @@
-Resolution analysis: return d_min=None instead of defaulting to the high resolution limit of the integrated data if interpolation of the curve fit fails. Avoids using all integrated data in symmetry analysis in some cases which previously resulted in incorrect symmetry determination.
-Use 100 bins for estimation of resolution limit for symmetry determination instead of 20 bins. Leads to better results if the true resolution of the data is much lower than extent of the integrated data.

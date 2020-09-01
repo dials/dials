@@ -1,3 +1,18 @@
+DIALS 3.1.1 (2020-09-01)
+========================
+
+Bugfixes
+--------
+
+- ``dials.scale``: Prevent discarding of resolution limits in rare cases, which
+  could cause incorrect symmetry determination, and worse results. (#1378)
+- ``dials.cosym``: filter out experiments with inconsistent unit cells (#1380)
+- Internally slicing experiments now works if image range doesn't start at 1 (#1383)
+- Restore missing I/sigma(I) resolution estimate log output (#1384)
+- ``dials.image_viewer``: "Save As" button now works, for single panels
+- Fix developer ``libtbx.precommit`` installation error (#1375)
+
+
 DIALS 3.1 (2020-08-17)
 ======================
 
