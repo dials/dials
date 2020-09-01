@@ -167,8 +167,8 @@ class XrayFrame(XFBaseClass):
     def setup_toolbar(self):
         XFBaseClass.setup_toolbar(self)
 
-        btn = self.toolbar.AddLabelTool(
-            id=wx.ID_SAVEAS,
+        btn = self.toolbar.AddTool(
+            toolId=wx.ID_SAVEAS,
             label="Save As...",
             bitmap=bitmaps.fetch_icon_bitmap("actions", "save_all", 32),
             shortHelp="Save As...",
@@ -840,7 +840,7 @@ class XrayFrame(XFBaseClass):
                 row_list = range(start_y_tile, stop_y_tile)
                 y_pix_start = start_y_tile * self.pyslip.tile_size_y - y_offset
 
-                bitmap = wx.EmptyBitmap(x2 - x1, y2 - y1)
+                bitmap = wx.Bitmap(x2 - x1, y2 - y1)
                 dc = wx.MemoryDC()
                 dc.SelectObject(bitmap)
 
@@ -856,7 +856,7 @@ class XrayFrame(XFBaseClass):
 
                 dc.SelectObject(wx.NullBitmap)
 
-                wximg = wx.ImageFromBitmap(bitmap)
+                wximg = bitmap.ConvertToImage()
                 imageout = Image.new("RGB", (wximg.GetWidth(), wximg.GetHeight()))
                 imageout.frombytes(bytes(wximg.GetData()))
 

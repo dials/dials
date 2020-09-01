@@ -79,24 +79,24 @@ class XrayFrame(wx.Frame):
         self.Layout()
 
     def setup_toolbar(self):
-        btn = self.toolbar.AddLabelTool(
-            id=-1,
+        btn = self.toolbar.AddTool(
+            toolId=-1,
             label="Load file",
             bitmap=icons.hkl_file.GetBitmap(),
             shortHelp="Load file",
             kind=wx.ITEM_NORMAL,
         )
         self.Bind(wx.EVT_MENU, self.OnLoadFile, btn)
-        btn = self.toolbar.AddLabelTool(
-            id=-1,
+        btn = self.toolbar.AddTool(
+            toolId=-1,
             label="Settings",
             bitmap=icons.advancedsettings.GetBitmap(),
             shortHelp="Settings",
             kind=wx.ITEM_NORMAL,
         )
         self.Bind(wx.EVT_MENU, self.OnShowSettings, btn)
-        btn = self.toolbar.AddLabelTool(
-            id=-1,
+        btn = self.toolbar.AddTool(
+            toolId=-1,
             label="Zoom",
             bitmap=icons.search.GetBitmap(),
             shortHelp="Zoom",
@@ -108,16 +108,16 @@ class XrayFrame(wx.Frame):
         self.image_chooser = wx.Choice(self.toolbar, -1, size=(300, -1))
         self.toolbar.AddControl(self.image_chooser)
         self.Bind(wx.EVT_CHOICE, self.OnChooseImage, self.image_chooser)
-        btn = self.toolbar.AddLabelTool(
-            id=wx.ID_BACKWARD,
+        btn = self.toolbar.AddTool(
+            toolId=wx.ID_BACKWARD,
             label="Previous",
             bitmap=bitmaps.fetch_icon_bitmap("actions", "1leftarrow"),
             shortHelp="Previous",
             kind=wx.ITEM_NORMAL,
         )
         self.Bind(wx.EVT_MENU, self.OnPrevious, btn)
-        btn = self.toolbar.AddLabelTool(
-            id=wx.ID_FORWARD,
+        btn = self.toolbar.AddTool(
+            toolId=wx.ID_FORWARD,
             label="Next",
             bitmap=bitmaps.fetch_icon_bitmap("actions", "1rightarrow"),
             shortHelp="Next",
