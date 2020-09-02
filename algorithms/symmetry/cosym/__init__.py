@@ -15,6 +15,7 @@ from collections import OrderedDict
 
 import dials.util
 import iotbx.phil
+import numpy as np
 from cctbx import sgtbx
 from dials.algorithms.indexing.symmetry import find_matching_symmetry
 from dials.algorithms.symmetry.cosym import target
@@ -237,9 +238,14 @@ class CosymAnalysis(symmetry_base, Subject):
             )
             dimensions = []
             functional = []
+            termination_params = copy.deepcopy(self.params.termination_params)
+            termination_params.max_iterations = min(
+                20, termination_params.max_iterations
+            )
             for dim in range(1, self.target.dim + 1):
+                logger.debug("Testing dimension: %i", dim)
                 self.target.set_dimensions(dim)
-                self._optimise()
+                self._optimise(termination_params)
                 dimensions.append(dim)
                 functional.append(self.minimizer.f)
 
@@ -280,14 +286,14 @@ class CosymAnalysis(symmetry_base, Subject):
     def run(self):
         self._intialise_target()
         self._determine_dimensions()
-        self._optimise()
+        self._optimise(self.params.termination_params)
         self._principal_component_analysis()
 
         self._analyse_symmetry()
         self._cluster_analysis()
 
     @Subject.notify_event(event="optimised")
-    def _optimise(self):
+    def _optimise(self, termination_params):
         NN = len(self.input_intensities)
         dim = self.target.dim
         n_sym_ops = len(self.target.get_sym_ops())
@@ -295,7 +301,7 @@ class CosymAnalysis(symmetry_base, Subject):
 
         import scitbx.lbfgs
 
-        tp = self.params.termination_params
+        tp = termination_params
         termination_params = scitbx.lbfgs.termination_parameters(
             traditional_convergence_test=tp.traditional_convergence_test,
             traditional_convergence_test_eps=tp.traditional_convergence_test_eps,
@@ -341,9 +347,7 @@ class CosymAnalysis(symmetry_base, Subject):
             pca.n_components = 3
         x_reduced = pca.fit_transform(X)
 
-        import numpy
-
-        self.coords_reduced = flex.double(numpy.ascontiguousarray(x_reduced))
+        self.coords_reduced = flex.double(np.ascontiguousarray(x_reduced))
 
     @Subject.notify_event(event="analysed_symmetry")
     def _analyse_symmetry(self):
@@ -473,7 +477,6 @@ class CosymAnalysis(symmetry_base, Subject):
             eps=self.params.cluster.dbscan.eps,
             min_samples=self.params.cluster.dbscan.min_samples,
         ).fit(X)
-        import numpy as np
 
         return flex.int(db.labels_.astype(np.int32))
 
@@ -502,7 +505,6 @@ class CosymAnalysis(symmetry_base, Subject):
 
         # Perform cluster analysis
         from sklearn.cluster import AgglomerativeClustering
-        import numpy as np
 
         model = AgglomerativeClustering(
             n_clusters=self.params.cluster.n_clusters,

@@ -73,7 +73,9 @@ def test_still_raises_sysexit(dials_data, run_in_tmpdir):
     assert expts_file.check(file=1)
 
     # Find the spots
-    result = procrunner.run(["dials.find_spots", "imported.expt", "min_spot_size=3"],)
+    result = procrunner.run(
+        ["dials.find_spots", "imported.expt", "min_spot_size=3"],
+    )
     assert not result.returncode and not result.stderr
     refl_file = run_in_tmpdir.join("strong.refl")
     assert refl_file.check(file=1)

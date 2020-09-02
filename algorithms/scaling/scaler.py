@@ -204,15 +204,15 @@ class ScalerBase(Subject):
     @Subject.notify_event(event="performed_error_analysis")
     def perform_error_optimisation(self, update_Ih=True):
         """Perform an optimisation of the sigma values."""
-        Ih_table = self.global_Ih_table
-        Ih_table.reset_error_model()
-        Ih_table.calc_Ih()
+        # error model should be determined using anomalous groups
+        Ih_table, _ = self._create_global_Ih_table(anomalous=True, remove_outliers=True)
         try:
             model = run_error_model_refinement(
                 self.params.weighting.error_model, Ih_table
             )
         except (ValueError, RuntimeError) as e:
-            logger.info(e, exc_info=True)
+            logger.info(e)
+            logger.debug(e, exc_info=True)
         else:
             self._update_error_model(model, update_Ih=update_Ih)
 
@@ -720,6 +720,7 @@ attempting to use all reflections for minimisation."""
             self.experiment.crystal.get_space_group(),
             indices_lists=[self.scaling_selection.iselection()],
             nblocks=self.params.scaling_options.nproc,
+            anomalous=self.params.anomalous,
         )
         if self.error_model:
             variance = self.reflection_table["variance"].select(
@@ -730,6 +731,41 @@ attempting to use all reflections for minimisation."""
             )
             new_vars = self.error_model.update_variances(variance, intensity)
             self._Ih_table.update_data_in_blocks(new_vars, 0, column="variance")
+
+    def _create_global_Ih_table(
+        self, free_set_percentage=0, anomalous=False, remove_outliers=False
+    ):
+        sel_reflections = self.get_valid_reflections()
+        if remove_outliers:
+            sel_reflections = sel_reflections.select(~self.outliers)
+        free_Ih_table = None
+        global_Ih_table = IhTable(
+            [sel_reflections],
+            self.experiment.crystal.get_space_group(),
+            nblocks=1,
+            free_set_percentage=free_set_percentage,
+            free_set_offset=self.params.scaling_options.free_set_offset,
+            anomalous=anomalous,
+        )
+        if free_set_percentage:
+            loc_indices = global_Ih_table.blocked_data_list[-1].Ih_table["loc_indices"]
+            self.free_set_selection = flex.bool(self.n_suitable_refl, False)
+            self.free_set_selection.set_selected(loc_indices, True)
+            global_Ih_table = IhTable(
+                [sel_reflections.select(~self.free_set_selection)],
+                self.experiment.crystal.get_space_group(),
+                [(~self.free_set_selection).iselection()],
+                nblocks=1,
+                anomalous=anomalous,
+            )
+            free_Ih_table = IhTable(
+                [sel_reflections.select(self.free_set_selection)],
+                self.experiment.crystal.get_space_group(),
+                [self.free_set_selection.iselection()],
+                nblocks=1,
+                anomalous=anomalous,
+            )
+        return global_Ih_table, free_Ih_table
 
     def _configure_model_and_datastructures(self, for_multi=False):
         """
@@ -748,31 +784,9 @@ attempting to use all reflections for minimisation."""
         free_set_percentage = 0
         if self.params.scaling_options.use_free_set and not for_multi:
             free_set_percentage = self.params.scaling_options.free_set_percentage
-        self._global_Ih_table = IhTable(
-            [sel_reflections],
-            self.experiment.crystal.get_space_group(),
-            nblocks=1,
-            free_set_percentage=free_set_percentage,
-            free_set_offset=self.params.scaling_options.free_set_offset,
+        self._global_Ih_table, self._free_Ih_table = self._create_global_Ih_table(
+            free_set_percentage=free_set_percentage, anomalous=self.params.anomalous
         )
-        if free_set_percentage:
-            loc_indices = self.global_Ih_table.blocked_data_list[-1].Ih_table[
-                "loc_indices"
-            ]
-            self.free_set_selection = flex.bool(self.n_suitable_refl, False)
-            self.free_set_selection.set_selected(loc_indices, True)
-            self._global_Ih_table = IhTable(
-                [sel_reflections.select(~self.free_set_selection)],
-                self.experiment.crystal.get_space_group(),
-                [(~self.free_set_selection).iselection()],
-                nblocks=1,
-            )
-            self._free_Ih_table = IhTable(
-                [sel_reflections.select(self.free_set_selection)],
-                self.experiment.crystal.get_space_group(),
-                [self.free_set_selection.iselection()],
-                nblocks=1,
-            )
         rows = [[key, str(val.n_params)] for key, val in six.iteritems(self.components)]
         logger.info("The following corrections will be applied to this dataset: \n")
         logger.info(tabulate(rows, ["correction", "n_parameters"]))
@@ -949,19 +963,27 @@ class MultiScalerBase(ScalerBase):
             for component in scaler.components.values():
                 component.update_reflection_data(block_selections=block_selections)
 
-    def _create_global_Ih_table(self):
-        tables = [s.get_valid_reflections() for s in self.active_scalers]
+    def _create_global_Ih_table(self, anomalous=False, remove_outliers=False):
+        if remove_outliers:
+            tables = [
+                s.get_valid_reflections().select(~s.outliers)
+                for s in self.active_scalers
+            ]
+        else:
+            tables = [s.get_valid_reflections() for s in self.active_scalers]
         free_set_percentage = 0.0
+        free_Ih_table = None
         if self.params.scaling_options.use_free_set:
             free_set_percentage = self.params.scaling_options.free_set_percentage
         space_group = self.active_scalers[0].experiment.crystal.get_space_group()
-        self._global_Ih_table = IhTable(
+        global_Ih_table = IhTable(
             tables,
             space_group,
             nblocks=1,
             additional_cols=["partiality"],
             free_set_percentage=free_set_percentage,
             free_set_offset=self.params.scaling_options.free_set_offset,
+            anomalous=anomalous,
         )
         if free_set_percentage:
             # need to set free_set_selection in individual scalers
@@ -970,10 +992,8 @@ class MultiScalerBase(ScalerBase):
             indices_list = []
             free_indices_list = []
             for i, scaler in enumerate(self.active_scalers):
-                sel = (
-                    self.global_Ih_table.Ih_table_blocks[-1].Ih_table["dataset_id"] == i
-                )
-                indiv_Ih_block = self.global_Ih_table.Ih_table_blocks[-1].select(sel)
+                sel = global_Ih_table.Ih_table_blocks[-1].Ih_table["dataset_id"] == i
+                indiv_Ih_block = global_Ih_table.Ih_table_blocks[-1].select(sel)
                 loc_indices = indiv_Ih_block.Ih_table["loc_indices"]
                 scaler.free_set_selection = flex.bool(scaler.n_suitable_refl, False)
                 scaler.free_set_selection.set_selected(loc_indices, True)
@@ -981,12 +1001,21 @@ class MultiScalerBase(ScalerBase):
                 free_tables.append(scaler.get_free_set_reflections())
                 free_indices_list.append(scaler.free_set_selection.iselection())
                 indices_list.append((~scaler.free_set_selection).iselection())
-            self._global_Ih_table = IhTable(
-                tables, space_group, indices_list, nblocks=1
+            global_Ih_table = IhTable(
+                tables,
+                space_group,
+                indices_list,
+                nblocks=1,
+                anomalous=anomalous,
             )
-            self._free_Ih_table = IhTable(
-                free_tables, space_group, free_indices_list, nblocks=1
+            free_Ih_table = IhTable(
+                free_tables,
+                space_group,
+                free_indices_list,
+                nblocks=1,
+                anomalous=anomalous,
             )
+        return global_Ih_table, free_Ih_table
 
     def _create_Ih_table(self):
         """Create a new Ih table from the reflection tables."""
@@ -999,6 +1028,7 @@ class MultiScalerBase(ScalerBase):
             self.active_scalers[0].experiment.crystal.get_space_group(),
             indices_lists=indices_lists,
             nblocks=self.params.scaling_options.nproc,
+            anomalous=self.params.anomalous,
         )
         if self.error_model:
             for i, scaler in enumerate(self.active_scalers):
@@ -1044,7 +1074,9 @@ class MultiScalerBase(ScalerBase):
         """
         assert self.active_scalers is not None
         if not self.global_Ih_table:
-            self._create_global_Ih_table()
+            self._global_Ih_table, self._free_Ih_table = self._create_global_Ih_table(
+                anomalous=self.params.anomalous
+            )
         if self.params.scaling_options.outlier_rejection:
             outlier_index_arrays = determine_outlier_index_arrays(
                 self.global_Ih_table,
@@ -1330,7 +1362,9 @@ class MultiScaler(MultiScalerBase):
         super(MultiScaler, self).__init__(single_scalers)
         logger.info("Determining symmetry equivalent reflections across datasets.\n")
         self._active_scalers = self.single_scalers
-        self._create_global_Ih_table()
+        self._global_Ih_table, self._free_Ih_table = self._create_global_Ih_table(
+            self.params.anomalous
+        )
         # now select reflections from across the datasets
         self._select_reflections_for_scaling()
         self._create_Ih_table()
@@ -1431,7 +1465,9 @@ class TargetScaler(MultiScalerBase):
         logger.info("Determining symmetry equivalent reflections across datasets.\n")
         self.unscaled_scalers = unscaled_scalers
         self._active_scalers = unscaled_scalers
-        self._create_global_Ih_table()
+        self._global_Ih_table, self._free_Ih_table = self._create_global_Ih_table(
+            self.params.anomalous
+        )
         self._select_reflections_for_scaling()
         tables = [
             s.reflection_table.select(s.suitable_refl_for_scaling_sel).select(
@@ -1443,6 +1479,7 @@ class TargetScaler(MultiScalerBase):
             tables,
             self.active_scalers[0].experiment.crystal.get_space_group(),
             nblocks=1,
+            anomalous=self.params.anomalous,
         )  # Keep in one table for matching below
         self._create_Ih_table()
         self._update_model_data()

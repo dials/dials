@@ -288,7 +288,7 @@ def test_targeted_scaling_against_mtz(dials_data, tmpdir):
         "reflection_selection.method=intensity_ranges",
         "reflection_selection.method=use_all",
         "intensity_choice=sum",
-        "intensity_choice=profile",
+        "intensity=profile",
     ],
 )
 def test_scale_single_dataset_with_options(dials_data, tmpdir, option):
@@ -323,11 +323,11 @@ def vmxi_protk_reindexed(dials_data, tmpdir):
         (["error_model=None"], None, None),
         (
             ["error_model=basic", "basic.minimisation=individual"],
-            (0.73711, 0.04720),
+            (0.61, 0.049),
             (0.05, 0.005),
         ),
-        (["error_model.basic.a=0.73711"], (0.73711, 0.04720), (1e-6, 0.005)),
-        (["error_model.basic.b=0.04720"], (0.73711, 0.04720), (0.05, 1e-6)),
+        (["error_model.basic.a=0.61"], (0.61, 0.049), (1e-6, 0.005)),
+        (["error_model.basic.b=0.049"], (0.61, 0.049), (0.05, 1e-6)),
         (
             ["error_model.basic.b=0.02", "error_model.basic.a=1.5"],
             (1.50, 0.02),
@@ -379,6 +379,7 @@ def test_error_model_options(
         "reflection_selection.method=random",
         "reflection_selection.method=intensity_ranges",
         "reflection_selection.method=use_all",
+        "anomalous=True",
     ],
 )
 def test_scale_multiple_datasets_with_options(dials_data, tmpdir, option):
@@ -509,6 +510,34 @@ def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
         [[21, 25], 5]
     ]
     assert analysis_results["termination_reason"] == "max_percent_removed"
+
+
+def test_scale_and_filter_image_group_single_dataset(dials_data, tmpdir):
+    """Test the scale and filter deltacchalf.mode=image_group on a
+    single data set."""
+    data_dir = dials_data("l_cysteine_dials_output")
+    command = [
+        "dials.scale",
+        data_dir / "20_integrated.pickle",
+        data_dir / "20_integrated_experiments.json",
+        "filtering.method=deltacchalf",
+        "stdcutoff=3.0",
+        "mode=image_group",
+        "max_cycles=1",
+        "scale_and_filter_results=analysis_results.json",
+        "error_model=None",
+    ]
+    result = procrunner.run(command, working_directory=tmpdir)
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("scaled.refl").check()
+    assert tmpdir.join("scaled.expt").check()
+    assert tmpdir.join("analysis_results.json").check()
+
+    with open(tmpdir.join("analysis_results.json").strpath) as f:
+        analysis_results = json.load(f)
+    assert analysis_results["cycle_results"]["1"]["image_ranges_removed"] == []
+    assert len(analysis_results["cycle_results"].keys()) == 1
+    assert analysis_results["termination_reason"] == "no_more_removed"
 
 
 def test_scale_dose_decay_model(dials_data, tmpdir):
@@ -786,9 +815,6 @@ def test_scale_cross_validate(dials_data, tmpdir, mode, parameter, parameter_val
     assert not result.returncode and not result.stderr
 
 
-@pytest.mark.xfail(
-    reason="test state leakage, cf. https://github.com/dials/dials/issues/1271",
-)
 def test_few_reflections(dials_data):
     u"""
     Test that dials.symmetry does something sensible if given few reflections.

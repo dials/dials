@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import math
 from random import randint, seed
 
+import numpy as np
 from scitbx import matrix
 
 from dxtbx.model.experiment_list import ExperimentList
@@ -122,11 +123,9 @@ def test(dials_data):
                     new_mask[k, j, i] = value2
 
         if not all(m1 == m2 for m1, m2 in zip(mask, new_mask)):
-            import numpy
-
-            numpy.set_printoptions(threshold=10000)
+            np.set_printoptions(threshold=10000)
             diff = (mask == new_mask).as_numpy_array()
-            print(diff.astype(numpy.int))
+            print(diff.astype(np.int))
             # print mask.as_numpy_array()
             # print new_mask.as_numpy_array()
             # print (new_mask.as_numpy_array()[:,:,:] %2) * (new_mask.as_numpy_array() == 5)

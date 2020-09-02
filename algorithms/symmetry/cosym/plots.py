@@ -1,6 +1,7 @@
 # coding: utf-8
 from __future__ import absolute_import, division, print_function
 
+import numpy as np
 from scitbx.array_family import flex
 
 
@@ -22,9 +23,8 @@ def plot_coords(coords, labels=None, key="cosym_coordinates"):
 
     matplotlib.use("Agg")
     from matplotlib import pyplot as plt
-    import numpy
 
-    colours = plt.cm.Spectral(numpy.linspace(0, 1, n_clusters)).tolist()
+    colours = plt.cm.Spectral(np.linspace(0, 1, n_clusters)).tolist()
 
     if -1 in unique_labels:
         colours.insert(0, (0, 0, 0, 1))
@@ -73,10 +73,10 @@ or the presence of non-isomorphism.
 def plot_rij_histogram(rij_matrix, key="cosym_rij_histogram"):
     """Plot a histogram of the rij values.
 
-  Args:
-    plot_name (str): The file name to save the plot to.
-      If this is not defined then the plot is displayed in interactive mode.
-  """
+    Args:
+      plot_name (str): The file name to save the plot to.
+        If this is not defined then the plot is displayed in interactive mode.
+    """
     rij = rij_matrix.as_1d()
     rij = rij.select(rij != 0)
     hist = flex.histogram(

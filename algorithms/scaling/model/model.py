@@ -9,7 +9,7 @@ from __future__ import absolute_import, division, print_function
 import logging
 from collections import OrderedDict
 
-from libtbx import phil
+from libtbx import phil, Auto
 from dials.array_family import flex
 from dials.algorithms.scaling.model.components.scale_components import (
     SingleScaleFactor,
@@ -101,27 +101,27 @@ fix_initial = True
 
 
 physical_model_phil_str = """\
-scale_interval = 15.0
+scale_interval = auto
     .type = float(value_min=1.0)
     .help = "Rotation (phi) interval between model parameters for the scale"
-            "component."
+            "component (auto scales interval depending on oscillation range)."
     .expert_level = 1
 decay_correction = True
     .type = bool
     .help = "Option to turn off decay correction."
     .expert_level = 1
-decay_interval = 20.0
+decay_interval = auto
     .type = float(value_min=1.0)
     .help = "Rotation (phi) interval between model parameters for the decay"
-            "component."
+            "component (auto scales interval depending on oscillation range)."
     .expert_level = 1
 decay_restraint = 1e-1
     .type = float(value_min=0.0)
     .help = "Weight to weakly restrain B-values to 0."
     .expert_level = 2
-absorption_correction = True
+absorption_correction = auto
     .type = bool
-    .help = "Option to turn off absorption correction."
+    .help = "Option to turn off absorption correction (default True if oscillation > 60.0)."
     .expert_level = 1
 lmax = 4
     .type = int(value_min=2)
@@ -717,13 +717,31 @@ class PhysicalScalingModel(ScalingModelBase):
         configdict = OrderedDict({"corrections": []})
         parameters_dict = {}
 
+        autos = [None, Auto, "auto", "Auto"]
         osc_range = experiment.scan.get_oscillation_range()
         one_osc_width = experiment.scan.get_oscillation()[1]
         configdict.update({"valid_osc_range": osc_range})
 
+        abs_osc_range = abs(osc_range[1] - osc_range[0])
+
+        if params.scale_interval in autos or params.decay_interval in autos:
+            if abs_osc_range < 10.0:
+                scale_interval, decay_interval = (2.0, 3.0)
+            elif abs_osc_range < 25.0:
+                scale_interval, decay_interval = (4.0, 5.0)
+            elif abs_osc_range < 90.0:
+                scale_interval, decay_interval = (8.0, 10.0)
+            else:
+                scale_interval, decay_interval = (15.0, 20.0)
+
+        if params.scale_interval not in autos:
+            scale_interval = params.scale_interval
+        if params.decay_interval not in autos:
+            decay_interval = params.decay_interval
+
         configdict["corrections"].append("scale")
         n_scale_param, s_norm_fac, scale_rot_int = initialise_smooth_input(
-            osc_range, one_osc_width, params.scale_interval
+            osc_range, one_osc_width, scale_interval
         )
         configdict.update(
             {"s_norm_fac": s_norm_fac, "scale_rot_interval": scale_rot_int}
@@ -736,7 +754,7 @@ class PhysicalScalingModel(ScalingModelBase):
         if params.decay_correction:
             configdict["corrections"].append("decay")
             n_decay_param, d_norm_fac, decay_rot_int = initialise_smooth_input(
-                osc_range, one_osc_width, params.decay_interval
+                osc_range, one_osc_width, decay_interval
             )
             configdict.update(
                 {"d_norm_fac": d_norm_fac, "decay_rot_interval": decay_rot_int}
@@ -746,7 +764,14 @@ class PhysicalScalingModel(ScalingModelBase):
                 "parameter_esds": None,
             }
 
-        if params.absorption_correction:
+        if params.absorption_correction in autos:
+            if abs_osc_range > 60.0:
+                absorption_correction = True
+            else:
+                absorption_correction = False
+        else:
+            absorption_correction = params.absorption_correction
+        if absorption_correction:
             configdict["corrections"].append("absorption")
             lmax = params.lmax
             n_abs_param = (2 * lmax) + (lmax ** 2)  # arithmetic sum formula (a1=3, d=2)

@@ -41,7 +41,7 @@ from dials.util import log, show_mail_on_error
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 from dials.util.filter_reflections import filter_reflection_table
-from dials.util.resolutionizer import Resolutionizer, phil_defaults
+from dials.util import resolution_analysis
 from dials.command_line.symmetry import median_unit_cell
 from dials.pychef import batches_to_dose, Statistics, interpret_images_to_doses_options
 from iotbx import mtz
@@ -111,12 +111,13 @@ class PychefRunner(object):
         """Filter arrays on resolution."""
         if not self.params.d_min and self.params.min_completeness:
             # Update self.params.d_min using resolution estimate
-            params = phil_defaults.extract().resolutionizer
+            params = resolution_analysis.phil_defaults.extract().resolution
             params.nbins = self.params.resolution_bins
-            r = Resolutionizer(self.intensities, params)
-            self.params.d_min = r.resolution_completeness(
-                limit=self.params.min_completeness
-            )
+            r = resolution_analysis.Resolutionizer(self.intensities, params)
+            self.params.d_min = r.resolution(
+                resolution_analysis.metrics.COMPLETENESS,
+                limit=self.params.min_completeness,
+            ).d_min
             logger.info("Estimated d_min: %.2f", self.params.d_min)
 
         if self.params.d_min or self.params.d_max:
@@ -259,9 +260,12 @@ class PychefRunner(object):
                 ]
             )
             env = Environment(loader=loader)
-            template = env.get_template("damage_analysis_report.html")
+            template = env.get_template("simple_report.html")
             html = template.render(
-                page_title="Damage analysis report", dose_plots=data["dose_plots"]
+                page_title="Damage analysis report",
+                panel_title="Damage analysis plots",
+                panel_id="dose_plots",
+                graphs=data["dose_plots"],
             )
             with open(html_filename, "wb") as f:
                 f.write(html.encode("utf-8", "xmlcharrefreplace"))
@@ -302,7 +306,9 @@ def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
             if "inverse_scale_factor" not in reflections[0]:
                 raise KeyError("Input data must be scaled.")
             script = PychefRunner.from_dials_data_files(
-                params, experiments, reflections[0],
+                params,
+                experiments,
+                reflections[0],
             )
 
         elif unhandled and os.path.isfile(unhandled[0]):

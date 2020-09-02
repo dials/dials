@@ -217,7 +217,7 @@ class SmoothScaleComponent1D(ScaleComponentBase, SmoothMixin):
         normalised_values = normalised_values - flex.min(normalised_values)
         phi_range_deg = [
             floor(round(flex.min(normalised_values), 10)),
-            ceil(round(flex.max(normalised_values), 10)),
+            max(ceil(round(flex.max(normalised_values), 10)), 1),
         ]
         self._smoother = GaussianSmoother1D(
             phi_range_deg, self.nparam_to_val(self._n_params)
@@ -414,11 +414,11 @@ class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
         normalised_y_values = normalised_y_values - flex.min(normalised_y_values)
         x_range = [
             floor(round(flex.min(normalised_x_values), 10)),
-            ceil(round(flex.max(normalised_x_values), 10)),
+            max(ceil(round(flex.max(normalised_x_values), 10)), 1),
         ]
         y_range = [
             floor(round(flex.min(normalised_y_values), 10)),
-            ceil(round(flex.max(normalised_y_values), 10)),
+            max(ceil(round(flex.max(normalised_y_values), 10)), 1),
         ]
         self._smoother = GaussianSmoother2D(
             x_range,
@@ -569,15 +569,15 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
         normalised_z_values = normalised_z_values - flex.min(normalised_z_values)
         x_range = [
             floor(round(flex.min(normalised_x_values), 10)),
-            ceil(round(flex.max(normalised_x_values), 10)),
+            max(ceil(round(flex.max(normalised_x_values), 10)), 1),
         ]
         y_range = [
             floor(round(flex.min(normalised_y_values), 10)),
-            ceil(round(flex.max(normalised_y_values), 10)),
+            max(ceil(round(flex.max(normalised_y_values), 10)), 1),
         ]
         z_range = [
             floor(round(flex.min(normalised_z_values), 10)),
-            ceil(round(flex.max(normalised_z_values), 10)),
+            max(ceil(round(flex.max(normalised_z_values), 10)), 1),
         ]
         self._smoother = GaussianSmoother3D(
             x_range,

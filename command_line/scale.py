@@ -42,11 +42,6 @@ from dials.util import log, show_mail_on_error, Sorry
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 from dials.algorithms.scaling.algorithm import ScalingAlgorithm, ScaleAndFilterAlgorithm
-from dials.algorithms.scaling.observers import (
-    register_default_scaling_observers,
-    register_merging_stats_observers,
-    register_scale_and_filter_observers,
-)
 
 try:
     from typing import List
@@ -186,17 +181,10 @@ def run_scaling(params, experiments, reflections):
         return (None, None)
 
     else:
-        # Register the observers at the highest level
         if params.filtering.method:
             algorithm = ScaleAndFilterAlgorithm(params, experiments, reflections)
-            register_scale_and_filter_observers(algorithm)
         else:
             algorithm = ScalingAlgorithm(params, experiments, reflections)
-
-        if params.output.html:
-            register_default_scaling_observers(algorithm)
-        else:
-            register_merging_stats_observers(algorithm)
 
         algorithm.run()
 
@@ -242,7 +230,9 @@ def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
     else:
         # Note, cross validation mode does not produce scaled datafiles
         if scaled_experiments and joint_table:
-            logger.info("Saving the experiments to %s", params.output.experiments)
+            logger.info(
+                "Saving the scaled experiments to %s", params.output.experiments
+            )
             scaled_experiments.as_file(params.output.experiments)
             logger.info(
                 "Saving the scaled reflections to %s", params.output.reflections

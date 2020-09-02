@@ -11,29 +11,24 @@
 from __future__ import absolute_import, division, print_function
 
 import argparse
-import functools
 import json
 import multiprocessing.pool
 import os
-import random
 import re
 import shutil
 import socket as pysocket
 import stat
 import subprocess
 import sys
-import tarfile
 import threading
 import time
 import warnings
 import zipfile
 
 try:  # Python 3
-    from urllib.parse import urlparse
     from urllib.request import urlopen, Request
     from urllib.error import HTTPError, URLError
 except ImportError:  # Python 2
-    from urlparse import urlparse
     from urllib2 import urlopen, Request, HTTPError, URLError
 
 # Clean environment for subprocesses
@@ -45,29 +40,17 @@ clean_env = {
 
 devnull = open(os.devnull, "wb")  # to redirect unwanted subprocess output
 
+
+def make_executable(filepath):
+    if os.name == "posix":
+        mode = os.stat(filepath).st_mode
+        mode |= (mode & 0o444) >> 2  # copy R bits to X
+        # r--r--r-- => 0o444
+        os.chmod(filepath, mode)
+
+
 allowed_ssh_connections = {}
 concurrent_git_connection_limit = threading.Semaphore(5)
-
-
-def ssh_allowed_for_connection(connection):
-    if connection not in allowed_ssh_connections:
-        try:
-            returncode = subprocess.call(
-                [
-                    "ssh",
-                    "-oBatchMode=yes",
-                    "-oStrictHostKeyChecking=no",
-                    "-T",
-                    connection,
-                ],
-                stdout=devnull,
-                stderr=devnull,
-            )
-            # SSH errors lead to 255
-            allowed_ssh_connections[connection] = returncode in (0, 1)
-        except OSError:
-            allowed_ssh_connections[connection] = False
-    return allowed_ssh_connections[connection]
 
 
 def install_miniconda(location):
@@ -103,21 +86,11 @@ def install_miniconda(location):
     else:
         command = ["/bin/sh", filename, "-b", "-u", "-p", location]
 
-    print()
-    run_command(workdir=".", command=command, description="Installing Miniconda")
+    print("Installing Miniconda")
+    run_command(command=command, workdir=".")
 
 
 def install_conda(python):
-    print()
-
-    if python in ("3.7", "3.8"):
-        print(
-            "\n",
-            "*" * 80 + "\n",
-            " Python version {python} is not supported yet.\n".format(python=python),
-            "*" * 80 + "\n\n",
-        )
-
     # Find relevant conda base installation
     conda_base = os.path.realpath("miniconda")
     if os.name == "nt":
@@ -165,15 +138,10 @@ def install_conda(python):
 
     environments = get_environments()
 
-    conda_info = json.loads(
-        subprocess.check_output([conda_exe, "info", "--json"], env=clean_env)
-    )
-    if conda_base != os.path.realpath(conda_info["root_prefix"]):
-        warnings.warn(
-            "Expected conda base differs:{0}!={1}".format(
-                conda_base, os.path.realpath(conda_info["root_prefix"])
-            )
-        )
+    conda_info = subprocess.check_output([conda_exe, "info", "--json"], env=clean_env)
+    if sys.version_info.major > 2:
+        conda_info = conda_info.decode("latin-1")
+    conda_info = json.loads(conda_info)
     for env in environments:
         if env not in conda_info["envs"]:
             print("Consistency check:", env, "not in environments:")
@@ -187,14 +155,6 @@ environments exist and are working.
 """,
                 RuntimeWarning,
             )
-    if conda_info["conda_version"] < "4.4":
-        sys.exit(
-            """
-CCTBX programs require conda version 4.4 and greater to make use of the
-common compilers provided by conda. Please update your version with
-"conda update conda".
-"""
-        )
 
     # identify packages required for environment
     if os.name == "nt":
@@ -214,13 +174,7 @@ common compilers provided by conda. Please update your version with
             "The file {filename} is not available".format(filename=filename)
         )
 
-    python_version = tuple(int(i) for i in python.split(".", 1))
-    python_requirement = "conda-forge::python>=%d.%d,<%d.%d" % (
-        python_version[0],
-        python_version[1],
-        python_version[0],
-        python_version[1] + 1,
-    )
+    python_requirement = "conda-forge::python=%s.*" % python
 
     # make a new environment directory
     prefix = os.path.realpath("conda_base")
@@ -252,7 +206,9 @@ common compilers provided by conda. Please update your version with
             " ".join(
                 [os.path.join(conda_base, "Scripts", "activate"), "base", "&&"]
                 + command_list
-            ),
+            )
+            .replace("<", "^<")
+            .replace(">", "^>"),
         ]
     print(
         "{text} dials environment from {filename} with Python {python}".format(
@@ -263,9 +219,8 @@ common compilers provided by conda. Please update your version with
         retry += 1
         try:
             run_command(
-                workdir=".",
                 command=command_list,
-                description="Installing base directory",
+                workdir=".",
             )
         except Exception:
             print(
@@ -307,43 +262,14 @@ channels:
             os.path.join(prefix, "vcredist_x64.exe"),
         )
 
-    # check that environment file is updated
-    if prefix not in get_environments():
-        raise RuntimeError(
-            """
-The newly installed environment cannot be found in
-${HOME}/.conda/environments.txt.
-"""
-        )
 
-
-_BUILD_DIR = "build"
-
-
-def tar_extract(workdir, archive):
-    # using tarfile module rather than unix tar command which is not platform independent
-    with tarfile.open(os.path.join(workdir, archive), errorlevel=2) as tar:
-        tar.extractall(path=workdir)
-        tarfoldername = os.path.join(
-            workdir, os.path.commonprefix(tar.getnames()).split("/")[0]
-        )
-    # take full permissions on all extracted files
-    module = os.path.join(workdir, tarfoldername)
-    for root, dirs, files in os.walk(module):
-        for fname in files:
-            full_path = os.path.join(root, fname)
-            os.chmod(
-                full_path, stat.S_IREAD | stat.S_IWRITE | stat.S_IRGRP | stat.S_IROTH
-            )
-
-
-def run_command(command, workdir=_BUILD_DIR, description=None):
-    print("===== Running in %s:" % workdir, description or " ".join(command))
-    if workdir:
-        try:
-            os.makedirs(workdir)
-        except OSError:
-            pass
+def run_command(command, workdir):
+    print("Running %s (in %s)" % (" ".join(command), workdir))
+    workdir = os.path.abspath(workdir)
+    try:
+        os.makedirs(workdir)
+    except OSError:
+        pass
     try:
         p = subprocess.Popen(args=command, cwd=workdir, env=clean_env)
     except Exception as e:
@@ -358,20 +284,45 @@ def run_command(command, workdir=_BUILD_DIR, description=None):
     try:
         p.wait()
     except KeyboardInterrupt:
-        print("\nReceived CTRL+C, trying to terminate subprocess...\n")
+        print("\nReceived CTRL+C, trying to stop subprocess...\n")
         p.terminate()
         raise
     if p.returncode:
         sys.exit("Process failed with return code %s" % p.returncode)
 
 
-def download_to_file(url, file, quiet=False, cache=True):
+def run_indirect_command(command, args):
+    print("(via conda environment) " + command)
+    if os.name == "nt":
+        filename = os.path.join("build", "indirection.cmd")
+        with open(filename, "w") as fh:
+            fh.write("call %s\\conda_base\\condabin\\activate.bat\r\n" % os.getcwd())
+            fh.write("shift\r\n")
+            fh.write("%*\r\n")
+        command = command + ".bat"
+        indirection = ["cmd.exe", "/C", "indirection.cmd"]
+    else:
+        filename = os.path.join("build", "indirection.sh")
+        with open(filename, "w") as fh:
+            fh.write("#!/bin/bash\n")
+            fh.write("source %s/conda_base/etc/profile.d/conda.sh\n" % os.getcwd())
+            fh.write("conda activate %s/conda_base\n" % os.getcwd())
+            fh.write('"$@"\n')
+        make_executable(filename)
+        indirection = ["./indirection.sh"]
+    run_command(
+        command=indirection + [command] + args,
+        workdir="build",
+    )
+
+
+def download_to_file(url, file, quiet=False):
     """Downloads a URL to file. Returns the file size.
-       Returns -1 if the downloaded file size does not match the expected file
-       size
-       Returns -2 if the download is skipped due to the file at the URL not
-       being newer than the local copy (identified by A. matching timestamp and
-       size, or B. matching etag).
+    Returns -1 if the downloaded file size does not match the expected file
+    size
+    Returns -2 if the download is skipped due to the file at the URL not
+    being newer than the local copy (identified by matching timestamp and
+    size)
     """
 
     # Create directory structure if necessary
@@ -383,17 +334,6 @@ def download_to_file(url, file, quiet=False, cache=True):
 
     localcopy = os.path.isfile(file)
 
-    # Get existing ETag, if present
-    etag = None
-    tagfile = "%s/.%s.etag" % os.path.split(os.path.abspath(file))
-    if cache and os.path.isfile(tagfile):
-        if not localcopy:
-            # Having an ETag without a file is pointless
-            os.remove(tagfile)
-        else:
-            with open(tagfile, "r") as tf:
-                etag = tf.readline()
-
     try:
         from ssl import SSLError
     except ImportError:
@@ -402,8 +342,6 @@ def download_to_file(url, file, quiet=False, cache=True):
     # Open connection to remote server
     try:
         url_request = Request(url)
-        if etag:
-            url_request.add_header("If-None-Match", etag)
         if localcopy:
             # Shorten timeout to 7 seconds if a copy of the file is already present
             socket = urlopen(url_request, None, 7)
@@ -420,11 +358,6 @@ def download_to_file(url, file, quiet=False, cache=True):
         # otherwise pass on the error message
         raise
     except (pysocket.timeout, HTTPError) as e:
-        if isinstance(e, HTTPError) and etag and e.code == 304:
-            # When using ETag. a 304 error means everything is fine
-            if not quiet:
-                print("local copy is current (etag)")
-            return -2
         if localcopy:
             # Download failed for some reason, but a valid local copy of
             # the file exists, so use that one instead.
@@ -456,10 +389,6 @@ def download_to_file(url, file, quiet=False, cache=True):
             file_size = int(socket.info().get("Content-Length"))
         except Exception:
             file_size = 0
-
-        if os.path.isfile(tagfile):
-            # ETag did not match, so delete any existing ETag.
-            os.remove(tagfile)
 
         remote_mtime = 0
         try:
@@ -505,26 +434,25 @@ def download_to_file(url, file, quiet=False, cache=True):
         received = 0
         block_size = 8192
         progress = 1
-        # Allow for writing the file immediately so we can empty the buffer
+        # Write to the file immediately so we can empty the buffer
         tmpfile = file + ".tmp"
 
-        f = open(tmpfile, "wb")
-        while True:
-            block = socket.read(block_size)
-            received += len(block)
-            f.write(block)
-            if file_size > 0 and not quiet:
-                while (100 * received / file_size) > progress:
-                    progress += 1
-                    if (progress % 20) == 0:
-                        print(progress, end="%")
-                        sys.stdout.flush()  # becomes print(flush=True) when we move to 3.3+
-                    elif (progress % 2) == 0:
-                        print(".", end="")
-                        sys.stdout.flush()  # becomes print(flush=True) when we move to 3.3+
-            if not block:
-                break
-        f.close()
+        with open(tmpfile, "wb") as fh:
+            while True:
+                block = socket.read(block_size)
+                received += len(block)
+                fh.write(block)
+                if file_size > 0 and not quiet:
+                    while (100 * received / file_size) > progress:
+                        progress += 1
+                        if (progress % 20) == 0:
+                            print(progress, end="%")
+                            sys.stdout.flush()  # becomes print(flush=True) when we move to 3.3+
+                        elif (progress % 2) == 0:
+                            print(".", end="")
+                            sys.stdout.flush()  # becomes print(flush=True) when we move to 3.3+
+                if not block:
+                    break
         socket.close()
 
         if not quiet:
@@ -546,11 +474,6 @@ def download_to_file(url, file, quiet=False, cache=True):
             st = os.stat(file)
             atime = st[stat.ST_ATIME]  # current access time
             os.utime(file, (atime, remote_mtime))
-
-        if cache and socket.info().get("ETag"):
-            # If the server sent an ETAG, then keep it alongside the file
-            with open(tagfile, "w") as tf:
-                tf.write(socket.info().get("ETag"))
 
     return received
 
@@ -589,10 +512,7 @@ def unzip(archive, directory, trim_directory=0):
                 unix_executable = member.external_attr >> 16 & 0o111
                 # rwxrwxrwx => --x--x--x => 0o111
                 if unix_executable:
-                    mode = os.stat(filename).st_mode
-                    mode |= (mode & 0o444) >> 2  # copy R bits to X
-                    # r--r--r-- => 0o444
-                    os.chmod(filename, mode)
+                    make_executable(filename)
     z.close()
 
 
@@ -623,18 +543,11 @@ def set_git_repository_config_to_rebase(config):
         fh.write("".join(cfg))
 
 
-def git(
-    module, source_list, branch=None, git_available=True, reference_base=None,
-):
+def git(module, git_available, ssh_available, reference_base, settings):
     """Retrieve a git repository, either by running git directly
-       or by downloading and unpacking an archive."""
+    or by downloading and unpacking an archive.
+    """
     destination = os.path.join("modules", module)
-    destpath, destdir = os.path.split(destination)
-
-    if reference_base:
-        reference = os.path.join(reference_base, module)
-    else:
-        reference = None
 
     if os.path.exists(destination):
         if not os.path.exists(os.path.join(destination, ".git")):
@@ -694,124 +607,392 @@ def git(
             return module, "OK", "Checked out revision %s (%s)" % (output[0], output[1])
         return module, "OK", "Checked out revision " + output[0].strip()
 
-    git_parameters = []
-    if branch:
-        git_parameters.extend(["-b", branch])
     try:
-        os.makedirs(destpath)
+        os.makedirs("modules")
     except OSError:
         pass
-    for source_candidate in source_list:
-        if not source_candidate.lower().startswith("http"):
-            connection = source_candidate.split(":")[0]
-            if not ssh_allowed_for_connection(connection):
-                continue
-        if source_candidate.lower().endswith(".git"):
-            if not git_available:
-                continue
-            if (
-                reference
-                and os.path.exists(reference)
-                and os.path.exists(os.path.join(reference, ".git"))
-            ):
-                reference_parameters = ["--reference", reference]
-            else:
-                reference_parameters = []
-            with concurrent_git_connection_limit:
-                p = subprocess.Popen(
-                    args=["git", "clone", "--recursive"]
-                    + git_parameters
-                    + [source_candidate, destdir]
-                    + reference_parameters,
-                    cwd=destpath,
-                    env=clean_env,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                )
-                try:
-                    output, _ = p.communicate()
-                    output = output.decode("latin-1")
-                except KeyboardInterrupt:
-                    print("\nReceived CTRL+C, trying to terminate subprocess...\n")
-                    p.terminate()
-                    raise
-            if p.returncode:
-                return (module, "ERROR", "Can not checkout git repository\n" + output)
-            if reference_parameters:
-                # Sever the link between checked out and reference repository
-                returncode = subprocess.call(
-                    ["git", "repack", "-a", "-d"],
-                    cwd=destination,
-                    env=clean_env,
-                    stdout=devnull,
-                    stderr=devnull,
-                )
-                if returncode:
-                    return (
-                        module,
-                        "ERROR",
-                        "Could not detach git repository from reference. Repository may be in invalid state!\n"
-                        "Run 'git repack -a -d' in the repository, or delete and recreate it",
-                    )
-                alternates = os.path.join(
-                    destination, ".git", "objects", "info", "alternates"
-                )
-                if os.path.exists(alternates):
-                    os.remove(alternates)
-            set_git_repository_config_to_rebase(
-                os.path.join(destination, ".git", "config")
-            )
-            # Show the hash for the checked out commit for debugging purposes
-            p = subprocess.Popen(
-                args=["git", "rev-parse", "HEAD"],
-                cwd=destination,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-            )
+
+    remote_branch = settings.get("branch-remote", settings["branch-local"])
+
+    if not git_available:
+        # Fall back to downloading a static archive
+        url = "https://github.com/%s/archive/%s.zip" % (
+            settings.get("effective-repository", settings.get("base-repository")),
+            remote_branch,
+        )
+        filename = os.path.join("modules", "%s-%s.zip" % (module, remote_branch))
+        try:
+            download_to_file(url, filename, quiet=True)
+        except Exception:
+            print("Error downloading", url)
+            raise
+        unzip(filename, destination, trim_directory=1)
+        return module, "OK", "Downloaded branch %s from static archive" % remote_branch
+
+    if ssh_available:
+        remote_pattern = "git@github.com:%s.git"
+    else:
+        remote_pattern = "https://github.com/%s.git"
+
+    secondary_remote = settings.get("effective-repository") and (
+        settings["effective-repository"] != settings.get("base-repository")
+    )
+    direct_branch_checkout = []
+    if not secondary_remote and remote_branch == settings["branch-local"]:
+        direct_branch_checkout = ["-b", remote_branch]
+    reference_parameters = []
+    if reference_base and os.path.exists(os.path.join(reference_base, module, ".git")):
+        reference_parameters = ["--reference", os.path.join(reference_base, module)]
+
+    with concurrent_git_connection_limit:
+        p = subprocess.Popen(
+            args=["git", "clone", "--recursive"]
+            + direct_branch_checkout
+            + [
+                remote_pattern
+                % settings.get("base-repository", settings.get("effective-repository")),
+                module,
+            ]
+            + reference_parameters,
+            cwd="modules",
+            env=clean_env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        try:
             output, _ = p.communicate()
             output = output.decode("latin-1")
-            if p.returncode:
-                return (
-                    module,
-                    "WARNING",
-                    "Can not get git repository revision\n" + output,
+        except KeyboardInterrupt:
+            print("\nReceived CTRL+C, trying to terminate subprocess...\n")
+            p.terminate()
+            raise
+        if p.returncode:
+            return (module, "ERROR", "Can not checkout git repository\n" + output)
+
+    if reference_parameters:
+        # Sever the link between checked out and reference repository
+        returncode = subprocess.call(
+            ["git", "repack", "-a", "-d"],
+            cwd=destination,
+            env=clean_env,
+            stdout=devnull,
+            stderr=devnull,
+        )
+        if returncode:
+            return (
+                module,
+                "ERROR",
+                "Could not detach git repository from reference. Repository may be in invalid state!\n"
+                "Run 'git repack -a -d' in the repository, or delete and recreate it",
+            )
+        alternates = os.path.join(destination, ".git", "objects", "info", "alternates")
+        if os.path.exists(alternates):
+            os.remove(alternates)
+
+    if secondary_remote:
+        returncode = subprocess.call(
+            [
+                "git",
+                "remote",
+                "add",
+                "upstream",
+                remote_pattern % settings["effective-repository"],
+            ],
+            cwd=destination,
+            env=clean_env,
+            stdout=devnull,
+            stderr=devnull,
+        )
+        if returncode:
+            return (
+                module,
+                "ERROR",
+                "Could not add upstream remote to repository. Repository may be in invalid state!",
+            )
+        with concurrent_git_connection_limit:
+            returncode = subprocess.call(
+                ["git", "fetch", "upstream"],
+                cwd=destination,
+                env=clean_env,
+                stdout=devnull,
+                stderr=devnull,
+            )
+        if returncode:
+            return (
+                module,
+                "ERROR",
+                "Could not fetch upstream repository %s. Repository may be in invalid state!"
+                % settings["effective-repository"],
+            )
+
+    set_git_repository_config_to_rebase(os.path.join(destination, ".git", "config"))
+
+    if not direct_branch_checkout:
+        # set up the local branch with tracking
+        returncode = subprocess.call(
+            [
+                "git",
+                "checkout",
+                "-B",
+                settings["branch-local"],
+                "--track",
+                "%s/%s" % ("upstream" if secondary_remote else "origin", remote_branch),
+            ],
+            cwd=destination,
+            env=clean_env,
+            stdout=devnull,
+            stderr=devnull,
+        )
+        if returncode:
+            return (
+                module,
+                "ERROR",
+                "Could not check out alternate branch %s. Repository may be in invalid state!"
+                % remote_branch,
+            )
+
+        if secondary_remote:
+            # When checking out a branch from a secondary repository under a
+            # different name set up a git pre-commit hook to write protect
+            # this branch.
+            hookfile = os.path.join(destination, ".git", "hooks", "pre-commit")
+            with open(hookfile, "w") as fh:
+                fh.write(
+                    """
+#!/bin/sh
+
+#
+# Reject commits to '{branch}' to avoid accidental
+# commits to the alternate repository {repository}
+#
+
+if [ "$(git rev-parse --abbrev-ref HEAD)" == "{branch}" ]
+then
+    echo "Please do not commit to the '{branch}' branch."
+    echo "You can create a new branch or commit directly to master."
+    echo
+    exit 1
+fi
+""".format(
+                        branch=settings["branch-local"],
+                        repository=settings["effective-repository"],
+                    )
                 )
-            return module, "OK", "Checked out revision " + output.strip()
-        filename = "%s-%s" % (module, urlparse(source_candidate)[2].split("/")[-1])
-        filename = os.path.join(destpath, filename)
-        download_to_file(source_candidate, filename, quiet=True)
-        unzip(filename, destination, trim_directory=1)
-        return module, "OK", "Downloaded from static archive"
+            make_executable(hookfile)
 
+    # Show the hash for the checked out commit for debugging purposes
+    p = subprocess.Popen(
+        args=["git", "rev-parse", "HEAD"],
+        cwd=destination,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    output, _ = p.communicate()
+    output = output.decode("latin-1")
+    if p.returncode:
+        return (
+            module,
+            "WARNING",
+            "Can not get git repository revision\n" + output,
+        )
+    git_status = settings["branch-local"]
+    if settings["branch-local"] != remote_branch:
+        git_status += " tracking " + remote_branch
+    if secondary_remote:
+        git_status += " at " + settings["effective-repository"]
+    return module, "OK", "Checked out revision %s (%s)" % (output.strip(), git_status)
+
+
+def update_sources(options):
+    if options.git_reference:
+        reference_base = os.path.abspath(os.path.expanduser(options.git_reference))
+    else:
+        if os.name == "posix" and pysocket.gethostname().endswith(".diamond.ac.uk"):
+            reference_base = (
+                "/dls/science/groups/scisoft/DIALS/repositories/git-reference"
+            )
+        else:
+            reference_base = None
+    try:
+        git_available = not subprocess.call(
+            ["git", "--version"], stdout=devnull, stderr=devnull
+        )
+    except OSError:
+        git_available = False
+    ssh_available = False
     if git_available:
-        return module, "ERROR", "Sources not available"
-    return module, "ERROR", "Sources not available. No git installation available"
+        try:
+            returncode = subprocess.call(
+                [
+                    "ssh",
+                    "-oBatchMode=yes",
+                    "-oStrictHostKeyChecking=no",
+                    "-T",
+                    "git@github.com",
+                ],
+                stdout=devnull,
+                stderr=devnull,
+            )
+            # SSH errors lead to 255
+            ssh_available = returncode in (0, 1)
+        except OSError:
+            pass
+
+    repositories = {
+        source.split("/")[1]: {"base-repository": source, "branch-local": "master"}
+        for source in (
+            "cctbx/annlib_adaptbx",
+            "cctbx/cctbx_project",
+            "cctbx/dxtbx",
+            "dials/annlib",
+            "dials/cbflib",
+            "dials/ccp4io",
+            "dials/ccp4io_adaptbx",
+            "dials/clipper",
+            "dials/dials",
+            "dials/gui_resources",
+            "dials/tntbx",
+            "xia2/xia2",
+        )
+    }
+    repositories["cctbx_project"] = {
+        "base-repository": "cctbx/cctbx_project",
+        "effective-repository": "dials/cctbx",
+        "branch-remote": "master",
+        "branch-local": "stable",
+    }
+
+    for source, setting in options.branch:
+        if source not in repositories:
+            sys.exit("Unknown repository %s" % source)
+        setting = re.match(
+            r"^(?:(\w+/\w+)@?)?([a-zA-Z0-9._\-]+)?(?::([a-zA-Z0-9._\-]+))?$", setting
+        )
+        if not setting:
+            sys.exit("Could not parse the branch setting for repository %s" % source)
+        _repository, _branch_remote, _branch_local = setting.groups()
+        if _repository:
+            repositories[source] = {
+                "base-repository": _repository,
+                "branch-remote": _branch_remote or "master",
+                "branch-local": _branch_local or _branch_remote or "master",
+            }
+        elif _branch_remote:
+            repositories[source]["branch-remote"] = _branch_remote
+            repositories[source]["branch-local"] = _branch_local or _branch_remote
+        elif _branch_local:
+            repositories[source]["branch-local"] = _branch_local
+
+    def _git_fn(repository):
+        return git(
+            repository,
+            git_available,
+            ssh_available,
+            reference_base,
+            repositories[repository],
+        )
+
+    success = True
+    update_pool = multiprocessing.pool.ThreadPool(20)
+    try:
+        for result in update_pool.imap_unordered(_git_fn, repositories):
+            module, result, output = result
+            output = (result + " - " + output).replace(
+                "\n", "\n" + " " * (len(module + result) + 5)
+            )
+            if os.name == "posix" and sys.stdout.isatty():
+                if result == "OK":
+                    output = "\x1b[32m" + output + "\x1b[0m"
+                elif result == "WARNING":
+                    output = "\x1b[33m" + output + "\x1b[0m"
+                elif result == "ERROR":
+                    output = "\x1b[31m" + output + "\x1b[0m"
+                    success = False
+            print(module + ": " + output)
+    except KeyboardInterrupt:
+        update_pool.terminate()
+        sys.exit("\naborted with Ctrl+C")
+    except Exception:
+        update_pool.terminate()
+        raise
+    update_pool.close()
+    update_pool.join()
+    if not success:
+        sys.exit("\nFailed to update one or more repositories")
 
 
-REPOSITORIES = (
-    "cctbx/annlib_adaptbx",
-    "cctbx/cctbx_project",
-    "cctbx/dxtbx",
-    "dials/annlib",
-    "dials/cbflib",
-    "dials/ccp4io",
-    "dials/ccp4io_adaptbx",
-    "dials/clipper",
-    "dials/dials",
-    "dials/gui_resources",
-    "dials/tntbx",
-    "ssrl-px/iota",
-    "xia2/xia2",
-)
+def run_tests():
+    dispatch_extension = ".bat" if os.name == "nt" else ""
+    print("Running dxtbx tests")
+    run_command(
+        [
+            os.path.join(
+                "..", "..", "build", "bin", "libtbx.pytest" + dispatch_extension
+            ),
+            "--regression",
+            "-n",
+            "auto",
+        ],
+        workdir=os.path.join("modules", "dxtbx"),
+    )
+    print("Running dials tests")
+    run_command(
+        [
+            os.path.join(
+                "..", "..", "build", "bin", "libtbx.pytest" + dispatch_extension
+            ),
+            "--regression",
+            "-n",
+            "auto",
+        ],
+        workdir=os.path.join("modules", "dials"),
+    )
 
-###################################
-##### Base Configuration      #####
-###################################
+
+def refresh_build():
+    print("Running libtbx.refresh")
+    dispatch_extension = ".bat" if os.name == "nt" else ""
+    run_command(
+        [os.path.join("build", "bin", "libtbx.refresh" + dispatch_extension)],
+        workdir=".",
+    )
 
 
-class DIALSBuilder(object):
-    # Configure these cctbx packages
-    LIBTBX = [
+def install_precommit():
+    print("Installing precommits")
+    dispatch_extension = ".bat" if os.name == "nt" else ""
+    run_command(
+        [
+            os.path.join("build", "bin", "libtbx.precommit" + dispatch_extension),
+            "install",
+        ],
+        workdir=".",
+    )
+
+
+def configure_build(config_flags):
+    if os.name == "nt":
+        conda_python = os.path.join(os.getcwd(), "conda_base", "python.exe")
+    elif sys.platform.startswith("darwin"):
+        conda_python = os.path.join(
+            "..", "conda_base", "python.app", "Contents", "MacOS", "python"
+        )
+    else:
+        conda_python = os.path.join("..", "conda_base", "bin", "python")
+
+    if not any(flag.startswith("--compiler=") for flag in config_flags):
+        config_flags.append("--compiler=conda")
+    if "--enable_cxx11" not in config_flags:
+        config_flags.append("--enable_cxx11")
+    if "--use_conda" not in config_flags:
+        config_flags.append("--use_conda")
+
+    with open("dials", "w"):
+        pass  # ensure we write a new-style environment setup script
+
+    configcmd = [
+        conda_python,
+        os.path.join("..", "modules", "cctbx_project", "libtbx", "configure.py"),
         "cctbx",
         "cbflib",
         "dxtbx",
@@ -825,279 +1006,23 @@ class DIALSBuilder(object):
         "dials",
         "xia2",
         "prime",
-        "iota",
         "--skip_phenix_dispatchers",
-    ]
+    ] + config_flags
+    print("Setting up build directory")
+    run_command(
+        command=configcmd,
+        workdir="build",
+    )
 
-    def __init__(self, options):
-        """Create and add all the steps."""
-        self.git_reference = options.git_reference
-        self.git_branches = dict(options.branch or [])
-        self.steps = []
-        # self.config_flags are only from the command line
-        # LIBTBX can still be used to always set flags specific to a builder
-        self.config_flags = options.config_flags or []
 
-        # Add sources
-        if "update" in options.actions:
-            self.update_sources()
-
-        # always remove .pyc files
-        self.remove_pycs()
-
-        # Build base packages
-        if "base" in options.actions:
-            install_conda(python=options.python)
-
-        # Configure, make, get revision numbers
-        if "build" in options.actions:
-            self.add_configure()
-            self.add_make()
-
-        # Tests, tests
-        if "tests" in options.actions:
-            self.add_tests()
-
-        if "build" in options.actions:
-            self.add_refresh()
-            self.add_precommit()
-
-    @staticmethod
-    def remove_pycs():
-        if not os.path.exists("modules"):
-            return
-        print("\n  removing .pyc files in %s" % os.path.join(os.getcwd(), "modules"))
-        i = 0
-        for root, dirs, files in os.walk("modules"):
-            if ".git" in dirs:
-                del dirs[dirs.index(".git")]
-            for name in files:
-                if name.endswith(".pyc"):
-                    os.remove(os.path.join(root, name))
-                    i += 1
-        print("  removed %d files" % i)
-
-    def run(self):
-        for i in self.steps:
-            result = i()
-            if result:
-                print(result)
-
-    def update_sources(self):
-        if self.git_reference:
-            reference_base = os.path.abspath(os.path.expanduser(self.git_reference))
-        else:
-            if os.name == "posix" and pysocket.gethostname().endswith(".diamond.ac.uk"):
-                reference_base = (
-                    "/dls/science/groups/scisoft/DIALS/repositories/git-reference"
-                )
-            else:
-                reference_base = None
-        try:
-            git_available = not subprocess.call(
-                ["git", "--version"], stdout=devnull, stderr=devnull
-            )
-        except OSError:
-            git_available = False
-
-        def git_fn(repository):
-            modulename = repository.split("/")[1]
-            branch = self.git_branches.get(modulename)
-            git_source = [
-                "git@github.com:%s.git" % repository,
-                "https://github.com/%s.git" % repository,
-                "https://github.com/%s/archive/%s.zip"
-                % (repository, branch or "master"),
-            ]
-            return git(
-                modulename,
-                git_source,
-                branch=branch,
-                git_available=git_available,
-                reference_base=reference_base,
-            )
-
-        success = True
-        update_pool = multiprocessing.pool.ThreadPool(20)
-        try:
-            for result in update_pool.imap_unordered(git_fn, REPOSITORIES):
-                # for r in REPOSITORIES:
-                #  result = git_fn(r)
-                module, result, output = result
-                output = (result + " - " + output).replace(
-                    "\n", "\n" + " " * (len(module + result) + 5)
-                )
-                if os.name == "posix" and sys.stdout.isatty():
-                    if result == "OK":
-                        output = "\x1b[32m" + output + "\x1b[0m"
-                    elif result == "WARNING":
-                        output = "\x1b[33m" + output + "\x1b[0m"
-                    elif result == "ERROR":
-                        output = "\x1b[31m" + output + "\x1b[0m"
-                        success = False
-                print(module + ": " + output)
-        except KeyboardInterrupt:
-            update_pool.terminate()
-            sys.exit("\naborted with Ctrl+C")
-        except Exception:
-            update_pool.terminate()
-            raise
-        update_pool.close()
-        update_pool.join()
-        if not success:
-            sys.exit("\nFailed to update one or more repositories")
-
-        msgpack = "msgpack-3.1.1.tar.gz"
-        for retry in range(5):
-            try:
-                print("Downloading msgpack:", end=" ")
-                result = download_to_file(
-                    random.choice(
-                        [
-                            "https://gitcdn.xyz/repo/dials/dependencies/dials-1.13/",
-                            "https://gitcdn.link/repo/dials/dependencies/dials-1.13/",
-                            "https://github.com/dials/dependencies/raw/dials-1.13/",
-                        ]
-                    )
-                    + msgpack,
-                    os.path.join("modules", msgpack),
-                )
-                assert result > 0 or result == -2
-            except Exception as err:
-                print("Error downloading msgpack. (%s) Retrying..." % err)
-                time.sleep(3)
-            else:
-                break
-        else:
-            sys.exit("Could not download msgpack")
-        tar_extract("modules", msgpack)
-
-    def add_command(self, command, description=None, workdir=None, args=None):
-        if os.name == "nt":
-            command = command + ".bat"
-        # Relative path to workdir.
-        workdir = workdir or [_BUILD_DIR]
-        dots = [".."] * len(workdir)
-        if workdir[0] == ".":
-            dots = []
-        if os.name == "nt":
-            dots.extend([os.getcwd(), _BUILD_DIR, "bin", command])
-        else:
-            dots.extend([_BUILD_DIR, "bin", command])
-        self.steps.append(
-            functools.partial(
-                run_command,
-                command=[os.path.join(*dots)] + (args or []),
-                description=description or command,
-                workdir=os.path.join(*workdir),
-            )
-        )
-
-    def add_indirect_command(self, command, args=None):
-        if os.name == "nt":
-            command = command + ".bat"
-        # Relative path to workdir.
-        workdir = [_BUILD_DIR]
-        dots = [".."] * len(workdir)
-        if workdir[0] == ".":
-            dots = []
-        if os.name == "nt":
-            dots.extend([os.getcwd(), _BUILD_DIR, "bin", command])
-        else:
-            dots.extend([_BUILD_DIR, "bin", command])
-        self.steps.append(
-            functools.partial(
-                run_command,
-                command=["./indirection.sh", os.path.join(*dots)] + (args or []),
-                description="(via conda environment) " + command,
-                workdir=os.path.join(*workdir),
-            )
-        )
-
-    def add_refresh(self):
-        self.add_command("libtbx.refresh", description="libtbx.refresh", workdir=["."])
-
-    def add_precommit(self):
-        self.add_command(
-            "libtbx.precommit",
-            description="libtbx.precommit install",
-            workdir=["."],
-            args=["install"],
-        )
-
-    def add_configure(self):
-        if os.name == "nt":
-            conda_python = os.path.join(os.getcwd(), "conda_base", "python.exe")
-        elif sys.platform.startswith("darwin"):
-            conda_python = os.path.join(
-                "..", "conda_base", "python.app", "Contents", "MacOS", "python"
-            )
-        else:
-            conda_python = os.path.join("..", "conda_base", "bin", "python")
-
-        if not any(flag.startswith("--compiler=") for flag in self.config_flags):
-            self.config_flags.append("--compiler=conda")
-        if "--enable_cxx11" not in self.config_flags:
-            self.config_flags.append("--enable_cxx11")
-        if "--use_conda" not in self.config_flags:
-            self.config_flags.append("--use_conda")
-
-        with open("dials", "w"):
-            pass  # ensure we write a new-style environment setup script
-
-        configcmd = (
-            [
-                conda_python,
-                os.path.join(
-                    "..", "modules", "cctbx_project", "libtbx", "configure.py"
-                ),
-            ]
-            + self.LIBTBX
-            + self.config_flags
-        )
-        self.steps.append(
-            functools.partial(
-                run_command,
-                command=configcmd,
-                description="run configure.py",
-                workdir=_BUILD_DIR,
-            )
-        )
-        self.steps.append(self.generate_environment_indirector)
-
-    def generate_environment_indirector(self):
-        filename = os.path.join(os.getcwd(), _BUILD_DIR, "indirection.sh")
-        with open(filename, "w") as fh:
-            fh.write("#!/bin/bash\n")
-            fh.write("source %s/conda_base/etc/profile.d/conda.sh\n" % os.getcwd())
-            fh.write("conda activate %s/conda_base\n" % os.getcwd())
-            fh.write('"$@"\n')
-        mode = os.stat(filename).st_mode
-        mode |= (mode & 0o444) >> 2  # copy R bits to X
-        os.chmod(filename, mode)
-
-    def add_make(self):
-        try:
-            nproc = len(os.sched_getaffinity(0))
-        except AttributeError:
-            nproc = multiprocessing.cpu_count()
-        self.add_indirect_command("libtbx.scons", args=["-j", str(nproc)])
-        # run build again to make sure everything is built
-        self.add_indirect_command("libtbx.scons", args=["-j", str(nproc)])
-
-    def add_tests(self):
-        self.add_command(
-            "libtbx.pytest",
-            args=["--regression", "-n", "auto"],
-            description="test dxtbx",
-            workdir=["modules", "dxtbx"],
-        )
-        self.add_command(
-            "libtbx.pytest",
-            args=["--regression", "-n", "auto"],
-            description="test DIALS",
-            workdir=["modules", "dials"],
-        )
+def make_build():
+    try:
+        nproc = len(os.sched_getaffinity(0))
+    except AttributeError:
+        nproc = multiprocessing.cpu_count()
+    run_indirect_command(os.path.join("bin", "libtbx.scons"), args=["-j", str(nproc)])
+    # run build again to make sure everything is built
+    run_indirect_command(os.path.join("bin", "libtbx.scons"), args=["-j", str(nproc)])
 
 
 def repository_at_tag(string):
@@ -1134,13 +1059,13 @@ def run():
     update - Update source repositories (cctbx, cbflib, etc.)
     base - Create conda environment
     build - Build
-    tests - Run tests
+    test - Run tests
 
   The default actions are: update, base, build
 
   Example:
 
-    python bootstrap.py update base build tests
+    python bootstrap.py update base build test
   """
 
     parser = argparse.ArgumentParser(
@@ -1148,7 +1073,7 @@ def run():
         description=description,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    action_choices = Choices(("update", "base", "build", "tests"))
+    action_choices = Choices(("update", "base", "build", "test"))
     action_choices.default = ["update", "base", "build"]
     parser.add_argument(
         "actions",
@@ -1165,20 +1090,21 @@ def run():
         "--config-flags",
         help="""Pass flags to the configuration step. Flags should
 be passed separately with quotes to avoid confusion (e.g
---config_flags="--build=debug" --config_flags="--enable_cxx11")""",
+--config_flags="--build=debug" --config_flags="--another_flag")""",
         action="append",
         default=[],
     )
     parser.add_argument(
         "--python",
         help="Install this minor version of Python (default: %(default)s)",
-        default="3.6",
-        choices=["3.6", "3.7", "3.8"],
+        default="3.8",
+        choices=("3.6", "3.7", "3.8"),
     )
     parser.add_argument(
         "--branch",
         type=repository_at_tag,
         action="append",
+        default=[],
         help=(
             "during 'update' step when a repository is newly cloned set it to a given branch."
             "Specify as repository@branch, eg. 'dials@dials-next'"
@@ -1187,7 +1113,26 @@ be passed separately with quotes to avoid confusion (e.g
 
     options = parser.parse_args()
     print("Performing actions:", " ".join(options.actions))
-    DIALSBuilder(options=options).run()
+
+    # Add sources
+    if "update" in options.actions:
+        update_sources(options)
+
+    # Build base packages
+    if "base" in options.actions:
+        install_conda(options.python)
+
+    # Configure, make, get revision numbers
+    if "build" in options.actions:
+        configure_build(options.config_flags)
+        make_build()
+        refresh_build()
+        install_precommit()
+
+    # Tests, tests
+    if "test" in options.actions:
+        run_tests()
+
     print("\nBootstrap success: %s" % ", ".join(options.actions))
 
 

@@ -61,7 +61,8 @@ def test_mtz_recalculated_cell(dials_data, tmpdir):
     scaled_expt = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled.expt")
     scaled_refl = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled.refl")
     result = procrunner.run(
-        ["dials.two_theta_refine", scaled_expt, scaled_refl], working_directory=tmpdir,
+        ["dials.two_theta_refine", scaled_expt, scaled_refl],
+        working_directory=tmpdir,
     )
     assert tmpdir.join("refined_cell.expt").check(file=1)
     refined_expt = load.experiment_list(
@@ -199,7 +200,7 @@ def test_mtz_multi_wavelength(dials_data, run_in_tmpdir):
     assert wavelengths == [0, 0.5, 1.0]  # base, dataset1, dataset2
 
 
-def test_mtz_primitive_cell(dials_data):
+def test_mtz_primitive_cell(dials_data, tmpdir):
     scaled_expt = dials_data("insulin_processed") / "scaled.expt"
     scaled_refl = dials_data("insulin_processed") / "scaled.refl"
 
@@ -213,13 +214,17 @@ def test_mtz_primitive_cell(dials_data):
             scaled_expt.strpath,
             scaled_refl.strpath,
             'change_of_basis_op="%s"' % cb_op,
-        ]
+        ],
+        working_directory=tmpdir.strpath,
     )
 
     # Now export the reindexed experiments/reflections
-    procrunner.run(["dials.export", "reindexed.expt", "reindexed.refl"])
+    procrunner.run(
+        ["dials.export", "reindexed.expt", "reindexed.refl"],
+        working_directory=tmpdir.strpath,
+    )
 
-    mtz_obj = mtz.object("scaled.mtz")
+    mtz_obj = mtz.object(os.path.join(tmpdir.strpath, "scaled.mtz"))
     cs_primitive = cs.change_basis(cb_op)
     assert mtz_obj.space_group() == cs_primitive.space_group()
     refl = flex.reflection_table.from_file(scaled_refl.strpath)

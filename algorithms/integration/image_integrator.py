@@ -191,9 +191,11 @@ class Task(object):
             image = imageset.get_corrected_data(i)
             mask = imageset.get_mask(i)
             if self.params.integration.lookup.mask is not None:
-                assert len(mask) == len(self.params.lookup.mask), (
-                    "Mask/Image are incorrect size %d %d"
-                    % (len(mask), len(self.params.integration.lookup.mask))
+                assert len(mask) == len(
+                    self.params.lookup.mask
+                ), "Mask/Image are incorrect size %d %d" % (
+                    len(mask),
+                    len(self.params.integration.lookup.mask),
                 )
                 mask = tuple(
                     m1 & m2 for m1, m2 in zip(self.params.integration.lookup.mask, mask)

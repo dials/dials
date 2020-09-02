@@ -1,31 +1,26 @@
-from __future__ import absolute_import, division, print_function
-
 import json
-import os
 from dials.command_line import stereographic_projection
 
 import procrunner
 
 
-def test_stereographic_projection(dials_regression, tmpdir):
-    path = os.path.join(dials_regression, "experiment_test_data")
+def test_stereographic_projection(dials_data, tmp_path):
     result = procrunner.run(
         (
             "dials.stereographic_projection",
-            "%s/experiment_1.json" % path,
+            dials_data("centroid_test_data") / "experiments.json",
             "hkl_limit=4",
             "plot.filename=proj.png",
             "json.filename=proj.json",
         ),
-        working_directory=tmpdir,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("projections.txt").check()
-    assert tmpdir.join("proj.png").check()
-    assert tmpdir.join("proj.json").check()
+    assert tmp_path.joinpath("projections.txt").is_file()
+    assert tmp_path.joinpath("proj.png").is_file()
+    assert tmp_path.joinpath("proj.json").is_file()
 
-    with tmpdir.join("proj.json").open("rb") as f:
-        d = json.load(f)
+    d = json.loads(tmp_path.joinpath("proj.json").read_text())
     assert set(d) == {"data", "layout"}
     assert d["data"][0]["name"] == "stereographic_projections"
     assert len(d["data"][0]["x"]) == 289

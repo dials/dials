@@ -51,13 +51,14 @@ steps:
 # unless they were just freshly cloned
 - bash: |
     set -e
-    for repository in cctbx_project dxtbx; do
-      echo ""
-      echo "Checking out latest ${repository} commit"
-      cd $(Pipeline.Workspace)/modules/${repository}
-      git fetch origin master --depth=1
-      git checkout FETCH_HEAD
-    done
+    echo "##[command]Updating cctbx_project"
+    cd $(Pipeline.Workspace)/modules/cctbx_project
+    git fetch upstream master --depth=1
+    git checkout FETCH_HEAD
+    echo "##[command]Updating dxtbx"
+    cd $(Pipeline.Workspace)/modules/dxtbx
+    git fetch origin master --depth=1
+    git checkout FETCH_HEAD
   displayName: Repository update (incremental)
   condition: ne(variables.REPOSITORIES_CACHED, 'false')
 
@@ -67,9 +68,9 @@ steps:
 # Cache is not shared across operating systems and python versions
 - task: Cache@2
   inputs:
-    key: '"base" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(Agent.OS)-$(Agent.Version)" | "$(PYTHON_VERSION)" | ${{ parameters.conda_environment }} | "$(TODAY_ISO)"'
+    key: '"base" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(Agent.OS)-$(Agent.Version)-$(Pipeline.Workspace)" | "$(PYTHON_VERSION)" | ${{ parameters.conda_environment }} | "$(TODAY_ISO)"'
     restoreKeys: |
-      "base" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(Agent.OS)-$(Agent.Version)" | "$(PYTHON_VERSION)" | ${{ parameters.conda_environment }}
+      "base" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(Agent.OS)-$(Agent.Version)-$(Pipeline.Workspace)" | "$(PYTHON_VERSION)" | ${{ parameters.conda_environment }}
     path: $(Pipeline.Workspace)/conda_base
     cacheHitVar: BASE_CACHED
   displayName: Restore environment cache
@@ -78,6 +79,10 @@ steps:
 # create a new one using the bootstrap script
 - script: |
     python modules/dials/installer/bootstrap.py base --python $(PYTHON_VERSION)
+
+    # Immediately recover disk space used by miniconda installation
+    du -sh miniconda
+    rm -r miniconda
   displayName: Create python $(PYTHON_VERSION) environment
   workingDirectory: $(Pipeline.Workspace)
   condition: eq(variables.BASE_CACHED, 'false')
@@ -89,9 +94,9 @@ steps:
 # Cache is not shared across operating systems and python versions
 - task: Cache@2
   inputs:
-    key: '"build" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(Agent.OS)-$(Agent.Version)" | "$(PYTHON_VERSION)" | installer/bootstrap.py | ${{ parameters.conda_environment }} | "$(TODAY_ISO)"'
+    key: '"build" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(Agent.OS)-$(Agent.Version)-$(Pipeline.Workspace)" | "$(PYTHON_VERSION)" | installer/bootstrap.py | ${{ parameters.conda_environment }} | "$(TODAY_ISO)"'
     restoreKeys: |
-      "build" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(Agent.OS)-$(Agent.Version)" | "$(PYTHON_VERSION)" | installer/bootstrap.py | ${{ parameters.conda_environment }}
+      "build" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(Agent.OS)-$(Agent.Version)-$(Pipeline.Workspace)" | "$(PYTHON_VERSION)" | installer/bootstrap.py | ${{ parameters.conda_environment }}
     path: $(Pipeline.Workspace)/build
     cacheHitVar: BUILD_CACHED
   displayName: Restore cached build
@@ -136,7 +141,7 @@ steps:
 - bash: |
     set -e
     . dials
-    conda install -p conda_base -y dials-data pytest-azurepipelines pytest-timeout
+    conda install -p conda_base -y dials-data pytest-azurepipelines pytest-cov pytest-timeout
     dials.data info -v
     echo "##vso[task.setvariable variable=DIALS_DATA_VERSION_FULL]$(dials.data info -v | grep version.full)"
     echo "##vso[task.setvariable variable=DIALS_DATA_VERSION]$(dials.data info -v | grep version.major)"
@@ -170,14 +175,23 @@ steps:
     . dials
     cd modules/dials
     pytest -v -ra -n auto --basetemp="$(Pipeline.Workspace)/tests" --durations=10 \
+        --cov=$(pwd) --cov-report=html --cov-report=xml --cov-branch \
         --timeout=5400 --regression --runslow || echo "##vso[task.complete result=Failed;]Some tests failed"
   displayName: Run tests
   workingDirectory: $(Pipeline.Workspace)
+
+- script: |
+    bash <(curl -s https://codecov.io/bash) -n "Python $(PYTHON_VERSION) $(Agent.OS)"
+  displayName: 'Publish coverage stats'
+  continueOnError: True
+  timeoutInMinutes: 3
+  workingDirectory: $(Pipeline.Workspace)/modules/dials
 
 # Recover disk space after testing
 # This is only relevant if we had cache misses, as free disk space is required to create cache archives
 - bash: |
     echo Disk space usage:
+    df -h
     du -sh *
     echo
     echo Test artefacts:

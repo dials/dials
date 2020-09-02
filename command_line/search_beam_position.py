@@ -84,8 +84,6 @@ output {
 """
 )
 
-master_params = phil_scope.fetch().extract()
-
 
 def optimize_origin_offset_local_scope(
     experiments,
@@ -97,7 +95,7 @@ def optimize_origin_offset_local_scope(
     plot_search_scope=False,
 ):
     """Local scope: find the optimal origin-offset closest to the current overall detector position
-        (local minimum, simple minimization)"""
+    (local minimum, simple minimization)"""
 
     beam = experiments[0].beam
     s0 = matrix.col(beam.get_s0())

@@ -6,6 +6,10 @@ import iotbx.phil
 
 phil_scope = iotbx.phil.parse(
     """
+  anomalous = False
+    .type = bool
+    .help = "Separate anomalous pairs in scaling and error model optimisation."
+    .expert_level=0
   overwrite_existing_models = False
     .type = bool
     .help = "If True, create new scaling models for all datasets"
@@ -68,6 +72,7 @@ phil_scope = iotbx.phil.parse(
               "to determine the scaling model and error model."
       .expert_level = 2
     intensity_choice = profile sum *combine
+      .alias = intensity
       .type = choice
       .help = "Option to choose from profile fitted or summation intensities, or
                an optimised combination of profile/sum."

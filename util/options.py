@@ -683,7 +683,11 @@ class OptionParserBase(optparse.OptionParser, object):
 
         # Set a verbosity parameter
         self.add_option(
-            "-v", action="count", default=0, dest="verbose", help="Increase verbosity"
+            "-v",
+            action="count",
+            default=0,
+            dest="verbose",
+            help="Increase verbosity (can be specified multiple times)",
         )
 
         # Add an option for PHIL file to parse - PHIL files passed as

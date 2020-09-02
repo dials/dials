@@ -1,10 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
 import dials.pychef
+import iotbx.mtz
 import pytest
 from cctbx import sgtbx
 from cctbx.array_family import flex
-from iotbx.reflection_file_reader import any_reflection_file
 from dxtbx.model import Experiment, ExperimentList, Scan
 
 
@@ -22,9 +22,8 @@ def test_observations():
 
 def test_accumulators(dials_data):
     f = dials_data("pychef").join("insulin_dials_scaled_unmerged.mtz").strpath
-    reader = any_reflection_file(f)
-    assert reader.file_type() == "ccp4_mtz"
-    arrays = reader.as_miller_arrays(merge_equivalents=False)
+    mtz_object = iotbx.mtz.object(file_name=f)
+    arrays = mtz_object.as_miller_arrays(merge_equivalents=False)
     for ma in arrays:
         if ma.info().labels == ["BATCH"]:
             batches = ma

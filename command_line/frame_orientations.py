@@ -122,7 +122,11 @@ plot_filename = None
 
             rows = []
             for i, d, z, a, o in zip(
-                images, directions, zone_axes, axis_angles, str_off,
+                images,
+                directions,
+                zone_axes,
+                axis_angles,
+                str_off,
             ):
                 row = [
                     str(i),

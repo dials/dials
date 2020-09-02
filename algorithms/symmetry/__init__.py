@@ -21,7 +21,7 @@ from mmtbx import scaling
 from mmtbx.scaling import absolute_scaling
 from mmtbx.scaling import matthews
 
-from dials.util.resolutionizer import Resolutionizer, phil_defaults
+from dials.util import resolution_analysis
 
 
 class symmetry_base(object):
@@ -347,10 +347,8 @@ class symmetry_base(object):
 
 def resolution_filter_from_array(intensities, min_i_mean_over_sigma_mean, min_cc_half):
     """Run the resolution filter using miller array data format."""
-    rparams = phil_defaults.extract().resolutionizer
-    rparams.nbins = 20
-    rparams.plot = False
-    resolutionizer = Resolutionizer(intensities, rparams)
+    rparams = resolution_analysis.phil_defaults.extract().resolution
+    resolutionizer = resolution_analysis.Resolutionizer(intensities, rparams)
     return _resolution_filter(resolutionizer, min_i_mean_over_sigma_mean, min_cc_half)
 
 
@@ -358,11 +356,11 @@ def resolution_filter_from_reflections_experiments(
     reflections, experiments, min_i_mean_over_sigma_mean, min_cc_half
 ):
     """Run the resolution filter using native dials data formats."""
-    rparams = phil_defaults.extract().resolutionizer
-    rparams.nbins = 20
-    rparams.plot = False
-    resolutionizer = Resolutionizer.from_reflections_and_experiments(
-        reflections, experiments, rparams
+    rparams = resolution_analysis.phil_defaults.extract().resolution
+    resolutionizer = (
+        resolution_analysis.Resolutionizer.from_reflections_and_experiments(
+            reflections, experiments, rparams
+        )
     )
     return _resolution_filter(resolutionizer, min_i_mean_over_sigma_mean, min_cc_half)
 
@@ -373,29 +371,35 @@ def _resolution_filter(resolutionizer, min_i_mean_over_sigma_mean, min_cc_half):
     d_min_cc_half = 0
     if min_i_mean_over_sigma_mean is not None:
         try:
-            d_min_isigi = resolutionizer.resolution_i_mean_over_sigma_mean(
-                min_i_mean_over_sigma_mean
-            )
+            d_min_isigi = resolutionizer.resolution(
+                resolution_analysis.metrics.I_MEAN_OVER_SIGMA_MEAN,
+                limit=min_i_mean_over_sigma_mean,
+            ).d_min
         except RuntimeError as e:
             logger.info(u"I/σ(I) resolution filter failed with the following error:")
             logger.error(e)
         else:
-            logger.info(
-                u"Resolution estimate from <I>/<σ(I)> > %.1f : %.2f",
-                min_i_mean_over_sigma_mean,
-                d_min_isigi,
-            )
+            if d_min_isigi:
+                logger.info(
+                    u"Resolution estimate from <I>/<σ(I)> > %.1f : %.2f",
+                    min_i_mean_over_sigma_mean,
+                    d_min_isigi,
+                )
     if min_cc_half is not None:
         try:
-            d_min_cc_half = resolutionizer.resolution_cc_half(min_cc_half)
+            d_min_cc_half = resolutionizer.resolution(
+                resolution_analysis.metrics.CC_HALF, limit=min_cc_half
+            ).d_min
         except RuntimeError as e:
             logger.info(u"CC½ resolution filter failed with the following error:")
             logger.error(e)
         else:
-            logger.info(
-                u"Resolution estimate from CC½ > %.2f: %.2f", min_cc_half, d_min_cc_half
-            )
-    valid_d_mins = list({d_min_cc_half, d_min_isigi}.difference({0}))
-    if valid_d_mins:
-        d_min = min(valid_d_mins)
-    return d_min
+            if d_min_cc_half:
+                logger.info(
+                    u"Resolution estimate from CC½ > %.2f: %.2f",
+                    min_cc_half,
+                    d_min_cc_half,
+                )
+    valid = [d for d in (d_min_cc_half, d_min_isigi) if d]
+    if valid:
+        return min(valid)

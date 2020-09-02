@@ -1,7 +1,5 @@
 from __future__ import absolute_import, division, print_function
 
-import abc
-
 from cctbx.array_family import flex
 import dials_algorithms_indexing_ext as ext
 
@@ -9,15 +7,11 @@ from dials.algorithms.indexing import DialsIndexError
 
 
 class AssignIndicesStrategy(object):
-
-    __metaclass__ = abc.ABCMeta
-
     def __init__(self, d_min=None):
         self._d_min = d_min
 
-    @abc.abstractmethod
     def __call__(self, reciprocal_lattice_vectors):
-        pass
+        raise NotImplementedError()
 
 
 class AssignIndicesGlobal(AssignIndicesStrategy):

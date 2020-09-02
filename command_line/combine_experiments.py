@@ -178,6 +178,12 @@ phil_scope = parse(
       .help = "If not None, throw out any experiment with fewer than this"
               "many reflections"
 
+    max_reflections_per_experiment = None
+      .type = int
+      .expert_level = 2
+      .help = "If not None, throw out any experiment with more than this"
+              "many reflections"
+
     include scope dials.algorithms.integration.stills_significance_filter.phil_scope
   }
 """,
@@ -501,7 +507,8 @@ class Script(object):
         # set up global experiments and reflections lists
         reflections = flex.reflection_table()
         global_id = 0
-        skipped_expts = 0
+        skipped_expts_min_refl = 0
+        skipped_expts_max_refl = 0
         experiments = ExperimentList()
 
         # loop through the input, building up the global lists
@@ -523,7 +530,13 @@ class Script(object):
                     params.output.min_reflections_per_experiment is not None
                     and n_sub_ref < params.output.min_reflections_per_experiment
                 ):
-                    skipped_expts += 1
+                    skipped_expts_min_refl += 1
+                    continue
+                if (
+                    params.output.max_reflections_per_experiment is not None
+                    and n_sub_ref > params.output.max_reflections_per_experiment
+                ):
+                    skipped_expts_max_refl += 1
                     continue
 
                 nrefs_per_exp.append(n_sub_ref)
@@ -550,11 +563,20 @@ class Script(object):
 
         if (
             params.output.min_reflections_per_experiment is not None
-            and skipped_expts > 0
+            and skipped_expts_min_refl > 0
         ):
             print(
                 "Removed {0} experiments with fewer than {1} reflections".format(
-                    skipped_expts, params.output.min_reflections_per_experiment
+                    skipped_expts_min_refl, params.output.min_reflections_per_experiment
+                )
+            )
+        if (
+            params.output.max_reflections_per_experiment is not None
+            and skipped_expts_max_refl > 0
+        ):
+            print(
+                "Removed {0} experiments with more than {1} reflections".format(
+                    skipped_expts_max_refl, params.output.max_reflections_per_experiment
                 )
             )
 

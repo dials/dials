@@ -11,7 +11,7 @@ from dials.algorithms.integration.processor import _average_bbox_size
 import procrunner
 
 
-def test2(dials_data, tmpdir):
+def test_basic_integrate(dials_data, tmpdir):
     # Call dials.integrate
 
     exp = load.experiment_list(
@@ -111,6 +111,41 @@ def test2(dials_data, tmpdir):
     # assert(flex.abs(diff_Obs_P).all_lt(1e-7))
 
 
+def test_basic_integrate_output_integrated_only(dials_data, tmpdir):
+
+    exp = load.experiment_list(
+        dials_data("centroid_test_data").join("experiments.json").strpath
+    )
+    exp[0].identifier = "bar"
+    exp.as_json(tmpdir.join("modified_input.json").strpath)
+
+    result = procrunner.run(
+        [
+            "dials.integrate",
+            "modified_input.json",
+            "profile.fitting=False",
+            "integration.integrator=3d",
+            "output_unintegrated_reflections=False",
+            "prediction.padding=0",
+        ],
+        working_directory=tmpdir,
+    )
+    assert not result.returncode and not result.stderr
+
+    experiments = load.experiment_list(tmpdir.join("integrated.expt").strpath)
+    assert experiments[0].identifier == "bar"
+
+    table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
+    mask = table.get_flags(table.flags.integrated, all=False)
+    assert len(table) == 1666
+    assert mask.count(False) == 0
+    assert "id" in table
+    for row in table.rows():
+        assert row["id"] == 0
+
+    assert dict(table.experiment_identifiers()) == {0: "bar"}
+
+
 def test_integration_with_sampling(dials_data, tmpdir):
 
     exp = load.experiment_list(
@@ -181,7 +216,12 @@ def test_multi_sweep(dials_regression, tmpdir):
     )
 
     result = procrunner.run(
-        ["dials.integrate", "modified_input.json", refls, "prediction.padding=0"],
+        [
+            "dials.integrate",
+            "modified_input.json",
+            refls,
+            "prediction.padding=0",
+        ],
         working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr

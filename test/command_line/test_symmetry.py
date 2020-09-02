@@ -226,11 +226,15 @@ def test_map_to_minimum_cell():
     )
     cb_ops_as_xyz = [cb_op.as_xyz() for cb_op in cb_ops]
     # Actual cb_ops are machine dependent (sigh)
-    assert cb_ops_as_xyz == [
-        "-x+y,-2*y,z",
-        "-x+z,-z,-y",
-        "x+y,-2*x,z",
-    ] or cb_ops_as_xyz == ["x-y,2*y,z", "x-z,z,-y", "-x-y,2*x,z"]
+    assert (
+        cb_ops_as_xyz
+        == [
+            "-x+y,-2*y,z",
+            "-x+z,-z,-y",
+            "x+y,-2*x,z",
+        ]
+        or cb_ops_as_xyz == ["x-y,2*y,z", "x-z,z,-y", "-x-y,2*x,z"]
+    )
 
     expts_min, reflections = apply_change_of_basis_ops(expts, reflections, cb_ops)
     # Verify that the unit cells have been transformed as expected
@@ -396,6 +400,57 @@ def test_change_of_basis_ops_to_minimum_cell_mpro():
     cb_ops = change_of_basis_ops_to_minimum_cell(
         expts, max_delta=5, relative_length_tolerance=0.05, absolute_angle_tolerance=2
     )
+    expts.change_basis(cb_ops, in_place=True)
+    assert symmetry.unit_cells_are_similar_to(
+        expts,
+        median_unit_cell(expts),
+        relative_length_tolerance=0.05,
+        absolute_angle_tolerance=2,
+    )
+
+
+from cctbx import crystal
+
+
+def test_change_of_basis_ops_to_minimum_cell_with_outlier():
+    symmetries = [
+        crystal.symmetry(unit_cell=uc, space_group="P1")
+        for uc in (
+            (52.8868, 52.8868, 333.522, 90, 90, 120),
+            (52.6503, 53.0292, 333.783, 89.9872, 89.2247, 60.8078),
+            (52.9571, 53.0005, 334.255, 90.0493, 90.0042, 119.893),
+            (
+                54.4465,
+                56.5677,
+                355.775,
+                93.4376,
+                90.0999,
+                118.256,
+            ),  # This is an outlier
+            (52.9235, 52.9235, 335.296, 90, 90, 120),
+            (53.4531, 53.4531, 322.909, 90, 90, 120),
+        )
+    ]
+
+    # Setup the input experiments and reflection tables
+    expts = ExperimentList()
+    for cs in symmetries:
+        B = scitbx.matrix.sqr(cs.unit_cell().fractionalization_matrix()).transpose()
+        expts.append(
+            Experiment(
+                crystal=Crystal(B, space_group=cs.space_group(), reciprocal=True)
+            )
+        )
+
+    # Actually run the method we are testing
+    cb_ops = change_of_basis_ops_to_minimum_cell(
+        expts, max_delta=5, relative_length_tolerance=0.05, absolute_angle_tolerance=2
+    )
+    assert cb_ops.count(None) == 1
+    assert cb_ops[3] is None
+    expts = ExperimentList([expt for expt, cb_op in zip(expts, cb_ops) if cb_op])
+    cb_ops = [cb_op for cb_op in cb_ops if cb_op]
+
     expts.change_basis(cb_ops, in_place=True)
     assert symmetry.unit_cells_are_similar_to(
         expts,

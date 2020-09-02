@@ -164,10 +164,18 @@ def run(args):
             )
             plt.xlabel("%s angle (degrees)" % names[2])
             plt.ylabel("%s angle (degrees)" % names[1])
-            plt.xlim(0, 360 / step)
-            plt.ylim(0, 360 / step)
-            fig.axes.set_xticklabels(["%.0f" % (step * t) for t in plt.xticks()[0]])
-            fig.axes.set_yticklabels(["%.0f" % (step * t) for t in plt.yticks()[0]])
+            plt.xlim(0, 360 / step - 0.5)
+            plt.ylim(0, 360 / step - 0.5)
+
+            ticks = (0, 50, 100, 150, 200, 250, 300, 350)
+            fig.axes.xaxis.set_major_locator(
+                matplotlib.ticker.FixedLocator([k / step for k in ticks])
+            )
+            fig.axes.yaxis.set_major_locator(
+                matplotlib.ticker.FixedLocator([k / step for k in ticks])
+            )
+            fig.axes.set_xticklabels(["%.0f" % k for k in ticks])
+            fig.axes.set_yticklabels(["%.0f" % k for k in ticks])
             cbar = plt.colorbar()
             cbar.set_label("Shadowed area (%)")
 

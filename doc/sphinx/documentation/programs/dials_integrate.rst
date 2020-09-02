@@ -4,7 +4,7 @@ dials.integrate
 Introduction
 ------------
 
-.. python_string:: dials.command_line.integrate.help_message
+.. python_string:: dials.command_line.integrate.__doc__
 
 Basic parameters
 ----------------

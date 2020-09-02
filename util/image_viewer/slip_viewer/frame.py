@@ -17,7 +17,7 @@ from ..rstbx_frame import EVT_EXTERNAL_UPDATE
 from ..rstbx_frame import XrayFrame as XFBaseClass
 from rstbx.viewer import settings as rv_settings, image as rv_image
 from wxtbx import bitmaps
-from boost.python import c_sizeof
+from boost_adaptbx.boost.python import c_sizeof
 from rstbx.viewer.frame import SettingsFrame
 
 pyslip._Tiles = tile_generation._Tiles
@@ -755,7 +755,7 @@ class XrayFrame(XFBaseClass):
             flex_img = get_flex_image_multipanel(
                 brightness=self.settings.brightness / 100,
                 panels=detector,
-                raw_data=data,
+                image_data=data,
                 beam=raw_img.get_beam(),
             )
 
@@ -856,7 +856,7 @@ class XrayFrame(XFBaseClass):
 
                 wximg = wx.ImageFromBitmap(bitmap)
                 imageout = Image.new("RGB", (wximg.GetWidth(), wximg.GetHeight()))
-                imageout.frombytes(wximg.GetData())
+                imageout.frombytes(bytes(wximg.GetData()))
 
                 self.pyslip.tiles.UseLevel(currentZoom)
 
@@ -895,7 +895,7 @@ class XrayFrame(XFBaseClass):
             flex_img = get_flex_image_multipanel(
                 brightness=self.settings.brightness / 100,
                 panels=detector,
-                raw_data=data,
+                image_data=data,
                 beam=raw_img.get_beam(),
             )
 
@@ -937,8 +937,10 @@ class XrayFrame(XFBaseClass):
                         if layer.map_rel:
                             pp = []
                             for pelement in p:
-                                fs = self.pyslip.tiles.map_relative_to_picture_fast_slow(
-                                    pelement[0], pelement[1]
+                                fs = (
+                                    self.pyslip.tiles.map_relative_to_picture_fast_slow(
+                                        pelement[0], pelement[1]
+                                    )
                                 )
                                 pp.append(
                                     (
@@ -1032,8 +1034,10 @@ class XrayFrame(XFBaseClass):
                         path = pdf_canvas.beginPath()
                         for i, pp in enumerate(p):
                             if layer.map_rel:
-                                fs = self.pyslip.tiles.map_relative_to_picture_fast_slow(
-                                    pp[0], pp[1]
+                                fs = (
+                                    self.pyslip.tiles.map_relative_to_picture_fast_slow(
+                                        pp[0], pp[1]
+                                    )
                                 )
                             else:
                                 raise NotImplementedError(

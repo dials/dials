@@ -1548,7 +1548,7 @@ class ZScoreAnalyser(object):
           * ``xyzobs.px.value``
         :type rlist: `dials_array_family_flex_ext.reflection_table`
         :param experiments: An experiment list with space group information.
-        :type experiments: `dxtbx_model_ext.ExperimentList`
+        :type experiments: `dxtbx.model.ExperimentList`
         :return: A dictionary describing several Plotly plots.
         :rtype:`dict`
         """

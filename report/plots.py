@@ -15,7 +15,7 @@ from scitbx.math import distributions
 from mmtbx.scaling.absolute_scaling import scattering_information, expected_intensity
 from mmtbx.scaling.matthews import matthews_rupp
 from scipy.optimize import least_squares
-
+from six.moves import cStringIO as StringIO
 
 logger = logging.getLogger("dials")
 
@@ -184,19 +184,15 @@ https://doi.org/10.1107/S0907444910014836
     }
 
 
-class ResolutionPlotterMixin(object):
-    """Define additional helper methods for plotting"""
-
-    @staticmethod
-    def _d_star_sq_to_d_ticks(d_star_sq, nticks):
-        min_d_star_sq = min(d_star_sq)
-        dstep = (max(d_star_sq) - min_d_star_sq) / nticks
-        tickvals = list(min_d_star_sq + (i * dstep) for i in range(nticks))
-        ticktext = ["%.2f" % (uctbx.d_star_sq_as_d(dsq)) for dsq in tickvals]
-        return tickvals, ticktext
+def d_star_sq_to_d_ticks(d_star_sq, nticks):
+    min_d_star_sq = min(d_star_sq)
+    dstep = (max(d_star_sq) - min_d_star_sq) / nticks
+    tickvals = list(min_d_star_sq + (i * dstep) for i in range(nticks))
+    ticktext = ["%.2f" % (uctbx.d_star_sq_as_d(dsq)) for dsq in tickvals]
+    return tickvals, ticktext
 
 
-class IntensityStatisticsPlots(ResolutionPlotterMixin):
+class IntensityStatisticsPlots:
     """Generate plots for intensity-derived statistics."""
 
     def __init__(
@@ -218,7 +214,7 @@ class IntensityStatisticsPlots(ResolutionPlotterMixin):
         self.multiplicities = merged.redundancies().complete_array(new_data_value=0)
         intensities.setup_binner_d_star_sq_step(auto_binning=True)
         self.wilson_plot_result = intensities.wilson_plot(use_binning=True)
-        mr = matthews_rupp(intensities.crystal_symmetry())
+        mr = matthews_rupp(intensities.crystal_symmetry(), out=StringIO())
         self.n_residues = mr.n_residues
         if not self._xanalysis and run_xtriage_analysis:
             # imports needed here or won't work, unsure why.
@@ -330,7 +326,7 @@ class IntensityStatisticsPlots(ResolutionPlotterMixin):
         best = least_squares(residuals, 1.0)
 
         mean_I_obs_theory = expected.mean_intensity * best.x
-        tickvals_wilson, ticktext_wilson = self._d_star_sq_to_d_ticks(dstarsq, nticks=5)
+        tickvals_wilson, ticktext_wilson = d_star_sq_to_d_ticks(dstarsq, nticks=5)
 
         return {
             "wilson_intensity_plot": {
@@ -479,7 +475,7 @@ class IntensityStatisticsPlots(ResolutionPlotterMixin):
             )
         if centric.size():
             second_moment_d_star_sq.extend(second_moments_centric.binner.bin_centers(2))
-        tickvals_2nd_moment, ticktext_2nd_moment = self._d_star_sq_to_d_ticks(
+        tickvals_2nd_moment, ticktext_2nd_moment = d_star_sq_to_d_ticks(
             second_moment_d_star_sq, nticks=5
         )
 
@@ -524,7 +520,7 @@ class IntensityStatisticsPlots(ResolutionPlotterMixin):
         }
 
 
-class ResolutionPlotsAndStats(ResolutionPlotterMixin):
+class ResolutionPlotsAndStats:
     """
     Use iotbx dataset statistics objects to make plots and tables for reports.
 
@@ -540,9 +536,10 @@ class ResolutionPlotsAndStats(ResolutionPlotterMixin):
         self.dataset_statistics = dataset_statistics
         self.anomalous_dataset_statistics = anomalous_dataset_statistics
         self.d_star_sq_bins = [
-            (1 / bin_stats.d_min ** 2) for bin_stats in self.dataset_statistics.bins
+            0.5 * (uctbx.d_as_d_star_sq(b.d_max) + uctbx.d_as_d_star_sq(b.d_min))
+            for b in self.dataset_statistics.bins
         ]
-        self.d_star_sq_tickvals, self.d_star_sq_ticktext = self._d_star_sq_to_d_ticks(
+        self.d_star_sq_tickvals, self.d_star_sq_ticktext = d_star_sq_to_d_ticks(
             self.d_star_sq_bins, nticks=5
         )
         self.is_centric = is_centric
@@ -596,74 +593,17 @@ class ResolutionPlotsAndStats(ResolutionPlotterMixin):
         ]
 
         return {
-            "cc_one_half": {
-                "data": [
-                    {
-                        "x": self.d_star_sq_bins,  # d_star_sq
-                        "y": cc_one_half_bins,
-                        "type": "scatter",
-                        "name": u"CC<sub>½</sub>",
-                        "mode": "lines",
-                        "line": {"color": "rgb(31, 119, 180)"},
-                    },
-                    {
-                        "x": self.d_star_sq_bins,  # d_star_sq
-                        "y": cc_one_half_critical_value_bins,
-                        "type": "scatter",
-                        "name": u"CC<sub>½</sub> critical value (p=0.01)",
-                        "line": {"color": "rgb(31, 119, 180)", "dash": "dot"},
-                    },
-                    (
-                        {
-                            "x": self.d_star_sq_bins,  # d_star_sq
-                            "y": cc_anom_bins,
-                            "type": "scatter",
-                            "name": "CC-anom",
-                            "mode": "lines",
-                            "line": {"color": "rgb(255, 127, 14)"},
-                        }
-                        if not self.is_centric
-                        else {}
-                    ),
-                    (
-                        {
-                            "x": self.d_star_sq_bins,  # d_star_sq
-                            "y": cc_anom_critical_value_bins,
-                            "type": "scatter",
-                            "name": "CC-anom critical value (p=0.01)",
-                            "mode": "lines",
-                            "line": {"color": "rgb(255, 127, 14)", "dash": "dot"},
-                        }
-                        if not self.is_centric
-                        else {}
-                    ),
-                ],
-                "layout": {
-                    "title": u"CC<sub>½</sub> vs resolution",
-                    "xaxis": {
-                        "title": u"Resolution (Å)",
-                        "tickvals": self.d_star_sq_tickvals,
-                        "ticktext": self.d_star_sq_ticktext,
-                    },
-                    "yaxis": {
-                        "title": u"CC<sub>½</sub>",
-                        "range": [min(cc_one_half_bins + cc_anom_bins + [0]), 1],
-                    },
-                },
-                "help": u"""\
-    The correlation coefficients, CC<sub>½</sub>, between random half-datasets. A correlation
-    coefficient of +1 indicates good correlation, and 0 indicates no correlation.
-    CC<sub>½</sub> is typically close to 1 at low resolution, falling off to close to zero at
-    higher resolution. A typical resolution cutoff based on CC<sub>½</sub> is around 0.3-0.5.
-
-    [1] Karplus, P. A., & Diederichs, K. (2012). Science, 336(6084), 1030-1033.
-        https://doi.org/10.1126/science.1218231
-    [2] Diederichs, K., & Karplus, P. A. (2013). Acta Cryst D, 69(7), 1215-1222.
-        https://doi.org/10.1107/S0907444913001121
-    [3] Evans, P. R., & Murshudov, G. N. (2013). Acta Cryst D, 69(7), 1204-1214.
-        https://doi.org/10.1107/S0907444913000061
-    """,
-            }
+            "cc_one_half": cc_half_plot(
+                d_star_sq=self.d_star_sq_bins,
+                cc_half=cc_one_half_bins,
+                cc_anom=cc_anom_bins if not self.is_centric else None,
+                cc_half_critical_values=cc_one_half_critical_value_bins,
+                cc_anom_critical_values=cc_anom_critical_value_bins
+                if not self.is_centric
+                else None,
+                cc_half_fit=None,
+                d_min=None,
+            )
         }
 
     def i_over_sig_i_plot(self):
@@ -911,7 +851,7 @@ class ResolutionPlotsAndStats(ResolutionPlotterMixin):
         return (self.overall_statistics_table(), self.merging_statistics_table())
 
 
-class AnomalousPlotter(ResolutionPlotterMixin):
+class AnomalousPlotter:
     def __init__(self, anomalous_array, strong_cutoff=0.0, n_bins=20):
         self.intensities_anom = anomalous_array.map_to_asu()
         self.merged = self.intensities_anom.merge_equivalents(
@@ -979,7 +919,7 @@ class AnomalousPlotter(ResolutionPlotterMixin):
                 correl_ratios_acentric = []
             else:
                 d_star_sq_acentric = acentric.binner().bin_centers(2)
-                actickvals, acticktext = self._d_star_sq_to_d_ticks(
+                actickvals, acticktext = d_star_sq_to_d_ticks(
                     d_star_sq_acentric, nticks=5
                 )
         if centric.size() > 0:
@@ -988,7 +928,7 @@ class AnomalousPlotter(ResolutionPlotterMixin):
                 correl_ratios_centric = []
             else:
                 d_star_sq_centric = centric.binner().bin_centers(2)
-                ctickvals, cticktext = self._d_star_sq_to_d_ticks(
+                ctickvals, cticktext = d_star_sq_to_d_ticks(
                     d_star_sq_acentric, nticks=5
                 )
 
@@ -1203,3 +1143,110 @@ https://doi.org/10.1107/S0907444905036693
     """,
             }
         }
+
+
+def cc_half_plot(
+    d_star_sq,
+    cc_half,
+    cc_anom=None,
+    cc_half_critical_values=None,
+    cc_anom_critical_values=None,
+    cc_half_fit=None,
+    d_min=None,
+):
+    d_star_sq_tickvals, d_star_sq_ticktext = d_star_sq_to_d_ticks(d_star_sq, nticks=5)
+    return {
+        "data": [
+            {
+                "x": list(d_star_sq),
+                "y": list(cc_half),
+                "type": "scatter",
+                "name": u"CC<sub>½</sub>",
+                "mode": "lines",
+                "line": {"color": "rgb(31, 119, 180)"},
+            },
+            (
+                {
+                    "x": list(d_star_sq),
+                    "y": list(cc_half_critical_values),
+                    "type": "scatter",
+                    "name": u"CC<sub>½</sub> critical value (p=0.01)",
+                    "line": {"color": "rgb(31, 119, 180)", "dash": "dot"},
+                }
+                if cc_half_critical_values
+                else {}
+            ),
+            (
+                {
+                    "x": list(d_star_sq),
+                    "y": list(cc_anom),
+                    "type": "scatter",
+                    "name": "CC-anom",
+                    "mode": "lines",
+                    "line": {"color": "rgb(255, 127, 14)"},
+                }
+                if cc_anom
+                else {}
+            ),
+            (
+                {
+                    "x": list(d_star_sq),
+                    "y": list(cc_anom_critical_values),
+                    "type": "scatter",
+                    "name": "CC-anom critical value (p=0.01)",
+                    "mode": "lines",
+                    "line": {"color": "rgb(255, 127, 14)", "dash": "dot"},
+                }
+                if cc_anom_critical_values
+                else {}
+            ),
+            (
+                {
+                    "x": list(d_star_sq),
+                    "y": list(cc_half_fit),
+                    "type": "scatter",
+                    "name": u"CC<sub>½</sub> fit",
+                    "line": {"color": "rgb(47, 79, 79)"},
+                }
+                if cc_half_fit
+                else {}
+            ),
+            (
+                {
+                    "x": [uctbx.d_as_d_star_sq(d_min)] * 2,
+                    "y": [0, 1],
+                    "type": "scatter",
+                    "name": u"d_min = %.2f Å" % d_min,
+                    "mode": "lines",
+                    "line": {"color": "rgb(169, 169, 169)", "dash": "dot"},
+                }
+                if d_min
+                else {}
+            ),
+        ],
+        "layout": {
+            "title": u"CC<sub>½</sub> vs resolution",
+            "xaxis": {
+                "title": u"Resolution (Å)",
+                "tickvals": d_star_sq_tickvals,
+                "ticktext": d_star_sq_ticktext,
+            },
+            "yaxis": {
+                "title": u"CC<sub>½</sub>",
+                "range": [min(cc_half + cc_anom if cc_anom else [] + [0]), 1],
+            },
+        },
+        "help": u"""\
+The correlation coefficients, CC<sub>½</sub>, between random half-datasets. A correlation
+coefficient of +1 indicates good correlation, and 0 indicates no correlation.
+CC<sub>½</sub> is typically close to 1 at low resolution, falling off to close to zero at
+higher resolution. A typical resolution cutoff based on CC<sub>½</sub> is around 0.3-0.5.
+
+[1] Karplus, P. A., & Diederichs, K. (2012). Science, 336(6084), 1030-1033.
+    https://doi.org/10.1126/science.1218231
+[2] Diederichs, K., & Karplus, P. A. (2013). Acta Cryst D, 69(7), 1215-1222.
+    https://doi.org/10.1107/S0907444913001121
+[3] Evans, P. R., & Murshudov, G. N. (2013). Acta Cryst D, 69(7), 1204-1214.
+    https://doi.org/10.1107/S0907444913000061
+""",
+    }

@@ -1,1 +1,0 @@
-Ensure that reflections excluded from scaling in one dials.scale job aren't permanently excluded from any subsequent dials.scale jobs.

@@ -120,15 +120,31 @@ class cosym(Subject):
                 )
 
         # Map experiments and reflections to minimum cell
-        # Eliminate reflections that are systematically absent due to centring
-        # of the lattice, otherwise they would lead to non-integer miller indices
-        # when reindexing to a primitive setting
         cb_ops = change_of_basis_ops_to_minimum_cell(
             self._experiments,
             params.lattice_symmetry_max_delta,
             params.relative_length_tolerance,
             params.absolute_angle_tolerance,
         )
+        exclude = [
+            expt.identifier
+            for expt, cb_op in zip(self._experiments, cb_ops)
+            if not cb_op
+        ]
+        if len(exclude):
+            logger.info(
+                f"Rejecting {len(exclude)} datasets from cosym analysis:"
+                f"couldn't determine consistent cb_op to minimum cell:\n"
+                f"{exclude}",
+            )
+            self._experiments, self._reflections = select_datasets_on_identifiers(
+                self._experiments, self._reflections, exclude_datasets=exclude
+            )
+            cb_ops = list(filter(None, cb_ops))
+
+        # Eliminate reflections that are systematically absent due to centring
+        # of the lattice, otherwise they would lead to non-integer miller indices
+        # when reindexing to a primitive setting
         self._reflections = eliminate_sys_absent(self._experiments, self._reflections)
 
         self._experiments, self._reflections = apply_change_of_basis_ops(

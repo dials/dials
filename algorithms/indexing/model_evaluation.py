@@ -1,6 +1,5 @@
 from __future__ import absolute_import, division, print_function
 
-import abc
 import collections
 import copy
 import logging
@@ -76,9 +75,6 @@ def filter_doubled_cell(solutions):
 
 
 class ModelRank(object):
-
-    __metaclass__ = abc.ABCMeta
-
     def __init__(self):
         self.all_solutions = []
 
@@ -88,13 +84,11 @@ class ModelRank(object):
     def extend(self, items):
         self.all_solutions.extend(items)
 
-    @abc.abstractmethod
     def best_model(self):
-        pass
+        raise NotImplementedError()
 
-    @abc.abstractmethod
     def __str__(self):
-        pass
+        raise NotImplementedError()
 
 
 # Tracker for solutions based on code in rstbx/dps_core/basis_choice.py
@@ -308,12 +302,8 @@ class ModelRankWeighted(ModelRank):
 
 
 class Strategy(object):
-
-    __metaclass__ = abc.ABCMeta
-
-    @abc.abstractmethod
     def evaluate(self, experiments, reflections):
-        pass
+        raise NotImplementedError()
 
 
 class ModelEvaluation(Strategy):

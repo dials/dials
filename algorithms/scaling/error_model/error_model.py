@@ -231,7 +231,7 @@ class ErrorModelBinner(object):
         self.bin_variances = self.calculate_bin_variances()
 
     def _create_summation_matrix(self):
-        """"Create a summation matrix to allow sums into intensity bins.
+        """ "Create a summation matrix to allow sums into intensity bins.
 
         This routine attempts to bin into bins equally spaced in log(intensity),
         to give a representative sample across all intensities. To avoid
