@@ -1,10 +1,3 @@
-.. raw:: html
-
-  <a href="https://dials.github.io/dials-1.14/documentation/tutorials/metrology_corrections.html" class="new-documentation">
-  This tutorial requires a DIALS 2.0 installation.<br/>
-  Please click here to go to the tutorial for DIALS 1.14.
-  </a>
-
 Refining multi-tile detector metrology with DIALS
 =================================================
 
