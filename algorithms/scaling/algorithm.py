@@ -200,7 +200,7 @@ class ScalingAlgorithm(object):
 
     def run(self):
         """Run the scaling script."""
-        with ScalingSummaryContextManager(self), ScalingHTMLContextManager(self):
+        with ScalingHTMLContextManager(self), ScalingSummaryContextManager(self):
             start_time = time.time()
             self.scale()
             self.remove_bad_data()
