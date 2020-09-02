@@ -852,18 +852,26 @@ class MaskSettingsPanel(wx.Panel):
             self._pyslip.tiles.map_relative_to_picture_fast_slow(*v) for v in vertices
         ]
 
-        point_ = []
-        panel_id = None
-        for p in vertices:
-            p1, p0, p_id = self._pyslip.tiles.flex_image.picture_to_readout(p[1], p[0])
-            assert p_id >= 0, "Point must be within a panel"
-            if panel_id is not None:
-                assert (
-                    panel_id == p_id
-                ), "All points must be contained within a single panel"
-            panel_id = p_id
-            point_.append((p0, p1))
-        vertices = point_
+        detector = self._pyslip.tiles.raw_image.get_detector()
+        if len(detector) > 1:
+
+            point_ = []
+            panel_id = None
+            for p in vertices:
+                p1, p0, p_id = self._pyslip.tiles.flex_image.picture_to_readout(
+                    p[1], p[0]
+                )
+                assert p_id >= 0, "Point must be within a panel"
+                if panel_id is not None:
+                    assert (
+                        panel_id == p_id
+                    ), "All points must be contained within a single panel"
+                panel_id = p_id
+                point_.append((p0, p1))
+            vertices = point_
+
+        else:
+            panel_id = 0
 
         from dials.util import masking
         from libtbx.utils import flat_list
@@ -888,18 +896,25 @@ class MaskSettingsPanel(wx.Panel):
         ]
 
         detector = self._pyslip.tiles.raw_image.get_detector()
-        point_ = []
-        panel_id = None
-        for p in points:
-            p1, p0, p_id = self._pyslip.tiles.flex_image.picture_to_readout(p[1], p[0])
-            assert p_id >= 0, "Point must be within a panel"
-            if panel_id is not None:
-                assert (
-                    panel_id == p_id
-                ), "All points must be contained within a single panel"
-            panel_id = int(p_id)
-            point_.append((p0, p1))
-        points = point_
+        if len(detector) > 1:
+
+            point_ = []
+            panel_id = None
+            for p in points:
+                p1, p0, p_id = self._pyslip.tiles.flex_image.picture_to_readout(
+                    p[1], p[0]
+                )
+                assert p_id >= 0, "Point must be within a panel"
+                if panel_id is not None:
+                    assert (
+                        panel_id == p_id
+                    ), "All points must be contained within a single panel"
+                panel_id = int(p_id)
+                point_.append((p0, p1))
+            points = point_
+
+        else:
+            panel_id = 0
 
         (x0, y0), (x1, y1) = points
 
@@ -939,18 +954,26 @@ class MaskSettingsPanel(wx.Panel):
             self._pyslip.tiles.map_relative_to_picture_fast_slow(*p) for p in points
         ]
 
-        points_ = []
-        panel_id = None
-        for p in points:
-            p1, p0, p_id = self._pyslip.tiles.flex_image.picture_to_readout(p[1], p[0])
-            assert p_id >= 0, "Point must be within a panel"
-            if panel_id is not None:
-                assert (
-                    panel_id == p_id
-                ), "All points must be contained within a single panel"
-            panel_id = p_id
-            points_.append((p0, p1))
-        points = points_
+        detector = self._pyslip.tiles.raw_image.get_detector()
+        if len(detector) > 1:
+
+            points_ = []
+            panel_id = None
+            for p in points:
+                p1, p0, p_id = self._pyslip.tiles.flex_image.picture_to_readout(
+                    p[1], p[0]
+                )
+                assert p_id >= 0, "Point must be within a panel"
+                if panel_id is not None:
+                    assert (
+                        panel_id == p_id
+                    ), "All points must be contained within a single panel"
+                panel_id = p_id
+                points_.append((p0, p1))
+            points = points_
+
+        else:
+            panel_id = 0
 
         (xc, yc), (xedge, yedge) = points
 
