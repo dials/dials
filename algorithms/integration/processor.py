@@ -65,6 +65,73 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
+def assess_available_memory(params):
+
+    # Obtain information about system memory
+    available_memory = psutil.virtual_memory().available
+    available_swap = psutil.swap_memory().free
+    available_incl_swap = available_memory + available_swap
+    available_limit = available_incl_swap * params.block.max_memory_usage
+    available_immediate_limit = available_memory * params.block.max_memory_usage
+
+    # Compile a memory report
+    report = [
+        "Memory situation report:",
+    ]
+
+    def _report(description, value):
+        report.append("  %-50s:%5.1f GB" % (description, value))
+
+    _report("Available system memory (excluding swap)", available_memory / 1e9)
+    _report("Available swap memory", available_swap / 1e9)
+    _report("Available system memory (including swap)", available_incl_swap / 1e9)
+    _report(
+        "Maximum memory for processing (including swap)",
+        available_limit / 1e9,
+    )
+    _report(
+        "Maximum memory for processing (excluding swap)",
+        available_immediate_limit / 1e9,
+    )
+
+    # Check if a ulimit applies
+    # Note that resource may be None on non-Linux platforms.
+    # We can't use psutil as platform-independent solution in this instance due to
+    # https://github.com/conda-forge/psutil-feedstock/issues/47
+    rlimit = getattr(resource, "RLIMIT_VMEM", getattr(resource, "RLIMIT_AS", None))
+    if rlimit:
+        try:
+            ulimit = resource.getrlimit(rlimit)[0]
+            if ulimit <= 0 or ulimit > (2 ** 62):
+                report.append("  no memory ulimit set")
+            else:
+                ulimit_used = psutil.Process().memory_info().rss
+                _report("Memory ulimit detected", ulimit / 1e9)
+                _report("Memory ulimit in use", ulimit_used / 1e9)
+                available_memory = max(0, min(available_memory, ulimit - ulimit_used))
+                available_incl_swap = max(
+                    0, min(available_incl_swap, ulimit - ulimit_used)
+                )
+                available_immediate_limit = (
+                    available_memory * params.block.max_memory_usage
+                )
+                _report("Available system memory (limited)", available_memory / 1e9)
+                _report(
+                    "Available system memory (incl. swap; limited)",
+                    available_incl_swap / 1e9,
+                )
+                _report(
+                    "Maximum memory for processing (exc. swap; limited)",
+                    available_immediate_limit / 1e9,
+                )
+        except Exception as e:
+            logger.debug(
+                "Could not obtain ulimit values due to %s", str(e), exc_info=True
+            )
+
+    return available_immediate_limit, available_incl_swap, report
+
+
 def _average_bbox_size(reflections):
     """Calculate the average bbox size for debugging"""
 
@@ -761,72 +828,16 @@ class _Manager(object):
             self.jobs.shoebox_memory(self.reflections, self.params.shoebox.flatten)
         )
 
-        # Obtain information about system memory
-        available_memory = psutil.virtual_memory().available
-        available_swap = psutil.swap_memory().free
-        available_incl_swap = available_memory + available_swap
-        available_limit = available_incl_swap * self.params.block.max_memory_usage
-        available_immediate_limit = (
-            available_memory * self.params.block.max_memory_usage
+        (
+            available_immediate_limit,
+            available_incl_swap,
+            report,
+        ) = assess_available_memory(self.params)
+
+        report.append(
+            "  %-50s:%5.1f GB"
+            % ("Memory required per process", memory_required_per_process / 1e9)
         )
-
-        # Compile a memory report
-        report = [
-            "Memory situation report:",
-        ]
-
-        def _report(description, value):
-            report.append("  %-50s:%5.1f GB" % (description, value))
-
-        _report("Available system memory (excluding swap)", available_memory / 1e9)
-        _report("Available swap memory", available_swap / 1e9)
-        _report("Available system memory (including swap)", available_incl_swap / 1e9)
-        _report(
-            "Maximum memory for processing (including swap)",
-            available_limit / 1e9,
-        )
-        _report(
-            "Maximum memory for processing (excluding swap)",
-            available_immediate_limit / 1e9,
-        )
-        _report("Memory required per process", memory_required_per_process / 1e9)
-
-        # Check if a ulimit applies
-        # Note that resource may be None on non-Linux platforms.
-        # We can't use psutil as platform-independent solution in this instance due to
-        # https://github.com/conda-forge/psutil-feedstock/issues/47
-        rlimit = getattr(resource, "RLIMIT_VMEM", getattr(resource, "RLIMIT_AS", None))
-        if rlimit:
-            try:
-                ulimit = resource.getrlimit(rlimit)[0]
-                if ulimit <= 0 or ulimit > (2 ** 62):
-                    report.append("  no memory ulimit set")
-                else:
-                    ulimit_used = psutil.Process().memory_info().rss
-                    _report("Memory ulimit detected", ulimit / 1e9)
-                    _report("Memory ulimit in use", ulimit_used / 1e9)
-                    available_memory = max(
-                        0, min(available_memory, ulimit - ulimit_used)
-                    )
-                    available_incl_swap = max(
-                        0, min(available_incl_swap, ulimit - ulimit_used)
-                    )
-                    available_immediate_limit = (
-                        available_memory * self.params.block.max_memory_usage
-                    )
-                    _report("Available system memory (limited)", available_memory / 1e9)
-                    _report(
-                        "Available system memory (incl. swap; limited)",
-                        available_incl_swap / 1e9,
-                    )
-                    _report(
-                        "Maximum memory for processing (exc. swap; limited)",
-                        available_immediate_limit / 1e9,
-                    )
-            except Exception as e:
-                logger.debug(
-                    "Could not obtain ulimit values due to %s", str(e), exc_info=True
-                )
 
         output_level = logging.INFO
 
