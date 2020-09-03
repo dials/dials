@@ -165,6 +165,7 @@ class CCHalfFromDials(object):
         self.filtered_reflection_table = None
         # prepare data
         self.group_to_datasetid_and_range = {}
+        self.group_to_dose_range = {}
         self.datasetid_to_groups = defaultdict(list)
 
         table, unit_cell, space_group = self.read_experiments(
@@ -208,6 +209,23 @@ class CCHalfFromDials(object):
                     counter += 1
 
             table["group"] = image_groups
+        elif self.params.mode in ("dose", "cumulative_dose"):
+            image_groups = flex.int(table["dataset"].size(), 0)
+            images_in_dataset = table["image"]
+            min_img = flex.min(images_in_dataset)
+            max_img = flex.max(images_in_dataset)
+            n_groups = (max_img - min_img + 1) // self.params.group_size
+            for n in range(n_groups):
+                start = min_img + n * self.params.group_size
+                if (n + 1) < n_groups:
+                    end = min_img + (n + 1) * self.params.group_size - 1
+                else:
+                    end = max_img
+                image_groups.set_selected(
+                    (images_in_dataset >= start) & (images_in_dataset <= end), n,
+                )
+                self.group_to_dose_range[n] = (start, end)
+            table["group"] = image_groups
 
         if self.params.deltacchalf_cutoff is not None:
             cutoff = self.params.deltacchalf_cutoff
@@ -226,6 +244,7 @@ class CCHalfFromDials(object):
             d_min=params.d_min,
             d_max=params.d_max,
             n_bins=params.nbins,
+            cumulative_cchalf=params.mode == "cumulative_dose",
         )
 
         # now do the exclusion
@@ -233,6 +252,8 @@ class CCHalfFromDials(object):
             filtered_reflections = self.remove_datasets_below_cutoff()
         elif self.params.mode == "image_group":
             filtered_reflections = self.remove_image_ranges_below_cutoff()
+        elif "dose" in self.params.mode:
+            filtered_reflections = self.remove_dose_range_below_cutoff()
         self.filtered_reflection_table = filtered_reflections
 
     def output(self):
@@ -401,6 +422,60 @@ class CCHalfFromDials(object):
         self.n_reflections_removed = n_valid_reflections - n_valid_filtered_reflections
         return output_reflections
 
+    def remove_dose_range_below_cutoff(self):
+        reflections = self.reflection_table.select(self.reflection_table["id"] != -1)
+        n_valid_reflections = reflections.get_flags(
+            reflections.flags.bad_for_scaling, all=False
+        ).count(False)
+        expid_to_tableid = {
+            v: k
+            for k, v in zip(
+                reflections.experiment_identifiers().keys(),
+                reflections.experiment_identifiers().values(),
+            )
+        }
+
+        start = None
+        end = None
+        for i, (g_start, g_end) in reversed(list(self.group_to_dose_range.items())):
+            if not end:
+                end = g_end
+            if i in self.statistics.exclude_groups:
+                start = g_start
+            else:
+                break
+        if start and end:
+            exclude_images = []
+            self.image_ranges_removed = []
+            for expt in self.experiments:
+                self.image_ranges_removed.append([(start, end), expt.identifier])
+                exclude_images.append(
+                    [f"{expid_to_tableid[expt.identifier]}:{start}:{end}"]
+                )
+
+            # Now remove individual batches
+            reflection_list = reflections.split_by_experiment_id()
+            reflection_list, experiments = exclude_image_ranges_for_scaling(
+                reflection_list, self.experiments, exclude_images
+            )
+
+            reflection_list, experiments = exclude_image_ranges_for_scaling(
+                reflection_list, experiments, exclude_images
+            )
+
+            output_reflections = flex.reflection_table()
+            for r in reflection_list:
+                output_reflections.extend(r)
+
+            n_valid_filtered_reflections = output_reflections.get_flags(
+                output_reflections.flags.bad_for_scaling, all=False
+            ).count(False)
+            self.n_reflections_removed = (
+                n_valid_reflections - n_valid_filtered_reflections
+            )
+            return output_reflections
+        return self.reflection_table
+
     @staticmethod
     def read_experiments(experiments, reflection_table):
         """
@@ -452,13 +527,19 @@ def delta_cchalf_report(result, filename):
     }
     if result.params.mode == "image_group":
         res["image_ranges_removed"] = result.image_ranges_removed
+    elif "dose" in result.params.mode:
+        res["image_ranges_removed"] = []
     else:
         res["removed_datasets"] = result.datasets_removed
     res["cutoff_value"] = result.statistics.cutoff
     data = {"cc_half_plots": make_histogram_plots([res])}
     del data["cc_half_plots"]["mean_cc_one_half_vs_cycle"]
     data["cc_half_plots"].update(
-        make_per_dataset_plot(result.statistics.group_ids, delta_cchalf)
+        make_per_dataset_plot(
+            result.statistics.group_ids,
+            delta_cchalf,
+            cumulative_delta_cchalf_i=result.statistics.cumulative_delta_cchalf_i,
+        )
     )
 
     logger.info("Writing html report to: %s", result.params.output.html)

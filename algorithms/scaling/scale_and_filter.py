@@ -23,7 +23,7 @@ filtering {
         min_completeness = None
             .type = float(value_min=0, value_max=100)
             .help = "Desired minimum completeness, as a percentage (0 - 100)."
-        mode = *dataset image_group
+        mode = *dataset image_group dose
             .type = choice
             .help = "Perform analysis on whole datasets or batch groups"
         group_size = 10
@@ -539,7 +539,7 @@ def make_histogram_plots(cycle_results):
     return d
 
 
-def make_per_dataset_plot(group_ids, delta_cchalf_i):
+def make_per_dataset_plot(group_ids, delta_cchalf_i, cumulative_delta_cchalf_i=None):
     """Make a line plot of ΔCC½ per group."""
 
     d = OrderedDict()
@@ -552,7 +552,19 @@ def make_per_dataset_plot(group_ids, delta_cchalf_i):
                         "y": list(delta_cchalf_i),
                         "type": "scatter",
                         "mode": "lines",
-                    }
+                        "label": "ΔCC<sub>½</sub>",
+                    },
+                    (
+                        {
+                            "x": list(group_ids),
+                            "y": list(cumulative_delta_cchalf_i),
+                            "type": "scatter",
+                            "mode": "lines",
+                            "label": "Cumulative ΔCC<sub>½</sub>",
+                        }
+                        if cumulative_delta_cchalf_i
+                        else {}
+                    ),
                 ],
                 "layout": {
                     "title": "ΔCC<sub>½</sub> vs group",

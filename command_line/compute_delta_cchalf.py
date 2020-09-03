@@ -29,7 +29,7 @@ phil_scope = parse(
 
   }
 
-  mode = *dataset image_group
+  mode = *dataset image_group dose cumulative_dose
     .type = choice
     .help = "Perform analysis on whole datasets or batch groups"
 

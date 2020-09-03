@@ -31,6 +31,7 @@ class PerGroupCChalfStatistics(object):
         d_min=None,
         d_max=None,
         n_bins=10,
+        cumulative_cchalf=False,
     ):
         # here dataset is the sweep number, group is the group number for doing
         # the cc half analysis. May be the same as dataset if doing per dataset
@@ -40,6 +41,7 @@ class PerGroupCChalfStatistics(object):
         assert cutoff_method in ["deltacchalf", "fisher", "normalised"]
         self.cutoff = cutoff
         self.cutoff_method = cutoff_method
+        self.cumulative_cchalf = cumulative_cchalf
 
         for r in required:
             if r not in reflection_table:
@@ -67,6 +69,11 @@ class PerGroupCChalfStatistics(object):
         self.mean_cchalf = compute_mean_weighted_cc_half(self._intensities)
         logger.info(f"CC 1/2 mean: {self.mean_cchalf:.3f}")
         self.cchalf_i = self._compute_cchalf_excluding_each_group()
+        self.cumulative_cchalf_i = None
+        if cumulative_cchalf:
+            self.cumulative_cchalf_i = (
+                self._compute_cchalf_excluding_each_group_cumulatively()
+            )
 
         mav = flex.mean_and_variance(self.delta_cchalf_i)
         self._mean_deltacchalf = mav.mean()
@@ -84,10 +91,14 @@ class PerGroupCChalfStatistics(object):
                 )
                 self.cutoff_method = "deltacchalf"
 
-            if self.cutoff_method == "fisher":
-                self._exclude_sel = self.fisher_transformed_delta_cchalf_i < self.cutoff
+            if self.cumulative_cchalf:
+                self._exclude_sel = self.cumulative_delta_cchalf_i <= self.cutoff
+            elif self.cutoff_method == "fisher":
+                self._exclude_sel = (
+                    self.fisher_transformed_delta_cchalf_i <= self.cutoff
+                )
             else:
-                self._exclude_sel = self.delta_cchalf_i < self.cutoff
+                self._exclude_sel = self.delta_cchalf_i <= self.cutoff
             self.exclude_groups = self.group_ids.select(self._exclude_sel)
         else:
             self.exclude_groups = None
@@ -108,6 +119,22 @@ class PerGroupCChalfStatistics(object):
             logger.info(f"CC½ excluding group {i_group}: {cchalf_i[-1]:.3f}")
         return cchalf_i
 
+    def _compute_cchalf_excluding_each_group_cumulatively(self):
+        """Compute the CC½ with each group excluded in turn
+
+        For each group, compute the CC½ excluding reflections in that group.
+
+        Returns (flex.double): The list of CC½ values excluding each group.
+        """
+
+        cchalf_i = flex.double()
+        for i_group in self._groups.counts():
+            intensities = self._intensities.select(self._groups <= i_group)
+            intensities.use_binning_of(self._intensities)
+            cchalf_i.append(compute_mean_weighted_cc_half(intensities))
+            logger.info(f"CC½ excluding groups > {i_group}: {cchalf_i[-1]:.3f}")
+        return cchalf_i
+
     @property
     def delta_cchalf_i(self):
         """Return the ΔCC½ for each group excluded
@@ -115,6 +142,15 @@ class PerGroupCChalfStatistics(object):
         Returns (flex.double): The list of ΔCC½ values excluding each group.
         """
         return self.mean_cchalf - self.cchalf_i
+
+    @property
+    def cumulative_delta_cchalf_i(self):
+        """Return the ΔCC½ values excluding cumulative groups
+
+        Returns (flex.double): The list of ΔCC½ values excluding cumulative groups.
+        """
+        if self.cumulative_cchalf:
+            return self.mean_cchalf - self.cumulative_cchalf_i
 
     @property
     def normalised_deltacchalf(self):
@@ -131,22 +167,34 @@ class PerGroupCChalfStatistics(object):
 
     def __str__(self):
         perm = flex.sort_permutation(self.delta_cchalf_i)
+        perm = range(0, len(self.delta_cchalf_i))
 
         rows = [
-            ["Group", "CC½", "ΔCC½", "Fisher-transformed ΔCC½", "Normalised ΔCC½"]
+            ["Group", "CC½", "ΔCC½"]
+            + (
+                ["Cumulative CC½", "Cumulative ΔCC½"]
+                if self.cumulative_cchalf
+                else ["Fisher-transformed ΔCC½", "Normalised ΔCC½"]
+            )
         ] + [
             [
                 f"{self.group_ids[p]}{'*' if self._exclude_sel and self._exclude_sel[p] else ''}",
                 self.cchalf_i[p],
                 self.delta_cchalf_i[p],
-                self.fisher_transformed_delta_cchalf_i[p],
-                self.normalised_deltacchalf[p],
             ]
+            + (
+                [self.cumulative_cchalf_i[p], self.cumulative_delta_cchalf_i[p]]
+                if self.cumulative_cchalf
+                else [
+                    self.fisher_transformed_delta_cchalf_i[p],
+                    self.normalised_deltacchalf[p],
+                ]
+            )
             for p in perm
         ]
 
         footer = (
-            f"\n*rejected ({'Fisher-transformed ' if self.cutoff_method == 'fisher' else ''}ΔCC½ < {self.cutoff:.3g})"
+            f"\n*below cutoff ({'Fisher-transformed ' if self.cutoff_method == 'fisher' else ''}ΔCC½ < {self.cutoff:.3g})"
             if self.cutoff is not None
             else ""
         )
