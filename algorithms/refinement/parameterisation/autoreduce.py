@@ -1,12 +1,13 @@
 from __future__ import absolute_import, division, print_function
+
 import logging
 
 logger = logging.getLogger(__name__)
 
-from scitbx.array_family import flex
-from dials.algorithms.refinement import DialsRefineConfigError
-
 from libtbx.phil import parse
+from scitbx.array_family import flex
+
+from dials.algorithms.refinement import DialsRefineConfigError
 
 phil_str = """
       min_nref_per_parameter = 5

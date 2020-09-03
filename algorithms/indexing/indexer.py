@@ -4,24 +4,29 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import math
+
 import pkg_resources
 
-from cctbx import sgtbx
-
-import dials.util
 import iotbx.phil
 import libtbx
-from dials.array_family import flex
-from dials.util.multi_dataset_handling import generate_experiment_identifiers
-from dials.algorithms.indexing import assign_indices
-from dials.algorithms.indexing import DialsIndexError, DialsIndexRefineError
+from cctbx import sgtbx
+
+from dxtbx.model import ExperimentList, ImageSequence
+
+import dials.util
+from dials.algorithms.indexing import (
+    DialsIndexError,
+    DialsIndexRefineError,
+    assign_indices,
+)
 from dials.algorithms.indexing.compare_orientation_matrices import (
     difference_rotation_matrix_axis_angle,
 )
-from dials.algorithms.indexing.symmetry import SymmetryHandler
 from dials.algorithms.indexing.max_cell import find_max_cell
+from dials.algorithms.indexing.symmetry import SymmetryHandler
 from dials.algorithms.refinement import DialsRefineConfigError, DialsRefineRuntimeError
-from dxtbx.model import ExperimentList, ImageSequence
+from dials.array_family import flex
+from dials.util.multi_dataset_handling import generate_experiment_identifiers
 
 logger = logging.getLogger(__name__)
 

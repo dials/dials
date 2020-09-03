@@ -3,10 +3,11 @@ from __future__ import absolute_import, division, print_function
 import contextlib
 import functools
 import sys
-import tabulate as _tabulate
 
 import six
+import tabulate as _tabulate
 import tqdm
+
 from libtbx.utils import Sorry
 
 __all__ = [
@@ -91,9 +92,9 @@ def debug_context_manager(original_context_manager, name="", log_func=None):
             sys.stderr.write(output)
             sys.stderr.flush()
 
-    from datetime import datetime
-    import threading
     import multiprocessing
+    import threading
+    from datetime import datetime
 
     class DCM(object):
         def __init__(self, name, log_func):

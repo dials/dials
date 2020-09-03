@@ -4,23 +4,26 @@ Tests for scaling library module.
 from __future__ import absolute_import, division, print_function
 
 import pytest
-from libtbx import phil
 from mock import Mock, patch
+
 from cctbx import crystal, miller, uctbx
 from cctbx.sgtbx import space_group
+from libtbx import phil
+
+from dxtbx.model import Beam, Crystal, Detector, Experiment, Goniometer, Scan
 from dxtbx.model.experiment_list import ExperimentList
-from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
-from dials.util.options import OptionParser
-from dials.array_family import flex
+
+from dials.algorithms.scaling.model.model import KBScalingModel, PhysicalScalingModel
 from dials.algorithms.scaling.scaling_library import (
-    scale_single_dataset,
-    create_scaling_model,
+    choose_initial_scaling_intensities,
     create_datastructures_for_structural_model,
     create_Ih_table,
-    choose_initial_scaling_intensities,
+    create_scaling_model,
     determine_best_unit_cell,
+    scale_single_dataset,
 )
-from dials.algorithms.scaling.model.model import KBScalingModel, PhysicalScalingModel
+from dials.array_family import flex
+from dials.util.options import OptionParser
 
 
 @pytest.fixture

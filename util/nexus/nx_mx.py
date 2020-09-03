@@ -5,6 +5,7 @@ import math
 from copy import deepcopy
 
 import numpy as np
+
 from scitbx import matrix
 
 # Extensions to NXMX
@@ -634,9 +635,10 @@ def load_scan(entry):
 
 
 def load_crystal(entry):
-    from dxtbx.model import Crystal
-    from scitbx.array_family import flex
     from cctbx import uctbx
+    from scitbx.array_family import flex
+
+    from dxtbx.model import Crystal
 
     # Get the sample
     nx_sample = get_nx_sample(entry, "sample")
@@ -830,8 +832,7 @@ def find_nx_mx_entries(nx_file, entry):
 
 
 def load(entry, exp_index):
-    from dxtbx.model.experiment_list import ExperimentList
-    from dxtbx.model.experiment_list import Experiment
+    from dxtbx.model.experiment_list import Experiment, ExperimentList
 
     print("Loading NXmx")
 

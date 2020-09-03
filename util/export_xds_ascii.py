@@ -10,6 +10,7 @@ from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
 from scitbx import matrix
 
 import dxtbx.model
+
 from dials.array_family import flex
 from dials.util import Sorry
 from dials.util.filter_reflections import (

@@ -41,8 +41,7 @@ def convert_to_cbf(imageset, template):
 
 
 def run():
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_experiments
+    from dials.util.options import OptionParser, flatten_experiments
 
     usage = "dials.convert_to_cbf [options] models.expt"
 

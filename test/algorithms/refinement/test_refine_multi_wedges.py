@@ -8,9 +8,12 @@ import os
 
 import procrunner
 import pytest
-from dials.algorithms.refinement.engine import Journal
-from dxtbx.model.experiment_list import ExperimentListFactory
+
 from scitbx import matrix
+
+from dxtbx.model.experiment_list import ExperimentListFactory
+
+from dials.algorithms.refinement.engine import Journal
 
 
 def test(dials_regression, run_in_tmpdir):

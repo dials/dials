@@ -19,10 +19,12 @@ https://www.itl.nist.gov/div898/handbook/eda/section3/normprpl.htm).
 import logging
 
 import scipy.stats
+
 from cctbx import miller
-from dials.array_family import flex
+
 from dxtbx.model import ExperimentList
 
+from dials.array_family import flex
 
 log = logging.getLogger("dials.util.intensity_explorer")
 

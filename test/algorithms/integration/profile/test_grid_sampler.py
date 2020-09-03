@@ -135,8 +135,9 @@ def test_nearest_n():
 
 
 def test_weights():
-    from dials.algorithms.profile_model.modeller import GridSampler
     from scitbx import matrix
+
+    from dials.algorithms.profile_model.modeller import GridSampler
 
     width = 1000
     height = 1000
@@ -223,8 +224,9 @@ def test_self_consistent():
 
 
 def test_pickle():
-    from dials.algorithms.profile_model.modeller import GridSampler
     import six.moves.cPickle as pickle
+
+    from dials.algorithms.profile_model.modeller import GridSampler
 
     width = 1000
     height = 1000

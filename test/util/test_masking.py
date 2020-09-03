@@ -1,15 +1,16 @@
 import json
 import os
+
+import procrunner
 import pytest
 
 import libtbx
-import procrunner
+
 from dxtbx.model.experiment_list import ExperimentListFactory
 from dxtbx.serialize import load
 
-from dials.array_family import flex
 from dials.algorithms.shadowing.filter import filter_shadowed_reflections
-
+from dials.array_family import flex
 from dials.util.masking import lru_equality_cache
 
 

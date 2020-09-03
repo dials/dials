@@ -1,11 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
 from libtbx import phil
-from scitbx.array_family import flex
 from scitbx import matrix
+from scitbx.array_family import flex
 
 from .strategy import Strategy
-
 
 fft1d_phil_str = """\
 characteristic_grid = None
@@ -49,8 +48,8 @@ class FFT1D(Strategy):
             A tuple containing the list of basis vectors and a flex.bool array
             identifying which reflections were used in indexing.
         """
-        from rstbx.phil.phil_preferences import indexing_api_defs
         import iotbx.phil
+        from rstbx.phil.phil_preferences import indexing_api_defs
 
         used_in_indexing = flex.bool(reciprocal_lattice_vectors.size(), True)
 

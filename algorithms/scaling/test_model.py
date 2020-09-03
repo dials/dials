@@ -2,21 +2,25 @@
 Tests for the scaling model classes.
 """
 from __future__ import absolute_import, division, print_function
+
 import copy
+
 import pytest
-from mock import Mock, MagicMock
-from dials.util.options import OptionParser
-from dials.array_family import flex
+from mock import MagicMock, Mock
+
+from libtbx import phil
+
 from dials.algorithms.scaling.model.model import (
-    ScalingModelBase,
-    KBScalingModel,
-    PhysicalScalingModel,
     ArrayScalingModel,
     DoseDecay,
+    KBScalingModel,
+    PhysicalScalingModel,
+    ScalingModelBase,
     calc_n_param_from_bins,
     initialise_smooth_input,
 )
-from libtbx import phil
+from dials.array_family import flex
+from dials.util.options import OptionParser
 
 
 @pytest.fixture(scope="module")

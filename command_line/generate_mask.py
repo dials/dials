@@ -25,14 +25,16 @@ import os.path
 
 import six.moves.cPickle as pickle
 
-import dials.util
-import dials.util.log
 import libtbx.phil as phil
-from dials.util.masking import MaskGenerator
-from dials.util.options import OptionParser, flatten_experiments
+from scitbx.array_family import flex
+
 from dxtbx.format.image import ImageBool
 from dxtbx.model.experiment_list import ExperimentList
-from scitbx.array_family import flex
+
+import dials.util
+import dials.util.log
+from dials.util.masking import MaskGenerator
+from dials.util.options import OptionParser, flatten_experiments
 
 try:
     from typing import List, Optional, Tuple

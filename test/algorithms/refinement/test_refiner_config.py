@@ -3,16 +3,18 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+from copy import deepcopy
 
 import pytest
-from dials.algorithms.refinement.refiner import phil_scope
-from dials.algorithms.refinement import DialsRefineConfigError, RefinerFactory
-from dials.array_family import flex
-from dxtbx.model.experiment_list import ExperimentListFactory
+
 from libtbx import phil
+
+from dxtbx.model.experiment_list import ExperimentListFactory
+
+from dials.algorithms.refinement import DialsRefineConfigError, RefinerFactory
+from dials.algorithms.refinement.refiner import _trim_scans_to_observations, phil_scope
+from dials.array_family import flex
 from dials.util.slice import slice_reflections
-from dials.algorithms.refinement.refiner import _trim_scans_to_observations
-from copy import deepcopy
 
 
 @pytest.mark.parametrize(

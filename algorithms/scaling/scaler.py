@@ -15,43 +15,45 @@ from __future__ import absolute_import, division, print_function
 import copy
 import logging
 import time
-from math import ceil
 from collections import OrderedDict
-from dials.util import tabulate
+from math import ceil
 
 import six
 from six.moves import cStringIO as StringIO
-from dials_scaling_ext import row_multiply
-from dials_scaling_ext import calc_sigmasq as cpp_calc_sigmasq
-from dials.array_family import flex
-from dials.algorithms.scaling.basis_functions import RefinerCalculator
-from dials.algorithms.scaling.outlier_rejection import determine_outlier_index_arrays
-from dials.algorithms.scaling.Ih_table import IhTable
-from dials.algorithms.scaling.target_function import ScalingTarget, ScalingTargetFixedIH
-from dials.algorithms.scaling.scaling_refiner import scaling_refinery
-from dials.algorithms.scaling.error_model.engine import run_error_model_refinement
-from dials.algorithms.scaling.parameter_handler import ScalingParameterManagerGenerator
-from dials.algorithms.scaling.scaling_utilities import (
-    log_memory_usage,
-    DialsMergingStatisticsError,
-)
-from dials.algorithms.scaling.scaling_library import (
-    scaled_data_as_miller_array,
-    merging_stats_from_scaled_array,
-)
-from dials.algorithms.scaling.combine_intensities import (
-    SingleDatasetIntensityCombiner,
-    MultiDatasetIntensityCombiner,
-)
-from dials.algorithms.scaling.reflection_selection import (
-    calculate_scaling_subset_ranges_with_E2,
-    calculate_scaling_subset_ranges,
-    select_connected_reflections_across_datasets,
-    _select_groups_on_Isigma_cutoff,
-)
-from dials.util.observer import Subject
+
 from libtbx import Auto
 from scitbx import sparse
+
+from dials.algorithms.scaling.basis_functions import RefinerCalculator
+from dials.algorithms.scaling.combine_intensities import (
+    MultiDatasetIntensityCombiner,
+    SingleDatasetIntensityCombiner,
+)
+from dials.algorithms.scaling.error_model.engine import run_error_model_refinement
+from dials.algorithms.scaling.Ih_table import IhTable
+from dials.algorithms.scaling.outlier_rejection import determine_outlier_index_arrays
+from dials.algorithms.scaling.parameter_handler import ScalingParameterManagerGenerator
+from dials.algorithms.scaling.reflection_selection import (
+    _select_groups_on_Isigma_cutoff,
+    calculate_scaling_subset_ranges,
+    calculate_scaling_subset_ranges_with_E2,
+    select_connected_reflections_across_datasets,
+)
+from dials.algorithms.scaling.scaling_library import (
+    merging_stats_from_scaled_array,
+    scaled_data_as_miller_array,
+)
+from dials.algorithms.scaling.scaling_refiner import scaling_refinery
+from dials.algorithms.scaling.scaling_utilities import (
+    DialsMergingStatisticsError,
+    log_memory_usage,
+)
+from dials.algorithms.scaling.target_function import ScalingTarget, ScalingTargetFixedIH
+from dials.array_family import flex
+from dials.util import tabulate
+from dials.util.observer import Subject
+from dials_scaling_ext import calc_sigmasq as cpp_calc_sigmasq
+from dials_scaling_ext import row_multiply
 
 logger = logging.getLogger("dials")
 

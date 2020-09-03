@@ -2,9 +2,10 @@ from __future__ import absolute_import, division, print_function
 
 import logging.config
 import os
-import six
 import sys
 import time
+
+import six
 
 try:
     from colorlog import ColoredFormatter

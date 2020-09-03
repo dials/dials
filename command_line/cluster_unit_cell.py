@@ -5,14 +5,13 @@ from __future__ import absolute_import, division, print_function
 import os
 import sys
 
-from cctbx import crystal
 import iotbx.mtz
 import iotbx.phil
+from cctbx import crystal
 from xfel.clustering.cluster import Cluster
 from xfel.clustering.cluster_groups import unit_cell_info
 
-from dials.util.options import OptionParser
-from dials.util.options import flatten_experiments
+from dials.util.options import OptionParser, flatten_experiments
 
 help_message = """
 """

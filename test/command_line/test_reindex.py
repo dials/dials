@@ -4,13 +4,16 @@ import os
 
 import procrunner
 import pytest
+
 import scitbx.matrix
 from cctbx import sgtbx
 from cctbx.sgtbx.lattice_symmetry import metric_subgroups
-from dxtbx.serialize import load
+
 from dxtbx.model import Crystal, Experiment, ExperimentList
-from dials.command_line.reindex import reindex_experiments
+from dxtbx.serialize import load
+
 from dials.array_family import flex
+from dials.command_line.reindex import reindex_experiments
 
 
 def test_reindex(dials_regression, tmpdir):

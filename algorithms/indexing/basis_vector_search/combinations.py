@@ -1,15 +1,16 @@
 from __future__ import absolute_import, division, print_function
-import logging
 
+import logging
 import math
 
 from scitbx.array_family import flex
+
 from dxtbx.model import Crystal
 
-from dials.algorithms.indexing.symmetry import find_matching_symmetry
 from dials.algorithms.indexing.compare_orientation_matrices import (
     difference_rotation_matrix_axis_angle,
 )
+from dials.algorithms.indexing.symmetry import find_matching_symmetry
 
 logger = logging.getLogger(__name__)
 

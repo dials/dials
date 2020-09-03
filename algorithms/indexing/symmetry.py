@@ -12,7 +12,6 @@ from scitbx.array_family import flex
 
 from dxtbx.model import Crystal
 
-
 logger = logging.getLogger(__name__)
 
 

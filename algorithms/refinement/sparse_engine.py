@@ -8,19 +8,17 @@
 #
 from __future__ import absolute_import, division, print_function
 
-import libtbx
-from dials.algorithms.refinement import DialsRefineConfigError
-from scitbx.array_family import flex
 import logging
 
-from dials.algorithms.refinement.engine import DisableMPmixin
+import libtbx
+from scitbx.array_family import flex
 
+from dials.algorithms.refinement import DialsRefineConfigError
 from dials.algorithms.refinement.engine import AdaptLstbx as AdaptLstbxBase
-
+from dials.algorithms.refinement.engine import DisableMPmixin
 from dials.algorithms.refinement.engine import (
     GaussNewtonIterations as GaussNewtonIterationsBase,
 )
-
 from dials.algorithms.refinement.engine import LevenbergMarquardtIterations
 
 try:

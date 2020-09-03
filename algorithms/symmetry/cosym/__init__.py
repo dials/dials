@@ -13,19 +13,20 @@ import logging
 import math
 from collections import OrderedDict
 
-import dials.util
-import iotbx.phil
 import numpy as np
+
+import iotbx.phil
 from cctbx import sgtbx
-from dials.algorithms.indexing.symmetry import find_matching_symmetry
-from dials.algorithms.symmetry.cosym import target
-from dials.algorithms.symmetry.cosym import engine
-from dials.algorithms.symmetry import symmetry_base
-from dials.algorithms.symmetry.laue_group import ScoreCorrelationCoefficient
-from dials.util.observer import Subject
 from libtbx import Auto
 from scitbx import matrix
 from scitbx.array_family import flex
+
+import dials.util
+from dials.algorithms.indexing.symmetry import find_matching_symmetry
+from dials.algorithms.symmetry import symmetry_base
+from dials.algorithms.symmetry.cosym import engine, target
+from dials.algorithms.symmetry.laue_group import ScoreCorrelationCoefficient
+from dials.util.observer import Subject
 
 logger = logging.getLogger(__name__)
 

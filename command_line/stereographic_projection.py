@@ -6,8 +6,9 @@ import math
 import os
 import sys
 
-import iotbx.phil
 import matplotlib
+
+import iotbx.phil
 from cctbx import crystal, miller
 from cctbx.array_family import flex
 from scitbx import matrix
@@ -157,8 +158,7 @@ def gcd_list(l):
 
 
 def run(args):
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_experiments
+    from dials.util.options import OptionParser, flatten_experiments
 
     # The script usage
     usage = "dials.stereographic_projection [options] [param.phil] indexed.expt"
@@ -339,8 +339,7 @@ def plot_projections(
 
     # http://matplotlib.org/faq/howto_faq.html#generate-images-without-having-a-window-appear
     matplotlib.use("Agg")  # use a non-interactive backend
-    from matplotlib import pyplot
-    from matplotlib import pylab
+    from matplotlib import pylab, pyplot
 
     if epochs is not None and colour_map is not None:
         epochs = flex.double(epochs)

@@ -12,10 +12,8 @@ from scitbx.math import five_number_summary
 
 from dials.algorithms.clustering.observers import uc_params_from_experiments
 from dials.util import log
-from dials.util.options import OptionParser
-from dials.util.options import flatten_experiments
+from dials.util.options import OptionParser, flatten_experiments
 from dials.util.version import dials_version
-
 
 logger = logging.getLogger("dials.unit_cell_histogram")
 

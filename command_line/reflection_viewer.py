@@ -1,7 +1,6 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
 from __future__ import absolute_import, division, print_function
 
-
 help_message = """
 
 This program is used to view the reflections with debugging purposes.

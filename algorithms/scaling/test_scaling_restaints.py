@@ -2,15 +2,19 @@
 Tests for the scaling restraints module.
 """
 from __future__ import absolute_import, division, print_function
+
 from collections import OrderedDict
+
 import pytest
 from mock import Mock
+
 from scitbx import sparse
-from dials.array_family import flex
+
 from dials.algorithms.scaling.scaling_restraints import (
-    SingleScalingRestraintsCalculator,
     ScalingRestraintsCalculator,
+    SingleScalingRestraintsCalculator,
 )
+from dials.array_family import flex
 
 
 @pytest.fixture

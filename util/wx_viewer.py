@@ -7,15 +7,15 @@ import math
 import os
 import time
 
-import gltbx.util
-import gltbx.gl as gl
-import gltbx.glu as glu
-import gltbx.gl_managed
 import gltbx.fonts
+import gltbx.gl as gl
+import gltbx.gl_managed
+import gltbx.glu as glu
 import gltbx.images
-from scitbx.array_family import flex
+import gltbx.util
 import scitbx.math
 from scitbx import matrix
+from scitbx.array_family import flex
 
 try:
     import wx

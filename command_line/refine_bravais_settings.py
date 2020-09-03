@@ -39,6 +39,7 @@ from cctbx import sgtbx
 from cctbx.sgtbx import bravais_types
 
 from dxtbx.model import ExperimentList
+
 from dials.algorithms.indexing.bravais_settings import (
     refined_settings_from_refined_triclinic,
 )
@@ -46,7 +47,6 @@ from dials.array_family import flex
 from dials.util import log
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
-
 
 logger = logging.getLogger("dials.command_line.refine_bravais_settings")
 

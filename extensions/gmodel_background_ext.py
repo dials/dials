@@ -43,6 +43,7 @@ class GModelBackgroundExt(object):
         :param experiments: The list of experiments
         """
         from libtbx.phil import parse
+
         from dials.algorithms.background.gmodel import BackgroundAlgorithm
 
         # Create some default parameters

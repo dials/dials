@@ -5,8 +5,8 @@ import os
 
 from iotbx.xds import spot_xds
 from scitbx import matrix
-from dxtbx.serialize import xds
 
+from dxtbx.serialize import xds
 
 logger = logging.getLogger(__name__)
 

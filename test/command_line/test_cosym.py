@@ -1,15 +1,18 @@
 from __future__ import absolute_import, division, print_function
 
 import os
-import pytest
+
 import procrunner
+import pytest
 
 from cctbx import sgtbx, uctbx
+
 from dxtbx.serialize import load
-from dials.array_family import flex
+
 from dials.algorithms.symmetry.cosym._generate_test_data import (
     generate_experiments_reflections,
 )
+from dials.array_family import flex
 
 
 @pytest.mark.parametrize("space_group", [None, "P 1", "P 4"])

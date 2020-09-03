@@ -4,14 +4,10 @@ from __future__ import absolute_import, division, print_function
 
 import random
 
+from libtbx.phil import command_line, parse
 from scitbx import matrix
-from libtbx.phil import parse, command_line
 
-from dxtbx.model import BeamFactory
-from dxtbx.model import GoniometerFactory
-from dxtbx.model import DetectorFactory
-
-from dxtbx.model import Crystal
+from dxtbx.model import BeamFactory, Crystal, DetectorFactory, GoniometerFactory
 
 
 # Local functions

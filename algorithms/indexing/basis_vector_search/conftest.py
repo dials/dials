@@ -1,11 +1,12 @@
 from __future__ import absolute_import, division, print_function
 
-import pytest
 import random
 
+import pytest
+
+from cctbx import sgtbx
 from scitbx import matrix
 from scitbx.math import euler_angles_as_matrix
-from cctbx import sgtbx
 
 random.seed(42)
 

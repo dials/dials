@@ -9,27 +9,26 @@ import pytest
 from libtbx.test_utils import approx_equal
 from scitbx import matrix
 from scitbx.array_family import flex
-from dxtbx.model import Crystal
-from dxtbx.model import Beam
-from dxtbx.model import Goniometer
 
-from dials.algorithms.refinement.refinement_helpers import (
-    get_fd_gradients,
-    random_param_shift,
-)
-from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters import (
-    ScanVaryingParameterSet,
-    GaussianSmoother,
+from dxtbx.model import Beam, Crystal, Goniometer
+
+from dials.algorithms.refinement.parameterisation.scan_varying_beam_parameters import (
+    ScanVaryingBeamParameterisation,
 )
 from dials.algorithms.refinement.parameterisation.scan_varying_crystal_parameters import (
     ScanVaryingCrystalOrientationParameterisation,
     ScanVaryingCrystalUnitCellParameterisation,
 )
-from dials.algorithms.refinement.parameterisation.scan_varying_beam_parameters import (
-    ScanVaryingBeamParameterisation,
-)
 from dials.algorithms.refinement.parameterisation.scan_varying_detector_parameters import (
     ScanVaryingDetectorParameterisationSinglePanel,
+)
+from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters import (
+    GaussianSmoother,
+    ScanVaryingParameterSet,
+)
+from dials.algorithms.refinement.refinement_helpers import (
+    get_fd_gradients,
+    random_param_shift,
 )
 
 

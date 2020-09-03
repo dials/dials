@@ -58,8 +58,8 @@ class SauterPoon(CentroidOutlier):
             m.x_calc = calc[0] * self._px_sz[0]
             m.y_calc = calc[1] * self._px_sz[1]
 
-        from rstbx.phil.phil_preferences import indexing_api_defs
         import iotbx.phil
+        from rstbx.phil.phil_preferences import indexing_api_defs
 
         hardcoded_phil = iotbx.phil.parse(input_string=indexing_api_defs).extract()
 

@@ -3,9 +3,12 @@ from __future__ import absolute_import, division, print_function
 import random
 
 import pytest
-from dials.algorithms.profile_model.gaussian_rs.transform import beam_vector_map
-from dxtbx.serialize import load
+
 from scitbx import matrix
+
+from dxtbx.serialize import load
+
+from dials.algorithms.profile_model.gaussian_rs.transform import beam_vector_map
 
 
 @pytest.fixture

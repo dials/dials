@@ -5,10 +5,9 @@ from __future__ import absolute_import, division, print_function
 
 import math
 
-from scitbx.array_family import flex
-from scitbx import sparse
-
 from libtbx.phil import parse
+from scitbx import sparse
+from scitbx.array_family import flex
 
 phil_str = """
     rmsd_cutoff = *fraction_of_bin_size absolute

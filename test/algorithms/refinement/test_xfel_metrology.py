@@ -1,15 +1,18 @@
 from __future__ import absolute_import, division, print_function
 
-from dials.algorithms.refinement.engine import Journal
 import os
-from dxtbx.model.experiment_list import ExperimentListFactory
-from dials.array_family import flex
-from dials.algorithms.refinement import RefinerFactory
-from dials.algorithms.refinement.refiner import phil_scope as refiner_phil_scope
-from libtbx import phil
 
 import procrunner
 import pytest
+
+from libtbx import phil
+
+from dxtbx.model.experiment_list import ExperimentListFactory
+
+from dials.algorithms.refinement import RefinerFactory
+from dials.algorithms.refinement.engine import Journal
+from dials.algorithms.refinement.refiner import phil_scope as refiner_phil_scope
+from dials.array_family import flex
 
 
 def test_joint_refinement(dials_regression, run_in_tmpdir):

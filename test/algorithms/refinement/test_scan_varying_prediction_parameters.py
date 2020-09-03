@@ -1,24 +1,20 @@
 from __future__ import absolute_import, division, print_function
 
 import sys
+from math import pi
+
 import pytest
 
-from math import pi
 from scitbx.array_family import flex
-from dxtbx.model.experiment_list import ExperimentList, Experiment
-from dials.algorithms.refinement.prediction.managed_predictors import (
-    ScansRayPredictor,
-    ScansExperimentsPredictor,
-)
-from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters import (
-    ScanVaryingPredictionParameterisation,
+
+from dxtbx.model.experiment_list import Experiment, ExperimentList
+
+from dials.algorithms.refinement.parameterisation.scan_varying_beam_parameters import (
+    ScanVaryingBeamParameterisation,
 )
 from dials.algorithms.refinement.parameterisation.scan_varying_crystal_parameters import (
     ScanVaryingCrystalOrientationParameterisation,
     ScanVaryingCrystalUnitCellParameterisation,
-)
-from dials.algorithms.refinement.parameterisation.scan_varying_beam_parameters import (
-    ScanVaryingBeamParameterisation,
 )
 from dials.algorithms.refinement.parameterisation.scan_varying_detector_parameters import (
     ScanVaryingDetectorParameterisationSinglePanel,
@@ -26,13 +22,22 @@ from dials.algorithms.refinement.parameterisation.scan_varying_detector_paramete
 from dials.algorithms.refinement.parameterisation.scan_varying_goniometer_parameters import (
     ScanVaryingGoniometerParameterisation,
 )
+from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters import (
+    ScanVaryingPredictionParameterisation,
+)
+from dials.algorithms.refinement.prediction.managed_predictors import (
+    ScansExperimentsPredictor,
+    ScansRayPredictor,
+)
 
 
 class _Test(object):
     def create_models(self, cmdline_overrides=None):
-        from dials.test.algorithms.refinement.setup_geometry import Extract
-        from dxtbx.model import ScanFactory
         from libtbx.phil import parse
+
+        from dxtbx.model import ScanFactory
+
+        from dials.test.algorithms.refinement.setup_geometry import Extract
 
         if cmdline_overrides is None:
             cmdline_overrides = []
@@ -93,6 +98,7 @@ geometry.parameters.crystal.c.length.range = 10 50"""
 
     def generate_reflections(self):
         from cctbx.sgtbx import space_group, space_group_symbols
+
         from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
 
         sequence_range = self.scan.get_oscillation_range(deg=False)

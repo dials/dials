@@ -2,8 +2,9 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 
-from dials.util import show_mail_on_error
 from libtbx.phil import parse
+
+from dials.util import show_mail_on_error
 
 logger = logging.getLogger("dials.command_line.create_profile_model")
 
@@ -56,11 +57,10 @@ class Script(object):
     def run(self):
         """Run the script."""
         from dials.algorithms.profile_model.factory import ProfileModelFactory
-        from dials.util.command_line import Command
         from dials.array_family import flex
+        from dials.util import Sorry, log
+        from dials.util.command_line import Command
         from dials.util.options import reflections_and_experiments_from_files
-        from dials.util import Sorry
-        from dials.util import log
 
         log.config()
 

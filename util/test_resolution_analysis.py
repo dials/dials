@@ -1,7 +1,7 @@
 import pytest
 
-from cctbx import uctbx
 import iotbx.merging_statistics
+from cctbx import uctbx
 from scitbx.array_family import flex
 from scitbx.math import curve_fitting
 

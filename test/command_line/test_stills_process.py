@@ -4,15 +4,16 @@ import os
 
 import pytest
 
-import dxtbx
-from dxtbx.model.experiment_list import ExperimentListFactory
-from dxtbx.format.FormatCBFCspad import FormatCBFCspadInMemory
-from dxtbx.imageset import ImageSet, ImageSetData, MemReader
 from libtbx import easy_run
 from libtbx.phil import parse
 
-from dials.command_line.stills_process import phil_scope, Processor
+import dxtbx
+from dxtbx.format.FormatCBFCspad import FormatCBFCspadInMemory
+from dxtbx.imageset import ImageSet, ImageSetData, MemReader
+from dxtbx.model.experiment_list import ExperimentListFactory
+
 from dials.array_family import flex
+from dials.command_line.stills_process import Processor, phil_scope
 
 
 def test_cspad_cbf_in_memory(dials_regression, run_in_tmpdir):

@@ -22,12 +22,10 @@ from cctbx import uctbx
 
 import dials.util.log
 from dials.report.analysis import scaled_data_as_miller_array
-from dials.util import tabulate
+from dials.util import missing_reflections, tabulate
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
 from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
-from dials.util import missing_reflections
 from dials.util.version import dials_version
-
 
 logger = logging.getLogger("dials.missing_reflections")
 

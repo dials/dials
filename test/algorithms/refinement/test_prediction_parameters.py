@@ -10,27 +10,8 @@ def test():
     from libtbx.phil import parse
     from scitbx.array_family import flex
 
-    ##### Import model builder
+    from dxtbx.model.experiment_list import Experiment, ExperimentList
 
-    from dials.test.algorithms.refinement.setup_geometry import Extract
-
-    ##### Imports for reflection prediction
-
-    from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
-    from dxtbx.model.experiment_list import ExperimentList, Experiment
-    from dials.algorithms.refinement.prediction.managed_predictors import (
-        ScansRayPredictor,
-        ScansExperimentsPredictor,
-    )
-
-    #### Import model parameterisations
-
-    from dials.algorithms.refinement.parameterisation.prediction_parameters import (
-        XYPhiPredictionParameterisation,
-    )
-    from dials.algorithms.refinement.parameterisation.detector_parameters import (
-        DetectorParameterisationSinglePanel,
-    )
     from dials.algorithms.refinement.parameterisation.beam_parameters import (
         BeamParameterisation,
     )
@@ -38,9 +19,27 @@ def test():
         CrystalOrientationParameterisation,
         CrystalUnitCellParameterisation,
     )
+    from dials.algorithms.refinement.parameterisation.detector_parameters import (
+        DetectorParameterisationSinglePanel,
+    )
     from dials.algorithms.refinement.parameterisation.goniometer_parameters import (
         GoniometerParameterisation,
     )
+
+    #### Import model parameterisations
+    from dials.algorithms.refinement.parameterisation.prediction_parameters import (
+        XYPhiPredictionParameterisation,
+    )
+    from dials.algorithms.refinement.prediction.managed_predictors import (
+        ScansExperimentsPredictor,
+        ScansRayPredictor,
+    )
+
+    ##### Imports for reflection prediction
+    from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
+
+    ##### Import model builder
+    from dials.test.algorithms.refinement.setup_geometry import Extract
 
     #### Create models
 

@@ -4,9 +4,12 @@ from __future__ import absolute_import, division, print_function
 
 import procrunner
 import pytest
-from dials.array_family import flex
-from dxtbx.model.experiment_list import ExperimentListFactory
+
 from iotbx import mtz
+
+from dxtbx.model.experiment_list import ExperimentListFactory
+
+from dials.array_family import flex
 
 
 def validate_mtz(mtz_file, expected_labels, unexpected_labels=None):

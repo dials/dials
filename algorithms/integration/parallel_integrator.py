@@ -8,8 +8,7 @@ import psutil
 from libtbx import Auto
 
 import dials.algorithms.integration
-from dials.algorithms.integration.processor import execute_parallel_task
-from dials.algorithms.integration.processor import NullTask
+from dials.algorithms.integration.processor import NullTask, execute_parallel_task
 from dials.array_family import flex
 from dials.util import tabulate
 from dials.util.mp import multi_node_parallel_map
@@ -19,7 +18,6 @@ from dials.util.mp import multi_node_parallel_map
 import dials.algorithms.profile_model.modeller  # noqa: F401 # isort: split
 
 from dials_algorithms_integration_parallel_integrator_ext import (
-    Logger,
     GaussianRSIntensityCalculator,
     GaussianRSMaskCalculator,
     GaussianRSMultiCrystalMaskCalculator,
@@ -27,6 +25,7 @@ from dials_algorithms_integration_parallel_integrator_ext import (
     GaussianRSReferenceCalculator,
     GaussianRSReferenceProfileData,
     GLMBackgroundCalculator,
+    Logger,
     MultiThreadedIntegrator,
     MultiThreadedReferenceProfiler,
     ReferenceProfileData,
@@ -106,14 +105,14 @@ class BackgroundCalculatorFactory(object):
         """
         Select the background calculator
         """
-        from dials.algorithms.background.simple.algorithm import (
-            SimpleBackgroundCalculatorFactory,
-        )
         from dials.algorithms.background.glm.algorithm import (
             GLMBackgroundCalculatorFactory,
         )
         from dials.algorithms.background.gmodel.algorithm import (
             GModelBackgroundCalculatorFactory,
+        )
+        from dials.algorithms.background.simple.algorithm import (
+            SimpleBackgroundCalculatorFactory,
         )
 
         # Get the parameters

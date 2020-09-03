@@ -3,10 +3,11 @@ from __future__ import absolute_import, division, print_function
 import math
 import random
 
-from dials.algorithms.profile_model.gaussian_rs import transform
-from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
-from dxtbx.serialize import load
 from scitbx import matrix
+
+from dxtbx.serialize import load
+
+from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem, transform
 
 
 def test_run(dials_data):

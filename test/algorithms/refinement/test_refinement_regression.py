@@ -9,23 +9,24 @@ from __future__ import absolute_import, division, print_function
 def test():
     # Python and cctbx imports
     from math import pi
-    from scitbx import matrix
-    from scitbx.array_family import flex
+
+    from cctbx.sgtbx import space_group, space_group_symbols
+
+    # Symmetry constrained parameterisation for the unit cell
+    from cctbx.uctbx import unit_cell
     from libtbx.phil import parse
     from libtbx.test_utils import approx_equal
+    from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enlarge
+    from scitbx import matrix
+    from scitbx.array_family import flex
+
+    # We will set up a mock scan and a mock experiment list
+    from dxtbx.model import ScanFactory
+    from dxtbx.model.experiment_list import Experiment, ExperimentList
 
     # Get modules to build models and minimiser using PHIL
     import dials.test.algorithms.refinement.setup_geometry as setup_geometry
     import dials.test.algorithms.refinement.setup_minimiser as setup_minimiser
-
-    # We will set up a mock scan and a mock experiment list
-    from dxtbx.model import ScanFactory
-    from dxtbx.model.experiment_list import ExperimentList, Experiment
-
-    # Model parameterisations
-    from dials.algorithms.refinement.parameterisation.detector_parameters import (
-        DetectorParameterisationSinglePanel,
-    )
     from dials.algorithms.refinement.parameterisation.beam_parameters import (
         BeamParameterisation,
     )
@@ -34,28 +35,28 @@ def test():
         CrystalUnitCellParameterisation,
     )
 
-    # Symmetry constrained parameterisation for the unit cell
-    from cctbx.uctbx import unit_cell
-    from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enlarge
-
-    # Reflection prediction
-    from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
-    from dials.algorithms.refinement.prediction.managed_predictors import (
-        ScansRayPredictor,
-        ScansExperimentsPredictor,
+    # Model parameterisations
+    from dials.algorithms.refinement.parameterisation.detector_parameters import (
+        DetectorParameterisationSinglePanel,
     )
-    from cctbx.sgtbx import space_group, space_group_symbols
 
     # Parameterisation of the prediction equation
     from dials.algorithms.refinement.parameterisation.prediction_parameters import (
         XYPhiPredictionParameterisation,
     )
+    from dials.algorithms.refinement.prediction.managed_predictors import (
+        ScansExperimentsPredictor,
+        ScansRayPredictor,
+    )
+    from dials.algorithms.refinement.reflection_manager import ReflectionManager
 
     # Imports for the target function
     from dials.algorithms.refinement.target import (
         LeastSquaresPositionalResidualWithRmsdCutoff,
     )
-    from dials.algorithms.refinement.reflection_manager import ReflectionManager
+
+    # Reflection prediction
+    from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
 
     #############################
     # Setup experimental models #

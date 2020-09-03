@@ -7,8 +7,10 @@ import os
 import pytest
 import six
 import six.moves.cPickle as pickle
-from dials.array_family import flex
+
 from dxtbx.model.experiment_list import ExperimentListFactory
+
+from dials.array_family import flex
 
 
 @pytest.fixture(scope="module")
@@ -79,20 +81,16 @@ def test_glm_background_calculator(data):
 class IntensityCalculatorFactory(object):
     @staticmethod
     def create(data, detector_space=False, deconvolution=False):
+        from dials.algorithms.integration.parallel_integrator import (
+            GaussianRSMultiCrystalReferenceProfileData,
+            GaussianRSReferenceProfileData,
+            ReferenceProfileData,
+        )
         from dials.algorithms.profile_model.gaussian_rs.algorithm import (
             GaussianRSIntensityCalculatorFactory,
         )
-        from dials.algorithms.integration.parallel_integrator import (
-            GaussianRSReferenceProfileData,
-        )
-        from dials.algorithms.integration.parallel_integrator import (
-            GaussianRSMultiCrystalReferenceProfileData,
-        )
-        from dials.algorithms.integration.parallel_integrator import (
-            ReferenceProfileData,
-        )
-        from dials.algorithms.profile_model.modeller import CircleSampler
         from dials.algorithms.profile_model.gaussian_rs.transform import TransformSpec
+        from dials.algorithms.profile_model.modeller import CircleSampler
 
         reference = data.reference[0]
         experiments = data.experiments
@@ -295,14 +293,12 @@ def test_gaussianrs_detector_space_with_deconvolution_intensity_calculator2(data
 
 def test_gaussianrs_profile_data_pickling(data):
     from dials.algorithms.integration.parallel_integrator import (
-        GaussianRSReferenceProfileData,
-    )
-    from dials.algorithms.integration.parallel_integrator import (
         GaussianRSMultiCrystalReferenceProfileData,
+        GaussianRSReferenceProfileData,
+        ReferenceProfileData,
     )
-    from dials.algorithms.integration.parallel_integrator import ReferenceProfileData
-    from dials.algorithms.profile_model.modeller import CircleSampler
     from dials.algorithms.profile_model.gaussian_rs.transform import TransformSpec
+    from dials.algorithms.profile_model.modeller import CircleSampler
 
     reference = data.reference[0]
     experiments = data.experiments
@@ -398,8 +394,10 @@ def test_job_list():
 
 
 def test_reflection_manager(data):
-    from dials.algorithms.integration.parallel_integrator import SimpleBlockList
-    from dials.algorithms.integration.parallel_integrator import SimpleReflectionManager
+    from dials.algorithms.integration.parallel_integrator import (
+        SimpleBlockList,
+        SimpleReflectionManager,
+    )
 
     jobs = SimpleBlockList((0, 60), 20)
     reflections = data.reflections

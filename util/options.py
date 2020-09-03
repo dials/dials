@@ -14,15 +14,17 @@ from orderedset import OrderedSet
 from six.moves.urllib.parse import urlparse
 
 import libtbx.phil
+
+from dxtbx.model import ExperimentList
+from dxtbx.model.experiment_list import ExperimentListFactory
+
 from dials.array_family import flex
 from dials.util import Sorry
 from dials.util.multi_dataset_handling import (
-    sort_tables_to_experiments_order,
     renumber_table_id_columns,
+    sort_tables_to_experiments_order,
 )
 from dials.util.phil import FilenameDataWrapper
-from dxtbx.model import ExperimentList
-from dxtbx.model.experiment_list import ExperimentListFactory
 
 try:
     import cPickle  # deliberately not using six.moves
@@ -436,9 +438,12 @@ class PhilCommandParser(object):
                             ignoring class constructor options.
         :return: The options and parameters and (optionally) unhandled arguments
         """
-        from dxtbx.model.experiment_list import BeamComparison
-        from dxtbx.model.experiment_list import DetectorComparison
-        from dxtbx.model.experiment_list import GoniometerComparison
+        from dxtbx.model.experiment_list import (
+            BeamComparison,
+            DetectorComparison,
+            GoniometerComparison,
+        )
+
         from dials.util.phil import parse
 
         # Parse the command line phil parameters

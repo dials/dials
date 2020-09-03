@@ -1,12 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
-from dials_pychef_ext import ChefStatistics, Observations
 from cctbx.array_family import flex
 from iotbx.data_plots import table_data
 from libtbx import phil
 
 from dials.util import resolution_analysis
-
+from dials_pychef_ext import ChefStatistics, Observations
 
 __all__ = [
     "ChefStatistics",

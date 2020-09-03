@@ -3,15 +3,18 @@ from __future__ import absolute_import, division, print_function
 import copy
 import functools
 import os
+
 import pytest
 
 from cctbx import sgtbx, uctbx
+
 from dxtbx.model import Crystal
 from dxtbx.serialize import load
-from dials.array_family import flex
+
 from dials.algorithms.indexing import model_evaluation
 from dials.algorithms.indexing.assign_indices import AssignIndicesGlobal
 from dials.algorithms.refinement.refiner import phil_scope as refine_phil
+from dials.array_family import flex
 
 
 def test_ModelRank():

@@ -4,16 +4,16 @@ import logging
 import math
 
 from libtbx import phil
-from scitbx import matrix
 from rstbx.array_family import (
     flex,  # required to load scitbx::af::shared<rstbx::Direction> to_python converter
 )
 from rstbx.dps_core import SimpleSamplerTool
+from scitbx import matrix
 
 from dials.algorithms.indexing import DialsIndexError
+
 from .strategy import Strategy
 from .utils import group_vectors
-
 
 logger = logging.getLogger(__name__)
 

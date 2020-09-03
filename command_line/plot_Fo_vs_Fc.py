@@ -11,14 +11,14 @@ from __future__ import absolute_import, division, print_function
 import sys
 from math import sqrt
 
+import matplotlib
+
 from iotbx import mtz
 from scitbx.array_family import flex
 from scitbx.lstbx import normal_eqns, normal_eqns_solving
 
 from dials.util import Sorry, show_mail_on_error
 from dials.util.options import OptionParser
-
-import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt

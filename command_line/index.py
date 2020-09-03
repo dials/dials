@@ -8,15 +8,15 @@ import logging
 import sys
 
 import iotbx.phil
+
 from dxtbx.model.experiment_list import ExperimentList
-from dials.algorithms.indexing import indexer
-from dials.algorithms.indexing import DialsIndexError
+
+from dials.algorithms.indexing import DialsIndexError, indexer
 from dials.array_family import flex
-from dials.util.slice import slice_reflections
-from dials.util.options import OptionParser
-from dials.util.options import reflections_and_experiments_from_files
-from dials.util.multi_dataset_handling import renumber_table_id_columns
 from dials.util import log
+from dials.util.multi_dataset_handling import renumber_table_id_columns
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.slice import slice_reflections
 from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.index")

@@ -13,30 +13,32 @@ of course the error model adjustment) before the analysis is done.
 import json
 import logging
 import sys
+
+from jinja2 import ChoiceLoader, Environment, PackageLoader
+
 from iotbx import phil
-from jinja2 import Environment, ChoiceLoader, PackageLoader
-from dials.util import log, show_mail_on_error
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
-from dials.util.version import dials_version
+
+from dials.algorithms.scaling.combine_intensities import combine_intensities
 from dials.algorithms.scaling.error_model.engine import run_error_model_refinement
 from dials.algorithms.scaling.error_model.error_model import (
-    calc_sigmaprime,
     calc_deltahl,
-)
-from dials.algorithms.scaling.Ih_table import IhTable
-from dials.algorithms.scaling.scaling_library import choose_initial_scaling_intensities
-from dials.algorithms.scaling.plots import (
-    normal_probability_plot,
-    error_model_variance_plot,
-    error_regression_plot,
+    calc_sigmaprime,
 )
 from dials.algorithms.scaling.error_model.error_model_target import (
     calculate_regression_x_y,
 )
-from dials.report.plots import i_over_sig_i_vs_i_plot
-from dials.algorithms.scaling.combine_intensities import combine_intensities
+from dials.algorithms.scaling.Ih_table import IhTable
+from dials.algorithms.scaling.plots import (
+    error_model_variance_plot,
+    error_regression_plot,
+    normal_probability_plot,
+)
+from dials.algorithms.scaling.scaling_library import choose_initial_scaling_intensities
 from dials.algorithms.scaling.scaling_utilities import calculate_prescaling_correction
-
+from dials.report.plots import i_over_sig_i_vs_i_plot
+from dials.util import log, show_mail_on_error
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.version import dials_version
 
 try:
     from typing import List

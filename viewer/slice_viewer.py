@@ -1,9 +1,11 @@
 from __future__ import absolute_import, division, print_function
+
 import wx
+
 from dials.viewer.viewer_low_level_util import (
-    flex_arr_img_panel,
     MyGrid,
     flex_3d_frame,
+    flex_arr_img_panel,
     grid_frame,
 )
 

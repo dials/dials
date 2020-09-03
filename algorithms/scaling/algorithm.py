@@ -2,46 +2,48 @@
 Definitions of the scaling algorithm.
 """
 from __future__ import absolute_import, division, print_function
-import itertools
-import logging
-import json
-import time
+
 import gc
-from dials.array_family import flex
+import itertools
+import json
+import logging
+import time
+
+from dials.algorithms.scaling.observers import (
+    ScalingHTMLContextManager,
+    ScalingSummaryContextManager,
+)
+from dials.algorithms.scaling.scale_and_filter import AnalysisResults, log_cycle_results
+from dials.algorithms.scaling.scaler_factory import MultiScalerFactory, create_scaler
 from dials.algorithms.scaling.scaling_library import (
-    create_scaling_model,
     create_datastructures_for_structural_model,
     create_datastructures_for_target_mtz,
-    set_image_ranges_in_scaling_models,
-    scaled_data_as_miller_array,
+    create_scaling_model,
     determine_best_unit_cell,
     merging_stats_from_scaled_array,
-)
-from dials.algorithms.scaling.scaler_factory import create_scaler, MultiScalerFactory
-from dials.util.multi_dataset_handling import (
-    select_datasets_on_ids,
-    parse_multiple_datasets,
-    assign_unique_identifiers,
+    scaled_data_as_miller_array,
+    set_image_ranges_in_scaling_models,
 )
 from dials.algorithms.scaling.scaling_utilities import (
-    log_memory_usage,
     DialsMergingStatisticsError,
+    log_memory_usage,
 )
+from dials.algorithms.statistics.cc_half_algorithm import (
+    CCHalfFromDials as deltaccscript,
+)
+from dials.array_family import flex
+from dials.command_line.compute_delta_cchalf import phil_scope as deltacc_phil_scope
+from dials.command_line.cosym import cosym
+from dials.command_line.cosym import phil_scope as cosym_phil_scope
 from dials.util.exclude_images import (
     exclude_image_ranges_for_scaling,
     get_valid_image_ranges,
 )
-from dials.algorithms.scaling.observers import (
-    ScalingSummaryContextManager,
-    ScalingHTMLContextManager,
+from dials.util.multi_dataset_handling import (
+    assign_unique_identifiers,
+    parse_multiple_datasets,
+    select_datasets_on_ids,
 )
-from dials.algorithms.scaling.scale_and_filter import AnalysisResults, log_cycle_results
-from dials.command_line.cosym import cosym
-from dials.command_line.cosym import phil_scope as cosym_phil_scope
-from dials.algorithms.statistics.cc_half_algorithm import (
-    CCHalfFromDials as deltaccscript,
-)
-from dials.command_line.compute_delta_cchalf import phil_scope as deltacc_phil_scope
 
 logger = logging.getLogger("dials")
 

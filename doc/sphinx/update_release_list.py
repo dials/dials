@@ -6,9 +6,9 @@ import re
 from datetime import datetime
 
 try:  # Python 3
-    from urllib.request import urlopen, Request
+    from urllib.request import Request, urlopen
 except ImportError:  # Python 2
-    from urllib2 import urlopen, Request
+    from urllib2 import Request, urlopen
 
 
 def _download_button(text, version, link):

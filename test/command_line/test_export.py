@@ -5,13 +5,16 @@ import os
 
 import procrunner
 import pytest
+
 from cctbx import uctbx
+from iotbx import mtz
+
+from dxtbx.model import ExperimentList
+from dxtbx.serialize import load
+from dxtbx.serialize.load import _decode_dict
+
 from dials.array_family import flex
 from dials.util.multi_dataset_handling import assign_unique_identifiers
-from dxtbx.model import ExperimentList
-from dxtbx.serialize.load import _decode_dict
-from dxtbx.serialize import load
-from iotbx import mtz
 
 
 def run_export(export_format, dials_data, tmpdir):

@@ -1,13 +1,15 @@
 from __future__ import absolute_import, division, print_function
 
-import six.moves.cPickle as pickle
 import pytest
+import six.moves.cPickle as pickle
 
-from dials.command_line.generate_mask import generate_mask, phil_scope
+from libtbx import phil
+
+from dxtbx.model import ExperimentList
+
 from dials.command_line.dials_import import Script as ImportScript
 from dials.command_line.dials_import import phil_scope as import_phil_scope
-from dxtbx.model import ExperimentList
-from libtbx import phil
+from dials.command_line.generate_mask import generate_mask, phil_scope
 
 
 @pytest.fixture(

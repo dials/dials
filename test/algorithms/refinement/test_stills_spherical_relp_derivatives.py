@@ -9,17 +9,9 @@ import pytest
 from cctbx.sgtbx import space_group, space_group_symbols
 from libtbx.phil import parse
 from scitbx import matrix
-from dials.array_family import flex
-from dials.test.algorithms.refinement.setup_geometry import Extract
-from dials.algorithms.spot_prediction import IndexGenerator
-from dxtbx.model.experiment_list import ExperimentList, Experiment
-from dials.algorithms.refinement.prediction.managed_predictors import ScansRayPredictor
-from dials.algorithms.refinement.parameterisation.prediction_parameters_stills import (
-    StillsPredictionParameterisation,
-)
-from dials.algorithms.refinement.parameterisation.detector_parameters import (
-    DetectorParameterisationSinglePanel,
-)
+
+from dxtbx.model.experiment_list import Experiment, ExperimentList
+
 from dials.algorithms.refinement.parameterisation.beam_parameters import (
     BeamParameterisation,
 )
@@ -27,9 +19,18 @@ from dials.algorithms.refinement.parameterisation.crystal_parameters import (
     CrystalOrientationParameterisation,
     CrystalUnitCellParameterisation,
 )
+from dials.algorithms.refinement.parameterisation.detector_parameters import (
+    DetectorParameterisationSinglePanel,
+)
+from dials.algorithms.refinement.parameterisation.prediction_parameters_stills import (
+    StillsPredictionParameterisation,
+)
+from dials.algorithms.refinement.prediction.managed_predictors import ScansRayPredictor
 
 # Create a reflection predictor specific for this test
-from dials.algorithms.spot_prediction import StillsReflectionPredictor
+from dials.algorithms.spot_prediction import IndexGenerator, StillsReflectionPredictor
+from dials.array_family import flex
+from dials.test.algorithms.refinement.setup_geometry import Extract
 
 
 class Predictor(object):

@@ -4,11 +4,12 @@ import math
 from collections import namedtuple
 
 from scitbx import matrix
-from dials.array_family import flex
+
 from dials.algorithms.refinement.parameterisation.prediction_parameters import (
-    XYPhiPredictionParameterisation,
     SparseGradientVectorMixin,
+    XYPhiPredictionParameterisation,
 )
+from dials.array_family import flex
 
 
 class StateDerivativeCache(object):

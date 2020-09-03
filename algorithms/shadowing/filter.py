@@ -2,8 +2,9 @@ from __future__ import absolute_import, division, print_function
 
 
 def filter_shadowed_reflections(experiments, reflections, experiment_goniometer=False):
-    from dxtbx.masking import is_inside_polygon
     from scitbx.array_family import flex
+
+    from dxtbx.masking import is_inside_polygon
 
     shadowed = flex.bool(reflections.size(), False)
     for expt_id in range(len(experiments)):

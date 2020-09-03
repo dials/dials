@@ -2,8 +2,10 @@ from __future__ import absolute_import, division, print_function
 
 
 def test():
-    from dials.algorithms.profile_model.modeller import ProfileModellerIface
-    from dials.algorithms.profile_model.modeller import MultiExpProfileModeller
+    from dials.algorithms.profile_model.modeller import (
+        MultiExpProfileModeller,
+        ProfileModellerIface,
+    )
     from dials.array_family import flex
 
     class Modeller(ProfileModellerIface):

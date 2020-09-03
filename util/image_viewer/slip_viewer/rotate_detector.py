@@ -1,7 +1,10 @@
 from __future__ import division, print_function
+
 import sys
-from dxtbx.model.experiment_list import ExperimentList
+
 from scitbx.matrix import col
+
+from dxtbx.model.experiment_list import ExperimentList
 
 """
 Example script for rotating a detector in an experiment.json

@@ -12,18 +12,20 @@ import logging
 import operator
 import os
 
+import six
+import six.moves.cPickle as pickle
+
 import boost_adaptbx.boost.python
 import cctbx.array_family.flex
 import cctbx.miller
-import dials_array_family_flex_ext
+import libtbx.smart_open
+from scitbx import matrix
+
 import dials.extensions.glm_background_ext
 import dials.extensions.simple_centroid_ext
 import dials.util.ext
-import libtbx.smart_open
-import six
-import six.moves.cPickle as pickle
+import dials_array_family_flex_ext
 from dials.algorithms.centroid import centroid_px_to_mm_panel
-from scitbx import matrix
 
 __all__ = [
     "real",
@@ -826,8 +828,9 @@ class _(object):
         :param nthreads: The number of threads to use
         :return: A tuple containing read time and extract time
         """
-        from dials.model.data import make_image
         from time import time
+
+        from dials.model.data import make_image
 
         assert "shoebox" in self
         detector = imageset.get_detector()

@@ -3,30 +3,33 @@ Test refinement of a crystal unit cell using a two theta target.
 """
 
 from __future__ import absolute_import, division, print_function
-import os
-from libtbx.test_utils import approx_equal
-from math import pi
-from copy import deepcopy
 
-from dxtbx.model.experiment_list import ExperimentList, Experiment
+import os
+from copy import deepcopy
+from math import pi
+
+from libtbx.test_utils import approx_equal
+
+from dxtbx.model.experiment_list import Experiment, ExperimentList
+
 from dials.algorithms.refinement.two_theta_refiner import (
-    TwoThetaTarget,
-    TwoThetaReflectionManager,
     TwoThetaExperimentsPredictor,
     TwoThetaPredictionParameterisation,
+    TwoThetaReflectionManager,
+    TwoThetaTarget,
 )
 
 
 def generate_reflections(experiments):
 
-    from dials.algorithms.spot_prediction import IndexGenerator
-    from dials.algorithms.refinement.prediction.managed_predictors import (
-        ScansRayPredictor,
-        ScansExperimentsPredictor,
-    )
-    from dials.algorithms.spot_prediction import ray_intersection
     from cctbx.sgtbx import space_group, space_group_symbols
     from scitbx.array_family import flex
+
+    from dials.algorithms.refinement.prediction.managed_predictors import (
+        ScansExperimentsPredictor,
+        ScansRayPredictor,
+    )
+    from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
 
     detector = experiments[0].detector
     crystal = experiments[0].crystal

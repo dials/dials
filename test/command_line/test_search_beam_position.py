@@ -1,17 +1,19 @@
 from __future__ import absolute_import, division, print_function
 
 import glob
-import mock
 import os
-import procrunner
-import pytest
-import py.path
 import sys
+
+import mock
+import procrunner
+import py.path
+import pytest
+
 import scitbx
 from cctbx import uctbx
 
-from dxtbx.serialize import load
 from dxtbx.model import ExperimentList
+from dxtbx.serialize import load
 
 import dials.command_line.dials_import
 from dials.algorithms.indexing.test_index import run_indexing

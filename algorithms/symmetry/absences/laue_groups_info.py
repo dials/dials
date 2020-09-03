@@ -1,9 +1,11 @@
 """Definitions of screw axes and space groups for Laue classes."""
 from __future__ import absolute_import, division, print_function
+
 from dials.algorithms.symmetry.absences.screw_axes import (
     ScrewAxis21a,
     ScrewAxis21b,
     ScrewAxis21c,
+    ScrewAxis31c,
     ScrewAxis41a,
     ScrewAxis41b,
     ScrewAxis41c,
@@ -11,7 +13,6 @@ from dials.algorithms.symmetry.absences.screw_axes import (
     ScrewAxis61c,
     ScrewAxis62c,
     ScrewAxis63c,
-    ScrewAxis31c,
     ScrewAxisObserver,
 )
 

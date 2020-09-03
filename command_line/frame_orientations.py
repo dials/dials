@@ -11,13 +11,13 @@ from __future__ import absolute_import, division, print_function
 
 import sys
 
+import matplotlib
+
 from scitbx import matrix
 
 import dials.util
 from dials.util import tabulate
 from dials.util.options import OptionParser, flatten_experiments
-
-import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt

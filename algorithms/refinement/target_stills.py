@@ -1,8 +1,10 @@
 from __future__ import absolute_import, division, print_function
+
 from math import pi, sqrt
+
 from cctbx.array_family import flex
 
-from dials.algorithms.refinement.target import Target, SparseGradientsMixin
+from dials.algorithms.refinement.target import SparseGradientsMixin, Target
 
 # constants
 TWO_PI = 2.0 * pi

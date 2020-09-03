@@ -2,11 +2,14 @@ from __future__ import absolute_import, division, print_function
 
 import os
 
-import libtbx
 import pytest
-from dials.array_family import flex
-from dxtbx.model.experiment_list import ExperimentListFactory
+
+import libtbx
 from libtbx.phil import parse
+
+from dxtbx.model.experiment_list import ExperimentListFactory
+
+from dials.array_family import flex
 
 
 def test_kapton(run_in_tmpdir):

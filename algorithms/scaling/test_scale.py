@@ -8,19 +8,22 @@ from __future__ import absolute_import, division, print_function
 
 import json
 
-import iotbx.merging_statistics
-import pytest
 import procrunner
-from cctbx import uctbx
+import pytest
+
+import iotbx.merging_statistics
 import iotbx.mtz
+from cctbx import uctbx
 from libtbx import phil
-from dxtbx.serialize import load
+
+from dxtbx.model import Beam, Crystal, Detector, Experiment, Goniometer, Scan
 from dxtbx.model.experiment_list import ExperimentList
-from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
-from dials.array_family import flex
-from dials.util.options import OptionParser
+from dxtbx.serialize import load
+
 from dials.algorithms.scaling.algorithm import ScalingAlgorithm, prepare_input
+from dials.array_family import flex
 from dials.command_line import merge, report, scale
+from dials.util.options import OptionParser
 
 
 def run_one_scaling(working_directory, argument_list):

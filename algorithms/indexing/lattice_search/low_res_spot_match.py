@@ -7,11 +7,13 @@ import operator
 
 import libtbx.phil
 from cctbx import miller
-from dials.algorithms.indexing import DialsIndexError
-from dials.array_family import flex
-from dxtbx.model import Crystal
 from scitbx import matrix
 from scitbx.math import least_squares_plane, superpose
+
+from dxtbx.model import Crystal
+
+from dials.algorithms.indexing import DialsIndexError
+from dials.array_family import flex
 
 from .strategy import Strategy
 

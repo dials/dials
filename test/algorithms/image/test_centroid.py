@@ -9,8 +9,9 @@ class Test_Centroid(object):
         self.calculate_gold()
 
     def test_centroid_points2d(self):
-        from dials.algorithms.image.centroid import centroid_points
         from scitbx import matrix
+
+        from dials.algorithms.image.centroid import centroid_points
 
         centroid = centroid_points(self.pixels2d.as_1d(), self.points2d.as_1d())
 
@@ -21,8 +22,9 @@ class Test_Centroid(object):
         )
 
     def test_centroid_points3d(self):
-        from dials.algorithms.image.centroid import centroid_points
         from scitbx import matrix
+
+        from dials.algorithms.image.centroid import centroid_points
 
         centroid = centroid_points(self.pixels3d.as_1d(), self.points3d.as_1d())
 
@@ -33,8 +35,9 @@ class Test_Centroid(object):
         )
 
     def test_centroid_image2d(self):
-        from dials.algorithms.image.centroid import centroid_image
         from scitbx import matrix
+
+        from dials.algorithms.image.centroid import centroid_image
 
         centroid = centroid_image(self.pixels2d)
 
@@ -45,8 +48,9 @@ class Test_Centroid(object):
         )
 
     def test_centroid_image3d(self):
-        from dials.algorithms.image.centroid import centroid_image
         from scitbx import matrix
+
+        from dials.algorithms.image.centroid import centroid_image
 
         centroid = centroid_image(self.pixels3d)
 
@@ -57,8 +61,9 @@ class Test_Centroid(object):
         )
 
     def test_centroid_masked_image2d(self):
-        from dials.algorithms.image.centroid import centroid_image
         from scitbx import matrix
+
+        from dials.algorithms.image.centroid import centroid_image
 
         centroid = centroid_image(self.pixels2d, self.mask2d)
 
@@ -70,8 +75,9 @@ class Test_Centroid(object):
         )
 
     def test_centroid_masked_image3d(self):
-        from dials.algorithms.image.centroid import centroid_image
         from scitbx import matrix
+
+        from dials.algorithms.image.centroid import centroid_image
 
         centroid = centroid_image(self.pixels3d, self.mask3d)
 
@@ -83,8 +89,9 @@ class Test_Centroid(object):
         )
 
     def test_centroid_bias(self):
-        from dials.algorithms.image.centroid import centroid_image
         from scitbx.array_family import flex
+
+        from dials.algorithms.image.centroid import centroid_image
 
         pixels = flex.double(flex.grid(5, 5), 0)
         pixels[1, 2] = 5
@@ -98,8 +105,9 @@ class Test_Centroid(object):
 
     @classmethod
     def generate_data(cls):
+        from random import randint, random
+
         from scitbx.array_family import flex
-        from random import random, randint
 
         # Generate a 3d array of pixels and points
         cls.points3d = flex.vec3_double(flex.grid(5, 5, 5))
@@ -130,8 +138,8 @@ class Test_Centroid(object):
 
     @classmethod
     def calculate_gold2d(cls):
-        from scitbx.array_family import flex
         from scitbx import matrix
+        from scitbx.array_family import flex
 
         r_tot = 0.0
         c_tot = 0.0
@@ -178,8 +186,8 @@ class Test_Centroid(object):
 
     @classmethod
     def calculate_gold3d(cls):
-        from scitbx.array_family import flex
         from scitbx import matrix
+        from scitbx.array_family import flex
 
         f_tot = 0.0
         r_tot = 0.0
@@ -240,8 +248,8 @@ class Test_Centroid(object):
 
     @classmethod
     def calculate_gold_masked2d(cls):
-        from scitbx.array_family import flex
         from scitbx import matrix
+        from scitbx.array_family import flex
 
         r_tot = 0.0
         c_tot = 0.0
@@ -300,8 +308,8 @@ class Test_Centroid(object):
 
     @classmethod
     def calculate_gold_masked3d(cls):
-        from scitbx.array_family import flex
         from scitbx import matrix
+        from scitbx.array_family import flex
 
         f_tot = 0.0
         r_tot = 0.0

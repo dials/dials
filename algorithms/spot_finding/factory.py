@@ -5,6 +5,7 @@ import time
 
 import six
 import six.moves.cPickle as pickle
+
 from dials.array_family import flex
 
 logger = logging.getLogger(__name__)
@@ -12,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 def generate_phil_scope():
     from iotbx.phil import parse
+
     import dials.extensions
 
     phil_scope = parse(
@@ -412,10 +414,12 @@ class SpotFinderFactory(object):
         :param params: The input parameters
         :returns: The spot finder instance
         """
-        from dials.util.masking import MaskGenerator
-        from dials.algorithms.spot_finding.finder import SpotFinder
         from libtbx.phil import parse
+
         from dxtbx.imageset import ImageSequence
+
+        from dials.algorithms.spot_finding.finder import SpotFinder
+        from dials.util.masking import MaskGenerator
 
         if params is None:
             params = phil_scope.fetch(source=parse("")).extract()

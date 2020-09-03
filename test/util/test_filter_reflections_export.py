@@ -28,27 +28,30 @@ scaled and filtered below a given value where the values become unreliable.
 """
 from __future__ import absolute_import, division, print_function
 
-import pytest
 import mock
-from dials.array_family import flex
+import pytest
+
+from cctbx import miller
+
 from dxtbx.model import Crystal, Experiment, ExperimentList
 from dxtbx.model.experiment_list import ExperimentListFactory
-from cctbx import miller
+
+from dials.array_family import flex
 from dials.util.filter_reflections import (
-    FilteringReductionMethods,
-    FilterForExportAlgorithm,
-    SumIntensityReducer,
-    PrfIntensityReducer,
-    SumAndPrfIntensityReducer,
-    ScaleIntensityReducer,
-    filter_reflection_table,
-    sum_partial_reflections,
-    _sum_prf_partials,
-    _sum_sum_partials,
-    _sum_scale_partials,
     AllSumPrfScaleIntensityReducer,
-    filtered_arrays_from_experiments_reflections,
+    FilterForExportAlgorithm,
+    FilteringReductionMethods,
     NoProfilesException,
+    PrfIntensityReducer,
+    ScaleIntensityReducer,
+    SumAndPrfIntensityReducer,
+    SumIntensityReducer,
+    _sum_prf_partials,
+    _sum_scale_partials,
+    _sum_sum_partials,
+    filter_reflection_table,
+    filtered_arrays_from_experiments_reflections,
+    sum_partial_reflections,
 )
 
 

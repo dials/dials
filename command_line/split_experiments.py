@@ -1,13 +1,15 @@
 from __future__ import absolute_import, division, print_function
 
 import functools
+
 from libtbx.phil import parse
+
+from dxtbx.model.experiment_list import ExperimentList
+
+from dials.array_family import flex
 from dials.util import Sorry, show_mail_on_error
 from dials.util.export_mtz import match_wavelengths
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
-from dials.array_family import flex
-from dxtbx.model.experiment_list import ExperimentList
-
 
 help_message = """
 
