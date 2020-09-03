@@ -1,5 +1,3 @@
-# isort: skip_file
-
 from __future__ import absolute_import, division, print_function
 
 import logging
@@ -18,7 +16,7 @@ from dials.util.mp import multi_node_parallel_map
 
 # Need this import first because loads extension that parallel_integrator_ext
 # relies on - it assumes the binding for EmpiricalProfileModeller exists
-import dials.algorithms.profile_model.modeller  # noqa: F401
+import dials.algorithms.profile_model.modeller  # noqa: F401 # isort: split
 
 from dials_algorithms_integration_parallel_integrator_ext import (
     Logger,
