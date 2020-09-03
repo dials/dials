@@ -66,11 +66,11 @@ phil_scope = parse(
     .type = int(value_min=1)
     .help = "The number of resolution bins to use"
 
-  dmin = None
+  d_min = None
     .type = float
     .help = "The maximum resolution"
 
-  dmax = None
+  d_max = None
     .type = float
     .help = "The minimum resolution"
 

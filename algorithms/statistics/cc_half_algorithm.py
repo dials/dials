@@ -49,8 +49,8 @@ class CCHalfFromMTZ(object):
             space_group,
             cutoff=cutoff,
             cutoff_method=cutoff_method,
-            d_min=params.dmin,
-            d_max=params.dmax,
+            d_min=params.d_min,
+            d_max=params.d_max,
             n_bins=params.nbins,
         )
 
@@ -223,8 +223,8 @@ class CCHalfFromDials(object):
             space_group,
             cutoff=cutoff,
             cutoff_method=cutoff_method,
-            d_min=params.dmin,
-            d_max=params.dmax,
+            d_min=params.d_min,
+            d_max=params.d_max,
             n_bins=params.nbins,
         )
 
