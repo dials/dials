@@ -53,3 +53,15 @@ class TimingInfo(object):
             if value
         ]
         return tabulate(rows)
+
+    def __add__(self, other):
+        assert isinstance(other, TimingInfo)
+        new_timing = TimingInfo()
+        new_timing.read = self.read + other.read
+        new_timing.extract = self.extract + other.extract
+        new_timing.initialize = self.initialize + other.initialize
+        new_timing.process = self.process + other.process
+        new_timing.finalize = self.finalize + other.finalize
+        new_timing.total = self.total + other.total
+        new_timing.user = self.user + other.user
+        return new_timing
