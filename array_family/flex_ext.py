@@ -751,6 +751,24 @@ class _(object):
         for experiment, indices in zip(experiments, index_list):
             yield experiment, indices
 
+    def random_split(self, n=2):
+        """Randomly split table into n tables.
+
+        Not all tables will be the same length."""
+        n = int(n)
+        if n <= 1:
+            return [self]
+        cctbx.array_family.flex.set_random_seed(0)
+        list_of_reflection_tables = []
+
+        perm = cctbx.array_family.flex.random_permutation(self.size())
+        divisions = [int(i * self.size() / n) for i in range(0, n + 1)]
+        for i, v in enumerate(divisions[:-1]):
+            isel = perm[v : divisions[i + 1]]
+            if isel:
+                list_of_reflection_tables.append(self.select(isel))
+        return list_of_reflection_tables
+
     def compute_background(self, experiments, image_volume=None):
         """
         Helper function to compute the background.
