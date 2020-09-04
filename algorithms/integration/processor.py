@@ -171,12 +171,14 @@ class MultiProcessing(object):
         self.nproc = 1
         self.njobs = 1
         self.nthreads = 1
+        self.n_subset_split = None
 
     def update(self, other):
         self.method = other.method
         self.nproc = other.nproc
         self.njobs = other.njobs
         self.nthreads = other.nthreads
+        self.n_subset_split = other.n_subset_split
 
 
 class Lookup(object):

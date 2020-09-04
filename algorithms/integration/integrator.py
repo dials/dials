@@ -236,6 +236,10 @@ def generate_phil_scope():
         nproc = 1
           .type = int(value_min=1)
           .help = "The number of processes to use per cluster job"
+
+        multiprocessing.n_subset_split = None
+            .type = int(value_min=1)
+            .help = "Number of subsets to split the reflection table for integration."
       }
 
       summation {
@@ -383,6 +387,7 @@ class Parameters(object):
         mp.method = params.mp.method
         mp.nproc = params.mp.nproc
         mp.njobs = params.mp.njobs
+        mp.n_subset_split = params.mp.multiprocessing.n_subset_split
 
         # Set the lookup parameters
         lookup = processor.Lookup()
@@ -1234,11 +1239,16 @@ class Integrator(object):
             # if necessary, only want to split if we can't even process with
             # nproc = 1
 
-            tables = _iterative_table_split(
-                [self.reflections],
-                self.experiments,
-                available_incl_swap,
-            )
+            if self.params.integration.mp.n_subset_split:
+                tables = self.reflections.random_split(
+                    self.params.integration.mp.n_subset_split
+                )
+            else:
+                tables = _iterative_table_split(
+                    [self.reflections],
+                    self.experiments,
+                    available_incl_swap,
+                )
 
             if len(tables) == 1:
                 # will not fail a memory check in the processor, so proceed
