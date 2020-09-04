@@ -88,6 +88,11 @@ def config(verbosity=0, logfile=None):
     #   logging.getLogger("dxtbx").setLevel(logging.DEBUG)
     console.setLevel(loglevel)
 
+    # Enable print of messages from warnings.warn to console
+    py_warnings_logger = logging.getLogger("py.warnings")
+    py_warnings_logger.addHandler(console)
+    logging.captureWarnings(True)
+
     print_banner(use_logging=True)
 
 
