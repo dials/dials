@@ -315,7 +315,10 @@ class RefinerFactory(object):
             params.refinement.parameterisation.scan_varying = False
 
         # Trim scans and calculate reflection block_width if required for scan-varying refinement
-        if params.refinement.parameterisation.scan_varying:
+        if (
+            params.refinement.parameterisation.scan_varying
+            and params.refinement.parameterisation.trim_scan_to_observations
+        ):
 
             experiments = _trim_scans_to_observations(experiments, reflections)
 
