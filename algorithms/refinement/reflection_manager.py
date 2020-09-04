@@ -321,7 +321,6 @@ class ReflectionManagerFactory(object):
 
         # Check for deprecated parameter
         if params.trim_scan_edges > 0.0:
-            warnings.simplefilter("default")
             warnings.warn(
                 "The parameter trim_scan_edges is deprecated and will be removed shortly",
                 DeprecationWarning,
