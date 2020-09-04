@@ -108,8 +108,8 @@ phil_str = (
     trim_scan_to_observations = True
       .type = bool
       .expert_level = 1
-      .help = "For scan-varying refinement, scan objects will be trimmed to"
-              "the range of observed reflections if this is true. This avoids"
+      .help = "For scan-varying refinement, trim scan objects to"
+              "the range of observed reflections. This avoids"
               "failures in refinement for cases where the extremes of scans"
               "contain no data, such as when the crystal moves out of the beam."
 
