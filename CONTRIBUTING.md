@@ -79,13 +79,14 @@ message that the code in question is special and care should be taken.
 
 ## Pull Requests
 
-- Include a newsfragment before merging. This is a file with a description of
-  your change, to go in the release notes - often less technical than a commit
-  message. This is a file numbered to match the issue or pull request in
-  the `newsfragments` folder - our current list of categories and what to call
-  this can be found [here][news-README]. These are processed on release by the
-  release manager with a tool named [towncrier]. This can be added after you've
-  created the pull request, if you don't have an issue number.
+- Include a newsfragment before merging. This is a file in the
+  `newsfragments` folder with a description of your change. Try to make it
+  a one-sentence summary aimed at a DIALS user, not a developer. The file is
+  numbered to match the issue or pull request and has 
+  [one of the allowed extensions from the list][news-README]. 
+  If you don't have an issue number you can also add that file after you've
+  created your pull request. Newsfragments are processed on release by a
+  tool named [towncrier] and make up our release notes. 
 - We aim to squash-merge most pull requests. However, if you are working on a
   longer-term feature branch, or making a lot of changes that might be a
   candidate for a non-squash merge - please try to keep commits a relatively
@@ -108,14 +109,13 @@ message that the code in question is special and care should be taken.
   take care of the formatting. We prefer if you commit code formatted with
   black (the pre-commit hook will help do this for you), but if for some reason
   you miss this, the whole codebase is auto-cleaned once a week. Most IDEs
-  and editors have support for running formatters like black frequently or
-  automatically.
+  and editors have support for running formatters like black automatically.
 - **Avoid introducing new flake8 warnings** - if you feel that it's appropriate
-  to violate a warning, mark it up explicitly with a [noqa] comment. The most
+  to ignore a warning, mark it up explicitly with a [noqa] comment. The most
   important subset of checks are run as part of the pre-commit checks, but
   please try to resolve any other valid warnings shown with a normal run of
-  flake8. The configuration in the repository turns off any that disagree with
-  black's interpretation of the rules, or standard practice in our repositories.
+  flake8. The configuration in the repository turns off any warnings that
+  disagree with our standard practice.
 - **We format C++ code with [clang-format]**. We use a configuration for style
   broadly compatible with what our existing prevailing style was. We don't
   require that everyone has clang-format installed - the weekly cleaning job
@@ -124,7 +124,7 @@ message that the code in question is special and care should be taken.
 
 
 [pre-commit]: https://github.com/pre-commit/pre-commit
-[black]: https://github.com/python/black
+[black]: https://github.com/psf/black
 [isort]: https://github.com/PyCQA/isort
 [clang-format]: https://clang.llvm.org/docs/ClangFormat.html
 [noqa]: http://flake8.pycqa.org/en/3.7.7/user/violations.html#in-line-ignoring-errors
