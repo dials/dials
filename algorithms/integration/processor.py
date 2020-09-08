@@ -681,10 +681,8 @@ class _Manager(object):
                 nframes = sorted([b[5] - b[4] for b in self.reflections["bbox"]])
                 cutoff = int(self.params.block.threshold * len(nframes))
                 block_overlap_size = nframes[cutoff]
-                nframes = len(
-                    self.experiments[0].imageset
-                )  ###FIXME more than one iset?
-                nblocks = self.params.mp.nproc  ###FIXME what about njobs?
+                nframes = sum(len(i) for i in self.experiments.imagesets())
+                nblocks = self.params.mp.nproc * self.params.mp.njobs
                 # want data to be split into n blocks with overlaps
                 # i.e. [x, overlap, y, overlap, y, overlap, ....,y,  overlap, x]
                 # blocks are x + overlap, or overlap + y + overlap.
