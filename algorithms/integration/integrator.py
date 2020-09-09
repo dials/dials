@@ -1197,7 +1197,7 @@ class Integrator(object):
                     max_memory_needed(reflections, frame0, frame1, flatten),
                     max_needed,
                 )
-            assert max_needed > 0
+            assert max_needed > 0, "Could not determine memory requirements"
             return max_needed
 
         def _iterative_table_split(tables, experiments, available_memory):
