@@ -79,19 +79,16 @@ def assess_available_memory(params):
         "Memory situation report:",
     ]
 
-    def _report(description, value):
-        report.append("  %-50s:%5.1f GB" % (description, value))
+    def _report(description, numbytes):
+        report.append("  %-50s:%5.1f GB" % (description, numbytes / 1e9))
 
-    _report("Available system memory (excluding swap)", available_memory / 1e9)
-    _report("Available swap memory", available_swap / 1e9)
-    _report("Available system memory (including swap)", available_incl_swap / 1e9)
-    _report(
-        "Maximum memory for processing (including swap)",
-        available_limit / 1e9,
-    )
+    _report("Available system memory (excluding swap)", available_memory)
+    _report("Available swap memory", available_swap)
+    _report("Available system memory (including swap)", available_incl_swap)
+    _report("Maximum memory for processing (including swap)", available_limit)
     _report(
         "Maximum memory for processing (excluding swap)",
-        available_immediate_limit / 1e9,
+        available_immediate_limit,
     )
 
     # Check if a ulimit applies
@@ -106,8 +103,8 @@ def assess_available_memory(params):
                 report.append("  no memory ulimit set")
             else:
                 ulimit_used = psutil.Process().memory_info().rss
-                _report("Memory ulimit detected", ulimit / 1e9)
-                _report("Memory ulimit in use", ulimit_used / 1e9)
+                _report("Memory ulimit detected", ulimit)
+                _report("Memory ulimit in use", ulimit_used)
                 available_memory = max(0, min(available_memory, ulimit - ulimit_used))
                 available_incl_swap = max(
                     0, min(available_incl_swap, ulimit - ulimit_used)
@@ -115,14 +112,14 @@ def assess_available_memory(params):
                 available_immediate_limit = (
                     available_memory * params.block.max_memory_usage
                 )
-                _report("Available system memory (limited)", available_memory / 1e9)
+                _report("Available system memory (limited)", available_memory)
                 _report(
                     "Available system memory (incl. swap; limited)",
-                    available_incl_swap / 1e9,
+                    available_incl_swap,
                 )
                 _report(
                     "Maximum memory for processing (exc. swap; limited)",
-                    available_immediate_limit / 1e9,
+                    available_immediate_limit,
                 )
         except Exception as e:
             logger.debug(
