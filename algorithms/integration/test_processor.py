@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function
 import math
 
 from dials.array_family import flex
-from dials_algorithms_integration_integrator_ext import JobList
+from dials_algorithms_integration_integrator_ext import JobList, max_memory_needed
 from dials.algorithms.profile_model.gaussian_rs import Model
 from dxtbx.model.experiment_list import ExperimentListFactory
 import dials.algorithms.integration.processor
@@ -32,6 +32,9 @@ def test_shoebox_memory_is_a_reasonable_guesstimate(dials_data):
         assumed_memory_usage = list(jobs.shoebox_memory(rlist, flatten))
         assert len(assumed_memory_usage) == 1
         assert assumed_memory_usage[0] == pytest.approx(23952, abs=3000)
+
+        max_mem = max_memory_needed(rlist, 0, 9, flatten)
+        assert max_mem == pytest.approx(23952, abs=3000)
 
 
 @mock.patch("dials.algorithms.integration.processor.flex.max")
