@@ -315,7 +315,10 @@ def test_template_with_missing_image_fails(centroid_test_data_with_missing_image
     # This should fail because image #4 is missing
     for image_range in (None, (3, 5)):
         result = procrunner.run(
-            ["dials.import", f"template={centroid_test_data_with_missing_image}",]
+            [
+                "dials.import",
+                f"template={centroid_test_data_with_missing_image}",
+            ]
             + (["image_range=%i,%i" % image_range] if image_range else []),
             working_directory=centroid_test_data_with_missing_image.parent,
         )

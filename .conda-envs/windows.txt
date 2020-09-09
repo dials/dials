@@ -41,7 +41,7 @@ conda-forge::requests
 conda-forge::scons
 conda-forge::setuptools
 conda-forge::six
-conda-forge::sphinx
+conda-forge::sphinx<3.2
 conda-forge::sqlite
 conda-forge::tabulate
 conda-forge::tqdm

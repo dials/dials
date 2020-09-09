@@ -22,6 +22,7 @@ Examples::
 from __future__ import absolute_import, division, print_function
 
 import logging
+import math
 import sys
 import dials.util.log
 
@@ -50,6 +51,11 @@ phil_scope = parse(
     experiments = 'integrated.expt'
       .type = str
       .help = "The experiments output filename"
+
+    output_unintegrated_reflections = True
+      .type = bool
+      .expert_level = 2
+      .help = "Include unintegrated reflections in output file"
 
     reflections = 'integrated.refl'
       .type = str
@@ -241,11 +247,6 @@ def sample_predictions(experiments, predicted, params):
 
     # this code is very similar to David's code in algorithms/refinement/reflection_manager.py!
 
-    # constants
-    from math import pi
-
-    RAD2DEG = 180.0 / pi
-
     working_isel = flex.size_t()
     for iexp, exp in enumerate(experiments):
 
@@ -256,7 +257,7 @@ def sample_predictions(experiments, predicted, params):
         # set sample size according to nref_per_degree (per experiment)
         if exp.scan and nref_per_degree:
             sequence_range_rad = exp.scan.get_oscillation_range(deg=False)
-            width = abs(sequence_range_rad[1] - sequence_range_rad[0]) * RAD2DEG
+            width = math.degrees(abs(sequence_range_rad[1] - sequence_range_rad[0]))
             sample_size = int(nref_per_degree * width)
         else:
             sequence_range_rad = None
@@ -554,6 +555,16 @@ def run_integration(params, experiments, reference=None):
     # Integrate the reflections
     reflections = integrator.integrate()
 
+    # Remove unintegrated reflections
+    if not params.output.output_unintegrated_reflections:
+        keep = reflections.get_flags(reflections.flags.integrated, all=False)
+        logger.info(
+            "Removing %d unintegrated reflections of %d total"
+            % (keep.count(False), keep.size())
+        )
+
+        reflections = reflections.select(keep)
+
     # Append rubbish data onto the end
     if rubbish is not None and params.output.include_bad_reference:
         mask = flex.bool(len(rubbish), True)
@@ -633,9 +644,7 @@ def run(args=None, phil=phil_scope):
     params, options = parser.parse_args(args=args, show_diff_phil=False)
 
     # Configure the logging
-    dials.util.log.config(
-        verbosity=options.verbose, logfile=params.output.log,
-    )
+    dials.util.log.config(verbosity=options.verbose, logfile=params.output.log)
 
     logger.info(dials_version())
 

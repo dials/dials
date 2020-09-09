@@ -85,10 +85,12 @@ def prf_sum_refl_to_filter():
     reflections["intensity.prf.variance"] = flex.double(5, 1.0)
     reflections["miller_index"] = flex.miller_index([(0, 0, 1)] * 5)
     reflections.set_flags(
-        flex.bool([False, False, True, True, True]), reflections.flags.integrated_sum,
+        flex.bool([False, False, True, True, True]),
+        reflections.flags.integrated_sum,
     )
     reflections.set_flags(
-        flex.bool([True, False, False, True, True]), reflections.flags.integrated_prf,
+        flex.bool([True, False, False, True, True]),
+        reflections.flags.integrated_prf,
     )
     return reflections
 

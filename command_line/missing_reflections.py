@@ -93,7 +93,8 @@ def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> 
     else:
         # Else get the integrated intensities
         miller_arrays = filtered_arrays_from_experiments_reflections(
-            experiments, reflections,
+            experiments,
+            reflections,
         )
         miller_array = miller_arrays[0]
         for ma in miller_arrays[1:]:

@@ -80,7 +80,7 @@ def test_resolution_cc_half(merging_stats):
         cc_half_method="sigma_tau",
         model=resolution_analysis.polynomial_fit,
     )
-    assert result.d_min == pytest.approx(1.23, abs=1e-3)
+    assert result.d_min == pytest.approx(1.233, abs=1e-3)
     assert flex.max(flex.abs(result.y_obs - result.y_fit)) < 0.04
     assert result.critical_values is not None
     assert len(result.critical_values) == len(result.d_star_sq)
@@ -92,6 +92,13 @@ def test_resolution_fit_from_merging_stats(merging_stats):
     )
     assert result.d_min == pytest.approx(1.295, abs=1e-3)
     assert flex.max(flex.abs(result.y_obs - result.y_fit)) < 1
+
+
+def test_resolution_fit_interpolation_error(merging_stats):
+    result = resolution_analysis.resolution_fit_from_merging_stats(
+        merging_stats, "i_over_sigma_mean", resolution_analysis.log_fit, limit=25
+    )
+    assert result.d_min is None
 
 
 def test_plot_result(merging_stats):

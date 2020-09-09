@@ -442,8 +442,7 @@ class ScoreCorrelationCoefficient(object):
 
     @property
     def p_cc_given_not_s(self):
-        """Probability of observing this CC if the sym op is NOT present, p(CC; !S).
-        """
+        """Probability of observing this CC if the sym op is NOT present, p(CC; !S)."""
         return self._p_cc_given_not_s
 
     @property

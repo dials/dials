@@ -201,7 +201,9 @@ def run(args):
     plt.ylabel("y-coordinate (mm)")
     if params.output.file_name is not None:
         plt.savefig(
-            params.output.file_name, dpi=params.output.dpi, bbox_inches="tight",
+            params.output.file_name,
+            dpi=params.output.dpi,
+            bbox_inches="tight",
         )
     if params.output.show_plot:
         plt.show()

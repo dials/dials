@@ -134,7 +134,7 @@ def filter_similar_orientations(
 ):
     for cryst in crystal_models:
         orientation_too_similar = False
-        for i_a, cryst_a in enumerate(other_crystal_models):
+        for cryst_a in other_crystal_models:
             R_ab, axis, angle, cb_op_ab = difference_rotation_matrix_axis_angle(
                 cryst_a, cryst
             )

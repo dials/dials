@@ -10,7 +10,7 @@ from time import time
 
 import psutil
 
-import boost.python
+import boost_adaptbx.boost.python
 import libtbx
 
 import dials.algorithms.integration
@@ -78,7 +78,7 @@ def _average_bbox_size(reflections):
     return xsize, ysize, zsize
 
 
-@boost.python.inject_into(Executor)
+@boost_adaptbx.boost.python.inject_into(Executor)
 class _(object):
     @staticmethod
     def __getinitargs__():
@@ -471,9 +471,11 @@ class Task(object):
             else:
                 mask = imageset.get_mask(i)
                 if self.params.lookup.mask is not None:
-                    assert len(mask) == len(self.params.lookup.mask), (
-                        "Mask/Image are incorrect size %d %d"
-                        % (len(mask), len(self.params.lookup.mask))
+                    assert len(mask) == len(
+                        self.params.lookup.mask
+                    ), "Mask/Image are incorrect size %d %d" % (
+                        len(mask),
+                        len(self.params.lookup.mask),
                     )
                     mask = tuple(
                         m1 & m2 for m1, m2 in zip(self.params.lookup.mask, mask)
@@ -780,7 +782,8 @@ class _Manager(object):
         _report("Available swap memory", available_swap / 1e9)
         _report("Available system memory (including swap)", available_incl_swap / 1e9)
         _report(
-            "Maximum memory for processing (including swap)", available_limit / 1e9,
+            "Maximum memory for processing (including swap)",
+            available_limit / 1e9,
         )
         _report(
             "Maximum memory for processing (excluding swap)",

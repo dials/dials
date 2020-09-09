@@ -61,7 +61,8 @@ def test_mtz_recalculated_cell(dials_data, tmpdir):
     scaled_expt = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled.expt")
     scaled_refl = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled.refl")
     result = procrunner.run(
-        ["dials.two_theta_refine", scaled_expt, scaled_refl], working_directory=tmpdir,
+        ["dials.two_theta_refine", scaled_expt, scaled_refl],
+        working_directory=tmpdir,
     )
     assert tmpdir.join("refined_cell.expt").check(file=1)
     refined_expt = load.experiment_list(

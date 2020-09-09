@@ -31,6 +31,14 @@ def test_slice_experiments_centroid_test_data(dials_data):
     assert copy.deepcopy(sliced_experiments)
 
 
+def test_slice_experiments_centroid_test_data_starting_from_2(dials_data):
+    files = dials_data("centroid_test_data").listdir("*.cbf", sort=True)[1:]
+    experiments = ExperimentListFactory.from_filenames(f.strpath for f in files)
+    sliced_image_range = [(2, 4)]
+    sliced_experiments = slice_experiments(experiments, sliced_image_range)
+    assert sliced_experiments[0].scan.get_image_range() == sliced_image_range[0]
+
+
 def test_slice_reflections():
     r = flex.reflection_table()
     r["id"] = flex.int([0, 0, 0, 1, 1, 1, 2, 2, 2])

@@ -1,1 +1,0 @@
-dials.plot_reflections: Fix invisible white spots on white background. Remove invalid keyword argument on matplotlib >= 3.3.

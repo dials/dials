@@ -13,7 +13,7 @@ import logging
 import operator
 import os
 
-import boost.python
+import boost_adaptbx.boost.python
 import cctbx.array_family.flex
 import cctbx.miller
 import dials_array_family_flex_ext
@@ -42,7 +42,7 @@ else:
     raise TypeError('unknown "real" type')
 
 
-@boost.python.inject_into(dials_array_family_flex_ext.reflection_table)
+@boost_adaptbx.boost.python.inject_into(dials_array_family_flex_ext.reflection_table)
 class _(object):
     """
     An injector class to add additional methods to the reflection table.
@@ -1205,7 +1205,8 @@ Found %s"""
                         .rotate_around_origin(rotation_axis, -rot_angle),
                     )
                     self["rlp"].set_selected(
-                        sel, tuple(sample_rotation.inverse()) * self["rlp"].select(sel),
+                        sel,
+                        tuple(sample_rotation.inverse()) * self["rlp"].select(sel),
                     )
                 else:
                     self["rlp"].set_selected(sel, S)

@@ -257,8 +257,8 @@ class LowResSpotMatch(Strategy):
 
     def _calc_obs_data(self, reflections, experiments):
         """Calculates a set of low resolution observations to try to match to
-    indices. Each observation will record its d* value as well as
-    tolerated d* bands and a 'clock angle'"""
+        indices. Each observation will record its d* value as well as
+        tolerated d* bands and a 'clock angle'"""
 
         spot_d_star = reflections["rlp"].norms()
         if self._params.candidate_spots.limit_resolution_by == "n_spots":

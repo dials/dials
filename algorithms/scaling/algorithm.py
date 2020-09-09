@@ -31,8 +31,10 @@ from dials.util.exclude_images import (
     exclude_image_ranges_for_scaling,
     get_valid_image_ranges,
 )
-from dials.util.observer import Subject
-from dials.algorithms.scaling.observers import register_scaler_observers
+from dials.algorithms.scaling.observers import (
+    ScalingSummaryContextManager,
+    ScalingHTMLContextManager,
+)
 from dials.algorithms.scaling.scale_and_filter import AnalysisResults, log_cycle_results
 from dials.command_line.cosym import cosym
 from dials.command_line.cosym import phil_scope as cosym_phil_scope
@@ -173,11 +175,8 @@ def prepare_input(params, experiments, reflections):
     return params, experiments, reflections
 
 
-class ScalingAlgorithm(Subject):
+class ScalingAlgorithm(object):
     def __init__(self, params, experiments, reflections):
-        super(ScalingAlgorithm, self).__init__(
-            events=["merging_statistics", "run_script", "run_scale_and_filter"]
-        )
         self.scaler = None
         self.scaled_miller_array = None
         self.merging_statistics_result = None
@@ -202,32 +201,32 @@ class ScalingAlgorithm(Subject):
 
         self.scaler = create_scaler(self.params, self.experiments, self.reflections)
 
-    @Subject.notify_event(event="run_script")
     def run(self):
         """Run the scaling script."""
-        start_time = time.time()
-        self.scale()
-        self.remove_bad_data()
-        if not self.experiments:
-            raise ValueError("All data sets have been rejected as bad.")
-        for table in self.reflections:
-            bad = table.get_flags(table.flags.bad_for_scaling, all=False)
-            table.unset_flags(flex.bool(table.size(), True), table.flags.scaled)
-            table.set_flags(~bad, table.flags.scaled)
-        self.scaled_miller_array = scaled_data_as_miller_array(
-            self.reflections,
-            self.experiments,
-            anomalous_flag=False,
-            best_unit_cell=self.params.reflection_selection.best_unit_cell,
-        )
-        try:
-            self.calculate_merging_stats()
-        except DialsMergingStatisticsError as e:
-            logger.info(e)
+        with ScalingHTMLContextManager(self), ScalingSummaryContextManager(self):
+            start_time = time.time()
+            self.scale()
+            self.remove_bad_data()
+            if not self.experiments:
+                raise ValueError("All data sets have been rejected as bad.")
+            for table in self.reflections:
+                bad = table.get_flags(table.flags.bad_for_scaling, all=False)
+                table.unset_flags(flex.bool(table.size(), True), table.flags.scaled)
+                table.set_flags(~bad, table.flags.scaled)
+            self.scaled_miller_array = scaled_data_as_miller_array(
+                self.reflections,
+                self.experiments,
+                anomalous_flag=False,
+                best_unit_cell=self.params.reflection_selection.best_unit_cell,
+            )
+            try:
+                self.calculate_merging_stats()
+            except DialsMergingStatisticsError as e:
+                logger.info(e)
 
-        # All done!
-        logger.info("\nTotal time taken: {:.4f}s ".format(time.time() - start_time))
-        logger.info("%s%s%s", "\n", "=" * 80, "\n")
+            # All done!
+            logger.info("\nTotal time taken: {:.4f}s ".format(time.time() - start_time))
+            logger.info("%s%s%s", "\n", "=" * 80, "\n")
 
     def scale(self):
         """The main scaling algorithm."""
@@ -282,7 +281,6 @@ class ScalingAlgorithm(Subject):
         if n > 0:
             logger.info("%s reflections excluded: scale factor < 0.001", n)
 
-    @Subject.notify_event(event="merging_statistics")
     def calculate_merging_stats(self):
         try:
             (
@@ -359,120 +357,123 @@ Whole dataset deltacchalf scaling and filtering can only be performed in
 multi-dataset scaling mode (not single dataset or scaling against a reference)"""
             )
 
-    @Subject.notify_event(event="run_scale_and_filter")
     def run(self):
         """Run cycles of scaling and filtering."""
-        start_time = time.time()
-        results = AnalysisResults()
+        with ScalingHTMLContextManager(self):
+            start_time = time.time()
+            results = AnalysisResults()
 
-        for counter in range(1, self.params.filtering.deltacchalf.max_cycles + 1):
-            self.run_scaling_cycle()
+            for counter in range(1, self.params.filtering.deltacchalf.max_cycles + 1):
+                self.run_scaling_cycle()
 
-            if counter == 1:
-                results.initial_expids_and_image_ranges = [
-                    (exp.identifier, exp.scan.get_image_range()) if exp.scan else None
-                    for exp in self.experiments
+                if counter == 1:
+                    results.initial_expids_and_image_ranges = [
+                        (exp.identifier, exp.scan.get_image_range())
+                        if exp.scan
+                        else None
+                        for exp in self.experiments
+                    ]
+
+                delta_cc_params = deltacc_phil_scope.extract()
+                delta_cc_params.mode = self.params.filtering.deltacchalf.mode
+                delta_cc_params.group_size = (
+                    self.params.filtering.deltacchalf.group_size
+                )
+                delta_cc_params.stdcutoff = self.params.filtering.deltacchalf.stdcutoff
+                logger.info("\nPerforming a round of filtering.\n")
+
+                # need to reduce to single table.
+                joined_reflections = flex.reflection_table()
+                for table in self.reflections:
+                    joined_reflections.extend(table)
+
+                script = deltaccscript(
+                    delta_cc_params, self.experiments, joined_reflections
+                )
+                script.run()
+
+                valid_image_ranges = get_valid_image_ranges(self.experiments)
+                results.expids_and_image_ranges = [
+                    (exp.identifier, valid_image_ranges[i]) if exp.scan else None
+                    for i, exp in enumerate(self.experiments)
                 ]
 
-            delta_cc_params = deltacc_phil_scope.extract()
-            delta_cc_params.mode = self.params.filtering.deltacchalf.mode
-            delta_cc_params.group_size = self.params.filtering.deltacchalf.group_size
-            delta_cc_params.stdcutoff = self.params.filtering.deltacchalf.stdcutoff
-            logger.info("\nPerforming a round of filtering.\n")
+                self.experiments = script.experiments
+                self.params.dataset_selection.use_datasets = None
+                self.params.dataset_selection.exclude_datasets = None
 
-            # need to reduce to single table.
-            joined_reflections = flex.reflection_table()
-            for table in self.reflections:
-                joined_reflections.extend(table)
-
-            script = deltaccscript(
-                delta_cc_params, self.experiments, joined_reflections
-            )
-            script.run()
-
-            valid_image_ranges = get_valid_image_ranges(self.experiments)
-            results.expids_and_image_ranges = [
-                (exp.identifier, valid_image_ranges[i]) if exp.scan else None
-                for i, exp in enumerate(self.experiments)
-            ]
-
-            self.experiments = script.experiments
-            self.params.dataset_selection.use_datasets = None
-            self.params.dataset_selection.exclude_datasets = None
-
-            results = log_cycle_results(results, self, script)
-            logger.info(
-                "Cycle %s of filtering, n_reflections removed this cycle: %s",
-                counter,
-                results.get_last_cycle_results()["n_removed"],
-            )
-
-            # Test termination conditions
-            latest_results = results.get_last_cycle_results()
-            if latest_results["n_removed"] == 0:
+                results = log_cycle_results(results, self, script)
                 logger.info(
-                    "Finishing scaling and filtering as no data removed in this cycle."
+                    "Cycle %s of filtering, n_reflections removed this cycle: %s",
+                    counter,
+                    results.get_last_cycle_results()["n_removed"],
                 )
-                if self.params.scaling_options.full_matrix:
-                    self.reflections = parse_multiple_datasets(
-                        [script.filtered_reflection_table]
-                    )
-                    results = self._run_final_scale_cycle(results)
-                else:
-                    self.reflections = [script.filtered_reflection_table]
-                results.finish(termination_reason="no_more_removed")
-                break
 
-            # Need to split reflections for further processing.
-            self.reflections = parse_multiple_datasets(
-                [script.filtered_reflection_table]
-            )
-
-            if (
-                latest_results["cumul_percent_removed"]
-                > self.params.filtering.deltacchalf.max_percent_removed
-            ):
-                logger.info(
-                    "Finishing scale and filtering as have now removed more than the limit."
-                )
-                results = self._run_final_scale_cycle(results)
-                results.finish(termination_reason="max_percent_removed")
-                break
-
-            if self.params.filtering.deltacchalf.min_completeness:
-                if (
-                    latest_results["merging_stats"]["completeness"]
-                    < self.params.filtering.deltacchalf.min_completeness
-                ):
+                # Test termination conditions
+                latest_results = results.get_last_cycle_results()
+                if latest_results["n_removed"] == 0:
                     logger.info(
-                        "Finishing scaling and filtering as completeness now below cutoff."
+                        "Finishing scaling and filtering as no data removed in this cycle."
                     )
-                    results = self._run_final_scale_cycle(results)
-                    results.finish(termination_reason="below_completeness_limit")
+                    if self.params.scaling_options.full_matrix:
+                        self.reflections = parse_multiple_datasets(
+                            [script.filtered_reflection_table]
+                        )
+                        results = self._run_final_scale_cycle(results)
+                    else:
+                        self.reflections = [script.filtered_reflection_table]
+                    results.finish(termination_reason="no_more_removed")
                     break
 
-            if counter == self.params.filtering.deltacchalf.max_cycles:
-                logger.info("Finishing as reached max number of cycles.")
-                results = self._run_final_scale_cycle(results)
-                results.finish(termination_reason="max_cycles")
-                break
+                # Need to split reflections for further processing.
+                self.reflections = parse_multiple_datasets(
+                    [script.filtered_reflection_table]
+                )
 
-            # If not finished then need to create new scaler to try again
-            self._create_model_and_scaler()
-            register_scaler_observers(self.scaler)
-        self.filtering_results = results
-        # Print summary of results
-        logger.info(results)
-        with open(self.params.filtering.output.scale_and_filter_results, "w") as f:
-            json.dump(self.filtering_results.to_dict(), f, indent=2)
-        # All done!
-        logger.info("\nTotal time taken: {:.4f}s ".format(time.time() - start_time))
-        logger.info("%s%s%s", "\n", "=" * 80, "\n")
+                if (
+                    latest_results["cumul_percent_removed"]
+                    > self.params.filtering.deltacchalf.max_percent_removed
+                ):
+                    logger.info(
+                        "Finishing scale and filtering as have now removed more than the limit."
+                    )
+                    results = self._run_final_scale_cycle(results)
+                    results.finish(termination_reason="max_percent_removed")
+                    break
 
-    @Subject.notify_event(event="run_script")
+                if self.params.filtering.deltacchalf.min_completeness:
+                    if (
+                        latest_results["merging_stats"]["completeness"]
+                        < self.params.filtering.deltacchalf.min_completeness
+                    ):
+                        logger.info(
+                            "Finishing scaling and filtering as completeness now below cutoff."
+                        )
+                        results = self._run_final_scale_cycle(results)
+                        results.finish(termination_reason="below_completeness_limit")
+                        break
+
+                if counter == self.params.filtering.deltacchalf.max_cycles:
+                    logger.info("Finishing as reached max number of cycles.")
+                    results = self._run_final_scale_cycle(results)
+                    results.finish(termination_reason="max_cycles")
+                    break
+
+                # If not finished then need to create new scaler to try again
+                self._create_model_and_scaler()
+            self.filtering_results = results
+            # Print summary of results
+            logger.info(results)
+            with open(self.params.filtering.output.scale_and_filter_results, "w") as f:
+                json.dump(self.filtering_results.to_dict(), f, indent=2)
+            # All done!
+            logger.info("\nTotal time taken: {:.4f}s ".format(time.time() - start_time))
+            logger.info("%s%s%s", "\n", "=" * 80, "\n")
+
     def run_scaling_cycle(self):
         """Do a round of scaling for scaling and filtering."""
         # Turn off the full matrix round, all else is the same.
+
         initial_full_matrix = self.params.scaling_options.full_matrix
         self.scaler.params.scaling_options.full_matrix = False
         self.scaler = scaling_algorithm(self.scaler)
@@ -496,7 +497,6 @@ multi-dataset scaling mode (not single dataset or scaling against a reference)""
 
     def _run_final_scale_cycle(self, results):
         self._create_model_and_scaler()
-        register_scaler_observers(self.scaler)
         super(ScaleAndFilterAlgorithm, self).run()
         results.add_final_stats(self.merging_statistics_result)
         for table in self.reflections:

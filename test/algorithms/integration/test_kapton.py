@@ -10,9 +10,9 @@ from libtbx.phil import parse
 
 
 def test_kapton(run_in_tmpdir):
-    """ Test script for kapton correction applied to integrated data.
-        Currently only testing kapton 2019 correction on rayonix-340 at LCLS
-        xfel_regression folder needs to be present in modules directory for test to run"""
+    """Test script for kapton correction applied to integrated data.
+    Currently only testing kapton 2019 correction on rayonix-340 at LCLS
+    xfel_regression folder needs to be present in modules directory for test to run"""
     xfel_regression = libtbx.env.find_in_repositories(
         relative_path="xfel_regression", test=os.path.isdir
     )

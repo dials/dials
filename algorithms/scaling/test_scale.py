@@ -288,7 +288,7 @@ def test_targeted_scaling_against_mtz(dials_data, tmpdir):
         "reflection_selection.method=intensity_ranges",
         "reflection_selection.method=use_all",
         "intensity_choice=sum",
-        "intensity_choice=profile",
+        "intensity=profile",
     ],
 )
 def test_scale_single_dataset_with_options(dials_data, tmpdir, option):
@@ -521,7 +521,7 @@ def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
 
 def test_scale_and_filter_image_group_single_dataset(dials_data, tmpdir):
     """Test the scale and filter deltacchalf.mode=image_group on a
-       single data set."""
+    single data set."""
     data_dir = dials_data("l_cysteine_dials_output")
     command = [
         "dials.scale",
@@ -829,9 +829,6 @@ def test_scale_cross_validate(dials_data, tmpdir, mode, parameter, parameter_val
     assert not result.returncode and not result.stderr
 
 
-@pytest.mark.xfail(
-    reason="test state leakage, cf. https://github.com/dials/dials/issues/1271",
-)
 def test_few_reflections(dials_data):
     u"""
     Test that dials.symmetry does something sensible if given few reflections.

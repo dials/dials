@@ -1,2 +1,0 @@
-dials.split_experiments: Fix case where output filenames were created with
-a larger digit-width than necessary e.g. output_09.expt -> output_9.expt

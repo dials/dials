@@ -219,7 +219,8 @@ environments exist and are working.
         retry += 1
         try:
             run_command(
-                command=command_list, workdir=".",
+                command=command_list,
+                workdir=".",
             )
         except Exception:
             print(
@@ -310,17 +311,18 @@ def run_indirect_command(command, args):
         make_executable(filename)
         indirection = ["./indirection.sh"]
     run_command(
-        command=indirection + [command] + args, workdir="build",
+        command=indirection + [command] + args,
+        workdir="build",
     )
 
 
 def download_to_file(url, file, quiet=False):
     """Downloads a URL to file. Returns the file size.
-       Returns -1 if the downloaded file size does not match the expected file
-       size
-       Returns -2 if the download is skipped due to the file at the URL not
-       being newer than the local copy (identified by matching timestamp and
-       size)
+    Returns -1 if the downloaded file size does not match the expected file
+    size
+    Returns -2 if the download is skipped due to the file at the URL not
+    being newer than the local copy (identified by matching timestamp and
+    size)
     """
 
     # Create directory structure if necessary
@@ -543,7 +545,7 @@ def set_git_repository_config_to_rebase(config):
 
 def git(module, git_available, ssh_available, reference_base, settings):
     """Retrieve a git repository, either by running git directly
-       or by downloading and unpacking an archive.
+    or by downloading and unpacking an archive.
     """
     destination = os.path.join("modules", module)
 
@@ -1008,7 +1010,8 @@ def configure_build(config_flags):
     ] + config_flags
     print("Setting up build directory")
     run_command(
-        command=configcmd, workdir="build",
+        command=configcmd,
+        workdir="build",
     )
 
 
@@ -1094,7 +1097,7 @@ be passed separately with quotes to avoid confusion (e.g
     parser.add_argument(
         "--python",
         help="Install this minor version of Python (default: %(default)s)",
-        default="3.6",
+        default="3.8",
         choices=("3.6", "3.7", "3.8"),
     )
     parser.add_argument(

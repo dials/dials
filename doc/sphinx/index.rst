@@ -15,6 +15,7 @@ DIALS: Diffraction Integration for Advanced Light Sources
    documentation/index
    documentation/tutorials/index
    How-to <howto>
+   Knowledge Base <https://dials.github.io/kb>
    workshops/index
    publications
    License <license>

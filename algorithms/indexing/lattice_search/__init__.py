@@ -130,8 +130,10 @@ class LatticeSearch(indexer.Indexer):
 
         candidate_crystal_models = []
         if self._lattice_search_strategy:
-            candidate_crystal_models = self._lattice_search_strategy.find_crystal_models(
-                self.reflections, self.experiments
+            candidate_crystal_models = (
+                self._lattice_search_strategy.find_crystal_models(
+                    self.reflections, self.experiments
+                )
             )
         return candidate_crystal_models
 

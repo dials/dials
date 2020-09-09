@@ -732,15 +732,18 @@ class Indexer(object):
                 volume_change = abs(uc1.volume() - uc2.volume()) / uc1.volume()
                 cutoff = 0.5
                 if volume_change > cutoff:
-                    msg = "\n".join(
-                        (
-                            "Unrealistic unit cell volume increase during refinement of %.1f%%.",
-                            "Please try refining fewer parameters, either by enforcing symmetry",
-                            "constraints (space_group=) and/or disabling experimental geometry",
-                            "refinement (detector.fix=all and beam.fix=all). To disable this",
-                            "sanity check set disable_unit_cell_volume_sanity_check=True.",
+                    msg = (
+                        "\n".join(
+                            (
+                                "Unrealistic unit cell volume increase during refinement of %.1f%%.",
+                                "Please try refining fewer parameters, either by enforcing symmetry",
+                                "constraints (space_group=) and/or disabling experimental geometry",
+                                "refinement (detector.fix=all and beam.fix=all). To disable this",
+                                "sanity check set disable_unit_cell_volume_sanity_check=True.",
+                            )
                         )
-                    ) % (100 * volume_change)
+                        % (100 * volume_change)
+                    )
                     raise DialsIndexError(msg)
 
     def _apply_symmetry_post_indexing(

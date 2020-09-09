@@ -35,7 +35,6 @@ def test_x4wide(input_files, dials_data, run_in_tmpdir, capsys):
     captured = capsys.readouterr()
     expected_output = (
         "Resolution rmerge:        1.34",
-        "Resolution completeness:  1.20",
         "Resolution cc_half:       1.56",
         "Resolution cc_ref:        1.3",
         "Resolution I/sig:         1.53",
@@ -66,7 +65,9 @@ def test_multi_sequence_with_batch_range(dials_data, run_in_tmpdir, capsys):
     refls = location.join("scaled_20_25.refl")
     expts = location.join("scaled_20_25.expt")
 
-    cmdline.run(["batch_range=1900,3600", refls.strpath, expts.strpath],)
+    cmdline.run(
+        ["batch_range=1900,3600", refls.strpath, expts.strpath],
+    )
     captured = capsys.readouterr()
 
     expected_output = (
