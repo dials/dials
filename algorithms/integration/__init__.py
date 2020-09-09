@@ -55,7 +55,8 @@ class TimingInfo(object):
         return tabulate(rows)
 
     def __add__(self, other):
-        assert isinstance(other, TimingInfo)
+        if not isinstance(other, TimingInfo):
+            raise TypeError(f"unsupported addition: expected type TimingInfo, not {other!r}")
         new_timing = TimingInfo()
         new_timing.read = self.read + other.read
         new_timing.extract = self.extract + other.extract
