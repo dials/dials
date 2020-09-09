@@ -545,7 +545,6 @@ class _Manager(object):
 
         # Save some parameters
         self.params = params
-        self.block_overlap_size = 0
 
         # Set the finalized flag to False
         self.finalized = False
@@ -564,7 +563,6 @@ class _Manager(object):
         assert "bbox" in self.reflections, "Reflections have no bbox"
 
         # Compute the block size and processors
-        self.compute_blocks()
         self.compute_jobs()
         self.split_reflections()
         self.compute_processors()
@@ -663,9 +661,9 @@ class _Manager(object):
         """
         return len(self.manager)
 
-    def compute_blocks(self):
+    def compute_jobs(self):
         """
-        Compute the processing block size.
+        Sets up a JobList() object in self.jobs
         """
 
         if self.params.block.size == libtbx.Auto:
@@ -675,27 +673,17 @@ class _Manager(object):
                 and not self.params.block.force
             ):
                 self.params.block.size = None
-            else:
-                assert self.params.block.threshold > 0, "Threshold must be > 0"
-                assert self.params.block.threshold <= 1.0, "Threshold must be < 1"
-                nframes = sorted([b[5] - b[4] for b in self.reflections["bbox"]])
-                cutoff = int(self.params.block.threshold * len(nframes))
-                block_overlap_size = nframes[cutoff]
-                nframes = sum(len(i) for i in self.experiments.imagesets())
-                nblocks = self.params.mp.nproc * self.params.mp.njobs
-                # want data to be split into n blocks with overlaps
-                # i.e. [x, overlap, y, overlap, y, overlap, ....,y,  overlap, x]
-                # blocks are x + overlap, or overlap + y + overlap.
-                x = (nframes - block_overlap_size) / nblocks
-                block_size = int(math.ceil(x + block_overlap_size))
-                self.params.block.size = max(block_size, 2.0 * block_overlap_size)
-                self.params.block.units = "frames"
-                self.block_overlap_size = block_overlap_size
 
-    def compute_jobs(self):
-        """
-        Sets up a JobList() object in self.jobs
-        """
+        # calculate the block overlap based on the size of bboxes in the data
+        # calculate once here rather than repeated in the loop below
+        block_overlap = 0
+        if self.params.block.size is not None:
+            assert self.params.block.threshold > 0, "Threshold must be > 0"
+            assert self.params.block.threshold <= 1.0, "Threshold must be < 1"
+            frames_per_refl = sorted([b[5] - b[4] for b in self.reflections["bbox"]])
+            cutoff = int(self.params.block.threshold * len(frames_per_refl))
+            block_overlap = frames_per_refl[cutoff]
+
         groups = itertools.groupby(
             range(len(self.experiments)),
             lambda x: (id(self.experiments[x].imageset), id(self.experiments[x].scan)),
@@ -709,43 +697,45 @@ class _Manager(object):
             scan = expr.scan
             imgs = expr.imageset
             array_range = (0, len(imgs))
-
-            def _block_overlap(params, reflections, block_size_frames):
-                assert params.block.threshold > 0, "Threshold must be > 0"
-                assert params.block.threshold <= 1.0, "Threshold must be < 1"
-                nframes = sorted([b[5] - b[4] for b in reflections["bbox"]])
-                cutoff = int(params.block.threshold * len(nframes))
-                block_overlap_size = min(
-                    nframes[cutoff], int(math.floor(block_size_frames / 2.0))
-                )
-                return block_overlap_size
-
             if scan is not None:
                 assert len(imgs) >= len(scan), "Invalid scan range"
                 array_range = scan.get_array_range()
+
             if self.params.block.size is None:
                 block_size_frames = array_range[1] - array_range[0]
-                block_overlap = self.block_overlap_size
+            elif self.params.block.size == libtbx.Auto:
+                # auto determine based on nframes and overlap
+                nframes = array_range[1] - array_range[0]
+                nblocks = self.params.mp.nproc * self.params.mp.njobs
+                # want data to be split into n blocks with overlaps
+                # i.e. [x, overlap, y, overlap, y, overlap, ....,y,  overlap, x]
+                # blocks are x + overlap, or overlap + y + overlap.
+                x = (nframes - block_overlap) / nblocks
+                block_size = int(math.ceil(x + block_overlap))
+                # increase the block size to be at least twice the overlap, in
+                # case the overlap is large e.g. if high mosaicity.
+                block_size_frames = max(block_size, 2 * block_overlap)
             elif self.params.block.units == "radians":
-                phi0, dphi = scan.get_oscillation(deg=False)
+                _, dphi = scan.get_oscillation(deg=False)
                 block_size_frames = int(math.ceil(self.params.block.size / dphi))
-                block_overlap = _block_overlap(
-                    self.params, self.reflections, block_size_frames
+                # if the specified block size is lower than the overlap,
+                # reduce the overlap to be half of the block size.
+                block_overlap = min(
+                    block_overlap, int(math.floor(block_size_frames / 2.0))
                 )
             elif self.params.block.units == "degrees":
-                phi0, dphi = scan.get_oscillation()
+                _, dphi = scan.get_oscillation()
                 block_size_frames = int(math.ceil(self.params.block.size / dphi))
-                block_overlap = _block_overlap(
-                    self.params, self.reflections, block_size_frames
+                # if the specified block size is lower than the overlap,
+                # reduce the overlap to be half of the block size.
+                block_overlap = min(
+                    block_overlap, int(math.floor(block_size_frames / 2.0))
                 )
             elif self.params.block.units == "frames":
                 block_size_frames = int(math.ceil(self.params.block.size))
-                if not self.block_overlap_size:
-                    block_overlap = _block_overlap(
-                        self.params, self.reflections, block_size_frames
-                    )
-                else:
-                    block_overlap = self.block_overlap_size
+                block_overlap = min(
+                    block_overlap, int(math.floor(block_size_frames / 2.0))
+                )
             else:
                 raise RuntimeError(
                     "Unknown block_size units %r" % self.params.block.units
@@ -970,7 +960,11 @@ class _Manager(object):
             "\n"
             "%s\n"
         )
-        return fmt % (block_size, self.params.block.units, task_table)
+        return fmt % (
+            block_size,
+            "" if block_size in ("auto", "Auto") else self.params.block.units,
+            task_table,
+        )
 
 
 class Processor3D(_ProcessorRot):
