@@ -610,7 +610,9 @@ class _(object):
         flex.size_t indices, optionally specifying the maximum distance and
         key to search on (which is assumed to be a 3-vector column). Can also
         apply relative scales to the vectors before matching in case e.g. very
-        wide or very fine slicing."""
+        wide or very fine slicing.
+
+        Returns: nn, mm, distance such that other[nn][j] ~= self[mm][j]"""
 
         xyz_a = self[key]
         xyz_b = other[key]

@@ -1448,3 +1448,31 @@ def test_calculate_entering_flags(dials_regression):
     flags = refl["entering"]
     assert flags.count(True) == 58283
     assert flags.count(False) == 57799
+
+
+def test_match_with_other():
+    n = 100
+    s = 10
+
+    r = random.random
+
+    xyz = flex.vec3_double()
+
+    for j in range(n):
+        xyz.append((r() * s, r() * s, r() * s))
+
+    order = list(range(n))
+
+    random.shuffle(order)
+
+    xyz2 = xyz.select(flex.size_t(order))
+
+    a = flex.reflection_table()
+    b = flex.reflection_table()
+
+    a["xyz"] = xyz
+    b["xyz"] = xyz2
+
+    nn, mm, distance = a.match_with_other(b, key="xyz")
+
+    assert list(nn) == list(order)
