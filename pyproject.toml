@@ -7,9 +7,8 @@ package_dir = ".."
 filename = "CHANGELOG.rst"
 
 [tool.isort]
-sections="FUTURE,STDLIB,THIRDPARTY,CCTBX,DXTBX,FIRSTPARTY,LOCALFOLDER"
-known_firstparty="dials*"
-known_dxtbx="dxtbx"
-known_cctbx="boost,boost_adaptbx,cbflib_adaptbx,cctbx,chiltbx,clipper_adaptbx,cma_es,cootbx,crys3d,cudatbx,fable,fast_linalg,fftw3tbx,gltbx,iota,iotbx,libtbx,mmtbx,omptbx,prime,rstbx,scitbx,simtbx,smtbx,spotfinder,tbxx,ucif,wxtbx,xfel"
+sections="FUTURE,STDLIB,THIRDPARTY,CCTBX,FIRSTPARTY,LOCALFOLDER"
+known_firstparty="dials_*"
+known_cctbx="boost,boost_adaptbx,cbflib_adaptbx,cctbx,chiltbx,clipper_adaptbx,cma_es,cootbx,crys3d,cudatbx,dxtbx,fable,fast_linalg,fftw3tbx,gltbx,iota,iotbx,libtbx,mmtbx,omptbx,prime,rstbx,scitbx,simtbx,smtbx,spotfinder,tbxx,ucif,wxtbx,xfel"
 profile="black"
 
