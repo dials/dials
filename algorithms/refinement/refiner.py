@@ -31,16 +31,6 @@ from dials.algorithms.refinement.prediction.managed_predictors import (
     ExperimentsPredictorFactory,
 )
 from dials.algorithms.refinement.refinement_helpers import ordinal_number, string_sel
-
-# The include scope directive does not work here. For example:
-#
-#   include scope dials.algorithms.refinement.outlier_detection.phil_scope
-#
-# results in:
-#
-#   AttributeError: 'module' object has no attribute 'refinement'
-#
-# to work around this, just include external phil scopes as strings
 from dials.algorithms.refinement.reflection_manager import ReflectionManagerFactory
 from dials.algorithms.refinement.reflection_manager import (
     phil_str as reflections_phil_str,
@@ -52,6 +42,15 @@ from dials.array_family import flex
 
 logger = logging.getLogger(__name__)
 
+# The include scope directive does not work here. For example:
+#
+#   include scope dials.algorithms.refinement.outlier_detection.phil_scope
+#
+# results in:
+#
+#   AttributeError: 'module' object has no attribute 'refinement'
+#
+# to work around this, just include external phil scopes as strings
 format_data = {
     "reflections_phil": reflections_phil_str,
     "target_phil": target_phil_str,

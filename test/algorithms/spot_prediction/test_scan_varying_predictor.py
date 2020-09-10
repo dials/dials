@@ -8,8 +8,6 @@ from __future__ import absolute_import, division, print_function
 import math
 
 from cctbx.sgtbx import space_group, space_group_symbols
-
-# We will set up a mock scan and a mock experiment list
 from dxtbx.model import ScanFactory
 from dxtbx.model.experiment_list import Experiment, ExperimentList
 from libtbx.phil import parse
@@ -20,11 +18,7 @@ from dials.algorithms.refinement.prediction.managed_predictors import (
     ScansExperimentsPredictor,
     ScansRayPredictor,
 )
-
-# Reflection prediction
 from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
-
-# Get modules to build models and minimiser using PHIL
 from dials.test.algorithms.refinement import setup_geometry
 
 

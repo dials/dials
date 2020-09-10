@@ -4,7 +4,6 @@ from __future__ import absolute_import, division, print_function
 
 from libtbx.phil import command_line, parse
 
-# Import the refinement engine
 from dials.algorithms.refinement.engine import (
     GaussNewtonIterations,
     LBFGScurvs,

@@ -28,7 +28,6 @@ Examples::
     "image_range=1 20" "image_range=5 30"
 """
 
-# The phil scope
 from libtbx.phil import parse
 
 phil_scope = parse(

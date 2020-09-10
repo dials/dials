@@ -25,8 +25,6 @@ from dials.algorithms.refinement.parameterisation.prediction_parameters_stills i
     StillsPredictionParameterisation,
 )
 from dials.algorithms.refinement.prediction.managed_predictors import ScansRayPredictor
-
-# Create a reflection predictor specific for this test
 from dials.algorithms.spot_prediction import IndexGenerator, StillsReflectionPredictor
 from dials.array_family import flex
 from dials.test.algorithms.refinement.setup_geometry import Extract
