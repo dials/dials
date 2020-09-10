@@ -10,14 +10,14 @@ def test(args=[]):
     from math import pi
 
     from cctbx.sgtbx import space_group, space_group_symbols
-    from libtbx.phil import parse
-    from libtbx.test_utils import approx_equal
-    from scitbx import matrix
-    from scitbx.array_family import flex
 
     # We will set up a mock scan and a mock experiment list
     from dxtbx.model import ScanFactory
     from dxtbx.model.experiment_list import Experiment, ExperimentList
+    from libtbx.phil import parse
+    from libtbx.test_utils import approx_equal
+    from scitbx import matrix
+    from scitbx.array_family import flex
 
     from dials.algorithms.refinement.parameterisation.beam_parameters import (
         BeamParameterisation,

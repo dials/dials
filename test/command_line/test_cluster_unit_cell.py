@@ -7,7 +7,6 @@ import procrunner
 import pytest
 
 from cctbx import crystal
-
 from dxtbx.model.experiment_list import ExperimentList, ExperimentListFactory
 
 from dials.command_line import cluster_unit_cell

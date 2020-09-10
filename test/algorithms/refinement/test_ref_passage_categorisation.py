@@ -10,13 +10,13 @@ import pytest
 
 def test():
     from cctbx.sgtbx import space_group, space_group_symbols
-    from libtbx.phil import parse
-    from scitbx import matrix
-    from scitbx.array_family import flex
 
     # We will set up a mock scan
     from dxtbx.model import ScanFactory
     from dxtbx.model.experiment_list import Experiment, ExperimentList
+    from libtbx.phil import parse
+    from scitbx import matrix
+    from scitbx.array_family import flex
 
     from dials.algorithms.refinement.prediction.managed_predictors import (
         ScansExperimentsPredictor,

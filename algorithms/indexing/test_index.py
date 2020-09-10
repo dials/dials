@@ -8,7 +8,6 @@ import procrunner
 import pytest
 
 from cctbx import uctbx
-
 from dxtbx.model import ExperimentList
 from dxtbx.serialize import load
 

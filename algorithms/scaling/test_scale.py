@@ -14,11 +14,10 @@ import pytest
 import iotbx.merging_statistics
 import iotbx.mtz
 from cctbx import uctbx
-from libtbx import phil
-
 from dxtbx.model import Beam, Crystal, Detector, Experiment, Goniometer, Scan
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.serialize import load
+from libtbx import phil
 
 from dials.algorithms.scaling.algorithm import ScalingAlgorithm, prepare_input
 from dials.array_family import flex

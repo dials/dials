@@ -636,9 +636,8 @@ def load_scan(entry):
 
 def load_crystal(entry):
     from cctbx import uctbx
-    from scitbx.array_family import flex
-
     from dxtbx.model import Crystal
+    from scitbx.array_family import flex
 
     # Get the sample
     nx_sample = get_nx_sample(entry, "sample")

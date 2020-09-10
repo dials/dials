@@ -21,7 +21,6 @@ import logging
 import scipy.stats
 
 from cctbx import miller
-
 from dxtbx.model import ExperimentList
 
 from dials.array_family import flex

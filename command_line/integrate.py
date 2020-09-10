@@ -26,9 +26,8 @@ import logging
 import math
 import sys
 
-from libtbx.phil import parse
-
 from dxtbx.model.experiment_list import Experiment, ExperimentList
+from libtbx.phil import parse
 
 import dials.util.log
 from dials.algorithms.integration.integrator import create_integrator

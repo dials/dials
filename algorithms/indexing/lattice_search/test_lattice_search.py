@@ -4,7 +4,6 @@ import py.path
 import pytest
 
 from cctbx import sgtbx, uctbx
-
 from dxtbx.imageset import ImageSet
 from dxtbx.serialize import load
 

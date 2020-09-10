@@ -7,8 +7,6 @@ from collections import namedtuple
 import six
 import six.moves.cPickle as pickle
 
-from libtbx.phil import parse
-
 from dxtbx.imageset import ImageGrid, ImageSequence
 from dxtbx.model.experiment_list import (
     Experiment,
@@ -16,6 +14,7 @@ from dxtbx.model.experiment_list import (
     ExperimentListFactory,
     ExperimentListTemplateImporter,
 )
+from libtbx.phil import parse
 
 from dials.util import Sorry, show_mail_on_error
 from dials.util.multi_dataset_handling import generate_experiment_identifiers

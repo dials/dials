@@ -5,7 +5,6 @@ import pytest
 import iotbx.mtz
 from cctbx import sgtbx
 from cctbx.array_family import flex
-
 from dxtbx.model import Experiment, ExperimentList, Scan
 
 import dials.pychef

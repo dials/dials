@@ -3,11 +3,10 @@ from __future__ import absolute_import, division, print_function
 import pytest
 
 from cctbx.sgtbx import space_group, space_group_symbols
-from libtbx.phil import parse
-from scitbx.math import five_number_summary
-
 from dxtbx.model import ScanFactory
 from dxtbx.model.experiment_list import Experiment, ExperimentList
+from libtbx.phil import parse
+from scitbx.math import five_number_summary
 
 from dials.algorithms.refinement.parameterisation.beam_parameters import (
     BeamParameterisation,

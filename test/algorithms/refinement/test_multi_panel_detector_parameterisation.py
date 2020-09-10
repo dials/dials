@@ -14,13 +14,12 @@ import pytest
 
 from cctbx.sgtbx import space_group, space_group_symbols
 from cctbx.uctbx import unit_cell
+from dxtbx.model import Detector, Panel, ScanFactory
+from dxtbx.model.experiment_list import Experiment, ExperimentList
 from libtbx.phil import parse
 from libtbx.test_utils import approx_equal
 from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enlarge
 from scitbx import matrix
-
-from dxtbx.model import Detector, Panel, ScanFactory
-from dxtbx.model.experiment_list import Experiment, ExperimentList
 
 import dials.test.algorithms.refinement.setup_geometry as setup_geometry
 import dials.test.algorithms.refinement.setup_minimiser as setup_minimiser

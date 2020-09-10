@@ -32,7 +32,6 @@ from scipy.spatial.transform import Rotation
 
 import libtbx.phil
 from cctbx.eltbx import attenuation_coefficient
-
 from dxtbx.model import Experiment
 
 import dials.util.log

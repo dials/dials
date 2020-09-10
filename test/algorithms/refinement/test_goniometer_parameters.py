@@ -4,11 +4,10 @@ import math
 
 import pytest
 
+from dxtbx.model import Goniometer
 from libtbx.test_utils import approx_equal
 from scitbx import matrix
 from scitbx.array_family import flex
-
-from dxtbx.model import Goniometer
 
 from dials.algorithms.refinement.parameterisation.goniometer_parameters import (
     GoniometerParameterisation,

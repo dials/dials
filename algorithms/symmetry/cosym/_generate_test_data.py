@@ -4,7 +4,6 @@ import scitbx.matrix
 import scitbx.random
 from cctbx import crystal, sgtbx
 from cctbx.sgtbx.subgroups import subgroups
-
 from dxtbx.model import Crystal, Experiment, ExperimentList, Scan
 
 from dials.array_family import flex

@@ -5,7 +5,6 @@ import procrunner
 import pytest
 
 import libtbx
-
 from dxtbx.model.experiment_list import ExperimentListFactory
 from dxtbx.serialize import load
 

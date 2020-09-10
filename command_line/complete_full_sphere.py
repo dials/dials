@@ -7,10 +7,9 @@ import math
 import sys
 
 from cctbx import crystal, miller
+from dxtbx.model import ExperimentList
 from libtbx.phil import parse
 from scitbx import matrix
-
-from dxtbx.model import ExperimentList
 
 from dials.algorithms.refinement import rotation_decomposition
 from dials.algorithms.shadowing.filter import filter_shadowed_reflections

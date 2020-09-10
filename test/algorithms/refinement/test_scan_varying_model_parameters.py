@@ -6,11 +6,10 @@ import textwrap
 
 import pytest
 
+from dxtbx.model import Beam, Crystal, Goniometer
 from libtbx.test_utils import approx_equal
 from scitbx import matrix
 from scitbx.array_family import flex
-
-from dxtbx.model import Beam, Crystal, Goniometer
 
 from dials.algorithms.refinement.parameterisation.scan_varying_beam_parameters import (
     ScanVaryingBeamParameterisation,

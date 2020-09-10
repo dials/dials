@@ -11,7 +11,6 @@ import pytest
 
 import scitbx
 from cctbx import uctbx
-
 from dxtbx.model import ExperimentList
 from dxtbx.serialize import load
 

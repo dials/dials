@@ -6,9 +6,8 @@ import random
 
 import pytest
 
-from libtbx.phil import parse
-
 from dxtbx.model.experiment_list import ExperimentListFactory
+from libtbx.phil import parse
 
 from dials.algorithms.refinement import RefinerFactory
 from dials.algorithms.refinement.restraints import RestraintsParameterisation

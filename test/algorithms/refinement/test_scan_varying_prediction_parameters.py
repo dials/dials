@@ -5,9 +5,8 @@ from math import pi
 
 import pytest
 
-from scitbx.array_family import flex
-
 from dxtbx.model.experiment_list import Experiment, ExperimentList
+from scitbx.array_family import flex
 
 from dials.algorithms.refinement.parameterisation.scan_varying_beam_parameters import (
     ScanVaryingBeamParameterisation,
@@ -33,9 +32,8 @@ from dials.algorithms.refinement.prediction.managed_predictors import (
 
 class _Test(object):
     def create_models(self, cmdline_overrides=None):
-        from libtbx.phil import parse
-
         from dxtbx.model import ScanFactory
+        from libtbx.phil import parse
 
         from dials.test.algorithms.refinement.setup_geometry import Extract
 

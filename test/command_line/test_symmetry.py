@@ -11,7 +11,6 @@ import pytest
 
 import scitbx.matrix
 from cctbx import sgtbx, uctbx
-
 from dxtbx.model import Crystal, Experiment, ExperimentList, Scan
 from dxtbx.serialize import load
 

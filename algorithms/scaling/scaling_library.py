@@ -19,10 +19,9 @@ from mock import Mock
 
 import iotbx.merging_statistics
 from cctbx import crystal, miller, uctbx
+from dxtbx.model import Experiment
 from iotbx import cif, mtz
 from libtbx import Auto, phil
-
-from dxtbx.model import Experiment
 
 from dials.algorithms.scaling.Ih_table import IhTable
 from dials.algorithms.scaling.model.model import KBScalingModel, PhysicalScalingModel

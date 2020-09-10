@@ -8,13 +8,13 @@ from __future__ import absolute_import, division, print_function
 import math
 
 from cctbx.sgtbx import space_group, space_group_symbols
-from libtbx.phil import parse
-from libtbx.test_utils import approx_equal
-from scitbx.array_family import flex
 
 # We will set up a mock scan and a mock experiment list
 from dxtbx.model import ScanFactory
 from dxtbx.model.experiment_list import Experiment, ExperimentList
+from libtbx.phil import parse
+from libtbx.test_utils import approx_equal
+from scitbx.array_family import flex
 
 from dials.algorithms.refinement.prediction.managed_predictors import (
     ScansExperimentsPredictor,

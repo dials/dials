@@ -32,7 +32,6 @@ import mock
 import pytest
 
 from cctbx import miller
-
 from dxtbx.model import Crystal, Experiment, ExperimentList
 from dxtbx.model.experiment_list import ExperimentListFactory
 

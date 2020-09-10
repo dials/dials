@@ -6,9 +6,8 @@ import random
 
 import pytest
 
-from scitbx import matrix
-
 from dxtbx.model.experiment_list import ExperimentListFactory
+from scitbx import matrix
 
 import dials.util.nexus
 from dials.command_line.export import phil_scope

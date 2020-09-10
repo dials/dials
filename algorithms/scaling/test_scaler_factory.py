@@ -6,9 +6,8 @@ from __future__ import absolute_import, division, print_function
 import pytest
 from mock import MagicMock, Mock
 
-from libtbx import phil
-
 from dxtbx.model import Crystal
+from libtbx import phil
 
 from dials.algorithms.scaling.scaler import (
     MultiScaler,

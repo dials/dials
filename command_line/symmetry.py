@@ -12,9 +12,8 @@ import iotbx.phil
 from cctbx import sgtbx, uctbx
 from cctbx.sgtbx.bravais_types import bravais_lattice
 from cctbx.sgtbx.lattice_symmetry import metric_subgroups
-from libtbx import Auto
-
 from dxtbx.model import ExperimentList
+from libtbx import Auto
 
 from dials.algorithms.merging.merge import prepare_merged_reflection_table
 from dials.algorithms.symmetry import resolution_filter_from_reflections_experiments

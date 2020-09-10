@@ -7,7 +7,6 @@ import random
 import pytest
 
 from cctbx import sgtbx
-
 from dxtbx.model import Crystal, Experiment, ExperimentList
 from dxtbx.serialize import load
 

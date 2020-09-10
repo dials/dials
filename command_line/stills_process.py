@@ -13,14 +13,13 @@ import six
 import six.moves.cPickle as pickle
 from six import BytesIO
 
-from libtbx.phil import parse
-from libtbx.utils import Abort, Sorry
-
 from dxtbx.model.experiment_list import (
     Experiment,
     ExperimentList,
     ExperimentListFactory,
 )
+from libtbx.phil import parse
+from libtbx.utils import Abort, Sorry
 
 import dials.util
 from dials.array_family import flex

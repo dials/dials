@@ -8,10 +8,9 @@ from mock import Mock, patch
 
 from cctbx import crystal, miller, uctbx
 from cctbx.sgtbx import space_group
-from libtbx import phil
-
 from dxtbx.model import Beam, Crystal, Detector, Experiment, Goniometer, Scan
 from dxtbx.model.experiment_list import ExperimentList
+from libtbx import phil
 
 from dials.algorithms.scaling.model.model import KBScalingModel, PhysicalScalingModel
 from dials.algorithms.scaling.scaling_library import (

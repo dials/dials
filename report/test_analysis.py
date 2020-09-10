@@ -5,7 +5,6 @@ import pytest
 from mock import mock
 
 from cctbx import miller
-
 from dxtbx.model import Crystal
 from dxtbx.serialize import load
 

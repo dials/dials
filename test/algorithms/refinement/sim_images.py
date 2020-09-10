@@ -6,9 +6,6 @@ from __future__ import absolute_import, division, print_function
 import math
 
 from cctbx.eltbx import henke
-from iotbx import pdb
-from scitbx import matrix
-
 from dxtbx.model import (
     BeamFactory,
     Crystal,
@@ -16,6 +13,8 @@ from dxtbx.model import (
     GoniometerFactory,
     ScanFactory,
 )
+from iotbx import pdb
+from scitbx import matrix
 
 _pdb_lines = """HEADER TEST
 CRYST1   50.000   60.000   70.000  90.00  90.00  90.00 P 1

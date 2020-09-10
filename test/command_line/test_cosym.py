@@ -6,7 +6,6 @@ import procrunner
 import pytest
 
 from cctbx import sgtbx, uctbx
-
 from dxtbx.serialize import load
 
 from dials.algorithms.symmetry.cosym._generate_test_data import (

@@ -7,7 +7,6 @@ import os
 import pytest
 
 from cctbx import sgtbx, uctbx
-
 from dxtbx.model import Crystal
 from dxtbx.serialize import load
 

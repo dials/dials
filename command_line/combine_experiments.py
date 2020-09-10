@@ -5,10 +5,6 @@ import random
 import sys
 
 import xfel.clustering.cluster
-from libtbx.phil import parse
-from scitbx import matrix
-from xfel.clustering.cluster_groups import unit_cell_info
-
 from dxtbx.command_line.image_average import splitit
 from dxtbx.datablock import BeamDiff, DetectorDiff, GoniometerDiff
 from dxtbx.model.experiment_list import (
@@ -18,6 +14,9 @@ from dxtbx.model.experiment_list import (
     ExperimentList,
     GoniometerComparison,
 )
+from libtbx.phil import parse
+from scitbx import matrix
+from xfel.clustering.cluster_groups import unit_cell_info
 
 import dials.util
 from dials.algorithms.integration.stills_significance_filter import SignificanceFilter

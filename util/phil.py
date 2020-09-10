@@ -5,9 +5,8 @@ import os
 import re
 
 import libtbx.phil
-from libtbx.utils import Sorry
-
 from dxtbx.model.experiment_list import ExperimentListFactory
+from libtbx.utils import Sorry
 
 from dials.array_family import flex
 

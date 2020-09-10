@@ -8,9 +8,6 @@ import pytest
 
 from cctbx import crystal, sgtbx
 from cctbx.sgtbx import bravais_types
-from scitbx import matrix
-from scitbx.math import euler_angles_as_matrix
-
 from dxtbx.format import Format
 from dxtbx.imageset import ImageSequence, ImageSetData
 from dxtbx.model import (
@@ -22,6 +19,8 @@ from dxtbx.model import (
 )
 from dxtbx.model.experiment_list import Experiment, ExperimentList
 from dxtbx.serialize import load
+from scitbx import matrix
+from scitbx.math import euler_angles_as_matrix
 
 from dials.algorithms.indexing.assign_indices import (
     AssignIndicesGlobal,

@@ -8,10 +8,9 @@ import sys
 
 import iotbx.cif.model
 from cctbx import miller, sgtbx
+from dxtbx.model.experiment_list import Experiment, ExperimentList
 from libtbx.phil import parse
 from libtbx.utils import format_float_with_standard_uncertainty
-
-from dxtbx.model.experiment_list import Experiment, ExperimentList
 
 from dials.algorithms.refinement.corrgram import create_correlation_plots
 from dials.algorithms.refinement.engine import LevenbergMarquardtIterations as Refinery

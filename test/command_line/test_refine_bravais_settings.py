@@ -6,7 +6,6 @@ import os
 import pytest
 
 from cctbx import sgtbx, uctbx
-
 from dxtbx.serialize import load
 
 from dials.command_line import refine_bravais_settings

@@ -10,10 +10,9 @@ import gltbx
 import gltbx.gl as gl
 import libtbx.phil
 import wxtbx.utils
+from dxtbx.model import MultiAxisGoniometer
 from scitbx.array_family import flex
 from scitbx.math import minimum_covering_sphere
-
-from dxtbx.model import MultiAxisGoniometer
 
 from dials.util import wx_viewer
 

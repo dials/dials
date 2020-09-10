@@ -10,7 +10,6 @@ import pkg_resources
 import iotbx.phil
 import libtbx
 from cctbx import sgtbx
-
 from dxtbx.model import ExperimentList, ImageSequence
 
 import dials.util

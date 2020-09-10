@@ -2,10 +2,9 @@ from __future__ import absolute_import, division, print_function
 
 from math import pi
 
+from dxtbx.model import Crystal
 from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enlarge
 from scitbx import matrix
-
-from dxtbx.model import Crystal
 
 from dials.algorithms.refinement.parameterisation.crystal_parameters import (
     CrystalOrientationParameterisation,

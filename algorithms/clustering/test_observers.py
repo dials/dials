@@ -5,9 +5,8 @@ import random
 import mock
 
 from cctbx import sgtbx
-from scitbx import matrix
-
 from dxtbx.model import Crystal, Experiment, ExperimentList
+from scitbx import matrix
 
 from dials.algorithms.clustering import observers
 from dials.algorithms.clustering.unit_cell import UnitCellCluster

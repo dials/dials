@@ -9,10 +9,9 @@ from collections import OrderedDict
 import pytest
 from mock import MagicMock, Mock, patch
 
+from dxtbx.model import Crystal, Experiment, Scan
 from libtbx import phil
 from scitbx import sparse
-
-from dxtbx.model import Crystal, Experiment, Scan
 
 from dials.algorithms.scaling.active_parameter_managers import (
     multi_active_parameter_manager,

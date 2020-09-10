@@ -3,9 +3,8 @@ from __future__ import absolute_import, division, print_function
 import pytest
 import six.moves.cPickle as pickle
 
-from libtbx import phil
-
 from dxtbx.model import ExperimentList
+from libtbx import phil
 
 from dials.command_line.dials_import import Script as ImportScript
 from dials.command_line.dials_import import phil_scope as import_phil_scope

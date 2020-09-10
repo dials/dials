@@ -9,10 +9,9 @@ from scitbx import matrix
 
 
 def test(dials_regression, run_in_tmpdir):
+    import dxtbx
     from iotbx.xds import integrate_hkl, xparm
     from rstbx.cftbx.coordinate_frame_converter import coordinate_frame_converter
-
-    import dxtbx
 
     from dials.algorithms.spot_prediction import RotationAngles
 

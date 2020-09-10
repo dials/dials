@@ -6,10 +6,9 @@ import logging
 import math
 
 import libtbx
+from dxtbx.model import Crystal
 from scitbx import matrix
 from scitbx.array_family import flex
-
-from dxtbx.model import Crystal
 
 import dials.util
 from dials.algorithms.indexing.compare_orientation_matrices import (

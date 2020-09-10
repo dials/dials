@@ -8,9 +8,8 @@ from math import pi
 
 import pytest
 
-from scitbx.array_family import flex
-
 from dxtbx.model.experiment_list import Experiment, ExperimentList
+from scitbx.array_family import flex
 
 from dials.algorithms.refinement.reflection_manager import BlockCalculator
 

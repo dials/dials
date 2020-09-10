@@ -9,9 +9,8 @@ from six.moves import cStringIO as StringIO
 
 import libtbx.phil
 import scitbx.matrix
-from scitbx.array_family import flex
-
 from dxtbx.model.experiment_list import Experiment, ExperimentList
+from scitbx.array_family import flex
 
 from dials.algorithms.indexing import indexer
 from dials.algorithms.indexing.basis_vector_search import combinations, optimise

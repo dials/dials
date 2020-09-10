@@ -2,9 +2,8 @@ from __future__ import absolute_import, division, print_function
 
 import functools
 
-from libtbx.phil import parse
-
 from dxtbx.model.experiment_list import ExperimentList
+from libtbx.phil import parse
 
 from dials.array_family import flex
 from dials.util import Sorry, show_mail_on_error

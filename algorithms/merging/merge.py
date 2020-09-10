@@ -5,9 +5,8 @@ import logging
 
 from six.moves import cStringIO as StringIO
 
-from mmtbx.scaling import data_statistics
-
 from dxtbx.model import ExperimentList
+from mmtbx.scaling import data_statistics
 
 from dials.algorithms.scaling.Ih_table import (
     _reflection_table_to_iobs,

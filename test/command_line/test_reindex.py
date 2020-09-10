@@ -8,7 +8,6 @@ import pytest
 import scitbx.matrix
 from cctbx import sgtbx
 from cctbx.sgtbx.lattice_symmetry import metric_subgroups
-
 from dxtbx.model import Crystal, Experiment, ExperimentList
 from dxtbx.serialize import load
 

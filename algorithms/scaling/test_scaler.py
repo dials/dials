@@ -3,11 +3,10 @@ from __future__ import absolute_import, division, print_function
 import pytest
 from mock import MagicMock, Mock
 
-from libtbx import phil
-from scitbx import sparse
-
 from dxtbx.model import Beam, Crystal, Detector, Experiment, Goniometer, Scan
 from dxtbx.model.experiment_list import ExperimentList
+from libtbx import phil
+from scitbx import sparse
 
 from dials.algorithms.scaling.basis_functions import RefinerCalculator
 from dials.algorithms.scaling.parameter_handler import ScalingParameterManagerGenerator

@@ -5,9 +5,8 @@ import os
 import pytest
 
 import libtbx
-from libtbx.phil import parse
-
 from dxtbx.model.experiment_list import ExperimentListFactory
+from libtbx.phil import parse
 
 from dials.array_family import flex
 

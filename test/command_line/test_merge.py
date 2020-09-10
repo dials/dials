@@ -5,9 +5,8 @@ from __future__ import absolute_import, division, print_function
 import procrunner
 import pytest
 
-from iotbx import mtz
-
 from dxtbx.model.experiment_list import ExperimentListFactory
+from iotbx import mtz
 
 from dials.array_family import flex
 

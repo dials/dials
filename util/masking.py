@@ -6,13 +6,12 @@ import warnings
 from collections import namedtuple
 
 from cctbx import crystal
-from iotbx.phil import parse
-
 from dxtbx.masking import (
     mask_untrusted_circle,
     mask_untrusted_polygon,
     mask_untrusted_rectangle,
 )
+from iotbx.phil import parse
 
 from dials.array_family import flex
 from dials.util.ext import ResolutionMaskGenerator

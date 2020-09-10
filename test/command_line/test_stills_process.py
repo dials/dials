@@ -4,13 +4,12 @@ import os
 
 import pytest
 
-from libtbx import easy_run
-from libtbx.phil import parse
-
 import dxtbx
 from dxtbx.format.FormatCBFCspad import FormatCBFCspadInMemory
 from dxtbx.imageset import ImageSet, ImageSetData, MemReader
 from dxtbx.model.experiment_list import ExperimentListFactory
+from libtbx import easy_run
+from libtbx.phil import parse
 
 from dials.array_family import flex
 from dials.command_line.stills_process import Processor, phil_scope

@@ -9,10 +9,9 @@ import sys
 
 import iotbx.phil
 from cctbx import sgtbx
+from dxtbx.model import MultiAxisGoniometer
 from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
 from scitbx import matrix
-
-from dxtbx.model import MultiAxisGoniometer
 
 from dials.algorithms.refinement import rotation_decomposition
 from dials.util import tabulate

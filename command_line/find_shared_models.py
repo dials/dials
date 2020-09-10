@@ -4,9 +4,8 @@ import datetime
 import logging
 from collections import Counter
 
-from libtbx.phil import parse
-
 from dxtbx.imageset import ImageSequence
+from libtbx.phil import parse
 
 from dials.util import log, show_mail_on_error, tabulate
 from dials.util.options import OptionParser, flatten_experiments

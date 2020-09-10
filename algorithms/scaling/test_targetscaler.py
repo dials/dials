@@ -9,9 +9,8 @@ from math import log
 
 import pytest
 
-from libtbx import phil
-
 from dxtbx.model import Crystal, Experiment, ExperimentList
+from libtbx import phil
 
 from dials.algorithms.scaling.model.model import KBScalingModel
 from dials.algorithms.scaling.scaler_factory import TargetScalerFactory

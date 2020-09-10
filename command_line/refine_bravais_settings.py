@@ -37,7 +37,6 @@ import sys
 import libtbx.phil
 from cctbx import sgtbx
 from cctbx.sgtbx import bravais_types
-
 from dxtbx.model import ExperimentList
 
 from dials.algorithms.indexing.bravais_settings import (

@@ -1,8 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
-from scitbx import matrix
-
 from dxtbx.model.experiment_list import ExperimentListFactory
+from scitbx import matrix
 
 from dials.algorithms.integration import Corrections, CorrectionsMulti
 from dials.array_family import flex

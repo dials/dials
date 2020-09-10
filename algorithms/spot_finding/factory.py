@@ -414,9 +414,8 @@ class SpotFinderFactory(object):
         :param params: The input parameters
         :returns: The spot finder instance
         """
-        from libtbx.phil import parse
-
         from dxtbx.imageset import ImageSequence
+        from libtbx.phil import parse
 
         from dials.algorithms.spot_finding.finder import SpotFinder
         from dials.util.masking import MaskGenerator

@@ -14,7 +14,6 @@ from orderedset import OrderedSet
 from six.moves.urllib.parse import urlparse
 
 import libtbx.phil
-
 from dxtbx.model import ExperimentList
 from dxtbx.model.experiment_list import ExperimentListFactory
 

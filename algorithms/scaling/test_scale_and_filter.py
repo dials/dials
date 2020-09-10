@@ -3,10 +3,9 @@ from __future__ import absolute_import, division, print_function
 
 import mock
 
-from libtbx import phil
-
 from dxtbx.model import Crystal, Experiment, Scan
 from dxtbx.model.experiment_list import ExperimentList
+from libtbx import phil
 
 from dials.algorithms.scaling.model.model import KBScalingModel
 from dials.algorithms.scaling.scale_and_filter import AnalysisResults, log_cycle_results

@@ -3,10 +3,9 @@ from __future__ import absolute_import, division, print_function
 import math
 import random
 
+from dxtbx.serialize import load
 from scitbx import matrix
 from scitbx.array_family import flex
-
-from dxtbx.serialize import load
 
 from dials.algorithms.profile_model.gaussian_rs import (
     BBoxCalculator3D,

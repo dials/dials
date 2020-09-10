@@ -26,10 +26,9 @@ import os.path
 import six.moves.cPickle as pickle
 
 import libtbx.phil as phil
-from scitbx.array_family import flex
-
 from dxtbx.format.image import ImageBool
 from dxtbx.model.experiment_list import ExperimentList
+from scitbx.array_family import flex
 
 import dials.util
 import dials.util.log

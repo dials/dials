@@ -14,14 +14,14 @@ def test(args=[]):
 
     # Symmetry constrained parameterisation for the unit cell
     from cctbx.uctbx import unit_cell
-    from libtbx.phil import parse
-    from libtbx.test_utils import approx_equal
-    from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enlarge
-    from scitbx import matrix
 
     # We will set up a mock scan and a mock experiment list
     from dxtbx.model import ScanFactory
     from dxtbx.model.experiment_list import Experiment, ExperimentList
+    from libtbx.phil import parse
+    from libtbx.test_utils import approx_equal
+    from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enlarge
+    from scitbx import matrix
 
     # Get module to build models using PHIL
     import dials.test.algorithms.refinement.setup_geometry as setup_geometry

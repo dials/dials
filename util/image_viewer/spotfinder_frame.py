@@ -10,6 +10,8 @@ from wx.lib.intctrl import IntCtrl
 
 from cctbx import crystal, uctbx
 from cctbx.miller import index_generator
+from dxtbx.imageset import ImageSet
+from dxtbx.model.experiment_list import ExperimentList, ExperimentListFactory
 from libtbx.utils import flat_list
 from rstbx.slip_viewer import pyslip
 from rstbx.viewer.frame import SettingsFrame
@@ -20,9 +22,6 @@ from wxtbx.phil_controls.floatctrl import FloatCtrl
 from wxtbx.phil_controls.intctrl import IntCtrl as PhilIntCtrl
 from wxtbx.phil_controls.ints import IntsCtrl
 from wxtbx.phil_controls.strctrl import StrCtrl
-
-from dxtbx.imageset import ImageSet
-from dxtbx.model.experiment_list import ExperimentList, ExperimentListFactory
 
 from dials.algorithms.image.threshold import (
     DispersionExtendedThresholdDebug,

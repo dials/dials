@@ -9,9 +9,8 @@ import os
 import procrunner
 import pytest
 
-from scitbx import matrix
-
 from dxtbx.model.experiment_list import ExperimentListFactory
+from scitbx import matrix
 
 from dials.algorithms.refinement.engine import Journal
 
