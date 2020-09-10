@@ -6,9 +6,13 @@ import logging
 import math
 import random
 
+import libtbx
+from libtbx.phil import parse
+from scitbx import matrix
+from scitbx.math import five_number_summary
+
 import dials.util
-from dials.algorithms.refinement import DialsRefineConfigError
-from dials.algorithms.refinement import weighting_strategies
+from dials.algorithms.refinement import DialsRefineConfigError, weighting_strategies
 from dials.algorithms.refinement.analysis.centroid_analysis import CentroidAnalyser
 from dials.algorithms.refinement.outlier_detection.outlier_base import (
     phil_str as outlier_phil_str,
@@ -18,10 +22,6 @@ from dials.algorithms.refinement.refinement_helpers import (
     set_obs_s1,
 )
 from dials.array_family import flex
-import libtbx
-from libtbx.phil import parse
-from scitbx import matrix
-from scitbx.math import five_number_summary
 
 logger = logging.getLogger(__name__)
 

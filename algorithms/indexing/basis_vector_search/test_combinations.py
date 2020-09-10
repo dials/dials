@@ -2,13 +2,14 @@ from __future__ import absolute_import, division, print_function
 
 import copy
 
-from cctbx import sgtbx
 import scitbx.matrix
-from scitbx.math import euler_angles_as_matrix
+from cctbx import sgtbx
 from dxtbx.model import Crystal
+from scitbx.math import euler_angles_as_matrix
+
 from dials.algorithms.indexing.symmetry import find_matching_symmetry
 
-from . import combinations, FFT1D
+from . import FFT1D, combinations
 
 
 def test_combinations(setup_rlp):

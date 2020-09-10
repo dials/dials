@@ -46,11 +46,11 @@ import logging
 from collections import defaultdict
 from typing import Any, List, Type
 
-from dials.util import tabulate
-
 from cctbx import crystal, miller
-from dials.array_family import flex
+
 from dials.algorithms.scaling.outlier_rejection import reject_outliers
+from dials.array_family import flex
+from dials.util import tabulate
 from dials.util.batch_handling import assign_batches_to_reflections
 
 logger = logging.getLogger("dials")

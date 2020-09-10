@@ -6,20 +6,16 @@ import logging
 import math
 import sys
 
-from cctbx import miller
-from cctbx import crystal
+from cctbx import crystal, miller
+from dxtbx.model import ExperimentList
 from libtbx.phil import parse
 from scitbx import matrix
 
-from dxtbx.model import ExperimentList
 from dials.algorithms.refinement import rotation_decomposition
 from dials.algorithms.shadowing.filter import filter_shadowed_reflections
 from dials.array_family import flex
-from dials.util import log
-from dials.util import show_mail_on_error
-from dials.util.options import OptionParser
-from dials.util.options import flatten_experiments
-
+from dials.util import log, show_mail_on_error
+from dials.util.options import OptionParser, flatten_experiments
 
 logger = logging.getLogger("dials.command_line.complete_full_sphere")
 

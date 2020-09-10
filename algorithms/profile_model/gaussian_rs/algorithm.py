@@ -13,8 +13,6 @@ class GaussianRSMaskCalculatorFactory(object):
         """
         from dials.algorithms.integration.parallel_integrator import (
             GaussianRSMaskCalculator,
-        )
-        from dials.algorithms.integration.parallel_integrator import (
             GaussianRSMultiCrystalMaskCalculator,
         )
 
@@ -60,15 +58,17 @@ class GaussianRSReferenceCalculatorFactory(object):
         """
         Create the intensity calculator
         """
+        from math import ceil
+
         from dials.algorithms.integration.parallel_integrator import (
             GaussianRSReferenceCalculator,
         )
-        from dials.algorithms.profile_model.modeller import SingleSampler
-        from dials.algorithms.profile_model.modeller import CircleSampler
-        from dials.algorithms.profile_model.modeller import GridSampler
         from dials.algorithms.profile_model.gaussian_rs.transform import TransformSpec
-
-        from math import ceil
+        from dials.algorithms.profile_model.modeller import (
+            CircleSampler,
+            GridSampler,
+            SingleSampler,
+        )
 
         # Assume the detector and scan are the same in each case
         detector = experiments[0].detector

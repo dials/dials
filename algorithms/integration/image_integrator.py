@@ -6,12 +6,10 @@ from time import time
 
 import dials.algorithms.integration
 from dials.algorithms.integration.processor import job
-from dials_algorithms_integration_integrator_ext import ReflectionManagerPerImage
-from dials.model.data import make_image
-from dials.model.data import MultiPanelImageVolume
-from dials.model.data import ImageVolume
+from dials.model.data import ImageVolume, MultiPanelImageVolume, make_image
 from dials.util import log
 from dials.util.mp import multi_node_parallel_map
+from dials_algorithms_integration_integrator_ext import ReflectionManagerPerImage
 
 logger = logging.getLogger(__name__)
 

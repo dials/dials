@@ -7,11 +7,9 @@ from cctbx import crystal, sgtbx
 from cctbx.crystal_orientation import crystal_orientation
 from cctbx.sgtbx import change_of_basis_op, subgroups
 from cctbx.sgtbx.bravais_types import bravais_lattice
+from dxtbx.model import Crystal
 from rstbx.dps_core.lepage import iotbx_converter
 from scitbx.array_family import flex
-
-from dxtbx.model import Crystal
-
 
 logger = logging.getLogger(__name__)
 

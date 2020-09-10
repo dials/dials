@@ -4,9 +4,10 @@ import logging
 import math
 import os
 
+import libtbx
+
 from dials.array_family import flex
 from dials.util import Sorry
-import libtbx
 
 logger = logging.getLogger(__name__)
 
@@ -72,8 +73,9 @@ class ExtractPixelsFromImage(object):
 
         :param index: The index of the image
         """
-        from dials.model.data import PixelList
         from dxtbx.imageset import ImageSequence
+
+        from dials.model.data import PixelList
 
         # Parallel reading of HDF5 from the same handle is not allowed. Python
         # multiprocessing is a bit messed up and used fork on linux so need to
@@ -737,6 +739,7 @@ class SpotFinder(object):
         :return: The observed spots
         """
         import six.moves.cPickle as pickle
+
         from dxtbx.format.image import ImageBool
 
         # Loop through all the experiments and get the unique imagesets

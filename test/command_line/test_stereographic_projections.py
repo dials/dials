@@ -1,7 +1,8 @@
 import json
-from dials.command_line import stereographic_projection
 
 import procrunner
+
+from dials.command_line import stereographic_projection
 
 
 def test_stereographic_projection(dials_data, tmp_path):

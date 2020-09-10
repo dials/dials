@@ -12,8 +12,10 @@ import copy
 import logging
 import math
 
-import scitbx.math
 import six
+
+import scitbx.math
+
 from dials.array_family import flex
 
 logger = logging.getLogger(__name__)
@@ -204,7 +206,6 @@ class ComputeEsdReflectingRange(object):
             # is used... @JMP please could we discuss? assert best method to get
             # sigma_m in that case is actually to look at present / absent
             # reflections as per how Mosflm does it...
-
             # Initialise the function used in likelihood estimation.
             self._R = FractionOfObservedIntensity(
                 crystal, beam, detector, goniometer, scan, reflections

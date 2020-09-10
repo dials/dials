@@ -1,23 +1,21 @@
 # coding: utf-8
+# DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
 from __future__ import absolute_import, division, print_function
 
-# DIALS_ENABLE_COMMAND_LINE_COMPLETION
-
-import os
 import copy
+import os
+
 import six.moves.cPickle as pickle
 
 import iotbx.phil
 from cctbx import sgtbx
 from rstbx.symmetry.constraints import parameter_reduction
 
-# from dials.util.command_line import Importer
 from dials.algorithms.indexing.assign_indices import AssignIndicesGlobal
 from dials.array_family import flex
-from dials.util.options import OptionParser
-from dials.util.options import reflections_and_experiments_from_files
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 
 help_message = """
 
@@ -101,8 +99,8 @@ def derive_change_of_basis_op(from_hkl, to_hkl):
         eqns.solve()
         r.extend(eqns.solution())
 
-    from scitbx.math import continued_fraction
     from scitbx import matrix
+    from scitbx.math import continued_fraction
 
     denom = 12
     r = [
@@ -158,6 +156,7 @@ def reindex_experiments(experiments, cb_op, space_group=None):
 
 def run(args):
     import libtbx.load_env
+
     from dials.util import Sorry
 
     usage = "dials.reindex [options] indexed.expt indexed.refl"

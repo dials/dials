@@ -7,16 +7,15 @@ import math
 
 import libtbx
 import libtbx.phil
+import scitbx.matrix
 from cctbx import crystal, miller, sgtbx
 from cctbx.crystal_orientation import crystal_orientation
 from cctbx.sgtbx import bravais_types
+from dxtbx.model import Crystal
 from libtbx.introspection import number_of_processors
 from rstbx.dps_core.lepage import iotbx_converter
 from rstbx.symmetry.subgroup import MetricSubgroup
 from scitbx.array_family import flex
-import scitbx.matrix
-
-from dxtbx.model import Crystal
 
 import dials.util
 from dials.algorithms.indexing.refinement import refine

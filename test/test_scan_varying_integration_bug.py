@@ -1,9 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
-import iotbx.mtz
 import procrunner
-from libtbx.test_utils import approx_equal
+
+import iotbx.mtz
 from cctbx import uctbx
+from libtbx.test_utils import approx_equal
 
 
 def test(dials_data, tmpdir):

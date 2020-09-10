@@ -5,7 +5,6 @@ from libtbx.math_utils import iceil
 
 from dials.array_family import flex
 
-
 logger = logging.getLogger(__name__)
 
 

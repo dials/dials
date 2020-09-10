@@ -1,25 +1,29 @@
 from __future__ import absolute_import, division, print_function
 
 import copy
+import glob
 import logging
 import os
 import sys
 import tarfile
 import time
-import glob
+from collections import OrderedDict
+
 import six
 import six.moves.cPickle as pickle
 from six import BytesIO
 
-import dials.util
-from dials.util import log
-from dials.array_family import flex
-from dxtbx.model.experiment_list import ExperimentListFactory
-from dxtbx.model.experiment_list import ExperimentList
-from dxtbx.model.experiment_list import Experiment
-from libtbx.utils import Abort, Sorry
-from collections import OrderedDict
+from dxtbx.model.experiment_list import (
+    Experiment,
+    ExperimentList,
+    ExperimentListFactory,
+)
 from libtbx.phil import parse
+from libtbx.utils import Abort, Sorry
+
+import dials.util
+from dials.array_family import flex
+from dials.util import log
 
 logger = logging.getLogger("dials.command_line.stills_process")
 
@@ -1124,8 +1128,8 @@ class Processor(object):
 
         # Get the integrator from the input parameters
         logger.info("Configuring integrator from input parameters")
-        from dials.algorithms.profile_model.factory import ProfileModelFactory
         from dials.algorithms.integration.integrator import create_integrator
+        from dials.algorithms.profile_model.factory import ProfileModelFactory
 
         # Compute the profile model
         # Predict the reflections
@@ -1168,10 +1172,11 @@ class Processor(object):
                 )()
 
         if self.params.significance_filter.enable:
+            from dxtbx.model.experiment_list import ExperimentList
+
             from dials.algorithms.integration.stills_significance_filter import (
                 SignificanceFilter,
             )
-            from dxtbx.model.experiment_list import ExperimentList
 
             sig_filter = SignificanceFilter(self.params)
             filtered_refls = sig_filter(experiments, integrated)

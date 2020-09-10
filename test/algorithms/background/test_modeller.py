@@ -78,8 +78,8 @@ class TestExact(object):
         return c, data, mask
 
     def generate_linear_background_2d(self, size, bmin, bmax):
-        from scitbx.array_family import flex
         from scitbx import matrix
+        from scitbx.array_family import flex
 
         data = flex.double(flex.grid(size), 0)
         mask = flex.bool(flex.grid(size), True)
@@ -110,8 +110,8 @@ class TestExact(object):
         return params, data, mask
 
     def generate_linear_background_3d(self, size, bmin, bmax):
-        from scitbx.array_family import flex
         from scitbx import matrix
+        from scitbx.array_family import flex
 
         data = flex.double(flex.grid(size), 0)
         mask = flex.bool(flex.grid(size), True)

@@ -6,9 +6,10 @@ import pytest
 
 @pytest.fixture
 def model(tmpdir):
-    from dials.array_family import flex
-    from dials.algorithms.background.gmodel import StaticBackgroundModel
     import six.moves.cPickle as pickle
+
+    from dials.algorithms.background.gmodel import StaticBackgroundModel
+    from dials.array_family import flex
 
     ysize = 2527
     xsize = 2463

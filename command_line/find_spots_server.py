@@ -98,9 +98,10 @@ indexing_min_spots = 10
     integrate = params.extract().integrate
     indexing_min_spots = params.extract().indexing_min_spots
 
-    from dials.command_line.find_spots import phil_scope as find_spots_phil_scope
     from dxtbx.model.experiment_list import ExperimentListFactory
+
     from dials.array_family import flex
+    from dials.command_line.find_spots import phil_scope as find_spots_phil_scope
 
     interp = find_spots_phil_scope.command_line_argument_interpreter()
     phil_scope, unhandled = interp.process_and_fetch(
@@ -184,8 +185,8 @@ indexing_min_spots = 10
 
         if integrate and "lattices" in stats:
 
-            from dials.algorithms.profile_model.factory import ProfileModelFactory
             from dials.algorithms.integration.integrator import create_integrator
+            from dials.algorithms.profile_model.factory import ProfileModelFactory
             from dials.command_line.integrate import phil_scope as integrate_phil_scope
 
             interp = integrate_phil_scope.command_line_argument_interpreter()

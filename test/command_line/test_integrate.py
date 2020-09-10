@@ -5,10 +5,12 @@ import math
 import os
 import shutil
 
-from dxtbx.serialize import load
-from dials.array_family import flex
-from dials.algorithms.integration.processor import _average_bbox_size
 import procrunner
+
+from dxtbx.serialize import load
+
+from dials.algorithms.integration.processor import _average_bbox_size
+from dials.array_family import flex
 
 
 def test_basic_integrate(dials_data, tmpdir):

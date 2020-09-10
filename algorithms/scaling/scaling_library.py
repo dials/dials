@@ -12,24 +12,26 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import uuid
-import pkg_resources
 from copy import deepcopy
 
+import pkg_resources
+from mock import Mock
+
 import iotbx.merging_statistics
-from cctbx import miller, crystal, uctbx
+from cctbx import crystal, miller, uctbx
 from dxtbx.model import Experiment
-from dials.array_family import flex
-from dials.util.options import OptionParser
-from dials.util import Sorry
+from iotbx import cif, mtz
+from libtbx import Auto, phil
+
 from dials.algorithms.scaling.Ih_table import IhTable
 from dials.algorithms.scaling.model.model import KBScalingModel, PhysicalScalingModel
 from dials.algorithms.scaling.scaling_utilities import (
-    calculate_prescaling_correction,
     DialsMergingStatisticsError,
+    calculate_prescaling_correction,
 )
-from iotbx import cif, mtz
-from libtbx import phil, Auto
-from mock import Mock
+from dials.array_family import flex
+from dials.util import Sorry
+from dials.util.options import OptionParser
 
 logger = logging.getLogger("dials")
 

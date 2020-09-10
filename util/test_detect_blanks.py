@@ -1,6 +1,7 @@
 import pytest
 
 from dxtbx.model import ExperimentList
+
 from dials.array_family import flex
 from dials.util import detect_blanks
 

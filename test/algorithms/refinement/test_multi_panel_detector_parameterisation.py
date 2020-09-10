@@ -5,33 +5,24 @@ single panel detector, and a geometrically identical 3x3 panel detector,
 ensuring the results are the same.
 """
 
-# Python and cctbx imports
 from __future__ import absolute_import, division, print_function
+
 from collections import namedtuple
-import pytest
 from math import pi
-from scitbx import matrix
-from dials.array_family import flex
+
+import pytest
+
+from cctbx.sgtbx import space_group, space_group_symbols
+from cctbx.uctbx import unit_cell
+from dxtbx.model import Detector, Panel, ScanFactory
+from dxtbx.model.experiment_list import Experiment, ExperimentList
 from libtbx.phil import parse
 from libtbx.test_utils import approx_equal
+from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enlarge
+from scitbx import matrix
 
-# Get modules to build models and minimiser using PHIL
 import dials.test.algorithms.refinement.setup_geometry as setup_geometry
 import dials.test.algorithms.refinement.setup_minimiser as setup_minimiser
-
-# Get the models to build the multi panel detector
-from dxtbx.model import Panel, Detector
-
-# We will set up a mock scan and a mock experiment list
-from dxtbx.model import ScanFactory
-from dxtbx.model.experiment_list import ExperimentList, Experiment
-
-# Model parameterisations
-from dials.algorithms.refinement.parameterisation.detector_parameters import (
-    DetectorParameterisationSinglePanel,
-    DetectorParameterisationMultiPanel,
-    PyDetectorParameterisationMultiPanel,
-)
 from dials.algorithms.refinement.parameterisation.beam_parameters import (
     BeamParameterisation,
 )
@@ -39,30 +30,24 @@ from dials.algorithms.refinement.parameterisation.crystal_parameters import (
     CrystalOrientationParameterisation,
     CrystalUnitCellParameterisation,
 )
-
-# Symmetry constrained parameterisation for the unit cell
-from cctbx.uctbx import unit_cell
-from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enlarge
-
-# Reflection prediction
-from dials.algorithms.spot_prediction import IndexGenerator
-from dials.algorithms.refinement.prediction.managed_predictors import (
-    ScansRayPredictor,
-    ScansExperimentsPredictor,
+from dials.algorithms.refinement.parameterisation.detector_parameters import (
+    DetectorParameterisationMultiPanel,
+    DetectorParameterisationSinglePanel,
+    PyDetectorParameterisationMultiPanel,
 )
-from dials.algorithms.spot_prediction import ray_intersection
-from cctbx.sgtbx import space_group, space_group_symbols
-
-# Parameterisation of the prediction equation
 from dials.algorithms.refinement.parameterisation.prediction_parameters import (
     XYPhiPredictionParameterisation,
 )
-
-# Imports for the target function
+from dials.algorithms.refinement.prediction.managed_predictors import (
+    ScansExperimentsPredictor,
+    ScansRayPredictor,
+)
+from dials.algorithms.refinement.reflection_manager import ReflectionManager
 from dials.algorithms.refinement.target import (
     LeastSquaresPositionalResidualWithRmsdCutoff,
 )
-from dials.algorithms.refinement.reflection_manager import ReflectionManager
+from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
+from dials.array_family import flex
 
 
 def make_panel_in_array(array_elt, reference_panel):

@@ -5,8 +5,9 @@ import shutil
 
 import procrunner
 
-from dials.command_line.show import model_connectivity, run
 from dxtbx.serialize import load
+
+from dials.command_line.show import model_connectivity, run
 
 
 def test_dials_show(dials_regression):

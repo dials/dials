@@ -1,10 +1,12 @@
 from __future__ import absolute_import, division, print_function
 
-import boost_adaptbx.boost.python
 import mock
 import pytest
 import six
-from dials.util.ext import streambuf, ostream
+
+import boost_adaptbx.boost.python
+
+from dials.util.ext import ostream, streambuf
 
 ext = boost_adaptbx.boost.python.import_ext("dials_util_streambuf_test_ext")
 

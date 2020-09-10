@@ -4,17 +4,18 @@ Classes are inherited from the dials.refinement engine with a few
 methods overwritten to use them with scaling code."""
 
 from __future__ import absolute_import, division, print_function
-import logging
-from dials.util import tabulate
 
-from dials.algorithms.refinement.engine import (
-    SimpleLBFGS,
-    GaussNewtonIterations,
-    LevenbergMarquardtIterations,
-)
-from dials.algorithms.scaling.scaling_utilities import log_memory_usage
+import logging
 
 from libtbx.phil import parse
+
+from dials.algorithms.refinement.engine import (
+    GaussNewtonIterations,
+    LevenbergMarquardtIterations,
+    SimpleLBFGS,
+)
+from dials.algorithms.scaling.scaling_utilities import log_memory_usage
+from dials.util import tabulate
 
 logger = logging.getLogger("dials")
 

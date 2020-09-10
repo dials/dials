@@ -9,7 +9,9 @@
 from __future__ import absolute_import, division, print_function
 
 from math import pi
+
 from scitbx.array_family import flex
+
 from dials.algorithms.spot_prediction import ScanStaticRayPredictor
 from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor as sc
 from dials.algorithms.spot_prediction import ScanVaryingReflectionPredictor as sv

@@ -1,15 +1,17 @@
+"""Test that compute_delta_cchalf returns required values"""
 from __future__ import absolute_import, division, print_function
 
-# test that compute_delta_cchalf returns required values
 import mock
-from libtbx import phil
-from dxtbx.model.experiment_list import ExperimentList
+
 from dxtbx.model import Crystal, Experiment, Scan
-from dials.util.options import OptionParser
+from dxtbx.model.experiment_list import ExperimentList
+from libtbx import phil
+
 from dials.algorithms.scaling.model.model import KBScalingModel
-from dials.array_family import flex
-from dials.algorithms.statistics.cc_half_algorithm import CCHalfFromDials, DeltaCCHalf
 from dials.algorithms.scaling.scale_and_filter import AnalysisResults, log_cycle_results
+from dials.algorithms.statistics.cc_half_algorithm import CCHalfFromDials, DeltaCCHalf
+from dials.array_family import flex
+from dials.util.options import OptionParser
 
 
 def generate_test_reflections(n=2):

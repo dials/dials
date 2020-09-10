@@ -26,8 +26,8 @@ class ReflectionBlockIntegratorStills(object):
 
     def integrate(self):
         """Integrate all the reflections."""
-        from dials.array_family import flex
         from dials.algorithms.shoebox import MaskCode
+        from dials.array_family import flex
 
         result = flex.reflection_table()
         for indices, reflections in self.extractor:
@@ -65,9 +65,11 @@ class IntegratorStills(object):
 
             predicted = self._match_with_reference(predicted, reference)
 
-            from annlib_ext import AnnAdaptor
-            from dials.array_family import flex
             import math
+
+            from annlib_ext import AnnAdaptor
+
+            from dials.array_family import flex
 
             matcheddata = predicted.select(
                 predicted.get_flags(predicted.flags.reference_spot)
@@ -171,9 +173,9 @@ class IntegratorStills(object):
 
     def _filter_reflections(self, params, experiments, reflections):
         """Filter the reflections to integrate."""
-        from dials.util.command_line import Command
         from dials.algorithms import filtering
         from dials.array_family import flex
+        from dials.util.command_line import Command
 
         # Set all reflections which overlap bad pixels to zero
         Command.start("Filtering reflections by detector mask")

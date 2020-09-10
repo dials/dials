@@ -10,11 +10,10 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 
-from libtbx.phil import parse
-from scitbx import matrix
-
 from dxtbx.model import MosaicCrystalSauter2014
 from dxtbx.model.experiment_list import Experiment, ExperimentList
+from libtbx.phil import parse
+from scitbx import matrix
 
 from dials.algorithms.refinement.prediction.managed_predictors import (
     ExperimentsPredictorFactory,

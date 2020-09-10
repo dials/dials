@@ -3,14 +3,15 @@ from __future__ import absolute_import, division, print_function
 import math
 
 import numpy as np
+
 from scitbx import matrix
 
 
 def test(dials_data):
-    from dxtbx.serialize import load
-    from dials.algorithms.profile_model.gaussian_rs import Model
-    from dials.algorithms.profile_model.gaussian_rs import MaskCalculator3D
     from dxtbx.model.experiment_list import Experiment, ExperimentList
+    from dxtbx.serialize import load
+
+    from dials.algorithms.profile_model.gaussian_rs import MaskCalculator3D, Model
 
     sequence = load.imageset(
         dials_data("centroid_test_data").join("sweep.json").strpath
@@ -52,8 +53,9 @@ def test(dials_data):
     )
 
     from scitbx.array_family import flex
-    from dials.algorithms.shoebox import MaskCode
+
     from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
+    from dials.algorithms.shoebox import MaskCode
 
     s0 = beam.get_s0()
     m2 = goniometer.get_rotation_axis()
@@ -157,8 +159,9 @@ def test(dials_data):
 
 def generate_reflections(detector, beam, scan, experiment, num):
     from random import randint, seed
-    from dials.array_family import flex
+
     from dials.algorithms.shoebox import MaskCode
+    from dials.array_family import flex
 
     seed(0)
     assert len(detector) == 1

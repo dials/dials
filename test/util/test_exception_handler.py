@@ -2,10 +2,10 @@
 
 from __future__ import absolute_import, division, print_function
 
-import dials.util
-
 import pytest
 import six
+
+import dials.util
 
 
 class _SomeError(RuntimeError):

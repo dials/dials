@@ -2,13 +2,14 @@
 
 from __future__ import absolute_import, division, print_function
 
+import os
 import sys
 from optparse import SUPPRESS_HELP, OptionParser
 
-import dials
-import os
 import procrunner
 import py
+
+import dials
 
 if __name__ == "__main__":
     dials_dir = py.path.local(dials.__file__).dirpath()

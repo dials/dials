@@ -7,31 +7,40 @@ import copy
 import logging
 import math
 
-import dials.util
-import libtbx
 import psutil
 
+import libtbx
 from dxtbx.model.experiment_list import ExperimentList
-from dials.array_family import flex
-from dials.algorithms.refinement.refinement_helpers import ordinal_number
 from libtbx.phil import parse
+
+import dials.util
 from dials.algorithms.refinement import DialsRefineConfigError
-from dials.algorithms.refinement.reflection_manager import ReflectionManagerFactory
-from dials.algorithms.refinement.prediction.managed_predictors import (
-    ExperimentsPredictorFactory,
-)
+from dials.algorithms.refinement.constraints import ConstraintManagerFactory
+from dials.algorithms.refinement.engine import AdaptLstbx, refinery_phil_str
 from dials.algorithms.refinement.parameterisation import (
     build_prediction_parameterisation,
 )
-from dials.algorithms.refinement.constraints import ConstraintManagerFactory
+from dials.algorithms.refinement.parameterisation import (
+    phil_str as parameterisation_phil_str,
+)
 from dials.algorithms.refinement.parameterisation.autoreduce import AutoReduce
 from dials.algorithms.refinement.parameterisation.parameter_report import (
     ParameterReporter,
 )
-from dials.algorithms.refinement.engine import AdaptLstbx
+from dials.algorithms.refinement.prediction.managed_predictors import (
+    ExperimentsPredictorFactory,
+)
+from dials.algorithms.refinement.refinement_helpers import ordinal_number, string_sel
+from dials.algorithms.refinement.reflection_manager import ReflectionManagerFactory
+from dials.algorithms.refinement.reflection_manager import (
+    phil_str as reflections_phil_str,
+)
 from dials.algorithms.refinement.restraints import RestraintsParameterisation
 from dials.algorithms.refinement.target import TargetFactory
-from dials.algorithms.refinement.refinement_helpers import string_sel
+from dials.algorithms.refinement.target import phil_str as target_phil_str
+from dials.array_family import flex
+
+logger = logging.getLogger(__name__)
 
 # The include scope directive does not work here. For example:
 #
@@ -42,17 +51,6 @@ from dials.algorithms.refinement.refinement_helpers import string_sel
 #   AttributeError: 'module' object has no attribute 'refinement'
 #
 # to work around this, just include external phil scopes as strings
-from dials.algorithms.refinement.reflection_manager import (
-    phil_str as reflections_phil_str,
-)
-from dials.algorithms.refinement.target import phil_str as target_phil_str
-from dials.algorithms.refinement.parameterisation import (
-    phil_str as parameterisation_phil_str,
-)
-from dials.algorithms.refinement.engine import refinery_phil_str
-
-logger = logging.getLogger(__name__)
-
 format_data = {
     "reflections_phil": reflections_phil_str,
     "target_phil": target_phil_str,
