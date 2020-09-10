@@ -94,6 +94,8 @@ def generate_integrated_test_reflections():
     r.set_flags(
         flex.bool([False, True, False, False, False, False]), r.flags.outlier_in_scaling
     )
+    bad = r.get_flags(r.flags.bad_for_scaling, all=False)
+    r.set_flags(~bad, r.flags.scaled)
     r["id"] = flex.int(6, 0)
     r["partial_id"] = flex.int([0, 1, 2, 3, 4, 5])
     return r
@@ -198,6 +200,8 @@ def test_filtered_arrays_from_experiments_reflections_with_batches(dials_data):
     expts = ExperimentListFactory.from_serialized_format(
         x4wide_dir.join("AUTOMATIC_DEFAULT_scaled.expt").strpath, check_format=False
     )
+    bad = refl.get_flags(refl.flags.bad_for_scaling, all=False)
+    refl.set_flags(~bad, refl.flags.scaled)
     miller_arrays, batches = filtered_arrays_from_experiments_reflections(
         expts, [refl], return_batches=True
     )

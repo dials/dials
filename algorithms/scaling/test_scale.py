@@ -433,6 +433,13 @@ def test_scale_physical(dials_data, tmpdir):
     assert result.overall.cc_one_half > 0.9955  # at 30/01/19, value was 0.9960
     assert result.overall.n_obs > 2300  # at 30/01/19, was 2320
 
+    refls = flex.reflection_table.from_file(tmpdir.join("scaled.refl").strpath)
+    n_scaled = refls.get_flags(refls.flags.scaled).count(True)
+    assert n_scaled == result.overall.n_obs
+    assert n_scaled == refls.get_flags(refls.flags.bad_for_scaling, all=False).count(
+        False
+    )
+
     # Try running again with the merged.mtz as a target, to trigger the
     # target_mtz option
     extra_args.append("target_mtz=merged.mtz")
@@ -655,6 +662,13 @@ def test_multi_scale(dials_data, tmpdir):
     assert result.overall.cc_one_half > 0.9975  # at 07/08/18, value was 0.99810
     print(result.overall.r_pim)
     print(result.overall.cc_one_half)
+
+    refls = flex.reflection_table.from_file(tmpdir.join("scaled.refl").strpath)
+    n_scaled = refls.get_flags(refls.flags.scaled).count(True)
+    assert n_scaled == result.overall.n_obs
+    assert n_scaled == refls.get_flags(refls.flags.bad_for_scaling, all=False).count(
+        False
+    )
 
     # run again, optimising errors, and continuing from where last run left off.
     extra_args = [

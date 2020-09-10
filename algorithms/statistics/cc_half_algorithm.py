@@ -273,9 +273,9 @@ class CCHalfFromDials(object):
         Returns:
           output_reflections: The reflection table with data removed.
         """
-        n_valid_reflections = reflections.get_flags(
-            reflections.flags.bad_for_scaling, all=False
-        ).count(False)
+        n_valid_reflections = reflections.get_flags(reflections.flags.scaled).count(
+            True
+        )
 
         datasets_to_remove = []
         ids_removed = []
@@ -290,8 +290,8 @@ class CCHalfFromDials(object):
         output_reflections.assert_experiment_identifiers_are_consistent(experiments)
 
         n_valid_filtered_reflections = output_reflections.get_flags(
-            output_reflections.flags.bad_for_scaling, all=False
-        ).count(False)
+            output_reflections.flags.scaled
+        ).count(True)
         results_summary["dataset_removal"].update(
             {
                 "experiments_fully_removed": datasets_to_remove,
@@ -312,9 +312,9 @@ class CCHalfFromDials(object):
         results_summary,
     ):
         """Remove image ranges from the datasets."""
-        n_valid_reflections = reflections.get_flags(
-            reflections.flags.bad_for_scaling, all=False
-        ).count(False)
+        n_valid_reflections = reflections.get_flags(reflections.flags.scaled).count(
+            True
+        )
         expid_to_tableid = {
             v: k
             for k, v in zip(
@@ -416,8 +416,8 @@ class CCHalfFromDials(object):
             output_reflections.extend(r)
 
         n_valid_filtered_reflections = output_reflections.get_flags(
-            output_reflections.flags.bad_for_scaling, all=False
-        ).count(False)
+            output_reflections.flags.scaled
+        ).count(True)
         results_summary["dataset_removal"].update(
             {
                 "image_ranges_removed": image_ranges_removed,

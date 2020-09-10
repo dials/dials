@@ -24,6 +24,7 @@ def generate_test_reflections(n=2):
         r["xyzobs.px.value"] = flex.vec3_double([(0, 0, i + 0.5) for i in range(0, 10)])
         r.experiment_identifiers()[id_] = str(id_)
         r.set_flags(flex.bool(10, True), r.flags.integrated)
+        r.set_flags(flex.bool(10, True), r.flags.scaled)
         reflections.extend(r)
     return reflections
 
