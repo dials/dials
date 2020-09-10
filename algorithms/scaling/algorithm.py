@@ -99,8 +99,7 @@ def prepare_input(params, experiments, reflections):
         r.experiment_identifiers().keys() for r in reflections
     )
     logger.info("\nDataset ids are: %s \n", ",".join(str(i) for i in ids))
-    for r in reflections:
-        r.unset_flags(flex.bool(len(r), True), r.flags.bad_for_scaling)
+
     reflections, experiments = exclude_image_ranges_for_scaling(
         reflections, experiments, params.exclude_images
     )
@@ -150,6 +149,10 @@ def prepare_input(params, experiments, reflections):
         )
         experiments.append(exp)
         reflections.append(reflection_table)
+
+    for r in reflections:
+        r.unset_flags(flex.bool(len(r), True), r.flags.bad_for_scaling)
+        r.unset_flags(flex.bool(r.size(), True), r.flags.scaled)
 
     #### Perform any non-batch cutting of the datasets, including the target dataset
     best_unit_cell = params.reflection_selection.best_unit_cell
@@ -206,6 +209,10 @@ class ScalingAlgorithm(object):
             self.remove_bad_data()
             if not self.experiments:
                 raise ValueError("All data sets have been rejected as bad.")
+            for table in self.reflections:
+                bad = table.get_flags(table.flags.bad_for_scaling, all=False)
+                table.unset_flags(flex.bool(table.size(), True), table.flags.scaled)
+                table.set_flags(~bad, table.flags.scaled)
             self.scaled_miller_array = scaled_data_as_miller_array(
                 self.reflections,
                 self.experiments,
@@ -472,6 +479,10 @@ multi-dataset scaling mode (not single dataset or scaling against a reference)""
         self.scaler = scaling_algorithm(self.scaler)
         self.scaler.params.scaling_options.full_matrix = initial_full_matrix
         self.remove_bad_data()
+        for table in self.reflections:
+            bad = table.get_flags(table.flags.bad_for_scaling, all=False)
+            table.unset_flags(flex.bool(table.size(), True), table.flags.scaled)
+            table.set_flags(~bad, table.flags.scaled)
         self.scaled_miller_array = scaled_data_as_miller_array(
             self.reflections,
             self.experiments,
@@ -488,6 +499,10 @@ multi-dataset scaling mode (not single dataset or scaling against a reference)""
         self._create_model_and_scaler()
         super(ScaleAndFilterAlgorithm, self).run()
         results.add_final_stats(self.merging_statistics_result)
+        for table in self.reflections:
+            bad = table.get_flags(table.flags.bad_for_scaling, all=False)
+            table.unset_flags(flex.bool(table.size(), True), table.flags.scaled)
+            table.set_flags(~bad, table.flags.scaled)
         return results
 
 

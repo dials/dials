@@ -171,4 +171,5 @@ def exclude_image_ranges_for_scaling(reflections, experiments, exclude_images):
     for refl, exp in zip(reflections, experiments):
         sel = get_selection_for_valid_image_ranges(refl, exp)
         refl.set_flags(~sel, refl.flags.user_excluded_in_scaling)
+        refl.unset_flags(~sel, refl.flags.scaled)
     return reflections, experiments

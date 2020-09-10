@@ -111,6 +111,7 @@ def test_reflections_to_batch_properties(
     reflections["miller_index"] = example_miller_set.indices()
     reflections["id"] = flex.int(9, 1)
     reflections.set_flags(flex.bool(9, True), reflections.flags.integrated)
+    reflections.set_flags(flex.bool(9, True), reflections.flags.scaled)
 
     experiments = [mock.Mock()]
     experiments[0].scan.get_image_range.return_value = [1, 10]
