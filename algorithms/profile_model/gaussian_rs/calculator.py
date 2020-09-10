@@ -317,8 +317,7 @@ class ComputeEsdReflectingRange(object):
             # Compute intensity
             self.K = flex.double()
             for i0, i1 in zip(self.indices[:-1], self.indices[1:]):
-                selection = flex.size_t(range(i0, i1))
-                self.K.append(flex.sum(self.n.select(selection)))
+                self.K.append(flex.sum(self.n[i0:i1]))
 
             # Set the starting values to try 1, 3 degrees seems sensible for
             # crystal mosaic spread
@@ -379,15 +378,13 @@ class ComputeEsdReflectingRange(object):
             # recorded.
             #
             L = 0
-            for j, (i0, i1) in enumerate(zip(self.indices[:-1], self.indices[1:])):
-                selection = flex.size_t(range(i0, i1))
-                zj = zi.select(selection)
-                nj = n.select(selection)
-                kj = K[j]
-                Z = flex.sum(zj)
+            for (kj, i0, i1) in zip(K, self.indices[:-1], self.indices[1:]):
+                zj = zi[i0:i1]
+                nj = n[i0:i1]
+                logZ = math.log(flex.sum(zj))
                 # L += flex.sum(nj * flex.log(zj)) - kj * Z
                 # L += flex.sum(nj * flex.log(zj)) - kj * math.log(Z)
-                L += flex.sum(nj * flex.log(zj)) - kj * math.log(Z) + math.log(Z)
+                L += flex.sum(nj * flex.log(zj)) - kj * logZ + logZ
             logger.debug("Sigma M: %f, log(L): %f", sigma_m * 180 / math.pi, L)
 
             # Return the logarithm of r
