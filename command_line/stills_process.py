@@ -53,6 +53,9 @@ control_phil_str = """
       .type = bool
       .help = Show the set of image tags that would be used during processing. To process subsets of image \
               files, use these tags with the image_tag parameter.
+    max_images = None
+      .type = int
+      .help = Limit total number of processed images to max_images
   }
 
   dispatch {
@@ -590,6 +593,9 @@ class Script(object):
 
             iterable = list(zip(tags, all_paths))
 
+        if params.input.max_images:
+            iterable = iterable[: params.input.max_images]
+
         if params.input.show_image_tags:
             print("Showing image tags for this dataset and exiting")
             for tag, item in iterable:
@@ -610,8 +616,8 @@ class Script(object):
                 )
                 print("Redirecting stdout to %s" % log_path)
                 print("Redirecting stderr to %s" % error_path)
-                sys.stdout = open(log_path, "a", buffering=0)
-                sys.stderr = open(error_path, "a", buffering=0)
+                sys.stdout = open(log_path, "a")
+                sys.stderr = open(error_path, "a")
                 print("Should be redirected now")
 
                 logfile = os.path.join(

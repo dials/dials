@@ -131,7 +131,7 @@ def test_sacla_h5(dials_regression, run_in_tmpdir, use_mpi, in_memory=False):
             "-n",
             "4",
             "dials.stills_process",
-            "mp.method=mpi mp.composite_stride=4",
+            "mp.method=mpi mp.composite_stride=4 output.logging_dir=.",
         ]
     else:
         command = ["dials.stills_process"]
