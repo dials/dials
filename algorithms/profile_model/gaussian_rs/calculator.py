@@ -307,7 +307,6 @@ class ComputeEsdReflectingRange(object):
             # Calculate zeta * (tau +- dphi / 2) / math.sqrt(2)
             self.e1 = (tau + dphi2) * flex.abs(zeta) / math.sqrt(2.0)
             self.e2 = (tau - dphi2) * flex.abs(zeta) / math.sqrt(2.0)
-            self.n = n
             self.indices = indices
             if len(self.e1) == 0:
                 raise RuntimeError(
@@ -316,8 +315,11 @@ class ComputeEsdReflectingRange(object):
 
             # Compute intensity
             self.K = flex.double()
+            self.nj = []
             for i0, i1 in zip(self.indices[:-1], self.indices[1:]):
-                self.K.append(flex.sum(self.n[i0:i1]))
+                nj = n[i0:i1]
+                self.K.append(flex.sum(nj))
+                self.nj.append(nj)
 
             # Set the starting values to try 1, 3 degrees seems sensible for
             # crystal mosaic spread
@@ -347,8 +349,6 @@ class ComputeEsdReflectingRange(object):
             # Calculate the two components to the fraction
             a = scitbx.math.erf(self.e1 / sigma_m)
             b = scitbx.math.erf(self.e2 / sigma_m)
-            n = self.n
-            K = self.K
 
             # Calculate the fraction of observed reflection intensity
             zi = (a - b) / 2.0
@@ -378,12 +378,11 @@ class ComputeEsdReflectingRange(object):
             # recorded.
             #
             L = 0
-            for (kj, i0, i1) in zip(K, self.indices[:-1], self.indices[1:]):
+            for (kj, nj, i0, i1) in zip(
+                self.K, self.nj, self.indices[:-1], self.indices[1:]
+            ):
                 zj = zi[i0:i1]
-                nj = n[i0:i1]
                 logZ = math.log(flex.sum(zj))
-                # L += flex.sum(nj * flex.log(zj)) - kj * Z
-                # L += flex.sum(nj * flex.log(zj)) - kj * math.log(Z)
                 L += flex.sum(nj * flex.log(zj)) - kj * logZ + logZ
             logger.debug("Sigma M: %f, log(L): %f", sigma_m * 180 / math.pi, L)
 
