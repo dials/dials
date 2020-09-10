@@ -488,9 +488,11 @@ class Script(object):
                     )
 
                 for item in item_list:
+                    tag = item[0]
+                    experiments = split_experiments[item[1]]
                     try:
-                        assert len(item[1]) == 1
-                        experiment = item[1][0]
+                        assert len(experiments) == 1
+                        experiment = experiments[0]
                         experiment.load_models()
                         imageset = experiment.imageset
                         update_geometry(imageset)
@@ -499,26 +501,26 @@ class Script(object):
                     except RuntimeError as e:
                         logger.warning(
                             "Error updating geometry on item %s, %s"
-                            % (str(item[0]), str(e))
+                            % (str(tag), str(e))
                         )
                         continue
 
                     if self.reference_detector is not None:
                         from dxtbx.model import Detector
 
-                        experiment = item[1][0]
+                        experiment = experiments[0]
                         imageset = experiment.imageset
                         imageset.set_detector(
                             Detector.from_dict(self.reference_detector.to_dict())
                         )
                         experiment.detector = imageset.get_detector()
 
-                    processor.process_experiments(item[0], item[1])
+                    processor.process_experiments(tag, experiments)
                 if finalize:
                     processor.finalize()
                 return processor
 
-            iterable = list(zip(tags, split_experiments))
+            iterable = list(zip(tags, range(len(split_experiments))))
 
         else:
             basenames = OrderedDict()
