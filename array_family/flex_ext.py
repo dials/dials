@@ -13,6 +13,7 @@ import logging
 import operator
 import os
 
+from annlib_ext import AnnAdaptorSelfInclude
 import boost_adaptbx.boost.python
 import cctbx.array_family.flex
 import cctbx.miller
@@ -26,10 +27,7 @@ import six.moves.cPickle as pickle
 from dials.algorithms.centroid import centroid_px_to_mm_panel
 from scitbx import matrix
 
-__all__ = [
-    "real",
-    "reflection_table_selector",
-]
+__all__ = ["real", "reflection_table_selector"]
 
 logger = logging.getLogger(__name__)
 
@@ -604,6 +602,48 @@ class _(object):
         mask2 = cctbx.array_family.flex.bool(len(self), False)
         mask2.set_selected(sind.select(mask), True)
         return mask2, other_matched, other_unmatched
+
+    def match_with_other(
+        self, other, max_separation=2, key="xyzobs.px.value", scale=(1, 1, 1)
+    ):
+        """Match reflections from list a and list b, returning tuple of
+        flex.size_t indices, optionally specifying the maximum distance and
+        key to search on (which is assumed to be a 3-vector column). Can also
+        apply relative scales to the vectors before matching in case e.g. very
+        wide or very fine slicing."""
+
+        xyz_a = self[key]
+        xyz_b = other[key]
+
+        flex = cctbx.array_family.flex
+
+        if scale != (1, 1, 1):
+            x, y, z = xyz_a.parts()
+            x *= scale[0]
+            y *= scale[1]
+            z *= scale[2]
+            xyz_a = flex.vec3_double(x, y, z)
+
+            x, y, z = xyz_b.parts()
+            x *= scale[0]
+            y *= scale[1]
+            z *= scale[2]
+            xyz_b = flex.vec3_double(x, y, z)
+
+        a = xyz_a.as_double().as_1d()
+        b = xyz_b.as_double().as_1d()
+        ann = AnnAdaptorSelfInclude(a, 3)
+        ann.query(b)
+
+        mm = flex.size_t(range(xyz_b.size()))
+        nn, distance = ann.nn, flex.sqrt(ann.distances)
+
+        sel = distance <= max_separation
+
+        mm = mm.select(sel)
+        nn = nn.select(sel)
+        distance = distance.select(sel)
+        return nn, mm, distance
 
     def compute_zeta(self, experiment):
         """
@@ -1205,8 +1245,7 @@ Found %s"""
                         .rotate_around_origin(rotation_axis, -rot_angle),
                     )
                     self["rlp"].set_selected(
-                        sel,
-                        tuple(sample_rotation.inverse()) * self["rlp"].select(sel),
+                        sel, tuple(sample_rotation.inverse()) * self["rlp"].select(sel)
                     )
                 else:
                     self["rlp"].set_selected(sel, S)
