@@ -302,7 +302,7 @@ def test_scale_single_dataset_with_options(dials_data, tmpdir, option):
     run_one_scaling(tmpdir, args)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def vmxi_protk_reindexed(dials_data, tmpdir):
     """Reindex the protk data to be in the correct space group."""
     location = dials_data("vmxi_proteinase_k_sweeps")
@@ -357,9 +357,9 @@ def test_error_model_options(
 
     Current values taken at 14.11.19"""
     expt_1, refl_1 = vmxi_protk_reindexed
-    args = [refl_1, expt_1] + [o for o in options]
+    args = [refl_1, expt_1] + list(options)
     run_one_scaling(tmpdir, args)
-    expts = load.experiment_list(tmpdir.join("scaled.expt").strpath, check_format=False)
+    expts = load.experiment_list(tmpdir.join("scaled.expt"), check_format=False)
     config = expts[0].scaling_model.configdict
     if not expected:
         assert "error_model_parameters" not in config
