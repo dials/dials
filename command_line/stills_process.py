@@ -359,7 +359,7 @@ class Script(object):
 
         try:
             from mpi4py import MPI
-        except ImportError:
+        except ImportError as e:
             rank = 0
             size = 1
         else:
@@ -415,8 +415,35 @@ class Script(object):
 
         st = time.time()
 
-        # Configure logging
-        log.config(verbosity=options.verbose, logfile="dials.process.log")
+
+        if params.mp.method == "mpi":
+            # Configure the logging
+            if params.output.logging_dir is None:
+                logfile = None
+            else:
+                log_path = os.path.join(
+                    params.output.logging_dir, "log_rank%04d.out" % rank
+                )
+                error_path = os.path.join(
+                    params.output.logging_dir, "error_rank%04d.out" % rank
+                )
+                print("Redirecting stdout to %s" % log_path)
+                print("Redirecting stderr to %s" % error_path)
+                sys.stdout = open(log_path, "a")
+                sys.stderr = open(error_path, "a")
+                print("Should be redirected now")
+
+                logfile = os.path.join(
+                    params.output.logging_dir, "info_rank%04d.out" % rank
+                )
+
+            log.config(verbosity=options.verbose, logfile=logfile)
+
+        else:
+
+            # Configure logging
+            log.config(verbosity=options.verbose, logfile="dials.process.log")
+
 
         bad_phils = [f for f in all_paths if os.path.splitext(f)[1] == ".phil"]
         if len(bad_phils) > 0:
@@ -607,7 +634,7 @@ class Script(object):
             iterable = list(zip(tags, all_paths))
 
         if params.input.max_images:
-            iterable = iterable[: params.input.max_images]
+            iterable = iterable[:params.input.max_images]
 
         if params.input.show_image_tags:
             print("Showing image tags for this dataset and exiting")
@@ -632,27 +659,27 @@ class Script(object):
 
         # Process the data
         if params.mp.method == "mpi":
-            # Configure the logging
-            if params.output.logging_dir is None:
-                logfile = None
-            else:
-                log_path = os.path.join(
-                    params.output.logging_dir, "log_rank%04d.out" % rank
-                )
-                error_path = os.path.join(
-                    params.output.logging_dir, "error_rank%04d.out" % rank
-                )
-                print("Redirecting stdout to %s" % log_path)
-                print("Redirecting stderr to %s" % error_path)
-                sys.stdout = open(log_path, "a")
-                sys.stderr = open(error_path, "a")
-                print("Should be redirected now")
+            # # Configure the logging
+            # if params.output.logging_dir is None:
+            #     logfile = None
+            # else:
+            #     log_path = os.path.join(
+            #         params.output.logging_dir, "log_rank%04d.out" % rank
+            #     )
+            #     error_path = os.path.join(
+            #         params.output.logging_dir, "error_rank%04d.out" % rank
+            #     )
+            #     print("Redirecting stdout to %s" % log_path)
+            #     print("Redirecting stderr to %s" % error_path)
+            #     sys.stdout = open(log_path, "a")
+            #     sys.stderr = open(error_path, "a")
+            #     print("Should be redirected now")
 
-                logfile = os.path.join(
-                    params.output.logging_dir, "info_rank%04d.out" % rank
-                )
+            #     logfile = os.path.join(
+            #         params.output.logging_dir, "info_rank%04d.out" % rank
+            #     )
 
-            log.config(verbosity=options.verbose, logfile=logfile)
+            # log.config(verbosity=options.verbose, logfile=logfile)
 
             if size <= 2:  # client/server only makes sense for n>2
                 subset = [
