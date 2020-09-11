@@ -303,7 +303,7 @@ def test_scale_single_dataset_with_options(dials_data, tmpdir, option):
 
 
 @pytest.fixture(scope="session")
-def vmxi_protk_reindexed(dials_data, tmpdir):
+def vmxi_protk_reindexed(dials_data, tmp_path_factory):
     """Reindex the protk data to be in the correct space group."""
     location = dials_data("vmxi_proteinase_k_sweeps")
 
@@ -313,8 +313,9 @@ def vmxi_protk_reindexed(dials_data, tmpdir):
         location.join("reflections_0.pickle"),
         "space_group=P422",
     ]
-    procrunner.run(command, working_directory=tmpdir)
-    return tmpdir.join("reindexed.expt"), tmpdir.join("reindexed.refl")
+    tmp_path = tmp_path_factory.mktemp("vmxi_protk_reindexed")
+    procrunner.run(command, working_directory=tmp_path)
+    return tmp_path / "reindexed.expt", tmp_path / "reindexed.refl"
 
 
 @pytest.mark.parametrize(
