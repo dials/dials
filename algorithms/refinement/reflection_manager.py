@@ -82,7 +82,7 @@ phil_str = (
       .type = float(value_min=0,value_max=5)
       .expert_level = 1
 
-    trim_scan_edges = 0.0
+    trim_scan_edges = None
       .type = float(value_min=0,value_max=5)
       .help = Deprecated. Use scan_margin instead
 
