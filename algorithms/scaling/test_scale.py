@@ -304,8 +304,8 @@ def test_scale_single_dataset_with_options(dials_data, tmpdir, option):
     run_one_scaling(tmpdir, args)
 
 
-@pytest.fixture
-def vmxi_protk_reindexed(dials_data, tmpdir):
+@pytest.fixture(scope="session")
+def vmxi_protk_reindexed(dials_data, tmp_path_factory):
     """Reindex the protk data to be in the correct space group."""
     location = dials_data("vmxi_proteinase_k_sweeps")
 
@@ -315,8 +315,9 @@ def vmxi_protk_reindexed(dials_data, tmpdir):
         location.join("reflections_0.pickle"),
         "space_group=P422",
     ]
-    procrunner.run(command, working_directory=tmpdir)
-    return tmpdir.join("reindexed.expt"), tmpdir.join("reindexed.refl")
+    tmp_path = tmp_path_factory.mktemp("vmxi_protk_reindexed")
+    procrunner.run(command, working_directory=tmp_path)
+    return tmp_path / "reindexed.expt", tmp_path / "reindexed.refl"
 
 
 @pytest.mark.parametrize(
@@ -359,9 +360,9 @@ def test_error_model_options(
 
     Current values taken at 14.11.19"""
     expt_1, refl_1 = vmxi_protk_reindexed
-    args = [refl_1, expt_1] + [o for o in options]
+    args = [refl_1, expt_1] + list(options)
     run_one_scaling(tmpdir, args)
-    expts = load.experiment_list(tmpdir.join("scaled.expt").strpath, check_format=False)
+    expts = load.experiment_list(tmpdir.join("scaled.expt"), check_format=False)
     config = expts[0].scaling_model.configdict
     if not expected:
         assert "error_model_parameters" not in config
