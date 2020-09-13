@@ -5,6 +5,7 @@ from __future__ import absolute_import, division, print_function
 import logging
 import math
 import random
+import warnings
 
 import dials.util
 from dials.algorithms.refinement import DialsRefineConfigError
@@ -320,8 +321,9 @@ class ReflectionManagerFactory(object):
 
         # Check for deprecated parameter
         if params.trim_scan_edges is not None:
-            logger.warn(
-                "The parameter trim_scan_edges is deprecated and will be removed shortly"
+            warnings.warn(
+                "The parameter trim_scan_edges is deprecated and will be removed shortly",
+                FutureWarning,
             )
             params.scan_margin = params.trim_scan_edges
 
