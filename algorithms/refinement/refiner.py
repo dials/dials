@@ -313,7 +313,10 @@ class RefinerFactory(object):
             params.refinement.parameterisation.scan_varying = False
 
         # Trim scans and calculate reflection block_width if required for scan-varying refinement
-        if params.refinement.parameterisation.scan_varying:
+        if (
+            params.refinement.parameterisation.scan_varying
+            and params.refinement.parameterisation.trim_scan_to_observations
+        ):
 
             experiments = _trim_scans_to_observations(experiments, reflections)
 
@@ -684,8 +687,6 @@ class Refiner(object):
       * The return value of run is a recorded history of the refinement
       * The experiments accessor provides a copy of the experiments used by
         refinement
-      * The model accessors provide copies of those models that might be modified
-        by refinement (beam, crystal and detector) TO BE DEPRECATED
       * get_matches exposes the function of the same name from the privately
         stored reflection manager
       * The return value of selection_used_for_refinement is a flex.bool

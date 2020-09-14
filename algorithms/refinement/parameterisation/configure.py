@@ -105,6 +105,14 @@ phil_str = (
               "of the serialized model small. At the moment, this only has"
               "an effect for crystal unit cell (B matrix) errors."
 
+    trim_scan_to_observations = True
+      .type = bool
+      .expert_level = 1
+      .help = "For scan-varying refinement, trim scan objects to"
+              "the range of observed reflections. This avoids"
+              "failures in refinement for cases where the extremes of scans"
+              "contain no data, such as when the crystal moves out of the beam."
+
     debug_centroid_analysis = False
       .help = "Set True to write out a file containing the reflections used"
               "for centroid analysis for automatic setting of the  scan-varying"

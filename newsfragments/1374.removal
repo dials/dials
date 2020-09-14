@@ -1,0 +1,2 @@
+dials.refine: the parameter `trim_scan_edges` is renamed `scan_margin` and the
+former name is deprecated
