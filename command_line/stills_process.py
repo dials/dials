@@ -49,6 +49,9 @@ control_phil_str = """
       .type = bool
       .help = Show the set of image tags that would be used during processing. To process subsets of image \
               files, use these tags with the image_tag parameter.
+    max_images = None
+      .type = int
+      .help = Limit total number of processed images to max_images
   }
 
   dispatch {
@@ -481,9 +484,11 @@ class Script(object):
                     )
 
                 for item in item_list:
+                    tag = item[0]
+                    experiments = split_experiments[item[1]]
                     try:
-                        assert len(item[1]) == 1
-                        experiment = item[1][0]
+                        assert len(experiments) == 1
+                        experiment = experiments[0]
                         experiment.load_models()
                         imageset = experiment.imageset
                         update_geometry(imageset)
@@ -492,26 +497,26 @@ class Script(object):
                     except RuntimeError as e:
                         logger.warning(
                             "Error updating geometry on item %s, %s"
-                            % (str(item[0]), str(e))
+                            % (str(tag), str(e))
                         )
                         continue
 
                     if self.reference_detector is not None:
                         from dxtbx.model import Detector
 
-                        experiment = item[1][0]
+                        experiment = experiments[0]
                         imageset = experiment.imageset
                         imageset.set_detector(
                             Detector.from_dict(self.reference_detector.to_dict())
                         )
                         experiment.detector = imageset.get_detector()
 
-                    processor.process_experiments(item[0], item[1])
+                    processor.process_experiments(tag, experiments)
                 if finalize:
                     processor.finalize()
                 return processor
 
-            iterable = list(zip(tags, split_experiments))
+            iterable = list(zip(tags, range(len(split_experiments))))
 
         else:
             basenames = OrderedDict()
@@ -586,6 +591,9 @@ class Script(object):
 
             iterable = list(zip(tags, all_paths))
 
+        if params.input.max_images:
+            iterable = iterable[: params.input.max_images]
+
         if params.input.show_image_tags:
             print("Showing image tags for this dataset and exiting")
             for tag, item in iterable:
@@ -606,8 +614,8 @@ class Script(object):
                 )
                 print("Redirecting stdout to %s" % log_path)
                 print("Redirecting stderr to %s" % error_path)
-                sys.stdout = open(log_path, "a", buffering=0)
-                sys.stderr = open(error_path, "a", buffering=0)
+                sys.stdout = open(log_path, "a")
+                sys.stderr = open(error_path, "a")
                 print("Should be redirected now")
 
                 logfile = os.path.join(
