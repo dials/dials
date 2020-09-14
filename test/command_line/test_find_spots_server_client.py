@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import multiprocessing
 import socket
 import sys
@@ -15,7 +13,7 @@ def start_server(server_command, working_directory):
     procrunner.run(server_command, working_directory=working_directory)
 
 
-def test_find_spots_server_client(dials_data, tmpdir):
+def test_find_spots_server_client(dials_data, tmp_path):
     if sys.hexversion >= 0x3080000 and sys.platform == "darwin":
         pytest.skip("find_spots server known to be broken on MacOS with Python 3.8+")
 
@@ -25,9 +23,7 @@ def test_find_spots_server_client(dials_data, tmpdir):
     server_command = ["dials.find_spots_server", "port=%i" % port, "nproc=3"]
     print(server_command)
 
-    p = multiprocessing.Process(
-        target=start_server, args=(server_command, tmpdir.strpath)
-    )
+    p = multiprocessing.Process(target=start_server, args=(server_command, tmp_path))
     p.daemon = True
     s.close()
     p.start()
@@ -89,7 +85,7 @@ def exercise_client(port, filenames):
     print(index_client_command)
     result = procrunner.run(index_client_command)
     assert not result.returncode and not result.stderr
-    out = "<document>%s</document>" % result["stdout"]
+    out = "<document>%s</document>" % result.stdout
 
     xmldoc = minidom.parseString(out)
     assert len(xmldoc.getElementsByTagName("image")) == 1
@@ -113,7 +109,7 @@ def exercise_client(port, filenames):
     client_command = client_command + filenames[1:]
     result = procrunner.run(client_command)
     assert not result.returncode and not result.stderr
-    out = "<document>%s</document>" % result["stdout"]
+    out = "<document>%s</document>" % result.stdout
 
     xmldoc = minidom.parseString(out)
     images = xmldoc.getElementsByTagName("image")
