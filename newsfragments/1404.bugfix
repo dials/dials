@@ -1,0 +1,1 @@
+dials.integrate: fix crash when run with integrator=3d_threaded
