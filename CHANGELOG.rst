@@ -1,3 +1,21 @@
+DIALS 3.1.2 (2020-09-14)
+========================
+
+Features
+--------
+
+- ``dials.stills_process``: Add parameter ``max_images=`` to limit the number
+  of processed images
+
+Bugfixes
+--------
+
+- ``dials.integrate``: fix crash when run with integrator=3d_threaded (#1404)
+- ``dials.integrate``: Minor performance improvements (#1399)
+- ``dials.stills_process``: MPI performance improvements for large datasets
+- ``dials.stills_process``: Fix error when using split logs
+
+
 DIALS 3.1.1 (2020-09-01)
 ========================
 
