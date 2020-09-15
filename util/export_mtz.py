@@ -1,6 +1,7 @@
 import logging
 import time
 from collections import Counter, OrderedDict
+from math import isclose
 
 from iotbx import mtz
 from libtbx import env
@@ -20,14 +21,6 @@ from dials.util.multi_dataset_handling import (
     parse_multiple_datasets,
 )
 from dials.util.version import dials_version
-
-try:
-    from math import isclose
-except ImportError:
-    # Python 3 backport
-    def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
-        return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
-
 
 logger = logging.getLogger(__name__)
 
