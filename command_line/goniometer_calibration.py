@@ -41,8 +41,7 @@ output {
 
 
 def run(args):
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_experiments
+    from dials.util.options import OptionParser, flatten_experiments
 
     usage = "dials.goniometer_calibration [options] models.expt"
 

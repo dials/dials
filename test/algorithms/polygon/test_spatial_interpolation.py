@@ -3,8 +3,8 @@ from __future__ import absolute_import, division, print_function
 import random
 
 from dials.algorithms.polygon.spatial_interpolation import (
-    regrid_irregular_grid_to_grid,
     regrid_grid_to_irregular_grid,
+    regrid_irregular_grid_to_grid,
 )
 
 
@@ -139,9 +139,10 @@ class TestRegridIrregularToRegular(object):
 
     @staticmethod
     def test_known_orientation():
-        from scitbx.array_family import flex
+        from math import cos, pi, sin, sqrt
+
         from scitbx import matrix
-        from math import sin, cos, pi, sqrt
+        from scitbx.array_family import flex
 
         # Set the size of the grid
         input_height = 4
@@ -179,9 +180,10 @@ class TestRegridIrregularToRegular(object):
 
     @staticmethod
     def test_conservation_of_counts():
-        from scitbx.array_family import flex
+        from math import cos, pi, sin
+
         from scitbx import matrix
-        from math import sin, cos, pi
+        from scitbx.array_family import flex
 
         # Set the size of the grid
         input_height = 10
@@ -346,9 +348,10 @@ class TestRegridRegularToIrregular(object):
 
     @staticmethod
     def test_known_orientation():
-        from scitbx.array_family import flex
+        from math import cos, pi, sin, sqrt
+
         from scitbx import matrix
-        from math import sin, cos, pi, sqrt
+        from scitbx.array_family import flex
 
         # Set the size of the grid
         input_height = 4
@@ -384,9 +387,10 @@ class TestRegridRegularToIrregular(object):
 
     @staticmethod
     def test_conservation_of_counts():
-        from scitbx.array_family import flex
+        from math import cos, pi, sin
+
         from scitbx import matrix
-        from math import sin, cos, pi
+        from scitbx.array_family import flex
 
         # Set the size of the grid
         input_height = 10

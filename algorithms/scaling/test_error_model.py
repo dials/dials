@@ -6,20 +6,21 @@ from __future__ import absolute_import, division, print_function
 import math
 
 import pytest
+
+from cctbx.sgtbx import space_group
+from libtbx import phil
+
+from dials.algorithms.scaling.error_model.engine import ErrorModelRefinery
 from dials.algorithms.scaling.error_model.error_model import (
-    calc_sigmaprime,
-    calc_deltahl,
     BasicErrorModel,
     ErrorModelB_APM,
+    calc_deltahl,
+    calc_sigmaprime,
 )
 from dials.algorithms.scaling.error_model.error_model_target import ErrorModelTargetB
 from dials.algorithms.scaling.Ih_table import IhTable
-from dials.algorithms.scaling.error_model.engine import ErrorModelRefinery
-
 from dials.array_family import flex
 from dials.util.options import OptionParser
-from libtbx import phil
-from cctbx.sgtbx import space_group
 
 
 @pytest.fixture()
@@ -74,8 +75,7 @@ def data_for_error_model_test(background_variance=1, multiplicity=100, b=0.05, a
     background."""
 
     ## First create a miller array of observations (in asu)
-    from cctbx import miller
-    from cctbx import crystal
+    from cctbx import crystal, miller
 
     ms = miller.build_set(
         crystal_symmetry=crystal.symmetry(
@@ -95,7 +95,7 @@ def data_for_error_model_test(background_variance=1, multiplicity=100, b=0.05, a
     # deviations of I-Imean and keep the same 'poisson' sigmas, such that the
     # sigmas need to be inflated by the error model with the given a, b.
     import scitbx
-    from scitbx.random import variate, poisson_distribution
+    from scitbx.random import poisson_distribution, variate
 
     # Note, if a and b both set, probably not quite right, but okay for small
     # a and b for the purpose of a test

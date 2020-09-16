@@ -30,16 +30,17 @@ import sys
 import numpy as np
 from scipy.spatial.transform import Rotation
 
+import libtbx.phil
 from cctbx.eltbx import attenuation_coefficient
-from dials.array_family import flex
+from dxtbx.model import Experiment
+
 import dials.util.log
+from dials.array_family import flex
 from dials.util.multi_dataset_handling import (
     parse_multiple_datasets,
     sort_tables_to_experiments_order,
 )
-from dials.util.options import flatten_experiments, flatten_reflections, OptionParser
-from dxtbx.model import Experiment
-import libtbx.phil
+from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
 
 try:
     from typing import List, Sequence, SupportsFloat

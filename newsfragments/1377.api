@@ -1,0 +1,2 @@
+Add a scaled flag to the reflection table. Indicates which reflections are
+good after the scaling process.

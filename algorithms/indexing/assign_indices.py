@@ -1,8 +1,8 @@
 from __future__ import absolute_import, division, print_function
 
 from cctbx.array_family import flex
-import dials_algorithms_indexing_ext as ext
 
+import dials_algorithms_indexing_ext as ext
 from dials.algorithms.indexing import DialsIndexError
 
 
@@ -80,8 +80,8 @@ class AssignIndicesLocal(AssignIndicesStrategy):
         self._nearest_neighbours = nearest_neighbours
 
     def __call__(self, reflections, experiments, d_min=None):
-        from scitbx import matrix
         from libtbx.math_utils import nearest_integer as nint
+        from scitbx import matrix
 
         reciprocal_lattice_points = reflections["rlp"]
         if "miller_index" not in reflections:

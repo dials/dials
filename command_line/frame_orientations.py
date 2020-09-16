@@ -10,12 +10,14 @@ Usage: dials.frame_orientations refined.expt
 from __future__ import absolute_import, division, print_function
 
 import sys
-from dials.util import tabulate
+
+import matplotlib
+
+from scitbx import matrix
 
 import dials.util
-from dials.util.options import flatten_experiments, OptionParser
-from scitbx import matrix
-import matplotlib
+from dials.util import tabulate
+from dials.util.options import OptionParser, flatten_experiments
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt

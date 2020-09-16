@@ -1,9 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
+import logging
+
 # modified version of the ab_cluster function so we can access the scipy dendrogram object
 from xfel.clustering.cluster import Cluster
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -45,12 +45,13 @@ class UnitCellCluster(Cluster):
         """
 
         import numpy as np
-        from xfel.clustering.singleframe import SingleFrame
+
         from cctbx.uctbx.determine_unit_cell import NCDist
+        from xfel.clustering.singleframe import SingleFrame
 
         logger.info("Hierarchical clustering of unit cells")
-        import scipy.spatial.distance as dist
         import scipy.cluster.hierarchy as hcluster
+        import scipy.spatial.distance as dist
 
         # 1. Create a numpy array of G6 cells
         g6_cells = np.array([SingleFrame.make_g6(image.uc) for image in self.members])

@@ -4,27 +4,25 @@ import os
 import random
 import sys
 
+import xfel.clustering.cluster
+from dxtbx.command_line.image_average import splitit
+from dxtbx.datablock import BeamDiff, DetectorDiff, GoniometerDiff
+from dxtbx.model.experiment_list import (
+    BeamComparison,
+    DetectorComparison,
+    Experiment,
+    ExperimentList,
+    GoniometerComparison,
+)
 from libtbx.phil import parse
 from scitbx import matrix
-import xfel.clustering.cluster
 from xfel.clustering.cluster_groups import unit_cell_info
-
-from dxtbx.command_line.image_average import splitit
-from dxtbx.datablock import BeamDiff
-from dxtbx.datablock import DetectorDiff
-from dxtbx.datablock import GoniometerDiff
-from dxtbx.model.experiment_list import Experiment
-from dxtbx.model.experiment_list import ExperimentList
-from dxtbx.model.experiment_list import BeamComparison
-from dxtbx.model.experiment_list import DetectorComparison
-from dxtbx.model.experiment_list import GoniometerComparison
 
 import dials.util
 from dials.algorithms.integration.stills_significance_filter import SignificanceFilter
 from dials.array_family import flex
-from dials.util.options import OptionParser, flatten_experiments
 from dials.util import tabulate
-
+from dials.util.options import OptionParser, flatten_experiments
 
 help_message = """
 

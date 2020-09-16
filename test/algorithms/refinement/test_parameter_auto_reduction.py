@@ -1,31 +1,31 @@
 from __future__ import absolute_import, division, print_function
 
 import pytest
-from dials.algorithms.refinement.reflection_manager import (
-    phil_scope as refman_phil_scope,
-)
-from dials.algorithms.refinement.reflection_manager import ReflectionManagerFactory
+
+from dxtbx.model import Detector
+
+from dials.algorithms.refinement import DialsRefineConfigError
+from dials.algorithms.refinement.parameterisation.autoreduce import AutoReduce
 from dials.algorithms.refinement.parameterisation.autoreduce import (
     phil_scope as ar_phil_scope,
 )
-from dials.algorithms.refinement.parameterisation.autoreduce import AutoReduce
+from dials.algorithms.refinement.parameterisation.detector_parameters import (
+    DetectorParameterisationMultiPanel,
+)
 from dials.algorithms.refinement.parameterisation.prediction_parameters_stills import (
     StillsPredictionParameterisation,
 )
-
-from dials.test.algorithms.refinement.test_stills_prediction_parameters import _Test
 from dials.algorithms.refinement.prediction.managed_predictors import (
     StillsExperimentsPredictor,
 )
-from dials.algorithms.refinement import DialsRefineConfigError
-
-from dxtbx.model import Detector
-from dials.algorithms.refinement.parameterisation.detector_parameters import (
-    DetectorParameterisationMultiPanel,
+from dials.algorithms.refinement.reflection_manager import ReflectionManagerFactory
+from dials.algorithms.refinement.reflection_manager import (
+    phil_scope as refman_phil_scope,
 )
 from dials.test.algorithms.refinement.test_multi_panel_detector_parameterisation import (
     make_panel_in_array,
 )
+from dials.test.algorithms.refinement.test_stills_prediction_parameters import _Test
 
 
 @pytest.fixture(scope="session")

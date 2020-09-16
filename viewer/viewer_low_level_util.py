@@ -1,11 +1,13 @@
 from __future__ import absolute_import, division, print_function
-from dials.array_family import flex
-from dials.viewer.from_flex_to_wxbitmap import wxbitmap_convert
+
+import math
 
 import wx
-import wx.lib.scrolledpanel as scroll_pan
 import wx.grid as gridlib
-import math
+import wx.lib.scrolledpanel as scroll_pan
+
+from dials.array_family import flex
+from dials.viewer.from_flex_to_wxbitmap import wxbitmap_convert
 
 WX3 = wx.VERSION[0] == 3
 

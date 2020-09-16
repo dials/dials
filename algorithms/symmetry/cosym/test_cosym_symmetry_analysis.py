@@ -1,8 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
-from scitbx.array_family import flex
-from cctbx import crystal, sgtbx, uctbx
 import pytest
+
+from cctbx import crystal, sgtbx, uctbx
+from scitbx.array_family import flex
 
 
 def test_symmetry_analysis():

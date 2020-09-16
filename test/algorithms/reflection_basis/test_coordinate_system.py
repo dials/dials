@@ -4,8 +4,10 @@ import math
 import random
 
 import pytest
-from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
+
 from scitbx import matrix
+
+from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
 
 ### Test the XDS coordinate system class
 

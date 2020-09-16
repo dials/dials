@@ -1,6 +1,7 @@
 """Test the plotting module from systematic_absences."""
 from __future__ import absolute_import, division, print_function
-from dials.algorithms.symmetry.absences.plots import plot_screw_axes, color_axis_data
+
+from dials.algorithms.symmetry.absences.plots import color_axis_data, plot_screw_axes
 
 
 def test_color_axis_data():

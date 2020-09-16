@@ -1,12 +1,15 @@
 from __future__ import absolute_import, division, print_function
-import mock
+
 import random
 
+import mock
+
 from cctbx import sgtbx
-from scitbx import matrix
 from dxtbx.model import Crystal, Experiment, ExperimentList
-from dials.algorithms.clustering.unit_cell import UnitCellCluster
+from scitbx import matrix
+
 from dials.algorithms.clustering import observers
+from dials.algorithms.clustering.unit_cell import UnitCellCluster
 
 
 def test_UnitCellAnalysisObserver():

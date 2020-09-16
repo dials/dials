@@ -2,19 +2,19 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import math
-from collections import namedtuple
 import warnings
+from collections import namedtuple
 
 from cctbx import crystal
+from dxtbx.masking import (
+    mask_untrusted_circle,
+    mask_untrusted_polygon,
+    mask_untrusted_rectangle,
+)
 from iotbx.phil import parse
 
 from dials.array_family import flex
 from dials.util.ext import ResolutionMaskGenerator
-from dxtbx.masking import (
-    mask_untrusted_rectangle,
-    mask_untrusted_circle,
-    mask_untrusted_polygon,
-)
 
 logger = logging.getLogger(__name__)
 

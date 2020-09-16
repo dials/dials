@@ -1,7 +1,8 @@
 from __future__ import absolute_import, division, print_function
 
-import pytest
 import random
+
+import pytest
 
 from . import fft3d, optimise
 

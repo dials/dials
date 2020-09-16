@@ -21,8 +21,10 @@ the Ih_table datastructures so that the data in the components is split in
 the same way as the data in the Ih_table datastructure.
 """
 from __future__ import absolute_import, division, print_function
-from dials.array_family import flex
+
 from scitbx import sparse
+
+from dials.array_family import flex
 from dials_scaling_ext import calculate_harmonic_tables_from_selections
 
 

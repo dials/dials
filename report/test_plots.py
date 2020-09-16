@@ -8,18 +8,20 @@ import random
 
 import mock as mock
 import pytest
-from cctbx import miller, crystal, uctbx
+
+from cctbx import crystal, miller, uctbx
 from cctbx.array_family import flex
+from iotbx.merging_statistics import dataset_statistics
+
 from dials.report.plots import (
+    AnomalousPlotter,
+    IntensityStatisticsPlots,
     ResolutionPlotsAndStats,
     i_over_sig_i_vs_batch_plot,
-    scale_rmerge_vs_batch_plot,
-    IntensityStatisticsPlots,
     i_over_sig_i_vs_i_plot,
-    AnomalousPlotter,
+    scale_rmerge_vs_batch_plot,
 )
 from dials.util.batch_handling import batch_manager
-from iotbx.merging_statistics import dataset_statistics
 
 
 @pytest.fixture

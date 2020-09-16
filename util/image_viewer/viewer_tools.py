@@ -6,9 +6,8 @@ Various tools/controls used by the image viewer
 from __future__ import absolute_import, division, print_function
 
 import wx
-from orderedset import OrderedSet
-
 import wx.lib.newevent
+from orderedset import OrderedSet
 
 WX3 = wx.VERSION[0] == 3
 

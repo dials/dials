@@ -1,10 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
-import time
 import sys
+import time
 
 from dials.util import debug_console
-
 
 interactive_console = debug_console
 

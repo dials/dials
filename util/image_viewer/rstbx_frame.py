@@ -1,16 +1,18 @@
 from __future__ import absolute_import, division, print_function
+
+import os
+
 import six.moves.cPickle as pickle
+import wx
+import wx.lib.colourselect
 from six.moves import range
 
 import rstbx.viewer.display
 import wxtbx.plots
-from wxtbx import bitmaps
-from wxtbx import icons
-import wx.lib.colourselect
-from dials.util import Sorry
 from libtbx.utils import to_unicode
-import wx
-import os
+from wxtbx import bitmaps, icons
+
+from dials.util import Sorry
 
 # Temporary: Make a variable to allow dual API
 WX3 = wx.VERSION[0] == 3

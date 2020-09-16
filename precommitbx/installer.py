@@ -9,12 +9,14 @@ import sys
 import time
 from distutils.version import LooseVersion as parse_version
 
-import dials.precommitbx._precommitbx
-import libtbx.load_env
 import procrunner
 import py
-from future.moves.urllib.request import urlopen, Request
+from future.moves.urllib.request import Request, urlopen
 from tqdm import tqdm, trange
+
+import libtbx.load_env
+
+import dials.precommitbx._precommitbx
 
 BOLD = "\033[1m"
 GREEN = "\033[32m"

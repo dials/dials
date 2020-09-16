@@ -9,43 +9,44 @@ from __future__ import absolute_import, division, print_function
 import logging
 from collections import OrderedDict
 
-from libtbx import phil, Auto
-from dials.array_family import flex
+import six
+
+from libtbx import Auto, phil
+
 from dials.algorithms.scaling.model.components.scale_components import (
-    SingleScaleFactor,
-    SingleBScaleFactor,
-    SHScaleComponent,
     LinearDoseDecay,
     QuadraticDoseDecay,
+    SHScaleComponent,
+    SingleBScaleFactor,
+    SingleScaleFactor,
 )
 from dials.algorithms.scaling.model.components.smooth_scale_components import (
-    SmoothScaleComponent1D,
     SmoothBScaleComponent1D,
+    SmoothScaleComponent1D,
     SmoothScaleComponent2D,
     SmoothScaleComponent3D,
 )
-from dials.algorithms.scaling.scaling_utilities import sph_harm_table
 from dials.algorithms.scaling.plots import (
     plot_absorption_parameters,
     plot_absorption_surface,
-    plot_smooth_scales,
+    plot_array_absorption_plot,
     plot_array_decay_plot,
     plot_array_modulation_plot,
-    plot_array_absorption_plot,
     plot_dose_decay,
     plot_relative_Bs,
+    plot_smooth_scales,
 )
+from dials.algorithms.scaling.scaling_utilities import sph_harm_table
+from dials.array_family import flex
 from dials_scaling_ext import (
-    calc_theta_phi,
     calc_lookup_index,
+    calc_theta_phi,
     create_sph_harm_lookup_table,
 )
-import six
 
 logger = logging.getLogger("dials")
 
 import pkg_resources
-
 
 kb_model_phil_str = """\
 decay_correction = True

@@ -2,11 +2,12 @@ from __future__ import absolute_import, division, print_function
 
 import math
 
-import cctbx.miller
 import wx
+from wx.lib.agw.floatspin import EVT_FLOATSPIN, FloatSpin
+
+import cctbx.miller
 from cctbx.crystal import symmetry
 from scitbx.matrix import col
-from wx.lib.agw.floatspin import EVT_FLOATSPIN, FloatSpin
 
 
 class UCSettingsFrame(wx.MiniFrame):

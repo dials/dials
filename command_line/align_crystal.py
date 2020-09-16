@@ -6,18 +6,16 @@ import collections
 import copy
 import json
 import sys
+
 import iotbx.phil
 from cctbx import sgtbx
-from scitbx import matrix
-from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
-
 from dxtbx.model import MultiAxisGoniometer
+from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
+from scitbx import matrix
 
 from dials.algorithms.refinement import rotation_decomposition
 from dials.util import tabulate
-from dials.util.options import OptionParser
-from dials.util.options import flatten_experiments
-
+from dials.util.options import OptionParser, flatten_experiments
 
 help_message = """
 Calculation of possible goniometer settings for re-alignment of crystal axes.

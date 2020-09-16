@@ -26,10 +26,10 @@ import warnings
 import zipfile
 
 try:  # Python 3
-    from urllib.request import urlopen, Request
     from urllib.error import HTTPError, URLError
+    from urllib.request import Request, urlopen
 except ImportError:  # Python 2
-    from urllib2 import urlopen, Request, HTTPError, URLError
+    from urllib2 import HTTPError, Request, URLError, urlopen
 
 # Clean environment for subprocesses
 clean_env = {

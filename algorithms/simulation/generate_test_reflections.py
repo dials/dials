@@ -93,7 +93,7 @@ def random_background_plane2(sbox, a, b, c, d):
     floating point values and i, j, k are the shoebox indices in directions x, y
     and z respectively."""
 
-    from scitbx.random import variate, poisson_distribution
+    from scitbx.random import poisson_distribution, variate
 
     dz, dy, dx = sbox.focus()
 
@@ -119,7 +119,7 @@ def random_background_plane(sbox, a, b, c, d):
     floating point values and i, j, k are the shoebox indices in directions x, y
     and z respectively."""
 
-    from scitbx.random import variate, poisson_distribution
+    from scitbx.random import poisson_distribution, variate
 
     dz, dy, dx = sbox.focus()
 
@@ -140,8 +140,9 @@ def random_background_plane(sbox, a, b, c, d):
 
 
 def simple_gaussian_spots(params):
-    from dials.array_family import flex
     from scitbx import matrix
+
+    from dials.array_family import flex
 
     r = params.rotation
     axis = matrix.col((r.axis.x, r.axis.y, r.axis.z))

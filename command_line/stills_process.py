@@ -1,25 +1,29 @@
 from __future__ import absolute_import, division, print_function
 
 import copy
+import glob
 import logging
 import os
 import sys
 import tarfile
 import time
-import glob
+from collections import OrderedDict
+
 import six
 import six.moves.cPickle as pickle
 from six import BytesIO
 
-import dials.util
-from dials.util import log
-from dials.array_family import flex
-from dxtbx.model.experiment_list import ExperimentListFactory
-from dxtbx.model.experiment_list import ExperimentList
-from dxtbx.model.experiment_list import Experiment
-from libtbx.utils import Abort, Sorry
-from collections import OrderedDict
+from dxtbx.model.experiment_list import (
+    Experiment,
+    ExperimentList,
+    ExperimentListFactory,
+)
 from libtbx.phil import parse
+from libtbx.utils import Abort, Sorry
+
+import dials.util
+from dials.array_family import flex
+from dials.util import log
 
 logger = logging.getLogger("dials.command_line.stills_process")
 
@@ -49,6 +53,9 @@ control_phil_str = """
       .type = bool
       .help = Show the set of image tags that would be used during processing. To process subsets of image \
               files, use these tags with the image_tag parameter.
+    max_images = None
+      .type = int
+      .help = Limit total number of processed images to max_images
   }
 
   dispatch {
@@ -481,9 +488,11 @@ class Script(object):
                     )
 
                 for item in item_list:
+                    tag = item[0]
+                    experiments = split_experiments[item[1]]
                     try:
-                        assert len(item[1]) == 1
-                        experiment = item[1][0]
+                        assert len(experiments) == 1
+                        experiment = experiments[0]
                         experiment.load_models()
                         imageset = experiment.imageset
                         update_geometry(imageset)
@@ -492,26 +501,26 @@ class Script(object):
                     except RuntimeError as e:
                         logger.warning(
                             "Error updating geometry on item %s, %s"
-                            % (str(item[0]), str(e))
+                            % (str(tag), str(e))
                         )
                         continue
 
                     if self.reference_detector is not None:
                         from dxtbx.model import Detector
 
-                        experiment = item[1][0]
+                        experiment = experiments[0]
                         imageset = experiment.imageset
                         imageset.set_detector(
                             Detector.from_dict(self.reference_detector.to_dict())
                         )
                         experiment.detector = imageset.get_detector()
 
-                    processor.process_experiments(item[0], item[1])
+                    processor.process_experiments(tag, experiments)
                 if finalize:
                     processor.finalize()
                 return processor
 
-            iterable = list(zip(tags, split_experiments))
+            iterable = list(zip(tags, range(len(split_experiments))))
 
         else:
             basenames = OrderedDict()
@@ -586,6 +595,9 @@ class Script(object):
 
             iterable = list(zip(tags, all_paths))
 
+        if params.input.max_images:
+            iterable = iterable[: params.input.max_images]
+
         if params.input.show_image_tags:
             print("Showing image tags for this dataset and exiting")
             for tag, item in iterable:
@@ -606,8 +618,8 @@ class Script(object):
                 )
                 print("Redirecting stdout to %s" % log_path)
                 print("Redirecting stderr to %s" % error_path)
-                sys.stdout = open(log_path, "a", buffering=0)
-                sys.stderr = open(error_path, "a", buffering=0)
+                sys.stdout = open(log_path, "a")
+                sys.stderr = open(error_path, "a")
                 print("Should be redirected now")
 
                 logfile = os.path.join(
@@ -1124,8 +1136,8 @@ class Processor(object):
 
         # Get the integrator from the input parameters
         logger.info("Configuring integrator from input parameters")
-        from dials.algorithms.profile_model.factory import ProfileModelFactory
         from dials.algorithms.integration.integrator import create_integrator
+        from dials.algorithms.profile_model.factory import ProfileModelFactory
 
         # Compute the profile model
         # Predict the reflections
@@ -1168,10 +1180,11 @@ class Processor(object):
                 )()
 
         if self.params.significance_filter.enable:
+            from dxtbx.model.experiment_list import ExperimentList
+
             from dials.algorithms.integration.stills_significance_filter import (
                 SignificanceFilter,
             )
-            from dxtbx.model.experiment_list import ExperimentList
 
             sig_filter = SignificanceFilter(self.params)
             filtered_refls = sig_filter(experiments, integrated)

@@ -2,18 +2,19 @@ from __future__ import absolute_import, division, print_function
 
 import errno
 import os
+
 import matplotlib
 
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
+from libtbx.phil import parse
 
+import dials.util
 from dials.algorithms.refinement.rotation_decomposition import (
     solve_r3_rotation_for_angles_given_axes,
 )
 
-import dials.util
-from libtbx.phil import parse
+matplotlib.use("Agg")
+import matplotlib.gridspec as gridspec
+import matplotlib.pyplot as plt
 
 phil_scope = parse(
     """
@@ -91,8 +92,9 @@ class Script(object):
 
     def run(self):
         """Run the script."""
-        from dials.util.options import flatten_experiments
         from scitbx import matrix
+
+        from dials.util.options import flatten_experiments
 
         params, options = self.parser.parse_args()
         if len(params.input.experiments) == 0:

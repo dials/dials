@@ -5,9 +5,10 @@ from __future__ import absolute_import, division, print_function
 import logging
 import math
 
-from dials.array_family import flex
 from scitbx.matrix import col, sqr
+
 from dials.algorithms.indexing import DialsIndexError
+from dials.array_family import flex
 
 logger = logging.getLogger(__name__)
 """

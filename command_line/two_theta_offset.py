@@ -7,8 +7,7 @@ from scitbx import matrix
 from scitbx.math import r3_rotation_axis_and_angle_from_matrix
 
 from dials.util import show_mail_on_error
-from dials.util.options import flatten_experiments
-from dials.util.options import OptionParser
+from dials.util.options import OptionParser, flatten_experiments
 
 help_message = """
 

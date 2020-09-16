@@ -6,8 +6,7 @@ from dials.algorithms.shadowing.filter import filter_shadowed_reflections
 from dials.array_family import flex
 from dials.util import show_mail_on_error
 from dials.util.command_line import Command
-from dials.util.options import flatten_experiments
-from dials.util.options import OptionParser
+from dials.util.options import OptionParser, flatten_experiments
 
 help_message = """
 

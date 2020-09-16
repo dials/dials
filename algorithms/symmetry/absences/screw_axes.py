@@ -1,12 +1,15 @@
 """Definitions of screw axes with methods for scoring against data."""
 from __future__ import absolute_import, division, print_function
-import math
+
 import logging
+import math
+
+from jinja2 import ChoiceLoader, Environment, PackageLoader
+
 from scitbx.array_family import flex
+
 from dials.algorithms.symmetry.absences.plots import plot_screw_axes
 from dials.util.observer import Observer, Subject, singleton
-from jinja2 import Environment, ChoiceLoader, PackageLoader
-
 
 logger = logging.getLogger("dials.space_group")
 

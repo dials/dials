@@ -9,5 +9,8 @@ signified by the file extension. These are:
 
 The start of the filename is the ticket number, and the content is what will
 end up in the news file. For example, if ticket #850 is about adding a new
-widget, the filename would be myproject/newsfragments/850.feature and the
-content would be myproject.widget has been added.
+widget, the filename would be `newsfragments/850.feature` and the
+content would be
+```
+myproject.widget has been added.
+```

@@ -2,14 +2,14 @@ from __future__ import absolute_import, division, print_function
 
 import six.moves.cPickle as pickle
 import wx
-from wxtbx.phil_controls.floatctrl import FloatCtrl as _FloatCtrl
-
 from wx.lib.agw.floatspin import EVT_FLOATSPIN, FloatSpin
+
+import wxtbx
+from wxtbx import metallicbutton
 from wxtbx.phil_controls import EVT_PHIL_CONTROL
+from wxtbx.phil_controls.floatctrl import FloatCtrl as _FloatCtrl
 from wxtbx.phil_controls.intctrl import IntCtrl
 from wxtbx.phil_controls.strctrl import StrCtrl
-from wxtbx import metallicbutton
-import wxtbx
 
 # Temporary: Make a variable to allow dual API
 WX3 = wx.VERSION[0] == 3
@@ -873,8 +873,9 @@ class MaskSettingsPanel(wx.Panel):
         else:
             panel_id = 0
 
-        from dials.util import masking
         from libtbx.utils import flat_list
+
+        from dials.util import masking
 
         region = masking.phil_scope.extract().untrusted[0]
         points = flat_list(vertices)

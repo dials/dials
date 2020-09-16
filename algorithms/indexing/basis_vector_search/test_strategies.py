@@ -2,9 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import pytest
 
-from . import RealSpaceGridSearch
-from . import FFT1D
-from . import FFT3D
+from . import FFT1D, FFT3D, RealSpaceGridSearch
 
 
 class TestStrategies(object):

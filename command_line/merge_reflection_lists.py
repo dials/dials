@@ -5,6 +5,7 @@ from __future__ import absolute_import, division, print_function
 import sys
 
 from libtbx.phil import parse
+
 from dials.util import show_mail_on_error
 from dials.util.command_line import Command
 from dials.util.options import OptionParser

@@ -3,22 +3,20 @@ Refinement engine and functions for error model refinement.
 """
 import logging
 
+from dials.algorithms.refinement.engine import SimpleLBFGS
 from dials.algorithms.scaling.error_model.error_model import (
+    ErrorModelA_APM,
+    ErrorModelB_APM,
+    ErrorModelRegressionAPM,
     get_error_model_class_and_scope,
     get_error_parameters_to_refine,
 )
-from dials.algorithms.refinement.engine import SimpleLBFGS
-from dials.algorithms.scaling.scaling_refiner import print_step_table
 from dials.algorithms.scaling.error_model.error_model_target import (
     ErrorModelTargetA,
     ErrorModelTargetB,
     ErrorModelTargetRegression,
 )
-from dials.algorithms.scaling.error_model.error_model import (
-    ErrorModelRegressionAPM,
-    ErrorModelA_APM,
-    ErrorModelB_APM,
-)
+from dials.algorithms.scaling.scaling_refiner import print_step_table
 
 logger = logging.getLogger("dials")
 

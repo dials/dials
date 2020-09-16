@@ -4,14 +4,14 @@ from __future__ import absolute_import, division, print_function
 import copy
 import logging
 import math
+
 from orderedset import OrderedSet
+from scipy import sparse
 
 import cctbx.sgtbx.cosets
-from cctbx import miller
-from cctbx import sgtbx
+from cctbx import miller, sgtbx
 from cctbx.array_family import flex
 from libtbx import easy_mp
-from scipy import sparse
 
 logger = logging.getLogger(__name__)
 
