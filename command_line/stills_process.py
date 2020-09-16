@@ -299,6 +299,15 @@ def do_import(filename, load_models=True):
     return all_experiments
 
 
+def sync_geometry(src, dest):
+    dest.set_local_frame(
+        src.get_local_fast_axis(), src.get_local_slow_axis(), src.get_local_origin()
+    )
+    if not src.is_panel():
+        for src_child, dest_child in zip(src, dest):
+            sync_geometry(src_child, dest_child)
+
+
 class Script(object):
     """A class for running the script."""
 
@@ -506,12 +515,11 @@ class Script(object):
                         continue
 
                     if self.reference_detector is not None:
-                        from dxtbx.model import Detector
-
                         experiment = experiments[0]
                         imageset = experiment.imageset
-                        imageset.set_detector(
-                            Detector.from_dict(self.reference_detector.to_dict())
+                        sync_geometry(
+                            self.reference_detector.hierarchy(),
+                            imageset.get_detector().hierarchy(),
                         )
                         experiment.detector = imageset.get_detector()
 
@@ -580,11 +588,10 @@ class Script(object):
                         continue
 
                     if self.reference_detector is not None:
-                        from dxtbx.model import Detector
-
                         imageset = experiments[0].imageset
-                        imageset.set_detector(
-                            Detector.from_dict(self.reference_detector.to_dict())
+                        sync_geometry(
+                            self.reference_detector.hierarchy(),
+                            imageset.get_detector().hierarchy(),
                         )
                         experiments[0].detector = imageset.get_detector()
 
