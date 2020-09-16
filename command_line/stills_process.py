@@ -676,6 +676,13 @@ class Script(object):
                         print("Sending stop to %d\n" % rankreq)
                         comm.send("endrun", dest=rankreq)
                     print("All stops sent.")
+
+                    # create an empty processor to handle any MPI finalize steps
+                    processor = Processor(
+                        copy.deepcopy(params), composite_tag="%04d" % rank, rank=rank
+                    )
+                    processor.finalize()
+
                 else:
                     # client process
                     processor = None
@@ -774,16 +781,16 @@ class Processor(object):
             assert composite_tag is not None
             from dxtbx.model.experiment_list import ExperimentList
 
-            # self.all_strong_reflections = flex.reflection_table() # no composite strong pickles yet
+            self.all_imported_experiments = ExperimentList()
+            self.all_strong_reflections = flex.reflection_table()
             self.all_indexed_experiments = ExperimentList()
             self.all_indexed_reflections = flex.reflection_table()
             self.all_integrated_experiments = ExperimentList()
             self.all_integrated_reflections = flex.reflection_table()
             self.all_int_pickle_filenames = []
             self.all_int_pickles = []
-            if params.dispatch.coset:
-                self.all_coset_experiments = ExperimentList()
-                self.all_coset_reflections = flex.reflection_table()
+            self.all_coset_experiments = ExperimentList()
+            self.all_coset_reflections = flex.reflection_table()
 
             self.setup_filenames(composite_tag)
 
@@ -885,12 +892,11 @@ class Processor(object):
         self.tag = tag
         self.debug_start(tag)
 
-        if (
-            not self.params.output.composite_output
-            and self.params.output.experiments_filename
-        ):
-
-            experiments.as_json(self.params.output.experiments_filename)
+        if self.params.output.experiments_filename:
+            if self.params.output.composite_output:
+                self.all_imported_experiments.extend(experiments)
+            else:
+                experiments.as_json(self.params.output.experiments_filename)
 
         # Do the processing
         try:
@@ -997,7 +1003,14 @@ class Processor(object):
             bbox[i] = (bbox[i][0], bbox[i][1], bbox[i][2], bbox[i][3], 0, 1)
 
         if self.params.output.composite_output:
-            pass  # no composite strong pickles yet
+            n = len(self.all_strong_reflections.experiment_identifiers())
+            for i, experiment in enumerate(experiments):
+                refls = observed.select(observed["id"] == i)
+                refls["id"] = flex.int(len(refls), n)
+                del refls.experiment_identifiers()[i]
+                refls.experiment_identifiers()[n] = experiment.identifier
+                self.all_strong_reflections.extend(refls)
+                n += 1
         else:
             # Save the reflections to file
             logger.info("\n" + "-" * 80)
@@ -1437,6 +1450,7 @@ class Processor(object):
                 comm = MPI.COMM_WORLD
                 rank = comm.Get_rank()  # each process in MPI has a unique id, 0-indexed
                 size = comm.Get_size()  # size: number of processes running in this job
+                comm.barrier()
 
                 if rank % stride == 0:
                     subranks = [rank + i for i in range(1, stride) if rank + i < size]
@@ -1444,10 +1458,14 @@ class Processor(object):
                         logger.info("Rank %d waiting for sender" % rank)
                         (
                             sender,
+                            imported_experiments,
+                            strong_reflections,
                             indexed_experiments,
                             indexed_reflections,
                             integrated_experiments,
                             integrated_reflections,
+                            coset_experiments,
+                            coset_reflections,
                             int_pickles,
                             int_pickle_filenames,
                         ) = comm.recv(source=MPI.ANY_SOURCE)
@@ -1455,22 +1473,51 @@ class Processor(object):
                             "Rank %d recieved data from rank %d" % (rank, sender)
                         )
 
-                        if len(indexed_experiments) > 0:
-                            indexed_reflections["id"] += len(
-                                self.all_indexed_experiments
+                        def extend_with_bookkeeping(
+                            src_expts, src_refls, dest_expts, dest_refls
+                        ):
+                            n = len(dest_refls.experiment_identifiers())
+                            src_refls["id"] += n
+                            idents = src_refls.experiment_identifiers()
+                            keys = idents.keys()
+                            values = idents.values()
+                            for key in keys:
+                                del idents[key]
+                            for i, key in enumerate(keys):
+                                idents[key + n] = values[i]
+                            dest_expts.extend(src_expts)
+                            dest_refls.extend(src_refls)
+
+                        if len(imported_experiments) > 0:
+                            extend_with_bookkeeping(
+                                imported_experiments,
+                                strong_reflections,
+                                self.all_imported_experiments,
+                                self.all_strong_reflections,
                             )
-                            self.all_indexed_reflections.extend(indexed_reflections)
-                            self.all_indexed_experiments.extend(indexed_experiments)
+
+                        if len(indexed_experiments) > 0:
+                            extend_with_bookkeeping(
+                                indexed_experiments,
+                                indexed_reflections,
+                                self.all_indexed_experiments,
+                                self.all_indexed_reflections,
+                            )
 
                         if len(integrated_experiments) > 0:
-                            integrated_reflections["id"] += len(
-                                self.all_integrated_experiments
+                            extend_with_bookkeeping(
+                                integrated_experiments,
+                                integrated_reflections,
+                                self.all_integrated_experiments,
+                                self.all_integrated_reflections,
                             )
-                            self.all_integrated_reflections.extend(
-                                integrated_reflections
-                            )
-                            self.all_integrated_experiments.extend(
-                                integrated_experiments
+
+                        if len(coset_experiments) > 0:
+                            extend_with_bookkeeping(
+                                coset_experiments,
+                                coset_reflections,
+                                self.all_coset_experiments,
+                                self.all_coset_reflections,
                             )
 
                         self.all_int_pickles.extend(int_pickles)
@@ -1485,25 +1532,54 @@ class Processor(object):
                     comm.send(
                         (
                             rank,
+                            self.all_imported_experiments,
+                            self.all_strong_reflections,
                             self.all_indexed_experiments,
                             self.all_indexed_reflections,
                             self.all_integrated_experiments,
                             self.all_integrated_reflections,
+                            self.all_coset_experiments,
+                            self.all_coset_reflections,
                             self.all_int_pickles,
                             self.all_int_pickle_filenames,
                         ),
                         dest=destrank,
                     )
 
-                    self.all_indexed_experiments = (
+                    self.all_imported_experiments = (
+                        self.all_strong_reflections
+                    ) = (
+                        self.all_indexed_experiments
+                    ) = (
                         self.all_indexed_reflections
                     ) = (
                         self.all_integrated_experiments
                     ) = (
                         self.all_integrated_reflections
+                    ) = (
+                        self.all_coset_experiments
+                    ) = (
+                        self.all_coset_reflections
                     ) = self.all_int_pickles = self.all_integrated_reflections = []
 
             # Dump composite files to disk
+            if (
+                len(self.all_imported_experiments) > 0
+                and self.params.output.experiments_filename
+            ):
+
+                self.all_imported_experiments.as_json(
+                    self.params.output.experiments_filename
+                )
+
+            if (
+                len(self.all_strong_reflections) > 0
+                and self.params.output.strong_filename
+            ):
+                self.save_reflections(
+                    self.all_strong_reflections, self.params.output.strong_filename
+                )
+
             if (
                 len(self.all_indexed_experiments) > 0
                 and self.params.output.refined_experiments_filename
