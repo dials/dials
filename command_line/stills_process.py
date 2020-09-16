@@ -64,6 +64,9 @@ control_phil_str = """
       .expert_level = 2
       .help = If True, before processing import all the data. Needed only if processing \
               multiple multi-image files at once (not a recommended use case)
+    process_percent = None
+      .type = int(value_min=1, value_max=100)
+      .help = Percent of events to process
     refine = False
       .expert_level = 2
       .type = bool
@@ -611,6 +614,21 @@ class Script(object):
                 print(tag)
             return
 
+        # prepare fractions of process_percent, if given
+        process_fractions = None
+        if params.dispatch.process_percent:
+            import fractions
+
+            percent = params.dispatch.process_percent / 100
+            process_fractions = fractions.Fraction(percent).limit_denominator(100)
+
+            def process_this_event(nevent):
+                # nevent modulo the denominator gives us which fraction we're in
+                n_mod_denom = nevent % process_fractions.denominator
+                # compare the 0-indexed modulo against the 1-indexed numerator (intentionally not <=)
+                n_accept = n_mod_denom < process_fractions.numerator
+                return n_accept
+
         # Process the data
         if params.mp.method == "mpi":
             # Configure the logging
@@ -643,7 +661,10 @@ class Script(object):
             else:
                 if rank == 0:
                     # server process
-                    for item in iterable:
+                    for item_num, item in enumerate(iterable):
+                        if process_fractions and not process_this_event(item_num):
+                            continue
+
                         print("Getting next available process")
                         rankreq = comm.recv(source=MPI.ANY_SOURCE)
                         print("Process %s is ready, sending %s\n" % (rankreq, item[0]))
