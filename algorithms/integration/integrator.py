@@ -1231,7 +1231,7 @@ class Integrator(object):
             self.reflections, time_info = _run_processor(self.reflections)
         else:
             # need to do a memory check and decide whether to split table
-            _, available_incl_swap, __ = assess_available_memory(
+            available_immediate, _, __ = assess_available_memory(
                 self.params.integration
             )
 
@@ -1247,7 +1247,7 @@ class Integrator(object):
                 tables = _iterative_table_split(
                     [self.reflections],
                     self.experiments,
-                    available_incl_swap,
+                    available_immediate,
                 )
 
             if len(tables) == 1:
