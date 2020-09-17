@@ -947,14 +947,10 @@ class _Manager(object):
             block_size = "auto"
         else:
             block_size = str(self.params.block.size)
-        fmt = (
-            "Processing reflections in the following blocks of images:\n"
-            "\n"
-            " block_size: %s %s\n"
-            "\n"
-            "%s\n"
-        )
-        return fmt % (
+        return (
+            "Processing reflections in the following blocks of images:\n\n"
+            " block_size: {} {}\n\n{}\n"
+        ).format(
             block_size,
             "" if block_size in ("auto", "Auto") else self.params.block.units,
             task_table,
