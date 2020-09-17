@@ -140,6 +140,12 @@ def test_basic_threaded_integrate(dials_regression, tmp_path):
     assert os.path.exists(tmp_path / "integrated.refl")
     assert os.path.exists(tmp_path / "integrated.expt")
 
+    table = flex.reflection_table.from_file(tmp_path / "integrated.refl")
+    assert table.size() == 18774
+    assert set(table["id"]) == set([0, 1])
+    assert table.select(table["id"] == 0).size() == 9478
+    assert table.select(table["id"] == 1).size() == 9296
+
 
 def test_basic_integrate_output_integrated_only(dials_data, tmpdir):
 
