@@ -1,12 +1,14 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
-import six.moves.cPickle as pickle
 import sys
+
+import six.moves.cPickle as pickle
+
+from libtbx.phil import parse
 
 import dials.util
 import dials.util.log
-from libtbx.phil import parse
 
 logger = logging.getLogger("dials.command_line.model_background")
 
@@ -203,10 +205,10 @@ class Script(object):
 
     def run(self):
         """Execute the script."""
-        from dials.util.command_line import heading
-        from dials.array_family import flex
-        from dials.util.options import flatten_experiments
         from dials.algorithms.background.modeller import BackgroundModeller
+        from dials.array_family import flex
+        from dials.util.command_line import heading
+        from dials.util.options import flatten_experiments
 
         # Parse the command line
         params, options = self.parser.parse_args(show_diff_phil=False)

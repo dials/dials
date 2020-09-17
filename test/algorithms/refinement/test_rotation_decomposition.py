@@ -4,8 +4,9 @@ from __future__ import absolute_import, division, print_function
 
 import math
 import random
-from scitbx import matrix
+
 from libtbx.test_utils import approx_equal
+from scitbx import matrix
 
 from dials.algorithms.refinement.rotation_decomposition import (
     solve_r3_rotation_for_angles_given_axes,

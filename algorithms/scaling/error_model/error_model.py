@@ -2,15 +2,19 @@
 Error model classes for scaling.
 """
 from __future__ import absolute_import, division, print_function
+
 import logging
-import six
 from collections import OrderedDict
-from math import log, exp
-from dials.util import tabulate
-from dials.array_family import flex
+from math import exp, log
+
+import six
+
 from iotbx import phil
 from scitbx import sparse
 from scitbx.math.distributions import normal_distribution
+
+from dials.array_family import flex
+from dials.util import tabulate
 
 logger = logging.getLogger("dials")
 

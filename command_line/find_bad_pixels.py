@@ -8,10 +8,10 @@ import sys
 
 import iotbx.phil
 from scitbx.array_family import flex
+
 from dials.algorithms.spot_finding.factory import SpotFinderFactory
 from dials.algorithms.spot_finding.factory import phil_scope as spot_phil
-from dials.util.options import OptionParser
-from dials.util.options import flatten_experiments
+from dials.util.options import OptionParser, flatten_experiments
 
 help_message = """
 

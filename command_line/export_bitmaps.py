@@ -3,7 +3,10 @@ from __future__ import absolute_import, division, print_function
 import os
 import sys
 
+from PIL import Image
+
 import iotbx.phil
+
 from dials.algorithms.image.threshold import DispersionThresholdDebug
 from dials.array_family import flex
 from dials.util import Sorry
@@ -11,9 +14,7 @@ from dials.util.image_viewer.slip_viewer.tile_generation import (
     get_flex_image,
     get_flex_image_multipanel,
 )
-from dials.util.options import flatten_experiments
-from dials.util.options import OptionParser
-from PIL import Image
+from dials.util.options import OptionParser, flatten_experiments
 
 help_message = """
 

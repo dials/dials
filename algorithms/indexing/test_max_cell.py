@@ -1,14 +1,15 @@
 from __future__ import absolute_import, division, print_function
 
-import pytest
 import random
 
+import pytest
+
+import scitbx.matrix
 from cctbx import sgtbx
 from cctbx.sgtbx import bravais_types
-import scitbx.matrix
 
-from dials.array_family import flex
 from dials.algorithms.indexing.max_cell import find_max_cell
+from dials.array_family import flex
 
 
 @pytest.fixture(params=bravais_types.acentric)

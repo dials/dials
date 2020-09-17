@@ -34,14 +34,18 @@ Incremental scaling (with different options per dataset)::
   dials.scale integrated_2.refl integrated_2.expt scaled.refl scaled.expt physical.scale_interval=15.0
 """
 from __future__ import absolute_import, division, print_function
+
 import logging
 import sys
-from libtbx import phil
+
 from six.moves import cStringIO as StringIO
-from dials.util import log, show_mail_on_error, Sorry
+
+from libtbx import phil
+
+from dials.algorithms.scaling.algorithm import ScaleAndFilterAlgorithm, ScalingAlgorithm
+from dials.util import Sorry, log, show_mail_on_error
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
-from dials.algorithms.scaling.algorithm import ScalingAlgorithm, ScaleAndFilterAlgorithm
 
 try:
     from typing import List

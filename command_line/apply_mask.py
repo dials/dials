@@ -1,10 +1,12 @@
 from __future__ import absolute_import, division, print_function
 
 import six
-from dials.util import show_mail_on_error
+from six.moves import cPickle as pickle
+
 from dxtbx.format.image import ImageBool
 from iotbx.phil import parse
-from six.moves import cPickle as pickle
+
+from dials.util import show_mail_on_error
 
 help_message = """
 
@@ -56,8 +58,8 @@ class Script(object):
 
     def run(self):
         """Run the script."""
-        from dials.util.options import flatten_experiments
         from dials.util import Sorry
+        from dials.util.options import flatten_experiments
 
         # Parse the command line arguments
         params, options = self.parser.parse_args(show_diff_phil=True)

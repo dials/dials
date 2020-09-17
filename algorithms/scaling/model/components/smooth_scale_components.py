@@ -6,16 +6,19 @@ inverse scale factors and derivatives with respect to the component
 parameters.
 """
 from __future__ import absolute_import, division, print_function
-from math import floor, ceil
+
+from math import ceil, floor
+
 from scitbx import sparse
-from dials.array_family import flex
+
 from dials.algorithms.scaling.model.components.scale_components import (
     ScaleComponentBase,
 )
-from dials_scaling_ext import row_multiply, GaussianSmootherFirstFixed as GS1D
+from dials.array_family import flex
 from dials_refinement_helpers_ext import GaussianSmoother2D as GS2D
 from dials_refinement_helpers_ext import GaussianSmoother3D as GS3D
-
+from dials_scaling_ext import GaussianSmootherFirstFixed as GS1D
+from dials_scaling_ext import row_multiply
 
 # The following gaussian smoother classes make the implementation
 # consistent with that used in dials.refinement.

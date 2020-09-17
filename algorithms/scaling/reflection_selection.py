@@ -62,17 +62,18 @@ are those which are selected by either method - inter-dataset connectedness or
 intra-dataset connectedness.
 """
 from __future__ import absolute_import, division, print_function
+
 import logging
 from math import floor
-from dials.util import tabulate
 
 from scitbx import sparse
 
-from dials.array_family import flex
 from dials.algorithms.scaling.scaling_utilities import (
-    Reasons,
     BadDatasetForScalingException,
+    Reasons,
 )
+from dials.array_family import flex
+from dials.util import tabulate
 
 logger = logging.getLogger("dials")
 

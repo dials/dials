@@ -5,17 +5,17 @@ import copy
 import logging
 import math
 
-import dials.util
 import libtbx
+from dxtbx.model import Crystal
 from scitbx import matrix
 from scitbx.array_family import flex
-from dxtbx.model import Crystal
+
+import dials.util
 from dials.algorithms.indexing.compare_orientation_matrices import (
     difference_rotation_matrix_axis_angle,
 )
 from dials.algorithms.refinement import RefinerFactory
 from dials.util.log import LoggingContext
-
 
 logger = logging.getLogger(__name__)
 

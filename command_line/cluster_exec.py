@@ -30,8 +30,9 @@ def get_tid():
 
 if __name__ == "__main__":
     import traceback
-    from os.path import join, exists
+    from os.path import exists, join
     from time import sleep
+
     import six.moves.cPickle as pickle
 
     # Get the task id and the current working directory

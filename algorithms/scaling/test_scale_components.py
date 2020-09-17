@@ -2,23 +2,27 @@
 Tests for scale components module.
 """
 from __future__ import absolute_import, division, print_function
+
 from math import exp
+
 import pytest
+
 from scitbx import sparse
-from dials.array_family import flex
+
 from dials.algorithms.scaling.model.components.scale_components import (
+    ScaleComponentBase,
     SHScaleComponent,
     SingleBScaleFactor,
     SingleScaleFactor,
-    ScaleComponentBase,
 )
 from dials.algorithms.scaling.model.components.smooth_scale_components import (
-    SmoothScaleComponent1D,
     SmoothBScaleComponent1D,
+    SmoothMixin,
+    SmoothScaleComponent1D,
     SmoothScaleComponent2D,
     SmoothScaleComponent3D,
-    SmoothMixin,
 )
+from dials.array_family import flex
 
 
 def test_ScaleComponentBase():

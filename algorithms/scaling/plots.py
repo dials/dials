@@ -8,9 +8,11 @@ import itertools
 import math
 
 import numpy as np
-from dials.array_family import flex
+
 from scitbx import math as scitbxmath
 from scitbx.math import distributions
+
+from dials.array_family import flex
 
 
 def _get_smooth_plotting_data_from_model(model, component="scale"):

@@ -3,15 +3,15 @@ from __future__ import absolute_import, division, print_function
 
 def test_after_import_extensions():
     import dials.extensions
-
-    # Check the expected extensions are present for each interface
-    from dials.extensions.gaussian_rs_profile_model_ext import GaussianRSProfileModelExt
     from dials.extensions.dispersion_spotfinder_threshold_ext import (
         DispersionSpotFinderThresholdExt,
     )
-    from dials.extensions.simple_centroid_ext import SimpleCentroidExt
+
+    # Check the expected extensions are present for each interface
+    from dials.extensions.gaussian_rs_profile_model_ext import GaussianRSProfileModelExt
     from dials.extensions.null_background_ext import NullBackgroundExt
     from dials.extensions.simple_background_ext import SimpleBackgroundExt
+    from dials.extensions.simple_centroid_ext import SimpleCentroidExt
 
     extensions = dials.extensions.ProfileModel.extensions()
     assert GaussianRSProfileModelExt in extensions

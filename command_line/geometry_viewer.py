@@ -4,15 +4,17 @@ from __future__ import absolute_import, division, print_function
 
 import copy
 
-import libtbx.phil
+import wx
+
 import gltbx
 import gltbx.gl as gl
-import wx
+import libtbx.phil
 import wxtbx.utils
-from dials.util import wx_viewer
 from dxtbx.model import MultiAxisGoniometer
-from scitbx.math import minimum_covering_sphere
 from scitbx.array_family import flex
+from scitbx.math import minimum_covering_sphere
+
+from dials.util import wx_viewer
 
 help_message = """
 """
@@ -88,6 +90,7 @@ class render_3d(object):
         distance = self.settings.detector_distance
         if distance:
             import math
+
             from scitbx import matrix
 
             p_id = detector.get_panel_intersection(beam.get_s0())
@@ -575,9 +578,9 @@ class GeometryWindow(wx_viewer.show_points_and_lines_mixin):
 
 def run(args):
 
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_experiments
     import os
+
+    from dials.util.options import OptionParser, flatten_experiments
 
     usage = "dials.geometry_viewer [options] models.expt"
 

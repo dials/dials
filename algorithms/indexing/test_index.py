@@ -3,12 +3,14 @@ from __future__ import absolute_import, division, print_function
 import collections
 import glob
 import os
-import pytest
 
 import procrunner
+import pytest
+
 from cctbx import uctbx
-from dxtbx.serialize import load
 from dxtbx.model import ExperimentList
+from dxtbx.serialize import load
+
 from dials.array_family import flex
 
 
@@ -614,11 +616,15 @@ def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_regression, tmp
     MosaicSauter2014 model."""
 
     import dxtbx.model
-    from dxtbx.model.experiment_list import ExperimentListFactory
-    from dxtbx.model.experiment_list import Experiment, ExperimentList
-    from dials.array_family import flex
     from dxtbx.model import Crystal
+    from dxtbx.model.experiment_list import (
+        Experiment,
+        ExperimentList,
+        ExperimentListFactory,
+    )
+
     from dials.algorithms.indexing.stills_indexer import StillsIndexer
+    from dials.array_family import flex
     from dials.command_line.stills_process import (
         phil_scope as stills_process_phil_scope,
     )

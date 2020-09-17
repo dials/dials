@@ -4,13 +4,14 @@ from __future__ import absolute_import, division, print_function
 import sys
 
 from libtbx import phil
-from dials.util import show_mail_on_error, Sorry
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+
 from dials.array_family import flex
+from dials.util import Sorry, show_mail_on_error
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
     parse_multiple_datasets,
 )
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 
 help_message = """Command line script which assigns experiment identifiers
 to reflections and experiments and saves them back to disk.

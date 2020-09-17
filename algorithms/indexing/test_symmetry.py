@@ -2,10 +2,11 @@ from __future__ import absolute_import, division, print_function
 
 import pytest
 
+import scitbx.matrix
 from cctbx import crystal, sgtbx, uctbx
 from cctbx.sgtbx import bravais_types
-import scitbx.matrix
 from dxtbx.model import Crystal
+
 from dials.algorithms.indexing import symmetry
 
 

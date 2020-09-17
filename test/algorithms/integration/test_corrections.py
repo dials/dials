@@ -1,8 +1,10 @@
 from __future__ import absolute_import, division, print_function
+
 from dxtbx.model.experiment_list import ExperimentListFactory
-from dials.algorithms.integration import CorrectionsMulti, Corrections
-from dials.array_family import flex
 from scitbx import matrix
+
+from dials.algorithms.integration import Corrections, CorrectionsMulti
+from dials.array_family import flex
 
 
 def test_run(dials_data):

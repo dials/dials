@@ -5,9 +5,8 @@ import pytest
 from cctbx import sgtbx
 from scitbx.array_family import flex
 
+from dials.algorithms.symmetry.cosym import engine, target
 from dials.algorithms.symmetry.cosym._generate_test_data import generate_test_data
-from dials.algorithms.symmetry.cosym import engine
-from dials.algorithms.symmetry.cosym import target
 
 
 @pytest.mark.parametrize("space_group", ["P2", "P3", "P6", "R3:h", "I23"])

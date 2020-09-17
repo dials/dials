@@ -28,7 +28,8 @@ def test_maha():
     # [8] 2.5335913 0.1952562 1.5105832
 
     from scitbx.array_family import flex
-    from dials.algorithms.statistics.fast_mcd import maha_dist_sq, cov
+
+    from dials.algorithms.statistics.fast_mcd import cov, maha_dist_sq
 
     # test Mahalanobis distance.
     x1 = flex.double(
@@ -64,12 +65,13 @@ def test_maha():
 
 
 def test_fast_mcd_small():
-    from scitbx.array_family import flex
-    from dials.algorithms.statistics.fast_mcd import FastMCD
-
     # set random seeds to try to avoid assertion errors due to occasionally
     # finding less common solutions
     import random
+
+    from scitbx.array_family import flex
+
+    from dials.algorithms.statistics.fast_mcd import FastMCD
 
     random.seed(42)
     flex.set_random_seed(42)
@@ -192,12 +194,13 @@ def test_fast_mcd_small():
 
 
 def test_fast_mcd_large(dials_regression):
-    from scitbx.array_family import flex
-    from dials.algorithms.statistics.fast_mcd import FastMCD
-
     # set random seeds to try to avoid assertion errors due to occasionally
     # finding less common solutions
     import random
+
+    from scitbx.array_family import flex
+
+    from dials.algorithms.statistics.fast_mcd import FastMCD
 
     random.seed(42)
     flex.set_random_seed(42)

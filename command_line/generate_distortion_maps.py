@@ -4,14 +4,14 @@ import logging
 import math
 
 import six.moves.cPickle as pickle
-from dials.array_family import flex
-from dials.util import Sorry
-from dials.util import log
-from dials.util.options import OptionParser
-from dials.util.options import flatten_experiments
-from dials.util.version import dials_version
+
 from iotbx import phil
 from scitbx import matrix
+
+from dials.array_family import flex
+from dials.util import Sorry, log
+from dials.util.options import OptionParser, flatten_experiments
+from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.generate_distortion_maps")
 

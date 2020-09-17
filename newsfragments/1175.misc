@@ -1,0 +1,1 @@
+DIALS no longer provides any Python 2.7 compatibility. If you need a Python 2.7 compatible version of DIALS please use the (still supported) DIALS 2.2 release branch.

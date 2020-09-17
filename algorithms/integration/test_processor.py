@@ -2,13 +2,15 @@ from __future__ import absolute_import, division, print_function
 
 import math
 
-from dials.array_family import flex
-from dials_algorithms_integration_integrator_ext import JobList, max_memory_needed
-from dials.algorithms.profile_model.gaussian_rs import Model
-from dxtbx.model.experiment_list import ExperimentListFactory
-import dials.algorithms.integration.processor
 import mock
 import pytest
+
+from dxtbx.model.experiment_list import ExperimentListFactory
+
+import dials.algorithms.integration.processor
+from dials.algorithms.profile_model.gaussian_rs import Model
+from dials.array_family import flex
+from dials_algorithms_integration_integrator_ext import JobList, max_memory_needed
 
 
 def test_shoebox_memory_is_a_reasonable_guesstimate(dials_data):

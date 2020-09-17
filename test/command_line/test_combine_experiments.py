@@ -6,14 +6,15 @@ from __future__ import absolute_import, division, print_function
 
 import copy
 import os
-import procrunner
 
+import procrunner
 import pytest
 
-from dxtbx.serialize import load
 from dxtbx.model.experiment_list import ExperimentListFactory
-from dials.array_family import flex
+from dxtbx.serialize import load
+
 import dials.command_line.combine_experiments as combine_experiments
+from dials.array_family import flex
 
 
 def test(dials_regression, run_in_tmpdir):

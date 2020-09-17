@@ -124,6 +124,10 @@ from cctbx.array_family.flex import (  # noqa: F401; lgtm
     xray_scatterer,
 )
 
+from dials.array_family.flex_ext import (  # noqa: F401; lgtm
+    real,
+    reflection_table_selector,
+)
 from dials_array_family_flex_ext import (  # noqa: F401; lgtm
     Binner,
     PixelListShoeboxCreator,
@@ -132,9 +136,4 @@ from dials_array_family_flex_ext import (  # noqa: F401; lgtm
     reflection_table,
     reflection_table_to_list_of_reflections,
     shoebox,
-)
-
-from dials.array_family.flex_ext import (  # noqa: F401; lgtm
-    real,
-    reflection_table_selector,
 )

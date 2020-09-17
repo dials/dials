@@ -12,14 +12,11 @@ logger = logging.getLogger(__name__)
 from six.moves import cStringIO as StringIO
 
 import libtbx
-from scitbx.array_family import flex
-from cctbx import adptbx
-from cctbx import sgtbx
-from cctbx import uctbx
+from cctbx import adptbx, sgtbx, uctbx
 from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from mmtbx import scaling
-from mmtbx.scaling import absolute_scaling
-from mmtbx.scaling import matthews
+from mmtbx.scaling import absolute_scaling, matthews
+from scitbx.array_family import flex
 
 from dials.util import resolution_analysis
 

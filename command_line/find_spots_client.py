@@ -113,9 +113,10 @@ def work_all(
 
     if plot or table:
         from scitbx.array_family import flex
+
         from dials.algorithms.spot_finding.per_image_analysis import (
-            plot_stats,
             StatsMultiImage,
+            plot_stats,
         )
 
         estimated_d_min = flex.double()

@@ -105,6 +105,7 @@ class SimpleBackgroundExt(object):
         :param experiments: The list of experiments
         """
         from libtbx.phil import parse
+
         from dials.algorithms.background.simple import BackgroundAlgorithm
 
         # Create some default parameters
