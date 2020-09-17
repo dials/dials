@@ -720,22 +720,16 @@ class _Manager(object):
                 block_size_frames = int(math.ceil(self.params.block.size / dphi))
                 # if the specified block size is lower than the overlap,
                 # reduce the overlap to be half of the block size.
-                block_overlap = min(
-                    block_overlap, int(math.floor(block_size_frames / 2.0))
-                )
+                block_overlap = min(block_overlap, int(block_size_frames // 2))
             elif self.params.block.units == "degrees":
                 _, dphi = scan.get_oscillation()
                 block_size_frames = int(math.ceil(self.params.block.size / dphi))
                 # if the specified block size is lower than the overlap,
                 # reduce the overlap to be half of the block size.
-                block_overlap = min(
-                    block_overlap, int(math.floor(block_size_frames / 2.0))
-                )
+                block_overlap = min(block_overlap, int(block_size_frames // 2))
             elif self.params.block.units == "frames":
                 block_size_frames = int(math.ceil(self.params.block.size))
-                block_overlap = min(
-                    block_overlap, int(math.floor(block_size_frames / 2.0))
-                )
+                block_overlap = min(block_overlap, int(block_size_frames // 2))
             else:
                 raise RuntimeError(
                     "Unknown block_size units %r" % self.params.block.units
