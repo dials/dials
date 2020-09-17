@@ -113,6 +113,34 @@ def test_basic_integrate(dials_data, tmpdir):
     # assert(flex.abs(diff_Obs_P).all_lt(1e-7))
 
 
+def test_basic_threaded_integrate(dials_regression, tmp_path):
+    """Test the threaded integrator on single imageset data."""
+
+    expts = os.path.join(
+        dials_regression, "integration_test_data", "multi_lattice", "experiments.json"
+    )
+
+    refls = os.path.join(
+        dials_regression, "integration_test_data", "multi_lattice", "indexed.pickle"
+    )
+
+    result = procrunner.run(
+        [
+            "dials.integrate",
+            "integration.integrator=3d_threaded",
+            "background.algorithm=glm",
+            "njobs=2",
+            "nproc=2",
+            refls,
+            expts,
+        ],
+        working_directory=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+    assert os.path.exists(tmp_path / "integrated.refl")
+    assert os.path.exists(tmp_path / "integrated.expt")
+
+
 def test_basic_integrate_output_integrated_only(dials_data, tmpdir):
 
     exp = load.experiment_list(
