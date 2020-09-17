@@ -527,6 +527,7 @@ class Script(object):
                         experiment.detector = imageset.get_detector()
 
                     processor.process_experiments(tag, experiments)
+                    imageset.clear_cache()
                 if finalize:
                     processor.finalize()
                 return processor
