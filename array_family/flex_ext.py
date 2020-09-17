@@ -758,7 +758,6 @@ class _(object):
         n = int(n)
         if n <= 1:
             return [self]
-        cctbx.array_family.flex.set_random_seed(0)
         list_of_reflection_tables = []
 
         perm = cctbx.array_family.flex.random_permutation(self.size())

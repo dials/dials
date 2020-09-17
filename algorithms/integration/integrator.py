@@ -1206,6 +1206,7 @@ class Integrator(object):
                 mem_needed = _determine_max_memory_needed(experiments, table)
                 if mem_needed > available_memory:
                     n_to_split = int(math.ceil(mem_needed / available_memory))
+                    flex.set_random_seed(0)
                     split_tables.extend(table.random_split(n_to_split))
                 else:
                     split_tables.append(table)

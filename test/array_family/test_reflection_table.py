@@ -1455,6 +1455,7 @@ def test_random_split():
 
     A random seed is set, so the result is reproducible.
     """
+    flex.set_random_seed(0)
     table = flex.reflection_table()
     table["id"] = flex.int(range(0, 10))
 
@@ -1465,7 +1466,7 @@ def test_random_split():
         assert list(t["id"]) == e
 
     split_tables = table.random_split(3)
-    expected = [[5, 7, 3], [0, 8, 2], [9, 6, 1, 4]]
+    expected = [[5, 7, 0], [4, 3, 8], [1, 9, 2, 6]]
     for t, e in zip(split_tables, expected):
         assert list(t["id"]) == e
 
