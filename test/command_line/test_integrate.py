@@ -113,16 +113,11 @@ def test_basic_integrate(dials_data, tmpdir):
     # assert(flex.abs(diff_Obs_P).all_lt(1e-7))
 
 
-def test_basic_threaded_integrate(dials_regression, tmp_path):
+def test_basic_threaded_integrate(dials_data, tmp_path):
     """Test the threaded integrator on single imageset data."""
 
-    expts = os.path.join(
-        dials_regression, "integration_test_data", "multi_lattice", "experiments.json"
-    )
-
-    refls = os.path.join(
-        dials_regression, "integration_test_data", "multi_lattice", "indexed.pickle"
-    )
+    expts = dials_data("centroid_test_data") / "indexed.expt"
+    refls = dials_data("centroid_test_data") / "indexed.refl"
 
     result = procrunner.run(
         [
@@ -137,14 +132,13 @@ def test_basic_threaded_integrate(dials_regression, tmp_path):
         working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert os.path.exists(tmp_path / "integrated.refl")
-    assert os.path.exists(tmp_path / "integrated.expt")
+    assert tmp_path.joinpath("integrated.refl").is_file()
+    assert tmp_path.joinpath("integrated.expt").is_file()
 
     table = flex.reflection_table.from_file(tmp_path / "integrated.refl")
-    assert table.size() == 18774
-    assert set(table["id"]) == set([0, 1])
-    assert table.select(table["id"] == 0).size() == 9478
-    assert table.select(table["id"] == 1).size() == 9296
+    assert table.size() == 4204
+    assert set(table["id"]) == {0}
+    assert table.select(table["id"] == 0).size() == 4204
 
 
 def test_basic_integrate_output_integrated_only(dials_data, tmpdir):
