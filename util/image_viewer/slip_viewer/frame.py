@@ -1111,6 +1111,8 @@ class XrayFrame(XFBaseClass):
                         else:
                             txt = pdf_canvas.beginText(x=fs[0] - (w / 2), y=fs[1])
                         txt.setFont(fontname, fontsize * scale)
+                        if isinstance(textcolour, wx.Colour):
+                            textcolour = tuple(textcolour)
                         txt.setFillColor(textcolour)
                         txt.setStrokeColor(textcolour)
                         txt.textLine(tdata)
