@@ -1,12 +1,6 @@
-from __future__ import absolute_import, division, print_function
-
 import glob
 import os
-import sys
 
-import mock
-import procrunner
-import py.path
 import pytest
 
 import scitbx
@@ -14,7 +8,6 @@ from cctbx import uctbx
 from dxtbx.model import ExperimentList
 from dxtbx.serialize import load
 
-import dials.command_line.dials_import
 from dials.algorithms.indexing.test_index import run_indexing
 from dials.command_line import search_beam_position
 
@@ -93,68 +86,50 @@ def test_index_after_search(dials_data, run_in_tmpdir):
     """Integrate the beam centre search with the rest of the toolchain
 
     Do the following:
-    1. Run dials.import with a specified beam centre, check for expected output;
-    2. Run dials.find_spots, check for expected output;
-    3. Run dials.search_beam_centre on the resultant datablock and pickled
+    1. Take a known good experiment and perturbate the beam centre
+    2. Run dials.search_beam_centre on the perturbated beam centre and original
     reflection table, check for expected output;
-    4. Run dials.index, using the datablock from the beam centre search,
-    and check that the expected unit cell is obtained and that the RMSDs are
-    smaller than or equal to some expected values."""
+    3. Run dials.index with the found beam centre and check that the expected
+    unit cell is obtained and that the RMSDs are smaller than or equal to some
+    expected values."""
 
-    dials_data = dials_data("thaumatin_i04").listdir(sort=True)
-    g = [f.strpath for f in dials_data if f.ext == ".cbf"]
+    insulin = dials_data("insulin_processed")
 
-    # beam centre from image headers: 205.28,210.76 mm
-    args = ["dials.import", "mosflm_beam_centre=207,212"] + g
-    print(args)
-    if os.name != "nt":
-        result = procrunner.run(args)
-        assert not result.returncode and not result.stderr
-    else:
-        # Can't run this command on Windows,
-        # as it will exceed the maximum Windows command length limits.
-        # So, instead:
-        with mock.patch.object(sys, "argv", args):
-            dials.command_line.dials_import.Script().run()
-    assert os.path.exists("imported.expt")
-
-    # spot-finding, just need a subset of the data
-    args = [
-        "dials.find_spots",
-        "imported.expt",
-        "scan_range=1,10",
-        "scan_range=531,540",
-    ]
-    print(args)
-    result = procrunner.run(args)
-    assert not result.returncode and not result.stderr
-    assert os.path.exists("strong.refl")
-
-    # actually run the beam centre search
-    search_beam_position.run(["imported.expt", "strong.refl"])
-    assert os.path.exists("optimised.expt")
-
-    # look at the results
-    experiments = load.experiment_list("imported.expt", check_format=False)
-    original_imageset = experiments.imagesets()[0]
-    optimized_experiments = load.experiment_list("optimised.expt", check_format=False)
-    detector_1 = original_imageset.get_detector()
-    detector_2 = optimized_experiments.detectors()[0]
-    shift = scitbx.matrix.col(detector_1[0].get_origin()) - scitbx.matrix.col(
-        detector_2[0].get_origin()
+    # load the original experiment and perturbate the beam centre by a small offset
+    experiments = load.experiment_list(insulin / "imported.expt", check_format=False)
+    original_origin = experiments[0].detector.hierarchy().get_origin()
+    shifted_origin = (
+        original_origin[0] - 1.3,
+        original_origin[1] + 1.5,
+        original_origin[2],
     )
-    print(shift)
+    experiments[0].detector.hierarchy().set_local_frame(
+        experiments[0].detector.hierarchy().get_fast_axis(),
+        experiments[0].detector.hierarchy().get_slow_axis(),
+        shifted_origin,
+    )
+    assert experiments[0].detector.hierarchy().get_origin() == shifted_origin
+    experiments.as_file(run_in_tmpdir / "shifted.expt")
+
+    # search the beam centre
+    search_beam_position.run(
+        [
+            run_in_tmpdir.join("shifted.expt").strpath,
+            insulin.join("strong.refl").strpath,
+        ]
+    )
+    assert os.path.exists("optimised.expt")
 
     # check we can actually index the resulting optimized experiments
     expected_unit_cell = uctbx.unit_cell(
-        (59.663, 64.291, 155.061, 91.376, 89.964, 91.212)
+        (67.655, 67.622, 67.631, 109.4583, 109.4797, 109.485)
     )
-    expected_rmsds = (0.3, 0.5, 0.005)
+    expected_rmsds = (0.3, 0.3, 0.005)
     expected_hall_symbol = " P 1"
     run_indexing(
-        "strong.refl",
-        "optimised.expt",
-        py.path.local(os.path.curdir),
+        insulin / "strong.refl",
+        run_in_tmpdir / "optimised.expt",
+        run_in_tmpdir,
         [],
         expected_unit_cell,
         expected_rmsds,
