@@ -1,7 +1,6 @@
 import argparse
 import collections
 import itertools
-import json
 import operator
 import pathlib
 import re
@@ -57,11 +56,11 @@ def parse_options():
         "--github", action="store_true", help="Write log output in GitHub action format"
     )
     parser.add_argument(
-        "--json",
+        "--annotations",
         type=str,
         action="store",
-        metavar="JSONFILE",
-        help="Write JSON log for GitHub annotations",
+        metavar="FILE",
+        help="Write log for GitHub annotations",
     )
     return parser.parse_args()
 
@@ -130,7 +129,7 @@ def parse_pytypelog(logfile):
             contents.pop(0)
 
     return parse_results(
-        errors=sum(len(f) for f in errors),
+        errors=sum(len(f) for f in errors.values()),
         missing_imports=import_errors,
         files=errors,
         total_files=n_files,
@@ -176,25 +175,18 @@ if __name__ == "__main__":
     else:
         print(log_format["green"] % "No errors found")
 
-    if options.json and not options.base:
-        with open(options.json, "w") as fh:
-            json.dump(
-                [
-                    {
-                        "path": str(error["filename_local"]),
-                        "level": "failure",
-                        "line": {
-                            "start": int(error["line"]),
-                            "end": int(error["line"]),
-                        },
-                        "message": error["description"],
-                    }
-                    for error in itertools.chain(*pytypelog.files.values())
-                ],
-                fh,
-                sort_keys=True,
-                indent=2,
-            )
+    if options.annotations and not options.base:
+        with open(options.annotations, "w") as fh:
+            for error in itertools.chain(*pytypelog.files.values()):
+                fh.write(
+                    "%s:%s:1:%s %s\n"
+                    % (
+                        str(error["filename_local"]),
+                        error["line"],
+                        error["error"],
+                        error["description"],
+                    )
+                )
 
     if not options.base:
         exit(1 if pytypelog.errors else 0)
@@ -262,19 +254,17 @@ if __name__ == "__main__":
                             f"   line {error['line']} {error['error']}: {error['description']}"
                         )
                         annotations.append(
-                            {
-                                "path": str(error["filename_local"]),
-                                "level": "failure",
-                                "line": {
-                                    "start": int(error["line"]),
-                                    "end": int(error["line"]),
-                                },
-                                "message": f"{error['error']}: {error['description']}",
-                            }
+                            "%s:%s:1:%s %s"
+                            % (
+                                str(error["filename_local"]),
+                                error["line"],
+                                error["error"],
+                                error["description"],
+                            )
                         )
-    if options.json:
-        with open(options.json, "w") as fh:
-            json.dump(annotations, fh, sort_keys=True, indent=2)
+    if options.annotations:
+        with open(options.annotations, "w") as fh:
+            fh.write("\n".join(annotations) + "\n")
 
     if annotations:
         exit(1)
