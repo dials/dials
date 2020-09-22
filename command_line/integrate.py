@@ -33,7 +33,7 @@ import dials.util.log
 from dials.algorithms.integration.integrator import create_integrator
 from dials.algorithms.profile_model.factory import ProfileModelFactory
 from dials.array_family import flex
-from dials.util import show_mail_on_error
+from dials.util import show_mail_handle_errors
 from dials.util.command_line import heading
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.slice import slice_crystal
@@ -696,5 +696,5 @@ def run(args=None, phil=phil_scope):
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
+    with show_mail_handle_errors():
         run()

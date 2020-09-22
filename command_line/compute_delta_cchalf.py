@@ -7,7 +7,7 @@ import logging
 from libtbx.phil import parse
 
 from dials.algorithms.statistics.cc_half_algorithm import CCHalfFromDials, CCHalfFromMTZ
-from dials.util import log, show_mail_on_error
+from dials.util import log, show_mail_handle_errors
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
 
 logger = logging.getLogger("dials.command_line.compute_delta_cchalf")
@@ -139,5 +139,5 @@ of datasets in the reflection table (%s)
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
+    with show_mail_handle_errors():
         run()

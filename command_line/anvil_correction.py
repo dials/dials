@@ -359,5 +359,5 @@ def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> 
 
 # Keep this minimal.  Try to keep the command-line behaviour neatly encapsulated in run.
 if __name__ == "__main__":
-    with dials.util.show_mail_on_error():
+    with dials.util.show_mail_handle_errors():
         run()

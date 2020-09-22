@@ -14,7 +14,7 @@ from scitbx import matrix
 from dials.algorithms.refinement import rotation_decomposition
 from dials.algorithms.shadowing.filter import filter_shadowed_reflections
 from dials.array_family import flex
-from dials.util import log, show_mail_on_error
+from dials.util import log, show_mail_handle_errors
 from dials.util.options import OptionParser, flatten_experiments
 
 logger = logging.getLogger("dials.command_line.complete_full_sphere")
@@ -233,6 +233,6 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
+    with show_mail_handle_errors():
         script = Script()
         script.run()

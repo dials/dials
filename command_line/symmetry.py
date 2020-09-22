@@ -27,7 +27,7 @@ from dials.algorithms.symmetry.absences.screw_axes import ScrewAxisObserver
 from dials.algorithms.symmetry.laue_group import LaueGroupAnalysis
 from dials.array_family import flex
 from dials.command_line.reindex import reindex_experiments
-from dials.util import log, show_mail_on_error, tabulate
+from dials.util import log, show_mail_handle_errors, tabulate
 from dials.util.exclude_images import (
     exclude_image_ranges_from_scans,
     get_selection_for_valid_image_ranges,
@@ -565,5 +565,5 @@ def run(args=None):
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
+    with show_mail_handle_errors():
         run()

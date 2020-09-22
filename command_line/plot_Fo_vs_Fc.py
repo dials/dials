@@ -17,7 +17,7 @@ from iotbx import mtz
 from scitbx.array_family import flex
 from scitbx.lstbx import normal_eqns, normal_eqns_solving
 
-from dials.util import Sorry, show_mail_on_error
+from dials.util import Sorry, show_mail_handle_errors
 from dials.util.options import OptionParser
 
 matplotlib.use("Agg")
@@ -247,6 +247,6 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
+    with show_mail_handle_errors():
         script = Script()
         script.run()

@@ -29,7 +29,7 @@ from dials.algorithms.refinement.two_theta_refiner import (
     TwoThetaTarget,
 )
 from dials.array_family import flex
-from dials.util import log, show_mail_on_error, tabulate
+from dials.util import log, show_mail_handle_errors, tabulate
 from dials.util.filter_reflections import filter_reflection_table
 from dials.util.multi_dataset_handling import parse_multiple_datasets
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
@@ -538,6 +538,6 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
+    with show_mail_handle_errors():
         script = Script()
         script.run()

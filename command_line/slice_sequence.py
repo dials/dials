@@ -5,7 +5,7 @@ from os.path import basename, splitext
 from dxtbx.model.experiment_list import ExperimentList
 
 from dials.algorithms.refinement.refinement_helpers import calculate_frame_numbers
-from dials.util import Sorry, show_mail_on_error
+from dials.util import Sorry, show_mail_handle_errors
 from dials.util.slice import slice_experiments, slice_reflections
 
 help_message = """
@@ -235,6 +235,6 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
+    with show_mail_handle_errors():
         script = Script()
         script.run()

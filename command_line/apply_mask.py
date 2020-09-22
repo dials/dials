@@ -6,7 +6,7 @@ from six.moves import cPickle as pickle
 from dxtbx.format.image import ImageBool
 from iotbx.phil import parse
 
-from dials.util import show_mail_on_error
+from dials.util import show_mail_handle_errors
 
 help_message = """
 
@@ -100,6 +100,6 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
+    with show_mail_handle_errors():
         script = Script()
         script.run()

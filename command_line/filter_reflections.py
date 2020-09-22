@@ -12,7 +12,7 @@ from libtbx.phil import parse
 
 from dials.algorithms.integration import filtering
 from dials.array_family import flex
-from dials.util import Sorry, log, show_mail_on_error, tabulate
+from dials.util import Sorry, log, show_mail_handle_errors, tabulate
 from dials.util.filter_reflections import SumAndPrfIntensityReducer, SumIntensityReducer
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
 
@@ -452,5 +452,5 @@ def run():
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
+    with show_mail_handle_errors():
         run()
