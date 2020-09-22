@@ -155,12 +155,14 @@ def show_mail_on_error():
         yield
     except Exception as e:
         text = "Please report this error to dials-support@lists.sourceforge.net:"
+        if issubclass(e.__class__, Sorry):
+            raise
+
         if len(e.args) == 1:
             e.args = (f"{text} {e.args[0]}",)
-        elif issubclass(e.__class__, Sorry):
-            raise
         else:
             e.args = (text, *e.args)
+
         raise
 
 
