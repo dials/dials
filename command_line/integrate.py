@@ -673,7 +673,7 @@ def run(args=None, phil=phil_scope):
     else:
         reference = reference[0]
 
-    if "shoebox" not in reference:
+    if reference and "shoebox" not in reference:
         sys.exit("Error: shoebox data missing from reflection table")
 
     try:
