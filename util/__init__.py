@@ -149,7 +149,7 @@ def debug_context_manager(original_context_manager, name="", log_func=None):
 @contextlib.contextmanager
 def show_mail_on_error():
     faulthandler.enable()
-    with contextlib.suppress(AttributeError, ImportError):
+    with contextlib.suppress(AttributeError):
         faulthandler.register(signal.SIGUSR2, all_threads=True)
     try:
         yield
