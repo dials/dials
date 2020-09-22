@@ -725,9 +725,11 @@ class SpotFrame(XrayFrame):
             dp1 = self.pyslip.tiles.picture_fast_slow_to_map_relative(dp1[0], dp1[1])
             dp3 = self.pyslip.tiles.picture_fast_slow_to_map_relative(dp3[0], dp3[1])
 
-            # Determine eccentricity, cf. https://en.wikipedia.org/wiki/Eccentricity_(mathematics)
-            ecc = math.sin(matrix.col(pan.get_normal()).angle(beamvec)) / math.sin(
-                math.pi / 2 - tt
+            # Determine eccentricity,
+            # cf. https://en.wikipedia.org/wiki/Eccentricity_(mathematics)
+            ecc = abs(
+                math.sin(matrix.col(pan.get_normal()).angle(beamvec))
+                / math.sin(math.pi / 2 - tt)
             )
 
             # Assuming that one detector axis is aligned with a major axis of
