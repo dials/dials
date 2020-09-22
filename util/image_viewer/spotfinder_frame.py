@@ -62,8 +62,6 @@ SpotfinderData = collections.namedtuple(
     ],
 )
 
-WX3 = wx.VERSION[0] == 3
-
 myEVT_LOADIMG = wx.NewEventType()
 EVT_LOADIMG = wx.PyEventBinder(myEVT_LOADIMG, 1)
 
@@ -279,11 +277,7 @@ class SpotFrame(XrayFrame):
 
         # Don't update whilst dragging the slider
         if event.EventType == wx.EVT_SLIDER.typeId:
-            if (
-                wx.GetMouseState().LeftDown()
-                if WX3
-                else wx.GetMouseState().LeftIsDown()
-            ):
+            if wx.GetMouseState().LeftIsDown():
                 return
 
         # Once we've stopped scrolling, load the selected item

@@ -14,9 +14,6 @@ from wxtbx import bitmaps, icons
 
 from dials.util import Sorry
 
-# Temporary: Make a variable to allow dual API
-WX3 = wx.VERSION[0] == 3
-
 # Instance to bind external update event to an event handler
 EVT_EXTERNAL_UPDATE = wx.PyEventBinder(wx.NewEventType(), 0)
 
@@ -292,15 +289,13 @@ class XrayFrame(wx.Frame):
             "Image file",
             wildcard=wildcard_str,
             default_path="",
-            flags=(wx.OPEN if WX3 else wx.FD_OPEN),
+            flags=wx.FD_OPEN,
         )
         if file_name != "":
             self.load_image(file_name)
 
     def OnLoadLabelitResult(self, event):
-        file_name = wx.FileSelector(
-            "Labelit result", default_path="", flags=(wx.OPEN if WX3 else wx.FD_OPEN)
-        )
+        file_name = wx.FileSelector("Labelit result", default_path="", flags=wx.FD_OPEN)
         if file_name != "":
             self.load_image(file_name)
 
