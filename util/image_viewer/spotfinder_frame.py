@@ -1210,9 +1210,10 @@ class SpotFrame(XrayFrame):
                 for i in idx:
                     y = i // width
                     x = i % width
-                    y, x = self.pyslip.tiles.flex_image.tile_readout_to_picture(
-                        pnl, y, x
-                    )
+                    if len(self.pyslip.tiles.raw_image.get_detector()) > 1:
+                        y, x = self.pyslip.tiles.flex_image.tile_readout_to_picture(
+                            pnl, y, x
+                        )
                     value.append(
                         self.pyslip.tiles.picture_fast_slow_to_map_relative(x, y)
                     )
