@@ -675,7 +675,7 @@ def main():
         conda_values = conda_info(conda)
         if not conda_values:
             sys.exit(
-                "Can not obtain information from this conda installation. libtbx.precommit unavailable"
+                "Cannot obtain information from this conda installation. libtbx.precommit unavailable"
             )
         conda_python = py.path.local(conda_values["sys.executable"]).realpath()
         print("Conda python: ", end="")
