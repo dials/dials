@@ -6,6 +6,8 @@ import sys
 from iotbx.phil import parse
 from libtbx import Auto
 
+from dials.util import log, show_mail_handle_errors
+
 logger = logging.getLogger("dials.command_line.export")
 
 help_message = """
@@ -427,8 +429,8 @@ def export_json(params, experiments, reflections):
     )
 
 
-if __name__ == "__main__":
-    from dials.util import log
+@show_mail_handle_errors()
+def run(args=None):
     from dials.util.options import OptionParser, reflections_and_experiments_from_files
     from dials.util.version import dials_version
 
@@ -445,7 +447,7 @@ if __name__ == "__main__":
     )
 
     # Get the parameters
-    params, options = parser.parse_args(show_diff_phil=False)
+    params, options = parser.parse_args(args, show_diff_phil=False)
 
     # Configure the logging
     log.config(logfile=params.output.log)
@@ -500,3 +502,7 @@ if __name__ == "__main__":
         exporter(params, experiments, reflections)
     except Exception as e:
         sys.exit(e)
+
+
+if __name__ == "__main__":
+    run()

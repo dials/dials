@@ -12,6 +12,7 @@ import iotbx.phil
 from cctbx import sgtbx
 from rstbx.symmetry.constraints import parameter_reduction
 
+import dials.util
 from dials.algorithms.indexing.assign_indices import AssignIndicesGlobal
 from dials.array_family import flex
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
@@ -154,7 +155,8 @@ def reindex_experiments(experiments, cb_op, space_group=None):
     return reindexed_experiments
 
 
-def run(args):
+@dials.util.show_mail_handle_errors()
+def run(args=None):
     import libtbx.load_env
 
     from dials.util import Sorry
@@ -170,7 +172,7 @@ def run(args):
         epilog=help_message,
     )
 
-    params, options = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(args, show_diff_phil=True)
 
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
@@ -352,6 +354,4 @@ experiments file must also be specified with the option: reference= """
 
 
 if __name__ == "__main__":
-    import sys
-
-    run(sys.argv[1:])
+    run()

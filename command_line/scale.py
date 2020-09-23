@@ -197,7 +197,8 @@ def run_scaling(params, experiments, reflections):
         return experiments, joint_table
 
 
-def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
+@show_mail_handle_errors()
+def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     """Run the scaling from the command-line."""
     usage = """Usage: dials.scale integrated.refl integrated.expt
 [integrated.refl(2) integrated.expt(2) ....] [options]"""
@@ -255,5 +256,4 @@ def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
 
 
 if __name__ == "__main__":
-    with show_mail_handle_errors():
-        run()
+    run()

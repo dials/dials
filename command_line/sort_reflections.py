@@ -55,12 +55,12 @@ class Sort(object):
         perm = sorted(indices, key=lambda k: column[k], reverse=reverse)
         return flex.size_t(perm)
 
-    def run(self):
+    def run(self, args=None):
         """Execute the script."""
         from dials.util.options import flatten_reflections
 
         # Parse the command line
-        params, options = self.parser.parse_args(show_diff_phil=True)
+        params, options = self.parser.parse_args(args, show_diff_phil=True)
         reflections = flatten_reflections(params.input.reflections)
         if not reflections:
             self.parser.print_help()
@@ -89,7 +89,11 @@ class Sort(object):
             reflections.as_file(params.output)
 
 
+@dials.util.show_mail_handle_errors()
+def run(args=None):
+    script = Sort()
+    script.run(args)
+
+
 if __name__ == "__main__":
-    with dials.util.show_mail_handle_errors():
-        script = Sort()
-        script.run()
+    run()

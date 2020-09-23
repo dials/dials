@@ -120,6 +120,7 @@ def merge_data_to_mtz(params, experiments, reflections):
     return make_merged_mtz_file(*((params, list(wavelengths)[0]) + merged_data))
 
 
+@show_mail_handle_errors()
 def run(args=None):
     """Run the merging from the command-line."""
     usage = """Usage: dials.merge scaled.refl scaled.expt [options]"""
@@ -185,5 +186,4 @@ Only scaled data can be processed with dials.merge"""
 
 
 if __name__ == "__main__":
-    with show_mail_handle_errors():
-        run()
+    run()

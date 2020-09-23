@@ -53,8 +53,8 @@ class Script(object):
             read_experiments=True,
         )
 
-    def run(self):
-        params, options = self.parser.parse_args(show_diff_phil=True)
+    def run(self, args=None):
+        params, options = self.parser.parse_args(args, show_diff_phil=True)
         log.config(logfile="dials.complete_full_sphere.log")
 
         model_shadow = params.shadow
@@ -232,7 +232,11 @@ class Script(object):
         experiments.as_file(filename)
 
 
+@show_mail_handle_errors()
+def run(args=None):
+    script = Script()
+    script.run(args)
+
+
 if __name__ == "__main__":
-    with show_mail_handle_errors():
-        script = Script()
-        script.run()
+    run()

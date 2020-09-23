@@ -12,7 +12,7 @@ from dxtbx.model.experiment_list import ExperimentList
 
 from dials.algorithms.indexing import DialsIndexError, indexer
 from dials.array_family import flex
-from dials.util import log
+from dials.util import log, show_mail_handle_errors
 from dials.util.multi_dataset_handling import renumber_table_id_columns
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.slice import slice_reflections
@@ -207,7 +207,8 @@ def index(experiments, reflections, params):
     return indexed_experiments, indexed_reflections
 
 
-def run(phil=working_phil, args=None):
+@show_mail_handle_errors()
+def run(args=None, phil=working_phil):
     usage = "dials.index [options] models.expt strong.refl"
 
     parser = OptionParser(

@@ -22,6 +22,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import os.path
+from typing import List, Optional, Tuple
 
 import six.moves.cPickle as pickle
 
@@ -35,12 +36,7 @@ import dials.util.log
 from dials.util.masking import MaskGenerator
 from dials.util.options import OptionParser, flatten_experiments
 
-try:
-    from typing import List, Optional, Tuple
-
-    Masks = List[Tuple[flex.bool, ...]]
-except ImportError:
-    pass
+Masks = List[Tuple[flex.bool, ...]]
 
 log = logging.getLogger("dials.generate_mask")
 
@@ -139,8 +135,8 @@ def generate_mask(
     return masks, experiments
 
 
-def run(phil=phil_scope, args=None):
-    # type: (phil.scope, List[str, ...]) -> None
+@dials.util.show_mail_handle_errors()
+def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     """
     Parse command-line arguments, run the script.
 
@@ -178,5 +174,4 @@ def run(phil=phil_scope, args=None):
 
 
 if __name__ == "__main__":
-    with dials.util.show_mail_handle_errors():
-        run()
+    run()

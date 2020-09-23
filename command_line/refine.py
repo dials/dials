@@ -306,6 +306,7 @@ def run_dials_refine(experiments, reflections, params):
     return experiments, reflections, refiner, history
 
 
+@dials.util.show_mail_handle_errors()
 def run(args=None, phil=working_phil):
     """
     Set up refinement from command line options, files and PHIL parameters.
@@ -482,5 +483,4 @@ def run(args=None, phil=working_phil):
 
 
 if __name__ == "__main__":
-    with dials.util.show_mail_handle_errors():
-        run()
+    run()

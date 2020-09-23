@@ -42,7 +42,8 @@ phil_scope = libtbx.phil.parse(
 )
 
 
-def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> None
+@dials.util.show_mail_handle_errors()
+def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     usage = "dials.missing_reflections [options] scaled.expt scaled.refl"
 
     parser = OptionParser(
@@ -139,5 +140,4 @@ def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> 
 
 
 if __name__ == "__main__":
-    with dials.util.show_mail_handle_errors():
-        run()
+    run()

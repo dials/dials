@@ -15,6 +15,7 @@ from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from dxtbx.model import ExperimentList
 from libtbx import Auto
 
+import dials.util
 from dials.algorithms.merging.merge import prepare_merged_reflection_table
 from dials.algorithms.symmetry import resolution_filter_from_reflections_experiments
 from dials.algorithms.symmetry.absences.laue_groups_info import (
@@ -27,7 +28,7 @@ from dials.algorithms.symmetry.absences.screw_axes import ScrewAxisObserver
 from dials.algorithms.symmetry.laue_group import LaueGroupAnalysis
 from dials.array_family import flex
 from dials.command_line.reindex import reindex_experiments
-from dials.util import log, show_mail_handle_errors, tabulate
+from dials.util import log, tabulate
 from dials.util.exclude_images import (
     exclude_image_ranges_from_scans,
     get_selection_for_valid_image_ranges,
@@ -510,6 +511,7 @@ Examples::
 """
 
 
+@dials.util.show_mail_handle_errors()
 def run(args=None):
     """Run symmetry analysis from the command-line."""
     usage = "dials.symmetry [options] models.expt observations.refl"
@@ -565,5 +567,4 @@ def run(args=None):
 
 
 if __name__ == "__main__":
-    with show_mail_handle_errors():
-        run()
+    run()

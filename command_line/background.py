@@ -4,14 +4,13 @@
 from __future__ import absolute_import, division, print_function
 
 import math
-import sys
 
 import iotbx.phil
 from scitbx.array_family import flex
 
 from dials.algorithms.spot_finding.factory import SpotFinderFactory
 from dials.algorithms.spot_finding.factory import phil_scope as spot_phil
-from dials.util import Sorry
+from dials.util import Sorry, show_mail_handle_errors
 
 help_message = """
 
@@ -43,11 +42,8 @@ masking {
 )
 
 
-def main():
-    run(sys.argv[1:])
-
-
-def run(args):
+@show_mail_handle_errors()
+def run(args=None):
     from dials.util.options import OptionParser, flatten_experiments
 
     usage = "dials.background [options] image_*.cbf"
@@ -56,7 +52,7 @@ def run(args):
         usage=usage, phil=phil_scope, read_experiments=True, epilog=help_message
     )
 
-    params, options = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(args, show_diff_phil=True)
 
     # Ensure we have either a data block or an experiment list
     experiments = flatten_experiments(params.input.experiments)
@@ -210,4 +206,4 @@ def background(imageset, indx, n_bins, corrected=False, mask_params=None):
 
 
 if __name__ == "__main__":
-    main()
+    run()

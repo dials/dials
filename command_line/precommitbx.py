@@ -4,4 +4,10 @@ from __future__ import absolute_import, division, print_function
 
 import dials.precommitbx.installer
 
-dials.precommitbx.installer.main()
+
+def run(_=None):
+    dials.precommitbx.installer.main()
+
+
+if __name__ == "__main__":
+    run()
