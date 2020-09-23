@@ -16,7 +16,7 @@ from dials.algorithms.merging.merge import (
     make_merged_mtz_file,
     merge_and_truncate,
 )
-from dials.util import Sorry, log, show_mail_on_error
+from dials.util import Sorry, log, show_mail_handle_errors
 from dials.util.export_mtz import match_wavelengths
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
@@ -177,5 +177,5 @@ Only scaled data can be processed with dials.merge"""
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
+    with show_mail_handle_errors():
         run()

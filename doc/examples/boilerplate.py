@@ -17,7 +17,7 @@ import libtbx.phil
 # dxtbx.model.Experiment objects, collated in ExperimentList objects.
 from dxtbx.model import ExperimentList
 
-# All command-line DIALS programs should run with dials.util.show_mail_on_error.
+# All command-line DIALS programs should run with dials.util.show_mail_handle_errors.
 import dials.util
 
 # The logging module is used to raise log messages.  Additionally, dials.util.log
@@ -164,5 +164,5 @@ def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> 
 
 # Keep this minimal.  Try to keep the command-line behaviour neatly encapsulated in run.
 if __name__ == "__main__":
-    with dials.util.show_mail_on_error():
+    with dials.util.show_mail_handle_errors():
         run()

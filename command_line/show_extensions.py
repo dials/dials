@@ -2,7 +2,7 @@
 
 from __future__ import absolute_import, division, print_function
 
-from dials.util import show_mail_on_error
+from dials.util import show_mail_handle_errors
 
 
 class Script(object):
@@ -81,6 +81,6 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
+    with show_mail_handle_errors():
         script = Script()
         script.run()

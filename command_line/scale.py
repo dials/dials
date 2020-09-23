@@ -43,7 +43,7 @@ from six.moves import cStringIO as StringIO
 from libtbx import phil
 
 from dials.algorithms.scaling.algorithm import ScaleAndFilterAlgorithm, ScalingAlgorithm
-from dials.util import Sorry, log, show_mail_on_error
+from dials.util import Sorry, log, show_mail_handle_errors
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
@@ -255,5 +255,5 @@ def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
+    with show_mail_handle_errors():
         run()

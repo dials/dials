@@ -7,7 +7,7 @@ from iotbx import ccp4_map, phil
 from scitbx.array_family import flex
 
 import dials.algorithms.rs_mapper as recviewer
-from dials.util import Sorry, show_mail_on_error
+from dials.util import Sorry, show_mail_handle_errors
 from dials.util.options import OptionParser, flatten_experiments
 
 help_message = """
@@ -160,6 +160,6 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
+    with show_mail_handle_errors():
         script = Script()
         script.run()

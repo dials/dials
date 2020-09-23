@@ -36,7 +36,7 @@ from dials.algorithms.scaling.plots import (
 from dials.algorithms.scaling.scaling_library import choose_initial_scaling_intensities
 from dials.algorithms.scaling.scaling_utilities import calculate_prescaling_correction
 from dials.report.plots import i_over_sig_i_vs_i_plot
-from dials.util import log, show_mail_on_error
+from dials.util import log, show_mail_handle_errors
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
@@ -199,5 +199,5 @@ def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
+    with show_mail_handle_errors():
         run()

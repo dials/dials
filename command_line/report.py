@@ -29,7 +29,7 @@ from dials.report.plots import (
     make_image_range_table,
     scale_rmerge_vs_batch_plot,
 )
-from dials.util import show_mail_on_error
+from dials.util import show_mail_handle_errors
 from dials.util.batch_handling import batch_manager
 from dials.util.command_line import Command
 
@@ -2561,6 +2561,6 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
+    with show_mail_handle_errors():
         script = Script()
         script.run()

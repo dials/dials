@@ -17,7 +17,7 @@ from dials.command_line.symmetry import (
     change_of_basis_ops_to_minimum_cell,
     eliminate_sys_absent,
 )
-from dials.util import Sorry, log, show_mail_on_error
+from dials.util import Sorry, log, show_mail_handle_errors
 from dials.util.exclude_images import get_selection_for_valid_image_ranges
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
 from dials.util.multi_dataset_handling import (
@@ -376,5 +376,5 @@ def run(args):
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
+    with show_mail_handle_errors():
         run(sys.argv[1:])

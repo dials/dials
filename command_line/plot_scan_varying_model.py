@@ -407,6 +407,6 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    with dials.util.show_mail_on_error():
+    with dials.util.show_mail_handle_errors():
         script = Script()
         script.run()

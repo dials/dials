@@ -6,7 +6,7 @@ from dxtbx.model.experiment_list import ExperimentList
 from libtbx.phil import parse
 
 from dials.array_family import flex
-from dials.util import Sorry, show_mail_on_error
+from dials.util import Sorry, show_mail_handle_errors
 from dials.util.export_mtz import match_wavelengths
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
 
@@ -337,6 +337,6 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
+    with show_mail_handle_errors():
         script = Script()
         script.run()

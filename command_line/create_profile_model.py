@@ -4,7 +4,7 @@ import logging
 
 from libtbx.phil import parse
 
-from dials.util import show_mail_on_error
+from dials.util import show_mail_handle_errors
 
 logger = logging.getLogger("dials.command_line.create_profile_model")
 
@@ -219,6 +219,6 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
+    with show_mail_handle_errors():
         script = Script()
         script.run()

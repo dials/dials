@@ -11,7 +11,7 @@ from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
 from scitbx import matrix
 
 from dials.array_family import flex
-from dials.util import show_mail_on_error
+from dials.util import show_mail_handle_errors
 from dials.util.command_line import Command
 from dials.util.options import OptionParser
 
@@ -454,6 +454,6 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
+    with show_mail_handle_errors():
         script = Script()
         script.run()

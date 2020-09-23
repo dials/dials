@@ -1,20 +1,28 @@
-from __future__ import absolute_import, division, print_function
-
 import contextlib
+import faulthandler
 import functools
+import os
+import signal
 import sys
 
-import six
 import tabulate as _tabulate
 import tqdm
 
 from libtbx.utils import Sorry
 
+# Coloured exit code support on windows
+try:
+    import colorama
+except ImportError:
+    pass
+else:
+    colorama.init()
+
 __all__ = [
     "debug_console",
     "debug_context_manager",
     "progress",
-    "show_mail_on_error",
+    "show_mail_handle_errors",
     "Sorry",
     "tabulate",
 ]
@@ -140,34 +148,49 @@ def debug_context_manager(original_context_manager, name="", log_func=None):
 
 @contextlib.contextmanager
 def show_mail_on_error():
-    if six.PY3:
-        import faulthandler
-
-        faulthandler.enable()
-        with contextlib.suppress(AttributeError, ImportError):
-            import signal
-
-            faulthandler.register(signal.SIGUSR2, all_threads=True)
+    faulthandler.enable()
+    with contextlib.suppress(AttributeError):
+        faulthandler.register(signal.SIGUSR2, all_threads=True)
     try:
         yield
     except Exception as e:
-        text = u"Please report this error to dials-support@lists.sourceforge.net:"
-        if len(e.args) == 0:
-            e.args = (text,)
-        elif issubclass(e.__class__, Sorry):
+        text = "Please report this error to dials-support@lists.sourceforge.net:"
+        if issubclass(e.__class__, Sorry):
             raise
-        elif len(e.args) == 1:
-            if isinstance(e.args[0], six.text_type):
-                if six.PY2:
-                    e.args = (
-                        (text + u" " + e.args[0]).encode(
-                            "ascii", errors="xmlcharrefreplace"
-                        ),
-                    )
-                else:
-                    e.args = (text + u" " + e.args[0],)
-            else:
-                e.args = (str(text) + " " + str(e.args[0]),)
+
+        if len(e.args) == 1:
+            e.args = (f"{text} {e.args[0]}",)
         else:
-            e.args = (text,) + e.args
+            e.args = (text, *e.args)
+
         raise
+
+
+@contextlib.contextmanager
+def make_sys_exit_red():
+    """Make sys.exit call messages red, if appropriate"""
+    try:
+        yield
+    except SystemExit as e:
+        # Don't colour if requested not to, or user formatted already
+        if (
+            isinstance(e.code, str)
+            and "NO_COLOR" not in os.environ
+            and sys.stderr.isatty()
+            and "\033" not in e.code
+        ):
+            e.code = f"\033[31m{e.code}\033[0m"
+        raise
+
+
+@contextlib.contextmanager
+def show_mail_handle_errors():
+    """
+    Handle showing errors to the user, including contact email, and colors.
+
+    If a stack trace occurs, the user will be give the contact email to report
+    the error to. If a sys.exit is caught, it will be converted to red, if
+    appropriate.
+    """
+    with make_sys_exit_red(), show_mail_on_error():
+        yield

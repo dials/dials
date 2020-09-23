@@ -6,7 +6,7 @@ from libtbx.phil import parse
 from scitbx import matrix
 from scitbx.math import r3_rotation_axis_and_angle_from_matrix
 
-from dials.util import show_mail_on_error
+from dials.util import show_mail_handle_errors
 from dials.util.options import OptionParser, flatten_experiments
 
 help_message = """
@@ -163,6 +163,6 @@ def find_centre_of_rotation(x1, x2, y1, y2):
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
+    with show_mail_handle_errors():
         script = Script()
         script.run()
