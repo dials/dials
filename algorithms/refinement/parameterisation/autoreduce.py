@@ -145,7 +145,12 @@ class AutoReduce(object):
         if len(sel) > 0:
             names = ", ".join([self.param_names[i] for i in sel])
             msg = "Too few reflections to parameterise {0}.\n".format(names)
-            msg += "Try modifying refinement.parameterisation.auto_reduction options"
+            msg += (
+                "Try setting "
+                "refinement.parameterisation.auto_reduction.action "
+                "to fix these parameters (=fix) or additionally remove the "
+                "associated reflections (=remove)."
+            )
             raise DialsRefineConfigError(msg)
 
     def check_and_fix(self):
