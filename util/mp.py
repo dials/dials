@@ -19,10 +19,10 @@ def available_cores() -> int:
     nproc = os.environ.get("NSLOTS", 0)
     try:
         nproc = int(nproc)
+        if nproc >= 1:
+            return nproc
     except ValueError:
-        nproc = 0
-    if nproc >= 1:
-        return nproc
+        pass
 
     # Available on Linux, Python 3.3+
     try:
