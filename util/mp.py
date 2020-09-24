@@ -8,9 +8,12 @@ import psutil
 import libtbx.easy_mp
 
 
-def available_nproc():
+def available_cores() -> int:
     """
-    Choose a suitable value for nproc based on the availability of processors.
+    Determine the number of available processor cores.
+    There are a number of different methods to get this information, some of which may not
+    be available on a specific OS and/or version of Python. So try them in order and return
+    the first successful one.
     """
 
     nproc = os.environ.get("NSLOTS", 0)
