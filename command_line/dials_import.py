@@ -125,6 +125,7 @@ phil_scope = parse(
 
     reference_models = *all beam detector goniometer
       .type = choice(multi=True)
+      .help = "Use only these models from reference_geometry"
 
     allow_multiple_sequences = True
       .type = bool
