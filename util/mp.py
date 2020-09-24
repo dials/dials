@@ -1,8 +1,45 @@
 from __future__ import absolute_import, division, print_function
 
+import os
+
 import future.moves.itertools as itertools
+import psutil
 
 import libtbx.easy_mp
+
+
+def available_nproc():
+    """
+    Choose a suitable value for nproc based on the availability of processors.
+    """
+
+    nproc = os.environ.get("NSLOTS", 0)
+    try:
+        nproc = int(nproc)
+    except ValueError:
+        nproc = 0
+    if nproc >= 1:
+        return nproc
+
+    try:
+        return len(os.sched_getaffinity(0))
+    except AttributeError:
+        pass
+
+    try:
+        return len(psutil.Process().cpu_affinity())
+    except AttributeError:
+        pass
+
+    nproc = os.cpu_count()
+    if nproc is not None:
+        return nproc
+
+    nproc = psutil.cpu_count()
+    if nproc is not None:
+        return nproc
+
+    return 1
 
 
 def parallel_map(
