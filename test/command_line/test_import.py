@@ -5,19 +5,43 @@ import os
 import procrunner
 import pytest
 from dxtbx.serialize import load
+from libtbx.phil import parse
 
 
-@pytest.mark.parametrize("use_beam", ["True", "False"])
-@pytest.mark.parametrize("use_gonio", ["True", "False"])
-@pytest.mark.parametrize("use_detector", ["True", "False"])
-def test_reference_individual(dials_data, tmpdir, use_beam, use_gonio, use_detector):
+@pytest.mark.parametrize(
+    "reference_models",
+    [
+        "*all",
+        "*all beam detector goniometer",
+        "all *beam *detector goniometer",
+        "all *beam detector goniometer",
+        "all beam *detector goniometer",
+        "*goniometer",  # There is a trap here!
+        # https://github.com/cctbx/cctbx_project/issues/531
+        "None",
+    ],
+)
+def test_reference_individual(dials_data, tmpdir, reference_models):
 
-    expected_beam = {"True": 3, "False": 0.9795}
+    # Read the test input phil parameter
+    use_refs_scope = parse(
+        "reference_models = {} \n .type=choice(multi=True)".format(reference_models)
+    )
+    use_models = use_refs_scope.extract().reference_models
+
+    if "all" in use_models:
+        use_beam, use_detector, use_gonio = True, True, True
+    else:
+        use_beam, use_detector, use_gonio = [
+            x in use_models for x in ["beam", "detector", "goniometer"]
+        ]
+
+    expected_beam = {True: 3, False: 0.9795}
     expected_gonio = {
-        "True": (7, 8, 9, 4, 5, 6, 1, 2, 3),
-        "False": (1, 0, 0, 0, 1, 0, 0, 0, 1),
+        True: (7, 8, 9, 4, 5, 6, 1, 2, 3),
+        False: (1, 0, 0, 0, 1, 0, 0, 0, 1),
     }
-    expected_detector = {"True": "Fake panel", "False": "Panel"}
+    expected_detector = {True: "Fake panel", False: "Panel"}
 
     # Find the image files
     image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
@@ -44,14 +68,10 @@ def test_reference_individual(dials_data, tmpdir, use_beam, use_gonio, use_detec
       input {
         reference_geometry = fake_geometry.expt
         check_reference_geometry = False
-        use_beam_reference = %s
-        use_gonio_reference = %s
-        use_detector_reference = %s
+        reference_models = %s
       }
   """ % (
-        use_beam,
-        use_gonio,
-        use_detector,
+        reference_models
     )
     tmpdir.join("test_reference_individual.phil").write(import_phil)
 
