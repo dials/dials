@@ -24,24 +24,20 @@ def available_cores() -> int:
     except ValueError:
         pass
 
-    # Available on Linux, Python 3.3+
     try:
         return len(os.sched_getaffinity(0))
     except AttributeError:
         pass
 
-    # Availability: Linux, Windows
     try:
         return len(psutil.Process().cpu_affinity())
     except AttributeError:
         pass
 
-    # None if 'undetermined'
     nproc = os.cpu_count()
     if nproc is not None:
         return nproc
 
-    # None if 'undetermined'
     nproc = psutil.cpu_count()
     if nproc is not None:
         return nproc
