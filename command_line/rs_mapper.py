@@ -2,12 +2,13 @@ from __future__ import absolute_import, division, print_function
 
 import math
 
-import dials.algorithms.rs_mapper as recviewer
-from dials.util import Sorry, show_mail_on_error
-from dials.util.options import flatten_experiments, OptionParser
 from cctbx import sgtbx, uctbx
 from iotbx import ccp4_map, phil
 from scitbx.array_family import flex
+
+import dials.algorithms.rs_mapper as recviewer
+from dials.util import Sorry, show_mail_handle_errors
+from dials.util.options import OptionParser, flatten_experiments
 
 help_message = """
 This program reconstructs reciprocal space from diffraction images. The orientation matrix is not necessary; only diffraction geometry is required.
@@ -159,6 +160,6 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
+    with show_mail_handle_errors():
         script = Script()
         script.run()

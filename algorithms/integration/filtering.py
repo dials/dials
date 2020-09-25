@@ -6,7 +6,6 @@ from iotbx.phil import parse
 
 from dials.array_family import flex
 
-
 # The phil scope
 phil_scope = parse(
     """

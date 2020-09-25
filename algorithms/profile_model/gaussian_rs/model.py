@@ -2,9 +2,10 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 
-from dials.model.experiment.profile import ProfileModelExt
 from libtbx.phil import parse
+
 from dials.array_family import flex
+from dials.model.experiment.profile import ProfileModelExt
 
 logger = logging.getLogger(__name__)
 
@@ -307,8 +308,6 @@ class Model(ProfileModelExt):
         """
         from dials.algorithms.profile_model.gaussian_rs.calculator import (
             ProfileModelCalculator,
-        )
-        from dials.algorithms.profile_model.gaussian_rs.calculator import (
             ScanVaryingProfileModelCalculator,
         )
 
@@ -428,6 +427,7 @@ class Model(ProfileModelExt):
         :param scan: The scan model
         """
         from dxtbx.model.experiment_list import Experiment
+
         from dials.algorithms.spot_prediction.reflection_predictor import (
             ReflectionPredictor,
         )
@@ -590,10 +590,11 @@ class Model(ProfileModelExt):
 
         # Define a function to create the fitting class
         def wrapper(experiment):
+            from math import ceil
+
             from dials.algorithms.profile_model.gaussian_rs import (
                 GaussianRSProfileModeller,
             )
-            from math import ceil
 
             # Return if no scan or gonio
             if (

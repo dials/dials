@@ -1,8 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
 import iotbx.phil
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+
 from dials.array_family import flex
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 
 help_message = """
 Augment spot list with additional information - for example number of pixels

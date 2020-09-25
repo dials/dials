@@ -213,8 +213,7 @@ def merge_cbf(imageset, n_images, out_prefix="sum_", get_raw_data_from_imageset=
 
 
 def run():
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_experiments
+    from dials.util.options import OptionParser, flatten_experiments
 
     usage = "dials.merge_cbf [options] image_*.cbf"
 

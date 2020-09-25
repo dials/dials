@@ -3,17 +3,15 @@ from __future__ import absolute_import, division, print_function
 import os
 
 from cctbx import sgtbx
+from dxtbx.model import Crystal
+from dxtbx.model.experiment_list import ExperimentListFactory
+from iotbx.xds import integrate_hkl, spot_xds
 from libtbx.phil import parse
-from iotbx.xds import integrate_hkl
-from iotbx.xds import spot_xds
 from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
 from scitbx import matrix
 
-from dxtbx.model import Crystal
-from dxtbx.model.experiment_list import ExperimentListFactory
-
 from dials.array_family import flex
-from dials.util import show_mail_on_error
+from dials.util import show_mail_handle_errors
 from dials.util.command_line import Command
 from dials.util.options import OptionParser
 
@@ -456,6 +454,6 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
+    with show_mail_handle_errors():
         script = Script()
         script.run()

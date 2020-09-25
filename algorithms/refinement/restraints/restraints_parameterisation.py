@@ -3,14 +3,16 @@ from __future__ import absolute_import, division, print_function
 from collections import namedtuple
 
 from libtbx.phil import parse
-from dials.algorithms.refinement import DialsRefineConfigError
-from scitbx.array_family import flex
 from scitbx import sparse
+from scitbx.array_family import flex
 
-from dials.algorithms.refinement.restraints.restraints import SingleUnitCellTie
-from dials.algorithms.refinement.restraints.restraints import MeanUnitCellTie
-from dials.algorithms.refinement.restraints.restraints import LowMemoryMeanUnitCellTie
-from dials.algorithms.refinement.restraints.restraints import MedianUnitCellTie
+from dials.algorithms.refinement import DialsRefineConfigError
+from dials.algorithms.refinement.restraints.restraints import (
+    LowMemoryMeanUnitCellTie,
+    MeanUnitCellTie,
+    MedianUnitCellTie,
+    SingleUnitCellTie,
+)
 
 # PHIL options for unit cell restraints
 uc_phil_str = """

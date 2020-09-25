@@ -8,8 +8,10 @@ import six.moves.cPickle as pickle
 
 
 def test_run(dials_regression):
-    from dials.algorithms.background.simple import MosflmOutlierRejector
-    from dials.algorithms.background.simple import Linear2dModeller
+    from dials.algorithms.background.simple import (
+        Linear2dModeller,
+        MosflmOutlierRejector,
+    )
 
     # The directory path
     path = os.path.join(
@@ -24,8 +26,8 @@ def test_run(dials_regression):
     outlier_rejector = MosflmOutlierRejector(fraction, n_sigma)
     linear_modeller = Linear2dModeller()
 
-    from dials.array_family import flex
     from dials.algorithms.shoebox import MaskCode
+    from dials.array_family import flex
 
     print(shoebox_filename)
     # Read the data

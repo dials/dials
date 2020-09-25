@@ -1,5 +1,7 @@
 from __future__ import absolute_import, division, print_function
+
 import os
+
 import pre_commit.main
 
 # work around https://github.com/Homebrew/homebrew-core/issues/30445

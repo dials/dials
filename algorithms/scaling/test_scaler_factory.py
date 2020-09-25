@@ -2,24 +2,27 @@
 Tests for the scaler factory classes and helper functions.
 """
 from __future__ import absolute_import, division, print_function
+
 import pytest
-from libtbx import phil
+from mock import MagicMock, Mock
+
 from dxtbx.model import Crystal
-from mock import Mock, MagicMock
-from dials.array_family import flex
-from dials.util.options import OptionParser
+from libtbx import phil
+
+from dials.algorithms.scaling.scaler import (
+    MultiScaler,
+    NullScaler,
+    SingleScaler,
+    TargetScaler,
+)
 from dials.algorithms.scaling.scaler_factory import (
+    MultiScalerFactory,
     SingleScalerFactory,
     TargetScalerFactory,
-    MultiScalerFactory,
     create_scaler,
 )
-from dials.algorithms.scaling.scaler import (
-    SingleScaler,
-    MultiScaler,
-    TargetScaler,
-    NullScaler,
-)
+from dials.array_family import flex
+from dials.util.options import OptionParser
 
 
 def generated_refl(not_integrated=False, idval=0):

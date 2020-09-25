@@ -3,20 +3,20 @@ from __future__ import absolute_import, division, print_function
 import wx
 from wx.lib.agw import floatspin
 
-import libtbx.phil
 import gltbx
 import gltbx.gl as gl
+import libtbx.phil
+import wxtbx.utils
 from scitbx.array_family import flex
 from scitbx.math import minimum_covering_sphere
-import wxtbx.utils
 from wxtbx.segmentedctrl import (
     SEGBTN_HORIZONTAL,
     SegmentedRadioControl,
     SegmentedToggleControl,
 )
 
-from dials.util.reciprocal_lattice import Render3d
 from dials.util import wx_viewer
+from dials.util.reciprocal_lattice import Render3d
 
 WX3 = wx.VERSION[0] == 3
 

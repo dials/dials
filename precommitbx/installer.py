@@ -9,12 +9,14 @@ import sys
 import time
 from distutils.version import LooseVersion as parse_version
 
-import dials.precommitbx._precommitbx
-import libtbx.load_env
 import procrunner
 import py
-from future.moves.urllib.request import urlopen, Request
+from future.moves.urllib.request import Request, urlopen
 from tqdm import tqdm, trange
+
+import libtbx.load_env
+
+import dials.precommitbx._precommitbx
 
 BOLD = "\033[1m"
 GREEN = "\033[32m"
@@ -673,7 +675,7 @@ def main():
         conda_values = conda_info(conda)
         if not conda_values:
             sys.exit(
-                "Can not obtain information from this conda installation. libtbx.precommit unavailable"
+                "Cannot obtain information from this conda installation. libtbx.precommit unavailable"
             )
         conda_python = py.path.local(conda_values["sys.executable"]).realpath()
         print("Conda python: ", end="")

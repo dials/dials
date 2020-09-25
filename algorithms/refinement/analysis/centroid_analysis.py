@@ -5,8 +5,9 @@ from __future__ import absolute_import, division, print_function
 
 import math
 
-from dials.array_family import flex
 from scitbx.math.periodogram import Periodogram
+
+from dials.array_family import flex
 
 RAD2DEG = 180.0 / math.pi
 

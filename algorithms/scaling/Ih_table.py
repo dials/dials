@@ -6,10 +6,12 @@ symmetry equivalent reflections, as required for scaling.
 """
 from __future__ import absolute_import, division, print_function
 
-from cctbx import miller, crystal, uctbx
-from dials.array_family import flex
 from orderedset import OrderedSet
+
+from cctbx import crystal, miller, uctbx
 from scitbx import sparse
+
+from dials.array_family import flex
 
 
 def map_indices_to_asu(miller_indices, space_group, anomalous=False):

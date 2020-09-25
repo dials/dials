@@ -30,8 +30,9 @@ def test_getters():
 
 
 def test_detector_area():
-    from dials.algorithms.profile_model.modeller import CircleSampler
     from scitbx.array_family import flex
+
+    from dials.algorithms.profile_model.modeller import CircleSampler
 
     width = 1000
     height = 1000
@@ -175,8 +176,9 @@ def test_nearest_n():
 
 
 def test_weights():
-    from dials.algorithms.profile_model.modeller import CircleSampler
     from scitbx import matrix
+
+    from dials.algorithms.profile_model.modeller import CircleSampler
 
     width = 1000
     height = 1000
@@ -256,8 +258,9 @@ def test_z_index():
 
 
 def test_pickle():
-    from dials.algorithms.profile_model.modeller import CircleSampler
     import six.moves.cPickle as pickle
+
+    from dials.algorithms.profile_model.modeller import CircleSampler
 
     width = 1000
     height = 1000

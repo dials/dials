@@ -4,11 +4,11 @@ import collections
 import os
 import re
 
-from dials.array_family import flex
+import libtbx.phil
 from dxtbx.model.experiment_list import ExperimentListFactory
 from libtbx.utils import Sorry
-import libtbx.phil
 
+from dials.array_family import flex
 
 FilenameDataWrapper = collections.namedtuple("FilenameDataWrapper", "filename, data")
 

@@ -5,8 +5,9 @@ from __future__ import absolute_import, division, print_function
 import pickle
 import sys
 
-import dials.util.log
 import iotbx.phil
+
+import dials.util.log
 from dials.util.image_viewer.spotfinder_wrap import spot_wrapper
 from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
 

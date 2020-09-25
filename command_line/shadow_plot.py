@@ -7,8 +7,9 @@ import sys
 
 import libtbx
 import libtbx.phil
-from dials.util import Sorry
 from scitbx.array_family import flex
+
+from dials.util import Sorry
 
 help_message = """
 Generate a 1d or 2d goniometer detector shadow plot for a given experiment list.
@@ -43,8 +44,7 @@ output {
 
 
 def run(args):
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_experiments
+    from dials.util.options import OptionParser, flatten_experiments
 
     usage = "dials.shadow_plot [options] models.expt"
 

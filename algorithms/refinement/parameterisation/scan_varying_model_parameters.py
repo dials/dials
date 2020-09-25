@@ -1,9 +1,11 @@
 from __future__ import absolute_import, division, print_function
-from dials.algorithms.refinement.parameterisation.model_parameters import (
-    Parameter,
-    ModelParameterisation,
-)
+
 from scitbx.array_family import flex
+
+from dials.algorithms.refinement.parameterisation.model_parameters import (
+    ModelParameterisation,
+    Parameter,
+)
 from dials_refinement_helpers_ext import GaussianSmoother as GS
 
 # reusable PHIL string for options affecting scan-varying parameterisation

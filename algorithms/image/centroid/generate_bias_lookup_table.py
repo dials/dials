@@ -12,7 +12,7 @@ def sum_of_erf(mu, sigma, N=1000):
     :param sigma: The Gaussian sigma
     :param N: The number of iterations in the sum
     """
-    from math import sqrt, erf
+    from math import erf, sqrt
 
     sum1 = 0
     sum2 = N * erf((N + 1 - mu) / (sqrt(2) * sigma))

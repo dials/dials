@@ -7,18 +7,19 @@ from __future__ import absolute_import, division, print_function
 import logging
 import sys
 
-from dials.util import log, show_mail_on_error, Sorry
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
-from dials.util.version import dials_version
-from dials.util.export_mtz import match_wavelengths
+from six.moves import cStringIO as StringIO
+
+from libtbx import phil
+
 from dials.algorithms.merging.merge import (
     make_MAD_merged_mtz_file,
     make_merged_mtz_file,
     merge_and_truncate,
 )
-from libtbx import phil
-from six.moves import cStringIO as StringIO
-
+from dials.util import Sorry, log, show_mail_handle_errors
+from dials.util.export_mtz import match_wavelengths
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.version import dials_version
 
 help_message = """Program to merge scaled dials data."""
 
@@ -176,5 +177,5 @@ Only scaled data can be processed with dials.merge"""
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
+    with show_mail_handle_errors():
         run()

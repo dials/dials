@@ -6,8 +6,7 @@ import iotbx.phil
 from cctbx.array_family import flex
 
 import dials.algorithms.indexing.compare_orientation_matrices
-from dials.util.options import OptionParser
-from dials.util.options import flatten_experiments
+from dials.util.options import OptionParser, flatten_experiments
 
 help_message = """
 

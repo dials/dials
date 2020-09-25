@@ -1,9 +1,10 @@
 from __future__ import absolute_import, division, print_function
-from dials.array_family import flex
+
 from dials.algorithms.refinement.parameterisation.prediction_parameters import (
     PredictionParameterisation,
     SparseGradientVectorMixin,
 )
+from dials.array_family import flex
 from dials_refinement_helpers_ext import dRq_de
 
 

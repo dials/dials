@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import pytest
 
 from cctbx import crystal, miller, sgtbx
+
 from dials.algorithms.symmetry.cosym._generate_test_data import generate_intensities
 from dials.algorithms.symmetry.laue_group import LaueGroupAnalysis
 

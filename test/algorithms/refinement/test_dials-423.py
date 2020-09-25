@@ -13,11 +13,12 @@ of the offsets of all panels from the root frame.
 
 
 def test_run(dials_regression):
-    from dials.array_family import flex
-    from dials.algorithms.refinement import RefinerFactory
-    from dials.algorithms.refinement.refiner import phil_scope
     from dxtbx.model.experiment_list import ExperimentListFactory
     from libtbx import phil
+
+    from dials.algorithms.refinement import RefinerFactory
+    from dials.algorithms.refinement.refiner import phil_scope
+    from dials.array_family import flex
 
     data_dir = os.path.join(dials_regression, "refinement_test_data", "dials-423")
     exp_file = os.path.join(data_dir, "experiments.json")

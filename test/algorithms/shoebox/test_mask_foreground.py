@@ -4,11 +4,14 @@ import math
 from random import randint, seed
 
 import numpy as np
-from scitbx import matrix
 
 from dxtbx.model.experiment_list import ExperimentList
-from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
-from dials.algorithms.profile_model.gaussian_rs import MaskCalculator3D
+from scitbx import matrix
+
+from dials.algorithms.profile_model.gaussian_rs import (
+    CoordinateSystem,
+    MaskCalculator3D,
+)
 from dials.algorithms.shoebox import MaskCode
 from dials.array_family import flex
 

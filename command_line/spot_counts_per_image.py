@@ -4,9 +4,10 @@ import json
 import sys
 
 import iotbx.phil
+
+from dials.algorithms.spot_finding import per_image_analysis
 from dials.util import tabulate
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
-from dials.algorithms.spot_finding import per_image_analysis
 
 help_message = """
 

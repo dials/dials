@@ -5,9 +5,10 @@ the parameters
 """
 from __future__ import absolute_import, division, print_function
 
+from scitbx import sparse
+
 from dials.array_family import flex
 from dials_scaling_ext import row_multiply
-from scitbx import sparse
 
 
 class RefinerCalculator(object):

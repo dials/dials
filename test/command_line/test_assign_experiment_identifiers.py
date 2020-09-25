@@ -6,8 +6,10 @@ from __future__ import absolute_import, division, print_function
 import os
 
 import procrunner
-from dials.array_family import flex
+
 from dxtbx.serialize import load
+
+from dials.array_family import flex
 
 
 def run_assign_identifiers(pickle_path_list, sequence_path_list, extra_args):

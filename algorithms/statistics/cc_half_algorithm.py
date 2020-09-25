@@ -7,19 +7,21 @@ from __future__ import absolute_import, division, print_function
 import logging
 from collections import defaultdict
 from math import sqrt
-from iotbx import mtz
-from cctbx import uctbx
 
-from dials.array_family import flex
-from dials.util.exclude_images import exclude_image_ranges_for_scaling
-from dials.util.multi_dataset_handling import select_datasets_on_identifiers
-from dials.util.filter_reflections import filter_reflection_table
-from dials.algorithms.statistics.delta_cchalf import PerGroupCChalfStatistics
+from jinja2 import ChoiceLoader, Environment, PackageLoader
+
+from cctbx import uctbx
+from iotbx import mtz
+
 from dials.algorithms.scaling.scale_and_filter import (
     make_histogram_plots,
     make_per_dataset_plot,
 )
-from jinja2 import Environment, ChoiceLoader, PackageLoader
+from dials.algorithms.statistics.delta_cchalf import PerGroupCChalfStatistics
+from dials.array_family import flex
+from dials.util.exclude_images import exclude_image_ranges_for_scaling
+from dials.util.filter_reflections import filter_reflection_table
+from dials.util.multi_dataset_handling import select_datasets_on_identifiers
 
 logger = logging.getLogger("dials.command_line.compute_delta_cchalf")
 
@@ -271,9 +273,9 @@ class CCHalfFromDials(object):
         Returns:
           output_reflections: The reflection table with data removed.
         """
-        n_valid_reflections = reflections.get_flags(
-            reflections.flags.bad_for_scaling, all=False
-        ).count(False)
+        n_valid_reflections = reflections.get_flags(reflections.flags.scaled).count(
+            True
+        )
 
         datasets_to_remove = []
         ids_removed = []
@@ -288,8 +290,8 @@ class CCHalfFromDials(object):
         output_reflections.assert_experiment_identifiers_are_consistent(experiments)
 
         n_valid_filtered_reflections = output_reflections.get_flags(
-            output_reflections.flags.bad_for_scaling, all=False
-        ).count(False)
+            output_reflections.flags.scaled
+        ).count(True)
         results_summary["dataset_removal"].update(
             {
                 "experiments_fully_removed": datasets_to_remove,
@@ -310,9 +312,9 @@ class CCHalfFromDials(object):
         results_summary,
     ):
         """Remove image ranges from the datasets."""
-        n_valid_reflections = reflections.get_flags(
-            reflections.flags.bad_for_scaling, all=False
-        ).count(False)
+        n_valid_reflections = reflections.get_flags(reflections.flags.scaled).count(
+            True
+        )
         expid_to_tableid = {
             v: k
             for k, v in zip(
@@ -414,8 +416,8 @@ class CCHalfFromDials(object):
             output_reflections.extend(r)
 
         n_valid_filtered_reflections = output_reflections.get_flags(
-            output_reflections.flags.bad_for_scaling, all=False
-        ).count(False)
+            output_reflections.flags.scaled
+        ).count(True)
         results_summary["dataset_removal"].update(
             {
                 "image_ranges_removed": image_ranges_removed,

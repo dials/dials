@@ -4,10 +4,10 @@ Tools for analysis of missing reflections.
 
 from annlib_ext import AnnAdaptor
 
+import cctbx.miller
 from boost_adaptbx import graph
 from boost_adaptbx.graph import connected_component_algorithm as cca
 
-import cctbx.miller
 from dials.array_family import flex
 
 

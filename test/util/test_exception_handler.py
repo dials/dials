@@ -2,10 +2,13 @@
 
 from __future__ import absolute_import, division, print_function
 
-import dials.util
+import os
+import sys
 
 import pytest
 import six
+
+import dials.util
 
 
 class _SomeError(RuntimeError):
@@ -34,3 +37,29 @@ def test_crash_with_bytestring():
             raise _SomeError(b"This is a byte string")
     assert "report this error" in repr(exc.value)
     assert "This is a" in repr(exc.value)
+
+
+def test_coloured_exit(monkeypatch):
+    with pytest.raises(SystemExit) as e:
+        with dials.util.make_sys_exit_red():
+            sys.exit("Ohno")
+    assert e.value.code == "Ohno"
+
+    class _AttySysErr:
+        def isatty(self):
+            return True
+
+    # Force colouring on
+    monkeypatch.setattr(sys, "stderr", _AttySysErr())
+
+    with pytest.raises(SystemExit) as e:
+        with dials.util.make_sys_exit_red():
+            sys.exit("Ohno")
+    assert str(e.value.code).startswith("\033[")
+
+    # and off again...
+    monkeypatch.setitem(os.environ, "NO_COLOR", "1")
+    with pytest.raises(SystemExit) as e:
+        with dials.util.make_sys_exit_red():
+            sys.exit("Ohno")
+    assert e.value.code == "Ohno"

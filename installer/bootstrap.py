@@ -26,10 +26,10 @@ import warnings
 import zipfile
 
 try:  # Python 3
-    from urllib.request import urlopen, Request
     from urllib.error import HTTPError, URLError
+    from urllib.request import Request, urlopen
 except ImportError:  # Python 2
-    from urllib2 import urlopen, Request, HTTPError, URLError
+    from urllib2 import HTTPError, Request, URLError, urlopen
 
 # Clean environment for subprocesses
 clean_env = {
@@ -482,7 +482,7 @@ def unzip(archive, directory, trim_directory=0):
     """unzip a file into a directory."""
     if not zipfile.is_zipfile(archive):
         raise Exception(
-            "Can not install %s: %s is not a valid .zip file" % (directory, archive)
+            "Cannot install %s: %s is not a valid .zip file" % (directory, archive)
         )
     z = zipfile.ZipFile(archive, "r")
     for member in z.infolist():
@@ -553,14 +553,14 @@ def git(module, git_available, ssh_available, reference_base, settings):
         if not os.path.exists(os.path.join(destination, ".git")):
             return module, "WARNING", "Existing non-git directory -- skipping"
         if not git_available:
-            return module, "WARNING", "can not update module, git command not found"
+            return module, "WARNING", "Cannot update module, git command not found"
 
         with open(os.path.join(destination, ".git", "HEAD"), "r") as fh:
             if fh.read(4) != "ref:":
                 return (
                     module,
                     "WARNING",
-                    "Can not update existing git repository! You are not on a branch.\n"
+                    "Cannot update existing git repository! You are not on a branch.\n"
                     "This may be legitimate when run eg. via Jenkins, but be aware that you cannot commit any changes",
                 )
 
@@ -588,7 +588,7 @@ def git(module, git_available, ssh_available, reference_base, settings):
             return (
                 module,
                 "WARNING",
-                "Can not update existing git repository! Unclean tree or merge problems.\n"
+                "Cannot update existing git repository! Unclean tree or merge problems.\n"
                 + output,
             )
         # Show the hash for the checked out commit for debugging purposes
@@ -601,7 +601,7 @@ def git(module, git_available, ssh_available, reference_base, settings):
         output, _ = p.communicate()
         output = output.decode("latin-1")
         if p.returncode:
-            return module, "WARNING", "Can not get git repository revision\n" + output
+            return module, "WARNING", "Cannot get git repository revision\n" + output
         output = output.split()
         if len(output) == 2:
             return module, "OK", "Checked out revision %s (%s)" % (output[0], output[1])
@@ -667,7 +667,7 @@ def git(module, git_available, ssh_available, reference_base, settings):
             p.terminate()
             raise
         if p.returncode:
-            return (module, "ERROR", "Can not checkout git repository\n" + output)
+            return (module, "ERROR", "Cannot checkout git repository\n" + output)
 
     if reference_parameters:
         # Sever the link between checked out and reference repository
@@ -793,7 +793,7 @@ fi
         return (
             module,
             "WARNING",
-            "Can not get git repository revision\n" + output,
+            "Cannot get git repository revision\n" + output,
         )
     git_status = settings["branch-local"]
     if settings["branch-local"] != remote_branch:

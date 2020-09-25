@@ -8,19 +8,21 @@ from __future__ import absolute_import, division, print_function
 
 import json
 
-import iotbx.merging_statistics
-import pytest
 import procrunner
-from cctbx import uctbx
+import pytest
+
+import iotbx.merging_statistics
 import iotbx.mtz
-from libtbx import phil
-from dxtbx.serialize import load
+from cctbx import uctbx
+from dxtbx.model import Beam, Crystal, Detector, Experiment, Goniometer, Scan
 from dxtbx.model.experiment_list import ExperimentList
-from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
-from dials.array_family import flex
-from dials.util.options import OptionParser
+from dxtbx.serialize import load
+from libtbx import phil
+
 from dials.algorithms.scaling.algorithm import ScalingAlgorithm, prepare_input
+from dials.array_family import flex
 from dials.command_line import merge, report, scale
+from dials.util.options import OptionParser
 
 
 def run_one_scaling(working_directory, argument_list):
@@ -302,8 +304,8 @@ def test_scale_single_dataset_with_options(dials_data, tmpdir, option):
     run_one_scaling(tmpdir, args)
 
 
-@pytest.fixture
-def vmxi_protk_reindexed(dials_data, tmpdir):
+@pytest.fixture(scope="session")
+def vmxi_protk_reindexed(dials_data, tmp_path_factory):
     """Reindex the protk data to be in the correct space group."""
     location = dials_data("vmxi_proteinase_k_sweeps")
 
@@ -313,8 +315,9 @@ def vmxi_protk_reindexed(dials_data, tmpdir):
         location.join("reflections_0.pickle"),
         "space_group=P422",
     ]
-    procrunner.run(command, working_directory=tmpdir)
-    return tmpdir.join("reindexed.expt"), tmpdir.join("reindexed.refl")
+    tmp_path = tmp_path_factory.mktemp("vmxi_protk_reindexed")
+    procrunner.run(command, working_directory=tmp_path)
+    return tmp_path / "reindexed.expt", tmp_path / "reindexed.refl"
 
 
 @pytest.mark.parametrize(
@@ -357,9 +360,9 @@ def test_error_model_options(
 
     Current values taken at 14.11.19"""
     expt_1, refl_1 = vmxi_protk_reindexed
-    args = [refl_1, expt_1] + [o for o in options]
+    args = [refl_1, expt_1] + list(options)
     run_one_scaling(tmpdir, args)
-    expts = load.experiment_list(tmpdir.join("scaled.expt").strpath, check_format=False)
+    expts = load.experiment_list(tmpdir.join("scaled.expt"), check_format=False)
     config = expts[0].scaling_model.configdict
     if not expected:
         assert "error_model_parameters" not in config
@@ -429,6 +432,13 @@ def test_scale_physical(dials_data, tmpdir):
     assert result.overall.r_pim < 0.0255  # at 30/01/19, value was 0.02410
     assert result.overall.cc_one_half > 0.9955  # at 30/01/19, value was 0.9960
     assert result.overall.n_obs > 2300  # at 30/01/19, was 2320
+
+    refls = flex.reflection_table.from_file(tmpdir.join("scaled.refl").strpath)
+    n_scaled = refls.get_flags(refls.flags.scaled).count(True)
+    assert n_scaled == result.overall.n_obs
+    assert n_scaled == refls.get_flags(refls.flags.bad_for_scaling, all=False).count(
+        False
+    )
 
     # Try running again with the merged.mtz as a target, to trigger the
     # target_mtz option
@@ -652,6 +662,13 @@ def test_multi_scale(dials_data, tmpdir):
     assert result.overall.cc_one_half > 0.9975  # at 07/08/18, value was 0.99810
     print(result.overall.r_pim)
     print(result.overall.cc_one_half)
+
+    refls = flex.reflection_table.from_file(tmpdir.join("scaled.refl").strpath)
+    n_scaled = refls.get_flags(refls.flags.scaled).count(True)
+    assert n_scaled == result.overall.n_obs
+    assert n_scaled == refls.get_flags(refls.flags.bad_for_scaling, all=False).count(
+        False
+    )
 
     # run again, optimising errors, and continuing from where last run left off.
     extra_args = [

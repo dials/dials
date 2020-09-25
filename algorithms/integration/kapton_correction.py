@@ -2,10 +2,11 @@ from __future__ import absolute_import, division, print_function
 
 import math
 
-from dials.algorithms.shoebox import MaskCode
-from dials.array_family import flex
 from iotbx import phil
 from scitbx import matrix
+
+from dials.algorithms.shoebox import MaskCode
+from dials.array_family import flex
 
 absorption_defs = """
   absorption_correction

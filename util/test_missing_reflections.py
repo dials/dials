@@ -1,5 +1,6 @@
 from cctbx import miller
 from dxtbx.model import ExperimentList
+
 from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor
 from dials.util import missing_reflections
 

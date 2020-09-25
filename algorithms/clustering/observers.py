@@ -1,11 +1,13 @@
 # coding: utf-8
 
 from __future__ import absolute_import, division, print_function
+
 from collections import OrderedDict
 
 from scitbx.array_family import flex
-from dials.util.observer import Observer, singleton
+
 from dials.algorithms.clustering import plots
+from dials.util.observer import Observer, singleton
 
 
 def uc_params_from_experiments(experiments):
