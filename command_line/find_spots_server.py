@@ -261,18 +261,18 @@ indexing_min_spots = 10
 
 
 class handler(server_base.BaseHTTPRequestHandler):
-    def do_GET(s):
+    def do_GET(self):
         """Respond to a GET request."""
-        s.send_response(200)
-        s.send_header("Content-type", "text/xml")
-        s.end_headers()
-        if s.path == "/Ctrl-C":
+        self.send_response(200)
+        self.send_header("Content-type", "text/xml")
+        self.end_headers()
+        if self.path == "/Ctrl-C":
             global stop
             stop = True
             return
 
-        filename = s.path.split(";")[0]
-        params = s.path.split(";")[1:]
+        filename = self.path.split(";")[0]
+        params = self.path.split(";")[1:]
 
         # If we're passing a url through, then unquote and ignore leading /
         if "%3A//" in filename:
@@ -288,7 +288,7 @@ class handler(server_base.BaseHTTPRequestHandler):
             d["error"] = str(e)
 
         response = json.dumps(d).encode("latin-1")
-        s.wfile.write(response)
+        self.wfile.write(response)
 
 
 def serve(httpd):
