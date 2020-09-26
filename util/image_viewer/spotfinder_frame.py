@@ -746,7 +746,7 @@ class SpotFrame(XrayFrame):
             if unit_cell is None and space_group is None:
                 for angle in (45, 135, 225, 315):
                     txtvec = cb1.rotate_around_origin(
-                        axis=beamvec, angle=angle / 180 * 3.14159
+                        axis=beamvec, angle=math.radians(angle)
                     )
                     txtpos = pan.get_ray_intersection_px(txtvec)
                     txtpos = self.pyslip.tiles.flex_image.tile_readout_to_picture(
