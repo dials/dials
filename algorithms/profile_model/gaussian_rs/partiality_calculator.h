@@ -177,9 +177,7 @@ namespace dials {
      * @param beam The beam parameters
      * @param sigma_mosaicity The xds sigma_mosaicity parameter
      */
-    PartialityCalculator2D(const BeamBase &beam, double sigma_m)
-        : s0_(beam.get_s0()) {
-    }
+    PartialityCalculator2D(const BeamBase &beam, double sigma_m) : s0_(beam.get_s0()) {}
 
     /**
      * Calculate the Partiality of the reflection.
