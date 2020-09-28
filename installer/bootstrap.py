@@ -848,7 +848,6 @@ def update_sources(options):
             "dials/cbflib",
             "dials/ccp4io",
             "dials/ccp4io_adaptbx",
-            "dials/clipper",
             "dials/dials",
             "dials/gui_resources",
             "dials/tntbx",
