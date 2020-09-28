@@ -84,9 +84,9 @@ message that the code in question is special and care should be taken.
   a one-sentence summary aimed at a DIALS user, not a developer. The file is
   numbered to match the issue or pull request and has 
   [one of the allowed extensions from the list][news-README]. 
-  If you don't have an issue number you can also add that file after you've
-  created your pull request. Newsfragments are processed on release by a
-  tool named [towncrier] and make up our release notes. 
+  If you don't have an issue number you can also add the file after you've
+  created your pull request and use the PR number. Newsfragments are
+  processed on release by a tool named [towncrier] and make up our release notes. 
 - We aim to squash-merge most pull requests. However, if you are working on a
   longer-term feature branch, or making a lot of changes that might be a
   candidate for a non-squash merge - please try to keep commits a relatively
