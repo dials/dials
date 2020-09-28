@@ -20,7 +20,15 @@ from libtbx import phil
 from six.moves import cStringIO as StringIO
 
 
-help_message = """Program to merge scaled dials data."""
+help_message = """
+Merge scaled dials data.
+
+Examples::
+
+  dials.merge scaled.expt scaled.refl
+
+  dials.merge scaled.expt scaled.refl truncate=False
+"""
 
 logger = logging.getLogger("dials")
 phil_scope = phil.parse(
