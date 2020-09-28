@@ -1,2 +1,0 @@
-dials.refine: a crash is now avoided that was triggered if there are experiments
-with zero reflections and the `auto_reduction.action=remove` option was chosen.
