@@ -21,7 +21,15 @@ from dials.util.export_mtz import match_wavelengths
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
-help_message = """Program to merge scaled dials data."""
+help_message = """
+Merge scaled dials data.
+
+Examples::
+
+  dials.merge scaled.expt scaled.refl
+
+  dials.merge scaled.expt scaled.refl truncate=False
+"""
 
 logger = logging.getLogger("dials")
 phil_scope = phil.parse(
