@@ -1,3 +1,21 @@
+DIALS 3.1.3 (2020-09-28)
+========================
+
+Bugfixes
+--------
+
+- ``dials.integrate``: fix integrator=3d_threaded crash if njobs > 1 (#1410)
+- ``dials.integrate``: Check for and show error message if shoebox data is missing (#1421)
+- ``dials.refine``: Avoid crash for experiments with zero reflections if the
+  `auto_reduction.action=remove` option was active (#1417)
+
+Improved Documentation
+----------------------
+
+- ``dials.merge``: improve help message by adding usage examples (#1413)
+- ``dials.refine``: More helpful error message when too few reflections (#1431)
+
+
 DIALS 3.1.2 (2020-09-14)
 ========================
 
