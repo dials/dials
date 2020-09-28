@@ -1273,8 +1273,6 @@ class ReferenceCalculatorProcessor(object):
                 for message in result[1]:
                     logger.log(message.levelno, message.msg)
                 reference_manager.accumulate(result[0])
-                result[0].reflections = None
-                result[0].data = None
 
             multi_node_parallel_map(
                 func=execute_parallel_task,
@@ -1353,8 +1351,6 @@ class IntegratorProcessor(object):
                 for message in result[1]:
                     logger.log(message.levelno, message.msg)
                 integration_manager.accumulate(result[0])
-                result[0].reflections = None
-                result[0].data = None
 
             multi_node_parallel_map(
                 func=execute_parallel_task,

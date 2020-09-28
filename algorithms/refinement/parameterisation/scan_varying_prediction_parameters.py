@@ -294,6 +294,10 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
             sel = reflections["id"] == iexp
             isel = sel.iselection()
 
+            # skip empty experiments (https://github.com/dials/dials/issues/1417)
+            if len(isel) == 0:
+                continue
+
             blocks = reflections["block"].select(isel)
 
             # identify which parameterisations to use for this experiment
