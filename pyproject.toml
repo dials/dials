@@ -5,6 +5,7 @@ include='\.pyi?$|/SConscript$|/libtbx_config$'
 package = "dials"
 package_dir = ".."
 filename = "CHANGELOG.rst"
+issue_format = "`#{issue} <https://github.com/dials/dials/issues/{issue}>`_"
 
 [tool.isort]
 sections="FUTURE,STDLIB,THIRDPARTY,CCTBX,FIRSTPARTY,LOCALFOLDER"
