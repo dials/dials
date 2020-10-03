@@ -1,0 +1,1 @@
+Remove the environment setup restriction to boost version 1.70, and allow building DIALS with newer boost versions.
