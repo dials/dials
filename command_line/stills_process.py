@@ -1196,6 +1196,13 @@ class Processor(object):
         logger.info("Integrating Reflections")
         logger.info("*" * 80)
 
+        cutoff = os.getenv('USE_INTEGRATION_CUTOFF')
+        if cutoff:
+            cutoff = float(cutoff)
+            for detector in experiments.detectors():
+                for panel in detector:
+                    panel.set_trusted_range((panel.get_trusted_range()[0], cutoff))
+
         indexed, _ = self.process_reference(indexed)
 
         if self.params.dispatch.coset:
