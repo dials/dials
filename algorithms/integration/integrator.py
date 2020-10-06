@@ -230,7 +230,7 @@ def generate_phil_scope():
           .type = int(value_min=1)
           .help = "The number of cluster jobs to use"
 
-        nproc = 1
+        nproc = Auto
           .type = int(value_min=1)
           .help = "The number of processes to use per cluster job"
       }
