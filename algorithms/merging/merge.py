@@ -5,7 +5,6 @@ import logging
 
 from six.moves import cStringIO as StringIO
 
-from dxtbx.model import ExperimentList
 from mmtbx.scaling import data_statistics
 
 from dials.algorithms.scaling.Ih_table import (
@@ -204,7 +203,9 @@ def merge(
 
     try:
         stats, anom_stats = merging_stats_from_scaled_array(
-            scaled_array, n_bins, use_internal_variance,
+            scaled_array,
+            n_bins,
+            use_internal_variance,
         )
     except DialsMergingStatisticsError as e:
         logger.error(e, exc_info=True)

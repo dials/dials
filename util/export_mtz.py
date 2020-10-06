@@ -7,7 +7,7 @@ import time
 from collections import Counter, OrderedDict
 
 from iotbx import mtz
-from libtbx import Auto, env
+from libtbx import env
 from scitbx import matrix
 
 import dials.util.ext
@@ -555,7 +555,9 @@ def export_mtz(
             experiment.data["ROT"] = z
 
     mtz_writer.add_crystal(
-        crystal_name=crystal_name, project_name=project_name, unit_cell=best_unit_cell,
+        crystal_name=crystal_name,
+        project_name=project_name,
+        unit_cell=best_unit_cell,
     )
     # Note: add unit cell here as may have changed basis since creating mtz.
     # For multi-wave unmerged mtz, we add an empty dataset for each wavelength,
