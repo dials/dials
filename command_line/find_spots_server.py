@@ -263,10 +263,10 @@ indexing_min_spots = 10
 class handler(server_base.BaseHTTPRequestHandler):
     def do_GET(self):
         """Respond to a GET request."""
-        self.send_response(200)
-        self.send_header("Content-type", "text/xml")
-        self.end_headers()
         if self.path == "/Ctrl-C":
+            self.send_response(200)
+            self.end_headers()
+
             global stop
             stop = True
             return
@@ -283,11 +283,15 @@ class handler(server_base.BaseHTTPRequestHandler):
         try:
             stats = work(filename, params)
             d.update(stats)
-
+            response = 200
         except Exception as e:
             d["error"] = str(e)
+            response = 500
 
-        response = json.dumps(d).encode("latin-1")
+        self.send_response(response)
+        self.send_header("Content-type", "application/json")
+        self.end_headers()
+        response = json.dumps(d).encode()
         self.wfile.write(response)
 
 
