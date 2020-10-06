@@ -5,6 +5,7 @@ from __future__ import absolute_import, division, print_function
 import procrunner
 import pytest
 
+from cctbx import uctbx
 from dxtbx.model.experiment_list import ExperimentListFactory
 from iotbx import mtz
 
@@ -77,7 +78,8 @@ def test_merge(dials_data, tmpdir, anomalous, truncate):
     validate_mtz(mtz_file, expected_labels, unexpected_labels)
 
 
-def test_merge_dmin_dmax(dials_data, tmpdir):
+@pytest.mark.parametrize("best_unit_cell", [None, "5.5,8.1,12.0,90,90,90"])
+def test_merge_dmin_dmax(dials_data, tmpdir, best_unit_cell):
     """Test the d_min, d_max"""
 
     location = dials_data("l_cysteine_4_sweeps_scaled")
@@ -98,12 +100,18 @@ def test_merge_dmin_dmax(dials_data, tmpdir):
         "project_name=ham",
         "crystal_name=jam",
         "dataset_name=spam",
+        "best_unit_cell=%s" % best_unit_cell,
     ]
     result = procrunner.run(command, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
 
     # check we only have reflections in range 8 - 1A
     m = mtz.object(mtz_file.strpath)
+    if best_unit_cell:
+        for ma in m.as_miller_arrays():
+            assert uctbx.unit_cell(best_unit_cell).parameters() == pytest.approx(
+                ma.unit_cell().parameters()
+            )
 
     max_min_resolution = m.max_min_resolution()
 

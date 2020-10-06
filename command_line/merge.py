@@ -9,16 +9,17 @@ import sys
 
 from six.moves import cStringIO as StringIO
 
-from libtbx import phil
 from dxtbx.model import ExperimentList
+from iotbx import phil
 
 from dials.algorithms.merging.merge import (
+    MTZDataClass,
     make_merged_mtz_file,
     merge,
-    truncate,
     show_wilson_scaling_analysis,
-    MTZDataClass,
+    truncate,
 )
+from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
 from dials.util import Sorry, log, show_mail_handle_errors
 from dials.util.export_mtz import match_wavelengths
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
@@ -62,6 +63,11 @@ partiality_threshold=0.4
     .help = "All reflections with partiality values above the partiality
         threshold will be retained. This is done after any combination of
         partials if applicable."
+best_unit_cell = None
+    .type = unit_cell
+    .help = "Best unit cell value, to use when performing resolution cutting,"
+            "and as the overall unit cell in the merged mtz. If None, the median"
+            "cell will be used."
 n_residues = 200
     .type = int
     .help = "Number of residues to use in Wilson scaling"
@@ -106,6 +112,15 @@ def merge_data_to_mtz(params, experiments, reflections):
     ]
     dataset_names = params.output.dataset_names
     crystal_names = params.output.crystal_names
+
+    # check if best_unit_cell is set.
+    best_unit_cell = params.best_unit_cell
+    if best_unit_cell is None:
+        best_unit_cell = determine_best_unit_cell(experiments)
+    reflections[0]["d"] = best_unit_cell.d(reflections[0]["miller_index"])
+    for expt in experiments:
+        expt.crystal.unit_cell = best_unit_cell
+
     if len(wavelengths) > 1:
         logger.info(
             "Multiple wavelengths found: \n%s",
@@ -155,6 +170,7 @@ def merge_data_to_mtz(params, experiments, reflections):
             d_max=params.d_max,
             combine_partials=params.combine_partials,
             partiality_threshold=params.partiality_threshold,
+            best_unit_cell=best_unit_cell,
             anomalous=params.anomalous,
             assess_space_group=params.assess_space_group,
             n_bins=params.merging.n_bins,
