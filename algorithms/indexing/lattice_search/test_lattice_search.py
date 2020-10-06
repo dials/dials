@@ -1,16 +1,16 @@
 from __future__ import absolute_import, division, print_function
 
-import pytest
 import py.path
+import pytest
 
 from cctbx import sgtbx, uctbx
-from dxtbx.serialize import load
 from dxtbx.imageset import ImageSet
-from dials.algorithms.indexing import lattice_search
-from dials.algorithms.indexing import stills_indexer
+from dxtbx.serialize import load
+
+from dials.algorithms.indexing import lattice_search, stills_indexer
+from dials.array_family import flex
 from dials.command_line.index import phil_scope
 from dials.command_line.slice_sequence import slice_experiments, slice_reflections
-from dials.array_family import flex
 
 
 @pytest.fixture

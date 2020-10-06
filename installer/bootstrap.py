@@ -26,10 +26,10 @@ import warnings
 import zipfile
 
 try:  # Python 3
-    from urllib.request import urlopen, Request
     from urllib.error import HTTPError, URLError
+    from urllib.request import Request, urlopen
 except ImportError:  # Python 2
-    from urllib2 import urlopen, Request, HTTPError, URLError
+    from urllib2 import HTTPError, Request, URLError, urlopen
 
 # Clean environment for subprocesses
 clean_env = {
@@ -219,7 +219,8 @@ environments exist and are working.
         retry += 1
         try:
             run_command(
-                command=command_list, workdir=".",
+                command=command_list,
+                workdir=".",
             )
         except Exception:
             print(
@@ -310,17 +311,18 @@ def run_indirect_command(command, args):
         make_executable(filename)
         indirection = ["./indirection.sh"]
     run_command(
-        command=indirection + [command] + args, workdir="build",
+        command=indirection + [command] + args,
+        workdir="build",
     )
 
 
 def download_to_file(url, file, quiet=False):
     """Downloads a URL to file. Returns the file size.
-       Returns -1 if the downloaded file size does not match the expected file
-       size
-       Returns -2 if the download is skipped due to the file at the URL not
-       being newer than the local copy (identified by matching timestamp and
-       size)
+    Returns -1 if the downloaded file size does not match the expected file
+    size
+    Returns -2 if the download is skipped due to the file at the URL not
+    being newer than the local copy (identified by matching timestamp and
+    size)
     """
 
     # Create directory structure if necessary
@@ -480,7 +482,7 @@ def unzip(archive, directory, trim_directory=0):
     """unzip a file into a directory."""
     if not zipfile.is_zipfile(archive):
         raise Exception(
-            "Can not install %s: %s is not a valid .zip file" % (directory, archive)
+            "Cannot install %s: %s is not a valid .zip file" % (directory, archive)
         )
     z = zipfile.ZipFile(archive, "r")
     for member in z.infolist():
@@ -543,7 +545,7 @@ def set_git_repository_config_to_rebase(config):
 
 def git(module, git_available, ssh_available, reference_base, settings):
     """Retrieve a git repository, either by running git directly
-       or by downloading and unpacking an archive.
+    or by downloading and unpacking an archive.
     """
     destination = os.path.join("modules", module)
 
@@ -551,14 +553,14 @@ def git(module, git_available, ssh_available, reference_base, settings):
         if not os.path.exists(os.path.join(destination, ".git")):
             return module, "WARNING", "Existing non-git directory -- skipping"
         if not git_available:
-            return module, "WARNING", "can not update module, git command not found"
+            return module, "WARNING", "Cannot update module, git command not found"
 
         with open(os.path.join(destination, ".git", "HEAD"), "r") as fh:
             if fh.read(4) != "ref:":
                 return (
                     module,
                     "WARNING",
-                    "Can not update existing git repository! You are not on a branch.\n"
+                    "Cannot update existing git repository! You are not on a branch.\n"
                     "This may be legitimate when run eg. via Jenkins, but be aware that you cannot commit any changes",
                 )
 
@@ -586,7 +588,7 @@ def git(module, git_available, ssh_available, reference_base, settings):
             return (
                 module,
                 "WARNING",
-                "Can not update existing git repository! Unclean tree or merge problems.\n"
+                "Cannot update existing git repository! Unclean tree or merge problems.\n"
                 + output,
             )
         # Show the hash for the checked out commit for debugging purposes
@@ -599,7 +601,7 @@ def git(module, git_available, ssh_available, reference_base, settings):
         output, _ = p.communicate()
         output = output.decode("latin-1")
         if p.returncode:
-            return module, "WARNING", "Can not get git repository revision\n" + output
+            return module, "WARNING", "Cannot get git repository revision\n" + output
         output = output.split()
         if len(output) == 2:
             return module, "OK", "Checked out revision %s (%s)" % (output[0], output[1])
@@ -665,7 +667,7 @@ def git(module, git_available, ssh_available, reference_base, settings):
             p.terminate()
             raise
         if p.returncode:
-            return (module, "ERROR", "Can not checkout git repository\n" + output)
+            return (module, "ERROR", "Cannot checkout git repository\n" + output)
 
     if reference_parameters:
         # Sever the link between checked out and reference repository
@@ -791,7 +793,7 @@ fi
         return (
             module,
             "WARNING",
-            "Can not get git repository revision\n" + output,
+            "Cannot get git repository revision\n" + output,
         )
     git_status = settings["branch-local"]
     if settings["branch-local"] != remote_branch:
@@ -846,7 +848,6 @@ def update_sources(options):
             "dials/cbflib",
             "dials/ccp4io",
             "dials/ccp4io_adaptbx",
-            "dials/clipper",
             "dials/dials",
             "dials/gui_resources",
             "dials/tntbx",
@@ -1008,7 +1009,8 @@ def configure_build(config_flags):
     ] + config_flags
     print("Setting up build directory")
     run_command(
-        command=configcmd, workdir="build",
+        command=configcmd,
+        workdir="build",
     )
 
 
@@ -1094,7 +1096,7 @@ be passed separately with quotes to avoid confusion (e.g
     parser.add_argument(
         "--python",
         help="Install this minor version of Python (default: %(default)s)",
-        default="3.6",
+        default="3.8",
         choices=("3.6", "3.7", "3.8"),
     )
     parser.add_argument(

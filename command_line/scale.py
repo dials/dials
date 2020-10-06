@@ -34,19 +34,18 @@ Incremental scaling (with different options per dataset)::
   dials.scale integrated_2.refl integrated_2.expt scaled.refl scaled.expt physical.scale_interval=15.0
 """
 from __future__ import absolute_import, division, print_function
+
 import logging
 import sys
-from libtbx import phil
+
 from six.moves import cStringIO as StringIO
-from dials.util import log, show_mail_on_error, Sorry
+
+from libtbx import phil
+
+from dials.algorithms.scaling.algorithm import ScaleAndFilterAlgorithm, ScalingAlgorithm
+from dials.util import Sorry, log, show_mail_handle_errors
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
-from dials.algorithms.scaling.algorithm import ScalingAlgorithm, ScaleAndFilterAlgorithm
-from dials.algorithms.scaling.observers import (
-    register_default_scaling_observers,
-    register_merging_stats_observers,
-    register_scale_and_filter_observers,
-)
 
 try:
     from typing import List
@@ -186,17 +185,10 @@ def run_scaling(params, experiments, reflections):
         return (None, None)
 
     else:
-        # Register the observers at the highest level
         if params.filtering.method:
             algorithm = ScaleAndFilterAlgorithm(params, experiments, reflections)
-            register_scale_and_filter_observers(algorithm)
         else:
             algorithm = ScalingAlgorithm(params, experiments, reflections)
-
-        if params.output.html:
-            register_default_scaling_observers(algorithm)
-        else:
-            register_merging_stats_observers(algorithm)
 
         algorithm.run()
 
@@ -263,5 +255,5 @@ def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
+    with show_mail_handle_errors():
         run()

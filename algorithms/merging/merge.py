@@ -1,28 +1,29 @@
 """Merging functions for experiment lists and reflection tables."""
 from __future__ import absolute_import, division, print_function
+
 import logging
 
-from dials.array_family import flex
-from dials.algorithms.scaling.scaling_library import (
-    scaled_data_as_miller_array,
-    merging_stats_from_scaled_array,
-)
-from dials.algorithms.scaling.scaling_utilities import DialsMergingStatisticsError
+from six.moves import cStringIO as StringIO
+
+from dxtbx.model import ExperimentList
+from mmtbx.scaling import data_statistics
+
 from dials.algorithms.scaling.Ih_table import (
     _reflection_table_to_iobs,
     map_indices_to_asu,
 )
+from dials.algorithms.scaling.scaling_library import (
+    merging_stats_from_scaled_array,
+    scaled_data_as_miller_array,
+)
+from dials.algorithms.scaling.scaling_utilities import DialsMergingStatisticsError
 from dials.algorithms.symmetry.absences.run_absences_checks import (
     run_systematic_absences_checks,
 )
-from dials.util.filter_reflections import filter_reflection_table
+from dials.array_family import flex
+from dials.report.analysis import make_merging_statistics_summary, table_1_summary
 from dials.util.export_mtz import MADMergedMTZWriter, MergedMTZWriter
-from dials.report.analysis import (
-    make_merging_statistics_summary,
-    table_1_summary,
-)
-from mmtbx.scaling import data_statistics
-from six.moves import cStringIO as StringIO
+from dials.util.filter_reflections import filter_reflection_table
 
 logger = logging.getLogger("dials")
 

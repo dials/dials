@@ -2,18 +2,19 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import math
+import warnings
 from collections import namedtuple
 
 from cctbx import crystal
+from dxtbx.masking import (
+    mask_untrusted_circle,
+    mask_untrusted_polygon,
+    mask_untrusted_rectangle,
+)
 from iotbx.phil import parse
 
 from dials.array_family import flex
 from dials.util.ext import ResolutionMaskGenerator
-from dxtbx.masking import (
-    mask_untrusted_rectangle,
-    mask_untrusted_circle,
-    mask_untrusted_polygon,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -216,6 +217,11 @@ class MaskGenerator(object):
             # the trusted range. This identifies bad pixels, but does not include
             # pixels that are overloaded on some images.
             if self.params.use_trusted_range:
+                warnings.warn(
+                    "Checking for hot pixels using the trusted_range is"
+                    " deprecated. https://github.com/dials/dials/issues/1156",
+                    FutureWarning,
+                )
                 trusted_mask = None
                 low, high = panel.get_trusted_range()
 

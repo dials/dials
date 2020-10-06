@@ -1,2 +1,0 @@
-'setpaths.sh' and related scripts in newly created DIALS development environments are made obsolete and will no longer work. Running them will point to the replacement 'dials' script.
-In existing DIALS development environments command line completion for DIALS commands will stop working.

@@ -37,8 +37,8 @@ help_message = """\
 
 
 def run(args):
-    from dials.util.options import OptionParser, reflections_and_experiments_from_files
     from dials.util import log
+    from dials.util.options import OptionParser, reflections_and_experiments_from_files
 
     usage = "dials.detect_blanks [options] models.expt observations.refl"
 

@@ -7,10 +7,11 @@ import math
 import random
 
 import scitbx.matrix
-from dials_refinement_helpers_ext import dR_from_axis_and_angle as dR_cpp
+from scitbx.array_family import flex
+
 from dials_refinement_helpers_ext import CrystalOrientationCompose as xloc_cpp
 from dials_refinement_helpers_ext import PanelGroupCompose as pgc_cpp
-from scitbx.array_family import flex
+from dials_refinement_helpers_ext import dR_from_axis_and_angle as dR_cpp
 
 logger = logging.getLogger(__name__)
 

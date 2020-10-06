@@ -2,8 +2,8 @@
 Tests for the reindex_to_reference module.
 """
 from __future__ import absolute_import, division, print_function
+
 import pytest
-from dials.util import Sorry
 
 from cctbx import sgtbx
 
@@ -11,6 +11,7 @@ from dials.algorithms.symmetry.cosym._generate_test_data import generate_test_da
 from dials.algorithms.symmetry.reindex_to_reference import (
     determine_reindex_operator_against_reference,
 )
+from dials.util import Sorry
 
 
 def test_determine_reindex_operator_against_reference():

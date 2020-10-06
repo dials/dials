@@ -19,10 +19,11 @@ https://www.itl.nist.gov/div898/handbook/eda/section3/normprpl.htm).
 import logging
 
 import scipy.stats
+
 from cctbx import miller
-from dials.array_family import flex
 from dxtbx.model import ExperimentList
 
+from dials.array_family import flex
 
 log = logging.getLogger("dials.util.intensity_explorer")
 
@@ -49,7 +50,7 @@ class IntensityDist(object):
           * ``xyzobs.px.value``
         :type rtable: dials.array_family_flex_ext.reflection_table
         :param elist: A corresponding experiment list.
-        :type elist: dxtbx_model_ext.ExperimentList
+        :type elist: dxtbx.model.ExperimentList
         :param calculate_variances: Choose whether to calculate weighted
         aggregate variances.  Doing so incurs a performance penalty.
         Defaullts to False.
@@ -116,7 +117,7 @@ class IntensityDist(object):
     def _multiplicity_mean_error_stddev(
         self, calculate_variances=False, keep_singles=False
     ):
-        """"
+        """ "
         Calculate aggregate properties of grouped symmetry-equivalent reflections.
 
         Populate the reflection table of observations with the following
@@ -283,7 +284,7 @@ class IntensityDist(object):
             self.rtables[key] = rtable
 
     def _make_z(self, uncertainty="sigma"):
-        """"
+        """ "
         Generate reflection z-scores.
 
         Calculate z-scores from reflection intensities, weighted mean

@@ -20,8 +20,9 @@ class Sort(object):
 
     def __init__(self):
         """Initialise the script."""
-        from dials.util.options import OptionParser
         from libtbx.phil import parse
+
+        from dials.util.options import OptionParser
 
         phil_scope = parse(
             """
@@ -89,6 +90,6 @@ class Sort(object):
 
 
 if __name__ == "__main__":
-    with dials.util.show_mail_on_error():
+    with dials.util.show_mail_handle_errors():
         script = Sort()
         script.run()

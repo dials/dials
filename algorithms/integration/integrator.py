@@ -1310,7 +1310,8 @@ class Integrator3DThreaded(object):
         self.reflections.compute_zeta_multi(self.experiments)
         self.reflections.compute_d(self.experiments)
         self.reflections.compute_bbox(
-            self.experiments, sigma_b_multiplier=self.params.profile.sigma_b_multiplier
+            self.experiments,
+            sigma_b_multiplier=self.params.integration.profile.sigma_b_multiplier,
         )
 
         # Filter the reflections by zeta

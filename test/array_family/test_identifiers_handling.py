@@ -1,6 +1,7 @@
 """Test for new experiment identifier features"""
-from dials.array_family import flex
 from dxtbx.model import Experiment, ExperimentList
+
+from dials.array_family import flex
 
 
 def test_selection_identifier_propagation():

@@ -3,12 +3,15 @@ from __future__ import absolute_import, division, print_function
 import math
 import random
 
-from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator3D
-from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
-from dials.algorithms.profile_model.gaussian_rs import transform
-from dials.array_family import flex
 from dxtbx.serialize import load
 from scitbx import matrix
+
+from dials.algorithms.profile_model.gaussian_rs import (
+    BBoxCalculator3D,
+    CoordinateSystem,
+    transform,
+)
+from dials.array_family import flex
 
 
 def evaluate_gaussian(x, a, x0, sx):

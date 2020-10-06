@@ -2,15 +2,19 @@
 Tests for the scaling restraints module.
 """
 from __future__ import absolute_import, division, print_function
+
 from collections import OrderedDict
+
 import pytest
 from mock import Mock
+
 from scitbx import sparse
-from dials.array_family import flex
+
 from dials.algorithms.scaling.scaling_restraints import (
-    SingleScalingRestraintsCalculator,
     ScalingRestraintsCalculator,
+    SingleScalingRestraintsCalculator,
 )
+from dials.array_family import flex
 
 
 @pytest.fixture
@@ -162,8 +166,10 @@ def test_ScalingRestraints(
     # The jacobian has n_rows equal to the number of restrainted parameters,
     # n_cols equal to the total number of parameters. Check that these are
     # correctly composed.
-    jacobian_restraints = SingleScalingRestraintsCalculator.calculate_jacobian_restraints(
-        mock_parameter_manager
+    jacobian_restraints = (
+        SingleScalingRestraintsCalculator.calculate_jacobian_restraints(
+            mock_parameter_manager
+        )
     )
     abs_restraints = mock_restrained_component.calculate_jacobian_restraints()
     assert list(jacobian_restraints[0]) == list(abs_restraints[0])

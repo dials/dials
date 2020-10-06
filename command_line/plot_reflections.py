@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import iotbx.phil
+
 from dials.util import Sorry
 
 master_phil_scope = iotbx.phil.parse(
@@ -34,9 +35,10 @@ output {
 
 def run(args):
     usage = "dials.plot_reflections models.expt observations.refl [options]"
-    from dials.util.options import OptionParser, reflections_and_experiments_from_files
-    from scitbx.array_family import flex
     from scitbx import matrix
+    from scitbx.array_family import flex
+
+    from dials.util.options import OptionParser, reflections_and_experiments_from_files
 
     parser = OptionParser(
         usage=usage,
@@ -201,7 +203,9 @@ def run(args):
     plt.ylabel("y-coordinate (mm)")
     if params.output.file_name is not None:
         plt.savefig(
-            params.output.file_name, dpi=params.output.dpi, bbox_inches="tight",
+            params.output.file_name,
+            dpi=params.output.dpi,
+            bbox_inches="tight",
         )
     if params.output.show_plot:
         plt.show()

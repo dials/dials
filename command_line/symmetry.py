@@ -1,43 +1,44 @@
 from __future__ import absolute_import, division, print_function
 
+import collections
 import copy
 import json
 import logging
 import math
 import random
 import sys
-from dials.util import tabulate
 
+import iotbx.phil
 from cctbx import sgtbx, uctbx
 from cctbx.sgtbx.bravais_types import bravais_lattice
 from cctbx.sgtbx.lattice_symmetry import metric_subgroups
+from dxtbx.model import ExperimentList
 from libtbx import Auto
-import iotbx.phil
 
-from dials.array_family import flex
-from dials.util import log, show_mail_on_error
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
-from dials.util.version import dials_version
-from dials.util.multi_dataset_handling import (
-    assign_unique_identifiers,
-    parse_multiple_datasets,
-)
-from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
-from dials.algorithms.symmetry import resolution_filter_from_reflections_experiments
-from dials.algorithms.symmetry.laue_group import LaueGroupAnalysis
 from dials.algorithms.merging.merge import prepare_merged_reflection_table
-from dials.algorithms.symmetry.absences.screw_axes import ScrewAxisObserver
-from dials.algorithms.symmetry.absences.run_absences_checks import (
-    run_systematic_absences_checks,
-)
+from dials.algorithms.symmetry import resolution_filter_from_reflections_experiments
 from dials.algorithms.symmetry.absences.laue_groups_info import (
     laue_groups as laue_groups_for_absence_analysis,
 )
+from dials.algorithms.symmetry.absences.run_absences_checks import (
+    run_systematic_absences_checks,
+)
+from dials.algorithms.symmetry.absences.screw_axes import ScrewAxisObserver
+from dials.algorithms.symmetry.laue_group import LaueGroupAnalysis
+from dials.array_family import flex
 from dials.command_line.reindex import reindex_experiments
+from dials.util import log, show_mail_handle_errors, tabulate
 from dials.util.exclude_images import (
     exclude_image_ranges_from_scans,
     get_selection_for_valid_image_ranges,
 )
+from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
+from dials.util.multi_dataset_handling import (
+    assign_unique_identifiers,
+    parse_multiple_datasets,
+)
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.symmetry")
 
@@ -176,6 +177,19 @@ def change_of_basis_ops_to_minimum_cell(
         cb_op_best_to_min = group["best_subsym"].change_of_basis_op_to_minimum_cell()
         cb_ops = [cb_op_best_to_min * group["cb_op_inp_best"]] * len(experiments)
     else:
+        groups = [
+            metric_subgroups(
+                expt.crystal.get_crystal_symmetry(),
+                max_delta,
+                best_monoclinic_beta=False,
+                enforce_max_delta_for_generated_two_folds=True,
+            )
+            for expt in experiments
+        ]
+        counter = collections.Counter(
+            g.result_groups[0]["best_subsym"].space_group() for g in groups
+        )
+        target_group = counter.most_common()[0][0]
         cb_ops = []
         for expt in experiments:
             groups = metric_subgroups(
@@ -184,16 +198,29 @@ def change_of_basis_ops_to_minimum_cell(
                 best_monoclinic_beta=False,
                 enforce_max_delta_for_generated_two_folds=True,
             )
-            group = groups.result_groups[0]
-            cb_ops.append(group["cb_op_inp_best"])
-        ref_expts = experiments.change_basis(cb_ops)
+            group = None
+            for g in groups.result_groups:
+                if g["best_subsym"].space_group() == target_group:
+                    group = g
+            if group:
+                cb_ops.append(group["cb_op_inp_best"])
+            else:
+                cb_ops.append(None)
+                logger.info(
+                    f"Couldn't match unit cell to target symmetry:\n"
+                    f"{expt.crystal.get_crystal_symmetry()}\n"
+                    f"{target_group}"
+                )
+        ref_expts = ExperimentList(
+            [expt for expt, cb_op in zip(experiments, cb_ops) if cb_op]
+        ).change_basis(list(filter(None, cb_ops)))
         cb_op_ref_min = (
             ref_expts[0]
             .crystal.get_crystal_symmetry()
             .customized_copy(unit_cell=median_unit_cell(ref_expts))
             .change_of_basis_op_to_minimum_cell()
         )
-        cb_ops = [cb_op_ref_min * cb_op for cb_op in cb_ops]
+        cb_ops = [cb_op_ref_min * cb_op if cb_op else None for cb_op in cb_ops]
     return cb_ops
 
 
@@ -219,8 +246,10 @@ def apply_change_of_basis_ops(experiments, reflections, change_of_basis_ops):
 def eliminate_sys_absent(experiments, reflections):
     for i, expt in enumerate(experiments):
         if expt.crystal.get_space_group().n_ltr() > 1:
-            effective_group = expt.crystal.get_space_group().build_derived_reflection_intensity_group(
-                anomalous_flag=True
+            effective_group = (
+                expt.crystal.get_space_group().build_derived_reflection_intensity_group(
+                    anomalous_flag=True
+                )
             )
             sys_absent_flags = effective_group.is_sys_absent(
                 reflections[i]["miller_index"]
@@ -536,5 +565,5 @@ def run(args=None):
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
+    with show_mail_handle_errors():
         run()

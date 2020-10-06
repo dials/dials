@@ -2,18 +2,19 @@ from __future__ import absolute_import, division, print_function
 
 from functools import reduce
 
+from scitbx import matrix
+from scitbx.array_family import flex
+
 from dials.algorithms.refinement.parameterisation.model_parameters import (
-    Parameter,
     ModelParameterisation,
+    Parameter,
 )
 from dials.algorithms.refinement.refinement_helpers import (
+    PanelGroupCompose,
     dR_from_axis_and_angle,
     get_panel_groups_at_depth,
     get_panel_ids_at_root,
-    PanelGroupCompose,
 )
-from scitbx import matrix
-from scitbx.array_family import flex
 
 
 class DetectorMixin(object):
@@ -517,8 +518,9 @@ class DetectorParameterisationMultiPanel(ModelParameterisation):
         dTau3_dtau3 = dR_from_axis_and_angle(tau3.axis, tau3rad, deg=False)
 
         # Compose the new state
-        from dials_refinement_helpers_ext import multi_panel_compose
         from scitbx.array_family import flex
+
+        from dials_refinement_helpers_ext import multi_panel_compose
 
         ret = multi_panel_compose(
             flex.vec3_double([self._initial_state[tag] for tag in ("d1", "d2", "dn")]),

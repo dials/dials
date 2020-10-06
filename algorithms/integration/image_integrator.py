@@ -6,12 +6,10 @@ from time import time
 
 import dials.algorithms.integration
 from dials.algorithms.integration.processor import job
-from dials_algorithms_integration_integrator_ext import ReflectionManagerPerImage
-from dials.model.data import make_image
-from dials.model.data import MultiPanelImageVolume
-from dials.model.data import ImageVolume
+from dials.model.data import ImageVolume, MultiPanelImageVolume, make_image
 from dials.util import log
 from dials.util.mp import multi_node_parallel_map
+from dials_algorithms_integration_integrator_ext import ReflectionManagerPerImage
 
 logger = logging.getLogger(__name__)
 
@@ -191,9 +189,11 @@ class Task(object):
             image = imageset.get_corrected_data(i)
             mask = imageset.get_mask(i)
             if self.params.integration.lookup.mask is not None:
-                assert len(mask) == len(self.params.lookup.mask), (
-                    "Mask/Image are incorrect size %d %d"
-                    % (len(mask), len(self.params.integration.lookup.mask))
+                assert len(mask) == len(
+                    self.params.lookup.mask
+                ), "Mask/Image are incorrect size %d %d" % (
+                    len(mask),
+                    len(self.params.integration.lookup.mask),
                 )
                 mask = tuple(
                     m1 & m2 for m1, m2 in zip(self.params.integration.lookup.mask, mask)

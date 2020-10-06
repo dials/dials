@@ -1,0 +1,68 @@
+# This workflow will run static type checking on all source files
+# and check pull requests for newly introduced type errors.
+
+name: type checking (pull)
+on: [ pull_request ]
+
+jobs:
+  pytype:
+    runs-on: ubuntu-latest
+    name: pytype
+
+    steps:
+    - name: Clone repository
+      uses: actions/checkout@v2
+      with:
+        # This checks out the merged pull request by default,
+        # we also need the parent commit to check for changes
+        fetch-depth: 2
+        path: dials
+
+    - name: Set up Python 3.6
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.6
+
+    - name: Install pytype
+      run: |
+        pip install pytype
+
+    - name: Install external packages for type analysis
+      run: |
+        pip install procrunner pytest
+
+    - name: Copy analysis script from merged branch
+      run: |
+        cp dials/.github/pytype/pytype-analysis.py .
+
+    - name: Type check merged pull request
+      run: |
+        pytype -j auto -k dials | tee pytypelog-merged
+
+    - name: Check out pull request target branch
+      run: |
+        rm -rf .pytype
+        cd dials
+        git checkout HEAD^1
+        git log -1 HEAD
+
+    - name: Type check pull request target branch
+      run: |
+        pytype -j auto -k dials | tee pytypelog-base
+
+    - name: Parse pytype output
+      run: |
+        python pytype-analysis.py pytypelog-merged --base pytypelog-base --github --annotations annotation-output.txt
+
+    - name: Add annotations
+      uses: pytorch/add-annotations-github-action@defb52024753b803a82ba97b544e806c1b77722b
+            # This an untagged commit from master. Do not use branch names/version tags
+            # https://julienrenaux.fr/2019/12/20/github-actions-security-risk/
+      with:
+        check_name: 'pytype'
+        linter_output_path: 'annotation-output.txt'
+        commit_sha: ${{ github.event.pull_request.head.sha }}
+        regex: '^(?<filename>.*?):(?<lineNumber>\d+):(?<columnNumber>\d+):(?<errorCode>\S+)\s*(?<errorDesc>.*)'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      if: ${{ failure() }}

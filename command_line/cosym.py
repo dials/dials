@@ -6,30 +6,28 @@ import sys
 
 import iotbx.phil
 from cctbx import sgtbx
+from xfel.clustering.cluster_groups import unit_cell_info
+
+from dials.algorithms.clustering.unit_cell import UnitCellCluster
+from dials.algorithms.symmetry.cosym import CosymAnalysis
+from dials.algorithms.symmetry.cosym.observers import register_default_cosym_observers
+from dials.array_family import flex
 from dials.command_line.symmetry import (
     apply_change_of_basis_ops,
     change_of_basis_ops_to_minimum_cell,
     eliminate_sys_absent,
 )
-from dials.array_family import flex
-from dials.util import show_mail_on_error, Sorry
-from dials.util.options import reflections_and_experiments_from_files
+from dials.util import Sorry, log, show_mail_handle_errors
+from dials.util.exclude_images import get_selection_for_valid_image_ranges
+from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
     parse_multiple_datasets,
     select_datasets_on_identifiers,
 )
 from dials.util.observer import Subject
-from dials.util.exclude_images import get_selection_for_valid_image_ranges
-from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
-from dials.util import log
-from dials.util.options import OptionParser
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
-from dials.algorithms.symmetry.cosym.observers import register_default_cosym_observers
-from dials.algorithms.symmetry.cosym import CosymAnalysis
-from dials.algorithms.clustering.unit_cell import UnitCellCluster
-from xfel.clustering.cluster_groups import unit_cell_info
-
 
 logger = logging.getLogger("dials.command_line.cosym")
 
@@ -120,15 +118,31 @@ class cosym(Subject):
                 )
 
         # Map experiments and reflections to minimum cell
-        # Eliminate reflections that are systematically absent due to centring
-        # of the lattice, otherwise they would lead to non-integer miller indices
-        # when reindexing to a primitive setting
         cb_ops = change_of_basis_ops_to_minimum_cell(
             self._experiments,
             params.lattice_symmetry_max_delta,
             params.relative_length_tolerance,
             params.absolute_angle_tolerance,
         )
+        exclude = [
+            expt.identifier
+            for expt, cb_op in zip(self._experiments, cb_ops)
+            if not cb_op
+        ]
+        if len(exclude):
+            logger.info(
+                f"Rejecting {len(exclude)} datasets from cosym analysis:"
+                f"couldn't determine consistent cb_op to minimum cell:\n"
+                f"{exclude}",
+            )
+            self._experiments, self._reflections = select_datasets_on_identifiers(
+                self._experiments, self._reflections, exclude_datasets=exclude
+            )
+            cb_ops = list(filter(None, cb_ops))
+
+        # Eliminate reflections that are systematically absent due to centring
+        # of the lattice, otherwise they would lead to non-integer miller indices
+        # when reindexing to a primitive setting
         self._reflections = eliminate_sys_absent(self._experiments, self._reflections)
 
         self._experiments, self._reflections = apply_change_of_basis_ops(
@@ -362,5 +376,5 @@ def run(args):
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
+    with show_mail_handle_errors():
         run(sys.argv[1:])

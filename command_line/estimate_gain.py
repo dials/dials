@@ -3,9 +3,10 @@ from __future__ import absolute_import, division, print_function
 import sys
 
 import iotbx.phil
+from scitbx.array_family import flex
+
 from dials.util import Sorry
 from dials.util.options import OptionParser, flatten_experiments
-from scitbx.array_family import flex
 
 help_message = """
 

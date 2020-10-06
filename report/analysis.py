@@ -2,14 +2,16 @@
 from __future__ import absolute_import, division, print_function
 
 import collections
+
 from cctbx import miller
+from scitbx.array_family import flex
+
 from dials.algorithms.scaling.scaling_library import scaled_data_as_miller_array
 from dials.util.batch_handling import (
+    assign_batches_to_reflections,
     calculate_batch_offsets,
     get_batch_ranges,
-    assign_batches_to_reflections,
 )
-from scitbx.array_family import flex
 
 
 def batch_dependent_properties(batches, intensities, scales=None):
@@ -293,59 +295,56 @@ def table_1_stats(
         "Anomalous multiplicity": "mean_redundancy",
     }
 
+    four_column_output = bool(selected_statistics)
+
     stats = {}
 
-    result = merging_statistics
-    anom_result = anomalous_statistics
-    select_result = selected_statistics
-    select_anom_result = selected_anomalous_statistics
-
-    if anom_result:
-        anom_probability_plot = anom_result.overall.anom_probability_plot_expected_delta
-        if anom_probability_plot is not None:
-            stats["Anomalous slope"] = [anom_probability_plot.slope]
-        stats["dF/F"] = [anom_result.overall.anom_signal]
-        stats["dI/s(dI)"] = [anom_result.overall.delta_i_mean_over_sig_delta_i_mean]
-        if select_anom_result:
-            anom_probability_plot = (
-                select_anom_result.overall.anom_probability_plot_expected_delta
-            )
-            if anom_probability_plot is not None:
-                stats["Anomalous slope"] = [anom_probability_plot.slope]
-            stats["dF/F"] = [select_anom_result.overall.anom_signal]
-            stats["dI/s(dI)"] = [
-                select_anom_result.overall.delta_i_mean_over_sig_delta_i_mean
-            ]
-    else:
-        anom_key_to_var = {}
-        select_anom_result = None
-
-    four_column_output = False
-    if select_result:
-        four_column_output = True
-
-    for d, r, s in (
-        (key_to_var, result, select_result),
-        (anom_key_to_var, anom_result, select_anom_result),
-    ):
-        for k, v in d.items():
+    def generate_stats(d, r, s):
+        for key, value in d.items():
             if four_column_output:
                 values = (
-                    getattr(s.overall, v),
-                    getattr(s.bins[0], v),
-                    getattr(s.bins[-1], v),
-                    getattr(r.overall, v),
+                    getattr(s.overall, value),
+                    getattr(s.bins[0], value),
+                    getattr(s.bins[-1], value),
+                    getattr(r.overall, value),
                 )
             else:
                 values = (
-                    getattr(r.overall, v),
-                    getattr(r.bins[0], v),
-                    getattr(r.bins[-1], v),
+                    getattr(r.overall, value),
+                    getattr(r.bins[0], value),
+                    getattr(r.bins[-1], value),
                 )
-            if "completeness" in v:
+            if "completeness" in value:
                 values = [v_ * 100 for v_ in values]
             if values[0] is not None:
-                stats[k] = values
+                stats[key] = values
+
+    generate_stats(key_to_var, merging_statistics, selected_statistics)
+
+    if anomalous_statistics:
+        anom_probability_plot = (
+            anomalous_statistics.overall.anom_probability_plot_expected_delta
+        )
+        if anom_probability_plot is not None:
+            stats["Anomalous slope"] = [anom_probability_plot.slope]
+        stats["dF/F"] = [anomalous_statistics.overall.anom_signal]
+        stats["dI/s(dI)"] = [
+            anomalous_statistics.overall.delta_i_mean_over_sig_delta_i_mean
+        ]
+        if selected_anomalous_statistics:
+            anom_probability_plot = (
+                selected_anomalous_statistics.overall.anom_probability_plot_expected_delta
+            )
+            if anom_probability_plot is not None:
+                stats["Anomalous slope"] = [anom_probability_plot.slope]
+            stats["dF/F"] = [selected_anomalous_statistics.overall.anom_signal]
+            stats["dI/s(dI)"] = [
+                selected_anomalous_statistics.overall.delta_i_mean_over_sig_delta_i_mean
+            ]
+        generate_stats(
+            anom_key_to_var, anomalous_statistics, selected_anomalous_statistics
+        )
+
     return stats
 
 

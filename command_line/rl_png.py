@@ -133,8 +133,8 @@ class PngScene(object):
 
 
 def run():
-    from dials.util.options import OptionParser, reflections_and_experiments_from_files
     from dials.util import log
+    from dials.util.options import OptionParser, reflections_and_experiments_from_files
 
     usage = "dials.rl_png [options] experiments.json observations.refl"
 

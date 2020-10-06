@@ -6,15 +6,15 @@ import json
 import logging
 import sys
 import warnings
-from jinja2 import Environment, ChoiceLoader, PackageLoader
+
+from jinja2 import ChoiceLoader, Environment, PackageLoader
 
 import libtbx.phil
 
-from dials.util import resolution_analysis
-from dials.util import log
+from dials.util import log, resolution_analysis
+from dials.util.multi_dataset_handling import parse_multiple_datasets
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
-from dials.util.multi_dataset_handling import parse_multiple_datasets
 
 logger = logging.getLogger("dials.estimate_resolution")
 

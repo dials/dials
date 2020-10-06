@@ -5,14 +5,14 @@ import os
 import pytest
 
 import dxtbx
-from dxtbx.model.experiment_list import ExperimentListFactory
 from dxtbx.format.FormatCBFCspad import FormatCBFCspadInMemory
 from dxtbx.imageset import ImageSet, ImageSetData, MemReader
+from dxtbx.model.experiment_list import ExperimentListFactory
 from libtbx import easy_run
 from libtbx.phil import parse
 
-from dials.command_line.stills_process import phil_scope, Processor
 from dials.array_family import flex
+from dials.command_line.stills_process import Processor, phil_scope
 
 
 def test_cspad_cbf_in_memory(dials_regression, run_in_tmpdir):
@@ -102,12 +102,6 @@ def test_sacla_h5(dials_regression, run_in_tmpdir, use_mpi, in_memory=False):
       }
       spotfinder {
         filter.min_spot_size = 2
-        threshold {
-          dispersion {
-            gain = 5.46 # from dials.estimate_gain run266702-0-subset.h5 max_images=4
-            global_threshold = 50
-          }
-        }
       }
       refinement {
         parameterisation {
@@ -131,7 +125,7 @@ def test_sacla_h5(dials_regression, run_in_tmpdir, use_mpi, in_memory=False):
             "-n",
             "4",
             "dials.stills_process",
-            "mp.method=mpi mp.composite_stride=4",
+            "mp.method=mpi mp.composite_stride=4 output.logging_dir=.",
         ]
     else:
         command = ["dials.stills_process"]
@@ -145,15 +139,25 @@ def test_sacla_h5(dials_regression, run_in_tmpdir, use_mpi, in_memory=False):
             subset = table.select(table["id"] == expt_id)
             assert len(subset) in n_refls, (result_filename, expt_id, len(table))
         assert "id" in table
-        assert set(table["id"]) == set((0, 1, 2))
+        assert set(table["id"]) == set((0, 1, 2, 3))
 
     # large ranges to handle platform-specific differences
     test_refl_table(
         "idx-0000_integrated.refl",
-        [list(range(205, 225)), list(range(565, 580)), list(range(475, 500))],
+        [
+            list(range(140, 160)),
+            list(range(575, 600)),
+            list(range(420, 445)),
+            list(range(485, 510)),
+        ],
     )
 
     test_refl_table(
         "idx-0000_coset6.refl",
-        [list(range(215, 245)), list(range(525, 555)), list(range(515, 545))],
+        [
+            list(range(145, 160)),
+            list(range(545, 570)),
+            list(range(430, 455)),
+            list(range(490, 515)),
+        ],
     )

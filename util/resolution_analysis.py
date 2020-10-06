@@ -10,24 +10,22 @@ import math
 import typing
 from collections import OrderedDict
 
+import iotbx.merging_statistics
 import iotbx.mtz
 import iotbx.phil
-import iotbx.merging_statistics
-from cctbx.array_family import flex
 from cctbx import miller, uctbx
+from cctbx.array_family import flex
 from iotbx.reflection_file_utils import label_table
-from scitbx.math import curve_fitting
-from scitbx.math import five_number_summary
+from scitbx.math import curve_fitting, five_number_summary
 
 from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
 from dials.report import plots
-from dials.util import Sorry
+from dials.util import Sorry, tabulate
 from dials.util.batch_handling import (
-    calculate_batch_offsets,
     assign_batches_to_reflections,
+    calculate_batch_offsets,
 )
 from dials.util.filter_reflections import filter_reflection_table
-from dials.util import tabulate
 
 logger = logging.getLogger(__name__)
 
@@ -197,7 +195,7 @@ def resolution_fit(d_star_sq, y_obs, model, limit, sel=None):
             d_min = 1.0 / math.sqrt(interpolate_value(d_star_sq, y_fit, limit))
         except RuntimeError as e:
             logger.debug(f"Error interpolating value: {e}")
-            d_min = uctbx.d_star_sq_as_d(flex.max(d_star_sq))
+            d_min = None
 
     return ResolutionResult(d_star_sq, y_obs, y_fit, d_min)
 
@@ -636,9 +634,10 @@ class Resolutionizer(object):
             if limit:
                 result = self.resolution(metric, limit=limit)
                 pretty_name = metric_to_output.get(metric, name)
-                logger.info(
-                    f"Resolution {pretty_name}:{result.d_min:{18 - len(pretty_name)}.2f}"
-                )
+                if result.d_min:
+                    logger.info(
+                        f"Resolution {pretty_name}:{result.d_min:{18 - len(pretty_name)}.2f}"
+                    )
                 plot_d[name] = plot_result(metric, result)
         return plot_d
 

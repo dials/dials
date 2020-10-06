@@ -3,12 +3,14 @@ from __future__ import absolute_import, division, print_function
 import collections
 import glob
 import os
-import pytest
 
 import procrunner
+import pytest
+
 from cctbx import uctbx
-from dxtbx.serialize import load
 from dxtbx.model import ExperimentList
+from dxtbx.serialize import load
+
 from dials.array_family import flex
 
 
@@ -603,22 +605,29 @@ def test_refinement_failure_on_max_lattices_a15(dials_regression, tmpdir):
 
 
 def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_regression, tmpdir):
-    """ Problem: In stills_indexer, before calling the refine function, the experiment list contains a list of
-        dxtbx crystal models (that are not MosaicSauter2014 models). The conversion to MosaicSauter2014 is made
-        during the refine step when functions from nave_parameters is called. If the experiment list contains
-        more than 1 experiment, for eg. multiple lattices, only the first crystal gets assigned mosaicity. In
-        actuality, all crystal models should be assigned mosaicity. This test only compares whether or not all crystal models
-        have been assigned a MosaicSauter2014 model.  """
+    """Problem: In stills_indexer, before calling the refine function, the
+    experiment list contains a list of dxtbx crystal models (that are not
+    MosaicSauter2014 models). The conversion to MosaicSauter2014 is made
+    during the refine step when functions from nave_parameters is called.
+    If the experiment list contains more than 1 experiment, for eg.
+    multiple lattices, only the first crystal gets assigned mosaicity. In
+    actuality, all crystal models should be assigned mosaicity. This test
+    only compares whether or not all crystal models have been assigned a
+    MosaicSauter2014 model."""
 
-    from dxtbx.model.experiment_list import ExperimentListFactory
-    from dxtbx.model.experiment_list import Experiment, ExperimentList
-    from dials.array_family import flex
+    import dxtbx.model
     from dxtbx.model import Crystal
+    from dxtbx.model.experiment_list import (
+        Experiment,
+        ExperimentList,
+        ExperimentListFactory,
+    )
+
     from dials.algorithms.indexing.stills_indexer import StillsIndexer
+    from dials.array_family import flex
     from dials.command_line.stills_process import (
         phil_scope as stills_process_phil_scope,
     )
-    import dxtbx_model_ext  # needed for comparison of types
 
     experiment_data = os.path.join(
         dials_regression,
@@ -670,7 +679,7 @@ def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_regression, tmp
     # Now check whether the models have mosaicity after stills_indexer refinement
     # Also check that mosaicity values are within expected limits
     for ii, crys in enumerate(refined_explist.crystals()):
-        assert isinstance(crys, dxtbx_model_ext.MosaicCrystalSauter2014)
+        assert isinstance(crys, dxtbx.model.MosaicCrystalSauter2014)
         if ii == 0:
             assert crys.get_domain_size_ang() == pytest.approx(2242.0, rel=0.1)
         if ii == 1:

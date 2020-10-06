@@ -1,11 +1,14 @@
 from __future__ import absolute_import, division, print_function
+
 from math import exp
+
 import pytest
-from dials.array_family import flex
+
 from dials.algorithms.scaling.model.components.smooth_scale_components import (
     GaussianSmoother2D,
     GaussianSmoother3D,
 )
+from dials.array_family import flex
 
 
 def test_2DGaussianSmoother():

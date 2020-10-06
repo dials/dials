@@ -4,25 +4,26 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import time
-from collections import OrderedDict, Counter
+from collections import Counter, OrderedDict
+
+from iotbx import mtz
+from libtbx import Auto, env
+from scitbx import matrix
 
 import dials.util.ext
 from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
 from dials.array_family import flex
-from dials.util.version import dials_version
-from dials.util.filter_reflections import filter_reflection_table
 from dials.util.batch_handling import (
-    calculate_batch_offsets,
     assign_batches_to_reflections,
+    calculate_batch_offsets,
     get_image_ranges,
 )
+from dials.util.filter_reflections import filter_reflection_table
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
     parse_multiple_datasets,
 )
-from iotbx import mtz
-from scitbx import matrix
-from libtbx import env
+from dials.util.version import dials_version
 
 try:
     from math import isclose

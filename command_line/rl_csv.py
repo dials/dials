@@ -4,10 +4,12 @@ from __future__ import absolute_import, division, print_function
 import gzip
 import io
 
-import iotbx.phil
 import six
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+
+import iotbx.phil
 from dxtbx.model import ExperimentList
+
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 
 phil_scope = iotbx.phil.parse(
     """

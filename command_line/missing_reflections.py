@@ -22,12 +22,10 @@ from cctbx import uctbx
 
 import dials.util.log
 from dials.report.analysis import scaled_data_as_miller_array
-from dials.util import tabulate
+from dials.util import missing_reflections, tabulate
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
 from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
-from dials.util import missing_reflections
 from dials.util.version import dials_version
-
 
 logger = logging.getLogger("dials.missing_reflections")
 
@@ -93,7 +91,8 @@ def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> 
     else:
         # Else get the integrated intensities
         miller_arrays = filtered_arrays_from_experiments_reflections(
-            experiments, reflections,
+            experiments,
+            reflections,
         )
         miller_array = miller_arrays[0]
         for ma in miller_arrays[1:]:
@@ -140,5 +139,5 @@ def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> 
 
 
 if __name__ == "__main__":
-    with dials.util.show_mail_on_error():
+    with dials.util.show_mail_handle_errors():
         run()

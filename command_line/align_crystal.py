@@ -6,18 +6,16 @@ import collections
 import copy
 import json
 import sys
+
 import iotbx.phil
 from cctbx import sgtbx
-from scitbx import matrix
-from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
-
 from dxtbx.model import MultiAxisGoniometer
+from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
+from scitbx import matrix
 
 from dials.algorithms.refinement import rotation_decomposition
 from dials.util import tabulate
-from dials.util.options import OptionParser
-from dials.util.options import flatten_experiments
-
+from dials.util.options import OptionParser, flatten_experiments
 
 help_message = """
 Calculation of possible goniometer settings for re-alignment of crystal axes.
@@ -205,8 +203,10 @@ class align_crystal(object):
                 for perm in referential_permutations:
                     S = matrix.sqr(perm[0].elems + perm[1].elems + perm[2].elems)
                     R = align_reference_frame(v1_0, S * l1, v2_0, S * l2)
-                    solutions = rotation_decomposition.solve_r3_rotation_for_angles_given_axes(
-                        R, e1, e2, e3, return_both_solutions=True, deg=True
+                    solutions = (
+                        rotation_decomposition.solve_r3_rotation_for_angles_given_axes(
+                            R, e1, e2, e3, return_both_solutions=True, deg=True
+                        )
                     )
 
                     if solutions is None:

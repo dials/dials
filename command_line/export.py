@@ -428,8 +428,9 @@ def export_json(params, experiments, reflections):
     if not reflections:
         raise ValueError("json exporter requires a reflection table")
 
-    from dials.util import export_json
     from scitbx.array_family import flex
+
+    from dials.util import export_json
 
     imagesets = [expt.imageset for expt in experiments]
 
@@ -456,9 +457,9 @@ def export_json(params, experiments, reflections):
 
 
 if __name__ == "__main__":
+    from dials.util import log
     from dials.util.options import OptionParser, reflections_and_experiments_from_files
     from dials.util.version import dials_version
-    from dials.util import log
 
     usage = "dials.export models.expt reflections.pickle [options]"
 

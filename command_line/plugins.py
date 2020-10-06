@@ -1,7 +1,8 @@
 from __future__ import absolute_import, division, print_function
 
-import pkg_resources
 import sys
+
+import pkg_resources
 
 BOLD = "\033[1m"
 RED = "\033[1;31m"

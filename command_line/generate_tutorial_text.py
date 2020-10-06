@@ -8,9 +8,10 @@ import sys
 import tempfile
 from optparse import SUPPRESS_HELP, OptionParser
 
-import dials_data.download
 import procrunner
 import py
+
+import dials_data.download
 
 
 def run(

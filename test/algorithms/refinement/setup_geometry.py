@@ -1,20 +1,12 @@
 """Setup experimental geometry for refinement test cases"""
 
-# Python and cctbx imports
 from __future__ import absolute_import, division, print_function
 
 import random
 
+from dxtbx.model import BeamFactory, Crystal, DetectorFactory, GoniometerFactory
+from libtbx.phil import command_line, parse
 from scitbx import matrix
-from libtbx.phil import parse, command_line
-
-# dxtbx experimental models
-from dxtbx.model import BeamFactory
-from dxtbx.model import GoniometerFactory
-from dxtbx.model import DetectorFactory
-
-# crystal model
-from dxtbx.model import Crystal
 
 
 # Local functions

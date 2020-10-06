@@ -8,14 +8,14 @@ import pytest
 
 
 def generate_reflections(experiments):
-    from dials.algorithms.spot_prediction import IndexGenerator
-    from dials.algorithms.refinement.prediction.managed_predictors import (
-        ScansRayPredictor,
-        ScansExperimentsPredictor,
-    )
-    from dials.algorithms.spot_prediction import ray_intersection
     from cctbx.sgtbx import space_group, space_group_symbols
     from scitbx.array_family import flex
+
+    from dials.algorithms.refinement.prediction.managed_predictors import (
+        ScansExperimentsPredictor,
+        ScansRayPredictor,
+    )
+    from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
 
     detector = experiments[0].detector
     crystal = experiments[0].crystal
@@ -102,7 +102,7 @@ def test1(dials_regression):
     assert sequence_range == (0.0, math.pi)
     assert im_width == pytest.approx(0.1 * math.pi / 180.0)
 
-    from dxtbx.model.experiment_list import ExperimentList, Experiment
+    from dxtbx.model.experiment_list import Experiment, ExperimentList
 
     # Build an experiment list
     experiments = ExperimentList()
@@ -162,11 +162,11 @@ def test1(dials_regression):
     xlo_param.set_fixed([True] * 3)
 
     # parameterisation of the prediction equation
-    from dials.algorithms.refinement.parameterisation.prediction_parameters import (
-        XYPhiPredictionParameterisation,
-    )
     from dials.algorithms.refinement.parameterisation.parameter_report import (
         ParameterReporter,
+    )
+    from dials.algorithms.refinement.parameterisation.prediction_parameters import (
+        XYPhiPredictionParameterisation,
     )
 
     pred_param = XYPhiPredictionParameterisation(
@@ -177,10 +177,10 @@ def test1(dials_regression):
     )
 
     # reflection manager and target function
+    from dials.algorithms.refinement.reflection_manager import ReflectionManager
     from dials.algorithms.refinement.target import (
         LeastSquaresPositionalResidualWithRmsdCutoff,
     )
-    from dials.algorithms.refinement.reflection_manager import ReflectionManager
 
     refman = ReflectionManager(refs, experiments, nref_per_degree=20)
 

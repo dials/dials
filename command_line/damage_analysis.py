@@ -32,22 +32,25 @@ dials.damage_analysis scaled.expt scaled.refl shared_crystal=True
 
 """
 from __future__ import absolute_import, division, print_function
+
 import json
 import logging
 import os
 import sys
+
+from jinja2 import ChoiceLoader, Environment, PackageLoader
+
+from cctbx import crystal, miller
+from iotbx import mtz
 from libtbx import phil
-from dials.util import log, show_mail_on_error
+from scitbx.array_family import flex
+
+from dials.command_line.symmetry import median_unit_cell
+from dials.pychef import Statistics, batches_to_dose, interpret_images_to_doses_options
+from dials.util import log, resolution_analysis, show_mail_handle_errors
+from dials.util.filter_reflections import filter_reflection_table
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
-from dials.util.filter_reflections import filter_reflection_table
-from dials.util import resolution_analysis
-from dials.command_line.symmetry import median_unit_cell
-from dials.pychef import batches_to_dose, Statistics, interpret_images_to_doses_options
-from iotbx import mtz
-from scitbx.array_family import flex
-from cctbx import miller, crystal
-from jinja2 import Environment, ChoiceLoader, PackageLoader
 
 try:
     from typing import List
@@ -306,7 +309,9 @@ def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
             if "inverse_scale_factor" not in reflections[0]:
                 raise KeyError("Input data must be scaled.")
             script = PychefRunner.from_dials_data_files(
-                params, experiments, reflections[0],
+                params,
+                experiments,
+                reflections[0],
             )
 
         elif unhandled and os.path.isfile(unhandled[0]):
@@ -330,5 +335,5 @@ def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
+    with show_mail_handle_errors():
         run()

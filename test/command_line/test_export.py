@@ -5,17 +5,15 @@ import os
 
 import procrunner
 import pytest
+
 from cctbx import uctbx
-from dials.array_family import flex
-from dials.util.multi_dataset_handling import assign_unique_identifiers
 from dxtbx.model import ExperimentList
-from dxtbx.serialize.load import _decode_dict
 from dxtbx.serialize import load
+from dxtbx.serialize.load import _decode_dict
 from iotbx import mtz
 
-
-# Tests used to check for h5py
-# May need to add this again if lack of this check causes issues.
+from dials.array_family import flex
+from dials.util.multi_dataset_handling import assign_unique_identifiers
 
 
 def run_export(export_format, dials_data, tmpdir):
@@ -61,7 +59,8 @@ def test_mtz_recalculated_cell(dials_data, tmpdir):
     scaled_expt = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled.expt")
     scaled_refl = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled.refl")
     result = procrunner.run(
-        ["dials.two_theta_refine", scaled_expt, scaled_refl], working_directory=tmpdir,
+        ["dials.two_theta_refine", scaled_expt, scaled_refl],
+        working_directory=tmpdir,
     )
     assert tmpdir.join("refined_cell.expt").check(file=1)
     refined_expt = load.experiment_list(

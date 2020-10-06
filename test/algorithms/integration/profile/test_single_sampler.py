@@ -89,8 +89,9 @@ def test_nearest_n():
 
 
 def test_weights():
-    from dials.algorithms.profile_model.modeller import SingleSampler
     from scitbx import matrix
+
+    from dials.algorithms.profile_model.modeller import SingleSampler
 
     scan_range = (2, 12)
     nz = 2
@@ -136,8 +137,9 @@ def test_self_consistent():
 
 
 def test_pickle():
-    from dials.algorithms.profile_model.modeller import SingleSampler
     import six.moves.cPickle as pickle
+
+    from dials.algorithms.profile_model.modeller import SingleSampler
 
     scan_range = (2, 12)
     nz = 2

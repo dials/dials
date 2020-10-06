@@ -63,10 +63,10 @@ class GLMBackgroundCalculatorFactory(object):
         :param model: The background model
         :param tuning_constant: The robust tuning constant
         """
+        from dials.algorithms.background.glm import Creator
         from dials.algorithms.integration.parallel_integrator import (
             GLMBackgroundCalculator,
         )
-        from dials.algorithms.background.glm import Creator
 
         if model == "constant2d":
             model = Creator.model.constant2d

@@ -5,13 +5,15 @@ import json
 import logging
 import math
 
-import dials.util
-import libtbx
 import scipy.stats
+
+import libtbx
 from cctbx import crystal, sgtbx
-from dials.algorithms.symmetry import symmetry_base
 from scitbx.array_family import flex
 from scitbx.math import five_number_summary
+
+import dials.util
+from dials.algorithms.symmetry import symmetry_base
 
 logger = logging.getLogger(__name__)
 
@@ -442,8 +444,7 @@ class ScoreCorrelationCoefficient(object):
 
     @property
     def p_cc_given_not_s(self):
-        """Probability of observing this CC if the sym op is NOT present, p(CC; !S).
-        """
+        """Probability of observing this CC if the sym op is NOT present, p(CC; !S)."""
         return self._p_cc_given_not_s
 
     @property

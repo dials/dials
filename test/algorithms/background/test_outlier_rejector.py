@@ -2,13 +2,15 @@ from __future__ import absolute_import, division, print_function
 
 import random
 
+from dials.algorithms.background.simple import (
+    NormalOutlierRejector,
+    NSigmaOutlierRejector,
+    TruncatedOutlierRejector,
+)
+from dials.algorithms.shoebox import MaskCode
 from dials.algorithms.simulation.generate_test_reflections import (
     random_background_plane2,
 )
-from dials.algorithms.shoebox import MaskCode
-from dials.algorithms.background.simple import TruncatedOutlierRejector
-from dials.algorithms.background.simple import NSigmaOutlierRejector
-from dials.algorithms.background.simple import NormalOutlierRejector
 from dials.array_family import flex
 
 

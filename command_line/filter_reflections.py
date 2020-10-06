@@ -5,17 +5,16 @@ from __future__ import absolute_import, division, print_function
 import logging
 import token
 from operator import itemgetter
-from dials.util import tabulate
-from tokenize import generate_tokens, TokenError, untokenize
+from tokenize import TokenError, generate_tokens, untokenize
 
 from cctbx import uctbx
-from dials.util import Sorry, log, show_mail_on_error
-from dials.util.filter_reflections import SumAndPrfIntensityReducer, SumIntensityReducer
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
-from dials.array_family import flex
-from dials.algorithms.integration import filtering
 from libtbx.phil import parse
 
+from dials.algorithms.integration import filtering
+from dials.array_family import flex
+from dials.util import Sorry, log, show_mail_handle_errors, tabulate
+from dials.util.filter_reflections import SumAndPrfIntensityReducer, SumIntensityReducer
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 
 logger = logging.getLogger("dials")
 
@@ -453,5 +452,5 @@ def run():
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
+    with show_mail_handle_errors():
         run()

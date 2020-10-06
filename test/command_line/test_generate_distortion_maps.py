@@ -1,17 +1,17 @@
 from __future__ import absolute_import, division, print_function
 
-import pytest
-from dxtbx.model.detector import Detector
-from dxtbx.model.beam import Beam
-from scitbx import matrix
-from dxtbx.imageset import ImageSet
-from dxtbx.imageset import ImageSetData
-from dxtbx.format.Format import Reader
-from dxtbx.model.experiment_list import ExperimentListFactory
-
-from libtbx import easy_run
-import six.moves.cPickle as pickle
 import os
+
+import pytest
+import six.moves.cPickle as pickle
+
+from dxtbx.format.Format import Reader
+from dxtbx.imageset import ImageSet, ImageSetData
+from dxtbx.model.beam import Beam
+from dxtbx.model.detector import Detector
+from dxtbx.model.experiment_list import ExperimentListFactory
+from libtbx import easy_run
+from scitbx import matrix
 
 
 def make_detector():

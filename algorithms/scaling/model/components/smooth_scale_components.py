@@ -6,16 +6,19 @@ inverse scale factors and derivatives with respect to the component
 parameters.
 """
 from __future__ import absolute_import, division, print_function
-from math import floor, ceil
+
+from math import ceil, floor
+
 from scitbx import sparse
-from dials.array_family import flex
+
 from dials.algorithms.scaling.model.components.scale_components import (
     ScaleComponentBase,
 )
-from dials_scaling_ext import row_multiply, GaussianSmootherFirstFixed as GS1D
+from dials.array_family import flex
 from dials_refinement_helpers_ext import GaussianSmoother2D as GS2D
 from dials_refinement_helpers_ext import GaussianSmoother3D as GS3D
-
+from dials_scaling_ext import GaussianSmootherFirstFixed as GS1D
+from dials_scaling_ext import row_multiply
 
 # The following gaussian smoother classes make the implementation
 # consistent with that used in dials.refinement.
@@ -217,7 +220,7 @@ class SmoothScaleComponent1D(ScaleComponentBase, SmoothMixin):
         normalised_values = normalised_values - flex.min(normalised_values)
         phi_range_deg = [
             floor(round(flex.min(normalised_values), 10)),
-            ceil(round(flex.max(normalised_values), 10)),
+            max(ceil(round(flex.max(normalised_values), 10)), 1),
         ]
         self._smoother = GaussianSmoother1D(
             phi_range_deg, self.nparam_to_val(self._n_params)
@@ -414,11 +417,11 @@ class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
         normalised_y_values = normalised_y_values - flex.min(normalised_y_values)
         x_range = [
             floor(round(flex.min(normalised_x_values), 10)),
-            ceil(round(flex.max(normalised_x_values), 10)),
+            max(ceil(round(flex.max(normalised_x_values), 10)), 1),
         ]
         y_range = [
             floor(round(flex.min(normalised_y_values), 10)),
-            ceil(round(flex.max(normalised_y_values), 10)),
+            max(ceil(round(flex.max(normalised_y_values), 10)), 1),
         ]
         self._smoother = GaussianSmoother2D(
             x_range,
@@ -569,15 +572,15 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
         normalised_z_values = normalised_z_values - flex.min(normalised_z_values)
         x_range = [
             floor(round(flex.min(normalised_x_values), 10)),
-            ceil(round(flex.max(normalised_x_values), 10)),
+            max(ceil(round(flex.max(normalised_x_values), 10)), 1),
         ]
         y_range = [
             floor(round(flex.min(normalised_y_values), 10)),
-            ceil(round(flex.max(normalised_y_values), 10)),
+            max(ceil(round(flex.max(normalised_y_values), 10)), 1),
         ]
         z_range = [
             floor(round(flex.min(normalised_z_values), 10)),
-            ceil(round(flex.max(normalised_z_values), 10)),
+            max(ceil(round(flex.max(normalised_z_values), 10)), 1),
         ]
         self._smoother = GaussianSmoother3D(
             x_range,
