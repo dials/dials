@@ -14,7 +14,7 @@ from multiprocessing import Process
 
 import libtbx.phil
 
-from dials.util import Sorry
+from dials.util import Sorry, show_mail_handle_errors
 
 logger = logging.getLogger("dials.command_line.find_spots_server")
 
@@ -323,15 +323,20 @@ def main(nproc, port):
     print(time.asctime(), "done")
 
 
-if __name__ == "__main__":
+@show_mail_handle_errors()
+def run(args=None):
     usage = "dials.find_spots_server [options]"
 
     from dials.util.options import OptionParser
 
     parser = OptionParser(usage=usage, phil=phil_scope, epilog=help_message)
-    params, options = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(args, show_diff_phil=True)
     if params.nproc is libtbx.Auto:
         from libtbx.introspection import number_of_processors
 
         params.nproc = number_of_processors(return_value_if_unknown=-1)
     main(params.nproc, params.port)
+
+
+if __name__ == "__main__":
+    run()

@@ -11,7 +11,8 @@ import py
 
 import dials
 
-if __name__ == "__main__":
+
+def run(args=None):
     dials_dir = py.path.local(dials.__file__).dirpath()
     sphinx_dir = dials_dir / "doc" / "sphinx"
     tutorial_doc_dir = sphinx_dir / "documentation" / "tutorials"
@@ -75,7 +76,7 @@ if __name__ == "__main__":
         default=False,
         help="Build documentation in parallel",
     )
-    options, _ = parser.parse_args()
+    options, _ = parser.parse_args(args)
 
     output_dir = py.path.local(options.output)
     if options.clean:
@@ -121,3 +122,7 @@ if __name__ == "__main__":
     )
     if result.returncode:
         sys.exit("Sphinx build failed with exit code %d" % result.returncode)
+
+
+if __name__ == "__main__":
+    run()

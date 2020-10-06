@@ -13,6 +13,8 @@ from cctbx import crystal, miller
 from cctbx.array_family import flex
 from scitbx import matrix
 
+import dials.util
+
 help_message = """
 
 Calculates a stereographic projection image for the given crystal models and
@@ -157,7 +159,8 @@ def gcd_list(l):
     return result
 
 
-def run(args):
+@dials.util.show_mail_handle_errors()
+def run(args=None):
     from dials.util.options import OptionParser, flatten_experiments
 
     # The script usage
@@ -481,4 +484,4 @@ def projections_as_json(projections, filename=None, labels=None):
 
 
 if __name__ == "__main__":
-    run(sys.argv[1:])
+    run()

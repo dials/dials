@@ -9,6 +9,7 @@ import libtbx
 import libtbx.phil
 from scitbx.array_family import flex
 
+import dials.util
 from dials.util import Sorry
 
 help_message = """
@@ -43,7 +44,8 @@ output {
 )
 
 
-def run(args):
+@dials.util.show_mail_handle_errors()
+def run(args=None):
     from dials.util.options import OptionParser, flatten_experiments
 
     usage = "dials.shadow_plot [options] models.expt"
@@ -56,7 +58,7 @@ def run(args):
         epilog=help_message,
     )
 
-    params, options = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(args, show_diff_phil=True)
     experiments = flatten_experiments(params.input.experiments)
 
     if len(experiments) == 0:
@@ -199,4 +201,4 @@ def polygon_area(points):
 
 
 if __name__ == "__main__":
-    run(sys.argv[1:])
+    run()

@@ -1,6 +1,7 @@
 import contextlib
 import faulthandler
 import functools
+import io
 import os
 import signal
 import sys
@@ -147,10 +148,19 @@ def debug_context_manager(original_context_manager, name="", log_func=None):
 
 
 @contextlib.contextmanager
+def enable_faulthandler():
+    # Don't clobber someone elses faulthandler settings
+    if not faulthandler.is_enabled():
+        # SIGUSR2 not available on windows
+        # The attached STDERR might not support what faulthandler wants
+        with contextlib.suppress(AttributeError, io.UnsupportedOperation):
+            faulthandler.enable()
+            faulthandler.register(signal.SIGUSR2, all_threads=True)
+    yield
+
+
+@contextlib.contextmanager
 def show_mail_on_error():
-    faulthandler.enable()
-    with contextlib.suppress(AttributeError):
-        faulthandler.register(signal.SIGUSR2, all_threads=True)
     try:
         yield
     except Exception as e:
@@ -192,5 +202,5 @@ def show_mail_handle_errors():
     the error to. If a sys.exit is caught, it will be converted to red, if
     appropriate.
     """
-    with make_sys_exit_red(), show_mail_on_error():
+    with enable_faulthandler(), make_sys_exit_red(), show_mail_on_error():
         yield

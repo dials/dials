@@ -3,6 +3,7 @@
 from __future__ import absolute_import, division, print_function
 
 import copy
+import sys
 
 import wx
 
@@ -14,7 +15,7 @@ from dxtbx.model import MultiAxisGoniometer
 from scitbx.array_family import flex
 from scitbx.math import minimum_covering_sphere
 
-from dials.util import wx_viewer
+from dials.util import show_mail_handle_errors, wx_viewer
 
 help_message = """
 """
@@ -576,7 +577,8 @@ class GeometryWindow(wx_viewer.show_points_and_lines_mixin):
         self.move_to_center_of_viewport(self.rotation_center)
 
 
-def run(args):
+@show_mail_handle_errors()
+def run(args=None):
 
     import os
 
@@ -592,7 +594,7 @@ def run(args):
         epilog=help_message,
     )
 
-    params, options = parser.parse_args(quick_parse=True, show_diff_phil=True)
+    params, options = parser.parse_args(args, quick_parse=True, show_diff_phil=True)
 
     if "DIALS_EXPORT_DO_NOT_CHECK_FORMAT" in os.environ:
         print(
@@ -671,6 +673,4 @@ def run(args):
 
 
 if __name__ == "__main__":
-    import sys
-
-    run(sys.argv[1:])
+    run()

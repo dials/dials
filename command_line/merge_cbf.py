@@ -5,6 +5,8 @@ import sys
 
 import iotbx.phil
 
+import dials.util
+
 help_message = """
 
 This program can be used to merge a given number of consecutive cbf files into
@@ -212,7 +214,8 @@ def merge_cbf(imageset, n_images, out_prefix="sum_", get_raw_data_from_imageset=
         print("%s written" % out_image)
 
 
-def run():
+@dials.util.show_mail_handle_errors()
+def run(args=None):
     from dials.util.options import OptionParser, flatten_experiments
 
     usage = "dials.merge_cbf [options] image_*.cbf"
@@ -226,7 +229,7 @@ def run():
     )
 
     params, options, args = parser.parse_args(
-        show_diff_phil=True, return_unhandled=True
+        args, show_diff_phil=True, return_unhandled=True
     )
 
     n_images = params.merge_n_images

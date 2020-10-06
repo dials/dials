@@ -71,10 +71,10 @@ class Script(object):
             read_experiments=True,
         )
 
-    def run(self):
+    def run(self, args=None):
         """Execute the script."""
         # Parse the command line
-        params, options = self.parser.parse_args(show_diff_phil=True)
+        params, options = self.parser.parse_args(args, show_diff_phil=True)
 
         # Check the number of experiments
         experiments = flatten_experiments(params.input.experiments)
@@ -135,7 +135,11 @@ class Script(object):
         )
 
 
+@show_mail_handle_errors()
+def run(args=None):
+    script = Script()
+    script.run(args)
+
+
 if __name__ == "__main__":
-    with show_mail_handle_errors():
-        script = Script()
-        script.run()
+    run()

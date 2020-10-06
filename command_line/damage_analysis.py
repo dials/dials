@@ -278,7 +278,8 @@ class PychefRunner(object):
                 json.dump(data, outfile)
 
 
-def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
+@show_mail_handle_errors()
+def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     """Run the command-line script."""
 
     usage = "dials.damage_analysis [options] scaled.expt scaled.refl | scaled.mtz"
@@ -335,5 +336,4 @@ def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
 
 
 if __name__ == "__main__":
-    with show_mail_handle_errors():
-        run()
+    run()

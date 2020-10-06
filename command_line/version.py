@@ -13,4 +13,9 @@ def version():
     print("Installed in: %s" % os.path.split(dials.__file__)[0])
 
 
-version()
+def run(args=None):
+    version()
+
+
+if __name__ == "__main__":
+    run()
