@@ -1,0 +1,1 @@
+dials.merge: Add best_unit_cell option. Allow this to be set from dials.scale also.
