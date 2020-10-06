@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import sys
+from six.moves import cStringIO as StringIO
 
 from iotbx.phil import parse
 from libtbx import Auto
@@ -273,8 +274,36 @@ def export_mtz(params, experiments, reflections):
             "Error: No intensity data in reflections; cannot export un-integrated data to MTZ"
         )
 
-    m = export_mtz(reflections[0], experiments, params)
-    from six.moves import cStringIO as StringIO
+    reflection_table = reflections[0]
+    filename = params.mtz.hklout
+    # if mtz filename is auto, then choose scaled.mtz or integrated.mtz
+    if filename in (None, Auto, "auto"):
+        if ("intensity.scale.value" in reflection_table) and (
+            "intensity.scale.variance" in reflection_table
+        ):
+            filename = "scaled.mtz"
+            logger.info("Data appears to be scaled, setting mtz.hklout = 'scaled.mtz'")
+        else:
+            filename = "integrated.mtz"
+            logger.info(
+                "Data appears to be unscaled, setting mtz.hklout = 'integrated.mtz'"
+            )
+
+    m = export_mtz(
+        reflection_table,
+        experiments,
+        intensity_choice=params.intensity,
+        filename=filename,
+        best_unit_cell=params.mtz.best_unit_cell,
+        partiality_threshold=params.mtz.partiality_threshold,
+        combine_partials=params.mtz.combine_partials,
+        min_isigi=params.mtz.min_isigi,
+        filter_ice_rings=params.mtz.filter_ice_rings,
+        d_min=params.mtz.d_min,
+        force_static_model=params.mtz.force_static_model,
+        crystal_name=params.mtz.crystal_name,
+        project_name=params.mtz.project_name,
+    )
 
     summary = StringIO()
     m.show_summary(out=summary)
