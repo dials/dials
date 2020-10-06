@@ -100,12 +100,12 @@ def test_merge_dmin_dmax(dials_data, tmpdir, best_unit_cell):
         "project_name=ham",
         "crystal_name=jam",
         "dataset_name=spam",
-        "best_unit_cell=%s" % best_unit_cell,
+        f"best_unit_cell={best_unit_cell}",
     ]
     result = procrunner.run(command, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
 
-    # check we only have reflections in range 8 - 1A
+    # check the unit cell was correctly set if using best_unit_cell
     m = mtz.object(mtz_file.strpath)
     if best_unit_cell:
         for ma in m.as_miller_arrays():
@@ -113,6 +113,7 @@ def test_merge_dmin_dmax(dials_data, tmpdir, best_unit_cell):
                 ma.unit_cell().parameters()
             )
 
+    # check we only have reflections in range 8 - 1A
     max_min_resolution = m.max_min_resolution()
 
     assert max_min_resolution[0] <= 8
