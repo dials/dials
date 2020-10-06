@@ -66,7 +66,7 @@ partiality_threshold=0.4
 best_unit_cell = None
     .type = unit_cell
     .help = "Best unit cell value, to use when performing resolution cutting,"
-            "and as the overall unit cell in the merged mtz. If None, the median"
+            "and as the overall unit cell in the merged mtz. If undefined, the median"
             "cell will be used."
 n_residues = 200
     .type = int
