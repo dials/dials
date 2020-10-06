@@ -115,7 +115,7 @@ def merge_data_to_mtz(params, experiments, reflections):
 
     # check if best_unit_cell is set.
     best_unit_cell = params.best_unit_cell
-    if best_unit_cell is None:
+    if not best_unit_cell:
         best_unit_cell = determine_best_unit_cell(experiments)
     reflections[0]["d"] = best_unit_cell.d(reflections[0]["miller_index"])
     for expt in experiments:
