@@ -15,6 +15,7 @@ import libtbx
 
 import dials.algorithms.integration
 import dials.util
+import dials.util.log
 from dials.array_family import flex
 from dials.model.data import make_image
 from dials.util import tabulate
