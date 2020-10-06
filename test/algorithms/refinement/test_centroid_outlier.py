@@ -1,7 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+
 import pytest
+
 from dials.algorithms.refinement.outlier_detection import CentroidOutlierFactory
 from dials.algorithms.refinement.outlier_detection.outlier_base import phil_scope
 from dials.array_family import flex

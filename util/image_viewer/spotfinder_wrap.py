@@ -1,17 +1,16 @@
 from __future__ import absolute_import, division, print_function
 
-from .slip_viewer.frame import chooser_wrapper as _chooser_wrapper
-
 import sys
-import wx
-
 import threading
 
+import wx
+
+from .slip_viewer.frame import chooser_wrapper as _chooser_wrapper
 from .viewer_tools import ZeroMQEvent
 
 try:
-    import resource
     import platform
+    import resource
 
     def debug_memory_usage():
         # getrusage returns kb on linux, bytes on mac
@@ -58,6 +57,7 @@ class spot_wrapper(object):
 
     def display(self, experiments, reflections):
         import wx
+
         from dials.util.image_viewer.spotfinder_frame import SpotFrame
 
         app = wx.App()

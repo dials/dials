@@ -152,6 +152,9 @@ namespace dials { namespace af {
     ExcludedForRefinement = (1 << 25),
     BadForRefinement = ExcludedForRefinement | CentroidOutlier,
 
+    // Scaled flag indicates good reflections after scaling
+    Scaled = (1 << 26),
+
   };
 
 }}  // namespace dials::af

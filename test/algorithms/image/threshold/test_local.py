@@ -1,13 +1,19 @@
 from __future__ import absolute_import, division, print_function
+
+from math import exp
+from random import randint
+
 import pytest
 from numpy.random import poisson
-from random import randint
-from math import exp
+
 from scitbx.array_family import flex
-from dials.algorithms.image.threshold import DispersionExtendedThreshold
-from dials.algorithms.image.threshold import DispersionThreshold
-from dials.algorithms.image.threshold import DispersionExtendedThresholdDebug
-from dials.algorithms.image.threshold import DispersionThresholdDebug
+
+from dials.algorithms.image.threshold import (
+    DispersionExtendedThreshold,
+    DispersionExtendedThresholdDebug,
+    DispersionThreshold,
+    DispersionThresholdDebug,
+)
 
 
 class Test:
@@ -122,9 +128,11 @@ class Test:
         assert result3 == result4
 
     def test_dispersion_debug(self):
-        from dials.algorithms.image.threshold import dispersion
-        from dials.algorithms.image.threshold import dispersion_w_gain
-        from dials.algorithms.image.threshold import DispersionThresholdDebug
+        from dials.algorithms.image.threshold import (
+            DispersionThresholdDebug,
+            dispersion,
+            dispersion_w_gain,
+        )
 
         nsig_b = 3
         nsig_s = 3
@@ -154,8 +162,11 @@ class Test:
         assert result3 == result4
 
     def test_dispersion_threshold(self):
-        from dials.algorithms.image.threshold import dispersion, dispersion_w_gain
-        from dials.algorithms.image.threshold import DispersionThreshold
+        from dials.algorithms.image.threshold import (
+            DispersionThreshold,
+            dispersion,
+            dispersion_w_gain,
+        )
         from dials.array_family import flex
 
         nsig_b = 3
@@ -180,8 +191,10 @@ class Test:
         assert result2 == result4
 
     def test_dispersion_extended_threshold(self):
-        from dials.algorithms.image.threshold import DispersionExtendedThreshold
-        from dials.algorithms.image.threshold import DispersionExtendedThresholdDebug
+        from dials.algorithms.image.threshold import (
+            DispersionExtendedThreshold,
+            DispersionExtendedThresholdDebug,
+        )
         from dials.array_family import flex
 
         nsig_b = 3

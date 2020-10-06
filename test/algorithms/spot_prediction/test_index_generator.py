@@ -4,11 +4,13 @@ import os
 
 
 def test(dials_regression):
-    from iotbx.xds import xparm, integrate_hkl
-    from dials.util import ioutil
-    from dials.algorithms.spot_prediction import IndexGenerator
     import numpy as np
+
+    from iotbx.xds import integrate_hkl, xparm
     from rstbx.cftbx.coordinate_frame_converter import coordinate_frame_converter
+
+    from dials.algorithms.spot_prediction import IndexGenerator
+    from dials.util import ioutil
 
     # The XDS files to read from
     integrate_filename = os.path.join(

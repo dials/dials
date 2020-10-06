@@ -2,8 +2,9 @@ from __future__ import absolute_import, division, print_function
 
 
 def profile2d(p, vmin=None, vmax=None):
-    from dials.array_family import flex
     import string
+
+    from dials.array_family import flex
 
     if vmin is None:
         vmin = flex.min(p)

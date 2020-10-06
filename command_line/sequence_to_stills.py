@@ -10,18 +10,17 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 
-from libtbx.phil import parse
-from scitbx import matrix
-
 from dxtbx.model import MosaicCrystalSauter2014
 from dxtbx.model.experiment_list import Experiment, ExperimentList
+from libtbx.phil import parse
+from scitbx import matrix
 
 from dials.algorithms.refinement.prediction.managed_predictors import (
     ExperimentsPredictorFactory,
 )
 from dials.array_family import flex
 from dials.model.data import Shoebox
-from dials.util import show_mail_on_error
+from dials.util import show_mail_handle_errors
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
 
 logger = logging.getLogger("dials.command_line.sequence_to_stills")
@@ -190,6 +189,7 @@ def sequence_to_stills(experiments, reflections, params):
     return (new_experiments, new_reflections)
 
 
+@show_mail_handle_errors()
 def run(args=None, phil=phil_scope):
     """
     Validate the arguments and load experiments/reflections for sequence_to_stills
@@ -230,5 +230,4 @@ def run(args=None, phil=phil_scope):
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
-        run()
+    run()

@@ -4,9 +4,11 @@ import json
 import sys
 
 import iotbx.phil
+
+import dials.util
+from dials.algorithms.spot_finding import per_image_analysis
 from dials.util import tabulate
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
-from dials.algorithms.spot_finding import per_image_analysis
 
 help_message = """
 
@@ -39,7 +41,8 @@ id = None
 )
 
 
-def run(args):
+@dials.util.show_mail_handle_errors()
+def run(args=None):
     usage = "dials.spot_counts_per_image [options] imported.expt strong.refl"
 
     parser = OptionParser(
@@ -51,7 +54,7 @@ def run(args):
         epilog=help_message,
     )
 
-    params, options = parser.parse_args(show_diff_phil=False)
+    params, options = parser.parse_args(args, show_diff_phil=False)
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
@@ -127,4 +130,4 @@ def run(args):
 
 
 if __name__ == "__main__":
-    run(sys.argv[1:])
+    run()

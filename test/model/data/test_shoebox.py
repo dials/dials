@@ -5,8 +5,10 @@ import random
 
 import six
 import six.moves.cPickle as pickle
-from dials.model.data import Shoebox
+
 from scitbx import matrix
+
+from dials.model.data import Shoebox
 
 
 def random_shoeboxes(num, mask=False):
@@ -272,8 +274,8 @@ def test_summed_intensity():
 
 
 def test_flatten():
-    from dials.array_family import flex
     from dials.algorithms.shoebox import MaskCode
+    from dials.array_family import flex
 
     for shoebox, (XC, I) in random_shoeboxes(10, mask=True):
         assert not shoebox.flat

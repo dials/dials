@@ -5,10 +5,15 @@ from __future__ import absolute_import, division, print_function
 import logging
 import math
 import random
+import warnings
+
+import libtbx
+from libtbx.phil import parse
+from scitbx import matrix
+from scitbx.math import five_number_summary
 
 import dials.util
-from dials.algorithms.refinement import DialsRefineConfigError
-from dials.algorithms.refinement import weighting_strategies
+from dials.algorithms.refinement import DialsRefineConfigError, weighting_strategies
 from dials.algorithms.refinement.analysis.centroid_analysis import CentroidAnalyser
 from dials.algorithms.refinement.outlier_detection.outlier_base import (
     phil_str as outlier_phil_str,
@@ -18,10 +23,6 @@ from dials.algorithms.refinement.refinement_helpers import (
     set_obs_s1,
 )
 from dials.array_family import flex
-import libtbx
-from libtbx.phil import parse
-from scitbx import matrix
-from scitbx.math import five_number_summary
 
 logger = logging.getLogger(__name__)
 
@@ -72,15 +73,19 @@ phil_str = (
       .type = float(value_min = 0)
       .expert_level = 1
 
-    trim_scan_edges = 0.0
+    scan_margin = 0.0
       .help = "Reflections within this value in degrees from the centre of the"
               "first or last image of the scan will be removed before"
               "refinement, unless doing so would result in too few remaining"
               "reflections. Reflections that are truncated at the scan edges"
               "have poorly-determined centroids and can bias the refined model"
               "if they are included."
-      .type = float(value_min=0,value_max=1)
+      .type = float(value_min=0,value_max=5)
       .expert_level = 1
+
+    trim_scan_edges = None
+      .type = float(value_min=0,value_max=5)
+      .help = Deprecated. Use scan_margin instead
 
     weighting_strategy
       .help = "Parameters to configure weighting strategy overrides"
@@ -314,6 +319,14 @@ class ReflectionManagerFactory(object):
                 *params.weighting_strategy.constants, stills=do_stills
             )
 
+        # Check for deprecated parameter
+        if params.trim_scan_edges is not None:
+            warnings.warn(
+                "The parameter trim_scan_edges is deprecated and will be removed shortly",
+                FutureWarning,
+            )
+            params.scan_margin = params.trim_scan_edges
+
         return refman(
             reflections=reflections,
             experiments=experiments,
@@ -321,7 +334,7 @@ class ReflectionManagerFactory(object):
             max_sample_size=params.maximum_sample_size,
             min_sample_size=params.minimum_sample_size,
             close_to_spindle_cutoff=params.close_to_spindle_cutoff,
-            trim_scan_edges=params.trim_scan_edges,
+            scan_margin=params.scan_margin,
             outlier_detector=outlier_detector,
             weighting_strategy_override=weighting_strategy,
         )
@@ -347,7 +360,7 @@ class ReflectionManager(object):
         max_sample_size=None,
         min_sample_size=0,
         close_to_spindle_cutoff=0.02,
-        trim_scan_edges=0.0,
+        scan_margin=0.0,
         outlier_detector=None,
         weighting_strategy_override=None,
     ):
@@ -394,7 +407,7 @@ class ReflectionManager(object):
 
         # set up the reflection inclusion criteria
         self._close_to_spindle_cutoff = close_to_spindle_cutoff  # close to spindle
-        self._trim_scan_edges = DEG2RAD * trim_scan_edges  # close to the scan edge
+        self._scan_margin = DEG2RAD * scan_margin  # close to the scan edge
         self._outlier_detector = outlier_detector  # for outlier rejection
         self._nref_per_degree = nref_per_degree  # random subsets
         self._max_sample_size = max_sample_size  # sample size ceiling
@@ -569,12 +582,12 @@ class ReflectionManager(object):
 
             # third test: reject reflections close to the centres of the first and
             # last images in the scan
-            if self._trim_scan_edges > 0.0:
+            if self._scan_margin > 0.0:
                 edge1, edge2 = [e + 0.5 for e in exp.scan.get_image_range()]
                 edge1 = exp.scan.get_angle_from_image_index(edge1, deg=False)
-                edge1 += self._trim_scan_edges
+                edge1 += self._scan_margin
                 edge2 = exp.scan.get_angle_from_image_index(edge2, deg=False)
-                edge2 -= self._trim_scan_edges
+                edge2 -= self._scan_margin
                 passed3 = (edge1 <= phi) & (phi <= edge2)
 
                 # combine the last test only if there would be a reasonable number of
@@ -584,7 +597,7 @@ class ReflectionManager(object):
                 if to_update.count(True) < 40:
                     logger.warning(
                         "Too few reflections to trim centroids from the scan "
-                        "edges. Resetting trim_scan_edges=0.0"
+                        "edges. Resetting scan_margin=0.0"
                     )
                     to_update = tmp
 

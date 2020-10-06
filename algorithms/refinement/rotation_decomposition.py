@@ -1,5 +1,7 @@
 from __future__ import absolute_import, division, print_function
+
 import math
+
 from scitbx import matrix
 
 """A Python version of the Rotation::euler_explicit method from Pointless"""

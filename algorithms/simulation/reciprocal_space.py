@@ -52,11 +52,11 @@ class Simulator(object):
 
     def with_individual_given_intensity(self, N, In, Ba, Bb, Bc, Bd):
         """Generate reflections with given intensity and background."""
-        from dials.util.command_line import ProgressBar
         from dials.algorithms.simulation import simulate_reciprocal_space_gaussian
         from dials.algorithms.simulation.generate_test_reflections import (
             random_background_plane2,
         )
+        from dials.util.command_line import ProgressBar
 
         # Check the lengths
         assert N == len(In)
@@ -153,11 +153,11 @@ class Simulator(object):
 
     def generate_predictions(self, N):
         """Generate some reflections."""
-        from dials.algorithms.profile_model.gaussian_rs import MaskCalculator3D
-        from dials.util.command_line import Command
         from dials.algorithms import filtering
-        from dials.algorithms.shoebox import MaskCode
+        from dials.algorithms.profile_model.gaussian_rs import MaskCalculator3D
         from dials.algorithms.profile_model.gaussian_rs import Model as ProfileModel
+        from dials.algorithms.shoebox import MaskCode
+        from dials.util.command_line import Command
 
         # Set the profile model
         self.experiment.profile = ProfileModel(

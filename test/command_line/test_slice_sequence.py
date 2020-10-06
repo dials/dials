@@ -4,8 +4,10 @@ import os
 
 import procrunner
 import pytest
-from dials.array_family import flex
+
 from dxtbx.model.experiment_list import ExperimentListFactory
+
+from dials.array_family import flex
 
 
 def test_slice_sequence_and_compare_with_expected_results(dials_regression, tmpdir):

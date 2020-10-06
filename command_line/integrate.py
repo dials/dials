@@ -1,4 +1,5 @@
 # coding: utf-8
+# DIALS_ENABLE_COMMAND_LINE_COMPLETION
 """
 This program is used to integrate the reflections on the diffraction images. It
 is called with an experiment list outputted from dials.index or dials.refine and
@@ -24,23 +25,21 @@ from __future__ import absolute_import, division, print_function
 import logging
 import math
 import sys
-import dials.util.log
 
-from dials.array_family import flex
-from dials.util import show_mail_on_error
-from dials.util.slice import slice_crystal
-from dials.util.options import OptionParser
-from dials.util.command_line import heading
-from dials.util.options import reflections_and_experiments_from_files
-from dials.util.version import dials_version
+from dxtbx.model.experiment_list import Experiment, ExperimentList
 from libtbx.phil import parse
-from dials.algorithms.profile_model.factory import ProfileModelFactory
+
+import dials.util.log
 from dials.algorithms.integration.integrator import create_integrator
-from dxtbx.model.experiment_list import ExperimentList
-from dxtbx.model.experiment_list import Experiment
+from dials.algorithms.profile_model.factory import ProfileModelFactory
+from dials.array_family import flex
+from dials.util import show_mail_handle_errors
+from dials.util.command_line import heading
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.slice import slice_crystal
+from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.integrate")
-# DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
 # Create the phil scope
 
@@ -628,6 +627,7 @@ def run_integration(params, experiments, reference=None):
     return experiments, reflections, report
 
 
+@show_mail_handle_errors()
 def run(args=None, phil=phil_scope):
     """Run the integration command line script."""
     usage = "usage: dials.integrate [options] models.expt"
@@ -674,6 +674,9 @@ def run(args=None, phil=phil_scope):
     else:
         reference = reference[0]
 
+    if reference and "shoebox" not in reference:
+        sys.exit("Error: shoebox data missing from reflection table")
+
     try:
         experiments, reflections, report = run_integration(
             params, experiments, reference
@@ -697,5 +700,4 @@ def run(args=None, phil=phil_scope):
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
-        run()
+    run()

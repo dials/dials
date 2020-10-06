@@ -1,5 +1,7 @@
 import json
+
 import pytest
+
 from dials.command_line import estimate_resolution as cmdline
 
 

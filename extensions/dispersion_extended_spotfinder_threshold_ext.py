@@ -3,10 +3,10 @@ from __future__ import absolute_import, division, print_function
 import logging
 
 import libtbx
-from scitbx.array_family import flex
 from scitbx import matrix
-from dials.algorithms.spot_finding.threshold import DispersionExtendedThresholdStrategy
+from scitbx.array_family import flex
 
+from dials.algorithms.spot_finding.threshold import DispersionExtendedThresholdStrategy
 
 logger = logging.getLogger(
     "dials.extensions.dispersion_extended_spotfinder_threshold_ext"

@@ -9,16 +9,18 @@ from __future__ import absolute_import, division, print_function
 import imp
 import math
 import os
+
 import wx
 
-from . import pyslip
-from . import tile_generation
+from boost_adaptbx.boost.python import c_sizeof
+from rstbx.viewer import image as rv_image
+from rstbx.viewer import settings as rv_settings
+from rstbx.viewer.frame import SettingsFrame
+from wxtbx import bitmaps
+
 from ..rstbx_frame import EVT_EXTERNAL_UPDATE
 from ..rstbx_frame import XrayFrame as XFBaseClass
-from rstbx.viewer import settings as rv_settings, image as rv_image
-from wxtbx import bitmaps
-from boost_adaptbx.boost.python import c_sizeof
-from rstbx.viewer.frame import SettingsFrame
+from . import pyslip, tile_generation
 
 pyslip._Tiles = tile_generation._Tiles
 

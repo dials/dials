@@ -6,10 +6,12 @@ import os
 import shutil
 import pytest
 
-from dxtbx.serialize import load
-from dials.array_family import flex
-from dials.algorithms.integration.processor import _average_bbox_size
 import procrunner
+
+from dxtbx.serialize import load
+
+from dials.algorithms.integration.processor import _average_bbox_size
+from dials.array_family import flex
 
 
 def test_basic_integrate(dials_data, tmpdir):
@@ -129,6 +131,34 @@ def test_basic_blocking_options(dials_data, tmp_path, block_size, block_units):
 
     result = procrunner.run(args, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
+
+
+def test_basic_threaded_integrate(dials_data, tmp_path):
+    """Test the threaded integrator on single imageset data."""
+
+    expts = dials_data("centroid_test_data") / "indexed.expt"
+    refls = dials_data("centroid_test_data") / "indexed.refl"
+
+    result = procrunner.run(
+        [
+            "dials.integrate",
+            "integration.integrator=3d_threaded",
+            "background.algorithm=glm",
+            "njobs=2",
+            "nproc=2",
+            refls,
+            expts,
+        ],
+        working_directory=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+    assert tmp_path.joinpath("integrated.refl").is_file()
+    assert tmp_path.joinpath("integrated.expt").is_file()
+
+    table = flex.reflection_table.from_file(tmp_path / "integrated.refl")
+    assert table.size() == 4204
+    assert set(table["id"]) == {0}
+    assert table.select(table["id"] == 0).size() == 4204
 
 
 def test_basic_integrate_output_integrated_only(dials_data, tmpdir):

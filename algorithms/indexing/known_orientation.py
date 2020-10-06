@@ -2,8 +2,9 @@
 
 from __future__ import absolute_import, division, print_function
 
-from dials.algorithms.indexing.indexer import Indexer
 from dxtbx.model.experiment_list import Experiment, ExperimentList
+
+from dials.algorithms.indexing.indexer import Indexer
 
 
 class IndexerKnownOrientation(Indexer):

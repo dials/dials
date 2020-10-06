@@ -72,7 +72,7 @@ def dials_regression():
         ):
             return reference_copy
     except ImportError:
-        pass  # can not tell whether in DLS network or not
+        pass  # Cannot tell whether in DLS network or not
     pytest.skip("dials_regression required for this test")
 
 

@@ -6,36 +6,35 @@ import logging
 import math
 import sys
 
+import iotbx.cif.model
 from cctbx import miller, sgtbx
+from dxtbx.model.experiment_list import Experiment, ExperimentList
 from libtbx.phil import parse
 from libtbx.utils import format_float_with_standard_uncertainty
-import iotbx.cif.model
 
-from dxtbx.model.experiment_list import Experiment, ExperimentList
+import dials.util
 from dials.algorithms.refinement.corrgram import create_correlation_plots
-from dials.algorithms.refinement.engine import refinery_phil_scope
 from dials.algorithms.refinement.engine import LevenbergMarquardtIterations as Refinery
-from dials.algorithms.refinement.refiner import Refiner
+from dials.algorithms.refinement.engine import refinery_phil_scope
 from dials.algorithms.refinement.parameterisation.crystal_parameters import (
     CrystalUnitCellParameterisation,
 )
 from dials.algorithms.refinement.parameterisation.parameter_report import (
     ParameterReporter,
 )
+from dials.algorithms.refinement.refiner import Refiner
 from dials.algorithms.refinement.two_theta_refiner import (
-    TwoThetaReflectionManager,
-    TwoThetaTarget,
     TwoThetaExperimentsPredictor,
     TwoThetaPredictionParameterisation,
+    TwoThetaReflectionManager,
+    TwoThetaTarget,
 )
 from dials.array_family import flex
-from dials.util import log
-from dials.util.version import dials_version
-from dials.util import show_mail_on_error
+from dials.util import log, tabulate
 from dials.util.filter_reflections import filter_reflection_table
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.multi_dataset_handling import parse_multiple_datasets
-from dials.util import tabulate
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.two_theta_refine")
 
@@ -419,11 +418,11 @@ class Script(object):
         with open(filename, "w") as fh:
             cif.show(out=fh)
 
-    def run(self):
+    def run(self, args=None):
         """Execute the script."""
 
         # Parse the command line
-        params, _ = self.parser.parse_args(show_diff_phil=False)
+        params, _ = self.parser.parse_args(args, show_diff_phil=False)
 
         # set up global reflections list
         reflections = flex.reflection_table()
@@ -539,7 +538,11 @@ class Script(object):
             self.generate_mmcif(crystals[0], refiner, filename=params.output.mmcif)
 
 
+@dials.util.show_mail_handle_errors()
+def run(args=None):
+    script = Script()
+    script.run(args)
+
+
 if __name__ == "__main__":
-    with show_mail_on_error():
-        script = Script()
-        script.run()
+    run()

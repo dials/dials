@@ -1,13 +1,13 @@
 from __future__ import absolute_import, division, print_function
+
 import logging
 
 logger = logging.getLogger(__name__)
 
-from scitbx.array_family import flex
-from dials.algorithms.refinement import DialsRefineConfigError
-
-# PHIL
 from libtbx.phil import parse
+from scitbx.array_family import flex
+
+from dials.algorithms.refinement import DialsRefineConfigError
 
 phil_str = """
       min_nref_per_parameter = 5
@@ -145,7 +145,12 @@ class AutoReduce(object):
         if len(sel) > 0:
             names = ", ".join([self.param_names[i] for i in sel])
             msg = "Too few reflections to parameterise {0}.\n".format(names)
-            msg += "Try modifying refinement.parameterisation.auto_reduction options"
+            msg += (
+                "Try setting "
+                "refinement.parameterisation.auto_reduction.action "
+                "to fix these parameters (=fix) or additionally remove the "
+                "associated reflections (=remove)."
+            )
             raise DialsRefineConfigError(msg)
 
     def check_and_fix(self):

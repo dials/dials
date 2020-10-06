@@ -14,7 +14,7 @@ from multiprocessing import Process
 
 import libtbx.phil
 
-from dials.util import Sorry
+from dials.util import Sorry, show_mail_handle_errors
 
 logger = logging.getLogger("dials.command_line.find_spots_server")
 
@@ -98,9 +98,10 @@ indexing_min_spots = 10
     integrate = params.extract().integrate
     indexing_min_spots = params.extract().indexing_min_spots
 
-    from dials.command_line.find_spots import phil_scope as find_spots_phil_scope
     from dxtbx.model.experiment_list import ExperimentListFactory
+
     from dials.array_family import flex
+    from dials.command_line.find_spots import phil_scope as find_spots_phil_scope
 
     interp = find_spots_phil_scope.command_line_argument_interpreter()
     phil_scope, unhandled = interp.process_and_fetch(
@@ -184,8 +185,8 @@ indexing_min_spots = 10
 
         if integrate and "lattices" in stats:
 
-            from dials.algorithms.profile_model.factory import ProfileModelFactory
             from dials.algorithms.integration.integrator import create_integrator
+            from dials.algorithms.profile_model.factory import ProfileModelFactory
             from dials.command_line.integrate import phil_scope as integrate_phil_scope
 
             interp = integrate_phil_scope.command_line_argument_interpreter()
@@ -260,18 +261,18 @@ indexing_min_spots = 10
 
 
 class handler(server_base.BaseHTTPRequestHandler):
-    def do_GET(s):
+    def do_GET(self):
         """Respond to a GET request."""
-        s.send_response(200)
-        s.send_header("Content-type", "text/xml")
-        s.end_headers()
-        if s.path == "/Ctrl-C":
+        self.send_response(200)
+        self.send_header("Content-type", "text/xml")
+        self.end_headers()
+        if self.path == "/Ctrl-C":
             global stop
             stop = True
             return
 
-        filename = s.path.split(";")[0]
-        params = s.path.split(";")[1:]
+        filename = self.path.split(";")[0]
+        params = self.path.split(";")[1:]
 
         # If we're passing a url through, then unquote and ignore leading /
         if "%3A//" in filename:
@@ -287,7 +288,7 @@ class handler(server_base.BaseHTTPRequestHandler):
             d["error"] = str(e)
 
         response = json.dumps(d).encode("latin-1")
-        s.wfile.write(response)
+        self.wfile.write(response)
 
 
 def serve(httpd):
@@ -322,15 +323,20 @@ def main(nproc, port):
     print(time.asctime(), "done")
 
 
-if __name__ == "__main__":
+@show_mail_handle_errors()
+def run(args=None):
     usage = "dials.find_spots_server [options]"
 
     from dials.util.options import OptionParser
 
     parser = OptionParser(usage=usage, phil=phil_scope, epilog=help_message)
-    params, options = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(args, show_diff_phil=True)
     if params.nproc is libtbx.Auto:
         from libtbx.introspection import number_of_processors
 
         params.nproc = number_of_processors(return_value_if_unknown=-1)
     main(params.nproc, params.port)
+
+
+if __name__ == "__main__":
+    run()

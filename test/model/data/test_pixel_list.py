@@ -4,8 +4,9 @@ import random
 
 
 def test_pickle():
-    from dials.model.data import PixelList
     from scitbx.array_family import flex
+
+    from dials.model.data import PixelList
 
     size = (100, 100)
     sf = 10
@@ -31,8 +32,9 @@ def test_pickle():
 
 
 def test_add_image():
-    from dials.model.data import PixelList, PixelListLabeller
     from scitbx.array_family import flex
+
+    from dials.model.data import PixelList, PixelListLabeller
 
     size = (2000, 2000)
     sf = 10
@@ -51,8 +53,9 @@ def test_add_image():
 
 
 def test_labels_3d():
-    from dials.model.data import PixelList, PixelListLabeller
     from scitbx.array_family import flex
+
+    from dials.model.data import PixelList, PixelListLabeller
 
     size = (500, 500)
     sf = 0
@@ -99,8 +102,9 @@ def test_labels_3d():
 
 
 def test_labels_2d():
-    from dials.model.data import PixelList, PixelListLabeller
     from scitbx.array_family import flex
+
+    from dials.model.data import PixelList, PixelListLabeller
 
     size = (500, 500)
     sf = 0
@@ -147,8 +151,9 @@ def test_labels_2d():
 
 
 def test_with_no_points():
-    from dials.model.data import PixelList, PixelListLabeller
     from scitbx.array_family import flex
+
+    from dials.model.data import PixelList, PixelListLabeller
 
     size = (500, 500)
     sf = 0

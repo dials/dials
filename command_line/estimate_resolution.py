@@ -6,15 +6,15 @@ import json
 import logging
 import sys
 import warnings
-from jinja2 import Environment, ChoiceLoader, PackageLoader
+
+from jinja2 import ChoiceLoader, Environment, PackageLoader
 
 import libtbx.phil
 
-from dials.util import resolution_analysis
-from dials.util import log
+from dials.util import log, resolution_analysis, show_mail_handle_errors
+from dials.util.multi_dataset_handling import parse_multiple_datasets
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
-from dials.util.multi_dataset_handling import parse_multiple_datasets
 
 logger = logging.getLogger("dials.estimate_resolution")
 
@@ -39,7 +39,8 @@ output {
 )
 
 
-def run(args):
+@show_mail_handle_errors()
+def run(args=None):
     usage = "dials.estimate_resolution [options] (scaled.expt scaled.refl | scaled_unmerged.mtz)"
 
     import libtbx.load_env
@@ -121,4 +122,4 @@ def output_html_report(plots, filename):
 
 
 if __name__ == "__main__":
-    run(sys.argv[1:])
+    run()

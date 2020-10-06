@@ -3,10 +3,11 @@ from __future__ import absolute_import, division, print_function
 import logging
 import math
 
-from dials.array_family import flex
+from scitbx.matrix import col
+
 from dials.algorithms.integration.kapton_correction import get_absorption_correction
 from dials.algorithms.shoebox import MaskCode
-from scitbx.matrix import col
+from dials.array_family import flex
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)

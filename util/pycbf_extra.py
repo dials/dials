@@ -1,9 +1,10 @@
 """This module defines some useful header functions for CBF files."""
 from __future__ import absolute_import, division, print_function
 
-from scitbx import matrix
-import pycbf
 import numpy as np
+import pycbf
+
+from scitbx import matrix
 
 
 def compute_central_rotation_matrix(gonio):

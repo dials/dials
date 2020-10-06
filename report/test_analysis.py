@@ -1,23 +1,26 @@
 """Tests for dials.report.analysis module"""
 from __future__ import absolute_import, division, print_function
+
 import pytest
 from mock import mock
+
 from cctbx import miller
 from dxtbx.model import Crystal
 from dxtbx.serialize import load
-from dials.array_family import flex
-from dials.report.analysis import (
-    scales_vs_batch,
-    i_sig_i_vs_batch,
-    rmerge_vs_batch,
-    batch_dependent_properties,
-    reflection_tables_to_batch_dependent_properties,
-    combined_table_to_batch_dependent_properties,
-    table_1_summary,
-)
+
 from dials.algorithms.scaling.scaling_library import (
     merging_stats_from_scaled_array,
     scaled_data_as_miller_array,
+)
+from dials.array_family import flex
+from dials.report.analysis import (
+    batch_dependent_properties,
+    combined_table_to_batch_dependent_properties,
+    i_sig_i_vs_batch,
+    reflection_tables_to_batch_dependent_properties,
+    rmerge_vs_batch,
+    scales_vs_batch,
+    table_1_summary,
 )
 
 
@@ -111,6 +114,7 @@ def test_reflections_to_batch_properties(
     reflections["miller_index"] = example_miller_set.indices()
     reflections["id"] = flex.int(9, 1)
     reflections.set_flags(flex.bool(9, True), reflections.flags.integrated)
+    reflections.set_flags(flex.bool(9, True), reflections.flags.scaled)
 
     experiments = [mock.Mock()]
     experiments[0].scan.get_image_range.return_value = [1, 10]

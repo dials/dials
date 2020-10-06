@@ -5,8 +5,9 @@ from __future__ import absolute_import, division, print_function
 import pickle
 import sys
 
-import dials.util.log
 import iotbx.phil
+
+import dials.util.log
 from dials.util.image_viewer.spotfinder_wrap import spot_wrapper
 from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
 
@@ -167,7 +168,8 @@ def show_image_viewer(params, experiments, reflections):
     wrapper.display(experiments=experiments, reflections=reflections)
 
 
-if __name__ == "__main__":
+@dials.util.show_mail_handle_errors()
+def run(args=None):
     import wx  # It is unclear why, but it is crucial that wx
 
     # is imported before the parser is run.
@@ -193,7 +195,7 @@ if __name__ == "__main__":
         read_experiments_from_images=True,
         epilog=help_message,
     )
-    params, options = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(args, show_diff_phil=True)
     experiments = [x.data for x in params.input.experiments]
     reflections = flatten_reflections(params.input.reflections)
 
@@ -214,3 +216,7 @@ if __name__ == "__main__":
             params.mask = pickle.load(f)
 
     show_image_viewer(params=params, reflections=reflections, experiments=experiments)
+
+
+if __name__ == "__main__":
+    run()

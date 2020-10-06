@@ -19,8 +19,17 @@ difficulty for most uses is to generate the map tiles.
 [1] http://wiki.openstreetmap.org/index.php/Slippy_Map
 """
 from __future__ import absolute_import, division, print_function
+
+import glob
+import math
+import os
+import sys
+
+import wx
+from six.moves import cPickle as pickle
 from six.moves import range
 
+from scitbx.matrix import col
 
 # Copyright (c) 2010, Ross Wilson (rzzzwilson@gmail.com). All rights reserved.
 #
@@ -44,15 +53,6 @@ from six.moves import range
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-
-
-import os
-import sys
-import glob
-from six.moves import cPickle as pickle
-import wx
-from scitbx.matrix import col
-import math
 
 
 __version__ = "2.2"

@@ -8,13 +8,8 @@ import pytest
 
 from cctbx import crystal, sgtbx
 from cctbx.sgtbx import bravais_types
-from dials.algorithms.indexing.assign_indices import (
-    AssignIndicesGlobal,
-    AssignIndicesLocal,
-)
-from dials.array_family import flex
 from dxtbx.format import Format
-from dxtbx.imageset import ImageSetData, ImageSequence
+from dxtbx.imageset import ImageSequence, ImageSetData
 from dxtbx.model import (
     BeamFactory,
     Crystal,
@@ -26,6 +21,12 @@ from dxtbx.model.experiment_list import Experiment, ExperimentList
 from dxtbx.serialize import load
 from scitbx import matrix
 from scitbx.math import euler_angles_as_matrix
+
+from dials.algorithms.indexing.assign_indices import (
+    AssignIndicesGlobal,
+    AssignIndicesLocal,
+)
+from dials.array_family import flex
 
 
 def random_rotation(angle_min=0, angle_max=360):

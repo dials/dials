@@ -3,14 +3,18 @@ from __future__ import absolute_import, division, print_function
 import math
 import random
 
-from scitbx.array_family import flex
-from scitbx import matrix
-
-from dials.algorithms.profile_model.gaussian_rs.transform import MapFramesForward
-from dials.algorithms.profile_model.gaussian_rs.transform import MapFramesReverse
-from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator3D
-from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
 from dxtbx.serialize import load
+from scitbx import matrix
+from scitbx.array_family import flex
+
+from dials.algorithms.profile_model.gaussian_rs import (
+    BBoxCalculator3D,
+    CoordinateSystem,
+)
+from dials.algorithms.profile_model.gaussian_rs.transform import (
+    MapFramesForward,
+    MapFramesReverse,
+)
 
 
 def test_map_frames_forward(dials_data):
