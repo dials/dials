@@ -639,6 +639,7 @@ def run_integration(params, experiments, reference=None):
     return experiments, reflections, report
 
 
+@show_mail_handle_errors()
 def run(args=None, phil=working_phil):
     """Run the integration command line script."""
     usage = "usage: dials.integrate [options] models.expt"
@@ -711,5 +712,4 @@ def run(args=None, phil=working_phil):
 
 
 if __name__ == "__main__":
-    with show_mail_handle_errors():
-        run()
+    run()

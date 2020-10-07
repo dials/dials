@@ -2,6 +2,8 @@ from __future__ import absolute_import, division, print_function
 
 import libtbx.phil
 
+import dials.util
+
 help_message = """
 
 Compute resolution-wise distribution of spots
@@ -37,7 +39,8 @@ def spot_resolution_shells(experiments, reflections, params):
         print("%d %f %d" % (j, d[j], n[j]))
 
 
-def run(args):
+@dials.util.show_mail_handle_errors()
+def run(args=None):
     from dials.util.options import OptionParser, reflections_and_experiments_from_files
 
     usage = "dials.spot_resolution_shells [options] models.expt observations.refl"
@@ -51,7 +54,7 @@ def run(args):
         epilog=help_message,
     )
 
-    params, options = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(args, show_diff_phil=True)
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
@@ -66,6 +69,4 @@ def run(args):
 
 
 if __name__ == "__main__":
-    import sys
-
-    run(sys.argv[1:])
+    run()

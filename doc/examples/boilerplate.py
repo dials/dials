@@ -104,7 +104,8 @@ def do_boilerplate(
     return experiments, reflections
 
 
-def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> None
+@dials.util.show_mail_on_error()
+def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     """
     Check command-line input and call other functions to do the legwork.
 
@@ -162,7 +163,6 @@ def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> 
     reflections.as_file(params.output.reflections)
 
 
-# Keep this minimal.  Try to keep the command-line behaviour neatly encapsulated in run.
+# Keep this minimal. Calling run() should do exactly the same thing as running this
 if __name__ == "__main__":
-    with dials.util.show_mail_handle_errors():
-        run()
+    run()

@@ -923,7 +923,11 @@ class Script(object):
         logger.info("\n".join(text))
 
 
+@show_mail_handle_errors()
+def run(args=None):
+    script = Script()
+    script.run(args)
+
+
 if __name__ == "__main__":
-    with show_mail_handle_errors():
-        script = Script()
-        script.run()
+    run()

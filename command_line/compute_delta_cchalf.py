@@ -87,6 +87,7 @@ phil_scope = parse(
 )
 
 
+@show_mail_handle_errors()
 def run(args=None, phil=phil_scope):
     """Run the command-line script."""
 
@@ -139,5 +140,4 @@ of datasets in the reflection table (%s)
 
 
 if __name__ == "__main__":
-    with show_mail_handle_errors():
-        run()
+    run()

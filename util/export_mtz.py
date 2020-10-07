@@ -7,7 +7,7 @@ import time
 from collections import Counter, OrderedDict
 
 from iotbx import mtz
-from libtbx import Auto, env
+from libtbx import env
 from scitbx import matrix
 
 import dials.util.ext
@@ -240,7 +240,7 @@ class UnmergedMTZWriter(MTZWriterBase):
             s0n,
         )
 
-    def write_columns(self, integrated_data):
+    def write_columns(self, reflection_table):
         """Write the column definitions AND data to the current dataset."""
 
         # now create the actual data structures - first keep a track of the columns
@@ -250,10 +250,10 @@ class UnmergedMTZWriter(MTZWriterBase):
 
         # gather the required information for the reflection file
 
-        nref = len(integrated_data["miller_index"])
+        nref = len(reflection_table["miller_index"])
         assert nref
         xdet, ydet, _ = [
-            flex.double(x) for x in integrated_data["xyzobs.px.value"].parts()
+            flex.double(x) for x in reflection_table["xyzobs.px.value"].parts()
         ]
 
         # now add column information...
@@ -302,17 +302,17 @@ class UnmergedMTZWriter(MTZWriterBase):
             )
 
         self.mtz_file.replace_original_index_miller_indices(
-            integrated_data["miller_index"]
+            reflection_table["miller_index"]
         )
 
         dataset.add_column("BATCH", type_table["BATCH"]).set_values(
-            integrated_data["batch"].as_double().as_float()
+            reflection_table["batch"].as_double().as_float()
         )
 
         # if intensity values used in scaling exist, then just export these as I, SIGI
-        if "intensity.scale.value" in integrated_data:
-            I_scaling = integrated_data["intensity.scale.value"]
-            V_scaling = integrated_data["intensity.scale.variance"]
+        if "intensity.scale.value" in reflection_table:
+            I_scaling = reflection_table["intensity.scale.value"]
+            V_scaling = reflection_table["intensity.scale.variance"]
             # Trap negative variances
             assert V_scaling.all_gt(0)
             dataset.add_column("I", type_table["I"]).set_values(I_scaling.as_float())
@@ -320,19 +320,19 @@ class UnmergedMTZWriter(MTZWriterBase):
                 flex.sqrt(V_scaling).as_float()
             )
             dataset.add_column("SCALEUSED", "R").set_values(
-                integrated_data["inverse_scale_factor"].as_float()
+                reflection_table["inverse_scale_factor"].as_float()
             )
             dataset.add_column("SIGSCALEUSED", "R").set_values(
-                flex.sqrt(integrated_data["inverse_scale_factor_variance"]).as_float()
+                flex.sqrt(reflection_table["inverse_scale_factor_variance"]).as_float()
             )
         else:
-            if "intensity.prf.value" in integrated_data:
-                if "intensity.sum.value" in integrated_data:
+            if "intensity.prf.value" in reflection_table:
+                if "intensity.sum.value" in reflection_table:
                     col_names = ("IPR", "SIGIPR")
                 else:
                     col_names = ("I", "SIGI")
-                I_profile = integrated_data["intensity.prf.value"]
-                V_profile = integrated_data["intensity.prf.variance"]
+                I_profile = reflection_table["intensity.prf.value"]
+                V_profile = reflection_table["intensity.prf.variance"]
                 # Trap negative variances
                 assert V_profile.all_gt(0)
                 dataset.add_column(col_names[0], type_table["I"]).set_values(
@@ -341,9 +341,9 @@ class UnmergedMTZWriter(MTZWriterBase):
                 dataset.add_column(col_names[1], type_table["SIGI"]).set_values(
                     flex.sqrt(V_profile).as_float()
                 )
-            if "intensity.sum.value" in integrated_data:
-                I_sum = integrated_data["intensity.sum.value"]
-                V_sum = integrated_data["intensity.sum.variance"]
+            if "intensity.sum.value" in reflection_table:
+                I_sum = reflection_table["intensity.sum.value"]
+                V_sum = reflection_table["intensity.sum.variance"]
                 # Trap negative variances
                 assert V_sum.all_gt(0)
                 dataset.add_column("I", type_table["I"]).set_values(I_sum.as_float())
@@ -351,11 +351,11 @@ class UnmergedMTZWriter(MTZWriterBase):
                     flex.sqrt(V_sum).as_float()
                 )
         if (
-            "background.sum.value" in integrated_data
-            and "background.sum.variance" in integrated_data
+            "background.sum.value" in reflection_table
+            and "background.sum.variance" in reflection_table
         ):
-            bg = integrated_data["background.sum.value"]
-            varbg = integrated_data["background.sum.variance"]
+            bg = reflection_table["background.sum.value"]
+            varbg = reflection_table["background.sum.variance"]
             assert (varbg >= 0).count(False) == 0
             sigbg = flex.sqrt(varbg)
             dataset.add_column("BG", type_table["BG"]).set_values(bg.as_float())
@@ -364,25 +364,25 @@ class UnmergedMTZWriter(MTZWriterBase):
             )
 
         dataset.add_column("FRACTIONCALC", type_table["FRACTIONCALC"]).set_values(
-            integrated_data["fractioncalc"].as_float()
+            reflection_table["fractioncalc"].as_float()
         )
 
         dataset.add_column("XDET", type_table["XDET"]).set_values(xdet.as_float())
         dataset.add_column("YDET", type_table["YDET"]).set_values(ydet.as_float())
         dataset.add_column("ROT", type_table["ROT"]).set_values(
-            integrated_data["ROT"].as_float()
+            reflection_table["ROT"].as_float()
         )
-        if "lp" in integrated_data:
+        if "lp" in reflection_table:
             dataset.add_column("LP", type_table["LP"]).set_values(
-                integrated_data["lp"].as_float()
+                reflection_table["lp"].as_float()
             )
-        if "qe" in integrated_data:
+        if "qe" in reflection_table:
             dataset.add_column("QE", type_table["QE"]).set_values(
-                integrated_data["qe"].as_float()
+                reflection_table["qe"].as_float()
             )
-        elif "dqe" in integrated_data:
+        elif "dqe" in reflection_table:
             dataset.add_column("QE", type_table["QE"]).set_values(
-                integrated_data["dqe"].as_float()
+                reflection_table["dqe"].as_float()
             )
         else:
             dataset.add_column("QE", type_table["QE"]).set_values(
@@ -390,35 +390,36 @@ class UnmergedMTZWriter(MTZWriterBase):
             )
 
 
-def export_mtz(integrated_data, experiment_list, params):
-    """Export data from integrated_data corresponding to experiment_list to an
+def export_mtz(
+    reflection_table,
+    experiment_list,
+    intensity_choice,
+    filename,
+    best_unit_cell=None,
+    partiality_threshold=0.4,
+    combine_partials=True,
+    min_isigi=-5,
+    filter_ice_rings=False,
+    d_min=None,
+    force_static_model=False,
+    crystal_name=None,
+    project_name=None,
+):
+    """Export data from reflection_table corresponding to experiment_list to an
     MTZ file hklout."""
 
-    # if mtz filename is auto, then choose scaled.mtz or integrated.mtz
-    if params.mtz.hklout in (None, Auto, "auto"):
-        if ("intensity.scale.value" in integrated_data) and (
-            "intensity.scale.variance" in integrated_data
-        ):
-            params.mtz.hklout = "scaled.mtz"
-            logger.info("Data appears to be scaled, setting mtz.hklout = 'scaled.mtz'")
-        else:
-            params.mtz.hklout = "integrated.mtz"
-            logger.info(
-                "Data appears to be unscaled, setting mtz.hklout = 'integrated.mtz'"
-            )
-
     # First get the experiment identifier information out of the data
-    expids_in_table = integrated_data.experiment_identifiers()
+    expids_in_table = reflection_table.experiment_identifiers()
     if not list(expids_in_table.keys()):
-        reflection_tables = parse_multiple_datasets([integrated_data])
+        reflection_tables = parse_multiple_datasets([reflection_table])
         experiment_list, refl_list = assign_unique_identifiers(
             experiment_list, reflection_tables
         )
-        integrated_data = flex.reflection_table()
+        reflection_table = flex.reflection_table()
         for reflections in refl_list:
-            integrated_data.extend(reflections)
-        expids_in_table = integrated_data.experiment_identifiers()
-    integrated_data.assert_experiment_identifiers_are_consistent(experiment_list)
+            reflection_table.extend(reflections)
+        expids_in_table = reflection_table.experiment_identifiers()
+    reflection_table.assert_experiment_identifiers_are_consistent(experiment_list)
     expids_in_list = list(experiment_list.identifiers())
 
     # Convert experiment_list to a real python list or else identity assumptions
@@ -438,7 +439,7 @@ def export_mtz(integrated_data, experiment_list, params):
             )
 
         wavelengths = match_wavelengths(experiment_list)
-        if len(wavelengths.keys()) > 1:
+        if len(wavelengths) > 1:
             logger.info(
                 "Multiple wavelengths found: \n%s",
                 "\n".join(
@@ -454,20 +455,19 @@ def export_mtz(integrated_data, experiment_list, params):
     if any(len(experiment.detector) != 1 for experiment in experiment_list):
         logger.warning("Ignoring multiple panels in output MTZ")
 
-    best_unit_cell = params.mtz.best_unit_cell
     if best_unit_cell is None:
         best_unit_cell = determine_best_unit_cell(experiment_list)
-    integrated_data["d"] = best_unit_cell.d(integrated_data["miller_index"])
+    reflection_table["d"] = best_unit_cell.d(reflection_table["miller_index"])
 
     # Clean up the data with the passed in options
-    integrated_data = filter_reflection_table(
-        integrated_data,
-        intensity_choice=params.intensity,
-        partiality_threshold=params.mtz.partiality_threshold,
-        combine_partials=params.mtz.combine_partials,
-        min_isigi=params.mtz.min_isigi,
-        filter_ice_rings=params.mtz.filter_ice_rings,
-        d_min=params.mtz.d_min,
+    reflection_table = filter_reflection_table(
+        reflection_table,
+        intensity_choice=intensity_choice,
+        partiality_threshold=partiality_threshold,
+        combine_partials=combine_partials,
+        min_isigi=min_isigi,
+        filter_ice_rings=filter_ice_rings,
+        d_min=d_min,
     )
 
     # get batch offsets and image ranges - even for scanless experiments
@@ -514,7 +514,7 @@ def export_mtz(integrated_data, experiment_list, params):
             expids_in_table[id_]
         )  # get strid and use to find loc in list
         experiment = experiment_list[loc]
-        if len(list(wavelengths.keys())) > 1:
+        if len(wavelengths) > 1:
             for i, (wl, exps) in enumerate(wavelengths.items()):
                 if loc in exps:
                     wavelength = wl
@@ -523,7 +523,7 @@ def export_mtz(integrated_data, experiment_list, params):
         else:
             wavelength = list(wavelengths.keys())[0]
             dataset_id = 1
-        reflections = integrated_data.select(integrated_data["id"] == id_)
+        reflections = reflection_table.select(reflection_table["id"] == id_)
         batch_offset = batch_offsets[loc]
         image_range = image_ranges[loc]
         reflections = assign_batches_to_reflections([reflections], [batch_offset])[0]
@@ -538,7 +538,7 @@ def export_mtz(integrated_data, experiment_list, params):
             wavelength,
             dataset_id,
             batch_offset=batch_offset,
-            force_static_model=params.mtz.force_static_model,
+            force_static_model=force_static_model,
         )
 
         # Create the batch offset array. This gives us an experiment (id)-dependent
@@ -555,8 +555,8 @@ def export_mtz(integrated_data, experiment_list, params):
             experiment.data["ROT"] = z
 
     mtz_writer.add_crystal(
-        crystal_name=params.mtz.crystal_name,
-        project_name=params.mtz.project_name,
+        crystal_name=crystal_name,
+        project_name=project_name,
         unit_cell=best_unit_cell,
     )
     # Note: add unit cell here as may have changed basis since creating mtz.
@@ -574,7 +574,7 @@ def export_mtz(integrated_data, experiment_list, params):
     # ALL columns must be the same length
     assert len({len(v) for v in combined_data.values()}) == 1, "Column length mismatch"
     assert len(combined_data["id"]) == len(
-        integrated_data["id"]
+        reflection_table["id"]
     ), "Lost rows in split/combine"
 
     # Write all the data and columns to the mtz file
@@ -582,11 +582,11 @@ def export_mtz(integrated_data, experiment_list, params):
 
     logger.info(
         "Saving {} integrated reflections to {}".format(
-            len(combined_data["id"]), params.mtz.hklout
+            len(combined_data["id"]), filename
         )
     )
     mtz_file = mtz_writer.mtz_file
-    mtz_file.write(params.mtz.hklout)
+    mtz_file.write(filename)
 
     return mtz_file
 

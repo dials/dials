@@ -236,7 +236,12 @@ class Script(object):
             return reflections
 
 
-if __name__ == "__main__":
+@show_mail_handle_errors()
+def run(args=None):
     with show_mail_handle_errors():
         script = Script()
-        script.run()
+        script.run(args)
+
+
+if __name__ == "__main__":
+    run()

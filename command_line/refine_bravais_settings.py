@@ -39,6 +39,7 @@ from cctbx import sgtbx
 from cctbx.sgtbx import bravais_types
 from dxtbx.model import ExperimentList
 
+import dials.util
 from dials.algorithms.indexing.bravais_settings import (
     refined_settings_from_refined_triclinic,
 )
@@ -145,6 +146,7 @@ def select_datasets_on_crystal_id(experiments, reflections, crystal_id):
     return experiments, reflections
 
 
+@dials.util.show_mail_handle_errors()
 def run(args=None):
     usage = "dials.refine_bravais_settings indexed.expt indexed.refl [options]"
 

@@ -4,8 +4,9 @@ from os.path import basename, splitext
 
 from dxtbx.model.experiment_list import ExperimentList
 
+import dials.util
 from dials.algorithms.refinement.refinement_helpers import calculate_frame_numbers
-from dials.util import Sorry, show_mail_handle_errors
+from dials.util import Sorry
 from dials.util.slice import slice_experiments, slice_reflections
 
 help_message = """
@@ -114,13 +115,13 @@ class Script(object):
             epilog=help_message,
         )
 
-    def run(self):
+    def run(self, args=None):
         """Execute the script."""
 
         from dials.util.options import reflections_and_experiments_from_files
 
         # Parse the command line
-        params, options = self.parser.parse_args(show_diff_phil=True)
+        params, options = self.parser.parse_args(args, show_diff_phil=True)
         reflections, experiments = reflections_and_experiments_from_files(
             params.input.reflections, params.input.experiments
         )
@@ -234,7 +235,11 @@ class Script(object):
         return
 
 
+@dials.util.show_mail_handle_errors()
+def run(args=None):
+    script = Script()
+    script.run(args)
+
+
 if __name__ == "__main__":
-    with show_mail_handle_errors():
-        script = Script()
-        script.run()
+    run()

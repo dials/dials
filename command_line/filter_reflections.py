@@ -405,7 +405,8 @@ def filter_by_dead_time(reflections, experiments, dead_time=0, reject_fraction=0
     return reflections.select(sel_good)
 
 
-def run():
+@show_mail_handle_errors()
+def run(args=None):
     """Run the command line filtering script."""
 
     flags = list(flex.reflection_table.flags.names.items())
@@ -426,7 +427,7 @@ def run():
         check_format=False,
     )
 
-    params, options = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(args, show_diff_phil=True)
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
@@ -452,5 +453,4 @@ def run():
 
 
 if __name__ == "__main__":
-    with show_mail_handle_errors():
-        run()
+    run()
