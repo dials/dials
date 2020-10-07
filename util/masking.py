@@ -247,8 +247,9 @@ class MaskGenerator(object):
 
             # Add a border around the image
             if self.params.border > 0:
-                logger.info("Generating border mask:")
-                logger.info(" border = %d" % self.params.border)
+                logger.info(
+                    "Generating border mask:\n" + f" border = {self.params.border}"
+                )
                 border = self.params.border
                 height, width = mask.all()
                 borderx = flex.bool(flex.grid(border, width), False)
@@ -271,20 +272,24 @@ class MaskGenerator(object):
 
                     if region.circle is not None:
                         xc, yc, radius = region.circle
-                        logger.info("Generating circle mask:")
-                        logger.info(" panel = %d" % region.panel)
-                        logger.info(" xc = %d" % xc)
-                        logger.info(" yc = %d" % yc)
-                        logger.info(" radius = %d" % radius)
+                        logger.info(
+                            "Generating circle mask:\n"
+                            + f" panel = {region.panel}\n"
+                            + f" xc = {xc}\n"
+                            + f" yc = {yc}\n"
+                            + f" radius = {radius}"
+                        )
                         mask_untrusted_circle(mask, xc, yc, radius)
                     if region.rectangle is not None:
                         x0, x1, y0, y1 = region.rectangle
-                        logger.info("Generating rectangle mask:")
-                        logger.info(" panel = %d" % region.panel)
-                        logger.info(" x0 = %d" % x0)
-                        logger.info(" y0 = %d" % y0)
-                        logger.info(" x1 = %d" % x1)
-                        logger.info(" y1 = %d" % y1)
+                        logger.info(
+                            "Generating rectangle mask:\n"
+                            + f" panel = {region.panel}\n"
+                            + f" x0 = {x0}\n"
+                            + f" y0 = {y0}\n"
+                            + f" x1 = {x1}\n"
+                            + f" y1 = {y1}"
+                        )
                         mask_untrusted_rectangle(mask, x0, x1, y0, y1)
                     if region.polygon is not None:
                         assert (
@@ -296,22 +301,24 @@ class MaskGenerator(object):
                             y = region.polygon[2 * i + 1]
                             vertices.append((x, y))
                         polygon = flex.vec2_double(vertices)
-                        logger.info("Generating polygon mask:")
-                        logger.info(" panel = %d" % region.panel)
-                        for vertex in vertices:
-                            logger.info(" coord = (%d, %d)" % (vertex))
+                        logger.info(
+                            f"Generating polygon mask:\n panel = {region.panel}\n"
+                            + "\n".join(f" coord = {vertex}" for vertex in vertices)
+                        )
                         mask_untrusted_polygon(mask, polygon)
                     if region.pixel is not None:
                         mask[region.pixel] = False
 
             # Generate high and low resolution masks
             if self.params.d_min is not None:
-                logger.info("Generating high resolution mask:")
-                logger.info(" d_min = %f" % self.params.d_min)
+                logger.info(
+                    f"Generating high resolution mask:\n d_min = {self.params.d_min}"
+                )
                 _apply_resolution_mask(mask, beam, panel, 0, self.params.d_min)
             if self.params.d_max is not None:
-                logger.info("Generating low resolution mask:")
-                logger.info(" d_max = %f" % self.params.d_max)
+                logger.info(
+                    f"Generating low resolution mask:\n d_max = {self.params.d_max}"
+                )
                 d_max = self.params.d_max
                 d_inf = max(d_max + 1, 1e9)
                 _apply_resolution_mask(mask, beam, panel, d_max, d_inf)
@@ -322,9 +329,11 @@ class MaskGenerator(object):
                     d_min = min(drange)
                     d_max = max(drange)
                     assert d_min < d_max, "d_min must be < d_max"
-                    logger.info("Generating resolution range mask:")
-                    logger.info(" d_min = %f" % d_min)
-                    logger.info(" d_max = %f" % d_max)
+                    logger.info(
+                        "Generating resolution range mask:\n"
+                        + f" d_min = {d_min}\n"
+                        + f" d_max = {d_max}"
+                    )
                     _apply_resolution_mask(mask, beam, panel, d_min, d_max)
             except TypeError:
                 # Catch the default value None of self.params.resolution_range
@@ -338,9 +347,11 @@ class MaskGenerator(object):
                 d_min = min(drange)
                 d_max = max(drange)
                 assert d_min < d_max, "d_min must be < d_max"
-                logger.info("Generating ice ring mask:")
-                logger.info(" d_min = %f" % d_min)
-                logger.info(" d_max = %f" % d_max)
+                logger.info(
+                    "Generating ice ring mask:\n"
+                    + f" d_min = {d_min:.4f}\n"
+                    + f" d_max = {d_max:.4f}"
+                )
                 _apply_resolution_mask(mask, beam, panel, d_min, d_max)
 
             # Add to the list
