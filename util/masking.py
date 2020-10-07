@@ -247,9 +247,7 @@ class MaskGenerator(object):
 
             # Add a border around the image
             if self.params.border > 0:
-                logger.debug(
-                    "Generating border mask:\n" + f" border = {self.params.border}"
-                )
+                logger.debug(f"Generating border mask:\n border = {self.params.border}")
                 border = self.params.border
                 height, width = mask.all()
                 borderx = flex.bool(flex.grid(border, width), False)
