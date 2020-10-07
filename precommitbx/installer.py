@@ -180,6 +180,10 @@ def main():
         minimum_python_version,
     )
 
+    # Need to obtain list of repository candidates before potentially installing precommit
+    # as this may jumble up installed packages while the python process is running.
+    repositories = list_all_repository_candidates()
+
     if install_things and install_precommit:
         if not _conda_info():
             exit(f"{RED}Can not install precommit without conda present{NC}")
@@ -200,7 +204,6 @@ def main():
 
     print()
     print("Repositories:")
-    repositories = list_all_repository_candidates()
     changes_required = False
     for path in sys.argv[1:]:
         if path == "install":
