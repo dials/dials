@@ -95,6 +95,8 @@ def _conda_info():
         use_exception_handler=True,
     )
     if return_code:
+        if conda_info and conda_info.get("message"):
+             print(conda_info["message"])
         raise RuntimeError(error)
     return json.loads(conda_info)
 

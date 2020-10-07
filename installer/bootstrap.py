@@ -959,13 +959,9 @@ def refresh_build():
 
 def install_precommit():
     print("Installing precommits")
-    dispatch_extension = ".bat" if os.name == "nt" else ""
-    run_command(
-        [
-            os.path.join("build", "bin", "libtbx.precommit" + dispatch_extension),
-            "install",
-        ],
-        workdir=".",
+    run_indirect_command(
+        os.path.join("bin", "libtbx.precommit"),
+        args=["install"],
     )
 
 
