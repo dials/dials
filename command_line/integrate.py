@@ -130,6 +130,18 @@ phil_scope = parse(
     process_includes=True,
 )
 
+# Local overrides for dials.integrate
+phil_overrides = parse(
+    """
+integration {
+  mp {
+    nproc = Auto
+  }
+}
+"""
+)
+working_phil = phil_scope.fetch(sources=[phil_overrides])
+
 
 def process_reference(reference):
     """
@@ -627,7 +639,7 @@ def run_integration(params, experiments, reference=None):
     return experiments, reflections, report
 
 
-def run(args=None, phil=phil_scope):
+def run(args=None, phil=working_phil):
     """Run the integration command line script."""
     usage = "usage: dials.integrate [options] models.expt"
 
