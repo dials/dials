@@ -9,8 +9,6 @@ from xml.dom import minidom
 import procrunner
 import pytest
 
-from dials.command_line import find_spots_client
-
 
 @pytest.fixture
 def server(tmp_path) -> int:
@@ -27,9 +25,8 @@ def server(tmp_path) -> int:
     p = subprocess.Popen(server_command, cwd=tmp_path)
     wait_for_server(port)
     yield port
-    find_spots_client.run([f"port={port}", "stop"])
-    p.wait(timeout=3)
     p.terminate()
+    p.wait(timeout=3)
 
 
 def test_server_return_codes(dials_data, server):
