@@ -7,10 +7,10 @@ standard_library.install_aliases()
 import http.server as server_base
 import json
 import logging
+import multiprocessing
 import sys
 import time
 import urllib.parse
-from multiprocessing import Process
 
 import libtbx.phil
 
@@ -315,7 +315,7 @@ def main(nproc, port):
     print(time.asctime(), "Serving %d processes on port %d" % (nproc, port))
 
     for j in range(nproc - 1):
-        proc = Process(target=serve, args=(httpd,))
+        proc = multiprocessing.Process(target=serve, args=(httpd,))
         proc.daemon = True
         proc.start()
     serve(httpd)
@@ -325,6 +325,9 @@ def main(nproc, port):
 
 if __name__ == "__main__":
     usage = "dials.find_spots_server [options]"
+
+    # Python 3.8 on macOS...
+    multiprocessing.set_start_method("fork")
 
     from dials.util.options import OptionParser
 
