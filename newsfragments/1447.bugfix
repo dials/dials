@@ -1,0 +1,1 @@
+dials.find_spots_server: force fork multiprocessing (for macOS / Python 3.8 compatibility)
