@@ -14,7 +14,7 @@ import urllib.parse
 
 import libtbx.phil
 
-from dials.util import Sorry
+from dials.util import Sorry, show_mail_handle_errors
 
 logger = logging.getLogger("dials.command_line.find_spots_server")
 
@@ -263,10 +263,10 @@ indexing_min_spots = 10
 class handler(server_base.BaseHTTPRequestHandler):
     def do_GET(self):
         """Respond to a GET request."""
-        self.send_response(200)
-        self.send_header("Content-type", "text/xml")
-        self.end_headers()
         if self.path == "/Ctrl-C":
+            self.send_response(200)
+            self.end_headers()
+
             global stop
             stop = True
             return
@@ -283,11 +283,15 @@ class handler(server_base.BaseHTTPRequestHandler):
         try:
             stats = work(filename, params)
             d.update(stats)
-
+            response = 200
         except Exception as e:
             d["error"] = str(e)
+            response = 500
 
-        response = json.dumps(d).encode("latin-1")
+        self.send_response(response)
+        self.send_header("Content-type", "application/json")
+        self.end_headers()
+        response = json.dumps(d).encode()
         self.wfile.write(response)
 
 
@@ -323,7 +327,8 @@ def main(nproc, port):
     print(time.asctime(), "done")
 
 
-if __name__ == "__main__":
+@show_mail_handle_errors()
+def run(args=None):
     usage = "dials.find_spots_server [options]"
 
     # Python 3.8 on macOS... needs fork
@@ -333,9 +338,13 @@ if __name__ == "__main__":
     from dials.util.options import OptionParser
 
     parser = OptionParser(usage=usage, phil=phil_scope, epilog=help_message)
-    params, options = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(args, show_diff_phil=True)
     if params.nproc is libtbx.Auto:
         from libtbx.introspection import number_of_processors
 
         params.nproc = number_of_processors(return_value_if_unknown=-1)
     main(params.nproc, params.port)
+
+
+if __name__ == "__main__":
+    run()

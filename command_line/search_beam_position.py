@@ -7,7 +7,6 @@ import itertools
 import logging
 import math
 import random
-import sys
 
 import iotbx.phil
 import libtbx.introspection
@@ -21,6 +20,7 @@ from scitbx import matrix
 from scitbx.array_family import flex
 from scitbx.simplex import simplex_opt
 
+import dials.util
 from dials.algorithms.indexing.indexer import find_max_cell
 from dials.util import Sorry, log
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
@@ -458,7 +458,8 @@ def discover_better_experimental_model(
     return new_experiments
 
 
-def run(args):
+@dials.util.show_mail_handle_errors()
+def run(args=None):
     usage = "dials.search_beam_position [options] imported.expt strong.refl"
 
     parser = OptionParser(
@@ -531,4 +532,4 @@ def run(args):
 
 
 if __name__ == "__main__":
-    run(sys.argv[1:])
+    run()

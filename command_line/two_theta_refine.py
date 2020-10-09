@@ -12,6 +12,7 @@ from dxtbx.model.experiment_list import Experiment, ExperimentList
 from libtbx.phil import parse
 from libtbx.utils import format_float_with_standard_uncertainty
 
+import dials.util
 from dials.algorithms.refinement.corrgram import create_correlation_plots
 from dials.algorithms.refinement.engine import LevenbergMarquardtIterations as Refinery
 from dials.algorithms.refinement.engine import refinery_phil_scope
@@ -29,7 +30,7 @@ from dials.algorithms.refinement.two_theta_refiner import (
     TwoThetaTarget,
 )
 from dials.array_family import flex
-from dials.util import log, show_mail_handle_errors, tabulate
+from dials.util import log, tabulate
 from dials.util.filter_reflections import filter_reflection_table
 from dials.util.multi_dataset_handling import parse_multiple_datasets
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
@@ -417,11 +418,11 @@ class Script(object):
         with open(filename, "w") as fh:
             cif.show(out=fh)
 
-    def run(self):
+    def run(self, args=None):
         """Execute the script."""
 
         # Parse the command line
-        params, _ = self.parser.parse_args(show_diff_phil=False)
+        params, _ = self.parser.parse_args(args, show_diff_phil=False)
 
         # set up global reflections list
         reflections = flex.reflection_table()
@@ -537,7 +538,11 @@ class Script(object):
             self.generate_mmcif(crystals[0], refiner, filename=params.output.mmcif)
 
 
+@dials.util.show_mail_handle_errors()
+def run(args=None):
+    script = Script()
+    script.run(args)
+
+
 if __name__ == "__main__":
-    with show_mail_handle_errors():
-        script = Script()
-        script.run()
+    run()

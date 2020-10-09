@@ -2,7 +2,6 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import math
-import sys
 
 import numpy as np
 
@@ -10,6 +9,7 @@ import libtbx.phil
 from scitbx.array_family import flex
 from scitbx.math import five_number_summary
 
+import dials.util
 from dials.algorithms.clustering.observers import uc_params_from_experiments
 from dials.util import log
 from dials.util.options import OptionParser, flatten_experiments
@@ -57,7 +57,8 @@ def outlier_selection(uc_params, iqr_ratio=1.5):
     return outliers
 
 
-def run(args):
+@dials.util.show_mail_handle_errors()
+def run(args=None):
     usage = "dials.unit_cell_histogram [options] models.expt"
 
     parser = OptionParser(
@@ -70,7 +71,7 @@ def run(args):
 
     logger.info(dials_version())
 
-    params, options = parser.parse_args(show_diff_phil=False)
+    params, options = parser.parse_args(args, show_diff_phil=False)
     experiments = flatten_experiments(params.input.experiments)
 
     if len(experiments) == 0:
@@ -253,4 +254,4 @@ def plot_number_of_crystals(experiments):
 
 
 if __name__ == "__main__":
-    run(sys.argv[1:])
+    run()

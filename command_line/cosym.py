@@ -316,7 +316,8 @@ Examples::
 """
 
 
-def run(args):
+@show_mail_handle_errors()
+def run(args=None):
     usage = "dials.cosym [options] models.expt observations.refl"
 
     parser = OptionParser(
@@ -376,5 +377,4 @@ def run(args):
 
 
 if __name__ == "__main__":
-    with show_mail_handle_errors():
-        run(sys.argv[1:])
+    run()

@@ -353,7 +353,7 @@ class Script(object):
             assert len(ref_experiments.detectors()) == 1
             self.reference_detector = ref_experiments.detectors()[0]
 
-    def run(self):
+    def run(self, args=None):
         """Execute the script."""
         from libtbx import easy_mp
 
@@ -370,7 +370,7 @@ class Script(object):
         if rank == 0:
             # Parse the command line
             params, options, all_paths = self.parser.parse_args(
-                show_diff_phil=False, return_unhandled=True, quick_parse=True
+                args, show_diff_phil=False, return_unhandled=True, quick_parse=True
             )
 
             if params.input.glob:
@@ -1661,7 +1661,11 @@ class Processor(object):
                 tar.close()
 
 
+@dials.util.show_mail_handle_errors()
+def run(args=None):
+    script = Script()
+    script.run(args)
+
+
 if __name__ == "__main__":
-    with dials.util.show_mail_handle_errors():
-        script = Script()
-        script.run()
+    run()

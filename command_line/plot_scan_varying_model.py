@@ -90,13 +90,13 @@ class Script(object):
             epilog=help_message,
         )
 
-    def run(self):
+    def run(self, args=None):
         """Run the script."""
         from scitbx import matrix
 
         from dials.util.options import flatten_experiments
 
-        params, options = self.parser.parse_args()
+        params, options = self.parser.parse_args(args)
         if len(params.input.experiments) == 0:
             self.parser.print_help()
             return
@@ -406,7 +406,11 @@ class Script(object):
         plt.savefig(fullname)
 
 
+@dials.util.show_mail_handle_errors()
+def run(args=None):
+    script = Script()
+    script.run(args)
+
+
 if __name__ == "__main__":
-    with dials.util.show_mail_handle_errors():
-        script = Script()
-        script.run()
+    run()

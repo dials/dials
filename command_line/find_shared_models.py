@@ -54,11 +54,11 @@ class Script(object):
             check_format=False,
         )
 
-    def run(self):
+    def run(self, args=None):
         """Execute the script."""
 
         # Parse the command line
-        params, options = self.parser.parse_args(show_diff_phil=False)
+        params, options = self.parser.parse_args(args, show_diff_phil=False)
 
         # Configure the logging
         log.config(verbosity=options.verbose, logfile=params.output.log)
@@ -147,7 +147,11 @@ class Script(object):
         logger.info(tabulate(rows, headers="firstrow"))
 
 
+@show_mail_handle_errors()
+def run(args=None):
+    script = Script()
+    script.run(args)
+
+
 if __name__ == "__main__":
-    with show_mail_handle_errors():
-        script = Script()
-        script.run()
+    run()

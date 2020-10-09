@@ -189,6 +189,7 @@ def sequence_to_stills(experiments, reflections, params):
     return (new_experiments, new_reflections)
 
 
+@show_mail_handle_errors()
 def run(args=None, phil=phil_scope):
     """
     Validate the arguments and load experiments/reflections for sequence_to_stills
@@ -229,5 +230,4 @@ def run(args=None, phil=phil_scope):
 
 
 if __name__ == "__main__":
-    with show_mail_handle_errors():
-        run()
+    run()

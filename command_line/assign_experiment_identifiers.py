@@ -33,6 +33,7 @@ phil_scope = phil.parse(
 )
 
 
+@show_mail_handle_errors()
 def run(args=None):
     """Run assign experiment identifiers from the command line."""
     usage = (
@@ -78,5 +79,4 @@ def run(args=None):
 
 
 if __name__ == "__main__":
-    with show_mail_handle_errors():
-        run()
+    run()
