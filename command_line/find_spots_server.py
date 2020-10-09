@@ -326,8 +326,9 @@ def main(nproc, port):
 if __name__ == "__main__":
     usage = "dials.find_spots_server [options]"
 
-    # Python 3.8 on macOS...
-    multiprocessing.set_start_method("fork")
+    # Python 3.8 on macOS... needs fork
+    if sys.hexversion >= 0x3080000 and sys.platform == "darwin":
+        multiprocessing.set_start_method("fork")
 
     from dials.util.options import OptionParser
 
