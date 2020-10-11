@@ -96,7 +96,7 @@ def _conda_info():
     )
     if return_code:
         if conda_info and conda_info.get("message"):
-             print(conda_info["message"])
+            print(conda_info["message"])
         raise RuntimeError(error)
     return json.loads(conda_info)
 
