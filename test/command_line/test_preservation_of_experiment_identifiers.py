@@ -31,7 +31,12 @@ def test_preservation_of_identifiers(dials_data, tmpdir):
 
     # Now find spots.
     result = procrunner.run(
-        ["dials.find_spots", imported_exp_path, "output.reflections=strong.refl"],
+        [
+            "dials.find_spots",
+            "nproc=1",
+            imported_exp_path,
+            "output.reflections=strong.refl",
+        ],
         working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr

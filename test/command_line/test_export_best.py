@@ -14,7 +14,8 @@ def test_export_best(dials_data, tmpdir):
     )
     assert not result.returncode and not result.stderr
     result = procrunner.run(
-        ["dials.find_spots", "imported.expt"], working_directory=tmpdir.strpath
+        ["dials.find_spots", "imported.expt", "nproc=1"],
+        working_directory=tmpdir.strpath,
     )
     assert not result.returncode and not result.stderr
     result = procrunner.run(
