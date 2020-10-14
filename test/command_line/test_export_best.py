@@ -26,6 +26,7 @@ def test_export_best(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.integrate",
+            "nproc=1",
             "indexed.expt",
             "indexed.refl",
             "prediction.padding=0",

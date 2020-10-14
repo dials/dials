@@ -135,6 +135,7 @@ def test_preservation_of_identifiers(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.integrate",
+            "nproc=1",
             refined_refl_path,
             refined_exp_path,
             "output.reflections=integrated.refl",
