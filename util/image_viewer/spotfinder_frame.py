@@ -106,8 +106,12 @@ class SpotFrame(XrayFrame):
         if self.viewing_stills:
             is_multi_shot_exp = [len(El) > 1 for El in self.experiments]
             if any(is_multi_shot_exp):
-                assert len(self.experiments) == 1 and len(self.reflections) == 1
-                assert len(self.experiments[0]) == len(set(self.reflections[0]["id"]))
+                assert len(self.experiments) == 1
+                if self.reflections:
+                    assert len(self.reflections) == 1
+                    assert len(self.experiments[0]) == len(
+                        set(self.reflections[0]["id"])
+                    )
                 expts = []
                 refls = []
                 for i_expt, expt in enumerate(self.experiments[0]):
@@ -118,9 +122,12 @@ class SpotFrame(XrayFrame):
                     El = ExperimentList()
                     El.append(expt)
                     expts.append(El)
-                    R = self.reflections[0].select(self.reflections[0]["id"] == i_expt)
-                    R["id"] = flex.int(len(R), 0)
-                    refls.append(R)
+                    if self.reflections:
+                        R = self.reflections[0].select(
+                            self.reflections[0]["id"] == i_expt
+                        )
+                        R["id"] = flex.int(len(R), 0)
+                        refls.append(R)
                 self.experiments = expts
                 self.reflections = refls
             else:
