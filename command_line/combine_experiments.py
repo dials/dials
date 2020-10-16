@@ -17,12 +17,14 @@ from dxtbx.model.experiment_list import (
 from libtbx.phil import parse
 from scitbx import matrix
 from xfel.clustering.cluster_groups import unit_cell_info
+from xfel.merging.application.input import file_lister
 
 import dials.util
 from dials.algorithms.integration.stills_significance_filter import SignificanceFilter
 from dials.array_family import flex
 from dials.util import tabulate
 from dials.util.options import OptionParser, flatten_experiments
+from dials.util.phil import ExperimentListConverters, ReflectionTableConverters
 
 help_message = """
 
@@ -39,17 +41,40 @@ reference model is a good replacement model.
 Although only one reference model of each type is allowed, more complex
 combinations of experiments can be created by repeat runs.
 
+An MPI mode is available for multiprocessing of long file lists.
+
 Examples::
 
   dials.combine_experiments experiments_0.expt experiments_1.expt \\
     reflections_0.refl reflections_1.refl \\
     reference_from_experiment.beam=0 \\
     reference_from_experiment.detector=0
+
+  mpirun -n 32 dials.combine_experiments input.path=$PWD/out \\
+    input.reflections_suffix=_strong.refl \\
+    input.experiments_suffix=_imported.expt
 """
 
 # The phil scope
 phil_scope = parse(
     """
+  input {
+    path = None
+      .type = str
+      .multiple = True
+      .help = A glob, directory, or file specifying experiments and reflections
+      .help = to combine. Files name.expt and name.refl must be present as
+      .help = matching pairs. This mode is only supported for MPI runs;
+      .help = otherwise, supply expts and refls as command-line arguments.
+    reflections_suffix = .refl
+      .type = str
+      .help = When input.path is given, find file names with this suffix for
+      .help = reflections.
+    experiments_suffix = .expt
+      .type = str
+      .help = When input.path is given, find file names with this suffix for
+      .help = experiments..
+  }
 
   reference_from_experiment{
     beam = None
@@ -391,7 +416,100 @@ class Script(object):
 
     def run(self, args=None):
         """Execute the script."""
-        params, options = self.parser.parse_args(args, show_diff_phil=True)
+
+        from libtbx.mpi4py import MPI
+
+        comm = MPI.COMM_WORLD
+        rank = comm.Get_rank()
+        size = comm.Get_size()
+
+        if size == 1:
+            params, options = self.parser.parse_args(args, show_diff_phil=True)
+            assert params.input.path is None, "input.path requires MPI support."
+            self.run_with_preparsed(params, options)
+            return
+
+        if rank == 0:
+
+            # Parse the command line
+            params, options, fnames = self.parser.parse_args(
+                args, show_diff_phil=False, quick_parse=True, return_unhandled=True
+            )
+
+            # Some basic validation
+            i_argv = 0
+            for fname in fnames:
+                # Make sure the order of the arg list is unchanged
+                try:
+                    i_argv = sys.argv.index(fname, i_argv)
+                except ValueError:
+                    raise Exception("The order of the aruments was changed")
+
+                # Make sure the only unhandled args are refls and expts
+                if not (
+                    fname.endswith(params.input.reflections_suffix)
+                    or fname.endswith(params.input.experiments_suffix)
+                ):
+                    sys.exit("Did not understand argument %s" % fname)
+                else:
+                    params.input.path.append(fname)
+
+        if rank == 0:
+            transmitted_info = params, options, fnames
+        else:
+            transmitted_info = None
+        params, options, fnames = comm.bcast(transmitted_info, root=0)
+
+        if rank == 0:
+            lister = file_lister.file_lister(params)
+            filenames = lister.filename_lister()
+
+            results = [None] * len(filenames)
+            working_ranks = [False] * size
+
+            for i_fname, fname in enumerate(filenames):
+                if i_fname % 1000 == 0:
+                    print(i_fname)
+                i_result, result, rankreq = comm.recv(source=MPI.ANY_SOURCE)
+                if result:
+                    results[i_result] = result
+                comm.send((i_fname, fname), dest=rankreq)
+                working_ranks[rankreq] = True
+
+            for i in range(1, size):
+                if not working_ranks[i]:
+                    comm.send("done", dest=i)
+
+            while working_ranks.count(True) > 0:
+                i_result, result, rankreq = comm.recv(source=MPI.ANY_SOURCE)
+                results[i_result] = result
+                comm.send("done", dest=rankreq)
+                working_ranks[rankreq] = False
+
+        else:
+            from libtbx.phil import strings_as_words as _words
+
+            expt_converter = ExperimentListConverters(check_format=False)
+            refl_converter = ReflectionTableConverters()
+            result, i_result = None, None
+            while True:
+                comm.send((i_result, result, rank), dest=0)
+                msg = comm.recv(source=0)
+                if msg == "done":
+                    break
+                else:
+                    i_fname, fname = msg
+                    expt = expt_converter.from_words(_words([fname[0]]), None)
+                    refl = refl_converter.from_words(_words([fname[1]]), None)
+                    i_result = i_fname
+                    result = (expt, refl)
+
+        if rank != 0:
+            exit()
+
+        params.input.experiments = [r[0] for r in results if r[0]]
+        params.input.reflections = [r[1] for r in results if r[1]]
+
         self.run_with_preparsed(params, options)
 
     def run_with_preparsed(self, params, options):
