@@ -244,3 +244,48 @@ def test_index_reflections(dials_regression):
     assert "miller_index" in reflections
     counts = reflections["id"].counts()
     assert dict(counts) == {-1: 1390, 0: 114692}
+
+
+def test_4rotation_local(dials_regression):
+    """Test the fix for https://github.com/dials/dials/issues/1458"""
+
+    data_dir = os.path.join(dials_regression, "indexing_test_data", "4rotation")
+    experiments = load.experiment_list(
+        os.path.join(data_dir, "experiments.json"), check_format=False
+    )
+    reflections = flex.reflection_table.from_file(
+        os.path.join(data_dir, "strong.pickle")
+    )
+    reflections["imageset_id"] = flex.int(len(reflections), 0)
+    reflections["id"] = flex.int(len(reflections), -1)
+
+    # Known crystal model
+    experiments[0].crystal = Crystal(
+        (30.809543619194347, -9.657021003319263, -35.831392296125614),
+        (-0.694910011020102, 26.577348370524163, -40.23283798190742),
+        (52.28735147737371, 80.23844876465284, 23.2414871375408),
+        space_group=sgtbx.space_group(),
+    )
+
+    # Prepare reflections for indexing and trim resolution range
+    reflections.centroid_px_to_mm(experiments)
+    reflections.map_centroids_to_reciprocal_space(experiments)
+    reflections = reflections.select(1 / reflections["rlp"].norms() > 4)
+
+    # Assign indices with the correct scan oscillation
+    AssignIndicesLocal()(reflections, experiments)
+    n_indexed = (reflections["miller_index"] == (0, 0, 0)).count(True)
+
+    # Modify the scan oscillation such that we are out by 1 degree per rotation
+    experiments[0].scan.set_oscillation((0, 1 - 1 / 360), deg=True)
+
+    # Reset miller indices and re-map to reciprocal space
+    reflections["miller_index"] = flex.miller_index(len(reflections), (0, 0, 0))
+    reflections["id"] = flex.int(len(reflections), -1)
+    reflections.centroid_px_to_mm(experiments)
+    reflections.map_centroids_to_reciprocal_space(experiments)
+
+    # Assert that we still index a similar number of reflections, even with the error
+    # in oscillation angle
+    AssignIndicesLocal()(reflections, experiments)
+    assert abs((reflections["miller_index"] == (0, 0, 0)).count(True) - n_indexed) < 10
