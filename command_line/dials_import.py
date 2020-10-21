@@ -258,10 +258,11 @@ class ReferenceGeometryUpdater(object):
         Replace with the reference geometry
         """
         if self.params.input.check_reference_geometry:
-            # Check static detector items are the same
-            assert self.reference.detector.is_similar_to(
-                imageset.get_detector(), static_only=True
-            ), "Reference detector model does not match input detector model"
+            if imageset.get_detector():
+                # Check static detector items are the same
+                assert self.reference.detector.is_similar_to(
+                    imageset.get_detector(), static_only=True
+                ), "Reference detector model does not match input detector"
 
         # Set beam and detector
         imageset.set_beam(self.reference.beam)
