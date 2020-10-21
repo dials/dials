@@ -246,7 +246,7 @@ def test_index_reflections(dials_regression):
     assert dict(counts) == {-1: 1390, 0: 114692}
 
 
-def test_4rotation_local(dials_regression):
+def test_local_4rotation(dials_regression):
     """Test the fix for https://github.com/dials/dials/issues/1458"""
 
     data_dir = os.path.join(dials_regression, "indexing_test_data", "4rotation")
@@ -275,6 +275,7 @@ def test_4rotation_local(dials_regression):
     # Assign indices with the correct scan oscillation
     AssignIndicesLocal()(reflections, experiments)
     n_indexed = (reflections["miller_index"] == (0, 0, 0)).count(True)
+    miller_indices = reflections["miller_index"]
 
     # Modify the scan oscillation such that we are out by 1 degree per rotation
     experiments[0].scan.set_oscillation((0, 1 - 1 / 360), deg=True)
@@ -289,3 +290,5 @@ def test_4rotation_local(dials_regression):
     # in oscillation angle
     AssignIndicesLocal()(reflections, experiments)
     assert abs((reflections["miller_index"] == (0, 0, 0)).count(True) - n_indexed) < 10
+    # Assert that most miller indices are the same as before we modified the oscillation
+    assert (reflections["miller_index"] == miller_indices).count(False) < 100
