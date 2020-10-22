@@ -211,10 +211,7 @@ def merge(
         logger.error(e, exc_info=True)
         stats_summary = None
     else:
-        if anomalous and anom_stats:
-            stats_summary = make_merging_statistics_summary(anom_stats)
-        else:
-            stats_summary = make_merging_statistics_summary(stats)
+        stats_summary = make_merging_statistics_summary(stats)
         stats_summary += table_1_summary(stats, anom_stats)
 
     return merged, merged_anom, stats_summary
