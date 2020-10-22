@@ -960,7 +960,8 @@ class SpotFrame(XrayFrame):
         request["extended"] = self.settings.dispersion_extended
 
         # If the request was already cached, return the result
-        if request == self._dispersion_debug_memo:
+        # NOTE this is broken when I page through images in e.g. threshold mode or when I update the threshold params
+        if not self.viewing_stills and request == self._dispersion_debug_memo:
             return self._kabsch_debug_list
 
         detector = image.get_detector()
