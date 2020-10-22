@@ -246,36 +246,36 @@ def test_index_reflections(dials_regression):
     assert dict(counts) == {-1: 1390, 0: 114692}
 
 
-def test_local_4rotation(dials_regression):
+def test_local_multiple_rotations(dials_data):
     """Test the fix for https://github.com/dials/dials/issues/1458"""
 
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "4rotation")
     experiments = load.experiment_list(
-        os.path.join(data_dir, "experiments.json"), check_format=False
+        dials_data("insulin_processed").join("indexed.expt"),
+        check_format=False,
     )
-    reflections = flex.reflection_table.from_file(
-        os.path.join(data_dir, "strong.pickle")
-    )
+    # Override the scan range to ensure we have 4 full rotations
+    experiments[0].scan.set_image_range((1, 1440))
+
+    reflections = flex.reflection_table.from_predictions(experiments[0], dmin=4)
     reflections["imageset_id"] = flex.int(len(reflections), 0)
     reflections["id"] = flex.int(len(reflections), -1)
+    reflections["xyzobs.px.value"] = reflections["xyzcal.px"]
+    reflections["xyzobs.mm.value"] = reflections["xyzcal.mm"]
 
-    # Known crystal model
-    experiments[0].crystal = Crystal(
-        (30.809543619194347, -9.657021003319263, -35.831392296125614),
-        (-0.694910011020102, 26.577348370524163, -40.23283798190742),
-        (52.28735147737371, 80.23844876465284, 23.2414871375408),
-        space_group=sgtbx.space_group(),
-    )
+    predicted_miller_indices = reflections["miller_index"]
 
-    # Prepare reflections for indexing and trim resolution range
+    # Prepare reflections for indexing
     reflections.centroid_px_to_mm(experiments)
     reflections.map_centroids_to_reciprocal_space(experiments)
-    reflections = reflections.select(1 / reflections["rlp"].norms() > 4)
+    # Reset miller indices to ensure they are reindexed
+    reflections["miller_index"] = flex.miller_index(len(reflections), (0, 0, 0))
 
     # Assign indices with the correct scan oscillation
     AssignIndicesLocal()(reflections, experiments)
-    n_indexed = (reflections["miller_index"] == (0, 0, 0)).count(True)
     miller_indices = reflections["miller_index"]
+    # Assert we have correctly indexed all reflections
+    assert (miller_indices == (0, 0, 0)).count(True) == 0
+    assert (miller_indices == predicted_miller_indices).count(False) == 0
 
     # Modify the scan oscillation such that we are out by 1 degree per rotation
     experiments[0].scan.set_oscillation((0, 1 - 1 / 360), deg=True)
@@ -286,9 +286,11 @@ def test_local_4rotation(dials_regression):
     reflections.centroid_px_to_mm(experiments)
     reflections.map_centroids_to_reciprocal_space(experiments)
 
-    # Assert that we still index a similar number of reflections, even with the error
-    # in oscillation angle
     AssignIndicesLocal()(reflections, experiments)
-    assert abs((reflections["miller_index"] == (0, 0, 0)).count(True) - n_indexed) < 10
-    # Assert that most miller indices are the same as before we modified the oscillation
-    assert (reflections["miller_index"] == miller_indices).count(False) < 100
+    # Assert that most reflections have been indexed
+    indexed_sel = reflections["miller_index"] == (0, 0, 0)
+    assert indexed_sel.count(True) < 10
+    # Assert that all indexed miller indices are correct
+    assert (
+        (reflections["miller_index"] != predicted_miller_indices) & ~indexed_sel
+    ).count(True) == 0
