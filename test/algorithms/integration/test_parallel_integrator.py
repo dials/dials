@@ -164,9 +164,13 @@ def test_gaussianrs_detector_space_intensity_calculator(data):
             algorithm(r, [])
             partiality_old = r.get("partiality_old")
             partiality_new = r.get("partiality")
-        except Exception:
-            errors += 1
-            continue
+        except Exception as e:
+            if ("Partiality too small to fit" in str(e)) or (
+                "DIALS_ASSERT(fit.niter() < 100) failure." in str(e)
+            ):
+                errors += 1
+                continue
+            raise
 
         assert partiality_old < 1.0 and partiality_old >= 0
         assert partiality_new < 1.0 and partiality_new >= 0
@@ -189,9 +193,13 @@ def test_gaussianrs_detector_space_with_deconvolution_intensity_calculator(data)
             algorithm(r, [])
             partiality_old = r.get("partiality_old")
             partiality_new = r.get("partiality")
-        except Exception:
-            errors += 1
-            continue
+        except Exception as e:
+            if ("Partiality too small to fit" in str(e)) or (
+                "DIALS_ASSERT(fit.niter() < 100) failure." in str(e)
+            ):
+                errors += 1
+                continue
+            raise
 
         assert partiality_old < 1.0 and partiality_old >= 0
         assert partiality_new < 1.0 and partiality_new >= 0
