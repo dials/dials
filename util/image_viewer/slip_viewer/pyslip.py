@@ -186,7 +186,7 @@ class _BufferedCanvas(wx.Panel):
             width = 1
         if height == 0:
             height = 1
-        self.buffer = wx.EmptyBitmap(width, height)
+        self.buffer = wx.Bitmap(width, height)
 
         self.view_width = width
         self.view_height = height

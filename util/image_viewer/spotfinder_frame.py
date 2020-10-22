@@ -150,8 +150,8 @@ class SpotFrame(XrayFrame):
         self.Bind(EVT_ZEROMQ_EVENT, self.OnZeroMQEvent)
 
     def setup_toolbar(self):
-        btn = self.toolbar.AddLabelTool(
-            id=-1,
+        btn = self.toolbar.AddTool(
+            toolId=-1,
             label="Load file",
             bitmap=icons.hkl_file.GetBitmap(),
             shortHelp="Load file",
@@ -170,8 +170,8 @@ class SpotFrame(XrayFrame):
         # shortHelp="Zoom",
         # kind=wx.ITEM_NORMAL)
         # self.Bind(wx.EVT_MENU, self.OnZoom, btn
-        btn = self.toolbar.AddLabelTool(
-            id=wx.ID_SAVEAS,
+        btn = self.toolbar.AddTool(
+            toolId=wx.ID_SAVEAS,
             label="Save As...",
             bitmap=bitmaps.fetch_icon_bitmap("actions", "save_all", 32),
             shortHelp="Save As...",
@@ -199,16 +199,16 @@ class SpotFrame(XrayFrame):
         self.toolbar.AddControl(panel)
         self.image_chooser_panel = panel
 
-        btn = self.toolbar.AddLabelTool(
-            id=wx.ID_BACKWARD,
+        btn = self.toolbar.AddTool(
+            toolId=wx.ID_BACKWARD,
             label="Previous",
             bitmap=bitmaps.fetch_icon_bitmap("actions", "1leftarrow"),
             shortHelp="Previous",
             kind=wx.ITEM_NORMAL,
         )
         self.Bind(wx.EVT_MENU, self.OnPrevious, btn)
-        btn = self.toolbar.AddLabelTool(
-            id=wx.ID_FORWARD,
+        btn = self.toolbar.AddTool(
+            toolId=wx.ID_FORWARD,
             label="Next",
             bitmap=bitmaps.fetch_icon_bitmap("actions", "1rightarrow"),
             shortHelp="Next",

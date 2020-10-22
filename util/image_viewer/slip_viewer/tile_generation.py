@@ -396,11 +396,11 @@ class _Tiles(object):
             w, h = self.flex_image.ex_size2(), self.flex_image.ex_size1()
             assert w == 256
             assert h == 256
-            wx_image = wx.EmptyImage(w, h)
+            wx_image = wx.Image(w, h)
             wx_image.SetData(self.flex_image.as_bytes())
             return wx_image.ConvertToBitmap()
         else:
-            wx_image = wx.EmptyImage(256, 256)
+            wx_image = wx.Image(256, 256)
             return wx_image.ConvertToBitmap()
 
     def get_binning(self):
