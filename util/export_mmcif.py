@@ -307,15 +307,20 @@ class MMCIFOutputFile(object):
 
             cif_block.update(result.as_cif_block())
 
-        cif_loop = iotbx.cif.model.loop(header=header)
-
-        for i, r in enumerate(reflections.rows()):
-            refl_id = i + 1
-            scan_id = r["id"] + 1
-            _, _, _, _, z0, z1 = r["bbox"]
-            h, k, l = r["miller_index"]
-            variable_values = tuple((r[name]) for name in variables_present)
-            cif_loop.add_row((refl_id, scan_id, z0, z1, h, k, l) + variable_values)
+        _, _, _, _, z0, z1 = reflections["bbox"].parts()
+        h, k, l = [
+            hkl.iround() for hkl in reflections["miller_index"].as_vec3_double().parts()
+        ]
+        loop_values = [
+            flex.size_t_range(1, len(reflections) + 1),
+            reflections["id"] + 1,
+            z0,
+            z1,
+            h,
+            k,
+            l,
+        ] + [reflections[name] for name in variables_present]
+        cif_loop = iotbx.cif.model.loop(data=dict(zip(header, loop_values)))
         cif_block.add_loop(cif_loop)
 
         # Add the block
