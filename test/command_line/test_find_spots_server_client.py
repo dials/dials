@@ -1,45 +1,53 @@
-import multiprocessing
 import socket
+import subprocess
 import sys
 import time
 import timeit
+import urllib.request
 from xml.dom import minidom
 
 import procrunner
 import pytest
 
 
-def start_server(server_command, working_directory):
-    procrunner.run(server_command, working_directory=working_directory)
-
-
-def test_find_spots_server_client(dials_data, tmp_path):
+@pytest.fixture
+def server(tmp_path) -> int:
+    """Fixture to load a find_spots_server server"""
     if sys.hexversion >= 0x3080000 and sys.platform == "darwin":
         pytest.skip("find_spots server known to be broken on MacOS with Python 3.8+")
 
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind(("", 0))
-    port = s.getsockname()[1]
-    server_command = ["dials.find_spots_server", "port=%i" % port, "nproc=3"]
-    print(server_command)
+    # Find a free port to run the server on
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(("", 0))
+        host, port = sock.getsockname()
+    # Start the server
+    server_command = ["dials.find_spots_server", f"port={port}", "nproc=3"]
+    p = subprocess.Popen(server_command, cwd=tmp_path)
+    wait_for_server(port)
+    yield port
+    p.terminate()
+    p.wait(timeout=3)
 
-    p = multiprocessing.Process(target=start_server, args=(server_command, tmp_path))
-    p.daemon = True
-    s.close()
-    p.start()
-    wait_for_server(port)  # need to give server chance to start
 
+def test_server_return_codes(dials_data, server):
+    first_file = dials_data("centroid_test_data").listdir("*.cbf", sort=True)[0].strpath
+    response = urllib.request.urlopen(f"http://127.0.0.1:{server}/{first_file}")
+    assert response.code == 200
+    with pytest.raises(urllib.error.HTTPError):
+        urllib.request.urlopen(f"http://127.0.0.1:{server}/some/junk/filename")
+
+
+def test_find_spots_server_client(dials_data, tmp_path, server):
     filenames = [
         f.strpath for f in dials_data("centroid_test_data").listdir("*.cbf", sort=True)
     ]
 
     try:
-        exercise_client(port=port, filenames=filenames)
+        exercise_client(port=server, filenames=filenames)
 
     finally:
-        result = procrunner.run(["dials.find_spots_client", "port=%i" % port, "stop"])
+        result = procrunner.run(["dials.find_spots_client", f"port={server}", "stop"])
         assert not result.returncode and not result.stderr
-        p.terminate()
 
 
 def wait_for_server(port, max_wait=20):

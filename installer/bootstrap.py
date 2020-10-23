@@ -959,13 +959,9 @@ def refresh_build():
 
 def install_precommit():
     print("Installing precommits")
-    dispatch_extension = ".bat" if os.name == "nt" else ""
-    run_command(
-        [
-            os.path.join("build", "bin", "libtbx.precommit" + dispatch_extension),
-            "install",
-        ],
-        workdir=".",
+    run_indirect_command(
+        os.path.join("bin", "libtbx.precommit"),
+        args=["install"],
     )
 
 
@@ -1097,7 +1093,7 @@ be passed separately with quotes to avoid confusion (e.g
         "--python",
         help="Install this minor version of Python (default: %(default)s)",
         default="3.8",
-        choices=("3.6", "3.7", "3.8"),
+        choices=("3.6", "3.7", "3.8", "3.9"),
     )
     parser.add_argument(
         "--branch",

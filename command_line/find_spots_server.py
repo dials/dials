@@ -7,10 +7,10 @@ standard_library.install_aliases()
 import http.server as server_base
 import json
 import logging
+import multiprocessing
 import sys
 import time
 import urllib.parse
-from multiprocessing import Process
 
 import libtbx.phil
 
@@ -263,10 +263,10 @@ indexing_min_spots = 10
 class handler(server_base.BaseHTTPRequestHandler):
     def do_GET(self):
         """Respond to a GET request."""
-        self.send_response(200)
-        self.send_header("Content-type", "text/xml")
-        self.end_headers()
         if self.path == "/Ctrl-C":
+            self.send_response(200)
+            self.end_headers()
+
             global stop
             stop = True
             return
@@ -283,11 +283,15 @@ class handler(server_base.BaseHTTPRequestHandler):
         try:
             stats = work(filename, params)
             d.update(stats)
-
+            response = 200
         except Exception as e:
             d["error"] = str(e)
+            response = 500
 
-        response = json.dumps(d).encode("latin-1")
+        self.send_response(response)
+        self.send_header("Content-type", "application/json")
+        self.end_headers()
+        response = json.dumps(d).encode()
         self.wfile.write(response)
 
 
@@ -315,7 +319,7 @@ def main(nproc, port):
     print(time.asctime(), "Serving %d processes on port %d" % (nproc, port))
 
     for j in range(nproc - 1):
-        proc = Process(target=serve, args=(httpd,))
+        proc = multiprocessing.Process(target=serve, args=(httpd,))
         proc.daemon = True
         proc.start()
     serve(httpd)
@@ -326,6 +330,10 @@ def main(nproc, port):
 @show_mail_handle_errors()
 def run(args=None):
     usage = "dials.find_spots_server [options]"
+
+    # Python 3.8 on macOS... needs fork
+    if sys.hexversion >= 0x3080000 and sys.platform == "darwin":
+        multiprocessing.set_start_method("fork")
 
     from dials.util.options import OptionParser
 

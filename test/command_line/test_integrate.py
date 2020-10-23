@@ -4,6 +4,7 @@ import json
 import math
 import os
 import shutil
+import pytest
 
 import procrunner
 
@@ -111,6 +112,25 @@ def test_basic_integrate(dials_data, tmpdir):
     assert flex.abs(diff_Cal_P).all_lt(1e-7)
     assert flex.abs(diff_Obs_Z).all_lt(1e-7)
     # assert(flex.abs(diff_Obs_P).all_lt(1e-7))
+
+
+@pytest.mark.parametrize(
+    ("block_size", "block_units"),
+    [(None, None), (1, "degrees"), (2, "frames"), (1, "frames")],
+)
+def test_basic_blocking_options(dials_data, tmp_path, block_size, block_units):
+    exp = load.experiment_list(dials_data("centroid_test_data") / "experiments.json")
+    exp[0].identifier = "foo"
+    exp.as_json(tmp_path / "modified_input.json")
+
+    args = ["dials.integrate", "modified_input.json", "nproc=2"]
+    if block_size:
+        args.append("block.size=%s" % block_size)
+    if block_units:
+        args.append("block.units=%s" % block_units)
+
+    result = procrunner.run(args, working_directory=tmp_path)
+    assert not result.returncode and not result.stderr
 
 
 def test_basic_threaded_integrate(dials_data, tmp_path):
