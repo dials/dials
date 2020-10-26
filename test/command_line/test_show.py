@@ -5,8 +5,9 @@ import shutil
 
 import procrunner
 
-from dials.command_line.show import model_connectivity, run
 from dxtbx.serialize import load
+
+from dials.command_line.show import model_connectivity, run
 
 
 def test_dials_show(dials_regression):
@@ -152,7 +153,7 @@ Panel:
   trusted_range: {-1,495976}
   thickness: 0.32
   material: Si
-  mu: 3.96038
+  mu: 3.96039
   gain: 1
   pedestal: 0
   fast_axis: {1,0,0}
@@ -160,7 +161,7 @@ Panel:
   origin: {-212.478,220.002,-190.18}
   distance: 190.18
   pixel to millimeter strategy: ParallaxCorrectedPxMmStrategy
-    mu: 3.96038
+    mu: 3.96039
     t0: 0.32
 Max resolution (at corners): 1.008375
 Max resolution (inscribed):  1.204621

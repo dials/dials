@@ -1,11 +1,13 @@
 from __future__ import absolute_import, division, print_function
 
 import procrunner
-from libtbx.test_utils import approx_equal
+
+import iotbx.mtz
 from cctbx import uctbx
+from libtbx.test_utils import approx_equal
 
 
-def test_1(dials_data, tmpdir):
+def test(dials_data, tmpdir):
     g = [f.strpath for f in dials_data("x4wide").listdir(sort=True)]
     assert len(g) == 90
 
@@ -31,10 +33,8 @@ def test_1(dials_data, tmpdir):
 
     integrated_mtz = tmpdir.join("integrated.mtz")
     assert integrated_mtz.check(file=1)
-    from iotbx.reflection_file_reader import any_reflection_file
 
-    reader = any_reflection_file(integrated_mtz.strpath)
-    mtz_object = reader.file_content()
+    mtz_object = iotbx.mtz.object(file_name=integrated_mtz.strpath)
     assert mtz_object.column_labels()[:14] == [
         "H",
         "K",

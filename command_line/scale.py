@@ -34,19 +34,18 @@ Incremental scaling (with different options per dataset)::
   dials.scale integrated_2.refl integrated_2.expt scaled.refl scaled.expt physical.scale_interval=15.0
 """
 from __future__ import absolute_import, division, print_function
+
 import logging
 import sys
-from libtbx import phil
+
 from six.moves import cStringIO as StringIO
-from dials.util import log, show_mail_on_error, Sorry
+
+from libtbx import phil
+
+from dials.algorithms.scaling.algorithm import ScaleAndFilterAlgorithm, ScalingAlgorithm
+from dials.util import Sorry, log, show_mail_handle_errors
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
-from dials.algorithms.scaling.algorithm import ScalingAlgorithm, ScaleAndFilterAlgorithm
-from dials.algorithms.scaling.observers import (
-    register_default_scaling_observers,
-    register_merging_stats_observers,
-    register_scale_and_filter_observers,
-)
 
 try:
     from typing import List
@@ -121,13 +120,14 @@ def _export_merged_mtz(params, experiments, joint_table):
     from dials.command_line.merge import phil_scope as merge_phil_scope
 
     merge_params = merge_phil_scope.extract()
-    merge_params.reporting.wilson_stats = False
-    merge_params.reporting.merging_stats = False
+    logger.disabled = True
     merge_params.assess_space_group = False
     merge_params.partiality_threshold = params.cut_data.partiality_cutoff
     merge_params.output.crystal_names = [params.output.crystal_name]
     merge_params.output.project_name = params.output.project_name
+    merge_params.best_unit_cell = params.reflection_selection.best_unit_cell
     mtz_file = merge_data_to_mtz(merge_params, experiments, [joint_table])
+    logger.disabled = False
     logger.info("\nWriting merged data to %s", (params.output.merged_mtz))
     out = StringIO()
     mtz_file.show_summary(out=out)
@@ -186,17 +186,10 @@ def run_scaling(params, experiments, reflections):
         return (None, None)
 
     else:
-        # Register the observers at the highest level
         if params.filtering.method:
             algorithm = ScaleAndFilterAlgorithm(params, experiments, reflections)
-            register_scale_and_filter_observers(algorithm)
         else:
             algorithm = ScalingAlgorithm(params, experiments, reflections)
-
-        if params.output.html:
-            register_default_scaling_observers(algorithm)
-        else:
-            register_merging_stats_observers(algorithm)
 
         algorithm.run()
 
@@ -205,7 +198,8 @@ def run_scaling(params, experiments, reflections):
         return experiments, joint_table
 
 
-def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
+@show_mail_handle_errors()
+def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     """Run the scaling from the command-line."""
     usage = """Usage: dials.scale integrated.refl integrated.expt
 [integrated.refl(2) integrated.expt(2) ....] [options]"""
@@ -242,7 +236,9 @@ def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
     else:
         # Note, cross validation mode does not produce scaled datafiles
         if scaled_experiments and joint_table:
-            logger.info("Saving the experiments to %s", params.output.experiments)
+            logger.info(
+                "Saving the scaled experiments to %s", params.output.experiments
+            )
             scaled_experiments.as_file(params.output.experiments)
             logger.info(
                 "Saving the scaled reflections to %s", params.output.reflections
@@ -261,5 +257,4 @@ def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
-        run()
+    run()

@@ -38,12 +38,13 @@ cross_validation_mode=multi parameter=model parameter_values="array physical"
 
 from __future__ import absolute_import, division, print_function
 
-import logging
 import itertools
+import logging
 import time
 
-from libtbx import phil
 import six
+
+from libtbx import phil
 
 logger = logging.getLogger("dials")
 

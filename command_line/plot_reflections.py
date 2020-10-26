@@ -1,6 +1,8 @@
 from __future__ import absolute_import, division, print_function
 
 import iotbx.phil
+
+import dials.util
 from dials.util import Sorry
 
 master_phil_scope = iotbx.phil.parse(
@@ -32,11 +34,13 @@ output {
 )
 
 
-def run(args):
+@dials.util.show_mail_handle_errors()
+def run(args=None):
     usage = "dials.plot_reflections models.expt observations.refl [options]"
-    from dials.util.options import OptionParser, reflections_and_experiments_from_files
-    from scitbx.array_family import flex
     from scitbx import matrix
+    from scitbx.array_family import flex
+
+    from dials.util.options import OptionParser, reflections_and_experiments_from_files
 
     parser = OptionParser(
         usage=usage,
@@ -46,7 +50,7 @@ def run(args):
         check_format=False,
     )
 
-    params, options = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(args, show_diff_phil=True)
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
@@ -155,19 +159,27 @@ def run(args):
         if not params.output.show_plot:
             # http://matplotlib.org/faq/howto_faq.html#generate-images-without-having-a-window-appear
             matplotlib.use("Agg")  # use a non-interactive backend
-        from matplotlib import pyplot
+        import matplotlib.pyplot as plt
     except ImportError:
         raise Sorry("matplotlib must be installed to generate a plot.")
 
-    fig = pyplot.figure()
+    fig = plt.figure()
     fig.set_size_inches(params.output.size_inches)
     fig.set_dpi(params.output.dpi)
-    pyplot.axes().set_aspect("equal")
+    plt.axes().set_aspect("equal")
     marker_size = params.output.marker_size
     if obs_x.size():
-        pyplot.scatter(obs_x, obs_y, marker="o", c="white", s=marker_size, alpha=1)
+        plt.scatter(
+            obs_x,
+            obs_y,
+            marker="o",
+            edgecolors="black",
+            c="white",
+            s=marker_size,
+            alpha=1,
+        )
     if pred_x.size():
-        pyplot.scatter(pred_x, pred_y, marker="+", s=marker_size, c="blue")
+        plt.scatter(pred_x, pred_y, marker="+", s=marker_size, c="blue")
     xmax = max(
         [
             detector[i_panel].get_image_size_mm()[0] + panel_origin_shifts[i_panel][0]
@@ -184,25 +196,22 @@ def run(args):
         beam_centre = hierarchy.get_beam_centre(imageset.get_beam().get_s0())
     except Exception:
         beam_centre = detector[0].get_beam_centre(imageset.get_beam().get_s0())
-    pyplot.scatter([beam_centre[0]], [beam_centre[1]], marker="+", c="blue", s=100)
-    pyplot.xlim(0, xmax)
-    pyplot.ylim(0, ymax)
-    pyplot.gca().invert_yaxis()
-    pyplot.title("Centroid x,y-coordinates")
-    pyplot.xlabel("x-coordinate (mm)")
-    pyplot.ylabel("y-coordinate (mm)")
+    plt.scatter([beam_centre[0]], [beam_centre[1]], marker="+", c="blue", s=100)
+    plt.xlim(0, xmax)
+    plt.ylim(0, ymax)
+    plt.gca().invert_yaxis()
+    plt.title("Centroid x,y-coordinates")
+    plt.xlabel("x-coordinate (mm)")
+    plt.ylabel("y-coordinate (mm)")
     if params.output.file_name is not None:
-        pyplot.savefig(
+        plt.savefig(
             params.output.file_name,
-            size_inches=params.output.size_inches,
             dpi=params.output.dpi,
             bbox_inches="tight",
         )
     if params.output.show_plot:
-        pyplot.show()
+        plt.show()
 
 
 if __name__ == "__main__":
-    import sys
-
-    run(sys.argv[1:])
+    run()

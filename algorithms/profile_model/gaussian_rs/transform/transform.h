@@ -947,8 +947,8 @@ namespace dials {
                       DIALS_ASSERT(kk < zfraction.accessor()[1]);
                       DIALS_ASSERT(k < zfraction.accessor()[0]);
                       double fraction = zfraction(k, kk);
-                      DIALS_ASSERT(fraction <= 1.0);
-                      DIALS_ASSERT(fraction >= 0.0);
+                      DIALS_ASSERT(fraction <= 1.0 + EPS);
+                      DIALS_ASSERT(fraction >= 0.0 - EPS);
                       double value = fraction * area * data(k, j, i);
                       profile_(kk, jj, ii) += value;
                     }

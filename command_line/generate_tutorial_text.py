@@ -8,12 +8,13 @@ import sys
 import tempfile
 from optparse import SUPPRESS_HELP, OptionParser
 
-import dials_data.download
 import procrunner
 import py
 
+import dials_data.download
 
-def run(
+
+def _command_runner(
     command, output_directory=None, store_command=None, store_output=None, **kwargs
 ):
     """Run a command and write its output to a defined location"""
@@ -39,7 +40,9 @@ def generate_processing_detail_text_thaumatin(options):
     tmpdir = py.path.local("./tmp-thaumatin")
     tmpdir.ensure(dir=1)
     outdir = py.path.local(options.output).join("thaumatin")
-    runcmd = functools.partial(run, output_directory=outdir, working_directory=tmpdir)
+    runcmd = functools.partial(
+        _command_runner, output_directory=outdir, working_directory=tmpdir
+    )
 
     df = dials_data.download.DataFetcher()
     runcmd(["dials.import", df("thaumatin_i04").join("th_8_2_0*cbf")])
@@ -70,13 +73,82 @@ def generate_processing_detail_text_thaumatin(options):
         tmpdir.remove(rec=1)
 
 
+def generate_processing_detail_text_mpro_x0692(options):
+    print("Generating mpro-x0692 / PDB ID 5REL processing tutorial output")
+    # See: https://www.ebi.ac.uk/pdbe/entry/pdb/5REL
+    #      https://doi.org/10.5281/zenodo.3730940
+
+    tmpdir = py.path.local("./tmp-mpro_x0692")
+    tmpdir.ensure(dir=1)
+    outdir = py.path.local(options.output).join("mpro_x0692")
+    runcmd = functools.partial(
+        _command_runner, output_directory=outdir, working_directory=tmpdir
+    )
+
+    # Find/validate the data input - until we've decided to integrate this
+    # into the main release, have a DLS default or otherwise let it be
+    # specified via an environment variable.
+    datadir = py.path.local(
+        os.getenv("MPRO_X0692_DATA", "/dls/i04/data/2020/mx27124-1/Mpro-x0692")
+    )
+    if not datadir.check(dir=1) or not datadir.listdir("Mpro-x0692_1_0*.cbf"):
+        sys.exit(
+            """Error:  Could not find Mpro-x0692 data: skipping text generation.
+        Please download data from https://zenodo.org/record/3730940 and extract,
+        then set environment variable MPRO_X0692_DATA to the folder with Mpro-x0692_1_0*.cbf"""
+        )
+    print("Using data: {}".format(datadir.strpath))
+
+    runcmd(["dials.import", datadir / "Mpro-x0692_1_0*.cbf"])
+    runcmd(["dials.find_spots", "imported.expt", "nproc=4"])
+    runcmd(["dials.index", "imported.expt", "strong.refl"])
+    # Because it's hard to robustly extract the *final* unindexed count
+    # using sphinx's built-in literalinclude, we extract it specially here
+    extract_last_indexed_spot_count(
+        outdir / "dials.index.log", outdir / "dials.index.log.extract_unindexed"
+    )
+    runcmd(["dials.refine_bravais_settings", "indexed.expt", "indexed.refl"])
+    runcmd(["dials.reindex", "indexed.refl", "change_of_basis_op=a,-b,-a-b-2*c"])
+    runcmd(
+        [
+            "dials.refine",
+            "bravais_setting_2.expt",
+            "reindexed.refl",
+            "scan_varying=false",
+        ]
+    )
+    runcmd(
+        ["dials.refine", "refined.expt", "refined.refl", "scan_varying=true"],
+        store_command=outdir / "dials.sv_refine.cmd",
+        store_output=outdir / "dials.sv_refine.log",
+    )
+    runcmd(["dials.integrate", "refined.expt", "refined.refl", "nproc=4"])
+    runcmd(["dials.symmetry", "integrated.expt", "integrated.refl"])
+    runcmd(["dials.scale", "symmetrized.expt", "symmetrized.refl"])
+    runcmd(["dials.estimate_resolution", "scaled.expt", "scaled.refl"])
+    d_min = extract_resolution(outdir / "dials.estimate_resolution.log", "cc_half")
+    runcmd(
+        ["dials.scale", "scaled.expt", "scaled.refl", "d_min=%.2f" % d_min],
+        store_command=outdir / "dials.scale_cut.cmd",
+        store_output=outdir / "dials.scale_cut.log",
+    )
+    runcmd(["dials.report", "scaled.expt", "scaled.refl"])
+    tmpdir.join("dials.report.html").copy(outdir.join("dials.report.html"))
+
+    print("Updated result files written to {}".format(outdir.strpath))
+    if not options.keep:
+        tmpdir.remove(rec=1)
+
+
 def generate_processing_detail_text_betalactamase(options):
     print("Generating Beta-lactamase processing tutorial output")
 
     tmpdir = py.path.local("./tmp-betalactamase")
     tmpdir.ensure(dir=1)
     outdir = py.path.local(options.output).join("betalactamase")
-    runcmd = functools.partial(run, output_directory=outdir, working_directory=tmpdir)
+    runcmd = functools.partial(
+        _command_runner, output_directory=outdir, working_directory=tmpdir
+    )
 
     # Find/validate the data input - until we've decided to integrate this
     # into the main release, have a DLS default or otherwise let it be
@@ -144,7 +216,9 @@ def generate_multi_crystal_symmetry_and_scaling(options):
     tmpdir = py.path.local(tempfile.mkdtemp("_multi_crystal", dir="."))
     tmpdir.ensure(dir=1)
     outdir = py.path.local(options.output).join("multi_crystal")
-    runcmd = functools.partial(run, output_directory=outdir, working_directory=tmpdir)
+    runcmd = functools.partial(
+        _command_runner, output_directory=outdir, working_directory=tmpdir
+    )
 
     df = dials_data.download.DataFetcher()
     experiment_files = sorted(
@@ -163,8 +237,8 @@ def generate_multi_crystal_symmetry_and_scaling(options):
     runcmd(["dials.cosym"] + input_files)
     tmpdir.join("dials.cosym.html").copy(outdir.join("dials.cosym.html"))
     runcmd(["dials.scale", "symmetrized.expt", "symmetrized.refl"])
-    runcmd(["dials.resolutionizer", "scaled.expt", "scaled.refl"])
-    d_min = extract_resolution(outdir / "dials.resolutionizer.log", "cc_half")
+    runcmd(["dials.estimate_resolution", "scaled.expt", "scaled.refl"])
+    d_min = extract_resolution(outdir / "dials.estimate_resolution.log", "cc_half")
     runcmd(
         ["dials.scale", "scaled.expt", "scaled.refl", "d_min=%.2f" % d_min],
         store_command=outdir / "dials.scale_cut.cmd",
@@ -230,7 +304,7 @@ def extract_last_indexed_spot_count(source, destination):
 
 
 def extract_resolution(source, method):
-    """Extract the resolution from a dials.resolutionizer log."""
+    """Extract the resolution from a dials.estimate_resolution log."""
     lines = source.read_text("latin-1").split("\n")
 
     # Find the Resolution line
@@ -239,7 +313,7 @@ def extract_resolution(source, method):
     return float(resolution_line.split(":")[-1].strip())
 
 
-if __name__ == "__main__":
+def run(args=None):
     parser = OptionParser(
         description="Generate tutorial logs for DIALS documentation website"
     )
@@ -250,6 +324,13 @@ if __name__ == "__main__":
         action="store_true",
         default=False,
         help="Generate betalactamase tutorial logs",
+    )
+    parser.add_option(
+        "--mpro_x0692",
+        dest="mpro_x0692",
+        action="store_true",
+        default=False,
+        help="Generate Mpro x0692 tutorial logs",
     )
     parser.add_option(
         "--thaum",
@@ -280,11 +361,13 @@ if __name__ == "__main__":
         default=".",
         help="Write output to this location",
     )
-    options, _ = parser.parse_args()
+    options, _ = parser.parse_args(args)
 
     targets = []
     if options.beta:
         targets.append(generate_processing_detail_text_betalactamase)
+    if options.mpro_x0692:
+        targets.append(generate_processing_detail_text_mpro_x0692)
     if options.thaum:
         targets.append(generate_processing_detail_text_thaumatin)
     if options.multi_crystal:
@@ -298,3 +381,7 @@ if __name__ == "__main__":
 
     for target in targets:
         target(options)
+
+
+if __name__ == "__main__":
+    run()

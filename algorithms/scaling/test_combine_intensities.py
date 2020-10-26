@@ -2,15 +2,19 @@
 Tests for intensity combination.
 """
 from __future__ import absolute_import, division, print_function
+
 import pytest
 from mock import Mock
-from dxtbx.model import Experiment, Crystal
-from dials.array_family import flex
-from dials.algorithms.scaling.scaling_utilities import calculate_prescaling_correction
+
+from dxtbx.model import Crystal, Experiment
+
 from dials.algorithms.scaling.combine_intensities import (
-    SingleDatasetIntensityCombiner,
     MultiDatasetIntensityCombiner,
+    SingleDatasetIntensityCombiner,
+    combine_intensities,
 )
+from dials.algorithms.scaling.scaling_utilities import calculate_prescaling_correction
+from dials.array_family import flex
 
 
 @pytest.fixture(scope="module")
@@ -140,6 +144,26 @@ def generate_simple_table(prf=True):
         )
     reflections = calculate_prescaling_correction(reflections)
     return reflections
+
+
+def test_combine_intensities_prf_sum(test_exp_P1):
+    reflections = flex.reflection_table()
+
+    reflections["intensity.sum.value"] = flex.double([100.0, 100.0, 100.0, 100.0])
+    reflections["intensity.prf.value"] = flex.double([200.0, 200.0, 200.0, 200.0])
+    reflections["intensity.sum.variance"] = flex.double(4, 100)
+    reflections["intensity.prf.variance"] = flex.double(4, 200)
+    reflections["prescaling_correction"] = flex.double(4, 1.0)
+    reflections.set_flags(
+        flex.bool([False, False, True, True]), reflections.flags.integrated_prf
+    )
+    reflections.set_flags(
+        flex.bool([True, False, False, True]), reflections.flags.integrated_sum
+    )
+
+    intensities, _ = combine_intensities(reflections, Imid=100.0)
+    # if prf not successful - set as sum. Only last refl should be combined here.
+    assert list(intensities) == [100.0, 100.0, 200.0, 150.0]
 
 
 def test_combine_intensities(test_exp_P1):

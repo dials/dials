@@ -4,15 +4,19 @@ import math
 import random
 
 import pytest
+
+from dxtbx.serialize import load
 from scitbx import matrix
+
+from dials.algorithms.profile_model.gaussian_rs import (
+    BBoxCalculator3D,
+    CoordinateSystem,
+)
 
 
 @pytest.fixture
 def setup(dials_data):
-    from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator3D
-    from dials.model.serialize import load
-
-    sequence = load.sequence(
+    sequence = load.imageset(
         dials_data("centroid_test_data").join("sweep.json").strpath
     )
 
@@ -44,8 +48,6 @@ def setup(dials_data):
 
 
 def test_outer_bounds(setup):
-    from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
-
     assert len(setup["detector"]) == 1
     s0 = setup["beam"].get_s0()
     m2 = setup["gonio"].get_rotation_axis()
@@ -126,8 +128,6 @@ def test_outer_bounds(setup):
 
 
 def test_radius(setup):
-    from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
-
     s0 = setup["beam"].get_s0()
     m2 = setup["gonio"].get_rotation_axis()
     s0_length = matrix.col(setup["beam"].get_s0()).length()

@@ -2,18 +2,22 @@
 Tests for outlier rejection.
 """
 from __future__ import absolute_import, division, print_function
+
 import pytest
 from mock import Mock
+
 from cctbx.sgtbx import space_group
-from dials.array_family import flex
+
 from dials.algorithms.scaling.Ih_table import IhTable
 from dials.algorithms.scaling.outlier_rejection import (
-    reject_outliers,
     NormDevOutlierRejection,
     SimpleNormDevOutlierRejection,
-    determine_outlier_index_arrays,
     TargetedOutlierRejection,
+    determine_outlier_index_arrays,
+    limit_outlier_weights,
+    reject_outliers,
 )
+from dials.array_family import flex
 
 
 @pytest.fixture(scope="module")
@@ -192,6 +196,54 @@ expected_target_output = [
     False,
     False,
 ]
+
+
+def test_outlier_rejection_with_small_outliers():
+
+    rt = flex.reflection_table()
+    rt["intensity"] = flex.double(
+        [3560.84231, 3433.66407, 3830.64235, 0.20552, 3786.59537]
+        + [4009.98652, 0.00000, 3578.91470, 3549.19151, 3379.58616]
+        + [3686.38610, 3913.42869, 0.00000, 3608.84869, 3681.11110]
+    )
+    rt["variance"] = flex.double(
+        [10163.98104, 9577.90389, 9702.84868, 3.77427, 8244.70685]
+        + [9142.38221, 1.51118, 9634.53782, 9870.73103, 9078.23488]
+        + [8977.26984, 8712.91360, 1.78802, 7473.26521, 10075.49862]
+    )
+    rt["inverse_scale_factor"] = flex.double(rt.size(), 1.0)
+    rt["miller_index"] = flex.miller_index([(0, 0, 1)] * rt.size())
+    expected_outliers = [3, 6, 12]
+
+    OutlierRej = NormDevOutlierRejection(IhTable([rt], space_group("P 1")), zmax=6.0)
+    OutlierRej.run()
+    outliers = OutlierRej.final_outlier_arrays
+    assert len(outliers) == 1
+    assert set(outliers[0]) == set(expected_outliers)
+
+
+def test_limit_outlier_weights():
+
+    rt = flex.reflection_table()
+    rt["intensity"] = flex.double([100.0, 101.0, 109.0, 105.0, 1.0])
+    rt["variance"] = flex.double([100.0, 101.0, 109.0, 105.0, 1.0])
+
+    rt["inverse_scale_factor"] = flex.double(rt.size(), 1.0)
+    rt["miller_index"] = flex.miller_index([(0, 0, 1)] * rt.size())
+    rt2 = flex.reflection_table()
+    rt2["intensity"] = flex.double([100.0, 101.0, 102.0, 105.0, 1.0])
+    rt2["variance"] = flex.double([100.0, 101.0, 102.0, 105.0, 1.0])
+    rt2["inverse_scale_factor"] = flex.double(rt.size(), 1.0)
+    rt2["miller_index"] = flex.miller_index([(0, 0, 1)] * rt.size())
+
+    table = IhTable([rt, rt2], space_group("P 1"))
+    import copy
+
+    new_weights = limit_outlier_weights(
+        copy.deepcopy(table.Ih_table_blocks[0].weights),
+        table.Ih_table_blocks[0].h_index_matrix,
+    )
+    assert all(i <= 0.1 for i in new_weights)
 
 
 def test_multi_dataset_outlier_rejection(test_sg):

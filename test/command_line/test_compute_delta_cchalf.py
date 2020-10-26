@@ -2,8 +2,10 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+
 import procrunner
-from dials.command_line.compute_delta_cchalf import phil_scope, CCHalfFromMTZ
+
+from dials.command_line.compute_delta_cchalf import CCHalfFromMTZ, phil_scope
 
 
 def check_cchalf_result(fileobj):
@@ -13,7 +15,7 @@ def check_cchalf_result(fileobj):
     assert lines[1] == "0 0.001234\n"
 
 
-def test_compute_delta_cchalf_scaled_data(python3, dials_data, tmpdir):
+def test_compute_delta_cchalf_scaled_data(dials_data, tmpdir):
     """Test dials.compute_delta_cchalf on scaled data."""
     location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = location.join("scaled_20_25.refl").strpath
@@ -38,14 +40,14 @@ def test_compute_delta_cchalf_scaled_data(python3, dials_data, tmpdir):
         check_cchalf_result(f)
 
 
-def test_compute_delta_cchalf_scaled_data_mtz(python3, dials_data, tmpdir):
+def test_compute_delta_cchalf_scaled_data_mtz(dials_data, tmpdir):
     """Test dials.compute_delta_cchalf on scaled data."""
     location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = location.join("scaled_20_25.refl").strpath
     expts = location.join("scaled_20_25.expt").strpath
 
     # First export the data
-    command = ["dials.export", refls, expts]
+    command = ["dials.export", refls, expts, "partiality_threshold=0.99"]
     result = procrunner.run(command, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
     assert tmpdir.join("scaled.mtz").check()

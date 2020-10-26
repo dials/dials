@@ -2,40 +2,12 @@ from __future__ import absolute_import, division, print_function
 
 import pytest
 
-#### Python and general cctbx imports
 from cctbx.sgtbx import space_group, space_group_symbols
+from dxtbx.model import ScanFactory
+from dxtbx.model.experiment_list import Experiment, ExperimentList
 from libtbx.phil import parse
 from scitbx.math import five_number_summary
 
-#### dials imports
-from dials.array_family import flex
-
-##### Import model builder
-from dials.test.algorithms.refinement.setup_geometry import Extract
-from dxtbx.model import ScanFactory
-
-##### Imports for reflection prediction
-from dials.algorithms.spot_prediction import IndexGenerator
-from dxtbx.model.experiment_list import ExperimentList, Experiment
-from dials.algorithms.refinement.prediction.managed_predictors import ScansRayPredictor
-from dials.algorithms.refinement.prediction.managed_predictors import (
-    StillsExperimentsPredictor,
-)
-from dials.algorithms.refinement.prediction.managed_predictors import (
-    ExperimentsPredictorFactory,
-)
-
-#### Import model parameterisations
-from dials.algorithms.refinement.parameterisation.prediction_parameters_stills import (
-    StillsPredictionParameterisation,
-)
-from dials.algorithms.refinement.parameterisation.prediction_parameters_stills import (
-    SphericalRelpStillsPredictionParameterisation,
-)
-
-from dials.algorithms.refinement.parameterisation.detector_parameters import (
-    DetectorParameterisationSinglePanel,
-)
 from dials.algorithms.refinement.parameterisation.beam_parameters import (
     BeamParameterisation,
 )
@@ -43,6 +15,21 @@ from dials.algorithms.refinement.parameterisation.crystal_parameters import (
     CrystalOrientationParameterisation,
     CrystalUnitCellParameterisation,
 )
+from dials.algorithms.refinement.parameterisation.detector_parameters import (
+    DetectorParameterisationSinglePanel,
+)
+from dials.algorithms.refinement.parameterisation.prediction_parameters_stills import (
+    SphericalRelpStillsPredictionParameterisation,
+    StillsPredictionParameterisation,
+)
+from dials.algorithms.refinement.prediction.managed_predictors import (
+    ExperimentsPredictorFactory,
+    ScansRayPredictor,
+    StillsExperimentsPredictor,
+)
+from dials.algorithms.spot_prediction import IndexGenerator
+from dials.array_family import flex
+from dials.test.algorithms.refinement.setup_geometry import Extract
 
 
 class _Test(object):

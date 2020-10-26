@@ -6,13 +6,13 @@ from __future__ import absolute_import, division, print_function
 
 import itertools
 from copy import deepcopy
-import pkg_resources
 
-from dials.algorithms.scaling.observers import register_merging_stats_observers
-from libtbx.table_utils import simple_table
-from libtbx import phil
-from scitbx.array_family import flex
+import pkg_resources
 import six
+
+from libtbx import phil
+from libtbx.table_utils import simple_table
+from scitbx.array_family import flex
 
 
 class CrossValidator(object):
@@ -222,7 +222,6 @@ is provided. For example, physical.decay_correction rather than decay_correction
             experiments=deepcopy(self.experiments),
             reflections=deepcopy(self.reflections),
         )
-        register_merging_stats_observers(algorithm)
         algorithm.run()
         results = self.get_results_from_script(algorithm)
         self.add_results_to_results_dict(config_no, results)

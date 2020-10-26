@@ -13,11 +13,12 @@ import os
 
 import procrunner
 import pytest
-
 from annlib_ext import AnnAdaptor
+
+from dxtbx.model.experiment_list import ExperimentListFactory
+
 from dials.algorithms.refinement.engine import Journal
 from dials.array_family import flex
-from dxtbx.model.experiment_list import ExperimentListFactory
 
 
 def test1(dials_regression, tmpdir):

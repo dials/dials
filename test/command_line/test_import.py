@@ -4,6 +4,7 @@ import os
 
 import procrunner
 import pytest
+
 from dxtbx.serialize import load
 
 
@@ -298,6 +299,55 @@ def test_extrapolate_scan(dials_data, tmpdir):
     # check that an experiment identifier is assigned
     exp = load.experiment_list(tmpdir.join("import_extrapolate.expt").strpath)
     assert exp[0].identifier != ""
+
+
+@pytest.fixture
+def centroid_test_data_with_missing_image(dials_data, tmp_path):
+    # All the images except image #4
+    images = dials_data("centroid_test_data").listdir(
+        fil="centroid_*[1,2,3,5,6,7,8,9].cbf", sort=True
+    )
+    for image in images:
+        (tmp_path / image.basename).symlink_to(image)
+    return tmp_path.joinpath("centroid_####.cbf")
+
+
+def test_template_with_missing_image_fails(centroid_test_data_with_missing_image):
+    # This should fail because image #4 is missing
+    for image_range in (None, (3, 5)):
+        result = procrunner.run(
+            [
+                "dials.import",
+                f"template={centroid_test_data_with_missing_image}",
+            ]
+            + (["image_range=%i,%i" % image_range] if image_range else []),
+            working_directory=centroid_test_data_with_missing_image.parent,
+        )
+        assert result.returncode
+        assert b"Missing image 4 from imageset" in result.stderr
+
+
+def test_template_with_missing_image_outside_of_image_range(
+    centroid_test_data_with_missing_image,
+):
+    # Explicitly pass an image_range that doesn't include the missing image
+    for image_range in ((1, 3), (5, 9)):
+        result = procrunner.run(
+            [
+                "dials.import",
+                f"template={centroid_test_data_with_missing_image}",
+                "image_range=%i,%i" % image_range,
+                "output.experiments=imported_%i_%i.expt" % image_range,
+            ],
+            working_directory=centroid_test_data_with_missing_image.parent,
+        )
+        assert not result.returncode
+        expts = load.experiment_list(
+            centroid_test_data_with_missing_image.parent.joinpath(
+                "imported_%i_%i.expt" % image_range
+            )
+        )
+        assert expts[0].scan.get_image_range() == image_range
 
 
 def test_import_still_sequence_as_experiments(dials_data, tmpdir):

@@ -9,6 +9,7 @@ import libtbx.phil
 from scitbx import matrix
 from scitbx.array_family import flex
 
+import dials.util
 from dials.algorithms.indexing.indexer import find_max_cell
 from dials.command_line.search_beam_position import run_dps
 from dials.util.reciprocal_lattice import Render3d
@@ -89,6 +90,10 @@ class PngScene(object):
         # we do not draw reciprocal lattice vectors at this time
         pass
 
+    def set_reciprocal_crystal_vectors(self, *args, **kwargs):
+        # we do not draw reciprocal crystal vectors at this time either
+        pass
+
     def project_2d(self, n):
         d = self.points.dot(n.elems)
         p = d * flex.vec3_double(len(d), n.elems)
@@ -128,9 +133,10 @@ class PngScene(object):
         pyplot.close()
 
 
-def run():
-    from dials.util.options import OptionParser, reflections_and_experiments_from_files
+@dials.util.show_mail_handle_errors()
+def run(args=None):
     from dials.util import log
+    from dials.util.options import OptionParser, reflections_and_experiments_from_files
 
     usage = "dials.rl_png [options] experiments.json observations.refl"
 
@@ -143,7 +149,7 @@ def run():
         epilog=help_message,
     )
 
-    params, options = parser.parse_args()
+    params, options = parser.parse_args(args)
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )

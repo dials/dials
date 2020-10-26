@@ -4,14 +4,14 @@ from __future__ import absolute_import, division, print_function
 import copy
 import logging
 import math
+
 from orderedset import OrderedSet
+from scipy import sparse
 
 import cctbx.sgtbx.cosets
-from cctbx import miller
-from cctbx import sgtbx
+from cctbx import miller, sgtbx
 from cctbx.array_family import flex
 from libtbx import easy_mp
-from scipy import sparse
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ class Target(object):
         dimensions=None,
         nproc=1,
     ):
-        r""""Intialise a Target object.
+        r""" "Intialise a Target object.
 
         Args:
           intensities (cctbx.miller.array): The intensities on which to perform

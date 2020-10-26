@@ -4,11 +4,13 @@ import os
 
 
 def test(dials_regression):
-    from iotbx.xds import xparm, integrate_hkl
-    from dials.util import ioutil
-    from dials.algorithms.spot_prediction import IndexGenerator
-    import numpy
+    import numpy as np
+
+    from iotbx.xds import integrate_hkl, xparm
     from rstbx.cftbx.coordinate_frame_converter import coordinate_frame_converter
+
+    from dials.algorithms.spot_prediction import IndexGenerator
+    from dials.util import ioutil
 
     # The XDS files to read from
     integrate_filename = os.path.join(
@@ -43,14 +45,14 @@ def test(dials_regression):
     xds_l = [hkl[2] for hkl in integrate_handle.hkl]
 
     # Get min/max generated hkl
-    min_gen_h, max_gen_h = numpy.min(gen_h), numpy.max(gen_h)
-    min_gen_k, max_gen_k = numpy.min(gen_k), numpy.max(gen_k)
-    min_gen_l, max_gen_l = numpy.min(gen_l), numpy.max(gen_l)
+    min_gen_h, max_gen_h = np.min(gen_h), np.max(gen_h)
+    min_gen_k, max_gen_k = np.min(gen_k), np.max(gen_k)
+    min_gen_l, max_gen_l = np.min(gen_l), np.max(gen_l)
 
     # Get min/max xds generated hkl
-    min_xds_h, max_xds_h = numpy.min(xds_h), numpy.max(xds_h)
-    min_xds_k, max_xds_k = numpy.min(xds_k), numpy.max(xds_k)
-    min_xds_l, max_xds_l = numpy.min(xds_l), numpy.max(xds_l)
+    min_xds_h, max_xds_h = np.min(xds_h), np.max(xds_h)
+    min_xds_k, max_xds_k = np.min(xds_k), np.max(xds_k)
+    min_xds_l, max_xds_l = np.min(xds_l), np.max(xds_l)
 
     # Ensure we have the whole xds range  in the generated set
     assert min_gen_h <= min_xds_h and max_gen_h >= max_xds_h

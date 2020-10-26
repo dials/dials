@@ -93,6 +93,7 @@ namespace dials { namespace refinement {
 
       // smoothing spacing
       spacing_ = (x_range[1] - x_range[0]) / (double)nsample;
+      DIALS_ASSERT(spacing_ > 0);
 
       // positions of the smoother parameters
       if (nvalues < 4) {

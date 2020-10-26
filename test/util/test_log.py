@@ -6,8 +6,9 @@ import dials.util.log
 
 
 def test_LoggingContext():
+
     # configure logging
-    dials.util.log.config(verbosity=1)
+    dials.util.log.config(verbosity=2)
 
     # get some loggers
     idx_logger = logging.getLogger("dials.algorithms.indexing")

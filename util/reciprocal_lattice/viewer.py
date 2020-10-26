@@ -3,20 +3,20 @@ from __future__ import absolute_import, division, print_function
 import wx
 from wx.lib.agw import floatspin
 
-import libtbx.phil
 import gltbx
 import gltbx.gl as gl
+import libtbx.phil
+import wxtbx.utils
 from scitbx.array_family import flex
 from scitbx.math import minimum_covering_sphere
-import wxtbx.utils
 from wxtbx.segmentedctrl import (
     SEGBTN_HORIZONTAL,
     SegmentedRadioControl,
     SegmentedToggleControl,
 )
 
-from dials.util.reciprocal_lattice import Render3d
 from dials.util import wx_viewer
+from dials.util.reciprocal_lattice import Render3d
 
 WX3 = wx.VERSION[0] == 3
 
@@ -299,11 +299,24 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
             setting="show_reciprocal_cell", label="Show reciprocal cell"
         )
         self.panel_sizer.Add(ctrls[0], 0, wx.ALL, 5)
+
         self.reverse_phi_ctrl = self.create_controls(
             setting="reverse_phi", label="Invert rotation axis"
         )[0]
         self.panel_sizer.Add(self.reverse_phi_ctrl, 0, wx.ALL, 5)
+
         self.Bind(wx.EVT_CHECKBOX, self.OnChangeSettings, self.reverse_phi_ctrl)
+
+        self.crystal_frame_tooltip = wx.ToolTip(
+            "Show the reciprocal lattice(s) in the crystal rather than the laboratory frame"
+        )
+        self.crystal_frame_ctrl = self.create_controls(
+            setting="crystal_frame", label="Show in crystal frame"
+        )[0]
+        self.crystal_frame_ctrl.SetToolTip(self.crystal_frame_tooltip)
+        self.panel_sizer.Add(self.crystal_frame_ctrl, 0, wx.ALL, 5)
+
+        self.Bind(wx.EVT_CHECKBOX, self.OnChangeSettings, self.crystal_frame_ctrl)
 
         self.beam_fast_ctrl = floatspin.FloatSpin(parent=self, increment=0.01, digits=2)
         self.beam_fast_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
@@ -406,6 +419,7 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
             self.beam_slow_ctrl.GetValue(),
         )
         self.settings.reverse_phi = self.reverse_phi_ctrl.GetValue()
+        self.settings.crystal_frame = self.crystal_frame_ctrl.GetValue()
         self.settings.marker_size = self.marker_size_ctrl.GetValue()
         for i, display in enumerate(("all", "indexed", "unindexed", "integrated")):
             if self.btn.values[i]:
@@ -437,6 +451,7 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
         self.rotation_axis = None
         self.beam_vector = None
         self.recip_latt_vectors = None
+        self.recip_crystal_vectors = None
         self.flag_show_minimum_covering_sphere = False
         self.minimum_covering_sphere = None
         self.field_of_view_y = 0.001
@@ -480,6 +495,9 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
     def set_reciprocal_lattice_vectors(self, vectors_per_crystal):
         self.recip_latt_vectors = vectors_per_crystal
 
+    def set_reciprocal_crystal_vectors(self, vectors_per_crystal):
+        self.recip_crystal_vectors = vectors_per_crystal
+
     # --- user input and settings
     def update_settings(self):
         self.points_display_list = None
@@ -504,14 +522,22 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
             self.draw_axis(self.rotation_axis, "phi")
         if self.beam_vector is not None and self.settings.show_beam_vector:
             self.draw_axis(self.beam_vector, "beam")
-        if self.recip_latt_vectors is not None and self.settings.show_reciprocal_cell:
-            for i, axes in enumerate(self.recip_latt_vectors):
-                if self.settings.experiment_ids:
-                    if i not in self.settings.experiment_ids:
-                        continue
-                j = (i + 1) % self.palette.size()
-                color = self.palette[j]
-                self.draw_cell(axes, color)
+
+        if self.settings.show_reciprocal_cell:
+            # if we don't have one sort of vector we don't have the other either
+            vectors = self.recip_latt_vectors
+            if self.settings.crystal_frame:
+                vectors = self.recip_crystal_vectors
+
+            if vectors:
+                for i, axes in enumerate(vectors):
+                    if self.settings.experiment_ids:
+                        if i not in self.settings.experiment_ids:
+                            continue
+                    j = (i + 1) % self.palette.size()
+                    color = self.palette[j]
+                    self.draw_cell(axes, color)
+
         self.GetParent().update_statusbar()
 
     def draw_axis(self, axis, label):

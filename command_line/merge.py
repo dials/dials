@@ -7,20 +7,33 @@ from __future__ import absolute_import, division, print_function
 import logging
 import sys
 
-from dials.util import log, show_mail_on_error, Sorry
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
-from dials.util.version import dials_version
-from dials.util.export_mtz import match_wavelengths
-from dials.algorithms.merging.merge import (
-    make_MAD_merged_mtz_file,
-    make_merged_mtz_file,
-    merge_and_truncate,
-)
-from libtbx import phil
 from six.moves import cStringIO as StringIO
 
+from dxtbx.model import ExperimentList
+from iotbx import phil
 
-help_message = """Program to merge scaled dials data."""
+from dials.algorithms.merging.merge import (
+    MTZDataClass,
+    make_merged_mtz_file,
+    merge,
+    show_wilson_scaling_analysis,
+    truncate,
+)
+from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
+from dials.util import Sorry, log, show_mail_handle_errors
+from dials.util.export_mtz import match_wavelengths
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.version import dials_version
+
+help_message = """
+Merge scaled dials data.
+
+Examples::
+
+  dials.merge scaled.expt scaled.refl
+
+  dials.merge scaled.expt scaled.refl truncate=False
+"""
 
 logger = logging.getLogger("dials")
 phil_scope = phil.parse(
@@ -45,11 +58,16 @@ combine_partials = True
     .help = "Combine partials that have the same partial id into one
         reflection, with an updated partiality given by the sum of the
         individual partialities."
-partiality_threshold=0.99
+partiality_threshold=0.4
     .type = float
     .help = "All reflections with partiality values above the partiality
         threshold will be retained. This is done after any combination of
         partials if applicable."
+best_unit_cell = None
+    .type = unit_cell
+    .help = "Best unit cell value, to use when performing resolution cutting,"
+            "and as the overall unit cell in the merged mtz. If undefined, the median"
+            "cell will be used."
 n_residues = 200
     .type = int
     .help = "Number of residues to use in Wilson scaling"
@@ -61,14 +79,6 @@ merging {
     anomalous = False
         .type = bool
         .help = "Option to control whether reported merging stats are anomalous."
-}
-reporting {
-    wilson_stats = True
-        .type = bool
-        .help = "Option to turn off reporting of Wilson statistics"
-    merging_stats = True
-        .type = bool
-        .help = "Option to turn off reporting of merging statistics."
 }
 output {
     log = dials.merge.log
@@ -88,7 +98,6 @@ output {
         .help = "Dataset name to be used in MTZ file output (multiple names
             allowed for MAD datasets)"
 }
-include scope cctbx.french_wilson.master_phil
 """,
     process_includes=True,
 )
@@ -96,7 +105,22 @@ include scope cctbx.french_wilson.master_phil
 
 def merge_data_to_mtz(params, experiments, reflections):
     """Merge data (at each wavelength) and write to an mtz file object."""
-    wavelengths = match_wavelengths(experiments)
+    wavelengths = match_wavelengths(experiments)  # wavelengths is an ordered dict
+    mtz_datasets = [
+        MTZDataClass(wavelength=w, project_name=params.output.project_name)
+        for w in wavelengths.keys()
+    ]
+    dataset_names = params.output.dataset_names
+    crystal_names = params.output.crystal_names
+
+    # check if best_unit_cell is set.
+    best_unit_cell = params.best_unit_cell
+    if not best_unit_cell:
+        best_unit_cell = determine_best_unit_cell(experiments)
+    reflections[0]["d"] = best_unit_cell.d(reflections[0]["miller_index"])
+    for expt in experiments:
+        expt.crystal.unit_cell = best_unit_cell
+
     if len(wavelengths) > 1:
         logger.info(
             "Multiple wavelengths found: \n%s",
@@ -106,11 +130,71 @@ def merge_data_to_mtz(params, experiments, reflections):
                 for k, v in wavelengths.items()
             ),
         )
-        return make_MAD_merged_mtz_file(params, experiments, reflections, wavelengths)
-    merged_data = merge_and_truncate(params, experiments, reflections)
-    return make_merged_mtz_file(*((params, list(wavelengths)[0]) + merged_data))
+        if not dataset_names or len(dataset_names) != len(wavelengths):
+            logger.info(
+                "Unequal number of dataset names and wavelengths, using default naming."
+            )
+            dataset_names = [None] * len(wavelengths)
+        if not crystal_names or len(crystal_names) != len(wavelengths):
+            logger.info(
+                "Unequal number of crystal names and wavelengths, using default naming."
+            )
+            crystal_names = [None] * len(wavelengths)
+        experiments_subsets = []
+        reflections_subsets = []
+        for dataset, dname, cname in zip(mtz_datasets, dataset_names, crystal_names):
+            dataset.dataset_name = dname
+            dataset.crystal_name = cname
+        for exp_nos in wavelengths.values():
+            expids = [experiments[i].identifier for i in exp_nos]
+            experiments_subsets.append(
+                ExperimentList([experiments[i] for i in exp_nos])
+            )
+            reflections_subsets.append(
+                reflections[0].select_on_experiment_identifiers(expids)
+            )
+    else:
+        mtz_datasets[0].dataset_name = dataset_names[0]
+        mtz_datasets[0].crystal_name = crystal_names[0]
+        experiments_subsets = [experiments]
+        reflections_subsets = reflections
+
+    for experimentlist, reflection_table, mtz_dataset in zip(
+        experiments_subsets, reflections_subsets, mtz_datasets
+    ):
+        # merge and truncate the data
+        merged_array, merged_anomalous_array, stats_summary = merge(
+            experimentlist,
+            reflection_table,
+            d_min=params.d_min,
+            d_max=params.d_max,
+            combine_partials=params.combine_partials,
+            partiality_threshold=params.partiality_threshold,
+            best_unit_cell=best_unit_cell,
+            anomalous=params.anomalous,
+            assess_space_group=params.assess_space_group,
+            n_bins=params.merging.n_bins,
+            use_internal_variance=params.merging.use_internal_variance,
+        )
+        mtz_dataset.merged_array = merged_array
+        mtz_dataset.merged_anomalous_array = merged_anomalous_array
+        if params.anomalous:
+            merged_intensities = merged_anomalous_array
+        else:
+            merged_intensities = merged_array
+
+        if params.truncate:
+            amplitudes, anomalous_amplitudes = truncate(merged_intensities)
+            mtz_dataset.amplitudes = amplitudes
+            mtz_dataset.anomalous_amplitudes = anomalous_amplitudes
+        show_wilson_scaling_analysis(merged_intensities)
+        if stats_summary:
+            logger.info(stats_summary)
+
+    return make_merged_mtz_file(mtz_datasets)
 
 
+@show_mail_handle_errors()
 def run(args=None):
     """Run the merging from the command-line."""
     usage = """Usage: dials.merge scaled.refl scaled.expt [options]"""
@@ -176,5 +260,4 @@ Only scaled data can be processed with dials.merge"""
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
-        run()
+    run()

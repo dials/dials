@@ -1,17 +1,15 @@
-from __future__ import absolute_import, division, print_function
-
 import json
 import os
+
+import procrunner
 import pytest
 
 import libtbx
-from libtbx.easy_run import fully_buffered
 from dxtbx.model.experiment_list import ExperimentListFactory
 from dxtbx.serialize import load
 
-from dials.array_family import flex
 from dials.algorithms.shadowing.filter import filter_shadowed_reflections
-
+from dials.array_family import flex
 from dials.util.masking import lru_equality_cache
 
 
@@ -70,24 +68,28 @@ def test_dynamic_shadowing(
             )
 
 
-def test_shadow_plot(dials_regression, run_in_tmpdir):
-    path = os.path.join(
-        dials_regression, "shadow_test_data/DLS_I04_SmarGon/Th_3_O45_C45_P48_1_0500.cbf"
+def test_shadow_plot(dials_data, tmp_path):
+    result = procrunner.run(
+        ("dials.import", dials_data("image_examples") / "DLS_I03_smargon_0001.cbf.gz"),
+        working_directory=tmp_path,
     )
-
-    fully_buffered("dials.import %s" % path).raise_if_errors()
-    fully_buffered("dials.shadow_plot imported.expt json=shadow.json").raise_if_errors()
-    assert os.path.exists("scan_shadow_plot.png")
-    assert os.path.exists("shadow.json")
-    with open("shadow.json", "rb") as f:
-        d = json.load(f)
-        assert set(d) == {"fraction_shadowed", "scan_points"}
-        assert d["fraction_shadowed"] == pytest.approx([0.06856597327776767], 2e-4)
-
-    fully_buffered(
-        "dials.shadow_plot imported.expt mode=2d plot=shadow_2d.png"
-    ).raise_if_errors()
-    assert os.path.exists("shadow_2d.png")
+    assert not result.returncode and not result.stderr
+    result = procrunner.run(
+        ("dials.shadow_plot", "imported.expt", "json=shadow.json"),
+        working_directory=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+    assert tmp_path.joinpath("scan_shadow_plot.png").is_file()
+    assert tmp_path.joinpath("shadow.json").is_file()
+    d = json.loads(tmp_path.joinpath("shadow.json").read_text())
+    assert set(d) == {"fraction_shadowed", "scan_points"}
+    assert d["fraction_shadowed"] == pytest.approx([0.003016, 0.003141], 2e-4)
+    result = procrunner.run(
+        ("dials.shadow_plot", "imported.expt", "mode=2d", "plot=shadow_2d.png"),
+        working_directory=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+    assert tmp_path.joinpath("shadow_2d.png").is_file()
 
 
 def test_filter_shadowed_reflections(dials_regression):
@@ -156,7 +158,7 @@ def test_lru_equality_cache_id():
 
     fun = lru_equality_cache(maxsize=1)(_callappend)
 
-    class EqTester(object):
+    class EqTester:
         def __init__(self, a):
             self.a = a
 

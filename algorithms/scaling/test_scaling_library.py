@@ -4,26 +4,25 @@ Tests for scaling library module.
 from __future__ import absolute_import, division, print_function
 
 import pytest
-from libtbx import phil
 from mock import Mock, patch
+
 from cctbx import crystal, miller, uctbx
 from cctbx.sgtbx import space_group
+from dxtbx.model import Beam, Crystal, Detector, Experiment, Goniometer, Scan
 from dxtbx.model.experiment_list import ExperimentList
-from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
-from dials.util.options import OptionParser
-from dials.array_family import flex
+from libtbx import phil
+
+from dials.algorithms.scaling.model.model import KBScalingModel, PhysicalScalingModel
 from dials.algorithms.scaling.scaling_library import (
-    scale_single_dataset,
-    create_scaling_model,
+    choose_initial_scaling_intensities,
     create_datastructures_for_structural_model,
     create_Ih_table,
-    # calculate_merging_statistics,
-    # calculate_single_merging_stats,
-    choose_scaling_intensities,
-    create_auto_scaling_model,
+    create_scaling_model,
     determine_best_unit_cell,
+    scale_single_dataset,
 )
-from dials.algorithms.scaling.model.model import KBScalingModel, PhysicalScalingModel
+from dials.array_family import flex
+from dials.util.options import OptionParser
 
 
 @pytest.fixture
@@ -276,58 +275,54 @@ def test_create_Ih_table(test_experiments, test_reflections):
         )
 
 
-def test_choose_scaling_intensities(test_reflections):
+def test_choose_initial_scaling_intensities(test_reflections):
     """Test for correct choice of intensities."""
     test_refl = test_reflections
     intstr = "prf"
-    new_rt = choose_scaling_intensities(test_refl, intstr)
+    new_rt = choose_initial_scaling_intensities(test_refl, intstr)
     assert list(new_rt["intensity"]) == list(test_refl["intensity.prf.value"])
     assert list(new_rt["variance"]) == list(test_refl["intensity.prf.variance"])
     intstr = "sum"  # should apply partiality correction
-    new_rt = choose_scaling_intensities(test_refl, intstr)
+    new_rt = choose_initial_scaling_intensities(test_refl, intstr)
     assert list(new_rt["intensity"]) == list(
         test_refl["intensity.sum.value"] / test_refl["partiality"]
     )
     assert list(new_rt["variance"]) == pytest.approx(
         list(test_refl["intensity.sum.variance"] / flex.pow2(test_refl["partiality"]))
     )
-    # If bad choice, currently return the prf values.
-    intstr = "bad"
-    new_rt = choose_scaling_intensities(test_refl, intstr)
-    assert list(new_rt["intensity"]) == list(test_refl["intensity.prf.value"])
-    assert list(new_rt["variance"]) == list(test_refl["intensity.prf.variance"])
 
 
 def test_auto_scaling_model():
+    """Test auto options for scaling model creation."""
     params = generated_param()
     exp = generated_exp(scan=False)
     rt = generated_refl()
     params.model = "auto"
-    new_exp = create_auto_scaling_model(params, exp, [rt])
+    new_exp = create_scaling_model(params, exp, [rt])
     assert new_exp[0].scaling_model.id_ == "KB"
 
-    params = generated_param(absorption_term=True)
+    params = generated_param(absorption_term="auto")
     exp = generated_exp(image_range=[1, 5])  # 5 degree wedge
     params.model = "auto"
-    new_exp = create_auto_scaling_model(params, exp, [rt])
+    new_exp = create_scaling_model(params, exp, [rt])
     assert new_exp[0].scaling_model.id_ == "physical"
     assert len(new_exp[0].scaling_model.components["scale"].parameters) == 5
     assert len(new_exp[0].scaling_model.components["decay"].parameters) == 3
     assert "absorption" not in new_exp[0].scaling_model.components
 
-    params = generated_param(absorption_term=True)
+    params = generated_param(absorption_term="auto")
     exp = generated_exp(image_range=[1, 20])  # 20 degree wedge
     params.model = "auto"
-    new_exp = create_auto_scaling_model(params, exp, [rt])
+    new_exp = create_scaling_model(params, exp, [rt])
     assert new_exp[0].scaling_model.id_ == "physical"
     assert len(new_exp[0].scaling_model.components["scale"].parameters) == 7
     assert len(new_exp[0].scaling_model.components["decay"].parameters) == 6
     assert "absorption" not in new_exp[0].scaling_model.components
 
-    params = generated_param(absorption_term=True)
+    params = generated_param(absorption_term="auto")
     exp = generated_exp(image_range=[1, 75])  # 20 degree wedge
     params.model = "auto"
-    new_exp = create_auto_scaling_model(params, exp, [rt])
+    new_exp = create_scaling_model(params, exp, [rt])
     assert new_exp[0].scaling_model.id_ == "physical"
     assert len(new_exp[0].scaling_model.components["scale"].parameters) == 12
     assert len(new_exp[0].scaling_model.components["decay"].parameters) == 10

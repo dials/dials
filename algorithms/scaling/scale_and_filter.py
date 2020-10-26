@@ -5,9 +5,10 @@ from __future__ import absolute_import, division, print_function
 import math
 from collections import OrderedDict
 
-from dials.report.plots import ResolutionPlotterMixin
 from libtbx import phil
 from scitbx.array_family import flex
+
+from dials.report.plots import d_star_sq_to_d_ticks
 
 phil_scope = phil.parse(
     """
@@ -323,7 +324,7 @@ def make_filtering_merging_stats_plots(merging_stats):
     r_pim_bins = merging_stats[0]["rpim"]
     r_merge_bins = merging_stats[0]["rmerge"]
     resolution = [1.0 / x ** 2 for x in merging_stats[0]["d_min"]]
-    vals, txt = ResolutionPlotterMixin._d_star_sq_to_d_ticks(resolution, 5)
+    vals, txt = d_star_sq_to_d_ticks(resolution, 5)
     d.update(
         {
             "cc_one_half_filter": {

@@ -5,6 +5,7 @@ import math
 from copy import deepcopy
 
 import numpy as np
+
 from scitbx import matrix
 
 # Extensions to NXMX
@@ -634,10 +635,9 @@ def load_scan(entry):
 
 
 def load_crystal(entry):
+    from cctbx import uctbx
     from dxtbx.model import Crystal
     from scitbx.array_family import flex
-    from cctbx import uctbx
-    import numpy
 
     # Get the sample
     nx_sample = get_nx_sample(entry, "sample")
@@ -650,13 +650,13 @@ def load_crystal(entry):
         assert nx_sample["depends_on"][()] == str(nx_sample["transformations/phi"].name)
 
     # Read the average unit cell data
-    average_unit_cell = flex.double(numpy.array(nx_sample["average_unit_cell"]))
+    average_unit_cell = flex.double(np.array(nx_sample["average_unit_cell"]))
     assert nx_sample["average_unit_cell"].attrs["angles_units"] == "deg"
     assert nx_sample["average_unit_cell"].attrs["length_units"] == "angstrom"
     assert len(average_unit_cell.all()) == 1
     assert len(average_unit_cell) == 6
     average_orientation_matrix = flex.double(
-        numpy.array(nx_sample["average_orientation_matrix"])
+        np.array(nx_sample["average_orientation_matrix"])
     )
     assert len(average_orientation_matrix.all()) == 2
     assert average_orientation_matrix.all()[0] == 3
@@ -673,12 +673,12 @@ def load_crystal(entry):
     real_space_c = A[6:9]
 
     # Read the unit cell data
-    unit_cell = flex.double(numpy.array(nx_sample["unit_cell"]))
+    unit_cell = flex.double(np.array(nx_sample["unit_cell"]))
     assert nx_sample["unit_cell"].attrs["angles_units"] == "deg"
     assert nx_sample["unit_cell"].attrs["length_units"] == "angstrom"
 
     # Read the orientation matrix
-    orientation_matrix = flex.double(numpy.array(nx_sample["orientation_matrix"]))
+    orientation_matrix = flex.double(np.array(nx_sample["orientation_matrix"]))
     assert len(unit_cell.all()) == 2
     assert len(orientation_matrix.all()) == 3
     assert unit_cell.all()[0] == orientation_matrix.all()[0]
@@ -721,8 +721,6 @@ def dump(entry, experiments, params):
         features.resize((len(features) + 1,))
         features[len(features) - 1] = 6
     else:
-        import numpy as np
-
         features = entry.create_dataset(
             "features", (1,), maxshape=(None,), dtype=np.uint64
         )
@@ -833,8 +831,7 @@ def find_nx_mx_entries(nx_file, entry):
 
 
 def load(entry, exp_index):
-    from dxtbx.model.experiment_list import ExperimentList
-    from dxtbx.model.experiment_list import Experiment
+    from dxtbx.model.experiment_list import Experiment, ExperimentList
 
     print("Loading NXmx")
 

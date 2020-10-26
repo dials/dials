@@ -1,9 +1,8 @@
-from __future__ import absolute_import, division, print_function
-
 # Do not import this file directly. Use
 #
 #   from dials.array_family import flex
 #
+from __future__ import absolute_import, division, print_function
 
 import collections
 import copy
@@ -13,18 +12,20 @@ import logging
 import operator
 import os
 
-import boost.python
+import six
+import six.moves.cPickle as pickle
+
+import boost_adaptbx.boost.python
 import cctbx.array_family.flex
 import cctbx.miller
-import dials_array_family_flex_ext
+import libtbx.smart_open
+from scitbx import matrix
+
 import dials.extensions.glm_background_ext
 import dials.extensions.simple_centroid_ext
 import dials.util.ext
-import libtbx.smart_open
-import six
-import six.moves.cPickle as pickle
+import dials_array_family_flex_ext
 from dials.algorithms.centroid import centroid_px_to_mm_panel
-from scitbx import matrix
 
 __all__ = [
     "real",
@@ -42,7 +43,7 @@ else:
     raise TypeError('unknown "real" type')
 
 
-@boost.python.inject_into(dials_array_family_flex_ext.reflection_table)
+@boost_adaptbx.boost.python.inject_into(dials_array_family_flex_ext.reflection_table)
 class _(object):
     """
     An injector class to add additional methods to the reflection table.
@@ -827,8 +828,9 @@ class _(object):
         :param nthreads: The number of threads to use
         :return: A tuple containing read time and extract time
         """
-        from dials.model.data import make_image
         from time import time
+
+        from dials.model.data import make_image
 
         assert "shoebox" in self
         detector = imageset.get_detector()
@@ -1151,7 +1153,9 @@ Found %s"""
                 self["xyzobs.mm.value"].set_selected(sel, centroid_position)
                 self["xyzobs.mm.variance"].set_selected(sel, centroid_variance)
 
-    def map_centroids_to_reciprocal_space(self, experiments, calculated=False):
+    def map_centroids_to_reciprocal_space(
+        self, experiments, calculated=False, crystal_frame=False
+    ):
         """Map mm/radian spot centroids to reciprocal space.
 
         Used to convert spot centroids provided in mm/radian units to reciprocal space
@@ -1160,6 +1164,8 @@ Found %s"""
 
         Args:
           experiments (dxtbx.model.ExperimentList): A list of experiments.
+          calculated (Bool): use calculated positions.
+          crystal_frame (Bool): return x, y, z positions as divided by U matrix
         """
 
         self["s1"] = cctbx.array_family.flex.vec3_double(len(self))
@@ -1189,7 +1195,10 @@ Found %s"""
                         expt.goniometer.get_setting_rotation()
                     )
                     rotation_axis = expt.goniometer.get_rotation_axis_datum()
-                    fixed_rotation = matrix.sqr(expt.goniometer.get_fixed_rotation())
+                    sample_rotation = matrix.sqr(expt.goniometer.get_fixed_rotation())
+                    if expt.crystal and crystal_frame:
+                        sample_rotation *= matrix.sqr(expt.crystal.get_U())
+
                     self["rlp"].set_selected(sel, tuple(setting_rotation.inverse()) * S)
                     self["rlp"].set_selected(
                         sel,
@@ -1198,7 +1207,8 @@ Found %s"""
                         .rotate_around_origin(rotation_axis, -rot_angle),
                     )
                     self["rlp"].set_selected(
-                        sel, tuple(fixed_rotation.inverse()) * self["rlp"].select(sel)
+                        sel,
+                        tuple(sample_rotation.inverse()) * self["rlp"].select(sel),
                     )
                 else:
                     self["rlp"].set_selected(sel, S)

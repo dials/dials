@@ -1,12 +1,14 @@
 from __future__ import absolute_import, division, print_function
 
+import numpy as np
+
 
 def predict_reflections(sequence, crystal):
+    from dxtbx.model.experiment_list import Experiment, ExperimentList
+
     from dials.algorithms import shoebox
-    from dials.array_family import flex
-    from dxtbx.model.experiment_list import ExperimentList
-    from dxtbx.model.experiment_list import Experiment
     from dials.algorithms.profile_model.gaussian_rs import Model
+    from dials.array_family import flex
 
     # Get models from the sequence
     beam = sequence.get_beam()
@@ -43,6 +45,7 @@ def predict_reflections(sequence, crystal):
 
 def test(dials_data):
     from dxtbx.serialize import load
+
     from dials.algorithms import shoebox
     from dials.array_family import flex
 
@@ -105,8 +108,8 @@ def tst_non_overlapping(reflections, non_overlapping, image_size):
 
 def tst_overlapping(reflections, overlapping, adjacency_list, image_size):
     """Ensure masks for overlapping reflections are set properly."""
-    import numpy
     from scitbx import matrix
+
     from dials.algorithms import shoebox
 
     # Loop through all overlaps
@@ -119,7 +122,7 @@ def tst_overlapping(reflections, overlapping, adjacency_list, image_size):
 
         # Create a mask that we expect
         r1_size = (bbox_1[5] - bbox_1[4], bbox_1[3] - bbox_1[2], bbox_1[1] - bbox_1[0])
-        expected_mask = numpy.zeros(shape=r1_size, dtype=numpy.int32)
+        expected_mask = np.zeros(shape=r1_size, dtype=np.int32)
         expected_mask[:, :, :] = shoebox.MaskCode.Valid
 
         # Loop through all reflections which this reflection overlaps
@@ -151,13 +154,11 @@ def tst_overlapping(reflections, overlapping, adjacency_list, image_size):
                         mask_coord.append(matrix.col((i + 0.5, j + 0.5, k + 0.5)))
 
             def dist(a, m):
-                return numpy.array([(a - b).length() for b in m])
+                return np.array([(a - b).length() for b in m])
 
             # Find the indices in the intersection area where r2 is closer to
             # the point than r1
-            ind = numpy.where(dist(r1_coord, mask_coord) > dist(r2_coord, mask_coord))[
-                0
-            ]
+            ind = np.where(dist(r1_coord, mask_coord) > dist(r2_coord, mask_coord))[0]
 
             # Set the mask values for r1 where r2 is closer to 0
             k0, k1 = bbox_3[4] - bbox_1[4], bbox_3[5] - bbox_1[4]
@@ -171,4 +172,4 @@ def tst_overlapping(reflections, overlapping, adjacency_list, image_size):
 
         # Check the masks are the same
         calculated_mask = r1.mask.as_numpy_array()
-        assert numpy.all(calculated_mask == expected_mask)
+        assert np.all(calculated_mask == expected_mask)

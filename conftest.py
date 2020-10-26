@@ -6,38 +6,21 @@
 
 from __future__ import absolute_import, division, print_function
 
+import multiprocessing
 import os
+import sys
 import warnings
 
 import pytest
-import six
 
+# https://stackoverflow.com/a/40846742
+warnings.filterwarnings("ignore", message="numpy.dtype size changed")
+warnings.filterwarnings("ignore", message="numpy.ufunc size changed")
+
+if sys.version_info[:2] == (3, 7) and sys.platform == "darwin":
+    multiprocessing.set_start_method("forkserver")
 
 collect_ignore = []
-if six.PY2:
-    _base = os.path.dirname(__file__)
-    with open(os.path.join(_base, ".travis", "python2-supported-files"), "r") as fh:
-        allowed_testfiles = {tuple(f.strip()[2:].split("/")) for f in fh}
-    for root, dirs, files in os.walk(_base):
-        relroot = os.path.relpath(root, _base).split(os.path.sep)
-        if relroot == ["."]:
-            relroot = []
-        for f in files:
-            if f.endswith(".py"):
-                filetuple = tuple(relroot + [f])
-                if filetuple not in allowed_testfiles:
-                    collect_ignore.append(os.path.join(*filetuple))
-    warnings.warn(
-        "%d test files were excluded as they can only be interpreted with Python 3"
-        % len(collect_ignore),
-        UserWarning,
-    )
-
-
-@pytest.fixture(scope="session")
-def python3():
-    if six.PY2:
-        pytest.skip("Test requires a Python 3 installation")
 
 
 def pytest_addoption(parser):
@@ -89,7 +72,7 @@ def dials_regression():
         ):
             return reference_copy
     except ImportError:
-        pass  # can not tell whether in DLS network or not
+        pass  # Cannot tell whether in DLS network or not
     pytest.skip("dials_regression required for this test")
 
 

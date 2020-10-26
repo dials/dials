@@ -4,10 +4,13 @@ from __future__ import absolute_import, division, print_function
 import gzip
 import io
 
-import iotbx.phil
 import six
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+
+import iotbx.phil
 from dxtbx.model import ExperimentList
+
+import dials.util
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 
 phil_scope = iotbx.phil.parse(
     """
@@ -25,10 +28,9 @@ output {
 """
 )
 
-master_params = phil_scope.fetch().extract()
 
-
-def run(args):
+@dials.util.show_mail_handle_errors()
+def run(args=None):
     usage = "dev.dials.csv [options] imported.expt strong.refl output.csv=rl.csv"
 
     parser = OptionParser(
@@ -39,7 +41,7 @@ def run(args):
         check_format=False,
     )
 
-    params, options = parser.parse_args(show_diff_phil=False)
+    params, options = parser.parse_args(args, show_diff_phil=False)
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
@@ -97,6 +99,4 @@ def run(args):
 
 
 if __name__ == "__main__":
-    import sys
-
-    run(sys.argv[1:])
+    run()

@@ -5,6 +5,7 @@ import time
 
 import six
 import six.moves.cPickle as pickle
+
 from dials.array_family import flex
 
 logger = logging.getLogger(__name__)
@@ -12,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 def generate_phil_scope():
     from iotbx.phil import parse
+
     import dials.extensions
 
     phil_scope = parse(
@@ -412,10 +414,11 @@ class SpotFinderFactory(object):
         :param params: The input parameters
         :returns: The spot finder instance
         """
-        from dials.util.masking import MaskGenerator
-        from dials.algorithms.spot_finding.finder import SpotFinder
-        from libtbx.phil import parse
         from dxtbx.imageset import ImageSequence
+        from libtbx.phil import parse
+
+        from dials.algorithms.spot_finding.finder import SpotFinder
+        from dials.util.masking import MaskGenerator
 
         if params is None:
             params = phil_scope.fetch(source=parse("")).extract()
@@ -442,7 +445,7 @@ class SpotFinderFactory(object):
         filter_spots = SpotFinderFactory.configure_filter(params)
 
         # Create the threshold strategy
-        threshold_function = SpotFinderFactory.configure_threshold(params, experiments)
+        threshold_function = SpotFinderFactory.configure_threshold(params)
 
         # Configure the mask generator
         mask_generator = MaskGenerator(params.spotfinder.filter)
@@ -474,7 +477,7 @@ class SpotFinderFactory(object):
         )
 
     @staticmethod
-    def configure_threshold(params, experiments):
+    def configure_threshold(params):
         """
         Get the threshold strategy
 

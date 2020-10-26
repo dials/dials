@@ -10,7 +10,7 @@ from time import time
 
 import psutil
 
-import boost.python
+import boost_adaptbx.boost.python
 import libtbx
 
 import dials.algorithms.integration
@@ -78,7 +78,7 @@ def _average_bbox_size(reflections):
     return xsize, ysize, zsize
 
 
-@boost.python.inject_into(Executor)
+@boost_adaptbx.boost.python.inject_into(Executor)
 class _(object):
     @staticmethod
     def __getinitargs__():
@@ -471,9 +471,11 @@ class Task(object):
             else:
                 mask = imageset.get_mask(i)
                 if self.params.lookup.mask is not None:
-                    assert len(mask) == len(self.params.lookup.mask), (
-                        "Mask/Image are incorrect size %d %d"
-                        % (len(mask), len(self.params.lookup.mask))
+                    assert len(mask) == len(
+                        self.params.lookup.mask
+                    ), "Mask/Image are incorrect size %d %d" % (
+                        len(mask),
+                        len(self.params.lookup.mask),
                     )
                     mask = tuple(
                         m1 & m2 for m1, m2 in zip(self.params.lookup.mask, mask)
@@ -561,7 +563,6 @@ class _Manager(object):
         assert "bbox" in self.reflections, "Reflections have no bbox"
 
         # Compute the block size and processors
-        self.compute_blocks()
         self.compute_jobs()
         self.split_reflections()
         self.compute_processors()
@@ -660,9 +661,9 @@ class _Manager(object):
         """
         return len(self.manager)
 
-    def compute_blocks(self):
+    def compute_jobs(self):
         """
-        Compute the processing block size.
+        Sets up a JobList() object in self.jobs
         """
 
         if self.params.block.size == libtbx.Auto:
@@ -672,19 +673,17 @@ class _Manager(object):
                 and not self.params.block.force
             ):
                 self.params.block.size = None
-            else:
-                assert self.params.block.threshold > 0, "Threshold must be > 0"
-                assert self.params.block.threshold <= 1.0, "Threshold must be < 1"
-                nframes = sorted([b[5] - b[4] for b in self.reflections["bbox"]])
-                cutoff = int(self.params.block.threshold * len(nframes))
-                block_size = nframes[cutoff] * 2
-                self.params.block.size = block_size
-                self.params.block.units = "frames"
 
-    def compute_jobs(self):
-        """
-        Sets up a JobList() object in self.jobs
-        """
+        # calculate the block overlap based on the size of bboxes in the data
+        # calculate once here rather than repeated in the loop below
+        block_overlap = 0
+        if self.params.block.size is not None:
+            assert self.params.block.threshold > 0, "Threshold must be > 0"
+            assert self.params.block.threshold <= 1.0, "Threshold must be < 1"
+            frames_per_refl = sorted([b[5] - b[4] for b in self.reflections["bbox"]])
+            cutoff = int(self.params.block.threshold * len(frames_per_refl))
+            block_overlap = frames_per_refl[cutoff]
+
         groups = itertools.groupby(
             range(len(self.experiments)),
             lambda x: (id(self.experiments[x].imageset), id(self.experiments[x].scan)),
@@ -701,21 +700,46 @@ class _Manager(object):
             if scan is not None:
                 assert len(imgs) >= len(scan), "Invalid scan range"
                 array_range = scan.get_array_range()
+
             if self.params.block.size is None:
                 block_size_frames = array_range[1] - array_range[0]
+            elif self.params.block.size == libtbx.Auto:
+                # auto determine based on nframes and overlap
+                nframes = array_range[1] - array_range[0]
+                nblocks = self.params.mp.nproc * self.params.mp.njobs
+                # want data to be split into n blocks with overlaps
+                # i.e. [x, overlap, y, overlap, y, overlap, ....,y,  overlap, x]
+                # blocks are x + overlap, or overlap + y + overlap.
+                x = (nframes - block_overlap) / nblocks
+                block_size = int(math.ceil(x + block_overlap))
+                # increase the block size to be at least twice the overlap, in
+                # case the overlap is large e.g. if high mosaicity.
+                block_size_frames = max(block_size, 2 * block_overlap)
             elif self.params.block.units == "radians":
-                phi0, dphi = scan.get_oscillation(deg=False)
+                _, dphi = scan.get_oscillation(deg=False)
                 block_size_frames = int(math.ceil(self.params.block.size / dphi))
+                # if the specified block size is lower than the overlap,
+                # reduce the overlap to be half of the block size.
+                block_overlap = min(block_overlap, int(block_size_frames // 2))
             elif self.params.block.units == "degrees":
-                phi0, dphi = scan.get_oscillation()
+                _, dphi = scan.get_oscillation()
                 block_size_frames = int(math.ceil(self.params.block.size / dphi))
+                # if the specified block size is lower than the overlap,
+                # reduce the overlap to be half of the block size.
+                block_overlap = min(block_overlap, int(block_size_frames // 2))
             elif self.params.block.units == "frames":
                 block_size_frames = int(math.ceil(self.params.block.size))
+                block_overlap = min(block_overlap, int(block_size_frames // 2))
             else:
                 raise RuntimeError(
                     "Unknown block_size units %r" % self.params.block.units
                 )
-            self.jobs.add((i0, i1), array_range, block_size_frames)
+            self.jobs.add(
+                (i0, i1),
+                array_range,
+                block_size_frames,
+                block_overlap,
+            )
         assert len(self.jobs) > 0, "Invalid number of jobs"
 
     def split_reflections(self):
@@ -780,7 +804,8 @@ class _Manager(object):
         _report("Available swap memory", available_swap / 1e9)
         _report("Available system memory (including swap)", available_incl_swap / 1e9)
         _report(
-            "Maximum memory for processing (including swap)", available_limit / 1e9,
+            "Maximum memory for processing (including swap)",
+            available_limit / 1e9,
         )
         _report(
             "Maximum memory for processing (excluding swap)",
@@ -796,7 +821,7 @@ class _Manager(object):
         if rlimit:
             try:
                 ulimit = resource.getrlimit(rlimit)[0]
-                if ulimit <= 0:
+                if ulimit <= 0 or ulimit > (2 ** 62):
                     report.append("  no memory ulimit set")
                 else:
                     ulimit_used = psutil.Process().memory_info().rss
@@ -909,7 +934,7 @@ class _Manager(object):
                 p1 = scan.get_angle_from_array_index(f1)
                 n = self.manager.num_reflections(i)
                 rows.append(
-                    [str(i), str(group), str(f0), str(f1), str(p0), str(p1), str(n)]
+                    [str(i), str(group), str(f0 + 1), str(f1), str(p0), str(p1), str(n)]
                 )
         else:
             raise RuntimeError("Experiments must be all sequences or all stills")
@@ -922,14 +947,14 @@ class _Manager(object):
             block_size = "auto"
         else:
             block_size = str(self.params.block.size)
-        fmt = (
-            "Processing reflections in the following blocks of images:\n"
-            "\n"
-            " block_size: %s %s\n"
-            "\n"
-            "%s\n"
+        return (
+            "Processing reflections in the following blocks of images:\n\n"
+            " block_size: {} {}\n\n{}\n"
+        ).format(
+            block_size,
+            "" if block_size in ("auto", "Auto") else self.params.block.units,
+            task_table,
         )
-        return fmt % (block_size, self.params.block.units, task_table)
 
 
 class Processor3D(_ProcessorRot):

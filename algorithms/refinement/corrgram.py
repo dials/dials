@@ -3,9 +3,9 @@
 from __future__ import absolute_import, division, print_function
 
 import json
+import logging
 import math
 import os
-import logging
 
 import libtbx.phil
 
@@ -61,12 +61,11 @@ def corrgram(corrmat, labels):
     try:
         import matplotlib
 
-        matplotlib.use("Agg", warn=False)
-        import matplotlib.pyplot as plt
+        matplotlib.use("Agg")
         import matplotlib.cm as cm
+        import matplotlib.pyplot as plt
     except ImportError as e:
-        msg = "matplotlib modules not available " + str(e)
-        logger.info(msg)
+        logger.info("matplotlib modules not available " + str(e), exc_info=True)
         return None
 
     plt.figure(1)

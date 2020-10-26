@@ -4,14 +4,16 @@ Tests for the functions in dials.util.options
 from __future__ import absolute_import, division, print_function
 
 from mock import Mock
+
+from dxtbx.model import Experiment, ExperimentList
+
+from dials.test.util import mock_reflection_file_object, mock_two_reflection_file_object
 from dials.util.options import (
-    flatten_experiments,
     OptionParser,
+    flatten_experiments,
     flatten_reflections,
     reflections_and_experiments_from_files,
 )
-from dials.test.util import mock_reflection_file_object, mock_two_reflection_file_object
-from dxtbx.model import Experiment, ExperimentList
 
 
 def test_can_read_headerless_h5_and_no_detector_is_present(dials_data):

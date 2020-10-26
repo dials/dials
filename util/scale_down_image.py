@@ -3,8 +3,9 @@ from __future__ import absolute_import, division, print_function
 import binascii
 import os
 
-from dials.util.ext import scale_down_array
 from scitbx.array_family import flex
+
+from dials.util.ext import scale_down_array
 
 
 def scale_down_array_py(image, scale_factor):
@@ -13,7 +14,7 @@ def scale_down_array_py(image, scale_factor):
     to be flags of some kind (i.e. similar to Pilatus data) and hence preserved
     as input."""
 
-    from scitbx.random import variate, uniform_distribution
+    from scitbx.random import uniform_distribution, variate
 
     assert scale_factor <= 1
     assert scale_factor >= 0

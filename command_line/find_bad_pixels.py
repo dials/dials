@@ -8,11 +8,11 @@ import sys
 
 import iotbx.phil
 from scitbx.array_family import flex
+
+import dials.util
 from dials.algorithms.spot_finding.factory import SpotFinderFactory
 from dials.algorithms.spot_finding.factory import phil_scope as spot_phil
-from dials.util.options import OptionParser
-from dials.util.options import flatten_experiments
-from dxtbx.model.experiment_list import ExperimentList, Experiment
+from dials.util.options import OptionParser, flatten_experiments
 
 help_message = """
 
@@ -98,20 +98,7 @@ def find_constant_signal_pixels(imageset, images):
         spot_params = spot_phil.fetch(
             source=iotbx.phil.parse("min_spot_size=1")
         ).extract()
-        threshold_function = SpotFinderFactory.configure_threshold(
-            spot_params,
-            ExperimentList(
-                [
-                    Experiment(
-                        beam=imageset.get_beam(),
-                        detector=imageset.get_detector(),
-                        goniometer=imageset.get_goniometer(),
-                        scan=imageset.get_scan(),
-                        imageset=imageset,
-                    )
-                ]
-            ),
-        )
+        threshold_function = SpotFinderFactory.configure_threshold(spot_params)
         peak_pixels = threshold_function.compute_threshold(data, ~bad)
 
         if total is None:
@@ -122,7 +109,8 @@ def find_constant_signal_pixels(imageset, images):
     return total
 
 
-def run(args):
+@dials.util.show_mail_handle_errors()
+def run(args=None):
     usage = "dev.dials.find_bad_pixels [options] data_master.h5"
 
     parser = OptionParser(
@@ -133,7 +121,7 @@ def run(args):
         epilog=help_message,
     )
 
-    params, options = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(args, show_diff_phil=True)
 
     experiments = flatten_experiments(params.input.experiments)
     if len(experiments) != 1:
@@ -195,4 +183,4 @@ def run(args):
 
 
 if __name__ == "__main__":
-    run(sys.argv[1:])
+    run()

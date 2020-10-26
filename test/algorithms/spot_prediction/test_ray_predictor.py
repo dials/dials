@@ -4,17 +4,21 @@ import math
 import os
 
 import pytest
+
 from scitbx import matrix
 
 
 class RayPredictor:
     def __init__(self, dials_regression):
-        from dials.algorithms.spot_prediction import IndexGenerator
-        from dials.algorithms.spot_prediction import ScanStaticRayPredictor
-        from iotbx.xds import xparm, integrate_hkl
-        from dials.util import ioutil
         import dxtbx
+        from iotbx.xds import integrate_hkl, xparm
         from rstbx.cftbx.coordinate_frame_converter import coordinate_frame_converter
+
+        from dials.algorithms.spot_prediction import (
+            IndexGenerator,
+            ScanStaticRayPredictor,
+        )
+        from dials.util import ioutil
 
         # The XDS files to read from
         integrate_filename = os.path.join(
@@ -162,8 +166,7 @@ def test_beam_vectors(raypredictor):
 
 
 def test_new(raypredictor):
-    from dials.algorithms.spot_prediction import ScanStaticRayPredictor
-    from dials.algorithms.spot_prediction import IndexGenerator
+    from dials.algorithms.spot_prediction import IndexGenerator, ScanStaticRayPredictor
 
     # Create the index generator
     raypredictor.generate_indices = IndexGenerator(
@@ -198,8 +201,7 @@ def test_new(raypredictor):
 
 
 def test_new_from_array(raypredictor):
-    from dials.algorithms.spot_prediction import ScanStaticRayPredictor
-    from dials.algorithms.spot_prediction import IndexGenerator
+    from dials.algorithms.spot_prediction import IndexGenerator, ScanStaticRayPredictor
 
     # Create the index generator
     raypredictor.generate_indices = IndexGenerator(
@@ -234,9 +236,12 @@ def test_new_from_array(raypredictor):
 
 
 def test_scan_varying(raypredictor):
-    from dials.algorithms.spot_prediction import ScanVaryingRayPredictor
-    from dials.algorithms.spot_prediction import ReekeIndexGenerator
     import scitbx.math
+
+    from dials.algorithms.spot_prediction import (
+        ReekeIndexGenerator,
+        ScanVaryingRayPredictor,
+    )
 
     s0 = raypredictor.beam.get_s0()
     m2 = raypredictor.gonio.get_rotation_axis()

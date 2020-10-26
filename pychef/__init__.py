@@ -1,9 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
-from dials_pychef_ext import ChefStatistics, Observations
 from cctbx.array_family import flex
 from iotbx.data_plots import table_data
 from libtbx import phil
+
+from dials.util import resolution_analysis
+from dials_pychef_ext import ChefStatistics, Observations
 
 __all__ = [
     "ChefStatistics",
@@ -486,9 +488,9 @@ def remove_batch_gaps(batches):
 
 
 def resolution_limit(i_obs, min_completeness, n_bins):
-    from dials.util.resolutionizer import Resolutionizer, phil_defaults
-
-    params = phil_defaults.extract().resolutionizer
+    params = resolution_analysis.phil_defaults.extract().resolution
     params.nbins = n_bins
-    r = Resolutionizer(i_obs, params)
-    return r.resolution_completeness(limit=min_completeness)
+    r = resolution_analysis.Resolutionizer(i_obs, params)
+    return r.resolution(
+        resolution_analysis.metrics.COMPLETENESS, limit=min_completeness
+    )

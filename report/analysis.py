@@ -1,16 +1,17 @@
 """Calculations relevant to reporting."""
 from __future__ import absolute_import, division, print_function
 
+import collections
+
 from cctbx import miller
+from scitbx.array_family import flex
+
 from dials.algorithms.scaling.scaling_library import scaled_data_as_miller_array
 from dials.util.batch_handling import (
+    assign_batches_to_reflections,
     calculate_batch_offsets,
     get_batch_ranges,
-    assign_batches_to_reflections,
 )
-from libtbx.str_utils import make_sub_header
-from scitbx.array_family import flex
-from six.moves import cStringIO as StringIO
 
 
 def batch_dependent_properties(batches, intensities, scales=None):
@@ -182,28 +183,181 @@ def _batch_bins_and_data(batches, values, function_to_apply):
     return batch_bins, data
 
 
+formats = collections.OrderedDict(
+    [
+        ("High resolution limit", " %7.2f"),
+        ("Low resolution limit", " %7.2f"),
+        ("Completeness", "%7.1f"),
+        ("Multiplicity", "%7.1f"),
+        ("I/sigma", "%7.1f"),
+        ("Rmerge(I)", "%7.3f"),
+        ("Rmerge(I+/-)", "%7.3f"),
+        ("Rmeas(I)", "%7.3f"),
+        ("Rmeas(I+/-)", "%7.3f"),
+        ("Rpim(I)", "%7.3f"),
+        ("Rpim(I+/-)", "%7.3f"),
+        ("CC half", "%7.3f"),
+        ("Wilson B factor", "%7.3f"),
+        ("Partial bias", "%7.3f"),
+        ("Anomalous completeness", "%7.1f"),
+        ("Anomalous multiplicity", "%7.1f"),
+        ("Anomalous correlation", "%7.3f"),
+        ("Anomalous slope", "%7.3f"),
+        ("dF/F", "%7.3f"),
+        ("dI/s(dI)", "%7.3f"),
+        ("Total observations", "%7d"),
+        ("Total unique", "%7d"),
+    ]
+)
+
+
+def format_statistics(statistics, caption=None):
+    """Format for printing statistics from data processing"""
+
+    available = list(statistics.keys())
+
+    columns = len(statistics.get("Completeness", [1, 2, 3]))
+    if caption:
+        result = caption.ljust(44)
+    else:
+        result = "".ljust(44)
+    if columns == 3:
+        result += " Overall    Low     High"
+    elif columns == 4:
+        result += "Suggested   Low    High  Overall"
+    result += "\n"
+
+    for k, format_str in formats.items():
+        if k in available:
+            try:
+                row_data = statistics[k]
+                if (
+                    columns == 4 and len(row_data) == 1
+                ):  # place value in leftmost overall/suggest column
+                    row_data = row_data + [None] * (columns - 1)
+                row_format = [format_str] + [format_str.strip()] * (len(row_data) - 1)
+                formatted = " ".join(
+                    (f % k) if k is not None else (" " * len(f % 0))
+                    for f, k in zip(row_format, row_data)
+                )
+            except TypeError:
+                formatted = "(error)"
+            result += k.ljust(44) + formatted + "\n"
+
+    return result
+
+
+def table_1_summary(
+    merging_statistics,
+    anomalous_statistics=None,
+    selected_statistics=None,
+    selected_anomalous_statistics=None,
+):
+    """Make a summary table of the merging statistics."""
+    text = "\n            -------------Summary of merging statistics--------------           \n\n"
+    stats = table_1_stats(
+        merging_statistics,
+        anomalous_statistics,
+        selected_statistics,
+        selected_anomalous_statistics,
+    )
+    text += format_statistics(stats)
+    return text
+
+
+def table_1_stats(
+    merging_statistics,
+    anomalous_statistics=None,
+    selected_statistics=None,
+    selected_anomalous_statistics=None,
+):
+    """Extract a statistics dict from merging stats objects"""
+    key_to_var = {
+        "I/sigma": "i_over_sigma_mean",
+        "Completeness": "completeness",
+        "Low resolution limit": "d_max",
+        "Multiplicity": "mean_redundancy",
+        "Rmerge(I)": "r_merge",
+        "Rmeas(I)": "r_meas",
+        "High resolution limit": "d_min",
+        "Total observations": "n_obs",
+        "Rpim(I)": "r_pim",
+        "CC half": "cc_one_half",
+        "Total unique": "n_uniq",
+    }
+
+    anom_key_to_var = {
+        "Rmerge(I+/-)": "r_merge",
+        "Rpim(I+/-)": "r_pim",
+        "Rmeas(I+/-)": "r_meas",
+        "Anomalous completeness": "anom_completeness",
+        "Anomalous correlation": "anom_half_corr",
+        "Anomalous multiplicity": "mean_redundancy",
+    }
+
+    four_column_output = bool(selected_statistics)
+
+    stats = {}
+
+    def generate_stats(d, r, s):
+        for key, value in d.items():
+            if four_column_output:
+                values = (
+                    getattr(s.overall, value),
+                    getattr(s.bins[0], value),
+                    getattr(s.bins[-1], value),
+                    getattr(r.overall, value),
+                )
+            else:
+                values = (
+                    getattr(r.overall, value),
+                    getattr(r.bins[0], value),
+                    getattr(r.bins[-1], value),
+                )
+            if "completeness" in value:
+                values = [v_ * 100 for v_ in values]
+            if values[0] is not None:
+                stats[key] = values
+
+    generate_stats(key_to_var, merging_statistics, selected_statistics)
+
+    if anomalous_statistics:
+        anom_probability_plot = (
+            anomalous_statistics.overall.anom_probability_plot_expected_delta
+        )
+        if anom_probability_plot is not None:
+            stats["Anomalous slope"] = [anom_probability_plot.slope]
+        stats["dF/F"] = [anomalous_statistics.overall.anom_signal]
+        stats["dI/s(dI)"] = [
+            anomalous_statistics.overall.delta_i_mean_over_sig_delta_i_mean
+        ]
+        if selected_anomalous_statistics:
+            anom_probability_plot = (
+                selected_anomalous_statistics.overall.anom_probability_plot_expected_delta
+            )
+            if anom_probability_plot is not None:
+                stats["Anomalous slope"] = [anom_probability_plot.slope]
+            stats["dF/F"] = [selected_anomalous_statistics.overall.anom_signal]
+            stats["dI/s(dI)"] = [
+                selected_anomalous_statistics.overall.delta_i_mean_over_sig_delta_i_mean
+            ]
+        generate_stats(
+            anom_key_to_var, anomalous_statistics, selected_anomalous_statistics
+        )
+
+    return stats
+
+
 def make_merging_statistics_summary(dataset_statistics):
     """Format merging statistics information into an output string."""
 
-    # Here use a StringIO to get around excessive padding/whitespace.
-    # Avoid using result.show as don't want redundancies printed.
-    out = StringIO()
-
-    # First make summary
-    make_sub_header("Merging statistics", out=out)
-    dataset_statistics.overall.show_summary(out=out)
-
-    # Next make statistics by resolution bin.
-    msg = "\n\nStatistics by resolution bin:\n"
-    msg += (
+    text = "\n            ----------Merging statistics by resolution bin----------           \n\n"
+    text += (
         " d_max  d_min   #obs  #uniq   mult.  %comp       <I>  <I/sI>"
         + "    r_mrg   r_meas    r_pim   cc1/2   cc_ano\n"
     )
     for bin_stats in dataset_statistics.bins:
-        msg += bin_stats.format() + "\n"
-    msg += dataset_statistics.overall.format() + "\n\n"
-    out.write(msg)
+        text += bin_stats.format() + "\n"
+    text += dataset_statistics.overall.format() + "\n\n"
 
-    # Finally show estimated cutoffs
-    dataset_statistics.show_estimated_cutoffs(out=out)
-    return out.getvalue()
+    return text

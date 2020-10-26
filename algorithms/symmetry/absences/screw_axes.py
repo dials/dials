@@ -1,12 +1,15 @@
 """Definitions of screw axes with methods for scoring against data."""
 from __future__ import absolute_import, division, print_function
-import math
+
 import logging
+import math
+
+from jinja2 import ChoiceLoader, Environment, PackageLoader
+
 from scitbx.array_family import flex
+
 from dials.algorithms.symmetry.absences.plots import plot_screw_axes
 from dials.util.observer import Observer, Subject, singleton
-from jinja2 import Environment, ChoiceLoader, PackageLoader
-
 
 logger = logging.getLogger("dials.space_group")
 
@@ -34,10 +37,12 @@ class ScrewAxisObserver(Observer):
             ]
         )
         env = Environment(loader=loader)
-        template = env.get_template("systematic_absences_report.html")
+        template = env.get_template("simple_report.html")
         html = template.render(
             page_title="DIALS systematic absences report",
-            screw_axes_graphs=self.data["screw_axes"],
+            panel_title="Screw axes analysis",
+            panel_id="screw_axes",
+            graphs=self.data["screw_axes"],
         )
         with open(filename, "wb") as f:
             f.write(html.encode("utf-8", "xmlcharrefreplace"))

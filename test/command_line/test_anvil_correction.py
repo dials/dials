@@ -5,14 +5,16 @@ Tests for dials.command_line.anvil_correction.
 from __future__ import absolute_import, division, print_function
 
 import copy
+
 import pytest
+
+from dxtbx.model import ExperimentList
 
 from dials.array_family import flex
 from dials.command_line.anvil_correction import (
     correct_intensities_for_dac_attenuation,
     run,
 )
-from dxtbx.model import ExperimentList
 
 
 def test_correct_correction(dials_data):
@@ -73,9 +75,9 @@ def test_correct_correction(dials_data):
         )
 
         # Check that the applied corrections are correct.
-        assert pytest.approx(intensity_correction) == target_correction, (
-            "The applied intensity correction to %s doesn't seem to be correct." % case
-        )
+        assert pytest.approx(intensity_correction, rel=1e-5) == list(
+            target_correction
+        ), ("The applied intensity correction to %s doesn't seem to be correct." % case)
 
 
 def test_help_message(dials_data, capsys):

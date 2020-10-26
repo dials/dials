@@ -8,6 +8,7 @@ from __future__ import absolute_import, division, print_function
 import copy
 import logging
 import uuid
+
 from dials.array_family import flex
 
 logger = logging.getLogger("dials")

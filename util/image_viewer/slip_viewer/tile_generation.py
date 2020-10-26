@@ -5,9 +5,10 @@ import sys
 
 import six
 import wx
-from scitbx.array_family import flex
-import scitbx.matrix
 from six.moves import range
+
+import scitbx.matrix
+from scitbx.array_family import flex
 
 ######
 # Base class for a tile object - handles access to tiles.

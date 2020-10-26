@@ -4,14 +4,13 @@
 from __future__ import absolute_import, division, print_function
 
 import math
-import sys
 
 import iotbx.phil
+from scitbx.array_family import flex
+
 from dials.algorithms.spot_finding.factory import SpotFinderFactory
 from dials.algorithms.spot_finding.factory import phil_scope as spot_phil
-from dials.util import Sorry
-from dxtbx.model.experiment_list import ExperimentList, Experiment
-from scitbx.array_family import flex
+from dials.util import Sorry, show_mail_handle_errors
 
 help_message = """
 
@@ -29,6 +28,9 @@ n_bins = 100
 images = None
   .type = ints
   .help = "Images on which to perform the analysis (otherwise use all images)"
+corrected = False
+  .type = bool
+  .help = "Use corrected data (i.e after applying pedestal and gain) in analysis"
 plot = False
   .type = bool
 
@@ -40,13 +42,9 @@ masking {
 )
 
 
-def main():
-    run(sys.argv[1:])
-
-
-def run(args):
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_experiments
+@show_mail_handle_errors()
+def run(args=None):
+    from dials.util.options import OptionParser, flatten_experiments
 
     usage = "dials.background [options] image_*.cbf"
 
@@ -54,7 +52,7 @@ def run(args):
         usage=usage, phil=phil_scope, read_experiments=True, epilog=help_message
     )
 
-    params, options = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(args, show_diff_phil=True)
 
     # Ensure we have either a data block or an experiment list
     experiments = flatten_experiments(params.input.experiments)
@@ -84,7 +82,11 @@ def run(args):
         print("For image %d:" % indx)
         indx -= first  # indices passed to imageset.get_raw_data start from zero
         d, I, sig = background(
-            imageset, indx, n_bins=params.n_bins, mask_params=params.masking
+            imageset,
+            indx,
+            n_bins=params.n_bins,
+            corrected=params.corrected,
+            mask_params=params.masking,
         )
 
         print("%8s %8s %8s" % ("d", "I", "sig"))
@@ -115,10 +117,11 @@ def run(args):
         pyplot.show()
 
 
-def background(imageset, indx, n_bins, mask_params=None):
-    from dials.array_family import flex
+def background(imageset, indx, n_bins, corrected=False, mask_params=None):
     from libtbx.phil import parse
     from scitbx import matrix
+
+    from dials.array_family import flex
 
     if mask_params is None:
         # Default mask params for trusted range
@@ -143,27 +146,17 @@ def background(imageset, indx, n_bins, mask_params=None):
     if math.fabs(b.dot(n)) < 0.95:
         raise Sorry("Detector not perpendicular to beam")
 
-    data = imageset.get_raw_data(indx)
+    if corrected:
+        data = imageset.get_corrected_data(indx)
+    else:
+        data = imageset.get_raw_data(indx)
     assert len(data) == 1
     data = data[0]
 
     data = data.as_double()
 
     spot_params = spot_phil.fetch(source=parse("")).extract()
-    threshold_function = SpotFinderFactory.configure_threshold(
-        spot_params,
-        ExperimentList(
-            [
-                Experiment(
-                    beam=imageset.get_beam(),
-                    detector=imageset.get_detector(),
-                    goniometer=imageset.get_goniometer(),
-                    scan=imageset.get_scan(),
-                    imageset=imageset,
-                )
-            ]
-        ),
-    )
+    threshold_function = SpotFinderFactory.configure_threshold(spot_params)
     peak_pixels = threshold_function.compute_threshold(data, mask)
     signal = data.select(peak_pixels.iselection())
     background_pixels = mask & ~peak_pixels
@@ -213,4 +206,4 @@ def background(imageset, indx, n_bins, mask_params=None):
 
 
 if __name__ == "__main__":
-    main()
+    run()

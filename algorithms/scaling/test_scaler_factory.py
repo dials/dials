@@ -2,24 +2,27 @@
 Tests for the scaler factory classes and helper functions.
 """
 from __future__ import absolute_import, division, print_function
+
 import pytest
-from libtbx import phil
+from mock import MagicMock, Mock
+
 from dxtbx.model import Crystal
-from mock import Mock, MagicMock
-from dials.array_family import flex
-from dials.util.options import OptionParser
+from libtbx import phil
+
+from dials.algorithms.scaling.scaler import (
+    MultiScaler,
+    NullScaler,
+    SingleScaler,
+    TargetScaler,
+)
 from dials.algorithms.scaling.scaler_factory import (
+    MultiScalerFactory,
     SingleScalerFactory,
     TargetScalerFactory,
-    MultiScalerFactory,
     create_scaler,
 )
-from dials.algorithms.scaling.scaler import (
-    SingleScaler,
-    MultiScaler,
-    TargetScaler,
-    NullScaler,
-)
+from dials.array_family import flex
+from dials.util.options import OptionParser
 
 
 def generated_refl(not_integrated=False, idval=0):
@@ -66,7 +69,31 @@ def refl_to_filter():
     reflections["intensity.sum.value"] = flex.double([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
     reflections["intensity.sum.variance"] = flex.double([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
     reflections.set_flags(
-        flex.bool([True, False, True, True, True, True]), reflections.flags.integrated
+        flex.bool([True, False, True, True, True, True]),
+        reflections.flags.integrated_sum,
+    )
+    return reflections
+
+
+@pytest.fixture
+def prf_sum_refl_to_filter():
+    """Generate a separate reflection table for filtering"""
+    reflections = flex.reflection_table()
+    reflections["partiality"] = flex.double(5, 1.0)
+    reflections["id"] = flex.int(reflections.size(), 0)
+    reflections.experiment_identifiers()[0] = "0"
+    reflections["intensity.sum.value"] = flex.double([1.0, 2.0, 3.0, 4.0, 5.0])
+    reflections["intensity.sum.variance"] = flex.double(5, 1.0)
+    reflections["intensity.prf.value"] = flex.double([11.0, 12.0, 13.0, 14.0, 15.0])
+    reflections["intensity.prf.variance"] = flex.double(5, 1.0)
+    reflections["miller_index"] = flex.miller_index([(0, 0, 1)] * 5)
+    reflections.set_flags(
+        flex.bool([False, False, True, True, True]),
+        reflections.flags.integrated_sum,
+    )
+    reflections.set_flags(
+        flex.bool([True, False, False, True, True]),
+        reflections.flags.integrated_prf,
     )
     return reflections
 
@@ -219,6 +246,31 @@ def test_SingleScalerFactory(generated_param, refl_to_filter, mock_scaling_compo
         False,
         False,
     ]
+
+
+def test_selection_of_profile_or_summation_intensities(
+    generated_param, prf_sum_refl_to_filter, mock_scaling_component
+):
+    _, exp = test_refl_and_exp(mock_scaling_component)
+    # Test that all required attributes get added with standard params.
+    assert all(
+        (i not in prf_sum_refl_to_filter)
+        for i in ["inverse_scale_factor", "intensity", "variance"]
+    )
+    # Test default, (no split into free set)
+    ss = SingleScalerFactory.create(generated_param, exp, prf_sum_refl_to_filter)
+    assert isinstance(ss, SingleScaler)
+    rt = ss.reflection_table
+    assert all(i in rt for i in ["inverse_scale_factor", "intensity", "variance"])
+    assert list(rt.get_flags(rt.flags.excluded_for_scaling)) == [
+        False,
+        True,
+        False,
+        False,
+        False,
+    ]
+    # test correct initial intensities have been chosen - should be prf then sum
+    assert list(rt["intensity"]) == [11.0, 2.0, 3.0, 14.0, 15.0]
 
 
 def test_TargetScalerFactory(generated_param, mock_scaling_component):

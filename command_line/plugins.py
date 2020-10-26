@@ -1,7 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
-import pkg_resources
 import sys
+
+import pkg_resources
+
+import dials.util
 
 BOLD = "\033[1m"
 RED = "\033[1;31m"
@@ -55,7 +58,9 @@ known_entry_points = {
     },
 }
 
-if __name__ == "__main__":
+
+@dials.util.show_mail_handle_errors()
+def run(_=None):
     for ep, ep_dict in known_entry_points.items():
         print(
             "{BOLD}{ep}{NC}  {ep_dict[description]}".format(
@@ -77,3 +82,7 @@ if __name__ == "__main__":
                 print(" {RED}{p}{NC}".format(NC=NC, p=p, RED=RED))
         print()
     sys.exit(not installation_is_valid())
+
+
+if __name__ == "__main__":
+    run()

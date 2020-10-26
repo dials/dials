@@ -3,6 +3,8 @@ from __future__ import absolute_import, division, print_function
 import logging
 
 import iotbx.phil
+
+import dials.util
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
 
 logger = logging.getLogger("dials.command_line.find_hot_pixels")
@@ -37,10 +39,11 @@ help_message = """
 """
 
 
-def run(args):
-    from dials.util import Sorry
-    from dials.util import log
+@dials.util.show_mail_handle_errors()
+def run(args=None):
     import six.moves.cPickle as pickle
+
+    from dials.util import Sorry, log
 
     usage = "dials.find_hot_pixels [options] models.expt strong.refl"
 
@@ -55,7 +58,7 @@ def run(args):
     )
 
     # Get the parameters
-    params, options = parser.parse_args(show_diff_phil=False)
+    params, options = parser.parse_args(args, show_diff_phil=False)
 
     # Configure the log
     log.config(verbosity=options.verbose, logfile="dials.find_hot_pixels.log")
@@ -124,6 +127,4 @@ def filter_reflections(reflections, depth):
 
 
 if __name__ == "__main__":
-    import sys
-
-    run(sys.argv[1:])
+    run()

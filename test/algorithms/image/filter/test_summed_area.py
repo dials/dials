@@ -6,8 +6,9 @@ import pytest
 
 
 def test():
-    from dials.algorithms.image.filter import summed_area
     from scitbx.array_family import flex
+
+    from dials.algorithms.image.filter import summed_area
 
     # Create an image
     image = flex.random_double(2000 * 2000)

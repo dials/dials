@@ -3,13 +3,14 @@ from __future__ import absolute_import, division, print_function
 import collections
 import glob
 import os
-import pytest
 
 import procrunner
-from scitbx import matrix
+import pytest
+
 from cctbx import uctbx
-from dxtbx.serialize import load
 from dxtbx.model import ExperimentList
+from dxtbx.serialize import load
+
 from dials.array_family import flex
 
 
@@ -136,200 +137,6 @@ def test_index_i04_weak_data_fft3d(dials_regression, tmpdir):
     )
 
 
-@pytest.mark.skip(reason="cluster_analysis_search=True not implemented")
-def test_index_cluster_analysis_search(dials_regression, tmpdir):
-    # thaumatin
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
-    pickle_path = os.path.join(data_dir, "full.pickle")
-    sequence_path = os.path.join(data_dir, "experiments_import.json")
-    extra_args = [
-        "cluster_analysis_search=True",
-        "n_macro_cycles=3",
-        "bin_size_fraction=0.25",
-        "reciprocal_space_grid.d_min=4",
-    ]
-    expected_unit_cell = uctbx.unit_cell((58, 58, 150, 90, 90, 90))
-    expected_rmsds = (0.05, 0.04, 0.0004)
-    expected_hall_symbol = " P 1"
-
-    run_indexing(
-        pickle_path,
-        sequence_path,
-        tmpdir,
-        extra_args,
-        expected_unit_cell,
-        expected_rmsds,
-        expected_hall_symbol,
-    )
-
-
-@pytest.mark.skip(reason="cluster_analysis_search=True not implemented")
-def test_index_cluster_analysis_search_with_symmetry(dials_regression, tmpdir):
-    # thaumatin
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
-    pickle_path = os.path.join(data_dir, "full.pickle")
-    sequence_path = os.path.join(data_dir, "experiments_import.json")
-    extra_args = [
-        "cluster_analysis_search=True",
-        "n_macro_cycles=3",
-        "bin_size_fraction=0.25",
-        "reciprocal_space_grid.d_min=4",
-    ]
-    expected_unit_cell = uctbx.unit_cell((58, 58, 150, 90, 90, 90))
-    expected_rmsds = (0.05, 0.042, 0.0004)
-
-    # now enforce symmetry
-    extra_args.append("known_symmetry.space_group=P4")
-    expected_hall_symbol = " P 4"
-
-    result = run_indexing(
-        pickle_path,
-        sequence_path,
-        tmpdir,
-        extra_args,
-        expected_unit_cell,
-        expected_rmsds,
-        expected_hall_symbol,
-    )
-
-    a, b, c = map(matrix.col, result.experiments[0].crystal.get_real_space_vectors())
-    assert a.length() == pytest.approx(b.length())
-    assert c.length() > b.length()
-    assert a.angle(b, deg=True) == pytest.approx(90)
-    assert b.angle(c, deg=True) == pytest.approx(90)
-    assert c.angle(a, deg=True) == pytest.approx(90)
-
-
-@pytest.mark.skip(reason="cluster_analysis_search=True not implemented")
-def test_index_trypsin_single_lattice(dials_regression, tmpdir):
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
-    pickle_path = os.path.join(data_dir, "P1_X6_1.pickle")
-    sequence_path = os.path.join(data_dir, "experiments_P1_X6_1.json")
-    extra_args = [
-        "cluster_analysis_search=True",
-        "n_macro_cycles=3",
-        "reciprocal_space_grid.d_min=4",
-        "filter_overlaps=False",  # P1_X6_1.pickle does not contain bbox!
-        "image_range=0,50",
-        "image_range=450,500",
-        "image_range=850,900",
-    ]
-    expected_unit_cell = uctbx.unit_cell((54.3, 58.3, 66.5, 90, 90, 90))
-    expected_rmsds = (0.061, 0.06, 0.00042)
-    expected_hall_symbol = " P 1"
-
-    run_indexing(
-        pickle_path,
-        sequence_path,
-        tmpdir,
-        extra_args,
-        expected_unit_cell,
-        expected_rmsds,
-        expected_hall_symbol,
-    )
-
-
-@pytest.mark.skip(reason="cluster_analysis_search=True not implemented")
-def test_index_trypsin_two_lattice(dials_regression, tmpdir):
-    # synthetic trypsin multi-lattice dataset (2 lattices)
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
-    pickle_path = os.path.join(data_dir, "P1_X6_1_2.pickle")
-    sequence_path = os.path.join(data_dir, "experiments_P1_X6_1_2.json")
-    extra_args = [
-        "cluster_analysis_search=True",
-        "reflections_per_degree=10",
-        "n_macro_cycles=2",
-        "reciprocal_space_grid.d_min=4",
-        "max_cell=70",
-        "image_range=0,50",
-        "image_range=450,500",
-        "image_range=850,900",
-        "max_lattices=2",
-    ]
-    expected_unit_cell = uctbx.unit_cell((54.3, 58.3, 66.5, 90, 90, 90))
-    expected_rmsds = (0.1, 0.1, 0.005)
-    expected_hall_symbol = " P 1"
-    n_expected_lattices = 2
-
-    run_indexing(
-        pickle_path,
-        sequence_path,
-        tmpdir,
-        extra_args,
-        expected_unit_cell,
-        expected_rmsds,
-        expected_hall_symbol,
-        n_expected_lattices=n_expected_lattices,
-        relative_length_tolerance=0.02,
-        absolute_angle_tolerance=1,
-    )
-
-
-@pytest.mark.skip(reason="cluster_analysis_search=True not implemented")
-def test_index_trypsin_three_lattice_cluster_analysis_search(dials_regression, tmpdir):
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
-    pickle_path = os.path.join(data_dir, "P1_X6_1_2_3.pickle")
-    sequence_path = os.path.join(data_dir, "experiments_P1_X6_1_2_3.json")
-    extra_args = [
-        "cluster_analysis_search=True",
-        "reflections_per_degree=10",
-        "n_macro_cycles=2",
-        "reciprocal_space_grid.d_min=4",
-        "max_cell=70",
-        "max_lattices=3",
-    ]
-    expected_unit_cell = uctbx.unit_cell((54.3, 58.3, 66.5, 90, 90, 90))
-    expected_rmsds = (0.24, 0.30, 0.006)
-    expected_hall_symbol = " P 1"
-    n_expected_lattices = 3
-
-    run_indexing(
-        pickle_path,
-        sequence_path,
-        tmpdir,
-        extra_args,
-        expected_unit_cell,
-        expected_rmsds,
-        expected_hall_symbol,
-        n_expected_lattices=n_expected_lattices,
-        relative_length_tolerance=0.01,
-        absolute_angle_tolerance=1,
-    )
-
-
-@pytest.mark.skip(reason="cluster_analysis_search=True not implemented")
-def test_index_trypsin_four_lattice_P1(dials_regression, tmpdir):
-    # synthetic trypsin multi-lattice dataset (4 lattices)
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
-    pickle_path = os.path.join(data_dir, "P1_X6_1_2_3_4.pickle")
-    sequence_path = os.path.join(data_dir, "experiments_P1_X6_1_2_3_4.json")
-    extra_args = [
-        "cluster_analysis_search=True",
-        "reflections_per_degree=10",
-        "n_macro_cycles=2",
-        "reciprocal_space_grid.d_min=4",
-        "max_cell=70",
-        "max_lattices=4",
-    ]
-    expected_unit_cell = uctbx.unit_cell((54.3, 58.3, 66.5, 90, 90, 90))
-    expected_rmsds = (0.24, 0.23, 0.006)
-    expected_hall_symbol = " P 1"
-    n_expected_lattices = 4
-
-    run_indexing(
-        pickle_path,
-        sequence_path,
-        tmpdir,
-        extra_args,
-        expected_unit_cell,
-        expected_rmsds,
-        expected_hall_symbol,
-        n_expected_lattices=n_expected_lattices,
-        relative_length_tolerance=0.01,
-        absolute_angle_tolerance=1,
-    )
-
-
 def test_index_trypsin_four_lattice_P212121(dials_regression, tmpdir):
     # synthetic trypsin multi-lattice dataset (4 lattices)
     data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
@@ -441,7 +248,6 @@ def test_index_peak_search_clean(dials_regression, tmpdir):
         "known_symmetry.space_group=P4",
         "known_symmetry.unit_cell=57.8,57.8,150,90,90,90",
         "peak_search=clean",
-        "cluster_analysis_search=True",
         "min_samples=15",
         "n_macro_cycles=4",
         "reciprocal_space_grid.d_min=4",
@@ -799,22 +605,29 @@ def test_refinement_failure_on_max_lattices_a15(dials_regression, tmpdir):
 
 
 def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_regression, tmpdir):
-    """ Problem: In stills_indexer, before calling the refine function, the experiment list contains a list of
-        dxtbx crystal models (that are not MosaicSauter2014 models). The conversion to MosaicSauter2014 is made
-        during the refine step when functions from nave_parameters is called. If the experiment list contains
-        more than 1 experiment, for eg. multiple lattices, only the first crystal gets assigned mosaicity. In
-        actuality, all crystal models should be assigned mosaicity. This test only compares whether or not all crystal models
-        have been assigned a MosaicSauter2014 model.  """
+    """Problem: In stills_indexer, before calling the refine function, the
+    experiment list contains a list of dxtbx crystal models (that are not
+    MosaicSauter2014 models). The conversion to MosaicSauter2014 is made
+    during the refine step when functions from nave_parameters is called.
+    If the experiment list contains more than 1 experiment, for eg.
+    multiple lattices, only the first crystal gets assigned mosaicity. In
+    actuality, all crystal models should be assigned mosaicity. This test
+    only compares whether or not all crystal models have been assigned a
+    MosaicSauter2014 model."""
 
-    from dxtbx.model.experiment_list import ExperimentListFactory
-    from dxtbx.model.experiment_list import Experiment, ExperimentList
-    from dials.array_family import flex
+    import dxtbx.model
     from dxtbx.model import Crystal
+    from dxtbx.model.experiment_list import (
+        Experiment,
+        ExperimentList,
+        ExperimentListFactory,
+    )
+
     from dials.algorithms.indexing.stills_indexer import StillsIndexer
+    from dials.array_family import flex
     from dials.command_line.stills_process import (
         phil_scope as stills_process_phil_scope,
     )
-    import dxtbx_model_ext  # needed for comparison of types
 
     experiment_data = os.path.join(
         dials_regression,
@@ -866,7 +679,7 @@ def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_regression, tmp
     # Now check whether the models have mosaicity after stills_indexer refinement
     # Also check that mosaicity values are within expected limits
     for ii, crys in enumerate(refined_explist.crystals()):
-        assert isinstance(crys, dxtbx_model_ext.MosaicCrystalSauter2014)
+        assert isinstance(crys, dxtbx.model.MosaicCrystalSauter2014)
         if ii == 0:
             assert crys.get_domain_size_ang() == pytest.approx(2242.0, rel=0.1)
         if ii == 1:
@@ -957,3 +770,29 @@ def test_index_known_orientation(dials_data, tmpdir):
         expected_rmsds,
         expected_hall_symbol,
     )
+
+
+def test_all_expt_ids_have_expts(dials_data, tmpdir):
+    result = procrunner.run(
+        [
+            "dials.index",
+            dials_data("vmxi_thaumatin_grid_index").join("split_07602.expt"),
+            dials_data("vmxi_thaumatin_grid_index").join("split_07602.refl"),
+            "stills.indexer=sequences",
+            "indexing.method=real_space_grid_search",
+            "space_group=P4",
+            "unit_cell=58,58,150,90,90,90",
+            "max_lattices=8",
+            "beam.fix=all",
+            "detector.fix=all",
+        ],
+        working_directory=tmpdir,
+    )
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("indexed.expt").check(file=1)
+    assert tmpdir.join("indexed.refl").check(file=1)
+
+    refl = flex.reflection_table.from_file(tmpdir / "indexed.refl")
+    expt = ExperimentList.from_file(tmpdir / "indexed.expt", check_format=False)
+
+    assert flex.max(refl["id"]) + 1 == len(expt)

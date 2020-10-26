@@ -1,10 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
 from collections import namedtuple
-from dials.array_family import flex
-from scitbx import matrix
-from scitbx import sparse
+
+from scitbx import matrix, sparse
+
 from dials.algorithms.refinement import DialsRefineConfigError
+from dials.array_family import flex
 
 """The PredictionParameterisation class ties together parameterisations for
 individual experimental models: beam, crystal orientation, crystal unit cell
@@ -15,6 +16,11 @@ respect to the global parameters. A concrete version of this class is provided
 for scan-static reflection prediction for rotation data, where the predicted
 centroid is expressed as X, Y, phi. Other versions of the class are defined
 elsewhere."""
+
+ParamSet = namedtuple(
+    "ParamSet",
+    ["beam_param", "xl_ori_param", "xl_uc_param", "det_param", "gonio_param"],
+)
 
 
 class PredictionParameterisation(object):
@@ -117,10 +123,6 @@ class PredictionParameterisation(object):
             for ids in p.get_experiment_ids()
         }
 
-        ParamSet = namedtuple(
-            "ParamSet",
-            ["beam_param", "xl_ori_param", "xl_uc_param", "det_param", "gonio_param"],
-        )
         self._exp_to_param = {
             i: ParamSet(
                 e2bp.get(i), e2xop.get(i), e2xucp.get(i), e2dp.get(i), e2gp.get(i)

@@ -4,24 +4,28 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import math
+
 import pkg_resources
 
-from cctbx import sgtbx
-
-import dials.util
 import iotbx.phil
 import libtbx
-from dials.array_family import flex
-from dials.util.multi_dataset_handling import generate_experiment_identifiers
-from dials.algorithms.indexing import assign_indices
-from dials.algorithms.indexing import DialsIndexError, DialsIndexRefineError
+from cctbx import sgtbx
+from dxtbx.model import ExperimentList, ImageSequence
+
+import dials.util
+from dials.algorithms.indexing import (
+    DialsIndexError,
+    DialsIndexRefineError,
+    assign_indices,
+)
 from dials.algorithms.indexing.compare_orientation_matrices import (
     difference_rotation_matrix_axis_angle,
 )
-from dials.algorithms.indexing.symmetry import SymmetryHandler
 from dials.algorithms.indexing.max_cell import find_max_cell
+from dials.algorithms.indexing.symmetry import SymmetryHandler
 from dials.algorithms.refinement import DialsRefineConfigError, DialsRefineRuntimeError
-from dxtbx.model import ExperimentList, ImageSequence
+from dials.array_family import flex
+from dials.util.multi_dataset_handling import generate_experiment_identifiers
 
 logger = logging.getLogger(__name__)
 
@@ -192,9 +196,6 @@ indexing {
   multiple_lattice_search
     .expert_level = 1
   {
-    cluster_analysis_search = False
-      .type = bool
-      .help = "Perform cluster analysis search for multiple lattices."
     recycle_unindexed_reflections_cutoff = 0.1
       .type = float(value_min=0, value_max=1)
       .help = "Attempt another cycle of indexing on the unindexed reflections "
@@ -648,6 +649,18 @@ class Indexer(object):
                         logger.info("Refinement failed:")
                         logger.info(e)
                         del experiments[-1]
+
+                        # remove experiment id from the reflections associated
+                        # with this deleted experiment - indexed flag removed
+                        # below
+                        last = len(experiments)
+                        sel = refined_reflections["id"] == last
+                        logger.info(
+                            "Removing %d reflections with id %d"
+                            % (sel.count(True), last)
+                        )
+                        refined_reflections["id"].set_selected(sel, -1)
+
                         break
 
                 self._unit_cell_volume_sanity_check(experiments, refined_experiments)
@@ -708,7 +721,7 @@ class Indexer(object):
                 rotation_matrix_differences(self.refined_experiments.crystals())
             )
 
-        self._xyzcal_mm_to_px(self.experiments, self.refined_reflections)
+        self._xyzcal_mm_to_px(self.refined_experiments, self.refined_reflections)
 
     def _unit_cell_volume_sanity_check(self, original_experiments, refined_experiments):
         # sanity check for unrealistic unit cell volume increase during refinement
@@ -723,15 +736,18 @@ class Indexer(object):
                 volume_change = abs(uc1.volume() - uc2.volume()) / uc1.volume()
                 cutoff = 0.5
                 if volume_change > cutoff:
-                    msg = "\n".join(
-                        (
-                            "Unrealistic unit cell volume increase during refinement of %.1f%%.",
-                            "Please try refining fewer parameters, either by enforcing symmetry",
-                            "constraints (space_group=) and/or disabling experimental geometry",
-                            "refinement (detector.fix=all and beam.fix=all). To disable this",
-                            "sanity check set disable_unit_cell_volume_sanity_check=True.",
+                    msg = (
+                        "\n".join(
+                            (
+                                "Unrealistic unit cell volume increase during refinement of %.1f%%.",
+                                "Please try refining fewer parameters, either by enforcing symmetry",
+                                "constraints (space_group=) and/or disabling experimental geometry",
+                                "refinement (detector.fix=all and beam.fix=all). To disable this",
+                                "sanity check set disable_unit_cell_volume_sanity_check=True.",
+                            )
                         )
-                    ) % (100 * volume_change)
+                        % (100 * volume_change)
+                    )
                     raise DialsIndexError(msg)
 
     def _apply_symmetry_post_indexing(

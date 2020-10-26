@@ -13,30 +13,33 @@ of course the error model adjustment) before the analysis is done.
 import json
 import logging
 import sys
+
+from jinja2 import ChoiceLoader, Environment, PackageLoader
+
+import libtbx.phil
 from iotbx import phil
-from jinja2 import Environment, ChoiceLoader, PackageLoader
-from dials.util import log, show_mail_on_error
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
-from dials.util.version import dials_version
+
+from dials.algorithms.scaling.combine_intensities import combine_intensities
 from dials.algorithms.scaling.error_model.engine import run_error_model_refinement
 from dials.algorithms.scaling.error_model.error_model import (
-    calc_sigmaprime,
     calc_deltahl,
-)
-from dials.algorithms.scaling.Ih_table import IhTable
-from dials.algorithms.scaling.scaling_library import choose_scaling_intensities
-from dials.algorithms.scaling.plots import (
-    normal_probability_plot,
-    error_model_variance_plot,
-    error_regression_plot,
+    calc_sigmaprime,
 )
 from dials.algorithms.scaling.error_model.error_model_target import (
     calculate_regression_x_y,
 )
-from dials.report.plots import i_over_sig_i_vs_i_plot
-from dials.algorithms.scaling.combine_intensities import combine_intensities
+from dials.algorithms.scaling.Ih_table import IhTable
+from dials.algorithms.scaling.plots import (
+    error_model_variance_plot,
+    error_regression_plot,
+    normal_probability_plot,
+)
+from dials.algorithms.scaling.scaling_library import choose_initial_scaling_intensities
 from dials.algorithms.scaling.scaling_utilities import calculate_prescaling_correction
-
+from dials.report.plots import i_over_sig_i_vs_i_plot
+from dials.util import log, show_mail_handle_errors
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.version import dials_version
 
 try:
     from typing import List
@@ -76,9 +79,7 @@ def refine_error_model(params, experiments, reflection_tables):
     # prepare relevant data for datastructures
     for i, table in enumerate(reflection_tables):
         # First get the good data
-        selection = ~(table.get_flags(table.flags.bad_for_scaling, all=False))
-        outliers = table.get_flags(table.flags.outlier_in_scaling)
-        table = table.select(selection & ~outliers)
+        table = table.select(~table.get_flags(table.flags.bad_for_scaling, all=False))
 
         # Now chose intensities, ideally these two options could be combined
         # with a smart refactor
@@ -90,12 +91,14 @@ def refine_error_model(params, experiments, reflection_tables):
             table["intensity"] = I
             table["variance"] = V
         else:
-            table = choose_scaling_intensities(
+            table = choose_initial_scaling_intensities(
                 table, intensity_choice=params.intensity_choice
             )
         reflection_tables[i] = table
     space_group = experiments[0].crystal.get_space_group()
-    Ih_table = IhTable(reflection_tables, space_group, additional_cols=["partiality"])
+    Ih_table = IhTable(
+        reflection_tables, space_group, additional_cols=["partiality"], anomalous=True
+    )
 
     # now do the error model refinement
     try:
@@ -144,10 +147,12 @@ def make_output(model, params):
             ]
         )
         env = Environment(loader=loader)
-        template = env.get_template("error_model_report.html")
+        template = env.get_template("simple_report.html")
         html = template.render(
             page_title="DIALS error model refinement report",
-            error_model_plots=d["error_model_plots"],
+            panel_title="Error distribution plots",
+            panel_id="error_model_plots",
+            graphs=d["error_model_plots"],
         )
         with open(params.output.html, "wb") as f:
             f.write(html.encode("utf-8", "xmlcharrefreplace"))
@@ -158,7 +163,8 @@ def make_output(model, params):
             json.dump(d, outfile)
 
 
-def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
+@show_mail_handle_errors()
+def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     """Run the scaling from the command-line."""
     usage = """Usage: dials.refine_error_model scaled.refl scaled.expt [options]"""
 
@@ -195,5 +201,4 @@ def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
-        run()
+    run()

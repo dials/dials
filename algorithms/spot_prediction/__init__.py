@@ -6,7 +6,6 @@ from dials_algorithms_spot_prediction_ext import (
     NaveStillsReflectionPredictor,
     PixelLabeller,
     PixelToMillerIndex,
-    ray_intersection,
     ReekeIndexGenerator,
     RotationAngles,
     ScanStaticRayPredictor,
@@ -14,6 +13,7 @@ from dials_algorithms_spot_prediction_ext import (
     SphericalRelpStillsReflectionPredictor,
     StillsDeltaPsiReflectionPredictor,
     StillsRayPredictor,
+    ray_intersection,
 )
 
 __all__ = [

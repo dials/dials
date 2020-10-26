@@ -8,19 +8,21 @@ from __future__ import absolute_import, division, print_function
 
 import json
 
-import iotbx.merging_statistics
-import pytest
 import procrunner
-from cctbx import uctbx
+import pytest
+
+import iotbx.merging_statistics
 import iotbx.mtz
-from libtbx import phil
-from dxtbx.serialize import load
+from cctbx import uctbx
+from dxtbx.model import Beam, Crystal, Detector, Experiment, Goniometer, Scan
 from dxtbx.model.experiment_list import ExperimentList
-from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
-from dials.array_family import flex
-from dials.util.options import OptionParser
+from dxtbx.serialize import load
+from libtbx import phil
+
 from dials.algorithms.scaling.algorithm import ScalingAlgorithm, prepare_input
+from dials.array_family import flex
 from dials.command_line import merge, report, scale
+from dials.util.options import OptionParser
 
 
 def run_one_scaling(working_directory, argument_list):
@@ -218,14 +220,27 @@ def test_scale_script_prepare_input():
         True,
         True,
     ]
-    params.cut_data.d_max = 2.25
-    params, _, script_reflections = prepare_input(params, exp, reflections)
+
+    # Ensure that the user_excluded_in_scaling flags are reset before applying any new
+    # cutoffs by re-passing script_reflections to prepare_input
+    params.cut_data.d_min = None
+    params, _, script_reflections = prepare_input(params, exp, script_reflections)
     r = script_reflections[0]
     assert list(r.get_flags(r.flags.user_excluded_in_scaling)) == [
         False,
         False,
+        False,
+        False,
+    ]
+
+    params.cut_data.d_max = 1.25
+    params, _, script_reflections = prepare_input(params, exp, reflections)
+    r = script_reflections[0]
+    assert list(r.get_flags(r.flags.user_excluded_in_scaling)) == [
         True,
         True,
+        False,
+        False,
     ]
 
     params, exp, reflections = generate_test_input(n=1)
@@ -275,7 +290,7 @@ def test_targeted_scaling_against_mtz(dials_data, tmpdir):
         "reflection_selection.method=intensity_ranges",
         "reflection_selection.method=use_all",
         "intensity_choice=sum",
-        "intensity_choice=profile",
+        "intensity=profile",
     ],
 )
 def test_scale_single_dataset_with_options(dials_data, tmpdir, option):
@@ -289,8 +304,8 @@ def test_scale_single_dataset_with_options(dials_data, tmpdir, option):
     run_one_scaling(tmpdir, args)
 
 
-@pytest.fixture
-def vmxi_protk_reindexed(dials_data, tmpdir):
+@pytest.fixture(scope="session")
+def vmxi_protk_reindexed(dials_data, tmp_path_factory):
     """Reindex the protk data to be in the correct space group."""
     location = dials_data("vmxi_proteinase_k_sweeps")
 
@@ -300,8 +315,9 @@ def vmxi_protk_reindexed(dials_data, tmpdir):
         location.join("reflections_0.pickle"),
         "space_group=P422",
     ]
-    procrunner.run(command, working_directory=tmpdir)
-    return tmpdir.join("reindexed.expt"), tmpdir.join("reindexed.refl")
+    tmp_path = tmp_path_factory.mktemp("vmxi_protk_reindexed")
+    procrunner.run(command, working_directory=tmp_path)
+    return tmp_path / "reindexed.expt", tmp_path / "reindexed.refl"
 
 
 @pytest.mark.parametrize(
@@ -310,11 +326,11 @@ def vmxi_protk_reindexed(dials_data, tmpdir):
         (["error_model=None"], None, None),
         (
             ["error_model=basic", "basic.minimisation=individual"],
-            (0.73711, 0.04720),
+            (0.61, 0.049),
             (0.05, 0.005),
         ),
-        (["error_model.basic.a=0.73711"], (0.73711, 0.04720), (1e-6, 0.005)),
-        (["error_model.basic.b=0.04720"], (0.73711, 0.04720), (0.05, 1e-6)),
+        (["error_model.basic.a=0.61"], (0.61, 0.049), (1e-6, 0.005)),
+        (["error_model.basic.b=0.049"], (0.61, 0.049), (0.05, 1e-6)),
         (
             ["error_model.basic.b=0.02", "error_model.basic.a=1.5"],
             (1.50, 0.02),
@@ -344,9 +360,9 @@ def test_error_model_options(
 
     Current values taken at 14.11.19"""
     expt_1, refl_1 = vmxi_protk_reindexed
-    args = [refl_1, expt_1] + [o for o in options]
+    args = [refl_1, expt_1] + list(options)
     run_one_scaling(tmpdir, args)
-    expts = load.experiment_list(tmpdir.join("scaled.expt").strpath, check_format=False)
+    expts = load.experiment_list(tmpdir.join("scaled.expt"), check_format=False)
     config = expts[0].scaling_model.configdict
     if not expected:
         assert "error_model_parameters" not in config
@@ -366,6 +382,7 @@ def test_error_model_options(
         "reflection_selection.method=random",
         "reflection_selection.method=intensity_ranges",
         "reflection_selection.method=use_all",
+        "anomalous=True",
     ],
 )
 def test_scale_multiple_datasets_with_options(dials_data, tmpdir, option):
@@ -415,6 +432,13 @@ def test_scale_physical(dials_data, tmpdir):
     assert result.overall.r_pim < 0.0255  # at 30/01/19, value was 0.02410
     assert result.overall.cc_one_half > 0.9955  # at 30/01/19, value was 0.9960
     assert result.overall.n_obs > 2300  # at 30/01/19, was 2320
+
+    refls = flex.reflection_table.from_file(tmpdir.join("scaled.refl").strpath)
+    n_scaled = refls.get_flags(refls.flags.scaled).count(True)
+    assert n_scaled == result.overall.n_obs
+    assert n_scaled == refls.get_flags(refls.flags.bad_for_scaling, all=False).count(
+        False
+    )
 
     # Try running again with the merged.mtz as a target, to trigger the
     # target_mtz option
@@ -480,7 +504,7 @@ def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
     assert tmpdir.join("scaled.expt").check()
     assert tmpdir.join("analysis_results.json").check()
     result = get_merging_stats(tmpdir.join("unmerged.mtz").strpath)
-    assert result.overall.r_pim < 0.17  # 03/02/20 was 0.160
+    assert result.overall.r_pim < 0.175  # 12/06/20 was 0.171,
     assert result.overall.cc_one_half > 0.95  # 03/02/20 was 0.961
     assert result.overall.n_obs > 50000  # 03/02/20 was 50213
 
@@ -496,6 +520,34 @@ def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
         [[21, 25], 5]
     ]
     assert analysis_results["termination_reason"] == "max_percent_removed"
+
+
+def test_scale_and_filter_image_group_single_dataset(dials_data, tmpdir):
+    """Test the scale and filter deltacchalf.mode=image_group on a
+    single data set."""
+    data_dir = dials_data("l_cysteine_dials_output")
+    command = [
+        "dials.scale",
+        data_dir / "20_integrated.pickle",
+        data_dir / "20_integrated_experiments.json",
+        "filtering.method=deltacchalf",
+        "stdcutoff=3.0",
+        "mode=image_group",
+        "max_cycles=1",
+        "scale_and_filter_results=analysis_results.json",
+        "error_model=None",
+    ]
+    result = procrunner.run(command, working_directory=tmpdir)
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("scaled.refl").check()
+    assert tmpdir.join("scaled.expt").check()
+    assert tmpdir.join("analysis_results.json").check()
+
+    with open(tmpdir.join("analysis_results.json").strpath) as f:
+        analysis_results = json.load(f)
+    assert analysis_results["cycle_results"]["1"]["image_ranges_removed"] == []
+    assert len(analysis_results["cycle_results"].keys()) == 1
+    assert analysis_results["termination_reason"] == "no_more_removed"
 
 
 def test_scale_dose_decay_model(dials_data, tmpdir):
@@ -524,6 +576,7 @@ def test_scale_best_unit_cell_d_min(dials_data, tmpdir):
         "best_unit_cell=%g,%g,%g,%g,%g,%g" % best_unit_cell.parameters(),
         "d_min=%g" % d_min,
         "unmerged_mtz=unmerged.mtz",
+        "merged_mtz=merged.mtz",
     ]
     for i in [1, 2, 3, 4, 5, 7, 10]:
         command.append(location.join("experiments_" + str(i) + ".json").strpath)
@@ -532,11 +585,16 @@ def test_scale_best_unit_cell_d_min(dials_data, tmpdir):
     assert not result.returncode and not result.stderr
     assert tmpdir.join("scaled.refl").check()
     assert tmpdir.join("scaled.expt").check()
+    assert tmpdir.join("unmerged.mtz").check()
+    assert tmpdir.join("merged.mtz").check()
     stats = get_merging_stats(tmpdir.join("unmerged.mtz").strpath)
     assert stats.overall.d_min >= d_min
     assert stats.crystal_symmetry.unit_cell().parameters() == pytest.approx(
         best_unit_cell.parameters()
     )
+    m = iotbx.mtz.object(tmpdir.join("merged.mtz").strpath)
+    for ma in m.as_miller_arrays():
+        assert best_unit_cell.parameters() == pytest.approx(ma.unit_cell().parameters())
 
 
 def test_scale_and_filter_dataset_mode(dials_data, tmpdir):
@@ -604,12 +662,19 @@ def test_multi_scale(dials_data, tmpdir):
     # Now inspect output, check it hasn't changed drastically, or if so verify
     # that the new behaviour is more correct and update test accordingly.
     result = get_merging_stats(tmpdir.join("unmerged.mtz").strpath)
-    expected_nobs = 5460
+    expected_nobs = 5526  # 19/06/20
     assert abs(result.overall.n_obs - expected_nobs) < 30
     assert result.overall.r_pim < 0.0221  # at 22/10/18, value was 0.22037
     assert result.overall.cc_one_half > 0.9975  # at 07/08/18, value was 0.99810
     print(result.overall.r_pim)
     print(result.overall.cc_one_half)
+
+    refls = flex.reflection_table.from_file(tmpdir.join("scaled.refl").strpath)
+    n_scaled = refls.get_flags(refls.flags.scaled).count(True)
+    assert n_scaled == result.overall.n_obs
+    assert n_scaled == refls.get_flags(refls.flags.bad_for_scaling, all=False).count(
+        False
+    )
 
     # run again, optimising errors, and continuing from where last run left off.
     extra_args = [
@@ -622,12 +687,12 @@ def test_multi_scale(dials_data, tmpdir):
     # that the new behaviour is more correct and update test accordingly.
     # Note: error optimisation currently appears to give worse results here!
     result = get_merging_stats(tmpdir.join("unmerged.mtz").strpath)
-    expected_nobs = 5411
+    expected_nobs = 5560  # 22/06/20
     print(result.overall.r_pim)
     print(result.overall.cc_one_half)
     assert abs(result.overall.n_obs - expected_nobs) < 100
-    assert result.overall.r_pim < 0.023  # at 07/08/18, value was 0.022722
-    assert result.overall.cc_one_half > 0.9965  # at 07/08/18, value was 0.996925
+    assert result.overall.r_pim < 0.016  # at #22/06/20, value was 0.015
+    assert result.overall.cc_one_half > 0.997  # at #22/06/20, value was 0.999
 
 
 def test_multi_scale_exclude_images(dials_data, tmpdir):
@@ -773,9 +838,6 @@ def test_scale_cross_validate(dials_data, tmpdir, mode, parameter, parameter_val
     assert not result.returncode and not result.stderr
 
 
-@pytest.mark.xfail(
-    reason="test state leakage, cf. https://github.com/dials/dials/issues/1271",
-)
 def test_few_reflections(dials_data):
     u"""
     Test that dials.symmetry does something sensible if given few reflections.

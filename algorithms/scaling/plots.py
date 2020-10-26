@@ -8,9 +8,11 @@ import itertools
 import math
 
 import numpy as np
-from dials.array_family import flex
+
 from scitbx import math as scitbxmath
 from scitbx.math import distributions
+
+from dials.array_family import flex
 
 
 def _get_smooth_plotting_data_from_model(model, component="scale"):
@@ -119,7 +121,11 @@ def plot_dose_decay(dose_decay_model):
             "data": [],
             "layout": {
                 "title": "Dose-decay model corrections",
-                "xaxis": {"domain": [0, 1], "anchor": "y", "title": "phi (degrees)",},
+                "xaxis": {
+                    "domain": [0, 1],
+                    "anchor": "y",
+                    "title": "phi (degrees)",
+                },
                 "yaxis": {
                     "domain": [0, 0.45],
                     "anchor": "x",
@@ -141,7 +147,10 @@ def plot_dose_decay(dose_decay_model):
 
     if "decay" in dose_decay_model.components:
         data = _add_decay_model_scales_to_data(
-            dose_decay_model, data, yaxis="y", resolution=3.0,
+            dose_decay_model,
+            data,
+            yaxis="y",
+            resolution=3.0,
         )
 
     d["dose_decay"]["data"] = data
@@ -851,7 +860,7 @@ def plot_array_decay_plot(array_model):
     configdict = array_model.configdict
 
     valid_osc = configdict["valid_osc_range"]
-    n_points = max(valid_osc[1] - valid_osc[0], 50)
+    n_points = max(int(math.ceil(valid_osc[1] - valid_osc[0])), 50)
     sample_x_values = flex.double(
         np.linspace(valid_osc[0], valid_osc[1], n_points + 1, endpoint=True)
     )

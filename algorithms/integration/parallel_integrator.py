@@ -8,18 +8,16 @@ import psutil
 from libtbx import Auto
 
 import dials.algorithms.integration
-from dials.algorithms.integration.processor import execute_parallel_task
-from dials.algorithms.integration.processor import NullTask
+from dials.algorithms.integration.processor import NullTask, execute_parallel_task
 from dials.array_family import flex
 from dials.util import tabulate
 from dials.util.mp import multi_node_parallel_map
 
 # Need this import first because loads extension that parallel_integrator_ext
 # relies on - it assumes the binding for EmpiricalProfileModeller exists
-import dials.algorithms.profile_model.modeller  # noqa: F401
+import dials.algorithms.profile_model.modeller  # noqa: F401 # isort: split
 
 from dials_algorithms_integration_parallel_integrator_ext import (
-    Logger,
     GaussianRSIntensityCalculator,
     GaussianRSMaskCalculator,
     GaussianRSMultiCrystalMaskCalculator,
@@ -27,6 +25,7 @@ from dials_algorithms_integration_parallel_integrator_ext import (
     GaussianRSReferenceCalculator,
     GaussianRSReferenceProfileData,
     GLMBackgroundCalculator,
+    Logger,
     MultiThreadedIntegrator,
     MultiThreadedReferenceProfiler,
     ReferenceProfileData,
@@ -106,14 +105,14 @@ class BackgroundCalculatorFactory(object):
         """
         Select the background calculator
         """
-        from dials.algorithms.background.simple.algorithm import (
-            SimpleBackgroundCalculatorFactory,
-        )
         from dials.algorithms.background.glm.algorithm import (
             GLMBackgroundCalculatorFactory,
         )
         from dials.algorithms.background.gmodel.algorithm import (
             GModelBackgroundCalculatorFactory,
+        )
+        from dials.algorithms.background.simple.algorithm import (
+            SimpleBackgroundCalculatorFactory,
         )
 
         # Get the parameters
@@ -306,12 +305,7 @@ def _assert_enough_memory(required_memory, max_memory_usage):
             % (total_memory / 1e9, limit_memory / 1e9, required_memory / 1e9)
         )
     else:
-        logger.info("")
-        logger.info(" Memory usage:")
-        logger.info("  Total system memory: %g GB" % (total_memory / 1e9))
-        logger.info("  Limit image memory: %g GB" % (limit_memory / 1e9))
-        logger.info("  Required image memory: %g GB" % (required_memory / 1e9))
-        logger.info("")
+        logger.info("Allocating %.1f MB memory", required_memory / 1e6)
 
 
 class IntegrationJob(object):
@@ -1278,8 +1272,6 @@ class ReferenceCalculatorProcessor(object):
                 for message in result[1]:
                     logger.log(message.levelno, message.msg)
                 reference_manager.accumulate(result[0])
-                result[0].reflections = None
-                result[0].data = None
 
             multi_node_parallel_map(
                 func=execute_parallel_task,
@@ -1358,8 +1350,6 @@ class IntegratorProcessor(object):
                 for message in result[1]:
                     logger.log(message.levelno, message.msg)
                 integration_manager.accumulate(result[0])
-                result[0].reflections = None
-                result[0].data = None
 
             multi_node_parallel_map(
                 func=execute_parallel_task,

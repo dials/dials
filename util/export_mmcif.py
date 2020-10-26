@@ -5,15 +5,16 @@ import logging
 import math
 import time
 
-import dials.util.version
-from dials.util.filter_reflections import filter_reflection_table
 import iotbx.cif.model
-from cctbx.sgtbx import bravais_types
-from cctbx import miller
 from cctbx import crystal as cctbxcrystal
+from cctbx import miller
+from cctbx.sgtbx import bravais_types
 from iotbx.merging_statistics import dataset_statistics
 from libtbx import Auto
 from scitbx.array_family import flex
+
+import dials.util.version
+from dials.util.filter_reflections import filter_reflection_table
 
 logger = logging.getLogger(__name__)
 RAD2DEG = 180.0 / math.pi
@@ -83,6 +84,10 @@ class MMCIFOutputFile(object):
         cif_block[
             "_publ.section_references"
         ] = "Winter, G. et al. (2018) Acta Cryst. D74, 85-97."
+        if "scale" in self.params.intensity:
+            cif_block[
+                "_publ.section_references"
+            ] += "\nBeilsten-Edmands, J. et al. (2020) Acta Cryst. D76, 385-399."
 
         # Hard coding X-ray
         cif_block["_pdbx_diffrn_data_section.id"] = "dials"

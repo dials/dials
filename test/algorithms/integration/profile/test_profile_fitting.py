@@ -4,6 +4,7 @@ import math
 
 import numpy as np
 import pytest
+
 from dials.algorithms.integration.fit import ProfileFitter
 from dials.array_family import flex
 

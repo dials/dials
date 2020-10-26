@@ -1,20 +1,20 @@
 from __future__ import absolute_import, division, print_function
 
-import math
 import logging
-import sys
+import math
 
 import iotbx.phil
 from cctbx import sgtbx
 from cctbx.crystal import symmetry as crystal_symmetry
 from cctbx.miller import set as miller_set
 from cctbx.sgtbx import space_group as sgtbx_space_group
+from libtbx.utils import format_float_with_standard_uncertainty
+
 from dials.algorithms.symmetry import origin
 from dials.array_family import flex
+from dials.util import log, show_mail_handle_errors
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
-from dials.util import log
 from dials.util.version import dials_version
-from libtbx.utils import format_float_with_standard_uncertainty
 
 logger = logging.getLogger("dials.command_line.check_indexing_symmetry")
 
@@ -293,7 +293,8 @@ def test_P1_crystal_indexing(reflections, experiment, params):
     return
 
 
-def run(args):
+@show_mail_handle_errors()
+def run(args=None):
     usage = "dials.check_indexing_symmetry [options] indexed.expt indexed.refl"
 
     parser = OptionParser(
@@ -305,7 +306,7 @@ def run(args):
         epilog=help_message,
     )
 
-    params, options = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(args, show_diff_phil=True)
 
     # Configure the logging
     log.config(logfile=params.output.log)
@@ -342,4 +343,4 @@ def run(args):
 
 
 if __name__ == "__main__":
-    run(sys.argv[1:])
+    run()

@@ -1,17 +1,13 @@
 """Contains classes used to construct a target function for refinement,
 principally Target and ReflectionManager."""
 
-# python and cctbx imports
 from __future__ import absolute_import, division, print_function
 
-import abc
 import math
 
-from scitbx.array_family import flex
-from scitbx import sparse
-
-# PHIL
 from libtbx.phil import parse
+from scitbx import sparse
+from scitbx.array_family import flex
 
 phil_str = """
     rmsd_cutoff = *fraction_of_bin_size absolute
@@ -131,7 +127,6 @@ class Target(object):
     This should all be set by a derived class.
     """
 
-    __metaclass__ = abc.ABCMeta
     _grad_names = ["dX_dp", "dY_dp", "dphi_dp"]
     rmsd_names = ["RMSD_X", "RMSD_Y", "RMSD_Phi"]
     rmsd_units = ["mm", "mm", "rad"]
@@ -488,7 +483,6 @@ class Target(object):
         return result
 
     @staticmethod
-    @abc.abstractmethod
     def _extract_residuals_and_weights(matches):
         """extract vector of residuals and corresponding weights. The space the
         residuals are measured in (e.g. X, Y and Phi) and the order they are
@@ -496,7 +490,6 @@ class Target(object):
         raise NotImplementedError()
 
     @staticmethod
-    @abc.abstractmethod
     def _extract_squared_residuals(matches):
         """extract vector of squared residuals. The space the residuals are measured
         in (e.g. X, Y and Phi) and the order they are returned is determined by a
@@ -546,7 +539,6 @@ class Target(object):
         rmsds = self._rmsds_core(self._matches.select(sel))
         return rmsds
 
-    @abc.abstractmethod
     def achieved(self):
         """return True to terminate the refinement."""
         raise NotImplementedError()

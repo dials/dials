@@ -2,22 +2,25 @@
 Collection of factories for creating the scalers.
 """
 from __future__ import absolute_import, division, print_function
+
 import logging
+
 from libtbx import Auto
-from dials.array_family import flex
+
 from dials.algorithms.scaling.scaler import (
     MultiScaler,
-    TargetScaler,
-    SingleScaler,
     NullScaler,
+    SingleScaler,
+    TargetScaler,
 )
+from dials.algorithms.scaling.scaling_library import choose_initial_scaling_intensities
 from dials.algorithms.scaling.scaling_utilities import (
-    quasi_normalisation,
-    Reasons,
     BadDatasetForScalingException,
+    Reasons,
     calc_crystal_frame_vectors,
+    quasi_normalisation,
 )
-from dials.algorithms.scaling.scaling_library import choose_scaling_intensities
+from dials.array_family import flex
 from dials.util.filter_reflections import (
     filter_reflection_table_selection,
     sum_partial_reflections,
@@ -55,7 +58,9 @@ class ScalerFactory(object):
     """Base class for Scaler Factories"""
 
     @staticmethod
-    def filter_bad_reflections(reflections, partiality_cutoff=0.4, min_isigi=-5.0):
+    def filter_bad_reflections(
+        reflections, partiality_cutoff=0.4, min_isigi=-5.0, intensity_choice="combine"
+    ):
         """Initial filter to select integrated reflections."""
         logger.info(
             "Applying filter of min_isigi > %s, partiality > %s",
@@ -63,11 +68,18 @@ class ScalerFactory(object):
             partiality_cutoff,
         )
         logger.disabled = True
-        intensity_choice = []
-        if "intensity.sum.value" in reflections:
-            intensity_choice.append("sum")
-        if "intensity.prf.value" in reflections:
-            intensity_choice.append("profile")
+        if intensity_choice == "combine":
+            if "intensity.sum.value" not in reflections:
+                if "intensity.prf.value" not in reflections:
+                    intensity_choice = None
+                else:
+                    intensity_choice = ["profile"]
+            elif "intensity.prf.value" not in reflections:
+                intensity_choice = ["sum"]
+            else:
+                intensity_choice = ["sum | profile"]
+        else:
+            intensity_choice = [intensity_choice]
         if intensity_choice:
             good = filter_reflection_table_selection(
                 reflections,
@@ -112,6 +124,7 @@ class SingleScalerFactory(ScalerFactory):
                 reflection_table,
                 partiality_cutoff=params.cut_data.partiality_cutoff,
                 min_isigi=params.cut_data.min_isigi,
+                intensity_choice=params.reflection_selection.intensity_choice,
             )
         except ValueError:
             raise BadDatasetForScalingException
@@ -131,7 +144,7 @@ class SingleScalerFactory(ScalerFactory):
             reflection_table["inverse_scale_factor"] = flex.double(
                 reflection_table.size(), 1.0
             )
-        reflection_table = choose_scaling_intensities(
+        reflection_table = choose_initial_scaling_intensities(
             reflection_table, params.reflection_selection.intensity_choice
         )
 

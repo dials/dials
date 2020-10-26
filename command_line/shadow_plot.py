@@ -7,8 +7,10 @@ import sys
 
 import libtbx
 import libtbx.phil
-from dials.util import Sorry
 from scitbx.array_family import flex
+
+import dials.util
+from dials.util import Sorry
 
 help_message = """
 Generate a 1d or 2d goniometer detector shadow plot for a given experiment list.
@@ -42,9 +44,9 @@ output {
 )
 
 
-def run(args):
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_experiments
+@dials.util.show_mail_handle_errors()
+def run(args=None):
+    from dials.util.options import OptionParser, flatten_experiments
 
     usage = "dials.shadow_plot [options] models.expt"
 
@@ -56,7 +58,7 @@ def run(args):
         epilog=help_message,
     )
 
-    params, options = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(args, show_diff_phil=True)
     experiments = flatten_experiments(params.input.experiments)
 
     if len(experiments) == 0:
@@ -164,10 +166,18 @@ def run(args):
             )
             plt.xlabel("%s angle (degrees)" % names[2])
             plt.ylabel("%s angle (degrees)" % names[1])
-            plt.xlim(0, 360 / step)
-            plt.ylim(0, 360 / step)
-            fig.axes.set_xticklabels(["%.0f" % (step * t) for t in plt.xticks()[0]])
-            fig.axes.set_yticklabels(["%.0f" % (step * t) for t in plt.yticks()[0]])
+            plt.xlim(0, 360 / step - 0.5)
+            plt.ylim(0, 360 / step - 0.5)
+
+            ticks = (0, 50, 100, 150, 200, 250, 300, 350)
+            fig.axes.xaxis.set_major_locator(
+                matplotlib.ticker.FixedLocator([k / step for k in ticks])
+            )
+            fig.axes.yaxis.set_major_locator(
+                matplotlib.ticker.FixedLocator([k / step for k in ticks])
+            )
+            fig.axes.set_xticklabels(["%.0f" % k for k in ticks])
+            fig.axes.set_yticklabels(["%.0f" % k for k in ticks])
             cbar = plt.colorbar()
             cbar.set_label("Shadowed area (%)")
 
@@ -191,4 +201,4 @@ def polygon_area(points):
 
 
 if __name__ == "__main__":
-    run(sys.argv[1:])
+    run()

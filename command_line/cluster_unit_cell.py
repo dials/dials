@@ -3,16 +3,15 @@
 from __future__ import absolute_import, division, print_function
 
 import os
-import sys
 
-from cctbx import crystal
+import iotbx.mtz
 import iotbx.phil
-from iotbx.reflection_file_reader import any_reflection_file
+from cctbx import crystal
 from xfel.clustering.cluster import Cluster
 from xfel.clustering.cluster_groups import unit_cell_info
 
-from dials.util.options import OptionParser
-from dials.util.options import flatten_experiments
+import dials.util
+from dials.util.options import OptionParser, flatten_experiments
 
 help_message = """
 """
@@ -35,7 +34,8 @@ plot {
 )
 
 
-def run(args):
+@dials.util.show_mail_handle_errors()
+def run(args=None):
     usage = "dials.cluster_unit_cell [options] models.expt"
 
     parser = OptionParser(
@@ -47,24 +47,22 @@ def run(args):
     )
 
     params, options, args = parser.parse_args(
-        show_diff_phil=True, return_unhandled=True
+        args, show_diff_phil=True, return_unhandled=True
     )
     experiments = flatten_experiments(params.input.experiments)
     crystal_symmetries = []
 
     if len(experiments) == 0:
-        if len(args):
-            for arg in args:
-                assert os.path.isfile(arg), arg
-                reader = any_reflection_file(arg)
-                assert reader.file_type() == "ccp4_mtz"
-                arrays = reader.as_miller_arrays(
-                    merge_equivalents=False, anomalous=False
-                )
-                crystal_symmetries.append(arrays[0].crystal_symmetry())
-        else:
+        if not args:
             parser.print_help()
             exit(0)
+        for arg in args:
+            assert os.path.isfile(arg), arg
+            mtz_object = iotbx.mtz.object(file_name=arg)
+            arrays = mtz_object.as_miller_arrays(
+                merge_equivalents=False, anomalous=False
+            )
+            crystal_symmetries.append(arrays[0].crystal_symmetry())
     else:
         crystal_symmetries = [
             crystal.symmetry(
@@ -114,4 +112,4 @@ def do_cluster_analysis(crystal_symmetries, params):
 
 
 if __name__ == "__main__":
-    run(sys.argv[1:])
+    run()

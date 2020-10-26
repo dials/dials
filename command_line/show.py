@@ -2,14 +2,18 @@ from __future__ import absolute_import, division, print_function
 
 import collections
 import os
+import sys
+
+import numpy as np
 
 import iotbx.phil
-import numpy
 from cctbx import uctbx
-from dials.array_family import flex
-from dials.util import Sorry, tabulate
 from dxtbx.model.experiment_list import ExperimentListFactory
 from scitbx.math import five_number_summary
+
+import dials.util
+from dials.array_family import flex
+from dials.util import Sorry, tabulate
 
 help_message = """
 
@@ -45,9 +49,6 @@ show_flags = False
 show_identifiers = False
   .type = bool
   .help = "Show experiment identifiers map if set"
-show_image_statistics = False
-  .type = bool
-  .help = "Deprecated option, please use image_statistics instead"
 image_statistics{
   show_corrected = False
     .type = bool
@@ -182,7 +183,8 @@ def show_goniometer(goniometer):
     return s
 
 
-def run(args):
+@dials.util.show_mail_handle_errors()
+def run(args=None):
     import dials.util.log
 
     dials.util.log.print_banner()
@@ -216,12 +218,6 @@ def run(args):
         if not all(e.beam for e in experiments):
             sys.exit("Error: experiment has no beam")
         print(show_experiments(experiments, show_scan_varying=params.show_scan_varying))
-
-        if params.show_image_statistics:
-            print(
-                "WARNING: show_image_statistics is deprecated. Please use image_statistics.show_raw or image_statistics.show_corrected instead"
-            )
-            params.image_statistics.show_raw = True
 
         if params.image_statistics.show_raw:
             show_image_statistics(experiments, "raw")
@@ -390,7 +386,7 @@ def _create_flag_count_table(table):
     # Calculate the counts of entries that match each flag
     numpy_flags = table["flags"].as_numpy_array()
     flag_count = {
-        flag: numpy.sum(numpy_flags & value != 0)
+        flag: np.sum(numpy_flags & value != 0)
         for value, flag in table.flags.values.items()
     }
 
@@ -698,6 +694,4 @@ def show_reflections(
 
 
 if __name__ == "__main__":
-    import sys
-
-    run(sys.argv[1:])
+    run()

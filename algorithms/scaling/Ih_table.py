@@ -6,27 +6,31 @@ symmetry equivalent reflections, as required for scaling.
 """
 from __future__ import absolute_import, division, print_function
 
-from cctbx import miller, crystal, uctbx
-from dials.array_family import flex
 from orderedset import OrderedSet
+
+from cctbx import crystal, miller, uctbx
 from scitbx import sparse
 
+from dials.array_family import flex
 
-def map_indices_to_asu(miller_indices, space_group):
+
+def map_indices_to_asu(miller_indices, space_group, anomalous=False):
     """Map the indices to the asymmetric unit."""
     crystal_symmetry = crystal.symmetry(space_group=space_group)
     miller_set = miller.set(
-        crystal_symmetry=crystal_symmetry, indices=miller_indices, anomalous_flag=False
+        crystal_symmetry=crystal_symmetry,
+        indices=miller_indices,
+        anomalous_flag=anomalous,
     )
     miller_set_in_asu = miller_set.map_to_asu()
     return miller_set_in_asu.indices()
 
 
-def get_sorted_asu_indices(asu_indices, space_group):
+def get_sorted_asu_indices(asu_indices, space_group, anomalous=False):
     """Return the sorted asu indices and the permutation selection."""
     crystal_symmetry = crystal.symmetry(space_group=space_group)
     miller_set_in_asu = miller.set(
-        crystal_symmetry=crystal_symmetry, indices=asu_indices, anomalous_flag=False
+        crystal_symmetry=crystal_symmetry, indices=asu_indices, anomalous_flag=anomalous
     )
     permuted = miller_set_in_asu.sort_permutation(by_value="packed_indices")
     sorted_asu_miller_index = asu_indices.select(permuted)
@@ -75,6 +79,7 @@ class IhTable(object):
         free_set_percentage=0,
         free_set_offset=0,
         additional_cols=None,
+        anomalous=False,
     ):
         """
         Distribute the input data into the required structure.
@@ -93,6 +98,7 @@ class IhTable(object):
         """
         if indices_lists:
             assert len(indices_lists) == len(reflection_tables)
+        self.anomalous = anomalous
         self.asu_index_dict = {}
         self.space_group = space_group
         self.n_work_blocks = nblocks
@@ -219,11 +225,11 @@ class IhTable(object):
         for table in reflection_tables:
             if "asu_miller_index" not in table:
                 table["asu_miller_index"] = map_indices_to_asu(
-                    table["miller_index"], self.space_group
+                    table["miller_index"], self.space_group, self.anomalous
                 )
             joint_asu_indices.extend(table["asu_miller_index"])
         sorted_joint_asu_indices, _ = get_sorted_asu_indices(
-            joint_asu_indices, self.space_group
+            joint_asu_indices, self.space_group, self.anomalous
         )
 
         asu_index_set = OrderedSet(sorted_joint_asu_indices)
@@ -288,7 +294,7 @@ class IhTable(object):
         self, dataset_id, reflections, indices_array=None, additional_cols=None
     ):
         sorted_asu_indices, perm = get_sorted_asu_indices(
-            reflections["asu_miller_index"], self.space_group
+            reflections["asu_miller_index"], self.space_group, self.anomalous
         )
         r = flex.reflection_table()
         r["intensity"] = reflections["intensity"]
@@ -374,7 +380,9 @@ class IhTable(object):
             dataset_sel = free_reflection_table["dataset_id"] == id_
             tables.append(free_reflection_table.select(dataset_sel))
             indices_lists.append(free_indices.select(dataset_sel))
-        free_Ih_table = IhTable(tables, self.space_group, indices_lists, nblocks=1)
+        free_Ih_table = IhTable(
+            tables, self.space_group, indices_lists, nblocks=1, anomalous=self.anomalous
+        )
         # add to blocks list and selection list
         self.Ih_table_blocks.append(free_Ih_table.blocked_data_list[0])
         self.blocked_selection_list.append(free_Ih_table.blocked_selection_list[0])
@@ -584,7 +592,9 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
         new_Ih_values = flex.double(self.size, 0.0)
         location_in_unscaled_array = 0
         sorted_asu_indices, permuted = get_sorted_asu_indices(
-            self.Ih_table["asu_miller_index"], target_Ih_table.space_group
+            self.Ih_table["asu_miller_index"],
+            target_Ih_table.space_group,
+            anomalous=target_Ih_table.anomalous,
         )
         for j, miller_idx in enumerate(OrderedSet(sorted_asu_indices)):
             n_in_group = self.h_index_matrix.col(j).non_zeroes

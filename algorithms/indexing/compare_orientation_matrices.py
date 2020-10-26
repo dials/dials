@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import math
 
 from scitbx import matrix
@@ -47,26 +45,24 @@ def rotation_matrix_differences(
 ):
     assert comparison in ("pairwise", "sequential"), comparison
     output = []
-    for i in range(len(crystal_models)):
+    for i, cm_i in enumerate(crystal_models):
         for j in range(i + 1, len(crystal_models)):
             if comparison == "sequential" and j > i + 1:
                 break
             R_ij, axis, angle, cb_op = difference_rotation_matrix_axis_angle(
-                crystal_models[i], crystal_models[j]
+                cm_i, crystal_models[j]
             )
-            output.append("Change of basis op: %s" % cb_op)
+            output.append(f"Change of basis op: {cb_op}")
             output.append(
                 "Rotation matrix to transform crystal %i to crystal %i:"
                 % (i + 1, j + 1)
             )
             output.append(R_ij.mathematica_form(format="%.3f", one_row_per_line=True))
             output.append(
-                ("Rotation of %.3f degrees " % angle)
-                + ("about axis (%.3f, %.3f, %.3f)" % axis)
+                f"Rotation of {angle:.3f} degrees about axis ({axis[0]:.3f}, {axis[1]:.3f}, {axis[2]:.3f})"
             )
             if miller_indices is not None:
                 for hkl in miller_indices:
-                    cm_i = crystal_models[i]
                     cm_j = crystal_models[j].change_basis(cb_op)
                     A_i = cm_i.get_A()
                     A_j = cm_j.get_A()
@@ -81,7 +77,8 @@ def rotation_matrix_differences(
                     v_j = hkl[0] * a_star_j + hkl[1] * b_star_j + hkl[2] * c_star_j
 
                     output.append(
-                        ("(%i,%i,%i): " % hkl) + ("%.2f deg" % v_i.angle(v_j, deg=True))
+                        f"({hkl[0]},{hkl[1]},{hkl[2]}): %.2f deg"
+                        % v_i.angle(v_j, deg=True)
                     )
             output.append("")
     return "\n".join(output)

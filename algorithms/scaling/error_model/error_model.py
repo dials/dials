@@ -2,15 +2,19 @@
 Error model classes for scaling.
 """
 from __future__ import absolute_import, division, print_function
+
 import logging
-import six
 from collections import OrderedDict
-from math import log, exp
-from dials.util import tabulate
-from dials.array_family import flex
+from math import exp, log
+
+import six
+
 from iotbx import phil
 from scitbx import sparse
 from scitbx.math.distributions import normal_distribution
+
+from dials.array_family import flex
+from dials.util import tabulate
 
 logger = logging.getLogger("dials")
 
@@ -231,7 +235,7 @@ class ErrorModelBinner(object):
         self.bin_variances = self.calculate_bin_variances()
 
     def _create_summation_matrix(self):
-        """"Create a summation matrix to allow sums into intensity bins.
+        """ "Create a summation matrix to allow sums into intensity bins.
 
         This routine attempts to bin into bins equally spaced in log(intensity),
         to give a representative sample across all intensities. To avoid
@@ -360,6 +364,7 @@ class BasicErrorModel(object):
         self.free_components = []
         self.sortedy = None
         self.sortedx = None
+        self.binner = None
         self.filtered_Ih_table = self.filter_unsuitable_reflections(
             Ih_table, basic_params, min_partiality
         )
@@ -444,7 +449,8 @@ class BasicErrorModel(object):
 
     def clear_Ih_table(self):
         """Delete the Ih_table, to free memory."""
-        del self.binner.Ih_table
+        if self.binner:
+            self.binner.Ih_table = None
 
     def __str__(self):
         a = abs(self.parameters[0])

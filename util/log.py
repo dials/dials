@@ -1,8 +1,5 @@
-from __future__ import absolute_import, division, print_function
-
 import logging.config
 import os
-import six
 import sys
 import time
 
@@ -16,19 +13,22 @@ class DialsLogfileFormatter:
     """A formatter for log files that prepends messages with the elapsed time
     or messages at warning level or above with 'WARNING:'"""
 
-    def __init__(self):
+    def __init__(self, timed):
+        self.timed = timed
         self.start_time = time.time()
         self.prefix = ""
 
     def format(self, record):
-        elapsed_seconds = record.created - self.start_time
-        prefix = "{:6.1f}: ".format(elapsed_seconds)
+        if self.timed:
+            elapsed_seconds = record.created - self.start_time
+            prefix = "{:6.1f}: ".format(elapsed_seconds)
+        else:
+            prefix = ""
         indent = len(prefix)
         msg = record.getMessage()
 
         if record.levelno >= logging.WARNING:
-            prefix = "WARN: "
-            prefix = (indent - len(prefix)) * " " + prefix
+            prefix = "{prefix:>{indent}s}".format(indent=indent, prefix="WARN: ")
 
         msg = msg.replace("\n", "\n" + " " * indent)
         if prefix == self.prefix:
@@ -70,7 +70,11 @@ def config(verbosity=0, logfile=None):
     dials_logger = logging.getLogger("dials")
     dials_logger.addHandler(console)
 
-    if verbosity:
+    logging.captureWarnings(True)
+    warning_logger = logging.getLogger("py.warnings")
+    warning_logger.addHandler(console)
+
+    if verbosity > 1:
         loglevel = logging.DEBUG
     else:
         loglevel = logging.INFO
@@ -78,8 +82,9 @@ def config(verbosity=0, logfile=None):
     if logfile:
         fh = logging.FileHandler(filename=logfile, mode="w")
         fh.setLevel(loglevel)
-        fh.setFormatter(DialsLogfileFormatter())
+        fh.setFormatter(DialsLogfileFormatter(timed=verbosity))
         dials_logger.addHandler(fh)
+        warning_logger.addHandler(fh)
 
     dials_logger.setLevel(loglevel)
     #   logging.getLogger("dxtbx").setLevel(logging.DEBUG)
@@ -153,11 +158,7 @@ def print_banner(force=False, use_logging=False):
 class LoggingContext(object):
     # https://docs.python.org/3/howto/logging-cookbook.html#using-a-context-manager-for-selective-logging
     def __init__(self, logger, level=None):
-        self.logger = (
-            logging.getLogger(logger)
-            if isinstance(logger, six.string_types)
-            else logger
-        )
+        self.logger = logging.getLogger(logger) if isinstance(logger, str) else logger
         self.level = level
 
     def __enter__(self):

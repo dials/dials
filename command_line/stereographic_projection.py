@@ -6,11 +6,14 @@ import math
 import os
 import sys
 
-import iotbx.phil
 import matplotlib
+
+import iotbx.phil
 from cctbx import crystal, miller
 from cctbx.array_family import flex
 from scitbx import matrix
+
+import dials.util
 
 help_message = """
 
@@ -156,9 +159,9 @@ def gcd_list(l):
     return result
 
 
-def run(args):
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_experiments
+@dials.util.show_mail_handle_errors()
+def run(args=None):
+    from dials.util.options import OptionParser, flatten_experiments
 
     # The script usage
     usage = "dials.stereographic_projection [options] [param.phil] indexed.expt"
@@ -339,8 +342,7 @@ def plot_projections(
 
     # http://matplotlib.org/faq/howto_faq.html#generate-images-without-having-a-window-appear
     matplotlib.use("Agg")  # use a non-interactive backend
-    from matplotlib import pyplot
-    from matplotlib import pylab
+    from matplotlib import pylab, pyplot
 
     if epochs is not None and colour_map is not None:
         epochs = flex.double(epochs)
@@ -391,7 +393,7 @@ def plot_projections(
     pyplot.xlim(-1.1, 1.1)
     pyplot.ylim(-1.1, 1.1)
     if filename is not None:
-        pyplot.savefig(filename, size_inches=(24, 18), dpi=300)
+        pyplot.savefig(filename, dpi=300)
 
 
 def projections_as_dict(projections, labels):
@@ -482,4 +484,4 @@ def projections_as_json(projections, filename=None, labels=None):
 
 
 if __name__ == "__main__":
-    run(sys.argv[1:])
+    run()

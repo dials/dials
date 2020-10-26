@@ -1,15 +1,25 @@
-from __future__ import absolute_import, division, print_function
-
 import collections
 import itertools
 import math
 
-from past.builtins import basestring, unicode
-import six
-
 import wx
+from wx.lib.intctrl import IntCtrl
+
 from cctbx import crystal, uctbx
 from cctbx.miller import index_generator
+from dxtbx.imageset import ImageSet
+from dxtbx.model.experiment_list import ExperimentList, ExperimentListFactory
+from libtbx.utils import flat_list
+from rstbx.slip_viewer import pyslip
+from rstbx.viewer.frame import SettingsFrame
+from scitbx import matrix
+from wxtbx import bitmaps, icons
+from wxtbx.phil_controls import EVT_PHIL_CONTROL
+from wxtbx.phil_controls.floatctrl import FloatCtrl
+from wxtbx.phil_controls.intctrl import IntCtrl as PhilIntCtrl
+from wxtbx.phil_controls.ints import IntsCtrl
+from wxtbx.phil_controls.strctrl import StrCtrl
+
 from dials.algorithms.image.threshold import (
     DispersionExtendedThresholdDebug,
     DispersionThresholdDebug,
@@ -20,27 +30,13 @@ from dials.command_line.find_spots import phil_scope as find_spots_phil_scope
 from dials.util import masking
 from dials.util.image_viewer.mask_frame import MaskSettingsFrame
 from dials.util.image_viewer.spotfinder_wrap import chooser_wrapper
-from dxtbx.imageset import ImageSet
-from dxtbx.model.experiment_list import ExperimentList
-from dxtbx.model.experiment_list import ExperimentListFactory
-from libtbx.utils import flat_list
-from rstbx.slip_viewer import pyslip
-from rstbx.viewer.frame import SettingsFrame
-from scitbx import matrix
-from wx.lib.intctrl import IntCtrl
-from wxtbx import bitmaps, icons
-from wxtbx.phil_controls import EVT_PHIL_CONTROL
-from wxtbx.phil_controls.floatctrl import FloatCtrl
-from wxtbx.phil_controls.intctrl import IntCtrl as PhilIntCtrl
-from wxtbx.phil_controls.ints import IntsCtrl
-from wxtbx.phil_controls.strctrl import StrCtrl
 
-from .slip_viewer.frame import XrayFrame, MASK_VAL
+from .slip_viewer.frame import MASK_VAL, XrayFrame
 from .viewer_tools import (
+    EVT_ZEROMQ_EVENT,
     ImageChooserControl,
     ImageCollectionWithSelection,
     LegacyChooserAdapter,
-    EVT_ZEROMQ_EVENT,
 )
 
 try:
@@ -62,8 +58,6 @@ SpotfinderData = collections.namedtuple(
         "vector_text_data",
     ],
 )
-
-WX3 = wx.VERSION[0] == 3
 
 myEVT_LOADIMG = wx.NewEventType()
 EVT_LOADIMG = wx.PyEventBinder(myEVT_LOADIMG, 1)
@@ -100,7 +94,7 @@ class SpotFrame(XrayFrame):
         # Store the list of images we can view
         self.images = ImageCollectionWithSelection()
 
-        super(SpotFrame, self).__init__(*args, **kwds)
+        super().__init__(*args, **kwds)
 
         # If we have only one imageset, unindexed filtering becomes easier
         self.have_one_imageset = len(set(self.imagesets)) <= 1
@@ -236,12 +230,12 @@ class SpotFrame(XrayFrame):
 
         self.stack = PhilIntCtrl(self.toolbar, -1, name="stack", size=(65, -1))
         self.stack.SetMin(1)
-        self.stack.SetValue(1)
+        self.stack.SetValue(self.params.stack_images)
         self.toolbar.AddControl(self.stack)
         self.Bind(EVT_PHIL_CONTROL, self.OnStack, self.stack)
 
     def setup_menus(self):
-        super(SpotFrame, self).setup_menus()
+        super().setup_menus()
 
         # XXX Placement
         self._id_mask = wx.NewId()
@@ -280,23 +274,19 @@ class SpotFrame(XrayFrame):
 
         # Don't update whilst dragging the slider
         if event.EventType == wx.EVT_SLIDER.typeId:
-            if (
-                wx.GetMouseState().LeftDown()
-                if WX3
-                else wx.GetMouseState().LeftIsDown()
-            ):
+            if wx.GetMouseState().LeftIsDown():
                 return
 
         # Once we've stopped scrolling, load the selected item
         self.load_image(selected_image)
 
     def OnPrevious(self, event):
-        super(SpotFrame, self).OnPrevious(event)
+        super().OnPrevious(event)
         # Parent function moves - now update the UI to match
         self.jump_to_image.SetValue(self.images.selected_index + 1)
 
     def OnNext(self, event):
-        super(SpotFrame, self).OnNext(event)
+        super().OnNext(event)
         # Parent function moves - now update the UI to match
         self.jump_to_image.SetValue(self.images.selected_index + 1)
 
@@ -307,8 +297,16 @@ class SpotFrame(XrayFrame):
 
     def OnStack(self, event):
         value = self.stack.GetPhilValue()
-        if value != self.params.sum_images:
-            self.params.sum_images = value
+
+        if value == 1:
+            for button in self.settings_frame.panel.kabsch_buttons:
+                button.Enable()
+        else:
+            for button in self.settings_frame.panel.kabsch_buttons:
+                button.Disable()
+
+        if value != self.params.stack_images:
+            self.params.stack_images = value
             self.reload_image()
 
     def GetBoxCorners(self, layer, p1, p2):
@@ -529,10 +527,7 @@ class SpotFrame(XrayFrame):
             return
 
         # If given a string, we need to load and convert to a chooser_wrapper
-        if isinstance(file_name_or_data, basestring):
-            if six.PY2 and isinstance(file_name_or_data, unicode):
-                # dxtbx/Boost cannot currently handle unicode here
-                file_name_or_data = file_name_or_data.encode("utf-8")
+        if isinstance(file_name_or_data, str):
             experiments = ExperimentListFactory.from_filenames([file_name_or_data])
             assert len(experiments) == 1
             imagesets = experiments.imagesets()
@@ -552,7 +547,7 @@ class SpotFrame(XrayFrame):
         previously_selected_image = self.images.selected
         self.images.selected = file_name_or_data
         # Do the actual data/image loading and update the viewer
-        super(SpotFrame, self).load_image(
+        super().load_image(
             file_name_or_data,
             get_image_data=self.get_image_data,
             show_untrusted=show_untrusted,
@@ -751,7 +746,7 @@ class SpotFrame(XrayFrame):
             if unit_cell is None and space_group is None:
                 for angle in (45, 135, 225, 315):
                     txtvec = cb1.rotate_around_origin(
-                        axis=beamvec, angle=angle / 180 * 3.14159
+                        axis=beamvec, angle=math.radians(angle)
                     )
                     txtpos = pan.get_ray_intersection_px(txtvec)
                     txtpos = self.pyslip.tiles.flex_image.tile_readout_to_picture(
@@ -811,8 +806,10 @@ class SpotFrame(XrayFrame):
                 update=False,
             )
 
-    def sum_images(self):
-        if self.params.sum_images > 1:
+    def stack_images(self):
+        mode = self.params.stack_mode
+        if self.params.stack_images > 1:
+            self.settings.display = "image"
             image = self.pyslip.tiles.raw_image
             image_data = image.get_image_data()
             if not isinstance(image_data, tuple):
@@ -823,12 +820,22 @@ class SpotFrame(XrayFrame):
             ).index
             imageset = self.image_chooser.GetClientData(i_frame).image_set
 
-            for i in range(1, self.params.sum_images):
+            for i in range(1, self.params.stack_images):
                 if (i_frame + i) >= len(imageset):
                     break
                 image_data_i = imageset[i_frame + i]
                 for j, rd in enumerate(image_data):
-                    rd += image_data_i[j]
+                    data = image_data_i[j]
+                    if mode == "max":
+                        sel = data > rd
+                        rd = rd.as_1d().set_selected(sel.as_1d(), data.as_1d())
+                    else:
+                        rd += data
+
+            # /= stack_images to put on consistent scale with single image
+            # so that -1 etc. handled correctly (mean mode)
+            if mode == "mean":
+                image_data = tuple(i / self.params.stack_images for i in image_data)
 
             # Don't show summed images with overloads
             self.pyslip.tiles.set_image_data(image_data, show_saturated=False)
@@ -843,8 +850,10 @@ class SpotFrame(XrayFrame):
             image_data = image.get_image_data()
         else:
             image_data = image.get_image_data(corrected=False)
-        if not isinstance(image_data, tuple):
-            image_data = (image_data,)
+        if isinstance(image_data, tuple):
+            image_data = tuple(id.as_double() for id in image_data)
+        else:
+            image_data = (image_data.as_double(),)
 
         if self.settings.display != "image":
             kabsch_debug_list = self._calculate_dispersion_debug(image)
@@ -898,7 +907,7 @@ class SpotFrame(XrayFrame):
     def _calculate_dispersion_debug(self, image):
         request = {}
         request["index"] = image.index
-        request["sum"] = self.params.sum_images
+        request["sum"] = self.params.stack_images
         request["gain_value"] = self.settings.gain
         request["nsigma_b"] = self.settings.nsigma_b
         request["nsigma_s"] = self.settings.nsigma_s
@@ -1050,7 +1059,7 @@ class SpotFrame(XrayFrame):
                             r = max(int(r, 16) - int("50", 16), 0)
                             g = max(int(g, 16) - int("50", 16), 0)
                             b = max(int(b, 16) - int("50", 16), 0)
-                            color = "#%02x%02x%02x" % (r, g, b)
+                            color = f"#{r:02x}{g:02x}{b:02x}"
                             self.dials_spotfinder_layers.append(
                                 self.pyslip.AddPointLayer(
                                     value,
@@ -1161,8 +1170,8 @@ class SpotFrame(XrayFrame):
                     fontsize=self.settings.fontsize,
                 )
 
-        self.sum_images()
-        # if self.params.sum_images == 1:
+        self.stack_images()
+        # if self.params.stack_images == 1:
         # self.show_filters()
         if self.settings.show_threshold_pix:
             image = self.pyslip.tiles.raw_image
@@ -1190,7 +1199,7 @@ class SpotFrame(XrayFrame):
             r = max(int(r, 16) - int("50", 16), 0)
             g = max(int(g, 16) - int("50", 16), 0)
             b = max(int(b, 16) - int("50", 16), 0)
-            color = "#%02x%02x%02x" % (r, g, b)
+            color = f"#{r:02x}{g:02x}{b:02x}"
             self.dials_spotfinder_layers.append(
                 self.pyslip.AddPointLayer(
                     value,
@@ -1349,7 +1358,7 @@ class SpotFrame(XrayFrame):
                 bbox = ref_list["bbox"]
                 x0, x1, y0, y1, z0, z1 = bbox.parts()
                 # ticket #107
-                n = self.params.sum_images - 1
+                n = self.params.stack_images - 1
                 bbox_sel = ~((i_frame >= z1) | ((i_frame + n) < z0))
                 selected = ref_list.select(bbox_sel)
                 for reflection in selected.rows():
@@ -1420,8 +1429,10 @@ class SpotFrame(XrayFrame):
                             )
 
                     if self.settings.show_shoebox:
-                        x0_, y0_ = map_coords(x0, y0, panel)
-                        x1_, y1_ = map_coords(x1, y1, panel)
+                        x0y0 = map_coords(x0, y0, panel)
+                        x0y1 = map_coords(x0, y1, panel)
+                        x1y0 = map_coords(x1, y0, panel)
+                        x1y1 = map_coords(x1, y1, panel)
                         # Change shoebox colour depending on index id
                         my_attrs = dict(shoebox_dict)
                         # Reflections with *only* strong set should get default
@@ -1430,10 +1441,10 @@ class SpotFrame(XrayFrame):
                                 reflection["id"]
                             ]
                         lines = [
-                            (((x0_, y0_), (x0_, y1_)), my_attrs),
-                            (((x0_, y1_), (x1_, y1_)), my_attrs),
-                            (((x1_, y1_), (x1_, y0_)), my_attrs),
-                            (((x1_, y0_), (x0_, y0_)), my_attrs),
+                            ((x0y0, x0y1), my_attrs),
+                            ((x0y1, x1y1), my_attrs),
+                            ((x1y1, x1y0), my_attrs),
+                            ((x1y0, x0y0), my_attrs),
                         ]
                         shoebox_data.extend(lines)
 
@@ -1460,7 +1471,7 @@ class SpotFrame(XrayFrame):
                         centroid = reflection["xyzobs.px.value"]
                         # ticket #107
                         if centroid[2] >= i_frame and centroid[2] <= (
-                            i_frame + self.params.sum_images
+                            i_frame + self.params.stack_images
                         ):
                             x, y = map_coords(
                                 centroid[0], centroid[1], reflection["panel"]
@@ -1667,7 +1678,7 @@ class SpotFrame(XrayFrame):
 
 class SpotSettingsFrame(SettingsFrame):
     def __init__(self, *args, **kwds):
-        super(SettingsFrame, self).__init__(*args, **kwds)
+        super().__init__(*args, **kwds)
         self.settings = self.GetParent().settings
         self.params = self.GetParent().params
         szr = wx.BoxSizer(wx.VERTICAL)
@@ -1688,7 +1699,7 @@ class SpotSettingsFrame(SettingsFrame):
 
 class SpotSettingsPanel(wx.Panel):
     def __init__(self, *args, **kwargs):
-        super(SpotSettingsPanel, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self.settings = self.GetParent().settings
         self.params = self.GetParent().params
@@ -1760,7 +1771,7 @@ class SpotSettingsPanel(wx.Panel):
             self,
             value=self.settings.brightness,
             min=1,
-            max=500,
+            max=1000,
             name="brightness",
             style=wx.TE_PROCESS_ENTER,
         )
@@ -1770,7 +1781,7 @@ class SpotSettingsPanel(wx.Panel):
             self, -1, size=(150, -1), style=wx.SL_AUTOTICKS | wx.SL_LABELS
         )
         self.brightness_ctrl.SetMin(1)
-        self.brightness_ctrl.SetMax(500)
+        self.brightness_ctrl.SetMax(1000)
         self.brightness_ctrl.SetValue(self.settings.brightness)
         self.brightness_ctrl.SetTickFreq(25)
         box.Add(self.brightness_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
@@ -1880,6 +1891,18 @@ class SpotSettingsPanel(wx.Panel):
         # txtd = wx.StaticText(self, -1,  "Minimum spot area (pxls)",)
         # box.Add(txtd, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
         # s.Add(box)
+
+        # Stack type choice
+        grid = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
+        txt1 = wx.StaticText(self, -1, "Stack type:")
+        grid.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.stack_modes = ["max", "mean", "sum"]
+        self.stack_mode_ctrl = wx.Choice(self, -1, choices=self.stack_modes)
+        self.stack_mode_ctrl.SetSelection(
+            self.stack_modes.index(self.params.stack_mode)
+        )
+        grid.Add(self.stack_mode_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        s.Add(grid)
 
         # Image type choice
         grid = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
@@ -2010,6 +2033,9 @@ class SpotSettingsPanel(wx.Panel):
             grid2.Add(btn, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
             self.Bind(wx.EVT_TOGGLEBUTTON, self.OnDispersionThresholdDebug, btn)
 
+        for label, button in zip(self.kabsch_labels, self.kabsch_buttons):
+            if self.params.stack_images > 1:
+                button.Disable()
         for button in self.kabsch_buttons:
             if button.GetLabelText() == self.settings.display:
                 button.SetValue(True)
@@ -2030,6 +2056,7 @@ class SpotSettingsPanel(wx.Panel):
 
         self.Bind(wx.EVT_CHOICE, self.OnUpdateZoomLevel, self.zoom_ctrl)
         self.Bind(wx.EVT_CHOICE, self.OnUpdateImage, self.image_type_ctrl)
+        self.Bind(wx.EVT_CHOICE, self.OnUpdateImage, self.stack_mode_ctrl)
         self.Bind(wx.EVT_CHOICE, self.OnUpdate, self.color_ctrl)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.resolution_rings_ctrl)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.ice_rings_ctrl)
@@ -2058,6 +2085,9 @@ class SpotSettingsPanel(wx.Panel):
         if self.settings.enable_collect_values:
             self.settings.image_type = self.image_types[
                 self.image_type_ctrl.GetSelection()
+            ]
+            self.params.stack_mode = self.stack_modes[
+                self.stack_mode_ctrl.GetSelection()
             ]
             self.settings.show_resolution_rings = self.resolution_rings_ctrl.GetValue()
             self.settings.show_ice_rings = self.ice_rings_ctrl.GetValue()
