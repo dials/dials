@@ -97,15 +97,14 @@ class SpotFrame(XrayFrame):
         super().__init__(*args, **kwds)
 
         self.viewing_stills = True
-        for explst in self.experiments:
-            for exp in explst:
-                if exp.scan is not None or exp.goniometer is not None:
-                    self.viewing_stills = False
-                    break
+        for experiment_list in self.experiments:
+            if any(e.scan or e.goniometer for exp in experiment_list):
+                self.viewing_stills = False
+                break
 
         if self.viewing_stills:
-            is_multi_shot_exp = [len(El) > 1 for El in self.experiments]
-            if any(is_multi_shot_exp):
+            is_multi_shot_exp = any(len(exp_list) > 1 for exp_list in self.experiments)
+            if is_multi_shot_exp:
                 assert len(self.experiments) == 1
                 if self.reflections:
                     assert len(self.reflections) == 1
@@ -1521,10 +1520,9 @@ class SpotFrame(XrayFrame):
                     if self.settings.show_ctr_mass and "xyzobs.px.value" in reflection:
                         centroid = reflection["xyzobs.px.value"]
                         # ticket #107
-                        if (
-                            centroid[2] >= i_frame
-                            and centroid[2] <= (i_frame + self.params.stack_images)
-                        ) or self.viewing_stills:
+                        if self.viewing_stills or (
+                            i_frame <= centroid[2] <= (i_frame + self.params.stack_images)
+                        ):
                             x, y = map_coords(
                                 centroid[0], centroid[1], reflection["panel"]
                             )
