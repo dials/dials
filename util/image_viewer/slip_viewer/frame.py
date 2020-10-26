@@ -15,10 +15,9 @@ import wx
 from boost_adaptbx.boost.python import c_sizeof
 from rstbx.viewer import image as rv_image
 from rstbx.viewer import settings as rv_settings
-from rstbx.viewer.frame import SettingsFrame
 from wxtbx import bitmaps
 
-from ..rstbx_frame import EVT_EXTERNAL_UPDATE
+from ..rstbx_frame import EVT_EXTERNAL_UPDATE, SettingsFrame
 from ..rstbx_frame import XrayFrame as XFBaseClass
 from . import pyslip, tile_generation
 
