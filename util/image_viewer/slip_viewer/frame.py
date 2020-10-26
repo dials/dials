@@ -20,6 +20,7 @@ from wxtbx import bitmaps
 from ..rstbx_frame import EVT_EXTERNAL_UPDATE, SettingsFrame
 from ..rstbx_frame import XrayFrame as XFBaseClass
 from . import pyslip, tile_generation
+from .calibration_frame import SBSettingsFrame
 
 pyslip._Tiles = tile_generation._Tiles
 
@@ -593,8 +594,6 @@ class XrayFrame(XFBaseClass):
         self.pyslip.Update()  # triggers redraw
 
     def OnCalibration(self, event):
-        from rstbx.slip_viewer.calibration_frame import SBSettingsFrame
-
         if not self._calibration_frame:
             self._calibration_frame = SBSettingsFrame(
                 self, wx.ID_ANY, "Quadrant calibration", style=wx.CAPTION | wx.CLOSE_BOX
