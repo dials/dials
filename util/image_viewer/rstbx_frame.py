@@ -305,21 +305,7 @@ class XrayFrame(wx.Frame):
             self.load_integration(dir_name)
 
     def OnShowSettings(self, event):
-        if self.settings_frame is None:
-            frame_rect = self.GetRect()
-            display_rect = wx.GetClientDisplayRect()
-            x_start = frame_rect[0] + frame_rect[2]
-            if x_start > (display_rect[2] - 400):
-                x_start = display_rect[2] - 400
-            y_start = frame_rect[1]
-            self.settings_frame = SettingsFrame(
-                self,
-                -1,
-                "Settings",
-                style=wx.CAPTION | wx.MINIMIZE_BOX | wx.CLOSE_BOX | wx.SYSTEM_MENU,
-                pos=(x_start, y_start),
-            )
-        self.settings_frame.Show()
+        raise NotImplementedError("Removed due to non-used code path")
 
     def OnShowZoom(self, event):
         if self.zoom_frame is None:
@@ -396,39 +382,6 @@ class XrayFrame(wx.Frame):
         wx.MessageBox("Click on any point in the image to set the new beam center.")
         self.statusbar.SetStatusText("Changing beam center")
         self.viewer.ChangeBeamCenter()
-
-
-class SettingsFrame(wx.MiniFrame):
-    def __init__(self, *args, **kwds):
-        super(SettingsFrame, self).__init__(*args, **kwds)
-        self.settings = self.GetParent().settings
-        szr = wx.BoxSizer(wx.VERTICAL)
-        panel = SettingsPanel(self, -1)
-        self.SetSizer(szr)
-        szr.Add(panel, 1, wx.EXPAND)
-        szr.Fit(panel)
-        self.panel = panel
-        self.sizer = szr
-        self.Fit()
-        self.Bind(wx.EVT_CLOSE, lambda evt: self.Destroy(), self)
-        self.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy)
-
-    def OnDestroy(self, event):
-        self.GetParent().settings_frame = None
-
-    def update_controls(self):
-        self.panel.zoom_ctrl.SetSelection(self.settings.zoom_level)
-        self.panel.brightness_ctrl.SetValue(self.settings.brightness)
-
-    def set_image(self, image):
-        self.panel.thumb_panel.set_image(image)
-        self.panel.GetSizer().Layout()
-        self.sizer.Fit(self.panel)
-        self.Layout()
-        self.Fit()
-
-    def refresh_thumbnail(self):
-        self.panel.thumb_panel.Refresh()
 
 
 class SettingsPanel(wx.Panel):

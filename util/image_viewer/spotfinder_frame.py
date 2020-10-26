@@ -29,7 +29,6 @@ from dials.util import masking
 from dials.util.image_viewer.mask_frame import MaskSettingsFrame
 from dials.util.image_viewer.spotfinder_wrap import chooser_wrapper
 
-from .rstbx_frame import SettingsFrame
 from .slip_viewer import pyslip
 from .slip_viewer.frame import MASK_VAL, XrayFrame
 from .viewer_tools import (
@@ -1676,7 +1675,7 @@ class SpotFrame(XrayFrame):
             raise
 
 
-class SpotSettingsFrame(SettingsFrame):
+class SpotSettingsFrame(wx.MiniFrame):
     def __init__(self, *args, **kwds):
         super().__init__(*args, **kwds)
         self.settings = self.GetParent().settings
