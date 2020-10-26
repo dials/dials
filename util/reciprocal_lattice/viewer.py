@@ -18,8 +18,6 @@ from wxtbx.segmentedctrl import (
 from dials.util import wx_viewer
 from dials.util.reciprocal_lattice import Render3d
 
-WX3 = wx.VERSION[0] == 3
-
 phil_scope = libtbx.phil.parse(
     """
 include scope dials.util.reciprocal_lattice.phil_scope
@@ -40,24 +38,25 @@ model_view_matrix = None
     process_includes=True,
 )
 
-if not WX3:
-    # WX4 compatibility
-    def _rewrite_event(unbound):
-        """Decorator to intercept the event and add missing instance methods"""
 
-        def _wrapp(self, event):
-            event.GetPositionTuple = event.GetPosition
-            return unbound(self, event)
+# WX3 - WX4 compatibility
+def _rewrite_event(unbound):
+    """Decorator to intercept the event and add missing instance methods"""
 
-        return _wrapp
+    def _wrapp(self, event):
+        event.GetPositionTuple = event.GetPosition
+        return unbound(self, event)
 
-    # HACK: Monkeypatch wxtbx so that we don't use old interfaces
-    wxtbx.segmentedctrl.SegmentedControl.HitTest = _rewrite_event(
-        wxtbx.segmentedctrl.SegmentedControl.HitTest
-    )
-    wxtbx.segmentedctrl.SegmentedControl.OnMotion = _rewrite_event(
-        wxtbx.segmentedctrl.SegmentedControl.OnMotion
-    )
+    return _wrapp
+
+
+# HACK: Monkeypatch wxtbx so that we don't use old interfaces
+wxtbx.segmentedctrl.SegmentedControl.HitTest = _rewrite_event(
+    wxtbx.segmentedctrl.SegmentedControl.HitTest
+)
+wxtbx.segmentedctrl.SegmentedControl.OnMotion = _rewrite_event(
+    wxtbx.segmentedctrl.SegmentedControl.OnMotion
+)
 
 
 class ReciprocalLatticeViewer(wx.Frame, Render3d):
