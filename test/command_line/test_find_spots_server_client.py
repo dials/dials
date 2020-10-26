@@ -1,5 +1,6 @@
 import socket
 import subprocess
+import sys
 import time
 import timeit
 import urllib.request
@@ -12,6 +13,8 @@ import pytest
 @pytest.fixture
 def server(tmp_path) -> int:
     """Fixture to load a find_spots_server server"""
+    if sys.hexversion >= 0x3080000 and sys.platform == "darwin":
+        pytest.skip("find_spots server known to be broken on MacOS with Python 3.8+")
 
     # Find a free port to run the server on
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:

@@ -185,7 +185,10 @@ namespace dials { namespace algorithms {
      * @param range The range of frames
      * @param block_size The job block size
      */
-    void add(tiny<int, 2> expr, tiny<int, 2> range, int block_size, int block_overlap_size) {
+    void add(tiny<int, 2> expr,
+             tiny<int, 2> range,
+             int block_size,
+             int block_overlap_size) {
       std::size_t j0 = size();
       add_jobs(groups_.size(), expr, range, block_size, block_overlap_size);
       std::size_t j1 = size();
@@ -238,8 +241,9 @@ namespace dials { namespace algorithms {
           jobs_.push_back(Job(index, expr, tiny<int, 2>(f, f + 1)));
         }
       } else {
-        if (nblocks == 0){
-          double z = ((double)frame1 - frame0 - block_size) / (block_size - block_overlap_size); //avoid integer division
+        if (nblocks == 0) {
+          double z = ((double)frame1 - frame0 - block_size)
+                     / (block_size - block_overlap_size);  // avoid integer division
           nblocks = (int)std::ceil(z) + 1;
         }
         DIALS_ASSERT(nblocks > 0 && nblocks <= nframes);

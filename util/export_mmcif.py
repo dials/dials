@@ -84,6 +84,10 @@ class MMCIFOutputFile(object):
         cif_block[
             "_publ.section_references"
         ] = "Winter, G. et al. (2018) Acta Cryst. D74, 85-97."
+        if "scale" in self.params.intensity:
+            cif_block[
+                "_publ.section_references"
+            ] += "\nBeilsten-Edmands, J. et al. (2020) Acta Cryst. D76, 385-399."
 
         # Hard coding X-ray
         cif_block["_pdbx_diffrn_data_section.id"] = "dials"

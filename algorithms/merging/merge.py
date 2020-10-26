@@ -152,6 +152,7 @@ def merge(
     d_max=None,
     combine_partials=True,
     partiality_threshold=0.4,
+    best_unit_cell=None,
     anomalous=True,
     use_internal_variance=False,
     assess_space_group=False,
@@ -179,7 +180,9 @@ def merge(
     # going to output scale factor in merged mtz.
     reflections["inverse_scale_factor"] = flex.double(reflections.size(), 1.0)
 
-    scaled_array = scaled_data_as_miller_array([reflections], experiments)
+    scaled_array = scaled_data_as_miller_array(
+        [reflections], experiments, best_unit_cell
+    )
     # Note, merge_equivalents does not raise an error if data is unique.
     merged = scaled_array.merge_equivalents(
         use_internal_variance=use_internal_variance
@@ -211,10 +214,7 @@ def merge(
         logger.error(e, exc_info=True)
         stats_summary = None
     else:
-        if anomalous and anom_stats:
-            stats_summary = make_merging_statistics_summary(anom_stats)
-        else:
-            stats_summary = make_merging_statistics_summary(stats)
+        stats_summary = make_merging_statistics_summary(stats)
         stats_summary += table_1_summary(stats, anom_stats)
 
     return merged, merged_anom, stats_summary

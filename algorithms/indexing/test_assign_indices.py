@@ -244,3 +244,57 @@ def test_index_reflections(dials_regression):
     assert "miller_index" in reflections
     counts = reflections["id"].counts()
     assert dict(counts) == {-1: 1390, 0: 114692}
+
+
+def test_local_multiple_rotations(dials_data):
+    """Test the fix for https://github.com/dials/dials/issues/1458"""
+
+    experiments = load.experiment_list(
+        dials_data("insulin_processed").join("indexed.expt"),
+        check_format=False,
+    )
+    # Override the scan range to ensure we have 4 full rotations
+    experiments[0].scan.set_image_range((1, 1440))
+
+    # Generate some predicted reflections
+    reflections = flex.reflection_table.from_predictions(experiments[0], dmin=4)
+    reflections["imageset_id"] = flex.int(len(reflections), 0)
+    reflections["id"] = flex.int(len(reflections), -1)
+    reflections["xyzobs.px.value"] = reflections["xyzcal.px"]
+    reflections["xyzobs.mm.value"] = reflections["xyzcal.mm"]
+    predicted_miller_indices = reflections["miller_index"]
+
+    # Prepare reflections for indexing
+    reflections.centroid_px_to_mm(experiments)
+    reflections.map_centroids_to_reciprocal_space(experiments)
+
+    # Reset miller indices to ensure they are reindexed
+    reflections["miller_index"] = flex.miller_index(len(reflections), (0, 0, 0))
+
+    # Assign indices with the correct scan oscillation
+    AssignIndicesLocal()(reflections, experiments)
+
+    # Assert we have correctly indexed all reflections
+    assert (reflections["miller_index"] == (0, 0, 0)).count(True) == 0
+    assert (reflections["miller_index"] == predicted_miller_indices).count(False) == 0
+
+    # Modify the scan oscillation such that we are out by 1 degree per rotation
+    experiments[0].scan.set_oscillation((0, 1 - 1 / 360), deg=True)
+
+    # Reset miller indices and re-map to reciprocal space
+    reflections["miller_index"] = flex.miller_index(len(reflections), (0, 0, 0))
+    reflections["id"] = flex.int(len(reflections), -1)
+    reflections.centroid_px_to_mm(experiments)
+    reflections.map_centroids_to_reciprocal_space(experiments)
+
+    # Assign indices, this time with the incorrect scan oscillation
+    AssignIndicesLocal()(reflections, experiments)
+
+    # Assert that most reflections have been indexed
+    indexed_sel = reflections["miller_index"] == (0, 0, 0)
+    assert indexed_sel.count(True) < 10
+
+    # Assert that all indexed miller indices are correct
+    assert (
+        (reflections["miller_index"] != predicted_miller_indices) & ~indexed_sel
+    ).count(True) == 0
