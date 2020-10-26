@@ -158,13 +158,13 @@ class SpotFrame(XrayFrame):
             kind=wx.ITEM_NORMAL,
         )
         self.Bind(wx.EVT_MENU, self.OnLoadFile, btn)
-        # btn = self.toolbar.AddLabelTool(id=-1,
+        # btn = self.toolbar.AddTool(toolId=-1,
         # label="Settings",
         # bitmap=icons.advancedsettings.GetBitmap(),
         # shortHelp="Settings",
         # kind=wx.ITEM_NORMAL)
         # self.Bind(wx.EVT_MENU, self.OnShowSettings, btn)
-        # btn = self.toolbar.AddLabelTool(id=-1,
+        # btn = self.toolbar.AddTool(toolId=-1,
         # label="Zoom",
         # bitmap=icons.search.GetBitmap(),
         # shortHelp="Zoom",

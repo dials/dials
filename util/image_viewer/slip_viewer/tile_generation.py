@@ -379,7 +379,7 @@ class _Tiles(object):
             w, h = self.flex_image.ex_size2(), self.flex_image.ex_size1()
             assert w == 512
             assert h == 512
-            wx_image = wx.EmptyImage(w / 2, h / 2)
+            wx_image = wx.Image(w / 2, h / 2)
             import PIL.Image as Image
 
             Image_from_bytes = Image.frombytes(
