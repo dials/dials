@@ -55,7 +55,7 @@ class wxbmp_from_np_array(object):
 
             NewW = 350
 
-            wx_image = wx.EmptyImage(NewW, NewW)
+            wx_image = wx.Image(NewW, NewW)
             wxBitmap = wx_image.ConvertToBitmap()
 
             dc = wx.MemoryDC(wxBitmap)
