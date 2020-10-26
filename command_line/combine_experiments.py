@@ -425,7 +425,7 @@ class Script(object):
 
         if size == 1:
             params, options = self.parser.parse_args(args, show_diff_phil=True)
-            assert params.input.path is None, "input.path requires MPI support."
+            assert not params.input.path, "input.path requires MPI support."
             self.run_with_preparsed(params, options)
             return
 
