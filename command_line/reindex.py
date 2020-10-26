@@ -322,7 +322,11 @@ experiments file must also be specified with the option: reference= """
                 experiments, change_of_basis_op, space_group=space_group
             )
         except RuntimeError as e:
-            sys.exit("Error: %s" % str(e).split(":")[-1].strip())
+            # Only catch specific errors here
+            if "Unsuitable value for rational rotation matrix." in str(e):
+                original_message = str(e).split(":")[-1].strip()
+                sys.exit(f"Error: {original_message} Is your change_of_basis_op valid?")
+            raise
 
         print("Saving reindexed experimental models to %s" % params.output.experiments)
         experiments.as_file(params.output.experiments)
