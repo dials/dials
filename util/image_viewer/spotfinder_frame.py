@@ -98,7 +98,7 @@ class SpotFrame(XrayFrame):
 
         self.viewing_stills = True
         for experiment_list in self.experiments:
-            if any(e.scan or e.goniometer for exp in experiment_list):
+            if any(exp.scan or exp.goniometer for exp in experiment_list):
                 self.viewing_stills = False
                 break
 
@@ -111,30 +111,30 @@ class SpotFrame(XrayFrame):
                     assert len(self.experiments[0]) == len(
                         set(self.reflections[0]["id"])
                     )
-                expts = []
-                refls = []
+                new_experiments = []
+                new_reflections = []
                 for i_expt, expt in enumerate(self.experiments[0]):
                     print(
-                        "ravel experiments %d / %d"
+                        "Perparing experiments (%d / %d)"
                         % (i_expt + 1, len(self.experiments[0]))
                     )
-                    El = ExperimentList()
-                    El.append(expt)
-                    expts.append(El)
+                    exp_list = ExperimentList()
+                    exp_list.append(expt)
+                    new_experiments.append(exp_list)
                     if self.reflections:
-                        R = self.reflections[0].select(
+                        refls = self.reflections[0].select(
                             self.reflections[0]["id"] == i_expt
                         )
-                        R["id"] = flex.int(len(R), 0)
-                        refls.append(R)
-                self.experiments = expts
-                self.reflections = refls
+                        refls["id"] = flex.int(len(refls), 0)
+                        new_reflections.append(refls)
+                self.experiments = new_experiments
+                self.reflections = new_reflections
             else:
-                refls = []
-                for R in self.reflections:
-                    R["id"] = flex.int(len(R), 0)
-                    refls.append(R)
-                self.reflections = refls
+                new_reflections = []
+                for refls in self.reflections:
+                    refls["id"] = flex.int(len(refls), 0)
+                    new_reflections.append(refls)
+                self.reflections = new_reflections
 
         # If we have only one imageset, unindexed filtering becomes easier
         self.have_one_imageset = len(set(self.imagesets)) <= 1
@@ -1341,9 +1341,10 @@ class SpotFrame(XrayFrame):
         shoebox_dict = {"width": 2, "color": "#0000FFA0", "closed": False}
         ctr_mass_dict = {"width": 2, "color": "#FF0000", "closed": False}
         vector_dict = {"width": 4, "color": "#F62817", "closed": False}
-        i_frame = self.images.selected.index
         if self.viewing_stills:
-            i_frame = self.images.selected_index
+            i_frame = self.images.selected_index  # NOTE, the underbar is intentional
+        else:
+            i_frame = self.images.selected.index
         imageset = self.images.selected.image_set
         if imageset.get_scan() is not None:
             i_frame += imageset.get_scan().get_array_range()[0]
