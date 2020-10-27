@@ -1,1 +1,0 @@
-Change blocking in dials.integrate to reduce unneccesary data reads, for performance.

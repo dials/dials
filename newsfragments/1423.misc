@@ -1,1 +1,0 @@
-Update the default conda environment dependencies. Developers should check that they have procrunner 2.2+ and reportlab installed.

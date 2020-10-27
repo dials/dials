@@ -1,3 +1,69 @@
+DIALS 3.2.0 (2020-10-27)
+========================
+
+Features
+--------
+
+- DIALS development environments are now running Python 3.8 by default.  (`#1373 <https://github.com/dials/dials/issues/1373>`_)
+- Add a scaled flag to the reflection table. Indicates which reflections are
+  good after the scaling process.  (`#1377 <https://github.com/dials/dials/issues/1377>`_)
+- Python warnings are now highlighted on the console log and written to log files  (`#1401 <https://github.com/dials/dials/issues/1401>`_)
+- Exit error messages from commands will now be colourized  (`#1420 <https://github.com/dials/dials/issues/1420>`_)
+- Change the way ``dials.integrate`` splits data into blocks, to reduce
+  unneccesary data reads, increasing performance up to 35% in some cases  (`#1396 <https://github.com/dials/dials/issues/1396>`_)
+- Add ``dials.util.mp.available_cores`` function  (`#1430 <https://github.com/dials/dials/issues/1430>`_)
+- ``dials.refine``: Trimming scans to observations for scan-varying refinement can
+  now be turned off, using the parameter ``trim_scan_to_observations=False``  (`#1374 <https://github.com/dials/dials/issues/1374>`_)
+- ``dials.refine``: Change default to ``separate_panels=False``. This speeds up
+  outlier rejection for multi-panel detectors. For metrology refinement this
+  should be set to ``True``  (`#1424 <https://github.com/dials/dials/issues/1424>`_)
+- ``dials.merge``: Add best_unit_cell option. If the best_unit_cell option is set
+  in ``dials.scale``, this will now propagate to the merged mtz output file.  (`#1444 <https://github.com/dials/dials/issues/1444>`_)
+- DIALS bootstrap now allow creating a Python 3.9 environment  (`#1452 <https://github.com/dials/dials/issues/1452>`_)
+- DIALS now uses pytype for limited static type checking. We hope that this
+  will, over time, improve code quality.  (`#1364 <https://github.com/dials/dials/issues/1364>`_)
+- ``dials.stills_process``: Added ``process_percent=`` to restrict processing
+  to a subset of data, sync reference geometry instead of overwriting it and
+  handle composite spotfinding modes.  (`#1409 <https://github.com/dials/dials/issues/1409>`_)
+
+
+Bugfixes
+--------
+
+- ``dials.stills_process``: Prevent memory usage getting too high by clearing the
+  imageset cache during processing.  (`#1412 <https://github.com/dials/dials/issues/1412>`_)
+- ``dials.find_spots_server``: Return HTTP 500 instead of 200 when running fails  (`#1443 <https://github.com/dials/dials/issues/1443>`_)
+- ``dials.find_spots_server``: Fix multiprocessing-related crash on macOS with Python3.8  (`#1447 <https://github.com/dials/dials/issues/1447>`_)
+- ``dials.integrate``: Fix failures when building with GCC 9  (`#1456 <https://github.com/dials/dials/issues/1456>`_)
+- ``dials.image_viewer``: Fix deprecation warnings  (`#1462 <https://github.com/dials/dials/issues/1462>`_)
+- ``dials.index``: When using local index assignment, take into account phi in
+  nearest neighbour analysis. This can significantly improve indexing rates in
+  some cases with scans > 360°  (`#1459 <https://github.com/dials/dials/issues/1459>`_)
+- ``dials.reindex``: Show an error instead of crashing for bad reindex operations.  (`#1282 <https://github.com/dials/dials/issues/1282>`_)
+
+Deprecations and Removals
+-------------------------
+
+- dials.refine: the parameter ``trim_scan_edges`` is renamed ``scan_margin``
+  and the former name is deprecated  (`#1374 <https://github.com/dials/dials/issues/1374>`_)
+- The developer command ``dev.dials.show_test_failure_reasons`` was removed.  (`#1436 <https://github.com/dials/dials/issues/1436>`_)
+- Remove clipper sources from new development installations  (`#1437 <https://github.com/dials/dials/issues/1437>`_)
+
+
+Misc
+----
+
+- `#1175 <https://github.com/dials/dials/issues/1175>`_, `#1337 <https://github.com/dials/dials/issues/1337>`_,
+  `#1354 <https://github.com/dials/dials/issues/1354>`_, `#1379 <https://github.com/dials/dials/issues/1379>`_,
+  `#1381 <https://github.com/dials/dials/issues/1381>`_, `#1400 <https://github.com/dials/dials/issues/1400>`_,
+  `#1406 <https://github.com/dials/dials/issues/1406>`_, `#1416 <https://github.com/dials/dials/issues/1416>`_,
+  `#1423 <https://github.com/dials/dials/issues/1423>`_, `#1426 <https://github.com/dials/dials/issues/1426>`_,
+  `#1432 <https://github.com/dials/dials/issues/1432>`_, `#1433 <https://github.com/dials/dials/issues/1433>`_,
+  `#1435 <https://github.com/dials/dials/issues/1435>`_, `#1446 <https://github.com/dials/dials/issues/1446>`_,
+  `#1454 <https://github.com/dials/dials/issues/1454>`_, `#1466 <https://github.com/dials/dials/issues/1466>`_,
+  `#1468 <https://github.com/dials/dials/issues/1468>`_
+
+
 DIALS 3.1.4 (2020-10-12)
 ========================
 
@@ -189,7 +255,7 @@ Features
 - Crystal model now has a new recalculated_unit_cell attribute. This allows it to store
   a post-refined unit cell (e.g. from dials.two_theta_refine) in addition to that from
   traditional geometry refinement (which was used for prediction). Downstream programs
-  such as dials.scale and dials.export will now use the recalculated unit cell 
+  such as dials.scale and dials.export will now use the recalculated unit cell
   where appropriate. (`#1214 <https://github.com/dials/dials/issues/1214>`_)
 - New best_monoclinic_beta parameter for dials.refine_bravais_settings and dials.symmetry.
   Setting this to False will ensure that C2 is selected in preference to I2, where I2
@@ -234,8 +300,8 @@ Features
 - Programs now generate a unique identifier for each experiment created, and reflection tables are linked via the experiment_identifiers map (`#1086 <https://github.com/dials/dials/issues/1086>`_)
 - Introduce `dials.anvil_correction` to correct the absorption of the incident and diffracted X-ray beam by the diamond anvils in a pressure cell.
   Call `dials.anvil_correction` on the output of `dials.integrate` and then proceed to use post-integration tools as normal, just as though the sample had been measured in air. (`#1090 <https://github.com/dials/dials/issues/1090>`_)
-- Map of detector efficiency for photon counting detectors as a function of 
-  detector position added to report, based on the qe value applied at the end 
+- Map of detector efficiency for photon counting detectors as a function of
+  detector position added to report, based on the qe value applied at the end
   of integration. (`#1108 <https://github.com/dials/dials/issues/1108>`_)
 - Significantly reduce the amount of memory required to write .refl output files (`#1115 <https://github.com/dials/dials/issues/1115>`_)
 - Add maximum_trusted_value=N option to spot finding to temporarily allow override of trusted range, e.g. to find overloaded spots in spot finding. (`#1157 <https://github.com/dials/dials/issues/1157>`_)
@@ -307,7 +373,7 @@ Bugfixes
   is first trimmed to match the range of the diffraction. (`#1025 <https://github.com/dials/dials/issues/1025>`_)
 - If convert_sequences_to_stills then delete the goniometer and scan. (`#1035 <https://github.com/dials/dials/issues/1035>`_)
 - Correctly account for scan-varying crystals in dials.slice_sequence (`#1040 <https://github.com/dials/dials/issues/1040>`_)
-- Eliminate systematic absences before applying change of basis op to minimum 
+- Eliminate systematic absences before applying change of basis op to minimum
   cell in dials.symmetry. (`#1064 <https://github.com/dials/dials/issues/1064>`_)
 
 
