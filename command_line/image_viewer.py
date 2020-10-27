@@ -170,21 +170,6 @@ def show_image_viewer(params, experiments, reflections):
 
 @dials.util.show_mail_handle_errors()
 def run(args=None):
-    import wx  # It is unclear why, but it is crucial that wx
-
-    # is imported before the parser is run.
-    # Otherwise viewer will crash when run with
-    # .cbf image as parameter on linux with wxPython>=3
-    # The problem can be traced to
-    # dxtbx/format/FormatCBFFull.py:49
-    #  ''' from iotbx.detectors.cbf import CBFImage '''
-    # and the wx import must happen before that import.
-    WX3 = wx.VERSION[0] == 3
-    if not WX3:
-        # HACK: Monkeypatch this renamed function so we can trick wxtbx's IntCtrl
-        #       without having to alter the package
-        wx.SystemSettings_GetColour = wx.SystemSettings.GetColour
-
     dials.util.log.print_banner()
     usage_message = "dials.image_viewer models.expt [observations.refl]"
     parser = OptionParser(
