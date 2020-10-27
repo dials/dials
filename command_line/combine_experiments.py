@@ -62,10 +62,10 @@ phil_scope = parse(
     path = None
       .type = str
       .multiple = True
-      .help = A glob, directory, or file specifying experiments and reflections
-      .help = to combine. Files name.expt and name.refl must be present as
-      .help = matching pairs. This mode is only supported for MPI runs;
-      .help = otherwise, supply expts and refls as command-line arguments.
+      .help = "A glob, directory, or file specifying expts and refls"
+              "to combine. Files name.expt and name.refl must be present as"
+              "matching pairs. This mode is only supported for MPI runs;"
+              "otherwise, supply expts and refls as command-line arguments."
     reflections_suffix = .refl
       .type = str
       .help = When input.path is given, find file names with this suffix for
