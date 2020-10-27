@@ -14,9 +14,6 @@ from wxtbx import bitmaps, icons
 
 from dials.util import Sorry
 
-# Temporary: Make a variable to allow dual API
-WX3 = wx.VERSION[0] == 3
-
 # Instance to bind external update event to an event handler
 EVT_EXTERNAL_UPDATE = wx.PyEventBinder(wx.NewEventType(), 0)
 
@@ -79,24 +76,24 @@ class XrayFrame(wx.Frame):
         self.Layout()
 
     def setup_toolbar(self):
-        btn = self.toolbar.AddLabelTool(
-            id=-1,
+        btn = self.toolbar.AddTool(
+            toolId=-1,
             label="Load file",
             bitmap=icons.hkl_file.GetBitmap(),
             shortHelp="Load file",
             kind=wx.ITEM_NORMAL,
         )
         self.Bind(wx.EVT_MENU, self.OnLoadFile, btn)
-        btn = self.toolbar.AddLabelTool(
-            id=-1,
+        btn = self.toolbar.AddTool(
+            toolId=-1,
             label="Settings",
             bitmap=icons.advancedsettings.GetBitmap(),
             shortHelp="Settings",
             kind=wx.ITEM_NORMAL,
         )
         self.Bind(wx.EVT_MENU, self.OnShowSettings, btn)
-        btn = self.toolbar.AddLabelTool(
-            id=-1,
+        btn = self.toolbar.AddTool(
+            toolId=-1,
             label="Zoom",
             bitmap=icons.search.GetBitmap(),
             shortHelp="Zoom",
@@ -108,16 +105,16 @@ class XrayFrame(wx.Frame):
         self.image_chooser = wx.Choice(self.toolbar, -1, size=(300, -1))
         self.toolbar.AddControl(self.image_chooser)
         self.Bind(wx.EVT_CHOICE, self.OnChooseImage, self.image_chooser)
-        btn = self.toolbar.AddLabelTool(
-            id=wx.ID_BACKWARD,
+        btn = self.toolbar.AddTool(
+            toolId=wx.ID_BACKWARD,
             label="Previous",
             bitmap=bitmaps.fetch_icon_bitmap("actions", "1leftarrow"),
             shortHelp="Previous",
             kind=wx.ITEM_NORMAL,
         )
         self.Bind(wx.EVT_MENU, self.OnPrevious, btn)
-        btn = self.toolbar.AddLabelTool(
-            id=wx.ID_FORWARD,
+        btn = self.toolbar.AddTool(
+            toolId=wx.ID_FORWARD,
             label="Next",
             bitmap=bitmaps.fetch_icon_bitmap("actions", "1rightarrow"),
             shortHelp="Next",
@@ -292,15 +289,13 @@ class XrayFrame(wx.Frame):
             "Image file",
             wildcard=wildcard_str,
             default_path="",
-            flags=(wx.OPEN if WX3 else wx.FD_OPEN),
+            flags=wx.FD_OPEN,
         )
         if file_name != "":
             self.load_image(file_name)
 
     def OnLoadLabelitResult(self, event):
-        file_name = wx.FileSelector(
-            "Labelit result", default_path="", flags=(wx.OPEN if WX3 else wx.FD_OPEN)
-        )
+        file_name = wx.FileSelector("Labelit result", default_path="", flags=wx.FD_OPEN)
         if file_name != "":
             self.load_image(file_name)
 

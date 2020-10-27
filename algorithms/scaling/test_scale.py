@@ -576,6 +576,7 @@ def test_scale_best_unit_cell_d_min(dials_data, tmpdir):
         "best_unit_cell=%g,%g,%g,%g,%g,%g" % best_unit_cell.parameters(),
         "d_min=%g" % d_min,
         "unmerged_mtz=unmerged.mtz",
+        "merged_mtz=merged.mtz",
     ]
     for i in [1, 2, 3, 4, 5, 7, 10]:
         command.append(location.join("experiments_" + str(i) + ".json").strpath)
@@ -584,11 +585,16 @@ def test_scale_best_unit_cell_d_min(dials_data, tmpdir):
     assert not result.returncode and not result.stderr
     assert tmpdir.join("scaled.refl").check()
     assert tmpdir.join("scaled.expt").check()
+    assert tmpdir.join("unmerged.mtz").check()
+    assert tmpdir.join("merged.mtz").check()
     stats = get_merging_stats(tmpdir.join("unmerged.mtz").strpath)
     assert stats.overall.d_min >= d_min
     assert stats.crystal_symmetry.unit_cell().parameters() == pytest.approx(
         best_unit_cell.parameters()
     )
+    m = iotbx.mtz.object(tmpdir.join("merged.mtz").strpath)
+    for ma in m.as_miller_arrays():
+        assert best_unit_cell.parameters() == pytest.approx(ma.unit_cell().parameters())
 
 
 def test_scale_and_filter_dataset_mode(dials_data, tmpdir):
