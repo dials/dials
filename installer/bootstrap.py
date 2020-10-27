@@ -1011,16 +1011,19 @@ def update_sources(options):
 
     if not options.cmake:
         repositories = {
-            source.split("/")[1]: {"base-repository": source, "branch-local": branch}
+            source.split("/")[1]: {
+                "base-repository": source,
+                "branch-local": "dials-__DIALS_RELEASE__VERSION__",
+            }
             for source, branch in (
-                ("cctbx/annlib_adaptbx", "master"),
-                ("cctbx/cctbx_project", "master"),
-                ("cctbx/dxtbx", "main"),
+                ("dials/annlib_adaptbx", "master"),
                 ("dials/annlib", "master"),
                 ("dials/cbflib", "main"),
-                ("dials/ccp4io", "master"),
                 ("dials/ccp4io_adaptbx", "master"),
+                ("dials/ccp4io", "master"),
+                ("dials/cctbx_project", "master"),
                 ("dials/dials", "main"),
+                ("dials/dxtbx", "main"),
                 ("dials/gui_resources", "master"),
                 ("xia2/xia2", "main"),
             )
@@ -1031,17 +1034,18 @@ def update_sources(options):
             )
         else:
             repositories["cctbx_project"] = {
-                "base-repository": "cctbx/cctbx_project",
-                "effective-repository": "dials/cctbx",
-                "branch-remote": "master",
-                "branch-local": "stable",
+                "base-repository": "dials/cctbx_project",
+                "branch-local": "dials-__DIALS_RELEASE__VERSION__",
             }
     else:
         # Only what we need for CMake
         repositories = {
-            source.split("/")[1]: {"base-repository": source, "branch-local": branch}
+            source.split("/")[1]: {
+                "base-repository": source,
+                "branch-local": "dials-__DIALS_RELEASE__VERSION__",
+            }
             for source, branch in (
-                ("cctbx/dxtbx", "main"),
+                ("dials/dxtbx", "main"),
                 ("dials/dials", "main"),
                 ("xia2/xia2", "main"),
             )
