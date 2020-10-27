@@ -417,11 +417,15 @@ class Script(object):
     def run(self, args=None):
         """Execute the script."""
 
-        from libtbx.mpi4py import MPI
+        try:
+            from mpi4py import MPI
 
-        comm = MPI.COMM_WORLD
-        rank = comm.Get_rank()
-        size = comm.Get_size()
+            comm = MPI.COMM_WORLD
+            rank = comm.Get_rank()
+            size = comm.Get_size()
+        except ImportError:
+            rank = 0
+            size = 1
 
         if size == 1:
             params, options = self.parser.parse_args(args, show_diff_phil=True)
@@ -429,7 +433,7 @@ class Script(object):
             self.run_with_preparsed(params, options)
             return
 
-        if rank == 0:
+        if rank == 0:  # An MPI file loader!
 
             # Parse the command line
             params, options, fnames = self.parser.parse_args(
@@ -451,8 +455,22 @@ class Script(object):
                     or fname.endswith(params.input.experiments_suffix)
                 ):
                     sys.exit("Did not understand argument %s" % fname)
-                else:
-                    params.input.path.append(fname)
+
+            # Make (expt, refl) filename tuples
+            if fnames:
+                assert (
+                    not params.input.path
+                ), "Please provide path or filenames, not both"
+                expts = [
+                    f for f in fnames if f.endswith(params.input.experiments_suffix)
+                ]
+                refls = [
+                    f for f in fnames if f.endswith(params.input.reflections_suffix)
+                ]
+                filenames = list(zip(expts, refls))
+            else:
+                lister = file_lister.file_lister(params)
+                filenames = lister.filename_lister()
 
         if rank == 0:
             transmitted_info = params, options, fnames
@@ -460,9 +478,7 @@ class Script(object):
             transmitted_info = None
         params, options, fnames = comm.bcast(transmitted_info, root=0)
 
-        if rank == 0:
-            lister = file_lister.file_lister(params)
-            filenames = lister.filename_lister()
+        if rank == 0:  # Server
 
             results = [None] * len(filenames)
             working_ranks = [False] * size
@@ -486,7 +502,7 @@ class Script(object):
                 comm.send("done", dest=rankreq)
                 working_ranks[rankreq] = False
 
-        else:
+        else:  # Client
             from libtbx.phil import strings_as_words as _words
 
             expt_converter = ExperimentListConverters(check_format=False)
