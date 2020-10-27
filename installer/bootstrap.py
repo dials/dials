@@ -839,12 +839,11 @@ def update_sources(options):
             pass
 
     repositories = {
-        source.split("/")[1]: {"base-repository": source, "branch-local": "master"}
+        source.split("/")[1]: {"base-repository": source, "branch-local": "dials-3.2"}
         for source in (
-            "cctbx/annlib_adaptbx",
-            "cctbx/cctbx_project",
-            "cctbx/dxtbx",
+            "dials/dxtbx",
             "dials/annlib",
+            "dials/annlib_adaptbx",
             "dials/cbflib",
             "dials/ccp4io",
             "dials/ccp4io_adaptbx",
@@ -855,10 +854,8 @@ def update_sources(options):
         )
     }
     repositories["cctbx_project"] = {
-        "base-repository": "cctbx/cctbx_project",
-        "effective-repository": "dials/cctbx",
-        "branch-remote": "master",
-        "branch-local": "stable",
+        "base-repository": "dials/cctbx",
+        "branch-local": "dials-3.2",
     }
 
     for source, setting in options.branch:
