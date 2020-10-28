@@ -73,7 +73,7 @@ relative_length_tolerance = 0.05
 absolute_angle_tolerance = 2
   .type = float(value_min=0)
 
-partiality_threshold = 0.99
+partiality_threshold = 0.4
   .type = float
   .help = "Use only reflections with a partiality above this threshold."
 
