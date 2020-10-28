@@ -359,7 +359,7 @@ class Script(object):
 
         try:
             from mpi4py import MPI
-        except ImportError as e:
+        except ImportError:
             rank = 0
             size = 1
         else:
@@ -415,7 +415,6 @@ class Script(object):
 
         st = time.time()
 
-
         if params.mp.method == "mpi":
             # Configure the logging
             if params.output.logging_dir is None:
@@ -443,7 +442,6 @@ class Script(object):
 
             # Configure logging
             log.config(verbosity=options.verbose, logfile="dials.process.log")
-
 
         bad_phils = [f for f in all_paths if os.path.splitext(f)[1] == ".phil"]
         if len(bad_phils) > 0:
@@ -634,7 +632,7 @@ class Script(object):
             iterable = list(zip(tags, all_paths))
 
         if params.input.max_images:
-            iterable = iterable[:params.input.max_images]
+            iterable = iterable[: params.input.max_images]
 
         if params.input.show_image_tags:
             print("Showing image tags for this dataset and exiting")
@@ -1196,7 +1194,7 @@ class Processor(object):
         logger.info("Integrating Reflections")
         logger.info("*" * 80)
 
-        cutoff = os.getenv('USE_INTEGRATION_CUTOFF')
+        cutoff = os.getenv("USE_INTEGRATION_CUTOFF")
         if cutoff:
             cutoff = float(cutoff)
             for detector in experiments.detectors():
@@ -1348,9 +1346,12 @@ class Processor(object):
 
         for crystal_model in experiments.crystals():
             if hasattr(crystal_model, "get_domain_size_ang"):
-                log_str += ". Final ML model: domain size angstroms: %f, half mosaicity degrees: %f" % (
-                    crystal_model.get_domain_size_ang(),
-                    crystal_model.get_half_mosaicity_deg(),
+                log_str += (
+                    ". Final ML model: domain size angstroms: %f, half mosaicity degrees: %f"
+                    % (
+                        crystal_model.get_domain_size_ang(),
+                        crystal_model.get_half_mosaicity_deg(),
+                    )
                 )
 
         logger.info(log_str)
@@ -1670,8 +1671,8 @@ class Processor(object):
 
             # Create a tar archive of the integration dictionary pickles
             if len(self.all_int_pickles) > 0 and self.params.output.integration_pickle:
-                tar_template_integration_pickle = (
-                    self.params.output.integration_pickle.replace("%d", "%s")
+                tar_template_integration_pickle = self.params.output.integration_pickle.replace(
+                    "%d", "%s"
                 )
                 outfile = (
                     os.path.join(
