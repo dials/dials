@@ -657,28 +657,6 @@ class Script(object):
 
         # Process the data
         if params.mp.method == "mpi":
-            # # Configure the logging
-            # if params.output.logging_dir is None:
-            #     logfile = None
-            # else:
-            #     log_path = os.path.join(
-            #         params.output.logging_dir, "log_rank%04d.out" % rank
-            #     )
-            #     error_path = os.path.join(
-            #         params.output.logging_dir, "error_rank%04d.out" % rank
-            #     )
-            #     print("Redirecting stdout to %s" % log_path)
-            #     print("Redirecting stderr to %s" % error_path)
-            #     sys.stdout = open(log_path, "a")
-            #     sys.stderr = open(error_path, "a")
-            #     print("Should be redirected now")
-
-            #     logfile = os.path.join(
-            #         params.output.logging_dir, "info_rank%04d.out" % rank
-            #     )
-
-            # log.config(verbosity=options.verbose, logfile=logfile)
-
             if size <= 2:  # client/server only makes sense for n>2
                 subset = [
                     item for i, item in enumerate(iterable) if (i + rank) % size == 0
@@ -1193,13 +1171,6 @@ class Processor(object):
         logger.info("*" * 80)
         logger.info("Integrating Reflections")
         logger.info("*" * 80)
-
-        cutoff = os.getenv("USE_INTEGRATION_CUTOFF")
-        if cutoff:
-            cutoff = float(cutoff)
-            for detector in experiments.detectors():
-                for panel in detector:
-                    panel.set_trusted_range((panel.get_trusted_range()[0], cutoff))
 
         indexed, _ = self.process_reference(indexed)
 
