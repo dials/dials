@@ -1,0 +1,1 @@
+dials.stills_process improvement when using MPI: remove an extra log file to speed up processing on a big computing cluster
