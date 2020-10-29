@@ -8,24 +8,15 @@ October 27th, 2020.
 New Features
 ============
 
-
-- Integration of rotation data should be ~35% faster with running with ``nproc > 1``. Before, sweeps
-  were split into blocks with a 50% overlap with neighbouring blocks in order to reduce the amount
-  of reflections that needed to be split, but this meant that the reflections
-  on each image were read out twice. This overlap has now been reduced which means less duplicated
-  effort in reading the data off of disk, and gives a notable speedup in runtime.
-  (`dials/dials#1396 <https://github.com/dials/dials/pull/1396>`_)
-
-
-
 Speeding up Integration
 -----------------------
 
-The time spent to run :ref:`dials.integrate` on sweep data with multiple threads should now be
-reduced by up to 35% thanks to .
-Essentially, when running integration with ``nproc=`` greater than one, the sweep range is split
-up into several "blocks" and each process takes responsibility for a block. Previously, each block
-was overlapping 50% with each of it's neighbours - to ensure that the smalle
+Integration of rotation data should be ~35% faster with running with ``nproc > 1``. Before, sweeps
+were split into blocks with a 50% overlap with neighbouring blocks in order to reduce the amount
+of reflections that needed to be split, but this meant that the reflections
+on each image were read out twice. This overlap has now been reduced which means less duplicated
+effort in reading the data off of disk, and gives a notable speedup in runtime.
+(`dials/dials#1396 <https://github.com/dials/dials/pull/1396>`_)
 
 Comparing Merging Stats in XIA2 Multiplex
 -----------------------------------------
