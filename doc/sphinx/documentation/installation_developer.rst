@@ -48,3 +48,10 @@ follows, replacing "USERNAME" for your username::
   svn checkout svn+ssh://USERNAME@cci.lbl.gov/dials_regression/trunk dials_regression
 
 You do not need to configure the dials_regression module to run dials or dxtbx tests.
+
+Keeping a Development Environment current
+=========================================
+
+While you can always create a new development environment from scratch using the instructions above,
+it may be much preferable to update an existing environment.
+For that you may find the `guide for updating a development environment <https://github.com/dials/dials/wiki/Updating-a-development-environment>`_ in the DIALS Github repository wiki handy.
