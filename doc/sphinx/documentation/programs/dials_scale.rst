@@ -1,3 +1,5 @@
+.. _dials.scale:
+
 dials.scale
 ============
 
