@@ -3,19 +3,23 @@ from __future__ import absolute_import, division, print_function
 import logging
 import time
 
+import numpy as np
 import six
 import six.moves.cPickle as pickle
 
+from dxtbx.imageset import ImageSequence
+from iotbx.phil import parse
+
+import dials.extensions
+from dials.algorithms.background.simple import Linear2dModeller
+from dials.algorithms.spot_finding.finder import SpotFinder
 from dials.array_family import flex
+from dials.util.masking import MaskGenerator
 
 logger = logging.getLogger(__name__)
 
 
 def generate_phil_scope():
-    from iotbx.phil import parse
-
-    import dials.extensions
-
     phil_scope = parse(
         """
 
@@ -169,7 +173,12 @@ class FilterRunner(object):
         return flags
 
     def check_flags(
-        self, flags, predictions=None, observations=None, shoeboxes=None, **kwargs
+        self,
+        flags,
+        predictions=None,
+        observations=None,
+        shoeboxes=None,
+        **kwargs  # noqa: U100
     ):
         """
         Check the flags are set, if they're not then create a list
@@ -214,7 +223,7 @@ class PeakCentroidDistanceFilter(object):
         """
         self.maxd = maxd
 
-    def run(self, flags, observations=None, shoeboxes=None, **kwargs):
+    def run(self, flags, observations=None, shoeboxes=None, **kwargs):  # noqa: U100
         """
         Run the filtering.
         """
@@ -243,9 +252,7 @@ class BackgroundGradientFilter(object):
         self.background_size = background_size
         self.gradient_cutoff = gradient_cutoff
 
-    def run(self, flags, sequence=None, shoeboxes=None, **kwargs):
-        from dials.algorithms.background.simple import Linear2dModeller
-
+    def run(self, flags, sequence=None, shoeboxes=None, **kwargs):  # noqa: U100
         modeller = Linear2dModeller()
         detector = sequence.get_detector()
 
@@ -337,10 +344,8 @@ class SpotDensityFilter(object):
         self.nbins = nbins
         self.gradient_cutoff = gradient_cutoff
 
-    def run(self, flags, sequence=None, observations=None, **kwargs):
+    def run(self, flags, sequence=None, observations=None, **kwargs):  # noqa: U100
         obs_x, obs_y = observations.centroids().px_position_xy().parts()
-
-        import numpy as np
 
         H, xedges, yedges = np.histogram2d(
             obs_x.as_numpy_array(), obs_y.as_numpy_array(), bins=self.nbins
@@ -414,12 +419,6 @@ class SpotFinderFactory(object):
         :param params: The input parameters
         :returns: The spot finder instance
         """
-        from dxtbx.imageset import ImageSequence
-        from libtbx.phil import parse
-
-        from dials.algorithms.spot_finding.finder import SpotFinder
-        from dials.util.masking import MaskGenerator
-
         if params is None:
             params = phil_scope.fetch(source=parse("")).extract()
 
@@ -484,8 +483,6 @@ class SpotFinderFactory(object):
         :param params: The input parameters
         :return: The threshold algorithm
         """
-        import dials.extensions
-
         # Configure the algorithm
         Algorithm = dials.extensions.SpotFinderThreshold.load(
             params.spotfinder.threshold.algorithm
