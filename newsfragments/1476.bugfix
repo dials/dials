@@ -1,1 +1,1 @@
-Remove deprecated toolbar style from image viewer
+Fix image viewer crash on newer wxPython versions
