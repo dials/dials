@@ -1317,12 +1317,9 @@ class Processor(object):
 
         for crystal_model in experiments.crystals():
             if hasattr(crystal_model, "get_domain_size_ang"):
-                log_str += (
-                    ". Final ML model: domain size angstroms: %f, half mosaicity degrees: %f"
-                    % (
-                        crystal_model.get_domain_size_ang(),
-                        crystal_model.get_half_mosaicity_deg(),
-                    )
+                log_str += ". Final ML model: domain size angstroms: %f, half mosaicity degrees: %f" % (
+                    crystal_model.get_domain_size_ang(),
+                    crystal_model.get_half_mosaicity_deg(),
                 )
 
         logger.info(log_str)
@@ -1642,8 +1639,8 @@ class Processor(object):
 
             # Create a tar archive of the integration dictionary pickles
             if len(self.all_int_pickles) > 0 and self.params.output.integration_pickle:
-                tar_template_integration_pickle = self.params.output.integration_pickle.replace(
-                    "%d", "%s"
+                tar_template_integration_pickle = (
+                    self.params.output.integration_pickle.replace("%d", "%s")
                 )
                 outfile = (
                     os.path.join(
