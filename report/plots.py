@@ -760,6 +760,7 @@ class ResolutionPlotsAndStats:
             "R<sub>merge</sub>",
             "R<sub>meas</sub>",
             "R<sub>pim</sub>",
+            "R<sub>anom</sub>",
             u"CC<sub>½</sub>",
         ]
         if not self.is_centric:
@@ -781,6 +782,7 @@ class ResolutionPlotsAndStats:
                 safe_format("%.3f", bin_stats.r_merge),
                 safe_format("%.3f", bin_stats.r_meas),
                 safe_format("%.3f", bin_stats.r_pim),
+                safe_format("%.3f", bin_stats.r_anom),
             ]
             if cc_half_method == "sigma_tau":
                 row.append(
