@@ -93,6 +93,10 @@ phil_scope = parse(
       .help = "If integrated centroids are provided, filter these so that only"
               "those with both the 'integrated' and 'strong' flags are used"
 
+    partiality_threshold = 0.4
+      .type = float
+      .help = "Use only reflections with a partiality above this threshold."
+
     combine_crystal_models = True
       .type = bool
       .help = "When multiple experiments are provided as input, combine these to"
@@ -476,7 +480,11 @@ class Script(object):
         # Filter data if scaled to remove outliers
         if "inverse_scale_factor" in reflections:
             try:
-                reflections = filter_reflection_table(reflections, ["scale"])
+                reflections = filter_reflection_table(
+                    reflections,
+                    ["scale"],
+                    partiality_threshold=params.refinement.partiality_threshold,
+                )
             except ValueError as e:
                 logger.warn(e)
                 logger.info(
