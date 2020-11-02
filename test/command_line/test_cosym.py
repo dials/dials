@@ -101,6 +101,7 @@ def test_cosym_partial_dataset_raises_sorry(dials_data, tmpdir):
         ("P321", (59.39, 59.39, 28.35, 90, 90, 120), None, 5, False, False),
     ],
 )
+@pytest.mark.xfail("os.name == 'nt'", reason="UnicodeEncodeError in logging")
 def test_synthetic(
     space_group,
     unit_cell,

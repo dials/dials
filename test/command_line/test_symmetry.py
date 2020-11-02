@@ -54,6 +54,7 @@ def test_symmetry_laue_only(dials_data, tmpdir):
     assert str(exps[0].crystal.get_space_group().info()) == "P 2 2 2"
 
 
+@pytest.mark.xfail("os.name == 'nt'", reason="UnicodeEncodeError in logging")
 def test_symmetry_basis_changes_for_C2(tmpdir):
     """Test the correctness of change of basis operations in dials.symmetry
 
