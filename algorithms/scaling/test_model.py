@@ -155,7 +155,6 @@ def test_KBScalingModel():
     # Test from_dict initialisation method.
     KB_dict = {
         "__id__": "KB",
-        "is_scaled": True,
         "scale": {
             "n_parameters": 1,
             "parameters": [0.5],
@@ -177,7 +176,6 @@ def test_KBScalingModel():
     # Test again with all parameters
     KB_dict = {
         "__id__": "KB",
-        "is_scaled": True,
         "scale": {
             "n_parameters": 1,
             "parameters": [0.5],
@@ -263,7 +261,6 @@ def test_PhysicalScalingModel(test_reflections, mock_exp):
     # Test from_dict initialisation method.
     physical_dict = {
         "__id__": "physical",
-        "is_scaled": True,
         "scale": {
             "n_parameters": 2,
             "parameters": [0.5, 1.0],
@@ -291,7 +288,6 @@ def test_PhysicalScalingModel(test_reflections, mock_exp):
     # Test from_dict initialisation method for all components.
     physical_dict = {
         "__id__": "physical",
-        "is_scaled": True,
         "scale": {
             "n_parameters": 2,
             "parameters": [0.5, 1.0],
@@ -563,7 +559,6 @@ def test_ArrayScalingModel(test_reflections, mock_exp):
     # Test from_dict initialisation method for another case.
     array_dict = {
         "__id__": "array",
-        "is_scaled": True,
         "decay": {
             "n_parameters": 4,
             "parameters": [0.5, 1.0, 0.4, 1.0],
