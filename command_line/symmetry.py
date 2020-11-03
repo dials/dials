@@ -73,7 +73,7 @@ relative_length_tolerance = 0.05
 absolute_angle_tolerance = 2
   .type = float(value_min=0)
 
-partiality_threshold = 0.99
+partiality_threshold = 0.4
   .type = float
   .help = "Use only reflections with a partiality above this threshold."
 
@@ -210,7 +210,7 @@ def change_of_basis_ops_to_minimum_cell(
                 logger.info(
                     f"Couldn't match unit cell to target symmetry:\n"
                     f"{expt.crystal.get_crystal_symmetry()}\n"
-                    f"{target_group}"
+                    f"Target symmetry: {target_group.info()}"
                 )
         ref_expts = ExperimentList(
             [expt for expt, cb_op in zip(experiments, cb_ops) if cb_op]

@@ -82,6 +82,7 @@ def test_multi_sequence_with_batch_range(dials_data, run_in_tmpdir, capsys):
     assert run_in_tmpdir.join("dials.estimate_resolution.html").check(file=1)
 
 
+@pytest.mark.xfail("os.name == 'nt'", reason="warnings do not go to stderr")
 def test_dispatcher_name():
     import procrunner
 

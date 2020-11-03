@@ -48,7 +48,7 @@ class XrayFrame(wx.Frame):
         self.plot_frame = None
         self._img = None
         self._distl = None
-        self.toolbar = self.CreateToolBar(style=wx.TB_3DBUTTONS | wx.TB_TEXT)
+        self.toolbar = self.CreateToolBar(style=wx.TB_TEXT)
         self.setup_toolbar()
         self.toolbar.Realize()
         self.mb = wx.MenuBar()
@@ -305,21 +305,7 @@ class XrayFrame(wx.Frame):
             self.load_integration(dir_name)
 
     def OnShowSettings(self, event):
-        if self.settings_frame is None:
-            frame_rect = self.GetRect()
-            display_rect = wx.GetClientDisplayRect()
-            x_start = frame_rect[0] + frame_rect[2]
-            if x_start > (display_rect[2] - 400):
-                x_start = display_rect[2] - 400
-            y_start = frame_rect[1]
-            self.settings_frame = SettingsFrame(
-                self,
-                -1,
-                "Settings",
-                style=wx.CAPTION | wx.MINIMIZE_BOX | wx.CLOSE_BOX | wx.SYSTEM_MENU,
-                pos=(x_start, y_start),
-            )
-        self.settings_frame.Show()
+        raise NotImplementedError("Removed due to non-used code path")
 
     def OnShowZoom(self, event):
         if self.zoom_frame is None:
@@ -396,131 +382,6 @@ class XrayFrame(wx.Frame):
         wx.MessageBox("Click on any point in the image to set the new beam center.")
         self.statusbar.SetStatusText("Changing beam center")
         self.viewer.ChangeBeamCenter()
-
-
-class SettingsFrame(wx.MiniFrame):
-    def __init__(self, *args, **kwds):
-        super(SettingsFrame, self).__init__(*args, **kwds)
-        self.settings = self.GetParent().settings
-        szr = wx.BoxSizer(wx.VERTICAL)
-        panel = SettingsPanel(self, -1)
-        self.SetSizer(szr)
-        szr.Add(panel, 1, wx.EXPAND)
-        szr.Fit(panel)
-        self.panel = panel
-        self.sizer = szr
-        self.Fit()
-        self.Bind(wx.EVT_CLOSE, lambda evt: self.Destroy(), self)
-        self.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy)
-
-    def OnDestroy(self, event):
-        self.GetParent().settings_frame = None
-
-    def update_controls(self):
-        self.panel.zoom_ctrl.SetSelection(self.settings.zoom_level)
-        self.panel.brightness_ctrl.SetValue(self.settings.brightness)
-
-    def set_image(self, image):
-        self.panel.thumb_panel.set_image(image)
-        self.panel.GetSizer().Layout()
-        self.sizer.Fit(self.panel)
-        self.Layout()
-        self.Fit()
-
-    def refresh_thumbnail(self):
-        self.panel.thumb_panel.Refresh()
-
-
-class SettingsPanel(wx.Panel):
-    def __init__(self, *args, **kwds):
-        wx.Panel.__init__(self, *args, **kwds)
-        self.settings = self.GetParent().settings
-        self._sizer = wx.BoxSizer(wx.VERTICAL)
-        s = self._sizer
-        self.SetSizer(self._sizer)
-        grid = wx.FlexGridSizer(cols=2, rows=2)
-        s.Add(grid)
-        txt1 = wx.StaticText(self, -1, "Zoom level:")
-        grid.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-        self.zoom_ctrl = wx.Choice(
-            self, -1, choices=["Auto", "25%", "50%", "100%", "200%", "400%", "800%"]
-        )
-        self.zoom_ctrl.SetSelection(self.settings.zoom_level)
-        grid.Add(self.zoom_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-        txt11 = wx.StaticText(self, -1, "Color scheme:")
-        grid.Add(txt11, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-        self.color_ctrl = wx.Choice(
-            self, -1, choices=["grayscale", "rainbow", "heatmap", "invert"]
-        )
-        self.color_ctrl.SetSelection(0)
-        grid.Add(self.color_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-        self._sizer.Fit(self)
-        box = wx.BoxSizer(wx.HORIZONTAL)
-        s.Add(box)
-        txt2 = wx.StaticText(self, -1, "Brightness")
-        box.Add(txt2, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-        self.brightness_ctrl = wx.Slider(
-            self, -1, size=(200, -1), style=wx.SL_AUTOTICKS | wx.SL_LABELS
-        )
-        box.Add(self.brightness_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-        self.brightness_ctrl.SetMin(1)
-        self.brightness_ctrl.SetMax(500)
-        self.brightness_ctrl.SetValue(self.settings.brightness)
-        self.brightness_ctrl.SetTickFreq(25)
-        self.center_ctrl = wx.CheckBox(self, -1, "Mark beam center")
-        self.center_ctrl.SetValue(self.settings.show_beam_center)
-        s.Add(self.center_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-        self.spots_ctrl = wx.CheckBox(self, -1, "Show spotfinder results")
-        self.spots_ctrl.SetValue(self.settings.show_spotfinder_spots)
-        s.Add(self.spots_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-        self.integ_ctrl = wx.CheckBox(self, -1, "Show integration results")
-        self.integ_ctrl.SetValue(self.settings.show_integration)
-        s.Add(self.integ_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-        #    self.invert_ctrl = wx.CheckBox(self, -1, "Invert beam center axes")
-        #    self.invert_ctrl.SetValue(self.settings.invert_beam_center_axes)
-        #    s.Add(self.invert_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
-        self.Bind(wx.EVT_CHOICE, self.OnUpdate, self.zoom_ctrl)
-        self.Bind(wx.EVT_CHOICE, self.OnUpdate, self.color_ctrl)
-        self.Bind(wx.EVT_SLIDER, self.OnUpdateBrightness, self.brightness_ctrl)
-        self.Bind(wx.EVT_CHECKBOX, self.OnUpdate2, self.center_ctrl)
-        self.Bind(wx.EVT_CHECKBOX, self.OnUpdate2, self.spots_ctrl)
-        txt3 = wx.StaticText(self, -1, "Thumbnail view:")
-        s.Add(txt3, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-        self.thumb_panel = rstbx.viewer.display.ThumbnailView(
-            parent=self, size=(256, 256), style=wx.SUNKEN_BORDER
-        )
-        s.Add(self.thumb_panel, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-
-    #    self.Bind(wx.EVT_CHECKBOX, self.OnUpdate2, self.invert_ctrl)
-
-    def collect_values(self):
-        if self.settings.enable_collect_values:
-            self.settings.zoom_level = self.zoom_ctrl.GetSelection()
-            self.settings.brightness = self.brightness_ctrl.GetValue()
-            self.settings.show_beam_center = self.center_ctrl.GetValue()
-            self.settings.show_spotfinder_spots = self.spots_ctrl.GetValue()
-            self.settings.show_integration = self.integ_ctrl.GetValue()
-            self.settings.color_scheme = self.color_ctrl.GetSelection()
-
-    #     self.settings.invert_beam_center_axes = self.invert_ctrl.GetValue()
-
-    def OnUpdate(self, event):
-        self.collect_values()
-        self.GetParent().GetParent().update_settings(layout=True)
-
-    def OnUpdateBrightness(self, event):
-        mouse = wx.GetMouseState()
-        if mouse.LeftDown():
-            return
-        self.collect_values()
-        self.GetParent().GetParent().update_settings(layout=False)
-
-    def OnUpdate2(self, event):
-        self.collect_values()
-        self.GetParent().GetParent().update_settings(layout=False)
-
-    def refresh_main(self):
-        self.GetParent().GetParent().viewer.Refresh()
 
 
 mag_levels = [8, 16, 24, 32, 48, 64]

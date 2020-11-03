@@ -15,12 +15,12 @@ import wx
 from boost_adaptbx.boost.python import c_sizeof
 from rstbx.viewer import image as rv_image
 from rstbx.viewer import settings as rv_settings
-from rstbx.viewer.frame import SettingsFrame
 from wxtbx import bitmaps
 
 from ..rstbx_frame import EVT_EXTERNAL_UPDATE
 from ..rstbx_frame import XrayFrame as XFBaseClass
 from . import pyslip, tile_generation
+from .calibration_frame import SBSettingsFrame
 
 pyslip._Tiles = tile_generation._Tiles
 
@@ -126,7 +126,7 @@ class XrayFrame(XFBaseClass):
         self._img = None
 
         self._distl = None
-        self.toolbar = self.CreateToolBar(style=wx.TB_3DBUTTONS | wx.TB_TEXT)
+        self.toolbar = self.CreateToolBar(style=wx.TB_TEXT)
         self.setup_toolbar()
         self.toolbar.Realize()
         self.mb = wx.MenuBar()
@@ -442,7 +442,6 @@ class XrayFrame(XFBaseClass):
 
         self._img = img  # XXX
 
-        self.settings_frame.set_image(self._img)
         self.update_statusbar()  # XXX Not always working?
         # self.Layout()
 
@@ -594,8 +593,6 @@ class XrayFrame(XFBaseClass):
         self.pyslip.Update()  # triggers redraw
 
     def OnCalibration(self, event):
-        from rstbx.slip_viewer.calibration_frame import SBSettingsFrame
-
         if not self._calibration_frame:
             self._calibration_frame = SBSettingsFrame(
                 self, wx.ID_ANY, "Quadrant calibration", style=wx.CAPTION | wx.CLOSE_BOX
@@ -1121,11 +1118,3 @@ class XrayFrame(XFBaseClass):
             pdf_canvas.save()
 
         self.update_statusbar("Writing " + file_name + "..." + " Done.")
-
-
-def override_SF_set_image(self, image):
-    self.Layout()
-    self.Fit()
-
-
-SettingsFrame.set_image = override_SF_set_image

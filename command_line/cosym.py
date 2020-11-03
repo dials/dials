@@ -33,7 +33,7 @@ logger = logging.getLogger("dials.command_line.cosym")
 
 phil_scope = iotbx.phil.parse(
     """\
-partiality_threshold = 0.99
+partiality_threshold = 0.4
   .type = float
   .help = "Use reflections with a partiality above the threshold."
 
@@ -131,8 +131,8 @@ class cosym(Subject):
         ]
         if len(exclude):
             logger.info(
-                f"Rejecting {len(exclude)} datasets from cosym analysis:"
-                f"couldn't determine consistent cb_op to minimum cell:\n"
+                f"Rejecting {len(exclude)} datasets from cosym analysis "
+                f"(couldn't determine consistent cb_op to minimum cell):\n"
                 f"{exclude}",
             )
             self._experiments, self._reflections = select_datasets_on_identifiers(

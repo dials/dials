@@ -1,0 +1,24 @@
+jobs:
+- job: windows
+  pool:
+    vmImage: windows-latest
+  dependsOn: setup
+  variables:
+    CURRENT_WEEK: $[ dependencies.setup.outputs['constants.CURRENT_WEEK'] ]
+    TODAY_ISO: $[ dependencies.setup.outputs['constants.TODAY_ISO'] ]
+
+  strategy:
+    matrix:
+      python36:
+        PYTHON_VERSION: 3.6
+#     python37:
+#       PYTHON_VERSION: 3.7
+#     python38:
+#       PYTHON_VERSION: 3.8
+  timeoutInMinutes: 150
+
+  steps:
+
+  - template: windows-build.yml
+    parameters:
+      conda_environment: .conda-envs/windows.txt

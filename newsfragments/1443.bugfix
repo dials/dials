@@ -1,1 +1,0 @@
-`dials.find_spots_server`: Return HTTP 500 instead of 200 when running fails

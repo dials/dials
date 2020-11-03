@@ -1,0 +1,1 @@
+Fix image viewer crash on newer wxPython versions

@@ -1,0 +1,1 @@
+Lower default partiality_threshold to 0.4 for dials.symmetry, dials.cosym and dials.two_theta_refine. The previous default of 0.99 could occasionally result in too many reflections being rejected for particularly narrow wedges.

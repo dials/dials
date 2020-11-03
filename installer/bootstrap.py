@@ -257,9 +257,16 @@ channels:
     # use the same version as conda-forge
     # https://github.com/conda-forge/vs2008_runtime-feedstock
     if os.name == "nt":
-        download_to_file(
-            "https://download.microsoft.com/download/5/D/8/5D8C65CB-C849-4025-8E95-C3966CAFD8AE/vcredist_x64.exe",
-            os.path.join(prefix, "vcredist_x64.exe"),
+        # There are no scipy Windows packages in conda-forge,
+        # so install that plus downstream dependencies using pip.
+        # https://github.com/conda-forge/vs2008_runtime-feedstock
+        try:
+            os.mkdir("build")
+        except Exception:
+            pass
+        run_indirect_command(
+            os.path.join(prefix, "Scripts", "pip.exe"),
+            args=["install", "scipy", "scikit-learn"],
         )
 
 
@@ -299,7 +306,8 @@ def run_indirect_command(command, args):
             fh.write("call %s\\conda_base\\condabin\\activate.bat\r\n" % os.getcwd())
             fh.write("shift\r\n")
             fh.write("%*\r\n")
-        command = command + ".bat"
+        if not command.endswith((".bat", ".cmd", ".exe")):
+            command = command + ".bat"
         indirection = ["cmd.exe", "/C", "indirection.cmd"]
     else:
         filename = os.path.join("build", "indirection.sh")
@@ -975,14 +983,17 @@ def configure_build(config_flags):
     else:
         conda_python = os.path.join("..", "conda_base", "bin", "python")
 
-    if not any(flag.startswith("--compiler=") for flag in config_flags):
+    if os.name != "nt" and not any(
+        flag.startswith("--compiler=") for flag in config_flags
+    ):
         config_flags.append("--compiler=conda")
     if "--enable_cxx11" not in config_flags:
         config_flags.append("--enable_cxx11")
     if "--use_conda" not in config_flags:
         config_flags.append("--use_conda")
 
-    with open("dials", "w"):
+    # write a new-style environment setup script
+    with open(("dials.bat" if os.name == "nt" else "dials"), "w"):
         pass  # ensure we write a new-style environment setup script
 
     configcmd = [

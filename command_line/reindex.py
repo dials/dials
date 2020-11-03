@@ -5,6 +5,7 @@ from __future__ import absolute_import, division, print_function
 
 import copy
 import os
+import sys
 
 import six.moves.cPickle as pickle
 
@@ -316,9 +317,17 @@ experiments file must also be specified with the option: reference= """
         space_group = params.space_group
         if space_group is not None:
             space_group = space_group.group()
-        experiments = reindex_experiments(
-            experiments, change_of_basis_op, space_group=space_group
-        )
+        try:
+            experiments = reindex_experiments(
+                experiments, change_of_basis_op, space_group=space_group
+            )
+        except RuntimeError as e:
+            # Only catch specific errors here
+            if "Unsuitable value for rational rotation matrix." in str(e):
+                original_message = str(e).split(":")[-1].strip()
+                sys.exit(f"Error: {original_message} Is your change_of_basis_op valid?")
+            raise
+
         print("Saving reindexed experimental models to %s" % params.output.experiments)
         experiments.as_file(params.output.experiments)
 

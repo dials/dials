@@ -64,9 +64,10 @@ def precommitbx_template():
 def install_precommitbx_hook(path):
     with path.joinpath(".git", "hooks", "pre-commit").open("w") as fh:
         fh.write(precommitbx_template())
-        mode = os.fstat(fh.fileno()).st_mode
-        mode |= stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
-        os.fchmod(fh.fileno(), stat.S_IMODE(mode))
+        if os.name != "nt":
+            mode = os.fstat(fh.fileno()).st_mode
+            mode |= stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+            os.fchmod(fh.fileno(), stat.S_IMODE(mode))
 
 
 def check_precommitbx_hook(path):

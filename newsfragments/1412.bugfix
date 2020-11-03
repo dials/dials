@@ -1,1 +1,0 @@
-Bugfix in stills_process. Clearing the imageset cache during processing prevents memory usage getting too high.

@@ -10,8 +10,6 @@ from cctbx.miller import index_generator
 from dxtbx.imageset import ImageSet
 from dxtbx.model.experiment_list import ExperimentList, ExperimentListFactory
 from libtbx.utils import flat_list
-from rstbx.slip_viewer import pyslip
-from rstbx.viewer.frame import SettingsFrame
 from scitbx import matrix
 from wxtbx import bitmaps, icons
 from wxtbx.phil_controls import EVT_PHIL_CONTROL
@@ -31,6 +29,7 @@ from dials.util import masking
 from dials.util.image_viewer.mask_frame import MaskSettingsFrame
 from dials.util.image_viewer.spotfinder_wrap import chooser_wrapper
 
+from .slip_viewer import pyslip
 from .slip_viewer.frame import MASK_VAL, XrayFrame
 from .viewer_tools import (
     EVT_ZEROMQ_EVENT,
@@ -1730,7 +1729,7 @@ class SpotFrame(XrayFrame):
             raise
 
 
-class SpotSettingsFrame(SettingsFrame):
+class SpotSettingsFrame(wx.MiniFrame):
     def __init__(self, *args, **kwds):
         super().__init__(*args, **kwds)
         self.settings = self.GetParent().settings
