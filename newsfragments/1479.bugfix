@@ -1,0 +1,1 @@
+dials.scale: fix issues for some uses of multi-crystal rescaling if full_matrix=False
