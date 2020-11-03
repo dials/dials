@@ -60,7 +60,11 @@ control_phil_str = """
       .type = bool
       .expert_level = 3
       .help = Detector gain should be set on the detector models loaded from the images or in the \
-              processing parameters, not both. Override the check that this is true with this flag. \
+              processing parameters, not both. Override the check that this is true with this flag.
+    cache_reference_image = False
+      .type = bool
+      .expert_level = 2
+      .help = Whether to cache the first image as a reference for other programs
   }
 
   dispatch {
@@ -365,6 +369,29 @@ class Script(object):
             assert len(ref_experiments.detectors()) == 1
             self.reference_detector = ref_experiments.detectors()[0]
 
+    def apply_geometry(self, experiments, tag):
+        experiment = experiments[0]
+        imageset = experiment.imageset
+
+        try:
+            self.update_geometry(imageset)
+            experiment.beam = imageset.get_beam()
+            experiment.detector = imageset.get_detector()
+        except RuntimeError as e:
+            logger.warning(
+                "Error updating geometry on item %s, %s" % (str(tag), str(e))
+            )
+            raise e
+
+        if self.reference_detector is not None:
+            experiment = experiments[0]
+            imageset = experiment.imageset
+            sync_geometry(
+                self.reference_detector.hierarchy(),
+                imageset.get_detector().hierarchy(),
+            )
+            experiment.detector = imageset.get_detector()
+
     def run(self, args=None):
         """Execute the script."""
         from libtbx import easy_mp
@@ -485,7 +512,7 @@ class Script(object):
         self.load_reference_geometry()
         from dials.command_line.dials_import import ManualGeometryUpdater
 
-        update_geometry = ManualGeometryUpdater(params)
+        self.update_geometry = ManualGeometryUpdater(params)
 
         # Import stuff
         logger.info("Loading files...")
@@ -529,6 +556,10 @@ class Script(object):
                     split_experiments2.append(split_experiments[i])
             split_experiments = split_experiments2
 
+            if params.input.cache_reference_image:
+                self.reference_experiments = split_experiments[0]
+                self.apply_geometry(self.reference_experiments, "reference")
+
             # Wrapper function
             def do_work(i, item_list, processor=None, finalize=True):
                 if not processor:
@@ -539,30 +570,9 @@ class Script(object):
                 for item in item_list:
                     tag = item[0]
                     experiments = split_experiments[item[1]]
-                    try:
-                        assert len(experiments) == 1
-                        experiment = experiments[0]
-                        experiment.load_models()
-                        imageset = experiment.imageset
-                        update_geometry(imageset)
-                        experiment.beam = imageset.get_beam()
-                        experiment.detector = imageset.get_detector()
-                    except RuntimeError as e:
-                        logger.warning(
-                            "Error updating geometry on item %s, %s"
-                            % (str(tag), str(e))
-                        )
-                        continue
-
-                    if self.reference_detector is not None:
-                        experiment = experiments[0]
-                        imageset = experiment.imageset
-                        sync_geometry(
-                            self.reference_detector.hierarchy(),
-                            imageset.get_detector().hierarchy(),
-                        )
-                        experiment.detector = imageset.get_detector()
-
+                    assert len(experiments) == 1
+                    experiments[0].load_models()
+                    self.apply_geometry(experiments, tag)
                     processor.process_experiments(tag, experiments)
                     imageset.clear_cache()
                 if finalize:
@@ -594,6 +604,10 @@ class Script(object):
                     all_paths2.append(all_paths[i])
             all_paths = all_paths2
 
+            if params.input.cache_reference_image:
+                self.reference_experiments = do_import(all_paths[0], load_models=True)
+                self.apply_geometry(self.reference_experiments, "reference")
+
             # Wrapper function
             def do_work(i, item_list, processor=None, finalize=True):
                 if not processor:
@@ -617,24 +631,7 @@ class Script(object):
                             "Found a multi-image file. Run again with pre_import=True"
                         )
 
-                    try:
-                        update_geometry(imagesets[0])
-                        experiment = experiments[0]
-                        experiment.beam = imagesets[0].get_beam()
-                        experiment.detector = imagesets[0].get_detector()
-                    except RuntimeError as e:
-                        logger.warning(
-                            "Error updating geometry on item %s, %s" % (tag, str(e))
-                        )
-                        continue
-
-                    if self.reference_detector is not None:
-                        imageset = experiments[0].imageset
-                        sync_geometry(
-                            self.reference_detector.hierarchy(),
-                            imageset.get_detector().hierarchy(),
-                        )
-                        experiments[0].detector = imageset.get_detector()
+                    self.apply_geometry(experiments, tag)
 
                     processor.process_experiments(tag, experiments)
                 if finalize:
