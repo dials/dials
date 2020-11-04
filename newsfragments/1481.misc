@@ -1,0 +1,1 @@
+For dials.stills_process, add detector gain mismatch check to avoid setting gain twice
