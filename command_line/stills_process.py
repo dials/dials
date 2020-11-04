@@ -225,6 +225,13 @@ dials_phil_str = """
                 0=Double a, 1=Double b, 2=Double c, 3=C-face centering, 4=B-face centering, 5=A-face centering, 6=Body centering \
                 See Sauter and Zwart, Acta D (2009) 65:553
     }
+
+    integration_only_overrides {
+      trusted_range = None
+        .type = floats(size=2)
+        .help = "Override the panel trusted range (underload and saturation) during integration."
+        .short_caption = "Panel trusted range"
+    }
   }
 """
 
@@ -1173,6 +1180,13 @@ class Processor(object):
         logger.info("*" * 80)
 
         indexed, _ = self.process_reference(indexed)
+
+        if self.params.integration.integration_only_overrides.trusted_range:
+            for detector in experiments.detectors():
+                for panel in detector:
+                    panel.set_trusted_range(
+                        self.params.integration.integration_only_overrides.trusted_range
+                    )
 
         if self.params.dispatch.coset:
             from xfel.util.sublattice_helper import integrate_coset
