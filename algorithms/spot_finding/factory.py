@@ -240,9 +240,7 @@ class PeakCentroidDistanceFilter(object):
         flags = self.run(flags, **kwargs)
         num_after = flags.count(True)
         logger.info(
-            "Filtered {0} of {1} spots by peak-centroid distance".format(
-                num_after, num_before
-            )
+            "Filtered %d of %d spots by peak-centroid distance", num_after, num_before
         )
         return flags
 
@@ -284,7 +282,7 @@ class BackgroundGradientFilter(object):
             )
             shoebox.bbox = expanded_bbox
         t1 = time.time()
-        logger.info("Time expand_shoebox: %s" % (t1 - t0))
+        logger.info("Time expand_shoebox: %s", t1 - t0)
 
         rlist = flex.reflection_table()
         rlist["shoebox"] = shoeboxes
@@ -332,9 +330,7 @@ class BackgroundGradientFilter(object):
         flags = self.run(flags, **kwargs)
         num_after = flags.count(True)
         logger.info(
-            "Filtered {0} or {1} spots by background gradient".format(
-                num_after, num_before
-            )
+            "Filtered %d of %d spots by background gradient", num_after, num_before
         )
         return flags
 
@@ -400,9 +396,7 @@ class SpotDensityFilter(object):
         num_before = flags.count(True)
         flags = self.run(flags, **kwargs)
         num_after = flags.count(True)
-        logger.info(
-            "Filtered {0} of {1} spots by spot density".format(num_after, num_before)
-        )
+        logger.info("Filtered %d of %d spots by spot density", num_after, num_before)
         return flags
 
 
