@@ -160,21 +160,22 @@ class ExtractPixelsFromImage(object):
             max_strong = int(math.ceil(self.max_strong_pixel_fraction * num_image))
             if num_strong > max_strong:
                 raise RuntimeError(
-                    """
-          The number of strong pixels found (%d) is greater than the
-          maximum allowed (%d). Try changing spot finding parameters
+                    f"""
+          The number of strong pixels found ({num_strong}) is greater than the
+          maximum allowed ({max_strong}). Try changing spot finding parameters
         """
-                    % (num_strong, max_strong)
                 )
 
         # Print some info
         if self.compute_mean_background:
             logger.info(
-                "Found %d strong pixels on image %d with average background %f"
-                % (num_strong, frame + 1, average_background)
+                "Found %d strong pixels on image %d with average background %f",
+                num_strong,
+                frame + 1,
+                average_background,
             )
         else:
-            logger.info("Found %d strong pixels on image %d" % (num_strong, frame + 1))
+            logger.info("Found %d strong pixels on image %d", num_strong, frame + 1)
 
         # Return the result
         return Result(pixel_list)
@@ -309,8 +310,7 @@ def pixel_list_to_shoeboxes(
             shoeboxes.extend(creator.result())
             spotsizes.extend(creator.spot_size())
             hp.extend(creator.hot_pixels())
-    logger.info("")
-    logger.info("Extracted {} spots".format(len(shoeboxes)))
+    logger.info("\nExtracted %d spots", len(shoeboxes))
 
     # Get the unallocated spots and print some info
     selection = shoeboxes.is_allocated()
@@ -318,8 +318,8 @@ def pixel_list_to_shoeboxes(
     ntoosmall = (spotsizes < min_spot_size).count(True)
     ntoolarge = (spotsizes > max_spot_size).count(True)
     assert ntoosmall + ntoolarge == selection.count(False)
-    logger.info("Removed %d spots with size < %d pixels" % (ntoosmall, min_spot_size))
-    logger.info("Removed %d spots with size > %d pixels" % (ntoolarge, max_spot_size))
+    logger.info("Removed %d spots with size < %d pixels", ntoosmall, min_spot_size)
+    logger.info("Removed %d spots with size > %d pixels", ntoolarge, max_spot_size)
 
     # Return the shoeboxes
     return shoeboxes, hotpixels
@@ -331,11 +331,11 @@ def shoeboxes_to_reflection_table(
     """Filter shoeboxes and create reflection table"""
     # Calculate the spot centroids
     centroid = shoeboxes.centroid_valid()
-    logger.info("Calculated {} spot centroids".format(len(shoeboxes)))
+    logger.info("Calculated %d spot centroids", len(shoeboxes))
 
     # Calculate the spot intensities
     intensity = shoeboxes.summed_intensity()
-    logger.info("Calculated {} spot intensities".format(len(shoeboxes)))
+    logger.info("Calculated %d spot intensities", len(shoeboxes))
 
     # Create the observations
     observed = flex.observation(shoeboxes.panels(), centroid, intensity)
@@ -475,7 +475,7 @@ class ExtractSpots(object):
             mp_chunksize = self._compute_chunksize(
                 len(imageset), mp_njobs * mp_nproc, self.min_chunksize
             )
-            logger.info("Setting chunksize=%i" % mp_chunksize)
+            logger.info("Setting chunksize=%i", mp_chunksize)
 
         len_by_nproc = int(math.floor(len(imageset) / (mp_njobs * mp_nproc)))
         if mp_chunksize > len_by_nproc:
@@ -508,11 +508,13 @@ class ExtractSpots(object):
         logger.info("Extracting strong pixels from images")
         if mp_njobs > 1:
             logger.info(
-                " Using %s with %d parallel job(s) and %d processes per node\n"
-                % (mp_method, mp_njobs, mp_nproc)
+                " Using %s with %d parallel job(s) and %d processes per node\n",
+                mp_method,
+                mp_njobs,
+                mp_nproc,
             )
         else:
-            logger.info(" Using multiprocessing with %d parallel job(s)\n" % (mp_nproc))
+            logger.info(" Using multiprocessing with %d parallel job(s)\n", mp_nproc)
         if mp_nproc > 1 or mp_njobs > 1:
 
             def process_output(result):
@@ -579,7 +581,7 @@ class ExtractSpots(object):
             mp_chunksize = self._compute_chunksize(
                 len(imageset), mp_njobs * mp_nproc, self.min_chunksize
             )
-            logger.info("Setting chunksize=%i" % mp_chunksize)
+            logger.info("Setting chunksize=%i", mp_chunksize)
 
         len_by_nproc = int(math.floor(len(imageset) / (mp_njobs * mp_nproc)))
         if mp_chunksize > len_by_nproc:
@@ -612,11 +614,13 @@ class ExtractSpots(object):
         logger.info("Extracting strong spots from images")
         if mp_njobs > 1:
             logger.info(
-                " Using %s with %d parallel job(s) and %d processes per node\n"
-                % (mp_method, mp_njobs, mp_nproc)
+                " Using %s with %d parallel job(s) and %d processes per node\n",
+                mp_method,
+                mp_njobs,
+                mp_nproc,
             )
         else:
-            logger.info(" Using multiprocessing with %d parallel job(s)\n" % (mp_nproc))
+            logger.info(" Using multiprocessing with %d parallel job(s)\n", mp_nproc)
         if mp_nproc > 1 or mp_njobs > 1:
 
             def process_output(result):
@@ -726,10 +730,9 @@ class SpotFinder(object):
         for j, imageset in enumerate(imagesets):
 
             # Find the strong spots in the sequence
-            logger.info("-" * 80)
-            logger.info("Finding strong spots in imageset %d" % j)
-            logger.info("-" * 80)
-            logger.info("")
+            logger.info(
+                "-" * 80 + "Finding strong spots in imageset %d" + "-" * 80 + "\n", j
+            )
             table, hot_mask = self._find_spots_in_imageset(imageset)
 
             # Fix up the experiment ID's now
@@ -838,7 +841,7 @@ class SpotFinder(object):
                     )
                 )
 
-            logger.info("\nFinding spots in image {} to {}...".format(j0, j1))
+            logger.info("\nFinding spots in image %s to %s...", j0, j1)
             j0 -= 1
             r, h = extract_spots(imageset[j0:j1])
             reflections.extend(r)
@@ -870,7 +873,7 @@ class SpotFinder(object):
                     for i in range(len(hp)):
                         hm[hp[i]] = False
                     num_hot += len(hp)
-            logger.info("Found %d possible hot pixel(s)" % num_hot)
+            logger.info("Found %d possible hot pixel(s)", num_hot)
 
         else:
             hot_mask = None
