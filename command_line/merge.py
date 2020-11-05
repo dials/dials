@@ -14,8 +14,10 @@ from iotbx import phil
 
 from dials.algorithms.merging.merge import (
     MTZDataClass,
+    generate_html_report,
     make_merged_mtz_file,
     merge,
+    print_dano_table,
     show_wilson_scaling_analysis,
     truncate,
 )
@@ -86,6 +88,9 @@ output {
     mtz = merged.mtz
         .type = str
         .help = "Filename to use for mtz output."
+    html = dials.merge.html
+        .type = str
+        .help = "Filename for html output report."
     crystal_names = XTAL
         .type = strings
         .help = "Crystal name to be used in MTZ file output (multiple names
@@ -197,7 +202,7 @@ def merge_data_to_mtz(params, experiments, reflections):
         else:
             merged_intensities = merged_array
 
-        # truncate the data, separately for normal and anomalous
+        anom_amplitudes = None
         if params.truncate:
             amplitudes, anom_amplitudes = truncate(merged_intensities)
             # This will add the data for F, SIGF
@@ -209,6 +214,8 @@ def merge_data_to_mtz(params, experiments, reflections):
         show_wilson_scaling_analysis(merged_intensities)
         if stats_summary:
             logger.info(stats_summary)
+        if anom_amplitudes:
+            print_dano_table(anom_amplitudes)
 
     # pass the dataclasses to an MTZ writer to generate the mtz file and return.
     return make_merged_mtz_file(mtz_datasets)
@@ -277,6 +284,9 @@ Only scaled data can be processed with dials.merge"""
     mtz_file.show_summary(out=out)
     logger.info(out.getvalue())
     mtz_file.write(params.output.mtz)
+
+    if params.output.html:
+        generate_html_report(mtz_file, params.output.html)
 
 
 if __name__ == "__main__":

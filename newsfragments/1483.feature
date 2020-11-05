@@ -1,0 +1,1 @@
+dials.merge: Add dF/s(dF), also known as dano/sigdano, to statistics reported.

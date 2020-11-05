@@ -125,6 +125,7 @@ def _export_merged_mtz(params, experiments, joint_table):
     merge_params.partiality_threshold = params.cut_data.partiality_cutoff
     merge_params.output.crystal_names = [params.output.crystal_name]
     merge_params.output.project_name = params.output.project_name
+    merge_params.output.html = None
     merge_params.best_unit_cell = params.reflection_selection.best_unit_cell
     mtz_file = merge_data_to_mtz(merge_params, experiments, [joint_table])
     logger.disabled = False
