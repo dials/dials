@@ -1,11 +1,8 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
+import pickle
 import time
 
 import numpy as np
-import six
-import six.moves.cPickle as pickle
 
 from dxtbx.imageset import ImageSequence
 from iotbx.phil import parse
@@ -144,7 +141,7 @@ def generate_phil_scope():
 phil_scope = generate_phil_scope()
 
 
-class FilterRunner(object):
+class FilterRunner:
     """
     A class to run multiple filters in succession.
     """
@@ -214,7 +211,7 @@ class FilterRunner(object):
         return flags
 
 
-class PeakCentroidDistanceFilter(object):
+class PeakCentroidDistanceFilter:
     def __init__(self, maxd):
         """
         Initialise
@@ -245,7 +242,7 @@ class PeakCentroidDistanceFilter(object):
         return flags
 
 
-class BackgroundGradientFilter(object):
+class BackgroundGradientFilter:
     def __init__(self, background_size=2, gradient_cutoff=4):
         self.background_size = background_size
         self.gradient_cutoff = gradient_cutoff
@@ -335,7 +332,7 @@ class BackgroundGradientFilter(object):
         return flags
 
 
-class SpotDensityFilter(object):
+class SpotDensityFilter:
     def __init__(self, nbins=50, gradient_cutoff=0.002):
         self.nbins = nbins
         self.gradient_cutoff = gradient_cutoff
@@ -400,7 +397,7 @@ class SpotDensityFilter(object):
         return flags
 
 
-class SpotFinderFactory(object):
+class SpotFinderFactory:
     """
     Factory class to create spot finders
     """
@@ -533,10 +530,7 @@ class SpotFinderFactory(object):
 
         # Read the image and return the image data
         with open(filename_or_data, "rb") as fh:
-            if six.PY3:
-                image = pickle.load(fh, encoding="bytes")
-            else:
-                image = pickle.load(fh)
+            image = pickle.load(fh, encoding="bytes")
         if not isinstance(image, tuple):
             image = (image,)
         return image
