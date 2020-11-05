@@ -1,15 +1,13 @@
 """
 Contains implementation interface for finding spots on one or many images
 """
-from __future__ import absolute_import, division, print_function
 
 import logging
 import math
 import os
+import pickle
 import warnings
 from typing import Iterable, Tuple
-
-import six.moves.cPickle as pickle
 
 import libtbx
 from dxtbx.format.image import ImageBool
@@ -28,7 +26,7 @@ _no_multiprocessing_on_windows = (
 )
 
 
-class Result(object):
+class Result:
     """
     A class to hold the result from spot finding on an image.
 
@@ -45,7 +43,7 @@ class Result(object):
         self.pixel_list = pixel_list
 
 
-class ExtractPixelsFromImage(object):
+class ExtractPixelsFromImage:
     """
     A class to extract pixels from a single image
     """
@@ -210,7 +208,7 @@ class ExtractPixelsFromImage2DNoShoeboxes(ExtractPixelsFromImage):
         :param region_of_interest: A region of interest to process
         :param max_strong_pixel_fraction: The maximum fraction of pixels allowed
         """
-        super(ExtractPixelsFromImage2DNoShoeboxes, self).__init__(
+        super().__init__(
             imageset,
             threshold_function,
             mask,
@@ -235,7 +233,7 @@ class ExtractPixelsFromImage2DNoShoeboxes(ExtractPixelsFromImage):
         pixel_labeller = [PixelListLabeller() for p in range(num_panels)]
 
         # Call the super function
-        result = super(ExtractPixelsFromImage2DNoShoeboxes, self).__call__(index)
+        result = super().__call__(index)
 
         # Add pixel lists to the labeller
         assert len(pixel_labeller) == len(result.pixel_list), "Inconsistent size"
@@ -259,7 +257,7 @@ class ExtractPixelsFromImage2DNoShoeboxes(ExtractPixelsFromImage):
         return [reflections]
 
 
-class ExtractSpotsParallelTask(object):
+class ExtractSpotsParallelTask:
     """
     Execute the spot finder task in parallel
 
@@ -377,7 +375,7 @@ def pixel_list_to_reflection_table(
     )
 
 
-class ExtractSpots(object):
+class ExtractSpots:
     """
     Class to find spots in an image and extract them into shoeboxes.
     """
@@ -649,7 +647,7 @@ class ExtractSpots(object):
         return reflections, None
 
 
-class SpotFinder(object):
+class SpotFinder:
     """
     A class to do spot finding and filtering.
     """
