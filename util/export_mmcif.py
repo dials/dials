@@ -324,10 +324,12 @@ class MMCIFOutputFile(object):
         self._cif["dials"] = cif_block
 
         # Print to file
-        if filename.endswith(".bz2"):
-            open_fn = bz2.open
-        elif filename.endswith(".gz"):
+        if self.params.mmcif.compress is not None:
+            filename += "." + self.params.mmcif.compress
+        if self.params.mmcif.compress == "gz":
             open_fn = gzip.open
+        elif self.params.mmcif.compress == "bz2":
+            open_fn = bz2.open
         else:
             open_fn = open
         with open_fn(filename, "wt") as fh:

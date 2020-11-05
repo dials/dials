@@ -234,8 +234,9 @@ def test_mtz_primitive_cell(dials_data, tmpdir):
         )
 
 
-@pytest.mark.parametrize("hklout", [None, "my.cif", "my.cif.bz2", "my.cif.gz"])
-def test_mmcif(hklout, dials_data, tmpdir):
+@pytest.mark.parametrize("compress", [None, "gz", "bz2"])
+@pytest.mark.parametrize("hklout", [None, "my.cif"])
+def test_mmcif(compress, hklout, dials_data, tmpdir):
     # Call dials.export after integration
 
     command = [
@@ -245,13 +246,17 @@ def test_mmcif(hklout, dials_data, tmpdir):
         dials_data("centroid_test_data").join("integrated.pickle").strpath,
     ]
     if hklout is not None:
-        command.append("mmcif.hklout=%s" % hklout)
+        command.append(f"mmcif.hklout={hklout}")
+    else:
+        hklout = "integrated.cif"
+    if compress is not None:
+        command.append(f"mmcif.compress={compress}")
+        hklin = hklout + "." + compress
+    else:
+        hklin = hklout
     result = procrunner.run(command, working_directory=tmpdir.strpath)
     assert not result.returncode and not result.stderr
-    if hklout is not None:
-        assert tmpdir.join(hklout).check(file=1)
-    else:
-        assert tmpdir.join("integrated.cif").check(file=1)
+    assert tmpdir.join(hklin).check(file=1)
 
     # TODO include similar test for exporting scaled data in mmcif format
 
