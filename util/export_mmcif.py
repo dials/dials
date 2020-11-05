@@ -324,7 +324,7 @@ class MMCIFOutputFile(object):
         self._cif["dials"] = cif_block
 
         # Print to file
-        if self.params.mmcif.compress is not None:
+        if self.params.mmcif.compress and not filename.endswith("." + self.params.mmcif.compress):
             filename += "." + self.params.mmcif.compress
         if self.params.mmcif.compress == "gz":
             open_fn = gzip.open
