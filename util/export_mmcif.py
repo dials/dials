@@ -1,6 +1,8 @@
 from __future__ import absolute_import, division, print_function
 
+import bz2
 import datetime
+import gzip
 import logging
 import math
 import time
@@ -27,7 +29,7 @@ class MMCIFOutputFile(object):
 
     def __init__(self, params):
         """
-        Init with the filename
+        Init with the parameters
         """
         self._cif = iotbx.cif.model.cif()
         self.params = params
@@ -322,7 +324,13 @@ class MMCIFOutputFile(object):
         self._cif["dials"] = cif_block
 
         # Print to file
-        with open(filename, "w") as fh:
+        if filename.endswith(".bz2"):
+            open_fn = bz2.open
+        elif filename.endswith(".gz"):
+            open_fn = gzip.open
+        else:
+            open_fn = open
+        with open_fn(filename, "wt") as fh:
             self._cif.show(out=fh)
 
         # Log
