@@ -354,7 +354,7 @@ def make_merging_statistics_summary(dataset_statistics):
     text = "\n            ----------Merging statistics by resolution bin----------           \n\n"
     text += (
         " d_max  d_min   #obs  #uniq   mult.  %comp       <I>  <I/sI>"
-        + "    r_mrg   r_meas    r_pim   cc1/2   cc_ano\n"
+        + "    r_mrg   r_meas    r_pim   r_anom   cc1/2   cc_ano\n"
     )
     for bin_stats in dataset_statistics.bins:
         text += bin_stats.format() + "\n"

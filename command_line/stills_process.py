@@ -415,8 +415,33 @@ class Script(object):
 
         st = time.time()
 
-        # Configure logging
-        log.config(verbosity=options.verbose, logfile="dials.process.log")
+        if params.mp.method == "mpi":
+            # Configure the logging
+            if params.output.logging_dir is None:
+                logfile = None
+            else:
+                log_path = os.path.join(
+                    params.output.logging_dir, "log_rank%04d.out" % rank
+                )
+                error_path = os.path.join(
+                    params.output.logging_dir, "error_rank%04d.out" % rank
+                )
+                print("Redirecting stdout to %s" % log_path)
+                print("Redirecting stderr to %s" % error_path)
+                sys.stdout = open(log_path, "a")
+                sys.stderr = open(error_path, "a")
+                print("Should be redirected now")
+
+                logfile = os.path.join(
+                    params.output.logging_dir, "info_rank%04d.out" % rank
+                )
+
+            log.config(verbosity=options.verbose, logfile=logfile)
+
+        else:
+
+            # Configure logging
+            log.config(verbosity=options.verbose, logfile="dials.process.log")
 
         bad_phils = [f for f in all_paths if os.path.splitext(f)[1] == ".phil"]
         if len(bad_phils) > 0:
@@ -632,28 +657,6 @@ class Script(object):
 
         # Process the data
         if params.mp.method == "mpi":
-            # Configure the logging
-            if params.output.logging_dir is None:
-                logfile = None
-            else:
-                log_path = os.path.join(
-                    params.output.logging_dir, "log_rank%04d.out" % rank
-                )
-                error_path = os.path.join(
-                    params.output.logging_dir, "error_rank%04d.out" % rank
-                )
-                print("Redirecting stdout to %s" % log_path)
-                print("Redirecting stderr to %s" % error_path)
-                sys.stdout = open(log_path, "a")
-                sys.stderr = open(error_path, "a")
-                print("Should be redirected now")
-
-                logfile = os.path.join(
-                    params.output.logging_dir, "info_rank%04d.out" % rank
-                )
-
-            log.config(verbosity=options.verbose, logfile=logfile)
-
             if size <= 2:  # client/server only makes sense for n>2
                 subset = [
                     item for i, item in enumerate(iterable) if (i + rank) % size == 0
@@ -1314,9 +1317,12 @@ class Processor(object):
 
         for crystal_model in experiments.crystals():
             if hasattr(crystal_model, "get_domain_size_ang"):
-                log_str += ". Final ML model: domain size angstroms: %f, half mosaicity degrees: %f" % (
-                    crystal_model.get_domain_size_ang(),
-                    crystal_model.get_half_mosaicity_deg(),
+                log_str += (
+                    ". Final ML model: domain size angstroms: %f, half mosaicity degrees: %f"
+                    % (
+                        crystal_model.get_domain_size_ang(),
+                        crystal_model.get_half_mosaicity_deg(),
+                    )
                 )
 
         logger.info(log_str)
@@ -1636,8 +1642,8 @@ class Processor(object):
 
             # Create a tar archive of the integration dictionary pickles
             if len(self.all_int_pickles) > 0 and self.params.output.integration_pickle:
-                tar_template_integration_pickle = (
-                    self.params.output.integration_pickle.replace("%d", "%s")
+                tar_template_integration_pickle = self.params.output.integration_pickle.replace(
+                    "%d", "%s"
                 )
                 outfile = (
                     os.path.join(

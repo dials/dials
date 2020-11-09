@@ -67,6 +67,7 @@ def test_two_theta_refine_scaled_data(dials_data, tmpdir):
         refls,
         expts,
         "output.experiments=refined_cell.expt",
+        "partiality_threshold=0.99",
     ]
     result = procrunner.run(command, working_directory=tmpdir)
     assert not result.returncode and not result.stderr

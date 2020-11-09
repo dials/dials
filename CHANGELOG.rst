@@ -1,3 +1,21 @@
+DIALS 3.2.1 (2020-11-09)
+========================
+
+3.2 Branch releases will now use a fixed conda environment. This release
+is the first to use the same versions of all dependencies as 3.2.0.
+
+Bugfixes
+--------
+
+- ``dials.symmetry``, ``dials.cosym`` and ``dials.two_theta_refine``: Lowered
+  default partiality_threshold from ``0.99`` to to ``0.4``. The previous
+  default could occasionally result in too many reflections being rejected for
+  particularly narrow wedges. (`#1470 <https://github.com/dials/dials/issues/1470>`_)
+- ``dials.stills_process`` Improve performance when using MPI by avoiding
+  unnecessary log file writing (`#1471 <https://github.com/dials/dials/issues/1471>`_)
+- ``dials.scale``: Fix scaling statistics output of r_anom data. (`#1478 <https://github.com/dials/dials/issues/1478>`_)
+
+
 DIALS 3.2.0 (2020-10-27)
 ========================
 

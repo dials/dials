@@ -33,7 +33,7 @@ logger = logging.getLogger("dials.command_line.cosym")
 
 phil_scope = iotbx.phil.parse(
     """\
-partiality_threshold = 0.99
+partiality_threshold = 0.4
   .type = float
   .help = "Use reflections with a partiality above the threshold."
 
