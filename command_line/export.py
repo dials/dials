@@ -194,7 +194,7 @@ phil_scope = parse(
       .help = "The output CIF file, defaults to integrated.cif or scaled_unmerged.cif
         depending on if the data are scaled."
 
-    compress = gz bz2
+    compress = gz bz2 xz
       .type = choice
       .help = "Choose compression format (also appended to the file name)"
   }

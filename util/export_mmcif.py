@@ -4,6 +4,7 @@ import bz2
 import datetime
 import gzip
 import logging
+import lzma
 import math
 import time
 
@@ -239,17 +240,37 @@ class MMCIFOutputFile(object):
             "_pdbx_diffrn_unmerged_refln.index_l",
         )
 
-        headernames = {
-            "scales": "_pdbx_diffrn_unmerged_refln.scale_value",
-            "intensity.scale.value": "_pdbx_diffrn_unmerged_refln.intensity_meas",
-            "intensity.scale.sigma": "_pdbx_diffrn_unmerged_refln.intensity_sigma",
-            "intensity.sum.value": "_pdbx_diffrn_unmerged_refln.intensity_sum",
-            "intensity.sum.sigma": "_pdbx_diffrn_unmerged_refln.intensity_sum_sigma",
-            "intensity.prf.value": "_pdbx_diffrn_unmerged_refln.intensity_prf",
-            "intensity.prf.sigma": "_pdbx_diffrn_unmerged_refln.intensity_prf_sigma",
-            "angle": "_pdbx_diffrn_unmerged_refln.scan_angle_reflection",
-            "partiality": "_pdbx_diffrn_unmerged_refln.partiality",
+        extra_items = {
+            "scales": ("_pdbx_diffrn_unmerged_refln.scale_value", "%5.3f"),
+            "intensity.scale.value": (
+                "_pdbx_diffrn_unmerged_refln.intensity_meas",
+                "%8.3f",
+            ),
+            "intensity.scale.sigma": (
+                "_pdbx_diffrn_unmerged_refln.intensity_sigma",
+                "%8.3f",
+            ),
+            "intensity.sum.value": (
+                "_pdbx_diffrn_unmerged_refln.intensity_sum",
+                "%8.3f",
+            ),
+            "intensity.sum.sigma": (
+                "_pdbx_diffrn_unmerged_refln.intensity_sum_sigma",
+                "%8.3f",
+            ),
+            "intensity.prf.value": (
+                "_pdbx_diffrn_unmerged_refln.intensity_prf",
+                "%8.3f",
+            ),
+            "intensity.prf.sigma": (
+                "_pdbx_diffrn_unmerged_refln.intensity_prf_sigma",
+                "%8.3f",
+            ),
+            "angle": ("_pdbx_diffrn_unmerged_refln.scan_angle_reflection", "%7.4f"),
+            "partiality": ("_pdbx_diffrn_unmerged_refln.partiality", "%7.4f"),
         }
+
+        fmt = "%6i %2i %5i %5i %-2i %-2i %-2i"
 
         variables_present = []
         if "scale" in self.params.intensity:
@@ -280,7 +301,10 @@ class MMCIFOutputFile(object):
 
         for name in variables_present:
             if name in reflections:
-                header += (headernames[name],)
+                header += (extra_items[name][0],)
+                fmt += " " + extra_items[name][1]
+
+        loop_format_strings = {"_pdbx_diffrn_unmerged_refln": fmt}
 
         if "scale" in self.params.intensity:
             # Write dataset_statistics - first make a miller array
@@ -323,11 +347,6 @@ class MMCIFOutputFile(object):
         # Add the block
         self._cif["dials"] = cif_block
 
-        loop_format_strings = {
-            "_reflns_shell": "%3i %7.4f %7.4f %7.4f %5i %7.4f %7.4f %7.4f %7.4f %7.4f %6i %8.2f %6.2f",
-            "_pdbx_diffrn_unmerged_refln": "%6i %2i %5i %5i %-2i %-2i %-2i %5.3f %8.3f %8.3f %7.4f %7.4f",
-        }
-
         # Print to file
         if self.params.mmcif.compress and not filename.endswith("." + self.params.mmcif.compress):
             filename += "." + self.params.mmcif.compress
@@ -335,6 +354,8 @@ class MMCIFOutputFile(object):
             open_fn = gzip.open
         elif self.params.mmcif.compress == "bz2":
             open_fn = bz2.open
+        elif self.params.mmcif.compress == "xz":
+            open_fn = lzma.open
         else:
             open_fn = open
         with open_fn(filename, "wt") as fh:

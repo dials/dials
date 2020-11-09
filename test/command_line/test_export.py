@@ -234,7 +234,7 @@ def test_mtz_primitive_cell(dials_data, tmpdir):
         )
 
 
-@pytest.mark.parametrize("compress", [None, "gz", "bz2"])
+@pytest.mark.parametrize("compress", [None, "gz", "bz2", "xz"])
 @pytest.mark.parametrize("hklout", [None, "my.cif"])
 def test_mmcif(compress, hklout, dials_data, tmpdir):
     # Call dials.export after integration
