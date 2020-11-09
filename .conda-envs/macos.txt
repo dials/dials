@@ -11,7 +11,7 @@ conda-forge::dials-data
 conda-forge::docutils
 conda-forge::eigen
 conda-forge::future
-conda-forge::h5py
+conda-forge::h5py<3
 conda-forge::hdf5<1.11
 conda-forge::hdf5-external-filter-plugins
 conda-forge::iota
