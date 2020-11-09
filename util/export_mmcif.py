@@ -323,6 +323,11 @@ class MMCIFOutputFile(object):
         # Add the block
         self._cif["dials"] = cif_block
 
+        loop_format_strings = {
+            "_reflns_shell": "%3i %7.4f %7.4f %7.4f %5i %7.4f %7.4f %7.4f %7.4f %7.4f %6i %8.2f %6.2f",
+            "_pdbx_diffrn_unmerged_refln": "%6i %2i %5i %5i %-2i %-2i %-2i %5.3f %8.3f %8.3f %7.4f %7.4f",
+        }
+
         # Print to file
         if self.params.mmcif.compress and not filename.endswith("." + self.params.mmcif.compress):
             filename += "." + self.params.mmcif.compress
@@ -333,7 +338,7 @@ class MMCIFOutputFile(object):
         else:
             open_fn = open
         with open_fn(filename, "wt") as fh:
-            self._cif.show(out=fh)
+            self._cif.show(out=fh, loop_format_strings=loop_format_strings)
 
         # Log
         logger.info("Wrote reflections to %s" % filename)
