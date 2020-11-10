@@ -1,1 +1,1 @@
-Ensure that dials.cosym is deterministic.
+``dials.cosym``: Fix non-determinism. Repeat runs will now give identical results.
