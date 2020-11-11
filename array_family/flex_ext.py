@@ -468,20 +468,6 @@ class _(object):
             ref_tmp.sort(key1, reverse)
             self[min(val) : (max(val) + 1)] = ref_tmp
 
-    def match(self, other):
-        """
-        Match reflections with another set of reflections.
-
-        :param other: The reflection table to match against
-        :return: A tuple containing the matches in the reflection table and the
-                 other reflection table
-        """
-        from dials.algorithms.spot_finding.spot_matcher import SpotMatcher
-
-        match = SpotMatcher(max_separation=2)
-        oind, sind = match(other, self)
-        return sind, oind
-
     def match_with_reference(self, other):
         """
         Match reflections with another set of reflections.
@@ -603,9 +589,7 @@ class _(object):
         mask2.set_selected(sind.select(mask), True)
         return mask2, other_matched, other_unmatched
 
-    def match_with_other(
-        self, other, max_separation=2, key="xyzobs.px.value", scale=(1, 1, 1)
-    ):
+    def match(self, other, max_separation=2, key="xyzobs.px.value", scale=(1, 1, 1)):
         """Match reflections from list a and list b, returning tuple of
         flex.size_t indices, optionally specifying the maximum distance and
         key to search on (which is assumed to be a 3-vector column). Can also

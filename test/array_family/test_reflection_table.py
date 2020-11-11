@@ -1450,7 +1450,7 @@ def test_calculate_entering_flags(dials_regression):
     assert flags.count(False) == 57799
 
 
-def test_match_with_other():
+def test_match():
     n = 100
     s = 10
 
@@ -1473,6 +1473,6 @@ def test_match_with_other():
     a["xyz"] = xyz
     b["xyz"] = xyz2
 
-    nn, mm, distance = a.match_with_other(b, key="xyz")
+    nn, mm, distance = a.match(b, key="xyz")
 
     assert list(nn) == list(order)
