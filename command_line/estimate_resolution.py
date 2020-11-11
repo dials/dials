@@ -31,8 +31,8 @@ The fitting functions for the various metrics are defined as follows:
 - `rmerge`: fit a polynomial to the values log(1/y(x))
 - `completeness`: fit a polynomial to the values y(x)
 
-Examples use cases
-------------------
+Example use cases
+-----------------
 
 Run with defaults on scaled data::
 
