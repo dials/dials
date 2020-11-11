@@ -8,6 +8,7 @@ import libtbx
 
 from dials.array_family import flex
 from dials.util import Sorry
+from dials.util.mp import available_cores
 
 logger = logging.getLogger(__name__)
 
@@ -494,6 +495,9 @@ class ExtractSpots(object):
         # Change the number of processors if necessary
         mp_nproc = self.mp_nproc
         mp_njobs = self.mp_njobs
+        if mp_nproc is libtbx.Auto:
+            mp_nproc = available_cores()
+            logger.info("Setting nproc={}".format(mp_nproc))
         if os.name == "nt" and (mp_nproc > 1 or mp_njobs > 1):
             logger.warning(_no_multiprocessing_on_windows)
             mp_nproc = 1
@@ -505,7 +509,7 @@ class ExtractSpots(object):
         mp_method = self.mp_method
         mp_chunksize = self.mp_chunksize
 
-        if mp_chunksize == libtbx.Auto:
+        if mp_chunksize is libtbx.Auto:
             mp_chunksize = self._compute_chunksize(
                 len(imageset), mp_njobs * mp_nproc, self.min_chunksize
             )

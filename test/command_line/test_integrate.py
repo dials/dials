@@ -26,6 +26,7 @@ def test_basic_integrate(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.integrate",
+            "nproc=1",
             "modified_input.json",
             "profile.fitting=False",
             "integration.integrator=3d",
@@ -73,6 +74,7 @@ def test_basic_integrate(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.integrate",
+            "nproc=1",
             "models.expt",
             "profile.fitting=False",
             "integration.integrator=3d",
@@ -142,6 +144,7 @@ def test_basic_threaded_integrate(dials_data, tmp_path):
     result = procrunner.run(
         [
             "dials.integrate",
+            "nproc=1",
             "integration.integrator=3d_threaded",
             "background.algorithm=glm",
             "njobs=2",
@@ -172,6 +175,7 @@ def test_basic_integrate_output_integrated_only(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.integrate",
+            "nproc=1",
             "modified_input.json",
             "profile.fitting=False",
             "integration.integrator=3d",
@@ -207,6 +211,7 @@ def test_integration_with_sampling(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.integrate",
+            "nproc=1",
             "modified_input.json",
             "profile.fitting=False",
             "sampling.integrate_all_reflections=False",
@@ -234,6 +239,7 @@ def test_integration_with_sample_size(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.integrate",
+            "nproc=1",
             "modified_input.json",
             "profile.fitting=False",
             "sampling.integrate_all_reflections=False",
@@ -268,6 +274,7 @@ def test_multi_sweep(dials_regression, tmpdir):
     result = procrunner.run(
         [
             "dials.integrate",
+            "nproc=1",
             "modified_input.json",
             refls,
             "prediction.padding=0",
@@ -319,6 +326,7 @@ def test_multi_lattice(dials_regression, tmpdir):
     result = procrunner.run(
         [
             "dials.integrate",
+            "nproc=1",
             "modified_input.json",
             os.path.join(
                 dials_regression,
@@ -370,6 +378,7 @@ def test_output_rubbish(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.integrate",
+            "nproc=1",
             "indexed.expt",
             "indexed.refl",
             "profile.fitting=False",
@@ -466,7 +475,9 @@ def test_integrate_with_kapton(dials_regression, tmpdir):
 
     # Call dials.integrate with and without kapton correction
     for phil in "integrate_without_kapton.phil", "integrate_with_kapton.phil":
-        result = procrunner.run(["dials.integrate", pickle_name, json_name, phil])
+        result = procrunner.run(
+            ["dials.integrate", "nproc=1", pickle_name, json_name, phil]
+        )
         assert not result.returncode and not result.stderr
 
     results = []
