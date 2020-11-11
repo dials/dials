@@ -408,7 +408,6 @@ class BasicErrorModel(object):
         """Filter suitable reflections for minimisation."""
         return filter_unsuitable_reflections(
             Ih_table,
-            cutoff=12.0,
             min_Ih=error_params.min_Ih,
             min_partiality=min_partiality,
             min_reflections_required=cls.min_reflections_required,
@@ -524,23 +523,17 @@ class BasicErrorModel(object):
 
 
 def filter_unsuitable_reflections(
-    Ih_table, cutoff, min_Ih, min_partiality, min_reflections_required
+    Ih_table, min_Ih, min_partiality, min_reflections_required
 ):
-    """Do a first pass to calculate delta_hl and filter out the largest
-    deviants, so that the error model is not misled by these and instead
-    operates on the central ~90% of the data. Also choose reflection groups
-    with n_h > 1, as these have deltas of zero by definition and will bias
-    the variance calculations. Also, only use groups where <Ih> > 25.0, as
-    the assumptions of normally distributed deltas will not hold for low
-    <Ih>."""
-    n_h = Ih_table.calc_nh()
-    sigmaprime = calc_sigmaprime([1.0, 0.0], Ih_table)
-    delta_hl = calc_deltahl(Ih_table, n_h, sigmaprime)
-    # make sure the fit isn't misled by extreme values
-    sel = flex.abs(delta_hl) < cutoff
+    """
+    Choose reflection groups with n_h > 1, as these have deltas of zero by
+    definition and will bias the variance calculations. Also, only use groups
+    where <Ih> > 25.0, as the assumptions of normally distributed deltas will
+    not hold for low <Ih>."""
+
     if "partiality" in Ih_table.Ih_table:
-        sel &= Ih_table.Ih_table["partiality"] > min_partiality
-    Ih_table = Ih_table.select(sel)
+        sel = Ih_table.Ih_table["partiality"] > min_partiality
+        Ih_table = Ih_table.select(sel)
 
     n = Ih_table.size
     sum_I_over_var = (
