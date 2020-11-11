@@ -1,1 +1,4 @@
 Added a ``__repr__`` to ``dials.model.data.PixelList`
+
+Python-based logging output will now properly expand formatting when
+running with multiple processes inside spotfinding and integration.
