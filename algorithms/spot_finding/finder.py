@@ -520,7 +520,7 @@ class ExtractSpots:
 
             def process_output(result):
                 for message in result[1]:
-                    logger.log(message.levelno, message.msg)
+                    logger.handle(message)
                 assert len(pixel_labeller) == len(
                     result[0].pixel_list
                 ), "Inconsistent size"

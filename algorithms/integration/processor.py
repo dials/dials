@@ -284,7 +284,7 @@ class _Processor(object):
 
             def process_output(result):
                 for message in result[1]:
-                    logger.log(message.levelno, message.msg)
+                    logger.handle(message)
                 self.manager.accumulate(result[0])
 
             multi_node_parallel_map(
