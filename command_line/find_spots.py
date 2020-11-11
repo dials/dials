@@ -81,11 +81,23 @@ phil_scope = parse(
     process_includes=True,
 )
 
+# Local overrides for dials.find_spots
+phil_overrides = parse(
+    """
+spotfinder {
+  mp {
+    nproc = Auto
+  }
+}
+"""
+)
+working_phil = phil_scope.fetch(sources=[phil_overrides])
+
 
 class Script(object):
     """A class for running the script."""
 
-    def __init__(self, phil=phil_scope):
+    def __init__(self, phil=working_phil):
         """Initialise the script."""
         # The script usage
         usage = (

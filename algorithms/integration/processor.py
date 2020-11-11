@@ -15,10 +15,11 @@ import libtbx
 
 import dials.algorithms.integration
 import dials.util
+import dials.util.log
 from dials.array_family import flex
 from dials.model.data import make_image
 from dials.util import tabulate
-from dials.util.mp import multi_node_parallel_map
+from dials.util.mp import available_cores, multi_node_parallel_map
 from dials_algorithms_integration_integrator_ext import (
     Executor,
     Group,
@@ -561,6 +562,10 @@ class _Manager(object):
 
         # Ensure the reflections contain bounding boxes
         assert "bbox" in self.reflections, "Reflections have no bbox"
+
+        if self.params.mp.nproc is libtbx.Auto:
+            self.params.mp.nproc = available_cores()
+            logger.info("Setting nproc={}".format(self.params.mp.nproc))
 
         # Compute the block size and processors
         self.compute_jobs()
