@@ -61,8 +61,8 @@ def tanh_fit(x, y, iqr_multiplier=None):
     """
     Fit a tanh function to the values y(x) and return this fit
 
-    x, y should be iterables containing floats of the same size. The order is the order
-    of polynomial to use for this fit. This is used for fitting a curve to CC½.
+    x, y should be iterables containing floats of the same size. This is used for
+    fitting a curve to CC½.
     """
 
     tf = curve_fitting.tanh_fit(x, y)
@@ -333,7 +333,7 @@ phil_str = """
     .expert_level = 1
   cc_ref = 0.1
     .type = float(value_min=0)
-    .help = "Minimum value of CC vs reference dataset in the outer resolution shell"
+    .help = "Minimum value of CC vs reference data set in the outer resolution shell"
     .short_caption = "Outer shell CCref"
     .expert_level = 1
   cc_half = 0.3
