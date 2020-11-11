@@ -1,0 +1,4 @@
+Internal: Logging metadata is now preserved when running spotfinding and
+integration across multiple processes. This means that delayed-format
+logging now works, and information like line numbers and exception
+information are now available to the caller.
