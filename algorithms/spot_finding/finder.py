@@ -735,7 +735,7 @@ class SpotFinder:
 
             # Find the strong spots in the sequence
             logger.info(
-                "-" * 80 + "Finding strong spots in imageset %d" + "-" * 80 + "\n", j
+                "-" * 80 + "\nFinding strong spots in imageset %d\n" + "-" * 80, j
             )
             table, hot_mask = self._find_spots_in_imageset(imageset)
 
