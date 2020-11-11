@@ -72,11 +72,7 @@ def test_multi_sequence_with_batch_range(dials_data, run_in_tmpdir, capsys):
     )
     captured = capsys.readouterr()
 
-    expected_output = (
-        "Resolution cc_half:       0.61",
-        "Resolution I/sig:         0.59",
-        "Resolution Mn(I/sig):     0.59",
-    )
+    expected_output = "Resolution cc_half:       0.61"
     for line in expected_output:
         assert line in captured.out
     assert run_in_tmpdir.join("dials.estimate_resolution.html").check(file=1)

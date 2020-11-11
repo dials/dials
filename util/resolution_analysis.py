@@ -349,12 +349,12 @@ phil_str = """
   cc_half_fit = polynomial *tanh
     .type = choice
     .expert_level = 1
-  isigma = 0.25
+  isigma = None
     .type = float(value_min=0)
     .help = "Minimum value of the unmerged <I/sigI> in the outer resolution shell"
     .short_caption = "Outer shell unmerged <I/sigI>"
     .expert_level = 1
-  misigma = 1.0
+  misigma = None
     .type = float(value_min=0)
     .help = "Minimum value of the merged <I/sigI> in the outer resolution shell"
     .short_caption = "Outer shell merged <I/sigI>"
