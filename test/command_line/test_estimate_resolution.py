@@ -116,3 +116,14 @@ def test_handle_fit_failure(dials_data, run_in_tmpdir, capsys):
     for line in expected_output:
         assert line in captured.out
     assert run_in_tmpdir.join("dials.estimate_resolution.html").check(file=1)
+
+
+def test_mismatched_experiments_reflections(dials_data, run_in_tmpdir):
+    location = dials_data("l_cysteine_dials_output")
+    filenames = [
+        location.join("11_integrated.expt"),
+        location.join("11_integrated.refl"),
+        location.join("23_integrated.refl"),
+    ]
+    with pytest.raises(SystemExit):
+        cmdline.run([f.strpath for f in filenames])

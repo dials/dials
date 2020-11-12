@@ -86,6 +86,10 @@ def run(args=None):
         )
     else:
         reflections = parse_multiple_datasets(reflections)
+        if len(experiments) != len(reflections):
+            sys.exit(
+                f"Mismatched number of experiments and reflection tables found: {len(experiments)} & {len(reflections)}."
+            )
         m = resolution_analysis.Resolutionizer.from_reflections_and_experiments(
             reflections, experiments, params.resolution
         )
