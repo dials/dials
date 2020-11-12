@@ -1,1 +1,1 @@
-dials.estimate_resolution: use only cc_half by default in resolution analysis
+dials.estimate_resolution: change default to only use cc_half in resolution analysis
