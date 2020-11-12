@@ -1460,8 +1460,11 @@ def test_match():
 
     xyz = flex.vec3_double()
 
+    # make x, y on a different absolute scale to Z - such that matching is
+    # best done taking this into consideration
+
     for j in range(n):
-        xyz.append((r() * s, r() * s, r() * s))
+        xyz.append((r() * s, r() * s, r() * s * 20))
 
     order = list(range(n))
 
@@ -1475,6 +1478,6 @@ def test_match():
     a["xyz"] = xyz
     b["xyz"] = xyz2
 
-    nn, mm, distance = a.match(b, key="xyz")
+    nn, mm, distance = a.match(b, key="xyz", scale=(1.0, 1.0, 0.05))
 
     assert list(nn) == list(order)
