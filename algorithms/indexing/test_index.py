@@ -322,7 +322,7 @@ def insulin_spotfinding(dials_data, tmpdir_factory):
     experiment = tmpdir.join("imported.expt")
     assert experiment.check()
 
-    command = ["dials.find_spots", experiment]
+    command = ["dials.find_spots", "nproc=1", experiment]
     result = procrunner.run(command, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
 
@@ -377,7 +377,7 @@ def insulin_spotfinding_stills(dials_data, tmpdir_factory):
     experiment = tmpdir.join("imported.expt")
     assert experiment.check()
 
-    command = ["dials.find_spots", experiment]
+    command = ["dials.find_spots", "nproc=1", experiment]
     result = procrunner.run(command, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
 
@@ -702,7 +702,7 @@ def test_index_ED_still_low_res_spot_match(dials_data, tmpdir, indexer_type, fix
     experiment = tmpdir.join("imported.expt")
     assert experiment.check()
 
-    command = ["dials.find_spots", experiment]
+    command = ["dials.find_spots", "nproc=1", experiment]
     result = procrunner.run(command, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
 
