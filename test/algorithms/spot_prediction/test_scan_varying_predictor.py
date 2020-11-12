@@ -7,25 +7,19 @@ from __future__ import absolute_import, division, print_function
 
 import math
 
-from scitbx.array_family import flex
+from cctbx.sgtbx import space_group, space_group_symbols
+from dxtbx.model import ScanFactory
+from dxtbx.model.experiment_list import Experiment, ExperimentList
 from libtbx.phil import parse
 from libtbx.test_utils import approx_equal
+from scitbx.array_family import flex
 
-# Get modules to build models and minimiser using PHIL
-from dials.test.algorithms.refinement import setup_geometry
-
-# We will set up a mock scan and a mock experiment list
-from dxtbx.model import ScanFactory
-from dxtbx.model.experiment_list import ExperimentList, Experiment
-
-# Reflection prediction
-from dials.algorithms.spot_prediction import IndexGenerator
-from dials.algorithms.spot_prediction import ray_intersection
 from dials.algorithms.refinement.prediction.managed_predictors import (
-    ScansRayPredictor,
     ScansExperimentsPredictor,
+    ScansRayPredictor,
 )
-from cctbx.sgtbx import space_group, space_group_symbols
+from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
+from dials.test.algorithms.refinement import setup_geometry
 
 
 def setup_models(args):

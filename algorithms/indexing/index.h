@@ -197,16 +197,17 @@ namespace dials { namespace algorithms {
       // convert into a single array for input to AnnAdaptor
       // based on flex.vec_3.as_double()
       // scitbx/array_family/boost_python/flex_vec3_double.cpp
-      af::shared<double> rlps_double(reciprocal_space_points.size() * 3,
+      af::shared<double> rlps_double(reciprocal_space_points.size() * 4,
                                      af::init_functor_null<double>());
       double* r = rlps_double.begin();
       for (std::size_t i = 0; i < reciprocal_space_points.size(); i++) {
         for (std::size_t j = 0; j < 3; j++) {
           *r++ = reciprocal_space_points[i][j];
         }
+        *r++ = phi[i];
       }
 
-      AnnAdaptor ann = AnnAdaptor(rlps_double, 3, nearest_neighbours);
+      AnnAdaptor ann = AnnAdaptor(rlps_double, 4, nearest_neighbours);
       ann.query(rlps_double);
 
       const double one_over_epsilon = 1.0 / epsilon;

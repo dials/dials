@@ -5,17 +5,16 @@ from __future__ import absolute_import, division, print_function
 import logging
 import token
 from operator import itemgetter
-from dials.util import tabulate
-from tokenize import generate_tokens, TokenError, untokenize
+from tokenize import TokenError, generate_tokens, untokenize
 
 from cctbx import uctbx
-from dials.util import Sorry, log, show_mail_on_error
-from dials.util.filter_reflections import SumAndPrfIntensityReducer, SumIntensityReducer
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
-from dials.array_family import flex
-from dials.algorithms.integration import filtering
 from libtbx.phil import parse
 
+from dials.algorithms.integration import filtering
+from dials.array_family import flex
+from dials.util import Sorry, log, show_mail_handle_errors, tabulate
+from dials.util.filter_reflections import SumAndPrfIntensityReducer, SumIntensityReducer
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 
 logger = logging.getLogger("dials")
 
@@ -406,7 +405,8 @@ def filter_by_dead_time(reflections, experiments, dead_time=0, reject_fraction=0
     return reflections.select(sel_good)
 
 
-def run():
+@show_mail_handle_errors()
+def run(args=None):
     """Run the command line filtering script."""
 
     flags = list(flex.reflection_table.flags.names.items())
@@ -427,7 +427,7 @@ def run():
         check_format=False,
     )
 
-    params, options = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(args, show_diff_phil=True)
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
@@ -453,5 +453,4 @@ def run():
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
-        run()
+    run()

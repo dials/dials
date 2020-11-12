@@ -9,10 +9,11 @@ from six.moves import cStringIO as StringIO
 
 import libtbx.phil
 import scitbx.matrix
-from dials.algorithms.indexing import indexer
-from dials.algorithms.indexing.basis_vector_search import combinations, optimise
 from dxtbx.model.experiment_list import Experiment, ExperimentList
 from scitbx.array_family import flex
+
+from dials.algorithms.indexing import indexer
+from dials.algorithms.indexing.basis_vector_search import combinations, optimise
 
 from .low_res_spot_match import LowResSpotMatch
 from .strategy import Strategy
@@ -220,6 +221,7 @@ class LatticeSearch(indexer.Indexer):
                 continue
 
             from rstbx.dps_core.cell_assessment import SmallUnitCellVolume
+
             from dials.algorithms.indexing import non_primitive_basis
 
             threshold = self.params.basis_vector_combinations.sys_absent_threshold

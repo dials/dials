@@ -7,6 +7,7 @@ alone.
 from __future__ import absolute_import, division, print_function
 
 from mock import Mock, patch
+
 from dials.algorithms.refinement.refiner import _copy_experiments_for_refining
 
 

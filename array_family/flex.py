@@ -124,6 +124,22 @@ from cctbx.array_family.flex import (  # noqa: F401; lgtm
     xray_scatterer,
 )
 
+# small integer types from scitbx
+from scitbx.array_family.flex import (  # noqa: F401; lgtm
+    int8,
+    int16,
+    int32,
+    int64,
+    uint8,
+    uint16,
+    uint32,
+    uint64,
+)
+
+from dials.array_family.flex_ext import (  # noqa: F401; lgtm
+    real,
+    reflection_table_selector,
+)
 from dials_array_family_flex_ext import (  # noqa: F401; lgtm
     Binner,
     PixelListShoeboxCreator,
@@ -132,9 +148,4 @@ from dials_array_family_flex_ext import (  # noqa: F401; lgtm
     reflection_table,
     reflection_table_to_list_of_reflections,
     shoebox,
-)
-
-from dials.array_family.flex_ext import (  # noqa: F401; lgtm
-    real,
-    reflection_table_selector,
 )

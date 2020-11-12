@@ -4,14 +4,14 @@ from __future__ import absolute_import, division, print_function
 import copy
 import logging
 import math
+
 from orderedset import OrderedSet
+from scipy import sparse
 
 import cctbx.sgtbx.cosets
-from cctbx import miller
-from cctbx import sgtbx
+from cctbx import miller, sgtbx
 from cctbx.array_family import flex
 from libtbx import easy_mp
-from scipy import sparse
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +86,7 @@ class Target(object):
 
         self._sym_ops = OrderedSet(["x,y,z"])
         self._lattice_group = lattice_group
-        self._sym_ops.update({op.as_xyz() for op in self._generate_twin_operators()})
+        self._sym_ops.update(op.as_xyz() for op in self._generate_twin_operators())
         if dimensions is None:
             dimensions = max(2, len(self._sym_ops))
         self.set_dimensions(dimensions)

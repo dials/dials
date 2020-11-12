@@ -5,10 +5,12 @@ import os
 import random
 
 import pytest
+
 from cctbx import sgtbx
-from dials.array_family import flex
-from dxtbx.model import ExperimentList, Experiment, Crystal
+from dxtbx.model import Crystal, Experiment, ExperimentList
 from dxtbx.serialize import load
+
+from dials.array_family import flex
 
 
 def test_accessing_invalid_key_throws_keyerror():
@@ -1178,7 +1180,7 @@ def test_to_from_msgpack(tmpdir):
 
 
 def test_experiment_identifiers():
-    from dxtbx.model import ExperimentList, Experiment
+    from dxtbx.model import Experiment, ExperimentList
 
     table = flex.reflection_table()
     table["id"] = flex.int([0, 1, 2, 3])

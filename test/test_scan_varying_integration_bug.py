@@ -1,9 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
-import iotbx.mtz
 import procrunner
-from libtbx.test_utils import approx_equal
+
+import iotbx.mtz
 from cctbx import uctbx
+from libtbx.test_utils import approx_equal
 
 
 def test(dials_data, tmpdir):
@@ -13,10 +14,10 @@ def test(dials_data, tmpdir):
     commands = [
         ["dials.import"] + g,
         ["dials.slice_sequence", "imported.expt", "image_range=80,90"],
-        ["dials.find_spots", "imported_80_90.expt"],
+        ["dials.find_spots", "imported_80_90.expt", "nproc=1"],
         ["dials.index", "imported_80_90.expt", "strong.refl", "space_group=P41212"],
         ["dials.refine", "indexed.expt", "indexed.refl", "scan_varying=True"],
-        ["dials.integrate", "refined.expt", "indexed.refl"],
+        ["dials.integrate", "refined.expt", "indexed.refl", "nproc=1"],
         [
             "dials.export",
             "refined.expt",

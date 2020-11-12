@@ -7,16 +7,17 @@ have a scan object.
 """
 from __future__ import absolute_import, division, print_function
 
+from dxtbx.model import Experiment, Scan
+
+from dials.array_family import flex
 from dials.util.batch_handling import (
+    _next_epoch,
     assign_batches_to_reflections,
     calculate_batch_offsets,
-    set_batch_offsets,
     get_batch_ranges,
     get_image_ranges,
-    _next_epoch,
+    set_batch_offsets,
 )
-from dials.array_family import flex
-from dxtbx.model import Experiment, Scan
 
 
 def reflections_1():

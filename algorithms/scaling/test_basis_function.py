@@ -2,16 +2,16 @@
 Test for the basis function module.
 """
 from __future__ import absolute_import, division, print_function
+
 import pytest
-from dials.array_family import flex
+
+from dials.algorithms.scaling.basis_functions import RefinerCalculator
 from dials.algorithms.scaling.model.components.scale_components import (
     SingleBScaleFactor,
     SingleScaleFactor,
 )
-from dials.algorithms.scaling.basis_functions import RefinerCalculator
 from dials.algorithms.scaling.parameter_handler import scaling_active_parameter_manager
-
-# from dials.algorithms.scaling.target_function import ScalingTarget
+from dials.array_family import flex
 
 
 @pytest.fixture

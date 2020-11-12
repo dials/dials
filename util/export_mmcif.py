@@ -5,15 +5,16 @@ import logging
 import math
 import time
 
-import dials.util.version
-from dials.util.filter_reflections import filter_reflection_table
 import iotbx.cif.model
-from cctbx.sgtbx import bravais_types
-from cctbx import miller
 from cctbx import crystal as cctbxcrystal
+from cctbx import miller
+from cctbx.sgtbx import bravais_types
 from iotbx.merging_statistics import dataset_statistics
 from libtbx import Auto
 from scitbx.array_family import flex
+
+import dials.util.version
+from dials.util.filter_reflections import filter_reflection_table
 
 logger = logging.getLogger(__name__)
 RAD2DEG = 180.0 / math.pi
@@ -83,6 +84,10 @@ class MMCIFOutputFile(object):
         cif_block[
             "_publ.section_references"
         ] = "Winter, G. et al. (2018) Acta Cryst. D74, 85-97."
+        if "scale" in self.params.intensity:
+            cif_block[
+                "_publ.section_references"
+            ] += "\nBeilsten-Edmands, J. et al. (2020) Acta Cryst. D76, 385-399."
 
         # Hard coding X-ray
         cif_block["_pdbx_diffrn_data_section.id"] = "dials"
@@ -188,38 +193,6 @@ class MMCIFOutputFile(object):
         else:
             unit_cell_parameters[0] = (a, b, c, alpha, beta, gamma)
 
-        ### _pdbx_diffrn_image_proc has been removed from the dictionary extension.
-        ### Keeping this section commented out as it may be added back in some
-        ### form in future
-        #
-        # Write the image data
-        # scan = experiments[0].scan
-        # z0 = scan.get_image_range()[0]
-        #
-        # cif_loop = iotbx.cif.model.loop(
-        #  header=("_pdbx_diffrn_image_proc.image_id",
-        #          "_pdbx_diffrn_image_proc.crystal_id",
-        #          "_pdbx_diffrn_image_proc.image_number",
-        #          "_pdbx_diffrn_image_proc.phi_value",
-        #          "_pdbx_diffrn_image_proc.wavelength",
-        #          "_pdbx_diffrn_image_proc.cell_length_a",
-        #          "_pdbx_diffrn_image_proc.cell_length_b",
-        #          "_pdbx_diffrn_image_proc.cell_length_c",
-        #          "_pdbx_diffrn_image_proc.cell_angle_alpha",
-        #          "_pdbx_diffrn_image_proc.cell_angle_beta",
-        #          "_pdbx_diffrn_image_proc.cell_angle_gamma"))
-        # for i in range(len(scan)):
-        #  z = z0 + i
-        #  if crystal.num_scan_points > 1:
-        #    a, b, c, alpha, beta, gamma = unit_cell_parameters[i]
-        #  else:
-        #    a, b, c, alpha, beta, gamma = unit_cell_parameters[0]
-        #  # phi is the angle at the image centre
-        #  phi = scan.get_angle_from_image_index(z + 0.5, deg=True)
-        #  cif_loop.add_row((i+1, 1, z, phi, wavelength,
-        #                    a, b, c, alpha, beta, gamma))
-        # cif_block.add_loop(cif_loop)
-
         # Write reflection data
         # Required columns
         header = (
@@ -302,15 +275,20 @@ class MMCIFOutputFile(object):
 
             cif_block.update(result.as_cif_block())
 
-        cif_loop = iotbx.cif.model.loop(header=header)
-
-        for i, r in enumerate(reflections.rows()):
-            refl_id = i + 1
-            scan_id = r["id"] + 1
-            _, _, _, _, z0, z1 = r["bbox"]
-            h, k, l = r["miller_index"]
-            variable_values = tuple((r[name]) for name in variables_present)
-            cif_loop.add_row((refl_id, scan_id, z0, z1, h, k, l) + variable_values)
+        _, _, _, _, z0, z1 = reflections["bbox"].parts()
+        h, k, l = [
+            hkl.iround() for hkl in reflections["miller_index"].as_vec3_double().parts()
+        ]
+        loop_values = [
+            flex.size_t_range(1, len(reflections) + 1),
+            reflections["id"] + 1,
+            z0,
+            z1,
+            h,
+            k,
+            l,
+        ] + [reflections[name] for name in variables_present]
+        cif_loop = iotbx.cif.model.loop(data=dict(zip(header, loop_values)))
         cif_block.add_loop(cif_loop)
 
         # Add the block

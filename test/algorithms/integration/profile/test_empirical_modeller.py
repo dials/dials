@@ -1,8 +1,8 @@
 from __future__ import absolute_import, division, print_function
 
-from dials.algorithms.profile_model.modeller import EmpiricalProfileModeller
-
 import math
+
+from dials.algorithms.profile_model.modeller import EmpiricalProfileModeller
 
 
 def evaluate_gaussian(x, a, x0, sx):
@@ -121,8 +121,9 @@ class Test(object):
         return result
 
     def generate_identical_non_negative_profiles(self):
-        from dials.array_family import flex
         from random import uniform
+
+        from dials.array_family import flex
 
         rlist = flex.reflection_table(1000)
 
@@ -141,8 +142,9 @@ class Test(object):
         return rlist, profiles, profile
 
     def generate_systematically_offset_profiles(self):
-        from dials.array_family import flex
         from random import uniform
+
+        from dials.array_family import flex
 
         rlist = flex.reflection_table(1000)
 

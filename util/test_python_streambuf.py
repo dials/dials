@@ -1,10 +1,12 @@
 from __future__ import absolute_import, division, print_function
 
-import boost_adaptbx.boost.python
 import mock
 import pytest
 import six
-from dials.util.ext import streambuf, ostream
+
+import boost_adaptbx.boost.python
+
+from dials.util.ext import ostream, streambuf
 
 ext = boost_adaptbx.boost.python.import_ext("dials_util_streambuf_test_ext")
 
@@ -145,6 +147,9 @@ def test_with_bytesio():
     bytesio_test_case().run()
 
 
+@pytest.mark.xfail(
+    "os.name == 'nt'", reason="crashes python process on Windows", run=False
+)
 def test_with_file(tmpdir):
     with tmpdir.as_cwd():
         mere_file_test_case().run()

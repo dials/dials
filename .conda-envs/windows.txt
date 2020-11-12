@@ -1,43 +1,42 @@
-# conda-forge::hdf5-external-filter-plugins
-
-conda-forge::colorlog
-conda-forge::dials-data
-conda-forge::mrcfile
-conda-forge::msgpack-python=0.6.2
-conda-forge::orderedset
-conda-forge::procrunner>=2.0.0
-conda-forge::pyrtf
-
 conda-forge::alabaster
 conda-forge::biopython
-conda-forge::boost<1.71
-conda-forge::boost-cpp<1.71
+conda-forge::boost
+conda-forge::boost-cpp
 conda-forge::bzip2
 # conda-forge::c-compiler
+conda-forge::colorlog
 conda-forge::conda
 # conda-forge::cxx-compiler
-conda-forge::cython>=0.29
+conda-forge::dials-data
 conda-forge::docutils
 conda-forge::eigen
 conda-forge::future
-conda-forge::h5py
+conda-forge::h5py<3
 conda-forge::hdf5<1.11
+conda-forge::hdf5-external-filter-plugins
 conda-forge::iota
 conda-forge::jinja2
 conda-forge::jpeg
 conda-forge::matplotlib-base>=3.0.2
 conda-forge::mock
-conda-forge::numpy>=1.16,<1.17
+conda-forge::mrcfile
+conda-forge::msgpack-c
+conda-forge::msgpack-python
+conda-forge::numpy>=1.16
+conda-forge::orderedset
 conda-forge::pillow>=5.4.1
 conda-forge::pip
+conda-forge::procrunner>=2.2.0
 conda-forge::psutil
+conda-forge::pyrtf
 conda-forge::pytest>=4.5
 conda-forge::pytest-forked
 conda-forge::pytest-mock<2.0
 conda-forge::pytest-xdist
+conda-forge::reportlab
 conda-forge::requests
-# conda-forge::scikit-learn
-# conda-forge::scipy
+# conda-forge::scikit-learn  # blocked by https://github.com/conda-forge/scipy-feedstock/issues/80
+# conda-forge::scipy  # blocked by https://github.com/conda-forge/scipy-feedstock/issues/80
 conda-forge::scons
 conda-forge::setuptools
 conda-forge::six

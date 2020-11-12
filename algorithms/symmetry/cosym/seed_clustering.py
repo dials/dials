@@ -8,10 +8,10 @@ logger = logging.getLogger(__name__)
 import math
 
 import numpy as np
-from scipy.cluster import hierarchy
 import scipy.spatial.distance as ssd
-from sklearn.neighbors import NearestNeighbors
+from scipy.cluster import hierarchy
 from sklearn import metrics
+from sklearn.neighbors import NearestNeighbors
 
 from libtbx import Auto
 from libtbx.utils import Sorry

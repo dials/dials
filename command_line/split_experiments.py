@@ -1,13 +1,15 @@
 from __future__ import absolute_import, division, print_function
 
 import functools
+
+from dxtbx.model.experiment_list import ExperimentList
 from libtbx.phil import parse
-from dials.util import Sorry, show_mail_on_error
+
+import dials.util
+from dials.array_family import flex
+from dials.util import Sorry
 from dials.util.export_mtz import match_wavelengths
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
-from dials.array_family import flex
-from dxtbx.model.experiment_list import ExperimentList
-
 
 help_message = """
 
@@ -97,11 +99,11 @@ class Script(object):
             epilog=help_message,
         )
 
-    def run(self):
+    def run(self, args=None):
         """Execute the script."""
 
         # Parse the command line
-        params, _ = self.parser.parse_args(show_diff_phil=True)
+        params, _ = self.parser.parse_args(args, show_diff_phil=True)
 
         # Try to load the models and data
         if not params.input.experiments:
@@ -335,7 +337,11 @@ class Script(object):
         return
 
 
+@dials.util.show_mail_handle_errors()
+def run(args=None):
+    script = Script()
+    script.run(args)
+
+
 if __name__ == "__main__":
-    with show_mail_on_error():
-        script = Script()
-        script.run()
+    run()

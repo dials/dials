@@ -12,9 +12,10 @@ from __future__ import absolute_import, division, print_function
 import copy
 import logging
 
+from scitbx.array_family import flex
+
 from dials.algorithms.scaling.Ih_table import IhTable
 from dials_scaling_ext import determine_outlier_indices, limit_outlier_weights
-from scitbx.array_family import flex
 
 logger = logging.getLogger("dials")
 

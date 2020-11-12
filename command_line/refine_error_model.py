@@ -13,30 +13,33 @@ of course the error model adjustment) before the analysis is done.
 import json
 import logging
 import sys
+
+from jinja2 import ChoiceLoader, Environment, PackageLoader
+
+import libtbx.phil
 from iotbx import phil
-from jinja2 import Environment, ChoiceLoader, PackageLoader
-from dials.util import log, show_mail_on_error
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
-from dials.util.version import dials_version
+
+from dials.algorithms.scaling.combine_intensities import combine_intensities
 from dials.algorithms.scaling.error_model.engine import run_error_model_refinement
 from dials.algorithms.scaling.error_model.error_model import (
-    calc_sigmaprime,
     calc_deltahl,
-)
-from dials.algorithms.scaling.Ih_table import IhTable
-from dials.algorithms.scaling.scaling_library import choose_initial_scaling_intensities
-from dials.algorithms.scaling.plots import (
-    normal_probability_plot,
-    error_model_variance_plot,
-    error_regression_plot,
+    calc_sigmaprime,
 )
 from dials.algorithms.scaling.error_model.error_model_target import (
     calculate_regression_x_y,
 )
-from dials.report.plots import i_over_sig_i_vs_i_plot
-from dials.algorithms.scaling.combine_intensities import combine_intensities
+from dials.algorithms.scaling.Ih_table import IhTable
+from dials.algorithms.scaling.plots import (
+    error_model_variance_plot,
+    error_regression_plot,
+    normal_probability_plot,
+)
+from dials.algorithms.scaling.scaling_library import choose_initial_scaling_intensities
 from dials.algorithms.scaling.scaling_utilities import calculate_prescaling_correction
-
+from dials.report.plots import i_over_sig_i_vs_i_plot
+from dials.util import log, show_mail_handle_errors
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.version import dials_version
 
 try:
     from typing import List
@@ -76,9 +79,7 @@ def refine_error_model(params, experiments, reflection_tables):
     # prepare relevant data for datastructures
     for i, table in enumerate(reflection_tables):
         # First get the good data
-        selection = ~(table.get_flags(table.flags.bad_for_scaling, all=False))
-        outliers = table.get_flags(table.flags.outlier_in_scaling)
-        table = table.select(selection & ~outliers)
+        table = table.select(~table.get_flags(table.flags.bad_for_scaling, all=False))
 
         # Now chose intensities, ideally these two options could be combined
         # with a smart refactor
@@ -162,7 +163,8 @@ def make_output(model, params):
             json.dump(d, outfile)
 
 
-def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
+@show_mail_handle_errors()
+def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     """Run the scaling from the command-line."""
     usage = """Usage: dials.refine_error_model scaled.refl scaled.expt [options]"""
 
@@ -199,5 +201,4 @@ def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
-        run()
+    run()

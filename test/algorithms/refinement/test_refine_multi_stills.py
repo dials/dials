@@ -2,11 +2,13 @@ from __future__ import absolute_import, division, print_function
 
 import os
 
-from dxtbx.model.experiment_list import ExperimentListFactory
 import procrunner
+
+from dxtbx.model.experiment_list import ExperimentListFactory
 from libtbx import phil
-from dials.array_family import flex
+
 from dials.algorithms.refinement import RefinerFactory
+from dials.array_family import flex
 
 
 def test1(dials_regression, run_in_tmpdir):

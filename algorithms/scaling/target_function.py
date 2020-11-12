@@ -6,9 +6,10 @@ and have implementations of residual/gradient calculations for
 scaling.
 """
 from __future__ import absolute_import, division, print_function
-from dials.array_family import flex
+
 from dials.algorithms.scaling.scaling_restraints import ScalingRestraintsCalculator
-from dials_scaling_ext import row_multiply, calc_dIh_by_dpi, calc_jacobian
+from dials.array_family import flex
+from dials_scaling_ext import calc_dIh_by_dpi, calc_jacobian, row_multiply
 
 
 class ScalingTarget(object):

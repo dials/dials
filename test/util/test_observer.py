@@ -2,7 +2,8 @@
 Test the observer module.
 """
 from __future__ import absolute_import, division, print_function
-from dials.util.observer import singleton, Observer, Subject
+
+from dials.util.observer import Observer, Subject, singleton
 
 
 def test_singleton_decorator():

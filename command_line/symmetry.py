@@ -7,39 +7,39 @@ import logging
 import math
 import random
 import sys
-from dials.util import tabulate
 
+import iotbx.phil
 from cctbx import sgtbx, uctbx
 from cctbx.sgtbx.bravais_types import bravais_lattice
 from cctbx.sgtbx.lattice_symmetry import metric_subgroups
-from libtbx import Auto
-import iotbx.phil
-
 from dxtbx.model import ExperimentList
-from dials.array_family import flex
-from dials.util import log, show_mail_on_error
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
-from dials.util.version import dials_version
-from dials.util.multi_dataset_handling import (
-    assign_unique_identifiers,
-    parse_multiple_datasets,
-)
-from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
-from dials.algorithms.symmetry import resolution_filter_from_reflections_experiments
-from dials.algorithms.symmetry.laue_group import LaueGroupAnalysis
+from libtbx import Auto
+
+import dials.util
 from dials.algorithms.merging.merge import prepare_merged_reflection_table
-from dials.algorithms.symmetry.absences.screw_axes import ScrewAxisObserver
-from dials.algorithms.symmetry.absences.run_absences_checks import (
-    run_systematic_absences_checks,
-)
+from dials.algorithms.symmetry import resolution_filter_from_reflections_experiments
 from dials.algorithms.symmetry.absences.laue_groups_info import (
     laue_groups as laue_groups_for_absence_analysis,
 )
+from dials.algorithms.symmetry.absences.run_absences_checks import (
+    run_systematic_absences_checks,
+)
+from dials.algorithms.symmetry.absences.screw_axes import ScrewAxisObserver
+from dials.algorithms.symmetry.laue_group import LaueGroupAnalysis
+from dials.array_family import flex
 from dials.command_line.reindex import reindex_experiments
+from dials.util import log, tabulate
 from dials.util.exclude_images import (
     exclude_image_ranges_from_scans,
     get_selection_for_valid_image_ranges,
 )
+from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
+from dials.util.multi_dataset_handling import (
+    assign_unique_identifiers,
+    parse_multiple_datasets,
+)
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.symmetry")
 
@@ -73,7 +73,7 @@ relative_length_tolerance = 0.05
 absolute_angle_tolerance = 2
   .type = float(value_min=0)
 
-partiality_threshold = 0.99
+partiality_threshold = 0.4
   .type = float
   .help = "Use only reflections with a partiality above this threshold."
 
@@ -210,7 +210,7 @@ def change_of_basis_ops_to_minimum_cell(
                 logger.info(
                     f"Couldn't match unit cell to target symmetry:\n"
                     f"{expt.crystal.get_crystal_symmetry()}\n"
-                    f"{target_group}"
+                    f"Target symmetry: {target_group.info()}"
                 )
         ref_expts = ExperimentList(
             [expt for expt, cb_op in zip(experiments, cb_ops) if cb_op]
@@ -511,6 +511,7 @@ Examples::
 """
 
 
+@dials.util.show_mail_handle_errors()
 def run(args=None):
     """Run symmetry analysis from the command-line."""
     usage = "dials.symmetry [options] models.expt observations.refl"
@@ -566,5 +567,4 @@ def run(args=None):
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
-        run()
+    run()

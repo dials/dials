@@ -4,16 +4,18 @@ Tests for dials.util.multi_dataset_handling functions
 from __future__ import absolute_import, division, print_function
 
 import pytest
+
+from dxtbx.model import Experiment, ExperimentList
+
 from dials.array_family import flex
+from dials.test.util import mock_reflection_file_object, mock_two_reflection_file_object
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
     parse_multiple_datasets,
+    renumber_table_id_columns,
     select_datasets_on_ids,
     sort_tables_to_experiments_order,
-    renumber_table_id_columns,
 )
-from dials.test.util import mock_reflection_file_object, mock_two_reflection_file_object
-from dxtbx.model import Experiment, ExperimentList
 
 
 @pytest.fixture

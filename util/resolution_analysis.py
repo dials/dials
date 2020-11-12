@@ -10,24 +10,22 @@ import math
 import typing
 from collections import OrderedDict
 
+import iotbx.merging_statistics
 import iotbx.mtz
 import iotbx.phil
-import iotbx.merging_statistics
-from cctbx.array_family import flex
 from cctbx import miller, uctbx
+from cctbx.array_family import flex
 from iotbx.reflection_file_utils import label_table
-from scitbx.math import curve_fitting
-from scitbx.math import five_number_summary
+from scitbx.math import curve_fitting, five_number_summary
 
 from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
 from dials.report import plots
-from dials.util import Sorry
+from dials.util import Sorry, tabulate
 from dials.util.batch_handling import (
-    calculate_batch_offsets,
     assign_batches_to_reflections,
+    calculate_batch_offsets,
 )
 from dials.util.filter_reflections import filter_reflection_table
-from dials.util import tabulate
 
 logger = logging.getLogger(__name__)
 

@@ -6,9 +6,8 @@ from libtbx.phil import parse
 from scitbx import matrix
 from scitbx.math import r3_rotation_axis_and_angle_from_matrix
 
-from dials.util import show_mail_on_error
-from dials.util.options import flatten_experiments
-from dials.util.options import OptionParser
+import dials.util
+from dials.util.options import OptionParser, flatten_experiments
 
 help_message = """
 
@@ -48,10 +47,10 @@ class Script(object):
             read_experiments=True,
         )
 
-    def run(self):
+    def run(self, args=None):
         """Execute the script."""
         # Parse the command line
-        params, options = self.parser.parse_args(show_diff_phil=True)
+        params, options = self.parser.parse_args(args, show_diff_phil=True)
 
         # Check the number of experiments is at least 2
         experiments = flatten_experiments(params.input.experiments)
@@ -163,7 +162,11 @@ def find_centre_of_rotation(x1, x2, y1, y2):
     return oy + d * ny, axis
 
 
+@dials.util.show_mail_handle_errors()
+def run(args=None):
+    script = Script()
+    script.run(args)
+
+
 if __name__ == "__main__":
-    with show_mail_on_error():
-        script = Script()
-        script.run()
+    run()

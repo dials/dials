@@ -1,10 +1,11 @@
 """Functions to help with reindexing against a reference dataset."""
 from __future__ import absolute_import, division, print_function
 
-import dials.util
-from dials.util import Sorry
 from cctbx import sgtbx
 from mmtbx.scaling.twin_analyses import twin_laws
+
+import dials.util
+from dials.util import Sorry
 
 
 def determine_reindex_operator_against_reference(test_miller_set, reference_miller_set):

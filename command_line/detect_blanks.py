@@ -4,7 +4,7 @@ import sys
 
 import libtbx.phil
 
-from dials.util import detect_blanks
+from dials.util import detect_blanks, show_mail_handle_errors
 
 logger = logging.getLogger("dials.detect_blanks")
 
@@ -36,9 +36,10 @@ help_message = """\
 """
 
 
-def run(args):
-    from dials.util.options import OptionParser, reflections_and_experiments_from_files
+@show_mail_handle_errors()
+def run(args=None):
     from dials.util import log
+    from dials.util.options import OptionParser, reflections_and_experiments_from_files
 
     usage = "dials.detect_blanks [options] models.expt observations.refl"
 
@@ -159,4 +160,4 @@ def run(args):
 
 
 if __name__ == "__main__":
-    run(sys.argv[1:])
+    run()

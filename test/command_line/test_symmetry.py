@@ -2,30 +2,32 @@
 
 from __future__ import absolute_import, division, print_function
 
-import os
 import json
+import math
+import os
+
 import procrunner
 import pytest
-import math
-from cctbx import sgtbx, uctbx
-import scitbx.matrix
-from dxtbx.serialize import load
-from dxtbx.model import Crystal, Experiment, ExperimentList, Scan
 
-from dials.array_family import flex
+import scitbx.matrix
+from cctbx import sgtbx, uctbx
+from dxtbx.model import Crystal, Experiment, ExperimentList, Scan
+from dxtbx.serialize import load
+
 from dials.algorithms.symmetry.cosym._generate_test_data import (
     generate_experiments_reflections,
 )
+from dials.array_family import flex
 from dials.command_line import symmetry
 from dials.command_line.symmetry import (
     apply_change_of_basis_ops,
     change_of_basis_ops_to_minimum_cell,
     eliminate_sys_absent,
-    median_unit_cell,
     get_subset_for_symmetry,
+    median_unit_cell,
 )
-from dials.util.multi_dataset_handling import assign_unique_identifiers
 from dials.util.exclude_images import exclude_image_ranges_from_scans
+from dials.util.multi_dataset_handling import assign_unique_identifiers
 from dials.util.phil import parse
 
 
@@ -52,6 +54,7 @@ def test_symmetry_laue_only(dials_data, tmpdir):
     assert str(exps[0].crystal.get_space_group().info()) == "P 2 2 2"
 
 
+@pytest.mark.xfail("os.name == 'nt'", reason="UnicodeEncodeError in logging")
 def test_symmetry_basis_changes_for_C2(tmpdir):
     """Test the correctness of change of basis operations in dials.symmetry
 

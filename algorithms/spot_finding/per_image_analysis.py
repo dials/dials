@@ -2,14 +2,14 @@ from __future__ import absolute_import, division, print_function
 
 import collections
 import math
-from dials.util import tabulate
 
 from cctbx import sgtbx, uctbx
-from dials.algorithms.integration import filtering
-from dials.array_family import flex
 from libtbx.math_utils import nearest_integer as nint
 from scitbx import matrix
 
+from dials.algorithms.integration import filtering
+from dials.array_family import flex
+from dials.util import tabulate
 
 Slot = collections.namedtuple("Slot", "d_min d_max")
 _stats_field_names = [

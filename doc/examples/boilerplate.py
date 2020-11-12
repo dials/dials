@@ -13,18 +13,19 @@ import sys
 # We need to parse command-line arguments to PHIL scopes.
 import libtbx.phil
 
-# Often, we deal with flex arrays and reflection tables to handle reflection data.
-from dials.array_family import flex
+# Information about the experiment geometry and meta-data are recorded in
+# dxtbx.model.Experiment objects, collated in ExperimentList objects.
+from dxtbx.model import ExperimentList
 
-# All command-line DIALS programs should run with dials.util.show_mail_on_error.
+# All command-line DIALS programs should run with dials.util.show_mail_handle_errors.
 import dials.util
 
 # The logging module is used to raise log messages.  Additionally, dials.util.log
 # sets up handlers and filters for a consistent logging style across DIALS.
 import dials.util.log
 
-# Useful to know what version of DIALS we are running
-from dials.util.version import dials_version
+# Often, we deal with flex arrays and reflection tables to handle reflection data.
+from dials.array_family import flex
 
 # The DIALS option parser is based on the (old) standard Python option parser,
 # but contains customisations such as the parsing of PHIL parameters.
@@ -32,9 +33,8 @@ from dials.util.version import dials_version
 # experiment lists and reflection tables into a single instance of each.
 from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
 
-# Information about the experiment geometry and meta-data are recorded in
-# dxtbx.model.Experiment objects, collated in ExperimentList objects.
-from dxtbx.model import ExperimentList
+# Useful to know what version of DIALS we are running
+from dials.util.version import dials_version
 
 try:
     from typing import List
@@ -104,7 +104,8 @@ def do_boilerplate(
     return experiments, reflections
 
 
-def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> None
+@dials.util.show_mail_on_error()
+def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     """
     Check command-line input and call other functions to do the legwork.
 
@@ -162,7 +163,6 @@ def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> 
     reflections.as_file(params.output.reflections)
 
 
-# Keep this minimal.  Try to keep the command-line behaviour neatly encapsulated in run.
+# Keep this minimal. Calling run() should do exactly the same thing as running this
 if __name__ == "__main__":
-    with dials.util.show_mail_on_error():
-        run()
+    run()
