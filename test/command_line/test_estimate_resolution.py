@@ -96,3 +96,23 @@ def test_dispatcher_name():
     result = procrunner.run(["dials.estimate_resolution"])
     assert not result.returncode
     assert not result.stderr
+
+
+def test_handle_fit_failure(dials_data, run_in_tmpdir, capsys):
+    location = dials_data("l_cysteine_dials_output")
+    filenames = [
+        location.join("11_integrated.expt"),
+        location.join("11_integrated.refl"),
+        location.join("23_integrated.expt"),
+        location.join("23_integrated.refl"),
+    ]
+    cmdline.run(["misigma=1"] + [f.strpath for f in filenames])
+    captured = capsys.readouterr()
+
+    expected_output = (
+        "Resolution fit against cc_half failed: No reflections left for fitting",
+        "Resolution Mn(I/sig):     0.62",
+    )
+    for line in expected_output:
+        assert line in captured.out
+    assert run_in_tmpdir.join("dials.estimate_resolution.html").check(file=1)
