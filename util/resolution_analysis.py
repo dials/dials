@@ -632,7 +632,11 @@ class Resolutionizer(object):
             if metric == metrics.CC_REF and not self._reference:
                 limit = None
             if limit:
-                result = self.resolution(metric, limit=limit)
+                try:
+                    result = self.resolution(metric, limit=limit)
+                except RuntimeError as e:
+                    logger.info(f"Resolution fit against {name} failed: {e}")
+                    continue
                 pretty_name = metric_to_output.get(metric, name)
                 if result.d_min:
                     logger.info(
