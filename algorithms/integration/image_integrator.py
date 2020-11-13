@@ -74,7 +74,7 @@ class ProcessorImage(object):
 
             def process_output(result):
                 for message in result[1]:
-                    logger.log(message.levelno, message.msg)
+                    logger.handle(message)
                 self.manager.accumulate(result[0])
                 result[0].reflections = None
                 result[0].data = None

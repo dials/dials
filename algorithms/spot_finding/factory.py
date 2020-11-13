@@ -1,21 +1,22 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
+import pickle
 import time
 
-import six
-import six.moves.cPickle as pickle
+import numpy as np
 
+from dxtbx.imageset import ImageSequence
+from iotbx.phil import parse
+
+import dials.extensions
+from dials.algorithms.background.simple import Linear2dModeller
+from dials.algorithms.spot_finding.finder import SpotFinder
 from dials.array_family import flex
+from dials.util.masking import MaskGenerator
 
 logger = logging.getLogger(__name__)
 
 
 def generate_phil_scope():
-    from iotbx.phil import parse
-
-    import dials.extensions
-
     phil_scope = parse(
         """
 
@@ -140,7 +141,7 @@ def generate_phil_scope():
 phil_scope = generate_phil_scope()
 
 
-class FilterRunner(object):
+class FilterRunner:
     """
     A class to run multiple filters in succession.
     """
@@ -169,7 +170,12 @@ class FilterRunner(object):
         return flags
 
     def check_flags(
-        self, flags, predictions=None, observations=None, shoeboxes=None, **kwargs
+        self,
+        flags,
+        predictions=None,
+        observations=None,
+        shoeboxes=None,
+        **kwargs  # noqa: U100
     ):
         """
         Check the flags are set, if they're not then create a list
@@ -205,7 +211,7 @@ class FilterRunner(object):
         return flags
 
 
-class PeakCentroidDistanceFilter(object):
+class PeakCentroidDistanceFilter:
     def __init__(self, maxd):
         """
         Initialise
@@ -214,7 +220,7 @@ class PeakCentroidDistanceFilter(object):
         """
         self.maxd = maxd
 
-    def run(self, flags, observations=None, shoeboxes=None, **kwargs):
+    def run(self, flags, observations=None, shoeboxes=None, **kwargs):  # noqa: U100
         """
         Run the filtering.
         """
@@ -231,21 +237,17 @@ class PeakCentroidDistanceFilter(object):
         flags = self.run(flags, **kwargs)
         num_after = flags.count(True)
         logger.info(
-            "Filtered {0} of {1} spots by peak-centroid distance".format(
-                num_after, num_before
-            )
+            "Filtered %d of %d spots by peak-centroid distance", num_after, num_before
         )
         return flags
 
 
-class BackgroundGradientFilter(object):
+class BackgroundGradientFilter:
     def __init__(self, background_size=2, gradient_cutoff=4):
         self.background_size = background_size
         self.gradient_cutoff = gradient_cutoff
 
-    def run(self, flags, sequence=None, shoeboxes=None, **kwargs):
-        from dials.algorithms.background.simple import Linear2dModeller
-
+    def run(self, flags, sequence=None, shoeboxes=None, **kwargs):  # noqa: U100
         modeller = Linear2dModeller()
         detector = sequence.get_detector()
 
@@ -277,7 +279,7 @@ class BackgroundGradientFilter(object):
             )
             shoebox.bbox = expanded_bbox
         t1 = time.time()
-        logger.info("Time expand_shoebox: %s" % (t1 - t0))
+        logger.info("Time expand_shoebox: %s", t1 - t0)
 
         rlist = flex.reflection_table()
         rlist["shoebox"] = shoeboxes
@@ -325,22 +327,18 @@ class BackgroundGradientFilter(object):
         flags = self.run(flags, **kwargs)
         num_after = flags.count(True)
         logger.info(
-            "Filtered {0} or {1} spots by background gradient".format(
-                num_after, num_before
-            )
+            "Filtered %d of %d spots by background gradient", num_after, num_before
         )
         return flags
 
 
-class SpotDensityFilter(object):
+class SpotDensityFilter:
     def __init__(self, nbins=50, gradient_cutoff=0.002):
         self.nbins = nbins
         self.gradient_cutoff = gradient_cutoff
 
-    def run(self, flags, sequence=None, observations=None, **kwargs):
+    def run(self, flags, sequence=None, observations=None, **kwargs):  # noqa: U100
         obs_x, obs_y = observations.centroids().px_position_xy().parts()
-
-        import numpy as np
 
         H, xedges, yedges = np.histogram2d(
             obs_x.as_numpy_array(), obs_y.as_numpy_array(), bins=self.nbins
@@ -395,13 +393,11 @@ class SpotDensityFilter(object):
         num_before = flags.count(True)
         flags = self.run(flags, **kwargs)
         num_after = flags.count(True)
-        logger.info(
-            "Filtered {0} of {1} spots by spot density".format(num_after, num_before)
-        )
+        logger.info("Filtered %d of %d spots by spot density", num_after, num_before)
         return flags
 
 
-class SpotFinderFactory(object):
+class SpotFinderFactory:
     """
     Factory class to create spot finders
     """
@@ -414,12 +410,6 @@ class SpotFinderFactory(object):
         :param params: The input parameters
         :returns: The spot finder instance
         """
-        from dxtbx.imageset import ImageSequence
-        from libtbx.phil import parse
-
-        from dials.algorithms.spot_finding.finder import SpotFinder
-        from dials.util.masking import MaskGenerator
-
         if params is None:
             params = phil_scope.fetch(source=parse("")).extract()
 
@@ -484,8 +474,6 @@ class SpotFinderFactory(object):
         :param params: The input parameters
         :return: The threshold algorithm
         """
-        import dials.extensions
-
         # Configure the algorithm
         Algorithm = dials.extensions.SpotFinderThreshold.load(
             params.spotfinder.threshold.algorithm
@@ -542,10 +530,7 @@ class SpotFinderFactory(object):
 
         # Read the image and return the image data
         with open(filename_or_data, "rb") as fh:
-            if six.PY3:
-                image = pickle.load(fh, encoding="bytes")
-            else:
-                image = pickle.load(fh)
+            image = pickle.load(fh, encoding="bytes")
         if not isinstance(image, tuple):
             image = (image,)
         return image
