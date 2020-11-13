@@ -86,7 +86,7 @@ class Target(object):
 
         self._sym_ops = OrderedSet(["x,y,z"])
         self._lattice_group = lattice_group
-        self._sym_ops.update({op.as_xyz() for op in self._generate_twin_operators()})
+        self._sym_ops.update(op.as_xyz() for op in self._generate_twin_operators())
         if dimensions is None:
             dimensions = max(2, len(self._sym_ops))
         self.set_dimensions(dimensions)

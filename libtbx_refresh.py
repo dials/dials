@@ -61,6 +61,7 @@ def _create_dials_env_script():
     import os
 
     import libtbx.load_env
+
     if os.name == "nt":
         filename = abs(libtbx.env.build_path.dirname() / "dials.bat")
     else:
@@ -110,39 +111,44 @@ export PATH
 }
 
 unset LIBTBX_BUILD
-""" % abs(libtbx.env.build_path)
+""" % abs(
+            libtbx.env.build_path
+        )
     with open(filename, "w") as fh:
         fh.write(script.lstrip())
 
     if os.name != "nt":
-     mode = os.stat(filename).st_mode
-     mode |= (mode & 0o444) >> 2  # copy R bits to X
-     os.chmod(filename, mode)
+        mode = os.stat(filename).st_mode
+        mode |= (mode & 0o444) >> 2  # copy R bits to X
+        os.chmod(filename, mode)
 
     if os.name == "nt":
-      clobber = """
+        clobber = """
 echo {stars}
 echo The script to set up the DIALS environment has changed
 echo Please source or run {newscript} instead
 echo {stars}
 """
-      clobber_extensions = (".sh", ".csh", ".bat")
+        clobber_extensions = (".sh", ".csh", ".bat")
     else:
-      clobber = """
+        clobber = """
 echo '{stars}'
 echo The script to set up the DIALS environment has changed
 echo Please source or run '{newscript}' instead
 echo '{stars}'
 """
-      clobber_extensions = (".sh", ".csh", ".bat")
+        clobber_extensions = (".sh", ".csh", ".bat")
 
     for clobberfile_name in (
-    "setpaths",
-        "setpaths_all",            "setpaths_debug",
+        "setpaths",
+        "setpaths_all",
+        "setpaths_debug",
     ):
-      for clobber_ext in clobber_extensions:
-        with open(abs(libtbx.env.build_path / (clobberfile_name + clobber_ext)), "w") as fh:
-            fh.write(clobber.format(newscript=filename, stars = "*"*74))
+        for clobber_ext in clobber_extensions:
+            with open(
+                abs(libtbx.env.build_path / (clobberfile_name + clobber_ext)), "w"
+            ) as fh:
+                fh.write(clobber.format(newscript=filename, stars="*" * 74))
 
 
 def _install_dials_autocompletion():

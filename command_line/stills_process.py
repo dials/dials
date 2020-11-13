@@ -56,6 +56,11 @@ control_phil_str = """
     max_images = None
       .type = int
       .help = Limit total number of processed images to max_images
+    ignore_gain_mismatch = False
+      .type = bool
+      .expert_level = 3
+      .help = Detector gain should be set on the detector models loaded from the images or in the \
+              processing parameters, not both. Override the check that this is true with this flag. \
   }
 
   dispatch {
@@ -224,6 +229,13 @@ dials_phil_str = """
         .help = The index number(s) of the modulus=2 sublattice transformation(s) used to produce distince coset results. \
                 0=Double a, 1=Double b, 2=Double c, 3=C-face centering, 4=B-face centering, 5=A-face centering, 6=Body centering \
                 See Sauter and Zwart, Acta D (2009) 65:553
+    }
+
+    integration_only_overrides {
+      trusted_range = None
+        .type = floats(size=2)
+        .help = "Override the panel trusted range (underload and saturation) during integration."
+        .short_caption = "Panel trusted range"
     }
   }
 """
@@ -986,7 +998,20 @@ class Processor(object):
 
     def pre_process(self, experiments):
         """Add any pre-processing steps here"""
-        pass
+
+        if not self.params.input.ignore_gain_mismatch:
+            g1 = self.params.spotfinder.threshold.dispersion.gain
+            g2 = self.params.integration.summation.detector_gain
+            gain = g1 if g1 is not None else g2
+            if gain is not None and gain != 1.0:
+                for detector in experiments.detectors():
+                    for panel in detector:
+                        if panel.get_gain() != 1.0 and panel.get_gain() != gain:
+                            raise RuntimeError(
+                                """
+The detector is reporting a gain of %f but you have also supplied a gain of %f. Since the detector gain is not 1.0, your supplied gain will be multiplicatively applied in addition to the detector's gain, which is unlikely to be correct. Please re-run, removing spotfinder.dispersion.gain and integration.summation.detector_gain from your parameters. You can override this exception by setting input.ignore_gain_mismatch=True."""
+                                % (panel.get_gain(), gain)
+                            )
 
     def find_spots(self, experiments):
         st = time.time()
@@ -1173,6 +1198,13 @@ class Processor(object):
         logger.info("*" * 80)
 
         indexed, _ = self.process_reference(indexed)
+
+        if self.params.integration.integration_only_overrides.trusted_range:
+            for detector in experiments.detectors():
+                for panel in detector:
+                    panel.set_trusted_range(
+                        self.params.integration.integration_only_overrides.trusted_range
+                    )
 
         if self.params.dispatch.coset:
             from xfel.util.sublattice_helper import integrate_coset
