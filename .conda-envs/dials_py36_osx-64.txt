@@ -19,7 +19,7 @@ conda-forge::conda
 conda-forge::cython>=0.29,<0.30
 conda-forge::docutils
 conda-forge::future
-conda-forge::h5py
+conda-forge::h5py<3
 conda-forge::hdf5<1.11
 conda-forge::jinja2
 conda-forge::jpeg

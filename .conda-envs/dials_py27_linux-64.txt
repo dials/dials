@@ -15,7 +15,7 @@ colorlog
 cython>=0.29,<0.30
 docutils
 future
-h5py
+h5py<3
 hdf5<1.11
 jinja2
 jpeg
