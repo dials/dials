@@ -1,8 +1,6 @@
-from __future__ import absolute_import, division, print_function
-
+import itertools
 import os
 
-import future.moves.itertools as itertools
 import psutil
 
 import libtbx.easy_mp
@@ -89,7 +87,7 @@ def parallel_map(
         )
 
 
-class MultiNodeClusterFunction(object):
+class MultiNodeClusterFunction:
     """
     A function called by the multi node parallel map. On each cluster node, a
     nested parallel map using the multi processing method will be used.
