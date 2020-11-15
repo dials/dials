@@ -1,13 +1,12 @@
 """
 Tests for scaling utilities module.
 """
-from __future__ import absolute_import, division, print_function
 
 from math import pi, sqrt
+from unittest.mock import Mock
 
 import numpy as np
 import pytest
-from mock import Mock
 
 from dxtbx.model import Crystal, Experiment
 from dxtbx.serialize import load

@@ -8,14 +8,13 @@ tables and ExperimentList objects (and sometimes phil_scope objects if
 necessary), and return common dials objects such as reflection tables and
 ExperimentLists.
 """
-from __future__ import absolute_import, division, print_function
 
 import logging
 import uuid
 from copy import deepcopy
+from unittest.mock import Mock
 
 import pkg_resources
-from mock import Mock
 
 import iotbx.merging_statistics
 from cctbx import crystal, miller, uctbx

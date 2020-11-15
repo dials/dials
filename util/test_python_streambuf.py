@@ -1,8 +1,7 @@
-from __future__ import absolute_import, division, print_function
+import io
+from unittest import mock
 
-import mock
 import pytest
-import six
 
 import boost_adaptbx.boost.python
 
@@ -11,7 +10,7 @@ from dials.util.ext import ostream, streambuf
 ext = boost_adaptbx.boost.python.import_ext("dials_util_streambuf_test_ext")
 
 
-class io_test_case(object):
+class io_test_case:
     phrase = b"Coding should be fun"
     #          01234567890123456789
 
@@ -101,20 +100,18 @@ class io_test_case(object):
 
     @staticmethod
     def only_seek_cur(seek_calls):
-        return all(call.args[1] == 1 for call in seek_calls)
+        return all(call == mock.call(mock.ANY, 1) for call in seek_calls)
 
 
 class bytesio_test_case(io_test_case):
-    stringio_type = six.BytesIO
-
     def exercise_write_failure(self):
         pass
 
     def create_file_object(self, mode):
         if mode == "rb":
-            self.file_object = self.stringio_type(self.phrase)
+            self.file_object = io.BytesIO(self.phrase)
         elif mode == "wb":
-            self.file_object = self.stringio_type()
+            self.file_object = io.BytesIO()
         else:
             raise NotImplementedError("Internal error in the test code")
 
