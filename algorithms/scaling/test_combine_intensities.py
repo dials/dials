@@ -1,10 +1,10 @@
 """
 Tests for intensity combination.
 """
-from __future__ import absolute_import, division, print_function
+
+from unittest.mock import Mock
 
 import pytest
-from mock import Mock
 
 from dxtbx.model import Crystal, Experiment
 

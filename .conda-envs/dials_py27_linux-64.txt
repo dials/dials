@@ -20,7 +20,6 @@ hdf5<1.11
 jinja2
 jpeg
 matplotlib-base<3.1
-mock
 nomkl
 numpy>=1.15,<1.16
 pillow>=5.4.1

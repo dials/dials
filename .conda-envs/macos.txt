@@ -19,7 +19,6 @@ conda-forge::jinja2
 conda-forge::jpeg
 conda-forge::libcxx
 conda-forge::matplotlib-base>=3.0.2
-conda-forge::mock
 conda-forge::mrcfile
 conda-forge::msgpack-c
 conda-forge::msgpack-python

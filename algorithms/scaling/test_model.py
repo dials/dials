@@ -1,12 +1,11 @@
 """
 Tests for the scaling model classes.
 """
-from __future__ import absolute_import, division, print_function
 
 import copy
+from unittest.mock import MagicMock, Mock
 
 import pytest
-from mock import MagicMock, Mock
 
 from libtbx import phil
 
@@ -463,7 +462,7 @@ def test_DoseDecayModel(test_reflections, mock_exp):
 
     def test_setup(model):
         assert model.id_ == "dose_decay"
-        assert set(model.components.keys()) == set(["scale", "decay", "relative_B"])
+        assert set(model.components.keys()) == {"scale", "decay", "relative_B"}
         assert list(model.components["scale"].parameters) == [1.2, 1.1]
         assert list(model.components["decay"].parameters) == [0.1]
         assert list(model.components["relative_B"].parameters) == [-0.1]
