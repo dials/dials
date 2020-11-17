@@ -31,7 +31,7 @@ conda-forge::psutil
 conda-forge::pyrtf
 conda-forge::pytest>=4.5
 conda-forge::pytest-forked
-conda-forge::pytest-mock<2.0
+conda-forge::pytest-mock
 conda-forge::pytest-xdist
 conda-forge::reportlab
 conda-forge::requests
