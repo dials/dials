@@ -403,7 +403,7 @@ class SpotFinderFactory:
     """
 
     @staticmethod
-    def from_parameters(params=None, experiments=None):
+    def from_parameters(params=None, experiments=None, is_stills=False):
         """
         Given a set of parameters, construct the spot finder
 
@@ -464,6 +464,7 @@ class SpotFinderFactory:
             max_spot_size=params.spotfinder.filter.max_spot_size,
             no_shoeboxes_2d=no_shoeboxes_2d,
             min_chunksize=params.spotfinder.mp.min_chunksize,
+            is_stills=is_stills,
         )
 
     @staticmethod

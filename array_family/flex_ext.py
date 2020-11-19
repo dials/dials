@@ -136,7 +136,7 @@ class _(object):
         return result
 
     @staticmethod
-    def from_observations(experiments, params=None):
+    def from_observations(experiments, params=None, is_stills=False):
         """
         Construct a reflection table from observations.
 
@@ -167,7 +167,7 @@ class _(object):
         # Get the integrator from the input parameters
         logger.info("Configuring spot finder from input parameters")
         spotfinder = SpotFinderFactory.from_parameters(
-            experiments=experiments, params=params
+            experiments=experiments, params=params, is_stills=is_stills
         )
 
         # Find the spots
