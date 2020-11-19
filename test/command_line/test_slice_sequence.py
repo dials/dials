@@ -5,7 +5,7 @@ import os
 import procrunner
 import pytest
 
-from dxtbx.model.experiment_list import ExperimentListFactory
+from dxtbx.serialize import load
 
 from dials.array_family import flex
 
@@ -26,7 +26,7 @@ def test_slice_sequence_and_compare_with_expected_results(dials_regression, tmpd
     assert not result.returncode and not result.stderr
 
     # load results
-    sliced_exp = ExperimentListFactory.from_json_file(
+    sliced_exp = load.experiment_list(
         tmpdir.join("experiments_1_20.expt").strpath, check_format=False
     )[0]
     sliced_refs = flex.reflection_table.from_file(tmpdir / "indexed_strong_1_20.refl")
@@ -58,12 +58,38 @@ def test_slice_sequence_with_first_images_missing(dials_regression, tmpdir):
     )
     assert not result.returncode and not result.stderr
 
-    sliced_exp = ExperimentListFactory.from_json_file(
+    sliced_exp = load.experiment_list(
         tmpdir.join("experiments_5_20_10_20.expt").strpath, check_format=False
     )[0]
     assert sliced_exp.scan.get_image_range() == (10, 20)
     assert sliced_exp.scan.get_array_range() == (9, 20)
     assert sliced_exp.scan.get_oscillation()[0] == pytest.approx(83.35)
+
+
+def test_slice_sequence_to_degree_blocks(dials_data, tmpdir):
+    """Slice data into 10 degree blocks i.e. 17 datasets"""
+    expt = dials_data("l_cysteine_4_sweeps_scaled") / "scaled_30.expt"
+    refl = dials_data("l_cysteine_4_sweeps_scaled") / "scaled_30.refl"
+    procrunner.run(
+        [
+            "dials.slice_sequence",
+            "block_size=10",
+            "output.experiments=sliced.expt",
+            "output.reflections=sliced.refl",
+            expt,
+            refl,
+        ],
+        working_directory=tmpdir,
+    )
+
+    sliced_expts = load.experiment_list(
+        tmpdir.join("sliced.expt").strpath, check_format=False
+    )
+    print(list(sliced_expts.identifiers()))
+    assert len(sliced_expts) == 17
+    sliced_refl = flex.reflection_table.from_file(tmpdir.join("sliced.refl").strpath)
+    assert len(set(sliced_refl.experiment_identifiers().values())) == 17
+    sliced_refl.assert_experiment_identifiers_are_consistent(sliced_expts)
 
 
 def test_slice_sequence_with_scan_varying_crystal(dials_data, tmpdir):
@@ -79,9 +105,9 @@ def test_slice_sequence_with_scan_varying_crystal(dials_data, tmpdir):
         ],
         working_directory=tmpdir,
     )
-    orig = ExperimentListFactory.from_json_file(expt.strpath, check_format=False)[0]
+    orig = load.experiment_list(expt.strpath, check_format=False)[0]
 
-    sliced = ExperimentListFactory.from_json_file(
+    sliced = load.experiment_list(
         tmpdir.join("sliced.expt").strpath, check_format=False
     )[0]
 
