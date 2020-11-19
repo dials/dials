@@ -1,8 +1,5 @@
-from __future__ import absolute_import, division, print_function
-
 import random
-
-import mock
+from unittest import mock
 
 from cctbx import sgtbx
 from dxtbx.model import Crystal, Experiment, ExperimentList

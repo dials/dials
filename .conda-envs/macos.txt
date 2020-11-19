@@ -19,7 +19,6 @@ conda-forge::jinja2
 conda-forge::jpeg
 conda-forge::libcxx
 conda-forge::matplotlib-base>=3.0.2
-conda-forge::mock
 conda-forge::mrcfile
 conda-forge::msgpack-c
 conda-forge::msgpack-python
@@ -33,7 +32,7 @@ conda-forge::pthread-stubs
 conda-forge::pyrtf
 conda-forge::pytest>=4.5
 conda-forge::pytest-forked
-conda-forge::pytest-mock<2.0
+conda-forge::pytest-mock
 conda-forge::pytest-xdist
 conda-forge::python.app
 conda-forge::reportlab

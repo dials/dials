@@ -1,12 +1,11 @@
 """
 Tests for the dials.report.plots module.
 """
-from __future__ import absolute_import, division, print_function
 
 import itertools
 import random
+from unittest import mock
 
-import mock as mock
 import pytest
 
 from cctbx import crystal, miller, uctbx
