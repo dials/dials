@@ -1,1 +1,0 @@
-Fix case where ``dials.stills_process` could swallow error messages
