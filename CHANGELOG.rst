@@ -1,3 +1,14 @@
+DIALS 3.2.2 (2020-11-23)
+========================
+
+Bugfixes
+--------
+
+- Fix case where ``dials.stills_process`` could swallow error messages
+- ``dials.cosym``: Fix non-determinism. Repeat runs will now give identical results. (`#1490 <https://github.com/dials/dials/issues/1490>`_)
+- Developers: Fix precommit installation failure on MacOS (`#1489 <https://github.com/dials/dials/issues/1490>`_)
+
+
 DIALS 3.2.1 (2020-11-09)
 ========================
 
