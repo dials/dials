@@ -11,6 +11,7 @@ import itertools
 import logging
 import operator
 import os
+from typing import Tuple
 
 import six
 import six.moves.cPickle as pickle
@@ -590,14 +591,38 @@ class _(object):
         mask2.set_selected(sind.select(mask), True)
         return mask2, other_matched, other_unmatched
 
-    def match(self, other, max_separation=2, key="xyzobs.px.value", scale=(1, 1, 1)):
-        """Match reflections from list a and list b, returning tuple of
-        flex.size_t indices, optionally specifying the maximum distance and
-        key to search on (which is assumed to be a 3-vector column). Can also
-        apply relative scales to the vectors before matching in case e.g. very
-        wide or very fine slicing.
+    def match(
+        self,
+        other: dials_array_family_flex_ext.reflection_table,
+        max_separation: int = 2,
+        key: str = "xyzobs.px.value",
+        scale: Tuple[float, float, float] = (1, 1, 1),
+    ) -> Tuple[
+        cctbx.array_family.flex.size_t,
+        cctbx.array_family.flex.size_t,
+        cctbx.array_family.flex.double,
+    ]:
+        """
+        Match reflections from this reflection list to another.
 
-        Returns: nn, mm, distance such that other[nn][j] ~= self[mm][j]"""
+        The match is based on comparison of any chosen 3-vector column.
+
+        Args:
+            other: The reflection table to match against
+            max_separations: Maximum distance in column-space to match on
+            key: Name of 3-vector column
+            scale:
+                Relative scales to apply to vectors before matching in
+                case e.g. very wide or very fine slicing.
+
+        Returns:
+            (other_index, self_index, distance) where:
+                other_index: is the index in the other reflection table
+                self_index: is the reindex in the this reflection table
+                distance: The calculated distance of specified column-vector
+
+            such that other[other_index][j] ~= self[self_index][j].
+        """
 
         xyz_a = self[key]
         xyz_b = other[key]
