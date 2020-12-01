@@ -649,9 +649,9 @@ class Script(object):
             iterable = iterable[: params.input.max_images]
 
         if params.input.show_image_tags:
-            print("Showing image tags for this dataset and exiting")
+            logger.info("Showing image tags for this dataset and exiting")
             for tag, item in iterable:
-                print(tag)
+                logger.info(tag)
             return
 
         # prepare fractions of process_percent, if given
@@ -683,17 +683,19 @@ class Script(object):
                         if process_fractions and not process_this_event(item_num):
                             continue
 
-                        print("Getting next available process")
+                        logger.info("Getting next available process")
                         rankreq = comm.recv(source=MPI.ANY_SOURCE)
-                        print("Process %s is ready, sending %s\n" % (rankreq, item[0]))
+                        logger.info(
+                            "Process %s is ready, sending %s\n" % (rankreq, item[0])
+                        )
                         comm.send(item, dest=rankreq)
                     # send a stop command to each process
-                    print("MPI DONE, sending stops\n")
+                    logger.info("MPI DONE, sending stops\n")
                     for rankreq in range(size - 1):
                         rankreq = comm.recv(source=MPI.ANY_SOURCE)
-                        print("Sending stop to %d\n" % rankreq)
+                        logger.info("Sending stop to %d\n" % rankreq)
                         comm.send("endrun", dest=rankreq)
-                    print("All stops sent.")
+                    logger.info("All stops sent.")
 
                     # create an empty processor to handle any MPI finalize steps
                     processor = Processor(
@@ -706,22 +708,22 @@ class Script(object):
                     processor = None
                     while True:
                         # inform the server this process is ready for an event
-                        print("Rank %d getting next task" % rank)
+                        logger.info("Rank %d getting next task" % rank)
                         comm.send(rank, dest=0)
-                        print("Rank %d waiting for response" % rank)
+                        logger.info("Rank %d waiting for response" % rank)
                         item = comm.recv(source=0)
                         if item == "endrun":
-                            print("Rank %d received endrun" % rank)
+                            logger.info("Rank %d received endrun" % rank)
                             break
-                        print("Rank %d beginning processing" % rank)
+                        logger.info("Rank %d beginning processing" % rank)
                         try:
                             processor = do_work(rank, [item], processor, finalize=False)
                         except Exception as e:
-                            print(
+                            logger.info(
                                 "Rank %d unhandled exception processing event" % rank,
                                 str(e),
                             )
-                        print("Rank %d event processed" % rank)
+                        logger.info("Rank %d event processed" % rank)
                     if processor:
                         processor.finalize()
         else:
@@ -739,13 +741,13 @@ class Script(object):
                 )
                 error_list = [r[2] for r in result]
                 if error_list.count(None) != len(error_list):
-                    print(
+                    logger.info(
                         "Some processes failed excecution. Not all images may have processed. Error messages:"
                     )
                     for error in error_list:
                         if error is None:
                             continue
-                        print(error)
+                        logger.info(error)
 
         # Total Time
         logger.info("")
@@ -920,7 +922,7 @@ class Processor(object):
         try:
             self.pre_process(experiments)
         except Exception as e:
-            print("Error in pre-process", tag, str(e))
+            logger.info("Error in pre-process", tag, str(e))
             self.debug_write("preprocess_exception", "fail")
             if not self.params.dispatch.squash_errors:
                 raise
@@ -930,11 +932,11 @@ class Processor(object):
                 self.debug_write("spotfind_start")
                 observed = self.find_spots(experiments)
             else:
-                print("Spot Finding turned off. Exiting")
+                logger.info("Spot Finding turned off. Exiting")
                 self.debug_write("data_loaded", "done")
                 return
         except Exception as e:
-            print("Error spotfinding", tag, str(e))
+            logger.info("Error spotfinding", tag, str(e))
             self.debug_write("spotfinding_exception", "fail")
             if not self.params.dispatch.squash_errors:
                 raise
@@ -946,7 +948,7 @@ class Processor(object):
                     and len(observed)
                     < self.params.dispatch.hit_finder.minimum_number_of_reflections
                 ):
-                    print("Not enough spots to index", tag)
+                    logger.info("Not enough spots to index", tag)
                     self.debug_write("not_enough_spots_%d" % len(observed), "stop")
                     return
                 if (
@@ -958,17 +960,17 @@ class Processor(object):
                         and len(observed)
                         > self.params.dispatch.hit_finder.maximum_number_of_reflections
                     ):
-                        print("Too many spots to index - Possibly junk", tag)
+                        logger.info("Too many spots to index - Possibly junk", tag)
                         self.debug_write("too_many_spots_%d" % len(observed), "stop")
                         return
                 self.debug_write("index_start")
                 experiments, indexed = self.index(experiments, observed)
             else:
-                print("Indexing turned off. Exiting")
+                logger.info("Indexing turned off. Exiting")
                 self.debug_write("spotfinding_ok_%d" % len(observed), "done")
                 return
         except Exception as e:
-            print("Couldn't index", tag, str(e))
+            logger.info("Couldn't index", tag, str(e))
             if not self.params.dispatch.squash_errors:
                 raise
             self.debug_write("indexing_failed_%d" % len(observed), "stop")
@@ -977,7 +979,7 @@ class Processor(object):
         try:
             experiments, indexed = self.refine(experiments, indexed)
         except Exception as e:
-            print("Error refining", tag, str(e))
+            logger.info("Error refining", tag, str(e))
             self.debug_write("refine_failed_%d" % len(indexed), "fail")
             if not self.params.dispatch.squash_errors:
                 raise
@@ -987,11 +989,11 @@ class Processor(object):
                 self.debug_write("integrate_start")
                 integrated = self.integrate(experiments, indexed)
             else:
-                print("Integration turned off. Exiting")
+                logger.info("Integration turned off. Exiting")
                 self.debug_write("index_ok_%d" % len(indexed), "done")
                 return
         except Exception as e:
-            print("Error integrating", tag, str(e))
+            logger.info("Error integrating", tag, str(e))
             self.debug_write("integrate_failed_%d" % len(indexed), "fail")
             if not self.params.dispatch.squash_errors:
                 raise
@@ -1115,7 +1117,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 "Filtered duplicate reflections, %d out of %d remaining"
                 % (len(filtered), len(indexed))
             )
-            print(
+            logger.info(
                 "Filtered duplicate reflections, %d out of %d remaining"
                 % (len(filtered), len(indexed))
             )
