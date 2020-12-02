@@ -102,6 +102,10 @@ def prepare_input(params, experiments, reflections):
     )
     logger.info("\nDataset ids are: %s \n", ",".join(str(i) for i in ids))
 
+    for r in reflections:
+        r.unset_flags(flex.bool(len(r), True), r.flags.bad_for_scaling)
+        r.unset_flags(flex.bool(r.size(), True), r.flags.scaled)
+
     reflections, experiments = exclude_image_ranges_for_scaling(
         reflections, experiments, params.exclude_images
     )
@@ -151,10 +155,6 @@ def prepare_input(params, experiments, reflections):
         )
         experiments.append(exp)
         reflections.append(reflection_table)
-
-    for r in reflections:
-        r.unset_flags(flex.bool(len(r), True), r.flags.bad_for_scaling)
-        r.unset_flags(flex.bool(r.size(), True), r.flags.scaled)
 
     #### Perform any non-batch cutting of the datasets, including the target dataset
     best_unit_cell = params.reflection_selection.best_unit_cell
