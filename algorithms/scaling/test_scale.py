@@ -714,6 +714,18 @@ def test_multi_scale_exclude_images(dials_data, tmpdir):
 
     run_one_scaling(tmpdir, [refl_1, refl_2, expt_1, expt_2] + extra_args)
 
+    refls = flex.reflection_table.from_file(tmpdir.join("scaled.refl").strpath)
+    d1 = refls.select(refls["id"] == 0)
+    d2 = refls.select(refls["id"] == 1)
+    nd1_scaled = d1.get_flags(d1.flags.scaled).count(True)
+    # full sweep would have 2312, expect ~2060
+    assert nd1_scaled < 2100
+    assert nd1_scaled > 2000
+    nd2_scaled = d2.get_flags(d2.flags.scaled).count(True)
+    # full sweep would have 3210
+    assert nd2_scaled < 2900
+    assert nd2_scaled > 2800
+
     scaling_models = load.experiment_list(
         tmpdir.join("scaled.expt").strpath, check_format=False
     ).scaling_models()
@@ -737,6 +749,18 @@ def test_multi_scale_exclude_images(dials_data, tmpdir):
     assert scaling_models[1].configdict["valid_image_range"] == [1, 1500]
     assert pytest.approx(scaling_models[0].configdict["valid_osc_range"], [0, 140.0])
     assert pytest.approx(scaling_models[1].configdict["valid_osc_range"], [-145.0, 5.0])
+
+    refls = flex.reflection_table.from_file(tmpdir.join("scaled.refl").strpath)
+    d1 = refls.select(refls["id"] == 0)
+    d2 = refls.select(refls["id"] == 1)
+    nd1_scaled = d1.get_flags(d1.flags.scaled).count(True)
+    # full sweep would have 2312, expect 1800
+    assert nd1_scaled < 1850
+    assert nd1_scaled > 1750
+    nd2_scaled = d2.get_flags(d2.flags.scaled).count(True)
+    # full sweep would have 3210, expect ~2850
+    assert nd2_scaled < 2900
+    assert nd2_scaled > 2800
 
 
 def test_targeted_scaling(dials_data, tmpdir):
