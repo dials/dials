@@ -166,9 +166,7 @@ class Script(object):
                 )
 
             if len(experiments) > 1:
-                raise Sorry(
-                    "For slicing into blocks please provide a single scan only"
-                )
+                raise Sorry("For slicing into blocks please provide a single scan only")
             scan = experiments[0].scan
 
             # Having extracted the scan, calculate the blocks
@@ -188,10 +186,10 @@ class Script(object):
                 ]
                 sliced_reflections = flex.reflection_table()
                 identifiers = sliced_experiments.identifiers()
-                for i, rt in enumerate(sliced[0:]):
-                    if rt.experiment_identifiers():
-                        for k in rt.experiment_identifiers().keys():
-                            del rt.experiment_identifiers()[k]
+                # resetting experiment identifiers
+                for i, rt in enumerate(sliced):
+                    for k in rt.experiment_identifiers().keys():
+                        del rt.experiment_identifiers()[k]
                     rt["id"] = flex.int(rt.size(), i)  # set id
                     rt.experiment_identifiers()[i] = identifiers[i]
                     sliced_reflections.extend(rt)

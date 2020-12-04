@@ -85,7 +85,6 @@ def test_slice_sequence_to_degree_blocks(dials_data, tmpdir):
     sliced_expts = load.experiment_list(
         tmpdir.join("sliced.expt").strpath, check_format=False
     )
-    print(list(sliced_expts.identifiers()))
     assert len(sliced_expts) == 17
     sliced_refl = flex.reflection_table.from_file(tmpdir.join("sliced.refl").strpath)
     assert len(set(sliced_refl.experiment_identifiers().values())) == 17
