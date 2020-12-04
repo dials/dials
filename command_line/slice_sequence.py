@@ -167,7 +167,7 @@ class Script(object):
 
             if len(experiments) > 1:
                 raise Sorry(
-                    "For slicing into blocks please provide a single " "scan only"
+                    "For slicing into blocks please provide a single scan only"
                 )
             scan = experiments[0].scan
 
@@ -178,10 +178,8 @@ class Script(object):
             sliced = [
                 slice_experiments(experiments, [sr])[0] for sr in params.image_range
             ]
-            sliced_experiments = ExperimentList()
             generate_experiment_identifiers(sliced)
-            for exp in sliced:
-                sliced_experiments.append(exp)
+            sliced_experiments = ExperimentList(sliced)
 
             # slice reflections if present
             if slice_refs:
