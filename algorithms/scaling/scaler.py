@@ -330,7 +330,6 @@ uncertainty in the scaling model""" + (
         if parameter_manager.apm_list[0].var_cov_matrix:
             for i, scaler in enumerate(self.active_scalers):
                 scaler.update_var_cov(parameter_manager.apm_list[i])
-                scaler.experiment.scaling_model.set_scaling_model_as_scaled()
 
 
 class SingleScaler(ScalerBase):

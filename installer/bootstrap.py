@@ -858,7 +858,6 @@ def update_sources(options):
             "dials/ccp4io_adaptbx",
             "dials/dials",
             "dials/gui_resources",
-            "dials/tntbx",
             "xia2/xia2",
         )
     }

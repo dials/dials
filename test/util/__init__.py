@@ -1,5 +1,5 @@
 """Shared functions for tests."""
-from mock import Mock
+from unittest.mock import Mock
 
 from dials.array_family import flex
 

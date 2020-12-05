@@ -15,7 +15,7 @@ Examples::
     untrusted.rectangle=50,100,50,100 \\
     untrusted.circle=200,200,100
 
-  dials.generate_mask models.expt resolution.d_max=2.00
+  dials.generate_mask models.expt d_max=2.00
 """
 
 from __future__ import absolute_import, division, print_function

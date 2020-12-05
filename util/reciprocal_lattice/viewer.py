@@ -390,7 +390,7 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
         box = wx.BoxSizer(wx.VERTICAL)
         self.panel_sizer.Add(box)
         label = wx.StaticText(self, -1, "Experiment ids:")
-        box.Add(label, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        box.Add(label, 0, wx.ALL, 5)
 
         self.expt_btn = SegmentedToggleControl(self, style=SEGBTN_HORIZONTAL)
         for i in range(-1, n + 1):
