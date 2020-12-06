@@ -51,6 +51,9 @@ scitbx::af::shared<double> get_kapton_path_cpp(
       } catch (dxtbx::error) {
         // Do nothing
       }
+      if (intersection_xy_list.size() == 2) {
+        break;
+      }
     }  // kapton faces
     /*
      * Now find out the maximum path length through the kapton. That is the path
