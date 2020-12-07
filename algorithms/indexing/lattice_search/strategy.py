@@ -6,6 +6,8 @@ from __future__ import absolute_import, division, print_function
 class Strategy(object):
     """A base class for lattice search strategies."""
 
+    phil_help = "''"
+
     phil_scope = None
 
     def __init__(self, params=None, *args, **kwargs):

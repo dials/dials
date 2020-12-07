@@ -91,7 +91,15 @@ for entry_point in itertools.chain(
     """
         % entry_point.name
     )
-    ext_master_scope = libtbx.phil.parse("%s .expert_level=1 {}" % entry_point.name)
+    ext_master_scope = libtbx.phil.parse(
+        """
+%s
+.expert_level=1
+.help=%s
+{}
+        """
+        % (entry_point.name, entry_point.load().phil_help)
+    )
     ext_phil_scope = ext_master_scope.get_without_substitution(entry_point.name)
     assert len(ext_phil_scope) == 1
     ext_phil_scope = ext_phil_scope[0]
