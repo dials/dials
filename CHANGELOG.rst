@@ -1,3 +1,13 @@
+DIALS 3.2.3 (2020-12-07)
+========================
+
+Bugfixes
+--------
+
+- ``dials.slice_sequence``: Fix crash using ``block_size=`` option (`#1502 <https://github.com/dials/dials/issues/1502>`_)
+- ``dials.scale``: Fix broken ``exclude_images=`` option (`#1509 <https://github.com/dials/dials/issues/1509>`_)
+
+
 DIALS 3.2.2 (2020-11-23)
 ========================
 
