@@ -7,6 +7,7 @@ import pytest
 from cctbx import sgtbx, uctbx
 from dxtbx.serialize import load
 
+import dials.command_line.cosym as dials_cosym
 from dials.algorithms.symmetry.cosym._generate_test_data import (
     generate_experiments_reflections,
 )
@@ -157,3 +158,75 @@ def test_synthetic(
             continue
         assert str(expt.crystal.get_space_group().info()) == str(space_group.info())
         assert expt.crystal.get_space_group() == space_group
+
+
+def test_reindexing_identity(mocker):
+    """
+    Default to choosing the cluster that contains the most identity reindexing ops.
+
+    This can be important if the lattice symmetry is only very approximately related by
+    pseudosymmetry to the true symmetry. If all potential reindexing ops are genuine
+    indexing ambiguities, then it doesn't matter which one is chosen, however if not,
+    then choosing the wrong one will distort the true unit cell. In such cases it is
+    likely that the input datasets were already indexed consistently, therefore default
+    to choosing the cluster that contains the most identity reindexing ops.
+    """
+    # patch the cosym object, including the __init__
+    mocker.patch.object(dials_cosym.cosym, "__init__", return_value=None, autospec=True)
+    cosym = dials_cosym.cosym(mocker.ANY, mocker.ANY)
+    cosym.observers = mocker.MagicMock()
+    cosym.cosym_analysis = mocker.Mock()
+    cosym._apply_reindexing_operators = mocker.Mock()
+    cosym.params = dials_cosym.phil_scope.extract()
+
+    # Mock cosym_analysis reindexing ops
+    cosym.params.cluster.n_clusters = 6
+    cosym.cosym_analysis.reindexing_ops = {
+        0: {
+            0: "-x,x+y,-z",
+            1: "x,-x-y,-z",
+            2: "-x,-y,z",
+            3: "x,y,z",
+            4: "-x-y,y,-z",
+            5: "x+y,-y,-z",
+        },
+        1: {
+            0: "-x,x+y,-z",
+            1: "x,-x-y,-z",
+            2: "-x,-y,z",
+            3: "x,y,z",
+            4: "-x-y,y,-z",
+            5: "x+y,-y,-z",
+        },
+        2: {
+            0: "-x,x+y,-z",
+            1: "x,-x-y,-z",
+            2: "-x,-y,z",
+            3: "x,y,z",
+            4: "-x-y,y,-z",
+            5: "x+y,-y,-z",
+        },
+        3: {
+            0: "-x,x+y,-z",
+            1: "x,-x-y,-z",
+            2: "-x,-y,z",
+            3: "x,y,z",
+            4: "-x-y,y,-z",
+            5: "x+y,-y,-z",
+        },
+        4: {
+            0: "-x,x+y,-z",
+            1: "x,-x-y,-z",
+            2: "-x,-y,z",
+            3: "x,y,z",
+            4: "-x-y,y,-z",
+            5: "x+y,-y,-z",
+        },
+    }
+    cosym.run()
+
+    # Assert that chosen reindexing ops were the identity ops
+    cosym._apply_reindexing_operators.assert_called_once_with(
+        {"x,y,z": [0, 1, 2, 3, 4]},
+        subgroup=mocker.ANY,
+    )
