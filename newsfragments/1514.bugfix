@@ -1,0 +1,1 @@
+dials.cosym: by default choose cluster containing the most identity reindexing ops. Under some circumstances, particularly in the case of approximate pseudosymmetry, the previous behaviour could result in reindexing operators being chosen that weren't genuine indexing ambiguities, instead distorting the input unit cells.
