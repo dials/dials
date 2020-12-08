@@ -301,7 +301,7 @@ phil_scope = iotbx.phil.parse(phil_str, process_includes=True)
 
 
 class Indexer(object):
-    def __init__(self, reflections, experiments, params=None):
+    def __init__(self, reflections, experiments, params):
         self.reflections = reflections
         self.experiments = experiments
 

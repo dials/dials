@@ -108,7 +108,7 @@ basis_vector_search_phil_scope.adopt_scope(
 
 
 class LatticeSearch(indexer.Indexer):
-    def __init__(self, reflections, experiments, params=None):
+    def __init__(self, reflections, experiments, params):
         super(LatticeSearch, self).__init__(reflections, experiments, params)
 
         self._lattice_search_strategy = None
@@ -293,7 +293,7 @@ class LatticeSearch(indexer.Indexer):
 
 
 class BasisVectorSearch(LatticeSearch):
-    def __init__(self, reflections, experiments, params=None):
+    def __init__(self, reflections, experiments, params):
         super(BasisVectorSearch, self).__init__(reflections, experiments, params)
 
         strategy_class = None
