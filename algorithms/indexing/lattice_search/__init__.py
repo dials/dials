@@ -83,14 +83,6 @@ for entry_point in itertools.chain(
     pkg_resources.iter_entry_points("dials.index.basis_vector_search"),
     pkg_resources.iter_entry_points("dials.index.lattice_search"),
 ):
-    scope = (
-        """\
-%s {
-    include scope entry_point.load().phil_scope
-}
-    """
-        % entry_point.name
-    )
     ext_master_scope = libtbx.phil.parse(
         """
 %s
