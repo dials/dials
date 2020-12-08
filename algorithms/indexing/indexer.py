@@ -654,12 +654,12 @@ class Indexer(object):
                         # with this deleted experiment - indexed flag removed
                         # below
                         last = len(experiments)
-                        sel = refined_reflections["id"] == last
+                        sel = reflections_for_refinement["id"] == last
                         logger.info(
                             "Removing %d reflections with id %d"
                             % (sel.count(True), last)
                         )
-                        refined_reflections["id"].set_selected(sel, -1)
+                        reflections_for_refinement["id"].set_selected(sel, -1)
 
                         break
 
