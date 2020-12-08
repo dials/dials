@@ -1,0 +1,2 @@
+When more than one lattice search strategy is defined, ensure that the correct corresponding PHIL scope is used.
+Previously, the PHIL scope of the last listed strategy would be used for all the strategies.
