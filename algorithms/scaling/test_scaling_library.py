@@ -1,10 +1,10 @@
 """
 Tests for scaling library module.
 """
-from __future__ import absolute_import, division, print_function
+
+from unittest.mock import Mock, patch
 
 import pytest
-from mock import Mock, patch
 
 from cctbx import crystal, miller, uctbx
 from cctbx.sgtbx import space_group

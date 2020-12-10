@@ -1,9 +1,8 @@
 """
 Tests for the functions in dials.util.options
 """
-from __future__ import absolute_import, division, print_function
 
-from mock import Mock
+from unittest.mock import Mock
 
 from dxtbx.model import Experiment, ExperimentList
 

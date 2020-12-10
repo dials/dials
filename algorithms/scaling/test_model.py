@@ -1,12 +1,11 @@
 """
 Tests for the scaling model classes.
 """
-from __future__ import absolute_import, division, print_function
 
 import copy
+from unittest.mock import MagicMock, Mock
 
 import pytest
-from mock import MagicMock, Mock
 
 from libtbx import phil
 
@@ -155,7 +154,6 @@ def test_KBScalingModel():
     # Test from_dict initialisation method.
     KB_dict = {
         "__id__": "KB",
-        "is_scaled": True,
         "scale": {
             "n_parameters": 1,
             "parameters": [0.5],
@@ -177,7 +175,6 @@ def test_KBScalingModel():
     # Test again with all parameters
     KB_dict = {
         "__id__": "KB",
-        "is_scaled": True,
         "scale": {
             "n_parameters": 1,
             "parameters": [0.5],
@@ -263,7 +260,6 @@ def test_PhysicalScalingModel(test_reflections, mock_exp):
     # Test from_dict initialisation method.
     physical_dict = {
         "__id__": "physical",
-        "is_scaled": True,
         "scale": {
             "n_parameters": 2,
             "parameters": [0.5, 1.0],
@@ -291,7 +287,6 @@ def test_PhysicalScalingModel(test_reflections, mock_exp):
     # Test from_dict initialisation method for all components.
     physical_dict = {
         "__id__": "physical",
-        "is_scaled": True,
         "scale": {
             "n_parameters": 2,
             "parameters": [0.5, 1.0],
@@ -463,7 +458,7 @@ def test_DoseDecayModel(test_reflections, mock_exp):
 
     def test_setup(model):
         assert model.id_ == "dose_decay"
-        assert set(model.components.keys()) == set(["scale", "decay", "relative_B"])
+        assert set(model.components.keys()) == {"scale", "decay", "relative_B"}
         assert list(model.components["scale"].parameters) == [1.2, 1.1]
         assert list(model.components["decay"].parameters) == [0.1]
         assert list(model.components["relative_B"].parameters) == [-0.1]
@@ -563,7 +558,6 @@ def test_ArrayScalingModel(test_reflections, mock_exp):
     # Test from_dict initialisation method for another case.
     array_dict = {
         "__id__": "array",
-        "is_scaled": True,
         "decay": {
             "n_parameters": 4,
             "parameters": [0.5, 1.0, 0.4, 1.0],

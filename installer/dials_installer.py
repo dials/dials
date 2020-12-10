@@ -34,7 +34,6 @@ class installer(install_distribution.installer):
         "gui_resources",
         "ccp4io_adaptbx",
         "annlib_adaptbx",
-        "tntbx",
         "clipper",
         # dials
         "dxtbx",

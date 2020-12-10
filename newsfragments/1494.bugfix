@@ -1,0 +1,1 @@
+``dials.estimate_resolution``: Handle very low multiplicity datasets without crashing, and better error handling

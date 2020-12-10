@@ -1,13 +1,12 @@
 """
 Test for the target function module.
 """
-from __future__ import absolute_import, division, print_function
 
 import copy
 from collections import OrderedDict
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
-from mock import MagicMock, Mock, patch
 
 from dxtbx.model import Crystal, Experiment, Scan
 from libtbx import phil

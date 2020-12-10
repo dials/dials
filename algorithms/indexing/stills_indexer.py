@@ -368,7 +368,7 @@ class StillsIndexer(Indexer):
                 except Exception as e:
                     s = str(e)
                     if len(experiments) == 1:
-                        raise DialsIndexRefineError(e.message)
+                        raise DialsIndexRefineError(e)
                     logger.info("Refinement failed:")
                     logger.info(s)
                     del experiments[-1]

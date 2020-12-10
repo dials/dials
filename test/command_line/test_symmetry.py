@@ -375,7 +375,7 @@ def test_change_of_basis_ops_to_minimum_cell_1037(mocker):
     )
     import pytest_mock
 
-    if pytest_mock.version.startswith("1."):
+    if getattr(pytest_mock, "version", "").startswith("1."):
         assert symmetry.unit_cells_are_similar_to.return_value is True
     else:
         assert symmetry.unit_cells_are_similar_to.spy_return is True
