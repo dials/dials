@@ -23,7 +23,7 @@ class FFT1D(Strategy):
     so that they are roughly evenly spaced in solid angle over a hemisphere. The
     reciprocal space displacements of the measured spot centroids are then projected
     onto each of these radial vectors in turn (that is, we calculate the scalar
-    product of each displacement with each unit vector).  A 1D FFT of the linear
+    product of each displacement with each unit vector). A 1D FFT of the linear
     density of projected spot positions is performed along each direction.
     Aggregating the results of all the transforms, the three shortest non-collinear
     wave vectors with the greatest spectral weight correspond to the basis vectors of
@@ -35,11 +35,11 @@ class FFT1D(Strategy):
     """
 
     phil_help = (
-        " 'Search for the basis vectors of the direct lattice by performing a series "
-        "of 1D FFTs along various directions in reciprocal space.  This has a lower "
-        "memory requirement than a single 3D FFT (the fft3d method).  This method may "
+        "Search for the basis vectors of the direct lattice by performing a series of "
+        "1D FFTs along various directions in reciprocal space. This has a lower "
+        "memory requirement than a single 3D FFT (the fft3d method). This method may "
         "also be more appropriate than a 3D FFT if the reflections are from narrow "
-        "wedges of rotation data or from stills data.' "
+        "wedges of rotation data or from stills data."
     )
 
     phil_scope = phil.parse(fft1d_phil_str)
