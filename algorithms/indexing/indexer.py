@@ -301,7 +301,7 @@ phil_scope = iotbx.phil.parse(phil_str, process_includes=True)
 
 
 class Indexer(object):
-    def __init__(self, reflections, experiments, params=None):
+    def __init__(self, reflections, experiments, params):
         self.reflections = reflections
         self.experiments = experiments
 
@@ -571,6 +571,8 @@ class Indexer(object):
                 # no more lattices found
                 break
 
+            refined_experiments = None
+            refined_reflections = None
             for i_cycle in range(self.params.refinement_protocol.n_macro_cycles):
                 if (
                     i_cycle > 0

@@ -108,24 +108,21 @@ basis_vector_search_phil_scope.adopt_scope(
 
 
 class LatticeSearch(indexer.Indexer):
-    def __init__(self, reflections, experiments, params=None):
+    def __init__(self, reflections, experiments, params):
         super(LatticeSearch, self).__init__(reflections, experiments, params)
 
-        strategy_class = None
+        self._lattice_search_strategy = None
         for entry_point in pkg_resources.iter_entry_points(
             "dials.index.lattice_search"
         ):
-            if entry_point.name == params.indexing.method:
+            if entry_point.name == self.params.method:
                 strategy_class = entry_point.load()
-
-        if strategy_class is not None:
-            self._lattice_search_strategy = strategy_class(
-                target_symmetry_primitive=self._symmetry_handler.target_symmetry_primitive,
-                max_lattices=self.params.basis_vector_combinations.max_refine,
-                params=getattr(self.params, entry_point.name),
-            )
-        else:
-            self._lattice_search_strategy = None
+                self._lattice_search_strategy = strategy_class(
+                    target_symmetry_primitive=self._symmetry_handler.target_symmetry_primitive,
+                    max_lattices=self.params.basis_vector_combinations.max_refine,
+                    params=getattr(self.params, entry_point.name, None),
+                )
+                break
 
     def find_candidate_crystal_models(self):
 
@@ -296,7 +293,7 @@ class LatticeSearch(indexer.Indexer):
 
 
 class BasisVectorSearch(LatticeSearch):
-    def __init__(self, reflections, experiments, params=None):
+    def __init__(self, reflections, experiments, params):
         super(BasisVectorSearch, self).__init__(reflections, experiments, params)
 
         strategy_class = None
