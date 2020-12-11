@@ -59,7 +59,6 @@ def prepare_merged_reflection_table(
         )
         reflections["intensity"] = reflections["intensity.sum.value"]
         reflections["variance"] = reflections["intensity.sum.variance"]
-
     # now merge
     space_group = experiments[0].crystal.get_space_group()
     reflections["asu_miller_index"] = map_indices_to_asu(
@@ -82,7 +81,7 @@ def prepare_merged_reflection_table(
 
 class MTZDataClass(object):
 
-    """Container class (i.e. Pythom3.7 dataclass) for per-wavelength mtz dataset."""
+    """Container class (i.e. Python 3.7 dataclass) for per-wavelength mtz dataset."""
 
     def __init__(
         self,
@@ -94,6 +93,7 @@ class MTZDataClass(object):
         merged_anomalous_array=None,
         amplitudes=None,
         anomalous_amplitudes=None,
+        redundancies=None,
     ):
         self.wavelength = wavelength
         self.project_name = project_name
@@ -103,6 +103,7 @@ class MTZDataClass(object):
         self.merged_anomalous_array = merged_anomalous_array
         self.amplitudes = amplitudes
         self.anomalous_amplitudes = anomalous_amplitudes
+        self.redundancies = redundancies
 
 
 def make_merged_mtz_file(mtz_datasets):
@@ -140,6 +141,7 @@ def make_merged_mtz_file(mtz_datasets):
             dataset.merged_anomalous_array,
             dataset.amplitudes,
             dataset.anomalous_amplitudes,
+            dataset.redundancies,
         )
 
     return mtz_writer.mtz_file
@@ -164,6 +166,8 @@ def merge(
     This procedure filters the input data, merges the data (normal and optionally
     anomalous), assesses the space group symmetry and generates a summary
     of the merging statistics.
+
+    Returns two merge_equivalents objects and a statistics summary.
     """
 
     logger.info("\nMerging scaled reflection data\n")
@@ -179,28 +183,25 @@ def merge(
     # ^ scale factor has been applied, so now set to 1.0 - okay as not
     # going to output scale factor in merged mtz.
     reflections["inverse_scale_factor"] = flex.double(reflections.size(), 1.0)
-
     scaled_array = scaled_data_as_miller_array(
         [reflections], experiments, best_unit_cell
     )
     # Note, merge_equivalents does not raise an error if data is unique.
-    merged = scaled_array.merge_equivalents(
-        use_internal_variance=use_internal_variance
-    ).array()
+    merged = scaled_array.merge_equivalents(use_internal_variance=use_internal_variance)
     merged_anom = None
 
     if anomalous:
         anomalous_scaled = scaled_array.as_anomalous_array()
         merged_anom = anomalous_scaled.merge_equivalents(
             use_internal_variance=use_internal_variance
-        ).array()
+        )
 
     # Before merge, do assessment of the space_group
     if assess_space_group:
         merged_reflections = flex.reflection_table()
-        merged_reflections["intensity"] = merged.data()
-        merged_reflections["variance"] = flex.pow2(merged.sigmas())
-        merged_reflections["miller_index"] = merged.indices()
+        merged_reflections["intensity"] = merged.array().data()
+        merged_reflections["variance"] = flex.pow2(merged.array().sigmas())
+        merged_reflections["miller_index"] = merged.array().indices()
         logger.info("Running systematic absences check")
         run_systematic_absences_checks(experiments, merged_reflections)
 
@@ -270,7 +271,7 @@ def truncate(merged_intensities):
         n_removed = merged_intensities.size() - anom_amplitudes.size()
         assert anom_amplitudes.is_xray_amplitude_array()
         amplitudes = anom_amplitudes.as_non_anomalous_array()
-        amplitudes = amplitudes.merge_equivalents().array()
+        amplitudes = amplitudes.merge_equivalents(use_internal_variance=False).array()
     else:
         anom_amplitudes = None
         amplitudes = merged_intensities.french_wilson(log=out)

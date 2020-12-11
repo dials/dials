@@ -159,11 +159,12 @@ def merge_data_to_mtz(params, experiments, reflections):
         experiments_subsets = [experiments]
         reflections_subsets = reflections
 
+    # merge and truncate the data for each wavelength group
     for experimentlist, reflection_table, mtz_dataset in zip(
         experiments_subsets, reflections_subsets, mtz_datasets
     ):
-        # merge and truncate the data
-        merged_array, merged_anomalous_array, stats_summary = merge(
+        # First generate two merge_equivalents objects, collect merging stats
+        merged, merged_anomalous, stats_summary = merge(
             experimentlist,
             reflection_table,
             d_min=params.d_min,
@@ -176,21 +177,40 @@ def merge_data_to_mtz(params, experiments, reflections):
             n_bins=params.merging.n_bins,
             use_internal_variance=params.merging.use_internal_variance,
         )
+
+        merged_array = merged.array()
+        # Save the relevant data in the mtz_dataset dataclass
+        # This will add the data for IMEAN/SIGIMEAN
         mtz_dataset.merged_array = merged_array
-        mtz_dataset.merged_anomalous_array = merged_anomalous_array
+        if merged_anomalous:
+            merged_anomalous_array = merged_anomalous.array()
+            # This will add the data for I(+), I(-), SIGI(+), SIGI(-), N(+), N(-)
+            mtz_dataset.merged_anomalous_array = merged_anomalous_array
+            mtz_dataset.redundancies = merged_anomalous.redundancies()
+        else:
+            merged_anomalous_array = None
+            # This will add the data for N
+            mtz_dataset.redundancies = merged.redundancies()
+
         if params.anomalous:
             merged_intensities = merged_anomalous_array
         else:
             merged_intensities = merged_array
 
+        # truncate the data, separately for normal and anomalous
         if params.truncate:
-            amplitudes, anomalous_amplitudes = truncate(merged_intensities)
+            amplitudes, anom_amplitudes = truncate(merged_intensities)
+            # This will add the data for F, SIGF
             mtz_dataset.amplitudes = amplitudes
-            mtz_dataset.anomalous_amplitudes = anomalous_amplitudes
+            # This will add the data for F(+), F(-), SIGF(+), SIGF(-)
+            mtz_dataset.anomalous_amplitudes = anom_amplitudes
+
+        # print out analysis statistics
         show_wilson_scaling_analysis(merged_intensities)
         if stats_summary:
             logger.info(stats_summary)
 
+    # pass the dataclasses to an MTZ writer to generate the mtz file and return.
     return make_merged_mtz_file(mtz_datasets)
 
 
