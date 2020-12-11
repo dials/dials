@@ -1,2 +1,2 @@
-When more than one lattice search strategy is defined, ensure that the correct corresponding PHIL scope is used.
-Previously, the PHIL scope of the last listed strategy would be used for all the strategies.
+When there is more than one lattice search indexing method available for use in ``dials.index``, each method is now associated with the correct set of configuration options.
+Previously, the configuration options of the last listed method would mistakenly be used for all the methods.
