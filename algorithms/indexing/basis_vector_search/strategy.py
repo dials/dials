@@ -6,6 +6,8 @@ from __future__ import absolute_import, division, print_function
 class Strategy(object):
     """A base class for basis vector search strategies."""
 
+    phil_help = None
+
     phil_scope = None
 
     def __init__(self, max_cell, params=None, *args, **kwargs):

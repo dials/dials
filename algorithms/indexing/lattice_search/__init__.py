@@ -83,15 +83,15 @@ for entry_point in itertools.chain(
     pkg_resources.iter_entry_points("dials.index.basis_vector_search"),
     pkg_resources.iter_entry_points("dials.index.lattice_search"),
 ):
-    scope = (
-        """\
-%s {
-    include scope entry_point.load().phil_scope
-}
-    """
-        % entry_point.name
+    ext_master_scope = libtbx.phil.parse(
+        """
+%s
+.expert_level=1
+.help=%s
+{}
+        """
+        % (entry_point.name, entry_point.load().phil_help)
     )
-    ext_master_scope = libtbx.phil.parse("%s .expert_level=1 {}" % entry_point.name)
     ext_phil_scope = ext_master_scope.get_without_substitution(entry_point.name)
     assert len(ext_phil_scope) == 1
     ext_phil_scope = ext_phil_scope[0]
