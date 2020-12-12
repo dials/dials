@@ -340,8 +340,6 @@ class Script:
         if self.params.input.reference_geometry is None:
             return
 
-        from dxtbx.model.experiment_list import ExperimentListFactory
-
         try:
             ref_experiments = ExperimentListFactory.from_json_file(
                 self.params.input.reference_geometry, check_format=False
@@ -785,7 +783,6 @@ class Processor:
 
         if params.output.composite_output:
             assert composite_tag is not None
-            from dxtbx.model.experiment_list import ExperimentList
 
             self.all_imported_experiments = ExperimentList()
             self.all_strong_reflections = flex.reflection_table()
@@ -1221,7 +1218,6 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 refls = indexed.select(indexed['id']==expt_id)
                 refls['id'] = flex.int(len(refls), len(new_experiments))
                 #refls.reset_ids()
-                #import ipdb;ipdb.set_trace()
                 del refls.experiment_identifiers()[expt_id]
                 refls.experiment_identifiers()[len(new_experiments)] = expt.identifier
                 new_reflections.extend(refls)
@@ -1268,8 +1264,6 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 )()
 
         if self.params.significance_filter.enable:
-            #from dxtbx.model.experiment_list import ExperimentList
-
             from dials.algorithms.integration.stills_significance_filter import (
                 SignificanceFilter,
             )
