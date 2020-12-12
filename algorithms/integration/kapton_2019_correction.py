@@ -194,7 +194,6 @@ class KaptonTape_2019:
         from dials.algorithms.integration import get_kapton_path_cpp
 
         # new style, much faster
-        #import ipdb;ipdb.set_trace()
         kapton_path_mm = get_kapton_path_cpp(kapton_faces[:4], s1_flex)
         # old style, really slow
         # for s1 in s1_flex:
