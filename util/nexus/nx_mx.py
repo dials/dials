@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import collections
 import math
 from copy import deepcopy
+from typing import Union
 
 import numpy as np
 
@@ -18,6 +19,18 @@ from scitbx import matrix
 schema_url = (
     "https://github.com/nexusformat/definitions/blob/master/applications/NXmx.nxdl.xml"
 )
+
+
+def h5str(h5_value: Union[str, np.string_, bytes]) -> str:
+    """
+    Convert a value returned an h5py attribute to str.
+    h5py can return either a bytes-like (numpy.string_) or str object
+    for attribute values depending on whether the value was written as
+    fixed or variable length. This function collapses the two to str.
+    """
+    if hasattr(h5_value, "decode"):
+        return h5_value.decode("utf-8")
+    return h5_value
 
 
 def convert_to_nexus_beam_direction(experiments):
@@ -508,7 +521,7 @@ def load_detector(entry):
     # Get the detector module object
     nx_instrument = get_nx_instrument(entry, "instrument")
     nx_detector = get_nx_detector(nx_instrument, "detector")
-    assert nx_detector["depends_on"][()] == "."
+    assert h5str(nx_detector["depends_on"][()]) == "."
     material = nx_detector["sensor_material"][()]
     det_type = nx_detector["type"][()]
     thickness = nx_detector["sensor_thickness"][()]
@@ -646,8 +659,10 @@ def load_crystal(entry):
     space_group_symbol = nx_sample["unit_cell_group"][()]
 
     # Get depends on
-    if nx_sample["depends_on"][()] != ".":
-        assert nx_sample["depends_on"][()] == str(nx_sample["transformations/phi"].name)
+    if h5str(nx_sample["depends_on"][()]) != ".":
+        assert h5str(nx_sample["depends_on"][()]) == h5str(
+            nx_sample["transformations/phi"].name
+        )
 
     # Read the average unit cell data
     average_unit_cell = flex.double(np.array(nx_sample["average_unit_cell"]))
@@ -821,9 +836,9 @@ def find_nx_mx_entries(nx_file, entry):
 
     def visitor(name, obj):
         if "NX_class" in obj.attrs:
-            if obj.attrs["NX_class"] in ["NXentry", "NXsubentry"]:
+            if h5str(obj.attrs["NX_class"]) in ["NXentry", "NXsubentry"]:
                 if "definition" in obj:
-                    if obj["definition"][()] == "NXmx":
+                    if h5str(obj["definition"][()]) == "NXmx":
                         hits.append(obj)
 
     nx_file[entry].visititems(visitor)
@@ -859,7 +874,7 @@ def load(entry, exp_index):
 
         # Get the definition
         definition = nxmx["definition"]
-        assert definition[()] == "NXmx"
+        assert h5str(definition[()]) == "NXmx"
         assert definition.attrs["version"] == 1
 
         # Get dials specific stuff
