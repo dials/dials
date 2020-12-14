@@ -51,26 +51,6 @@ phil_scope = phil.parse(
 )
 
 
-def get_error_model_class_and_scope(error_model_params):
-    """Return the correct error model class & phil scope from a params option."""
-    name = error_model_params.error_model
-    if name == "basic":
-        return BasicErrorModel, error_model_params.basic
-    else:
-        raise ValueError("Invalid choice of error model: %s" % name)
-
-
-def get_error_parameters_to_refine(model, scope):
-    """Get a list of components to refine."""
-    active_parameters = []
-    if model.id_ == "basic":
-        if not scope.a:
-            active_parameters.append("a")
-        if not scope.b:
-            active_parameters.append("b")
-    return active_parameters
-
-
 def calc_sigmaprime(x, Ih_table):
     """Calculate the error from the model."""
     sigmaprime = (
@@ -357,24 +337,52 @@ class BasicErrorModel(object):
 
     id_ = "basic"
 
-    def __init__(self, Ih_table, basic_params, min_partiality=0.4):
+    def __init__(self, a=None, b=None, basic_params=None):
 
-        """Raises: ValueError if insufficient reflections left after filtering."""
+        """
+        A basic two-parameter error model s'^2 = a^2(s^2 + (bI)^2)
+
+        If a and b are not given as arguments, the params scope is checked to
+        see if a user specified fixed value is set. If no fixed values are given
+        then the model starts with the default parameters a=1.0 b=0.02
+        """
 
         self.free_components = []
         self.sortedy = None
         self.sortedx = None
         self.binner = None
-        self.filtered_Ih_table = self.filter_unsuitable_reflections(
-            Ih_table, basic_params, min_partiality
-        )
-        a = basic_params.a if basic_params.a else 1.0
-        b = basic_params.b if basic_params.b else 0.02
+        if not basic_params:
+            basic_params = phil_scope.fetch().extract().basic
+        self.params = basic_params
+        self.filtered_Ih_table = None
+        if not a:
+            a = basic_params.a
+            if not a:
+                a = 1.0
+        if not b:
+            b = basic_params.b
+            if not b:
+                b = 0.02
         self.components = {"a": AComponent(a), "b": BComponent(b)}
+        self._active_parameters = []
+        # if the parameters have been set in the phil scope, then these are to be fixed
+        if not basic_params.a:
+            self._active_parameters.append("a")
+        if not basic_params.b:
+            self._active_parameters.append("b")
 
+    def configure_for_refinement(self, Ih_table, min_partiality=0.4):
+        """
+        Add data to allow error model refinement.
+
+        Raises: ValueError if insufficient reflections left after filtering.
+        """
+        self.filtered_Ih_table = self.filter_unsuitable_reflections(
+            Ih_table, self.params, min_partiality
+        )
         # always want binning info so that can calc for output.
         self.binner = ErrorModelBinner(
-            self.filtered_Ih_table, self.min_reflections_required, basic_params.n_bins
+            self.filtered_Ih_table, self.min_reflections_required, self.params.n_bins
         )
 
         # need to calculate sorted deltahl for norm dev plotting (and used by
@@ -384,9 +392,16 @@ class BasicErrorModel(object):
         self.binner.update(self.parameters)
 
     @property
+    def active_parameters(self):
+        return self._active_parameters
+
+    @property
     def parameters(self):
         """A list of the model parameters."""
-        return [self.components["a"].parameters[0], self.components["b"].parameters[0]]
+        return [
+            self.components["a"].parameters[0],
+            abs(self.components["b"].parameters[0]),
+        ]
 
     @parameters.setter
     def parameters(self, parameters):

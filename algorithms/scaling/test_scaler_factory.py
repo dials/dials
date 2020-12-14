@@ -9,6 +9,7 @@ import pytest
 from dxtbx.model import Crystal
 from libtbx import phil
 
+from dials.algorithms.scaling.error_model.error_model import BasicErrorModel
 from dials.algorithms.scaling.scaler import (
     MultiScaler,
     NullScaler,
@@ -168,7 +169,7 @@ def mock_exp(mock_scaling_component, idval=0):
     exp.scaling_model.components = {"scale": mock_scaling_component}
     exp.scaling_model.consecutive_refinement_order = ["scale"]
     exp.scaling_model.is_scaled = False
-    exp.scaling_model.configdict = {}
+    exp.scaling_model.error_model = BasicErrorModel()
     exp.scaling_model.configure_reflection_table.side_effect = side_effect_config_table
     exp_dict = {
         "__id__": "crystal",
