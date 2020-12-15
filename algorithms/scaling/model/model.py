@@ -302,7 +302,10 @@ class ScalingModelBase(object):
     def load_error_model(self, error_params):
         # load existing model if there, but use user-specified values if given
         new_model = None
-        if "error_model_type" in self._configdict:
+        if (
+            "error_model_type" in self._configdict
+            and not error_params.reset_error_model
+        ):
             if self._configdict["error_model_type"] == "BasicErrorModel":
                 p = self._configdict["error_model_parameters"]
                 a = None

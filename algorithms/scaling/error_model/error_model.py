@@ -47,6 +47,10 @@ phil_scope = phil.parse(
             .help = "The number of intensity bins to use for the error model optimisation."
             .expert_level = 2
     }
+    reset_error_model = False
+        .type = bool
+        .help = "If True, the error model is reset to the default at the start"
+                "of scaling, as opposed to loading the current error model."
     """
 )
 
