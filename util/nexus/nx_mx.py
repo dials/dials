@@ -3,10 +3,10 @@ from __future__ import absolute_import, division, print_function
 import collections
 import math
 from copy import deepcopy
-from typing import Union
 
 import numpy as np
 
+from dxtbx.format.nexus import h5str
 from scitbx import matrix
 
 # Extensions to NXMX
@@ -19,18 +19,6 @@ from scitbx import matrix
 schema_url = (
     "https://github.com/nexusformat/definitions/blob/master/applications/NXmx.nxdl.xml"
 )
-
-
-def h5str(h5_value: Union[str, np.string_, bytes]) -> str:
-    """
-    Convert a value returned an h5py attribute to str.
-    h5py can return either a bytes-like (numpy.string_) or str object
-    for attribute values depending on whether the value was written as
-    fixed or variable length. This function collapses the two to str.
-    """
-    if hasattr(h5_value, "decode"):
-        return h5_value.decode("utf-8")
-    return h5_value
 
 
 def convert_to_nexus_beam_direction(experiments):
