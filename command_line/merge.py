@@ -186,11 +186,11 @@ def merge_data_to_mtz(params, experiments, reflections):
             merged_anomalous_array = merged_anomalous.array()
             # This will add the data for I(+), I(-), SIGI(+), SIGI(-), N(+), N(-)
             mtz_dataset.merged_anomalous_array = merged_anomalous_array
-            mtz_dataset.redundancies = merged_anomalous.redundancies()
+            mtz_dataset.multiplicities = merged_anomalous.redundancies()
         else:
             merged_anomalous_array = None
             # This will add the data for N
-            mtz_dataset.redundancies = merged.redundancies()
+            mtz_dataset.multiplicities = merged.redundancies()
 
         if params.anomalous:
             merged_intensities = merged_anomalous_array

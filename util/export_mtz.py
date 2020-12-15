@@ -90,7 +90,7 @@ class MergedMTZWriter(MTZWriterBase):
         anom_array=None,
         amplitudes=None,
         anom_amplitudes=None,
-        redundancies=None,
+        multiplicities=None,
         suffix=None,
     ):
         """Add merged data to the most recent dataset.
@@ -108,8 +108,8 @@ class MergedMTZWriter(MTZWriterBase):
         self.current_dataset.add_miller_array(merged_array, "IMEAN" + suffix)
         if anom_array:
             self.current_dataset.add_miller_array(anom_array, "I" + suffix)
-        if redundancies:
-            self.current_dataset.add_miller_array(redundancies, "N" + suffix)
+        if multiplicities:
+            self.current_dataset.add_miller_array(multiplicities, "N" + suffix)
         if amplitudes:
             self.current_dataset.add_miller_array(amplitudes, "F" + suffix)
         if anom_amplitudes:
@@ -125,13 +125,18 @@ class MADMergedMTZWriter(MergedMTZWriter):
         anom_array=None,
         amplitudes=None,
         anom_amplitudes=None,
-        redundancies=None,
+        multiplicities=None,
         suffix=None,
     ):
         if not suffix:
             suffix = "_WAVE%s" % str(self.n_datasets)
         super(MADMergedMTZWriter, self).add_dataset(
-            merged_array, anom_array, amplitudes, anom_amplitudes, redundancies, suffix
+            merged_array,
+            anom_array,
+            amplitudes,
+            anom_amplitudes,
+            multiplicities,
+            suffix,
         )
 
 

@@ -93,7 +93,7 @@ class MTZDataClass(object):
         merged_anomalous_array=None,
         amplitudes=None,
         anomalous_amplitudes=None,
-        redundancies=None,
+        multiplicities=None,
     ):
         self.wavelength = wavelength
         self.project_name = project_name
@@ -103,7 +103,7 @@ class MTZDataClass(object):
         self.merged_anomalous_array = merged_anomalous_array
         self.amplitudes = amplitudes
         self.anomalous_amplitudes = anomalous_amplitudes
-        self.redundancies = redundancies
+        self.multiplicities = multiplicities
 
 
 def make_merged_mtz_file(mtz_datasets):
@@ -141,7 +141,7 @@ def make_merged_mtz_file(mtz_datasets):
             dataset.merged_anomalous_array,
             dataset.amplitudes,
             dataset.anomalous_amplitudes,
-            dataset.redundancies,
+            dataset.multiplicities,
         )
 
     return mtz_writer.mtz_file
