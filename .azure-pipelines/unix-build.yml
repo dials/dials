@@ -80,6 +80,7 @@ steps:
 # If the conda environment could not be loaded from cache then
 # create a new one using the bootstrap script
 - script: |
+    set -e
     python modules/dials/installer/bootstrap.py base --python $(PYTHON_VERSION)
 
     # Immediately recover disk space used by miniconda installation

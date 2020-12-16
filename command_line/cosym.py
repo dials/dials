@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+import collections
 import logging
 import random
 import sys
@@ -176,25 +177,20 @@ class cosym(Subject):
     def run(self):
         self.cosym_analysis.run()
 
-        space_groups = {}
         reindexing_ops = {}
+        sym_op_counts = {
+            cluster_id: collections.Counter(
+                ops[cluster_id] for ops in self.cosym_analysis.reindexing_ops.values()
+            )
+            for cluster_id in range(self.params.cluster.n_clusters)
+        }
+        identity_counts = [counts["x,y,z"] for counts in sym_op_counts.values()]
+        cluster_id = identity_counts.index(max(identity_counts))
         for dataset_id in self.cosym_analysis.reindexing_ops:
-            if 0 in self.cosym_analysis.reindexing_ops[dataset_id]:
-                cb_op = self.cosym_analysis.reindexing_ops[dataset_id][0]
+            if cluster_id in self.cosym_analysis.reindexing_ops[dataset_id]:
+                cb_op = self.cosym_analysis.reindexing_ops[dataset_id][cluster_id]
                 reindexing_ops.setdefault(cb_op, [])
                 reindexing_ops[cb_op].append(dataset_id)
-            if dataset_id in self.cosym_analysis.space_groups:
-                space_groups.setdefault(
-                    self.cosym_analysis.space_groups[dataset_id], []
-                )
-                space_groups[self.cosym_analysis.space_groups[dataset_id]].append(
-                    dataset_id
-                )
-
-        logger.info("Space groups:")
-        for sg, datasets in space_groups.items():
-            logger.info(str(sg.info().reference_setting()))
-            logger.info(datasets)
 
         logger.info("Reindexing operators:")
         for cb_op, datasets in reindexing_ops.items():
