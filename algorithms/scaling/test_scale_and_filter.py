@@ -1,7 +1,6 @@
 """Test that compute_delta_cchalf returns required values"""
-from __future__ import absolute_import, division, print_function
 
-import mock
+from unittest import mock
 
 from dxtbx.model import Crystal, Experiment, Scan
 from dxtbx.model.experiment_list import ExperimentList

@@ -1,8 +1,6 @@
-from __future__ import absolute_import, division, print_function
-
 import math
+from unittest import mock
 
-import mock
 import pytest
 
 from dxtbx.model.experiment_list import ExperimentListFactory

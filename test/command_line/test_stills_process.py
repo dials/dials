@@ -14,6 +14,51 @@ from libtbx.phil import parse
 from dials.array_family import flex
 from dials.command_line.stills_process import Processor, phil_scope
 
+cspad_cbf_in_memory_phil = """
+dispatch.squash_errors = False
+spotfinder {
+  filter.min_spot_size=2
+  threshold.dispersion.gain=25
+  threshold.dispersion.global_threshold=100
+}
+indexing {
+  known_symmetry {
+    space_group = P6122
+    unit_cell = 92.9 92.9 130.4 90 90 120
+  }
+  refinement_protocol.d_min_start=1.7
+  stills.refine_candidates_with_known_symmetry=True
+}
+"""
+
+sacla_phil = """
+dispatch.squash_errors = True
+dispatch.coset = True
+input.reference_geometry=%s
+indexing {
+  known_symmetry {
+    space_group = P43212
+    unit_cell = 78.9 78.9 38.1 90 90 90
+  }
+  refinement_protocol.d_min_start = 2.2
+  stills.refine_candidates_with_known_symmetry=True
+}
+spotfinder {
+  filter.min_spot_size = 2
+}
+refinement {
+  parameterisation {
+    detector.fix_list = Dist,Tau1
+  }
+}
+profile {
+  gaussian_rs {
+    centroid_definition = com
+  }
+}
+output.composite_output = True
+"""
+
 
 def test_cspad_cbf_in_memory(dials_regression, run_in_tmpdir):
     # Check the data files for this test exist
@@ -26,24 +71,7 @@ def test_cspad_cbf_in_memory(dials_regression, run_in_tmpdir):
     assert os.path.isfile(image_path)
 
     with open("process_lcls.phil", "w") as f:
-        f.write(
-            """
-      dispatch.squash_errors = False
-      spotfinder {
-        filter.min_spot_size=2
-        threshold.dispersion.gain=25
-        threshold.dispersion.global_threshold=100
-      }
-      indexing {
-        known_symmetry {
-          space_group = P6122
-          unit_cell = 92.9 92.9 130.4 90 90 120
-        }
-        refinement_protocol.d_min_start=1.7
-        stills.refine_candidates_with_known_symmetry=True
-      }
-      """
-        )
+        f.write(cspad_cbf_in_memory_phil)
 
     params = phil_scope.fetch(parse(file_name="process_lcls.phil")).extract()
     params.output.experiments_filename = None
@@ -87,36 +115,7 @@ def test_sacla_h5(dials_regression, run_in_tmpdir, use_mpi, in_memory=False):
 
     # Write the .phil configuration to a file
     with open("process_sacla.phil", "w") as f:
-        f.write(
-            """
-      dispatch.squash_errors = True
-      dispatch.coset = True
-      input.reference_geometry=%s
-      indexing {
-        known_symmetry {
-          space_group = P43212
-          unit_cell = 78.9 78.9 38.1 90 90 90
-        }
-        refinement_protocol.d_min_start = 2.2
-        stills.refine_candidates_with_known_symmetry=True
-      }
-      spotfinder {
-        filter.min_spot_size = 2
-      }
-      refinement {
-        parameterisation {
-          detector.fix_list = Dist,Tau1
-        }
-      }
-      profile {
-        gaussian_rs {
-          centroid_definition = com
-        }
-      }
-      output.composite_output = True
-      """
-            % geometry_path
-        )
+        f.write(sacla_phil % geometry_path)
 
     # Call dials.stills_process
     if use_mpi:

@@ -11,6 +11,7 @@ conda-forge::dials-data
 conda-forge::docutils
 conda-forge::eigen
 conda-forge::future
+conda-forge::gemmi
 conda-forge::h5py<3
 conda-forge::hdf5<1.11
 conda-forge::hdf5-external-filter-plugins==0.1.0[build_number='>=5']
@@ -18,7 +19,6 @@ conda-forge::iota
 conda-forge::jinja2
 conda-forge::jpeg
 conda-forge::matplotlib-base>=3.0.2
-conda-forge::mock
 conda-forge::mrcfile
 conda-forge::msgpack-c
 conda-forge::msgpack-python
@@ -40,7 +40,7 @@ conda-forge::requests
 conda-forge::scons
 conda-forge::setuptools
 conda-forge::six
-conda-forge::sphinx<3.2
+conda-forge::sphinx>=3.2
 conda-forge::sqlite
 conda-forge::tabulate
 conda-forge::tqdm

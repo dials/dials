@@ -1,10 +1,10 @@
 """
 Tests for the scaler factory classes and helper functions.
 """
-from __future__ import absolute_import, division, print_function
+
+from unittest.mock import MagicMock, Mock
 
 import pytest
-from mock import MagicMock, Mock
 
 from dxtbx.model import Crystal
 from libtbx import phil
