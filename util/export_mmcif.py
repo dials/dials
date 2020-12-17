@@ -34,6 +34,7 @@ class MMCIFOutputFile(object):
         """
         self._cif = iotbx.cif.model.cif()
         self.params = params
+        self._fmt = "%6i %2i %5i %5i %-2i %-2i %-2i"
 
     def write(self, experiments, reflections):
         """
@@ -57,6 +58,32 @@ class MMCIFOutputFile(object):
         else:
             filename = self.params.mmcif.hklout
 
+        # Add the block
+        self._cif["dials"] = self.make_cif_block(experiments, reflections)
+
+        loop_format_strings = {"_pdbx_diffrn_unmerged_refln": self._fmt}
+
+        # Print to file
+        if self.params.mmcif.compress and not filename.endswith(
+            "." + self.params.mmcif.compress
+        ):
+            filename += "." + self.params.mmcif.compress
+        if self.params.mmcif.compress == "gz":
+            open_fn = gzip.open
+        elif self.params.mmcif.compress == "bz2":
+            open_fn = bz2.open
+        elif self.params.mmcif.compress == "xz":
+            open_fn = lzma.open
+        else:
+            open_fn = open
+        with open_fn(filename, "wt") as fh:
+            self._cif.show(out=fh, loop_format_strings=loop_format_strings)
+
+        # Log
+        logger.info("Wrote reflections to %s" % filename)
+
+    def make_cif_block(self, experiments, reflections):
+        """Write the data to a cif block"""
         # Select reflections
         selection = reflections.get_flags(reflections.flags.integrated, all=True)
         reflections = reflections.select(selection)
@@ -159,12 +186,13 @@ class MMCIFOutputFile(object):
         cif_block.add_loop(citations_loop)
 
         # Hard coding X-ray
-        cif_block["_pdbx_diffrn_data_section.id"] = "dials"
-        cif_block["_pdbx_diffrn_data_section.type_scattering"] = "x-ray"
-        cif_block["_pdbx_diffrn_data_section.type_merged"] = "false"
-        cif_block["_pdbx_diffrn_data_section.type_scaled"] = str(
-            "scale" in self.params.intensity
-        ).lower()
+        if self.params.mmcif.pdb_version == "v5_next":
+            cif_block["_pdbx_diffrn_data_section.id"] = "dials"
+            cif_block["_pdbx_diffrn_data_section.type_scattering"] = "x-ray"
+            cif_block["_pdbx_diffrn_data_section.type_merged"] = "false"
+            cif_block["_pdbx_diffrn_data_section.type_scaled"] = str(
+                "scale" in self.params.intensity
+            ).lower()
 
         # FIXME finish metadata addition - detector and source details needed
         # http://mmcif.wwpdb.org/dictionaries/mmcif_pdbx_v50.dic/Categories/index.html
@@ -199,6 +227,10 @@ class MMCIFOutputFile(object):
         cif_block["_diffrn_detector.pdbx_collection_date"] = date_str
 
         # Write the crystal information
+        # if v50, thats all so return
+        if self.params.mmcif.pdb_version == "v50":
+            return cif_block
+        # continue if v5_next
         cif_loop = iotbx.cif.model.loop(
             header=(
                 "_pdbx_diffrn_unmerged_cell.ordinal",
@@ -309,8 +341,6 @@ class MMCIFOutputFile(object):
             "partiality": ("_pdbx_diffrn_unmerged_refln.partiality", "%7.4f"),
         }
 
-        fmt = "%6i %2i %5i %5i %-2i %-2i %-2i"
-
         variables_present = []
         if "scale" in self.params.intensity:
             reflections["scales"] = 1.0 / reflections["inverse_scale_factor"]
@@ -341,9 +371,7 @@ class MMCIFOutputFile(object):
         for name in variables_present:
             if name in reflections:
                 header += (extra_items[name][0],)
-                fmt += " " + extra_items[name][1]
-
-        loop_format_strings = {"_pdbx_diffrn_unmerged_refln": fmt}
+                self._fmt += " " + extra_items[name][1]
 
         if "scale" in self.params.intensity:
             # Write dataset_statistics - first make a miller array
@@ -393,24 +421,4 @@ class MMCIFOutputFile(object):
         cif_loop = iotbx.cif.model.loop(data=dict(zip(header, loop_values)))
         cif_block.add_loop(cif_loop)
 
-        # Add the block
-        self._cif["dials"] = cif_block
-
-        # Print to file
-        if self.params.mmcif.compress and not filename.endswith(
-            "." + self.params.mmcif.compress
-        ):
-            filename += "." + self.params.mmcif.compress
-        if self.params.mmcif.compress == "gz":
-            open_fn = gzip.open
-        elif self.params.mmcif.compress == "bz2":
-            open_fn = bz2.open
-        elif self.params.mmcif.compress == "xz":
-            open_fn = lzma.open
-        else:
-            open_fn = open
-        with open_fn(filename, "wt") as fh:
-            self._cif.show(out=fh, loop_format_strings=loop_format_strings)
-
-        # Log
-        logger.info("Wrote reflections to %s" % filename)
+        return cif_block

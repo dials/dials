@@ -197,6 +197,12 @@ phil_scope = parse(
     compress = gz bz2 xz
       .type = choice
       .help = "Choose compression format (also appended to the file name)"
+
+    pdb_version = v50 *v5_next
+      .type = choice
+      .help = "The pdb mmcif dictionary version that the output mmcif file"
+              "should comply with. v5_next adds support for recording unmerged"
+              "data as well as additional scan metadata and statistics."
   }
 
   mosflm {
