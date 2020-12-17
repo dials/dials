@@ -79,18 +79,84 @@ class MMCIFOutputFile(object):
 
         # Audit trail
         dials_version = dials.util.version.dials_version()
+        cif_block["_audit.revision_id"] = 1
         cif_block["_audit.creation_method"] = dials_version
         cif_block["_audit.creation_date"] = datetime.date.today().isoformat()
-        cif_block["_computing.data_reduction"] = (
-            "%s (Winter, G. et al., 2018)" % dials_version
+        cif_block["_entry.id"] = "DIALS"
+        # add software loop
+        mmcif_software_header = (
+            "_software.pdbx_ordinal",
+            "_software.citation_id",
+            "_software.name",  # as defined at [1]
+            "_software.version",
+            "_software.type",
+            "_software.classification",
+            "_software.description",
         )
-        cif_block[
-            "_publ.section_references"
-        ] = "Winter, G. et al. (2018) Acta Cryst. D74, 85-97."
+
+        mmcif_citations_header = (
+            "_citation.id",
+            "_citation.journal_abbrev",
+            "_citation.journal_volume",
+            "_citation.journal_issue",
+            "_citation.page_first",
+            "_citation.page_last",
+            "_citation.year",
+            "_citation.title",
+        )
+
+        software_loop = iotbx.cif.model.loop(header=mmcif_software_header)
+        citations_loop = iotbx.cif.model.loop(header=mmcif_citations_header)
+
+        software_loop.add_row(
+            (
+                1,
+                1,
+                "DIALS",
+                dials_version,
+                "package",
+                "data processing",
+                "Data processing and integration within the DIALS software package",
+            )
+        )
+        citations_loop.add_row(
+            (
+                1,
+                "Acta Cryst. D",
+                74,
+                2,
+                85,
+                97,
+                2018,
+                "DIALS: implementation and evaluation of a new integration package",
+            )
+        )
         if "scale" in self.params.intensity:
-            cif_block[
-                "_publ.section_references"
-            ] += "\nBeilsten-Edmands, J. et al. (2020) Acta Cryst. D76, 385-399."
+            software_loop.add_row(
+                (
+                    2,
+                    2,
+                    "DIALS",
+                    dials_version,
+                    "program",
+                    "data scaling",
+                    "Data scaling and merging within the DIALS software package",
+                )
+            )
+            citations_loop.add_row(
+                (
+                    2,
+                    "Acta Cryst. D",
+                    76,
+                    4,
+                    385,
+                    399,
+                    2020,
+                    "Scaling diffraction data in the DIALS software package: algorithms and new approaches for multi-crystal scaling",
+                )
+            )
+        cif_block.add_loop(software_loop)
+        cif_block.add_loop(citations_loop)
 
         # Hard coding X-ray
         cif_block["_pdbx_diffrn_data_section.id"] = "dials"
@@ -114,6 +180,10 @@ class MMCIFOutputFile(object):
             wls.append(round(exp.beam.get_wavelength(), 5))
             epochs.append(exp.scan.get_epochs()[0])
         unique_wls = set(wls)
+        cif_block["_exptl_crystal.id"] = 1  # links to crystal_id
+        cif_block["_diffrn.id"] = 1  # links to diffrn_id
+        cif_block["_diffrn.crystal_id"] = 1
+        cif_block["_diffrn_source.diffrn_id"] = 1
         cif_block["_diffrn_source.pdbx_wavelength_list"] = ", ".join(
             str(w) for w in unique_wls
         )
@@ -125,6 +195,7 @@ class MMCIFOutputFile(object):
         # One date is required, so if multiple just use the first date.
         min_epoch = min(epochs)
         date_str = time.strftime("%Y-%m-%d", time.gmtime(min_epoch))
+        cif_block["_diffrn_detector.diffrn_id"] = 1
         cif_block["_diffrn_detector.pdbx_collection_date"] = date_str
 
         # Write the crystal information
@@ -298,8 +369,13 @@ class MMCIFOutputFile(object):
                 use_internal_variance=False,
                 eliminate_sys_absent=False,
             )
-
-            cif_block.update(result.as_cif_block())
+            merged_block = iotbx.cif.model.block()
+            merged_block["_reflns.pdbx_ordinal"] = 1
+            merged_block["_reflns.pdbx_diffrn_id"] = 1
+            merged_block["_reflns.entry_id"] = "DIALS"
+            merged_data = result.as_cif_block()
+            merged_block.update(merged_data)
+            cif_block.update(merged_block)
 
         _, _, _, _, z0, z1 = reflections["bbox"].parts()
         h, k, l = [
