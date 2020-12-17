@@ -371,10 +371,13 @@ class Script(object):
         logger.info("Saving mmCIF information to %s", filename)
 
         block = iotbx.cif.model.block()
+        block["_audit.revision_id"] = 1
         block["_audit.creation_method"] = dials_version()
         block["_audit.creation_date"] = datetime.date.today().isoformat()
+        block["_entry.id"] = "two_theta_refine"
         #   block["_publ.section_references"] = '' # once there is a reference...
 
+        block["_cell.entry_id"] = "two_theta_refine"
         for cell, esd, cifname in zip(
             crystal.get_unit_cell().parameters(),
             crystal.get_cell_parameter_sd(),
@@ -393,6 +396,7 @@ class Script(object):
         block["_cell.volume_esd"] = "%f" % crystal.get_cell_volume_sd()
 
         used_reflections = refiner.get_matches()
+        block["_cell_measurement.entry_id"] = "two_theta_refine"
         block["_cell_measurement.reflns_used"] = len(used_reflections)
         block["_cell_measurement.theta_min"] = (
             flex.min(used_reflections["2theta_obs.rad"]) * 180 / math.pi / 2
@@ -400,6 +404,10 @@ class Script(object):
         block["_cell_measurement.theta_max"] = (
             flex.max(used_reflections["2theta_obs.rad"]) * 180 / math.pi / 2
         )
+        block["_exptl_crystal.id"] = 1
+        block["_diffrn.id"] = "two_theta_refine"
+        block["_diffrn.crystal_id"] = 1
+        block["_diffrn_reflns.diffrn_id"] = "two_theta_refine"
         block["_diffrn_reflns.number"] = len(used_reflections)
         miller_span = miller.index_span(used_reflections["miller_index"])
         min_h, min_k, min_l = miller_span.min()
