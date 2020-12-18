@@ -271,6 +271,9 @@ class MMCIFOutputFile(object):
                 "_pdbx_diffrn_scan.scan_angle_end",
             )
         )
+
+        expid_to_scan_id = {exp.identifier: i + 1 for i, exp in enumerate(experiments)}
+
         for i, exp in enumerate(experiments):
             scan = exp.scan
             crystal_id = crystal_to_id[exp.crystal]
@@ -409,9 +412,16 @@ class MMCIFOutputFile(object):
         h, k, l = [
             hkl.iround() for hkl in reflections["miller_index"].as_vec3_double().parts()
         ]
+        # make scan id consistent with header as defined above
+        scan_id = flex.int(reflections.size(), 0)
+        for id_ in reflections.experiment_identifiers().keys():
+            expid = reflections.experiment_identifiers()[id_]
+            sel = reflections["id"] == id_
+            scan_id.set_selected(sel, expid_to_scan_id[expid])
+
         loop_values = [
             flex.size_t_range(1, len(reflections) + 1),
-            reflections["id"] + 1,
+            scan_id,
             z0,
             z1,
             h,

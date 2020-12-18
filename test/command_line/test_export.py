@@ -258,7 +258,22 @@ def test_mmcif(compress, hklout, dials_data, tmpdir):
     assert not result.returncode and not result.stderr
     assert tmpdir.join(hklin).check(file=1)
 
-    # TODO include similar test for exporting scaled data in mmcif format
+
+def test_mmcif_on_scaled_data(dials_data, tmpdir):
+    """Call dials.export format=mmcif after scaling"""
+    scaled_expt = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled.expt")
+    scaled_refl = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled.refl")
+    command = [
+        "dials.export",
+        "format=mmcif",
+        scaled_expt.strpath,
+        scaled_refl.strpath,
+        "mmcif.hklout=scaled.mmcif",
+        "compress=None",
+    ]
+    result = procrunner.run(command, working_directory=tmpdir.strpath)
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("scaled.mmcif").check(file=1)
 
 
 def test_xds_ascii(dials_data, tmpdir):
