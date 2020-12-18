@@ -226,82 +226,6 @@ class MMCIFOutputFile(object):
         cif_block["_diffrn_detector.diffrn_id"] = 1
         cif_block["_diffrn_detector.pdbx_collection_date"] = date_str
 
-        # Write the crystal information
-        # if v50, thats all so return
-        if self.params.mmcif.pdb_version == "v50":
-            return cif_block
-        # continue if v5_next
-        cif_loop = iotbx.cif.model.loop(
-            header=(
-                "_pdbx_diffrn_unmerged_cell.ordinal",
-                "_pdbx_diffrn_unmerged_cell.crystal_id",
-                "_pdbx_diffrn_unmerged_cell.wavelength",
-                "_pdbx_diffrn_unmerged_cell.cell_length_a",
-                "_pdbx_diffrn_unmerged_cell.cell_length_b",
-                "_pdbx_diffrn_unmerged_cell.cell_length_c",
-                "_pdbx_diffrn_unmerged_cell.cell_angle_alpha",
-                "_pdbx_diffrn_unmerged_cell.cell_angle_beta",
-                "_pdbx_diffrn_unmerged_cell.cell_angle_gamma",
-                "_pdbx_diffrn_unmerged_cell.Bravais_lattice",
-            )
-        )
-        crystals = experiments.crystals()
-        crystal_to_id = {crystal: i + 1 for i, crystal in enumerate(crystals)}
-        for i, exp in enumerate(experiments):
-            crystal = exp.crystal
-            crystal_id = crystal_to_id[crystal]
-            wavelength = exp.beam.get_wavelength()
-            a, b, c, alpha, beta, gamma = crystal.get_unit_cell().parameters()
-            latt_type = str(
-                bravais_types.bravais_lattice(group=crystal.get_space_group())
-            )
-            cif_loop.add_row(
-                (i + 1, crystal_id, wavelength, a, b, c, alpha, beta, gamma, latt_type)
-            )
-            cif_block.add_loop(cif_loop)
-
-        # Write the scan information
-        cif_loop = iotbx.cif.model.loop(
-            header=(
-                "_pdbx_diffrn_scan.scan_id",
-                "_pdbx_diffrn_scan.crystal_id",
-                "_pdbx_diffrn_scan.image_id_begin",
-                "_pdbx_diffrn_scan.image_id_end",
-                "_pdbx_diffrn_scan.scan_angle_begin",
-                "_pdbx_diffrn_scan.scan_angle_end",
-            )
-        )
-
-        expid_to_scan_id = {exp.identifier: i + 1 for i, exp in enumerate(experiments)}
-
-        for i, exp in enumerate(experiments):
-            scan = exp.scan
-            crystal_id = crystal_to_id[exp.crystal]
-            image_range = scan.get_image_range()
-            osc_range = scan.get_oscillation_range(deg=True)
-            cif_loop.add_row(
-                (
-                    i + 1,
-                    crystal_id,
-                    image_range[0],
-                    image_range[1],
-                    osc_range[0],
-                    osc_range[1],
-                )
-            )
-            cif_block.add_loop(cif_loop)
-
-        # Make a dict of unit_cell parameters
-        unit_cell_parameters = {}
-        if crystal.num_scan_points > 1:
-            for i in range(crystal.num_scan_points):
-                a, b, c, alpha, beta, gamma = crystal.get_unit_cell_at_scan_point(
-                    i
-                ).parameters()
-                unit_cell_parameters[i] = (a, b, c, alpha, beta, gamma)
-        else:
-            unit_cell_parameters[0] = (a, b, c, alpha, beta, gamma)
-
         # Write reflection data
         # Required columns
         header = (
@@ -407,6 +331,71 @@ class MMCIFOutputFile(object):
             merged_data = result.as_cif_block()
             merged_block.update(merged_data)
             cif_block.update(merged_block)
+
+        # Write the crystal information
+        # if v50, thats all so return
+        if self.params.mmcif.pdb_version == "v50":
+            return cif_block
+        # continue if v5_next
+        cif_loop = iotbx.cif.model.loop(
+            header=(
+                "_pdbx_diffrn_unmerged_cell.ordinal",
+                "_pdbx_diffrn_unmerged_cell.crystal_id",
+                "_pdbx_diffrn_unmerged_cell.wavelength",
+                "_pdbx_diffrn_unmerged_cell.cell_length_a",
+                "_pdbx_diffrn_unmerged_cell.cell_length_b",
+                "_pdbx_diffrn_unmerged_cell.cell_length_c",
+                "_pdbx_diffrn_unmerged_cell.cell_angle_alpha",
+                "_pdbx_diffrn_unmerged_cell.cell_angle_beta",
+                "_pdbx_diffrn_unmerged_cell.cell_angle_gamma",
+                "_pdbx_diffrn_unmerged_cell.Bravais_lattice",
+            )
+        )
+        crystals = experiments.crystals()
+        crystal_to_id = {crystal: i + 1 for i, crystal in enumerate(crystals)}
+        for i, exp in enumerate(experiments):
+            crystal = exp.crystal
+            crystal_id = crystal_to_id[crystal]
+            wavelength = exp.beam.get_wavelength()
+            a, b, c, alpha, beta, gamma = crystal.get_unit_cell().parameters()
+            latt_type = str(
+                bravais_types.bravais_lattice(group=crystal.get_space_group())
+            )
+            cif_loop.add_row(
+                (i + 1, crystal_id, wavelength, a, b, c, alpha, beta, gamma, latt_type)
+            )
+            cif_block.add_loop(cif_loop)
+
+        # Write the scan information
+        cif_loop = iotbx.cif.model.loop(
+            header=(
+                "_pdbx_diffrn_scan.scan_id",
+                "_pdbx_diffrn_scan.crystal_id",
+                "_pdbx_diffrn_scan.image_id_begin",
+                "_pdbx_diffrn_scan.image_id_end",
+                "_pdbx_diffrn_scan.scan_angle_begin",
+                "_pdbx_diffrn_scan.scan_angle_end",
+            )
+        )
+
+        expid_to_scan_id = {exp.identifier: i + 1 for i, exp in enumerate(experiments)}
+
+        for i, exp in enumerate(experiments):
+            scan = exp.scan
+            crystal_id = crystal_to_id[exp.crystal]
+            image_range = scan.get_image_range()
+            osc_range = scan.get_oscillation_range(deg=True)
+            cif_loop.add_row(
+                (
+                    i + 1,
+                    crystal_id,
+                    image_range[0],
+                    image_range[1],
+                    osc_range[0],
+                    osc_range[1],
+                )
+            )
+            cif_block.add_loop(cif_loop)
 
         _, _, _, _, z0, z1 = reflections["bbox"].parts()
         h, k, l = [
