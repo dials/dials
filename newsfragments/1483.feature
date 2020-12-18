@@ -1,1 +1,2 @@
-dials.merge: Add dF/s(dF), also known as dano/sigdano, to statistics reported.
+dials.merge: Add <dF/s(dF)>, to the statistics reported if anomalous=True.
+A html report is also generated to plot this statistic.

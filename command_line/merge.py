@@ -15,9 +15,9 @@ from iotbx import phil
 from dials.algorithms.merging.merge import (
     MTZDataClass,
     generate_html_report,
+    make_dano_table,
     make_merged_mtz_file,
     merge,
-    print_dano_table,
     show_wilson_scaling_analysis,
     truncate,
 )
@@ -215,7 +215,7 @@ def merge_data_to_mtz(params, experiments, reflections):
         if stats_summary:
             logger.info(stats_summary)
         if anom_amplitudes:
-            print_dano_table(anom_amplitudes)
+            logger.info(make_dano_table(anom_amplitudes))
 
     # pass the dataclasses to an MTZ writer to generate the mtz file and return.
     return make_merged_mtz_file(mtz_datasets)

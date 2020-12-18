@@ -301,19 +301,19 @@ def dano_over_sigdano_stats(anomalous_amplitudes, n_bins=20):
 
 
 def dano_over_sigdano(anomalous_amplitudes):
-    """Calculate < |F(+) - F(-)|> / <sigma(F(+) - F(-))> i.e. DANO/SIGDANO."""
+    """Calculate < |F(+) - F(-)| / sigma(F(+) - F(-))> i.e. <DANO/SIGDANO>."""
     diff = anomalous_amplitudes.anomalous_differences()
     if not diff.data() or not diff.sigmas():
         return 0.0
-    return flex.mean(flex.abs(diff.data())) / flex.mean(diff.sigmas())
+    return flex.mean(flex.abs(diff.data()) / diff.sigmas())
 
 
-def print_dano_table(anomalous_amplitudes):
-    """Calculate dano/sigdano in resolution bins and print to the logger."""
+def make_dano_table(anomalous_amplitudes):
+    """Calculate <dano/sigdano> in resolution bins and tabulate."""
     dFsdF, resolution_bin_edges = dano_over_sigdano_stats(anomalous_amplitudes)
 
     logger.info("Size of anomalous differences")
-    header = ["d_max", "d_min", "dano/sigdano"]
+    header = ["d_max", "d_min", "<|ΔF|/σ(ΔF)>"]
     rows = []
     for i, dF in enumerate(dFsdF):
         rows.append(
@@ -323,7 +323,7 @@ def print_dano_table(anomalous_amplitudes):
                 f"{dF:6.3f}",
             ]
         )
-    logger.info(tabulate(rows, header))
+    return tabulate(rows, header)
 
 
 def make_dano_plots(anomalous_data):
@@ -343,7 +343,10 @@ def make_dano_plots(anomalous_data):
                 "data": [],
                 "help": """\
 This plot shows the size of the anomalous differences of F relative to the uncertainties.
-Dano/SigDano = (< |F(+)-F(-)| > / < sigma(F(+)-F(-)) >)
+(< |F(+)-F(-)|  / σ(F(+)-F(-)) >). A value of 0.8 is indicative of pure noise, and
+a suggested cutoff is when the value falls below 1.2, although these guides require
+reliable sigma estimates. For further information see
+https://strucbio.biologie.uni-konstanz.de/ccp4wiki/index.php?title=SHELX_C/D/E
 """,
             },
         },
@@ -371,14 +374,33 @@ Dano/SigDano = (< |F(+)-F(-)| > / < sigma(F(+)-F(-)) >)
             }
         )
 
+    data["dF"]["dano"]["data"].append(
+        {
+            "x": d_star_sq_bins,
+            "y": [0.8] * len(d_star_sq_bins),
+            "type": "scatter",
+            "mode": "lines",
+            "name": "random noise level",
+        }
+    )
+    data["dF"]["dano"]["data"].append(
+        {
+            "x": d_star_sq_bins,
+            "y": [1.2] * len(d_star_sq_bins),
+            "type": "scatter",
+            "mode": "lines",
+            "name": "an approximate <br>threshold for a<br>resolution cutoff",
+        }
+    )
+
     data["dF"]["dano"]["layout"] = {
-        "title": "Dano/SigDano vs resolution",
+        "title": "< |ΔF| / σ(ΔF) > vs resolution",
         "xaxis": {
             "title": "Resolution (Å)",
             "tickvals": d_star_sq_tickvals,
             "ticktext": d_star_sq_ticktext,
         },
-        "yaxis": {"title": "Dano/SigDano", "rangemode": "tozero"},
+        "yaxis": {"title": "< |ΔF| / σ(ΔF) >", "rangemode": "tozero"},
     }
     return data
 
@@ -394,8 +416,9 @@ def generate_html_report(mtz_file, filename):
         ):
             anom_data[array.info().wavelength] = array
     data = {"dF": {}}
-    if anom_data:
-        data = make_dano_plots(anom_data)
+    if not anom_data:
+        return
+    data = make_dano_plots(anom_data)
 
     loader = ChoiceLoader(
         [

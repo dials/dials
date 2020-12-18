@@ -57,7 +57,10 @@ def test_merge(dials_data, tmpdir, anomalous, truncate):
     ]
     result = procrunner.run(command, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("dials.merge.html").check()
+    if truncate and anomalous:
+        assert tmpdir.join("dials.merge.html").check()
+    else:
+        assert not tmpdir.join("dials.merge.html").check()
     expected_labels = mean_labels
     unexpected_labels = []
 
@@ -105,7 +108,6 @@ def test_merge_dmin_dmax(dials_data, tmpdir, best_unit_cell):
     ]
     result = procrunner.run(command, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("dials.merge.html").check()
 
     # check the unit cell was correctly set if using best_unit_cell
     m = mtz.object(mtz_file.strpath)
