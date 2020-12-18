@@ -209,9 +209,7 @@ class ScalerBase(Subject):
         # error model should be determined using anomalous groups
         Ih_table, _ = self._create_global_Ih_table(anomalous=True, remove_outliers=True)
         try:
-            model = run_error_model_refinement(
-                self.params.weighting.error_model, Ih_table
-            )
+            model = run_error_model_refinement(self.error_model, Ih_table)
         except (ValueError, RuntimeError) as e:
             logger.info(e)
             logger.debug(e, exc_info=True)
@@ -376,6 +374,12 @@ class SingleScaler(ScalerBase):
         self._configure_model_and_datastructures(for_multi=for_multi)
         if "Imid" in self.experiment.scaling_model.configdict:
             self._combine_intensities(self.experiment.scaling_model.configdict["Imid"])
+        if self.params.weighting.error_model.error_model:
+            # reload current error model parameters, or create new null
+            self.experiment.scaling_model.load_error_model(
+                self.params.weighting.error_model
+            )
+            self._update_error_model(self.experiment.scaling_model.error_model)
         if not self._experiment.scaling_model.is_scaled:
             self.round_of_outlier_rejection()
         if not for_multi:
@@ -1372,6 +1376,11 @@ class MultiScaler(MultiScalerBase):
         )
         # now select reflections from across the datasets
         self._select_reflections_for_scaling()
+        if self.params.weighting.error_model.error_model:
+            # all share same error model
+            self._update_error_model(
+                self.active_scalers[0].experiment.scaling_model.error_model
+            )
         self._create_Ih_table()
         # now add data to scale components from datasets
         self._update_model_data()
@@ -1422,7 +1431,11 @@ class MultiScaler(MultiScalerBase):
                         self._free_Ih_table.update_data_in_blocks(
                             variance, i, column="variance"
                         )
-
+                if self.params.weighting.error_model.error_model:
+                    # all share same error model
+                    self._update_error_model(
+                        self.active_scalers[0].experiment.scaling_model.error_model
+                    )
                 self.global_Ih_table.calc_Ih()
                 if self._free_Ih_table:
                     self._free_Ih_table.calc_Ih()

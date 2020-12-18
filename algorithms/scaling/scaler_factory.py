@@ -88,9 +88,9 @@ class ScalerFactory(object):
                 partiality_threshold=partiality_cutoff,
                 min_isigi=min_isigi,
             )
-            logger.disabled = False
             mask = ~good
             reflections.set_flags(mask, reflections.flags.excluded_for_scaling)
+        logger.disabled = False
         return reflections
 
     @staticmethod
