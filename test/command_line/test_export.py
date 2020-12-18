@@ -260,7 +260,7 @@ def test_mmcif(compress, hklout, dials_data, tmpdir):
     assert tmpdir.join(hklin).check(file=1)
 
 
-@pytest.mark.parametrize("pdb_version", ["v50", "v5_next"])
+@pytest.mark.parametrize("pdb_version", ["v5", "v5_next"])
 def test_mmcif_on_scaled_data(dials_data, tmpdir, pdb_version):
     """Call dials.export format=mmcif after scaling"""
     scaled_expt = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled.expt")
@@ -279,7 +279,7 @@ def test_mmcif_on_scaled_data(dials_data, tmpdir, pdb_version):
     assert tmpdir.join("scaled.mmcif").check(file=1)
 
     model = iotbx.cif.reader(file_path=tmpdir.join("scaled.mmcif").strpath).model()
-    if pdb_version == "v50":
+    if pdb_version == "v5":
         assert "_pdbx_diffrn_data_section.id" not in model["dials"].keys()
     elif pdb_version == "v5_next":
         assert "_pdbx_diffrn_data_section.id" in model["dials"].keys()

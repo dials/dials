@@ -333,8 +333,8 @@ class MMCIFOutputFile(object):
             cif_block.update(merged_block)
 
         # Write the crystal information
-        # if v50, thats all so return
-        if self.params.mmcif.pdb_version == "v50":
+        # if v5, thats all so return
+        if self.params.mmcif.pdb_version == "v5":
             return cif_block
         # continue if v5_next
         cif_loop = iotbx.cif.model.loop(
