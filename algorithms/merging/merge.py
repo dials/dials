@@ -342,8 +342,8 @@ def make_dano_plots(anomalous_data):
             "dano": {
                 "data": [],
                 "help": """\
-This plot shows the size of the anomalous differences of F relative to the uncertainties.
-(< |F(+)-F(-)|  / σ(F(+)-F(-)) >). A value of 0.8 is indicative of pure noise, and
+This plot shows the size of the anomalous differences of F relative to the uncertainties,
+(<|F(+)-F(-)|/σ(F(+)-F(-))>). A value of 0.8 is indicative of pure noise, and
 a suggested cutoff is when the value falls below 1.2, although these guides require
 reliable sigma estimates. For further information see
 https://strucbio.biologie.uni-konstanz.de/ccp4wiki/index.php?title=SHELX_C/D/E
@@ -394,13 +394,13 @@ https://strucbio.biologie.uni-konstanz.de/ccp4wiki/index.php?title=SHELX_C/D/E
     )
 
     data["dF"]["dano"]["layout"] = {
-        "title": "< |ΔF| / σ(ΔF) > vs resolution",
+        "title": "<|ΔF|/σ(ΔF)> vs resolution",
         "xaxis": {
             "title": "Resolution (Å)",
             "tickvals": d_star_sq_tickvals,
             "ticktext": d_star_sq_ticktext,
         },
-        "yaxis": {"title": "< |ΔF| / σ(ΔF) >", "rangemode": "tozero"},
+        "yaxis": {"title": "<|ΔF|/σ(ΔF)>", "rangemode": "tozero"},
     }
     return data
 
