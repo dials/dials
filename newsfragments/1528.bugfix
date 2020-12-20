@@ -1,1 +1,1 @@
-Updates to mmcif output to conform to latest pdb dictionaries.
+``dials.export``,``dials.two_theta_refine``: Updates to mmcif output to conform to latest pdb dictionaries (v5).
