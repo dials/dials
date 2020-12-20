@@ -6,6 +6,7 @@ import os
 import procrunner
 import pytest
 
+import iotbx.cif
 from cctbx import uctbx
 from dxtbx.model import ExperimentList
 from dxtbx.serialize import load
@@ -258,7 +259,30 @@ def test_mmcif(compress, hklout, dials_data, tmpdir):
     assert not result.returncode and not result.stderr
     assert tmpdir.join(hklin).check(file=1)
 
-    # TODO include similar test for exporting scaled data in mmcif format
+
+@pytest.mark.parametrize("pdb_version", ["v5", "v5_next"])
+def test_mmcif_on_scaled_data(dials_data, tmpdir, pdb_version):
+    """Call dials.export format=mmcif after scaling"""
+    scaled_expt = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled.expt")
+    scaled_refl = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled.refl")
+    command = [
+        "dials.export",
+        "format=mmcif",
+        scaled_expt.strpath,
+        scaled_refl.strpath,
+        "mmcif.hklout=scaled.mmcif",
+        "compress=None",
+        f"pdb_version={pdb_version}",
+    ]
+    result = procrunner.run(command, working_directory=tmpdir.strpath)
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("scaled.mmcif").check(file=1)
+
+    model = iotbx.cif.reader(file_path=tmpdir.join("scaled.mmcif").strpath).model()
+    if pdb_version == "v5":
+        assert "_pdbx_diffrn_data_section.id" not in model["dials"].keys()
+    elif pdb_version == "v5_next":
+        assert "_pdbx_diffrn_data_section.id" in model["dials"].keys()
 
 
 def test_xds_ascii(dials_data, tmpdir):
