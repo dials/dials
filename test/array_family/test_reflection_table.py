@@ -1452,16 +1452,16 @@ def test_calculate_entering_flags(dials_regression):
     assert flags.count(False) == 57799
 
 
-def test_match():
+def test_match_1():
+    """Test basic reflection matching"""
+
     n = 100
     s = 10
 
-    r = random.random
+    def r():
+        return random.random()
 
     xyz = flex.vec3_double()
-
-    # make x, y on a different absolute scale to Z - such that matching is
-    # best done taking this into consideration
 
     for j in range(n):
         xyz.append((r() * s, r() * s, r() * s * 20))
@@ -1478,6 +1478,45 @@ def test_match():
     a["xyz"] = xyz
     b["xyz"] = xyz2
 
-    nn, mm, distance = a.match(b, key="xyz", scale=(1.0, 1.0, 0.05))
+    mm, nn, distance = a.match(b, key="xyz", scale=(1.0, 1.0, 0.05))
 
-    assert list(nn) == list(order)
+    a_ = a.select(flex.size_t(list(mm)))
+    b_ = b.select(flex.size_t(list(nn)))
+
+    for _a, _b in zip(a_, b_):
+        assert pytest.approx(_a, _b)
+
+
+def test_match_2():
+    """Test non-1:1 reflection matching"""
+
+    n = 100
+    s = 10
+
+    def r():
+        return random.random()
+
+    xyz = flex.vec3_double()
+
+    for j in range(n):
+        xyz.append((r() * s, r() * s, r() * s * 20))
+
+    order = list(range(n))
+
+    random.shuffle(order)
+
+    xyz2 = xyz.select(flex.size_t(order))
+
+    a = flex.reflection_table()
+    b = flex.reflection_table()
+
+    a["xyz"] = xyz[: n // 2]
+    b["xyz"] = xyz2
+
+    mm, nn, distance = a.match(b, key="xyz", scale=(1.0, 1.0, 0.05))
+
+    a_ = a.select(flex.size_t(list(mm)))
+    b_ = b.select(flex.size_t(list(nn)))
+
+    for _a, _b in zip(a_, b_):
+        assert pytest.approx(_a, _b)

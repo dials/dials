@@ -603,7 +603,7 @@ class _(object):
         cctbx.array_family.flex.double,
     ]:
         """
-        Match reflections from this reflection list to another.
+        Match reflections from this reflection list to another (reference) list
 
         The match is based on comparison of any chosen 3-vector column.
 
@@ -616,38 +616,38 @@ class _(object):
                 case e.g. very wide or very fine slicing.
 
         Returns:
-            (other_index, self_index, distance) where:
-                other_index: is the index in the other reflection table
+            (self_index, other_index, distance) where:
                 self_index: is the reindex in the this reflection table
+                other_index: is the index in the other reflection table
                 distance: The calculated distance of specified column-vector
 
-            such that other[other_index][j] ~= self[self_index][j].
+            such that self[self_index][j] ~= other[other_index][j].
         """
 
-        xyz_a = self[key]
-        xyz_b = other[key]
+        xyz = self[key]
+        ref = other[key]
 
         flex = cctbx.array_family.flex
 
         if scale != (1, 1, 1):
-            x, y, z = xyz_a.parts()
+            x, y, z = xyz.parts()
             x *= scale[0]
             y *= scale[1]
             z *= scale[2]
-            xyz_a = flex.vec3_double(x, y, z)
+            xyz = flex.vec3_double(x, y, z)
 
-            x, y, z = xyz_b.parts()
+            x, y, z = ref.parts()
             x *= scale[0]
             y *= scale[1]
             z *= scale[2]
-            xyz_b = flex.vec3_double(x, y, z)
+            ref = flex.vec3_double(x, y, z)
 
-        a = xyz_a.as_double().as_1d()
-        b = xyz_b.as_double().as_1d()
-        ann = AnnAdaptorSelfInclude(a, 3)
-        ann.query(b)
+        x = xyz.as_double().as_1d()
+        r = ref.as_double().as_1d()
+        ann = AnnAdaptorSelfInclude(r, 3)
+        ann.query(x)
 
-        mm = flex.size_t(range(xyz_b.size()))
+        mm = flex.size_t(range(xyz.size()))
         nn, distance = ann.nn, flex.sqrt(ann.distances)
 
         sel = distance <= max_separation
@@ -655,7 +655,7 @@ class _(object):
         mm = mm.select(sel)
         nn = nn.select(sel)
         distance = distance.select(sel)
-        return nn, mm, distance
+        return mm, nn, distance
 
     def compute_zeta(self, experiment):
         """
