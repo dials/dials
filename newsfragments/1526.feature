@@ -1,1 +1,0 @@
-dials.scale: Update algorithm to apply a more realistic initial error model, or load the existing error model if rescaling

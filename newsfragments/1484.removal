@@ -1,3 +1,0 @@
-- dials.algorithms.spot_finding.finder.SpotFinder: Use of __call__ to run spotfinding has been
-  deprecated in favor of SpotFinder.find_spots(experiments).
-
