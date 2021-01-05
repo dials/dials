@@ -1480,8 +1480,14 @@ def test_match_1():
 
     mm, nn, distance = a.match(b, key="xyz", scale=(1.0, 1.0, 0.05))
 
-    a_ = a.select(flex.size_t(list(mm)))
-    b_ = b.select(flex.size_t(list(nn)))
+    # FIXME clean this once the change set from cctbx/cctbx_project#581 is in
+    # the stable branch
+    if hasattr(mm, "as_size_t"):
+        a_ = a.select(mm.as_size_t())
+        b_ = b.select(nn.as_size_t())
+    else:
+        a_ = a.select(flex.size_t(list(mm)))
+        b_ = b.select(flex.size_t(list(nn)))
 
     for _a, _b in zip(a_, b_):
         assert pytest.approx(_a, _b)
@@ -1515,8 +1521,14 @@ def test_match_2():
 
     mm, nn, distance = a.match(b, key="xyz", scale=(1.0, 1.0, 0.05))
 
-    a_ = a.select(flex.size_t(list(mm)))
-    b_ = b.select(flex.size_t(list(nn)))
+    # FIXME clean this once the change set from cctbx/cctbx_project#581 is in
+    # the stable branch
+    if hasattr(mm, "as_size_t"):
+        a_ = a.select(mm.as_size_t())
+        b_ = b.select(nn.as_size_t())
+    else:
+        a_ = a.select(flex.size_t(list(mm)))
+        b_ = b.select(flex.size_t(list(nn)))
 
     for _a, _b in zip(a_, b_):
         assert pytest.approx(_a, _b)
