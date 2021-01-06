@@ -11,9 +11,6 @@ Nightly build installers are available for Linux and Mac OS.
 For instructions on compiling from source or setting up a DIALS development
 environment, see :doc:`/documentation/installation_developer`.
 
-We no longer provide Python 2.7 nightly installations. If you require a Python 2.7-compatible
-installation please use the stable releases linked above.
-
 .. button::
    :text: Mac installer
    :link: https://dials.diamond.ac.uk/diamond_builds/dials-macosx-conda3.pkg
@@ -21,10 +18,6 @@ installation please use the stable releases linked above.
 .. button::
    :text: Linux installer
    :link: https://dials.diamond.ac.uk/diamond_builds/dials-linux-x86_64-conda3.tar.gz
-
-.. button::
-   :text: Source installer
-   :link: https://dials.diamond.ac.uk/diamond_builds/dials-source.tar.xz
 
 
 Installation
