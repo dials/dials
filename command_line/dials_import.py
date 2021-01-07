@@ -123,9 +123,23 @@ phil_scope = parse(
       .help = "If True, assert the reference geometry is similar to"
               "the image geometry"
 
-    reference_models = *all beam detector goniometer
-      .type = choice(multi=True)
-      .help = "Use only these models from reference_geometry"
+    use_beam_reference = True
+      .type = bool
+      .expert_level = 2
+      .help = "If True, the beam from reference_geometry will override "
+              "the beam from the image headers."
+
+    use_gonio_reference = True
+      .type = bool
+      .expert_level = 2
+      .help = "If True, the goniometer from reference_geometry will override "
+              "the goniometer from the image headers."
+
+    use_detector_reference = True
+      .type = bool
+      .expert_level = 2
+      .help = "If True, the detector from reference_geometry will override "
+              "the detector from the image headers."
 
     allow_multiple_sequences = True
       .type = bool
@@ -169,7 +183,6 @@ phil_scope = parse(
               "If both dx and dy are set then"
               "OffsetParallaxCorrectedPxMmStrategy will be used"
   }
-
 """,
     process_includes=True,
 )
@@ -265,18 +278,12 @@ class ReferenceGeometryUpdater(object):
                 imageset.get_detector(), static_only=True
             ), "Reference detector model does not match input detector model"
 
-        # Process params.reference.models
-        if "all" in self.params.input.reference_models:
-            use_reference_models = ["beam", "detector", "goniometer"]
-        else:
-            use_reference_models = self.params.input.reference_models
-
         # Set beam and detector
-        if "beam" in use_reference_models:
+        if self.params.input.use_beam_reference:
             imageset.set_beam(self.reference.beam)
-        if "detector" in use_reference_models:
+        if self.params.input.use_detector_reference:
             imageset.set_detector(self.reference.detector)
-        if "goniometer" in use_reference_models:
+        if self.params.input.use_gonio_reference:
             imageset.set_goniometer(self.reference.goniometer)
         return imageset
 
