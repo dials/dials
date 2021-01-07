@@ -353,3 +353,7 @@ intersphinx_mapping = {
     "scipy": ("https://docs.scipy.org/doc/scipy/reference/", None),
     "cctbx": ("https://cctbx.github.io/", None),
 }
+
+autodoc_default_options = {
+    "special-members": "__init__",
+}

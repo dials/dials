@@ -1,2 +1,0 @@
-Cosym: deprecate target.get_sym_ops(), use target.sym_ops instead
-Remove CosymAnalysis.space_groups - this has been superceded by the pointless-style symmetry analysis

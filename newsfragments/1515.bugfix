@@ -1,2 +1,0 @@
-When there is more than one lattice search indexing method available for use in ``dials.index``, each method is now associated with the correct set of configuration options.
-Previously, the configuration options of the last listed method would mistakenly be used for all the methods.

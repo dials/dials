@@ -1,0 +1,60 @@
+name: Newsfragments
+
+on:
+  pull_request_target:
+    branches-ignore:
+      - 'dials-?.*'
+
+jobs:
+  rename-news:
+    name: Newsfragment
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          token: ${{ secrets.USER_TOKEN }}
+      - name: Added a newsfragment
+        run: |
+          set -x
+          echo "Triggering commit: ${GITHUB_REF} ${GITHUB_SHA}"
+          git fetch --unshallow
+          git log HEAD -n 1
+          commit_merge_base="$(git merge-base ${{ github.event.pull_request.head.sha }} ${{ github.event.pull_request.base.sha }})"
+          if ! git diff --name-status $commit_merge_base ${{ github.event.pull_request.head.sha }} -- newsfragments/ | grep '^A'; then
+            echo "::error ::PR Branch is missing a newsfragment. Please add one with a number or named XXX.<type>."
+            exit 1
+          else
+            echo "✅  Newsfragment entry present"
+          fi
+      - name: Rename placeholder newsfragments
+        run: |
+          rename_candidates="$(find newsfragments -regex 'newsfragments/[xX]+\..*')"
+          if [[ -n "$rename_candidates" ]]; then
+            git config user.name "DiamondLightSource-build-server"
+            git config user.email "DiamondLightSource-build-server@users.noreply.github.com"
+            HEAD_REPO="${{github.event.pull_request.head.repo.full_name}}"
+            HEAD_BRANCH="${{ github.event.pull_request.head.ref }}"
+            message=""
+            git remote add fork https://x-access-token:${USER_TOKEN}@github.com/$HEAD_REPO.git
+            for fragment in ${rename_candidates}; do
+              target_file="$(echo "${fragment}" | sed -E "s/[xX]+/${{github.event.number}}/")"
+              if [[ -f "${target_file}" ]]; then
+                echo "::error ::Cannot rename ${fragment} to ${target_file} as it already exists. Merge manually."
+                exit 1
+              fi
+              git mv $fragment $target_file
+              git add $target_file
+              if [[ -z "${message}" ]]; then
+                message="Rename ${fragment} to ${target_file}"
+              else
+                message="Rename XXX.* to ${{github.event.number}}.*"
+              fi
+            done
+            git commit -m "${message}"
+            git push fork HEAD:"${HEAD_BRANCH}"
+          else
+            echo "No Newsfragments need to be renamed."
+          fi
