@@ -124,6 +124,10 @@ def filter_known_symmetry(
                     absolute_angle_tolerance=absolute_angle_tolerance,
                 )
             ):
+                logger.debug(
+                    "Rejecting crystal model inconsistent with input symmetry:\n"
+                    f"  Unit cell: {str(model.get_unit_cell())}"
+                )
                 continue
 
             yield model

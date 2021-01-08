@@ -144,6 +144,7 @@ class LatticeSearch(indexer.Indexer):
         if crystal_model is not None:
             crystal_models = [crystal_model]
         else:
+            logger.info("No suitable crystal model found")
             crystal_models = []
         experiments = ExperimentList()
         for cm in crystal_models:
