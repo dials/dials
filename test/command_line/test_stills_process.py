@@ -100,17 +100,19 @@ def test_cspad_cbf_in_memory(dials_regression, run_in_tmpdir):
 
 
 @pytest.mark.parametrize("use_mpi", [True, False])
-def test_sacla_h5(dials_regression, run_in_tmpdir, use_mpi, in_memory=False):
+def test_sacla_h5(dials_data, run_in_tmpdir, use_mpi, in_memory=False):
     # Only allow MPI tests if we've got MPI capabilities
     if use_mpi:
         pytest.importorskip("mpi4py")
 
     # Check the data files for this test exist
-    sacla_path = os.path.join(dials_regression, "image_examples", "SACLA_MPCCD_Cheetah")
-    image_path = os.path.join(sacla_path, "run266702-0-subset.h5")
+    sacla_path = dials_data("image_examples")
+    image_path = os.path.join(sacla_path, "SACLA-MPCCD-run266702-0-subset.h5")
     assert os.path.isfile(image_path)
 
-    geometry_path = os.path.join(sacla_path, "refined_experiments_level1.json")
+    geometry_path = os.path.join(
+        sacla_path, "SACLA-MPCCD-run266702-0-subset-refined_experiments_level1.json"
+    )
     assert os.path.isfile(geometry_path)
 
     # Write the .phil configuration to a file
