@@ -37,6 +37,13 @@ plot = False
 masking {
   include scope dials.util.masking.phil_scope
 }
+
+output {
+    plot = None
+      .type = path
+      .help = "Plot to an image file rather than an interactive plot window"
+}
+
 """,
     process_includes=True,
 )
@@ -97,6 +104,9 @@ def run(args=None):
         intensities.append(I)
         sigmas.append(sig)
 
+    if params.output.plot:
+        params.plot = True
+
     if params.plot:
         from matplotlib import pyplot
 
@@ -114,7 +124,13 @@ def run(args=None):
         ]
         ax.set_xticklabels(x_tick_labs)
 
-        pyplot.show()
+        if params.output.plot:
+            try:
+                pyplot.savefig(params.output.plot)
+            except ValueError:
+                raise Sorry(f"Unable to save plot to {params.output.plot}")
+        else:
+            pyplot.show()
 
 
 def background(imageset, indx, n_bins, corrected=False, mask_params=None):
