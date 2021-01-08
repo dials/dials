@@ -98,6 +98,8 @@ def filter_known_symmetry(
             value is 5).
     """
 
+    n_matched = 0
+
     cb_op_ref_to_primitive = target_symmetry.change_of_basis_op_to_primitive_setting()
 
     if target_symmetry.unit_cell() is not None:
@@ -130,7 +132,12 @@ def filter_known_symmetry(
                 )
                 continue
 
+            n_matched += 1
             yield model
+    if not n_matched:
+        logger.warning(
+            "No crystal models remaining after comparing with known symmetry"
+        )
 
 
 def filter_similar_orientations(
