@@ -56,7 +56,11 @@ def run(args=None):
     usage = "dials.background [options] image_*.cbf"
 
     parser = OptionParser(
-        usage=usage, phil=phil_scope, read_experiments=True, epilog=help_message
+        usage=usage,
+        phil=phil_scope,
+        read_experiments=True,
+        read_experiments_from_images=True,
+        epilog=help_message,
     )
 
     params, options = parser.parse_args(args, show_diff_phil=True)
