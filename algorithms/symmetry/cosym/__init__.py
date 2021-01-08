@@ -13,19 +13,20 @@ import logging
 import math
 from collections import OrderedDict
 
-import dials.util
-import iotbx.phil
 import numpy as np
+
+import iotbx.phil
 from cctbx import sgtbx
-from dials.algorithms.indexing.symmetry import find_matching_symmetry
-from dials.algorithms.symmetry.cosym import target
-from dials.algorithms.symmetry.cosym import engine
-from dials.algorithms.symmetry import symmetry_base
-from dials.algorithms.symmetry.laue_group import ScoreCorrelationCoefficient
-from dials.util.observer import Subject
 from libtbx import Auto
 from scitbx import matrix
 from scitbx.array_family import flex
+
+import dials.util
+from dials.algorithms.indexing.symmetry import find_matching_symmetry
+from dials.algorithms.symmetry import symmetry_base
+from dials.algorithms.symmetry.cosym import engine, target
+from dials.algorithms.symmetry.laue_group import ScoreCorrelationCoefficient
+from dials.util.observer import Subject
 
 logger = logging.getLogger(__name__)
 
@@ -174,10 +175,12 @@ class CosymAnalysis(symmetry_base, Subject):
                 sg_best = sg_primitive.change_basis(cb_op_best_primitive.inverse())
                 # best_subgroup above is the bravais type, so create thin copy here with the
                 # user-input space group instead
+                best_subsym = best_subsym.customized_copy(
+                    space_group_info=sg_best.info()
+                )
                 best_subgroup = {
-                    "best_subsym": best_subsym.customized_copy(
-                        space_group_info=sg_best.info()
-                    ),
+                    "subsym": best_subsym.change_basis(cb_op_inp_best.inverse()),
+                    "best_subsym": best_subsym,
                     "cb_op_inp_best": cb_op_inp_best,
                 }
 
@@ -296,7 +299,7 @@ class CosymAnalysis(symmetry_base, Subject):
     def _optimise(self, termination_params):
         NN = len(self.input_intensities)
         dim = self.target.dim
-        n_sym_ops = len(self.target.get_sym_ops())
+        n_sym_ops = len(self.target.sym_ops)
         coords = flex.random_double(NN * n_sym_ops * dim)
 
         import scitbx.lbfgs
@@ -356,9 +359,7 @@ class CosymAnalysis(symmetry_base, Subject):
             self._symmetry_analysis = None
             return
 
-        sym_ops = [
-            sgtbx.rt_mx(s).new_denominators(1, 12) for s in self.target.get_sym_ops()
-        ]
+        sym_ops = [sgtbx.rt_mx(s).new_denominators(1, 12) for s in self.target.sym_ops]
         self._symmetry_analysis = SymmetryAnalysis(
             self.coords, sym_ops, self.subgroups, self.cb_op_inp_min
         )
@@ -371,52 +372,46 @@ class CosymAnalysis(symmetry_base, Subject):
         )
         self.params.cluster.n_clusters = len(cosets.partitions)
 
-    def _space_group_for_dataset(self, dataset_id, sym_ops):
-        if self.input_space_group is not None:
-            sg = copy.deepcopy(self.input_space_group)
-        else:
-            sg = sgtbx.space_group()
-        ref_sym_op_id = None
-        ref_cluster_id = None
-        for sym_op_id in range(len(sym_ops)):
-            i_cluster = self.cluster_labels[
-                len(self.input_intensities) * sym_op_id + dataset_id
-            ]
-            if i_cluster < 0:
-                continue
-            if ref_sym_op_id is None:
-                ref_sym_op_id = sym_op_id
-                ref_cluster_id = i_cluster
-                continue
-            op = sym_ops[ref_sym_op_id].inverse().multiply(sym_ops[sym_op_id])
-            if i_cluster == ref_cluster_id:
-                sg.expand_smx(op.new_denominators(1, 12))
-        return sg.make_tidy()
-
     def _reindexing_ops_for_dataset(self, dataset_id, sym_ops, cosets):
-        reindexing_ops = {}
-        # Number of clusters in labels, ignoring noise if present.
-        n_clusters = len(set(self.cluster_labels)) - (
-            1 if -1 in self.cluster_labels else 0
-        )
+        """Identify the reindexing operator for each symmetry copy of the given dataset.
 
-        for i_cluster in range(n_clusters):
-            isel = (self.cluster_labels == i_cluster).iselection()
-            dataset_ids = isel % len(self.input_intensities)
-            sel = (dataset_ids == dataset_id).iselection()
-            for s in sel:
-                sym_op_id = isel[s] // len(self.input_intensities)
+        Args:
+            dataset_id (int): The index into the input list of datasets defining the
+                dataset for which to identify reindexing ops
+            sym_ops (list): List of cctbx.sgtbx.rt_mx used for the cosym symmetry
+                analysis
+            cosets (sgtbx.cosets.left_decomposition): Coset left decomposition of the
+                space group determined by the cosym analysis with respect to the lattice
+                group symmetry
+
+        Returns:
+            dict: The dictionary of reindexing operators for each copy of the dataset,
+                dataset_id. The keys are the id of the cluster containing that copy of
+                the dataset.
+        """
+        reindexing_ops = {}
+        for i_cluster in range(self.params.cluster.n_clusters):
+            # Select all points within this cluster
+            cluster_isel = (self.cluster_labels == i_cluster).iselection()
+            # dataset_ids of each points within this cluster
+            dataset_ids = cluster_isel % len(self.input_intensities)
+            # Index into cluster_isel for points corresponding to the requested dataset_id
+            dataset_isel = (dataset_ids == dataset_id).iselection()
+            for i in dataset_isel:
+                if i_cluster in reindexing_ops:
+                    # Finished with this cluster so exit loop early
+                    break
+                # sym_op for this copy of the dataset
+                sym_op = sym_ops[cluster_isel[i] // len(self.input_intensities)]
                 for partition in cosets.partitions:
-                    if sym_ops[sym_op_id] in partition:
-                        if i_cluster not in reindexing_ops:
-                            cb_op = sgtbx.change_of_basis_op(
-                                partition[0]
-                            ).new_denominators(self.cb_op_inp_min)
-                            reindexing_ops[i_cluster] = (
-                                self.cb_op_inp_min.inverse()
-                                * cb_op
-                                * self.cb_op_inp_min
-                            ).as_xyz()
+                    if sym_op in partition:
+                        cb_op = sgtbx.change_of_basis_op(partition[0]).new_denominators(
+                            self.cb_op_inp_min
+                        )
+                        reindexing_ops[i_cluster] = (
+                            self.cb_op_inp_min.inverse() * cb_op * self.cb_op_inp_min
+                        ).as_xyz()
+                        break
 
         return reindexing_ops
 
@@ -427,28 +422,22 @@ class CosymAnalysis(symmetry_base, Subject):
             self.cluster_labels = flex.double(self.coords.all()[0])
         else:
             self.cluster_labels = self._do_clustering(self.params.cluster.method)
+            # Number of clusters in labels, ignoring noise if present.
+            self.params.cluster.n_clusters = len(set(self.cluster_labels) - {-1})
 
-        sym_ops = [
-            sgtbx.rt_mx(s).new_denominators(1, 12) for s in self.target.get_sym_ops()
-        ]
+        sym_ops = [sgtbx.rt_mx(s).new_denominators(1, 12) for s in self.target.sym_ops]
 
         reindexing_ops = {}
-        space_groups = {}
+
+        cosets = sgtbx.cosets.left_decomposition(
+            self.target._lattice_group,
+            self.best_subgroup["subsym"].space_group().build_derived_acentric_group(),
+        )
 
         for dataset_id in range(len(self.input_intensities)):
-            space_groups[dataset_id] = self._space_group_for_dataset(
-                dataset_id, sym_ops
-            )
-
-            cosets = sgtbx.cosets.left_decomposition(
-                self.target._lattice_group, space_groups[dataset_id]
-            )
-
             reindexing_ops[dataset_id] = self._reindexing_ops_for_dataset(
                 dataset_id, sym_ops, cosets
             )
-
-        self.space_groups = space_groups
         self.reindexing_ops = reindexing_ops
 
     def _do_clustering(self, method):
@@ -520,7 +509,7 @@ class CosymAnalysis(symmetry_base, Subject):
         clustering = seed_clustering(
             self.coords,
             len(self.input_intensities),
-            len(self.target.get_sym_ops()),
+            len(self.target.sym_ops),
             min_silhouette_score=self.params.cluster.seed.min_silhouette_score,
             n_clusters=self.params.cluster.n_clusters,
         )

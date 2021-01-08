@@ -107,7 +107,6 @@ https://conda.anaconda.org/cctbx/win-64/ipython-5.8.0-py27_0.tar.bz2#5682fdd996f
 https://conda.anaconda.org/cctbx/noarch/pbr-5.1.2-py_0.tar.bz2#8035783a2f41554ebc23a72fd716e2de
 https://conda.anaconda.org/cctbx/noarch/pytest-xdist-1.26.1-py_0.tar.bz2#f5d20bb9e89fb4cb9807f125c9b11340
 https://conda.anaconda.org/cctbx/win-64/urllib3-1.24.1-py27_1000.tar.bz2#385f73a86e57dfa4ac4c99c0b21699b3
-https://conda.anaconda.org/cctbx/win-64/mock-2.0.0-py27_0.tar.bz2#1312ffc191bab8b5f34806009c9cf320
 https://conda.anaconda.org/cctbx/win-64/requests-2.21.0-py27_1000.tar.bz2#8c0573075b71241180f4f0698ecb2991
 https://conda.anaconda.org/cctbx/win-64/sphinx-1.8.4-py27_0.tar.bz2#9da8c3929f25d13aa4952d6344dea9eb
 https://conda.anaconda.org/cctbx/noarch/numpydoc-0.8.0-py_1.tar.bz2#5e71b7baaecd06f5c2dfbb1055cb0de3

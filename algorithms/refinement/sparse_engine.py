@@ -8,13 +8,18 @@
 #
 from __future__ import absolute_import, division, print_function
 
-import libtbx
-from dials.algorithms.refinement import DialsRefineConfigError
-from scitbx.array_family import flex
 import logging
 
-logger = logging.getLogger(__name__)
+import libtbx
+from scitbx.array_family import flex
+
+from dials.algorithms.refinement import DialsRefineConfigError
+from dials.algorithms.refinement.engine import AdaptLstbx as AdaptLstbxBase
 from dials.algorithms.refinement.engine import DisableMPmixin
+from dials.algorithms.refinement.engine import (
+    GaussNewtonIterations as GaussNewtonIterationsBase,
+)
+from dials.algorithms.refinement.engine import LevenbergMarquardtIterations
 
 try:
     from scitbx.examples.bevington import non_linear_ls_eigen_wrapper
@@ -26,7 +31,7 @@ except ImportError:
 """
     )
 
-from dials.algorithms.refinement.engine import AdaptLstbx as AdaptLstbxBase
+logger = logging.getLogger(__name__)
 
 
 class AdaptLstbxSparse(DisableMPmixin, AdaptLstbxBase, non_linear_ls_eigen_wrapper):
@@ -53,11 +58,6 @@ class AdaptLstbxSparse(DisableMPmixin, AdaptLstbxBase, non_linear_ls_eigen_wrapp
         )
 
         non_linear_ls_eigen_wrapper.__init__(self, n_parameters=len(self.x))
-
-
-from dials.algorithms.refinement.engine import (
-    GaussNewtonIterations as GaussNewtonIterationsBase,
-)
 
 
 class GaussNewtonIterations(AdaptLstbxSparse, GaussNewtonIterationsBase):
@@ -89,9 +89,6 @@ class GaussNewtonIterations(AdaptLstbxSparse, GaussNewtonIterationsBase):
 
         # adopt any overrides of the defaults above
         libtbx.adopt_optional_init_args(self, kwds)
-
-
-from dials.algorithms.refinement.engine import LevenbergMarquardtIterations
 
 
 class SparseLevenbergMarquardtIterations(

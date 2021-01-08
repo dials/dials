@@ -23,6 +23,7 @@ steps:
       "repositories" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | installer/bootstrap.py
     path: $(Pipeline.Workspace)/modules
     cacheHitVar: REPOSITORIES_CACHED
+  condition: eq(variables['ENABLE_CACHE'], '1')
   displayName: Restore repository cache
 
 # Copy libGL/libGLU into a place where they can be found during the
@@ -73,11 +74,13 @@ steps:
       "base" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(Agent.OS)-$(Agent.Version)-$(Pipeline.Workspace)" | "$(PYTHON_VERSION)" | ${{ parameters.conda_environment }}
     path: $(Pipeline.Workspace)/conda_base
     cacheHitVar: BASE_CACHED
+  condition: eq(variables['ENABLE_CACHE'], '1')
   displayName: Restore environment cache
 
 # If the conda environment could not be loaded from cache then
 # create a new one using the bootstrap script
 - script: |
+    set -e
     python modules/dials/installer/bootstrap.py base --python $(PYTHON_VERSION)
 
     # Immediately recover disk space used by miniconda installation
@@ -99,6 +102,7 @@ steps:
       "build" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(Agent.OS)-$(Agent.Version)-$(Pipeline.Workspace)" | "$(PYTHON_VERSION)" | installer/bootstrap.py | ${{ parameters.conda_environment }}
     path: $(Pipeline.Workspace)/build
     cacheHitVar: BUILD_CACHED
+  condition: eq(variables['ENABLE_CACHE'], '1')
   displayName: Restore cached build
 
 # Copy GL/GLU/KHR headers into a place where they can be found during the
@@ -166,6 +170,7 @@ steps:
       "data" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(DIALS_DATA_VERSION)"
     path: $(Pipeline.Workspace)/data
     cacheHitVar: DATA_CACHED
+  condition: eq(variables['ENABLE_CACHE'], '1')
   displayName: Restore regression data cache
 
 # Finally, run the full regression test suite

@@ -2,18 +2,19 @@ from __future__ import absolute_import, division, print_function
 
 import errno
 import os
+
 import matplotlib
 
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
+from libtbx.phil import parse
 
+import dials.util
 from dials.algorithms.refinement.rotation_decomposition import (
     solve_r3_rotation_for_angles_given_axes,
 )
 
-import dials.util
-from libtbx.phil import parse
+matplotlib.use("Agg")
+import matplotlib.gridspec as gridspec
+import matplotlib.pyplot as plt
 
 phil_scope = parse(
     """
@@ -89,12 +90,13 @@ class Script(object):
             epilog=help_message,
         )
 
-    def run(self):
+    def run(self, args=None):
         """Run the script."""
-        from dials.util.options import flatten_experiments
         from scitbx import matrix
 
-        params, options = self.parser.parse_args()
+        from dials.util.options import flatten_experiments
+
+        params, options = self.parser.parse_args(args)
         if len(params.input.experiments) == 0:
             self.parser.print_help()
             return
@@ -383,7 +385,7 @@ class Script(object):
             ymax = max(ymax, max(bc["beam_centre_x"]) + 0.1)
             plt.axis(ymin=ymin, ymax=ymax)
         plt.xlabel(r"rotation angle $\left(^\circ\right)$")
-        plt.ylabel(r"angle $\left(^\circ\right)$")
+        plt.ylabel(r"X (pixels)")
         plt.title(r"Beam centre X (pixels)")
 
         ax = plt.subplot(gs[1, 0])
@@ -395,7 +397,7 @@ class Script(object):
             ymax = max(ymax, max(bc["beam_centre_y"]) + 0.1)
             plt.axis(ymin=ymin, ymax=ymax)
         plt.xlabel(r"rotation angle $\left(^\circ\right)$")
-        plt.ylabel(r"angle $\left(^\circ\right)$")
+        plt.ylabel(r"Y (pixels)")
         plt.title(r"Beam centre Y (pixels)")
 
         basename = os.path.join(self._directory, "beam_centre")
@@ -404,7 +406,11 @@ class Script(object):
         plt.savefig(fullname)
 
 
+@dials.util.show_mail_handle_errors()
+def run(args=None):
+    script = Script()
+    script.run(args)
+
+
 if __name__ == "__main__":
-    with dials.util.show_mail_on_error():
-        script = Script()
-        script.run()
+    run()

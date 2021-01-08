@@ -5,6 +5,8 @@ import sys
 
 from libtbx.phil import parse
 
+from dials.util import Sorry, log, show_mail_handle_errors
+
 logger = logging.getLogger("dials.command_line.export_best")
 
 help_message = """
@@ -93,11 +95,10 @@ class BestExporter(object):
         best.write_par_file("%s.par" % prefix, experiment)
 
 
-if __name__ == "__main__":
+@show_mail_handle_errors()
+def run(args=None):
     from dials.util.options import OptionParser, reflections_and_experiments_from_files
     from dials.util.version import dials_version
-    from dials.util import log
-    from dials.util import Sorry
 
     usage = "dials.export models.expt reflections.pickle [options]"
 
@@ -110,7 +111,7 @@ if __name__ == "__main__":
     )
 
     # Get the parameters
-    params, options = parser.parse_args(show_diff_phil=False)
+    params, options = parser.parse_args(args, show_diff_phil=False)
 
     # Configure the logging
     log.config(logfile=params.output.log)
@@ -135,3 +136,7 @@ if __name__ == "__main__":
 
     exporter = BestExporter(params, experiments, reflections)
     exporter.export()
+
+
+if __name__ == "__main__":
+    run()

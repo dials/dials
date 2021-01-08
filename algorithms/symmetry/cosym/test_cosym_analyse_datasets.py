@@ -1,12 +1,13 @@
 from __future__ import absolute_import, division, print_function
 
-import libtbx
 import pytest
 
+import libtbx
 from cctbx import sgtbx
+from scitbx.array_family import flex
+
+from dials.algorithms.symmetry.cosym import CosymAnalysis, phil_scope
 from dials.algorithms.symmetry.cosym._generate_test_data import generate_test_data
-from dials.algorithms.symmetry.cosym import phil_scope
-from dials.algorithms.symmetry.cosym import CosymAnalysis
 
 
 @pytest.mark.parametrize(
@@ -111,20 +112,14 @@ def test_cosym(
             .build_derived_patterson_group()
         )
 
-    space_groups = {}
     reindexing_ops = {}
     for dataset_id in cosym.reindexing_ops.keys():
         if 0 in cosym.reindexing_ops[dataset_id]:
             cb_op = cosym.reindexing_ops[dataset_id][0]
             reindexing_ops.setdefault(cb_op, set())
             reindexing_ops[cb_op].add(dataset_id)
-        if dataset_id in cosym.space_groups:
-            space_groups.setdefault(cosym.space_groups[dataset_id], set())
-            space_groups[cosym.space_groups[dataset_id]].add(dataset_id)
 
     assert len(reindexing_ops) == len(expected_reindexing_ops)
-    assert len(space_groups) == 1
-    space_group_info = list(space_groups)[0].info()
 
     if use_known_space_group:
         expected_sg = sgtbx.space_group_info(space_group).group()
@@ -134,6 +129,7 @@ def test_cosym(
         )
     assert cosym.best_subgroup["best_subsym"].space_group() == expected_sg
 
+    space_group_info = cosym.best_subgroup["subsym"].space_group_info()
     for cb_op, ridx_set in reindexing_ops.items():
         for expected_set in expected_reindexing_ops.values():
             assert (len(ridx_set.symmetric_difference(expected_set)) == 0) or (
@@ -152,3 +148,23 @@ def test_cosym(
             assert reindexed.is_compatible_unit_cell(), str(
                 reindexed.crystal_symmetry()
             )
+
+
+def test_reindexing_ops_for_dataset(mocker):
+    # Mock a minimal CosymAnalysis instance
+    self = mocker.Mock()
+    self.cluster_labels = flex.double([1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0])
+    self.params.cluster.n_clusters = 2
+    self.input_intensities = [mocker.Mock(), mocker.Mock()]
+    self.cb_op_inp_min = sgtbx.change_of_basis_op()
+
+    # Lattice symmetry and true space group
+    lattice_group = sgtbx.space_group_info(symbol="C 2 2 2 (x+y,z,-2*y)").group()
+    sg = sgtbx.space_group_info(symbol="P 1 2 1").group()
+    cosets = sgtbx.cosets.left_decomposition(lattice_group, sg)
+
+    # Finally run the method we're testing
+    reindexing_ops = CosymAnalysis._reindexing_ops_for_dataset(
+        self, 0, list(lattice_group.smx()), cosets
+    )
+    assert reindexing_ops == {0: "x+z,-y,-z", 1: "x,y,z"}

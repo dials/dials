@@ -4,13 +4,17 @@ import math
 import os
 import random
 
-import dials.util.nexus
 import pytest
-from dials.util.nexus.nx_mx import polarization_normal_to_stokes
-from dials.util.nexus.nx_mx import polarization_stokes_to_normal
+
 from dxtbx.model.experiment_list import ExperimentListFactory
 from scitbx import matrix
+
+import dials.util.nexus
 from dials.command_line.export import phil_scope
+from dials.util.nexus.nx_mx import (
+    polarization_normal_to_stokes,
+    polarization_stokes_to_normal,
+)
 
 
 def test_polarization_conversion():

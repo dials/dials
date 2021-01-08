@@ -2,8 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import copy
 
-from dxtbx.model import Experiment, ExperimentList
-from dxtbx.model import Scan
+from dxtbx.model import Experiment, ExperimentList, Scan
 from dxtbx.model.experiment_list import ExperimentListFactory
 
 from dials.array_family import flex

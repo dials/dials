@@ -15,31 +15,28 @@ Examples::
     untrusted.rectangle=50,100,50,100 \\
     untrusted.circle=200,200,100
 
-  dials.generate_mask models.expt resolution.d_max=2.00
+  dials.generate_mask models.expt d_max=2.00
 """
 
 from __future__ import absolute_import, division, print_function
 
 import logging
 import os.path
+from typing import List, Optional, Tuple
 
 import six.moves.cPickle as pickle
 
-import dials.util
-import dials.util.log
 import libtbx.phil as phil
-from dials.util.masking import MaskGenerator
-from dials.util.options import OptionParser, flatten_experiments
 from dxtbx.format.image import ImageBool
 from dxtbx.model.experiment_list import ExperimentList
 from scitbx.array_family import flex
 
-try:
-    from typing import List, Optional, Tuple
+import dials.util
+import dials.util.log
+from dials.util.masking import MaskGenerator
+from dials.util.options import OptionParser, flatten_experiments
 
-    Masks = List[Tuple[flex.bool, ...]]
-except ImportError:
-    pass
+Masks = List[Tuple[flex.bool, ...]]
 
 log = logging.getLogger("dials.generate_mask")
 
@@ -138,8 +135,8 @@ def generate_mask(
     return masks, experiments
 
 
-def run(phil=phil_scope, args=None):
-    # type: (phil.scope, List[str, ...]) -> None
+@dials.util.show_mail_handle_errors()
+def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     """
     Parse command-line arguments, run the script.
 
@@ -177,5 +174,4 @@ def run(phil=phil_scope, args=None):
 
 
 if __name__ == "__main__":
-    with dials.util.show_mail_on_error():
-        run()
+    run()

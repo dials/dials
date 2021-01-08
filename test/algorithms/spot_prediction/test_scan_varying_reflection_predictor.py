@@ -2,7 +2,12 @@ from __future__ import absolute_import, division, print_function
 
 import copy
 import os
+
 import pytest
+
+from .test_scan_static_reflection_predictor import (  # noqa: F401, used as test fixture; isort:skip
+    data as static_test,
+)
 
 
 class Data(object):
@@ -198,11 +203,6 @@ def test_regression(data):
     # print 'OK'
 
 
-from dials.test.algorithms.spot_prediction.test_scan_static_reflection_predictor import (  # noqa: F401, used as test fixture
-    data as static_test,
-)
-
-
 def test_scan_varying_results_are_close_to_static_prediction_when_model_is_static(
     static_test,  # noqa: F811, not a redefinition
 ):
@@ -267,8 +267,8 @@ def test_scan_varying_results_are_close_to_static_prediction_when_model_is_stati
 
 def test_for_reflection_table(data):
     from dials.algorithms.spot_prediction import (
-        ScanVaryingReflectionPredictor,
         ScanStaticReflectionPredictor,
+        ScanVaryingReflectionPredictor,
     )
     from dials.array_family import flex
 

@@ -1,11 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
 from libtbx import phil
-from scitbx.array_family import flex
 from scitbx import matrix
+from scitbx.array_family import flex
 
-from . import Strategy
-
+from .strategy import Strategy
 
 fft1d_phil_str = """\
 characteristic_grid = None
@@ -17,12 +16,31 @@ characteristic_grid = None
 
 
 class FFT1D(Strategy):
-    """Basis vector search using a 1D FFT.
+    """
+    Basis vector search using 1D FFTs in reciprocal space.
+
+    A set of dimensionless radial unit vectors, typically ~7000 in total, is chosen
+    so that they are roughly evenly spaced in solid angle over a hemisphere. The
+    reciprocal space displacements of the measured spot centroids are then projected
+    onto each of these radial vectors in turn (that is, we calculate the scalar
+    product of each displacement with each unit vector). A 1D FFT of the linear
+    density of projected spot positions is performed along each direction.
+    Aggregating the results of all the transforms, the three shortest non-collinear
+    wave vectors with the greatest spectral weight correspond to the basis vectors of
+    the direct lattice.
 
     See:
         Steller, I., Bolotovsky, R. & Rossmann, M. G. (1997). J. Appl. Cryst. 30, 1036-1040.
         Sauter, N. K., Grosse-Kunstleve, R. W. & Adams, P. D. (2004). J. Appl. Cryst. 37, 399-409.
     """
+
+    phil_help = (
+        "Search for the basis vectors of the direct lattice by performing a series of "
+        "1D FFTs along various directions in reciprocal space. This has a lower "
+        "memory requirement than a single 3D FFT (the fft3d method). This method may "
+        "also be more appropriate than a 3D FFT if the reflections are from narrow "
+        "wedges of rotation data or from stills data."
+    )
 
     phil_scope = phil.parse(fft1d_phil_str)
 
@@ -49,8 +67,8 @@ class FFT1D(Strategy):
             A tuple containing the list of basis vectors and a flex.bool array
             identifying which reflections were used in indexing.
         """
-        from rstbx.phil.phil_preferences import indexing_api_defs
         import iotbx.phil
+        from rstbx.phil.phil_preferences import indexing_api_defs
 
         used_in_indexing = flex.bool(reciprocal_lattice_vectors.size(), True)
 

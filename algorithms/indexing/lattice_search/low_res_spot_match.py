@@ -7,11 +7,12 @@ import operator
 
 import libtbx.phil
 from cctbx import miller
-from dials.algorithms.indexing import DialsIndexError
-from dials.array_family import flex
 from dxtbx.model import Crystal
 from scitbx import matrix
 from scitbx.math import least_squares_plane, superpose
+
+from dials.algorithms.indexing import DialsIndexError
+from dials.array_family import flex
 
 from .strategy import Strategy
 
@@ -90,7 +91,7 @@ candidate_spots
     .type = int
 
     d_star_tolerance = 4.0
-    .help = "Number of sigmas from the centroid position for which to"
+    .help = "Number of sigmas from the centroid position for which to "
             "calculate d* bands"
     .type = float
 }
@@ -116,9 +117,25 @@ max_quads = 600
 
 
 class LowResSpotMatch(Strategy):
-    """Lattice search by matching low resolution spots to candidate indices
-    based on resolution and reciprocal space distance between observed spots.
     """
+    A lattice search strategy matching low resolution spots to candidate indices.
+
+    The match is based on resolution and reciprocal space distance between observed
+    spots. A prior unit cell and space group are required and solutions are assessed
+    by matching the low resolution spots against candidate reflection positions
+    predicted from the known cell. This lattice search strategy is a special case
+    designed to work for electron diffraction still images, in which one typically
+    only collects reflections from the zero-order Laue zone. In principle, it is not
+    limited to this type of data, but probably works best with narrow wedges,
+    good initial geometry and a small beam-stop shadow so that a good number of
+    low-order reflections are collected.
+    """
+
+    phil_help = (
+        "A lattice search strategy that matches low resolution spots to candidate "
+        "indices based on a known unit cell and space group. Designed primarily for "
+        "electron diffraction still images."
+    )
 
     phil_scope = libtbx.phil.parse(low_res_spot_match_phil_str)
 

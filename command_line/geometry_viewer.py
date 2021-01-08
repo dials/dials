@@ -3,16 +3,19 @@
 from __future__ import absolute_import, division, print_function
 
 import copy
+import sys
 
-import libtbx.phil
+import wx
+
 import gltbx
 import gltbx.gl as gl
-import wx
+import libtbx.phil
 import wxtbx.utils
-from dials.util import wx_viewer
 from dxtbx.model import MultiAxisGoniometer
-from scitbx.math import minimum_covering_sphere
 from scitbx.array_family import flex
+from scitbx.math import minimum_covering_sphere
+
+from dials.util import show_mail_handle_errors, wx_viewer
 
 help_message = """
 """
@@ -88,6 +91,7 @@ class render_3d(object):
         distance = self.settings.detector_distance
         if distance:
             import math
+
             from scitbx import matrix
 
             p_id = detector.get_panel_intersection(beam.get_s0())
@@ -573,11 +577,12 @@ class GeometryWindow(wx_viewer.show_points_and_lines_mixin):
         self.move_to_center_of_viewport(self.rotation_center)
 
 
-def run(args):
+@show_mail_handle_errors()
+def run(args=None):
 
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_experiments
     import os
+
+    from dials.util.options import OptionParser, flatten_experiments
 
     usage = "dials.geometry_viewer [options] models.expt"
 
@@ -589,7 +594,7 @@ def run(args):
         epilog=help_message,
     )
 
-    params, options = parser.parse_args(quick_parse=True, show_diff_phil=True)
+    params, options = parser.parse_args(args, quick_parse=True, show_diff_phil=True)
 
     if "DIALS_EXPORT_DO_NOT_CHECK_FORMAT" in os.environ:
         print(
@@ -668,6 +673,4 @@ def run(args):
 
 
 if __name__ == "__main__":
-    import sys
-
-    run(sys.argv[1:])
+    run()

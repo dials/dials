@@ -5,9 +5,10 @@ import sys
 
 import six
 import wx
-from scitbx.array_family import flex
-import scitbx.matrix
 from six.moves import range
+
+import scitbx.matrix
+from scitbx.array_family import flex
 
 ######
 # Base class for a tile object - handles access to tiles.
@@ -378,7 +379,7 @@ class _Tiles(object):
             w, h = self.flex_image.ex_size2(), self.flex_image.ex_size1()
             assert w == 512
             assert h == 512
-            wx_image = wx.EmptyImage(w / 2, h / 2)
+            wx_image = wx.Image(w / 2, h / 2)
             import PIL.Image as Image
 
             Image_from_bytes = Image.frombytes(
@@ -395,11 +396,11 @@ class _Tiles(object):
             w, h = self.flex_image.ex_size2(), self.flex_image.ex_size1()
             assert w == 256
             assert h == 256
-            wx_image = wx.EmptyImage(w, h)
+            wx_image = wx.Image(w, h)
             wx_image.SetData(self.flex_image.as_bytes())
             return wx_image.ConvertToBitmap()
         else:
-            wx_image = wx.EmptyImage(256, 256)
+            wx_image = wx.Image(256, 256)
             return wx_image.ConvertToBitmap()
 
     def get_binning(self):

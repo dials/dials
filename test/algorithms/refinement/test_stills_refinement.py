@@ -9,38 +9,38 @@ from __future__ import absolute_import, division, print_function
 def test(args=[]):
     # Python and cctbx imports
     from math import pi
-    from scitbx import matrix
-    from libtbx.phil import parse
-    from libtbx.test_utils import approx_equal
 
-    # Import for surgery on reflection_tables
-    from dials.array_family import flex
+    from cctbx.sgtbx import space_group, space_group_symbols
 
-    # Get module to build models using PHIL
-    import dials.test.algorithms.refinement.setup_geometry as setup_geometry
+    # Symmetry constrained parameterisation for the unit cell
+    from cctbx.uctbx import unit_cell
 
     # We will set up a mock scan and a mock experiment list
     from dxtbx.model import ScanFactory
-    from dxtbx.model.experiment_list import ExperimentList, Experiment
+    from dxtbx.model.experiment_list import Experiment, ExperimentList
+    from libtbx.phil import parse
+    from libtbx.test_utils import approx_equal
+    from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enlarge
+    from scitbx import matrix
+
+    # Get module to build models using PHIL
+    import dials.test.algorithms.refinement.setup_geometry as setup_geometry
 
     # Crystal parameterisations
     from dials.algorithms.refinement.parameterisation.crystal_parameters import (
         CrystalOrientationParameterisation,
         CrystalUnitCellParameterisation,
     )
-
-    # Symmetry constrained parameterisation for the unit cell
-    from cctbx.uctbx import unit_cell
-    from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enlarge
-
-    # Reflection prediction
-    from dials.algorithms.spot_prediction import IndexGenerator
     from dials.algorithms.refinement.prediction.managed_predictors import (
         ScansRayPredictor,
         StillsExperimentsPredictor,
     )
-    from dials.algorithms.spot_prediction import ray_intersection
-    from cctbx.sgtbx import space_group, space_group_symbols
+
+    # Reflection prediction
+    from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
+
+    # Import for surgery on reflection_tables
+    from dials.array_family import flex
 
     #############################
     # Setup experimental models #

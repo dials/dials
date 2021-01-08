@@ -2,6 +2,8 @@
 
 from __future__ import absolute_import, division, print_function
 
+import dials.util
+
 
 def get_cwd():
     """
@@ -28,10 +30,12 @@ def get_tid():
         raise KeyError("Could not find task id")
 
 
-if __name__ == "__main__":
+@dials.util.show_mail_handle_errors()
+def run(_=None):
     import traceback
-    from os.path import join, exists
+    from os.path import exists, join
     from time import sleep
+
     import six.moves.cPickle as pickle
 
     # Get the task id and the current working directory
@@ -59,3 +63,7 @@ if __name__ == "__main__":
     # Dump the result
     with open(output_fn, "wb") as outfile:
         pickle.dump(result, outfile, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+if __name__ == "__main__":
+    run()

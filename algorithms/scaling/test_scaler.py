@@ -1,25 +1,27 @@
-from __future__ import absolute_import, division, print_function
+from unittest.mock import MagicMock, Mock
+
 import pytest
-from mock import Mock, MagicMock
-from scitbx import sparse
-from libtbx import phil
+
+from dxtbx.model import Beam, Crystal, Detector, Experiment, Goniometer, Scan
 from dxtbx.model.experiment_list import ExperimentList
-from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
+from libtbx import phil
+from scitbx import sparse
+
+from dials.algorithms.scaling.basis_functions import RefinerCalculator
+from dials.algorithms.scaling.parameter_handler import ScalingParameterManagerGenerator
+from dials.algorithms.scaling.scaler import (
+    MultiScaler,
+    NullScaler,
+    SingleScaler,
+    TargetScaler,
+    calc_sf_variances,
+)
+from dials.algorithms.scaling.scaler_factory import create_scaler
+from dials.algorithms.scaling.scaling_library import create_scaling_model
+from dials.algorithms.scaling.scaling_utilities import calculate_prescaling_correction
+from dials.algorithms.scaling.target_function import ScalingTarget
 from dials.array_family import flex
 from dials.util.options import OptionParser
-from dials.algorithms.scaling.scaling_library import create_scaling_model
-from dials.algorithms.scaling.scaler_factory import create_scaler
-from dials.algorithms.scaling.basis_functions import RefinerCalculator
-from dials.algorithms.scaling.scaling_utilities import calculate_prescaling_correction
-from dials.algorithms.scaling.scaler import (
-    SingleScaler,
-    calc_sf_variances,
-    MultiScaler,
-    TargetScaler,
-    NullScaler,
-)
-from dials.algorithms.scaling.parameter_handler import ScalingParameterManagerGenerator
-from dials.algorithms.scaling.target_function import ScalingTarget
 
 
 def side_effect_update_var(variances, intensities):

@@ -5,13 +5,15 @@ import json
 import logging
 import math
 
-import dials.util
-import libtbx
 import scipy.stats
+
+import libtbx
 from cctbx import crystal, sgtbx
-from dials.algorithms.symmetry import symmetry_base
 from scitbx.array_family import flex
 from scitbx.math import five_number_summary
+
+import dials.util
+from dials.algorithms.symmetry import symmetry_base
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +54,7 @@ class LaueGroupAnalysis(symmetry_base):
             intensities. If set to :data:`libtbx.Auto` then d_min will be
             automatically determined according to the parameters
             ``min_i_mean_over_sigma_mean`` and ``min_cc_half``.
-          min_i_mean_over_sigma_mean (float): minimum value of |I|/|sigma(i)| for
+          min_i_mean_over_sigma_mean (float): minimum value of :math:`|I|/|sigma(i)|` for
             automatic determination of resolution cutoff.
           min_cc_half (float): minimum value of CC1/2 for automatic determination of
             resolution cutoff.

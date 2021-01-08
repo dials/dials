@@ -1,12 +1,14 @@
 """Test scoring of screw axes."""
 from __future__ import absolute_import, division, print_function
-from dials.array_family import flex
+
 from dials.algorithms.symmetry.absences.screw_axes import (
+    ScrewAxis21c,
     ScrewAxis41c,
     ScrewAxis42c,
     ScrewAxis61c,
-    ScrewAxis21c,
 )
+from dials.array_family import flex
+
 
 # take some actual data for difficult cases - merged I, sigma values
 def make_test_data_LCY_21c():

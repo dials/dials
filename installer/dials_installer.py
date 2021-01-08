@@ -34,7 +34,6 @@ class installer(install_distribution.installer):
         "gui_resources",
         "ccp4io_adaptbx",
         "annlib_adaptbx",
-        "tntbx",
         "clipper",
         # dials
         "dxtbx",
@@ -135,8 +134,9 @@ class installer(install_distribution.installer):
         # (base/lib/python2.??/site-packages/matplotlib-????/matplotlib)
         # (base/Python.framework/Versions/?.?/lib/python?.?/site-packages/matplotlib-(...) on MacOS)
         try:
-            import matplotlib
             import inspect
+
+            import matplotlib
 
             matplotpath = os.path.dirname(
                 os.path.dirname(inspect.getsourcefile(matplotlib))

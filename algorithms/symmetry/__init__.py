@@ -12,14 +12,11 @@ logger = logging.getLogger(__name__)
 from six.moves import cStringIO as StringIO
 
 import libtbx
-from scitbx.array_family import flex
-from cctbx import adptbx
-from cctbx import sgtbx
-from cctbx import uctbx
+from cctbx import adptbx, sgtbx, uctbx
 from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from mmtbx import scaling
-from mmtbx.scaling import absolute_scaling
-from mmtbx.scaling import matthews
+from mmtbx.scaling import absolute_scaling, matthews
+from scitbx.array_family import flex
 
 from dials.util import resolution_analysis
 
@@ -53,7 +50,7 @@ class symmetry_base(object):
             intensities. If set to :data:`libtbx.Auto` then d_min will be
             automatically determined according to the parameters
             ``min_i_mean_over_sigma_mean`` and ``min_cc_half``.
-          min_i_mean_over_sigma_mean (float): minimum value of |I|/|sigma(I)| for
+          min_i_mean_over_sigma_mean (float): minimum value of :math:`|I|/|sigma(I)|` for
             automatic determination of resolution cutoff.
           min_cc_half (float): minimum value of CC½ for automatic determination of
             resolution cutoff.

@@ -3,17 +3,22 @@ Tests for the constraints system used in refinement
 """
 
 from __future__ import absolute_import, division, print_function
+
 import os
 from copy import deepcopy
-from libtbx.test_utils import approx_equal
-from libtbx import easy_run
-from scitbx import sparse
-from dials.array_family import flex
+
 from dxtbx.model.experiment_list import ExperimentListFactory
-from dials.algorithms.refinement.constraints import EqualShiftConstraint
-from dials.algorithms.refinement.constraints import ConstraintManager
-from dials.algorithms.refinement.constraints import SparseConstraintManager
+from libtbx import easy_run
+from libtbx.test_utils import approx_equal
+from scitbx import sparse
+
+from dials.algorithms.refinement.constraints import (
+    ConstraintManager,
+    EqualShiftConstraint,
+    SparseConstraintManager,
+)
 from dials.algorithms.refinement.engine import Journal
+from dials.array_family import flex
 
 
 def test_contraints_manager_simple_test():

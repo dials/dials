@@ -1,15 +1,16 @@
-from __future__ import absolute_import, division, print_function
+"""Test that compute_delta_cchalf returns required values"""
 
-# test that compute_delta_cchalf returns required values
-import mock
-from libtbx import phil
-from dxtbx.model.experiment_list import ExperimentList
+from unittest import mock
+
 from dxtbx.model import Crystal, Experiment, Scan
-from dials.util.options import OptionParser
+from dxtbx.model.experiment_list import ExperimentList
+from libtbx import phil
+
 from dials.algorithms.scaling.model.model import KBScalingModel
-from dials.array_family import flex
-from dials.algorithms.statistics.cc_half_algorithm import CCHalfFromDials, DeltaCCHalf
 from dials.algorithms.scaling.scale_and_filter import AnalysisResults, log_cycle_results
+from dials.algorithms.statistics.cc_half_algorithm import CCHalfFromDials, DeltaCCHalf
+from dials.array_family import flex
+from dials.util.options import OptionParser
 
 
 def generate_test_reflections(n=2):
@@ -21,6 +22,7 @@ def generate_test_reflections(n=2):
         r["xyzobs.px.value"] = flex.vec3_double([(0, 0, i + 0.5) for i in range(0, 10)])
         r.experiment_identifiers()[id_] = str(id_)
         r.set_flags(flex.bool(10, True), r.flags.integrated)
+        r.set_flags(flex.bool(10, True), r.flags.scaled)
         reflections.extend(r)
     return reflections
 

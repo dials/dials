@@ -9,10 +9,11 @@ from six.moves import cStringIO as StringIO
 
 import libtbx.phil
 import scitbx.matrix
-from dials.algorithms.indexing import indexer
-from dials.algorithms.indexing.basis_vector_search import combinations, optimise
 from dxtbx.model.experiment_list import Experiment, ExperimentList
 from scitbx.array_family import flex
+
+from dials.algorithms.indexing import indexer
+from dials.algorithms.indexing.basis_vector_search import combinations, optimise
 
 from .low_res_spot_match import LowResSpotMatch
 from .strategy import Strategy
@@ -82,15 +83,15 @@ for entry_point in itertools.chain(
     pkg_resources.iter_entry_points("dials.index.basis_vector_search"),
     pkg_resources.iter_entry_points("dials.index.lattice_search"),
 ):
-    scope = (
-        """\
-%s {
-    include scope entry_point.load().phil_scope
-}
-    """
-        % entry_point.name
+    ext_master_scope = libtbx.phil.parse(
+        """
+%s
+.expert_level=1
+.help=%s
+{}
+        """
+        % (entry_point.name, entry_point.load().phil_help)
     )
-    ext_master_scope = libtbx.phil.parse("%s .expert_level=1 {}" % entry_point.name)
     ext_phil_scope = ext_master_scope.get_without_substitution(entry_point.name)
     assert len(ext_phil_scope) == 1
     ext_phil_scope = ext_phil_scope[0]
@@ -107,24 +108,21 @@ basis_vector_search_phil_scope.adopt_scope(
 
 
 class LatticeSearch(indexer.Indexer):
-    def __init__(self, reflections, experiments, params=None):
+    def __init__(self, reflections, experiments, params):
         super(LatticeSearch, self).__init__(reflections, experiments, params)
 
-        strategy_class = None
+        self._lattice_search_strategy = None
         for entry_point in pkg_resources.iter_entry_points(
             "dials.index.lattice_search"
         ):
-            if entry_point.name == params.indexing.method:
+            if entry_point.name == self.params.method:
                 strategy_class = entry_point.load()
-
-        if strategy_class is not None:
-            self._lattice_search_strategy = strategy_class(
-                target_symmetry_primitive=self._symmetry_handler.target_symmetry_primitive,
-                max_lattices=self.params.basis_vector_combinations.max_refine,
-                params=getattr(self.params, entry_point.name),
-            )
-        else:
-            self._lattice_search_strategy = None
+                self._lattice_search_strategy = strategy_class(
+                    target_symmetry_primitive=self._symmetry_handler.target_symmetry_primitive,
+                    max_lattices=self.params.basis_vector_combinations.max_refine,
+                    params=getattr(self.params, entry_point.name, None),
+                )
+                break
 
     def find_candidate_crystal_models(self):
 
@@ -220,6 +218,7 @@ class LatticeSearch(indexer.Indexer):
                 continue
 
             from rstbx.dps_core.cell_assessment import SmallUnitCellVolume
+
             from dials.algorithms.indexing import non_primitive_basis
 
             threshold = self.params.basis_vector_combinations.sys_absent_threshold
@@ -294,7 +293,7 @@ class LatticeSearch(indexer.Indexer):
 
 
 class BasisVectorSearch(LatticeSearch):
-    def __init__(self, reflections, experiments, params=None):
+    def __init__(self, reflections, experiments, params):
         super(BasisVectorSearch, self).__init__(reflections, experiments, params)
 
         strategy_class = None

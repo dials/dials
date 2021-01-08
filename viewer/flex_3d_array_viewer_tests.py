@@ -1,6 +1,6 @@
+# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
 from __future__ import absolute_import, division, print_function
 
-# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
 from dials.algorithms.shoebox import MaskCode
 from dials.array_family import flex
 from dials.viewer.slice_viewer import show_3d

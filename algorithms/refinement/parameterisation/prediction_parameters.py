@@ -1,10 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
 from collections import namedtuple
-from dials.array_family import flex
-from scitbx import matrix
-from scitbx import sparse
+
+from scitbx import matrix, sparse
+
 from dials.algorithms.refinement import DialsRefineConfigError
+from dials.array_family import flex
 
 """The PredictionParameterisation class ties together parameterisations for
 individual experimental models: beam, crystal orientation, crystal unit cell

@@ -6,16 +6,19 @@ from collections import namedtuple
 
 import six
 import six.moves.cPickle as pickle
-from dials.util import show_mail_on_error, Sorry
-from dxtbx.model.experiment_list import Experiment
-from dxtbx.model.experiment_list import ExperimentList
-from dxtbx.model.experiment_list import ExperimentListFactory
-from dxtbx.model.experiment_list import ExperimentListTemplateImporter
-from dxtbx.imageset import ImageGrid
-from dxtbx.imageset import ImageSequence
-from dials.util.options import flatten_experiments
-from dials.util.multi_dataset_handling import generate_experiment_identifiers
+
+from dxtbx.imageset import ImageGrid, ImageSequence
+from dxtbx.model.experiment_list import (
+    Experiment,
+    ExperimentList,
+    ExperimentListFactory,
+    ExperimentListTemplateImporter,
+)
 from libtbx.phil import parse
+
+from dials.util import Sorry, show_mail_handle_errors
+from dials.util.multi_dataset_handling import generate_experiment_identifiers
+from dials.util.options import flatten_experiments
 
 logger = logging.getLogger("dials.command_line.import")
 
@@ -340,12 +343,15 @@ class ManualGeometryUpdater(object):
         """
         Override the parameters
         """
-        from dxtbx.imageset import ImageSequence, ImageSetFactory
-        from dxtbx.model import BeamFactory
-        from dxtbx.model import DetectorFactory
-        from dxtbx.model import GoniometerFactory
-        from dxtbx.model import ScanFactory
         from copy import deepcopy
+
+        from dxtbx.imageset import ImageSequence, ImageSetFactory
+        from dxtbx.model import (
+            BeamFactory,
+            DetectorFactory,
+            GoniometerFactory,
+            ScanFactory,
+        )
 
         if self.params.geometry.convert_sequences_to_stills:
             imageset = ImageSetFactory.imageset_from_anyset(imageset)
@@ -446,8 +452,8 @@ class ManualGeometryUpdater(object):
                 setting_rotation_tolerance=self.params.input.tolerance.goniometer.setting_rotation,
             )
         oscillation = self.params.geometry.scan.oscillation
-        from dxtbx.sequence_filenames import template_regex_from_list
         from dxtbx.imageset import ImageSetFactory
+        from dxtbx.sequence_filenames import template_regex_from_list
 
         template, indices = template_regex_from_list(imageset.paths())
         image_range = (min(indices), max(indices))
@@ -938,7 +944,11 @@ class Script(object):
         logger.info("\n".join(text))
 
 
+@show_mail_handle_errors()
+def run(args=None):
+    script = Script()
+    script.run(args)
+
+
 if __name__ == "__main__":
-    with show_mail_on_error():
-        script = Script()
-        script.run()
+    run()

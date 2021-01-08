@@ -2,22 +2,25 @@
 Collection of factories for creating the scalers.
 """
 from __future__ import absolute_import, division, print_function
+
 import logging
+
 from libtbx import Auto
-from dials.array_family import flex
+
 from dials.algorithms.scaling.scaler import (
     MultiScaler,
-    TargetScaler,
-    SingleScaler,
     NullScaler,
-)
-from dials.algorithms.scaling.scaling_utilities import (
-    quasi_normalisation,
-    Reasons,
-    BadDatasetForScalingException,
-    calc_crystal_frame_vectors,
+    SingleScaler,
+    TargetScaler,
 )
 from dials.algorithms.scaling.scaling_library import choose_initial_scaling_intensities
+from dials.algorithms.scaling.scaling_utilities import (
+    BadDatasetForScalingException,
+    Reasons,
+    calc_crystal_frame_vectors,
+    quasi_normalisation,
+)
+from dials.array_family import flex
 from dials.util.filter_reflections import (
     filter_reflection_table_selection,
     sum_partial_reflections,
@@ -85,9 +88,9 @@ class ScalerFactory(object):
                 partiality_threshold=partiality_cutoff,
                 min_isigi=min_isigi,
             )
-            logger.disabled = False
             mask = ~good
             reflections.set_flags(mask, reflections.flags.excluded_for_scaling)
+        logger.disabled = False
         return reflections
 
     @staticmethod

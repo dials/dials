@@ -1,35 +1,36 @@
 """
 Tests for scaling utilities module.
 """
-from __future__ import absolute_import, division, print_function
 
-from math import sqrt, pi
+from math import pi, sqrt
+from unittest.mock import Mock
 
-from scitbx.sparse import matrix  # noqa: F401 - Needed to call calc_theta_phi
 import numpy as np
 import pytest
-from dxtbx.model import Experiment, Crystal
+
+from dxtbx.model import Crystal, Experiment
 from dxtbx.serialize import load
-from dials.array_family import flex
+from libtbx import phil
+from scitbx.sparse import matrix  # noqa: F401 - Needed to call calc_theta_phi
+
 from dials.algorithms.scaling.scaling_library import create_scaling_model
 from dials.algorithms.scaling.scaling_utilities import (
+    Reasons,
     align_rotation_axis_along_z,
     calc_crystal_frame_vectors,
     calculate_prescaling_correction,
     quasi_normalisation,
     set_wilson_outliers,
-    Reasons,
 )
+from dials.array_family import flex
 from dials.util.options import OptionParser
 from dials_scaling_ext import (
+    calc_lookup_index,
+    calc_theta_phi,
     calculate_harmonic_tables_from_selections,
     create_sph_harm_lookup_table,
     create_sph_harm_table,
-    calc_lookup_index,
-    calc_theta_phi,
 )
-from libtbx import phil
-from mock import Mock
 
 
 @pytest.fixture(scope="module")

@@ -3,8 +3,9 @@ from __future__ import absolute_import, division, print_function
 import math
 import random
 
-from dials.algorithms.polygon import clip
 from scitbx.array_family import flex
+
+from dials.algorithms.polygon import clip
 
 
 def generate_intersecting(subject_size=None, target_size=4):

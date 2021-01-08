@@ -1,20 +1,23 @@
 """
 Tests for outlier rejection.
 """
-from __future__ import absolute_import, division, print_function
+
+from unittest.mock import Mock
+
 import pytest
-from mock import Mock
+
 from cctbx.sgtbx import space_group
-from dials.array_family import flex
+
 from dials.algorithms.scaling.Ih_table import IhTable
 from dials.algorithms.scaling.outlier_rejection import (
-    reject_outliers,
     NormDevOutlierRejection,
     SimpleNormDevOutlierRejection,
-    determine_outlier_index_arrays,
     TargetedOutlierRejection,
+    determine_outlier_index_arrays,
     limit_outlier_weights,
+    reject_outliers,
 )
+from dials.array_family import flex
 
 
 @pytest.fixture(scope="module")

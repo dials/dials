@@ -2,9 +2,10 @@ from __future__ import absolute_import, division, print_function
 
 import math
 
+from scitbx.array_family import flex
+
 from dials_refinement_helpers_ext import maha_dist_sq as maha_dist_sq_cpp
 from dials_refinement_helpers_ext import mcd_consistency
-from scitbx.array_family import flex
 
 
 def sample_covariance(a, b):

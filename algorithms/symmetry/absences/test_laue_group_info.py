@@ -1,12 +1,14 @@
 """Test components of the dials.space_group program."""
 from __future__ import absolute_import, division, print_function
+
 import pytest
-from dials.array_family import flex
+
 from dials.algorithms.symmetry.absences.laue_groups_info import (
-    score_space_groups,
     laue_groups,
     score_screw_axes,
+    score_space_groups,
 )
+from dials.array_family import flex
 
 
 def test_score_screw_axes_equivalent_axes():

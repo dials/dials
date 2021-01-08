@@ -1,11 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
-import sys
-
 import iotbx.phil
-from dials.util import Sorry
-from dials.util.options import OptionParser, flatten_experiments
 from scitbx.array_family import flex
+
+from dials.util import Sorry, show_mail_handle_errors
+from dials.util.options import OptionParser, flatten_experiments
 
 help_message = """
 
@@ -127,7 +126,8 @@ def estimate_gain(imageset, kernel_size=(10, 10), output_gain_map=None, max_imag
     return gain0
 
 
-def run(args):
+@show_mail_handle_errors()
+def run(args=None):
     usage = "dials.estimate_gain [options] models.expt"
 
     parser = OptionParser(
@@ -139,7 +139,7 @@ def run(args):
         epilog=help_message,
     )
 
-    params, options = parser.parse_args(show_diff_phil=False)
+    params, options = parser.parse_args(args, show_diff_phil=False)
 
     # Log the diff phil
     diff_phil = parser.diff_phil.as_str()
@@ -165,4 +165,4 @@ def run(args):
 
 
 if __name__ == "__main__":
-    run(sys.argv[1:])
+    run()
