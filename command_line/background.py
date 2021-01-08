@@ -108,10 +108,7 @@ def run(args=None):
         intensities.append(I)
         sigmas.append(sig)
 
-    if params.output.plot:
-        params.plot = True
-
-    if params.plot:
+    if params.plot or params.output.plot:
         import matplotlib.ticker as mticker
         from matplotlib import pyplot
 
