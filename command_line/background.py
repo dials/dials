@@ -108,6 +108,7 @@ def run(args=None):
         params.plot = True
 
     if params.plot:
+        import matplotlib.ticker as mticker
         from matplotlib import pyplot
 
         fig = pyplot.figure()
@@ -117,8 +118,8 @@ def run(args=None):
         for d, I, sig in zip(d_spacings, intensities, sigmas):
             ds2 = 1 / flex.pow2(d)
             ax.plot(ds2, I)
-        xticks = ax.get_xticks()
-
+        xticks = ax.get_xticks().tolist()
+        ax.xaxis.set_major_locator(mticker.FixedLocator(xticks))
         x_tick_labs = [
             "" if e <= 0.0 else "{:.2f}".format(math.sqrt(1.0 / e)) for e in xticks
         ]
