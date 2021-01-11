@@ -266,13 +266,6 @@ class ManagerImage(object):
         frames = self.experiments[0].scan.get_array_range()
         self.manager = ReflectionManagerPerImage(frames, self.reflections)
 
-        # Parallel reading of HDF5 from the same handle is not allowed. Python
-        # multiprocessing is a bit messed up and used fork on linux so need to
-        # close and reopen file.
-        for exp in self.experiments:
-            if exp.imageset.reader().is_single_file_reader():
-                exp.imageset.reader().nullify_format_instance()
-
         # Set the initialization time
         self.time.initialize = time() - start_time
 
