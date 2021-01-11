@@ -599,8 +599,8 @@ class _(object):
         key: str = "xyzobs.px.value",
         scale: Tuple[float, float, float] = (1, 1, 1),
     ) -> Tuple[
-        cctbx.array_family.flex.size_t,
-        cctbx.array_family.flex.size_t,
+        cctbx.array_family.flex.int,
+        cctbx.array_family.flex.int,
         cctbx.array_family.flex.double,
     ]:
         """
@@ -646,7 +646,7 @@ class _(object):
         ann = AnnAdaptorSelfInclude(r, 3)
         ann.query(x)
 
-        mm = cctbx.array_family.flex.size_t(range(xyz.size()))
+        mm = cctbx.array_family.flex.int(range(xyz.size()))
         nn, distance = ann.nn, cctbx.array_family.flex.sqrt(ann.distances)
 
         sel = distance <= max_separation
