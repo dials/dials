@@ -1,3 +1,3 @@
-flex.reflection_table: reimplement match method which allows for
-flexible matching on a given column in the reflection table (assumed
-to be a 3D vector for the moment).
+``flex.reflection_table.match`` can now match reflections with configurable
+distance and scaling between any 3-vector column in the reflection tables. The
+default is still ``"xyzobs.px.value"``.

@@ -594,6 +594,7 @@ class _(object):
     def match(
         self,
         other: dials_array_family_flex_ext.reflection_table,
+        *,
         max_separation: int = 2,
         key: str = "xyzobs.px.value",
         scale: Tuple[float, float, float] = (1, 1, 1),

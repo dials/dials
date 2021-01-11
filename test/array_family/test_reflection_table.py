@@ -1452,9 +1452,7 @@ def test_calculate_entering_flags(dials_regression):
     assert flags.count(False) == 57799
 
 
-def test_match_1():
-    """Test basic reflection matching"""
-
+def test_match_basic():
     n = 100
     s = 10
 
@@ -1493,9 +1491,7 @@ def test_match_1():
         assert pytest.approx(_a, _b)
 
 
-def test_match_2():
-    """Test non-1:1 reflection matching"""
-
+def test_match_mismatched_sizes():
     n = 100
     s = 10
 
