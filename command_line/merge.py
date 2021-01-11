@@ -14,6 +14,8 @@ from iotbx import phil
 
 from dials.algorithms.merging.merge import (
     MTZDataClass,
+    generate_html_report,
+    make_dano_table,
     make_merged_mtz_file,
     merge,
     show_wilson_scaling_analysis,
@@ -86,6 +88,9 @@ output {
     mtz = merged.mtz
         .type = str
         .help = "Filename to use for mtz output."
+    html = dials.merge.html
+        .type = str
+        .help = "Filename for html output report."
     crystal_names = XTAL
         .type = strings
         .help = "Crystal name to be used in MTZ file output (multiple names
@@ -159,11 +164,12 @@ def merge_data_to_mtz(params, experiments, reflections):
         experiments_subsets = [experiments]
         reflections_subsets = reflections
 
+    # merge and truncate the data for each wavelength group
     for experimentlist, reflection_table, mtz_dataset in zip(
         experiments_subsets, reflections_subsets, mtz_datasets
     ):
-        # merge and truncate the data
-        merged_array, merged_anomalous_array, stats_summary = merge(
+        # First generate two merge_equivalents objects, collect merging stats
+        merged, merged_anomalous, stats_summary = merge(
             experimentlist,
             reflection_table,
             d_min=params.d_min,
@@ -176,21 +182,42 @@ def merge_data_to_mtz(params, experiments, reflections):
             n_bins=params.merging.n_bins,
             use_internal_variance=params.merging.use_internal_variance,
         )
+
+        merged_array = merged.array()
+        # Save the relevant data in the mtz_dataset dataclass
+        # This will add the data for IMEAN/SIGIMEAN
         mtz_dataset.merged_array = merged_array
-        mtz_dataset.merged_anomalous_array = merged_anomalous_array
+        if merged_anomalous:
+            merged_anomalous_array = merged_anomalous.array()
+            # This will add the data for I(+), I(-), SIGI(+), SIGI(-), N(+), N(-)
+            mtz_dataset.merged_anomalous_array = merged_anomalous_array
+            mtz_dataset.multiplicities = merged_anomalous.redundancies()
+        else:
+            merged_anomalous_array = None
+            # This will add the data for N
+            mtz_dataset.multiplicities = merged.redundancies()
+
         if params.anomalous:
             merged_intensities = merged_anomalous_array
         else:
             merged_intensities = merged_array
 
+        anom_amplitudes = None
         if params.truncate:
-            amplitudes, anomalous_amplitudes = truncate(merged_intensities)
+            amplitudes, anom_amplitudes = truncate(merged_intensities)
+            # This will add the data for F, SIGF
             mtz_dataset.amplitudes = amplitudes
-            mtz_dataset.anomalous_amplitudes = anomalous_amplitudes
+            # This will add the data for F(+), F(-), SIGF(+), SIGF(-)
+            mtz_dataset.anomalous_amplitudes = anom_amplitudes
+
+        # print out analysis statistics
         show_wilson_scaling_analysis(merged_intensities)
         if stats_summary:
             logger.info(stats_summary)
+        if anom_amplitudes:
+            logger.info(make_dano_table(anom_amplitudes))
 
+    # pass the dataclasses to an MTZ writer to generate the mtz file and return.
     return make_merged_mtz_file(mtz_datasets)
 
 
@@ -257,6 +284,9 @@ Only scaled data can be processed with dials.merge"""
     mtz_file.show_summary(out=out)
     logger.info(out.getvalue())
     mtz_file.write(params.output.mtz)
+
+    if params.output.html:
+        generate_html_report(mtz_file, params.output.html)
 
 
 if __name__ == "__main__":

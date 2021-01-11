@@ -1,1 +1,0 @@
-Set minimum version for HDF5 plugins, fixing library discovery when dxtbx is not imported before h5py

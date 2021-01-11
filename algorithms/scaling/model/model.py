@@ -13,6 +13,7 @@ import six
 
 from libtbx import Auto, phil
 
+from dials.algorithms.scaling.error_model.error_model import BasicErrorModel
 from dials.algorithms.scaling.model.components.scale_components import (
     LinearDoseDecay,
     QuadraticDoseDecay,
@@ -297,6 +298,26 @@ class ScalingModelBase(object):
     def from_dict(cls, obj):
         """Create a scaling model from a dictionary."""
         raise NotImplementedError()
+
+    def load_error_model(self, error_params):
+        # load existing model if there, but use user-specified values if given
+        new_model = None
+        if (
+            "error_model_type" in self._configdict
+            and not error_params.reset_error_model
+        ):
+            if self._configdict["error_model_type"] == "BasicErrorModel":
+                p = self._configdict["error_model_parameters"]
+                a = None
+                b = None
+                if not error_params.basic.a:
+                    a = p[0]
+                if not error_params.basic.b:
+                    b = p[1]
+                new_model = BasicErrorModel(a, b, error_params.basic)
+        if not new_model:
+            new_model = BasicErrorModel(basic_params=error_params.basic)
+        self.set_error_model(new_model)
 
     def set_error_model(self, error_model):
         """Associate an error model with the dataset."""
@@ -810,7 +831,6 @@ class PhysicalScalingModel(ScalingModelBase):
             "decay": {"parameters": d_params, "parameter_esds": d_params_sds},
             "absorption": {"parameters": abs_params, "parameter_esds": a_params_sds},
         }
-
         return cls(parameters_dict, configdict, is_scaled=True)
 
     def plot_model_components(self):
