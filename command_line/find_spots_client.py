@@ -14,6 +14,8 @@ import urllib.request
 
 import libtbx.phil
 
+import dials.util
+
 
 def work(host, port, filename, params):
     conn = http.client.HTTPConnection(host, port)
@@ -205,10 +207,12 @@ grid = None
 """
 )
 
-if __name__ == "__main__":
+
+@dials.util.show_mail_handle_errors()
+def run(args=None):
     import select
 
-    mixed_args = sys.argv[1:]
+    mixed_args = args or sys.argv[1:]
     if os.name != "nt":
         r, w, x = select.select([sys.stdin], [], [], 0)
         if len(r) > 0:
@@ -244,7 +248,7 @@ if __name__ == "__main__":
     elif len(unhandled) and unhandled[0] == "ping":
         url = "http://%s:%i" % (params.host, params.port)
         try:
-            data = urllib.request.urlopen(url).read()
+            _ = urllib.request.urlopen(url).read()
             print("Success")
             sys.exit(0)
         except Exception:
@@ -267,3 +271,7 @@ if __name__ == "__main__":
                 grid=params.grid,
                 nproc=nproc,
             )
+
+
+if __name__ == "__main__":
+    run()

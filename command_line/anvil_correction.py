@@ -264,7 +264,8 @@ def correct_intensities_for_dac_attenuation(
                 pass
 
 
-def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> None
+@dials.util.show_mail_handle_errors()
+def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     """
     Run dials.anvil_correction as from the command line.
 
@@ -359,5 +360,4 @@ def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> 
 
 # Keep this minimal.  Try to keep the command-line behaviour neatly encapsulated in run.
 if __name__ == "__main__":
-    with dials.util.show_mail_on_error():
-        run()
+    run()

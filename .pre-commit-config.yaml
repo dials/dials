@@ -2,7 +2,7 @@ repos:
 
 # Automatically sort imports
 - repo: https://github.com/PyCQA/isort.git
-  rev: 5.5.2
+  rev: 5.5.3
   hooks:
   - id: isort
 
@@ -15,14 +15,19 @@ repos:
     files: \.pyi?$|SConscript$|^libtbx_config$
     types: [file]
 
+- repo: https://github.com/PyCQA/flake8
+  rev: 3.8.3
+  hooks:
+  - id: flake8
+    args: ['--max-line-length=88', '--select=E401,E711,E712,E713,E714,E721,E722,E901,F401,F402,F403,F405,F631,F632,F633,F811,F812,F821,F822,F841,F901,W191,W291,W292,W293,W602,W603,W604,W605,W606']
+
+
 # Syntax check and some basic flake8
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v2.0.0
+  rev: v3.2.0
   hooks:
   - id: check-ast
   - id: check-yaml
-  - id: flake8
-    args: ['--max-line-length=88', '--select=E401,E711,E712,E713,E714,E721,E722,E901,F401,F402,F403,F405,F631,F632,F633,F811,F812,F821,F822,F841,F901,W191,W291,W292,W293,W602,W603,W604,W605,W606']
   - id: check-merge-conflict
   - id: check-added-large-files
     args: ['--maxkb=200']

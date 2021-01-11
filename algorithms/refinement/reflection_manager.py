@@ -258,12 +258,6 @@ class ReflectionManagerFactory(object):
             else:
                 params.outlier.algorithm = "mcd"
 
-        if params.outlier.separate_panels is libtbx.Auto:
-            if do_stills:
-                params.outlier.separate_panels = False
-            else:
-                params.outlier.separate_panels = True
-
         if params.outlier.algorithm == "sauter_poon":
             if params.outlier.sauter_poon.px_sz is libtbx.Auto:
                 # get this from the first panel of the first detector

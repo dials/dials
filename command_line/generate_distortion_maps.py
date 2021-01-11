@@ -9,7 +9,7 @@ from iotbx import phil
 from scitbx import matrix
 
 from dials.array_family import flex
-from dials.util import Sorry, log
+from dials.util import Sorry, log, show_mail_handle_errors
 from dials.util.options import OptionParser, flatten_experiments
 from dials.util.version import dials_version
 
@@ -168,7 +168,8 @@ def make_dx_dy_ellipse(imageset, phi, l1, l2, centre_xy):
     return distortion_map_x, distortion_map_y
 
 
-def main():
+@show_mail_handle_errors()
+def run(args=None):
     usage = "dials.generate_distortion_maps [options] image_*.cbf"
 
     parser = OptionParser(
@@ -180,7 +181,7 @@ def main():
         epilog=help_message,
     )
 
-    params, options = parser.parse_args()
+    params, options = parser.parse_args(args)
 
     # Configure the logging
     log.config(verbosity=options.verbose, logfile=params.output.log)
@@ -233,4 +234,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    run()

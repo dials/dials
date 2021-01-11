@@ -16,11 +16,13 @@ import sys
 
 from jinja2 import ChoiceLoader, Environment, PackageLoader
 
+import libtbx.phil
 from iotbx import phil
 
 from dials.algorithms.scaling.combine_intensities import combine_intensities
 from dials.algorithms.scaling.error_model.engine import run_error_model_refinement
 from dials.algorithms.scaling.error_model.error_model import (
+    BasicErrorModel,
     calc_deltahl,
     calc_sigmaprime,
 )
@@ -36,7 +38,7 @@ from dials.algorithms.scaling.plots import (
 from dials.algorithms.scaling.scaling_library import choose_initial_scaling_intensities
 from dials.algorithms.scaling.scaling_utilities import calculate_prescaling_correction
 from dials.report.plots import i_over_sig_i_vs_i_plot
-from dials.util import log, show_mail_on_error
+from dials.util import log, show_mail_handle_errors
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
@@ -100,8 +102,9 @@ def refine_error_model(params, experiments, reflection_tables):
     )
 
     # now do the error model refinement
+    model = BasicErrorModel(basic_params=params.basic)
     try:
-        model = run_error_model_refinement(params, Ih_table)
+        model = run_error_model_refinement(model, Ih_table)
     except (ValueError, RuntimeError) as e:
         logger.info(e)
     else:
@@ -162,7 +165,8 @@ def make_output(model, params):
             json.dump(d, outfile)
 
 
-def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
+@show_mail_handle_errors()
+def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     """Run the scaling from the command-line."""
     usage = """Usage: dials.refine_error_model scaled.refl scaled.expt [options]"""
 
@@ -199,5 +203,4 @@ def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
-        run()
+    run()

@@ -22,8 +22,10 @@ setup(
         "License :: OSI Approved :: BSD License",
         "Natural Language :: English",
         "Operating System :: OS Independent",
-        "Programming Language :: Python :: 2",
-        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: Implementation :: CPython",
     ],
     description="Diffraction Integration for Advanced Light Sources",
@@ -34,9 +36,7 @@ setup(
     name="dials",
     packages=find_packages(),
     package_dir={"dials": "../dials"},
-    data_files=[
-        ("dials", ["conftest.py", "__init__.py", "libtbx_refresh.py", "run_tests.py"])
-    ],
+    data_files=[("dials", ["conftest.py", "__init__.py", "libtbx_refresh.py"])],
     setup_requires=setup_requirements,
     test_suite="tests",
     tests_require=test_requirements,

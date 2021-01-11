@@ -1,11 +1,7 @@
-from __future__ import absolute_import, division, print_function
-
 import logging.config
 import os
 import sys
 import time
-
-import six
 
 try:
     from colorlog import ColoredFormatter
@@ -74,6 +70,10 @@ def config(verbosity=0, logfile=None):
     dials_logger = logging.getLogger("dials")
     dials_logger.addHandler(console)
 
+    logging.captureWarnings(True)
+    warning_logger = logging.getLogger("py.warnings")
+    warning_logger.addHandler(console)
+
     if verbosity > 1:
         loglevel = logging.DEBUG
     else:
@@ -84,6 +84,7 @@ def config(verbosity=0, logfile=None):
         fh.setLevel(loglevel)
         fh.setFormatter(DialsLogfileFormatter(timed=verbosity))
         dials_logger.addHandler(fh)
+        warning_logger.addHandler(fh)
 
     dials_logger.setLevel(loglevel)
     #   logging.getLogger("dxtbx").setLevel(logging.DEBUG)
@@ -157,11 +158,7 @@ def print_banner(force=False, use_logging=False):
 class LoggingContext(object):
     # https://docs.python.org/3/howto/logging-cookbook.html#using-a-context-manager-for-selective-logging
     def __init__(self, logger, level=None):
-        self.logger = (
-            logging.getLogger(logger)
-            if isinstance(logger, six.string_types)
-            else logger
-        )
+        self.logger = logging.getLogger(logger) if isinstance(logger, str) else logger
         self.level = level
 
     def __enter__(self):

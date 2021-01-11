@@ -56,6 +56,11 @@ control_phil_str = """
     max_images = None
       .type = int
       .help = Limit total number of processed images to max_images
+    ignore_gain_mismatch = False
+      .type = bool
+      .expert_level = 3
+      .help = Detector gain should be set on the detector models loaded from the images or in the \
+              processing parameters, not both. Override the check that this is true with this flag. \
   }
 
   dispatch {
@@ -64,6 +69,9 @@ control_phil_str = """
       .expert_level = 2
       .help = If True, before processing import all the data. Needed only if processing \
               multiple multi-image files at once (not a recommended use case)
+    process_percent = None
+      .type = int(value_min=1, value_max=100)
+      .help = Percent of events to process
     refine = False
       .expert_level = 2
       .type = bool
@@ -222,6 +230,13 @@ dials_phil_str = """
                 0=Double a, 1=Double b, 2=Double c, 3=C-face centering, 4=B-face centering, 5=A-face centering, 6=Body centering \
                 See Sauter and Zwart, Acta D (2009) 65:553
     }
+
+    integration_only_overrides {
+      trusted_range = None
+        .type = floats(size=2)
+        .help = "Override the panel trusted range (underload and saturation) during integration."
+        .short_caption = "Panel trusted range"
+    }
   }
 """
 
@@ -299,6 +314,15 @@ def do_import(filename, load_models=True):
     return all_experiments
 
 
+def sync_geometry(src, dest):
+    dest.set_local_frame(
+        src.get_local_fast_axis(), src.get_local_slow_axis(), src.get_local_origin()
+    )
+    if not src.is_panel():
+        for src_child, dest_child in zip(src, dest):
+            sync_geometry(src_child, dest_child)
+
+
 class Script(object):
     """A class for running the script."""
 
@@ -341,7 +365,7 @@ class Script(object):
             assert len(ref_experiments.detectors()) == 1
             self.reference_detector = ref_experiments.detectors()[0]
 
-    def run(self):
+    def run(self, args=None):
         """Execute the script."""
         from libtbx import easy_mp
 
@@ -358,7 +382,7 @@ class Script(object):
         if rank == 0:
             # Parse the command line
             params, options, all_paths = self.parser.parse_args(
-                show_diff_phil=False, return_unhandled=True, quick_parse=True
+                args, show_diff_phil=False, return_unhandled=True, quick_parse=True
             )
 
             if params.input.glob:
@@ -403,8 +427,33 @@ class Script(object):
 
         st = time.time()
 
-        # Configure logging
-        log.config(verbosity=options.verbose, logfile="dials.process.log")
+        if params.mp.method == "mpi":
+            # Configure the logging
+            if params.output.logging_dir is None:
+                logfile = None
+            else:
+                log_path = os.path.join(
+                    params.output.logging_dir, "log_rank%04d.out" % rank
+                )
+                error_path = os.path.join(
+                    params.output.logging_dir, "error_rank%04d.out" % rank
+                )
+                print("Redirecting stdout to %s" % log_path)
+                print("Redirecting stderr to %s" % error_path)
+                sys.stdout = open(log_path, "a")
+                sys.stderr = open(error_path, "a")
+                print("Should be redirected now")
+
+                logfile = os.path.join(
+                    params.output.logging_dir, "info_rank%04d.out" % rank
+                )
+
+            log.config(verbosity=options.verbose, logfile=logfile)
+
+        else:
+
+            # Configure logging
+            log.config(verbosity=options.verbose, logfile="dials.process.log")
 
         bad_phils = [f for f in all_paths if os.path.splitext(f)[1] == ".phil"]
         if len(bad_phils) > 0:
@@ -506,16 +555,16 @@ class Script(object):
                         continue
 
                     if self.reference_detector is not None:
-                        from dxtbx.model import Detector
-
                         experiment = experiments[0]
                         imageset = experiment.imageset
-                        imageset.set_detector(
-                            Detector.from_dict(self.reference_detector.to_dict())
+                        sync_geometry(
+                            self.reference_detector.hierarchy(),
+                            imageset.get_detector().hierarchy(),
                         )
                         experiment.detector = imageset.get_detector()
 
                     processor.process_experiments(tag, experiments)
+                    imageset.clear_cache()
                 if finalize:
                     processor.finalize()
                 return processor
@@ -580,11 +629,10 @@ class Script(object):
                         continue
 
                     if self.reference_detector is not None:
-                        from dxtbx.model import Detector
-
                         imageset = experiments[0].imageset
-                        imageset.set_detector(
-                            Detector.from_dict(self.reference_detector.to_dict())
+                        sync_geometry(
+                            self.reference_detector.hierarchy(),
+                            imageset.get_detector().hierarchy(),
                         )
                         experiments[0].detector = imageset.get_detector()
 
@@ -604,30 +652,23 @@ class Script(object):
                 print(tag)
             return
 
+        # prepare fractions of process_percent, if given
+        process_fractions = None
+        if params.dispatch.process_percent:
+            import fractions
+
+            percent = params.dispatch.process_percent / 100
+            process_fractions = fractions.Fraction(percent).limit_denominator(100)
+
+            def process_this_event(nevent):
+                # nevent modulo the denominator gives us which fraction we're in
+                n_mod_denom = nevent % process_fractions.denominator
+                # compare the 0-indexed modulo against the 1-indexed numerator (intentionally not <=)
+                n_accept = n_mod_denom < process_fractions.numerator
+                return n_accept
+
         # Process the data
         if params.mp.method == "mpi":
-            # Configure the logging
-            if params.output.logging_dir is None:
-                logfile = None
-            else:
-                log_path = os.path.join(
-                    params.output.logging_dir, "log_rank%04d.out" % rank
-                )
-                error_path = os.path.join(
-                    params.output.logging_dir, "error_rank%04d.out" % rank
-                )
-                print("Redirecting stdout to %s" % log_path)
-                print("Redirecting stderr to %s" % error_path)
-                sys.stdout = open(log_path, "a")
-                sys.stderr = open(error_path, "a")
-                print("Should be redirected now")
-
-                logfile = os.path.join(
-                    params.output.logging_dir, "info_rank%04d.out" % rank
-                )
-
-            log.config(verbosity=options.verbose, logfile=logfile)
-
             if size <= 2:  # client/server only makes sense for n>2
                 subset = [
                     item for i, item in enumerate(iterable) if (i + rank) % size == 0
@@ -636,7 +677,10 @@ class Script(object):
             else:
                 if rank == 0:
                     # server process
-                    for item in iterable:
+                    for item_num, item in enumerate(iterable):
+                        if process_fractions and not process_this_event(item_num):
+                            continue
+
                         print("Getting next available process")
                         rankreq = comm.recv(source=MPI.ANY_SOURCE)
                         print("Process %s is ready, sending %s\n" % (rankreq, item[0]))
@@ -648,6 +692,13 @@ class Script(object):
                         print("Sending stop to %d\n" % rankreq)
                         comm.send("endrun", dest=rankreq)
                     print("All stops sent.")
+
+                    # create an empty processor to handle any MPI finalize steps
+                    processor = Processor(
+                        copy.deepcopy(params), composite_tag="%04d" % rank, rank=rank
+                    )
+                    processor.finalize()
+
                 else:
                     # client process
                     processor = None
@@ -746,16 +797,16 @@ class Processor(object):
             assert composite_tag is not None
             from dxtbx.model.experiment_list import ExperimentList
 
-            # self.all_strong_reflections = flex.reflection_table() # no composite strong pickles yet
+            self.all_imported_experiments = ExperimentList()
+            self.all_strong_reflections = flex.reflection_table()
             self.all_indexed_experiments = ExperimentList()
             self.all_indexed_reflections = flex.reflection_table()
             self.all_integrated_experiments = ExperimentList()
             self.all_integrated_reflections = flex.reflection_table()
             self.all_int_pickle_filenames = []
             self.all_int_pickles = []
-            if params.dispatch.coset:
-                self.all_coset_experiments = ExperimentList()
-                self.all_coset_reflections = flex.reflection_table()
+            self.all_coset_experiments = ExperimentList()
+            self.all_coset_reflections = flex.reflection_table()
 
             self.setup_filenames(composite_tag)
 
@@ -857,12 +908,11 @@ class Processor(object):
         self.tag = tag
         self.debug_start(tag)
 
-        if (
-            not self.params.output.composite_output
-            and self.params.output.experiments_filename
-        ):
-
-            experiments.as_json(self.params.output.experiments_filename)
+        if self.params.output.experiments_filename:
+            if self.params.output.composite_output:
+                self.all_imported_experiments.extend(experiments)
+            else:
+                experiments.as_json(self.params.output.experiments_filename)
 
         # Do the processing
         try:
@@ -948,7 +998,20 @@ class Processor(object):
 
     def pre_process(self, experiments):
         """Add any pre-processing steps here"""
-        pass
+
+        if not self.params.input.ignore_gain_mismatch:
+            g1 = self.params.spotfinder.threshold.dispersion.gain
+            g2 = self.params.integration.summation.detector_gain
+            gain = g1 if g1 is not None else g2
+            if gain is not None and gain != 1.0:
+                for detector in experiments.detectors():
+                    for panel in detector:
+                        if panel.get_gain() != 1.0 and panel.get_gain() != gain:
+                            raise RuntimeError(
+                                """
+The detector is reporting a gain of %f but you have also supplied a gain of %f. Since the detector gain is not 1.0, your supplied gain will be multiplicatively applied in addition to the detector's gain, which is unlikely to be correct. Please re-run, removing spotfinder.dispersion.gain and integration.summation.detector_gain from your parameters. You can override this exception by setting input.ignore_gain_mismatch=True."""
+                                % (panel.get_gain(), gain)
+                            )
 
     def find_spots(self, experiments):
         st = time.time()
@@ -969,7 +1032,14 @@ class Processor(object):
             bbox[i] = (bbox[i][0], bbox[i][1], bbox[i][2], bbox[i][3], 0, 1)
 
         if self.params.output.composite_output:
-            pass  # no composite strong pickles yet
+            n = len(self.all_strong_reflections.experiment_identifiers())
+            for i, experiment in enumerate(experiments):
+                refls = observed.select(observed["id"] == i)
+                refls["id"] = flex.int(len(refls), n)
+                del refls.experiment_identifiers()[i]
+                refls.experiment_identifiers()[n] = experiment.identifier
+                self.all_strong_reflections.extend(refls)
+                n += 1
         else:
             # Save the reflections to file
             logger.info("\n" + "-" * 80)
@@ -1128,6 +1198,13 @@ class Processor(object):
         logger.info("*" * 80)
 
         indexed, _ = self.process_reference(indexed)
+
+        if self.params.integration.integration_only_overrides.trusted_range:
+            for detector in experiments.detectors():
+                for panel in detector:
+                    panel.set_trusted_range(
+                        self.params.integration.integration_only_overrides.trusted_range
+                    )
 
         if self.params.dispatch.coset:
             from xfel.util.sublattice_helper import integrate_coset
@@ -1409,6 +1486,7 @@ class Processor(object):
                 comm = MPI.COMM_WORLD
                 rank = comm.Get_rank()  # each process in MPI has a unique id, 0-indexed
                 size = comm.Get_size()  # size: number of processes running in this job
+                comm.barrier()
 
                 if rank % stride == 0:
                     subranks = [rank + i for i in range(1, stride) if rank + i < size]
@@ -1416,10 +1494,14 @@ class Processor(object):
                         logger.info("Rank %d waiting for sender" % rank)
                         (
                             sender,
+                            imported_experiments,
+                            strong_reflections,
                             indexed_experiments,
                             indexed_reflections,
                             integrated_experiments,
                             integrated_reflections,
+                            coset_experiments,
+                            coset_reflections,
                             int_pickles,
                             int_pickle_filenames,
                         ) = comm.recv(source=MPI.ANY_SOURCE)
@@ -1427,22 +1509,51 @@ class Processor(object):
                             "Rank %d recieved data from rank %d" % (rank, sender)
                         )
 
-                        if len(indexed_experiments) > 0:
-                            indexed_reflections["id"] += len(
-                                self.all_indexed_experiments
+                        def extend_with_bookkeeping(
+                            src_expts, src_refls, dest_expts, dest_refls
+                        ):
+                            n = len(dest_refls.experiment_identifiers())
+                            src_refls["id"] += n
+                            idents = src_refls.experiment_identifiers()
+                            keys = idents.keys()
+                            values = idents.values()
+                            for key in keys:
+                                del idents[key]
+                            for i, key in enumerate(keys):
+                                idents[key + n] = values[i]
+                            dest_expts.extend(src_expts)
+                            dest_refls.extend(src_refls)
+
+                        if len(imported_experiments) > 0:
+                            extend_with_bookkeeping(
+                                imported_experiments,
+                                strong_reflections,
+                                self.all_imported_experiments,
+                                self.all_strong_reflections,
                             )
-                            self.all_indexed_reflections.extend(indexed_reflections)
-                            self.all_indexed_experiments.extend(indexed_experiments)
+
+                        if len(indexed_experiments) > 0:
+                            extend_with_bookkeeping(
+                                indexed_experiments,
+                                indexed_reflections,
+                                self.all_indexed_experiments,
+                                self.all_indexed_reflections,
+                            )
 
                         if len(integrated_experiments) > 0:
-                            integrated_reflections["id"] += len(
-                                self.all_integrated_experiments
+                            extend_with_bookkeeping(
+                                integrated_experiments,
+                                integrated_reflections,
+                                self.all_integrated_experiments,
+                                self.all_integrated_reflections,
                             )
-                            self.all_integrated_reflections.extend(
-                                integrated_reflections
-                            )
-                            self.all_integrated_experiments.extend(
-                                integrated_experiments
+
+                        if len(coset_experiments) > 0:
+                            extend_with_bookkeeping(
+                                coset_experiments,
+                                coset_reflections,
+                                self.all_coset_experiments,
+                                self.all_coset_reflections,
                             )
 
                         self.all_int_pickles.extend(int_pickles)
@@ -1457,25 +1568,54 @@ class Processor(object):
                     comm.send(
                         (
                             rank,
+                            self.all_imported_experiments,
+                            self.all_strong_reflections,
                             self.all_indexed_experiments,
                             self.all_indexed_reflections,
                             self.all_integrated_experiments,
                             self.all_integrated_reflections,
+                            self.all_coset_experiments,
+                            self.all_coset_reflections,
                             self.all_int_pickles,
                             self.all_int_pickle_filenames,
                         ),
                         dest=destrank,
                     )
 
-                    self.all_indexed_experiments = (
+                    self.all_imported_experiments = (
+                        self.all_strong_reflections
+                    ) = (
+                        self.all_indexed_experiments
+                    ) = (
                         self.all_indexed_reflections
                     ) = (
                         self.all_integrated_experiments
                     ) = (
                         self.all_integrated_reflections
+                    ) = (
+                        self.all_coset_experiments
+                    ) = (
+                        self.all_coset_reflections
                     ) = self.all_int_pickles = self.all_integrated_reflections = []
 
             # Dump composite files to disk
+            if (
+                len(self.all_imported_experiments) > 0
+                and self.params.output.experiments_filename
+            ):
+
+                self.all_imported_experiments.as_json(
+                    self.params.output.experiments_filename
+                )
+
+            if (
+                len(self.all_strong_reflections) > 0
+                and self.params.output.strong_filename
+            ):
+                self.save_reflections(
+                    self.all_strong_reflections, self.params.output.strong_filename
+                )
+
             if (
                 len(self.all_indexed_experiments) > 0
                 and self.params.output.refined_experiments_filename
@@ -1556,7 +1696,11 @@ class Processor(object):
                 tar.close()
 
 
+@dials.util.show_mail_handle_errors()
+def run(args=None):
+    script = Script()
+    script.run(args)
+
+
 if __name__ == "__main__":
-    with dials.util.show_mail_on_error():
-        script = Script()
-        script.run()
+    run()

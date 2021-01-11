@@ -17,7 +17,7 @@ from iotbx import mtz
 from scitbx.array_family import flex
 from scitbx.lstbx import normal_eqns, normal_eqns_solving
 
-from dials.util import Sorry, show_mail_on_error
+from dials.util import Sorry, show_mail_handle_errors
 from dials.util.options import OptionParser
 
 matplotlib.use("Agg")
@@ -196,11 +196,11 @@ class Script(object):
         print("Saving plot to {0}".format(self.params.plot_filename))
         plt.savefig(self.params.plot_filename)
 
-    def run(self):
+    def run(self, args=None):
         """Execute the script."""
 
         # Parse the command line
-        self.params, _ = self.parser.parse_args(show_diff_phil=True)
+        self.params, _ = self.parser.parse_args(args, show_diff_phil=True)
 
         if self.params.hklin is None:
             self.parser.print_help()
@@ -246,7 +246,11 @@ class Script(object):
         return
 
 
+@show_mail_handle_errors()
+def run(args=None):
+    script = Script()
+    script.run(args)
+
+
 if __name__ == "__main__":
-    with show_mail_on_error():
-        script = Script()
-        script.run()
+    run()

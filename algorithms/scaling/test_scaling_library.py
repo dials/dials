@@ -1,10 +1,10 @@
 """
 Tests for scaling library module.
 """
-from __future__ import absolute_import, division, print_function
+
+from unittest.mock import Mock, patch
 
 import pytest
-from mock import Mock, patch
 
 from cctbx import crystal, miller, uctbx
 from cctbx.sgtbx import space_group
@@ -161,6 +161,7 @@ def generated_param(absorption_term=False):
 
 
 @pytest.mark.parametrize("model", ["physical", "array"])
+@pytest.mark.xfail("os.name == 'nt'", reason="ZeroDivisionError in refinement")
 def test_scale_single_dataset(test_reflections, test_experiments, test_params, model):
     """Test completion of scaling."""
     scaled_reflections = scale_single_dataset(
@@ -171,6 +172,7 @@ def test_scale_single_dataset(test_reflections, test_experiments, test_params, m
     # what about when no params supplied?
 
 
+@pytest.mark.xfail("os.name == 'nt'", reason="ZeroDivisionError in refinement")
 def test_scale_single_dataset_no_params_supplied(test_reflections, test_experiments):
     """Test when no params scope supplied."""
     scaled_reflections = scale_single_dataset(

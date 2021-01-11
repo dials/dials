@@ -14,6 +14,51 @@ from libtbx.phil import parse
 from dials.array_family import flex
 from dials.command_line.stills_process import Processor, phil_scope
 
+cspad_cbf_in_memory_phil = """
+dispatch.squash_errors = False
+spotfinder {
+  filter.min_spot_size=2
+  threshold.dispersion.gain=25
+  threshold.dispersion.global_threshold=100
+}
+indexing {
+  known_symmetry {
+    space_group = P6122
+    unit_cell = 92.9 92.9 130.4 90 90 120
+  }
+  refinement_protocol.d_min_start=1.7
+  stills.refine_candidates_with_known_symmetry=True
+}
+"""
+
+sacla_phil = """
+dispatch.squash_errors = True
+dispatch.coset = True
+input.reference_geometry=%s
+indexing {
+  known_symmetry {
+    space_group = P43212
+    unit_cell = 78.9 78.9 38.1 90 90 90
+  }
+  refinement_protocol.d_min_start = 2.2
+  stills.refine_candidates_with_known_symmetry=True
+}
+spotfinder {
+  filter.min_spot_size = 2
+}
+refinement {
+  parameterisation {
+    detector.fix_list = Dist,Tau1
+  }
+}
+profile {
+  gaussian_rs {
+    centroid_definition = com
+  }
+}
+output.composite_output = True
+"""
+
 
 def test_cspad_cbf_in_memory(dials_regression, run_in_tmpdir):
     # Check the data files for this test exist
@@ -26,24 +71,7 @@ def test_cspad_cbf_in_memory(dials_regression, run_in_tmpdir):
     assert os.path.isfile(image_path)
 
     with open("process_lcls.phil", "w") as f:
-        f.write(
-            """
-      dispatch.squash_errors = False
-      spotfinder {
-        filter.min_spot_size=2
-        threshold.dispersion.gain=25
-        threshold.dispersion.global_threshold=100
-      }
-      indexing {
-        known_symmetry {
-          space_group = P6122
-          unit_cell = 92.9 92.9 130.4 90 90 120
-        }
-        refinement_protocol.d_min_start=1.7
-        stills.refine_candidates_with_known_symmetry=True
-      }
-      """
-        )
+        f.write(cspad_cbf_in_memory_phil)
 
     params = phil_scope.fetch(parse(file_name="process_lcls.phil")).extract()
     params.output.experiments_filename = None
@@ -72,57 +100,24 @@ def test_cspad_cbf_in_memory(dials_regression, run_in_tmpdir):
 
 
 @pytest.mark.parametrize("use_mpi", [True, False])
-def test_sacla_h5(dials_regression, run_in_tmpdir, use_mpi, in_memory=False):
+def test_sacla_h5(dials_data, run_in_tmpdir, use_mpi, in_memory=False):
     # Only allow MPI tests if we've got MPI capabilities
     if use_mpi:
         pytest.importorskip("mpi4py")
 
     # Check the data files for this test exist
-    sacla_path = os.path.join(dials_regression, "image_examples", "SACLA_MPCCD_Cheetah")
-    image_path = os.path.join(sacla_path, "run266702-0-subset.h5")
+    sacla_path = dials_data("image_examples")
+    image_path = os.path.join(sacla_path, "SACLA-MPCCD-run266702-0-subset.h5")
     assert os.path.isfile(image_path)
 
-    geometry_path = os.path.join(sacla_path, "refined_experiments_level1.json")
+    geometry_path = os.path.join(
+        sacla_path, "SACLA-MPCCD-run266702-0-subset-refined_experiments_level1.json"
+    )
     assert os.path.isfile(geometry_path)
 
     # Write the .phil configuration to a file
     with open("process_sacla.phil", "w") as f:
-        f.write(
-            """
-      dispatch.squash_errors = True
-      dispatch.coset = True
-      input.reference_geometry=%s
-      indexing {
-        known_symmetry {
-          space_group = P43212
-          unit_cell = 78.9 78.9 38.1 90 90 90
-        }
-        refinement_protocol.d_min_start = 2.2
-        stills.refine_candidates_with_known_symmetry=True
-      }
-      spotfinder {
-        filter.min_spot_size = 2
-        threshold {
-          dispersion {
-            gain = 5.46 # from dials.estimate_gain run266702-0-subset.h5 max_images=4
-            global_threshold = 50
-          }
-        }
-      }
-      refinement {
-        parameterisation {
-          detector.fix_list = Dist,Tau1
-        }
-      }
-      profile {
-        gaussian_rs {
-          centroid_definition = com
-        }
-      }
-      output.composite_output = True
-      """
-            % geometry_path
-        )
+        f.write(sacla_phil % geometry_path)
 
     # Call dials.stills_process
     if use_mpi:
@@ -145,15 +140,25 @@ def test_sacla_h5(dials_regression, run_in_tmpdir, use_mpi, in_memory=False):
             subset = table.select(table["id"] == expt_id)
             assert len(subset) in n_refls, (result_filename, expt_id, len(table))
         assert "id" in table
-        assert set(table["id"]) == set((0, 1, 2))
+        assert set(table["id"]) == set((0, 1, 2, 3))
 
     # large ranges to handle platform-specific differences
     test_refl_table(
         "idx-0000_integrated.refl",
-        [list(range(205, 225)), list(range(565, 580)), list(range(475, 500))],
+        [
+            list(range(140, 160)),
+            list(range(575, 600)),
+            list(range(420, 445)),
+            list(range(485, 510)),
+        ],
     )
 
     test_refl_table(
         "idx-0000_coset6.refl",
-        [list(range(215, 245)), list(range(525, 555)), list(range(515, 545))],
+        [
+            list(range(145, 160)),
+            list(range(545, 570)),
+            list(range(430, 455)),
+            list(range(490, 515)),
+        ],
     )

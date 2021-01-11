@@ -3,6 +3,7 @@ jobs:
   pool:
     vmImage: macOS-latest
   dependsOn: setup
+  condition: eq(variables['ENABLE_CACHE'], '1')
   variables:
     CURRENT_WEEK: $[ dependencies.setup.outputs['constants.CURRENT_WEEK'] ]
     TODAY_ISO: $[ dependencies.setup.outputs['constants.TODAY_ISO'] ]
@@ -18,7 +19,26 @@ jobs:
   timeoutInMinutes: 150
 
   steps:
+  - template: unix-build.yml
+    parameters:
+      conda_environment: .conda-envs/macos.txt
 
+- job: macos_uncached
+  pool:
+    vmImage: macOS-latest
+  dependsOn: setup
+  condition: eq(variables['ENABLE_CACHE'], '0')
+  variables:
+    CURRENT_WEEK: $[ dependencies.setup.outputs['constants.CURRENT_WEEK'] ]
+    TODAY_ISO: $[ dependencies.setup.outputs['constants.TODAY_ISO'] ]
+    PYTHON_VERSION: 3.6
+    REPOSITORIES_CACHED: false
+    BASE_CACHED: false
+    BUILD_CACHED: false
+    DATA_CACHED: false
+  timeoutInMinutes: 150
+
+  steps:
   - template: unix-build.yml
     parameters:
       conda_environment: .conda-envs/macos.txt

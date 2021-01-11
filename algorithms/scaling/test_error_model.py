@@ -165,9 +165,9 @@ def test_error_model_on_simulated_data(
 
     block = Ih_table.blocked_data_list[0]
     BasicErrorModel.min_reflections_required = 250
-    params = generated_param()
 
-    error_model = BasicErrorModel(block, params.weighting.error_model.basic)
+    error_model = BasicErrorModel()
+    error_model.configure_for_refinement(block)
     assert error_model.binner.summation_matrix.n_rows > 400
     refinery = ErrorModelRefinery(error_model, parameters_to_refine=["a", "b"])
     refinery.run()
@@ -180,14 +180,16 @@ def test_error_model_on_simulated_data(
 def test_errormodel(large_reflection_table, test_sg):
     """Test the initialisation and methods of the error model."""
 
-    em = BasicErrorModel
-    em.min_reflections_required = 1
     Ih_table = IhTable([large_reflection_table], test_sg, nblocks=1)
     block = Ih_table.blocked_data_list[0]
     params = generated_param()
     params.weighting.error_model.basic.n_bins = 2
     params.weighting.error_model.basic.min_Ih = 1.0
-    error_model = em(block, params.weighting.error_model.basic)
+    em = BasicErrorModel
+    em.min_reflections_required = 1
+    error_model = em(basic_params=params.weighting.error_model.basic)
+    error_model.min_reflections_required = 1
+    error_model.configure_for_refinement(block)
     assert error_model.binner.summation_matrix[0, 1] == 1
     assert error_model.binner.summation_matrix[1, 1] == 1
     assert error_model.binner.summation_matrix[2, 0] == 1
@@ -236,7 +238,8 @@ def test_error_model_target(large_reflection_table, test_sg):
     params = generated_param()
     params.weighting.error_model.basic.n_bins = 2
     params.weighting.error_model.basic.min_Ih = 1.0
-    error_model = em(block, params.weighting.error_model.basic)
+    error_model = em(basic_params=params.weighting.error_model.basic)
+    error_model.configure_for_refinement(block)
     error_model.parameters = [1.0, 0.05]
     parameterisation = ErrorModelB_APM(error_model)
     target = ErrorModelTargetB(error_model)

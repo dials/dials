@@ -25,6 +25,7 @@ def test_find_spots_from_images(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.find_spots",
+            "nproc=1",
             "output.reflections=spotfinder.refl",
             "output.shoeboxes=True",
             "algorithm=dispersion",
@@ -49,6 +50,7 @@ def test_find_spots_from_images_override_maximum(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.find_spots",
+            "nproc=1",
             "maximum_trusted_value=100",
             "output.reflections=spotfinder.refl",
             "output.shoeboxes=True",
@@ -76,7 +78,7 @@ def test_find_spots_from_zero_indexed_cbf(dials_data, tmpdir):
     one_indexed_cbf.copy(zero_indexed_cbf)
 
     result = procrunner.run(
-        ["dials.find_spots", zero_indexed_cbf], working_directory=tmpdir
+        ["dials.find_spots", "nproc=1", zero_indexed_cbf], working_directory=tmpdir
     )
     assert not result.returncode and not result.stderr
     assert tmpdir.join("strong.refl").check(file=1)
@@ -87,6 +89,7 @@ def test_find_spots_from_images_output_experiments(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.find_spots",
+            "nproc=1",
             "output.reflections=spotfinder.refl",
             "output.shoeboxes=True",
             "algorithm=dispersion",
@@ -121,6 +124,7 @@ def test_find_spots_from_imported_experiments(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.find_spots",
+            "nproc=1",
             tmpdir.join("imported.expt").strpath,
             "output.reflections=spotfinder.refl",
             "output.shoeboxes=True",
@@ -152,6 +156,7 @@ def test_find_spots_from_imported_as_grid(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.find_spots",
+            "nproc=1",
             tmpdir.join("imported.expt").strpath,
             "output.reflections=spotfinder.refl",
             "output.shoeboxes=True",
@@ -171,6 +176,7 @@ def test_find_spots_with_resolution_filter(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.find_spots",
+            "nproc=1",
             "output.reflections=spotfinder.refl",
             "output.shoeboxes=False",
             "algorithm=dispersion",
@@ -195,6 +201,7 @@ def test_find_spots_with_hot_mask(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.find_spots",
+            "nproc=1",
             "write_hot_mask=True",
             "output.reflections=spotfinder.refl",
             "algorithm=dispersion",
@@ -224,6 +231,7 @@ def test_find_spots_with_hot_mask_with_prefix(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.find_spots",
+            "nproc=1",
             "write_hot_mask=True",
             "hot_mask_prefix=my_hot_mask",
             "output.reflections=spotfinder.refl",
@@ -253,6 +261,7 @@ def test_find_spots_with_generous_parameters(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.find_spots",
+            "nproc=1",
             "min_spot_size=3",
             "max_separation=3",
             "output.reflections=spotfinder.refl",
@@ -275,6 +284,7 @@ def test_find_spots_with_user_defined_mask(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.find_spots",
+            "nproc=1",
             "output.reflections=spotfinder.refl",
             "output.shoeboxes=True",
             "algorithm=dispersion",
@@ -309,6 +319,7 @@ def test_find_spots_with_user_defined_region(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.find_spots",
+            "nproc=1",
             "output.reflections=spotfinder.refl",
             "output.shoeboxes=True",
             "region_of_interest=800,1200,800,1200",
@@ -334,6 +345,7 @@ def test_find_spots_with_xfel_stills(dials_regression, tmpdir):
     result = procrunner.run(
         [
             "dials.find_spots",
+            "nproc=1",
             os.path.join(
                 dials_regression,
                 "spotfinding_test_data",
@@ -353,7 +365,7 @@ def test_find_spots_with_xfel_stills(dials_regression, tmpdir):
 
 def test_find_spots_with_per_image_statistics(dials_data, tmpdir):
     result = procrunner.run(
-        ["dials.find_spots", "per_image_statistics=True"]
+        ["dials.find_spots", "nproc=1", "per_image_statistics=True"]
         + [
             f.strpath for f in dials_data("centroid_test_data").listdir("centroid*.cbf")
         ],

@@ -4,7 +4,7 @@ import logging
 
 from libtbx.phil import parse
 
-from dials.util import show_mail_on_error
+from dials.util import show_mail_handle_errors
 
 logger = logging.getLogger("dials.command_line.create_profile_model")
 
@@ -54,7 +54,7 @@ class Script(object):
             check_format=False,
         )
 
-    def run(self):
+    def run(self, args=None):
         """Run the script."""
         from dials.algorithms.profile_model.factory import ProfileModelFactory
         from dials.array_family import flex
@@ -65,7 +65,7 @@ class Script(object):
         log.config()
 
         # Parse the command line
-        params, options = self.parser.parse_args(show_diff_phil=True)
+        params, options = self.parser.parse_args(args, show_diff_phil=True)
         reflections, experiments = reflections_and_experiments_from_files(
             params.input.reflections, params.input.experiments
         )
@@ -218,7 +218,11 @@ class Script(object):
         return reference
 
 
+@show_mail_handle_errors()
+def run(args=None):
+    script = Script()
+    script.run(args)
+
+
 if __name__ == "__main__":
-    with show_mail_on_error():
-        script = Script()
-        script.run()
+    run()

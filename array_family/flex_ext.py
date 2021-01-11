@@ -166,12 +166,12 @@ class _(object):
 
         # Get the integrator from the input parameters
         logger.info("Configuring spot finder from input parameters")
-        find_spots = SpotFinderFactory.from_parameters(
+        spotfinder = SpotFinderFactory.from_parameters(
             experiments=experiments, params=params
         )
 
         # Find the spots
-        return find_spots(experiments)
+        return spotfinder.find_spots(experiments)
 
     @staticmethod
     def from_pickle(filename):

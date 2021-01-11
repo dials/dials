@@ -14,12 +14,14 @@ from scitbx import matrix
 from dials.algorithms.refinement import rotation_decomposition
 from dials.algorithms.shadowing.filter import filter_shadowed_reflections
 from dials.array_family import flex
-from dials.util import log, show_mail_on_error
+from dials.util import log, show_mail_handle_errors
 from dials.util.options import OptionParser, flatten_experiments
 
 logger = logging.getLogger("dials.command_line.complete_full_sphere")
 
 help_message = """
+This program attempts to compute a sample realignment to measure the blind
+region of reciprocal space, given an already recorded data set.
 
 dials.complete_full_sphere [resolution=1.6] models.expt
 """
@@ -53,8 +55,8 @@ class Script(object):
             read_experiments=True,
         )
 
-    def run(self):
-        params, options = self.parser.parse_args(show_diff_phil=True)
+    def run(self, args=None):
+        params, options = self.parser.parse_args(args, show_diff_phil=True)
         log.config(logfile="dials.complete_full_sphere.log")
 
         model_shadow = params.shadow
@@ -232,7 +234,11 @@ class Script(object):
         experiments.as_file(filename)
 
 
+@show_mail_handle_errors()
+def run(args=None):
+    script = Script()
+    script.run(args)
+
+
 if __name__ == "__main__":
-    with show_mail_on_error():
-        script = Script()
-        script.run()
+    run()

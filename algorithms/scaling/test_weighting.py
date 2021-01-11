@@ -1,10 +1,10 @@
 """
 Test for the scaling weighting module.
 """
-from __future__ import absolute_import, division, print_function
+
+from unittest.mock import Mock
 
 import pytest
-from mock import Mock
 
 from dials.algorithms.scaling.weighting import (
     CauchyWeights,

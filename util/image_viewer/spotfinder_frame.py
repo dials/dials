@@ -1,10 +1,7 @@
-from __future__ import absolute_import, division, print_function
-
 import collections
 import itertools
 import math
 
-import six
 import wx
 from wx.lib.intctrl import IntCtrl
 
@@ -13,8 +10,6 @@ from cctbx.miller import index_generator
 from dxtbx.imageset import ImageSet
 from dxtbx.model.experiment_list import ExperimentList, ExperimentListFactory
 from libtbx.utils import flat_list
-from rstbx.slip_viewer import pyslip
-from rstbx.viewer.frame import SettingsFrame
 from scitbx import matrix
 from wxtbx import bitmaps, icons
 from wxtbx.phil_controls import EVT_PHIL_CONTROL
@@ -34,6 +29,7 @@ from dials.util import masking
 from dials.util.image_viewer.mask_frame import MaskSettingsFrame
 from dials.util.image_viewer.spotfinder_wrap import chooser_wrapper
 
+from .slip_viewer import pyslip
 from .slip_viewer.frame import MASK_VAL, XrayFrame
 from .viewer_tools import (
     EVT_ZEROMQ_EVENT,
@@ -97,7 +93,7 @@ class SpotFrame(XrayFrame):
         # Store the list of images we can view
         self.images = ImageCollectionWithSelection()
 
-        super(SpotFrame, self).__init__(*args, **kwds)
+        super().__init__(*args, **kwds)
 
         # If we have only one imageset, unindexed filtering becomes easier
         self.have_one_imageset = len(set(self.imagesets)) <= 1
@@ -238,7 +234,7 @@ class SpotFrame(XrayFrame):
         self.Bind(EVT_PHIL_CONTROL, self.OnStack, self.stack)
 
     def setup_menus(self):
-        super(SpotFrame, self).setup_menus()
+        super().setup_menus()
 
         # XXX Placement
         self._id_mask = wx.NewId()
@@ -284,12 +280,12 @@ class SpotFrame(XrayFrame):
         self.load_image(selected_image)
 
     def OnPrevious(self, event):
-        super(SpotFrame, self).OnPrevious(event)
+        super().OnPrevious(event)
         # Parent function moves - now update the UI to match
         self.jump_to_image.SetValue(self.images.selected_index + 1)
 
     def OnNext(self, event):
-        super(SpotFrame, self).OnNext(event)
+        super().OnNext(event)
         # Parent function moves - now update the UI to match
         self.jump_to_image.SetValue(self.images.selected_index + 1)
 
@@ -538,10 +534,7 @@ class SpotFrame(XrayFrame):
             return
 
         # If given a string, we need to load and convert to a chooser_wrapper
-        if isinstance(file_name_or_data, six.string_types):
-            if six.PY2 and isinstance(file_name_or_data, six.text_type):
-                # dxtbx/Boost cannot currently handle unicode here
-                file_name_or_data = file_name_or_data.encode("utf-8")
+        if isinstance(file_name_or_data, str):
             experiments = ExperimentListFactory.from_filenames([file_name_or_data])
             assert len(experiments) == 1
             imagesets = experiments.imagesets()
@@ -561,7 +554,7 @@ class SpotFrame(XrayFrame):
         previously_selected_image = self.images.selected
         self.images.selected = file_name_or_data
         # Do the actual data/image loading and update the viewer
-        super(SpotFrame, self).load_image(
+        super().load_image(
             file_name_or_data,
             get_image_data=self.get_image_data,
             show_untrusted=show_untrusted,
@@ -765,7 +758,7 @@ class SpotFrame(XrayFrame):
             if unit_cell is None and space_group is None:
                 for angle in (45, 135, 225, 315):
                     txtvec = cb1.rotate_around_origin(
-                        axis=beamvec, angle=angle / 180 * 3.14159
+                        axis=beamvec, angle=math.radians(angle)
                     )
                     txtpos = pan.get_ray_intersection_px(txtvec)
                     if len(detector) > 1:
@@ -1079,7 +1072,7 @@ class SpotFrame(XrayFrame):
                             r = max(int(r, 16) - int("50", 16), 0)
                             g = max(int(g, 16) - int("50", 16), 0)
                             b = max(int(b, 16) - int("50", 16), 0)
-                            color = "#%02x%02x%02x" % (r, g, b)
+                            color = f"#{r:02x}{g:02x}{b:02x}"
                             self.dials_spotfinder_layers.append(
                                 self.pyslip.AddPointLayer(
                                     value,
@@ -1220,7 +1213,7 @@ class SpotFrame(XrayFrame):
             r = max(int(r, 16) - int("50", 16), 0)
             g = max(int(g, 16) - int("50", 16), 0)
             b = max(int(b, 16) - int("50", 16), 0)
-            color = "#%02x%02x%02x" % (r, g, b)
+            color = f"#{r:02x}{g:02x}{b:02x}"
             self.dials_spotfinder_layers.append(
                 self.pyslip.AddPointLayer(
                     value,
@@ -1709,9 +1702,9 @@ class SpotFrame(XrayFrame):
             raise
 
 
-class SpotSettingsFrame(SettingsFrame):
+class SpotSettingsFrame(wx.MiniFrame):
     def __init__(self, *args, **kwds):
-        super(SettingsFrame, self).__init__(*args, **kwds)
+        super().__init__(*args, **kwds)
         self.settings = self.GetParent().settings
         self.params = self.GetParent().params
         szr = wx.BoxSizer(wx.VERTICAL)
@@ -1732,7 +1725,7 @@ class SpotSettingsFrame(SettingsFrame):
 
 class SpotSettingsPanel(wx.Panel):
     def __init__(self, *args, **kwargs):
-        super(SpotSettingsPanel, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self.settings = self.GetParent().settings
         self.params = self.GetParent().params

@@ -16,7 +16,7 @@ from dxtbx.model.experiment_list import (
 )
 from libtbx.phil import parse
 
-from dials.util import Sorry, show_mail_on_error
+from dials.util import Sorry, show_mail_handle_errors
 from dials.util.multi_dataset_handling import generate_experiment_identifiers
 from dials.util.options import flatten_experiments
 
@@ -125,6 +125,24 @@ phil_scope = parse(
       .expert_level = 2
       .help = "If True, assert the reference geometry is similar to"
               "the image geometry"
+
+    use_beam_reference = True
+      .type = bool
+      .expert_level = 2
+      .help = "If True, the beam from reference_geometry will override "
+              "the beam from the image headers."
+
+    use_gonio_reference = True
+      .type = bool
+      .expert_level = 2
+      .help = "If True, the goniometer from reference_geometry will override "
+              "the goniometer from the image headers."
+
+    use_detector_reference = True
+      .type = bool
+      .expert_level = 2
+      .help = "If True, the detector from reference_geometry will override "
+              "the detector from the image headers."
 
     allow_multiple_sequences = True
       .type = bool
@@ -264,9 +282,12 @@ class ReferenceGeometryUpdater(object):
             ), "Reference detector model does not match input detector model"
 
         # Set beam and detector
-        imageset.set_beam(self.reference.beam)
-        imageset.set_detector(self.reference.detector)
-        imageset.set_goniometer(self.reference.goniometer)
+        if self.params.input.use_beam_reference:
+            imageset.set_beam(self.reference.beam)
+        if self.params.input.use_detector_reference:
+            imageset.set_detector(self.reference.detector)
+        if self.params.input.use_gonio_reference:
+            imageset.set_goniometer(self.reference.goniometer)
         return imageset
 
     def load_reference_geometry(self, params):
@@ -923,7 +944,11 @@ class Script(object):
         logger.info("\n".join(text))
 
 
+@show_mail_handle_errors()
+def run(args=None):
+    script = Script()
+    script.run(args)
+
+
 if __name__ == "__main__":
-    with show_mail_on_error():
-        script = Script()
-        script.run()
+    run()

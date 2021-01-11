@@ -58,11 +58,11 @@ plot_filename = None
             epilog=__doc__,
         )
 
-    def run(self):
+    def run(self, args=None):
         """Execute the script."""
 
         # Parse the command line
-        self.params, _ = self.parser.parse_args(show_diff_phil=True)
+        self.params, _ = self.parser.parse_args(args, show_diff_phil=True)
 
         if not self.params.input.experiments:
             self.parser.print_help()
@@ -230,7 +230,11 @@ def extract_experiment_data(exp, scale=1):
     }
 
 
+@dials.util.show_mail_handle_errors()
+def run(args=None):
+    script = Script()
+    script.run(args)
+
+
 if __name__ == "__main__":
-    with dials.util.show_mail_on_error():
-        script = Script()
-        script.run()
+    run()

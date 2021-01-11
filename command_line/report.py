@@ -29,7 +29,7 @@ from dials.report.plots import (
     make_image_range_table,
     scale_rmerge_vs_batch_plot,
 )
-from dials.util import show_mail_on_error
+from dials.util import show_mail_handle_errors
 from dials.util.batch_handling import batch_manager
 from dials.util.command_line import Command
 
@@ -2530,12 +2530,12 @@ class Script(object):
         )
         dials.util.log.print_banner()
 
-    def run(self):
+    def run(self, args=None):
         """Run the script."""
         from dials.util.options import reflections_and_experiments_from_files
 
         # Parse the command line arguments
-        params, options = self.parser.parse_args(show_diff_phil=True)
+        params, options = self.parser.parse_args(args, show_diff_phil=True)
 
         # Show the help
         if len(params.input.reflections) != 1 and not len(params.input.experiments):
@@ -2560,7 +2560,11 @@ class Script(object):
         analyse(reflections, experiments)
 
 
+@show_mail_handle_errors()
+def run(args=None):
+    script = Script()
+    script.run(args)
+
+
 if __name__ == "__main__":
-    with show_mail_on_error():
-        script = Script()
-        script.run()
+    run()

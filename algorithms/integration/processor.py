@@ -15,10 +15,11 @@ import libtbx
 
 import dials.algorithms.integration
 import dials.util
+import dials.util.log
 from dials.array_family import flex
 from dials.model.data import make_image
 from dials.util import tabulate
-from dials.util.mp import multi_node_parallel_map
+from dials.util.mp import available_cores, multi_node_parallel_map
 from dials_algorithms_integration_integrator_ext import (
     Executor,
     Group,
@@ -284,7 +285,7 @@ class _Processor(object):
 
             def process_output(result):
                 for message in result[1]:
-                    logger.log(message.levelno, message.msg)
+                    logger.handle(message)
                 self.manager.accumulate(result[0])
 
             multi_node_parallel_map(
@@ -562,8 +563,11 @@ class _Manager(object):
         # Ensure the reflections contain bounding boxes
         assert "bbox" in self.reflections, "Reflections have no bbox"
 
+        if self.params.mp.nproc is libtbx.Auto:
+            self.params.mp.nproc = available_cores()
+            logger.info("Setting nproc={}".format(self.params.mp.nproc))
+
         # Compute the block size and processors
-        self.compute_blocks()
         self.compute_jobs()
         self.split_reflections()
         self.compute_processors()
@@ -662,9 +666,9 @@ class _Manager(object):
         """
         return len(self.manager)
 
-    def compute_blocks(self):
+    def compute_jobs(self):
         """
-        Compute the processing block size.
+        Sets up a JobList() object in self.jobs
         """
 
         if self.params.block.size == libtbx.Auto:
@@ -674,19 +678,17 @@ class _Manager(object):
                 and not self.params.block.force
             ):
                 self.params.block.size = None
-            else:
-                assert self.params.block.threshold > 0, "Threshold must be > 0"
-                assert self.params.block.threshold <= 1.0, "Threshold must be < 1"
-                nframes = sorted([b[5] - b[4] for b in self.reflections["bbox"]])
-                cutoff = int(self.params.block.threshold * len(nframes))
-                block_size = nframes[cutoff] * 2
-                self.params.block.size = block_size
-                self.params.block.units = "frames"
 
-    def compute_jobs(self):
-        """
-        Sets up a JobList() object in self.jobs
-        """
+        # calculate the block overlap based on the size of bboxes in the data
+        # calculate once here rather than repeated in the loop below
+        block_overlap = 0
+        if self.params.block.size is not None:
+            assert self.params.block.threshold > 0, "Threshold must be > 0"
+            assert self.params.block.threshold <= 1.0, "Threshold must be < 1"
+            frames_per_refl = sorted([b[5] - b[4] for b in self.reflections["bbox"]])
+            cutoff = int(self.params.block.threshold * len(frames_per_refl))
+            block_overlap = frames_per_refl[cutoff]
+
         groups = itertools.groupby(
             range(len(self.experiments)),
             lambda x: (id(self.experiments[x].imageset), id(self.experiments[x].scan)),
@@ -703,21 +705,46 @@ class _Manager(object):
             if scan is not None:
                 assert len(imgs) >= len(scan), "Invalid scan range"
                 array_range = scan.get_array_range()
+
             if self.params.block.size is None:
                 block_size_frames = array_range[1] - array_range[0]
+            elif self.params.block.size == libtbx.Auto:
+                # auto determine based on nframes and overlap
+                nframes = array_range[1] - array_range[0]
+                nblocks = self.params.mp.nproc * self.params.mp.njobs
+                # want data to be split into n blocks with overlaps
+                # i.e. [x, overlap, y, overlap, y, overlap, ....,y,  overlap, x]
+                # blocks are x + overlap, or overlap + y + overlap.
+                x = (nframes - block_overlap) / nblocks
+                block_size = int(math.ceil(x + block_overlap))
+                # increase the block size to be at least twice the overlap, in
+                # case the overlap is large e.g. if high mosaicity.
+                block_size_frames = max(block_size, 2 * block_overlap)
             elif self.params.block.units == "radians":
-                phi0, dphi = scan.get_oscillation(deg=False)
+                _, dphi = scan.get_oscillation(deg=False)
                 block_size_frames = int(math.ceil(self.params.block.size / dphi))
+                # if the specified block size is lower than the overlap,
+                # reduce the overlap to be half of the block size.
+                block_overlap = min(block_overlap, int(block_size_frames // 2))
             elif self.params.block.units == "degrees":
-                phi0, dphi = scan.get_oscillation()
+                _, dphi = scan.get_oscillation()
                 block_size_frames = int(math.ceil(self.params.block.size / dphi))
+                # if the specified block size is lower than the overlap,
+                # reduce the overlap to be half of the block size.
+                block_overlap = min(block_overlap, int(block_size_frames // 2))
             elif self.params.block.units == "frames":
                 block_size_frames = int(math.ceil(self.params.block.size))
+                block_overlap = min(block_overlap, int(block_size_frames // 2))
             else:
                 raise RuntimeError(
                     "Unknown block_size units %r" % self.params.block.units
                 )
-            self.jobs.add((i0, i1), array_range, block_size_frames)
+            self.jobs.add(
+                (i0, i1),
+                array_range,
+                block_size_frames,
+                block_overlap,
+            )
         assert len(self.jobs) > 0, "Invalid number of jobs"
 
     def split_reflections(self):
@@ -925,14 +952,14 @@ class _Manager(object):
             block_size = "auto"
         else:
             block_size = str(self.params.block.size)
-        fmt = (
-            "Processing reflections in the following blocks of images:\n"
-            "\n"
-            " block_size: %s %s\n"
-            "\n"
-            "%s\n"
+        return (
+            "Processing reflections in the following blocks of images:\n\n"
+            " block_size: {} {}\n\n{}\n"
+        ).format(
+            block_size,
+            "" if block_size in ("auto", "Auto") else self.params.block.units,
+            task_table,
         )
-        return fmt % (block_size, self.params.block.units, task_table)
 
 
 class Processor3D(_ProcessorRot):

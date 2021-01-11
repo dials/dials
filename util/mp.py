@@ -1,8 +1,47 @@
-from __future__ import absolute_import, division, print_function
+import itertools
+import os
 
-import future.moves.itertools as itertools
+import psutil
 
 import libtbx.easy_mp
+
+
+def available_cores() -> int:
+    """
+    Determine the number of available processor cores.
+
+    There are a number of different methods to get this information, some of
+    which may not be available on a specific OS and/or version of Python. So try
+    them in order and return the first successful one.
+    """
+
+    nproc = os.environ.get("NSLOTS", 0)
+    try:
+        nproc = int(nproc)
+        if nproc >= 1:
+            return nproc
+    except ValueError:
+        pass
+
+    try:
+        return len(os.sched_getaffinity(0))
+    except AttributeError:
+        pass
+
+    try:
+        return len(psutil.Process().cpu_affinity())
+    except AttributeError:
+        pass
+
+    nproc = os.cpu_count()
+    if nproc is not None:
+        return nproc
+
+    nproc = psutil.cpu_count()
+    if nproc is not None:
+        return nproc
+
+    return 1
 
 
 def parallel_map(
@@ -48,7 +87,7 @@ def parallel_map(
         )
 
 
-class MultiNodeClusterFunction(object):
+class MultiNodeClusterFunction:
     """
     A function called by the multi node parallel map. On each cluster node, a
     nested parallel map using the multi processing method will be used.

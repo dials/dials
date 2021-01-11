@@ -98,7 +98,6 @@ https://conda.anaconda.org/cctbx/win-64/ipython-7.2.0-py36h39e3cac_1000.tar.bz2#
 https://conda.anaconda.org/cctbx/noarch/pbr-5.1.2-py_0.tar.bz2#8035783a2f41554ebc23a72fd716e2de
 https://conda.anaconda.org/cctbx/noarch/pytest-xdist-1.26.1-py_0.tar.bz2#f5d20bb9e89fb4cb9807f125c9b11340
 https://conda.anaconda.org/cctbx/win-64/urllib3-1.24.1-py36_1000.tar.bz2#08dc9999b45af0d758bd1ba7547e8bb1
-https://conda.anaconda.org/cctbx/win-64/mock-2.0.0-py36_1000.tar.bz2#7d8006ba5a9092b06704f49c086e25d3
 https://conda.anaconda.org/cctbx/win-64/requests-2.21.0-py36_1000.tar.bz2#9a1e7c83b90a804f39ae858cb45e1308
 https://conda.anaconda.org/cctbx/win-64/sphinx-1.8.4-py36_0.tar.bz2#e37c1b696185d6cebc3edc5aaeeb8ba0
 https://conda.anaconda.org/cctbx/win-64/wxpython-4.0.3-py36h6538335_1002.tar.bz2#14f421d4cc37da05cdb7dbc51c511ca6

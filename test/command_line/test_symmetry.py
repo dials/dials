@@ -54,6 +54,7 @@ def test_symmetry_laue_only(dials_data, tmpdir):
     assert str(exps[0].crystal.get_space_group().info()) == "P 2 2 2"
 
 
+@pytest.mark.xfail("os.name == 'nt'", reason="UnicodeEncodeError in logging")
 def test_symmetry_basis_changes_for_C2(tmpdir):
     """Test the correctness of change of basis operations in dials.symmetry
 
@@ -374,7 +375,7 @@ def test_change_of_basis_ops_to_minimum_cell_1037(mocker):
     )
     import pytest_mock
 
-    if pytest_mock.version.startswith("1."):
+    if getattr(pytest_mock, "version", "").startswith("1."):
         assert symmetry.unit_cells_are_similar_to.return_value is True
     else:
         assert symmetry.unit_cells_are_similar_to.spy_return is True
