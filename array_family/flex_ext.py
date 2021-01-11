@@ -628,28 +628,26 @@ class _(object):
         xyz = self[key]
         ref = other[key]
 
-        flex = cctbx.array_family.flex
-
         if scale != (1, 1, 1):
             x, y, z = xyz.parts()
             x *= scale[0]
             y *= scale[1]
             z *= scale[2]
-            xyz = flex.vec3_double(x, y, z)
+            xyz = cctbx.array_family.flex.vec3_double(x, y, z)
 
             x, y, z = ref.parts()
             x *= scale[0]
             y *= scale[1]
             z *= scale[2]
-            ref = flex.vec3_double(x, y, z)
+            ref = cctbx.array_family.flex.vec3_double(x, y, z)
 
         x = xyz.as_double().as_1d()
         r = ref.as_double().as_1d()
         ann = AnnAdaptorSelfInclude(r, 3)
         ann.query(x)
 
-        mm = flex.size_t(range(xyz.size()))
-        nn, distance = ann.nn, flex.sqrt(ann.distances)
+        mm = cctbx.array_family.flex.size_t(range(xyz.size()))
+        nn, distance = ann.nn, cctbx.array_family.flex.sqrt(ann.distances)
 
         sel = distance <= max_separation
 
