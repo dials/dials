@@ -532,11 +532,6 @@ class ExtractSpots:
                 callback=process_output,
             )
         else:
-            # Hack to avoid the call to nullify_format_instance() in the case
-            # of HDF5 files, which shouldn't be necessary if we aren't using
-            # multiprocessing
-            # See https://github.com/dials/dials/issues/144
-            function.first = False
             for task in indices:
                 result = function(task)
                 assert len(pixel_labeller) == len(
