@@ -1,9 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
 import copy
+import logging
 
 import scitbx.matrix
-from cctbx import sgtbx
+from cctbx import crystal, sgtbx, uctbx
 from dxtbx.model import Crystal
 from scitbx.math import euler_angles_as_matrix
 
@@ -82,6 +83,31 @@ def test_combinations(setup_rlp):
                     g["ref_subsym"].space_group() for g in subgroups.result_groups
                 ]:
                     assert 0
+
+
+def test_filter_known_symmetry_no_matches(caplog):
+    caplog.set_level(logging.DEBUG)
+    unit_cell = uctbx.unit_cell((10, 10, 10, 90, 90, 90))
+    crystal_models = []
+    # the reciprocal matrix
+    B = scitbx.matrix.sqr(unit_cell.fractionalization_matrix()).transpose()
+    for _ in range(10):
+        crystal_models.append(
+            Crystal(B, space_group=sgtbx.space_group(), reciprocal=True)
+        )
+
+    target_symmetry = crystal.symmetry(
+        unit_cell=(15, 15, 15, 85, 85, 85), space_group=sgtbx.space_group()
+    )
+    list(
+        combinations.filter_known_symmetry(
+            crystal_models, target_symmetry=target_symmetry
+        )
+    )
+    assert "Rejecting crystal model inconsistent with input symmetry" in caplog.text
+    assert (
+        "No crystal models remaining after comparing with known symmetry" in caplog.text
+    )
 
 
 def test_filter_similar_orientations():
