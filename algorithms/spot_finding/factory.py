@@ -408,6 +408,8 @@ class SpotFinderFactory:
         Given a set of parameters, construct the spot finder
 
         :param params: The input parameters
+        :param is_stills:   [ADVANCED] Force still-handling of experiment
+                            ID remapping for dials.stills_process.
         :returns: The spot finder instance
         """
         if params is None:

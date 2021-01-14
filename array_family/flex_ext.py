@@ -142,6 +142,10 @@ class _(object):
 
         :param experiments: The experiments
         :param params: The input parameters
+        :param is_stills:   [ADVANCED] Force still-handling of experiment
+                            ID remapping for dials.stills_process. Do
+                            not use for general processing unless you
+                            know all the implications.
         :return: The reflection table of observations
         """
         from dials.algorithms.spot_finding.factory import SpotFinderFactory

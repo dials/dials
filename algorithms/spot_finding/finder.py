@@ -683,6 +683,8 @@ class SpotFinder:
         :param find_spots: The spot finding algorithm
         :param filter_spots: The spot filtering algorithm
         :param scan_range: The scan range to find spots over
+        :param is_stills:   [ADVANCED] Force still-handling of experiment
+                            ID remapping for dials.stills_process.
         """
 
         # Set the filter and some other stuff
