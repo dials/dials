@@ -1,5 +1,21 @@
+DIALS 3.3.1 (2021-01-18)
+========================
+
+Features
+--------
+
+- ``dials.index``: More verbose debug logs when rejecting crystal models that are inconsistent with input symmetry (`#1538 <https://github.com/dials/dials/issues/1538>`_)
+
+
+Bugfixes
+--------
+
+- ``dials.stills_process``: Fix spotfinding error "Failed to remap experiment IDs" (`#1180 <https://github.com/dials/dials/issues/1180>`_)
+- Improved spotfinding performance for HDF5 when using a single processor. (`#1539 <https://github.com/dials/dials/issues/1539>`_)
+
+
 DIALS 3.3.0 (2021-01-04)
-======================
+========================
 
 Features
 --------
