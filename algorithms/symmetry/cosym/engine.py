@@ -6,6 +6,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 import scitbx.lbfgs
+from scitbx.array_family import flex
 
 
 class lbfgs_with_curvs(object):
@@ -57,7 +58,7 @@ class lbfgs_with_curvs(object):
 
     def curvatures(self):
         """Return the curvatures."""
-        return self.target.curvatures(self.x)
+        return self.target.curvatures(self.x.as_numpy_array())
 
     def compute_functional_gradients_and_curvatures(self):
         """Compute the functional, gradients and curvatures.
@@ -65,9 +66,11 @@ class lbfgs_with_curvs(object):
         Returns:
           tuple: A tuple of the functional, gradients and curvatures.
         """
-        self.f, self.g = self.target.compute_functional_and_gradients(self.x)
+        self.f, self.g = self.target.compute_functional_and_gradients(
+            self.x.as_numpy_array()
+        )
         self.c = self.curvatures()
-        return self.f, self.g, self.c
+        return self.f, flex.double(self.g), flex.double(self.c)
 
     def compute_functional_and_gradients(self):
         """Compute the functional and gradients.
@@ -75,8 +78,10 @@ class lbfgs_with_curvs(object):
         Returns:
           tuple: A tuple of the functional and gradients.
         """
-        self.f, self.g = self.target.compute_functional_and_gradients(self.x)
-        return self.f, self.g
+        self.f, self.g = self.target.compute_functional_and_gradients(
+            self.x.as_numpy_array()
+        )
+        return self.f, flex.double(self.g)
 
     def callback_after_step(self, minimizer):
         """Log progress after each successful step of the minimisation."""
