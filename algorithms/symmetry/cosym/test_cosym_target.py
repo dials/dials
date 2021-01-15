@@ -27,22 +27,22 @@ def test_cosym_target(space_group):
         m = len(t.sym_ops)
         n = len(datasets)
         assert t.dim == m
-        assert t.rij_matrix.all() == (n * m, n * m)
+        assert t.rij_matrix.shape == (n * m, n * m)
         x = flex.random_double(n * m * t.dim)
-        f0, g = t.compute_functional_and_gradients(x)
-        g_fd = t.compute_gradients_fd(x)
+        f0, g = t.compute_functional_and_gradients(x.as_numpy_array())
+        g_fd = t.compute_gradients_fd(x.as_numpy_array())
         for n, value in enumerate(zip(g, g_fd)):
             assert value[0] == pytest.approx(value[1], rel=2e-3), n
 
-        c = t.curvatures(x)
-        c_fd = t.curvatures_fd(x, eps=1e-3)
+        c = t.curvatures(x.as_numpy_array())
+        c_fd = t.curvatures_fd(x.as_numpy_array(), eps=1e-3)
         assert list(c) == pytest.approx(c_fd, rel=0.8e-1)
 
         assert engine.lbfgs_with_curvs(target=t, coords=x)
-        t.compute_functional(x)
+        t.compute_functional(x.as_numpy_array())
         # check functional has decreased and gradients are approximately zero
-        f, g = t.compute_functional_and_gradients(x)
-        g_fd = t.compute_gradients_fd(x)
+        f, g = t.compute_functional_and_gradients(x.as_numpy_array())
+        g_fd = t.compute_gradients_fd(x.as_numpy_array())
         assert f < f0
         assert pytest.approx(g, abs=1e-3) == [0] * len(g)
         assert pytest.approx(g_fd, abs=1e-3) == [0] * len(g)

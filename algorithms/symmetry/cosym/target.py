@@ -5,7 +5,9 @@ import copy
 import logging
 import math
 import warnings
+from typing import Tuple
 
+import numpy as np
 from orderedset import OrderedSet
 from scipy import sparse
 
@@ -105,7 +107,7 @@ class Target(object):
             "Patterson group: %s" % self._patterson_group.info().symbol_and_number()
         )
 
-        self._compute_rij_wij()
+        self.rij_matrix, self.wij_matrix = self._compute_rij_wij()
 
     def set_dimensions(self, dimensions):
         """Set the number of dimensions for analysis.
@@ -158,15 +160,6 @@ class Target(object):
     def _compute_rij_wij(self, use_cache=True):
         """Compute the rij_wij matrix."""
         n_lattices = self._lattices.size()
-        n_sym_ops = len(self.sym_ops)
-
-        NN = n_lattices * n_sym_ops
-
-        self.rij_matrix = flex.double(flex.grid(NN, NN), 0.0)
-        if self._weights is None:
-            self.wij_matrix = None
-        else:
-            self.wij_matrix = flex.double(flex.grid(NN, NN), 0.0)
 
         indices = {}
         space_group_type = self._data.space_group().type()
@@ -297,19 +290,17 @@ class Target(object):
                 else:
                     wij_matrix += wij
 
-        self.rij_matrix = flex.double(rij_matrix.todense())
+        rij_matrix = rij_matrix.todense().astype(np.float64)
         if wij_matrix is not None:
-            import numpy as np
+            wij_matrix = wij_matrix.todense().astype(np.float64)
 
-            self.wij_matrix = flex.double(wij_matrix.todense().astype(np.float64))
+        return rij_matrix, wij_matrix
 
-        return self.rij_matrix, self.wij_matrix
-
-    def compute_functional(self, x):
+    def compute_functional(self, x: np.array) -> float:
         """Compute the target function at coordinates `x`.
 
         Args:
-          x (scitbx.array_family.flex.double):
+          x (np.array):
             a flattened list of the N-dimensional vectors, i.e. coordinates in
             the first dimension are stored first, followed by the coordinates in
             the second dimension, etc.
@@ -317,24 +308,24 @@ class Target(object):
         Returns:
           f (float): The value of the target function at coordinates `x`.
         """
-        assert (x.size() // self.dim) == (self._lattices.size() * len(self.sym_ops))
-        inner = self.rij_matrix.deep_copy()
-        NN = x.size() // self.dim
+        assert (x.size // self.dim) == (self._lattices.size() * len(self.sym_ops))
+        inner = np.copy(self.rij_matrix)
+        NN = x.size // self.dim
         for i in range(self.dim):
             coord = x[i * NN : (i + 1) * NN]
-            outer_prod = coord.matrix_outer_product(coord)
+            outer_prod = np.outer(coord, coord)
             inner -= outer_prod
-        elements = inner * inner
+        elements = np.power(inner, 2)
         if self.wij_matrix is not None:
-            elements = self.wij_matrix * elements
-        f = 0.5 * flex.sum(elements)
+            elements = np.multiply(self.wij_matrix, elements)
+        f = 0.5 * elements.sum()
         return f
 
-    def compute_gradients_fd(self, x, eps=1e-6):
+    def compute_gradients_fd(self, x: np.array, eps=1e-6) -> np.array:
         """Compute the gradients at coordinates `x` using finite differences.
 
         Args:
-          x (scitbx.array_family.flex.double):
+          x (np.array):
             a flattened list of the N-dimensional vectors, i.e. coordinates in
             the first dimension are stored first, followed by the coordinates in
             the second dimension, etc.
@@ -342,11 +333,11 @@ class Target(object):
             The value of epsilon to use in finite difference calculations.
 
         Returns:
-          grad (scitbx.array_family.flex.double):
+          grad (np.array):
           The gradients of the target function with respect to the parameters.
         """
-        grad = flex.double(x.size(), 0)
-        for i in range(grad.size()):
+        grad = np.zeros(x.shape)
+        for i in range(x.size):
             x[i] += eps  # x + eps
             fp = self.compute_functional(x)
             x[i] -= 2 * eps  # x - eps
@@ -355,85 +346,82 @@ class Target(object):
             grad[i] += (fp - fm) / (2 * eps)
         return grad
 
-    def compute_functional_and_gradients(self, x):
+    def compute_functional_and_gradients(self, x: np.array) -> Tuple[float, np.array]:
         """Compute the target function and gradients at coordinates `x`.
 
         Args:
-          x (scitbx.array_family.flex.double):
+          x (np.array):
             a flattened list of the N-dimensional vectors, i.e. coordinates in
             the first dimension are stored first, followed by the coordinates in
             the second dimension, etc.
 
         Returns:
-          Tuple[float, scitbx.array_family.flex.double]:
+          Tuple[float, np.array]:
           f: The value of the target function at coordinates `x`.
           grad: The gradients of the target function with respect to the parameters.
         """
         f = self.compute_functional(x)
-        grad = flex.double()
+        grad = np.empty(x.shape)
         if self.wij_matrix is not None:
-            wrij_matrix = self.wij_matrix * self.rij_matrix
+            wrij_matrix = np.multiply(self.wij_matrix, self.rij_matrix)
         else:
             wrij_matrix = self.rij_matrix
 
         coords = []
-        NN = x.size() // self.dim
+        NN = x.size // self.dim
         for i in range(self.dim):
             coords.append(x[i * NN : (i + 1) * NN])
 
         # term 1
         for i in range(self.dim):
-            grad.extend(wrij_matrix.matrix_multiply(coords[i]))
+            grad[i * NN : (i + 1) * NN] = np.matmul(wrij_matrix, coords[i])
 
         for i in range(self.dim):
-            tmp_array = flex.double()
-            tmp = coords[i].matrix_outer_product(coords[i])
+            tmp_array = np.empty(x.shape)
+            tmp = np.outer(coords[i], coords[i])
             if self.wij_matrix is not None:
-                tmp = self.wij_matrix * tmp
+                tmp = np.multiply(self.wij_matrix, tmp)
             for j in range(self.dim):
-                tmp_array.extend(tmp.matrix_multiply(coords[j]))
+                tmp_array[j * NN : (j + 1) * NN] = np.matmul(tmp, coords[j])
             grad -= tmp_array
         grad *= -2
 
-        # grad_fd = self.compute_gradients_fd(x)
-        # assert grad.all_approx_equal_relatively(grad_fd, relative_error=1e-4)
-
         return f, grad
 
-    def curvatures(self, x):
+    def curvatures(self, x: np.array) -> np.array:
         """Compute the curvature of the target function.
 
         Args:
-          x (scitbx.array_family.flex.double):
+          x (np.array):
             a flattened list of the N-dimensional vectors, i.e. coordinates in
             the first dimension are stored first, followed by the coordinates in
             the second dimension, etc.
 
         Returns:
-          curvs (scitbx.array_family.flex.double):
+          curvs (np.array):
           The curvature of the target function with respect to the parameters.
         """
         coords = []
-        NN = x.size() // self.dim
+        NN = x.size // self.dim
         for i in range(self.dim):
             coords.append(x[i * NN : (i + 1) * NN])
 
-        curvs = flex.double()
+        curvs = np.empty(x.shape)
         if self.wij_matrix is not None:
             wij = self.wij_matrix
         else:
-            wij = flex.double(self.rij_matrix.accessor(), 1)
+            wij = np.ones(self.rij_matrix.shape)
         for i in range(self.dim):
-            curvs.extend(wij.matrix_multiply(coords[i] * coords[i]))
+            curvs[i * NN : (i + 1) * NN] = np.matmul(wij, np.power(coords[i], 2))
         curvs *= 2
 
         return curvs
 
-    def curvatures_fd(self, x, eps=1e-6):
+    def curvatures_fd(self, x: np.array, eps=1e-6) -> np.array:
         """Compute the curvatures at coordinates `x` using finite differences.
 
         Args:
-          x (scitbx.array_family.flex.double):
+          x (np.array):
             a flattened list of the N-dimensional vectors, i.e. coordinates in
             the first dimension are stored first, followed by the coordinates in
             the second dimension, etc.
@@ -441,12 +429,12 @@ class Target(object):
             The value of epsilon to use in finite difference calculations.
 
         Returns:
-          curvs (scitbx.array_family.flex.double):
+          curvs (np.array):
           The curvature of the target function with respect to the parameters.
         """
         f = self.compute_functional(x)
-        curvs = flex.double(x.size(), 0)
-        for i in range(curvs.size()):
+        curvs = np.zeros(x.shape)
+        for i in range(x.size):
             x[i] += eps  # x + eps
             fp = self.compute_functional(x)
             x[i] -= 2 * eps  # x - eps
