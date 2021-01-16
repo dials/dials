@@ -116,15 +116,19 @@ def run(args=None):
         ax = fig.add_subplot(111)
         ax.set_xlabel(r"resolution ($\AA$)")
         ax.set_ylabel(r"$\langle I_b \rangle$")
-        for d, I, sig in zip(d_spacings, intensities, sigmas):
+        for i, d, I, sig in zip(images, d_spacings, intensities, sigmas):
             ds2 = 1 / flex.pow2(d)
-            ax.plot(ds2, I)
+            ax.plot(ds2, I, label=f"image {i}")
         xticks = ax.get_xticks().tolist()
         ax.xaxis.set_major_locator(mticker.FixedLocator(xticks))
         x_tick_labs = [
             "" if e <= 0.0 else "{:.2f}".format(math.sqrt(1.0 / e)) for e in xticks
         ]
         ax.set_xticklabels(x_tick_labs)
+
+        max_n_colors = len(pyplot.rcParams["axes.prop_cycle"].by_key()["color"])
+        if max_n_colors >= len(images) >= 2:
+            ax.legend(loc="upper right")
 
         if params.output.plot:
             try:
