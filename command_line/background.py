@@ -76,6 +76,10 @@ def run(args=None):
     imagesets = experiments.imagesets()
 
     if params.output.plot:
+        import matplotlib
+
+        matplotlib.use("agg")
+
         import matplotlib.ticker as mticker
         from matplotlib import pyplot
 
