@@ -6,11 +6,15 @@ from __future__ import absolute_import, division, print_function
 import math
 
 import iotbx.phil
-from scitbx.array_family import flex
+from libtbx.phil import parse
+from scitbx import matrix
 
 from dials.algorithms.spot_finding.factory import SpotFinderFactory
 from dials.algorithms.spot_finding.factory import phil_scope as spot_phil
+from dials.array_family import flex
 from dials.util import Sorry, show_mail_handle_errors
+from dials.util.masking import MaskGenerator
+from dials.util.options import OptionParser, flatten_experiments
 
 help_message = """
 
@@ -31,8 +35,6 @@ images = None
 corrected = False
   .type = bool
   .help = "Use corrected data (i.e after applying pedestal and gain) in analysis"
-plot = False
-  .type = bool
 
 masking {
   include scope dials.util.masking.phil_scope
@@ -41,7 +43,9 @@ masking {
 output {
     plot = None
       .type = path
-      .help = "Plot to an image file rather than an interactive plot window"
+      .help = "Save background plot to file"
+    size_inches = None
+      .type = floats(value_min=0, size=2)
 }
 
 """,
@@ -51,8 +55,6 @@ output {
 
 @show_mail_handle_errors()
 def run(args=None):
-    from dials.util.options import OptionParser, flatten_experiments
-
     usage = "dials.background [options] image_*.cbf"
 
     parser = OptionParser(
@@ -67,85 +69,85 @@ def run(args=None):
 
     # Ensure we have either a data block or an experiment list
     experiments = flatten_experiments(params.input.experiments)
-    if len(experiments) != 1:
+    if 0 and len(experiments) != 1:
         parser.print_help()
         return
 
     imagesets = experiments.imagesets()
 
-    if len(imagesets) != 1:
-        raise Sorry("Please pass an experiment list that contains a single imageset")
-    imageset = imagesets[0]
-
-    first, last = imageset.get_scan().get_image_range()
-    images = range(first, last + 1)
-
-    if params.images:
-        if min(params.images) < first or max(params.images) > last:
-            raise Sorry("image outside of scan range")
-        images = params.images
-
-    d_spacings = []
-    intensities = []
-    sigmas = []
-
-    for indx in images:
-        print("For image %d:" % indx)
-        indx -= first  # indices passed to imageset.get_raw_data start from zero
-        d, I, sig = background(
-            imageset,
-            indx,
-            n_bins=params.n_bins,
-            corrected=params.corrected,
-            mask_params=params.masking,
-        )
-
-        print("%8s %8s %8s" % ("d", "I", "sig"))
-        for j in range(len(I)):
-            print("%8.3f %8.3f %8.3f" % (d[j], I[j], sig[j]))
-
-        d_spacings.append(d)
-        intensities.append(I)
-        sigmas.append(sig)
-
-    if params.plot or params.output.plot:
+    if params.output.plot:
         import matplotlib.ticker as mticker
         from matplotlib import pyplot
 
-        fig = pyplot.figure()
+        fig = pyplot.figure(figsize=params.output.size_inches)
         ax = fig.add_subplot(111)
-        ax.set_xlabel(r"resolution ($\AA$)")
-        ax.set_ylabel(r"$\langle I_b \rangle$")
-        for d, I, sig in zip(d_spacings, intensities, sigmas):
-            ds2 = 1 / flex.pow2(d)
-            ax.plot(ds2, I)
-        xticks = ax.get_xticks().tolist()
-        ax.xaxis.set_major_locator(mticker.FixedLocator(xticks))
-        x_tick_labs = [
-            "" if e <= 0.0 else "{:.2f}".format(math.sqrt(1.0 / e)) for e in xticks
-        ]
-        ax.set_xticklabels(x_tick_labs)
+
+    for i_imgset, imageset in enumerate(imagesets):
+        first, last = imageset.get_scan().get_image_range()
+        images = range(first, last + 1)
+
+        if params.images:
+            if min(params.images) < first or max(params.images) > last:
+                raise Sorry("image outside of scan range")
+            images = params.images
+
+        d_spacings = []
+        intensities = []
+        sigmas = []
+
+        for indx in images:
+            print(f"For imageset {i_imgset} image {indx}:")
+            d, I, sig = background(
+                imageset,
+                indx - first,  # indices passed to imageset.get_raw_data start from zero
+                n_bins=params.n_bins,
+                corrected=params.corrected,
+                mask_params=params.masking,
+            )
+
+            print("%8s %8s %8s" % ("d", "I", "sig"))
+            for j in range(len(I)):
+                print("%8.3f %8.3f %8.3f" % (d[j], I[j], sig[j]))
+
+            d_spacings.append(d)
+            intensities.append(I)
+            sigmas.append(sig)
 
         if params.output.plot:
-            try:
-                pyplot.savefig(params.output.plot)
-            except ValueError:
-                raise Sorry(f"Unable to save plot to {params.output.plot}")
-        else:
-            pyplot.show()
+            ax.set_xlabel(r"resolution ($\AA$)")
+            ax.set_ylabel(r"$\langle I_b \rangle$")
+            for indx, d, I, sig in zip(images, d_spacings, intensities, sigmas):
+                filenames = imageset.reader().paths()
+                if len(imagesets) > 1:
+                    label = (
+                        f"{filenames[indx - first]}"
+                        if len(filenames) > 1
+                        else f"{filenames[0]} image {indx}"
+                    )
+                else:
+                    label = f"image {indx}" if len(images) > 1 else f""
+                ds2 = 1 / flex.pow2(d)
+                ax.plot(ds2, I, label=label)
+            xticks = ax.get_xticks().tolist()
+            ax.xaxis.set_major_locator(mticker.FixedLocator(xticks))
+            x_tick_labs = [
+                "" if e <= 0.0 else "{:.2f}".format(math.sqrt(1.0 / e)) for e in xticks
+            ]
+            ax.set_xticklabels(x_tick_labs)
+
+    if params.output.plot:
+        try:
+            if len(imagesets) > 1 or len(images) > 1:
+                pyplot.gca().legend()
+            pyplot.savefig(params.output.plot)
+        except ValueError:
+            raise Sorry(f"Unable to save plot to {params.output.plot}")
 
 
 def background(imageset, indx, n_bins, corrected=False, mask_params=None):
-    from libtbx.phil import parse
-    from scitbx import matrix
-
-    from dials.array_family import flex
-
     if mask_params is None:
         # Default mask params for trusted range
         mask_params = phil_scope.fetch(parse("")).extract().masking
-
-    from dials.util.masking import MaskGenerator
 
     mask_generator = MaskGenerator(mask_params)
     mask = mask_generator.generate(imageset)
