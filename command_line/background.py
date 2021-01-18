@@ -109,6 +109,10 @@ def run(args=None):
         sigmas.append(sig)
 
     if params.plot or params.output.plot:
+        if params.output.plot:
+            import matplotlib
+
+            matplotlib.use("agg")
         import matplotlib.ticker as mticker
         from matplotlib import pyplot
 
