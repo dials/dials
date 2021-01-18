@@ -138,7 +138,12 @@ def run(args=None):
     if params.output.plot:
         try:
             if len(imagesets) > 1 or len(images) > 1:
-                pyplot.gca().legend()
+                # Plot a legend if there are fewer lines than the number of colours
+                # in the colour cycle
+                if len(ax.lines) <= len(
+                    pyplot.rcParams["axes.prop_cycle"].by_key()["color"]
+                ):
+                    pyplot.gca().legend()
             pyplot.savefig(params.output.plot)
         except ValueError:
             raise Sorry(f"Unable to save plot to {params.output.plot}")
