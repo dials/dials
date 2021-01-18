@@ -69,10 +69,6 @@ def run(args=None):
 
     # Ensure we have either a data block or an experiment list
     experiments = flatten_experiments(params.input.experiments)
-    if 0 and len(experiments) != 1:
-        parser.print_help()
-        return
-
     imagesets = experiments.imagesets()
 
     if params.output.plot:
