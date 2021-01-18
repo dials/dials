@@ -1,1 +1,1 @@
-``dials.background``: Fix crash when writing output plot with bad X configuration
+``dials.background``: Fix crash when writing output plot with bad display configuration
