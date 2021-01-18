@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import os
 
+import procrunner
 import pytest
 
 import dxtbx
@@ -160,3 +161,22 @@ def test_sacla_h5(dials_regression, run_in_tmpdir, use_mpi, in_memory=False):
             list(range(490, 515)),
         ],
     )
+
+
+def test_pseudo_scan(dials_data, tmp_path):
+    result = procrunner.run(
+        (
+            "dials.stills_process",
+            dials_data("centroid_test_data") / "centroid_000[1-2].cbf",
+            "convert_sequences_to_stills=True",
+            "squash_errors=False",
+            "composite_output=True",
+        ),
+        working_directory=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+
+    experiments = ExperimentListFactory.from_json_file(
+        tmp_path / "idx-0000_refined.expt", check_format=False
+    )
+    assert len(experiments) == 2
