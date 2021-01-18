@@ -1,0 +1,1 @@
+``dials.scale``: Fix crash if only summation intensities present and intensity_choice=combine
