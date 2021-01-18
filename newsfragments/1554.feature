@@ -1,1 +1,1 @@
-dials.background: Add support for multiple imagesets
+``dials.background``: Add support for multiple imagesets
