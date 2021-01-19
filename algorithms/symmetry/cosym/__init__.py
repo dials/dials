@@ -7,7 +7,6 @@ the presence of an indexing ambiguity.
 """
 from __future__ import absolute_import, division, print_function
 
-import copy
 import json
 import logging
 import math
@@ -24,7 +23,8 @@ from scitbx.array_family import flex
 import dials.util
 from dials.algorithms.indexing.symmetry import find_matching_symmetry
 from dials.algorithms.symmetry import symmetry_base
-from dials.algorithms.symmetry.cosym import engine, target
+from dials.algorithms.symmetry.cosym import engine as cosym_engine
+from dials.algorithms.symmetry.cosym import target
 from dials.algorithms.symmetry.laue_group import ScoreCorrelationCoefficient
 from dials.util.observer import Subject
 
@@ -72,21 +72,13 @@ min_pairs = 3
   .type = int(value_min=1)
   .help = 'Minimum number of pairs for inclusion of correlation coefficient in calculation of Rij matrix.'
 
-termination_params {
+minimization {
+  engine = *scitbx scipy
+    .type = choice
   max_iterations = 100
     .type = int(value_min=0)
   max_calls = None
     .type = int(value_min=0)
-  traditional_convergence_test = True
-    .type = bool
-  traditional_convergence_test_eps = 1
-    .type = float
-  drop_convergence_test_n_test_points=5
-    .type = int(value_min=2)
-  drop_convergence_test_max_drop_eps=1.e-5
-    .type = float(value_min=0)
-  drop_convergence_test_iteration_coefficient=2
-    .type = float(value_min=1)
 }
 
 cluster {
@@ -241,16 +233,17 @@ class CosymAnalysis(symmetry_base, Subject):
             )
             dimensions = []
             functional = []
-            termination_params = copy.deepcopy(self.params.termination_params)
-            termination_params.max_iterations = min(
-                20, termination_params.max_iterations
-            )
             for dim in range(1, self.target.dim + 1):
                 logger.debug("Testing dimension: %i", dim)
                 self.target.set_dimensions(dim)
-                self._optimise(termination_params)
+                max_calls = self.params.minimization.max_calls
+                self._optimise(
+                    self.params.minimization.engine,
+                    max_iterations=self.params.minimization.max_iterations,
+                    max_calls=min(20, max_calls) if max_calls else max_calls,
+                )
                 dimensions.append(dim)
-                functional.append(self.minimizer.f)
+                functional.append(self.minimizer.fun)
 
             # Find the elbow point of the curve, in the same manner as that used by
             # distl spotfinder for resolution method 1 (Zhang et al 2006).
@@ -289,38 +282,40 @@ class CosymAnalysis(symmetry_base, Subject):
     def run(self):
         self._intialise_target()
         self._determine_dimensions()
-        self._optimise(self.params.termination_params)
+        self._optimise(
+            self.params.minimization.engine,
+            max_iterations=self.params.minimization.max_iterations,
+            max_calls=self.params.minimization.max_calls,
+        )
         self._principal_component_analysis()
 
         self._analyse_symmetry()
         self._cluster_analysis()
 
     @Subject.notify_event(event="optimised")
-    def _optimise(self, termination_params):
+    def _optimise(self, engine, max_iterations=None, max_calls=None):
         NN = len(self.input_intensities)
         n_sym_ops = len(self.target.sym_ops)
 
-        import scitbx.lbfgs
+        coords = np.random.rand(NN * n_sym_ops * self.target.dim)
+        if engine == "scitbx":
+            self.minimizer = cosym_engine.minimize_scitbx_lbfgs(
+                self.target,
+                coords,
+                use_curvatures=self.params.use_curvatures,
+                max_iterations=max_iterations,
+                max_calls=max_calls,
+            )
+        else:
+            self.minimizer = cosym_engine.minimize_scipy(
+                self.target,
+                coords,
+                method="L-BFGS-B",
+                max_iterations=max_iterations,
+                max_calls=max_calls,
+            )
 
-        tp = termination_params
-        termination_params = scitbx.lbfgs.termination_parameters(
-            traditional_convergence_test=tp.traditional_convergence_test,
-            traditional_convergence_test_eps=tp.traditional_convergence_test_eps,
-            drop_convergence_test_n_test_points=tp.drop_convergence_test_n_test_points,
-            drop_convergence_test_max_drop_eps=tp.drop_convergence_test_max_drop_eps,
-            drop_convergence_test_iteration_coefficient=tp.drop_convergence_test_iteration_coefficient,
-            # min_iterations=tp.min_iterations,
-            max_iterations=tp.max_iterations,
-            max_calls=tp.max_calls,
-        )
-
-        self.minimizer = engine.lbfgs_with_curvs(
-            self.target,
-            np.random.rand(NN * n_sym_ops * self.target.dim),
-            use_curvatures=self.params.use_curvatures,
-            termination_params=termination_params,
-        )
-        self.coords = self.minimizer.coords.reshape(
+        self.coords = self.minimizer.x.reshape(
             self.target.dim, NN * n_sym_ops
         ).transpose()
 

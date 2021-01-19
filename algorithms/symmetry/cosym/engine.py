@@ -3,6 +3,8 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 
+import scipy.optimize
+
 import scitbx.lbfgs
 from scitbx.array_family import flex
 
@@ -82,3 +84,47 @@ class lbfgs_with_curvs(object):
         """Log progress after each successful step of the minimisation."""
         logger.debug("minimization step: f, iter, nfun:")
         logger.debug("%s %s %s" % (self.f, minimizer.iter(), minimizer.nfun()))
+
+
+def minimize_scitbx_lbfgs(
+    target, coords, use_curvatures=True, max_iterations=100, max_calls=None
+):
+
+    termination_params = scitbx.lbfgs.termination_parameters(
+        max_iterations=max_iterations,
+        max_calls=max_calls,
+        traditional_convergence_test=True,
+        traditional_convergence_test_eps=1,
+        drop_convergence_test_n_test_points=5,
+        drop_convergence_test_max_drop_eps=1.0e-5,
+        drop_convergence_test_iteration_coefficient=2,
+    )
+    result = lbfgs_with_curvs(
+        target,
+        coords,
+        use_curvatures=use_curvatures,
+        termination_params=termination_params,
+    )
+    return scipy.optimize.OptimizeResult(
+        fun=result.f, jac=result.g, x=result.coords, nfev=result.minimizer.nfun()
+    )
+
+
+def minimize_scipy(
+    target, coords, method="L-BFGS-B", max_iterations=None, max_calls=None
+):
+    """Thin wrapper around scipy.optimize.minimize.
+
+    Args:
+      target (dials.algorithms.target.Target): The target function to minimise.
+      coords (np.array): The starting coordinates for
+        minimisation.
+    """
+
+    return scipy.optimize.minimize(
+        fun=target.compute_functional,
+        x0=coords,
+        jac=target.compute_gradients,
+        method=method,
+        options=dict(maxiter=max_iterations, maxfun=max_calls),
+    )
