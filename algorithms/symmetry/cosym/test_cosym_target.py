@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+# import numpy as np
 import pytest
 
 from cctbx import sgtbx
@@ -28,22 +29,23 @@ def test_cosym_target(space_group):
         n = len(datasets)
         assert t.dim == m
         assert t.rij_matrix.shape == (n * m, n * m)
-        x = flex.random_double(n * m * t.dim)
-        f0 = t.compute_functional(x.as_numpy_array())
-        g = t.compute_gradients(x.as_numpy_array())
-        g_fd = t.compute_gradients_fd(x.as_numpy_array())
+        # x = np.random.rand(n * m * t.dim)
+        x = flex.random_double(n * m * t.dim).as_numpy_array()
+        f0 = t.compute_functional(x)
+        g = t.compute_gradients(x)
+        g_fd = t.compute_gradients_fd(x)
         for n, value in enumerate(zip(g, g_fd)):
             assert value[0] == pytest.approx(value[1], rel=2e-3), n
 
-        c = t.curvatures(x.as_numpy_array())
-        c_fd = t.curvatures_fd(x.as_numpy_array(), eps=1e-3)
+        c = t.curvatures(x)
+        c_fd = t.curvatures_fd(x, eps=1e-3)
         assert list(c) == pytest.approx(c_fd, rel=0.8e-1)
 
-        assert engine.lbfgs_with_curvs(target=t, coords=x)
+        minimizer = engine.lbfgs_with_curvs(target=t, coords=x)
         # check functional has decreased and gradients are approximately zero
-        f = t.compute_functional(x.as_numpy_array())
-        g = t.compute_gradients(x.as_numpy_array())
-        g_fd = t.compute_gradients_fd(x.as_numpy_array())
+        f = t.compute_functional(minimizer.coords)
+        g = t.compute_gradients(minimizer.coords)
+        g_fd = t.compute_gradients_fd(minimizer.coords)
         assert f < f0
         assert pytest.approx(g, abs=1e-3) == [0] * len(g)
         assert pytest.approx(g_fd, abs=1e-3) == [0] * len(g)
