@@ -5,7 +5,6 @@ import copy
 import logging
 import math
 import warnings
-from typing import Tuple
 
 import numpy as np
 from orderedset import OrderedSet
@@ -336,6 +335,7 @@ class Target(object):
           grad (np.array):
           The gradients of the target function with respect to the parameters.
         """
+        x = copy.deepcopy(x)
         grad = np.zeros(x.shape)
         for i in range(x.size):
             x[i] += eps  # x + eps
@@ -346,8 +346,8 @@ class Target(object):
             grad[i] += (fp - fm) / (2 * eps)
         return grad
 
-    def compute_functional_and_gradients(self, x: np.array) -> Tuple[float, np.array]:
-        """Compute the target function and gradients at coordinates `x`.
+    def compute_gradients(self, x: np.array) -> np.array:
+        """Compute the gradients of the target function at coordinates `x`.
 
         Args:
           x (np.array):
@@ -360,7 +360,6 @@ class Target(object):
           f: The value of the target function at coordinates `x`.
           grad: The gradients of the target function with respect to the parameters.
         """
-        f = self.compute_functional(x)
         grad = np.empty(x.shape)
         if self.wij_matrix is not None:
             wrij_matrix = np.multiply(self.wij_matrix, self.rij_matrix)
@@ -386,10 +385,10 @@ class Target(object):
             grad -= tmp_array
         grad *= -2
 
-        return f, grad
+        return grad
 
     def curvatures(self, x: np.array) -> np.array:
-        """Compute the curvature of the target function.
+        """Compute the curvature of the target function at coordinates `x`.
 
         Args:
           x (np.array):
@@ -401,20 +400,17 @@ class Target(object):
           curvs (np.array):
           The curvature of the target function with respect to the parameters.
         """
-        coords = []
         NN = x.size // self.dim
-        for i in range(self.dim):
-            coords.append(x[i * NN : (i + 1) * NN])
-
         curvs = np.empty(x.shape)
         if self.wij_matrix is not None:
             wij = self.wij_matrix
         else:
             wij = np.ones(self.rij_matrix.shape)
         for i in range(self.dim):
-            curvs[i * NN : (i + 1) * NN] = np.matmul(wij, np.power(coords[i], 2))
+            curvs[i * NN : (i + 1) * NN] = np.matmul(
+                wij, np.power(x[i * NN : (i + 1) * NN], 2)
+            )
         curvs *= 2
-
         return curvs
 
     def curvatures_fd(self, x: np.array, eps=1e-6) -> np.array:
@@ -432,6 +428,7 @@ class Target(object):
           curvs (np.array):
           The curvature of the target function with respect to the parameters.
         """
+        x = copy.deepcopy(x)
         f = self.compute_functional(x)
         curvs = np.zeros(x.shape)
         for i in range(x.size):
