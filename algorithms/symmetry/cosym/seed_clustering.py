@@ -231,7 +231,7 @@ class seed_clustering(object):
 
         if n_clusters is Auto and silhouette_scores[idx] < min_silhouette_score:
             # assume single cluster
-            cluster_labels = np.zeros(cluster_labels.size())
+            cluster_labels = np.zeros(cluster_labels.size)
         else:
             threshold = thresholds[idx] - eps
             labels = hierarchy.fcluster(linkage_matrix, threshold, criterion="distance")
