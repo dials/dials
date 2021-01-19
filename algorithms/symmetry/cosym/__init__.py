@@ -298,9 +298,7 @@ class CosymAnalysis(symmetry_base, Subject):
     @Subject.notify_event(event="optimised")
     def _optimise(self, termination_params):
         NN = len(self.input_intensities)
-        dim = self.target.dim
         n_sym_ops = len(self.target.sym_ops)
-        coords = flex.random_double(NN * n_sym_ops * dim)
 
         import scitbx.lbfgs
 
@@ -316,25 +314,21 @@ class CosymAnalysis(symmetry_base, Subject):
             max_calls=tp.max_calls,
         )
 
-        M = engine.lbfgs_with_curvs(
+        self.minimizer = engine.lbfgs_with_curvs(
             self.target,
-            coords,
+            np.random.rand(NN * n_sym_ops * self.target.dim),
             use_curvatures=self.params.use_curvatures,
             termination_params=termination_params,
         )
-        self.minimizer = M
-
-        coords = M.x.deep_copy()
-        coords.reshape(flex.grid(dim, NN * n_sym_ops))
-        coords.matrix_transpose_in_place()
-        self.coords = coords
+        self.coords = self.minimizer.coords.reshape(
+            self.target.dim, NN * n_sym_ops
+        ).transpose()
 
     def _principal_component_analysis(self):
         # Perform PCA
         from sklearn.decomposition import PCA
 
-        X = self.coords.as_numpy_array()
-        pca = PCA().fit(X)
+        pca = PCA().fit(self.coords)
         logger.info("Principal component analysis:")
         logger.info(
             "Explained variance: "
@@ -348,9 +342,7 @@ class CosymAnalysis(symmetry_base, Subject):
         self.explained_variance_ratio = pca.explained_variance_ratio_
         if self.target.dim > 3:
             pca.n_components = 3
-        x_reduced = pca.fit_transform(X)
-
-        self.coords_reduced = flex.double(np.ascontiguousarray(x_reduced))
+        self.coords_reduced = pca.fit_transform(self.coords)
 
     @Subject.notify_event(event="analysed_symmetry")
     def _analyse_symmetry(self):
@@ -392,11 +384,11 @@ class CosymAnalysis(symmetry_base, Subject):
         reindexing_ops = {}
         for i_cluster in range(self.params.cluster.n_clusters):
             # Select all points within this cluster
-            cluster_isel = (self.cluster_labels == i_cluster).iselection()
+            cluster_isel = np.where(self.cluster_labels == i_cluster)[0]
             # dataset_ids of each points within this cluster
             dataset_ids = cluster_isel % len(self.input_intensities)
             # Index into cluster_isel for points corresponding to the requested dataset_id
-            dataset_isel = (dataset_ids == dataset_id).iselection()
+            dataset_isel = np.where(dataset_ids == dataset_id)[0]
             for i in dataset_isel:
                 if i_cluster in reindexing_ops:
                     # Finished with this cluster so exit loop early
@@ -419,7 +411,7 @@ class CosymAnalysis(symmetry_base, Subject):
     def _cluster_analysis(self):
 
         if self.params.cluster.n_clusters == 1:
-            self.cluster_labels = flex.double(self.coords.all()[0])
+            self.cluster_labels = np.zeros(self.coords.shape[0])
         else:
             self.cluster_labels = self._do_clustering(self.params.cluster.method)
             # Number of clusters in labels, ignoring noise if present.
@@ -456,8 +448,7 @@ class CosymAnalysis(symmetry_base, Subject):
     def _dbscan_clustering(self):
         from sklearn.preprocessing import StandardScaler
 
-        X = self.coords_reduced.as_numpy_array()
-        X = StandardScaler().fit_transform(X)
+        X = StandardScaler().fit_transform(self.coords_reduced)
 
         # Perform cluster analysis
         from sklearn.cluster import DBSCAN
@@ -490,8 +481,6 @@ class CosymAnalysis(symmetry_base, Subject):
         return cluster_labels
 
     def _agglomerative_clustering(self):
-        X = self.coords.as_numpy_array()
-
         # Perform cluster analysis
         from sklearn.cluster import AgglomerativeClustering
 
@@ -500,7 +489,7 @@ class CosymAnalysis(symmetry_base, Subject):
             linkage="average",
             affinity="cosine",
         )
-        model.fit(X)
+        model.fit(self.coords)
         return flex.int(model.labels_.astype(np.int32))
 
     def _seed_clustering(self):
@@ -569,9 +558,8 @@ class SymmetryAnalysis(object):
 
         self.subgroups = subgroups
         self.cb_op_inp_min = cb_op_inp_min
-        X = coords.as_numpy_array()
-        n_datasets = coords.all()[0] // len(sym_ops)
-        dist_mat = ssd.pdist(X, metric="cosine")
+        n_datasets = coords.shape[0] // len(sym_ops)
+        dist_mat = ssd.pdist(coords, metric="cosine")
         cos_angle = 1 - ssd.squareform(dist_mat)
 
         self._sym_ops_cos_angle = OrderedDict()
