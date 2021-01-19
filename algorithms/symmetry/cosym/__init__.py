@@ -249,15 +249,15 @@ class CosymAnalysis(symmetry_base, Subject):
             # distl spotfinder for resolution method 1 (Zhang et al 2006).
             # See also dials/algorithms/spot_finding/per_image_analysis.py
 
-            x = flex.double(dimensions)
-            y = flex.double(functional)
+            x = np.array(dimensions)
+            y = np.array(functional)
             slopes = (y[-1] - y[:-1]) / (x[-1] - x[:-1])
-            p_m = flex.min_index(slopes)
+            p_m = slopes.argmin()
 
             x1 = matrix.col((x[p_m], y[p_m]))
             x2 = matrix.col((x[-1], y[-1]))
 
-            gaps = flex.double()
+            gaps = []
             v = matrix.col(((x2[1] - x1[1]), -(x2[0] - x1[0]))).normalize()
 
             for i in range(p_m, len(x)):
@@ -266,7 +266,7 @@ class CosymAnalysis(symmetry_base, Subject):
                 g = abs(v.dot(r))
                 gaps.append(g)
 
-            p_g = flex.max_index(gaps)
+            p_g = np.array(gaps).argmax()
 
             x_g = x[p_g + p_m]
 
@@ -453,7 +453,7 @@ class CosymAnalysis(symmetry_base, Subject):
             min_samples=self.params.cluster.dbscan.min_samples,
         ).fit(X)
 
-        return flex.int(db.labels_.astype(np.int32))
+        return db.labels_
 
     def _bisect_clustering(self):
         assert self.params.cluster.n_clusters in (2, Auto)
