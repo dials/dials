@@ -87,14 +87,14 @@ class SingleDatasetIntensityCombiner(object):
     """
 
     def __init__(self, scaler, use_Imid=None):
+        self.scaler = scaler
+        self.experiment = scaler.experiment
         if "intensity.prf.value" not in scaler.reflection_table:
             self.max_key = 1
             logger.info(
                 "No profile intensities found, skipping profile/summation intensity combination."
             )
             return
-        self.scaler = scaler
-        self.experiment = scaler.experiment
         if use_Imid is not None:
             self.max_key = use_Imid
         else:
