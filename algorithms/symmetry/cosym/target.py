@@ -156,9 +156,24 @@ class Target(object):
         return lower_index, upper_index
 
     def _compute_rij_wij(self, use_cache=True):
-        """Compute the rij_wij matrix."""
+        """Compute the rij_wij matrix.
+
+        Rij is a symmetric matrix of size (n x m, n x m), where n is the number of
+        datasets and m is the number of symmetry operations.
+
+        It is composed of (m, m) blocks of size (n, n), where each block contains the
+        correlation coefficients between cb_op_k applied to datasets 1..N with
+        cb_op_kk applied to datasets 1.. N.
+
+        If `use_cache=True`, then an optimisation is made to reflect the fact some elements
+        of the matrix are equivalent, i.e.:
+            CC[(a, cb_op_k), (b, cb_op_kk)] == CC[(a,), (b, cb_op_k.inverse() * cb_op_kk)]
+
+        """
         n_lattices = len(self._lattices)
 
+        # Pre-calculate miller indices after application of each cb_op. Only calculate
+        # this once per cb_op instead of on-the-fly every time we need it.
         indices = {}
         space_group_type = self._data.space_group().type()
         for cb_op in self.sym_ops:
