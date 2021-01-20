@@ -429,6 +429,7 @@ class CosymAnalysis(symmetry_base, Subject):
         elif method == "minimize_divide":
             clustering = self._minimize_divide_clustering
         elif method == "agglomerative":
+            assert self.params.cluster.n_clusters is not Auto
             clustering = self._agglomerative_clustering
         elif method == "seed":
             clustering = self._seed_clustering
