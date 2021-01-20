@@ -407,19 +407,19 @@ def test_json_shortened(dials_data, tmpdir):
     assert d["experiment_id"][0] == 0
 
 
-def test_export_sum_or_profile_only(dials_data, tmpdir):
+def test_export_sum_or_profile_only(dials_data, tmp_path):
     expt = dials_data("insulin_processed") / "integrated.expt"
     refl = dials_data("insulin_processed") / "integrated.refl"
 
     for remove in "prf", "sum":
-        removed = tmpdir / f"removed_{remove}.refl"
+        removed = tmp_path / f"removed_{remove}.refl"
         data = flex.reflection_table.from_file(refl)
         del data[f"intensity.{remove}.value"]
         del data[f"intensity.{remove}.variance"]
         data.as_file(removed)
-
-        procrunner.run(
+        result = procrunner.run(
             ["dials.export", expt, removed, f"mtz.hklout=removed_{remove}.mtz"],
-            working_directory=tmpdir.strpath,
+            working_directory=tmp_path,
         )
-        assert (tmpdir / "removed_{remove}.mtz").check(file=1)
+        assert not result.returncode and not result.stderr
+        assert (tmp_path / f"removed_{remove}.mtz").is_file()
