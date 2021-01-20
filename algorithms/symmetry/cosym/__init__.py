@@ -82,7 +82,7 @@ minimization {
 }
 
 cluster {
-  method = dbscan bisect minimize_divide agglomerative *seed
+  method = dbscan minimize_divide agglomerative *seed
     .type = choice
   n_clusters = auto
     .type = int(value_min=1)
@@ -91,10 +91,6 @@ cluster {
       .type = float(value_min=0)
     min_samples = 5
       .type = int(value_min=1)
-  }
-  bisect {
-    axis = 0
-      .type = int(value_min=0)
   }
   seed {
     min_silhouette_score = 0.2
@@ -430,8 +426,6 @@ class CosymAnalysis(symmetry_base, Subject):
     def _do_clustering(self, method):
         if method == "dbscan":
             clustering = self._dbscan_clustering
-        elif method == "bisect":
-            clustering = self._bisect_clustering
         elif method == "minimize_divide":
             clustering = self._minimize_divide_clustering
         elif method == "agglomerative":
@@ -454,15 +448,6 @@ class CosymAnalysis(symmetry_base, Subject):
         ).fit(X)
 
         return db.labels_
-
-    def _bisect_clustering(self):
-        assert self.params.cluster.n_clusters in (2, Auto)
-        axis = self.params.cluster.bisect.axis
-        assert axis < self.coords_reduced.all()[1]
-        x = self.coords_reduced[:, axis : axis + 1].as_1d()
-        cluster_labels = flex.int(x.size(), 0)
-        cluster_labels.set_selected(x > 0, 1)
-        return cluster_labels
 
     def _minimize_divide_clustering(self):
         assert self.params.cluster.n_clusters in (2, Auto)
