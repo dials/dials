@@ -75,7 +75,6 @@ class ExtractPixelsFromImage:
         if self.mask is not None:
             detector = self.imageset.get_detector()
             assert len(self.mask) == len(detector)
-        self.first = True
 
     def __call__(self, index):
         """
@@ -83,14 +82,6 @@ class ExtractPixelsFromImage:
 
         :param index: The index of the image
         """
-        # Parallel reading of HDF5 from the same handle is not allowed. Python
-        # multiprocessing is a bit messed up and used fork on linux so need to
-        # close and reopen file.
-        if self.first:
-            if self.imageset.reader().is_single_file_reader():
-                self.imageset.reader().nullify_format_instance()
-            self.first = False
-
         # Get the frame number
         if isinstance(self.imageset, ImageSequence):
             frame = self.imageset.get_array_range()[0] + index
@@ -541,11 +532,6 @@ class ExtractSpots:
                 callback=process_output,
             )
         else:
-            # Hack to avoid the call to nullify_format_instance() in the case
-            # of HDF5 files, which shouldn't be necessary if we aren't using
-            # multiprocessing
-            # See https://github.com/dials/dials/issues/144
-            function.first = False
             for task in indices:
                 result = function(task)
                 assert len(pixel_labeller) == len(
