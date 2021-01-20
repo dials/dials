@@ -403,11 +403,13 @@ class SpotFinderFactory:
     """
 
     @staticmethod
-    def from_parameters(params=None, experiments=None):
+    def from_parameters(params=None, experiments=None, is_stills=False):
         """
         Given a set of parameters, construct the spot finder
 
         :param params: The input parameters
+        :param is_stills:   [ADVANCED] Force still-handling of experiment
+                            ID remapping for dials.stills_process.
         :returns: The spot finder instance
         """
         if params is None:
@@ -464,6 +466,7 @@ class SpotFinderFactory:
             max_spot_size=params.spotfinder.filter.max_spot_size,
             no_shoeboxes_2d=no_shoeboxes_2d,
             min_chunksize=params.spotfinder.mp.min_chunksize,
+            is_stills=is_stills,
         )
 
     @staticmethod

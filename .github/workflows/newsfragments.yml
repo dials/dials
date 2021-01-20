@@ -2,6 +2,7 @@ name: Newsfragments
 
 on:
   pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches-ignore:
       - 'dials-?.*'
 
@@ -9,7 +10,7 @@ jobs:
   rename-news:
     name: Newsfragment
     runs-on: ubuntu-latest
-
+    if: github.event.pull_request.draft == false
     steps:
       - name: Check out the repository
         uses: actions/checkout@v2

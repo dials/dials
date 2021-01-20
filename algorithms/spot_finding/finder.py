@@ -75,7 +75,6 @@ class ExtractPixelsFromImage:
         if self.mask is not None:
             detector = self.imageset.get_detector()
             assert len(self.mask) == len(detector)
-        self.first = True
 
     def __call__(self, index):
         """
@@ -83,14 +82,6 @@ class ExtractPixelsFromImage:
 
         :param index: The index of the image
         """
-        # Parallel reading of HDF5 from the same handle is not allowed. Python
-        # multiprocessing is a bit messed up and used fork on linux so need to
-        # close and reopen file.
-        if self.first:
-            if self.imageset.reader().is_single_file_reader():
-                self.imageset.reader().nullify_format_instance()
-            self.first = False
-
         # Get the frame number
         if isinstance(self.imageset, ImageSequence):
             frame = self.imageset.get_array_range()[0] + index
@@ -675,6 +666,7 @@ class SpotFinder:
         max_spot_size=20,
         no_shoeboxes_2d=False,
         min_chunksize=50,
+        is_stills=False,
     ):
         """
         Initialise the class.
@@ -682,6 +674,8 @@ class SpotFinder:
         :param find_spots: The spot finding algorithm
         :param filter_spots: The spot filtering algorithm
         :param scan_range: The scan range to find spots over
+        :param is_stills:   [ADVANCED] Force still-handling of experiment
+                            ID remapping for dials.stills_process.
         """
 
         # Set the filter and some other stuff
@@ -703,6 +697,7 @@ class SpotFinder:
         self.mp_njobs = mp_njobs
         self.no_shoeboxes_2d = no_shoeboxes_2d
         self.min_chunksize = min_chunksize
+        self.is_stills = is_stills
 
     def __call__(self, experiments):
         warnings.warn(
@@ -744,7 +739,7 @@ class SpotFinder:
             for i, experiment in enumerate(experiments):
                 if experiment.imageset is not imageset:
                     continue
-                if experiment.scan:
+                if not self.is_stills and experiment.scan:
                     z0, z1 = experiment.scan.get_array_range()
                     z = table["xyzobs.px.value"].parts()[2]
                     table["id"].set_selected((z > z0) & (z < z1), i)
