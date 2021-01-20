@@ -551,7 +551,7 @@ class SymmetryAnalysis(object):
                     op = sym_ops[ref_sym_op_id].inverse().multiply(sym_ops[sym_op_id])
                     op = op.new_denominators(1, 12)
                     comp_idx = n_datasets * sym_op_id + dataset_id
-                    self._sym_ops_cos_angle.setdefault(op, flex.double())
+                    self._sym_ops_cos_angle.setdefault(op, [])
                     self._sym_ops_cos_angle[op].append(cos_angle[ref_idx, comp_idx])
 
         self._score_symmetry_elements()
@@ -561,7 +561,7 @@ class SymmetryAnalysis(object):
         self.sym_op_scores = OrderedDict()
         for op, cos_angle in self._sym_ops_cos_angle.items():
             cc_true = 1
-            cc = flex.mean(cos_angle)
+            cc = np.mean(cos_angle)
             score = ScoreSymmetryElement(cc, sigma_cc=0.1, cc_true=cc_true)
             score.sym_op = op
             self.sym_op_scores[op] = score
