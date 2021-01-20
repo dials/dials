@@ -348,7 +348,7 @@ def vmxi_protk_reindexed(dials_data, tmp_path_factory):
         ),
         (
             ["error_model.basic.b=0.051", "basic.minimisation=regression"],
-            (0.99, 0.051),
+            (1.0, 0.051),
             (0.05, 1e-6),
         ),
     ],

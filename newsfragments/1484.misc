@@ -1,1 +1,0 @@
-Added a ``__repr__`` to ``dials.model.data.PixelList`

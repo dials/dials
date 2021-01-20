@@ -1,3 +1,0 @@
-Each of the available indexing strategies in ``dials.index`` now has some help text explaining how it works.
-You can view this help by calling ``dials.index -c -a1 -e1`` and looking for ``method`` under ``indexing``.
-

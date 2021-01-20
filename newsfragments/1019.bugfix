@@ -1,1 +1,0 @@
-dials.find_spots: fix crash when nproc=Auto

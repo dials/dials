@@ -36,9 +36,7 @@ setup(
     name="dials",
     packages=find_packages(),
     package_dir={"dials": "../dials"},
-    data_files=[
-        ("dials", ["conftest.py", "__init__.py", "libtbx_refresh.py", "run_tests.py"])
-    ],
+    data_files=[("dials", ["conftest.py", "__init__.py", "libtbx_refresh.py"])],
     setup_requires=setup_requirements,
     test_suite="tests",
     tests_require=test_requirements,
