@@ -450,14 +450,14 @@ class CosymAnalysis(symmetry_base, Subject):
         return db.labels_
 
     def _minimize_divide_clustering(self):
-        assert self.params.cluster.n_clusters in (2, Auto)
-        x = self.coords_reduced[:, :1].as_1d()
-        y = self.coords_reduced[:, 1:2].as_1d()
         from cctbx.merging.brehm_diederichs import minimize_divide
 
+        assert self.params.cluster.n_clusters in (2, Auto)
+        x = flex.double(self.coords_reduced[:, :1].flatten())
+        y = flex.double(self.coords_reduced[:, 1:2].flatten())
         selection = minimize_divide(x, y).plus_minus()
-        cluster_labels = flex.int(x.size(), 0)
-        cluster_labels.set_selected(selection, 1)
+        cluster_labels = np.zeros(x.size(), dtype=int)
+        cluster_labels[selection.as_numpy_array()] = 1
         return cluster_labels
 
     def _agglomerative_clustering(self):
