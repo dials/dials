@@ -211,7 +211,7 @@ class CosymAnalysis(symmetry_base, Subject):
             )
         self.target = target.Target(
             self.intensities,
-            self.dataset_ids,
+            self.dataset_ids.as_numpy_array(),
             min_pairs=self.params.min_pairs,
             lattice_group=self.lattice_group,
             dimensions=dimensions,

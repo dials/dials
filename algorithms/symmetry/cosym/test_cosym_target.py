@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
-# import numpy as np
+import numpy as np
 import pytest
 
 from cctbx import sgtbx
@@ -17,10 +17,13 @@ def test_cosym_target(space_group):
     )
 
     intensities = datasets[0]
-    dataset_ids = flex.double(intensities.size(), 0)
+    dataset_ids = np.zeros(intensities.size() * len(datasets))
     for i, d in enumerate(datasets[1:]):
+        i += 1
         intensities = intensities.concatenate(d, assert_is_similar_symmetry=False)
-        dataset_ids.extend(flex.double(d.size(), i + 1))
+        dataset_ids[i * d.size() : (i + 1) * d.size()] = np.full(
+            d.size(), i, dtype=np.int
+        )
 
     for weights in [None, "count", "standard_error"]:
         print(weights)
