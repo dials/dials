@@ -471,7 +471,7 @@ class CosymAnalysis(symmetry_base, Subject):
             affinity="cosine",
         )
         model.fit(self.coords)
-        return flex.int(model.labels_.astype(np.int32))
+        return model.labels_
 
     def _seed_clustering(self):
         from dials.algorithms.symmetry.cosym.seed_clustering import seed_clustering
