@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import sys
+
 from six.moves import cStringIO as StringIO
 
 from iotbx.phil import parse
@@ -193,6 +194,16 @@ phil_scope = parse(
       .help = "The output CIF file, defaults to integrated.cif or scaled_unmerged.cif
         depending on if the data are scaled."
 
+    compress = gz bz2 xz
+      .type = choice
+      .help = "Choose compression format (also appended to the file name)"
+
+    pdb_version = v5 *v5_next
+      .type = choice
+      .help = "This controls which pdb mmcif dictionary version the output"
+              "mmcif file should comply with. v5_next adds support for"
+              "recording unmerged data as well as additional scan metadata"
+              "and statistics, however writing can be slow for large datasets."
   }
 
   mosflm {

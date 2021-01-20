@@ -37,6 +37,13 @@ plot = False
 masking {
   include scope dials.util.masking.phil_scope
 }
+
+output {
+    plot = None
+      .type = path
+      .help = "Plot to an image file rather than an interactive plot window"
+}
+
 """,
     process_includes=True,
 )
@@ -49,7 +56,11 @@ def run(args=None):
     usage = "dials.background [options] image_*.cbf"
 
     parser = OptionParser(
-        usage=usage, phil=phil_scope, read_experiments=True, epilog=help_message
+        usage=usage,
+        phil=phil_scope,
+        read_experiments=True,
+        read_experiments_from_images=True,
+        epilog=help_message,
     )
 
     params, options = parser.parse_args(args, show_diff_phil=True)
@@ -97,7 +108,12 @@ def run(args=None):
         intensities.append(I)
         sigmas.append(sig)
 
-    if params.plot:
+    if params.plot or params.output.plot:
+        if params.output.plot:
+            import matplotlib
+
+            matplotlib.use("agg")
+        import matplotlib.ticker as mticker
         from matplotlib import pyplot
 
         fig = pyplot.figure()
@@ -107,14 +123,20 @@ def run(args=None):
         for d, I, sig in zip(d_spacings, intensities, sigmas):
             ds2 = 1 / flex.pow2(d)
             ax.plot(ds2, I)
-        xticks = ax.get_xticks()
-
+        xticks = ax.get_xticks().tolist()
+        ax.xaxis.set_major_locator(mticker.FixedLocator(xticks))
         x_tick_labs = [
             "" if e <= 0.0 else "{:.2f}".format(math.sqrt(1.0 / e)) for e in xticks
         ]
         ax.set_xticklabels(x_tick_labs)
 
-        pyplot.show()
+        if params.output.plot:
+            try:
+                pyplot.savefig(params.output.plot)
+            except ValueError:
+                raise Sorry(f"Unable to save plot to {params.output.plot}")
+        else:
+            pyplot.show()
 
 
 def background(imageset, indx, n_bins, corrected=False, mask_params=None):

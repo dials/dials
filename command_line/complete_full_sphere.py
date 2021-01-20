@@ -20,6 +20,8 @@ from dials.util.options import OptionParser, flatten_experiments
 logger = logging.getLogger("dials.command_line.complete_full_sphere")
 
 help_message = """
+This program attempts to compute a sample realignment to measure the blind
+region of reciprocal space, given an already recorded data set.
 
 dials.complete_full_sphere [resolution=1.6] models.expt
 """

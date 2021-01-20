@@ -57,6 +57,10 @@ def test_merge(dials_data, tmpdir, anomalous, truncate):
     ]
     result = procrunner.run(command, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
+    if truncate and anomalous:
+        assert tmpdir.join("dials.merge.html").check()
+    else:
+        assert not tmpdir.join("dials.merge.html").check()
     expected_labels = mean_labels
     unexpected_labels = []
 
@@ -168,6 +172,7 @@ def test_merge_multi_wavelength(dials_data, tmpdir):
     result = procrunner.run(command, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
     assert tmpdir.join("merged.mtz").check()
+    assert tmpdir.join("dials.merge.html").check()
     m = mtz.object(tmpdir.join("merged.mtz").strpath)
     labels = []
     for ma in m.as_miller_arrays(merge_equivalents=False):

@@ -1,11 +1,9 @@
 """
 Tests for the reflection selection algorithm.
 """
-from __future__ import absolute_import, division, print_function
 
 import itertools
-
-from mock import Mock
+from unittest.mock import Mock
 
 from cctbx import sgtbx, uctbx
 from libtbx import phil

@@ -1,3 +1,117 @@
+DIALS 3.3.1 (2021-01-18)
+========================
+
+Features
+--------
+
+- ``dials.index``: More verbose debug logs when rejecting crystal models that are inconsistent with input symmetry (`#1538 <https://github.com/dials/dials/issues/1538>`_)
+
+
+Bugfixes
+--------
+
+- ``dials.stills_process``: Fix spotfinding error "Failed to remap experiment IDs" (`#1180 <https://github.com/dials/dials/issues/1180>`_)
+- Improved spotfinding performance for HDF5 when using a single processor. (`#1539 <https://github.com/dials/dials/issues/1539>`_)
+
+
+DIALS 3.3.0 (2021-01-04)
+========================
+
+Features
+--------
+
+- DIALS is now using `GEMMI <https://gemmi.readthedocs.io/>`_. (`#1266 <https://github.com/dials/dials/issues/1266>`_)
+- Upgrade ``h5py`` requirement to 3.1+ for SWMR-related functionality. (`#1495 <https://github.com/dials/dials/issues/1495>`_)
+- Added support for small integer types to DIALS flex arrays. (`#1488 <https://github.com/dials/dials/issues/1488>`_)
+- ``dials.estimate_resolution``: Only use cc_half in default resolution analysis. (`#1492 <https://github.com/dials/dials/issues/1492>`_)
+- ``dials.export``: Allow on-the-fly bzip2 or gzip compression for mmCIF
+  output, because unmerged mmCIF reflection files are large. (`#1480 <https://github.com/dials/dials/issues/1480>`_)
+- ``dials.find_spots`` and ``dials.integrate`` both now have ``nproc=Auto`` by
+  default, which uses the number of allowed/available cores detected. (`#1441 <https://github.com/dials/dials/issues/1441>`_)
+- ``dials.merge``: Report ``<dF/s(dF)>``, if ``anomalous=True``. An html report
+  is also generated to plot this statistic. (`#1483 <https://github.com/dials/dials/issues/1483>`_)
+- ``dials.scale``: Apply a more realistic initial error model, or load the
+  existing error model, if rescaling. (`#1526 <https://github.com/dials/dials/issues/1526>`_)
+- ``dials.stills_process``: allow using different saturation cutoffs for
+  indexing and integration. Useful for using saturated reflections for indexing
+  while still rejecting them during integration. (`#1473 <https://github.com/dials/dials/issues/1473>`_)
+
+
+Bugfixes
+--------
+
+- Internal: Logging metadata is now preserved when running spotfinding and
+  integration across multiple processes. (`#1484 <https://github.com/dials/dials/issues/1484>`_)
+- Fix NXmx behaviour with h5py 3.1. (`#1523 <https://github.com/dials/dials/issues/1523>`_)
+- ``dials.cosym``: Choose the cluster containing the most identity reindexing
+  ops by default. Under some circumstances, particularly in the case of
+  approximate pseudosymmetry, the previous behaviour could result in reindexing
+  operators being chosen that weren't genuine indexing ambiguities, instead
+  distorting the input unit cells. (`#1514 <https://github.com/dials/dials/issues/1514>`_)
+- ``dials.estimate_resolution``: Handle very low multiplicity datasets without
+  crashing, and better error handling. (`#1494 <https://github.com/dials/dials/issues/1494>`_)
+- ``dials.export``,``dials.two_theta_refine``: Updates to mmcif output to
+  conform to latest pdb dictionaries (v5). (`#1528 <https://github.com/dials/dials/issues/1528>`_)
+- ``dials.find_spots``: fix crash when ``nproc=Auto``. (`#1019 <https://github.com/dials/dials/issues/1019>`_)
+- ``dials.image_viewer``: Fix crash on newer wxPython versions. (`#1476 <https://github.com/dials/dials/issues/1476>`_)
+- ``dials.index``: Fix configuration error when there is more than one lattice
+  search indexing method. (`#1515 <https://github.com/dials/dials/issues/1515>`_)
+- ``dials.merge``: Fix incorrect output of SigF, N+, N- in ``merged.mtz``. (`#1522 <https://github.com/dials/dials/issues/1522>`_)
+- ``dials.reciprocal_lattice_viewer``: Fix error opening with wxPython 4.1+. (`#1511 <https://github.com/dials/dials/issues/1511>`_)
+- ``dials.scale``: fix issues for some uses of multi-crystal rescaling if ``full_matrix=False``. (`#1479 <https://github.com/dials/dials/issues/1479>`_)
+
+
+Improved Documentation
+----------------------
+
+- Update information on how to care for an existing development environment,
+  and remove outdated information. (`#1472 <https://github.com/dials/dials/issues/1472>`_)
+- Each of the available indexing strategies in ``dials.index`` now has some
+  help text explaining how it works. You can view this help by calling
+  ``dials.index -c -a1 -e1`` and looking for ``method`` under ``indexing``. (`#1519 <https://github.com/dials/dials/issues/1519>`_)
+- Include ``__init__`` methods in autodoc generated library documentation. (`#1520 <https://github.com/dials/dials/issues/1520>`_)
+- ``dials.estimate_resolution``: Improved documentation. (`#1493 <https://github.com/dials/dials/issues/1493>`_)
+
+
+Deprecations and Removals
+-------------------------
+
+- ``dials.algorithms.spot_finding.finder.SpotFinder``: Use of ``__call__`` to
+  run spotfinding has been deprecated in favor of ``SpotFinder.find_spots(experiments)``. (`#1484 <https://github.com/dials/dials/issues/1484>`_)
+
+
+Misc
+----
+
+- `#1469 <https://github.com/dials/dials/issues/1469>`_, `#1481 <https://github.com/dials/dials/issues/1481>`_,
+  `#1484 <https://github.com/dials/dials/issues/1484>`_, `#1487 <https://github.com/dials/dials/issues/1487>`_,
+  `#1491 <https://github.com/dials/dials/issues/1491>`_, `#1496 <https://github.com/dials/dials/issues/1496>`_,
+  `#1497 <https://github.com/dials/dials/issues/1497>`_, `#1498 <https://github.com/dials/dials/issues/1498>`_,
+  `#1499 <https://github.com/dials/dials/issues/1499>`_, `#1500 <https://github.com/dials/dials/issues/1500>`_,
+  `#1501 <https://github.com/dials/dials/issues/1501>`_, `#1514 <https://github.com/dials/dials/issues/1514>`_.
+
+
+DIALS 3.2.3 (2020-12-07)
+========================
+
+Bugfixes
+--------
+
+- ``dials.slice_sequence``: Fix crash using ``block_size=`` option (`#1502 <https://github.com/dials/dials/issues/1502>`_)
+- ``dials.scale``: Fix broken ``exclude_images=`` option (`#1509 <https://github.com/dials/dials/issues/1509>`_)
+
+
+DIALS 3.2.2 (2020-11-23)
+========================
+
+Bugfixes
+--------
+
+- Fix case where ``dials.stills_process`` could swallow error messages
+- ``dials.cosym``: Fix non-determinism. Repeat runs will now give identical results. (`#1490 <https://github.com/dials/dials/issues/1490>`_)
+- Developers: Fix precommit installation failure on MacOS (`#1489 <https://github.com/dials/dials/issues/1490>`_)
+
+
 DIALS 3.2.1 (2020-11-09)
 ========================
 

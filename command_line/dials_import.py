@@ -126,6 +126,24 @@ phil_scope = parse(
       .help = "If True, assert the reference geometry is similar to"
               "the image geometry"
 
+    use_beam_reference = True
+      .type = bool
+      .expert_level = 2
+      .help = "If True, the beam from reference_geometry will override "
+              "the beam from the image headers."
+
+    use_gonio_reference = True
+      .type = bool
+      .expert_level = 2
+      .help = "If True, the goniometer from reference_geometry will override "
+              "the goniometer from the image headers."
+
+    use_detector_reference = True
+      .type = bool
+      .expert_level = 2
+      .help = "If True, the detector from reference_geometry will override "
+              "the detector from the image headers."
+
     allow_multiple_sequences = True
       .type = bool
       .help = "If False, raise an error if multiple sequences are found"
@@ -264,9 +282,12 @@ class ReferenceGeometryUpdater(object):
             ), "Reference detector model does not match input detector model"
 
         # Set beam and detector
-        imageset.set_beam(self.reference.beam)
-        imageset.set_detector(self.reference.detector)
-        imageset.set_goniometer(self.reference.goniometer)
+        if self.params.input.use_beam_reference:
+            imageset.set_beam(self.reference.beam)
+        if self.params.input.use_detector_reference:
+            imageset.set_detector(self.reference.detector)
+        if self.params.input.use_gonio_reference:
+            imageset.set_goniometer(self.reference.goniometer)
         return imageset
 
     def load_reference_geometry(self, params):

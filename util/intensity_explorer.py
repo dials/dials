@@ -117,7 +117,7 @@ class IntensityDist(object):
     def _multiplicity_mean_error_stddev(
         self, calculate_variances=False, keep_singles=False
     ):
-        """ "
+        """
         Calculate aggregate properties of grouped symmetry-equivalent reflections.
 
         Populate the reflection table of observations with the following
@@ -284,7 +284,7 @@ class IntensityDist(object):
             self.rtables[key] = rtable
 
     def _make_z(self, uncertainty="sigma"):
-        """ "
+        """
         Generate reflection z-scores.
 
         Calculate z-scores from reflection intensities, weighted mean

@@ -135,12 +135,16 @@ class _(object):
         return result
 
     @staticmethod
-    def from_observations(experiments, params=None):
+    def from_observations(experiments, params=None, is_stills=False):
         """
         Construct a reflection table from observations.
 
         :param experiments: The experiments
         :param params: The input parameters
+        :param is_stills:   [ADVANCED] Force still-handling of experiment
+                            ID remapping for dials.stills_process. Do
+                            not use for general processing unless you
+                            know all the implications.
         :return: The reflection table of observations
         """
         from dials.algorithms.spot_finding.factory import SpotFinderFactory
@@ -165,12 +169,12 @@ class _(object):
 
         # Get the integrator from the input parameters
         logger.info("Configuring spot finder from input parameters")
-        find_spots = SpotFinderFactory.from_parameters(
-            experiments=experiments, params=params
+        spotfinder = SpotFinderFactory.from_parameters(
+            experiments=experiments, params=params, is_stills=is_stills
         )
 
         # Find the spots
-        return find_spots(experiments)
+        return spotfinder.find_spots(experiments)
 
     @staticmethod
     def from_pickle(filename):

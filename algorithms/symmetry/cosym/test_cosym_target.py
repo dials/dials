@@ -24,7 +24,7 @@ def test_cosym_target(space_group):
     for weights in [None, "count", "standard_error"]:
         print(weights)
         t = target.Target(intensities, dataset_ids, weights=weights)
-        m = len(t.get_sym_ops())
+        m = len(t.sym_ops)
         n = len(datasets)
         assert t.dim == m
         assert t.rij_matrix.all() == (n * m, n * m)

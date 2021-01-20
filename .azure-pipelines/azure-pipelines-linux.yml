@@ -1,7 +1,7 @@
 jobs:
 - job: linux
   pool:
-    vmImage: ubuntu-latest
+    vmImage: ubuntu-20.04
   dependsOn: setup
   condition: eq(variables['ENABLE_CACHE'], '1')
   variables:
@@ -30,7 +30,7 @@ jobs:
 
 - job: linux_uncached
   pool:
-    vmImage: ubuntu-latest
+    vmImage: ubuntu-20.04
   dependsOn: setup
   condition: eq(variables['ENABLE_CACHE'], '0')
   variables:

@@ -50,7 +50,7 @@ class symmetry_base(object):
             intensities. If set to :data:`libtbx.Auto` then d_min will be
             automatically determined according to the parameters
             ``min_i_mean_over_sigma_mean`` and ``min_cc_half``.
-          min_i_mean_over_sigma_mean (float): minimum value of |I|/|sigma(I)| for
+          min_i_mean_over_sigma_mean (float): minimum value of :math:`|I|/|sigma(I)|` for
             automatic determination of resolution cutoff.
           min_cc_half (float): minimum value of CC½ for automatic determination of
             resolution cutoff.

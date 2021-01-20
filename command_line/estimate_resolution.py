@@ -1,5 +1,63 @@
 # LIBTBX_SET_DISPATCHER_NAME dials.estimate_resolution
 # LIBTBX_SET_DISPATCHER_NAME dials.resolutionizer
+"""
+Estimate a resolution limit based on merging statistics calculated in resolution bins.
+
+A number of metrics are supported for estimating a resolution limit,
+including:
+
+- `cc_half` (this is the default)
+- `isigma` (unmerged <I/sigI>)
+- `misigma` (merged <I/sigI>)
+- `i_mean_over_sigma_mean` (unmerged <I>/<sigI>)
+- `cc_ref` (CC vs provided reference data set)
+- `completeness`
+- `rmerge`
+
+Resolution estimation is performed by fitting an appropriate curve to the relevant
+merging statistics calculated in resolution bins (with a roughly equal number of
+reflections per bin). The estimated resolution limit is chosen as the resolution at
+which the fitted function equals the specified criteria.
+
+If multiple metrics are requested, the chosen resolution limit will be the lowest
+resolution value estimated across the selected metrics.
+
+The fitting functions for the various metrics are defined as follows:
+
+- `cc_half`: fit a tanh function the form (1/2)(1 - tanh(z)) where z = (s - s0)/r, s0 is
+  the value of s at the half-falloff value, and r controls the steepness of falloff
+- `isigma`, `misigma`, `i_mean_over_sigma_mean`: fit a polynomial to the values
+  log(y(x))
+- `rmerge`: fit a polynomial to the values log(1/y(x))
+- `completeness`: fit a polynomial to the values y(x)
+
+Example use cases
+-----------------
+
+Run with defaults on scaled data::
+
+  dials.estimate_resolution scaled.expt scaled.refl
+
+Run with default on scaled unmerged mtz file::
+
+  dials.estimate_resolution scaled_unmerged.mtz
+
+Override the default cc_half cutoff::
+
+  dials.estimate_resolution scaled.expt scaled.refl cc_half=0.1
+
+Use merged <I/sigI> resolution cutoff instead of cc_half::
+
+  dials.estimate_resolution scaled.expt scaled.refl misigma=1.0 cc_half=None
+
+Use unmerged <I/sigI> resolution cutoff in addition to default cc_half::
+
+  dials.estimate_resolution scaled.expt scaled.refl isigma=0.25
+
+Use cc_ref resolution cutoff::
+
+  dials.estimate_resolution cc_ref=0.3 cc_half=None reference=reference.mtz
+"""
 from __future__ import absolute_import, division, print_function
 
 import json
@@ -17,9 +75,6 @@ from dials.util.options import OptionParser, reflections_and_experiments_from_fi
 from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.estimate_resolution")
-
-help_message = """
-"""
 
 
 phil_scope = libtbx.phil.parse(
@@ -56,7 +111,7 @@ def run(args=None):
         read_reflections=True,
         read_experiments=True,
         check_format=False,
-        epilog=help_message,
+        epilog=__doc__,
     )
 
     params, options, unhandled = parser.parse_args(
@@ -86,6 +141,10 @@ def run(args=None):
         )
     else:
         reflections = parse_multiple_datasets(reflections)
+        if len(experiments) != len(reflections):
+            sys.exit(
+                f"Mismatched number of experiments and reflection tables found: {len(experiments)} & {len(reflections)}."
+            )
         m = resolution_analysis.Resolutionizer.from_reflections_and_experiments(
             reflections, experiments, params.resolution
         )
