@@ -40,7 +40,7 @@ class Target(object):
         Args:
           intensities (cctbx.miller.array): The intensities on which to perform
             cosym anaylsis.
-          lattice_ids (scitbx.array_family.flex.int): An array of equal size to
+          lattice_ids (np.ndarray): An array of equal size to
             `intensities` which maps each reflection to a given lattice (dataset).
           weights (str): Optionally include weights in the target function.
             Allowed values are `None`, "count" and "standard_error". The default
@@ -69,22 +69,21 @@ class Target(object):
         cb_op_to_primitive = data.change_of_basis_op_to_primitive_setting()
         data = data.change_basis(cb_op_to_primitive).map_to_asu()
 
-        order = flex.sort_permutation(lattice_ids)
-        sorted_lattice_id = flex.select(lattice_ids, order)
-        sorted_data = data.data().select(order)
-        sorted_indices = data.indices().select(order)
-        self._lattice_ids = sorted_lattice_id
+        order = lattice_ids.argsort()
+        sorted_data = data.data().select(flex.size_t(order))
+        sorted_indices = data.indices().select(flex.size_t(order))
+        self._lattice_ids = lattice_ids[order]
         self._data = data.customized_copy(indices=sorted_indices, data=sorted_data)
         assert isinstance(self._data.indices(), type(flex.miller_index()))
         assert isinstance(self._data.data(), type(flex.double()))
 
         # construct a lookup for the separate lattices
-        last_id = -1
-        self._lattices = flex.int()
-        for n, lid in enumerate(self._lattice_ids):
-            if lid != last_id:
-                last_id = lid
-                self._lattices.append(n)
+        self._lattices = np.array(
+            [
+                np.where(self._lattice_ids == i)[0][0]
+                for i in np.unique(self._lattice_ids)
+            ]
+        )
 
         self.sym_ops = OrderedSet(["x,y,z"])
         self._lattice_group = lattice_group
@@ -158,7 +157,7 @@ class Target(object):
 
     def _compute_rij_wij(self, use_cache=True):
         """Compute the rij_wij matrix."""
-        n_lattices = self._lattices.size()
+        n_lattices = len(self._lattices)
 
         indices = {}
         space_group_type = self._data.space_group().type()
@@ -307,7 +306,7 @@ class Target(object):
         Returns:
           f (float): The value of the target function at coordinates `x`.
         """
-        assert (x.size // self.dim) == (self._lattices.size() * len(self.sym_ops))
+        assert (x.size // self.dim) == (len(self._lattices) * len(self.sym_ops))
         inner = np.copy(self.rij_matrix)
         NN = x.size // self.dim
         for i in range(self.dim):
