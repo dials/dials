@@ -5,6 +5,8 @@ import logging
 import random
 import sys
 
+import numpy as np
+
 import iotbx.phil
 from cctbx import sgtbx
 from xfel.clustering.cluster_groups import unit_cell_info
@@ -342,6 +344,7 @@ def run(args=None):
 
     if params.seed is not None:
         flex.set_random_seed(params.seed)
+        np.random.seed(params.seed)
         random.seed(params.seed)
 
     if not params.input.experiments or not params.input.reflections:
