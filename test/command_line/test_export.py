@@ -419,6 +419,7 @@ def test_export_sum_or_profile_only(dials_data, tmpdir):
         data.as_file(removed)
 
         procrunner.run(
-            ["dials.export", expt, removed],
+            ["dials.export", expt, removed, f"mtz.hklout=removed_{remove}.mtz"],
             working_directory=tmpdir.strpath,
         )
+        assert (tmpdir / "removed_{remove}.mtz").check(file=1)
