@@ -35,8 +35,7 @@ Incremental scaling (with different options per dataset)::
 
 import logging
 import sys
-
-from six.moves import cStringIO as StringIO
+from io import StringIO
 
 from libtbx import phil
 

@@ -1,4 +1,5 @@
-import six.moves.cPickle as pickle
+import pickle
+
 import wx
 from wx.lib.agw.floatspin import EVT_FLOATSPIN, FloatSpin
 

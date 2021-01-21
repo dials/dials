@@ -6,8 +6,6 @@ refiner which components of the model are to be refined.
 import logging
 from collections import OrderedDict
 
-import six
-
 from scitbx import sparse
 
 from dials.array_family import flex

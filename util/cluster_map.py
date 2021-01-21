@@ -4,9 +4,8 @@ Tools to run cluster processing using DRMAA
 
 import multiprocessing
 import os
+import pickle
 import sys
-
-import six.moves.cPickle as pickle
 
 
 class InputWriter:

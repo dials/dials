@@ -1,4 +1,4 @@
-import six.moves.cPickle as pickle
+import pickle
 
 
 def reflections(obj, outfile):

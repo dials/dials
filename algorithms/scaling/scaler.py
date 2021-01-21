@@ -15,10 +15,8 @@ import copy
 import logging
 import time
 from collections import OrderedDict
+from io import StringIO
 from math import ceil
-
-import six
-from six.moves import cStringIO as StringIO
 
 from libtbx import Auto
 from scitbx import sparse

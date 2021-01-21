@@ -11,8 +11,6 @@ import copy
 import logging
 import math
 
-import six
-
 import scitbx.math
 
 from dials.array_family import flex

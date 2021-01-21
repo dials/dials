@@ -3,8 +3,6 @@ Extension to general active parameter manager for scaling and function
 to use a scaler to determine the correct call to the apm factories.
 """
 
-import six
-
 from dials.algorithms.scaling.active_parameter_managers import (
     ParameterManagerGenerator,
     active_parameter_manager,

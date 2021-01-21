@@ -6,8 +6,6 @@ import logging
 from collections import OrderedDict
 from math import exp, log
 
-import six
-
 from iotbx import phil
 from scitbx import sparse
 from scitbx.math.distributions import normal_distribution
@@ -473,17 +471,6 @@ class BasicErrorModel:
         a = abs(self.parameters[0])
         b = abs(self.parameters[1])
         ISa = f"{1.0 / (b * a):.3f}" if (b * a) > 0 else "Unable to estimate"
-        if six.PY2:
-            return "\n".join(
-                (
-                    "",
-                    "Error model details:",
-                    "  Type: basic",
-                    f"  Parameters: a = {a:.5f}, b = {b:.5f}",
-                    "  estimated I/sigma asymptotic limit: %s" % ISa,
-                    "",
-                )
-            )
         return "\n".join(
             (
                 "",

@@ -8,8 +8,6 @@ methods to define how these are composed into one model.
 import logging
 from collections import OrderedDict
 
-import six
-
 from libtbx import Auto, phil
 
 from dials.algorithms.scaling.error_model.error_model import BasicErrorModel

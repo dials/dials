@@ -1,8 +1,8 @@
 import os
+import pickle
 
 import procrunner
 import pytest
-import six.moves.cPickle as pickle
 
 from dials.array_family import flex
 

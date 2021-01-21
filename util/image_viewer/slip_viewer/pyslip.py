@@ -21,10 +21,10 @@ difficulty for most uses is to generate the map tiles.
 import glob
 import math
 import os
+import pickle
 import sys
 
 import wx
-from six.moves import cPickle as pickle
 
 from scitbx.matrix import col
 

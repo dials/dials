@@ -3,9 +3,8 @@
 
 import copy
 import os
+import pickle
 import sys
-
-import six.moves.cPickle as pickle
 
 import iotbx.phil
 from cctbx import sgtbx

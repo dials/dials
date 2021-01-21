@@ -2,10 +2,8 @@ import collections
 import functools
 import logging
 import math
+import pickle
 import random
-
-import six
-import six.moves.cPickle as pickle
 
 import dials.extensions
 from dials.algorithms.integration import processor

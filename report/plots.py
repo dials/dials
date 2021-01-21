@@ -5,10 +5,10 @@ for reports of several programs.
 
 import logging
 from collections import OrderedDict
+from io import StringIO
 
 import numpy as np
 from scipy.optimize import least_squares
-from six.moves import cStringIO as StringIO
 
 from cctbx import uctbx
 from mmtbx.scaling.absolute_scaling import expected_intensity, scattering_information

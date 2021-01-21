@@ -1,3 +1,4 @@
+import pickle
 import random
 
 
@@ -16,8 +17,6 @@ def test_pickle():
     pl = PixelList(sf, image, mask)
     assert pl.size() == size
     assert pl.frame() == sf
-
-    import six.moves.cPickle as pickle
 
     obj = pickle.dumps(pl)
     pl2 = pickle.loads(obj)

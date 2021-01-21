@@ -2,7 +2,6 @@ import os
 import sys
 
 import pytest
-import six
 
 import dials.util
 

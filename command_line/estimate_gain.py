@@ -1,3 +1,5 @@
+import pickle
+
 import iotbx.phil
 from scitbx.array_family import flex
 
@@ -115,8 +117,6 @@ def estimate_gain(imageset, kernel_size=(10, 10), output_gain_map=None, max_imag
         if len(gains) > 1:
             raw_data = imageset.get_raw_data(0)
         # write the gain map
-        import six.moves.cPickle as pickle
-
         gain_map = flex.double(flex.grid(raw_data[0].all()), gain0)
         with open(output_gain_map, "wb") as fh:
             pickle.dump(gain_map, fh, protocol=pickle.HIGHEST_PROTOCOL)

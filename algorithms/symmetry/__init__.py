@@ -7,7 +7,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from six.moves import cStringIO as StringIO
+from io import StringIO
 
 import libtbx
 from cctbx import adptbx, sgtbx, uctbx

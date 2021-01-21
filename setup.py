@@ -2,7 +2,7 @@ import sys
 
 from setuptools import find_packages, setup
 
-requirements = ["dials-data", "Jinja2", "procrunner", "six"]
+requirements = ["dials-data", "Jinja2", "procrunner"]
 
 setup_requirements = []
 needs_pytest = {"pytest", "test", "ptr"}.intersection(sys.argv)

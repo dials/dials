@@ -1,5 +1,6 @@
+import pickle
+
 import pytest
-import six.moves.cPickle as pickle
 
 from dxtbx.model import ExperimentList
 from libtbx import phil

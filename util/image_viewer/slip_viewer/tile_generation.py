@@ -1,7 +1,6 @@
 import math
 import sys
 
-import six
 import wx
 
 import scitbx.matrix

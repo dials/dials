@@ -1,4 +1,5 @@
 import math
+import pickle
 import random
 
 
@@ -256,8 +257,6 @@ def test_z_index():
 
 
 def test_pickle():
-    import six.moves.cPickle as pickle
-
     from dials.algorithms.profile_model.modeller import CircleSampler
 
     width = 1000

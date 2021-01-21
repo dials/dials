@@ -1,8 +1,6 @@
 import math
 import os
-
-import six
-import six.moves.cPickle as pickle
+import pickle
 
 
 def test_run(dials_regression):

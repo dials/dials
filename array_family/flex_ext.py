@@ -10,10 +10,9 @@ import itertools
 import logging
 import operator
 import os
+import pickle
 from typing import Tuple
 
-import six
-import six.moves.cPickle as pickle
 from annlib_ext import AnnAdaptorSelfInclude
 
 import boost_adaptbx.boost.python

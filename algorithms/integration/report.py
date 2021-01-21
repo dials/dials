@@ -1,7 +1,5 @@
 import collections
 
-import six
-
 from dials.array_family import flex
 from dials.array_family.flex import Binner
 from dials.util.report import Array, Report, Table

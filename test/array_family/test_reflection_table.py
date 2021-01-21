@@ -1,5 +1,6 @@
 import copy
 import os
+import pickle
 import random
 
 import pytest
@@ -704,8 +705,6 @@ def test_serialize():
     table["col3"] = flex.std_string(c3)
 
     # Pickle, then unpickle
-    import six.moves.cPickle as pickle
-
     obj = pickle.dumps(table)
     new_table = pickle.loads(obj)
     assert new_table.is_consistent()
@@ -1242,8 +1241,6 @@ def test_experiment_identifiers():
         table.assert_experiment_identifiers_are_consistent()
 
     identifiers[3] = "mnop"
-
-    import six.moves.cPickle as pickle
 
     pickled = pickle.dumps(table)
     table2 = pickle.loads(pickled)

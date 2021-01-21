@@ -1,4 +1,5 @@
 import logging
+import pickle
 
 import iotbx.phil
 
@@ -39,8 +40,6 @@ help_message = """
 
 @dials.util.show_mail_handle_errors()
 def run(args=None):
-    import six.moves.cPickle as pickle
-
     from dials.util import Sorry, log
 
     usage = "dials.find_hot_pixels [options] models.expt strong.refl"

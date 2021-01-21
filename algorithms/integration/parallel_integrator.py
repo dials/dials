@@ -1,5 +1,6 @@
 import logging
 import math
+import pickle
 
 import psutil
 
@@ -1285,8 +1286,6 @@ class ReferenceCalculatorProcessor:
         # Write the profiles to file
         if params.integration.debug.reference.output:
             with open(params.integration.debug.reference.filename, "wb") as outfile:
-                import six.moves.cPickle as pickle
-
                 pickle.dump(self._profiles, outfile)
 
         # Print the profiles to the debug log

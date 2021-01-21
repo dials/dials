@@ -1,6 +1,6 @@
 import os
+import pickle
 
-import six.moves.cPickle as pickle
 import wx
 import wx.lib.colourselect
 

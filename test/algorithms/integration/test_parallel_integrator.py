@@ -1,10 +1,9 @@
 import collections
 import math
 import os
+import pickle
 
 import pytest
-import six
-import six.moves.cPickle as pickle
 
 from dxtbx.model.experiment_list import ExperimentListFactory
 

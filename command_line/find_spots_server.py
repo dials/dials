@@ -1,7 +1,3 @@
-from future import standard_library
-
-standard_library.install_aliases()
-
 import http.server as server_base
 import json
 import logging

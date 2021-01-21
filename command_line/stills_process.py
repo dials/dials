@@ -2,14 +2,12 @@ import copy
 import glob
 import logging
 import os
+import pickle
 import sys
 import tarfile
 import time
 from collections import OrderedDict
-
-import six
-import six.moves.cPickle as pickle
-from six import BytesIO
+from io import BytesIO
 
 from dxtbx.model.experiment_list import (
     Experiment,

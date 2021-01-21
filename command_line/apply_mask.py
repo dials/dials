@@ -1,5 +1,4 @@
-import six
-from six.moves import cPickle as pickle
+import pickle
 
 from dxtbx.format.image import ImageBool
 from iotbx.phil import parse

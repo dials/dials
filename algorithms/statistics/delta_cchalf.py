@@ -2,8 +2,6 @@ import logging
 from collections import defaultdict
 from math import floor, sqrt
 
-import six
-
 from cctbx import crystal, miller
 
 from dials.array_family import flex

@@ -4,8 +4,7 @@ Command line script to allow merging and truncating of a dials dataset.
 
 import logging
 import sys
-
-from six.moves import cStringIO as StringIO
+from io import StringIO
 
 from dxtbx.model import ExperimentList
 from iotbx import phil

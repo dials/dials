@@ -1,4 +1,4 @@
-import six.moves.cPickle as pickle
+import pickle
 
 __all__ = ["reference", "reflections"]
 

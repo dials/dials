@@ -7,7 +7,6 @@ import itertools
 from copy import deepcopy
 
 import pkg_resources
-import six
 
 from libtbx import phil
 from libtbx.table_utils import simple_table

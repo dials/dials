@@ -1,5 +1,3 @@
-import six
-
 from dials.array_family import flex
 
 

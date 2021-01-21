@@ -1,7 +1,5 @@
 import os
-
-import six
-import six.moves.cPickle as pickle
+import pickle
 
 
 def test_spot_counts_per_image_plot(dials_regression):

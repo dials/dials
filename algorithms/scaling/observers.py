@@ -6,7 +6,6 @@ import json
 import logging
 from collections import OrderedDict
 
-import six
 from jinja2 import ChoiceLoader, Environment, PackageLoader
 
 from cctbx import uctbx

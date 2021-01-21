@@ -7,9 +7,9 @@ import sys
 import traceback
 from collections import defaultdict, namedtuple
 from glob import glob
+from urllib.parse import urlparse
 
 from orderedset import OrderedSet
-from six.moves.urllib.parse import urlparse
 
 import libtbx.phil
 from dxtbx.model import ExperimentList
@@ -22,14 +22,6 @@ from dials.util.multi_dataset_handling import (
     sort_tables_to_experiments_order,
 )
 from dials.util.phil import FilenameDataWrapper
-
-try:
-    import cPickle  # deliberately not using six.moves
-
-    pickle_errors = pickle.UnpicklingError, cPickle.UnpicklingError
-except ImportError:
-    pickle_errors = (pickle.UnpicklingError,)
-
 
 tolerance_phil_scope = libtbx.phil.parse(
     """
@@ -340,7 +332,7 @@ class Importer:
                         data=flex.reflection_table.from_file(argument),
                     )
                 )
-            except pickle_errors:
+            except pickle.UnpicklingError:
                 self._handle_converter_error(
                     argument,
                     pickle.UnpicklingError("Appears to be an invalid pickle file"),

@@ -20,9 +20,8 @@ Examples::
 
 import logging
 import os.path
+import pickle
 from typing import List, Optional, Tuple
-
-import six.moves.cPickle as pickle
 
 import libtbx.phil as phil
 from dxtbx.format.image import ImageBool

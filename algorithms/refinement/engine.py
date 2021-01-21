@@ -6,6 +6,7 @@ are the current concrete implementations"""
 import copy
 import json
 import logging
+from io import StringIO
 
 import libtbx
 from libtbx import easy_mp
@@ -479,8 +480,6 @@ class AdaptLbfgs(Refinery):
         self._termination_params = lbfgs.termination_parameters(
             max_iterations=self._max_iterations
         )
-
-        from six.moves import cStringIO as StringIO
 
         self._log_string = StringIO
 

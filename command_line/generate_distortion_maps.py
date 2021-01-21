@@ -1,7 +1,6 @@
 import logging
 import math
-
-import six.moves.cPickle as pickle
+import pickle
 
 from iotbx import phil
 from scitbx import matrix

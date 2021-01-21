@@ -1,5 +1,6 @@
 # LIBTBX_SET_DISPATCHER_NAME cluster.dials.exec
 
+import pickle
 
 import dials.util
 
@@ -34,8 +35,6 @@ def run(_=None):
     import traceback
     from os.path import exists, join
     from time import sleep
-
-    import six.moves.cPickle as pickle
 
     # Get the task id and the current working directory
     tid = get_tid()

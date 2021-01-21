@@ -1,7 +1,7 @@
 import os
+import pickle
 
 import pytest
-import six.moves.cPickle as pickle
 
 from dxtbx.format.Format import Reader
 from dxtbx.imageset import ImageSet, ImageSetData

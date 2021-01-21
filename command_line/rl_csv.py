@@ -3,8 +3,6 @@
 import gzip
 import io
 
-import six
-
 import iotbx.phil
 from dxtbx.model import ExperimentList
 

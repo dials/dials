@@ -1,7 +1,6 @@
 import logging
+import pickle
 import sys
-
-import six.moves.cPickle as pickle
 
 from libtbx.phil import parse
 

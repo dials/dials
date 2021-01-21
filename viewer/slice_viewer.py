@@ -36,7 +36,7 @@ class show_3d:
     Following there is an example of how to see a set of shoebox(es) from a pickle file,
     this is taken from  a test piece of code:
 
-    import six.moves.cPickle as pickle
+    import pickle
     from dials.array_family import flex
     from dials.viewer.slice_viewer import show_3d
 

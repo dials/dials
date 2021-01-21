@@ -1,10 +1,8 @@
 # LIBTBX_SET_DISPATCHER_NAME dials.import
 
 import logging
+import pickle
 from collections import namedtuple
-
-import six
-import six.moves.cPickle as pickle
 
 from dxtbx.imageset import ImageGrid, ImageSequence
 from dxtbx.model.experiment_list import (

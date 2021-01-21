@@ -1,8 +1,6 @@
 import math
+import pickle
 import random
-
-import six
-import six.moves.cPickle as pickle
 
 from scitbx import matrix
 

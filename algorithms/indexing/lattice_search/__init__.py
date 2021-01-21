@@ -1,9 +1,9 @@
 import itertools
 import logging
 import math
+from io import StringIO
 
 import pkg_resources
-from six.moves import cStringIO as StringIO
 
 import libtbx.phil
 import scitbx.matrix

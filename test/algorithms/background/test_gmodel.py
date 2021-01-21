@@ -1,11 +1,11 @@
+import pickle
+
 import procrunner
 import pytest
 
 
 @pytest.fixture
 def model(tmpdir):
-    import six.moves.cPickle as pickle
-
     from dials.algorithms.background.gmodel import StaticBackgroundModel
     from dials.array_family import flex
 
