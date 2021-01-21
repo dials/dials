@@ -51,6 +51,8 @@ namespace dials { namespace refinement {
       // smoothing spacing
       x_spacing_ = (x_range[1] - x_range[0]) / (double)nxsample;
       y_spacing_ = (y_range[1] - y_range[0]) / (double)nysample;
+      DIALS_ASSERT(x_spacing_ > 0);
+      DIALS_ASSERT(y_spacing_ > 0);
 
       // positions of the smoother parameters
       if (nxvalues < 4) {

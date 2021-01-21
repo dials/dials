@@ -1,10 +1,13 @@
 """Tests for dials.damage_analysis"""
 import os
+
 import procrunner
 import pytest
+
+from dxtbx.serialize import load
+
 from dials.array_family import flex
 from dials.command_line.damage_analysis import PychefRunner, phil_scope, run
-from dxtbx.serialize import load
 
 
 def test_damage_analysis_dials_data(dials_data, run_in_tmpdir):

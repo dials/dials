@@ -2,15 +2,17 @@
 
 from __future__ import absolute_import, division, print_function
 
+import os
 import sys
 from optparse import SUPPRESS_HELP, OptionParser
 
-import dials
-import os
 import procrunner
 import py
 
-if __name__ == "__main__":
+import dials
+
+
+def run(args=None):
     dials_dir = py.path.local(dials.__file__).dirpath()
     sphinx_dir = dials_dir / "doc" / "sphinx"
     tutorial_doc_dir = sphinx_dir / "documentation" / "tutorials"
@@ -74,7 +76,7 @@ if __name__ == "__main__":
         default=False,
         help="Build documentation in parallel",
     )
-    options, _ = parser.parse_args()
+    options, _ = parser.parse_args(args)
 
     output_dir = py.path.local(options.output)
     if options.clean:
@@ -120,3 +122,7 @@ if __name__ == "__main__":
     )
     if result.returncode:
         sys.exit("Sphinx build failed with exit code %d" % result.returncode)
+
+
+if __name__ == "__main__":
+    run()

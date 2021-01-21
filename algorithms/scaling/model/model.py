@@ -9,43 +9,45 @@ from __future__ import absolute_import, division, print_function
 import logging
 from collections import OrderedDict
 
-from libtbx import phil
-from dials.array_family import flex
+import six
+
+from libtbx import Auto, phil
+
+from dials.algorithms.scaling.error_model.error_model import BasicErrorModel
 from dials.algorithms.scaling.model.components.scale_components import (
-    SingleScaleFactor,
-    SingleBScaleFactor,
-    SHScaleComponent,
     LinearDoseDecay,
     QuadraticDoseDecay,
+    SHScaleComponent,
+    SingleBScaleFactor,
+    SingleScaleFactor,
 )
 from dials.algorithms.scaling.model.components.smooth_scale_components import (
-    SmoothScaleComponent1D,
     SmoothBScaleComponent1D,
+    SmoothScaleComponent1D,
     SmoothScaleComponent2D,
     SmoothScaleComponent3D,
 )
-from dials.algorithms.scaling.scaling_utilities import sph_harm_table
 from dials.algorithms.scaling.plots import (
     plot_absorption_parameters,
     plot_absorption_surface,
-    plot_smooth_scales,
+    plot_array_absorption_plot,
     plot_array_decay_plot,
     plot_array_modulation_plot,
-    plot_array_absorption_plot,
     plot_dose_decay,
     plot_relative_Bs,
+    plot_smooth_scales,
 )
+from dials.algorithms.scaling.scaling_utilities import sph_harm_table
+from dials.array_family import flex
 from dials_scaling_ext import (
-    calc_theta_phi,
     calc_lookup_index,
+    calc_theta_phi,
     create_sph_harm_lookup_table,
 )
-import six
 
 logger = logging.getLogger("dials")
 
 import pkg_resources
-
 
 kb_model_phil_str = """\
 decay_correction = True
@@ -101,27 +103,27 @@ fix_initial = True
 
 
 physical_model_phil_str = """\
-scale_interval = 15.0
+scale_interval = auto
     .type = float(value_min=1.0)
     .help = "Rotation (phi) interval between model parameters for the scale"
-            "component."
+            "component (auto scales interval depending on oscillation range)."
     .expert_level = 1
 decay_correction = True
     .type = bool
     .help = "Option to turn off decay correction."
     .expert_level = 1
-decay_interval = 20.0
+decay_interval = auto
     .type = float(value_min=1.0)
     .help = "Rotation (phi) interval between model parameters for the decay"
-            "component."
+            "component (auto scales interval depending on oscillation range)."
     .expert_level = 1
 decay_restraint = 1e-1
     .type = float(value_min=0.0)
     .help = "Weight to weakly restrain B-values to 0."
     .expert_level = 2
-absorption_correction = True
+absorption_correction = auto
     .type = bool
-    .help = "Option to turn off absorption correction."
+    .help = "Option to turn off absorption correction (default True if oscillation > 60.0)."
     .expert_level = 1
 lmax = 4
     .type = int(value_min=2)
@@ -274,7 +276,6 @@ class ScalingModelBase(object):
             dict: A dictionary representation of the model.
         """
         dictionary = OrderedDict({"__id__": self.id_})
-        dictionary["is_scaled"] = self._is_scaled
         for key in self.components:
             dictionary[key] = OrderedDict(
                 [
@@ -297,6 +298,26 @@ class ScalingModelBase(object):
     def from_dict(cls, obj):
         """Create a scaling model from a dictionary."""
         raise NotImplementedError()
+
+    def load_error_model(self, error_params):
+        # load existing model if there, but use user-specified values if given
+        new_model = None
+        if (
+            "error_model_type" in self._configdict
+            and not error_params.reset_error_model
+        ):
+            if self._configdict["error_model_type"] == "BasicErrorModel":
+                p = self._configdict["error_model_parameters"]
+                a = None
+                b = None
+                if not error_params.basic.a:
+                    a = p[0]
+                if not error_params.basic.b:
+                    b = p[1]
+                new_model = BasicErrorModel(a, b, error_params.basic)
+        if not new_model:
+            new_model = BasicErrorModel(basic_params=error_params.basic)
+        self.set_error_model(new_model)
 
     def set_error_model(self, error_model):
         """Associate an error model with the dataset."""
@@ -556,7 +577,6 @@ class DoseDecay(ScalingModelBase):
         (s_params, d_params, abs_params, B) = (None, None, None, None)
         (s_params_sds, d_params_sds, a_params_sds, B_sd) = (None, None, None, None)
         configdict = obj["configuration_parameters"]
-        is_scaled = obj["is_scaled"]
         if "scale" in configdict["corrections"]:
             s_params = flex.double(obj["scale"]["parameters"])
             if "est_standard_devs" in obj["scale"]:
@@ -581,7 +601,7 @@ class DoseDecay(ScalingModelBase):
             "absorption": {"parameters": abs_params, "parameter_esds": a_params_sds},
         }
 
-        return cls(parameters_dict, configdict, is_scaled)
+        return cls(parameters_dict, configdict, is_scaled=True)
 
     def plot_model_components(self):
         d = OrderedDict()
@@ -717,13 +737,31 @@ class PhysicalScalingModel(ScalingModelBase):
         configdict = OrderedDict({"corrections": []})
         parameters_dict = {}
 
+        autos = [None, Auto, "auto", "Auto"]
         osc_range = experiment.scan.get_oscillation_range()
         one_osc_width = experiment.scan.get_oscillation()[1]
         configdict.update({"valid_osc_range": osc_range})
 
+        abs_osc_range = abs(osc_range[1] - osc_range[0])
+
+        if params.scale_interval in autos or params.decay_interval in autos:
+            if abs_osc_range < 10.0:
+                scale_interval, decay_interval = (2.0, 3.0)
+            elif abs_osc_range < 25.0:
+                scale_interval, decay_interval = (4.0, 5.0)
+            elif abs_osc_range < 90.0:
+                scale_interval, decay_interval = (8.0, 10.0)
+            else:
+                scale_interval, decay_interval = (15.0, 20.0)
+
+        if params.scale_interval not in autos:
+            scale_interval = params.scale_interval
+        if params.decay_interval not in autos:
+            decay_interval = params.decay_interval
+
         configdict["corrections"].append("scale")
         n_scale_param, s_norm_fac, scale_rot_int = initialise_smooth_input(
-            osc_range, one_osc_width, params.scale_interval
+            osc_range, one_osc_width, scale_interval
         )
         configdict.update(
             {"s_norm_fac": s_norm_fac, "scale_rot_interval": scale_rot_int}
@@ -736,7 +774,7 @@ class PhysicalScalingModel(ScalingModelBase):
         if params.decay_correction:
             configdict["corrections"].append("decay")
             n_decay_param, d_norm_fac, decay_rot_int = initialise_smooth_input(
-                osc_range, one_osc_width, params.decay_interval
+                osc_range, one_osc_width, decay_interval
             )
             configdict.update(
                 {"d_norm_fac": d_norm_fac, "decay_rot_interval": decay_rot_int}
@@ -746,7 +784,14 @@ class PhysicalScalingModel(ScalingModelBase):
                 "parameter_esds": None,
             }
 
-        if params.absorption_correction:
+        if params.absorption_correction in autos:
+            if abs_osc_range > 60.0:
+                absorption_correction = True
+            else:
+                absorption_correction = False
+        else:
+            absorption_correction = params.absorption_correction
+        if absorption_correction:
             configdict["corrections"].append("absorption")
             lmax = params.lmax
             n_abs_param = (2 * lmax) + (lmax ** 2)  # arithmetic sum formula (a1=3, d=2)
@@ -768,7 +813,6 @@ class PhysicalScalingModel(ScalingModelBase):
         (s_params, d_params, abs_params) = (None, None, None)
         (s_params_sds, d_params_sds, a_params_sds) = (None, None, None)
         configdict = obj["configuration_parameters"]
-        is_scaled = obj["is_scaled"]
         if "scale" in configdict["corrections"]:
             s_params = flex.double(obj["scale"]["parameters"])
             if "est_standard_devs" in obj["scale"]:
@@ -787,8 +831,7 @@ class PhysicalScalingModel(ScalingModelBase):
             "decay": {"parameters": d_params, "parameter_esds": d_params_sds},
             "absorption": {"parameters": abs_params, "parameter_esds": a_params_sds},
         }
-
-        return cls(parameters_dict, configdict, is_scaled)
+        return cls(parameters_dict, configdict, is_scaled=True)
 
     def plot_model_components(self):
         d = OrderedDict()
@@ -1049,7 +1092,6 @@ class ArrayScalingModel(ScalingModelBase):
         if obj["__id__"] != cls.id_:
             raise RuntimeError("expected __id__ %s, got %s" % (cls.id_, obj["__id__"]))
         configdict = obj["configuration_parameters"]
-        is_scaled = obj["is_scaled"]
         (dec_params, abs_params, mod_params) = (None, None, None)
         (d_params_sds, a_params_sds, m_params_sds) = (None, None, None)
         if "decay" in configdict["corrections"]:
@@ -1071,7 +1113,7 @@ class ArrayScalingModel(ScalingModelBase):
             "modulation": {"parameters": mod_params, "parameter_esds": m_params_sds},
         }
 
-        return cls(parameters_dict, configdict, is_scaled)
+        return cls(parameters_dict, configdict, is_scaled=True)
 
     def plot_model_components(self):
         d = OrderedDict()
@@ -1125,7 +1167,6 @@ class KBScalingModel(ScalingModelBase):
         if obj["__id__"] != cls.id_:
             raise RuntimeError("expected __id__ %s, got %s" % (cls.id_, obj["__id__"]))
         configdict = obj["configuration_parameters"]
-        is_scaled = obj["is_scaled"]
         (s_params, d_params) = (None, None)
         (s_params_sds, d_params_sds) = (None, None)
         if "scale" in configdict["corrections"]:
@@ -1142,7 +1183,7 @@ class KBScalingModel(ScalingModelBase):
             "decay": {"parameters": d_params, "parameter_esds": d_params_sds},
         }
 
-        return cls(parameters_dict, configdict, is_scaled)
+        return cls(parameters_dict, configdict, is_scaled=True)
 
     @classmethod
     def from_data(cls, params, experiment, reflection_table):

@@ -1,14 +1,16 @@
 from __future__ import absolute_import, division, print_function
 
-from math import pi
 import random
+from math import pi
 
 import pytest
+
 from scitbx import matrix
 
 
 def test_beam_parameters():
     from dxtbx.model import BeamFactory
+
     from dials.algorithms.refinement.parameterisation.beam_parameters import (
         BeamParameterisation,
     )

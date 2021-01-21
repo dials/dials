@@ -2,6 +2,7 @@
 Phil scope of options for scaling.
 """
 from __future__ import absolute_import, division, print_function
+
 import iotbx.phil
 
 phil_scope = iotbx.phil.parse(
@@ -72,6 +73,7 @@ phil_scope = iotbx.phil.parse(
               "to determine the scaling model and error model."
       .expert_level = 2
     intensity_choice = profile sum *combine
+      .alias = intensity
       .type = choice
       .help = "Option to choose from profile fitted or summation intensities, or
                an optimised combination of profile/sum."

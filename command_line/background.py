@@ -4,13 +4,13 @@
 from __future__ import absolute_import, division, print_function
 
 import math
-import sys
 
 import iotbx.phil
+from scitbx.array_family import flex
+
 from dials.algorithms.spot_finding.factory import SpotFinderFactory
 from dials.algorithms.spot_finding.factory import phil_scope as spot_phil
-from dials.util import Sorry
-from scitbx.array_family import flex
+from dials.util import Sorry, show_mail_handle_errors
 
 help_message = """
 
@@ -37,26 +37,33 @@ plot = False
 masking {
   include scope dials.util.masking.phil_scope
 }
+
+output {
+    plot = None
+      .type = path
+      .help = "Plot to an image file rather than an interactive plot window"
+}
+
 """,
     process_includes=True,
 )
 
 
-def main():
-    run(sys.argv[1:])
-
-
-def run(args):
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_experiments
+@show_mail_handle_errors()
+def run(args=None):
+    from dials.util.options import OptionParser, flatten_experiments
 
     usage = "dials.background [options] image_*.cbf"
 
     parser = OptionParser(
-        usage=usage, phil=phil_scope, read_experiments=True, epilog=help_message
+        usage=usage,
+        phil=phil_scope,
+        read_experiments=True,
+        read_experiments_from_images=True,
+        epilog=help_message,
     )
 
-    params, options = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(args, show_diff_phil=True)
 
     # Ensure we have either a data block or an experiment list
     experiments = flatten_experiments(params.input.experiments)
@@ -101,7 +108,12 @@ def run(args):
         intensities.append(I)
         sigmas.append(sig)
 
-    if params.plot:
+    if params.plot or params.output.plot:
+        if params.output.plot:
+            import matplotlib
+
+            matplotlib.use("agg")
+        import matplotlib.ticker as mticker
         from matplotlib import pyplot
 
         fig = pyplot.figure()
@@ -111,20 +123,27 @@ def run(args):
         for d, I, sig in zip(d_spacings, intensities, sigmas):
             ds2 = 1 / flex.pow2(d)
             ax.plot(ds2, I)
-        xticks = ax.get_xticks()
-
+        xticks = ax.get_xticks().tolist()
+        ax.xaxis.set_major_locator(mticker.FixedLocator(xticks))
         x_tick_labs = [
             "" if e <= 0.0 else "{:.2f}".format(math.sqrt(1.0 / e)) for e in xticks
         ]
         ax.set_xticklabels(x_tick_labs)
 
-        pyplot.show()
+        if params.output.plot:
+            try:
+                pyplot.savefig(params.output.plot)
+            except ValueError:
+                raise Sorry(f"Unable to save plot to {params.output.plot}")
+        else:
+            pyplot.show()
 
 
 def background(imageset, indx, n_bins, corrected=False, mask_params=None):
-    from dials.array_family import flex
     from libtbx.phil import parse
     from scitbx import matrix
+
+    from dials.array_family import flex
 
     if mask_params is None:
         # Default mask params for trusted range
@@ -209,4 +228,4 @@ def background(imageset, indx, n_bins, corrected=False, mask_params=None):
 
 
 if __name__ == "__main__":
-    main()
+    run()

@@ -7,23 +7,22 @@ import itertools
 import logging
 import math
 import random
-import sys
 
+import iotbx.phil
 import libtbx.introspection
 from libtbx.test_utils import approx_equal
 from libtbx.utils import plural_s
-from scitbx import matrix
-from scitbx.simplex import simplex_opt
-from scitbx.array_family import flex
-import iotbx.phil
+from rstbx.dps_core import Direction, Directional_FFT
 from rstbx.indexing_api import dps_extended
 from rstbx.indexing_api.lattice import DPS_primitive_lattice
 from rstbx.phil.phil_preferences import indexing_api_defs
-from rstbx.dps_core import Direction, Directional_FFT
+from scitbx import matrix
+from scitbx.array_family import flex
+from scitbx.simplex import simplex_opt
 
+import dials.util
 from dials.algorithms.indexing.indexer import find_max_cell
-from dials.util import log
-from dials.util import Sorry
+from dials.util import Sorry, log
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.slice import slice_reflections
 
@@ -95,7 +94,7 @@ def optimize_origin_offset_local_scope(
     plot_search_scope=False,
 ):
     """Local scope: find the optimal origin-offset closest to the current overall detector position
-        (local minimum, simple minimization)"""
+    (local minimum, simple minimization)"""
 
     beam = experiments[0].beam
     s0 = matrix.col(beam.get_s0())
@@ -459,7 +458,8 @@ def discover_better_experimental_model(
     return new_experiments
 
 
-def run(args):
+@dials.util.show_mail_handle_errors()
+def run(args=None):
     usage = "dials.search_beam_position [options] imported.expt strong.refl"
 
     parser = OptionParser(
@@ -532,4 +532,4 @@ def run(args):
 
 
 if __name__ == "__main__":
-    run(sys.argv[1:])
+    run()

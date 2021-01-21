@@ -1,15 +1,15 @@
 from __future__ import absolute_import, division, print_function
-import logging
 
+import logging
 import math
 
-from scitbx.array_family import flex
 from dxtbx.model import Crystal
+from scitbx.array_family import flex
 
-from dials.algorithms.indexing.symmetry import find_matching_symmetry
 from dials.algorithms.indexing.compare_orientation_matrices import (
     difference_rotation_matrix_axis_angle,
 )
+from dials.algorithms.indexing.symmetry import find_matching_symmetry
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +98,8 @@ def filter_known_symmetry(
             value is 5).
     """
 
+    n_matched = 0
+
     cb_op_ref_to_primitive = target_symmetry.change_of_basis_op_to_primitive_setting()
 
     if target_symmetry.unit_cell() is not None:
@@ -124,9 +126,18 @@ def filter_known_symmetry(
                     absolute_angle_tolerance=absolute_angle_tolerance,
                 )
             ):
+                logger.debug(
+                    "Rejecting crystal model inconsistent with input symmetry:\n"
+                    f"  Unit cell: {str(model.get_unit_cell())}"
+                )
                 continue
 
+            n_matched += 1
             yield model
+    if not n_matched:
+        logger.warning(
+            "No crystal models remaining after comparing with known symmetry"
+        )
 
 
 def filter_similar_orientations(
@@ -134,7 +145,7 @@ def filter_similar_orientations(
 ):
     for cryst in crystal_models:
         orientation_too_similar = False
-        for i_a, cryst_a in enumerate(other_crystal_models):
+        for cryst_a in other_crystal_models:
             R_ab, axis, angle, cb_op_ab = difference_rotation_matrix_axis_angle(
                 cryst_a, cryst
             )

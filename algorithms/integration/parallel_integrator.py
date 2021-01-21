@@ -8,18 +8,16 @@ import psutil
 from libtbx import Auto
 
 import dials.algorithms.integration
-from dials.algorithms.integration.processor import execute_parallel_task
-from dials.algorithms.integration.processor import NullTask
+from dials.algorithms.integration.processor import NullTask, execute_parallel_task
 from dials.array_family import flex
 from dials.util import tabulate
 from dials.util.mp import multi_node_parallel_map
 
 # Need this import first because loads extension that parallel_integrator_ext
 # relies on - it assumes the binding for EmpiricalProfileModeller exists
-import dials.algorithms.profile_model.modeller  # noqa: F401
+import dials.algorithms.profile_model.modeller  # noqa: F401 # isort: split
 
 from dials_algorithms_integration_parallel_integrator_ext import (
-    Logger,
     GaussianRSIntensityCalculator,
     GaussianRSMaskCalculator,
     GaussianRSMultiCrystalMaskCalculator,
@@ -27,6 +25,7 @@ from dials_algorithms_integration_parallel_integrator_ext import (
     GaussianRSReferenceCalculator,
     GaussianRSReferenceProfileData,
     GLMBackgroundCalculator,
+    Logger,
     MultiThreadedIntegrator,
     MultiThreadedReferenceProfiler,
     ReferenceProfileData,
@@ -106,14 +105,14 @@ class BackgroundCalculatorFactory(object):
         """
         Select the background calculator
         """
-        from dials.algorithms.background.simple.algorithm import (
-            SimpleBackgroundCalculatorFactory,
-        )
         from dials.algorithms.background.glm.algorithm import (
             GLMBackgroundCalculatorFactory,
         )
         from dials.algorithms.background.gmodel.algorithm import (
             GModelBackgroundCalculatorFactory,
+        )
+        from dials.algorithms.background.simple.algorithm import (
+            SimpleBackgroundCalculatorFactory,
         )
 
         # Get the parameters
@@ -566,11 +565,6 @@ class IntegrationManager(object):
         self.manager = SimpleReflectionManager(
             self.blocks, self.reflections, self.params.integration.mp.njobs
         )
-
-        # Parallel reading of HDF5 from the same handle is not allowed. Python
-        # multiprocessing is a bit messed up and used fork on linux so need to
-        # close and reopen file.
-        self.experiments.nullify_all_single_file_reader_format_instances()
 
     def task(self, index):
         """
@@ -1041,11 +1035,6 @@ class ReferenceCalculatorManager(object):
             self.blocks, self.reflections, self.params.integration.mp.njobs
         )
 
-        # Parallel reading of HDF5 from the same handle is not allowed. Python
-        # multiprocessing is a bit messed up and used fork on linux so need to
-        # close and reopen file.
-        self.experiments.nullify_all_single_file_reader_format_instances()
-
     def task(self, index):
         """
         Get a task.
@@ -1273,8 +1262,6 @@ class ReferenceCalculatorProcessor(object):
                 for message in result[1]:
                     logger.log(message.levelno, message.msg)
                 reference_manager.accumulate(result[0])
-                result[0].reflections = None
-                result[0].data = None
 
             multi_node_parallel_map(
                 func=execute_parallel_task,
@@ -1353,8 +1340,6 @@ class IntegratorProcessor(object):
                 for message in result[1]:
                     logger.log(message.levelno, message.msg)
                 integration_manager.accumulate(result[0])
-                result[0].reflections = None
-                result[0].data = None
 
             multi_node_parallel_map(
                 func=execute_parallel_task,

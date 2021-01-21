@@ -1,10 +1,12 @@
 from __future__ import absolute_import, division, print_function
 
 import six
-from dials.util import show_mail_on_error
+from six.moves import cPickle as pickle
+
 from dxtbx.format.image import ImageBool
 from iotbx.phil import parse
-from six.moves import cPickle as pickle
+
+import dials.util
 
 help_message = """
 
@@ -54,13 +56,13 @@ class Script(object):
             usage=usage, epilog=help_message, phil=phil_scope, read_experiments=True
         )
 
-    def run(self):
+    def run(self, args=None):
         """Run the script."""
-        from dials.util.options import flatten_experiments
         from dials.util import Sorry
+        from dials.util.options import flatten_experiments
 
         # Parse the command line arguments
-        params, options = self.parser.parse_args(show_diff_phil=True)
+        params, options = self.parser.parse_args(args, show_diff_phil=True)
         experiments = flatten_experiments(params.input.experiments)
 
         # Check that an experiment list and at least one mask file have been provided
@@ -97,7 +99,11 @@ class Script(object):
         experiments.as_file(filename=params.output.experiments)
 
 
+@dials.util.show_mail_handle_errors()
+def run(args=None):
+    script = Script()
+    script.run(args)
+
+
 if __name__ == "__main__":
-    with show_mail_on_error():
-        script = Script()
-        script.run()
+    run()

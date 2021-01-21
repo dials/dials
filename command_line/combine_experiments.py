@@ -4,27 +4,25 @@ import os
 import random
 import sys
 
+import xfel.clustering.cluster
+from dxtbx.command_line.image_average import splitit
+from dxtbx.datablock import BeamDiff, DetectorDiff, GoniometerDiff
+from dxtbx.model.experiment_list import (
+    BeamComparison,
+    DetectorComparison,
+    Experiment,
+    ExperimentList,
+    GoniometerComparison,
+)
 from libtbx.phil import parse
 from scitbx import matrix
-import xfel.clustering.cluster
 from xfel.clustering.cluster_groups import unit_cell_info
-
-from dxtbx.command_line.image_average import splitit
-from dxtbx.datablock import BeamDiff
-from dxtbx.datablock import DetectorDiff
-from dxtbx.datablock import GoniometerDiff
-from dxtbx.model.experiment_list import Experiment
-from dxtbx.model.experiment_list import ExperimentList
-from dxtbx.model.experiment_list import BeamComparison
-from dxtbx.model.experiment_list import DetectorComparison
-from dxtbx.model.experiment_list import GoniometerComparison
 
 import dials.util
 from dials.algorithms.integration.stills_significance_filter import SignificanceFilter
 from dials.array_family import flex
-from dials.util.options import OptionParser, flatten_experiments
 from dials.util import tabulate
-
+from dials.util.options import OptionParser, flatten_experiments
 
 help_message = """
 
@@ -176,6 +174,12 @@ phil_scope = parse(
       .type = int
       .expert_level = 2
       .help = "If not None, throw out any experiment with fewer than this"
+              "many reflections"
+
+    max_reflections_per_experiment = None
+      .type = int
+      .expert_level = 2
+      .help = "If not None, throw out any experiment with more than this"
               "many reflections"
 
     include scope dials.algorithms.integration.stills_significance_filter.phil_scope
@@ -385,9 +389,9 @@ class Script(object):
             epilog=help_message,
         )
 
-    def run(self):
+    def run(self, args=None):
         """Execute the script."""
-        params, options = self.parser.parse_args(show_diff_phil=True)
+        params, options = self.parser.parse_args(args, show_diff_phil=True)
         self.run_with_preparsed(params, options)
 
     def run_with_preparsed(self, params, options):
@@ -501,7 +505,8 @@ class Script(object):
         # set up global experiments and reflections lists
         reflections = flex.reflection_table()
         global_id = 0
-        skipped_expts = 0
+        skipped_expts_min_refl = 0
+        skipped_expts_max_refl = 0
         experiments = ExperimentList()
 
         # loop through the input, building up the global lists
@@ -523,7 +528,13 @@ class Script(object):
                     params.output.min_reflections_per_experiment is not None
                     and n_sub_ref < params.output.min_reflections_per_experiment
                 ):
-                    skipped_expts += 1
+                    skipped_expts_min_refl += 1
+                    continue
+                if (
+                    params.output.max_reflections_per_experiment is not None
+                    and n_sub_ref > params.output.max_reflections_per_experiment
+                ):
+                    skipped_expts_max_refl += 1
                     continue
 
                 nrefs_per_exp.append(n_sub_ref)
@@ -550,11 +561,20 @@ class Script(object):
 
         if (
             params.output.min_reflections_per_experiment is not None
-            and skipped_expts > 0
+            and skipped_expts_min_refl > 0
         ):
             print(
                 "Removed {0} experiments with fewer than {1} reflections".format(
-                    skipped_expts, params.output.min_reflections_per_experiment
+                    skipped_expts_min_refl, params.output.min_reflections_per_experiment
+                )
+            )
+        if (
+            params.output.max_reflections_per_experiment is not None
+            and skipped_expts_max_refl > 0
+        ):
+            print(
+                "Removed {0} experiments with more than {1} reflections".format(
+                    skipped_expts_max_refl, params.output.max_reflections_per_experiment
                 )
             )
 
@@ -778,7 +798,11 @@ class Script(object):
         reflections.as_file(refl_name)
 
 
+@dials.util.show_mail_handle_errors()
+def run(args=None):
+    script = Script()
+    script.run(args)
+
+
 if __name__ == "__main__":
-    with dials.util.show_mail_on_error():
-        script = Script()
-        script.run()
+    run()

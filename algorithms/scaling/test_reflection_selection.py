@@ -1,20 +1,22 @@
 """
 Tests for the reflection selection algorithm.
 """
-from __future__ import absolute_import, division, print_function
+
 import itertools
+from unittest.mock import Mock
+
+from cctbx import sgtbx, uctbx
 from libtbx import phil
 from scitbx import sparse
-from cctbx import sgtbx, uctbx
-from mock import Mock
-from dials.array_family import flex
+
 from dials.algorithms.scaling.Ih_table import IhTable
 from dials.algorithms.scaling.reflection_selection import (
-    select_connected_reflections_across_datasets,
-    calculate_scaling_subset_ranges_with_E2,
-    calculate_scaling_subset_ranges,
     _loop_over_class_matrix,
+    calculate_scaling_subset_ranges,
+    calculate_scaling_subset_ranges_with_E2,
+    select_connected_reflections_across_datasets,
 )
+from dials.array_family import flex
 
 
 def test_select_connected_reflections_across_datasets():

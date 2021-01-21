@@ -1,8 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+
 import pytest
+
 from cctbx import uctbx
+
 from dials.algorithms.indexing.test_index import run_indexing
 
 
@@ -101,7 +104,7 @@ def test_run(dials_regression, tmpdir):
     )
 
     # Now test refinement gradients are correct
-    from dxtbx.model.experiment_list import ExperimentList, Experiment
+    from dxtbx.model.experiment_list import Experiment, ExperimentList
 
     old_exps = ExperimentList(
         [
@@ -129,6 +132,7 @@ def test_run(dials_regression, tmpdir):
     )
 
     from libtbx.phil import parse
+
     from dials.algorithms.refinement.refiner import phil_scope
 
     params = phil_scope.fetch(source=parse("")).extract()

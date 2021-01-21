@@ -6,7 +6,7 @@ a wide range of use cases - so, if in the event that you are planning any large
 scale work that you will want to merge back in, please contact us beforehand so
 that we can discuss any potential impacts this might have.
 
-Listed in this document are code standards and conventions that you should try
+Listed in this document are code standards and conventions that we try
 to adhere to, some of which are essential and others that are just encouraged.
 The intention is that all of the code should try to converge towards these.
 
@@ -39,24 +39,9 @@ good reason for it, but "I prefer it this way" isn't a strong enough reason -
 there is real value to a standard style, because diverging from it sends a
 message that the code in question is special and care should be taken.
 
-- **Code should be written with python 3 syntax** - This means "new" exception
-  syntax, print functions, new-style classes, and a smattering of other changes
-  — the pre-commit hooks check for this.
-- **Try to write code compatible with python 3 and 2** - we have both
-  [six] and [future] available for help with this, but try to use future to
-  write idiomatic python 3 wherever possible. If you are unsure how to do this,
-  ask for help. Although the primary DIALS platform is now python 3 we still
-  have limited support for python 2 for development, maintenance and backporting
-  purposes. Please see our [python 2 deprecation timeline] for more information
-  and the current level of python 2 support.
 - Err on the side of [PEP8] when making any style decision. In particular,
   **use PEP8 as a guide for naming** when you aren't sure the correct form to
-  use.
-- Try not to do `from <module> import *` imports - it makes it hard to trace
-  where definitions are coming from, and turns off many useful diagnostics in
-  static analysis tools. Exceptions are allowed for modules that purely import
-  from an extension to wrap the interface, if it would be excessively verbose
-  otherwise.
+  use - lowercase variable names, CamelCase class names etc.
 - **Common imports should go at the top of the file**.  This makes it very easy
   to reason about the dependencies of a module, makes it hard to make
   conflicting definitions, and avoids duplicate imports scattered throughout
@@ -69,6 +54,11 @@ message that the code in question is special and care should be taken.
   or within optional functions/classes that are not always used when the file is
   imported.  This reduces the runtime import load for functionality that isn't
   universally used.
+- Try not to do `from <module> import *` imports - it makes it hard to trace
+  where definitions are coming from, and turns off many useful diagnostics in
+  static analysis tools. Exceptions are allowed for modules that purely import
+  from an extension to wrap the interface, if it would otherwise cause
+  excessive verbosity.
 - **Don't create classes with one function**. If your class is an `__init__`
   and a single 'do' function (or a `__call__`), then it can probably be more
   concisely expressed as a function.
@@ -86,37 +76,46 @@ message that the code in question is special and care should be taken.
   Remember that someone may be looking at your commit in several years time,
   trying to work out the reason for your commit and wondering what on earth you
   were thinking. That someone may be you.
-- Make pull requests a clean representation of the implementation of a feature
-  — meandering commit history is okay for WIP branches if it's supposed to be
-  squashed down to one commit eventually, but development dead-ends and back
-  tracks while developing a feature probably aren't useful to retain. It's okay
-  if this is hard to achieve, but expect people to argue for a squash-merge.
+
+## Pull Requests
+
+- Include a newsfragment before merging. This is a file in the
+  `newsfragments` folder with a description of your change. Try to make it
+  a one-sentence summary aimed at a DIALS user, not a developer. The file is
+  numbered to match the issue or pull request and has 
+  [one of the allowed extensions from the list][news-README]. 
+  If you don't have an issue number you can also add the file after you've
+  created your pull request and use the PR number. Newsfragments are
+  processed on release by a tool named [towncrier] and make up our release notes. 
+- We aim to squash-merge most pull requests. However, if you are working on a
+  longer-term feature branch, or making a lot of changes that might be a
+  candidate for a non-squash merge - please try to keep commits a relatively
+  clean representation of the implementation of your change, by e.g. using
+  `git rebase` - This helps people to understand your changes easier.
 
 
 ## Code linting, automatic formatting and static analysis
 
-- **Please install the pre-commit hooks**. (`libtbx.precommit install` if using
-  the libtbx ecosystem). These use the [pre-commit] library and ensure that
-  various sanity checks are run before commit, including formatting, syntax
-  compatibility, basic flake8 checks, lack of conflict markers and file size
-  limits. Basically, most of the essential rules will be checked automatically
-  by this.
+- **Please use the pre-commit hooks**. If using the DIALS bootstrap installer
+  then this will be done automatically. Otherwise, use `libtbx.precommit
+  install` - if in the libtbx ecosystem - or manually install the hooks with
+  `pre-commit install`. These use the [pre-commit] tool and ensure that
+  various sanity checks are run before commit, including import order,
+  formatting, syntax compatibility, basic flake8 checks, lack of conflict
+  markers and file size limits. Basically, most of the essential rules will be
+  checked automatically by this.
 - **We format python code with [black]**. This means that while writing code
   you don't have to worry about laying things out neatly, because black will
   take care of the formatting. We prefer if you commit code formatted with
   black (the pre-commit hook will help do this for you), but if for some reason
-  you can't, the whole codebase is auto-cleaned once a week. Most IDEs and
-  editors have support for running formatters like black frequently or
-  automatically.
-- **Avoid introducing new pre-commit flake8 warnings** - if you feel that it's
-  appropriate to violate a warning, mark it up explicitly with a [noqa]
-  comment. Probably the most common cause of this are "F401 - module imported
-  or unused", which happens when importing packages to collect into a single
-  namespace for other imports (though declaring `__all__` avoids this issue).
-  The pre-commit hooks will pick up the most important of these, but please try
-  to resolve any other valid warnings shown with a normal run of flake8. The
-  configuration in the repository turns off any that disagree with black's
-  interpretation of the rules or standard practice in our repositories.
+  you miss this, the whole codebase is auto-cleaned once a week. Most IDEs
+  and editors have support for running formatters like black automatically.
+- **Avoid introducing new flake8 warnings** - if you feel that it's appropriate
+  to ignore a warning, mark it up explicitly with a [noqa] comment. The most
+  important subset of checks are run as part of the pre-commit checks, but
+  please try to resolve any other valid warnings shown with a normal run of
+  flake8. The configuration in the repository turns off any warnings that
+  disagree with our standard practice.
 - **We use type checking with [mypy]**. When you commit new code this will be
   checked by a pre-commit hook, and also by a GitHub action in your pull request.
   At this stage this is experimental, so please get in contact if this causes
@@ -129,8 +128,9 @@ message that the code in question is special and care should be taken.
 
 
 [pre-commit]: https://github.com/pre-commit/pre-commit
-[black]: https://github.com/python/black
+[black]: https://github.com/psf/black
 [mypy]: https://mypy.readthedocs.io/en/stable/
+[isort]: https://github.com/PyCQA/isort
 [clang-format]: https://clang.llvm.org/docs/ClangFormat.html
 [noqa]: http://flake8.pycqa.org/en/3.7.7/user/violations.html#in-line-ignoring-errors
 [PEP8]: https://www.python.org/dev/peps/pep-0008
@@ -138,6 +138,5 @@ message that the code in question is special and care should be taken.
 [Zen of Python]: https://www.python.org/dev/peps/pep-0020/#the-zen-of-python
 [How to Write a Git Commit Message]: https://chris.beams.io/posts/git-commit
 [The Seven Rules]: https://chris.beams.io/posts/git-commit/#seven-rules
-[six]: https://six.readthedocs.io/
-[future]: http://python-future.org/
-[python 2 deprecation timeline]: https://github.com/dials/dials/issues/1175
+[news-README]: https://github.com/dials/dials/blob/master/newsfragments/README.MD
+[towncrier]: https://github.com/twisted/towncrier

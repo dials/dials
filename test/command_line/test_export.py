@@ -5,17 +5,16 @@ import os
 
 import procrunner
 import pytest
+
+import iotbx.cif
 from cctbx import uctbx
-from dials.array_family import flex
-from dials.util.multi_dataset_handling import assign_unique_identifiers
 from dxtbx.model import ExperimentList
-from dxtbx.serialize.load import _decode_dict
 from dxtbx.serialize import load
+from dxtbx.serialize.load import _decode_dict
 from iotbx import mtz
 
-
-# Tests used to check for h5py
-# May need to add this again if lack of this check causes issues.
+from dials.array_family import flex
+from dials.util.multi_dataset_handling import assign_unique_identifiers
 
 
 def run_export(export_format, dials_data, tmpdir):
@@ -61,7 +60,8 @@ def test_mtz_recalculated_cell(dials_data, tmpdir):
     scaled_expt = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled.expt")
     scaled_refl = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled.refl")
     result = procrunner.run(
-        ["dials.two_theta_refine", scaled_expt, scaled_refl], working_directory=tmpdir,
+        ["dials.two_theta_refine", scaled_expt, scaled_refl],
+        working_directory=tmpdir,
     )
     assert tmpdir.join("refined_cell.expt").check(file=1)
     refined_expt = load.experiment_list(
@@ -235,8 +235,9 @@ def test_mtz_primitive_cell(dials_data, tmpdir):
         )
 
 
+@pytest.mark.parametrize("compress", [None, "gz", "bz2", "xz"])
 @pytest.mark.parametrize("hklout", [None, "my.cif"])
-def test_mmcif(hklout, dials_data, tmpdir):
+def test_mmcif(compress, hklout, dials_data, tmpdir):
     # Call dials.export after integration
 
     command = [
@@ -246,15 +247,42 @@ def test_mmcif(hklout, dials_data, tmpdir):
         dials_data("centroid_test_data").join("integrated.pickle").strpath,
     ]
     if hklout is not None:
-        command.append("mmcif.hklout=%s" % hklout)
+        command.append(f"mmcif.hklout={hklout}")
+    else:
+        hklout = "integrated.cif"
+    if compress is not None:
+        command.append(f"mmcif.compress={compress}")
+        hklin = hklout + "." + compress
+    else:
+        hklin = hklout
     result = procrunner.run(command, working_directory=tmpdir.strpath)
     assert not result.returncode and not result.stderr
-    if hklout is not None:
-        assert tmpdir.join(hklout).check(file=1)
-    else:
-        assert tmpdir.join("integrated.cif").check(file=1)
+    assert tmpdir.join(hklin).check(file=1)
 
-    # TODO include similar test for exporting scaled data in mmcif format
+
+@pytest.mark.parametrize("pdb_version", ["v5", "v5_next"])
+def test_mmcif_on_scaled_data(dials_data, tmpdir, pdb_version):
+    """Call dials.export format=mmcif after scaling"""
+    scaled_expt = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled.expt")
+    scaled_refl = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled.refl")
+    command = [
+        "dials.export",
+        "format=mmcif",
+        scaled_expt.strpath,
+        scaled_refl.strpath,
+        "mmcif.hklout=scaled.mmcif",
+        "compress=None",
+        f"pdb_version={pdb_version}",
+    ]
+    result = procrunner.run(command, working_directory=tmpdir.strpath)
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("scaled.mmcif").check(file=1)
+
+    model = iotbx.cif.reader(file_path=tmpdir.join("scaled.mmcif").strpath).model()
+    if pdb_version == "v5":
+        assert "_pdbx_diffrn_data_section.id" not in model["dials"].keys()
+    elif pdb_version == "v5_next":
+        assert "_pdbx_diffrn_data_section.id" in model["dials"].keys()
 
 
 def test_xds_ascii(dials_data, tmpdir):

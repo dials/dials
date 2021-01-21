@@ -1,29 +1,28 @@
 """
 Tests for scaling library module.
 """
-from __future__ import absolute_import, division, print_function
+
+from unittest.mock import Mock, patch
 
 import pytest
-from libtbx import phil
-from mock import Mock, patch
+
 from cctbx import crystal, miller, uctbx
 from cctbx.sgtbx import space_group
+from dxtbx.model import Beam, Crystal, Detector, Experiment, Goniometer, Scan
 from dxtbx.model.experiment_list import ExperimentList
-from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
-from dials.util.options import OptionParser
-from dials.array_family import flex
+from libtbx import phil
+
+from dials.algorithms.scaling.model.model import KBScalingModel, PhysicalScalingModel
 from dials.algorithms.scaling.scaling_library import (
-    scale_single_dataset,
-    create_scaling_model,
+    choose_initial_scaling_intensities,
     create_datastructures_for_structural_model,
     create_Ih_table,
-    # calculate_merging_statistics,
-    # calculate_single_merging_stats,
-    choose_initial_scaling_intensities,
-    create_auto_scaling_model,
+    create_scaling_model,
     determine_best_unit_cell,
+    scale_single_dataset,
 )
-from dials.algorithms.scaling.model.model import KBScalingModel, PhysicalScalingModel
+from dials.array_family import flex
+from dials.util.options import OptionParser
 
 
 @pytest.fixture
@@ -162,6 +161,7 @@ def generated_param(absorption_term=False):
 
 
 @pytest.mark.parametrize("model", ["physical", "array"])
+@pytest.mark.xfail("os.name == 'nt'", reason="ZeroDivisionError in refinement")
 def test_scale_single_dataset(test_reflections, test_experiments, test_params, model):
     """Test completion of scaling."""
     scaled_reflections = scale_single_dataset(
@@ -172,6 +172,7 @@ def test_scale_single_dataset(test_reflections, test_experiments, test_params, m
     # what about when no params supplied?
 
 
+@pytest.mark.xfail("os.name == 'nt'", reason="ZeroDivisionError in refinement")
 def test_scale_single_dataset_no_params_supplied(test_reflections, test_experiments):
     """Test when no params scope supplied."""
     scaled_reflections = scale_single_dataset(
@@ -294,35 +295,36 @@ def test_choose_initial_scaling_intensities(test_reflections):
 
 
 def test_auto_scaling_model():
+    """Test auto options for scaling model creation."""
     params = generated_param()
     exp = generated_exp(scan=False)
     rt = generated_refl()
     params.model = "auto"
-    new_exp = create_auto_scaling_model(params, exp, [rt])
+    new_exp = create_scaling_model(params, exp, [rt])
     assert new_exp[0].scaling_model.id_ == "KB"
 
-    params = generated_param(absorption_term=True)
+    params = generated_param(absorption_term="auto")
     exp = generated_exp(image_range=[1, 5])  # 5 degree wedge
     params.model = "auto"
-    new_exp = create_auto_scaling_model(params, exp, [rt])
+    new_exp = create_scaling_model(params, exp, [rt])
     assert new_exp[0].scaling_model.id_ == "physical"
     assert len(new_exp[0].scaling_model.components["scale"].parameters) == 5
     assert len(new_exp[0].scaling_model.components["decay"].parameters) == 3
     assert "absorption" not in new_exp[0].scaling_model.components
 
-    params = generated_param(absorption_term=True)
+    params = generated_param(absorption_term="auto")
     exp = generated_exp(image_range=[1, 20])  # 20 degree wedge
     params.model = "auto"
-    new_exp = create_auto_scaling_model(params, exp, [rt])
+    new_exp = create_scaling_model(params, exp, [rt])
     assert new_exp[0].scaling_model.id_ == "physical"
     assert len(new_exp[0].scaling_model.components["scale"].parameters) == 7
     assert len(new_exp[0].scaling_model.components["decay"].parameters) == 6
     assert "absorption" not in new_exp[0].scaling_model.components
 
-    params = generated_param(absorption_term=True)
+    params = generated_param(absorption_term="auto")
     exp = generated_exp(image_range=[1, 75])  # 20 degree wedge
     params.model = "auto"
-    new_exp = create_auto_scaling_model(params, exp, [rt])
+    new_exp = create_scaling_model(params, exp, [rt])
     assert new_exp[0].scaling_model.id_ == "physical"
     assert len(new_exp[0].scaling_model.components["scale"].parameters) == 12
     assert len(new_exp[0].scaling_model.components["decay"].parameters) == 10

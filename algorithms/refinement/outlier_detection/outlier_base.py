@@ -2,10 +2,11 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 from math import pi
-from dials.util import tabulate
+
+from libtbx.phil import parse
 
 from dials.array_family import flex
-from libtbx.phil import parse
+from dials.util import tabulate
 
 logger = logging.getLogger(__name__)
 
@@ -294,10 +295,10 @@ outlier
     .type = bool
     .expert_level = 1
 
-  separate_panels = Auto
-    .help = "If true, outlier rejection will be performed separately for each"
-            "panel of a multi-panel detector model. Otherwise data from across"
-            "all panels will be combined for outlier rejection."
+  separate_panels = False
+    .help = "Perform outlier rejection separately for each panel of a multi-"
+            "panel detector model. Otherwise data from across all panels will"
+            "be combined for outlier rejection."
     .type = bool
     .expert_level = 1
 

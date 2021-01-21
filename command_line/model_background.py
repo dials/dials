@@ -1,12 +1,14 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
-import six.moves.cPickle as pickle
 import sys
+
+import six.moves.cPickle as pickle
+
+from libtbx.phil import parse
 
 import dials.util
 import dials.util.log
-from libtbx.phil import parse
 
 logger = logging.getLogger("dials.command_line.model_background")
 
@@ -201,15 +203,15 @@ class Script(object):
             usage=usage, phil=phil_scope, epilog=help_message, read_experiments=True
         )
 
-    def run(self):
+    def run(self, args=None):
         """Execute the script."""
-        from dials.util.command_line import heading
-        from dials.array_family import flex
-        from dials.util.options import flatten_experiments
         from dials.algorithms.background.modeller import BackgroundModeller
+        from dials.array_family import flex
+        from dials.util.command_line import heading
+        from dials.util.options import flatten_experiments
 
         # Parse the command line
-        params, options = self.parser.parse_args(show_diff_phil=False)
+        params, options = self.parser.parse_args(args, show_diff_phil=False)
 
         # Configure the logging
         dials.util.log.config(verbosity=options.verbose, logfile=params.output.log)
@@ -283,7 +285,11 @@ class Script(object):
         # image_generator.save_polar_model(params.output.polar_model_image_prefix)
 
 
+@dials.util.show_mail_handle_errors()
+def run(args=None):
+    script = Script()
+    script.run(args)
+
+
 if __name__ == "__main__":
-    with dials.util.show_mail_on_error():
-        script = Script()
-        script.run()
+    run()

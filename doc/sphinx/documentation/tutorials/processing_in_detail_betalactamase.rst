@@ -514,8 +514,8 @@ a table and summary of the merging statistics are presented, which give indicati
 of the quality of the scaled dataset:
 
 .. dials_tutorial_include:: betalactamase/dials.scale.log
-    :start-at: ----------Merging statistics----------
-    :end-before: ----------Resolution cutoff estimates----------
+    :start-at: ----------Merging statistics by resolution bin----------
+    :end-before: Writing html report to dials.scale.html
 
 Looking at the resolution-dependent merging statistics, we can see that the
 completeness falls significantly beyond 1.4 Angstrom resolution.

@@ -1,8 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
 import iotbx.phil
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+
+import dials.util
 from dials.array_family import flex
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 
 help_message = """
 Augment spot list with additional information - for example number of pixels
@@ -84,7 +86,8 @@ def augment_reflections(reflections, params, experiments=None):
     return reflections
 
 
-def run(args):
+@dials.util.show_mail_handle_errors()
+def run(args=None):
     from dials.util import Sorry
 
     usage = "dials.augment_spots [options] [models.expt] strong.refl"
@@ -98,7 +101,7 @@ def run(args):
         epilog=help_message,
     )
 
-    params, options = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(args, show_diff_phil=True)
 
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
@@ -115,6 +118,4 @@ def run(args):
 
 
 if __name__ == "__main__":
-    import sys
-
-    run(sys.argv[1:])
+    run()

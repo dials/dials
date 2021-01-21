@@ -59,9 +59,8 @@ class FinalizeModel(object):
         :param data: The data array
         :param mask: The mask array
         """
-        from dials.algorithms.image.filter import median_filter, mean_filter
-        from dials.algorithms.image.fill_holes import diffusion_fill
-        from dials.algorithms.image.fill_holes import simple_fill
+        from dials.algorithms.image.fill_holes import diffusion_fill, simple_fill
+        from dials.algorithms.image.filter import mean_filter, median_filter
         from dials.array_family import flex
 
         # Print some image properties

@@ -8,10 +8,11 @@ import sys
 
 import iotbx.phil
 from scitbx.array_family import flex
+
+import dials.util
 from dials.algorithms.spot_finding.factory import SpotFinderFactory
 from dials.algorithms.spot_finding.factory import phil_scope as spot_phil
-from dials.util.options import OptionParser
-from dials.util.options import flatten_experiments
+from dials.util.options import OptionParser, flatten_experiments
 
 help_message = """
 
@@ -108,7 +109,8 @@ def find_constant_signal_pixels(imageset, images):
     return total
 
 
-def run(args):
+@dials.util.show_mail_handle_errors()
+def run(args=None):
     usage = "dev.dials.find_bad_pixels [options] data_master.h5"
 
     parser = OptionParser(
@@ -119,7 +121,7 @@ def run(args):
         epilog=help_message,
     )
 
-    params, options = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(args, show_diff_phil=True)
 
     experiments = flatten_experiments(params.input.experiments)
     if len(experiments) != 1:
@@ -149,10 +151,6 @@ def run(args):
             sys.exit("Image outside of scan range")
         images = params.images
 
-    # work around issues with HDF5 and multiprocessing
-    if hasattr(imageset.reader(), "nullify_format_instance"):
-        imageset.reader().nullify_format_instance()
-
     n = int(math.ceil(len(images) / params.nproc))
     chunks = [images[i : i + n] for i in range(0, len(images), n)]
 
@@ -181,4 +179,4 @@ def run(args):
 
 
 if __name__ == "__main__":
-    run(sys.argv[1:])
+    run()

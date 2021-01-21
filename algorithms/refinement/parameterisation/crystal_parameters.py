@@ -1,14 +1,16 @@
 from __future__ import absolute_import, division, print_function
+
 import logging
 
 logger = logging.getLogger(__name__)
 
-from dials.algorithms.refinement.parameterisation.model_parameters import (
-    Parameter,
-    ModelParameterisation,
-)
-from scitbx import matrix
 from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enlarge
+from scitbx import matrix
+
+from dials.algorithms.refinement.parameterisation.model_parameters import (
+    ModelParameterisation,
+    Parameter,
+)
 from dials.algorithms.refinement.refinement_helpers import CrystalOrientationCompose
 
 

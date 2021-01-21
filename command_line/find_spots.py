@@ -6,15 +6,13 @@ import logging
 
 from libtbx.phil import parse
 
-from dials.array_family import flex
 from dials.algorithms.shoebox import MaskCode
 from dials.algorithms.spot_finding import per_image_analysis
-from dials.util.multi_dataset_handling import generate_experiment_identifiers
-from dials.util import log
-from dials.util import show_mail_on_error
+from dials.array_family import flex
+from dials.util import log, show_mail_handle_errors
 from dials.util.ascii_art import spot_counts_per_image_plot
-from dials.util.options import OptionParser
-from dials.util.options import flatten_experiments
+from dials.util.multi_dataset_handling import generate_experiment_identifiers
+from dials.util.options import OptionParser, flatten_experiments
 from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.find_spots")
@@ -83,11 +81,23 @@ phil_scope = parse(
     process_includes=True,
 )
 
+# Local overrides for dials.find_spots
+phil_overrides = parse(
+    """
+spotfinder {
+  mp {
+    nproc = Auto
+  }
+}
+"""
+)
+working_phil = phil_scope.fetch(sources=[phil_overrides])
+
 
 class Script(object):
     """A class for running the script."""
 
-    def __init__(self, phil=phil_scope):
+    def __init__(self, phil=working_phil):
         """Initialise the script."""
         # The script usage
         usage = (
@@ -226,7 +236,12 @@ class Script(object):
             return reflections
 
 
-if __name__ == "__main__":
-    with show_mail_on_error():
+@show_mail_handle_errors()
+def run(args=None):
+    with show_mail_handle_errors():
         script = Script()
-        script.run()
+        script.run(args)
+
+
+if __name__ == "__main__":
+    run()

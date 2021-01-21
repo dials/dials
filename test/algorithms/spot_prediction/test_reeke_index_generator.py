@@ -3,12 +3,12 @@ from __future__ import absolute_import, division, print_function
 import math
 import random
 
+from cctbx.sgtbx import space_group, space_group_info, space_group_symbols
+from cctbx.uctbx import unit_cell
+from rstbx.diffraction import full_sphere_indices, rotation_angles
 from scitbx import matrix
 from scitbx.math import r3_rotation_axis_and_angle_as_matrix
-from cctbx.sgtbx import space_group, space_group_symbols, space_group_info
-from cctbx.uctbx import unit_cell
-from rstbx.diffraction import rotation_angles
-from rstbx.diffraction import full_sphere_indices
+
 from dials.algorithms.spot_prediction import ReekeIndexGenerator
 
 

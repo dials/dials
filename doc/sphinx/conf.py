@@ -1,6 +1,4 @@
 # coding: utf-8
-from __future__ import absolute_import, division, print_function
-
 # DIALS documentation build configuration file, created by
 # sphinx-quickstart on Thu Jul 24 15:08:40 2014.
 #
@@ -13,9 +11,11 @@ from __future__ import absolute_import, division, print_function
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+from __future__ import absolute_import, division, print_function
+
 import datetime
-import sys
 import os
+import sys
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -352,4 +352,8 @@ intersphinx_mapping = {
     "numpy": ("https://docs.scipy.org/doc/numpy/", None),
     "scipy": ("https://docs.scipy.org/doc/scipy/reference/", None),
     "cctbx": ("https://cctbx.github.io/", None),
+}
+
+autodoc_default_options = {
+    "special-members": "__init__",
 }

@@ -1,14 +1,14 @@
-from __future__ import absolute_import, division, print_function
-
 import math
+from unittest import mock
 
+import pytest
+
+from dxtbx.model.experiment_list import ExperimentListFactory
+
+import dials.algorithms.integration.processor
+from dials.algorithms.profile_model.gaussian_rs import Model
 from dials.array_family import flex
 from dials_algorithms_integration_integrator_ext import JobList
-from dials.algorithms.profile_model.gaussian_rs import Model
-from dxtbx.model.experiment_list import ExperimentListFactory
-import dials.algorithms.integration.processor
-import mock
-import pytest
 
 
 def test_shoebox_memory_is_a_reasonable_guesstimate(dials_data):
@@ -27,7 +27,7 @@ def test_shoebox_memory_is_a_reasonable_guesstimate(dials_data):
     rlist["bbox"] = flex.int6(rlist.size(), (0, 1, 0, 1, 0, 1))
 
     jobs = JobList()
-    jobs.add((0, 1), (0, 9), 9)
+    jobs.add((0, 1), (0, 9), 9, 0)
     for flatten in (True, False):
         assumed_memory_usage = list(jobs.shoebox_memory(rlist, flatten))
         assert len(assumed_memory_usage) == 1

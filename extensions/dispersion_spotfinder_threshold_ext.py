@@ -111,8 +111,8 @@ class DispersionSpotFinderThresholdExt(object):
 
 def estimate_global_threshold(image, mask=None, plot=False):
 
-    from scitbx.array_family import flex
     from scitbx import matrix
+    from scitbx.array_family import flex
 
     n_above_threshold = flex.size_t()
     threshold = flex.double()

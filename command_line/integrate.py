@@ -1,4 +1,5 @@
 # coding: utf-8
+# DIALS_ENABLE_COMMAND_LINE_COMPLETION
 """
 This program is used to integrate the reflections on the diffraction images. It
 is called with an experiment list outputted from dials.index or dials.refine and
@@ -22,24 +23,23 @@ Examples::
 from __future__ import absolute_import, division, print_function
 
 import logging
+import math
 import sys
-import dials.util.log
 
-from dials.array_family import flex
-from dials.util import show_mail_on_error
-from dials.util.slice import slice_crystal
-from dials.util.options import OptionParser
-from dials.util.command_line import heading
-from dials.util.options import reflections_and_experiments_from_files
-from dials.util.version import dials_version
+from dxtbx.model.experiment_list import Experiment, ExperimentList
 from libtbx.phil import parse
-from dials.algorithms.profile_model.factory import ProfileModelFactory
+
+import dials.util.log
 from dials.algorithms.integration.integrator import create_integrator
-from dxtbx.model.experiment_list import ExperimentList
-from dxtbx.model.experiment_list import Experiment
+from dials.algorithms.profile_model.factory import ProfileModelFactory
+from dials.array_family import flex
+from dials.util import show_mail_handle_errors
+from dials.util.command_line import heading
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.slice import slice_crystal
+from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.integrate")
-# DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
 # Create the phil scope
 
@@ -50,6 +50,11 @@ phil_scope = parse(
     experiments = 'integrated.expt'
       .type = str
       .help = "The experiments output filename"
+
+    output_unintegrated_reflections = True
+      .type = bool
+      .expert_level = 2
+      .help = "Include unintegrated reflections in output file"
 
     reflections = 'integrated.refl'
       .type = str
@@ -124,6 +129,18 @@ phil_scope = parse(
 """,
     process_includes=True,
 )
+
+# Local overrides for dials.integrate
+phil_overrides = parse(
+    """
+integration {
+  mp {
+    nproc = Auto
+  }
+}
+"""
+)
+working_phil = phil_scope.fetch(sources=[phil_overrides])
 
 
 def process_reference(reference):
@@ -241,11 +258,6 @@ def sample_predictions(experiments, predicted, params):
 
     # this code is very similar to David's code in algorithms/refinement/reflection_manager.py!
 
-    # constants
-    from math import pi
-
-    RAD2DEG = 180.0 / pi
-
     working_isel = flex.size_t()
     for iexp, exp in enumerate(experiments):
 
@@ -256,7 +268,7 @@ def sample_predictions(experiments, predicted, params):
         # set sample size according to nref_per_degree (per experiment)
         if exp.scan and nref_per_degree:
             sequence_range_rad = exp.scan.get_oscillation_range(deg=False)
-            width = abs(sequence_range_rad[1] - sequence_range_rad[0]) * RAD2DEG
+            width = math.degrees(abs(sequence_range_rad[1] - sequence_range_rad[0]))
             sample_size = int(nref_per_degree * width)
         else:
             sequence_range_rad = None
@@ -554,6 +566,16 @@ def run_integration(params, experiments, reference=None):
     # Integrate the reflections
     reflections = integrator.integrate()
 
+    # Remove unintegrated reflections
+    if not params.output.output_unintegrated_reflections:
+        keep = reflections.get_flags(reflections.flags.integrated, all=False)
+        logger.info(
+            "Removing %d unintegrated reflections of %d total"
+            % (keep.count(False), keep.size())
+        )
+
+        reflections = reflections.select(keep)
+
     # Append rubbish data onto the end
     if rubbish is not None and params.output.include_bad_reference:
         mask = flex.bool(len(rubbish), True)
@@ -617,7 +639,8 @@ def run_integration(params, experiments, reference=None):
     return experiments, reflections, report
 
 
-def run(args=None, phil=phil_scope):
+@show_mail_handle_errors()
+def run(args=None, phil=working_phil):
     """Run the integration command line script."""
     usage = "usage: dials.integrate [options] models.expt"
 
@@ -633,9 +656,7 @@ def run(args=None, phil=phil_scope):
     params, options = parser.parse_args(args=args, show_diff_phil=False)
 
     # Configure the logging
-    dials.util.log.config(
-        verbosity=options.verbose, logfile=params.output.log,
-    )
+    dials.util.log.config(verbosity=options.verbose, logfile=params.output.log)
 
     logger.info(dials_version())
 
@@ -665,6 +686,9 @@ def run(args=None, phil=phil_scope):
     else:
         reference = reference[0]
 
+    if reference and "shoebox" not in reference:
+        sys.exit("Error: shoebox data missing from reflection table")
+
     try:
         experiments, reflections, report = run_integration(
             params, experiments, reference
@@ -688,5 +712,4 @@ def run(args=None, phil=phil_scope):
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
-        run()
+    run()

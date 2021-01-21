@@ -6,12 +6,10 @@ from time import time
 
 import dials.algorithms.integration
 from dials.algorithms.integration.processor import job
-from dials_algorithms_integration_integrator_ext import ReflectionManagerPerImage
-from dials.model.data import make_image
-from dials.model.data import MultiPanelImageVolume
-from dials.model.data import ImageVolume
+from dials.model.data import ImageVolume, MultiPanelImageVolume, make_image
 from dials.util import log
 from dials.util.mp import multi_node_parallel_map
+from dials_algorithms_integration_integrator_ext import ReflectionManagerPerImage
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +74,7 @@ class ProcessorImage(object):
 
             def process_output(result):
                 for message in result[1]:
-                    logger.log(message.levelno, message.msg)
+                    logger.handle(message)
                 self.manager.accumulate(result[0])
                 result[0].reflections = None
                 result[0].data = None
@@ -191,9 +189,11 @@ class Task(object):
             image = imageset.get_corrected_data(i)
             mask = imageset.get_mask(i)
             if self.params.integration.lookup.mask is not None:
-                assert len(mask) == len(self.params.lookup.mask), (
-                    "Mask/Image are incorrect size %d %d"
-                    % (len(mask), len(self.params.integration.lookup.mask))
+                assert len(mask) == len(
+                    self.params.lookup.mask
+                ), "Mask/Image are incorrect size %d %d" % (
+                    len(mask),
+                    len(self.params.integration.lookup.mask),
                 )
                 mask = tuple(
                     m1 & m2 for m1, m2 in zip(self.params.integration.lookup.mask, mask)
@@ -265,13 +265,6 @@ class ManagerImage(object):
         # Create the reflection manager
         frames = self.experiments[0].scan.get_array_range()
         self.manager = ReflectionManagerPerImage(frames, self.reflections)
-
-        # Parallel reading of HDF5 from the same handle is not allowed. Python
-        # multiprocessing is a bit messed up and used fork on linux so need to
-        # close and reopen file.
-        for exp in self.experiments:
-            if exp.imageset.reader().is_single_file_reader():
-                exp.imageset.reader().nullify_format_instance()
 
         # Set the initialization time
         self.time.initialize = time() - start_time

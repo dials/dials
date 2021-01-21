@@ -1,11 +1,12 @@
-from __future__ import absolute_import, division, print_function
+from unittest.mock import Mock
 
 import pytest
+
 from cctbx.sgtbx import space_group, uctbx
+from scitbx import sparse
+
 from dials.algorithms.scaling.Ih_table import IhTable, IhTableBlock, map_indices_to_asu
 from dials.array_family import flex
-from mock import Mock
-from scitbx import sparse
 
 
 @pytest.fixture()

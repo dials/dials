@@ -3,34 +3,35 @@
 from __future__ import absolute_import, division, print_function
 
 import copy
+import itertools
 import math
 from collections import OrderedDict
 
-import itertools
 import numpy as np
-import dials.util.log
+
 from cctbx import uctbx
-from dials.array_family import flex
+
+import dials.util.log
+from dials.algorithms.scaling.model.model import plot_scaling_models
 from dials.algorithms.scaling.scaling_library import (
     merging_stats_from_scaled_array,
     scaled_data_as_miller_array,
 )
 from dials.algorithms.scaling.scaling_utilities import DialsMergingStatisticsError
-from dials.algorithms.scaling.model.model import plot_scaling_models
+from dials.array_family import flex
 from dials.report.analysis import combined_table_to_batch_dependent_properties
 from dials.report.plots import (
-    ResolutionPlotsAndStats,
-    IntensityStatisticsPlots,
     AnomalousPlotter,
-    scale_rmerge_vs_batch_plot,
+    IntensityStatisticsPlots,
+    ResolutionPlotsAndStats,
     i_over_sig_i_vs_batch_plot,
     i_over_sig_i_vs_i_plot,
     make_image_range_table,
+    scale_rmerge_vs_batch_plot,
 )
-from dials.util import show_mail_on_error
-from dials.util.command_line import Command
+from dials.util import show_mail_handle_errors
 from dials.util.batch_handling import batch_manager
-
+from dials.util.command_line import Command
 
 RAD2DEG = 180 / math.pi
 
@@ -109,8 +110,8 @@ phil_scope = libtbx.phil.parse(
 
 def ensure_directory(path):
     """Make the directory if not already there."""
-    from os import makedirs
     import errno
+    from os import makedirs
 
     try:
         makedirs(path)
@@ -329,10 +330,11 @@ the refinement algorithm accounting for unmodelled features in the data.
         return d
 
     def plot_orientation(self, experiments):
+        from scitbx import matrix
+
         from dials.algorithms.refinement.rotation_decomposition import (
             solve_r3_rotation_for_angles_given_axes,
         )
-        from scitbx import matrix
 
         # orientation plot
         dat = []
@@ -1548,7 +1550,7 @@ class ZScoreAnalyser(object):
           * ``xyzobs.px.value``
         :type rlist: `dials_array_family_flex_ext.reflection_table`
         :param experiments: An experiment list with space group information.
-        :type experiments: `dxtbx_model_ext.ExperimentList`
+        :type experiments: `dxtbx.model.ExperimentList`
         :return: A dictionary describing several Plotly plots.
         :rtype:`dict`
         """
@@ -2285,7 +2287,7 @@ class Analyser(object):
 
         if self.params.output.html is not None:
 
-            from jinja2 import Environment, ChoiceLoader, PackageLoader
+            from jinja2 import ChoiceLoader, Environment, PackageLoader
 
             loader = ChoiceLoader(
                 [
@@ -2528,12 +2530,12 @@ class Script(object):
         )
         dials.util.log.print_banner()
 
-    def run(self):
+    def run(self, args=None):
         """Run the script."""
         from dials.util.options import reflections_and_experiments_from_files
 
         # Parse the command line arguments
-        params, options = self.parser.parse_args(show_diff_phil=True)
+        params, options = self.parser.parse_args(args, show_diff_phil=True)
 
         # Show the help
         if len(params.input.reflections) != 1 and not len(params.input.experiments):
@@ -2558,7 +2560,11 @@ class Script(object):
         analyse(reflections, experiments)
 
 
+@show_mail_handle_errors()
+def run(args=None):
+    script = Script()
+    script.run(args)
+
+
 if __name__ == "__main__":
-    with show_mail_on_error():
-        script = Script()
-        script.run()
+    run()

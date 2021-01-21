@@ -3,15 +3,14 @@ from __future__ import absolute_import, division, print_function
 from math import sqrt
 
 import pytest
+
 from scitbx import matrix
 
 
 class Model(object):
     def __init__(self, test_nave_model=False):
         # Set up experimental models with regular geometry
-        from dxtbx.model import BeamFactory
-        from dxtbx.model import GoniometerFactory
-        from dxtbx.model import DetectorFactory
+        from dxtbx.model import BeamFactory, DetectorFactory, GoniometerFactory
 
         # Beam along the Z axis
         self.beam = BeamFactory.make_beam(unit_s0=matrix.col((0, 0, 1)), wavelength=1.0)

@@ -12,14 +12,11 @@ logger = logging.getLogger(__name__)
 from six.moves import cStringIO as StringIO
 
 import libtbx
-from scitbx.array_family import flex
-from cctbx import adptbx
-from cctbx import sgtbx
-from cctbx import uctbx
+from cctbx import adptbx, sgtbx, uctbx
 from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from mmtbx import scaling
-from mmtbx.scaling import absolute_scaling
-from mmtbx.scaling import matthews
+from mmtbx.scaling import absolute_scaling, matthews
+from scitbx.array_family import flex
 
 from dials.util import resolution_analysis
 
@@ -53,7 +50,7 @@ class symmetry_base(object):
             intensities. If set to :data:`libtbx.Auto` then d_min will be
             automatically determined according to the parameters
             ``min_i_mean_over_sigma_mean`` and ``min_cc_half``.
-          min_i_mean_over_sigma_mean (float): minimum value of |I|/|sigma(I)| for
+          min_i_mean_over_sigma_mean (float): minimum value of :math:`|I|/|sigma(I)|` for
             automatic determination of resolution cutoff.
           min_cc_half (float): minimum value of CC½ for automatic determination of
             resolution cutoff.
@@ -348,7 +345,6 @@ class symmetry_base(object):
 def resolution_filter_from_array(intensities, min_i_mean_over_sigma_mean, min_cc_half):
     """Run the resolution filter using miller array data format."""
     rparams = resolution_analysis.phil_defaults.extract().resolution
-    rparams.nbins = 20
     resolutionizer = resolution_analysis.Resolutionizer(intensities, rparams)
     return _resolution_filter(resolutionizer, min_i_mean_over_sigma_mean, min_cc_half)
 
@@ -358,9 +354,10 @@ def resolution_filter_from_reflections_experiments(
 ):
     """Run the resolution filter using native dials data formats."""
     rparams = resolution_analysis.phil_defaults.extract().resolution
-    rparams.nbins = 20
-    resolutionizer = resolution_analysis.Resolutionizer.from_reflections_and_experiments(
-        reflections, experiments, rparams
+    resolutionizer = (
+        resolution_analysis.Resolutionizer.from_reflections_and_experiments(
+            reflections, experiments, rparams
+        )
     )
     return _resolution_filter(resolutionizer, min_i_mean_over_sigma_mean, min_cc_half)
 
@@ -379,11 +376,12 @@ def _resolution_filter(resolutionizer, min_i_mean_over_sigma_mean, min_cc_half):
             logger.info(u"I/σ(I) resolution filter failed with the following error:")
             logger.error(e)
         else:
-            logger.info(
-                u"Resolution estimate from <I>/<σ(I)> > %.1f : %.2f",
-                min_i_mean_over_sigma_mean,
-                d_min_isigi,
-            )
+            if d_min_isigi:
+                logger.info(
+                    u"Resolution estimate from <I>/<σ(I)> > %.1f : %.2f",
+                    min_i_mean_over_sigma_mean,
+                    d_min_isigi,
+                )
     if min_cc_half is not None:
         try:
             d_min_cc_half = resolutionizer.resolution(
@@ -393,10 +391,12 @@ def _resolution_filter(resolutionizer, min_i_mean_over_sigma_mean, min_cc_half):
             logger.info(u"CC½ resolution filter failed with the following error:")
             logger.error(e)
         else:
-            logger.info(
-                u"Resolution estimate from CC½ > %.2f: %.2f", min_cc_half, d_min_cc_half
-            )
-    valid_d_mins = list({d_min_cc_half, d_min_isigi}.difference({0}))
-    if valid_d_mins:
-        d_min = min(valid_d_mins)
-    return d_min
+            if d_min_cc_half:
+                logger.info(
+                    u"Resolution estimate from CC½ > %.2f: %.2f",
+                    min_cc_half,
+                    d_min_cc_half,
+                )
+    valid = [d for d in (d_min_cc_half, d_min_isigi) if d]
+    if valid:
+        return min(valid)

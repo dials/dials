@@ -3,8 +3,9 @@ from __future__ import absolute_import, division, print_function
 import binascii
 import os
 
-from dials.util.ext import scale_down_array
 from scitbx.array_family import flex
+
+from dials.util.ext import scale_down_array
 
 
 def scale_down_array_py(image, scale_factor):
@@ -13,7 +14,7 @@ def scale_down_array_py(image, scale_factor):
     to be flags of some kind (i.e. similar to Pilatus data) and hence preserved
     as input."""
 
-    from scitbx.random import variate, uniform_distribution
+    from scitbx.random import uniform_distribution, variate
 
     assert scale_factor <= 1
     assert scale_factor >= 0
@@ -62,6 +63,7 @@ def write_image_from_flex_array(out_image, pixel_values, header):
     compressed = compress(pixel_values)
 
     fixed_header = ""
+    header = header.decode()
     for record in header.split("\n")[:-1]:
         if "X-Binary-Size:" in record:
             fixed_header += "X-Binary-Size: %d\r\n" % len(compressed)
@@ -72,7 +74,9 @@ def write_image_from_flex_array(out_image, pixel_values, header):
 
     tailer = "\r\n--CIF-BINARY-FORMAT-SECTION----\r\n;\r\n"
 
-    open(out_image, "wb").write(fixed_header + start_tag + compressed + tailer)
+    open(out_image, "wb").write(
+        fixed_header.encode() + start_tag + compressed + tailer.encode()
+    )
 
 
 def scale_down_image(in_image, out_image, scale_factor):

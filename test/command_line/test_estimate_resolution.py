@@ -1,5 +1,7 @@
 import json
+
 import pytest
+
 from dials.command_line import estimate_resolution as cmdline
 
 
@@ -35,7 +37,6 @@ def test_x4wide(input_files, dials_data, run_in_tmpdir, capsys):
     captured = capsys.readouterr()
     expected_output = (
         "Resolution rmerge:        1.34",
-        "Resolution completeness:  1.20",
         "Resolution cc_half:       1.56",
         "Resolution cc_ref:        1.3",
         "Resolution I/sig:         1.53",
@@ -66,19 +67,18 @@ def test_multi_sequence_with_batch_range(dials_data, run_in_tmpdir, capsys):
     refls = location.join("scaled_20_25.refl")
     expts = location.join("scaled_20_25.expt")
 
-    cmdline.run(["batch_range=1900,3600", refls.strpath, expts.strpath],)
+    cmdline.run(
+        ["batch_range=1900,3600", refls.strpath, expts.strpath],
+    )
     captured = capsys.readouterr()
 
-    expected_output = (
-        "Resolution cc_half:       0.61",
-        "Resolution I/sig:         0.59",
-        "Resolution Mn(I/sig):     0.59",
-    )
+    expected_output = "Resolution cc_half:       0.61"
     for line in expected_output:
         assert line in captured.out
     assert run_in_tmpdir.join("dials.estimate_resolution.html").check(file=1)
 
 
+@pytest.mark.xfail("os.name == 'nt'", reason="warnings do not go to stderr")
 def test_dispatcher_name():
     import procrunner
 
@@ -92,3 +92,34 @@ def test_dispatcher_name():
     result = procrunner.run(["dials.estimate_resolution"])
     assert not result.returncode
     assert not result.stderr
+
+
+def test_handle_fit_failure(dials_data, run_in_tmpdir, capsys):
+    location = dials_data("l_cysteine_dials_output")
+    filenames = [
+        location.join("11_integrated.expt"),
+        location.join("11_integrated.refl"),
+        location.join("23_integrated.expt"),
+        location.join("23_integrated.refl"),
+    ]
+    cmdline.run(["misigma=1"] + [f.strpath for f in filenames])
+    captured = capsys.readouterr()
+
+    expected_output = (
+        "Resolution fit against cc_half failed: No reflections left for fitting",
+        "Resolution Mn(I/sig):     0.62",
+    )
+    for line in expected_output:
+        assert line in captured.out
+    assert run_in_tmpdir.join("dials.estimate_resolution.html").check(file=1)
+
+
+def test_mismatched_experiments_reflections(dials_data, run_in_tmpdir):
+    location = dials_data("l_cysteine_dials_output")
+    filenames = [
+        location.join("11_integrated.expt"),
+        location.join("11_integrated.refl"),
+        location.join("23_integrated.refl"),
+    ]
+    with pytest.raises(SystemExit):
+        cmdline.run([f.strpath for f in filenames])

@@ -1,23 +1,23 @@
 # coding: utf-8
+# DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
 from __future__ import absolute_import, division, print_function
 
-# DIALS_ENABLE_COMMAND_LINE_COMPLETION
-
-import os
 import copy
+import os
+import sys
+
 import six.moves.cPickle as pickle
 
 import iotbx.phil
 from cctbx import sgtbx
 from rstbx.symmetry.constraints import parameter_reduction
 
-# from dials.util.command_line import Importer
+import dials.util
 from dials.algorithms.indexing.assign_indices import AssignIndicesGlobal
 from dials.array_family import flex
-from dials.util.options import OptionParser
-from dials.util.options import reflections_and_experiments_from_files
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 
 help_message = """
 
@@ -101,8 +101,8 @@ def derive_change_of_basis_op(from_hkl, to_hkl):
         eqns.solve()
         r.extend(eqns.solution())
 
-    from scitbx.math import continued_fraction
     from scitbx import matrix
+    from scitbx.math import continued_fraction
 
     denom = 12
     r = [
@@ -156,8 +156,10 @@ def reindex_experiments(experiments, cb_op, space_group=None):
     return reindexed_experiments
 
 
-def run(args):
+@dials.util.show_mail_handle_errors()
+def run(args=None):
     import libtbx.load_env
+
     from dials.util import Sorry
 
     usage = "dials.reindex [options] indexed.expt indexed.refl"
@@ -171,7 +173,7 @@ def run(args):
         epilog=help_message,
     )
 
-    params, options = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(args, show_diff_phil=True)
 
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
@@ -315,9 +317,17 @@ experiments file must also be specified with the option: reference= """
         space_group = params.space_group
         if space_group is not None:
             space_group = space_group.group()
-        experiments = reindex_experiments(
-            experiments, change_of_basis_op, space_group=space_group
-        )
+        try:
+            experiments = reindex_experiments(
+                experiments, change_of_basis_op, space_group=space_group
+            )
+        except RuntimeError as e:
+            # Only catch specific errors here
+            if "Unsuitable value for rational rotation matrix." in str(e):
+                original_message = str(e).split(":")[-1].strip()
+                sys.exit(f"Error: {original_message} Is your change_of_basis_op valid?")
+            raise
+
         print("Saving reindexed experimental models to %s" % params.output.experiments)
         experiments.as_file(params.output.experiments)
 
@@ -353,6 +363,4 @@ experiments file must also be specified with the option: reference= """
 
 
 if __name__ == "__main__":
-    import sys
-
-    run(sys.argv[1:])
+    run()
