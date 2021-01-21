@@ -47,7 +47,7 @@ from scitbx.array_family import flex
 
 from dials.command_line.symmetry import median_unit_cell
 from dials.pychef import Statistics, batches_to_dose, interpret_images_to_doses_options
-from dials.util import log, resolution_analysis, show_mail_on_error
+from dials.util import log, resolution_analysis, show_mail_handle_errors
 from dials.util.filter_reflections import filter_reflection_table
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
@@ -278,7 +278,8 @@ class PychefRunner(object):
                 json.dump(data, outfile)
 
 
-def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
+@show_mail_handle_errors()
+def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     """Run the command-line script."""
 
     usage = "dials.damage_analysis [options] scaled.expt scaled.refl | scaled.mtz"
@@ -335,5 +336,4 @@ def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
-        run()
+    run()

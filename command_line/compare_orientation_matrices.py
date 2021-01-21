@@ -1,11 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
-import sys
-
 import iotbx.phil
 from cctbx.array_family import flex
 
 import dials.algorithms.indexing.compare_orientation_matrices
+import dials.util
 from dials.util.options import OptionParser, flatten_experiments
 
 help_message = """
@@ -39,7 +38,8 @@ space_group = None
 )
 
 
-def run(args):
+@dials.util.show_mail_handle_errors()
+def run(args=None):
     usage = "dials.compare_orientation_matrices [options] models.expt"
 
     parser = OptionParser(
@@ -50,7 +50,7 @@ def run(args):
         epilog=help_message,
     )
 
-    params, options = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(args, show_diff_phil=True)
     experiments = flatten_experiments(params.input.experiments)
     if len(experiments) <= 1:
         parser.print_help()
@@ -73,4 +73,4 @@ def run(args):
 
 
 if __name__ == "__main__":
-    run(sys.argv[1:])
+    run()

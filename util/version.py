@@ -18,7 +18,7 @@ def get_git_version(dials_path, treat_merges_as_single_commit=False):
         # Obtain name of the current branch. If this fails then the other commands will probably also fail
         branch = (
             subprocess.check_output(
-                ["git", "describe", "--contains", "--all", "HEAD"],
+                ["git", "branch", "--all", "--contains", "HEAD"],
                 cwd=dials_path,
                 stderr=devnull,
             )

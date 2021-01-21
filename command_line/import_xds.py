@@ -11,7 +11,7 @@ from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
 from scitbx import matrix
 
 from dials.array_family import flex
-from dials.util import show_mail_on_error
+from dials.util import show_mail_handle_errors
 from dials.util.command_line import Command
 from dials.util.options import OptionParser
 
@@ -418,12 +418,12 @@ class Script(object):
         usage = "usage: dials.import_xds [options] (SPOT.XDS|INTEGRATE.HKL)"
         self.parser = OptionParser(usage=usage, phil=phil_scope)
 
-    def run(self):
+    def run(self, args=None):
         """Run the script."""
 
         # Parse the command line arguments
         params, options, args = self.parser.parse_args(
-            show_diff_phil=True, return_unhandled=True
+            args, show_diff_phil=True, return_unhandled=True
         )
 
         # Check number of arguments
@@ -453,7 +453,11 @@ class Script(object):
             raise RuntimeError("expected (SPOT.XDS|INTEGRATE.HKL), got %s" % filename)
 
 
+@show_mail_handle_errors()
+def run(args=None):
+    script = Script()
+    script.run(args)
+
+
 if __name__ == "__main__":
-    with show_mail_on_error():
-        script = Script()
-        script.run()
+    run()

@@ -1,12 +1,10 @@
-# coding: utf-8
 """
 Testing for other refiner/refinement small utilities that can be tested
 alone.
 """
 
-from __future__ import absolute_import, division, print_function
 
-from mock import Mock, patch
+from unittest.mock import Mock, patch
 
 from dials.algorithms.refinement.refiner import _copy_experiments_for_refining
 

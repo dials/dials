@@ -3,7 +3,6 @@
 from __future__ import absolute_import, division, print_function
 
 import os
-import sys
 
 import iotbx.mtz
 import iotbx.phil
@@ -11,6 +10,7 @@ from cctbx import crystal
 from xfel.clustering.cluster import Cluster
 from xfel.clustering.cluster_groups import unit_cell_info
 
+import dials.util
 from dials.util.options import OptionParser, flatten_experiments
 
 help_message = """
@@ -34,7 +34,8 @@ plot {
 )
 
 
-def run(args):
+@dials.util.show_mail_handle_errors()
+def run(args=None):
     usage = "dials.cluster_unit_cell [options] models.expt"
 
     parser = OptionParser(
@@ -46,7 +47,7 @@ def run(args):
     )
 
     params, options, args = parser.parse_args(
-        show_diff_phil=True, return_unhandled=True
+        args, show_diff_phil=True, return_unhandled=True
     )
     experiments = flatten_experiments(params.input.experiments)
     crystal_symmetries = []
@@ -111,4 +112,4 @@ def do_cluster_analysis(crystal_symmetries, params):
 
 
 if __name__ == "__main__":
-    run(sys.argv[1:])
+    run()

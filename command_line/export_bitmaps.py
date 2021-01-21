@@ -9,7 +9,7 @@ import iotbx.phil
 
 from dials.algorithms.image.threshold import DispersionThresholdDebug
 from dials.array_family import flex
-from dials.util import Sorry
+from dials.util import Sorry, show_mail_handle_errors
 from dials.util.image_viewer.slip_viewer.tile_generation import (
     get_flex_image,
     get_flex_image_multipanel,
@@ -100,7 +100,8 @@ output {
 colour_schemes = {"greyscale": 0, "rainbow": 1, "heatmap": 2, "inverse_greyscale": 3}
 
 
-def run(args):
+@show_mail_handle_errors()
+def run(args=None):
     usage = "dials.export_bitmaps [options] models.expt | image.cbf"
 
     parser = OptionParser(
@@ -112,7 +113,7 @@ def run(args):
         epilog=help_message,
     )
 
-    params, options = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(args, show_diff_phil=True)
 
     experiments = flatten_experiments(params.input.experiments)
     if len(experiments) == 0:
@@ -307,4 +308,4 @@ def image_filter(
 
 
 if __name__ == "__main__":
-    run(sys.argv[1:])
+    run()

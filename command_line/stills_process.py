@@ -56,6 +56,11 @@ control_phil_str = """
     max_images = None
       .type = int
       .help = Limit total number of processed images to max_images
+    ignore_gain_mismatch = False
+      .type = bool
+      .expert_level = 3
+      .help = Detector gain should be set on the detector models loaded from the images or in the \
+              processing parameters, not both. Override the check that this is true with this flag. \
   }
 
   dispatch {
@@ -225,6 +230,13 @@ dials_phil_str = """
                 0=Double a, 1=Double b, 2=Double c, 3=C-face centering, 4=B-face centering, 5=A-face centering, 6=Body centering \
                 See Sauter and Zwart, Acta D (2009) 65:553
     }
+
+    integration_only_overrides {
+      trusted_range = None
+        .type = floats(size=2)
+        .help = "Override the panel trusted range (underload and saturation) during integration."
+        .short_caption = "Panel trusted range"
+    }
   }
 """
 
@@ -353,7 +365,7 @@ class Script(object):
             assert len(ref_experiments.detectors()) == 1
             self.reference_detector = ref_experiments.detectors()[0]
 
-    def run(self):
+    def run(self, args=None):
         """Execute the script."""
         from libtbx import easy_mp
 
@@ -370,7 +382,7 @@ class Script(object):
         if rank == 0:
             # Parse the command line
             params, options, all_paths = self.parser.parse_args(
-                show_diff_phil=False, return_unhandled=True, quick_parse=True
+                args, show_diff_phil=False, return_unhandled=True, quick_parse=True
             )
 
             if params.input.glob:
@@ -415,8 +427,33 @@ class Script(object):
 
         st = time.time()
 
-        # Configure logging
-        log.config(verbosity=options.verbose, logfile="dials.process.log")
+        if params.mp.method == "mpi":
+            # Configure the logging
+            if params.output.logging_dir is None:
+                logfile = None
+            else:
+                log_path = os.path.join(
+                    params.output.logging_dir, "log_rank%04d.out" % rank
+                )
+                error_path = os.path.join(
+                    params.output.logging_dir, "error_rank%04d.out" % rank
+                )
+                print("Redirecting stdout to %s" % log_path)
+                print("Redirecting stderr to %s" % error_path)
+                sys.stdout = open(log_path, "a")
+                sys.stderr = open(error_path, "a")
+                print("Should be redirected now")
+
+                logfile = os.path.join(
+                    params.output.logging_dir, "info_rank%04d.out" % rank
+                )
+
+            log.config(verbosity=options.verbose, logfile=logfile)
+
+        else:
+
+            # Configure logging
+            log.config(verbosity=options.verbose, logfile="dials.process.log")
 
         bad_phils = [f for f in all_paths if os.path.splitext(f)[1] == ".phil"]
         if len(bad_phils) > 0:
@@ -527,6 +564,7 @@ class Script(object):
                         experiment.detector = imageset.get_detector()
 
                     processor.process_experiments(tag, experiments)
+                    imageset.clear_cache()
                 if finalize:
                     processor.finalize()
                 return processor
@@ -631,28 +669,6 @@ class Script(object):
 
         # Process the data
         if params.mp.method == "mpi":
-            # Configure the logging
-            if params.output.logging_dir is None:
-                logfile = None
-            else:
-                log_path = os.path.join(
-                    params.output.logging_dir, "log_rank%04d.out" % rank
-                )
-                error_path = os.path.join(
-                    params.output.logging_dir, "error_rank%04d.out" % rank
-                )
-                print("Redirecting stdout to %s" % log_path)
-                print("Redirecting stderr to %s" % error_path)
-                sys.stdout = open(log_path, "a")
-                sys.stderr = open(error_path, "a")
-                print("Should be redirected now")
-
-                logfile = os.path.join(
-                    params.output.logging_dir, "info_rank%04d.out" % rank
-                )
-
-            log.config(verbosity=options.verbose, logfile=logfile)
-
             if size <= 2:  # client/server only makes sense for n>2
                 subset = [
                     item for i, item in enumerate(iterable) if (i + rank) % size == 0
@@ -982,7 +998,20 @@ class Processor(object):
 
     def pre_process(self, experiments):
         """Add any pre-processing steps here"""
-        pass
+
+        if not self.params.input.ignore_gain_mismatch:
+            g1 = self.params.spotfinder.threshold.dispersion.gain
+            g2 = self.params.integration.summation.detector_gain
+            gain = g1 if g1 is not None else g2
+            if gain is not None and gain != 1.0:
+                for detector in experiments.detectors():
+                    for panel in detector:
+                        if panel.get_gain() != 1.0 and panel.get_gain() != gain:
+                            raise RuntimeError(
+                                """
+The detector is reporting a gain of %f but you have also supplied a gain of %f. Since the detector gain is not 1.0, your supplied gain will be multiplicatively applied in addition to the detector's gain, which is unlikely to be correct. Please re-run, removing spotfinder.dispersion.gain and integration.summation.detector_gain from your parameters. You can override this exception by setting input.ignore_gain_mismatch=True."""
+                                % (panel.get_gain(), gain)
+                            )
 
     def find_spots(self, experiments):
         st = time.time()
@@ -992,7 +1021,9 @@ class Processor(object):
         logger.info("*" * 80)
 
         # Find the strong spots
-        observed = flex.reflection_table.from_observations(experiments, self.params)
+        observed = flex.reflection_table.from_observations(
+            experiments, self.params, is_stills=True
+        )
 
         # Reset z coordinates for dials.image_viewer; see Issues #226 for details
         xyzobs = observed["xyzobs.px.value"]
@@ -1169,6 +1200,13 @@ class Processor(object):
         logger.info("*" * 80)
 
         indexed, _ = self.process_reference(indexed)
+
+        if self.params.integration.integration_only_overrides.trusted_range:
+            for detector in experiments.detectors():
+                for panel in detector:
+                    panel.set_trusted_range(
+                        self.params.integration.integration_only_overrides.trusted_range
+                    )
 
         if self.params.dispatch.coset:
             from xfel.util.sublattice_helper import integrate_coset
@@ -1660,7 +1698,11 @@ class Processor(object):
                 tar.close()
 
 
+@dials.util.show_mail_handle_errors()
+def run(args=None):
+    script = Script()
+    script.run(args)
+
+
 if __name__ == "__main__":
-    with dials.util.show_mail_on_error():
-        script = Script()
-        script.run()
+    run()

@@ -566,11 +566,6 @@ class IntegrationManager(object):
             self.blocks, self.reflections, self.params.integration.mp.njobs
         )
 
-        # Parallel reading of HDF5 from the same handle is not allowed. Python
-        # multiprocessing is a bit messed up and used fork on linux so need to
-        # close and reopen file.
-        self.experiments.nullify_all_single_file_reader_format_instances()
-
     def task(self, index):
         """
         Get a task.
@@ -1040,11 +1035,6 @@ class ReferenceCalculatorManager(object):
             self.blocks, self.reflections, self.params.integration.mp.njobs
         )
 
-        # Parallel reading of HDF5 from the same handle is not allowed. Python
-        # multiprocessing is a bit messed up and used fork on linux so need to
-        # close and reopen file.
-        self.experiments.nullify_all_single_file_reader_format_instances()
-
     def task(self, index):
         """
         Get a task.
@@ -1272,8 +1262,6 @@ class ReferenceCalculatorProcessor(object):
                 for message in result[1]:
                     logger.log(message.levelno, message.msg)
                 reference_manager.accumulate(result[0])
-                result[0].reflections = None
-                result[0].data = None
 
             multi_node_parallel_map(
                 func=execute_parallel_task,
@@ -1352,8 +1340,6 @@ class IntegratorProcessor(object):
                 for message in result[1]:
                     logger.log(message.levelno, message.msg)
                 integration_manager.accumulate(result[0])
-                result[0].reflections = None
-                result[0].data = None
 
             multi_node_parallel_map(
                 func=execute_parallel_task,

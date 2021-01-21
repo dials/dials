@@ -6,7 +6,7 @@ import sys
 from libtbx import phil
 
 from dials.array_family import flex
-from dials.util import Sorry, show_mail_on_error
+from dials.util import Sorry, show_mail_handle_errors
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
     parse_multiple_datasets,
@@ -33,6 +33,7 @@ phil_scope = phil.parse(
 )
 
 
+@show_mail_handle_errors()
 def run(args=None):
     """Run assign experiment identifiers from the command line."""
     usage = (
@@ -78,5 +79,4 @@ def run(args=None):
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
-        run()
+    run()

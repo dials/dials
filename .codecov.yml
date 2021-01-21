@@ -13,4 +13,4 @@ comment:
   layout: "diff, flags"
   branches:
     - master
-  after_n_builds: 6
+  after_n_builds: 2

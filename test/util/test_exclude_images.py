@@ -1,12 +1,11 @@
 """
 tests for functions in dials.util.exclude_images.py
 """
-from __future__ import absolute_import, division, print_function
 
 import copy
+from unittest.mock import Mock
 
 import pytest
-from mock import Mock
 
 from dxtbx.model import Experiment, ExperimentList, Scan
 

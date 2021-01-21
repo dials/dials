@@ -1480,9 +1480,75 @@ def test_random_split():
     split_tables = table.random_split(0)
     assert split_tables[0] is table
 
-    #  if n > len(table), the table should split into n=len(table) tables with
+    # if n > len(table), the table should split into n=len(table) tables with
     # one entry.
     split_tables = table.random_split(20)
     assert len(split_tables) == 10
     for t in split_tables:
         assert len(t) == 1
+
+
+def test_match_basic():
+    n = 100
+    s = 10
+
+    def r():
+        return random.random()
+
+    xyz = flex.vec3_double()
+
+    for j in range(n):
+        xyz.append((r() * s, r() * s, r() * s * 20))
+
+    order = list(range(n))
+
+    random.shuffle(order)
+
+    xyz2 = xyz.select(flex.size_t(order))
+
+    a = flex.reflection_table()
+    b = flex.reflection_table()
+
+    a["xyz"] = xyz
+    b["xyz"] = xyz2
+
+    mm, nn, distance = a.match(b, key="xyz", scale=(1.0, 1.0, 0.05))
+
+    a_ = a.select(mm.as_size_t())
+    b_ = b.select(nn.as_size_t())
+
+    for _a, _b in zip(a_["xyz"], b_["xyz"]):
+        assert _a == pytest.approx(_b)
+
+
+def test_match_mismatched_sizes():
+    n = 100
+    s = 10
+
+    def r():
+        return random.random()
+
+    xyz = flex.vec3_double()
+
+    for j in range(n):
+        xyz.append((r() * s, r() * s, r() * s * 20))
+
+    order = list(range(n))
+
+    random.shuffle(order)
+
+    xyz2 = xyz.select(flex.size_t(order))
+
+    a = flex.reflection_table()
+    b = flex.reflection_table()
+
+    a["xyz"] = xyz[: n // 2]
+    b["xyz"] = xyz2
+
+    mm, nn, distance = a.match(b, key="xyz", scale=(1.0, 1.0, 0.05))
+
+    a_ = a.select(mm.as_size_t())
+    b_ = b.select(nn.as_size_t())
+
+    for _a, _b in zip(a_["xyz"], b_["xyz"]):
+        assert _a == pytest.approx(_b)

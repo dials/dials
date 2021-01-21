@@ -69,6 +69,7 @@ def test_export_xds(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.find_spots",
+            "nproc=1",
             dials_data("centroid_test_data").join("experiments.json").strpath,
         ],
         working_directory=tmpdir.strpath,

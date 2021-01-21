@@ -56,7 +56,7 @@ def read_image(in_image):
     return pixel_values, cbf_header
 
 
-def write_image(out_image, pixel_values, header):
+def write_image(out_image, pixel_values, header, nn=1):
     from cbflib_adaptbx import compress
 
     assert not os.path.exists(out_image)
@@ -65,17 +65,23 @@ def write_image(out_image, pixel_values, header):
     compressed = compress(pixel_values)
 
     fixed_header = ""
+    header = header.decode()
     for record in header.split("\n")[:-1]:
         if "X-Binary-Size:" in record:
             fixed_header += "X-Binary-Size: %d\r\n" % len(compressed)
         elif "Content-MD5" in record:
             pass
+        elif "Count_cutoff" in record:
+            cutoff = int(record.split()[2]) * nn
+            fixed_header += "# Count_cutoff %d counts\n" % cutoff
         else:
             fixed_header += "%s\n" % record
 
     tailer = "\r\n--CIF-BINARY-FORMAT-SECTION----\r\n;\r\n"
 
-    gz_open(out_image, "wb").write(fixed_header + start_tag + compressed + tailer)
+    gz_open(out_image, "wb").write(
+        fixed_header.encode() + start_tag + compressed + tailer.encode()
+    )
 
 
 def main(in_images, out_images):
@@ -121,4 +127,4 @@ def main_sum(in_images, out_image):
     sum_image = merge_counts(in_image_data)
 
     print("Writing %s" % out_image)
-    write_image(out_image, sum_image, in_image_headers[0])
+    write_image(out_image, sum_image, in_image_headers[0], nn=len(in_images))

@@ -301,7 +301,7 @@ phil_scope = iotbx.phil.parse(phil_str, process_includes=True)
 
 
 class Indexer(object):
-    def __init__(self, reflections, experiments, params=None):
+    def __init__(self, reflections, experiments, params):
         self.reflections = reflections
         self.experiments = experiments
 
@@ -568,6 +568,7 @@ class Indexer(object):
             if len(experiments) == 0:
                 raise DialsIndexError("No suitable lattice could be found.")
             elif len(experiments) == n_lattices_previous_cycle:
+                logger.warning("No more suitable lattices could be found")
                 # no more lattices found
                 break
 

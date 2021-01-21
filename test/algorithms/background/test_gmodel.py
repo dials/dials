@@ -35,6 +35,7 @@ def test_simple(dials_data, model, tmpdir):
     result = procrunner.run(
         [
             "dials.integrate",
+            "nproc=1",
             experiments.strpath,
             "profile.fitting=False",
             "background.algorithm=simple",
@@ -49,6 +50,7 @@ def test_simple(dials_data, model, tmpdir):
     result = procrunner.run(
         [
             "dials.integrate",
+            "nproc=1",
             experiments.strpath,
             "profile.fitting=False",
             "background.algorithm=gmodel",
@@ -95,6 +97,7 @@ def test_robust(dials_data, model, tmpdir):
     result = procrunner.run(
         [
             "dials.integrate",
+            "nproc=1",
             experiments.strpath,
             "profile.fitting=False",
             "background.algorithm=glm",
@@ -108,6 +111,7 @@ def test_robust(dials_data, model, tmpdir):
     result = procrunner.run(
         [
             "dials.integrate",
+            "nproc=1",
             experiments.strpath,
             "profile.fitting=False",
             "background.algorithm=gmodel",

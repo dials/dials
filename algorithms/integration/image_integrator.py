@@ -74,7 +74,7 @@ class ProcessorImage(object):
 
             def process_output(result):
                 for message in result[1]:
-                    logger.log(message.levelno, message.msg)
+                    logger.handle(message)
                 self.manager.accumulate(result[0])
                 result[0].reflections = None
                 result[0].data = None
@@ -265,13 +265,6 @@ class ManagerImage(object):
         # Create the reflection manager
         frames = self.experiments[0].scan.get_array_range()
         self.manager = ReflectionManagerPerImage(frames, self.reflections)
-
-        # Parallel reading of HDF5 from the same handle is not allowed. Python
-        # multiprocessing is a bit messed up and used fork on linux so need to
-        # close and reopen file.
-        for exp in self.experiments:
-            if exp.imageset.reader().is_single_file_reader():
-                exp.imageset.reader().nullify_format_instance()
 
         # Set the initialization time
         self.time.initialize = time() - start_time

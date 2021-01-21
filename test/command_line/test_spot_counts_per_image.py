@@ -19,7 +19,7 @@ def test_spot_counts_per_image(dataset, dials_data, tmpdir):
 
     # find the spots
     result = procrunner.run(
-        ["dials.find_spots", "imported.expt", "min_spot_size=3"],
+        ["dials.find_spots", "imported.expt", "nproc=1", "min_spot_size=3"],
         working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr

@@ -1,11 +1,13 @@
 from __future__ import absolute_import, division, print_function
 
+import math
+
 import pytest
 
 from dxtbx.model.experiment_list import ExperimentListFactory
+
 from dials.algorithms.refinement.reflection_manager import ReflectionManager
 from dials.array_family import flex
-import math
 
 
 def test_scan_margin(dials_data):

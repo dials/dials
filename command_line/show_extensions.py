@@ -2,7 +2,7 @@
 
 from __future__ import absolute_import, division, print_function
 
-from dials.util import show_mail_on_error
+import dials.util
 
 
 class Script(object):
@@ -27,12 +27,12 @@ class Script(object):
         usage = "dev.dials.show_extensions [options] /path/to/image/files"
         self.parser = OptionParser(usage=usage, phil=phil_scope)
 
-    def run(self):
+    def run(self, args=None):
         """Run the script."""
         import dials.extensions
 
         # Parse the command line arguments
-        params, options = self.parser.parse_args()
+        params, options = self.parser.parse_args(args)
 
         # Create the list of interfaces
         interfaces = [
@@ -80,7 +80,11 @@ class Script(object):
                                 print("  phil:\n%s" % phil)
 
 
+@dials.util.show_mail_handle_errors()
+def run(args=None):
+    script = Script()
+    script.run(args)
+
+
 if __name__ == "__main__":
-    with show_mail_on_error():
-        script = Script()
-        script.run()
+    run()

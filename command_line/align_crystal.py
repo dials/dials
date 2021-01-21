@@ -13,6 +13,7 @@ from dxtbx.model import MultiAxisGoniometer
 from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
 from scitbx import matrix
 
+import dials.util
 from dials.algorithms.refinement import rotation_decomposition
 from dials.util import tabulate
 from dials.util.options import OptionParser, flatten_experiments
@@ -351,7 +352,8 @@ class align_crystal(object):
         return "\n".join(output)
 
 
-def run(args):
+@dials.util.show_mail_handle_errors()
+def run(args=None):
     usage = "dials.align_crystal [options] models.expt"
     parser = OptionParser(
         usage=usage,
@@ -361,7 +363,7 @@ def run(args):
         epilog=help_message,
     )
 
-    params, options = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(args, show_diff_phil=True)
     experiments = flatten_experiments(params.input.experiments)
 
     if len(experiments) == 0:
@@ -429,4 +431,4 @@ def run(args):
 
 
 if __name__ == "__main__":
-    run(sys.argv[1:])
+    run()

@@ -26,7 +26,7 @@ sorted matrix:
 classes 1  2  2  0  0  3  1  0
         2  1  4  2  1  0  0  5
 
-Now, we chose a target number of reflections per class e.g. 5. To chose the
+Now, we choose a target number of reflections per class e.g. 5. To choose the
 reflection groups, we start with the first column.
 number of chosen reflections per class: [3, 2, 1]
 symmetry groups used:                   [1]
@@ -245,7 +245,7 @@ from each dataset, with a total number between %.2f and %.2f.
 def _loop_over_class_matrix(
     sorted_class_matrix, min_per_area, min_per_bin, max_per_bin
 ):
-    """Build up the reflectio set by looping over the class matrix."""
+    """Build up the reflection set by looping over the class matrix."""
 
     def _get_next_row_needed(total_in_classes):
         current_min = flex.min(total_in_classes)

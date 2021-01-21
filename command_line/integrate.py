@@ -33,7 +33,7 @@ import dials.util.log
 from dials.algorithms.integration.integrator import create_integrator
 from dials.algorithms.profile_model.factory import ProfileModelFactory
 from dials.array_family import flex
-from dials.util import show_mail_on_error
+from dials.util import show_mail_handle_errors
 from dials.util.command_line import heading
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.slice import slice_crystal
@@ -129,6 +129,18 @@ phil_scope = parse(
 """,
     process_includes=True,
 )
+
+# Local overrides for dials.integrate
+phil_overrides = parse(
+    """
+integration {
+  mp {
+    nproc = Auto
+  }
+}
+"""
+)
+working_phil = phil_scope.fetch(sources=[phil_overrides])
 
 
 def process_reference(reference):
@@ -627,7 +639,8 @@ def run_integration(params, experiments, reference=None):
     return experiments, reflections, report
 
 
-def run(args=None, phil=phil_scope):
+@show_mail_handle_errors()
+def run(args=None, phil=working_phil):
     """Run the integration command line script."""
     usage = "usage: dials.integrate [options] models.expt"
 
@@ -673,6 +686,9 @@ def run(args=None, phil=phil_scope):
     else:
         reference = reference[0]
 
+    if reference and "shoebox" not in reference:
+        sys.exit("Error: shoebox data missing from reflection table")
+
     try:
         experiments, reflections, report = run_integration(
             params, experiments, reference
@@ -696,5 +712,4 @@ def run(args=None, phil=phil_scope):
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
-        run()
+    run()

@@ -7,14 +7,14 @@ standard_library.install_aliases()
 import http.server as server_base
 import json
 import logging
+import multiprocessing
 import sys
 import time
 import urllib.parse
-from multiprocessing import Process
 
 import libtbx.phil
 
-from dials.util import Sorry
+from dials.util import Sorry, show_mail_handle_errors
 
 logger = logging.getLogger("dials.command_line.find_spots_server")
 
@@ -261,18 +261,18 @@ indexing_min_spots = 10
 
 
 class handler(server_base.BaseHTTPRequestHandler):
-    def do_GET(s):
+    def do_GET(self):
         """Respond to a GET request."""
-        s.send_response(200)
-        s.send_header("Content-type", "text/xml")
-        s.end_headers()
-        if s.path == "/Ctrl-C":
+        if self.path == "/Ctrl-C":
+            self.send_response(200)
+            self.end_headers()
+
             global stop
             stop = True
             return
 
-        filename = s.path.split(";")[0]
-        params = s.path.split(";")[1:]
+        filename = self.path.split(";")[0]
+        params = self.path.split(";")[1:]
 
         # If we're passing a url through, then unquote and ignore leading /
         if "%3A//" in filename:
@@ -283,12 +283,16 @@ class handler(server_base.BaseHTTPRequestHandler):
         try:
             stats = work(filename, params)
             d.update(stats)
-
+            response = 200
         except Exception as e:
             d["error"] = str(e)
+            response = 500
 
-        response = json.dumps(d).encode("latin-1")
-        s.wfile.write(response)
+        self.send_response(response)
+        self.send_header("Content-type", "application/json")
+        self.end_headers()
+        response = json.dumps(d).encode()
+        self.wfile.write(response)
 
 
 def serve(httpd):
@@ -315,7 +319,7 @@ def main(nproc, port):
     print(time.asctime(), "Serving %d processes on port %d" % (nproc, port))
 
     for j in range(nproc - 1):
-        proc = Process(target=serve, args=(httpd,))
+        proc = multiprocessing.Process(target=serve, args=(httpd,))
         proc.daemon = True
         proc.start()
     serve(httpd)
@@ -323,15 +327,24 @@ def main(nproc, port):
     print(time.asctime(), "done")
 
 
-if __name__ == "__main__":
+@show_mail_handle_errors()
+def run(args=None):
     usage = "dials.find_spots_server [options]"
+
+    # Python 3.8 on macOS... needs fork
+    if sys.hexversion >= 0x3080000 and sys.platform == "darwin":
+        multiprocessing.set_start_method("fork")
 
     from dials.util.options import OptionParser
 
     parser = OptionParser(usage=usage, phil=phil_scope, epilog=help_message)
-    params, options = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(args, show_diff_phil=True)
     if params.nproc is libtbx.Auto:
         from libtbx.introspection import number_of_processors
 
         params.nproc = number_of_processors(return_value_if_unknown=-1)
     main(params.nproc, params.port)
+
+
+if __name__ == "__main__":
+    run()

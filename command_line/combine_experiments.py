@@ -389,9 +389,9 @@ class Script(object):
             epilog=help_message,
         )
 
-    def run(self):
+    def run(self, args=None):
         """Execute the script."""
-        params, options = self.parser.parse_args(show_diff_phil=True)
+        params, options = self.parser.parse_args(args, show_diff_phil=True)
         self.run_with_preparsed(params, options)
 
     def run_with_preparsed(self, params, options):
@@ -798,7 +798,11 @@ class Script(object):
         reflections.as_file(refl_name)
 
 
+@dials.util.show_mail_handle_errors()
+def run(args=None):
+    script = Script()
+    script.run(args)
+
+
 if __name__ == "__main__":
-    with dials.util.show_mail_on_error():
-        script = Script()
-        script.run()
+    run()
