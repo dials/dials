@@ -94,9 +94,10 @@ tolerance
 
   scan {
 
-    oscillation = 0.01
+    oscillation = 0.03
       .type = float(value_min=0.0)
-      .help = "The oscillation tolerance for the scan"
+      .help = "The oscillation tolerance for the scan, as a fraction of the"
+              "image width"
 
   }
 }

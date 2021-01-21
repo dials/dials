@@ -1450,3 +1450,69 @@ def test_calculate_entering_flags(dials_regression):
     flags = refl["entering"]
     assert flags.count(True) == 58283
     assert flags.count(False) == 57799
+
+
+def test_match_basic():
+    n = 100
+    s = 10
+
+    def r():
+        return random.random()
+
+    xyz = flex.vec3_double()
+
+    for j in range(n):
+        xyz.append((r() * s, r() * s, r() * s * 20))
+
+    order = list(range(n))
+
+    random.shuffle(order)
+
+    xyz2 = xyz.select(flex.size_t(order))
+
+    a = flex.reflection_table()
+    b = flex.reflection_table()
+
+    a["xyz"] = xyz
+    b["xyz"] = xyz2
+
+    mm, nn, distance = a.match(b, key="xyz", scale=(1.0, 1.0, 0.05))
+
+    a_ = a.select(mm.as_size_t())
+    b_ = b.select(nn.as_size_t())
+
+    for _a, _b in zip(a_["xyz"], b_["xyz"]):
+        assert _a == pytest.approx(_b)
+
+
+def test_match_mismatched_sizes():
+    n = 100
+    s = 10
+
+    def r():
+        return random.random()
+
+    xyz = flex.vec3_double()
+
+    for j in range(n):
+        xyz.append((r() * s, r() * s, r() * s * 20))
+
+    order = list(range(n))
+
+    random.shuffle(order)
+
+    xyz2 = xyz.select(flex.size_t(order))
+
+    a = flex.reflection_table()
+    b = flex.reflection_table()
+
+    a["xyz"] = xyz[: n // 2]
+    b["xyz"] = xyz2
+
+    mm, nn, distance = a.match(b, key="xyz", scale=(1.0, 1.0, 0.05))
+
+    a_ = a.select(mm.as_size_t())
+    b_ = b.select(nn.as_size_t())
+
+    for _a, _b in zip(a_["xyz"], b_["xyz"]):
+        assert _a == pytest.approx(_b)
