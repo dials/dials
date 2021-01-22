@@ -1,61 +1,49 @@
-from __future__ import division, print_function
+import dxtbx  # noqa: F401; import dependency to find HDF5 library
+
+import os
+import time
+import numpy as np
+import h5py
+import glob
+import bitshuffle.h5
+import logging
 
 from dxtbx.model.experiment_list import ExperimentListFactory
 from dials.array_family import flex
-import dials_algorithms_event_mode_ext
+from dials_algorithms_event_mode_ext import event_list
 
-import dxtbx  # noqa: F401; import dependency to find HDF5 library
+from dials_research.nexus.make_nxs import CBF2NexusWriter, CopyNexusStructure
 
-import h5py
-import glob
+logger = logging.getLogger("I2E")
 
 
-class images_to_events(object):
+def input_expt_names(expt_list):
+    return sum(map(glob.glob, expt_list), [])
+
+
+def get_input_image(imageset, i, msk=None):
+    image = imageset.get_raw_data(i)[0]
+    image.set_selected(~imageset.get_mask(i)[0], -1)
+    if msk:
+        image.set_selected(~msk, -2)
+    return image
+
+
+class event_generator:
     """
-    Class to wrap/manage conversion of images to events.
+    A class to manage conversion of images to event data.
     """
 
-    def __init__(self, params):
-        self._params = params
-        self._expt = ExperimentListFactory.from_filenames(self.input_expt_names())[0]
-        self._imageset = self._expt.imageset
+    def __init__(self, image, num, exposure_time, pos_dset, time_dset):
+        self._image = image
+        self._num = num
+        # Exposure time
+        self._T = exposure_time
+        # Output datasets
+        self._d_position = pos_dset
+        self._d_time = time_dset
 
-        if self._params.input.image_range:
-            self._n_img = self._params.input.image_range[-1]
-        else:
-            self._n_img = self._imageset.size()
-
-        if self._params.input.mask:
-            with h5py.File(self._params.input.mask[0], "r") as fh:
-                self._msk = flex.bool(fh["bad_pixel_mask"][()])
-        else:
-            self._msk = None
-
-        if self._params.output.events:
-            self._fout = h5py.File(self._params.output.events, "x")
-            self._d_position = self._fout.create_dataset(
-                "position",
-                (0,),
-                maxshape=(None,),
-                dtype="i4",
-                chunks=(100000,),
-                compression="lzf",
-            )
-            self._d_time = self._fout.create_dataset(
-                "time",
-                (0,),
-                maxshape=(None,),
-                dtype="i4",
-                chunks=(100000,),
-                compression="lzf",
-            )
-        else:
-            print("No output file")
-
-    def input_expt_names(self):
-        return sum(map(glob.glob, self._params.input.experiments), [])
-
-    def output(self, events_position, events_time):
+    def write_to_file(self, events_position, events_time):
         n = events_time.size()
 
         P = self._d_position
@@ -68,30 +56,128 @@ class images_to_events(object):
         T.resize(n_time + n, axis=0)
         T[-n:] = events_time.as_numpy_array()
 
-        self._fout.flush()
-
-    def img_input(self, i):
-        image = self._imageset.get_raw_data(i)[0]
-        image.set_selected(~self._imageset.get_mask(i)[0], -1)
-        if self._msk is not None:
-            image.set_selected(~self._msk, -2)
-        return image
-
-    def events(self, i):
-        img = self.input_img(i)
-
-        sel = img > 0
+    def add_counts(self):
+        tau0 = time.time()
+        image = self._image
+        sel = image > 0
         idx = sel.iselection()
-        counts = img.select(idx)
+        counts = image.select(idx)
 
-        pos, t = dials_algorithms_event_mode_ext.event_list(i, idx, counts)
-        return pos, t
+        _pos, _t = event_list(self._num, self._T, idx, counts)
+        num_counts = _pos.size()
+        tau1 = time.time()
+        logger.info(f"Total number of counts in this frame: {num_counts}")
+        logger.info(f"Time taken for conversion: {tau1-tau0:0.2f}s")
+        self.write_to_file(_pos, _t)
 
-    def run(self):
-        n = self._n_img
-        for j in range(n):
-            pos, t = self.events(j)
-            if self._params.output.events:
-                self.output(pos, t)
-        if self._params.output.events:
-            self._fout.close()
+
+def images_to_events(params):
+    t0 = time.time()
+
+    # Define logger
+    logdir = os.path.dirname(params.output.events)
+    logging.basicConfig(
+        filename=os.path.join(logdir, "images2events.log"),
+        format="%(message)s",
+        level="DEBUG",
+    )
+
+    # Get imageset from input
+    expt = ExperimentListFactory.from_filenames(
+        input_expt_names(params.input.experiments)
+    )[0]
+    imageset = expt.imageset
+
+    # Get image range
+    if params.input.image_range:
+        n_img = params.input.image_range[-1]
+    else:
+        n_img = imageset.size()
+
+    # Get "exposure time"
+    exposure_time = params.input.exposure_time
+
+    # Bad pixel mask
+    # TODO TOFIX
+    if params.input.mask:
+        with h5py.File(params.input.mask[0], "r") as fh:
+            msk = flex.bool(fh["bad_pixel_mask"][()])
+    else:
+        msk = None
+
+    # Print out some information
+    logger.info("Raw data: %s" % params.input.experiments)
+    logger.info("Number of images to be converted: %d" % n_img)
+    logger.info("Exposure time per frame: %d" % exposure_time)
+    logger.info("")
+
+    # Create output event data file
+    logger.info("Events will be written to %s" % params.output.events)
+    with h5py.File(params.output.events, "x") as fout:
+        block_size = 0
+        fout.create_dataset("time_per_frame", data=exposure_time)
+        pos_dset = fout.create_dataset(
+            "event_id",
+            (0,),
+            maxshape=(None,),
+            dtype="i4",
+            chunks=(100000,),
+            compression=bitshuffle.h5.H5FILTER,
+            compression_opts=(block_size, bitshuffle.h5.H5_COMPRESS_LZ4),
+        )
+        time_dset = fout.create_dataset(
+            "event_time",
+            (0,),
+            maxshape=(None,),
+            dtype="i4",
+            chunks=(100000,),
+            compression=bitshuffle.h5.H5FILTER,
+            compression_opts=(block_size, bitshuffle.h5.H5_COMPRESS_LZ4),
+        )
+
+        # Generate events
+        for j in range(n_img):
+            logger.info("Converting image %d of %d" % (j, n_img))
+            t1 = time.time()
+            image = get_input_image(imageset, j, msk)
+            event_generator(image, j, exposure_time, pos_dset, time_dset).add_counts()
+            fout.flush()
+            t2 = time.time()
+            logger.info(f"Time taken: {t2 - t1:0.2f}s")
+            logger.info("-" * 20)
+
+    t3 = time.time()
+    logger.info(f"Time taked for conversion: {t3 - t0:0.2f}s")
+    # Get metadata from input file and write nxs
+    logger.info("Writing experiment metadata to NeXus file...")
+    # Check that the detector dimensions are saved correctly in input file
+    # If not, prompt nexus writer to flip them
+    fin, ext = os.path.splitext(params.input.experiments[0])
+    if ext == ".h5" or ext == ".nxs":
+        with h5py.File(params.input.experiments[0], "r") as fh:
+            data_size = fh["entry/instrument/detector/module/data_size"][()]
+
+        if np.all(data_size != imageset.get_raw_data(0)[0].all()):
+            CopyNexusStructure(
+                params.output.events,
+                params.input.experiments[0],
+                event_mode=True,
+                flip=True,
+            )
+        else:
+            CopyNexusStructure(
+                params.output.events, params.input.experiments[0], event_mode=True,
+            )
+    else:
+        CBF2NexusWriter(
+            params.output.events,
+            input_expt_names(params.input.experiments),
+            event_mode=True,
+        ).write_nexus_file()
+    t4 = time.time()
+    logger.info(f"Total time taken: {t4 - t0:0.2f}s")
+    logger.info("=== EOF ===")
+
+
+# TODO: save image_range information when it is applied
+# Also save the corresponding scan axis values in the output

@@ -14,17 +14,18 @@ namespace dials { namespace algorithms { namespace event_mode {
 
   // Create event list
 
-  static boost::python::tuple event_list(int image_n,
-                                         scitbx::af::shared<size_t> idx,
-                                         scitbx::af::shared<int> counts) {
-    scitbx::af::shared<int> position, time;
+  static boost::python::tuple event_list(int image_n, float T,
+          scitbx::af::shared<size_t> idx,
+          scitbx::af::shared<int> counts) {
+    scitbx::af::shared<int> position;
+    scitbx::af::shared<size_t> time;
     boost::random::mt19937 rng;
     boost::random::uniform_real_distribution<double> dist(0, 1);
     for (size_t j = 0; j < idx.size(); j++) {
       for (size_t c = 0; c < counts[j]; c++) {
         position.push_back(idx[j]);
-        //time.push_back(expTime * (image_n + dist(rng)));
-        time.push_back(1000 * (image_n + dist(rng)));  
+        time.push_back(T * (image_n + dist(rng)));
+        //time.push_back(1000 * (image_n + dist(rng)));  
       }
     }
     return boost::python::make_tuple(position, time);
@@ -32,10 +33,8 @@ namespace dials { namespace algorithms { namespace event_mode {
 
   // Get image from event list
 
-  static scitbx::af::shared<double> image_coord(int n,
-                                                int expT,
-                                                scitbx::af::shared<int> pos,
-                                                scitbx::af::shared<int> t) {
+  static scitbx::af::shared<double> image_coord(int n, int expT,
+          scitbx::af::shared<int> pos, scitbx::af::shared<size_t> t) {
     scitbx::af::shared<double> coord;
     int t_i = expT * n;
     int t_f = expT * (n + 1);
@@ -52,7 +51,7 @@ namespace dials { namespace algorithms { namespace event_mode {
 
   void init_module() {
     using namespace boost::python;
-    def("event_list", event_list, (arg("image_n"), arg("idx"), arg("counts")));
+    def("event_list", event_list, (arg("image_n"), arg("T"), arg("idx"), arg("counts")));
     def("image_coord", image_coord, (arg("n"), arg("expT"), arg("pos"), arg("t")));
   }
 }}}  // namespace dials::algorithms::event_mode
