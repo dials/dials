@@ -32,6 +32,11 @@ For subsequent login sessions, be sure to set the environment in order to use th
 
   source dials
 
+ModuleNotFoundError: No module named 'gltbx_gl_ext'
+---------------------------------------------------
+If you are seeing this error then you need to add libgl/glu/khr headers to your installation.
+`Please follow these instructions <https://github.com/dials/dials/issues/1465#issuecomment-715457232>`_.
+
 Downloading the DIALS regression test data
 ==========================================
 
