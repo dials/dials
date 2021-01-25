@@ -109,7 +109,7 @@ def debug_context_manager(original_context_manager, name="", log_func=None):
         def __init__(self, name, log_func):
             self._ocm = original_context_manager
             if name:
-                self._name = f"{name}-{str(hash(original_context_manager))}"
+                self._name = f"{name}-{hash(original_context_manager)}"
             else:
                 self._name = str(hash(original_context_manager))
             self._log_func = log_func

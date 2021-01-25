@@ -79,9 +79,7 @@ class UnitCellCluster(Cluster):
         # 3. Create an array of sub-cluster objects from the clustering
         sub_clusters = []
         for cluster in range(max(cluster_ids)):
-            info_string = (
-                "Made using ab_cluster with t={}," " {} method, and {} linkage"
-            ).format(threshold, method, linkage_method)
+            info_string = f"Made using ab_cluster with t={threshold}, {method} method, and {linkage_method} linkage"
             sub_clusters.append(
                 self.make_sub_cluster(
                     [

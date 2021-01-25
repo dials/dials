@@ -547,7 +547,7 @@ class Script:
                         experiment.detector = imageset.get_detector()
                     except RuntimeError as e:
                         logger.warning(
-                            "Error updating geometry on item %s, %s", str(tag), str(e)
+                            "Error updating geometry on item %s, %s", tag, e
                         )
                         continue
 
@@ -619,7 +619,7 @@ class Script:
                         experiment.detector = imagesets[0].get_detector()
                     except RuntimeError as e:
                         logger.warning(
-                            "Error updating geometry on item %s, %s", tag, str(e)
+                            "Error updating geometry on item %s, %s", tag, e
                         )
                         continue
 

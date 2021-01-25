@@ -60,11 +60,7 @@ known_entry_points = {
 @dials.util.show_mail_handle_errors()
 def run(_=None):
     for ep, ep_dict in known_entry_points.items():
-        print(
-            "{BOLD}{ep}{NC}  {ep_dict[description]}".format(
-                BOLD=BOLD, NC=NC, ep=ep, ep_dict=ep_dict
-            )
-        )
+        print(f"{BOLD}{ep}{NC}  {ep_dict['description']}")
         plugins = read_entry_point(ep)
         for p in sorted(plugins):
             print(

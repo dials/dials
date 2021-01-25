@@ -457,7 +457,7 @@ class Resource:
 
             self.layers = json.load(open(fname))
         except OSError as e:
-            msg = f"Error opening {fname}: {str(e)}"
+            msg = f"Error opening {fname}: {e}"
             raise OSError(msg)
 
     def Write(self, fname=None):

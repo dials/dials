@@ -436,7 +436,7 @@ class Task:
             assert (frame1 - frame0) <= len(imageset)
             imageset = imageset[frame0:frame1]
         except Exception as e:
-            raise RuntimeError(f"Programmer Error: bad array range: {str(e)}")
+            raise RuntimeError(f"Programmer Error: bad array range: {e}")
 
         try:
             frame0, frame1 = imageset.get_array_range()

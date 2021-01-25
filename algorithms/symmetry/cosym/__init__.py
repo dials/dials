@@ -711,7 +711,7 @@ class SymmetryAnalysis:
             % self.best_solution.subgroup["best_subsym"].space_group_info()
         )
         output.append(
-            f"Unit cell: {self.best_solution.subgroup['best_subsym'].unit_cell()}"
+            f"Unit cell: {str(self.best_solution.subgroup['best_subsym'].unit_cell())}"
         )
         output.append(
             "Reindex operator: %s"

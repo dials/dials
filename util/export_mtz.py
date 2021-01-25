@@ -61,7 +61,7 @@ class MTZWriterBase:
             else:
                 unit_cell = self.unit_cell
         if not crystal_name:
-            crystal_name = f"crystal_{str(self.n_crystals + 1)}"
+            crystal_name = f"crystal_{self.n_crystals + 1}"
         if not project_name:
             project_name = "DIALS"
         self.current_crystal = self.mtz_file.add_crystal(
@@ -125,7 +125,7 @@ class MADMergedMTZWriter(MergedMTZWriter):
         suffix=None,
     ):
         if not suffix:
-            suffix = f"_WAVE{str(self.n_datasets)}"
+            suffix = f"_WAVE{self.n_datasets}"
         super().add_dataset(
             merged_array,
             anom_array,
