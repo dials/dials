@@ -520,8 +520,15 @@ def run(args=None):
             params.intensity = ["scale"]
             logger.info("Data appears to be scaled, setting intensity = scale")
         else:
-            params.intensity = ["profile", "sum"]
-            logger.info("Data appears to be unscaled, setting intensity = profile+sum")
+            params.intensity = []
+            if "intensity.sum.value" in reflections[0]:
+                params.intensity.append("sum")
+            if "intensity.prf.value" in reflections[0]:
+                params.intensity.append("profile")
+            logger.info(
+                "Data appears to be unscaled, setting intensity = "
+                + "+".join(params.intensity)
+            )
 
     # Choose the exporter
     exporter = {
