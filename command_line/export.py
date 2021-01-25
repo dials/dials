@@ -279,7 +279,7 @@ def export_mtz(params, experiments, reflections):
     # Handle case where user has passed data before integration
     if (
         "intensity.sum.value" not in reflections[0]
-        or "intensity.prf.value" not in reflections[0]
+        and "intensity.prf.value" not in reflections[0]
     ):
         raise ValueError(
             "Error: No intensity data in reflections; cannot export un-integrated data to MTZ"
@@ -520,8 +520,15 @@ def run(args=None):
             params.intensity = ["scale"]
             logger.info("Data appears to be scaled, setting intensity = scale")
         else:
-            params.intensity = ["profile", "sum"]
-            logger.info("Data appears to be unscaled, setting intensity = profile+sum")
+            params.intensity = []
+            if "intensity.sum.value" in reflections[0]:
+                params.intensity.append("sum")
+            if "intensity.prf.value" in reflections[0]:
+                params.intensity.append("profile")
+            logger.info(
+                "Data appears to be unscaled, setting intensity = "
+                + "+".join(params.intensity)
+            )
 
     # Choose the exporter
     exporter = {
