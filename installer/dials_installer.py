@@ -120,8 +120,7 @@ class installer(install_distribution.installer):
             if not os.path.exists(fullpath):
                 print(f"Skipping *{extension}", " " * 26, subdir)
                 return
-            num_files, total_size = 0, 0
-            filelist = []
+            filelist, total_size = [], 0
             for dirpath, dirnames, filenames in os.walk(fullpath):
                 for f in filenames:
                     if f.endswith(extension):
@@ -135,7 +134,7 @@ class installer(install_distribution.installer):
             for f in filelist:
                 os.remove(f)
             self._cleaned_size = self._cleaned_size + total_size
-            self._cleaned_files = self._cleaned_files + num_files
+            self._cleaned_files = self._cleaned_files + len(filelist)
 
         def rmfile(filename):
             fullpath = os.path.join(directory, filename)
