@@ -217,7 +217,7 @@ class installer(install_distribution.installer):
         rmdir("modules/cbflib/ply-3.2/doc")
         rmdir("modules/cbflib/ply-3.2/example")
         rmdir("modules/cbflib/ply-3.2/test")
-        rmfile("modules/cbflib/idx-s00-20131106040304531.cbf")
+        rmext("modules/cbflib", ".cbf")
         rmdir("modules/clipper/examples")
         print("-" * 60)
         print(
