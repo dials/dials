@@ -19,7 +19,7 @@ def test(dials_data, tmpdir):
     pkl_path = [data_dir / ("%d_integrated.pickle" % p) for p in prefix]
 
     for pth in exp_path + pkl_path:
-        assert pth.check(), "%s missing" % pth.strpath
+        assert pth.check(), f"{pth.strpath} missing"
 
     cmd = (
         [

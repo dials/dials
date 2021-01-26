@@ -540,7 +540,7 @@ def run(args=None):
         "json": export_json,
     }.get(params.format)
     if not exporter:
-        sys.exit("Unknown format: %s" % params.format)
+        sys.exit(f"Unknown format: {params.format}")
 
     # Export the data
     try:

@@ -333,7 +333,7 @@ class Importer:
         for argument in args:
             try:
                 if not os.path.exists(argument):
-                    raise Sorry("File %s does not exist" % argument)
+                    raise Sorry(f"File {argument} does not exist")
                 self.reflections.append(
                     FilenameDataWrapper(
                         filename=argument,
@@ -489,9 +489,7 @@ class PhilCommandParser:
         if len(unused) > 0:
             msg = [item.object.as_str().strip() for item in unused]
             msg = "\n".join(["  %s" % line for line in msg])
-            raise RuntimeError(
-                "The following definitions were not recognised\n%s" % msg
-            )
+            raise RuntimeError(f"The following definitions were not recognised\n{msg}")
 
         # Extract the parameters
         params = self._phil.extract()
@@ -595,13 +593,12 @@ class PhilCommandParser:
         # Add the experiments phil scope
         if self._read_experiments or self._read_experiments_from_images:
             phil_scope = parse(
-                """
+                f"""
         experiments = None
-          .type = experiment_list(check_format=%r)
+          .type = experiment_list(check_format={self._check_format!r})
           .multiple = True
           .help = "The experiment list file path"
       """
-                % self._check_format
             )
             main_scope.adopt_scope(phil_scope)
 
@@ -922,11 +919,7 @@ class OptionParser(OptionParserBase):
                 )
                 slen = max(len(x.type) for x in valid)
                 for err in valid:
-                    msg.append(
-                        "    - {} {}".format(
-                            f"{err.type}:".ljust(slen + 1), err.message
-                        )
-                    )
+                    msg.append(f"    - {f'{err.type}:'.ljust(slen + 1)} {err.message}")
         # The others
         for arg in [x for x in unhandled if x not in self._phil_parser.handling_errors]:
             msg.append("  " + str(arg))
@@ -1017,9 +1010,7 @@ class OptionParser(OptionParserBase):
 
             # Identify all names that are directly on this level
             # or represent parameter groups with a common prefix
-            top_elements = {
-                "{}{}".format(x[0], "=" if len(x) == 1 else ".") for x in paths
-            }
+            top_elements = {f"{x[0]}{'=' if len(x) == 1 else '.'}" for x in paths}
 
             # Partition all names that are further down the tree by their prefix
             subpaths = {}
@@ -1032,8 +1023,8 @@ class OptionParser(OptionParserBase):
             # If there are prefixes with only one name beneath them, put them on the top level
             for s in list(subpaths.keys()):
                 if len(subpaths[s]) == 1:
-                    top_elements.remove("%s." % s)
-                    top_elements.add("{}.{}=".format(s, subpaths[s][0]))
+                    top_elements.remove(f"{s}.")
+                    top_elements.add(f"{s}.{subpaths[s][0]}=")
                     del subpaths[s]
 
             result = {"": top_elements}
@@ -1047,7 +1038,7 @@ class OptionParser(OptionParserBase):
         print("{")
         print(' case "$1" in')
         for p in parameter_choice_list:
-            print("\n  %s)" % p)
+            print(f"\n  {p})")
             print(
                 '   _dials_autocomplete_values="%s";;'
                 % " ".join(parameter_choice_list[p])
@@ -1062,8 +1053,8 @@ class OptionParser(OptionParserBase):
         print(' case "$1" in')
         for p, exp in parameter_expansion_list.items():
             if exp is not None:
-                print("\n  %s=)" % p)
-                print('   _dials_autocomplete_values="%s=";;' % exp)
+                print(f"\n  {p}=)")
+                print(f'   _dials_autocomplete_values="{exp}=";;')
         print("\n  *)")
         print('    _dials_autocomplete_values="";;')
         print(" esac")
@@ -1075,7 +1066,7 @@ class OptionParser(OptionParserBase):
             for subkey in tree:
                 if subkey != "":
                     _tree_to_bash(prefix + subkey + ".", tree[subkey])
-                    print("\n  %s*)" % (prefix + subkey + "."))
+                    print(f"\n  {prefix + subkey + '.'}*)")
                     print(
                         '    _dials_autocomplete_values="%s";;'
                         % " ".join(

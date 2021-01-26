@@ -68,7 +68,7 @@ class batch_manager:
                     "x": self._batch_increments[i]
                     + (batch["range"][1] - batch["range"][0]) / 2,
                     "y": 1,
-                    "text": "%s" % batch["id"],
+                    "text": f"{batch['id']}",
                     "showarrow": False,
                     "yshift": 20,
                     # 'arrowhead': 7,
@@ -81,7 +81,7 @@ class batch_manager:
                 sel,
                 flex.std_string(
                     [
-                        "{}: {}".format(batch["id"], j - batch["range"][0] + 1)
+                        f"{batch['id']}: {j - batch['range'][0] + 1}"
                         for j in batches.select(sel)
                     ]
                 ),

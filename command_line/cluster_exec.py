@@ -42,8 +42,8 @@ def run(_=None):
     cwd = get_cwd()
 
     # Set the paths
-    input_fn = join(cwd, "%s.input" % tid)
-    output_fn = join(cwd, "%s.output" % tid)
+    input_fn = join(cwd, f"{tid}.input")
+    output_fn = join(cwd, f"{tid}.output")
 
     # Wait until it exists
     while not exists(input_fn):

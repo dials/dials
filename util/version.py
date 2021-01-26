@@ -58,7 +58,7 @@ def get_git_version(dials_path, treat_merges_as_single_commit=False):
                 commit = version[version.rindex("-") + 1 :]  # 'gxxxxxxx'
                 # Now find the first-parent-path
                 depth = subprocess.check_output(
-                    ["git", "rev-list", "%s..HEAD" % tag, "--first-parent"],
+                    ["git", "rev-list", f"{tag}..HEAD", "--first-parent"],
                     cwd=dials_path,
                     stderr=devnull,
                 ).rstrip()

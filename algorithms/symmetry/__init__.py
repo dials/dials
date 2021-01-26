@@ -135,8 +135,8 @@ class symmetry_base:
                     absolute_angle_tolerance,
                 ):
                     raise ValueError(
-                        "Incompatible unit cell: %s\n" % d.unit_cell()
-                        + "      median unit cell: %s" % self.median_unit_cell
+                        f"Incompatible unit cell: {d.unit_cell()}\n"
+                        + f"      median unit cell: {self.median_unit_cell}"
                     )
 
     def _normalise(self, method):

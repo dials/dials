@@ -282,10 +282,10 @@ def do_import(filename, load_models=True):
         try:
             experiments = ExperimentListFactory.from_json_file(filename)
         except ValueError:
-            raise Abort("Could not load %s" % filename)
+            raise Abort(f"Could not load {filename}")
 
     if len(experiments) == 0:
-        raise Abort("Could not load %s" % filename)
+        raise Abort(f"Could not load {filename}")
 
     from dxtbx.imageset import ImageSetFactory
 
@@ -412,12 +412,12 @@ class Script:
             self.pr = cProfile.Profile()
             self.pr.enable()
 
-        print("Have %d files" % len(all_paths))
+        print(f"Have {len(all_paths)} files")
 
         # Mask validation
         for mask_path in params.spotfinder.lookup.mask, params.integration.lookup.mask:
             if mask_path is not None and not os.path.isfile(mask_path):
-                raise Sorry("Mask %s not found" % mask_path)
+                raise Sorry(f"Mask {mask_path} not found")
 
         # Save the options
         self.options = options
@@ -436,8 +436,8 @@ class Script:
                 error_path = os.path.join(
                     params.output.logging_dir, "error_rank%04d.out" % rank
                 )
-                print("Redirecting stdout to %s" % log_path)
-                print("Redirecting stderr to %s" % error_path)
+                print(f"Redirecting stdout to {log_path}")
+                print(f"Redirecting stderr to {error_path}")
                 sys.stdout = open(log_path, "a")
                 sys.stderr = open(error_path, "a")
                 print("Should be redirected now")
@@ -606,9 +606,7 @@ class Script:
                         logger.info("Zero length imageset in file: %s", filename)
                         return
                     if len(imagesets) > 1:
-                        raise Abort(
-                            "Found more than one imageset in file: %s" % filename
-                        )
+                        raise Abort(f"Found more than one imageset in file: {filename}")
                     if len(imagesets[0]) > 1:
                         raise Abort(
                             "Found a multi-image file. Run again with pre_import=True"
@@ -680,9 +678,7 @@ class Script:
 
                         print("Getting next available process")
                         rankreq = comm.recv(source=MPI.ANY_SOURCE)
-                        print(
-                            "Process {} is ready, sending {}\n".format(rankreq, item[0])
-                        )
+                        print(f"Process {rankreq} is ready, sending {item[0]}\n")
                         comm.send(item, dest=rankreq)
                     # send a stop command to each process
                     print("MPI DONE, sending stops\n")
@@ -944,7 +940,7 @@ class Processor:
                     < self.params.dispatch.hit_finder.minimum_number_of_reflections
                 ):
                     print("Not enough spots to index", tag)
-                    self.debug_write("not_enough_spots_%d" % len(observed), "stop")
+                    self.debug_write(f"not_enough_spots_{len(observed)}", "stop")
                     return
                 if (
                     self.params.dispatch.hit_finder.maximum_number_of_reflections
@@ -956,26 +952,26 @@ class Processor:
                         > self.params.dispatch.hit_finder.maximum_number_of_reflections
                     ):
                         print("Too many spots to index - Possibly junk", tag)
-                        self.debug_write("too_many_spots_%d" % len(observed), "stop")
+                        self.debug_write(f"too_many_spots_{len(observed)}", "stop")
                         return
                 self.debug_write("index_start")
                 experiments, indexed = self.index(experiments, observed)
             else:
                 print("Indexing turned off. Exiting")
-                self.debug_write("spotfinding_ok_%d" % len(observed), "done")
+                self.debug_write(f"spotfinding_ok_{len(observed)}", "done")
                 return
         except Exception as e:
             print("Couldn't index", tag, str(e))
             if not self.params.dispatch.squash_errors:
                 raise
-            self.debug_write("indexing_failed_%d" % len(observed), "stop")
+            self.debug_write(f"indexing_failed_{len(observed)}", "stop")
             return
         self.debug_write("refine_start")
         try:
             experiments, indexed = self.refine(experiments, indexed)
         except Exception as e:
             print("Error refining", tag, str(e))
-            self.debug_write("refine_failed_%d" % len(indexed), "fail")
+            self.debug_write(f"refine_failed_{len(indexed)}", "fail")
             if not self.params.dispatch.squash_errors:
                 raise
             return
@@ -985,15 +981,15 @@ class Processor:
                 integrated = self.integrate(experiments, indexed)
             else:
                 print("Integration turned off. Exiting")
-                self.debug_write("index_ok_%d" % len(indexed), "done")
+                self.debug_write(f"index_ok_{len(indexed)}", "done")
                 return
         except Exception as e:
             print("Error integrating", tag, str(e))
-            self.debug_write("integrate_failed_%d" % len(indexed), "fail")
+            self.debug_write(f"integrate_failed_{len(indexed)}", "fail")
             if not self.params.dispatch.squash_errors:
                 raise
             return
-        self.debug_write("integrate_ok_%d" % len(integrated), "done")
+        self.debug_write(f"integrate_ok_{len(integrated)}", "done")
 
     def pre_process(self, experiments):
         """Add any pre-processing steps here"""
@@ -1090,7 +1086,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                     logger.info("Couldn't index using method %s", method)
                     if indexing_error is None:
                         if e is None:
-                            e = Exception("Couldn't index using method %s" % method)
+                            e = Exception(f"Couldn't index using method {method}")
                         indexing_error = e
                 else:
                     indexing_error = None
@@ -1332,7 +1328,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
         )
 
         rmsd_indexed, _ = calc_2D_rmsd_and_displacements(indexed)
-        log_str = "RMSD indexed (px): %f\n" % (rmsd_indexed)
+        log_str = f"RMSD indexed (px): {rmsd_indexed:f}\n"
         for i in range(6):
             bright_integrated = integrated.select(
                 (

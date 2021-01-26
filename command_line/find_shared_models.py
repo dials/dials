@@ -133,13 +133,13 @@ class Script:
             date_str = timestamp.strftime("%Y-%m-%d")
             time_str = timestamp.strftime("%H:%M:%S")
             row = [
-                "%s" % sequences[i].get_template(),
-                "%s" % i,
-                "%s" % b_index[i],
-                "%s" % d_index[i],
-                "%s" % g_index[i],
-                "%s" % date_str,
-                "%s" % time_str,
+                f"{sequences[i].get_template()}",
+                f"{i}",
+                f"{b_index[i]}",
+                f"{d_index[i]}",
+                f"{g_index[i]}",
+                f"{date_str}",
+                f"{time_str}",
             ]
             rows.append(row)
         logger.info(tabulate(rows, headers="firstrow"))

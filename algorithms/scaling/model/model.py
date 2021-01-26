@@ -352,9 +352,9 @@ class ScalingModelBase:
                 msg.append("    parameters")
                 for p in component.parameters:
                     if p < 0.0:
-                        msg.append("    %.4f" % p)
+                        msg.append(f"    {p:.4f}")
                     else:
-                        msg.append("     %.4f" % p)
+                        msg.append(f"     {p:.4f}")
         msg.append("")
         return "\n".join(msg)
 
@@ -572,9 +572,7 @@ class DoseDecay(ScalingModelBase):
     def from_dict(cls, obj):
         """Create a :obj:`PhysicalScalingModel` from a dictionary."""
         if obj["__id__"] != cls.id_:
-            raise RuntimeError(
-                "expected __id__ {}, got {}".format(cls.id_, obj["__id__"])
-            )
+            raise RuntimeError(f"expected __id__ {cls.id_}, got {obj['__id__']}")
         (s_params, d_params, abs_params, B) = (None, None, None, None)
         (s_params_sds, d_params_sds, a_params_sds, B_sd) = (None, None, None, None)
         configdict = obj["configuration_parameters"]
@@ -810,9 +808,7 @@ class PhysicalScalingModel(ScalingModelBase):
     def from_dict(cls, obj):
         """Create a :obj:`PhysicalScalingModel` from a dictionary."""
         if obj["__id__"] != cls.id_:
-            raise RuntimeError(
-                "expected __id__ {}, got {}".format(cls.id_, obj["__id__"])
-            )
+            raise RuntimeError(f"expected __id__ {cls.id_}, got {obj['__id__']}")
         (s_params, d_params, abs_params) = (None, None, None)
         (s_params_sds, d_params_sds, a_params_sds) = (None, None, None)
         configdict = obj["configuration_parameters"]
@@ -1093,9 +1089,7 @@ class ArrayScalingModel(ScalingModelBase):
     def from_dict(cls, obj):
         """Create an :obj:`ArrayScalingModel` from a dictionary."""
         if obj["__id__"] != cls.id_:
-            raise RuntimeError(
-                "expected __id__ {}, got {}".format(cls.id_, obj["__id__"])
-            )
+            raise RuntimeError(f"expected __id__ {cls.id_}, got {obj['__id__']}")
         configdict = obj["configuration_parameters"]
         (dec_params, abs_params, mod_params) = (None, None, None)
         (d_params_sds, a_params_sds, m_params_sds) = (None, None, None)
@@ -1170,9 +1164,7 @@ class KBScalingModel(ScalingModelBase):
     def from_dict(cls, obj):
         """Create an :obj:`KBScalingModel` from a dictionary."""
         if obj["__id__"] != cls.id_:
-            raise RuntimeError(
-                "expected __id__ {}, got {}".format(cls.id_, obj["__id__"])
-            )
+            raise RuntimeError(f"expected __id__ {cls.id_}, got {obj['__id__']}")
         configdict = obj["configuration_parameters"]
         (s_params, d_params) = (None, None)
         (s_params_sds, d_params_sds) = (None, None)

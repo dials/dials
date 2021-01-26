@@ -226,7 +226,7 @@ def imageset_as_bitmaps(imageset, params):
                 ),
             )
 
-        print("Exporting %s" % path)
+        print(f"Exporting {path}")
         output_files.append(path)
         with open(path, "wb") as tmp_stream:
             pil_img.save(

@@ -109,17 +109,13 @@ def debug_context_manager(original_context_manager, name="", log_func=None):
         def __init__(self, name, log_func):
             self._ocm = original_context_manager
             if name:
-                self._name = "{}-{}".format(name, str(hash(original_context_manager)))
+                self._name = f"{name}-{str(hash(original_context_manager))}"
             else:
                 self._name = str(hash(original_context_manager))
             self._log_func = log_func
 
         def format_event(self, event):
-            return "{} {}: {}\n".format(
-                datetime.now().strftime("%H:%M:%S.%f"),
-                self._name,
-                event,
-            )
+            return f"{datetime.now().strftime('%H:%M:%S.%f')} {self._name}: {event}\n"
 
         def log(self, event):
             self._log_func(self.format_event(event))

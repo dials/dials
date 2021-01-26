@@ -262,10 +262,10 @@ class LaueGroupAnalysis(symmetry_base):
                 .customized_copy(unit_cell=self.median_unit_cell)
             )
         )
-        output.append("Change of basis op to minimum cell: %s" % self.cb_op_inp_min)
+        output.append(f"Change of basis op to minimum cell: {self.cb_op_inp_min}")
         output.append("Crystal symmetry in minimum cell:")
         output.append(str(self.intensities.crystal_symmetry()))
-        output.append("Lattice point group: %s" % self.lattice_group.info())
+        output.append(f"Lattice point group: {self.lattice_group.info()}")
         output.append(
             "\nOverall CC for %i unrelated pairs: %.3f"
             % (self.corr_unrelated.n(), self.corr_unrelated.coefficient())
@@ -275,7 +275,7 @@ class LaueGroupAnalysis(symmetry_base):
             % self.E_cc_true
         )
         if self.cc_sig_fac:
-            output.append("Estimated sd(CC) = %.3f / sqrt(N)" % self.cc_sig_fac)
+            output.append(f"Estimated sd(CC) = {self.cc_sig_fac:.3f} / sqrt(N)")
         else:
             output.append("Too few reflections to estimate sd(CC).")
         output.append(
@@ -296,12 +296,12 @@ class LaueGroupAnalysis(symmetry_base):
                 stars = ""
             rows.append(
                 (
-                    "%.3f" % score.likelihood,
-                    "%.2f" % score.z_cc,
-                    "%.2f" % score.cc.coefficient(),
+                    f"{score.likelihood:.3f}",
+                    f"{score.z_cc:.2f}",
+                    f"{score.cc.coefficient():.2f}",
                     "%i" % score.n_refs,
                     stars,
-                    "%s" % score.sym_op.r().info(),
+                    f"{score.sym_op.r().info()}",
                 )
             )
         output.append("\n" + "-" * 80 + "\n")
@@ -332,16 +332,16 @@ class LaueGroupAnalysis(symmetry_base):
                 stars = ""
             rows.append(
                 (
-                    "%s" % score.subgroup["best_subsym"].space_group_info(),
+                    f"{score.subgroup['best_subsym'].space_group_info()}",
                     stars,
-                    "%.3f" % score.likelihood,
-                    "% .2f" % score.z_cc_net,
-                    "% .2f" % score.z_cc_for,
-                    "% .2f" % score.z_cc_against,
-                    "% .2f" % score.cc_for.coefficient(),
-                    "% .2f" % score.cc_against.coefficient(),
-                    "%.1f" % score.subgroup["max_angular_difference"],
-                    "%s" % (score.subgroup["cb_op_inp_best"]),
+                    f"{score.likelihood:.3f}",
+                    f"{score.z_cc_net: .2f}",
+                    f"{score.z_cc_for: .2f}",
+                    f"{score.z_cc_against: .2f}",
+                    f"{score.cc_for.coefficient(): .2f}",
+                    f"{score.cc_against.coefficient(): .2f}",
+                    f"{score.subgroup['max_angular_difference']:.1f}",
+                    f"{score.subgroup['cb_op_inp_best']}",
                 )
             )
         output.append("\n" + "-" * 80 + "\n")
@@ -353,13 +353,13 @@ class LaueGroupAnalysis(symmetry_base):
             % self.best_solution.subgroup["best_subsym"].space_group_info()
         )
         output.append(
-            "Unit cell: %s" % self.best_solution.subgroup["best_subsym"].unit_cell()
+            f"Unit cell: {self.best_solution.subgroup['best_subsym'].unit_cell()}"
         )
         output.append(
-            "Reindex operator: %s" % (self.best_solution.subgroup["cb_op_inp_best"])
+            f"Reindex operator: {self.best_solution.subgroup['cb_op_inp_best']}"
         )
-        output.append("Laue group probability: %.3f" % self.best_solution.likelihood)
-        output.append("Laue group confidence: %.3f\n" % self.best_solution.confidence)
+        output.append(f"Laue group probability: {self.best_solution.likelihood:.3f}")
+        output.append(f"Laue group confidence: {self.best_solution.confidence:.3f}\n")
         return "\n".join(output)
 
     def as_dict(self):
@@ -705,7 +705,7 @@ class ScoreSubGroup:
             "cc_for": self.cc_for.coefficient(),
             "cc_against": self.cc_against.coefficient(),
             "max_angular_difference": self.subgroup["max_angular_difference"],
-            "cb_op": "%s" % (self.subgroup["cb_op_inp_best"]),
+            "cb_op": f"{self.subgroup['cb_op_inp_best']}",
         }
 
 

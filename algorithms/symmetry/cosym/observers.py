@@ -44,7 +44,7 @@ class CosymHTMLGenerator(Observer):
         self.data.update(CosymClusterAnalysisObserver().make_plots())
         self.data.update(UnitCellAnalysisObserver().make_plots())
         self.data.update(SymmetryAnalysisObserver().make_tables())
-        print("Writing html report to: %s" % filename)
+        print(f"Writing html report to: {filename}")
         loader = ChoiceLoader(
             [
                 PackageLoader("dials", "templates"),
@@ -77,7 +77,7 @@ class CosymJSONGenerator(Observer):
         self.data.update(CosymClusterAnalysisObserver().make_plots())
         self.data.update(UnitCellAnalysisObserver().make_plots())
         self.data.update(SymmetryAnalysisObserver().get_data())
-        print("Writing json to: %s" % filename)
+        print(f"Writing json to: {filename}")
         with open(filename, "w") as f:
             json.dump(self.data, f)
 

@@ -303,7 +303,7 @@ class BasisVectorSearch(LatticeSearch):
                 break
         if not strategy_class:
             raise RuntimeError(
-                "Unknown basis vector search strategy: %s" % params.indexing.method
+                f"Unknown basis vector search strategy: {params.indexing.method}"
             )
 
         target_unit_cell = None
@@ -412,15 +412,15 @@ class BasisVectorSearch(LatticeSearch):
 
             print((" " * 7), end=" ", file=s)
             for i in range(len(vectors)):
-                print("%7.3f" % vectors[i].length(), end=" ", file=s)
+                print(f"{vectors[i].length():7.3f}", end=" ", file=s)
             print(file=s)
             for i in range(len(vectors)):
-                print("%7.3f" % vectors[i].length(), end=" ", file=s)
+                print(f"{vectors[i].length():7.3f}", end=" ", file=s)
                 for j in range(len(vectors)):
                     if j <= i:
                         print((" " * 7), end=" ", file=s)
                     else:
-                        print("%5.1f  " % angles[i, j], end=" ", file=s)
+                        print(f"{angles[i, j]:5.1f}  ", end=" ", file=s)
                 print(file=s)
 
             logger.debug(s.getvalue())

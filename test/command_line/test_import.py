@@ -39,19 +39,15 @@ def test_reference_individual(dials_data, tmpdir, use_beam, use_gonio, use_detec
     assert tmpdir.join("fake_geometry.expt").check(file=1)
 
     # Write an import phil file
-    import_phil = """
+    import_phil = f"""
       input {{
         reference_geometry = fake_geometry.expt
         check_reference_geometry = False
-        use_beam_reference = {}
-        use_gonio_reference = {}
-        use_detector_reference = {}
+        use_beam_reference = {use_beam}
+        use_gonio_reference = {use_gonio}
+        use_detector_reference = {use_detector}
       }}
-  """.format(
-        use_beam,
-        use_gonio,
-        use_detector,
-    )
+  """
     tmpdir.join("test_reference_individual.phil").write(import_phil)
 
     result = procrunner.run(
@@ -428,7 +424,7 @@ def test_import_still_sequence_as_experiments(dials_data, tmpdir):
     out = "experiments_as_still.expt"
 
     _ = procrunner.run(
-        ["dials.import", "scan.oscillation=0,0", "output.experiments=%s" % out]
+        ["dials.import", "scan.oscillation=0,0", f"output.experiments={out}"]
         + [f.strpath for f in image_files],
         working_directory=tmpdir.strpath,
     )
@@ -454,7 +450,7 @@ def test_import_still_sequence_as_experiments_subset(dials_data, tmpdir):
     out = "experiments_as_still.expt"
 
     _ = procrunner.run(
-        ["dials.import", "scan.oscillation=10,0", "output.experiments=%s" % out]
+        ["dials.import", "scan.oscillation=10,0", f"output.experiments={out}"]
         + [f.strpath for f in image_files],
         working_directory=tmpdir.strpath,
     )
@@ -479,7 +475,7 @@ def test_import_still_sequence_as_experiments_split_subset(dials_data, tmpdir):
     out = "experiments_as_still.expt"
 
     _ = procrunner.run(
-        ["dials.import", "scan.oscillation=10,0", "output.experiments=%s" % out]
+        ["dials.import", "scan.oscillation=10,0", f"output.experiments={out}"]
         + [f.strpath for f in image_files],
         working_directory=tmpdir.strpath,
     )

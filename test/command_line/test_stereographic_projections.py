@@ -32,7 +32,7 @@ def test_labels(dials_data, tmpdir):
         fil="experiments*.json", sort=True
     )
     args = [e.strpath for e in experiments] + [
-        "plot.labels=%s" % " ".join(str(i) for i in range(len(experiments))),
+        f"plot.labels={' '.join(str(i) for i in range(len(experiments)))}",
         "json.filename=proj.json",
         "hkl=1,0,0",
     ]

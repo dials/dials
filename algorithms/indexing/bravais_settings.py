@@ -141,14 +141,14 @@ class RefinedSettingsList(list):
             table_data.append(
                 [
                     "%1s%7d" % (status, item.setting_number),
-                    "%(max_angular_difference)6.4f" % item,
-                    "%5.3f" % item.rmsd,
+                    f"{item['max_angular_difference']:6.4f}",
+                    f"{item.rmsd:5.3f}",
                     min_max_cc_str,
                     "%d" % item.Nmatches,
-                    "%(bravais)s" % item,
+                    f"{item['bravais']}",
                     "%6.2f %6.2f %6.2f %6.2f %6.2f %6.2f" % P,
-                    "%.0f" % uc.volume(),
-                    "%s" % item["cb_op_inp_best"].as_abc(),
+                    f"{uc.volume():.0f}",
+                    f"{item['cb_op_inp_best'].as_abc()}",
                 ]
             )
 

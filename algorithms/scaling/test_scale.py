@@ -269,7 +269,7 @@ def test_targeted_scaling_against_mtz(dials_data, tmpdir):
     refl = location.join("scaled_30.refl").strpath
     expt = location.join("scaled_30.expt").strpath
     target_mtz = tmpdir.join("unmerged.mtz").strpath
-    command = ["dials.scale", refl, expt, "target_mtz=%s" % target_mtz]
+    command = ["dials.scale", refl, expt, f"target_mtz={target_mtz}"]
 
     result = procrunner.run(command, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
@@ -571,7 +571,7 @@ def test_scale_best_unit_cell_d_min(dials_data, tmpdir):
     command = [
         "dials.scale",
         "best_unit_cell=%g,%g,%g,%g,%g,%g" % best_unit_cell.parameters(),
-        "d_min=%g" % d_min,
+        f"d_min={d_min:g}",
         "unmerged_mtz=unmerged.mtz",
         "merged_mtz=merged.mtz",
     ]
@@ -845,15 +845,15 @@ def test_scale_cross_validate(dials_data, tmpdir, mode, parameter, parameter_val
     refl = data_dir / "20_integrated.pickle"
     expt = data_dir / "20_integrated_experiments.json"
     extra_args = [
-        "cross_validation_mode=%s" % mode,
+        f"cross_validation_mode={mode}",
         "nfolds=2",
         "full_matrix=0",
         "error_model=None",
     ]
     if parameter:
-        extra_args += ["parameter=%s" % parameter]
+        extra_args += [f"parameter={parameter}"]
     if parameter_values:
-        extra_args += ["parameter_values=%s" % parameter_values]
+        extra_args += [f"parameter_values={parameter_values}"]
     command = ["dials.scale", refl, expt] + extra_args
     result = procrunner.run(command, working_directory=tmpdir)
     assert not result.returncode and not result.stderr

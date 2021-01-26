@@ -50,9 +50,7 @@ def nag():
     try:
         path = libtbx.env.dist_path(caller)
     except Exception as e:
-        print(
-            "error on obtaining module path for %s for pre-commit nagging:" % caller, e
-        )
+        print(f"error on obtaining module path for {caller} for pre-commit nagging:", e)
         return
 
     if not os.path.isdir(os.path.join(path, ".git")):

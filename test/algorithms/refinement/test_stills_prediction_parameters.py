@@ -208,7 +208,7 @@ def test_stills_pred_param(tc):
     for i, (an_grad, fd_grad) in enumerate(zip(an_grads, fd_grads)):
 
         # compare FD with analytical calculations
-        print("\nParameter {}: {}".format(i, fd_grad["name"]))
+        print(f"\nParameter {i}: {fd_grad['name']}")
 
         for name in ["dX_dp", "dY_dp", "dDeltaPsi_dp"]:
             print(name)
@@ -267,9 +267,7 @@ def test_stills_pred_param(tc):
                 assert flex.max(flex.abs(norm_error)) < 30
             except AssertionError as e:
                 e.args += (
-                    "extreme normalised error value: {}".format(
-                        flex.max(flex.abs(norm_error))
-                    ),
+                    f"extreme normalised error value: {flex.max(flex.abs(norm_error))}",
                 )
                 raise e
 
@@ -298,7 +296,7 @@ def test_stills_pred_param(tc):
                     ).format(n_outliers, tst_val)
                 )
                 # largest normalied error now about -4. for dX/dp of Detector0Tau1
-                assert abs(tst_val) < 6, "should be < 6, not %s" % tst_val
+                assert abs(tst_val) < 6, f"should be < 6, not {tst_val}"
 
 
 # In comparison with FD approximations, the worst gradients by far are dX/dp
@@ -333,7 +331,7 @@ def test_spherical_relp_stills_pred_param(tc):
 
     # compare FD with analytical calculations
     for i, (an_grad, fd_grad) in enumerate(zip(an_grads, fd_grads)):
-        print("\nParameter {}: {}".format(i, fd_grad["name"]))
+        print(f"\nParameter {i}: {fd_grad['name']}")
         for name in ["dX_dp", "dY_dp", "dDeltaPsi_dp"]:
             print(name)
             for a, b in zip(an_grad[name], fd_grad[name]):

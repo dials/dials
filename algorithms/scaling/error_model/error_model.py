@@ -472,7 +472,7 @@ class BasicErrorModel:
     def __str__(self):
         a = abs(self.parameters[0])
         b = abs(self.parameters[1])
-        ISa = "%.3f" % (1.0 / (b * a)) if (b * a) > 0 else "Unable to estimate"
+        ISa = f"{1.0 / (b * a):.3f}" if (b * a) > 0 else "Unable to estimate"
         if six.PY2:
             return "\n".join(
                 (
@@ -513,7 +513,7 @@ class BasicErrorModel:
             "Corrected variance",
         ]
         rows = []
-        bin_bounds = ["%.2f" % i for i in self.binner.binning_info["bin_boundaries"]]
+        bin_bounds = [f"{i:.2f}" for i in self.binner.binning_info["bin_boundaries"]]
         for i, (initial_var, bin_var, n_refl) in enumerate(
             zip(
                 self.binner.binning_info["initial_variances"],

@@ -212,7 +212,7 @@ def run(args=None):
     prefix = params.output.prefix
     if prefix is None:
         prefix = ""
-    summary_file = "%sbravais_summary.json" % prefix
+    summary_file = f"{prefix}bravais_summary.json"
     logger.info("Saving summary as %s", summary_file)
     with open(os.path.join(params.output.directory, summary_file), "w") as fh:
         json.dump(refined_settings.as_dict(), fh)

@@ -32,7 +32,7 @@ def flex_histogram(z, char="*", width=60, height=10):
     # estimate the total number of images
     image_count = xmax - xmin + 1
     if image_count <= 1:
-        return "%i spots found on 1 image" % len(z)
+        return f"{len(z)} spots found on 1 image"
 
     # determine histogram width
     width = min(image_count, width)

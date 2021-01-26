@@ -91,7 +91,7 @@ def run(args=None):
     with open(params.output.mask, "wb") as fh:
         pickle.dump(mask, fh, pickle.HIGHEST_PROTOCOL)
 
-    print("Wrote hot pixel mask to %s" % params.output.mask)
+    print(f"Wrote hot pixel mask to {params.output.mask}")
 
 
 def hot_pixel_mask(imageset, reflections):
@@ -107,7 +107,7 @@ def hot_pixel_mask(imageset, reflections):
     for x, y in xylist:
         mask[y, x] = False
 
-    print("Found %d hot pixels" % len(xylist))
+    print(f"Found {len(xylist)} hot pixels")
 
     return (mask,)
 

@@ -54,14 +54,14 @@ class Script:
 
         reflections = reflections[0]
 
-        print("Read %d reflections" % len(reflections))
+        print(f"Read {len(reflections)} reflections")
 
         indexed = reflections.select(reflections.get_flags(reflections.flags.indexed))
 
-        print("Kept %d indexed reflections" % len(indexed))
+        print(f"Kept {len(indexed)} indexed reflections")
 
         for name in sorted(indexed.keys()):
-            print("Found column %s" % name)
+            print(f"Found column {name}")
 
         for reflection in indexed[:3]:
             print(reflection)

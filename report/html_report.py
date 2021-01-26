@@ -28,21 +28,20 @@ class html_report:
             js_dir = libtbx.env.find_in_repositories("dials/static/js")
             katex_dir = libtbx.env.find_in_repositories("dials/static/katex")
 
-            plotly_js = '<script src="%s/plotly-latest.min.js"></script>' % js_dir
-            bootstrap_js = '<script src="%s/bootstrap.min.js"></script>' % js_dir
-            jquery_js = '<script src="%s/jquery-1.12.0.min.js"></script>' % js_dir
+            plotly_js = f'<script src="{js_dir}/plotly-latest.min.js"></script>'
+            bootstrap_js = f'<script src="{js_dir}/bootstrap.min.js"></script>'
+            jquery_js = f'<script src="{js_dir}/jquery-1.12.0.min.js"></script>'
             bootstrap_css = (
-                '<link rel="stylesheet" href="%s/bootstrap.min.css">' % css_dir
+                f'<link rel="stylesheet" href="{css_dir}/bootstrap.min.css">'
             )
             katex_js = (
-                '<script type="text/javascript" src=%s/katex.min.js></script>'
-                % katex_dir
+                f'<script type="text/javascript" src={katex_dir}/katex.min.js></script>'
             )
             katex_auto_render_js = (
                 '<script type="text/javascript" src=%s/contrib/auto-render.min.js></script>'
                 % katex_dir
             )
-            katex_css = '<link rel="stylesheet" href="%s/katex.min.css">' % katex_dir
+            katex_css = f'<link rel="stylesheet" href="{katex_dir}/katex.min.css">'
 
         elif self.external_dependencies == "embed":
             import os
@@ -199,13 +198,9 @@ class page_header:
         self._title = title
 
     def html(self):
-        html = (
-            """\
-<div class="page-header">
-  <h1>%s</h1>
+        html = f"""<div class="page-header">
+  <h1>{self._title}</h1>
 </div>"""
-            % self._title
-        )
         return html
 
 
@@ -267,14 +262,11 @@ class table_responsive:
             style = ' style="width: %ipx"' % self._width
         else:
             style = ""
-        html = """
-<div class="table-responsive"{}>
-  {}
+        html = f"""
+<div class="table-responsive"{style}>
+  {self._table_html}
 </div>
-""".format(
-            style,
-            self._table_html,
-        )
+"""
         return html
 
 

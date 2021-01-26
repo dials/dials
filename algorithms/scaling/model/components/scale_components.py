@@ -94,12 +94,9 @@ class ScaleComponentBase:
     def parameters(self, new_parameters):
         assert len(new_parameters) == len(
             self._parameters
-        ), """
+        ), f"""
 attempting to set a new set of parameters of different length than previous
-assignment: was {}, attempting {}""".format(
-            len(self._parameters),
-            len(new_parameters),
-        )
+assignment: was {len(self._parameters)}, attempting {len(new_parameters)}"""
         self._parameters = new_parameters
 
     @property

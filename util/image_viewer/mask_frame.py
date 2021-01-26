@@ -658,7 +658,7 @@ class MaskSettingsPanel(wx.Panel):
         else:
             return
 
-        print("Writing mask to %s" % self.params.output.mask)
+        print(f"Writing mask to {self.params.output.mask}")
         with open(self.params.output.mask, "wb") as fh:
             pickle.dump(mask, fh, protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -667,7 +667,7 @@ class MaskSettingsPanel(wx.Panel):
 
         file_name = self.params.output.mask_params
         with open(file_name, "w") as f:
-            print("Saving parameters to %s" % file_name)
+            print(f"Saving parameters to {file_name}")
             phil_scope.fetch_diff(phil_scope.format(self.params.masking)).show(f)
 
     def UpdateMask(self):

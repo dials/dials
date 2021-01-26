@@ -42,7 +42,7 @@ def plot_screw_axes(screw_axes_data):
                         }
                     ],
                     "layout": {
-                        "title": "I (merged) / σ (merged) along axis %s" % name,
+                        "title": f"I (merged) / σ (merged) along axis {name}",
                         "xaxis": {
                             "domain": [0, 1],
                             "anchor": "y",
@@ -84,7 +84,7 @@ def plot_screw_axes(screw_axes_data):
                         },
                     ],
                     "layout": {
-                        "title": "I, σ (merged) along axis %s" % name,
+                        "title": f"I, σ (merged) along axis {name}",
                         "xaxis": {
                             "domain": [0, 1],
                             "anchor": "y",

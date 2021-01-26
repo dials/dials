@@ -64,11 +64,11 @@ def write_image_from_flex_array(out_image, pixel_values, header):
     header = header.decode()
     for record in header.split("\n")[:-1]:
         if "X-Binary-Size:" in record:
-            fixed_header += "X-Binary-Size: %d\r\n" % len(compressed)
+            fixed_header += f"X-Binary-Size: {len(compressed)}\r\n"
         elif "Content-MD5" in record:
             pass
         else:
-            fixed_header += "%s\n" % record
+            fixed_header += f"{record}\n"
 
     tailer = "\r\n--CIF-BINARY-FORMAT-SECTION----\r\n;\r\n"
 

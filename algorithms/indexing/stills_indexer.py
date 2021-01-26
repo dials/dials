@@ -36,7 +36,7 @@ def plot_displacements(reflections, predictions, experiments):
     plt.figure()
     for cv in displacements:
         plt.plot([cv[0]], [-cv[1]], "r.")
-    plt.title(" %d spots, r.m.s.d. %5.2f pixels" % (len(displacements), rmsd))
+    plt.title(f" {len(displacements)} spots, r.m.s.d. {rmsd:5.2f} pixels")
     plt.axes().set_aspect("equal")
     plt.show()
     plt.close()
@@ -54,7 +54,7 @@ def plot_displacements(reflections, predictions, experiments):
 
     plt.xlim([0, experiments[0].detector[0].get_image_size()[0]])
     plt.ylim([0, experiments[0].detector[0].get_image_size()[1]])
-    plt.title(" %d spots, r.m.s.d. %5.2f pixels" % (len(displacements), rmsd))
+    plt.title(f" {len(displacements)} spots, r.m.s.d. {rmsd:5.2f} pixels")
     plt.axes().set_aspect("equal")
     plt.show()
     plt.close()
@@ -637,7 +637,7 @@ class StillsIndexer(Indexer):
 
         if params.indexing.stills.refine_all_candidates:
             if best.rmsd > params.indexing.stills.rmsd_min_px:
-                raise DialsIndexError("RMSD too high, %f" % best.rmsd)
+                raise DialsIndexError(f"RMSD too high, {best.rmsd:f}")
 
             if len(candidates) > 1:
                 for i in range(len(candidates)):

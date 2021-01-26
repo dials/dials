@@ -1023,25 +1023,25 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
             # distance from lab origin to ref_panel plane along its normal,
             # in initial orientation
             distance = self._groups[igp].get_directed_distance()
-            dist = Parameter(distance, dn, "length (mm)", "Group{}Dist".format(igp + 1))
+            dist = Parameter(distance, dn, "length (mm)", f"Group{igp + 1}Dist")
 
             # shift in the detector model plane to locate dorg, in initial
             # orientation
             shift = dorg - dn * distance
             shift1 = Parameter(
-                shift.dot(d1), d1, "length (mm)", "Group{}Shift1".format(igp + 1)
+                shift.dot(d1), d1, "length (mm)", f"Group{igp + 1}Shift1"
             )
             shift2 = Parameter(
-                shift.dot(d2), d2, "length (mm)", "Group{}Shift2".format(igp + 1)
+                shift.dot(d2), d2, "length (mm)", f"Group{igp + 1}Shift2"
             )
 
             # rotations of the plane through its origin about:
             # 1) axis normal to initial orientation
             # 2) d1 axis of initial orientation
             # 3) d2 axis of initial orientation
-            tau1 = Parameter(0, dn, "angle (mrad)", "Group{}Tau1".format(igp + 1))
-            tau2 = Parameter(0, d1, "angle (mrad)", "Group{}Tau2".format(igp + 1))
-            tau3 = Parameter(0, d2, "angle (mrad)", "Group{}Tau3".format(igp + 1))
+            tau1 = Parameter(0, dn, "angle (mrad)", f"Group{igp + 1}Tau1")
+            tau2 = Parameter(0, d1, "angle (mrad)", f"Group{igp + 1}Tau2")
+            tau3 = Parameter(0, d2, "angle (mrad)", f"Group{igp + 1}Tau3")
 
             # extend the parameter list with those pertaining to this group
             p_list.extend([dist, shift1, shift2, tau1, tau2, tau3])

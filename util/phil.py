@@ -29,7 +29,7 @@ class ExperimentListConverters:
         if s == "<image files>":
             return FilenameDataWrapper(filename=s, data=None)
         if not os.path.exists(s):
-            raise Sorry("File %s does not exist" % s)
+            raise Sorry(f"File {s} does not exist")
         return FilenameDataWrapper(
             filename=s,
             data=ExperimentListFactory.from_json_file(
@@ -58,7 +58,7 @@ class ReflectionTableConverters:
         if s is None:
             return None
         if not os.path.exists(s):
-            raise Sorry("File %s does not exist" % s)
+            raise Sorry(f"File {s} does not exist")
         return FilenameDataWrapper(filename=s, data=flex.reflection_table.from_file(s))
 
     def as_words(self, python_object, master):
@@ -84,9 +84,9 @@ class ReflectionTableSelectorConverters:
         regex = r"^\s*([\w\.]+)\s*(<=|!=|==|>=|<|>|&)\s*(.+)\s*$"
         matches = re.findall(regex, s)
         if len(matches) == 0:
-            raise RuntimeError("%s is not a valid selection" % s)
+            raise RuntimeError(f"{s} is not a valid selection")
         elif len(matches) > 1:
-            raise RuntimeError("%s is not a single selection" % s)
+            raise RuntimeError(f"{s} is not a single selection")
         else:
             match = matches[0]
         assert len(match) == 3

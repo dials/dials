@@ -89,8 +89,8 @@ class installer(install_distribution.installer):
             while nbytes >= 1024 and i < len(suffixes) - 1:
                 nbytes /= 1024.0
                 i += 1
-            f = ("%.2f" % nbytes).rstrip("0").rstrip(".")
-            return "{} {}".format(f, suffixes[i])
+            f = f"{nbytes:.2f}".rstrip("0").rstrip(".")
+            return f"{f} {suffixes[i]}"
 
         self._cleaned_size, self._cleaned_files = 0, 0
 
@@ -138,7 +138,7 @@ class installer(install_distribution.installer):
                 print("Skipping", " " * 26, filename)
                 return
             filesize = os.path.getsize(fullpath)
-            print("Removing {:>9}, file {}".format(humansize(filesize), filename))
+            print(f"Removing {humansize(filesize):>9}, file {filename}")
             os.remove(fullpath)
             self._cleaned_size = self._cleaned_size + filesize
             self._cleaned_files = self._cleaned_files + 1

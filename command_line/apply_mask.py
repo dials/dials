@@ -90,7 +90,7 @@ class Script:
             imageset.external_lookup.mask.data = ImageBool(mask)
 
         # Dump the experiments
-        print("Writing experiments to %s" % params.output.experiments)
+        print(f"Writing experiments to {params.output.experiments}")
         experiments.as_file(filename=params.output.experiments)
 
 

@@ -123,9 +123,9 @@ def run(args=None):
                 "rotation",
                 "goniometer",
                 depends_on,
-                "%.4f" % axis[0],
-                "%.4f" % axis[1],
-                "%.4f" % axis[2],
+                f"{axis[0]:.4f}",
+                f"{axis[1]:.4f}",
+                f"{axis[2]:.4f}",
                 ".",
                 ".",
                 ".",
@@ -136,8 +136,8 @@ def run(args=None):
     print("Goniometer axes and angles (ImgCIF coordinate system):")
     for axis, angle, name in zip(axes, angles, axis_names):
         print(
-            "%s: " % name,
-            "rotation of %.3f degrees" % angle,
+            f"{name}: ",
+            f"rotation of {angle:.3f} degrees",
             "about axis (%.5f,%.5f,%.5f)" % axis,
         )
 
@@ -145,8 +145,8 @@ def run(args=None):
     print("Goniometer axes and angles (MOSFLM coordinate system):")
     for axis, angle, name in zip(axes, angles, axis_names):
         print(
-            "%s: " % name,
-            "rotation of %.3f degrees" % angle,
+            f"{name}: ",
+            f"rotation of {angle:.3f} degrees",
             "about axis (%.5f,%.5f,%.5f)" % (R_to_mosflm * matrix.col(axis)).elems,
         )
 

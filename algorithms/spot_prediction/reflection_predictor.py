@@ -81,8 +81,7 @@ class ReflectionPredictor:
         wl = experiment.beam.get_wavelength()
         if dmin is not None and dmin < 0.5 * wl:
             raise Sorry(
-                "Prediction at d_min of {} is not possible "
-                "with wavelength {}".format(dmin, wl)
+                f"Prediction at d_min of {dmin} is not possible with wavelength {wl}"
             )
 
         # Select the predictor class

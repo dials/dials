@@ -97,7 +97,7 @@ def run(args=None):
         ("Overall statistics", ""),
         ("#spots", "%i" % overall_stats.n_spots_total),
         ("#spots_no_ice", "%i" % overall_stats.n_spots_no_ice),
-        ("d_min", "%.2f" % overall_stats.estimated_d_min),
+        ("d_min", f"{overall_stats.estimated_d_min:.2f}"),
         (
             "d_min (distl method 1)",
             "%.2f (%.2f)"

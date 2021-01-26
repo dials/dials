@@ -213,7 +213,7 @@ class ConstraintManagerFactory:
                     )
             for j in p.get_experiment_ids():
                 if j in constraint_scope.id:
-                    prefixes.append(model_type + "{}".format(j + 1))
+                    prefixes.append(model_type + f"{j + 1}")
                     break
 
         # ignore model name prefixes

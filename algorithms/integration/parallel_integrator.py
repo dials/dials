@@ -220,7 +220,7 @@ class IntensityCalculatorFactory:
             elif params.fit_method == "detector_space":
                 detector_space = True
             else:
-                raise RuntimeError("Unknown fit method: %s" % params.fit_method)
+                raise RuntimeError(f"Unknown fit method: {params.fit_method}")
 
             # Create the algorithm
             algorithm = GaussianRSIntensityCalculatorFactory.create(
@@ -291,16 +291,15 @@ def _assert_enough_memory(required_memory, max_memory_usage):
     limit_memory = total_memory * max_memory_usage
     if required_memory > limit_memory:
         raise RuntimeError(
-            """
+            f"""
     There was a problem allocating memory for image data. Possible solutions
     include increasing the percentage of memory allowed for shoeboxes or
     decreasing the block size. This could also be caused by a highly mosaic
     crystal model - is your crystal really this mosaic?
-      Total system memory: %.1f GB
-      Limit image memory: %.1f GB
-      Required image memory: %.1f GB
+      Total system memory: {total_memory / 1000000000.0:.1f} GB
+      Limit image memory: {limit_memory / 1000000000.0:.1f} GB
+      Required image memory: {required_memory / 1000000000.0:.1f} GB
     """
-            % (total_memory / 1e9, limit_memory / 1e9, required_memory / 1e9)
         )
     else:
         logger.info("Allocating %.1f MB memory", required_memory / 1e6)
@@ -681,7 +680,7 @@ class IntegrationManager:
             elif block.units == "frames":
                 block_size = int(math.ceil(block.size))
             else:
-                raise RuntimeError("Unknown block_size unit %r" % block.units)
+                raise RuntimeError(f"Unknown block_size unit {block.units!r}")
             if block_size > max_block_size:
                 raise RuntimeError(
                     """
@@ -1152,7 +1151,7 @@ class ReferenceCalculatorManager:
             elif block.units == "frames":
                 block_size = int(math.ceil(block.size))
             else:
-                raise RuntimeError("Unknown block_size unit %r" % block.units)
+                raise RuntimeError(f"Unknown block_size unit {block.units!r}")
             if block_size > max_block_size:
                 raise RuntimeError(
                     """

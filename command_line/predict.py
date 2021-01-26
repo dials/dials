@@ -124,13 +124,9 @@ class Script:
             pass
 
         # Save the reflections to file
-        Command.start(
-            "Saving {} reflections to {}".format(len(predicted_all), params.output)
-        )
+        Command.start(f"Saving {len(predicted_all)} reflections to {params.output}")
         predicted_all.as_file(params.output)
-        Command.end(
-            "Saved {} reflections to {}".format(len(predicted_all), params.output)
-        )
+        Command.end(f"Saved {len(predicted_all)} reflections to {params.output}")
 
 
 @show_mail_handle_errors()

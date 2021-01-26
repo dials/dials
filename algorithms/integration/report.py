@@ -348,11 +348,11 @@ class IntegrationReport(Report):
                         "%d" % report["n_ice"][i],
                         "%d" % report["n_summed"][i],
                         "%d" % report["n_fitted"][i],
-                        "%.2f" % report["mean_background"][i],
-                        "%.2f" % report["ios_sum"][i],
-                        "%.2f" % report["ios_prf"][i],
-                        "%.2f" % report["cc_prf"][i],
-                        "%.2f" % report["rmsd_xy"][i],
+                        f"{report['mean_background'][i]:.2f}",
+                        f"{report['ios_sum'][i]:.2f}",
+                        f"{report['ios_prf'][i]:.2f}",
+                        f"{report['cc_prf'][i]:.2f}",
+                        f"{report['rmsd_xy'][i]:.2f}",
                     ]
                 )
         self.add_table(table)
@@ -380,18 +380,18 @@ class IntegrationReport(Report):
                 table.rows.append(
                     [
                         "%d" % j,
-                        "%.2f" % report["bins"][i],
+                        f"{report['bins'][i]:.2f}",
                         "%d" % report["n_full"][i],
                         "%d" % report["n_partial"][i],
                         "%d" % report["n_overload"][i],
                         "%d" % report["n_ice"][i],
                         "%d" % report["n_summed"][i],
                         "%d" % report["n_fitted"][i],
-                        "%.2f" % report["mean_background"][i],
-                        "%.2f" % report["ios_sum"][i],
-                        "%.2f" % report["ios_prf"][i],
-                        "%.2f" % report["cc_prf"][i],
-                        "%.2f" % report["rmsd_xy"][i],
+                        f"{report['mean_background'][i]:.2f}",
+                        f"{report['ios_sum'][i]:.2f}",
+                        f"{report['ios_prf'][i]:.2f}",
+                        f"{report['cc_prf'][i]:.2f}",
+                        f"{report['rmsd_xy'][i]:.2f}",
                     ]
                 )
         self.add_table(table)
@@ -478,10 +478,10 @@ class ProfileModelReport(Report):
                     [
                         "%d" % i,
                         "%d" % j,
-                        "%s" % model.valid(j),
-                        "%.2f" % model.coord(j)[0],
-                        "%.2f" % model.coord(j)[1],
-                        "%.2f" % model.coord(j)[2],
+                        f"{model.valid(j)}",
+                        f"{model.coord(j)[0]:.2f}",
+                        f"{model.coord(j)[1]:.2f}",
+                        f"{model.coord(j)[2]:.2f}",
                         "%d" % model.n_reflections(j),
                     ]
                 )
@@ -559,8 +559,8 @@ class ProfileValidationReport(Report):
                         "%d" % i,
                         "%d" % j,
                         "%d" % num_validated,
-                        "%.2f" % mean_cc,
-                        "%.2f" % mean_nrmsd,
+                        f"{mean_cc:.2f}",
+                        f"{mean_nrmsd:.2f}",
                     ]
                 )
 

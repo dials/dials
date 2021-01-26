@@ -143,7 +143,7 @@ class Script:
             solutions.extend(sol_minus)
 
         if not solutions:
-            sys.exit("Impossible two theta: %.3f," % (two_theta * 180.0 / math.pi))
+            sys.exit(f"Impossible two theta: {two_theta * 180.0 / math.pi:.3f},")
 
         logger.info("Maximum two theta: %.3f,", two_theta * 180.0 / math.pi)
         logger.info("%d solutions found", len(solutions))

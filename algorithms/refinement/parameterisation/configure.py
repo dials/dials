@@ -429,7 +429,7 @@ def _parameterise_beams(options, experiments, analysis):
             beam_param = BeamParameterisation(beam, goniometer, experiment_ids=exp_ids)
 
         # Set the model identifier to name the parameterisation
-        beam_param.model_identifier = "Beam{}".format(ibeam + 1)
+        beam_param.model_identifier = f"Beam{ibeam + 1}"
 
         # get number of fixable units, either parameters or parameter sets in
         # the scan-varying case
@@ -511,7 +511,7 @@ def _parameterise_crystals(options, experiments, analysis):
             )
 
         # Set the model identifier to name the parameterisation
-        xl_ori_param.model_identifier = "Crystal{}".format(icrystal + 1)
+        xl_ori_param.model_identifier = f"Crystal{icrystal + 1}"
 
         # unit cell parameterisation
         if sv_xl_uc:
@@ -532,7 +532,7 @@ def _parameterise_crystals(options, experiments, analysis):
             )
 
         # Set the model identifier to name the parameterisation
-        xl_uc_param.model_identifier = "Crystal{}".format(icrystal + 1)
+        xl_uc_param.model_identifier = f"Crystal{icrystal + 1}"
 
         # get number of fixable units, either parameters or parameter sets in
         # the scan-varying case
@@ -670,7 +670,7 @@ def _parameterise_detectors(options, experiments, analysis):
                     )
 
         # Set the model identifier to name the parameterisation
-        det_param.model_identifier = "Detector{}".format(idetector + 1)
+        det_param.model_identifier = f"Detector{idetector + 1}"
 
         # get number of fixable units, either parameters or parameter sets in
         # the scan-varying case
@@ -742,7 +742,7 @@ def _parameterise_goniometers(options, experiments, analysis):
             )
 
         # Set the model identifier to name the parameterisation
-        gon_param.model_identifier = "Goniometer{}".format(igoniometer + 1)
+        gon_param.model_identifier = f"Goniometer{igoniometer + 1}"
 
         # get number of fixable units, either parameters or parameter sets in
         # the scan-varying case

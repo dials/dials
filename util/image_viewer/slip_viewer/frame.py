@@ -211,9 +211,7 @@ class XrayFrame(XFBaseClass):
                 else:
                     readout = -1
 
-                coords_str = "slow={:.3f} / fast={:.3f} pixels".format(
-                    coords[0], coords[1]
-                )
+                coords_str = f"slow={coords[0]:.3f} / fast={coords[1]:.3f} pixels"
                 if len(coords) == 2:
                     posn_str += " Readout: " + coords_str + "."
                 elif readout >= 0:
@@ -252,7 +250,7 @@ class XrayFrame(XFBaseClass):
                     reso = self.pyslip.tiles.get_resolution(coords[1], coords[0])
 
                 if reso is not None:
-                    posn_str += " Resolution: %.3f" % (reso)
+                    posn_str += f" Resolution: {reso:.3f}"
 
             self.statusbar.SetStatusText(posn_str)
         else:

@@ -436,7 +436,7 @@ class Task:
             assert (frame1 - frame0) <= len(imageset)
             imageset = imageset[frame0:frame1]
         except Exception as e:
-            raise RuntimeError("Programmer Error: bad array range: %s" % str(e))
+            raise RuntimeError(f"Programmer Error: bad array range: {str(e)}")
 
         try:
             frame0, frame1 = imageset.get_array_range()
@@ -730,7 +730,7 @@ class _Manager:
                 block_overlap = min(block_overlap, int(block_size_frames // 2))
             else:
                 raise RuntimeError(
-                    "Unknown block_size units %r" % self.params.block.units
+                    f"Unknown block_size units {self.params.block.units!r}"
                 )
             self.jobs.add(
                 (i0, i1),

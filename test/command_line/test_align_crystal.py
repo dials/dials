@@ -6,7 +6,7 @@ import procrunner
 def test_align_crystal(dials_regression, tmpdir):
     path = os.path.join(dials_regression, "experiment_test_data")
     result = procrunner.run(
-        ("dials.align_crystal", "%s/kappa_experiments.json" % path),
+        ("dials.align_crystal", f"{path}/kappa_experiments.json"),
         working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr

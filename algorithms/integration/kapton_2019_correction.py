@@ -46,7 +46,7 @@ class KaptonTape_2019:
             p.set_pixel_size((pixel_size, pixel_size))
             p.set_image_size(image_size)
             p.set_trusted_range((-1, 2e6))
-            p.set_name("KAPTON_%s" % name)
+            p.set_name(f"KAPTON_{name}")
             return d
 
         # Set up the bounding box of the kapton

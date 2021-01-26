@@ -173,7 +173,7 @@ def _install_dials_autocompletion():
             # Check if this file marks itself as completable
             with open(os.path.join(commands_dir, filename), "rb") as f:
                 if b"DIALS_ENABLE_COMMAND_LINE_COMPLETION" in f.read():
-                    command_name = "dials.%s" % filename[:-3]
+                    command_name = f"dials.{filename[:-3]}"
                     command_list.append(command_name)
     print("Identified autocompletable commands: " + " ".join(command_list))
 
@@ -211,11 +211,11 @@ for cmd in [
     with open(os.path.join(output_directory, "bash.sh"), "w") as script:
         script.write("type compopt &>/dev/null && {\n")
         for cmd in command_list:
-            script.write(" complete -F _dials_autocomplete %s\n" % cmd)
+            script.write(f" complete -F _dials_autocomplete {cmd}\n")
         script.write("}\n")
         script.write("type compopt &>/dev/null || {\n")
         for cmd in command_list:
-            script.write(" complete -o nospace -F _dials_autocomplete %s\n" % cmd)
+            script.write(f" complete -o nospace -F _dials_autocomplete {cmd}\n")
         script.write("}\n")
 
 

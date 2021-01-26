@@ -342,7 +342,7 @@ class CCHalfFromDials:
                         table_id,
                     )
                     exclude_images.append(
-                        ["{}:{}:{}".format(table_id, image_range[0], image_range[1])]
+                        [f"{table_id}:{image_range[0]}:{image_range[1]}"]
                     )
                     if expid_to_image_groups[exp_id][-1] == id_:
                         del expid_to_image_groups[exp_id][-1]
@@ -383,9 +383,7 @@ class CCHalfFromDials:
             for imgrange in exp.scan.get_valid_image_ranges(exp.identifier):
                 if all([j not in tested for j in range(imgrange[0], imgrange[1] + 1)]):
                     table_id = expid_to_tableid[exp.identifier]
-                    exclude_images.append(
-                        ["{}:{}:{}".format(table_id, imgrange[0], imgrange[1])]
-                    )
+                    exclude_images.append([f"{table_id}:{imgrange[0]}:{imgrange[1]}"])
                     logger.info(
                         "Removing %s due to scaling outlier group.", exclude_images[-1]
                     )

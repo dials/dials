@@ -96,7 +96,7 @@ def estimate_gain(imageset, kernel_size=(10, 10), output_gain_map=None, max_imag
         )
         sorted_dispersion = sorted_dispersion.select(inlier_sel)
         gain = sorted_dispersion[nint(len(sorted_dispersion) / 2)]
-        print("Estimated gain: %.2f" % gain)
+        print(f"Estimated gain: {gain:.2f}")
         gains.append(gain)
 
         if image_no == 0:

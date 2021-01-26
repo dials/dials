@@ -26,7 +26,7 @@ if __name__ == "__main__":
     import sys
 
     if len(sys.argv) != 2:
-        raise RuntimeError("%s strong.refl" % sys.argv[0])
+        raise RuntimeError(f"{sys.argv[0]} strong.refl")
 
     from dials.array_family import flex
 

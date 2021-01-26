@@ -91,12 +91,10 @@ class TwoThetaReflectionManager(ReflectionManager):
         rows = []
         row_data = five_number_summary(twotheta_resid)
         rows.append(
-            ["2theta_c - 2theta_o (deg)"] + ["%.4g" % (e * RAD2DEG) for e in row_data]
+            ["2theta_c - 2theta_o (deg)"] + [f"{e * RAD2DEG:.4g}" for e in row_data]
         )
         row_data = five_number_summary(w_2theta)
-        rows.append(
-            ["2theta weights"] + ["%.4g" % (e * DEG2RAD ** 2) for e in row_data]
-        )
+        rows.append(["2theta weights"] + [f"{e * DEG2RAD ** 2:.4g}" for e in row_data])
         logger.info(msg)
         logger.info(tabulate(rows, header) + "\n")
 

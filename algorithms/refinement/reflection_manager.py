@@ -699,17 +699,17 @@ class ReflectionManager:
         header = ["", "Min", "Q1", "Med", "Q3", "Max"]
         rows = []
         row_data = five_number_summary(x_resid)
-        rows.append(["Xc - Xo (mm)"] + ["%.4g" % e for e in row_data])
+        rows.append(["Xc - Xo (mm)"] + [f"{e:.4g}" for e in row_data])
         row_data = five_number_summary(y_resid)
-        rows.append(["Yc - Yo (mm)"] + ["%.4g" % e for e in row_data])
+        rows.append(["Yc - Yo (mm)"] + [f"{e:.4g}" for e in row_data])
         row_data = five_number_summary(phi_resid)
-        rows.append(["Phic - Phio (deg)"] + ["%.4g" % (e * RAD2DEG) for e in row_data])
+        rows.append(["Phic - Phio (deg)"] + [f"{e * RAD2DEG:.4g}" for e in row_data])
         row_data = five_number_summary(w_x)
-        rows.append(["X weights"] + ["%.4g" % e for e in row_data])
+        rows.append(["X weights"] + [f"{e:.4g}" for e in row_data])
         row_data = five_number_summary(w_y)
-        rows.append(["Y weights"] + ["%.4g" % e for e in row_data])
+        rows.append(["Y weights"] + [f"{e:.4g}" for e in row_data])
         row_data = five_number_summary(w_phi)
-        rows.append(["Phi weights"] + ["%.4g" % (e * DEG2RAD ** 2) for e in row_data])
+        rows.append(["Phi weights"] + [f"{e * DEG2RAD ** 2:.4g}" for e in row_data])
 
         logger.info(msg)
         logger.info(dials.util.tabulate(rows, header, numalign="right") + "\n")
@@ -789,18 +789,18 @@ class StillsReflectionManager(ReflectionManager):
         header = ["", "Min", "Q1", "Med", "Q3", "Max"]
         rows = []
         row_data = five_number_summary(x_resid)
-        rows.append(["Xc - Xo (mm)"] + ["%.4g" % e for e in row_data])
+        rows.append(["Xc - Xo (mm)"] + [f"{e:.4g}" for e in row_data])
         row_data = five_number_summary(y_resid)
-        rows.append(["Yc - Yo (mm)"] + ["%.4g" % e for e in row_data])
+        rows.append(["Yc - Yo (mm)"] + [f"{e:.4g}" for e in row_data])
         row_data = five_number_summary(delpsi)
-        rows.append(["DeltaPsi (deg)"] + ["%.4g" % (e * RAD2DEG) for e in row_data])
+        rows.append(["DeltaPsi (deg)"] + [f"{e * RAD2DEG:.4g}" for e in row_data])
         row_data = five_number_summary(w_x)
-        rows.append(["X weights"] + ["%.4g" % e for e in row_data])
+        rows.append(["X weights"] + [f"{e:.4g}" for e in row_data])
         row_data = five_number_summary(w_y)
-        rows.append(["Y weights"] + ["%.4g" % e for e in row_data])
+        rows.append(["Y weights"] + [f"{e:.4g}" for e in row_data])
         row_data = five_number_summary(w_delpsi)
         rows.append(
-            ["DeltaPsi weights"] + ["%.4g" % (e * DEG2RAD ** 2) for e in row_data]
+            ["DeltaPsi weights"] + [f"{e * DEG2RAD ** 2:.4g}" for e in row_data]
         )
 
         msg = (

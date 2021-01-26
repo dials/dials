@@ -198,7 +198,7 @@ if __name__ == "__main__":
         print()
         print(
             log_format["group"]
-            % ("%d modules were added or scanned for the first time:" % len(new_files))
+            % (f"{len(new_files)} modules were added or scanned for the first time:")
         )
         for f in sorted(new_files):
             print("  ", f)

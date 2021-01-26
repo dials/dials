@@ -370,7 +370,7 @@ class settings_window(wxtbx.utils.SettingsPanel):
                     ctrl.SetBackgroundColour(self.GetBackgroundColour())
                 box = wx.BoxSizer(wx.HORIZONTAL)
                 self.panel_sizer.Add(box)
-                label = wx.StaticText(self, -1, "%s angle" % name)
+                label = wx.StaticText(self, -1, f"{name} angle")
                 box.Add(ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
                 box.Add(label, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
                 self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, ctrl)

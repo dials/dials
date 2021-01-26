@@ -38,7 +38,7 @@ class TimingInfo:
     def __str__(self):
         """Convert to string."""
         rows = [
-            [description, "%.2f seconds" % value]
+            [description, f"{value:.2f} seconds"]
             for description, value in (
                 ["Read time", self.read],
                 ["Extract time", self.extract],

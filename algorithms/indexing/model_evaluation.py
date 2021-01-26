@@ -189,10 +189,10 @@ class ModelRankFilter(ModelRank):
                         s.crystal.get_unit_cell(),
                         "{:.2f} {:.2f} {:.2f} {:.1f} {:.1f} {:.1f}",
                     ),
-                    "%.0f" % s.crystal.get_unit_cell().volume(),
+                    f"{s.crystal.get_unit_cell().volume():.0f}",
                     str(s.n_indexed),
-                    "%.0f" % (s.fraction_indexed * 100),
-                    "%.2f" % s.model_likelihood,
+                    f"{s.fraction_indexed * 100:.0f}",
+                    f"{s.model_likelihood:.2f}",
                 ]
             )
 
@@ -285,14 +285,14 @@ class ModelRankWeighted(ModelRank):
                         s.crystal.get_unit_cell(),
                         "{:.2f} {:.2f} {:.2f} {:.1f} {:.1f} {:.1f}",
                     ),
-                    "%.0f" % s.crystal.get_unit_cell().volume(),
-                    "%.2f" % score_by_volume[i],
+                    f"{s.crystal.get_unit_cell().volume():.0f}",
+                    f"{score_by_volume[i]:.2f}",
                     str(s.n_indexed),
-                    "%.0f" % (s.fraction_indexed * 100),
-                    "%.2f" % score_by_fraction_indexed[i],
-                    "%.2f" % rmsd_xy[i],
-                    "%.2f" % score_by_rmsd_xy[i],
-                    "%.2f" % combined_scores[i],
+                    f"{s.fraction_indexed * 100:.0f}",
+                    f"{score_by_fraction_indexed[i]:.2f}",
+                    f"{rmsd_xy[i]:.2f}",
+                    f"{score_by_rmsd_xy[i]:.2f}",
+                    f"{combined_scores[i]:.2f}",
                 ]
             )
 

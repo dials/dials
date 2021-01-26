@@ -118,7 +118,7 @@ class ErrorModelRegressionRefiner(SimpleLBFGS):
 
     def compute_functional_gradients_and_curvatures(self):
         """overwrite method to avoid calls to 'blocks' methods of target"""
-        logger.debug("Current parameters %s", ["%.6f" % i for i in self.x])
+        logger.debug("Current parameters %s", [f"{i:.6f}" for i in self.x])
         self.prepare_for_step()
         self._target.predict(
             self.parameterisation
@@ -189,7 +189,7 @@ class ErrorModelRefinery:
             target=target,
             prediction_parameterisation=parameterisation,
             *self.args,
-            **self.kwargs
+            **self.kwargs,
         )
         refiner.run()
 

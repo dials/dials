@@ -67,9 +67,7 @@ class Simulator:
         refl = self.generate_predictions(N)
 
         # Calculate the signal
-        progress = ProgressBar(
-            title="Calculating signal for %d reflections" % len(refl)
-        )
+        progress = ProgressBar(title=f"Calculating signal for {len(refl)} reflections")
         s1 = refl["s1"]
         phi = refl["xyzcal.mm"].parts()[2]
         bbox = refl["bbox"]
@@ -96,11 +94,11 @@ class Simulator:
                 shoebox[i].data = data.as_float()
             if i % m == 0:
                 progress.update(100.0 * float(i) / len(refl))
-        progress.finished("Calculated signal impacts for %d reflections" % len(refl))
+        progress.finished(f"Calculated signal impacts for {len(refl)} reflections")
 
         # Calculate the background
         progress = ProgressBar(
-            title="Calculating background for %d reflections" % len(refl)
+            title=f"Calculating background for {len(refl)} reflections"
         )
         for l in range(len(refl)):
             background = flex.float(flex.grid(shoebox[l].size()), 0.0)
@@ -110,7 +108,7 @@ class Simulator:
             if l % m == 0:
                 progress.update(100.0 * float(l) / len(refl))
             progress.update(100.0 * float(l) / len(refl))
-        progress.finished("Calculated background for %d reflections" % len(refl))
+        progress.finished(f"Calculated background for {len(refl)} reflections")
 
         ## Calculate the expected intensity by monte-carlo integration
         # progress = ProgressBar(title='Integrating expected signal for %d reflections' % len(refl))
@@ -168,12 +166,12 @@ class Simulator:
 
         # Filter by zeta
         zeta = 0.05
-        Command.start("Filtering by zeta >= %f" % zeta)
+        Command.start(f"Filtering by zeta >= {zeta:f}")
         mask = filtering.by_zeta(
             self.experiment.goniometer, self.experiment.beam, refl["s1"], zeta
         )
         refl.del_selected(~mask)
-        Command.end("Filtered %d reflections by zeta >= %f" % (len(refl), zeta))
+        Command.end(f"Filtered {len(refl)} reflections by zeta >= {zeta:f}")
 
         # Compute the bounding box
         refl.compute_bbox([self.experiment])
@@ -200,13 +198,13 @@ class Simulator:
 
         # Compute the bounding box
         # Create a load of shoeboxes
-        Command.start("Creating shoeboxes for %d reflections" % len(refl))
+        Command.start(f"Creating shoeboxes for {len(refl)} reflections")
         refl["shoebox"] = flex.shoebox(refl["panel"], refl["bbox"])
         refl["shoebox"].allocate_with_value(MaskCode.Valid)
-        Command.end("Created shoeboxes for %d reflections" % len(refl))
+        Command.end(f"Created shoeboxes for {len(refl)} reflections")
 
         # Get the function object to mask the foreground
-        Command.start("Masking Foreground for %d reflections" % len(refl))
+        Command.start(f"Masking Foreground for {len(refl)} reflections")
         mask_foreground = MaskCalculator3D(
             self.experiment.beam,
             self.experiment.detector,
@@ -220,7 +218,7 @@ class Simulator:
         mask_foreground(
             refl["shoebox"], refl["s1"], refl["xyzcal.px"].parts()[2], refl["panel"]
         )
-        Command.end("Masked foreground for %d reflections" % len(refl))
+        Command.end(f"Masked foreground for {len(refl)} reflections")
 
         # Return the reflections
         return refl

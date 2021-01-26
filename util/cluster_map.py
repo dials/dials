@@ -73,10 +73,10 @@ def cluster_map(func, iterable, callback=None, nslots=1, njobs=1, job_category="
         jt.jobEnvironment = os.environ
         jt.workingDirectory = cwd
         jt.outputPath = ":" + os.path.join(
-            cwd, "%s.stdout" % drmaa.JobTemplate.PARAMETRIC_INDEX
+            cwd, f"{drmaa.JobTemplate.PARAMETRIC_INDEX}.stdout"
         )
         jt.errorPath = ":" + os.path.join(
-            cwd, "%s.stderr" % drmaa.JobTemplate.PARAMETRIC_INDEX
+            cwd, f"{drmaa.JobTemplate.PARAMETRIC_INDEX}.stderr"
         )
         jt.jobCategory = job_category
 

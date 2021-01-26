@@ -279,8 +279,8 @@ class Script:
         rows = []
         names = ["a", "b", "c", "alpha", "beta", "gamma"]
         for n, p, e in zip(names, cell, esd):
-            rows.append([n, "%9.5f" % p, "%9.5f" % e])
-        rows.append(["\nvolume", "\n%9.5f" % vol, "\n%9.5f" % vol_esd])
+            rows.append([n, f"{p:9.5f}", f"{e:9.5f}"])
+        rows.append(["\nvolume", f"\n{vol:9.5f}", f"\n{vol_esd:9.5f}"])
         return tabulate(rows, header)
 
     @staticmethod
@@ -327,7 +327,7 @@ class Script:
                 "angle_gamma",
             ],
         ):
-            block["_cell_%s" % cifname] = format_float_with_standard_uncertainty(
+            block[f"_cell_{cifname}"] = format_float_with_standard_uncertainty(
                 cell, esd
             )
         block["_cell_volume"] = format_float_with_standard_uncertainty(
@@ -388,10 +388,10 @@ class Script:
                 "angle_gamma",
             ],
         ):
-            block["_cell.%s" % cifname] = "%.8f" % cell
-            block["_cell.%s_esd" % cifname] = "%.8f" % esd
-        block["_cell.volume"] = "%f" % crystal.get_unit_cell().volume()
-        block["_cell.volume_esd"] = "%f" % crystal.get_cell_volume_sd()
+            block[f"_cell.{cifname}"] = f"{cell:.8f}"
+            block[f"_cell.{cifname}_esd"] = f"{esd:.8f}"
+        block["_cell.volume"] = f"{crystal.get_unit_cell().volume():f}"
+        block["_cell.volume_esd"] = f"{crystal.get_cell_volume_sd():f}"
 
         used_reflections = refiner.get_matches()
         block["_cell_measurement.entry_id"] = "two_theta_refine"

@@ -19,7 +19,7 @@ def work(host, port, filename, params):
     conn = http.client.HTTPConnection(host, port)
     path = filename
     for param in params:
-        path += ";%s" % param
+        path += f";{param}"
     conn.request("GET", path)
     return conn.getresponse().read()
 
@@ -33,21 +33,17 @@ def _nproc():
 def response_to_xml(d):
 
     if "n_spots_total" in d:
-        response = (
-            """\
-<image>%(image)s</image>
-<spot_count>%(n_spots_total)s</spot_count>
-<spot_count_no_ice>%(n_spots_no_ice)s</spot_count_no_ice>
-<d_min>%(estimated_d_min).2f</d_min>
-<d_min_method_1>%(d_min_distl_method_1).2f</d_min_method_1>
-<d_min_method_2>%(d_min_distl_method_2).2f</d_min_method_2>
-<total_intensity>%(total_intensity).0f</total_intensity>"""
-            % d
-        )
+        response = f"""<image>{d['image']}</image>
+<spot_count>{d['n_spots_total']}</spot_count>
+<spot_count_no_ice>{d['n_spots_no_ice']}</spot_count_no_ice>
+<d_min>{d['estimated_d_min']:.2f}</d_min>
+<d_min_method_1>{d['d_min_distl_method_1']:.2f}</d_min_method_1>
+<d_min_method_2>{d['d_min_distl_method_2']:.2f}</d_min_method_2>
+<total_intensity>{d['total_intensity']:.0f}</total_intensity>"""
 
     else:
         assert "error" in d
-        return "<response>\n%s\n</response>" % d["error"]
+        return f"<response>\n{d['error']}\n</response>"
 
     if "lattices" in d:
         from dxtbx.model.crystal import CrystalFactory
@@ -77,7 +73,7 @@ def response_to_xml(d):
             ]
         )
 
-    return "<response>\n%s\n</response>" % response
+    return f"<response>\n{response}\n</response>"
 
 
 def work_all(
@@ -107,7 +103,7 @@ def work_all(
         print(response_to_xml(d))
 
     if json_file is not None:
-        "Writing results to %s" % json_file
+        f"Writing results to {json_file}"
         with open(json_file, "wb") as f:
             json.dump(results, f)
 

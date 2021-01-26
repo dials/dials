@@ -89,7 +89,7 @@ class UnitCellCluster(Cluster):
                         for i in range(len(self.members))
                         if cluster_ids[i] == cluster + 1
                     ],
-                    "cluster_{}".format(cluster + 1),
+                    f"cluster_{cluster + 1}",
                     info_string,
                 )
             )
@@ -97,7 +97,7 @@ class UnitCellCluster(Cluster):
         sub_clusters = sorted(sub_clusters, key=lambda x: len(x.members))
         # Rename to order by size
         for num, cluster in enumerate(sub_clusters):
-            cluster.cname = "cluster_{}".format(num + 1)
+            cluster.cname = f"cluster_{num + 1}"
 
         # 3.5 optionally write out the clusters to files.
         if write_file_lists:

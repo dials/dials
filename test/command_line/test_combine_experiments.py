@@ -211,10 +211,10 @@ def test_combine_clustering(dials_data, tmpdir, with_identifiers):
         for n, i in enumerate(input_range):
             command = [
                 "dials.assign_experiment_identifiers",
-                data_dir.strpath + "/experiments_%s.json" % i,
-                data_dir.strpath + "/reflections_%s.pickle" % i,
-                "output.experiments=%s.expt" % n,
-                "output.reflections=%s.refl" % n,
+                data_dir.strpath + f"/experiments_{i}.json",
+                data_dir.strpath + f"/reflections_{i}.pickle",
+                f"output.experiments={n}.expt",
+                f"output.reflections={n}.refl",
             ]
             procrunner.run(command, working_directory=tmpdir)
 
@@ -284,8 +284,8 @@ def narrow_wedge_input_with_identifiers(dials_regression, tmpdir):
             "dials.assign_experiment_identifiers",
             os.path.join(data_dir, "data/sweep_%03d/experiments.json" % i),
             os.path.join(data_dir, "data/sweep_%03d/reflections.pickle" % i),
-            "output.experiments=%s.expt" % n,
-            "output.reflections=%s.refl" % n,
+            f"output.experiments={n}.expt",
+            f"output.reflections={n}.refl",
         ]
         procrunner.run(command, working_directory=tmpdir)
 
@@ -366,7 +366,7 @@ def test_combine_nsubset(
             "dials.combine_experiments",
             tmpdir.join("input.phil").strpath,
             "n_subset=3",
-            "n_subset_method=%s" % method,
+            f"n_subset_method={method}",
         ],
         working_directory=tmpdir,
     )

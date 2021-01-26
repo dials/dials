@@ -119,7 +119,7 @@ class ProgressBar:
             n_char = int(percent * bar_length / 100)
             n_space = bar_length - n_char
             left_str += " "
-            left_str += "[ {}>{} ]".format("=" * n_char, " " * n_space)
+            left_str += f"[ {'=' * n_char}>{' ' * n_space} ]"
 
         # Append strings
         progress_str = left_str + right_str
@@ -207,7 +207,7 @@ class Command:
         if cls.print_time:
 
             # Get the time string
-            time_string = "{:.2f}s".format(time.time() - cls._start_time)
+            time_string = f"{time.time() - cls._start_time:.2f}s"
 
             # Truncate the string
             max_length = cls.max_length - cls.indent - len(time_string) - 1

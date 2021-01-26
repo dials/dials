@@ -187,7 +187,7 @@ def d_star_sq_to_d_ticks(d_star_sq, nticks):
     min_d_star_sq = min(d_star_sq)
     dstep = (max(d_star_sq) - min_d_star_sq) / nticks
     tickvals = list(min_d_star_sq + (i * dstep) for i in range(nticks))
-    ticktext = ["%.2f" % (uctbx.d_star_sq_as_d(dsq)) for dsq in tickvals]
+    ticktext = [f"{uctbx.d_star_sq_as_d(dsq):.2f}" for dsq in tickvals]
     return tickvals, ticktext
 
 
@@ -773,10 +773,10 @@ class ResolutionPlotsAndStats:
                 f"{bin_stats.d_max:.2f} - {bin_stats.d_min:.2f}",
                 bin_stats.n_obs,
                 bin_stats.n_uniq,
-                "%.2f" % bin_stats.mean_redundancy,
-                "%.2f" % (100 * bin_stats.completeness),
-                "%.1f" % bin_stats.i_mean,
-                "%.1f" % bin_stats.i_over_sigma_mean,
+                f"{bin_stats.mean_redundancy:.2f}",
+                f"{100 * bin_stats.completeness:.2f}",
+                f"{bin_stats.i_mean:.1f}",
+                f"{bin_stats.i_over_sigma_mean:.1f}",
                 safe_format("%.3f", bin_stats.r_merge),
                 safe_format("%.3f", bin_stats.r_meas),
                 safe_format("%.3f", bin_stats.r_pim),
@@ -825,22 +825,22 @@ class ResolutionPlotsAndStats:
             ["Resolution (Å)"] + [f"{s.d_max:.2f} - {s.d_min:.2f}" for s in stats],
             ["Observations"] + ["%i" % s.n_obs for s in stats],
             ["Unique reflections"] + ["%i" % s.n_uniq for s in stats],
-            ["Multiplicity"] + ["%.1f" % s.mean_redundancy for s in stats],
-            ["Completeness"] + ["%.2f%%" % (s.completeness * 100) for s in stats],
+            ["Multiplicity"] + [f"{s.mean_redundancy:.1f}" for s in stats],
+            ["Completeness"] + [f"{s.completeness * 100:.2f}%" for s in stats],
             # ['Mean intensity'] + ['%.1f' %s.i_mean for s in stats],
-            ["Mean I/σ(I)"] + ["%.1f" % s.i_over_sigma_mean for s in stats],
-            ["R<sub>merge</sub>"] + ["%.3f" % s.r_merge for s in stats],
-            ["R<sub>meas</sub>"] + ["%.3f" % s.r_meas for s in stats],
-            ["R<sub>pim</sub>"] + ["%.3f" % s.r_pim for s in stats],
+            ["Mean I/σ(I)"] + [f"{s.i_over_sigma_mean:.1f}" for s in stats],
+            ["R<sub>merge</sub>"] + [f"{s.r_merge:.3f}" for s in stats],
+            ["R<sub>meas</sub>"] + [f"{s.r_meas:.3f}" for s in stats],
+            ["R<sub>pim</sub>"] + [f"{s.r_pim:.3f}" for s in stats],
         ]
 
         if cc_half_method == "sigma_tau":
             rows.append(
-                ["CC<sub>½</sub>"] + ["%.3f" % s.cc_one_half_sigma_tau for s in stats]
+                ["CC<sub>½</sub>"] + [f"{s.cc_one_half_sigma_tau:.3f}" for s in stats]
             )
         else:
-            rows.append(["CC<sub>½</sub>"] + ["%.3f" % s.cc_one_half for s in stats])
-        rows = [["<strong>%s</strong>" % r[0]] + r[1:] for r in rows]
+            rows.append(["CC<sub>½</sub>"] + [f"{s.cc_one_half:.3f}" for s in stats])
+        rows = [[f"<strong>{r[0]}</strong>"] + r[1:] for r in rows]
 
         overall_stats_table = [headers]
         overall_stats_table.extend(rows)
@@ -1006,7 +1006,7 @@ https://doi.org/10.1107/S0907444905036693
         title = "Correlation of half-set differences"
         plotname = "anom_scatter_plot"
         if strong_cutoff > 0.0:
-            title += " (d > %.2f)" % strong_cutoff
+            title += f" (d > {strong_cutoff:.2f})"
             plotname += "_lowres"
         else:
             title += " (all data)"
@@ -1090,7 +1090,7 @@ https://doi.org/10.1107/S0907444905036693
         title = "Normal probability plot of anomalous differences"
         plotname = "normal_distribution_plot"
         if strong_cutoff > 0.0:
-            title += " (d > %.2f)" % strong_cutoff
+            title += f" (d > {strong_cutoff:.2f})"
             plotname += "_lowres"
         else:
             title += " (all data)"
@@ -1217,7 +1217,7 @@ def cc_half_plot(
                     "x": [uctbx.d_as_d_star_sq(d_min)] * 2,
                     "y": [0, 1],
                     "type": "scatter",
-                    "name": "d_min = %.2f Å" % d_min,
+                    "name": f"d_min = {d_min:.2f} Å",
                     "mode": "lines",
                     "line": {"color": "rgb(169, 169, 169)", "dash": "dot"},
                 }

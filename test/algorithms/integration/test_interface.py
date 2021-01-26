@@ -470,14 +470,13 @@ def test_summation(dials_data):
         rlist = rlist.copy()
 
         phil_scope = parse(
-            """
+            f"""
       integration.background.algorithm=null
       integration.intensity.algorithm=sum
-      integration.intensity.sum.integrator=%s
+      integration.intensity.sum.integrator={integrator_type}
       integration.block.size=0.5
       integration.profile_fitting=False
     """
-            % integrator_type
         )
 
         params = master_phil_scope.fetch(source=phil_scope).extract()

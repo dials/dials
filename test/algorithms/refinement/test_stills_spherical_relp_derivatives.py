@@ -382,7 +382,7 @@ def test():
     for i, fd_grad in enumerate(fd_grads):
 
         ## compare FD with analytical calculations
-        print("\n\nParameter {}: {}".format(i, fd_grad["name"]))
+        print(f"\n\nParameter {i}: {fd_grad['name']}")
 
         print("d[s1]/dp for the first reflection")
         print("finite diff", fd_grad["ds1"][0])

@@ -324,10 +324,9 @@ def select_datasets_on_identifiers(
         )
     if experiments.identifiers().count("") > 0:
         raise ValueError(
-            """
+            f"""
             Not all experiment identifiers set in the ExperimentList.
-            Current identifiers set as: %s"""
-            % list(experiments.identifiers())
+            Current identifiers set as: {list(experiments.identifiers())}"""
         )
     list_of_reflections = []
     if use_datasets:

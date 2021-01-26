@@ -630,9 +630,9 @@ class SymmetryAnalysis:
         for score in d["sym_op_scores"]:
             rows.append(
                 (
-                    "%.3f" % score["likelihood"],
-                    "%.2f" % score["z_cc"],
-                    "%.2f" % score["cc"],
+                    f"{score['likelihood']:.3f}",
+                    f"{score['z_cc']:.2f}",
+                    f"{score['cc']:.2f}",
                     score["stars"],
                     str(sgtbx.rt_mx(str(score["operator"])).r().info()),
                 )
@@ -661,11 +661,11 @@ class SymmetryAnalysis:
                         ).info()
                     ),
                     score["stars"],
-                    "%.3f" % score["likelihood"],
-                    "% .2f" % score["z_cc_net"],
-                    "% .2f" % score["z_cc_for"],
-                    "% .2f" % score["z_cc_against"],
-                    "%.1f" % score["max_angular_difference"],
+                    f"{score['likelihood']:.3f}",
+                    f"{score['z_cc_net']: .2f}",
+                    f"{score['z_cc_for']: .2f}",
+                    f"{score['z_cc_against']: .2f}",
+                    f"{score['max_angular_difference']:.1f}",
                     str(sgtbx.change_of_basis_op(str(score["cb_op"]))),
                 )
             )
@@ -688,8 +688,8 @@ class SymmetryAnalysis:
                 "%.3f %.3f %.3f %.1f %.1f %.1f" % tuple(best_subgroup["unit_cell"]),
             ),
             ("Reindex operator", best_subgroup["cb_op"]),
-            ("Laue group probability", "%.3f" % best_subgroup["likelihood"]),
-            ("Laue group confidence", "%.3f" % best_subgroup["confidence"]),
+            ("Laue group probability", f"{best_subgroup['likelihood']:.3f}"),
+            ("Laue group confidence", f"{best_subgroup['confidence']:.3f}"),
         )
 
     def __str__(self):
@@ -711,14 +711,14 @@ class SymmetryAnalysis:
             % self.best_solution.subgroup["best_subsym"].space_group_info()
         )
         output.append(
-            "Unit cell: %s" % self.best_solution.subgroup["best_subsym"].unit_cell()
+            f"Unit cell: {self.best_solution.subgroup['best_subsym'].unit_cell()}"
         )
         output.append(
             "Reindex operator: %s"
             % (self.best_solution.subgroup["cb_op_inp_best"] * self.cb_op_inp_min)
         )
-        output.append("Laue group probability: %.3f" % self.best_solution.likelihood)
-        output.append("Laue group confidence: %.3f" % self.best_solution.confidence)
+        output.append(f"Laue group probability: {self.best_solution.likelihood:.3f}")
+        output.append(f"Laue group confidence: {self.best_solution.confidence:.3f}")
         return "\n".join(output)
 
     def as_dict(self):
@@ -927,6 +927,6 @@ class ScoreSubGroup:
             "z_cc_for": self.z_cc_for,
             "z_cc_against": self.z_cc_against,
             "max_angular_difference": self.subgroup["max_angular_difference"],
-            "cb_op": "%s" % (self.subgroup["cb_op_inp_best"]),
+            "cb_op": f"{self.subgroup['cb_op_inp_best']}",
             "stars": self.stars,
         }

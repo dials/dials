@@ -141,7 +141,7 @@ def print_step_table(refinery):
         rmsds = [r for r in refinery.history["rmsd"][i]]
         rows.append(
             [str(i), str(refinery.history["num_reflections"][i])]
-            + ["%.5g" % r for r in rmsds]
+            + [f"{r:.5g}" for r in rmsds]
         )
 
     logger.info(tabulate(rows, header))

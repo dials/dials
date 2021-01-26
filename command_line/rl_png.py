@@ -197,9 +197,9 @@ def run(args=None):
             if len(experiments.crystals()) > 1:
                 prefix = "%i_" % (i + 1)
 
-            f.viewer.plot("rl_%sa.png" % prefix, n=a)
-            f.viewer.plot("rl_%sb.png" % prefix, n=b)
-            f.viewer.plot("rl_%sc.png" % prefix, n=c)
+            f.viewer.plot(f"rl_{prefix}a.png", n=a)
+            f.viewer.plot(f"rl_{prefix}b.png", n=b)
+            f.viewer.plot(f"rl_{prefix}c.png", n=c)
 
     elif n_solutions:
         if "imageset_id" not in reflections:
@@ -224,7 +224,7 @@ def run(args=None):
             solutions = [matrix.col(v) for v in result["solutions"]]
             for i in range(min(n_solutions, len(solutions))):
                 v = solutions[i]
-                f.viewer.plot("rl_solution_%s.png" % (i + 1), n=v.elems)
+                f.viewer.plot(f"rl_solution_{i + 1}.png", n=v.elems)
 
 
 if __name__ == "__main__":

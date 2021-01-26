@@ -183,7 +183,7 @@ def run_single(experiments1, filename):
 )
 def test_nexus_dump_and_reload(dials_regression, tmpdir, filename):
     path = os.path.join(dials_regression, "nexus_test_data", "shared_models")
-    filename_in = os.path.join(path, "%s.json" % filename)
-    filename_out = tmpdir.join("%s.nxs" % filename).strpath
+    filename_in = os.path.join(path, f"{filename}.json")
+    filename_out = tmpdir.join(f"{filename}.nxs").strpath
     experiments = ExperimentListFactory.from_json_file(filename_in)
     run_single(experiments, filename_out)

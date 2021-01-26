@@ -36,8 +36,7 @@ def write_integrated_hkl(prefix, reflections):
         with open(file_name, "w") as f:
             for i in range(len(integrated)):
                 f.write(
-                    "%4.0f %4.0f %4.0f %10.2f %10.2f"
-                    % (h[i], k[i], l[i], I[i], sigI[i])
+                    f"{h[i]:4.0f} {k[i]:4.0f} {l[i]:4.0f} {I[i]:10.2f} {sigI[i]:10.2f}"
                     + os.linesep
                 )
 
@@ -135,22 +134,20 @@ def write_par_file(file_name, experiment):
             % (max(detector[0].get_image_size()) * detector[0].get_pixel_size()[0]),
             file=f,
         )
-        print("PIXEL          %s" % round(detector[0].get_pixel_size()[0], 10), file=f)
+        print(f"PIXEL          {round(detector[0].get_pixel_size()[0], 10)}", file=f)
         print("ROTAXIS        %4.2f %4.2f %4.2f" % rotation.elems, direction, file=f)
         print("POLAXIS        %4.2f %4.2f %4.2f" % polarization.elems, file=f)
         print("GAIN               1.00", file=f)  # correct for Pilatus images
         # http://strucbio.biologie.uni-konstanz.de/xdswiki/index.php/FAQ#You_said_that_the_XDS_deals_with_high_mosaicity._How_high_mosaicity_is_still_manageable.3F
         # http://journals.iucr.org/d/issues/2012/01/00/wd5161/index.html
         # Transform from XDS defintion of sigma_m to FWHM (MOSFLM mosaicity definition)
-        print(
-            "CMOSAIC            %.2f" % (experiment.profile.sigma_m() * 2.355), file=f
-        )
-        print("PHISTART           %.2f" % scan.get_oscillation_range()[0], file=f)
-        print("PHIWIDTH           %.2f" % scan.get_oscillation()[1], file=f)
-        print("DISTANCE        %7.2f" % distance, file=f)
-        print("WAVELENGTH      %.5f" % beam.get_wavelength(), file=f)
-        print("POLARISATION    %7.5f" % beam.get_polarization_fraction(), file=f)
-        print("SYMMETRY       %s" % space_group_symbol(cryst.get_space_group()), file=f)
+        print(f"CMOSAIC            {experiment.profile.sigma_m() * 2.355:.2f}", file=f)
+        print(f"PHISTART           {scan.get_oscillation_range()[0]:.2f}", file=f)
+        print(f"PHIWIDTH           {scan.get_oscillation()[1]:.2f}", file=f)
+        print(f"DISTANCE        {distance:7.2f}", file=f)
+        print(f"WAVELENGTH      {beam.get_wavelength():.5f}", file=f)
+        print(f"POLARISATION    {beam.get_polarization_fraction():7.5f}", file=f)
+        print(f"SYMMETRY       {space_group_symbol(cryst.get_space_group())}", file=f)
         print("UB             %9.6f %9.6f %9.6f" % UB_mosflm[:3], file=f)
         print("               %9.6f %9.6f %9.6f" % UB_mosflm[3:6], file=f)
         print("               %9.6f %9.6f %9.6f" % UB_mosflm[6:], file=f)

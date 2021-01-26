@@ -7,11 +7,7 @@ from urllib.request import Request, urlopen
 
 def _download_button(text, version, link):
     print(f"  {version} {text} -> {link}")
-    return ".. button::\n   :text: DIALS {} {}\n   :link: {}\n\n".format(
-        version,
-        text,
-        link,
-    )
+    return f".. button::\n   :text: DIALS {version} {text}\n   :link: {link}\n\n"
 
 
 if __name__ == "__main__":

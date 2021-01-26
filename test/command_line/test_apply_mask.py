@@ -9,9 +9,9 @@ def test(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.apply_mask",
-            "input.experiments=%s" % input_filename,
-            "input.mask=%s" % mask_filename,
-            "output.experiments=%s" % output_filename,
+            f"input.experiments={input_filename}",
+            f"input.mask={mask_filename}",
+            f"output.experiments={output_filename}",
         ],
         working_directory=tmpdir.strpath,
     )
@@ -36,9 +36,9 @@ def test_experiments(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.apply_mask",
-            "input.experiments=%s" % input_filename,
-            "input.mask=%s" % mask_filename,
-            "output.experiments=%s" % output_filename,
+            f"input.experiments={input_filename}",
+            f"input.mask={mask_filename}",
+            f"output.experiments={output_filename}",
         ],
         working_directory=tmpdir.strpath,
     )

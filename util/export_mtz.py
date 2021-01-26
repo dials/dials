@@ -39,7 +39,7 @@ class MTZWriterBase:
         """If a unit cell is provided, will be used as default unless specified
         for each crystal."""
         mtz_file = mtz.object()
-        mtz_file.set_title("From %s" % env.dispatcher_name)
+        mtz_file.set_title(f"From {env.dispatcher_name}")
         date_str = time.strftime("%Y-%m-%d at %H:%M:%S %Z")
         if time.strftime("%Z") != "GMT":
             date_str += time.strftime("  (%Y-%m-%d at %H:%M:%S %Z)", time.gmtime())
@@ -61,7 +61,7 @@ class MTZWriterBase:
             else:
                 unit_cell = self.unit_cell
         if not crystal_name:
-            crystal_name = "crystal_%s" % str(self.n_crystals + 1)
+            crystal_name = f"crystal_{str(self.n_crystals + 1)}"
         if not project_name:
             project_name = "DIALS"
         self.current_crystal = self.mtz_file.add_crystal(
@@ -125,7 +125,7 @@ class MADMergedMTZWriter(MergedMTZWriter):
         suffix=None,
     ):
         if not suffix:
-            suffix = "_WAVE%s" % str(self.n_datasets)
+            suffix = f"_WAVE{str(self.n_datasets)}"
         super().add_dataset(
             merged_array,
             anom_array,

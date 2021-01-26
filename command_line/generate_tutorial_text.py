@@ -27,7 +27,7 @@ def _command_runner(
     result = procrunner.run(
         command, environment_override={"DIALS_NOBANNER": "1"}, **kwargs
     )
-    print("running command took {:.1f} seconds\n".format(result["runtime"]))
+    print(f"running command took {result['runtime']:.1f} seconds\n")
     assert not result.returncode, "Command execution failed"
     if store_output:
         store_output.write_binary(result.stdout, ensure=True)
@@ -127,7 +127,7 @@ def generate_processing_detail_text_mpro_x0692(options):
     runcmd(["dials.estimate_resolution", "scaled.expt", "scaled.refl"])
     d_min = extract_resolution(outdir / "dials.estimate_resolution.log", "cc_half")
     runcmd(
-        ["dials.scale", "scaled.expt", "scaled.refl", "d_min=%.2f" % d_min],
+        ["dials.scale", "scaled.expt", "scaled.refl", f"d_min={d_min:.2f}"],
         store_command=outdir / "dials.scale_cut.cmd",
         store_output=outdir / "dials.scale_cut.log",
     )
@@ -239,13 +239,13 @@ def generate_multi_crystal_symmetry_and_scaling(options):
     runcmd(["dials.estimate_resolution", "scaled.expt", "scaled.refl"])
     d_min = extract_resolution(outdir / "dials.estimate_resolution.log", "cc_half")
     runcmd(
-        ["dials.scale", "scaled.expt", "scaled.refl", "d_min=%.2f" % d_min],
+        ["dials.scale", "scaled.expt", "scaled.refl", f"d_min={d_min:.2f}"],
         store_command=outdir / "dials.scale_cut.cmd",
         store_output=outdir / "dials.scale_cut.log",
     )
     runcmd(["dials.compute_delta_cchalf", "scaled.refl", "scaled.expt"])
     runcmd(
-        ["dials.scale", "scaled.expt", "scaled.refl", "d_min=%.2f" % d_min],
+        ["dials.scale", "scaled.expt", "scaled.refl", f"d_min={d_min:.2f}"],
         store_command=outdir / "dials.scale_exclude.cmd",
         store_output=outdir / "dials.scale_exclude.log",
     )
@@ -307,7 +307,7 @@ def extract_resolution(source, method):
     lines = source.read_text("latin-1").split("\n")
 
     # Find the Resolution line
-    resolution_line = lines[find_in_line("Resolution %s" % method, lines)]
+    resolution_line = lines[find_in_line(f"Resolution {method}", lines)]
     # Parse and return the suggested resolution value
     return float(resolution_line.split(":")[-1].strip())
 

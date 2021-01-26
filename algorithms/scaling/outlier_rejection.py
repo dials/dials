@@ -103,7 +103,7 @@ def determine_outlier_index_arrays(Ih_table, method="standard", zmax=6.0, target
         assert target is not None
         outlier_rej = TargetedOutlierRejection(Ih_table, zmax, target)
     elif method is not None:
-        raise ValueError("Invalid choice of outlier rejection method: %s" % method)
+        raise ValueError(f"Invalid choice of outlier rejection method: {method}")
     if not outlier_rej:
         return [flex.size_t([]) for _ in range(Ih_table.n_datasets)]
     outlier_rej.run()

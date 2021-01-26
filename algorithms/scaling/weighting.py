@@ -18,7 +18,7 @@ def get_weighting_scheme(Ih_table, weighting_scheme):
     if weighting_scheme == "huber":
         return HuberWeights(Ih_table)
     else:
-        raise ValueError("Invalid choice of weighting scheme: %s" % weighting_scheme)
+        raise ValueError(f"Invalid choice of weighting scheme: {weighting_scheme}")
 
 
 class WeightingBase:

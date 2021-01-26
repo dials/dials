@@ -130,7 +130,7 @@ def merge_cbf(imageset, n_images, out_prefix="sum_", get_raw_data_from_imageset=
             rsplit = record.split(" ")
             if "X-Binary-Size:" in record:
                 old_size = int(record.split()[-1])
-                new_header.append("X-Binary-Size: %d\r\n" % len(compressed))
+                new_header.append(f"X-Binary-Size: {len(compressed)}\r\n")
             elif "Content-MD5" in record:
                 pass
             elif len(rsplit) > 3 and rsplit[1] in {
@@ -163,7 +163,7 @@ def merge_cbf(imageset, n_images, out_prefix="sum_", get_raw_data_from_imageset=
                     )
 
             else:
-                new_header.append("%s\n" % record)
+                new_header.append(f"{record}\n")
 
         loop_lines = [
             n for n, record in enumerate(new_header) if record.startswith("loop_")
@@ -197,10 +197,10 @@ def merge_cbf(imageset, n_images, out_prefix="sum_", get_raw_data_from_imageset=
                     new_line = [
                         element
                         if modifier is None
-                        else "%f" % (float(element) * modifier)
+                        else f"{float(element) * modifier:f}"
                         for modifier, element in zip(modifiers, line.split())
                     ]
-                    new_header[n] = "%s\r\n" % " ".join(new_line)
+                    new_header[n] = f"{' '.join(new_line)}\r\n"
 
         tailer = data[data_offset + 4 + old_size :]
 
@@ -209,7 +209,7 @@ def merge_cbf(imageset, n_images, out_prefix="sum_", get_raw_data_from_imageset=
             f.write(start_tag)
             f.write(compressed)
             f.write(tailer)
-        print("%s written" % out_image)
+        print(f"{out_image} written")
 
 
 @dials.util.show_mail_handle_errors()

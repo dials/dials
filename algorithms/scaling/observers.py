@@ -248,7 +248,7 @@ def make_scaling_model_plots(experiments):
     for key in sorted(data.keys()):
         scaling_model_plots = plot_scaling_models(data[key])
         for plot in scaling_model_plots.values():
-            plot["layout"]["title"] += " (dataset %s)" % key
+            plot["layout"]["title"] += f" (dataset {key})"
         for name, plot in scaling_model_plots.items():
             d[name + "_" + str(key)] = plot
     graphs = {"scaling_model": d}
@@ -313,7 +313,7 @@ def make_outlier_plots(reflection_tables, experiments):
         outlier_plots = plot_outliers(data[key])
         for plot in outlier_plots.values():
             if plot:  # may be null if no outliers
-                plot["layout"]["title"] += " (dataset %s)" % key
+                plot["layout"]["title"] += f" (dataset {key})"
         d["outlier_plot_" + str(key)] = outlier_plots["outlier_xy_positions"]
         d["outlier_plot_z" + str(key)] = outlier_plots["outliers_vs_z"]
     graphs = {"outlier_plots": d}

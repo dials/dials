@@ -249,15 +249,15 @@ def show_experiments(experiments, show_scan_varying=False):
         text.append("Experiment %i:" % i_expt)
         format_class = expt.imageset.get_format_class()
         if format_class.__name__ != "Format":
-            text.append("Format class: %s" % format_class.__name__)
+            text.append(f"Format class: {format_class.__name__}")
         if expt.identifier != "":
-            text.append("Experiment identifier: %s" % expt.identifier)
+            text.append(f"Experiment identifier: {expt.identifier}")
         try:
             template = expt.imageset.get_template()
         except AttributeError:
             template = None
         if template:
-            text.append("Image template: %s" % template)
+            text.append(f"Image template: {template}")
         text.append(str(expt.detector))
         text.append(
             "Max resolution (at corners): %f"
@@ -293,7 +293,7 @@ def show_experiments(experiments, show_scan_varying=False):
                 a, b, c = abc.mean()
                 alpha, beta, gamma = angles.mean()
                 mean_unit_cell = uctbx.unit_cell((a, b, c, alpha, beta, gamma))
-                text.append("  Average unit cell: %s" % mean_unit_cell)
+                text.append(f"  Average unit cell: {mean_unit_cell}")
         if expt.profile is not None:
             text.append(str(expt.profile))
         if expt.scaling_model is not None:
@@ -319,9 +319,7 @@ def show_image_statistics(experiments, im_type):
         )
     except OSError as e:
         raise Sorry(
-            "Unable to read image data. Please check {} is accessible".format(
-                e.filename
-            )
+            f"Unable to read image data. Please check {e.filename} is accessible"
         )
 
     print(f"Five number summary of the {im_type} images")
@@ -348,8 +346,8 @@ def show_image_statistics(experiments, im_type):
 def model_connectivity(experiments):
     def model_connectivity_impl(experiments, model):
         text = [""]
-        text.append("%s:" % model.capitalize())
-        models = getattr(experiments, "%ss" % model)()
+        text.append(f"{model.capitalize()}:")
+        models = getattr(experiments, f"{model}s")()
         rows = [[""] + [str(j) for j in range(len(models))]]
         for j, e in enumerate(experiments):
             row = ["Experiment %d" % j]
@@ -407,7 +405,7 @@ def _create_flag_count_table(table):
             [
                 indent + flag.name,
                 "{:{:d}d}".format(flag_count[flag], max_count_len),
-                "{:5.01f}".format(100 * flag_count[flag] / len(table)),
+                f"{100 * flag_count[flag] / len(table):5.01f}",
             ]
         )
 
@@ -496,7 +494,7 @@ def show_reflections(
 
         foreground_valid = MaskCode.Valid | MaskCode.Foreground
         text.append("")
-        text.append("Reflection list contains %i reflections" % (len(rlist)))
+        text.append(f"Reflection list contains {len(rlist)} reflections")
 
         if len(rlist) == 0:
             continue
@@ -652,7 +650,7 @@ def show_reflections(
         for i in range(len(c_strings[0])):
 
             column.append(
-                ("%%%is" % len(key))
+                f"%{len(key)}s"
                 % ", ".join(
                     ("%%%is" % max_element_lengths[j]) % c_strings[j][i]
                     for j in range(len(c_strings))

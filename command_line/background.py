@@ -104,9 +104,9 @@ def run(args=None):
                 mask_params=params.masking,
             )
 
-            print("{:>8} {:>8} {:>8}".format("d", "I", "sig"))
+            print(f"{'d':>8} {'I':>8} {'sig':>8}")
             for j in range(len(I)):
-                print("{:8.3f} {:8.3f} {:8.3f}".format(d[j], I[j], sig[j]))
+                print(f"{d[j]:8.3f} {I[j]:8.3f} {sig[j]:8.3f}")
 
             d_spacings.append(d)
             intensities.append(I)
@@ -130,7 +130,7 @@ def run(args=None):
             xticks = ax.get_xticks().tolist()
             ax.xaxis.set_major_locator(mticker.FixedLocator(xticks))
             x_tick_labs = [
-                "" if e <= 0.0 else "{:.2f}".format(math.sqrt(1.0 / e)) for e in xticks
+                "" if e <= 0.0 else f"{math.sqrt(1.0 / e):.2f}" for e in xticks
             ]
             ax.set_xticklabels(x_tick_labs)
 
@@ -187,11 +187,10 @@ def background(imageset, indx, n_bins, corrected=False, mask_params=None):
     background = data.select(background_pixels.iselection())
 
     # print some summary information
-    print("Mean background: %.3f" % (flex.sum(background) / background.size()))
+    print(f"Mean background: {flex.sum(background) / background.size():.3f}")
     if len(signal) > 0:
         print(
-            "Max/total signal pixels: %.0f / %.0f"
-            % (flex.max(signal), flex.sum(signal))
+            f"Max/total signal pixels: {flex.max(signal):.0f} / {flex.sum(signal):.0f}"
         )
     else:
         print("No signal pixels on this image")

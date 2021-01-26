@@ -470,5 +470,5 @@ class LinePlot(wxtbx.plots.plot_container):
                 % (line.distance, line.lattice_length)
             )
         else:
-            ax.set_title("Line distance: %.2fmm" % line.distance)
+            ax.set_title(f"Line distance: {line.distance:.2f}mm")
         self.canvas.draw()

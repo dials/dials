@@ -277,21 +277,21 @@ class align_crystal:
         rows.append(
             [names[0]]
             + [
-                "%.3f" % smallest_angle(axis.angle(matrix.col(axes[0]), deg=True))
+                f"{smallest_angle(axis.angle(matrix.col(axes[0]), deg=True)):.3f}"
                 for axis in (a_star_, b_star_, c_star_)
             ]
         )
         rows.append(
             ["Beam"]
             + [
-                "%.3f" % smallest_angle(axis.angle(self.s0, deg=True))
+                f"{smallest_angle(axis.angle(self.s0, deg=True)):.3f}"
                 for axis in (a_star_, b_star_, c_star_)
             ]
         )
         rows.append(
             [names[2]]
             + [
-                "%.3f" % smallest_angle(axis.angle(matrix.col(axes[2]), deg=True))
+                f"{smallest_angle(axis.angle(matrix.col(axes[2]), deg=True)):.3f}"
                 for axis in (a_star_, b_star_, c_star_)
             ]
         )
@@ -307,21 +307,21 @@ class align_crystal:
         rows.append(
             [names[0]]
             + [
-                "%.3f" % smallest_angle(axis.angle(matrix.col(axes[0]), deg=True))
+                f"{smallest_angle(axis.angle(matrix.col(axes[0]), deg=True)):.3f}"
                 for axis in (a_, b_, c_)
             ]
         )
         rows.append(
             ["Beam"]
             + [
-                "%.3f" % smallest_angle(axis.angle(self.s0, deg=True))
+                f"{smallest_angle(axis.angle(self.s0, deg=True)):.3f}"
                 for axis in (a_, b_, c_)
             ]
         )
         rows.append(
             [names[2]]
             + [
-                "%.3f" % smallest_angle(axis.angle(matrix.col(axes[2]), deg=True))
+                f"{smallest_angle(axis.angle(matrix.col(axes[2]), deg=True)):.3f}"
                 for axis in (a_, b_, c_)
             ]
         )
@@ -340,8 +340,8 @@ class align_crystal:
                 (
                     describe(v1, space_group, reciprocal=reciprocal),
                     describe(v2, space_group, reciprocal=reciprocal),
-                    "% 7.3f" % angles[0],
-                    "% 7.3f" % angles[1],
+                    f"{angles[0]: 7.3f}",
+                    f"{angles[1]: 7.3f}",
                 )
             )
         rows = [("Primary axis", "Secondary axis", names[1], names[0])] + sorted(rows)

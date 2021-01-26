@@ -67,7 +67,7 @@ class NeighborAnalysis:
 
         assert (
             len(direct) > NEAR
-        ), "Too few spots (%d) for nearest neighbour analysis." % len(direct)
+        ), f"Too few spots ({len(direct)}) for nearest neighbour analysis."
 
         perm = flex.sort_permutation(direct)
         direct = direct.select(perm)

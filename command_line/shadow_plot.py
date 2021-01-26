@@ -133,7 +133,7 @@ def run(args=None):
         if params.mode == "2d":
             raise Sorry("json output not supported for mode=2d")
 
-        print("Writing json output to %s" % params.output.json)
+        print(f"Writing json output to {params.output.json}")
         d = {
             "scan_points": list(scan_points),
             "fraction_shadowed": list(fraction_shadowed),
@@ -153,7 +153,7 @@ def run(args=None):
             plt.plot(
                 scan_points.as_numpy_array(), fraction_shadowed.as_numpy_array() * 100
             )
-            plt.xlabel("%s angle (degrees)" % names[scan_axis])
+            plt.xlabel(f"{names[scan_axis]} angle (degrees)")
             plt.ylabel("Shadowed area (%)")
             if params.y_max is not None:
                 plt.ylim(0, params.y_max)
@@ -163,8 +163,8 @@ def run(args=None):
             fig = plt.imshow(
                 fraction_shadowed.as_numpy_array() * 100, interpolation="bicubic"
             )
-            plt.xlabel("%s angle (degrees)" % names[2])
-            plt.ylabel("%s angle (degrees)" % names[1])
+            plt.xlabel(f"{names[2]} angle (degrees)")
+            plt.ylabel(f"{names[1]} angle (degrees)")
             plt.xlim(0, 360 / step - 0.5)
             plt.ylim(0, 360 / step - 0.5)
 
@@ -175,8 +175,8 @@ def run(args=None):
             fig.axes.yaxis.set_major_locator(
                 matplotlib.ticker.FixedLocator([k / step for k in ticks])
             )
-            fig.axes.set_xticklabels(["%.0f" % k for k in ticks])
-            fig.axes.set_yticklabels(["%.0f" % k for k in ticks])
+            fig.axes.set_xticklabels([f"{k:.0f}" for k in ticks])
+            fig.axes.set_yticklabels([f"{k:.0f}" for k in ticks])
             cbar = plt.colorbar()
             cbar.set_label("Shadowed area (%)")
 
@@ -184,7 +184,7 @@ def run(args=None):
             fig = plt.gcf()
             fig.set_size_inches(params.output.size_inches)
         plt.tight_layout()
-        print("Saving plot to %s" % params.output.plot)
+        print(f"Saving plot to {params.output.plot}")
         plt.savefig(params.output.plot)
 
 

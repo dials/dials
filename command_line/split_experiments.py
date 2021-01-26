@@ -167,8 +167,7 @@ class Script:
 
                 experiment_filename = experiments_template(index=i)
                 print(
-                    "Saving experiments with wavelength %s to %s"
-                    % (wl, experiment_filename)
+                    f"Saving experiments with wavelength {wl} to {experiment_filename}"
                 )
                 new_exps.as_json(experiment_filename)
                 if reflections:

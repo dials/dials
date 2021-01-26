@@ -341,8 +341,8 @@ def test_index_insulin_multi_sequence(insulin_spotfinding, tmpdir, method):
     extra_args = [
         'known_symmetry.unit_cell="%s %s %s %s %s %s"'
         % expected_unit_cell.parameters(),
-        'known_symmetry.space_group="Hall: %s"' % expected_hall_symbol,
-        "indexing.method=%s" % method,
+        f'known_symmetry.space_group="Hall: {expected_hall_symbol}"',
+        f"indexing.method={method}",
         "treat_single_image_as_still=False",
     ]
     run_indexing(
@@ -398,8 +398,8 @@ def test_index_insulin_force_stills(insulin_spotfinding_stills, tmpdir, method):
         "stills.indexer=stills",
         'known_symmetry.unit_cell="%s %s %s %s %s %s"'
         % expected_unit_cell.parameters(),
-        'known_symmetry.space_group="Hall: %s"' % expected_hall_symbol,
-        "indexing.method=%s" % method,
+        f'known_symmetry.space_group="Hall: {expected_hall_symbol}"',
+        f"indexing.method={method}",
     ]
 
     run_indexing(

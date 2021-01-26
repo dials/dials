@@ -130,11 +130,11 @@ def test_synthetic(
     ]
 
     if use_known_space_group:
-        args.append("space_group=%s" % space_group.info())
+        args.append(f"space_group={space_group.info()}")
     if use_known_lattice_group:
-        args.append("lattice_group=%s" % space_group.info())
+        args.append(f"lattice_group={space_group.info()}")
     if dimensions is not None:
-        args.append("dimensions=%s" % dimensions)
+        args.append(f"dimensions={dimensions}")
 
     dials_cosym.run(args=args)
     assert os.path.isfile("symmetrized.refl")

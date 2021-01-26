@@ -267,9 +267,8 @@ can be processed with dials.merge"""
     ]:
         if k not in reflections[0]:
             raise Sorry(
-                """%s not found in the reflection table.
+                f"""{k} not found in the reflection table.
 Only scaled data can be processed with dials.merge"""
-                % k
             )
 
     try:

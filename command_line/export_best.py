@@ -86,11 +86,9 @@ class BestExporter:
         imageset = experiment.imageset
         prefix = self.params.output.prefix
 
-        best.write_background_file(
-            "%s.dat" % prefix, imageset, n_bins=self.params.n_bins
-        )
+        best.write_background_file(f"{prefix}.dat", imageset, n_bins=self.params.n_bins)
         best.write_integrated_hkl(prefix, reflections)
-        best.write_par_file("%s.par" % prefix, experiment)
+        best.write_par_file(f"{prefix}.par", experiment)
 
 
 @show_mail_handle_errors()

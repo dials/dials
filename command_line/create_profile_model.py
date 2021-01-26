@@ -133,9 +133,9 @@ class Script:
                 logger.info("Sigma M: %f", sigma_m)
 
         # Write the parameters
-        Command.start("Writing experiments to %s" % params.output)
+        Command.start(f"Writing experiments to {params.output}")
         experiments.as_file(params.output)
-        Command.end("Wrote experiments to %s" % params.output)
+        Command.end(f"Wrote experiments to {params.output}")
 
     def process_reference(self, reference, params):
         """Load the reference spots."""

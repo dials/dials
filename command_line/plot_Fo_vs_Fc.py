@@ -222,13 +222,13 @@ class Script:
             intercept = hyperbola_fit.param[0]
 
             print("Model fit described by the formula: |Fo|^2 = sqrt(|Fc|^2 + |Fe|^2)")
-            print("where |Fe| = {:.5f}\n".format(sqrt(intercept)))
+            print(f"where |Fe| = {sqrt(intercept):.5f}\n")
 
             print("Goodness of fit:")
             gof = hyperbola_fit.goodness_of_fit()
-            print("SSE: {:.5g}".format(gof["SSE"]))
-            print("R-square: {:.5f}".format(gof["R-square"]))
-            print("RMSE: {:.2f}".format(gof["RMSE"]))
+            print(f"SSE: {gof['SSE']:.5g}")
+            print(f"R-square: {gof['R-square']:.5f}")
+            print(f"RMSE: {gof['RMSE']:.2f}")
             print()
 
             # Set the model_fit function using the determined intercept

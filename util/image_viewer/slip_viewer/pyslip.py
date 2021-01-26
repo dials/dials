@@ -233,7 +233,7 @@ class _Tiles:
             ) = pickle.load(fd)
             fd.close()
         except OSError:
-            msg = "'%s' doesn't appear to be a tile directory" % tile_dir
+            msg = f"'{tile_dir}' doesn't appear to be a tile directory"
             raise Exception(msg)
 
         (self.tile_size_x, self.tile_size_y) = self.tile_size
@@ -457,7 +457,7 @@ class Resource:
 
             self.layers = json.load(open(fname))
         except OSError as e:
-            msg = "Error opening {}: {}".format(fname, str(e))
+            msg = f"Error opening {fname}: {str(e)}"
             raise OSError(msg)
 
     def Write(self, fname=None):
@@ -745,7 +745,7 @@ class PySlip(_BufferedCanvas):
         start_level=None,
         min_level=None,
         max_level=None,
-        **kwargs
+        **kwargs,
     ):
         """Initialise a pySlip instance.
 
@@ -885,7 +885,7 @@ class PySlip(_BufferedCanvas):
         selectable=False,
         name="<points_layer>",
         update=True,
-        **kwargs
+        **kwargs,
     ):
         """Add a layer of points.
 
@@ -974,7 +974,7 @@ class PySlip(_BufferedCanvas):
         selectable=False,
         name="<polygon_layer>",
         update=True,
-        **kwargs
+        **kwargs,
     ):
         # get global values, if required
         default_placement = kwargs.get("placement", self.DefaultPolygonPlacement)
@@ -1133,7 +1133,7 @@ class PySlip(_BufferedCanvas):
         selectable=False,
         name="<polygon_layer>",
         update=True,
-        **kwargs
+        **kwargs,
     ):
         """Add a layer of polygon data to the map.
 
@@ -1251,7 +1251,7 @@ class PySlip(_BufferedCanvas):
         show_levels=None,
         selectable=False,
         name="<image_layer>",
-        **kwargs
+        **kwargs,
     ):
         """Add a layer of images to the map.
 
@@ -1342,7 +1342,7 @@ class PySlip(_BufferedCanvas):
         selectable=False,
         name="<text_layer>",
         update=True,
-        **kwargs
+        **kwargs,
     ):
         """Add a text layer to the map.
 

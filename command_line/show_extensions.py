@@ -44,7 +44,7 @@ class Script:
         # Loop through all the interfaces
         for iface in interfaces:
             print("-" * 80)
-            print("Extension interface: %s" % iface.__name__)
+            print(f"Extension interface: {iface.__name__}")
 
             # Either just show information about interfaces or show some about
             # extensions depending on user input
@@ -52,22 +52,22 @@ class Script:
 
                 # Print info about interface
                 if options.verbose > 0:
-                    print(" name = %s" % iface.name)
+                    print(f" name = {iface.name}")
                     if options.verbose > 1:
                         level = options.verbose - 2
                         scope = iface.phil_scope()
                         phil = scope.as_str(print_width=80 - 3, attributes_level=level)
                         phil = "\n".join((" " * 2) + l for l in phil.split("\n"))
                         if phil.strip() != "":
-                            print(" phil:\n%s" % phil)
+                            print(f" phil:\n{phil}")
 
             else:
 
                 # Loop through all the extensions
                 for ext in iface.extensions():
-                    print(" Extension: %s" % ext.__name__)
+                    print(f" Extension: {ext.__name__}")
                     if options.verbose > 0:
-                        print("  name = %s" % ext.name)
+                        print(f"  name = {ext.name}")
                         if options.verbose > 1:
                             level = options.verbose - 2
                             scope = ext.phil_scope()
@@ -76,7 +76,7 @@ class Script:
                             )
                             phil = "\n".join((" " * 3) + l for l in phil.split("\n"))
                             if phil.strip() != "":
-                                print("  phil:\n%s" % phil)
+                                print(f"  phil:\n{phil}")
 
 
 @dials.util.show_mail_handle_errors()

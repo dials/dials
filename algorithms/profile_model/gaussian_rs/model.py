@@ -125,7 +125,7 @@ class Model(ProfileModelExt):
     def from_dict(cls, obj):
         """Convert the profile model from a dictionary."""
         if obj["__id__"] != "gaussian_rs":
-            raise RuntimeError("expected __id__ gaussian_rs, got %s" % obj["__id__"])
+            raise RuntimeError(f"expected __id__ gaussian_rs, got {obj['__id__']}")
         n_sigma = obj["n_sigma"]
         sigma_b = obj["sigma_b"]
         sigma_m = obj["sigma_m"]

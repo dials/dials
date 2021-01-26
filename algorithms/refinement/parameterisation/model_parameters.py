@@ -94,9 +94,9 @@ class Parameter:
             msg += "    Axis: (%5.3f, %5.3f, %5.3f)" % tuple(self.axis) + "\n"
         except TypeError:
             msg += "    Axis: " + str(self.axis) + "\n"
-        msg += "    Value: %5.3f" % self.value + "\n"
+        msg += f"    Value: {self.value:5.3f}" + "\n"
         try:
-            msg += "    Sigma: %5.3f" % self.esd + "\n"
+            msg += f"    Sigma: {self.esd:5.3f}" + "\n"
         except TypeError:
             msg += "    Sigma: " + str(self.esd) + "\n"
 

@@ -1517,7 +1517,7 @@ def create_integrator(params, experiments, reflections):
         "3d_threaded": Integrator3DThreaded,
     }.get(params.integration.integrator)
     if not IntegratorClass:
-        raise ValueError("Unknown integration type %s" % params.integration.integrator)
+        raise ValueError(f"Unknown integration type {params.integration.integrator}")
 
     # Remove scan if stills
     if experiments.all_stills():

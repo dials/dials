@@ -74,12 +74,12 @@ class Script:
             for t in tables[1:]:
                 table.extend(t)
         else:
-            raise RuntimeError("unknown method, %s" % params.method)
+            raise RuntimeError(f"unknown method, {params.method}")
 
         # Write the reflections to the file
-        Command.start("Writing %d reflections to %s" % (len(table), params.output))
+        Command.start(f"Writing {len(table)} reflections to {params.output}")
         table.as_file(params.output)
-        Command.end("Wrote %d reflections to %s" % (len(table), params.output))
+        Command.end(f"Wrote {len(table)} reflections to {params.output}")
 
 
 @show_mail_handle_errors()

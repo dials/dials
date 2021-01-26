@@ -177,17 +177,17 @@ class AnalysisResults:
         """Make summary of results."""
         msg = "\nSummary of data removed:\n"
         for i, res in enumerate(self.get_cycle_results()):
-            msg += "Cycle number: %s\n" % (i + 1)
+            msg += f"Cycle number: {i + 1}\n"
             if "image_ranges_removed" in res:
                 if res["image_ranges_removed"]:
                     removed = "\n    ".join(
                         str(t[0]) + ", dataset " + str(t[1])
                         for t in res["image_ranges_removed"]
                     )
-                    msg += "  Removed image ranges: \n    %s" % removed
+                    msg += f"  Removed image ranges: \n    {removed}"
             else:
                 if res["removed_ids"]:
-                    msg += "  Removed datasets: %s\n" % res["removed_ids"]
+                    msg += f"  Removed datasets: {res['removed_ids']}\n"
             msg += (
                 "  cumulative %% of reflections removed: %.3f\n"
                 % res["cumul_percent_removed"]
@@ -493,8 +493,7 @@ def make_histogram_plots(cycle_results):
     def _add_new_histogram(d, hist, index):
         d.update(
             {
-                "scale_filter_histograms_%s"
-                % index: {
+                f"scale_filter_histograms_{index}": {
                     "data": [
                         {
                             "x": list(hist.slot_centers()),
@@ -505,7 +504,7 @@ def make_histogram_plots(cycle_results):
                         }
                     ],
                     "layout": {
-                        "title": "%s" % legends[index],
+                        "title": f"{legends[index]}",
                         "xaxis": {"title": "ΔCC<sub>½</sub>"},
                         "yaxis": {
                             "title": "Number of datasets/groups",

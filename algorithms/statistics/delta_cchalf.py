@@ -180,7 +180,7 @@ class PerGroupCChalfStatistics:
 
         for r in required:
             if r not in reflection_table:
-                raise KeyError("Column %s not present in reflection table" % r)
+                raise KeyError(f"Column {r} not present in reflection table")
         # now do a prefiltering
         self.map_to_asu()
         self.d_filter()

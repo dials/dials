@@ -121,7 +121,7 @@ class ScoreSettingsPanel(wx.Panel):
                 stream = open(path, "w")
                 for (key, score) in _scores.items():
                     if score is None:
-                        print("%s None" % (key), file=stream)
+                        print(f"{key} None", file=stream)
                     else:
                         print("%s %d" % (key, score), file=stream)
                 stream.close()

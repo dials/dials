@@ -819,7 +819,7 @@ class Refiner:
             ]
             rows.append(
                 [str(i), str(self._refinery.history["num_reflections"][i])]
-                + ["%.5g" % r for r in rmsds]
+                + [f"{r:.5g}" for r in rmsds]
             )
 
         logger.info(dials.util.tabulate(rows, header))
@@ -859,7 +859,7 @@ class Refiner:
                     self._refinery.history["out_of_sample_rmsd"][i], rmsd_multipliers
                 )
             ]
-            rows.append([str(i), str(nref)] + ["%.5g" % e for e in rmsds])
+            rows.append([str(i), str(nref)] + [f"{e:.5g}" for e in rmsds])
 
         logger.info(dials.util.tabulate(rows, header))
 
@@ -921,7 +921,7 @@ class Refiner:
                     rmsds.append(rmsd * images_per_rad)
                 elif units == "rad":
                     rmsds.append(rmsd * RAD2DEG)
-            rows.append([str(iexp), str(num)] + ["%.5g" % r for r in rmsds])
+            rows.append([str(iexp), str(num)] + [f"{r:.5g}" for r in rmsds])
 
         if len(rows) > 0:
             logger.info(dials.util.tabulate(rows, header))
@@ -985,7 +985,7 @@ class Refiner:
                         rmsds.append(rmsd * images_per_rad)
                     elif name == "RMSD_DeltaPsi" and units == "rad":
                         rmsds.append(rmsd * RAD2DEG)
-                rows.append([str(ipanel), str(num)] + ["%.5g" % r for r in rmsds])
+                rows.append([str(ipanel), str(num)] + [f"{r:.5g}" for r in rmsds])
 
             if len(rows) > 0:
                 logger.info(dials.util.tabulate(rows, header))

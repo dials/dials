@@ -243,7 +243,7 @@ class CentroidOutlier:
                 try:
                     row.append("{phi_start:.2f} - {phi_end:.2f}".format(**job))
                 except KeyError:
-                    row.append("{:.2f} - {:.2f}".format(0.0, 0.0))
+                    row.append(f"{0.0:.2f} - {0.0:.2f}")
             if nref == 0:
                 p100 = 0
             else:
@@ -254,7 +254,7 @@ class CentroidOutlier:
                         " {}"
                     ).format(p100, i + 1)
                     logger.debug(msg)
-            row.extend([str(nref), str(nout), "%3.1f" % p100])
+            row.extend([str(nref), str(nout), f"{p100:3.1f}"])
             rows.append(row)
 
         if self.nreject == 0:

@@ -795,7 +795,7 @@ class Indexer:
                 )
                 logger.info(R_ab)
                 logger.info(
-                    "Rotation of %.3f degrees" % angle
+                    f"Rotation of {angle:.3f} degrees"
                     + " about axis (%.3f, %.3f, %.3f)" % axis
                 )
                 have_similar_crystal_models = True
@@ -854,7 +854,7 @@ class Indexer:
                     str(i),
                     str(indexed_count),
                     str(unindexed_count),
-                    "{:.1%}".format(indexed_count / (indexed_count + unindexed_count)),
+                    f"{indexed_count / (indexed_count + unindexed_count):.1%}",
                 ]
             )
         logger.info(dials.util.tabulate(rows, headers="firstrow"))

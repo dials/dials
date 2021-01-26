@@ -194,7 +194,7 @@ def write(handle, key, data):
         dsc = "Profile rmsd"
         make_float(handle, "prf_rmsd", col, dsc)
     else:
-        raise KeyError("Column %s not written to file" % key)
+        raise KeyError(f"Column {key} not written to file")
 
 
 def read(handle, key):
@@ -313,7 +313,7 @@ def read(handle, key):
     elif key == "profile.rmsd":
         return flex.double(handle["prf_rmsd"][:])
     else:
-        raise KeyError("Column %s not read from file" % key)
+        raise KeyError(f"Column {key} not read from file")
 
 
 def dump(entry, reflections, experiments):

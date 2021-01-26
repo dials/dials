@@ -54,7 +54,7 @@ def test_compute_delta_cchalf_scaled_data_mtz(dials_data, tmpdir):
     # set cutoff to 0.0 to force one to be 'rejected'
     command = [
         "dials.compute_delta_cchalf",
-        "mtzfile=%s" % tmpdir.join("scaled.mtz").strpath,
+        f"mtzfile={tmpdir.join('scaled.mtz').strpath}",
         "stdcutoff=0.0",
     ]
     result = procrunner.run(command, working_directory=tmpdir)

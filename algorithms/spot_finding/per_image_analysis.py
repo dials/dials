@@ -65,26 +65,26 @@ class StatsMultiImage(collections.namedtuple("StatsMultiImage", _stats_field_nam
             method1_str = ""
             method2_str = ""
             if self.estimated_d_min is not None and self.estimated_d_min[i_image] > 0:
-                d_min_str = "%.2f" % self.estimated_d_min[i_image]
+                d_min_str = f"{self.estimated_d_min[i_image]:.2f}"
             if (
                 self.d_min_distl_method_1 is not None
                 and self.d_min_distl_method_1[i_image] > 0
             ):
-                method1_str = "%.2f" % self.d_min_distl_method_1[i_image]
+                method1_str = f"{self.d_min_distl_method_1[i_image]:.2f}"
                 if self.noisiness_method_1 is not None:
-                    method1_str += " (%.2f)" % self.noisiness_method_1[i_image]
+                    method1_str += f" ({self.noisiness_method_1[i_image]:.2f})"
             if (
                 self.d_min_distl_method_2 is not None
                 and self.d_min_distl_method_2[i_image] > 0
             ):
-                method2_str = "%.2f" % self.d_min_distl_method_2[i_image]
+                method2_str = f"{self.d_min_distl_method_2[i_image]:.2f}"
                 if self.noisiness_method_2 is not None:
-                    method2_str += " (%.2f)" % self.noisiness_method_2[i_image]
+                    method2_str += f" ({self.noisiness_method_2[i_image]:.2f})"
             row = [
                 image[i_image],
                 str(self.n_spots_total[i_image]),
                 str(self.n_spots_no_ice[i_image]),
-                "%.0f" % self.total_intensity[i_image],
+                f"{self.total_intensity[i_image]:.0f}",
             ]
             if estimated_d_min is not None:
                 row.append(d_min_str)
@@ -95,7 +95,7 @@ class StatsMultiImage(collections.namedtuple("StatsMultiImage", _stats_field_nam
             if n_indexed is not None:
                 row.append("%i" % self.n_indexed[i_image])
             if fraction_indexed is not None:
-                row.append("%.2f" % self.fraction_indexed[i_image])
+                row.append(f"{self.fraction_indexed[i_image]:.2f}")
             rows.append(row)
         return rows
 
@@ -370,7 +370,7 @@ def estimate_resolution_limit(reflections, ice_sel=None, plot_filename=None):
         ax_.set_xticks(xticks)
         ax_.set_xlim(ax.get_xlim())
         ax_.set_xlabel(r"Resolution ($\AA$)")
-        ax_.set_xticklabels(["%.1f" % d for d in xticks_d])
+        ax_.set_xticklabels([f"{d:.1f}" for d in xticks_d])
         pyplot.savefig(plot_filename)
         pyplot.close()
 

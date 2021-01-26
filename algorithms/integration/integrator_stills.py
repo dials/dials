@@ -186,12 +186,12 @@ class IntegratorStills:
             array_range,
         )
         reflections.del_selected(not mask)
-        Command.end("Filtered %d reflections by detector mask" % len(reflections))
+        Command.end(f"Filtered {len(reflections)} reflections by detector mask")
 
         # Filter the reflections by zeta
         min_zeta = params.integration.filter.by_zeta
         if min_zeta > 0:
-            Command.start("Filtering reflections by zeta >= %f" % min_zeta)
+            Command.start(f"Filtering reflections by zeta >= {min_zeta:f}")
             zeta = reflections.compute_zeta(experiments[0])
             reflections.del_selected(flex.abs(zeta) < min_zeta)
             n = len(reflections)

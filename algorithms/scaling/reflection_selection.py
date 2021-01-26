@@ -326,14 +326,14 @@ def _determine_Isigma_selection(reflection_table, params):
         selection &= Ioversigma < Isighigh
         reason = f"in I/sigma range ({Isighigh} > I/sig > {Isiglow})"
     else:
-        reason = "in I/sigma range (I/sig > %s)" % Isiglow
+        reason = f"in I/sigma range (I/sig > {Isiglow})"
     return selection, reason
 
 
 def _determine_partiality_selection(reflection_table, params):
     min_partiality = params.reflection_selection.min_partiality
     selection = reflection_table["partiality"] > min_partiality
-    reason = "above min partiality ( > %s)" % min_partiality
+    reason = f"above min partiality ( > {min_partiality})"
     return selection, reason
 
 

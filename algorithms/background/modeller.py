@@ -104,7 +104,7 @@ class FinalizeModel:
                 logger.info("  mean: %d", int(flex.mean(sub_data)))
                 logger.info("")
             else:
-                raise RuntimeError("Unknown filter_type: %s" % self.filter_type)
+                raise RuntimeError(f"Unknown filter_type: {self.filter_type}")
 
         # Fill any remaining holes
         logger.info("Filling holes")
@@ -237,7 +237,7 @@ class BackgroundModellerExecutor:
             elif self.image_type == "mean":
                 model = self.finalizer.finalize(mean, mask)
             else:
-                raise RuntimeError("Unknown image_type: %s" % self.image_type)
+                raise RuntimeError(f"Unknown image_type: {self.image_type}")
 
             # Add to the list
             result.append(

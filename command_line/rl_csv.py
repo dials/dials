@@ -91,7 +91,7 @@ def run(args=None):
         for _rlp in rlp:
             fout.write(fmt % (_rlp[0], _rlp[1], _rlp[2], k, k))
 
-        print("Appended %d spots to %s" % (len(rlp), params.output.csv))
+        print(f"Appended {len(rlp)} spots to {params.output.csv}")
 
     fout.close()
 

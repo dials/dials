@@ -376,11 +376,11 @@ class UCSettingsPanel(wx.Panel):
 
         frame.update_statusbar(
             "%d %d %d %d %d %d, " % tuple(self._cell)
-            + "number of indices: %d" % len(hkl_list.indices())
+            + f"number of indices: {len(hkl_list.indices())}"
         )
 
         spacings = sorted(hkl_list.d_spacings(), key=lambda s: s[1], reverse=True)
-        print("Printing spacings, len: %s" % len(spacings))
+        print(f"Printing spacings, len: {len(spacings)}")
 
         for d in spacings:
             print(d)
