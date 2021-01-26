@@ -108,8 +108,7 @@ class installer(install_distribution.installer):
                     total_size += os.path.getsize(fp)
                     num_files += 1
             print(
-                "Removing %9s, %4d files from %s"
-                % (humansize(total_size), num_files, subdir)
+                f"Removing {humansize(total_size):9}, {num_files:4d} files from {subdir}"
             )
             shutil.rmtree(fullpath)
             self._cleaned_size = self._cleaned_size + total_size
@@ -128,8 +127,7 @@ class installer(install_distribution.installer):
                         filelist.append(fp)
                         total_size += os.path.getsize(fp)
             print(
-                f"Removing %9s, %4d {extension} files from {subdir}"
-                % (humansize(total_size), len(filelist))
+                f"Removing {humansize(total_size):9}, {len(filelist):4d} {extension} files from {subdir}"
             )
             for f in filelist:
                 os.remove(f)
