@@ -434,16 +434,16 @@ class IntegrationJob:
         frame0, frame1 = imageset.get_scan().get_array_range()
 
         # Write some output
-        logger.info(" Beginning integration job %d" % self.index)
+        logger.info(" Beginning integration job %d", self.index)
         logger.info("")
-        logger.info(" Frames: %d -> %d" % (frame0, frame1))
+        logger.info(" Frames: %d -> %d", frame0, frame1)
         logger.info("")
         logger.info(" Number of reflections")
-        logger.info("  Partial:     %d" % npart)
-        logger.info("  Full:        %d" % nfull)
-        logger.info("  In ice ring: %d" % nice)
-        logger.info("  Integrate:   %d" % nint)
-        logger.info("  Total:       %d" % ntot)
+        logger.info("  Partial:     %d", npart)
+        logger.info("  Full:        %d", nfull)
+        logger.info("  In ice ring: %d", nice)
+        logger.info("  Integrate:   %d", nint)
+        logger.info("  Total:       %d", ntot)
         logger.info("")
 
         # Print a histogram of reflections on frames
@@ -882,16 +882,16 @@ class ReferenceCalculatorJob:
         frame0, frame1 = imageset.get_scan().get_array_range()
 
         # Write some output
-        logger.info(" Beginning integration job %d" % self.index)
+        logger.info(" Beginning integration job %d", self.index)
         logger.info("")
-        logger.info(" Frames: %d -> %d" % (frame0, frame1))
+        logger.info(" Frames: %d -> %d", frame0, frame1)
         logger.info("")
         logger.info(" Number of reflections")
-        logger.info("  Partial:     %d" % npart)
-        logger.info("  Full:        %d" % nfull)
-        logger.info("  In ice ring: %d" % nice)
-        logger.info("  Integrate:   %d" % nint)
-        logger.info("  Total:       %d" % ntot)
+        logger.info("  Partial:     %d", npart)
+        logger.info("  Full:        %d", nfull)
+        logger.info("  In ice ring: %d", nice)
+        logger.info("  Integrate:   %d", nint)
+        logger.info("  Total:       %d", ntot)
         logger.info("")
 
         # Print a histogram of reflections on frames
@@ -952,7 +952,7 @@ class ReferenceCalculatorJob:
         n_tot = dont_integrate.count(False)
         n_mod = (used_in_modelling & ~dont_integrate).count(True)
         logger.info("")
-        logger.info(fmt % (n_mod, n_tot))
+        logger.info(fmt, n_mod, n_tot)
 
     def write_debug_files(self):
         """
@@ -1293,12 +1293,12 @@ class ReferenceCalculatorProcessor:
         # Print the profiles to the debug log
         for i in range(len(self._profiles)):
             logger.debug("")
-            logger.debug("Reference Profiles for experiment %d" % i)
+            logger.debug("Reference Profiles for experiment %d", i)
             logger.debug("")
             reference = self._profiles[i].reference()
             for j in range(len(reference)):
                 data = reference.data(j)
-                logger.debug("Profile %d" % j)
+                logger.debug("Profile %d", j)
                 if len(data) > 0:
                     logger.debug(pprint.profile3d(data))
                 else:

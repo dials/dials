@@ -44,7 +44,7 @@ class ResolutionBinner:
                 self._xmin + (i + 1) * self._bin_size,
             )
             if output:
-                logger.info("%d: %.3f, %.3f" % (i, sqrt(1 / b0), sqrt(1 / b1)))
+                logger.info("%d: %.3f, %.3f", i, sqrt(1 / b0), sqrt(1 / b1))
             self._bins.append((b0, b1))
 
     def nbins(self):

@@ -266,4 +266,4 @@ def _export_experiment(filename, integrated_data, experiment, params, var_model=
 
     fout.write("!END_OF_DATA\n")
     fout.close()
-    logger.info("Output %d reflections to %s" % (nref, filename))
+    logger.info("Output %d reflections to %s", nref, filename)

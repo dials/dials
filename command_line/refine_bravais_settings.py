@@ -213,7 +213,7 @@ def run(args=None):
     if prefix is None:
         prefix = ""
     summary_file = "%sbravais_summary.json" % prefix
-    logger.info("Saving summary as %s" % summary_file)
+    logger.info("Saving summary as %s", summary_file)
     with open(os.path.join(params.output.directory, summary_file), "w") as fh:
         json.dump(refined_settings.as_dict(), fh)
 
@@ -221,7 +221,7 @@ def run(args=None):
         expts = subgroup.refined_experiments
         soln = int(subgroup.setting_number)
         bs_json = "%sbravais_setting_%i.expt" % (prefix, soln)
-        logger.info("Saving solution %i as %s" % (soln, bs_json))
+        logger.info("Saving solution %i as %s", soln, bs_json)
         expts.as_file(os.path.join(params.output.directory, bs_json))
 
 

@@ -116,7 +116,7 @@ class Creator:
             import six.moves.cPickle as pickle
 
             filename = self.params.debug.filename
-            logger.info("Writing background model to %s" % filename)
+            logger.info("Writing background model to %s", filename)
             with open(filename, "wb") as outfile:
                 pickle.dump(self.background, outfile, protocol=pickle.HIGHEST_PROTOCOL)
 

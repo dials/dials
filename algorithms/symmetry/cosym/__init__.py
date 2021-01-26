@@ -281,9 +281,9 @@ class CosymAnalysis(symmetry_base, Subject):
                     zip(dimensions, functional), headers=("Dimensions", "Functional")
                 )
             )
-            logger.info("Best number of dimensions: %i" % x_g)
+            logger.info("Best number of dimensions: %i", x_g)
             self.target.set_dimensions(int(x_g))
-            logger.info("Using %i dimensions for analysis" % self.target.dim)
+            logger.info("Using %i dimensions for analysis", self.target.dim)
 
     def run(self):
         self._intialise_target()

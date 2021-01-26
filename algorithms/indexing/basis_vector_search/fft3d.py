@@ -126,7 +126,7 @@ class FFT3D(Strategy):
             d_min = 5 * max_cell / self._n_points
             d_spacings = 1 / reciprocal_lattice_vectors.norms()
             d_min = max(d_min, min(d_spacings))
-            logger.info("Setting d_min: %.2f" % d_min)
+            logger.info("Setting d_min: %.2f", d_min)
         else:
             d_min = self._params.reciprocal_space_grid.d_min
 
@@ -184,8 +184,7 @@ class FFT3D(Strategy):
                     v_u, v
                 ):
                     logger.debug(
-                        "rejecting %s: integer multiple of %s"
-                        % (v.length(), v_u.length())
+                        "rejecting %s: integer multiple of %s", v.length(), v_u.length()
                     )
                     is_unique = False
                     break
@@ -208,7 +207,7 @@ class FFT3D(Strategy):
         )
 
         logger.info(
-            "Number of centroids used: %i" % ((reciprocal_space_grid > 0).count(True))
+            "Number of centroids used: %i", (reciprocal_space_grid > 0).count(True)
         )
 
         # gb_to_bytes = 1073741824
@@ -240,7 +239,7 @@ class FFT3D(Strategy):
 
         if self._params.b_iso is libtbx.Auto:
             self._params.b_iso = -4 * d_min ** 2 * math.log(0.05)
-            logger.debug("Setting b_iso = %.1f" % self._params.b_iso)
+            logger.debug("Setting b_iso = %.1f", self._params.b_iso)
         used_in_indexing = flex.bool(reciprocal_lattice_vectors.size(), True)
         dials_algorithms_indexing_ext.map_centroids_to_reciprocal_space_grid(
             grid,

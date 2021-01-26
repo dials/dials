@@ -526,8 +526,8 @@ class ScoreSymmetryElement:
                     outliers.set_selected(col < q1_x - cut_x, True)
             if outliers.count(True):
                 logger.debug(
-                    "Rejecting %s outlier value%s"
-                    % (libtbx.utils.plural_s(outliers.count(True)))
+                    "Rejecting %s outlier value%s",
+                    libtbx.utils.plural_s(outliers.count(True)),
                 )
                 x = x.select(~outliers)
                 y = y.select(~outliers)

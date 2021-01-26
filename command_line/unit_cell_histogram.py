@@ -42,8 +42,12 @@ def outlier_selection(uc_params, iqr_ratio=1.5):
     for p in uc_params:
         min_x, q1_x, med_x, q3_x, max_x = five_number_summary(p)
         logger.info(
-            "Five number summary: min %.2f, q1 %.2f, med %.2f, q3 %.2f, max %.2f"
-            % (min_x, q1_x, med_x, q3_x, max_x)
+            "Five number summary: min %.2f, q1 %.2f, med %.2f, q3 %.2f, max %.2f",
+            min_x,
+            q1_x,
+            med_x,
+            q3_x,
+            max_x,
         )
         iqr_x = q3_x - q1_x
         if iqr_x < 1e-6:
@@ -51,7 +55,7 @@ def outlier_selection(uc_params, iqr_ratio=1.5):
         cut_x = iqr_ratio * iqr_x
         outliers.set_selected(p > q3_x + cut_x, True)
         outliers.set_selected(p < q1_x - cut_x, True)
-    logger.info("Identified %i unit cell outliers" % outliers.count(True))
+    logger.info("Identified %i unit cell outliers", outliers.count(True))
     return outliers
 
 

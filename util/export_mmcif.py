@@ -78,7 +78,7 @@ class MMCIFOutputFile:
             self._cif.show(out=fh, loop_format_strings=loop_format_strings)
 
         # Log
-        logger.info("Wrote reflections to %s" % filename)
+        logger.info("Wrote reflections to %s", filename)
 
     def make_cif_block(self, experiments, reflections):
         """Write the data to a cif block"""

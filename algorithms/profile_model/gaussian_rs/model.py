@@ -274,8 +274,8 @@ class Model(ProfileModelExt):
                 "or set using the parameters sigma_b and sigma_m."
             )
         logger.info("Creating profile model with parameters:")
-        logger.info("  sigma_b: %f" % sigma_b)
-        logger.info("  sigma_m: %f" % sigma_m)
+        logger.info("  sigma_b: %f", sigma_b)
+        logger.info("  sigma_m: %f", sigma_m)
         return cls(
             params=params, n_sigma=n_sigma, sigma_b=sigma_b, sigma_m=sigma_m, deg=True
         )

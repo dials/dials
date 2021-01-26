@@ -79,7 +79,7 @@ class Script:
         for experiment in experiments:
             if isinstance(experiment.imageset, ImageSequence):
                 sequences.append(experiment.imageset)
-        logger.info("Number of sequences = %d" % len(sequences))
+        logger.info("Number of sequences = %d", len(sequences))
 
         # Sort the sequences by timestamps
         logger.info("Sorting sequences based on timestamp")
@@ -95,7 +95,7 @@ class Script:
 
         # Print the number of datasets on each day
         for timestamp in sorted(counter.keys()):
-            logger.info("%d datasets collected on %s" % (counter[timestamp], timestamp))
+            logger.info("%d datasets collected on %s", counter[timestamp], timestamp)
 
         # Loop though and see if any models might be shared
         b_list = [s.get_beam() for s in sequences]

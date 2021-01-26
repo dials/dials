@@ -507,7 +507,7 @@ class ProfileModelCalculator:
 
         # stills images behave differently in here
         if goniometer is None or scan is None or scan.is_still():
-            logger.info("Using %d reflections for sigma calculation" % n_all)
+            logger.info("Using %d reflections for sigma calculation", n_all)
             logger.info("Calculating E.S.D Beam Divergence.")
             beam_divergence = ComputeEsdBeamDivergence(
                 detector, reflections, centroid_definition
@@ -533,9 +533,7 @@ class ProfileModelCalculator:
             reflections = reflections.select(flex.abs(zeta) >= min_zeta)
             n_use = reflections.size()
 
-            logger.info(
-                "Using %d / %d reflections for sigma calculation" % (n_use, n_all)
-            )
+            logger.info("Using %d / %d reflections for sigma calculation", n_use, n_all)
             logger.info("Calculating E.S.D Beam Divergence.")
             beam_divergence = ComputeEsdBeamDivergence(
                 detector, reflections, centroid_definition

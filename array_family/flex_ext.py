@@ -478,8 +478,8 @@ class _:
         :return: The matches
         """
         logger.info("Matching reference spots with predicted reflections")
-        logger.info(" %d observed reflections input" % len(other))
-        logger.info(" %d reflections predicted" % len(self))
+        logger.info(" %d observed reflections input", len(other))
+        logger.info(" %d reflections predicted", len(self))
 
         # Get the miller index, entering flag and turn number for
         # Both sets of reflections
@@ -566,8 +566,8 @@ class _:
             + cctbx.array_family.flex.pow2(z1 - z2)
         )
         mask = distance < 2
-        logger.info(" %d reflections matched" % len(o2))
-        logger.info(" %d reflections accepted" % mask.count(True))
+        logger.info(" %d reflections matched", len(o2))
+        logger.info(" %d reflections accepted", mask.count(True))
         self.set_flags(sind.select(mask), self.flags.reference_spot)
         self.set_flags(sind.select(o2.get_flags(self.flags.strong)), self.flags.strong)
         self.set_flags(

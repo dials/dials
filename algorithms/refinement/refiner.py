@@ -445,9 +445,10 @@ class RefinerFactory:
         ndim = target.dim
         nref = len(refman.get_matches())
         logger.info(
-            "There are {} parameters to refine against {} reflections in {} dimensions".format(
-                nparam, nref, ndim
-            )
+            "There are %s parameters to refine against %s reflections in %s dimensions",
+            nparam,
+            nref,
+            ndim,
         )
 
         if not params.refinement.parameterisation.sparse and isinstance(
@@ -463,9 +464,8 @@ class RefinerFactory:
                 or dense_jacobian_gigabytes > 0.5
             ):
                 logger.info(
-                    "Storage of the Jacobian matrix requires {:.1f} GB".format(
-                        dense_jacobian_gigabytes
-                    )
+                    "Storage of the Jacobian matrix requires %.1f GB",
+                    dense_jacobian_gigabytes,
                 )
 
         # build refiner interface and return
@@ -499,9 +499,7 @@ class RefinerFactory:
             params.refinement.parameterisation.sparse and params.refinement.mp.nproc > 1
         ):
             logger.warning(
-                "Could not set sparse=True and nproc={}".format(
-                    params.refinement.mp.nproc
-                )
+                "Could not set sparse=True and nproc=%s", params.refinement.mp.nproc
             )
             logger.warning("Resetting sparse=False")
             params.refinement.parameterisation.sparse = False
@@ -634,9 +632,9 @@ class RefinerFactory:
                 engine.set_nproc(nproc)
             except NotImplementedError:
                 logger.warning(
-                    "Could not set nproc={} for refinement engine of type {}".format(
-                        nproc, options.engine
-                    )
+                    "Could not set nproc=%s for refinement engine of type %s",
+                    nproc,
+                    options.engine,
                 )
 
         return engine
@@ -947,7 +945,7 @@ class Refiner:
         for idetector, detector in enumerate(self._experiments.detectors()):
             if len(detector) == 1:
                 continue
-            logger.info("\nDetector {} RMSDs by panel:".format(idetector + 1))
+            logger.info("\nDetector %s RMSDs by panel:", idetector + 1)
 
             header = ["Panel\nid", "Nref"]
             for (name, units) in zip(self._target.rmsd_names, self._target.rmsd_units):

@@ -226,7 +226,7 @@ class ScalingAlgorithm:
                 logger.info(e)
 
             # All done!
-            logger.info("\nTotal time taken: {:.4f}s ".format(time.time() - start_time))
+            logger.info("\nTotal time taken: %.4fs ", time.time() - start_time)
             logger.info("%s%s%s", "\n", "=" * 80, "\n")
 
     def scale(self):
@@ -468,7 +468,7 @@ multi-dataset scaling mode (not single dataset or scaling against a reference)""
             with open(self.params.filtering.output.scale_and_filter_results, "w") as f:
                 json.dump(self.filtering_results.to_dict(), f, indent=2)
             # All done!
-            logger.info("\nTotal time taken: {:.4f}s ".format(time.time() - start_time))
+            logger.info("\nTotal time taken: %.4fs ", time.time() - start_time)
             logger.info("%s%s%s", "\n", "=" * 80, "\n")
 
     def run_scaling_cycle(self):

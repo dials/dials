@@ -108,13 +108,13 @@ class Script:
             obs = self.predict_to_miller_set(expt, resolution)
 
         logger.info(
-            "Fraction of unique observations at datum: %.1f%%"
-            % (100.0 * len(obs.indices()) / len(all_indices.indices()))
+            "Fraction of unique observations at datum: %.1f%%",
+            100.0 * len(obs.indices()) / len(all_indices.indices()),
         )
 
         missing = all_indices.lone_set(other=obs)
 
-        logger.info("%d unique reflections in blind region" % len(missing.indices()))
+        logger.info("%d unique reflections in blind region", len(missing.indices()))
 
         e1 = matrix.col(axes[0])
         e2 = matrix.col(axes[1])
@@ -145,8 +145,8 @@ class Script:
         if not solutions:
             sys.exit("Impossible two theta: %.3f," % (two_theta * 180.0 / math.pi))
 
-        logger.info("Maximum two theta: %.3f," % (two_theta * 180.0 / math.pi))
-        logger.info("%d solutions found" % len(solutions))
+        logger.info("Maximum two theta: %.3f,", two_theta * 180.0 / math.pi)
+        logger.info("%d solutions found", len(solutions))
 
         names = tuple(
             [n.replace("GON_", "").lower() for n in expt.goniometer.get_names()]
@@ -164,9 +164,7 @@ class Script:
             fout = "solution_%d.expt" % (j + 1)
             f = len(new.indices()) / len(missing.indices())
 
-            logger.info(
-                "{:8.3f} {:8.3f} {:8.3f} {:4.2f} {}".format(s[0], s[1], s[2], f, fout)
-            )
+            logger.info("%8.3f %8.3f %8.3f %4.2f %s", s[0], s[1], s[2], f, fout)
             self.write_expt(experiments, fout)
 
     def make_scan_360(self, scan):

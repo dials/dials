@@ -186,7 +186,7 @@ class LowResSpotMatch(Strategy):
             seeds = self.stems
         else:
             seeds = self.seeds
-        logger.info("Using {} seeds".format(len(seeds)))
+        logger.info("Using %s seeds", len(seeds))
 
         # Second search: match seed spots with another spot from a different
         # reciprocal lattice row, such that the observed reciprocal space distances
@@ -194,39 +194,39 @@ class LowResSpotMatch(Strategy):
         pairs = []
         for seed in seeds:
             pairs.extend(self._pairs_with_seed(seed))
-        logger.info("Found {} pairs".format(len(pairs)))
+        logger.info("Found %s pairs", len(pairs))
         pairs = list(set(pairs))  # filter duplicates
 
         if self._params.max_pairs:
             pairs.sort(key=operator.attrgetter("total_weight"))
             idx = self._params.max_pairs
             pairs = pairs[0:idx]
-        logger.info("Using {} highest-scoring pairs".format(len(pairs)))
+        logger.info("Using %s highest-scoring pairs", len(pairs))
 
         # Further search iterations: extend to more spots within tolerated distances
         triplets = []
         for pair in pairs:
             triplets.extend(self._extend_by_candidates(pair))
-        logger.info("Found {} triplets".format(len(triplets)))
+        logger.info("Found %s triplets", len(triplets))
         triplets = list(set(triplets))  # filter duplicates
         if self._params.max_triplets:
             triplets.sort(key=operator.attrgetter("total_weight"))
             idx = self._params.max_triplets
             triplets = triplets[0:idx]
-        logger.info("Using {} highest-scoring triplets".format(len(triplets)))
+        logger.info("Using %s highest-scoring triplets", len(triplets))
 
         branches = triplets
         if self._params.search_depth == "quads":
             quads = []
             for triplet in triplets:
                 quads.extend(self._extend_by_candidates(triplet))
-            logger.info("{} quads".format(len(quads)))
+            logger.info("%s quads", len(quads))
             quads = list(set(quads))  # filter duplicates
             if self._params.max_quads:
                 quads.sort(key=operator.attrgetter("total_weight"))
                 idx = self._params.max_quads
                 quads = quads[0:idx]
-            logger.info("Using {} highest-scoring quads".format(len(quads)))
+            logger.info("Using %s highest-scoring quads", len(quads))
             branches = quads
 
         # Sort branches by total deviation of observed distances from expected

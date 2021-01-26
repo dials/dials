@@ -10,7 +10,7 @@ def write_background_file(file_name, imageset, n_bins):
 
     d, I, sig = background(imageset, imageset.indices()[0], n_bins=n_bins)
 
-    logger.info("Saving background file to %s" % file_name)
+    logger.info("Saving background file to %s", file_name)
     with open(file_name, "w") as f:
         for d_, I_, sig_ in zip(d, I, sig):
             f.write(f"{d_:10.4f} {I_:10.2f} {sig_:10.2f}" + os.linesep)
@@ -32,7 +32,7 @@ def write_integrated_hkl(prefix, reflections):
         if flex.max(expt_ids) > 0:
             suffix = "%i" % (i_expt + 1)
         file_name = f"{prefix}{suffix}.hkl"
-        logger.info("Saving reflections to %s" % file_name)
+        logger.info("Saving reflections to %s", file_name)
         with open(file_name, "w") as f:
             for i in range(len(integrated)):
                 f.write(
@@ -124,7 +124,7 @@ def write_par_file(file_name, experiment):
         symbol = symbol.replace(" ", "")
         return symbol
 
-    logger.info("Saving BEST parameter file to %s" % file_name)
+    logger.info("Saving BEST parameter file to %s", file_name)
     with open(file_name, "w") as f:
         print("# parameter file for BEST", file=f)
         print("TITLE          From DIALS", file=f)

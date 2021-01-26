@@ -176,9 +176,9 @@ class ReflectionPredictor:
 
         :return: A reflection table
         """
-        logger.info("Prediction type: %s" % self._predict.name)
+        logger.info("Prediction type: %s", self._predict.name)
         table = self._predict()
-        logger.info("Predicted %d reflections" % len(table))
+        logger.info("Predicted %d reflections", len(table))
         return table
 
     def predictor(self, index):

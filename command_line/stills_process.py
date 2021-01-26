@@ -276,7 +276,7 @@ phil_scope = parse(control_phil_str + dials_phil_str, process_includes=True).fet
 
 
 def do_import(filename, load_models=True):
-    logger.info("Loading %s" % os.path.basename(filename))
+    logger.info("Loading %s", os.path.basename(filename))
     experiments = ExperimentListFactory.from_filenames([filename], load_models=False)
     if len(experiments) == 0:
         try:
@@ -457,8 +457,8 @@ class Script:
         if len(bad_phils) > 0:
             self.parser.print_help()
             logger.error(
-                "Error: the following phil files were not understood: %s"
-                % (", ".join(bad_phils))
+                "Error: the following phil files were not understood: %s",
+                ", ".join(bad_phils),
             )
             return
 
@@ -547,8 +547,7 @@ class Script:
                         experiment.detector = imageset.get_detector()
                     except RuntimeError as e:
                         logger.warning(
-                            "Error updating geometry on item %s, %s"
-                            % (str(tag), str(e))
+                            "Error updating geometry on item %s, %s", str(tag), str(e)
                         )
                         continue
 
@@ -604,7 +603,7 @@ class Script:
                     experiments = do_import(filename, load_models=True)
                     imagesets = experiments.imagesets()
                     if len(imagesets) == 0 or len(imagesets[0]) == 0:
-                        logger.info("Zero length imageset in file: %s" % filename)
+                        logger.info("Zero length imageset in file: %s", filename)
                         return
                     if len(imagesets) > 1:
                         raise Abort(
@@ -622,7 +621,7 @@ class Script:
                         experiment.detector = imagesets[0].get_detector()
                     except RuntimeError as e:
                         logger.warning(
-                            "Error updating geometry on item {}, {}".format(tag, str(e))
+                            "Error updating geometry on item %s, %s", tag, str(e)
                         )
                         continue
 
@@ -747,7 +746,7 @@ class Script:
 
         # Total Time
         logger.info("")
-        logger.info("Total Time Taken = %f seconds" % (time.time() - st))
+        logger.info("Total Time Taken = %f seconds", time.time() - st)
 
         if params.mp.debug.cProfile:
             self.pr.disable()
@@ -1049,7 +1048,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 self.save_reflections(observed, self.params.output.strong_filename)
 
         logger.info("")
-        logger.info("Time Taken = %f seconds" % (time.time() - st))
+        logger.info("Time Taken = %f seconds", time.time() - st)
         return observed
 
     def index(self, experiments, reflections):
@@ -1088,7 +1087,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                     )
                     idxr.index()
                 except Exception as e:
-                    logger.info("Couldn't index using method %s" % method)
+                    logger.info("Couldn't index using method %s", method)
                     if indexing_error is None:
                         if e is None:
                             e = Exception("Couldn't index using method %s" % method)
@@ -1110,8 +1109,9 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 if sel.count(True) == 1:
                     filtered.extend(indexed.select(sel))
             logger.info(
-                "Filtered duplicate reflections, %d out of %d remaining"
-                % (len(filtered), len(indexed))
+                "Filtered duplicate reflections, %d out of %d remaining",
+                len(filtered),
+                len(indexed),
             )
             print(
                 "Filtered duplicate reflections, %d out of %d remaining"
@@ -1120,7 +1120,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
             indexed = filtered
 
         logger.info("")
-        logger.info("Time Taken = %f seconds" % (time.time() - st))
+        logger.info("Time Taken = %f seconds", time.time() - st)
         return experiments, indexed
 
     def refine(self, experiments, centroids):
@@ -1188,7 +1188,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
 
         if self.params.dispatch.refine:
             logger.info("")
-            logger.info("Time Taken = %f seconds" % (time.time() - st))
+            logger.info("Time Taken = %f seconds", time.time() - st)
 
         return experiments, centroids
 
@@ -1270,8 +1270,9 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
             accepted_expts = ExperimentList()
             accepted_refls = flex.reflection_table()
             logger.info(
-                "Removed %d reflections out of %d when applying significance filter"
-                % (len(integrated) - len(filtered_refls), len(integrated))
+                "Removed %d reflections out of %d when applying significance filter",
+                len(integrated) - len(filtered_refls),
+                len(integrated),
             )
             for expt_id, expt in enumerate(experiments):
                 refls = filtered_refls.select(filtered_refls["id"] == expt_id)
@@ -1281,8 +1282,8 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                     accepted_refls.extend(refls)
                 else:
                     logger.info(
-                        "Removed experiment %d which has no reflections left after applying significance filter"
-                        % expt_id
+                        "Removed experiment %d which has no reflections left after applying significance filter",
+                        expt_id,
                     )
 
             if len(accepted_refls) == 0:
@@ -1359,7 +1360,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
         logger.info(log_str)
 
         logger.info("")
-        logger.info("Time Taken = %f seconds" % (time.time() - st))
+        logger.info("Time Taken = %f seconds", time.time() - st)
         return integrated
 
     def write_integration_pickles(self, integrated, experiments, callback=None):
@@ -1436,12 +1437,12 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
         assert "miller_index" in reference
         assert "id" in reference
         logger.info("Processing reference reflections")
-        logger.info(" read %d strong spots" % len(reference))
+        logger.info(" read %d strong spots", len(reference))
         mask = reference.get_flags(reference.flags.indexed)
         rubbish = reference.select(~mask)
         if mask.count(False) > 0:
             reference.del_selected(~mask)
-            logger.info(" removing %d unindexed reflections" % mask.count(True))
+            logger.info(" removing %d unindexed reflections", mask.count(True))
         if len(reference) == 0:
             raise Sorry(
                 """
@@ -1454,7 +1455,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
         if mask.count(True) > 0:
             rubbish.extend(reference.select(mask))
             reference.del_selected(mask)
-            logger.info(" removing %d reflections with hkl (0,0,0)" % mask.count(True))
+            logger.info(" removing %d reflections with hkl (0,0,0)", mask.count(True))
         mask = reference["id"] < 0
         if mask.count(True) > 0:
             raise Sorry(
@@ -1464,17 +1465,17 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
       """
                 % mask.count(True)
             )
-        logger.info(" using %d indexed reflections" % len(reference))
-        logger.info(" found %d junk reflections" % len(rubbish))
-        logger.info(" time taken: %g" % (time.time() - st))
+        logger.info(" using %d indexed reflections", len(reference))
+        logger.info(" found %d junk reflections", len(rubbish))
+        logger.info(" time taken: %g", time.time() - st)
         return reference, rubbish
 
     def save_reflections(self, reflections, filename):
         """Save the reflections to file."""
         st = time.time()
-        logger.info("Saving %d reflections to %s" % (len(reflections), filename))
+        logger.info("Saving %d reflections to %s", len(reflections), filename)
         reflections.as_file(filename)
-        logger.info(" time taken: %g" % (time.time() - st))
+        logger.info(" time taken: %g", time.time() - st)
 
     def finalize(self):
         """Perform any final operations"""
@@ -1493,7 +1494,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 if rank % stride == 0:
                     subranks = [rank + i for i in range(1, stride) if rank + i < size]
                     for i in range(len(subranks)):
-                        logger.info("Rank %d waiting for sender" % rank)
+                        logger.info("Rank %d waiting for sender", rank)
                         (
                             sender,
                             imported_experiments,
@@ -1507,9 +1508,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                             int_pickles,
                             int_pickle_filenames,
                         ) = comm.recv(source=MPI.ANY_SOURCE)
-                        logger.info(
-                            "Rank %d recieved data from rank %d" % (rank, sender)
-                        )
+                        logger.info("Rank %d recieved data from rank %d", rank, sender)
 
                         def extend_with_bookkeeping(
                             src_expts, src_refls, dest_expts, dest_refls
@@ -1564,8 +1563,9 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 else:
                     destrank = (rank // stride) * stride
                     logger.info(
-                        "Rank %d sending results to rank %d"
-                        % (rank, (rank // stride) * stride)
+                        "Rank %d sending results to rank %d",
+                        rank,
+                        (rank // stride) * stride,
                     )
                     comm.send(
                         (

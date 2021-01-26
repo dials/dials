@@ -185,7 +185,7 @@ class Script:
                 selected.set_selected(reflections["id"] == i, True)
             ascii_plot = spot_counts_per_image_plot(reflections.select(selected))
             if len(ascii_plot):
-                logger.info("\nHistogram of per-image spot count for imageset %i:" % i)
+                logger.info("\nHistogram of per-image spot count for imageset %i:", i)
                 logger.info(ascii_plot)
 
         # Save the reflections to file
@@ -199,9 +199,7 @@ class Script:
 
         reflections.as_file(params.output.reflections)
         logger.info(
-            "Saved {} reflections to {}".format(
-                len(reflections), params.output.reflections
-            )
+            "Saved %s reflections to %s", len(reflections), params.output.reflections
         )
 
         # Reset the trusted ranges

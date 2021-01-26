@@ -34,7 +34,7 @@ class MaskerBase:
             self.mask_overlapping(
                 reflections["shoebox"], reflections["xyzcal.px"], adjacency_list
             )
-            logger.info("Masked {} overlapping reflections".format(len(adjacency_list)))
+            logger.info("Masked %s overlapping reflections", len(adjacency_list))
 
         # Return the reflections
         return reflections

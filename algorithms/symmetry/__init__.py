@@ -110,7 +110,7 @@ class symmetry_base:
         self.patterson_group = (
             self.lattice_group.build_derived_patterson_group().make_tidy()
         )
-        logger.info("Patterson group: %s" % self.patterson_group.info())
+        logger.info("Patterson group: %s", self.patterson_group.info())
 
         sel = self.patterson_group.epsilon(self.intensities.indices()) == 1
         self.intensities = self.intensities.select(sel)
@@ -153,7 +153,7 @@ class symmetry_base:
 
         for i in range(int(flex.max(self.dataset_ids) + 1)):
             logger.info("\n" + "-" * 80 + "\n")
-            logger.info("Normalising intensities for dataset %i\n" % (i + 1))
+            logger.info("Normalising intensities for dataset %i\n", i + 1)
             intensities = self.intensities.select(self.dataset_ids == i)
             try:
                 intensities = normalise(intensities)
@@ -287,14 +287,19 @@ class symmetry_base:
                 """\
   %5.2f, %5.2f, %5.2f
   %12.2f, %5.2f
-  %19.2f"""
-                % (b_cart[0], b_cart[3], b_cart[4], b_cart[1], b_cart[5], b_cart[2])
+  %19.2f""",
+                b_cart[0],
+                b_cart[3],
+                b_cart[4],
+                b_cart[1],
+                b_cart[5],
+                b_cart[2],
             )
         else:
             logger.info("ML estimate of overall B value:")
-            logger.info("   %5.2f A**2" % normalisation.b_wilson)
+            logger.info("   %5.2f A**2", normalisation.b_wilson)
         logger.info("ML estimate of  -log of scale factor:")
-        logger.info("  %5.2f" % (normalisation.p_scale))
+        logger.info("  %5.2f", normalisation.p_scale)
 
         s = StringIO()
         mr.show(out=s)

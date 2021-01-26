@@ -97,11 +97,12 @@ class Target:
         self._patterson_group = self._lattice_group.build_derived_patterson_group()
 
         logger.debug(
-            "Lattice group: %s (%i symops)"
-            % (self._lattice_group.info().symbol_and_number(), len(self._lattice_group))
+            "Lattice group: %s (%i symops)",
+            self._lattice_group.info().symbol_and_number(),
+            len(self._lattice_group),
         )
         logger.debug(
-            "Patterson group: %s" % self._patterson_group.info().symbol_and_number()
+            "Patterson group: %s", self._patterson_group.info().symbol_and_number()
         )
 
         self._compute_rij_wij()

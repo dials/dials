@@ -272,11 +272,15 @@ class _Processor:
         if mp_njobs > 1:
             assert mp_method != "none" and mp_method is not None
             logger.info(
-                " Using %s with %d parallel job(s) and %d processes per node\n"
-                % (mp_method, mp_njobs, mp_nproc)
+                " Using %s with %d parallel job(s) and %d processes per node\n",
+                mp_method,
+                mp_njobs,
+                mp_nproc,
             )
         else:
-            logger.info(" Using multiprocessing with %d parallel job(s)\n" % (mp_nproc))
+            logger.info(
+                " Using multiprocessing with %d parallel job(s)\n",
+            )
         if mp_njobs * mp_nproc > 1:
 
             def process_output(result):
@@ -750,8 +754,9 @@ class _Manager:
             assert num_partial >= num_full, "Invalid number of partials"
             if num_partial > num_full:
                 logger.info(
-                    " Split %d reflections into %d partial reflections\n"
-                    % (num_full, num_partial)
+                    " Split %d reflections into %d partial reflections\n",
+                    num_full,
+                    num_partial,
                 )
         else:
             num_full = len(self.reflections)
@@ -761,7 +766,7 @@ class _Manager:
             if num_partial > num_full:
                 num_split = num_partial - num_full
                 logger.info(
-                    " Split %d reflections overlapping job boundaries\n" % num_split
+                    " Split %d reflections overlapping job boundaries\n", num_split
                 )
 
         # Compute the partiality

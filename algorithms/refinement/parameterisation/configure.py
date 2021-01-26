@@ -362,9 +362,7 @@ def _centroid_analysis(options, experiments, reflection_manager):
             min_interval = max(min_interval, block_size)
         a["interval_width"] = min_interval
         logger.info(
-            "Exp id {} suggested interval width = {:.1f} degrees".format(
-                i, min_interval
-            )
+            "Exp id %s suggested interval width = %.1f degrees", i, min_interval
         )
 
     return analysis

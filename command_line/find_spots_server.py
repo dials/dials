@@ -114,7 +114,7 @@ indexing_min_spots = 10
     t0 = time.time()
     reflections = flex.reflection_table.from_observations(experiments, params)
     t1 = time.time()
-    logger.info("Spotfinding took %.2f seconds" % (t1 - t0))
+    logger.info("Spotfinding took %.2f seconds", t1 - t0)
     from dials.algorithms.spot_finding import per_image_analysis
 
     imageset = experiments.imagesets()[0]
@@ -124,7 +124,7 @@ indexing_min_spots = 10
         reflections, filter_ice=filter_ice, ice_rings_width=ice_rings_width
     )._asdict()
     t2 = time.time()
-    logger.info("Resolution analysis took %.2f seconds" % (t2 - t1))
+    logger.info("Resolution analysis took %.2f seconds", t2 - t1)
 
     if index and stats["n_spots_no_ice"] > indexing_min_spots:
         logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -179,7 +179,7 @@ indexing_min_spots = 10
             stats["error"] = str(e)
         finally:
             t3 = time.time()
-            logger.info("Indexing took %.2f seconds" % (t3 - t2))
+            logger.info("Indexing took %.2f seconds", t3 - t2)
 
         if integrate and "lattices" in stats:
 
@@ -225,8 +225,8 @@ indexing_min_spots = 10
                     logger.info("")
                     logger.info("*" * 80)
                     logger.info(
-                        "Warning: %d reference spots were not matched to predictions"
-                        % (len(reference) - matched.count(True))
+                        "Warning: %d reference spots were not matched to predictions",
+                        len(reference) - matched.count(True),
                     )
                     logger.info("*" * 80)
                     logger.info("")
@@ -253,7 +253,7 @@ indexing_min_spots = 10
                 stats["error"] = str(e)
             finally:
                 t4 = time.time()
-                logger.info("Integration took %.2f seconds" % (t4 - t3))
+                logger.info("Integration took %.2f seconds", t4 - t3)
 
     return stats
 

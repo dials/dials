@@ -581,9 +581,7 @@ def export_mtz(
     mtz_writer.write_columns(combined_data)
 
     logger.info(
-        "Saving {} integrated reflections to {}".format(
-            len(combined_data["id"]), filename
-        )
+        "Saving %s integrated reflections to %s", len(combined_data["id"]), filename
     )
     mtz_file = mtz_writer.mtz_file
     mtz_file.write(filename)

@@ -132,7 +132,7 @@ class ImageGenerator:
                 cb = pylab.colorbar()
                 cb.ax.tick_params(labelsize=8)
             logger.info(
-                "Saving %s image for panel %d to %s_%d.png" % (name, i, filename, i)
+                "Saving %s image for panel %d to %s_%d.png", name, i, filename, i
             )
             pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches="tight")
 
@@ -262,7 +262,7 @@ class Script:
         model = modeller.compute()
 
         # Save the background model
-        logger.info("Saving background model to %s" % params.output.model)
+        logger.info("Saving background model to %s", params.output.model)
         from dials.algorithms.background.gmodel import StaticBackgroundModel
 
         static_model = StaticBackgroundModel()

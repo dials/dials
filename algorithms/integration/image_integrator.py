@@ -67,7 +67,7 @@ class ProcessorImage:
             mp_nproc = 1
         assert mp_nproc > 0, "Invalid number of processors"
         logger.info(self.manager.summary())
-        logger.info(" Using %s with %d parallel job(s)\n" % (mp_method, mp_nproc))
+        logger.info(" Using %s with %d parallel job(s)\n", mp_method, mp_nproc)
         if mp_nproc > 1:
 
             def process_output(result):
@@ -353,6 +353,7 @@ class ManagerImage:
         assert num_partial >= num_full, "Invalid number of partials"
         if num_partial > num_full:
             logger.info(
-                " Split %d reflections into %d partial reflections\n"
-                % (num_full, num_partial)
+                " Split %d reflections into %d partial reflections\n",
+                num_full,
+                num_partial,
             )

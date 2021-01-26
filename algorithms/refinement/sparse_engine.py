@@ -115,8 +115,10 @@ class SparseLevenbergMarquardtIterations(
         of the refinement"""
 
         logger.debug(
-            "Iteration: %5d Objective: %18.4f Mu: %12.7f"
-            % (self.n_iterations, objective, self.mu)
+            "Iteration: %5d Objective: %18.4f Mu: %12.7f",
+            self.n_iterations,
+            objective,
+            self.mu,
         )
 
     def run(self):

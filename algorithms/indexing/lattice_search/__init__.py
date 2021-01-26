@@ -232,15 +232,15 @@ class LatticeSearch(indexer.Indexer):
                         continue
                 except SmallUnitCellVolume:
                     logger.debug(
-                        "correct_non_primitive_basis SmallUnitCellVolume error for unit cell %s:"
-                        % experiments[0].crystal.get_unit_cell()
+                        "correct_non_primitive_basis SmallUnitCellVolume error for unit cell %s:",
+                        experiments[0].crystal.get_unit_cell(),
                     )
                     continue
                 except RuntimeError as e:
                     if "Krivy-Gruber iteration limit exceeded" in str(e):
                         logger.debug(
-                            "correct_non_primitive_basis Krivy-Gruber iteration limit exceeded error for unit cell %s:"
-                            % experiments[0].crystal.get_unit_cell()
+                            "correct_non_primitive_basis Krivy-Gruber iteration limit exceeded error for unit cell %s:",
+                            experiments[0].crystal.get_unit_cell(),
                         )
                         continue
                     raise
@@ -282,8 +282,8 @@ class LatticeSearch(indexer.Indexer):
             logger.info("Candidate solutions:")
             logger.info(str(solutions))
             best_model = solutions.best_model()
-            logger.debug("best model_likelihood: %.2f" % best_model.model_likelihood)
-            logger.debug("best n_indexed: %i" % best_model.n_indexed)
+            logger.debug("best model_likelihood: %.2f", best_model.model_likelihood)
+            logger.debug("best n_indexed: %i", best_model.n_indexed)
             self.hkl_offset = best_model.hkl_offset
             return best_model.crystal, best_model.n_indexed
         else:

@@ -45,8 +45,8 @@ class DispersionExtendedSpotFinderThresholdExt:
                 estimate_global_threshold(image, mask)
             )
             logger.info(
-                "Setting global_threshold: %i"
-                % (params.spotfinder.threshold.dispersion.global_threshold)
+                "Setting global_threshold: %i",
+                params.spotfinder.threshold.dispersion.global_threshold,
             )
 
         self._algorithm = DispersionExtendedThresholdStrategy(

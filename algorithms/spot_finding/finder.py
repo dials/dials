@@ -104,8 +104,9 @@ class ExtractPixelsFromImage:
             mask = tuple(m1 & m2 for m1, m2 in zip(mask, self.mask))
 
         logger.debug(
-            "Number of masked pixels for image %i: %i"
-            % (index, sum(m.count(False) for m in mask))
+            "Number of masked pixels for image %i: %i",
+            index,
+            sum(m.count(False) for m in mask),
         )
 
         # Add the images to the pixel lists

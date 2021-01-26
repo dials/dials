@@ -74,9 +74,7 @@ class CentroidOutlier:
         Return True if any outliers were detected, otherwise False"""
 
         logger.info(
-            "Detecting centroid outliers using the {} algorithm".format(
-                type(self).__name__
-            )
+            "Detecting centroid outliers using the %s algorithm", type(self).__name__
         )
 
         # check the columns are present

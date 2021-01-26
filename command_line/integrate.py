@@ -568,8 +568,9 @@ def run_integration(params, experiments, reference=None):
     if not params.output.output_unintegrated_reflections:
         keep = reflections.get_flags(reflections.flags.integrated, all=False)
         logger.info(
-            "Removing %d unintegrated reflections of %d total"
-            % (keep.count(False), keep.size())
+            "Removing %d unintegrated reflections of %d total",
+            keep.count(False),
+            keep.size(),
         )
 
         reflections = reflections.select(keep)

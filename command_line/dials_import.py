@@ -504,7 +504,7 @@ class MetaDataUpdater:
             logger.info("")
             logger.info("Applying input geometry in the following order:")
             for i, item in enumerate(update_order, start=1):
-                logger.info("  %d. %s" % (i, item))
+                logger.info("  %d. %s", i, item)
             logger.info("")
 
     def __call__(self, imageset_list):
@@ -834,12 +834,12 @@ class Script:
         # Print out some bulk info
         logger.info("-" * 80)
         for f in format_list:
-            logger.info("  format: %s" % f)
-        logger.info("  num images: %d" % num_images)
+            logger.info("  format: %s", f)
+        logger.info("  num images: %d", num_images)
         logger.info("  sequences:")
-        logger.info("    still:    %d" % num_still_sequences)
-        logger.info("    sweep:    %d" % num_sweeps)
-        logger.info("  num stills: %d" % num_stills)
+        logger.info("    still:    %d", num_still_sequences)
+        logger.info("    sweep:    %d", num_sweeps)
+        logger.info("  num stills: %d", num_stills)
 
         # Print out info for all experiments
         for experiment in experiments:
@@ -853,14 +853,12 @@ class Script:
                 imageset_type = "stills"
 
             logger.debug("-" * 80)
-            logger.debug("  format: %s" % str(experiment.imageset.get_format_class()))
-            logger.debug("  imageset type: %s" % imageset_type)
+            logger.debug("  format: %s", str(experiment.imageset.get_format_class()))
+            logger.debug("  imageset type: %s", imageset_type)
             if image_range is None:
-                logger.debug("  num images:    %d" % len(experiment.imageset))
+                logger.debug("  num images:    %d", len(experiment.imageset))
             else:
-                logger.debug(
-                    "  num images:    %d" % (image_range[1] - image_range[0] + 1)
-                )
+                logger.debug("  num images:    %d", image_range[1] - image_range[0] + 1)
 
             logger.debug("")
             logger.debug(experiment.imageset.get_beam())
@@ -881,7 +879,7 @@ class Script:
         """
         if params.output.experiments:
             logger.info("-" * 80)
-            logger.info("Writing experiments to %s" % params.output.experiments)
+            logger.info("Writing experiments to %s", params.output.experiments)
             experiments.as_file(
                 params.output.experiments, compact=params.output.compact
             )
@@ -923,7 +921,7 @@ class Script:
         logger.info("")
         for i in range(1, len(sequences)):
             logger.info("=" * 80)
-            logger.info("Diff between sequence %d and %d" % (i - 1, i))
+            logger.info("Diff between sequence %d and %d", i - 1, i)
             logger.info("")
             self.print_sequence_diff(sequences[i - 1], sequences[i], params)
         logger.info("=" * 80)

@@ -121,8 +121,7 @@ class StillsIndexer(Indexer):
                 crystal_ids = self.reflections.select(d_spacings > d_min_indexed)["id"]
                 if (crystal_ids == -1).count(True) < min_reflections_for_indexing:
                     logger.info(
-                        "Finish searching for more lattices: %i unindexed reflections remaining."
-                        % (min_reflections_for_indexing)
+                        "Finish searching for more lattices: %i unindexed reflections remaining.",
                     )
                     break
 
@@ -214,17 +213,15 @@ class StillsIndexer(Indexer):
                             != crystal.get_space_group().type().lookup_symbol()
                         ):
                             logger.info(
-                                "Crystal isoform lookup_symbol %s does not match isoform %s lookup_symbol %s"
-                                % (
-                                    crystal.get_space_group().type().lookup_symbol(),
-                                    isoform.name,
-                                    isoform.lookup_symbol,
-                                )
+                                "Crystal isoform lookup_symbol %s does not match isoform %s lookup_symbol %s",
+                                crystal.get_space_group().type().lookup_symbol(),
+                                isoform.name,
+                                isoform.lookup_symbol,
                             )
                             continue
                         crystal.set_B(isoform.cell.fractionalization_matrix())
 
-                        logger.info("Refining isoform %s" % isoform.name)
+                        logger.info("Refining isoform %s", isoform.name)
                         refiners.append(
                             e_refine(
                                 params=self.all_params,
@@ -248,32 +245,28 @@ class StillsIndexer(Indexer):
                     minrmsd_mm = min(positional_rmsds)
                     minindex = positional_rmsds.index(minrmsd_mm)
                     logger.info(
-                        "The smallest rmsd is %5.1f um from isoform %s"
-                        % (
-                            1000.0 * minrmsd_mm,
-                            self.params.stills.isoforms[minindex].name,
-                        )
+                        "The smallest rmsd is %5.1f um from isoform %s",
+                        1000.0 * minrmsd_mm,
+                        self.params.stills.isoforms[minindex].name,
                     )
                     if self.params.stills.isoforms[minindex].rmsd_target_mm is not None:
                         logger.info(
-                            "Asserting %f < %f"
-                            % (
-                                minrmsd_mm,
-                                self.params.stills.isoforms[minindex].rmsd_target_mm,
-                            )
+                            "Asserting %f < %f",
+                            minrmsd_mm,
+                            self.params.stills.isoforms[minindex].rmsd_target_mm,
                         )
                         assert (
                             minrmsd_mm
                             < self.params.stills.isoforms[minindex].rmsd_target_mm
                         )
                     logger.info(
-                        "Acceptable rmsd for isoform %s."
-                        % (self.params.stills.isoforms[minindex].name)
+                        "Acceptable rmsd for isoform %s.",
+                        self.params.stills.isoforms[minindex].name,
                     )
                     if len(self.params.stills.isoforms) == 2:
                         logger.info(
-                            "Rmsd gain over the other isoform %5.1f um."
-                            % (1000.0 * abs(positional_rmsds[0] - positional_rmsds[1]))
+                            "Rmsd gain over the other isoform %5.1f um.",
+                            1000.0 * abs(positional_rmsds[0] - positional_rmsds[1]),
                         )
                     R = refiners[minindex]
                     # Now one last check to see if direct beam is out of bounds
@@ -289,11 +282,9 @@ class StillsIndexer(Indexer):
                             self.params.stills.isoforms[minindex].beam_restraint
                         )
                         logger.info(
-                            "Asserting difference in refined beam center and expected beam center %f < %f"
-                            % (
-                                (refined_beam - known_beam).length(),
-                                self.params.stills.isoforms[minindex].rmsd_target_mm,
-                            )
+                            "Asserting difference in refined beam center and expected beam center %f < %f",
+                            (refined_beam - known_beam).length(),
+                            self.params.stills.isoforms[minindex].rmsd_target_mm,
                         )
                         assert (
                             refined_beam - known_beam
@@ -435,7 +426,7 @@ class StillsIndexer(Indexer):
             n_indexed = 0
             for _ in experiments.where(crystal=crystal_model):
                 n_indexed += (self.reflections["id"] == i).count(True)
-            logger.info("model %i (%i reflections):" % (i + 1, n_indexed))
+            logger.info("model %i (%i reflections):", i + 1, n_indexed)
             logger.info(crystal_model)
 
         if (

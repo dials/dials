@@ -138,7 +138,7 @@ class CrystalUnitCellMixin:
 
             # write original error to debug log
             logger.debug("Unable to compose the crystal model")
-            logger.debug("Original error message: {}".format(str(e)))
+            logger.debug("Original error message: %s", str(e))
             logger.debug("Failing now.")
             raise RuntimeError(
                 "Unable to compose the crystal model. Please check that the "

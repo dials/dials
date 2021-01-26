@@ -476,7 +476,7 @@ class Script:
 
         # Combine crystals?
         if params.refinement.combine_crystal_models and len(experiments) > 1:
-            logger.info("Combining {} crystal models".format(len(experiments)))
+            logger.info("Combining %s crystal models", len(experiments))
             experiments = self.combine_crystals(experiments)
 
         # Filter integrated centroids?
