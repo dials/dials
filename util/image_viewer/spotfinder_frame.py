@@ -95,8 +95,50 @@ class SpotFrame(XrayFrame):
 
         super().__init__(*args, **kwds)
 
+        self.viewing_stills = True
+        for experiment_list in self.experiments:
+            if any(exp.scan or exp.goniometer for exp in experiment_list):
+                self.viewing_stills = False
+                break
+
+        if self.viewing_stills:
+            is_multi_shot_exp = any(len(exp_list) > 1 for exp_list in self.experiments)
+            if is_multi_shot_exp:
+                assert len(self.experiments) == 1
+                if self.reflections:
+                    assert len(self.reflections) == 1
+                    assert len(self.experiments[0]) == len(
+                        set(self.reflections[0]["id"])
+                    )
+                new_experiments = []
+                new_reflections = []
+                for i_expt, expt in enumerate(self.experiments[0]):
+                    print(
+                        "Perparing experiments (%d / %d)"
+                        % (i_expt + 1, len(self.experiments[0]))
+                    )
+                    exp_list = ExperimentList()
+                    exp_list.append(expt)
+                    new_experiments.append(exp_list)
+                    if self.reflections:
+                        refls = self.reflections[0].select(
+                            self.reflections[0]["id"] == i_expt
+                        )
+                        refls["id"] = flex.int(len(refls), 0)
+                        new_reflections.append(refls)
+                self.experiments = new_experiments
+                self.reflections = new_reflections
+            else:
+                new_reflections = []
+                for refls in self.reflections:
+                    refls["id"] = flex.int(len(refls), 0)
+                    new_reflections.append(refls)
+                self.reflections = new_reflections
+
         # If we have only one imageset, unindexed filtering becomes easier
         self.have_one_imageset = len(set(self.imagesets)) <= 1
+        if self.viewing_stills:
+            self.have_one_imageset = True
 
         self.viewer.reflections = self.reflections
         self.viewer.frames = self.imagesets
@@ -916,7 +958,8 @@ class SpotFrame(XrayFrame):
         request["extended"] = self.settings.dispersion_extended
 
         # If the request was already cached, return the result
-        if request == self._dispersion_debug_memo:
+        # NOTE this is broken when I page through images in e.g. threshold mode or when I update the threshold params
+        if not self.viewing_stills and request == self._dispersion_debug_memo:
             return self._kabsch_debug_list
 
         detector = image.get_detector()
@@ -1297,7 +1340,10 @@ class SpotFrame(XrayFrame):
         shoebox_dict = {"width": 2, "color": "#0000FFA0", "closed": False}
         ctr_mass_dict = {"width": 2, "color": "#FF0000", "closed": False}
         vector_dict = {"width": 4, "color": "#F62817", "closed": False}
-        i_frame = self.images.selected.index
+        if self.viewing_stills:
+            i_frame = self.images.selected_index  # NOTE, the underbar is intentional
+        else:
+            i_frame = self.images.selected.index
         imageset = self.images.selected.image_set
         if imageset.get_scan() is not None:
             i_frame += imageset.get_scan().get_array_range()[0]
@@ -1331,6 +1377,8 @@ class SpotFrame(XrayFrame):
         ] * 10
 
         for ref_list_id, ref_list in enumerate(self.reflections):
+            if self.viewing_stills and ref_list_id != i_frame:
+                continue
 
             # If we have more than one imageset, then we could be on the wrong one
             if not self.have_one_imageset:
@@ -1358,8 +1406,11 @@ class SpotFrame(XrayFrame):
                 x0, x1, y0, y1, z0, z1 = bbox.parts()
                 # ticket #107
                 n = self.params.stack_images - 1
-                bbox_sel = ~((i_frame >= z1) | ((i_frame + n) < z0))
-                selected = ref_list.select(bbox_sel)
+                if self.viewing_stills:
+                    selected = ref_list
+                else:
+                    bbox_sel = ~((i_frame >= z1) | ((i_frame + n) < z0))
+                    selected = ref_list.select(bbox_sel)
                 for reflection in selected.rows():
                     x0, x1, y0, y1, z0, z1 = reflection["bbox"]
                     panel = reflection["panel"]
@@ -1373,7 +1424,7 @@ class SpotFrame(XrayFrame):
                         and n == 0
                     ):
                         shoebox = reflection["shoebox"]
-                        iz = i_frame - z0
+                        iz = i_frame - z0 if not self.viewing_stills else 0
                         if not reflection["id"] in all_pix_data:
                             all_pix_data[reflection["id"]] = []
 
@@ -1458,7 +1509,7 @@ class SpotFrame(XrayFrame):
                         offset, j = divmod(offset, shoebox.all()[1])
                         offset, i = divmod(offset, shoebox.all()[0])
                         max_index = (i, j, k)
-                        if z0 + max_index[0] == i_frame:
+                        if z0 + max_index[0] == i_frame or self.viewing_stills:
                             x, y = map_coords(
                                 x0 + max_index[2] + 0.5,
                                 y0 + max_index[1] + 0.5,
@@ -1469,8 +1520,8 @@ class SpotFrame(XrayFrame):
                     if self.settings.show_ctr_mass and "xyzobs.px.value" in reflection:
                         centroid = reflection["xyzobs.px.value"]
                         # ticket #107
-                        if centroid[2] >= i_frame and centroid[2] <= (
-                            i_frame + self.params.stack_images
+                        if self.viewing_stills or (
+                            i_frame <= centroid[2] <= (i_frame + self.params.stack_images)
                         ):
                             x, y = map_coords(
                                 centroid[0], centroid[1], reflection["panel"]
@@ -1503,7 +1554,10 @@ class SpotFrame(XrayFrame):
                         frame_numbers < (i_frame + 1 + n)
                     )
 
-                    selected = ref_list.select(frame_predictions_sel & expt_sel)
+                    sel = expt_sel
+                    if not self.viewing_stills:
+                        sel = frame_predictions_sel & expt_sel
+                    selected = ref_list.select(sel)
                     for reflection in selected.rows():
                         if (
                             self.settings.show_predictions
