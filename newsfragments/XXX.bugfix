@@ -1,0 +1,2 @@
+``dials.scale``: Fix issue of error model not always being carried through after
+the profile/summation intensity combination step.
