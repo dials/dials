@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 
 # modified version of the ab_cluster function so we can access the scipy dendrogram object
@@ -105,7 +103,7 @@ class UnitCellCluster(Cluster):
         if write_file_lists:
             for cluster in sub_clusters:
                 if len(cluster.members) > 1:
-                    cluster.dump_file_list(out_file_name="{}.lst".format(cluster.cname))
+                    cluster.dump_file_list(out_file_name=f"{cluster.cname}.lst")
 
         if labels is True:
             labels = [image.name for image in self.members]
@@ -150,7 +148,7 @@ class UnitCellCluster(Cluster):
                 ax.set_ylim(-ax.get_ylim()[1] / 100, ax.get_ylim()[1])
 
             if direct_visualisation:
-                fig.savefig("{}_dendogram.pdf".format(self.cname))
+                fig.savefig(f"{self.cname}_dendogram.pdf")
                 plt.show()
 
         return sub_clusters, dendrogram, ax

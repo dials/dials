@@ -40,7 +40,6 @@ Classes:
   - AllSumPrfScaleIntensityReducer
       implements filtering methods for using all of prf, sum and scale intensities
 """
-from __future__ import absolute_import, division, print_function
 
 import logging
 from collections import defaultdict
@@ -120,7 +119,7 @@ def filter_reflection_table(reflection_table, intensity_choice, *args, **kwargs)
         raise ValueError(
             (
                 "Unrecognised intensity choice for filter_reflection_table,\n"
-                "value read: {0}\n"
+                "value read: {}\n"
                 "must be one of: 'scale', 'profile', 'sum', 'profile sum', \n"
                 "                'sum scale', 'profile sum scale'\n"
                 "(if parsing from command line, multiple choices passed as e.g. profile+sum"
@@ -284,7 +283,7 @@ def checkdataremains(func):
     return wrapper
 
 
-class FilteringReductionMethods(object):
+class FilteringReductionMethods:
     """A collection of methods for filtering.
 
     Some internal methods require an 'intensity' string, which indicates which

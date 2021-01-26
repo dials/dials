@@ -1,6 +1,5 @@
 # LIBTBX_SET_DISPATCHER_NAME dials.complete_full_sphere
 
-from __future__ import absolute_import, division, print_function
 
 import logging
 import math
@@ -38,7 +37,7 @@ shadow = True
 )
 
 
-class Script(object):
+class Script:
     """A class for running the script."""
 
     def __init__(self):
@@ -165,7 +164,9 @@ class Script(object):
             fout = "solution_%d.expt" % (j + 1)
             f = len(new.indices()) / len(missing.indices())
 
-            logger.info("%8.3f %8.3f %8.3f %4.2f %s" % (s[0], s[1], s[2], f, fout))
+            logger.info(
+                "{:8.3f} {:8.3f} {:8.3f} {:4.2f} {}".format(s[0], s[1], s[2], f, fout)
+            )
             self.write_expt(experiments, fout)
 
     def make_scan_360(self, scan):

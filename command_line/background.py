@@ -1,7 +1,6 @@
 # LIBTBX_SET_DISPATCHER_NAME dials.background
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
 
-from __future__ import absolute_import, division, print_function
 
 import math
 
@@ -105,9 +104,9 @@ def run(args=None):
                 mask_params=params.masking,
             )
 
-            print("%8s %8s %8s" % ("d", "I", "sig"))
+            print("{:>8} {:>8} {:>8}".format("d", "I", "sig"))
             for j in range(len(I)):
-                print("%8.3f %8.3f %8.3f" % (d[j], I[j], sig[j]))
+                print("{:8.3f} {:8.3f} {:8.3f}".format(d[j], I[j], sig[j]))
 
             d_spacings.append(d)
             intensities.append(I)

@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import os
 
 from dxtbx.model import Crystal
@@ -19,7 +17,7 @@ def dump(experiments, directory):
         if len(experiments) > 1:
             suffix = "_%i" % (i + 1)
 
-        sub_dir = "%s%s" % (directory, suffix)
+        sub_dir = f"{directory}{suffix}"
         if not os.path.isdir(sub_dir):
             os.makedirs(sub_dir)
         detector = experiment.detector
@@ -61,7 +59,7 @@ def dump(experiments, directory):
 
         index_mat = os.path.join(sub_dir, "index.mat")
         mosflm_in = os.path.join(sub_dir, "mosflm.in")
-        print("Exporting experiment to %s and %s" % (index_mat, mosflm_in))
+        print(f"Exporting experiment to {index_mat} and {mosflm_in}")
 
         with open(index_mat, "w") as f:
             f.write(format_mosflm_mat(w * A_mosflm, U_mosflm, cryst.get_unit_cell()))

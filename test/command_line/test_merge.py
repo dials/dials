@@ -1,6 +1,5 @@
 """Tests for dials.merge command line program."""
 
-from __future__ import absolute_import, division, print_function
 
 import procrunner
 import pytest
@@ -42,7 +41,7 @@ def test_merge(dials_data, tmpdir, anomalous, truncate):
     refls = location.join("scaled_20_25.refl")
     expts = location.join("scaled_20_25.expt")
 
-    mtz_file = tmpdir.join("merge-%s-%s.mtz" % (anomalous, truncate))
+    mtz_file = tmpdir.join(f"merge-{anomalous}-{truncate}.mtz")
 
     command = [
         "dials.merge",
@@ -128,16 +127,16 @@ def test_merge_multi_wavelength(dials_data, tmpdir):
     """Test that merge handles multi-wavelength data suitably - should be
     exported into an mtz with seprate columns for each wavelength."""
 
-    mean_labels = ["%sIMEAN_WAVE%s" % (pre, i) for i in [1, 2] for pre in ["", "SIG"]]
+    mean_labels = [f"{pre}IMEAN_WAVE{i}" for i in [1, 2] for pre in ["", "SIG"]]
     anom_labels = [
-        "%sI_WAVE%s(%s)" % (pre, i, sgn)
+        f"{pre}I_WAVE{i}({sgn})"
         for i in [1, 2]
         for pre in ["", "SIG"]
         for sgn in ["+", "-"]
     ]
-    amp_labels = ["%sF_WAVE%s" % (pre, i) for i in [1, 2] for pre in ["", "SIG"]]
+    amp_labels = [f"{pre}F_WAVE{i}" for i in [1, 2] for pre in ["", "SIG"]]
     anom_amp_labels = [
-        "%sF_WAVE%s(%s)" % (pre, i, sgn)
+        f"{pre}F_WAVE{i}({sgn})"
         for i in [1, 2]
         for pre in ["", "SIG"]
         for sgn in ["+", "-"]

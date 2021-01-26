@@ -1,6 +1,4 @@
-# coding: utf-8
 """Definitions of functions and classes for scaling and filtering algorithm."""
-from __future__ import absolute_import, division, print_function
 
 import math
 from collections import OrderedDict
@@ -81,7 +79,7 @@ def log_cycle_results(results, scaling_script, filter_script):
     return results
 
 
-class AnalysisResults(object):
+class AnalysisResults:
     """Class to store results from scaling and filtering."""
 
     def __init__(self):
@@ -256,9 +254,9 @@ def make_filtering_merging_stats_plots(merging_stats):
                     }
                 ],
                 "layout": {
-                    "title": u"CC<sub>½</sub> vs cycle",
+                    "title": "CC<sub>½</sub> vs cycle",
                     "xaxis": {"title": "Cycle number"},
-                    "yaxis": {"title": u"CC<sub>½</sub>"},
+                    "yaxis": {"title": "CC<sub>½</sub>"},
                 },
             }
         }
@@ -294,9 +292,9 @@ def make_filtering_merging_stats_plots(merging_stats):
                     }
                 ],
                 "layout": {
-                    "title": u"<I/σ(I)> vs cycle",
+                    "title": "<I/σ(I)> vs cycle",
                     "xaxis": {"title": "Cycle number"},
-                    "yaxis": {"title": u"<I/σ(I)>"},
+                    "yaxis": {"title": "<I/σ(I)>"},
                 },
             }
         }
@@ -339,13 +337,13 @@ def make_filtering_merging_stats_plots(merging_stats):
                     }
                 ],
                 "layout": {
-                    "title": u"CC<sub>½</sub> vs resolution",
+                    "title": "CC<sub>½</sub> vs resolution",
                     "xaxis": {
-                        "title": u"Resolution (Å)",
+                        "title": "Resolution (Å)",
                         "tickvals": vals,
                         "ticktext": txt,
                     },
-                    "yaxis": {"title": u"CC<sub>½</sub>", "range": [0, 1]},
+                    "yaxis": {"title": "CC<sub>½</sub>", "range": [0, 1]},
                 },
             }
         }
@@ -366,7 +364,7 @@ def make_filtering_merging_stats_plots(merging_stats):
                 "layout": {
                     "title": "R-pim vs resolution",
                     "xaxis": {
-                        "title": u"Resolution (Å)",
+                        "title": "Resolution (Å)",
                         "tickvals": vals,
                         "ticktext": txt,
                     },
@@ -394,7 +392,7 @@ def make_filtering_merging_stats_plots(merging_stats):
                 "layout": {
                     "title": "R-merge vs resolution",
                     "xaxis": {
-                        "title": u"Resolution (Å)",
+                        "title": "Resolution (Å)",
                         "tickvals": vals,
                         "ticktext": txt,
                     },
@@ -463,9 +461,9 @@ def make_histogram_plots(cycle_results):
                     }
                 ],
                 "layout": {
-                    "title": u"Resolution-averaged CC<sub>½</sub> (σ-τ) vs cycle",
+                    "title": "Resolution-averaged CC<sub>½</sub> (σ-τ) vs cycle",
                     "xaxis": {"title": "Cycle number"},
-                    "yaxis": {"title": u"Resolution-averaged CC<sub>½</sub> (σ-τ)"},
+                    "yaxis": {"title": "Resolution-averaged CC<sub>½</sub> (σ-τ)"},
                 },
             }
         }
@@ -508,7 +506,7 @@ def make_histogram_plots(cycle_results):
                     ],
                     "layout": {
                         "title": "%s" % legends[index],
-                        "xaxis": {"title": u"ΔCC<sub>½</sub>"},
+                        "xaxis": {"title": "ΔCC<sub>½</sub>"},
                         "yaxis": {
                             "title": "Number of datasets/groups",
                             "range": [0, min(max(hist.slots()), 50)],

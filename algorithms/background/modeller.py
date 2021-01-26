@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 
 from dials_algorithms_background_modeller_ext import (
@@ -19,7 +17,7 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
-class FinalizeModel(object):
+class FinalizeModel:
     """
     A class to finalize the background model
     """
@@ -146,7 +144,7 @@ class FinalizeModel(object):
         return data
 
 
-class BackgroundModellerResult(object):
+class BackgroundModellerResult:
     """
     A class to contain the modelling result
     """
@@ -175,7 +173,7 @@ class BackgroundModellerResult(object):
         self.polar_model = polar_model
 
 
-class BackgroundModellerExecutor(object):
+class BackgroundModellerExecutor:
     def __init__(self, experiments, params):
         assert len(experiments) == 1
         self.min_images = params.modeller.min_images
@@ -259,7 +257,7 @@ class BackgroundModellerExecutor(object):
         return result
 
 
-class BackgroundModeller(object):
+class BackgroundModeller:
     """
     A class to help with background modelling
     """

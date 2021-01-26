@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 import math
 
@@ -64,7 +62,7 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
-class MaskCalculatorFactory(object):
+class MaskCalculatorFactory:
     """
     A factory function to return a mask calculator object
     """
@@ -95,7 +93,7 @@ class MaskCalculatorFactory(object):
         return algorithm
 
 
-class BackgroundCalculatorFactory(object):
+class BackgroundCalculatorFactory:
     """
     A factory function to return a background calculator object
     """
@@ -189,7 +187,7 @@ class BackgroundCalculatorFactory(object):
         return algorithm
 
 
-class IntensityCalculatorFactory(object):
+class IntensityCalculatorFactory:
     """
     A factory function to return an intensity calculator object
     """
@@ -238,7 +236,7 @@ class IntensityCalculatorFactory(object):
         return algorithm
 
 
-class ReferenceCalculatorFactory(object):
+class ReferenceCalculatorFactory:
     """
     A factory function to return an reference calculator object
     """
@@ -308,7 +306,7 @@ def _assert_enough_memory(required_memory, max_memory_usage):
         logger.info("Allocating %.1f MB memory", required_memory / 1e6)
 
 
-class IntegrationJob(object):
+class IntegrationJob:
     """
     A class to represent an integration job
     """
@@ -516,7 +514,7 @@ class IntegrationJob(object):
             del self.reflections["shoebox"]
 
 
-class IntegrationManager(object):
+class IntegrationManager:
     """
     A class to manage processing book-keeping
     """
@@ -760,7 +758,7 @@ class IntegrationManager(object):
         return fmt % (block_size, self.params.integration.block.units, task_table)
 
 
-class ReferenceCalculatorJob(object):
+class ReferenceCalculatorJob:
     """
     A class to represent an integration job
     """
@@ -980,7 +978,7 @@ class ReferenceCalculatorJob(object):
             del self.reflections["shoebox"]
 
 
-class ReferenceCalculatorManager(object):
+class ReferenceCalculatorManager:
     """
     A class to manage processing book-keeping
     """
@@ -1236,7 +1234,7 @@ def compute_required_memory(imageset, block_size):
     return MultiThreadedIntegrator.compute_required_memory(imageset, block_size)
 
 
-class ReferenceCalculatorProcessor(object):
+class ReferenceCalculatorProcessor:
     def __init__(self, experiments, reflections, params=None):
         from dials.util import pprint
 
@@ -1313,7 +1311,7 @@ class ReferenceCalculatorProcessor(object):
         return self._profiles
 
 
-class IntegratorProcessor(object):
+class IntegratorProcessor:
     def __init__(self, experiments, reflections, reference=None, params=None):
 
         # Create the reference manager

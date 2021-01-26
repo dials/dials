@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 # DIALS version numbers are constructed from
 #  1. a common prefix
 __dials_version_format = "DIALS %s"
@@ -111,7 +109,7 @@ def dials_version():
 
         # 2. If .git directory missing or 'git describe' failed, read .gitversion
         if (version is None) and os.path.exists(version_file):
-            with open(version_file, "r") as gv:
+            with open(version_file) as gv:
                 version = gv.read().rstrip()
     except Exception:
         pass

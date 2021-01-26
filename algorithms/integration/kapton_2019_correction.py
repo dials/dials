@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 import math
 
@@ -13,7 +11,7 @@ logging.basicConfig()
 logger = logging.getLogger(__name__)
 
 
-class KaptonTape_2019(object):
+class KaptonTape_2019:
     """Class for defining Kapton tape using dxtbx models and finding the path through the tape traversed by s1 vector"""
 
     def __init__(
@@ -405,7 +403,7 @@ class KaptonTape_2019(object):
         ]
 
 
-class image_kapton_correction(object):
+class image_kapton_correction:
     def __init__(
         self,
         panel_size_px=None,  #
@@ -559,7 +557,7 @@ class image_kapton_correction(object):
         return corrections, sigmas
 
 
-class multi_kapton_correction(object):
+class multi_kapton_correction:
     def __init__(self, experiments, integrated, kapton_params, logger=None):
         self.experiments = experiments
         self.reflections = integrated

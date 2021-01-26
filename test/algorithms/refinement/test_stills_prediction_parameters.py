@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import pytest
 
 from cctbx.sgtbx import space_group, space_group_symbols
@@ -32,7 +30,7 @@ from dials.array_family import flex
 from dials.test.algorithms.refinement.setup_geometry import Extract
 
 
-class _Test(object):
+class _Test:
     def __init__(self):
         self.create_models()
         self.generate_reflections()
@@ -210,7 +208,7 @@ def test_stills_pred_param(tc):
     for i, (an_grad, fd_grad) in enumerate(zip(an_grads, fd_grads)):
 
         # compare FD with analytical calculations
-        print("\nParameter {0}: {1}".format(i, fd_grad["name"]))
+        print("\nParameter {}: {}".format(i, fd_grad["name"]))
 
         for name in ["dX_dp", "dY_dp", "dDeltaPsi_dp"]:
             print(name)
@@ -290,7 +288,7 @@ def test_stills_pred_param(tc):
                 try:
                     assert n_outliers < 250
                 except AssertionError as e:
-                    e.args += ("too many outliers rejected: {}".format(n_outliers),)
+                    e.args += (f"too many outliers rejected: {n_outliers}",)
                     raise e
 
                 print(
@@ -335,7 +333,7 @@ def test_spherical_relp_stills_pred_param(tc):
 
     # compare FD with analytical calculations
     for i, (an_grad, fd_grad) in enumerate(zip(an_grads, fd_grads)):
-        print("\nParameter {0}: {1}".format(i, fd_grad["name"]))
+        print("\nParameter {}: {}".format(i, fd_grad["name"]))
         for name in ["dX_dp", "dY_dp", "dDeltaPsi_dp"]:
             print(name)
             for a, b in zip(an_grad[name], fd_grad[name]):

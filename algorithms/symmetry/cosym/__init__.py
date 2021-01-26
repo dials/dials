@@ -5,7 +5,6 @@ Acta Cryst. D74, 405-410 <https://doi.org/10.1107/S2059798318002978>`_ for
 determination of Patterson group symmetry from sparse multi-crystal data sets in
 the presence of an indexing ambiguity.
 """
-from __future__ import absolute_import, division, print_function
 
 import copy
 import json
@@ -135,7 +134,7 @@ class CosymAnalysis(symmetry_base, Subject):
             cosym anaylsis.
           params (libtbx.phil.scope_extract): Parameters for the analysis.
         """
-        super(CosymAnalysis, self).__init__(
+        super().__init__(
             intensities,
             normalisation=params.normalisation,
             lattice_symmetry_max_delta=params.lattice_symmetry_max_delta,
@@ -562,7 +561,7 @@ class CosymAnalysis(symmetry_base, Subject):
         return json.dumps(d, indent=indent)
 
 
-class SymmetryAnalysis(object):
+class SymmetryAnalysis:
     def __init__(self, coords, sym_ops, subgroups, cb_op_inp_min):
 
         import scipy.spatial.distance as ssd
@@ -747,7 +746,7 @@ class SymmetryAnalysis(object):
         return d
 
 
-class ScoreSymmetryElement(object):
+class ScoreSymmetryElement:
     """Analyse intensities for presence of a given symmetry operation.
 
     1) Calculate the probability of observing this CC if the sym op is present,
@@ -816,7 +815,7 @@ class ScoreSymmetryElement(object):
         }
 
 
-class ScoreSubGroup(object):
+class ScoreSubGroup:
     """Score the probability of a given subgroup being the true subgroup.
 
     1) Calculates overall Zcc scores for symmetry elements present/absent from
@@ -876,7 +875,7 @@ class ScoreSubGroup(object):
         Returns:
           str:
         """
-        return "%s %.3f %.2f %.2f %.2f" % (
+        return "{} {:.3f} {:.2f} {:.2f} {:.2f}".format(
             self.subgroup["best_subsym"].space_group_info(),
             self.likelihood,
             self.z_cc_net,

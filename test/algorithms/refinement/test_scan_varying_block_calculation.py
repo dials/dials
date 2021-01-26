@@ -2,7 +2,6 @@
 for scan-varying refinement. This exercises the issue originally flagged in
 https://github.com/dials/dials/issues/511"""
 
-from __future__ import absolute_import, division, print_function
 
 from math import pi
 

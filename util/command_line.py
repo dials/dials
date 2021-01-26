@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import sys
 import time
 
@@ -99,7 +97,7 @@ class ProgressBar:
         if self._title:
             left_str += self._title + ": "
 
-        left_str += "{: >3}%".format(percent)
+        left_str += f"{percent: >3}%"
 
         # Add a spinner
         if self._spinner:
@@ -113,7 +111,7 @@ class ProgressBar:
                 n_seconds_left = "?"
             else:
                 n_seconds_left = int(ceil(n_seconds_left))
-            right_str = " " + "est: {}s".format(n_seconds_left) + right_str
+            right_str = " " + f"est: {n_seconds_left}s" + right_str
 
         # Add a bar
         if self._bar:
@@ -121,7 +119,7 @@ class ProgressBar:
             n_char = int(percent * bar_length / 100)
             n_space = bar_length - n_char
             left_str += " "
-            left_str += "[ {0}>{1} ]".format("=" * n_char, " " * n_space)
+            left_str += "[ {}>{} ]".format("=" * n_char, " " * n_space)
 
         # Append strings
         progress_str = left_str + right_str
@@ -139,7 +137,7 @@ class ProgressBar:
         """ Print the 'end of comand' string."""
         if self._estimate_time:
             # Get the time string
-            time_string = "{:.2f}s".format(self._timer.get_elapsed_time())
+            time_string = f"{self._timer.get_elapsed_time():.2f}s"
 
             # Truncate the string
             max_length = self._length - self._indent - len(time_string) - 1
@@ -171,7 +169,7 @@ class ProgressBar:
         sys.stdout.flush()
 
 
-class Command(object):
+class Command:
     """Class to nicely print out a command with timing info."""
 
     # Variables available in class methods

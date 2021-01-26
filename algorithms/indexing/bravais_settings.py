@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import concurrent.futures
 import copy
 import logging
@@ -135,7 +133,7 @@ class RefinedSettingsList(list):
             P = uc.parameters()
             min_max_cc_str = "-/-"
             if item.min_cc is not None and item.max_cc is not None:
-                min_max_cc_str = "%.3f/%.3f" % (item.min_cc, item.max_cc)
+                min_max_cc_str = f"{item.min_cc:.3f}/{item.max_cc:.3f}"
             if item.recommended:
                 status = "*"
             else:

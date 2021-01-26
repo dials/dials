@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import collections
 import functools
 import logging
@@ -327,12 +325,12 @@ def nframes_hist(bbox, width=80, symbol="#", prefix=""):
     return hist([b[5] - b[4] for b in bbox], width=width, symbol=symbol, prefix=prefix)
 
 
-class Parameters(object):
+class Parameters:
     """
     A stack of classes to represent the integration parameters
     """
 
-    class Filter(object):
+    class Filter:
         """
         Filter parameters
         """
@@ -341,12 +339,12 @@ class Parameters(object):
             self.min_zeta = 0.05
             self.powder_filter = None
 
-    class Profile(object):
+    class Profile:
         """
         Profile parameters
         """
 
-        class Validation(object):
+        class Validation:
             def __init__(self):
                 self.number_of_partitions = 2
                 self.min_partition_size = 100
@@ -603,7 +601,7 @@ class ProfileModellerExecutor(Executor):
         """
         self.experiments = experiments
         self.profile_fitter = profile_fitter
-        super(ProfileModellerExecutor, self).__init__()
+        super().__init__()
 
     def initialize(self, frame0, frame1, reflections):
         """
@@ -705,7 +703,7 @@ class ProfileValidatorExecutor(Executor):
         """
         self.experiments = experiments
         self.profile_fitter = profile_fitter
-        super(ProfileValidatorExecutor, self).__init__()
+        super().__init__()
 
     def initialize(self, frame0, frame1, reflections):
         """
@@ -810,7 +808,7 @@ class IntegratorExecutor(Executor):
         self.experiments = experiments
         self.overlaps = None
         self.profile_fitter = profile_fitter
-        super(IntegratorExecutor, self).__init__()
+        super().__init__()
 
     def initialize(self, frame0, frame1, reflections):
         """
@@ -918,7 +916,7 @@ class IntegratorExecutor(Executor):
         return (self.experiments, self.profile_fitter)
 
 
-class Integrator(object):
+class Integrator:
     """
     The integrator class
     """
@@ -1281,7 +1279,7 @@ class IntegratorStills(Integrator):
     finalize_reflections = staticmethod(_finalize_stills)
 
 
-class Integrator3DThreaded(object):
+class Integrator3DThreaded:
     """
     Integrator for 3D algorithms
     """
@@ -1490,10 +1488,7 @@ def create_integrator(params, experiments, reflections):
         params.integration.lookup.mask, str
     ):
         with open(params.integration.lookup.mask, "rb") as infile:
-            if six.PY3:
-                params.integration.lookup.mask = pickle.load(infile, encoding="bytes")
-            else:
-                params.integration.lookup.mask = pickle.load(infile)
+            params.integration.lookup.mask = pickle.load(infile, encoding="bytes")
 
     # Set algorithms as reflection table defaults
     BackgroundAlgorithm = dials.extensions.Background.load(

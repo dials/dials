@@ -1,7 +1,3 @@
-# -*- coding: utf8 -*-
-
-from __future__ import absolute_import, division, print_function
-
 import logging
 from collections import defaultdict
 from math import floor, sqrt
@@ -15,7 +11,7 @@ from dials.array_family import flex
 logger = logging.getLogger("dials.command_line.compute_delta_cchalf")
 
 
-class ResolutionBinner(object):
+class ResolutionBinner:
     """
     A class to bin the data by resolution
     """
@@ -74,7 +70,7 @@ class ResolutionBinner(object):
         return bin_index
 
 
-class ReflectionSum(object):
+class ReflectionSum:
     """
     A helper class to store sums of X and X**2
     """
@@ -85,7 +81,7 @@ class ReflectionSum(object):
         self.n = n
 
 
-class BinData(object):
+class BinData:
     """
     A helper class to store mean and variance
     """
@@ -157,7 +153,7 @@ def compute_cchalf_from_reflection_sums(reflection_sums, binner):
     return compute_mean_cchalf_in_bins(bin_data)
 
 
-class PerGroupCChalfStatistics(object):
+class PerGroupCChalfStatistics:
     def __init__(
         self,
         reflection_table,
@@ -344,4 +340,4 @@ Summary of input data:
         """
         Return the ΔCC½ for each image excluded
         """
-        return {k: self._cchalf_mean - v for k, v in six.iteritems(self._cchalf)}
+        return {k: self._cchalf_mean - v for k, v in self._cchalf.items()}

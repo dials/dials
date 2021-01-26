@@ -1,11 +1,10 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.show_extensions
 
-from __future__ import absolute_import, division, print_function
 
 import dials.util
 
 
-class Script(object):
+class Script:
     """The class to encapsulate the script."""
 
     def __init__(self):

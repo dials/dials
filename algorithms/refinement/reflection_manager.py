@@ -1,6 +1,5 @@
 """Contains classes used to manage the reflections used during refinement,
 principally ReflectionManager."""
-from __future__ import absolute_import, division, print_function
 
 import logging
 import math
@@ -115,7 +114,7 @@ phil_str = (
 phil_scope = parse(phil_str)
 
 
-class BlockCalculator(object):
+class BlockCalculator:
     """Utility class to calculate and set columns in the provided reflection
     table, which will be used during scan-varying refinement. The columns are a
     'block' number and an associated 'block_centre', giving the image number in
@@ -211,7 +210,7 @@ class BlockCalculator(object):
         return self._reflections
 
 
-class ReflectionManagerFactory(object):
+class ReflectionManagerFactory:
     @staticmethod
     def from_parameters_reflections_experiments(
         params, reflections, experiments, do_stills=False
@@ -246,7 +245,7 @@ class ReflectionManagerFactory(object):
             # check incompatible weighting strategy
             if params.weighting_strategy.override in ["stills", "external_deltapsi"]:
                 msg = (
-                    'The "{0}" weighting strategy is not compatible with '
+                    'The "{}" weighting strategy is not compatible with '
                     "scan refinement"
                 ).format(params.weighting_strategy.override)
                 raise DialsRefineConfigError(msg)
@@ -334,7 +333,7 @@ class ReflectionManagerFactory(object):
         )
 
 
-class ReflectionManager(object):
+class ReflectionManager:
     """A class to maintain information about observed and predicted
     reflections for refinement.
 
@@ -695,8 +694,7 @@ class ReflectionManager(object):
             return
 
         msg = (
-            "\nSummary statistics for {} observations".format(nref)
-            + " matched to predictions:"
+            f"\nSummary statistics for {nref} observations" + " matched to predictions:"
         )
         header = ["", "Min", "Q1", "Med", "Q3", "Max"]
         rows = []
@@ -806,8 +804,7 @@ class StillsReflectionManager(ReflectionManager):
         )
 
         msg = (
-            "\nSummary statistics for {} observations".format(nref)
-            + " matched to predictions:"
+            f"\nSummary statistics for {nref} observations" + " matched to predictions:"
         )
         logger.info(msg)
         logger.info(dials.util.tabulate(rows, header) + "\n")

@@ -1,4 +1,3 @@
-# coding: utf-8
 """
 A 'slippy map' widget for wxPython.
 
@@ -18,7 +17,6 @@ difficulty for most uses is to generate the map tiles.
 
 [1] http://wiki.openstreetmap.org/index.php/Slippy_Map
 """
-from __future__ import absolute_import, division, print_function
 
 import glob
 import math
@@ -27,7 +25,6 @@ import sys
 
 import wx
 from six.moves import cPickle as pickle
-from six.moves import range
 
 from scitbx.matrix import col
 
@@ -198,7 +195,7 @@ class _BufferedCanvas(wx.Panel):
 ######
 
 
-class _Tiles(object):
+class _Tiles:
     """An object to handle a pyslip tiles directory.
 
     Uses 'elephant' caching - it never forgets!
@@ -235,7 +232,7 @@ class _Tiles(object):
                 self.land_colour,
             ) = pickle.load(fd)
             fd.close()
-        except IOError:
+        except OSError:
             msg = "'%s' doesn't appear to be a tile directory" % tile_dir
             raise Exception(msg)
 
@@ -305,7 +302,7 @@ class _Tiles(object):
         info_file = os.path.join(self.tile_dir, "%02d" % level, self.TileInfoFilename)
         try:
             fd = open(info_file, "rb")
-        except IOError:
+        except OSError:
             return None
 
         # OK, looks like we actually do have this level!
@@ -367,7 +364,7 @@ class _Tiles(object):
 ######
 
 
-class _Layer(object):
+class _Layer:
     """A Layer object."""
 
     DefaultDelta = 5  # default selection delta
@@ -422,7 +419,7 @@ class _Layer(object):
 ###############################################################################
 
 
-class Resource(object):
+class Resource:
     """A class to allow the loading of layer data to/from disk as a resource.
 
     An instance of Resource has the following attributes/methods:
@@ -459,9 +456,9 @@ class Resource(object):
             import json
 
             self.layers = json.load(open(fname))
-        except IOError as e:
-            msg = "Error opening %s: %s" % (fname, str(e))
-            raise IOError(msg)
+        except OSError as e:
+            msg = "Error opening {}: {}".format(fname, str(e))
+            raise OSError(msg)
 
     def Write(self, fname=None):
         """Write the Resource to disk.

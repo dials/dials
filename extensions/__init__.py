@@ -1,9 +1,7 @@
-from __future__ import absolute_import, division, print_function
-
 import pkg_resources
 
 
-class _Extension(object):
+class _Extension:
     """A base class for extension groups.
     This contains a common lookup mechanism and phil scope generator.
     """
@@ -40,7 +38,7 @@ class _Extension(object):
         if cls == _Extension:
             raise RuntimeError("Extension has no phil parameters")
         doc = "\n".join('"%s"' % d for d in cls.__doc__.strip().splitlines())
-        master_scope = parse("%s .help=%s {}" % (cls.name, doc))
+        master_scope = parse(f"{cls.name} .help={doc} {{}}")
         main_scope = master_scope.get_without_substitution(cls.name)
         assert len(main_scope) == 1
         main_scope = main_scope[0]
@@ -76,7 +74,7 @@ class _Extension(object):
                     help_str = "\n".join(
                         ['"%s"' % line for line in ext.__doc__.split()]
                     )
-                    ext_master_scope = parse("%s .help=%s {}" % (ext.name, help_str))
+                    ext_master_scope = parse(f"{ext.name} .help={help_str} {{}}")
                     ext_phil_scope = ext_master_scope.get_without_substitution(ext.name)
                     assert len(ext_phil_scope) == 1
                     ext_phil_scope = ext_phil_scope[0]

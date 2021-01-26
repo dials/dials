@@ -1,12 +1,10 @@
-from __future__ import absolute_import, division, print_function
-
 import json
 import math
 import os
 import shutil
-import pytest
 
 import procrunner
+import pytest
 
 from dxtbx.serialize import load
 
@@ -420,7 +418,7 @@ def test_integrate_with_kapton(dials_regression, tmpdir):
     shutil.copy(pickle_path, loc)
     shutil.copy(image_path, loc)
 
-    with open(json_name, "w") as w, open(json_path, "r") as r:
+    with open(json_name, "w") as w, open(json_path) as r:
         w.write(r.read() % loc.replace("\\", "\\\\"))
 
     templ_phil = """

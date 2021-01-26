@@ -1,6 +1,5 @@
 # LIBTBX_SET_DISPATCHER_NAME dials.filter_reflections
 
-from __future__ import absolute_import, division, print_function
 
 import logging
 import token
@@ -130,7 +129,7 @@ def eval_flag_expression(expression, reflections):
         try:
             toknum, tokval, _, _, _ = next(g)
         except TokenError:
-            raise Sorry("errors found in {}".format(expression))
+            raise Sorry(f"errors found in {expression}")
         except StopIteration:
             break
 
@@ -148,11 +147,11 @@ def eval_flag_expression(expression, reflections):
 
         # Catch unwanted operators
         if toknum is token.OP and tokval not in "()|&~":
-            raise Sorry("unrecognised operators found in {}".format(expression))
+            raise Sorry(f"unrecognised operators found in {expression}")
 
         # Catch unrecognised flag names
         if toknum is token.NAME and tokval not in flag_names:
-            raise Sorry("unrecognised flag name: {}".format(tokval))
+            raise Sorry(f"unrecognised flag name: {tokval}")
 
         # Replace names with valid lookups in the reflection table
         if toknum is token.NAME:
@@ -339,7 +338,7 @@ def run_filtering(params, experiments, reflections):
     # Save filtered reflections to file
     if params.output.reflections:
         print(
-            "Saving {0} reflections to {1}".format(
+            "Saving {} reflections to {}".format(
                 len(reflections), params.output.reflections
             )
         )

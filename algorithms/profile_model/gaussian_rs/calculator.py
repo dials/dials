@@ -5,7 +5,6 @@
 # FIXME Should maybe be scan varying
 # FIXME Don't know how XDS calculated the n_sigma
 
-from __future__ import absolute_import, division, print_function
 
 import collections
 import copy
@@ -21,7 +20,7 @@ from dials.array_family import flex
 logger = logging.getLogger(__name__)
 
 
-class ComputeEsdBeamDivergence(object):
+class ComputeEsdBeamDivergence:
     """Calculate the E.s.d of the beam divergence."""
 
     def __init__(self, detector, reflections, centroid_definition="s1"):
@@ -92,7 +91,7 @@ class ComputeEsdBeamDivergence(object):
         return flex.double(variance)
 
 
-class FractionOfObservedIntensity(object):
+class FractionOfObservedIntensity:
     """Calculate the fraction of observed intensity for different sigma_m."""
 
     def __init__(self, crystal, beam, detector, goniometer, scan, reflections):
@@ -184,10 +183,10 @@ class FractionOfObservedIntensity(object):
         return flex.log(R)
 
 
-class ComputeEsdReflectingRange(object):
+class ComputeEsdReflectingRange:
     """calculate the e.s.d of the reflecting range (mosaicity)."""
 
-    class Estimator(object):
+    class Estimator:
         """Estimate E.s.d reflecting range by maximum likelihood estimation."""
 
         def __init__(self, crystal, beam, detector, goniometer, scan, reflections):
@@ -229,7 +228,7 @@ class ComputeEsdReflectingRange(object):
             """The target for minimization."""
             return -flex.sum(self._R(math.exp(log_sigma[0])))
 
-    class CrudeEstimator(object):
+    class CrudeEstimator:
         """If the main estimator failed make a crude estimate"""
 
         def __init__(self, crystal, beam, detector, goniometer, scan, reflections):
@@ -282,7 +281,7 @@ class ComputeEsdReflectingRange(object):
             # Return the list of tau and zeta
             return flex.double(tau), flex.double(zeta2)
 
-    class ExtendedEstimator(object):
+    class ExtendedEstimator:
         """Try to estimate using knowledge of intensities"""
 
         def __init__(
@@ -476,7 +475,7 @@ class ComputeEsdReflectingRange(object):
         return self._sigma
 
 
-class ProfileModelCalculator(object):
+class ProfileModelCalculator:
     """Class to help calculate the profile model."""
 
     def __init__(
@@ -569,7 +568,7 @@ class ProfileModelCalculator(object):
         return self._sigma_m
 
 
-class ScanVaryingProfileModelCalculator(object):
+class ScanVaryingProfileModelCalculator:
     """Class to help calculate the profile model."""
 
     def __init__(
@@ -622,7 +621,7 @@ class ScanVaryingProfileModelCalculator(object):
             index_list[z0].append(i)
         reflection_list = {
             key: reflections.select(flex.size_t(value))
-            for key, value in six.iteritems(index_list)
+            for key, value in index_list.items()
         }
 
         # The range of frames

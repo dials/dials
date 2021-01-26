@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 
 from libtbx.phil import parse
@@ -415,7 +413,7 @@ class Model(ProfileModelExt):
         margin=1,
         force_static=False,
         padding=0,
-        **kwargs
+        **kwargs,
     ):
         """
         Given an experiment, predict the reflections.
@@ -487,7 +485,7 @@ class Model(ProfileModelExt):
         goniometer=None,
         scan=None,
         sigma_b_multiplier=2.0,
-        **kwargs
+        **kwargs,
     ):
         """Given an experiment and list of reflections, compute the
         bounding box of the reflections on the detector (and image frames).
@@ -531,7 +529,7 @@ class Model(ProfileModelExt):
         goniometer=None,
         scan=None,
         image_volume=None,
-        **kwargs
+        **kwargs,
     ):
         """
         Given an experiment and list of reflections, compute the
@@ -654,7 +652,7 @@ class Model(ProfileModelExt):
             [
                 "Profile model:",
                 "    type: gaussian_rs",
-                "    delta_b (sigma_b): %f (%f)" % (self.delta_b(), self.sigma_b()),
-                "    delta_m (sigma_m): %f (%f)" % (self.delta_m(), self.sigma_m()),
+                f"    delta_b (sigma_b): {self.delta_b():f} ({self.sigma_b():f})",
+                f"    delta_m (sigma_m): {self.delta_m():f} ({self.sigma_m():f})",
             ]
         )

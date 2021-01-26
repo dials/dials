@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import sys
 
 import pkg_resources
@@ -77,9 +75,9 @@ def run(_=None):
         required_plugins = set(ep_dict.get("required", []))
         missing_plugins = required_plugins - set(plugins)
         if missing_plugins:
-            print(" {RED}  --- missing required plugins:{NC}".format(NC=NC, RED=RED))
+            print(f" {RED}  --- missing required plugins:{NC}")
             for p in missing_plugins:
-                print(" {RED}{p}{NC}".format(NC=NC, p=p, RED=RED))
+                print(f" {RED}{p}{NC}")
         print()
     sys.exit(not installation_is_valid())
 

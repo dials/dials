@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 import os
 
@@ -18,7 +16,7 @@ def dump(experiments, reflections, directory):
             if len(experiments) > 1:
                 suffix = "_%i" % (i + 1)
 
-            sub_dir = "%s%s" % (directory, suffix)
+            sub_dir = f"{directory}{suffix}"
             if not os.path.isdir(sub_dir):
                 os.makedirs(sub_dir)
             # XXX imageset is getting the experimental geometry from the image files

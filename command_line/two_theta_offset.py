@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 from itertools import combinations
 
 from libtbx.phil import parse
@@ -30,7 +28,7 @@ min_distance = 10.0
 )
 
 
-class Script(object):
+class Script:
     """A class for running the script."""
 
     def __init__(self):

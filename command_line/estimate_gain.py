@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import iotbx.phil
 from scitbx.array_family import flex
 
@@ -89,7 +87,7 @@ def estimate_gain(imageset, kernel_size=(10, 10), output_gain_map=None, max_imag
         q3 = sorted_dispersion[nint(len(sorted_dispersion) * 3 / 4)]
         iqr = q3 - q1
 
-        print("q1, q2, q3: %.2f, %.2f, %.2f" % (q1, q2, q3))
+        print(f"q1, q2, q3: {q1:.2f}, {q2:.2f}, {q3:.2f}")
         if iqr == 0.0:
             raise Sorry("Unable to robustly estimate the variation of pixel values.")
 

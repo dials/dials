@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import random
 
 import six
@@ -105,8 +103,5 @@ def test_Render3d_integrated(mocker, centroid_test_data):
     render.settings.n_min = 20
     render.settings.n_max = 80
     render.load_models(experiments, reflections)
-    if six.PY3:
-        expected = 1368
-    else:
-        expected = 1402
+    expected = 1368
     assert render.viewer.set_points.call_args[0][0].size() == expected

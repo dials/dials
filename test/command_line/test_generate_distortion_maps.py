@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import os
 
 import pytest
@@ -60,11 +58,11 @@ def test_translate(dials_regression, run_in_tmpdir):
     image_path = os.path.join(data_dir, "grid_full_cbf_0005.cbf")
 
     # Generate distortion maps
-    cmd = ("dials.generate_distortion_maps {0} dx=1 dy=2").format(image_path)
+    cmd = ("dials.generate_distortion_maps {} dx=1 dy=2").format(image_path)
     easy_run.fully_buffered(command=cmd).raise_if_errors()
 
     # Import without correction
-    cmd = ("dials.import {0}").format(image_path)
+    cmd = ("dials.import {}").format(image_path)
     easy_run.fully_buffered(command=cmd).raise_if_errors()
     expt1 = ExperimentListFactory.from_serialized_format("imported.expt")[0]
     det1 = expt1.detector
@@ -75,8 +73,7 @@ def test_translate(dials_regression, run_in_tmpdir):
 
     # Import with correction
     cmd = (
-        "dials.import {0} dx=dx.pickle dy=dy.pickle "
-        "output.experiments=corrected.expt"
+        "dials.import {} dx=dx.pickle dy=dy.pickle " "output.experiments=corrected.expt"
     ).format(image_path)
     easy_run.fully_buffered(command=cmd).raise_if_errors()
     expt2 = ExperimentListFactory.from_serialized_format("corrected.expt")[0]

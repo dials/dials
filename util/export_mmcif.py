@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import bz2
 import datetime
 import gzip
@@ -23,7 +21,7 @@ logger = logging.getLogger(__name__)
 RAD2DEG = 180.0 / math.pi
 
 
-class MMCIFOutputFile(object):
+class MMCIFOutputFile:
     """
     Class to output experiments and reflections as MMCIF file
     """

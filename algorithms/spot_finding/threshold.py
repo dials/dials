@@ -1,7 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
-
-class ThresholdStrategy(object):
+class ThresholdStrategy:
     """
     Base class for spot finder threshold strategies.
     """

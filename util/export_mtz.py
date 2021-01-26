@@ -1,7 +1,3 @@
-# coding: utf-8
-
-from __future__ import absolute_import, division, print_function
-
 import logging
 import time
 from collections import Counter, OrderedDict
@@ -36,7 +32,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-class MTZWriterBase(object):
+class MTZWriterBase:
     """Helper for adding metadata, crystals and datasets to an mtz file object."""
 
     def __init__(self, space_group, unit_cell=None):
@@ -47,7 +43,7 @@ class MTZWriterBase(object):
         date_str = time.strftime("%Y-%m-%d at %H:%M:%S %Z")
         if time.strftime("%Z") != "GMT":
             date_str += time.strftime("  (%Y-%m-%d at %H:%M:%S %Z)", time.gmtime())
-        mtz_file.add_history("From %s, run on %s" % (dials_version(), date_str))
+        mtz_file.add_history(f"From {dials_version()}, run on {date_str}")
         mtz_file.set_space_group_info(space_group.info())
         self.mtz_file = mtz_file
         if unit_cell:
@@ -130,7 +126,7 @@ class MADMergedMTZWriter(MergedMTZWriter):
     ):
         if not suffix:
             suffix = "_WAVE%s" % str(self.n_datasets)
-        super(MADMergedMTZWriter, self).add_dataset(
+        super().add_dataset(
             merged_array,
             anom_array,
             amplitudes,

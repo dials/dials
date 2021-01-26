@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 import re
 
@@ -353,9 +351,9 @@ def _centroid_analysis(options, experiments, reflection_manager):
             phi_min, phi_max = experiments[i].scan.get_oscillation_range(deg=True)
             a["interval_width"] = abs(phi_max - phi_min)
             logger.info(
-                "Exp id {0} suggested interval width could not be "
+                "Exp id {} suggested interval width could not be "
                 "determined and will be reset to the scan width of "
-                "{1:.1f} degrees".format(i, a["interval_width"])
+                "{:.1f} degrees".format(i, a["interval_width"])
             )
             continue
         min_interval = max(min_interval, 9.0)
@@ -364,7 +362,7 @@ def _centroid_analysis(options, experiments, reflection_manager):
             min_interval = max(min_interval, block_size)
         a["interval_width"] = min_interval
         logger.info(
-            "Exp id {0} suggested interval width = {1:.1f} degrees".format(
+            "Exp id {} suggested interval width = {:.1f} degrees".format(
                 i, min_interval
             )
         )

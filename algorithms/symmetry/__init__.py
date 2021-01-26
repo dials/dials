@@ -1,9 +1,7 @@
-# coding: utf-8
 """Methods for symmetry determination.
 
 This module provides a base class for symmetry determination algorithms.
 """
-from __future__ import absolute_import, division, print_function
 
 import logging
 
@@ -21,7 +19,7 @@ from scitbx.array_family import flex
 from dials.util import resolution_analysis
 
 
-class symmetry_base(object):
+class symmetry_base:
     """Base class for symmetry analysis."""
 
     def __init__(
@@ -36,7 +34,7 @@ class symmetry_base(object):
         absolute_angle_tolerance=None,
         best_monoclinic_beta=True,
     ):
-        u"""Initialise a symmetry_base object.
+        """Initialise a symmetry_base object.
 
         Args:
           intensities (cctbx.miller.array): The intensities on which to perform
@@ -373,12 +371,12 @@ def _resolution_filter(resolutionizer, min_i_mean_over_sigma_mean, min_cc_half):
                 limit=min_i_mean_over_sigma_mean,
             ).d_min
         except RuntimeError as e:
-            logger.info(u"I/σ(I) resolution filter failed with the following error:")
+            logger.info("I/σ(I) resolution filter failed with the following error:")
             logger.error(e)
         else:
             if d_min_isigi:
                 logger.info(
-                    u"Resolution estimate from <I>/<σ(I)> > %.1f : %.2f",
+                    "Resolution estimate from <I>/<σ(I)> > %.1f : %.2f",
                     min_i_mean_over_sigma_mean,
                     d_min_isigi,
                 )
@@ -388,12 +386,12 @@ def _resolution_filter(resolutionizer, min_i_mean_over_sigma_mean, min_cc_half):
                 resolution_analysis.metrics.CC_HALF, limit=min_cc_half
             ).d_min
         except RuntimeError as e:
-            logger.info(u"CC½ resolution filter failed with the following error:")
+            logger.info("CC½ resolution filter failed with the following error:")
             logger.error(e)
         else:
             if d_min_cc_half:
                 logger.info(
-                    u"Resolution estimate from CC½ > %.2f: %.2f",
+                    "Resolution estimate from CC½ > %.2f: %.2f",
                     min_cc_half,
                     d_min_cc_half,
                 )

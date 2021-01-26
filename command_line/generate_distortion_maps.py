@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 import math
 
@@ -210,25 +208,23 @@ def run(args=None):
 
     if params.mode == "translate":
         op = params.translate
-        logger.info(
-            "Generating translation map with dx={0}, dy={1}".format(op.dx, op.dy)
-        )
+        logger.info(f"Generating translation map with dx={op.dx}, dy={op.dy}")
         dx, dy = make_dx_dy_translate(imageset, op.dx, op.dy)
     elif params.mode == "ellipse":
         op = params.ellipse
         logger.info(
-            "Generating elliptical map with phi={0}, l1={1}, "
-            "l2={2}, centre_xy={3},{4}".format(op.phi, op.l1, op.l2, *op.centre_xy)
+            "Generating elliptical map with phi={}, l1={}, "
+            "l2={}, centre_xy={},{}".format(op.phi, op.l1, op.l2, *op.centre_xy)
         )
         dx, dy = make_dx_dy_ellipse(imageset, op.phi, op.l1, op.l2, op.centre_xy)
     else:
         raise Sorry("Unrecognised mode")
 
-    logger.info("Saving X distortion map to {0}".format(params.output.x_map))
+    logger.info(f"Saving X distortion map to {params.output.x_map}")
     with open(params.output.x_map, "wb") as f:
         pickle.dump(dx, f, pickle.HIGHEST_PROTOCOL)
 
-    logger.info("Saving Y distortion map to {0}".format(params.output.y_map))
+    logger.info(f"Saving Y distortion map to {params.output.y_map}")
     with open(params.output.y_map, "wb") as f:
         pickle.dump(dy, f, pickle.HIGHEST_PROTOCOL)
 

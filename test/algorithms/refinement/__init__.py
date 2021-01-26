@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 geometry_phil = """geometry.parameters
     .help = "Set up an experimental model for refinement test case"
 {

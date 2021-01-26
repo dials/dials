@@ -1,7 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
-
-class GaussianRSProfileModelExt(object):
+class GaussianRSProfileModelExt:
     """An extension class implementing a reciprocal space gaussian profile model."""
 
     name = "gaussian_rs"

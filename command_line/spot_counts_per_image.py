@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import json
 import sys
 
@@ -117,7 +115,7 @@ def run(args=None):
         if params.split_json:
             for k, v in stats._asdict().items():
                 start, end = params.json.split(".")
-                with open("%s_%s.%s" % (start, k, end), "w") as fp:
+                with open(f"{start}_{k}.{end}", "w") as fp:
                     json.dump(v, fp)
         if params.joint_json:
             with open(params.json, "w") as fp:

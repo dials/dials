@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import collections
 import os
 import re
@@ -13,7 +11,7 @@ from dials.array_family import flex
 FilenameDataWrapper = collections.namedtuple("FilenameDataWrapper", "filename, data")
 
 
-class ExperimentListConverters(object):
+class ExperimentListConverters:
     """A phil converter for the experiment list class."""
 
     phil_type = "experiment_list"
@@ -47,7 +45,7 @@ class ExperimentListConverters(object):
         return [libtbx.phil.tokenizer.word(value=value)]
 
 
-class ReflectionTableConverters(object):
+class ReflectionTableConverters:
     """A phil converter for the reflection table class."""
 
     phil_type = "reflection_table"
@@ -71,7 +69,7 @@ class ReflectionTableConverters(object):
         return [libtbx.phil.tokenizer.word(value=value)]
 
 
-class ReflectionTableSelectorConverters(object):
+class ReflectionTableSelectorConverters:
     """A phil converter for the reflection table selector class."""
 
     phil_type = "reflection_table_selector"
@@ -99,7 +97,7 @@ class ReflectionTableSelectorConverters(object):
         if python_object is None:
             value = "None"
         else:
-            value = "%s%s%s" % (
+            value = "{}{}{}".format(
                 python_object.column,
                 python_object.op_string,
                 python_object.value,

@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 
 import libtbx
@@ -13,7 +11,7 @@ logger = logging.getLogger(
 )
 
 
-class DispersionExtendedSpotFinderThresholdExt(object):
+class DispersionExtendedSpotFinderThresholdExt:
     """Extensions to do dispersion threshold."""
 
     name = "dispersion_extended"

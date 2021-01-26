@@ -1,10 +1,7 @@
-# coding: utf-8
-
 """
 Test the command line script dials.scale, for successful completion.
 """
 
-from __future__ import absolute_import, division, print_function
 
 import json
 
@@ -863,7 +860,7 @@ def test_scale_cross_validate(dials_data, tmpdir, mode, parameter, parameter_val
 
 
 def test_few_reflections(dials_data):
-    u"""
+    """
     Test that dials.symmetry does something sensible if given few reflections.
 
     Use some example integrated data generated from two ten-image 1° sweeps.  These

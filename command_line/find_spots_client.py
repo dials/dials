@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 from future import standard_library
 
 standard_library.install_aliases()
@@ -168,7 +166,7 @@ def stop(host, port, nproc):
     stopped = 0
     for j in range(nproc):
         try:
-            url_request = urllib.request.Request("http://%s:%s/Ctrl-C" % (host, port))
+            url_request = urllib.request.Request(f"http://{host}:{port}/Ctrl-C")
             socket = urllib.request.urlopen(url_request, None, 3)
             if socket.getcode() == "200":
                 stopped = stopped + 1

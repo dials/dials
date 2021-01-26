@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 
 from dials.util.phil import parse
@@ -28,7 +26,7 @@ phil_scope = parse(
 )
 
 
-class Modeller(object):
+class Modeller:
     def __init__(
         self, beam, detector, min_count=5, nsigma=6, sigma=0.5, kernel_size=9, niter=10
     ):
@@ -87,7 +85,7 @@ class Modeller(object):
         return data
 
 
-class Creator(object):
+class Creator:
     def __init__(self, experiment, params):
 
         self.modeller = None

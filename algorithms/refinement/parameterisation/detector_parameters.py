@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 from functools import reduce
 
 from scitbx import matrix
@@ -17,7 +15,7 @@ from dials.algorithms.refinement.refinement_helpers import (
 )
 
 
-class DetectorMixin(object):
+class DetectorMixin:
     """Mix-in class defining some functionality unique to detector
     parameterisations that can be shared by static and scan-varying versions"""
 
@@ -937,7 +935,7 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
         try:
             self._groups = get_panel_groups_at_depth(h, level)
         except AttributeError:
-            print("Cannot access the hierarchy at the depth level={}".format(level))
+            print(f"Cannot access the hierarchy at the depth level={level}")
             raise
 
         # collect the panel ids for each Panel within the groups

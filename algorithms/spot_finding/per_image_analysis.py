@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import collections
 import math
 
@@ -105,7 +103,7 @@ class StatsMultiImage(collections.namedtuple("StatsMultiImage", _stats_field_nam
         return tabulate(self.as_table(), headers="firstrow")
 
 
-class binner_equal_population(object):
+class binner_equal_population:
     def __init__(self, d_star_sq, target_n_per_bin=20, max_slots=20, min_slots=5):
         n_slots = len(d_star_sq) // target_n_per_bin
         if max_slots is not None:
@@ -123,7 +121,7 @@ class binner_equal_population(object):
             d_max = d_min
 
 
-class binner_d_star_cubed(object):
+class binner_d_star_cubed:
     def __init__(self, d_spacings, target_n_per_bin=25, max_slots=40, min_slots=20):
         d_spacings = flex.double(list(set(d_spacings)))
         d_spacings_sorted = flex.sorted(d_spacings, reverse=True)
@@ -700,7 +698,7 @@ def plot_stats(stats, filename="per_image_analysis.png"):
             color="green",
             marker="o",
             alpha=0.4,
-            label=u"#spots (to 4\u00c5)",
+            label="#spots (to 4\u00c5)",
         )
     ax1.scatter(
         list(i_image),
@@ -745,7 +743,7 @@ def plot_stats(stats, filename="per_image_analysis.png"):
         alpha=0.5,
         label="d_min (distl method 2)",
     )
-    ax2.set_ylabel(u"Resolution (\u00c5)")
+    ax2.set_ylabel("Resolution (\u00c5)")
     ax2.set_xlim((0, len(n_spots_total)))
     ylim = ax2.get_ylim()
     ylim = (math.floor(ylim[0]), math.ceil(ylim[1]))

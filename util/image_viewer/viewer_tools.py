@@ -1,9 +1,7 @@
-# coding: utf-8
 """
 Various tools/controls used by the image viewer
 """
 
-from __future__ import absolute_import, division, print_function
 
 import wx
 import wx.lib.newevent
@@ -16,7 +14,7 @@ class ImageCollectionWithSelection(OrderedSet):
     """A Ordered-like object that tracks a 'currently selected item'"""
 
     def __init__(self, items=None):
-        super(ImageCollectionWithSelection, self).__init__(items or [])
+        super().__init__(items or [])
         self._selected_index = None
 
     @property
@@ -42,7 +40,7 @@ class ImageCollectionWithSelection(OrderedSet):
         self._selected_index = self.index(item)
 
 
-class LegacyChooserAdapter(object):
+class LegacyChooserAdapter:
     """Fake wx.Choice replacement for legacy upstream code.
 
     The design relies on a wx.Choice object being created by a subclass and
@@ -59,7 +57,7 @@ class LegacyChooserAdapter(object):
         :param images: The list-like object containing the image data
         :param loader: A function to call to load a specific entry as current
         """
-        super(LegacyChooserAdapter, self).__init__()
+        super().__init__()
         self._images = images
         self._loader = loader
 
@@ -87,7 +85,7 @@ class ImageChooserControl(wx.Control):
 
     def __init__(self, *args, **kwargs):
         kwargs["style"] = kwargs.get("style", 0) | wx.BORDER_NONE
-        super(ImageChooserControl, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self._slider = wx.Slider(self, -1, style=wx.SL_AUTOTICKS)
         self._slider.SetMin(1)
@@ -112,7 +110,7 @@ class ImageChooserControl(wx.Control):
         w, h = self.GetSize()
         self._slider.SetMinSize((w, h - self.size_y))
         # Delgate to the sizers for the rest of the calculation
-        super(ImageChooserControl, self).Layout()
+        super().Layout()
 
     def set_temporary_label(self, label):
         """Set the display label to a 'temporary' styled entry"""

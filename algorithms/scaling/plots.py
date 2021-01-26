@@ -1,8 +1,6 @@
-# coding: utf-8
 """
 Make plotly plots for html output by dials.scale, dials.report or xia2.report.
 """
-from __future__ import absolute_import, division, print_function
 
 import itertools
 import math

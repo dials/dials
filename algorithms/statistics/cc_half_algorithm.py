@@ -1,8 +1,5 @@
-# -*- coding: utf8 -*-
-
 """ΔCC½ algorithm definitions"""
 
-from __future__ import absolute_import, division, print_function
 
 import logging
 from collections import defaultdict
@@ -26,7 +23,7 @@ from dials.util.multi_dataset_handling import select_datasets_on_identifiers
 logger = logging.getLogger("dials.command_line.compute_delta_cchalf")
 
 
-class CCHalfFromMTZ(object):
+class CCHalfFromMTZ:
 
     """
     Run a cc-half algorithm using an MTZ file.
@@ -153,7 +150,7 @@ Batch offset can be specified with mtz.batch_offset=
         return table, unit_cell, space_group
 
 
-class CCHalfFromDials(object):
+class CCHalfFromDials:
 
     """
     Run a cc-half algorithm using dials datafiles.
@@ -345,7 +342,7 @@ class CCHalfFromDials(object):
                         table_id,
                     )
                     exclude_images.append(
-                        ["%s:%s:%s" % (table_id, image_range[0], image_range[1])]
+                        ["{}:{}:{}".format(table_id, image_range[0], image_range[1])]
                     )
                     if expid_to_image_groups[exp_id][-1] == id_:
                         del expid_to_image_groups[exp_id][-1]
@@ -387,7 +384,7 @@ class CCHalfFromDials(object):
                 if all([j not in tested for j in range(imgrange[0], imgrange[1] + 1)]):
                     table_id = expid_to_tableid[exp.identifier]
                     exclude_images.append(
-                        ["%s:%s:%s" % (table_id, imgrange[0], imgrange[1])]
+                        ["{}:{}:{}".format(table_id, imgrange[0], imgrange[1])]
                     )
                     logger.info(
                         "Removing %s due to scaling outlier group.", exclude_images[-1]
@@ -467,7 +464,7 @@ class CCHalfFromDials(object):
         return filtered_table, mean_unit_cell, space_group
 
 
-class DeltaCCHalf(object):
+class DeltaCCHalf:
 
     """
     Implementation of a ΔCC½ algorithm.

@@ -2,7 +2,6 @@
 Test refinement of a crystal unit cell using a two theta target.
 """
 
-from __future__ import absolute_import, division, print_function
 
 import os
 from copy import deepcopy

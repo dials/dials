@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 from cctbx.array_family.flex import (  # noqa: F401; lgtm
     abs,
     acos,

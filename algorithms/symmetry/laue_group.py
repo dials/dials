@@ -1,5 +1,4 @@
 """Algorithms for determination of Laue group symmetry."""
-from __future__ import absolute_import, division, print_function
 
 import json
 import logging
@@ -66,7 +65,7 @@ class LaueGroupAnalysis(symmetry_base):
             will be preferred over C2 if it gives a more oblique cell (i.e. smaller
             beta angle).
         """
-        super(LaueGroupAnalysis, self).__init__(
+        super().__init__(
             intensities,
             normalisation=normalisation,
             lattice_symmetry_max_delta=lattice_symmetry_max_delta,
@@ -409,7 +408,7 @@ class LaueGroupAnalysis(symmetry_base):
         return json_str
 
 
-class ScoreCorrelationCoefficient(object):
+class ScoreCorrelationCoefficient:
     def __init__(self, cc, sigma_cc, expected_cc, lower_bound=-1, upper_bound=1, k=2):
         self.cc = cc
         self.sigma_cc = sigma_cc
@@ -467,7 +466,7 @@ class ScoreCorrelationCoefficient(object):
         return self._p_mu_power_pdf(x)
 
 
-class ScoreSymmetryElement(object):
+class ScoreSymmetryElement:
     """Analyse intensities for presence of a given symmetry operation.
 
     1) Calculate the correlation coefficient, CC, for the given sym op.
@@ -587,7 +586,7 @@ class ScoreSymmetryElement(object):
         }
 
 
-class ScoreSubGroup(object):
+class ScoreSubGroup:
     """Score the probability of a given subgroup being the true subgroup.
 
     1) Calculates the combined correlation coefficients for symmetry operations
@@ -659,7 +658,7 @@ class ScoreSubGroup(object):
         Returns:
           str:
         """
-        return "%s %.3f %.2f %.2f %.2f %.2f %.2f" % (
+        return "{} {:.3f} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f}".format(
             self.subgroup["best_subsym"].space_group_info(),
             self.likelihood,
             self.z_cc_net,
@@ -710,7 +709,7 @@ class ScoreSubGroup(object):
         }
 
 
-class CorrelationCoefficientAccumulator(object):
+class CorrelationCoefficientAccumulator:
     """Class for incremental computation of correlation coefficients.
 
     Uses the single-pass formula for Pearson correlation coefficient:

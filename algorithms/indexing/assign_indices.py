@@ -1,12 +1,10 @@
-from __future__ import absolute_import, division, print_function
-
 from cctbx.array_family import flex
 
 import dials_algorithms_indexing_ext as ext
 from dials.algorithms.indexing import DialsIndexError
 
 
-class AssignIndicesStrategy(object):
+class AssignIndicesStrategy:
     def __init__(self, d_min=None):
         self._d_min = d_min
 
@@ -16,7 +14,7 @@ class AssignIndicesStrategy(object):
 
 class AssignIndicesGlobal(AssignIndicesStrategy):
     def __init__(self, tolerance=0.3):
-        super(AssignIndicesGlobal, self).__init__()
+        super().__init__()
         self._tolerance = tolerance
 
     def __call__(self, reflections, experiments, d_min=None):
@@ -73,7 +71,7 @@ class AssignIndicesLocal(AssignIndicesStrategy):
     def __init__(
         self, d_min=None, epsilon=0.05, delta=8, l_min=0.8, nearest_neighbours=20
     ):
-        super(AssignIndicesLocal, self).__init__()
+        super().__init__()
         self._epsilon = epsilon
         self._delta = delta
         self._l_min = l_min

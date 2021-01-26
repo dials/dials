@@ -1,7 +1,6 @@
 """
 Weighting scheme definitions for scaling.
 """
-from __future__ import absolute_import, division, print_function
 
 from dials.array_family import flex
 
@@ -22,7 +21,7 @@ def get_weighting_scheme(Ih_table, weighting_scheme):
         raise ValueError("Invalid choice of weighting scheme: %s" % weighting_scheme)
 
 
-class WeightingBase(object):
+class WeightingBase:
     """Base class that defines the properties of a Scaling Weights object."""
 
     weighting_scheme = "invvar"

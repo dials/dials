@@ -1,11 +1,9 @@
-from __future__ import absolute_import, division, print_function
-
 import random
 
 from dials.array_family import flex
 
 
-class Simulator(object):
+class Simulator:
     """Class to help with simulation from reciprocal space."""
 
     def __init__(self, experiment, sigma_b, sigma_m, n_sigma):

@@ -1,5 +1,4 @@
 """Target function for cosym analysis."""
-from __future__ import absolute_import, division, print_function
 
 import copy
 import logging
@@ -17,7 +16,7 @@ from libtbx import easy_mp
 logger = logging.getLogger(__name__)
 
 
-class Target(object):
+class Target:
     """Target function for cosym analysis.
 
     Attributes:

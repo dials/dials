@@ -1,4 +1,3 @@
-# coding: utf-8
 """
 Mask images to remove unwanted pixels.
 
@@ -18,7 +17,6 @@ Examples::
   dials.generate_mask models.expt d_max=2.00
 """
 
-from __future__ import absolute_import, division, print_function
 
 import logging
 import os.path

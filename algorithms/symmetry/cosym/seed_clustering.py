@@ -1,5 +1,4 @@
 """Seed clustering method for cosym analysis."""
-from __future__ import absolute_import, division, print_function
 
 import logging
 
@@ -18,7 +17,7 @@ from libtbx.utils import Sorry
 from scitbx.array_family import flex
 
 
-class seed_clustering(object):
+class seed_clustering:
     """Perform seed clustering of coordinates.
 
     Labels points into clusters such that cluster contains exactly one copy

@@ -1,7 +1,6 @@
 """
 Tools to run cluster processing using DRMAA
 """
-from __future__ import absolute_import, division, print_function
 
 import multiprocessing
 import os
@@ -10,7 +9,7 @@ import sys
 import six.moves.cPickle as pickle
 
 
-class InputWriter(object):
+class InputWriter:
     """
     A class to write the input files
     """
@@ -98,7 +97,7 @@ def cluster_map(func, iterable, callback=None, nslots=1, njobs=1, job_category="
             result = []
             for i, jobid in enumerate(joblist, start=1):
                 s.wait(jobid, drmaa.Session.TIMEOUT_WAIT_FOREVER)
-                with open(os.path.join(cwd, "%d.stdout" % i), "r") as infile:
+                with open(os.path.join(cwd, "%d.stdout" % i)) as infile:
                     sys.stdout.write("".join(infile.readlines()))
                 with open(os.path.join(cwd, "%d.output" % i), "rb") as infile:
                     r = pickle.load(infile)

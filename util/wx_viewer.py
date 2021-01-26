@@ -1,7 +1,6 @@
 # This code is based on:
 #   http://lists.wxwidgets.org/archive/wxPython-users/msg11078.html
 
-from __future__ import absolute_import, division, print_function
 
 import math
 import os

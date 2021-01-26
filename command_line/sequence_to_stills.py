@@ -6,7 +6,6 @@ Example:
   dials.sequence_to_stills sequence.expt sequence.refl
 """
 
-from __future__ import absolute_import, division, print_function
 
 import logging
 

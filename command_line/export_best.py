@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 import sys
 
@@ -41,7 +39,7 @@ phil_scope = parse(
 )
 
 
-class BestExporter(object):
+class BestExporter:
     def __init__(self, params, experiments, reflections):
         """
         Initialise the exporter

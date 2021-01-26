@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 
 from libtbx.phil import parse
@@ -37,7 +35,7 @@ phil_scope = parse(
 )
 
 
-class Script(object):
+class Script:
     """Encapsulate the script in a class."""
 
     def __init__(self):

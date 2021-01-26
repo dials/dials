@@ -2,7 +2,6 @@
 LevenbergMarquardtIterations, GaussNewtonIterations, SimpleLBFGS and LBFGScurvs
 are the current concrete implementations"""
 
-from __future__ import absolute_import, division, print_function
 
 import copy
 import json
@@ -135,7 +134,7 @@ class Journal(dict):
 
     @classmethod
     def from_json_file(cls, filename):
-        with open(filename, "r") as f:
+        with open(filename) as f:
             d = json.load(f)
         j = cls()
         j.update(d["data"])
@@ -144,7 +143,7 @@ class Journal(dict):
         return j
 
 
-class Refinery(object):
+class Refinery:
     """Interface for Refinery objects. This should be subclassed and the run
     method implemented."""
 
@@ -462,7 +461,7 @@ class Refinery(object):
         raise NotImplementedError()
 
 
-class DisableMPmixin(object):
+class DisableMPmixin:
     """A mixin class that disables setting of nproc for multiprocessing"""
 
     def set_nproc(self, nproc):

@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 from os.path import basename, splitext
 
 from dxtbx.model.experiment_list import ExperimentList
@@ -95,7 +93,7 @@ def calculate_block_ranges(scan, block_size):
     return image_ranges
 
 
-class Script(object):
+class Script:
     """A class for running the script."""
 
     def __init__(self):
@@ -211,11 +209,11 @@ class Script(object):
                 if not bname:
                     bname = "experiments"
                 if len(params.image_range) == 1 and params.image_range[0] is not None:
-                    ext = "_{0}_{1}.expt".format(*params.image_range[0])
+                    ext = "_{}_{}.expt".format(*params.image_range[0])
                 else:
                     ext = "_sliced.expt"
                 output_experiments_filename = bname + ext
-            print("Saving sliced experiments to {}".format(output_experiments_filename))
+            print(f"Saving sliced experiments to {output_experiments_filename}")
 
             sliced_experiments.as_file(output_experiments_filename)
 
@@ -229,14 +227,12 @@ class Script(object):
                 if not bname:
                     bname = "reflections"
                 if len(params.image_range) == 1 and params.image_range[0] is not None:
-                    ext = "_{0}_{1}.refl".format(*params.image_range[0])
+                    ext = "_{}_{}.refl".format(*params.image_range[0])
                 else:
                     ext = "_sliced.refl"
                 output_reflections_filename = bname + ext
 
-            print(
-                "Saving sliced reflections to {0}".format(output_reflections_filename)
-            )
+            print(f"Saving sliced reflections to {output_reflections_filename}")
             sliced_reflections.as_file(output_reflections_filename)
 
         return

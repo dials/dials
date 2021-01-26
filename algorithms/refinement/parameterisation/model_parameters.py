@@ -1,9 +1,7 @@
-from __future__ import absolute_import, division, print_function
-
 from scitbx.array_family import flex
 
 
-class Parameter(object):
+class Parameter:
     """A class to help formalise what a parameter is.
 
     A Parameter must have a numerical value (either a length or an angle). It may
@@ -105,7 +103,7 @@ class Parameter(object):
         return msg
 
 
-class ModelParameterisation(object):
+class ModelParameterisation:
     """An abstract interface for the parameterisation of a model.
 
     Parameterisation of experimental objects, such as the detector, the beam,

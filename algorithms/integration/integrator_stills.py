@@ -1,7 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
-
-class ReflectionBlockIntegratorStills(object):
+class ReflectionBlockIntegratorStills:
     """A class to perform the integration."""
 
     def __init__(self, params, experiments, reference, extractor=None):
@@ -47,7 +44,7 @@ class ReflectionBlockIntegratorStills(object):
         return result
 
 
-class IntegratorStills(object):
+class IntegratorStills:
     """Integrate reflections"""
 
     def __init__(self, params, exlist, reference=None, predicted=None, shoeboxes=None):

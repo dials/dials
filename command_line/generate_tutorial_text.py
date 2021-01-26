@@ -1,6 +1,5 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.generate_tutorial_text
 
-from __future__ import absolute_import, division, print_function
 
 import functools
 import os
@@ -68,7 +67,7 @@ def generate_processing_detail_text_thaumatin(options):
     tmpdir.join("dials.report.html").copy(outdir.join("dials.report.html"))
     runcmd(["dials.export", "integrated.refl", "integrated.expt"])
 
-    print("Updated result files written to {}".format(outdir.strpath))
+    print(f"Updated result files written to {outdir.strpath}")
     if not options.keep:
         tmpdir.remove(rec=1)
 
@@ -97,7 +96,7 @@ def generate_processing_detail_text_mpro_x0692(options):
         Please download data from https://zenodo.org/record/3730940 and extract,
         then set environment variable MPRO_X0692_DATA to the folder with Mpro-x0692_1_0*.cbf"""
         )
-    print("Using data: {}".format(datadir.strpath))
+    print(f"Using data: {datadir.strpath}")
 
     runcmd(["dials.import", datadir / "Mpro-x0692_1_0*.cbf"])
     runcmd(["dials.find_spots", "imported.expt", "nproc=4"])
@@ -135,7 +134,7 @@ def generate_processing_detail_text_mpro_x0692(options):
     runcmd(["dials.report", "scaled.expt", "scaled.refl"])
     tmpdir.join("dials.report.html").copy(outdir.join("dials.report.html"))
 
-    print("Updated result files written to {}".format(outdir.strpath))
+    print(f"Updated result files written to {outdir.strpath}")
     if not options.keep:
         tmpdir.remove(rec=1)
 
@@ -169,7 +168,7 @@ def generate_processing_detail_text_betalactamase(options):
         Please download C2sum_1 from https://zenodo.org/record/1014387 and extract,
         then set environment variable BETALACTAMASE_TUTORIAL_DATA to the folder with C2sum_1_*.cbf.gz"""
         )
-    print("Using data: {}".format(datadir.strpath))
+    print(f"Using data: {datadir.strpath}")
 
     runcmd(["dials.import", datadir / "C2sum_1*.cbf.gz"])
     runcmd(["dials.find_spots", "imported.expt", "nproc=4"])
@@ -205,7 +204,7 @@ def generate_processing_detail_text_betalactamase(options):
     runcmd(["dials.report", "scaled.expt", "scaled.refl"])
     tmpdir.join("dials.report.html").copy(outdir.join("dials.report.html"))
 
-    print("Updated result files written to {}".format(outdir.strpath))
+    print(f"Updated result files written to {outdir.strpath}")
     if not options.keep:
         tmpdir.remove(rec=1)
 
@@ -255,7 +254,7 @@ def generate_multi_crystal_symmetry_and_scaling(options):
     tmpdir.join("dials.symmetry.html").copy(outdir.join("dials.symmetry.html"))
     runcmd(["dials.merge", "symmetrized.expt", "symmetrized.refl"])
 
-    print("Updated result files written to {}".format(outdir.strpath))
+    print(f"Updated result files written to {outdir.strpath}")
     if not options.keep:
         tmpdir.remove(rec=1)
 
@@ -265,7 +264,7 @@ def find_in_line(string, lines, start=0):
     for n, line in enumerate(lines[start:], start):
         if string in line:
             return n
-    raise RuntimeError("Could not find line '{}' in lines".format(string))
+    raise RuntimeError(f"Could not find line '{string}' in lines")
 
 
 def write_extract(destination, start, end, lines):
@@ -286,7 +285,7 @@ def write_extract(destination, start, end, lines):
         else:
             out_lines.append("")
 
-    destination.write_text(u"\n".join(out_lines), "latin-1")
+    destination.write_text("\n".join(out_lines), "latin-1")
 
 
 def extract_last_indexed_spot_count(source, destination):

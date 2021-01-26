@@ -1,6 +1,5 @@
 # LIBTBX_SET_DISPATCHER_NAME cluster.dials.exec
 
-from __future__ import absolute_import, division, print_function
 
 import dials.util
 

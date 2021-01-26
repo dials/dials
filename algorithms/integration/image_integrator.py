@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 import platform
 from time import time
@@ -14,7 +12,7 @@ from dials_algorithms_integration_integrator_ext import ReflectionManagerPerImag
 logger = logging.getLogger(__name__)
 
 
-class ProcessorImage(object):
+class ProcessorImage:
     """Top level processor for per image processing."""
 
     def __init__(self, experiments, reflections, params):
@@ -106,7 +104,7 @@ class ProcessorImage(object):
         return result, self.manager.time
 
 
-class Task(object):
+class Task:
     """
     A class to perform a null task.
     """
@@ -220,7 +218,7 @@ class Task(object):
         )
 
 
-class ManagerImage(object):
+class ManagerImage:
     """
     A class to manage processing book-keeping
     """

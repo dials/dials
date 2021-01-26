@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 Correct integrated intensities to account for attenuation by a diamond anvil cell.
 
@@ -22,7 +20,6 @@ Examples::
   dials.anvil_correction integrated.expt integrated.refl thickness=1.2 normal=1,0,0
 """
 
-from __future__ import absolute_import, division, print_function
 
 import logging
 import sys
@@ -53,7 +50,7 @@ else:
 logger = logging.getLogger("dials.command_line.anvil_correction")
 
 phil_scope = libtbx.phil.parse(
-    u"""
+    """
     anvil
         .caption = "Properties of the mounted diamond anvils"
     {
@@ -216,7 +213,7 @@ def attenuation_correction(
 def correct_intensities_for_dac_attenuation(
     experiment, reflections, dac_norm, thickness, density=3.51
 ):  # type: (Experiment, flex.reflection_table, Vector, float, float) -> None
-    u"""
+    """
     Boost integrated intensities to account for attenuation by a diamond anvil cell.
 
     Take an experiment object and reflection table containing integrated but unscaled
@@ -256,7 +253,7 @@ def correct_intensities_for_dac_attenuation(
     for method, subsel in methods.items():
         setting_subsel = sel.select(subsel)
         for quantity, factor in quantities.items():
-            col = "intensity.%s.%s" % (method, quantity)
+            col = f"intensity.{method}.{quantity}"
             corrected = (refls_sel[col] * factor).select(subsel)
             try:
                 reflections[col].set_selected(setting_subsel, corrected)

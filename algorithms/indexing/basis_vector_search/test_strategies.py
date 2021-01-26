@@ -1,11 +1,9 @@
-from __future__ import absolute_import, division, print_function
-
 import pytest
 
 from . import FFT1D, FFT3D, RealSpaceGridSearch
 
 
-class TestStrategies(object):
+class TestStrategies:
     def check_results(self, unit_cell, basis_vectors):
         # check we have found a basis vector corresponding to each unit cell parameter
         for p in unit_cell.parameters()[:3]:

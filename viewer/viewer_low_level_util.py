@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import math
 
 import wx
@@ -12,7 +10,7 @@ from dials.viewer.from_flex_to_wxbitmap import wxbitmap_convert
 
 class grid_frame(wx.Frame):
     def __init__(self, parent, title):
-        super(grid_frame, self).__init__(parent, title=title, size=wx.DefaultSize)
+        super().__init__(parent, title=title, size=wx.DefaultSize)
 
     def frame_ini_img(self, in_upper_panel, text_data=None):
         self.img_panel = in_upper_panel
@@ -38,7 +36,7 @@ class grid_frame(wx.Frame):
 
 class flex_3d_frame(wx.Frame):
     def __init__(self, parent, title):
-        super(flex_3d_frame, self).__init__(parent, title=title, size=wx.DefaultSize)
+        super().__init__(parent, title=title, size=wx.DefaultSize)
         self.table_exist = False
 
     def frame_ini_img(self, in_upper_panel, text_data=None):
@@ -107,7 +105,7 @@ class MyGrid(gridlib.Grid):
     def __init__(self, parent_frame):
 
         self.parent_fr = parent_frame
-        super(MyGrid, self).__init__(parent_frame)
+        super().__init__(parent_frame)
 
     def ini_n_intro(self, table_in):
         self.lst_keys = []
@@ -207,7 +205,7 @@ class MyGrid(gridlib.Grid):
 
 class flex_arr_img_panel(wx.Panel):
     def __init__(self, parent_frame):
-        super(flex_arr_img_panel, self).__init__(parent_frame)
+        super().__init__(parent_frame)
         self.show_nums = True
         self.show_mask = True
         self.palette = "black2white"
@@ -316,7 +314,7 @@ class flex_arr_img_panel(wx.Panel):
 
 class multi_img_scrollable(scroll_pan.ScrolledPanel):
     def __init__(self, outer_panel, i_bmp_in):
-        super(multi_img_scrollable, self).__init__(outer_panel)
+        super().__init__(outer_panel)
         self.parent_panel = outer_panel
         self.lst_2d_bmp = i_bmp_in
         self.SetBackgroundColour(wx.Colour(200, 200, 200))
@@ -441,7 +439,7 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
 class buttons_panel(wx.Panel):
     def __init__(self, outer_panel):
-        super(buttons_panel, self).__init__(outer_panel)
+        super().__init__(outer_panel)
         self.parent_panel = outer_panel
 
         Show_Its_CheckBox = wx.CheckBox(self, -1, "Show I nums")

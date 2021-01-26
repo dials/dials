@@ -1,5 +1,4 @@
 """LBFGS refinement engine for cosym analysis."""
-from __future__ import absolute_import, division, print_function
 
 import logging
 
@@ -8,7 +7,7 @@ logger = logging.getLogger(__name__)
 import scitbx.lbfgs
 
 
-class lbfgs_with_curvs(object):
+class lbfgs_with_curvs:
     """Minimise a target function using the LBFGS minimiser.
 
     Implementation of an LBFGS minimiser using curvature information, according
@@ -81,4 +80,4 @@ class lbfgs_with_curvs(object):
     def callback_after_step(self, minimizer):
         """Log progress after each successful step of the minimisation."""
         logger.debug("minimization step: f, iter, nfun:")
-        logger.debug("%s %s %s" % (self.f, minimizer.iter(), minimizer.nfun()))
+        logger.debug(f"{self.f} {minimizer.iter()} {minimizer.nfun()}")

@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import json
 import os
 
@@ -9,7 +7,7 @@ import procrunner
 def test_export_mosflm(dials_regression, tmpdir):
     dials_regression_escaped = json.dumps(dials_regression).strip('"')
     with open(
-        os.path.join(dials_regression, "experiment_test_data/experiment_1.json"), "r"
+        os.path.join(dials_regression, "experiment_test_data/experiment_1.json")
     ) as fi:
         with (tmpdir / "experiments.json").open("w") as fo:
             fo.write(fi.read().replace("$DIALS_REGRESSION", dials_regression_escaped))
@@ -20,7 +18,7 @@ def test_export_mosflm(dials_regression, tmpdir):
     assert not result.returncode and not result.stderr
 
     assert os.path.exists("mosflm/index.mat")
-    with open("mosflm/index.mat", "r") as f:
+    with open("mosflm/index.mat") as f:
         lines = f.read()
     assert (
         lines
@@ -39,7 +37,7 @@ def test_export_mosflm(dials_regression, tmpdir):
         )
     )
     assert os.path.exists("mosflm/mosflm.in")
-    with open("mosflm/mosflm.in", "r") as f:
+    with open("mosflm/mosflm.in") as f:
         lines = f.read()
     assert (
         lines

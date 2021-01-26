@@ -26,7 +26,6 @@ Examples::
   dials.refine_bravais_settings indexed.expt indexed.refl nproc=4
 """
 
-from __future__ import absolute_import, division, print_function
 
 import collections
 import json

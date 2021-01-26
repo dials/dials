@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import copy
 import logging
 import math
@@ -96,7 +94,7 @@ class StillsIndexer(Indexer):
         if params.refinement.reflections.outlier.algorithm in ("auto", libtbx.Auto):
             # The stills_indexer provides its own outlier rejection
             params.refinement.reflections.outlier.algorithm = "null"
-        super(StillsIndexer, self).__init__(reflections, experiments, params)
+        super().__init__(reflections, experiments, params)
 
     def index(self):
         # most of this is the same as dials.algorithms.indexing.indexer.indexer_base.index(), with some stills
@@ -674,7 +672,7 @@ class StillsIndexer(Indexer):
 
         px_sz = experiments[0].detector[0].get_pixel_size()
 
-        class Match(object):
+        class Match:
             pass
 
         matches = []

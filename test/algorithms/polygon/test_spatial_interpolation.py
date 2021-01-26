@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import random
 
 from dials.algorithms.polygon.spatial_interpolation import (
@@ -8,7 +6,7 @@ from dials.algorithms.polygon.spatial_interpolation import (
 )
 
 
-class TestRegridIrregularToRegular(object):
+class TestRegridIrregularToRegular:
     @staticmethod
     def test_identical():
         from scitbx.array_family import flex
@@ -219,7 +217,7 @@ class TestRegridIrregularToRegular(object):
         assert abs(flex.sum(output) - flex.sum(grid)) <= eps
 
 
-class TestRegridRegularToIrregular(object):
+class TestRegridRegularToIrregular:
     @staticmethod
     def test_identical():
         from scitbx.array_family import flex

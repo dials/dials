@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import copy
 import os
 import random
@@ -779,7 +777,7 @@ def test_extract_shoeboxes():
     reflections["shoebox"] = flex.shoebox(reflections["panel"], reflections["bbox"])
     reflections["shoebox"].allocate()
 
-    class FakeImageSet(object):
+    class FakeImageSet:
         def __init__(self):
             self.data = flex.int(range(height * width))
             self.data.reshape(flex.grid(height, width))
@@ -788,12 +786,12 @@ def test_extract_shoeboxes():
             return (frame0, frame1)
 
         def get_detector(self):
-            class FakeDetector(object):
+            class FakeDetector:
                 def __len__(self):
                     return npanels
 
                 def __getitem__(self, index):
-                    class FakePanel(object):
+                    class FakePanel:
                         def get_trusted_range(self):
                             return (-1, 1000000)
 

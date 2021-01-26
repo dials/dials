@@ -6,7 +6,6 @@ https://doi.org/10.1107/S2059798317010348
 Usage: dials.plot_Fo_vs_Fc hklin=refined.mtz
 """
 
-from __future__ import absolute_import, division, print_function
 
 import sys
 from math import sqrt
@@ -33,7 +32,7 @@ class HyperbolaFit(normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_mixin):
     a_sq0 = flex.double([1000])
 
     def __init__(self, x, y):
-        super(HyperbolaFit, self).__init__(n_parameters=1)
+        super().__init__(n_parameters=1)
         self.x = x
         self.y = y
         self.n_data = len(self.x)
@@ -85,7 +84,7 @@ class HyperbolaFit(normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_mixin):
         return {"SSE": sse, "R-square": r_sq, "RMSE": rmse}
 
 
-class Script(object):
+class Script:
     """A class for running the script."""
 
     def __init__(self):
@@ -145,7 +144,7 @@ class Script(object):
         try:
             m = mtz.object(self.params.hklin)
         except RuntimeError:
-            raise Sorry("Could not read {0}".format(self.params.hklin))
+            raise Sorry(f"Could not read {self.params.hklin}")
 
         mad = m.as_miller_arrays_dict()
         mad = {k[-1]: v for (k, v) in mad.items()}
@@ -154,7 +153,7 @@ class Script(object):
 
         if [fobs, fc].count(None) > 0:
             raise Sorry(
-                "Columns {0} not found in available labels: {1}".format(
+                "Columns {} not found in available labels: {}".format(
                     ", ".join([self.params.Fo, self.params.Fc]),
                     ", ".join(m.column_labels()),
                 )
@@ -193,7 +192,7 @@ class Script(object):
             y = self.model_fit(x)
             ax.plot(x, y, c="0.0", linewidth=0.8)
 
-        print("Saving plot to {0}".format(self.params.plot_filename))
+        print(f"Saving plot to {self.params.plot_filename}")
         plt.savefig(self.params.plot_filename)
 
     def run(self, args=None):

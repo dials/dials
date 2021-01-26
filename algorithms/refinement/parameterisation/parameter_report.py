@@ -1,7 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
-
-class ParameterReporter(object):
+class ParameterReporter:
     """
     Keeps a record of all the ModelParameterisations and
     ScanVaryingModelParameterisations present and provides access to their
@@ -168,7 +165,7 @@ class ParameterReporter(object):
         return global_p_list
 
 
-class TableColumn(object):
+class TableColumn:
     """Bucket to store data to be used for constructing tables to print."""
 
     def __init__(self, title, values):

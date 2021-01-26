@@ -1,8 +1,6 @@
-# coding: utf-8
 """
 Command line script to allow merging and truncating of a dials dataset.
 """
-from __future__ import absolute_import, division, print_function
 
 import logging
 import sys

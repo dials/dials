@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import copy
 
 import libtbx.phil
@@ -48,7 +46,7 @@ black_background = True
 )
 
 
-class Render3d(object):
+class Render3d:
     def __init__(self, settings=None):
         self.reflections = None
         if settings is None:
@@ -281,7 +279,7 @@ class Render3d(object):
             try:
                 p = detector[panel_id]
             except RuntimeError:
-                raise Sorry("Detector does not have panel index {}".format(panel_id))
+                raise Sorry(f"Detector does not have panel index {panel_id}")
 
             beam_f, beam_s = p.millimeter_to_pixel((beam_f, beam_s))
             beam.set_unit_s0(p.get_pixel_lab_coord((beam_f, beam_s)))

@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 import math
 
@@ -94,7 +92,7 @@ class FFT3D(Strategy):
             min_cell (float): A conservative lower bound on the minimum possible
                 primitive unit cell dimension.
         """
-        super(FFT3D, self).__init__(max_cell, params=params, *args, **kwargs)
+        super().__init__(max_cell, params=params, *args, **kwargs)
         n_points = self._params.reciprocal_space_grid.n_points
         self._gridding = fftpack.adjust_gridding_triple(
             (n_points, n_points, n_points), max_prime=5
@@ -168,7 +166,7 @@ class FFT3D(Strategy):
         vectors = [vectors[i] for i in perm]
 
         for i, (v, volume) in enumerate(zip(vectors, volumes)):
-            logger.debug("%s %s %s" % (i, v.length(), volume))
+            logger.debug(f"{i} {v.length()} {volume}")
 
         # sort by length
         lengths = flex.double(v.length() for v in vectors)

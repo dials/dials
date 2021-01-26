@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import libtbx.pkg_utils
 
 import dials.precommitbx.nagger
@@ -205,7 +203,7 @@ for cmd in [
     Depends(ac, os.path.join(libtbx.env.dist_path("dials"), "util", "options.py"))
     Depends(ac, os.path.join(libtbx.env.dist_path("dials"), "util", "autocomplete.sh"))
 """.format(
-                "\n".join(['    "{}",'.format(cmd) for cmd in command_list])
+                "\n".join([f'    "{cmd}",' for cmd in command_list])
             )
         )
 

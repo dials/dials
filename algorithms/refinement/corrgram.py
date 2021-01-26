@@ -1,6 +1,5 @@
 """Creation of 'corrgram' correlation matrix plots"""
 
-from __future__ import absolute_import, division, print_function
 
 import json
 import logging
@@ -136,9 +135,7 @@ def create_correlation_plots(refiner, params):
                 plot_fname = fname_base + "_" + resid_name + ext
                 plt = corrgram(corrmat, labels)
                 if plt is not None:
-                    logger.info(
-                        "Saving parameter correlation plot to {}".format(plot_fname)
-                    )
+                    logger.info(f"Saving parameter correlation plot to {plot_fname}")
                     plt.savefig(plot_fname)
                     plt.close()
                     num_plots += 1
@@ -146,9 +143,7 @@ def create_correlation_plots(refiner, params):
             with open(mat_fname, "w") as handle:
                 for k, corrmat in corrmats.items():
                     corrmats[k] = corrmat.as_scitbx_matrix().as_list_of_lists()
-                logger.info(
-                    "Saving parameter correlation matrices to {}".format(mat_fname)
-                )
+                logger.info(f"Saving parameter correlation matrices to {mat_fname}")
                 json.dump({"corrmats": corrmats, "labels": labels}, handle)
 
     if num_plots == 0:

@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import copy
 import logging
 import math
@@ -22,7 +20,7 @@ TWO_PI = 2.0 * math.pi
 FIVE_DEG = TWO_PI * 5.0 / 360.0
 
 
-class CompleteGraph(object):
+class CompleteGraph:
     def __init__(self, seed_vertex):
         self.vertices = [seed_vertex]
         self.weight = [{0: 0.0}]
@@ -150,7 +148,7 @@ class LowResSpotMatch(Strategy):
 
             max_lattices (int): The maximum number of lattice models to find
         """
-        super(LowResSpotMatch, self).__init__(params=params, *args, **kwargs)
+        super().__init__(params=params, *args, **kwargs)
         self._target_symmetry_primitive = target_symmetry_primitive
         self._max_lattices = max_lattices
 
@@ -188,7 +186,7 @@ class LowResSpotMatch(Strategy):
             seeds = self.stems
         else:
             seeds = self.seeds
-        logger.info("Using {0} seeds".format(len(seeds)))
+        logger.info("Using {} seeds".format(len(seeds)))
 
         # Second search: match seed spots with another spot from a different
         # reciprocal lattice row, such that the observed reciprocal space distances
@@ -196,39 +194,39 @@ class LowResSpotMatch(Strategy):
         pairs = []
         for seed in seeds:
             pairs.extend(self._pairs_with_seed(seed))
-        logger.info("Found {0} pairs".format(len(pairs)))
+        logger.info("Found {} pairs".format(len(pairs)))
         pairs = list(set(pairs))  # filter duplicates
 
         if self._params.max_pairs:
             pairs.sort(key=operator.attrgetter("total_weight"))
             idx = self._params.max_pairs
             pairs = pairs[0:idx]
-        logger.info("Using {0} highest-scoring pairs".format(len(pairs)))
+        logger.info("Using {} highest-scoring pairs".format(len(pairs)))
 
         # Further search iterations: extend to more spots within tolerated distances
         triplets = []
         for pair in pairs:
             triplets.extend(self._extend_by_candidates(pair))
-        logger.info("Found {0} triplets".format(len(triplets)))
+        logger.info("Found {} triplets".format(len(triplets)))
         triplets = list(set(triplets))  # filter duplicates
         if self._params.max_triplets:
             triplets.sort(key=operator.attrgetter("total_weight"))
             idx = self._params.max_triplets
             triplets = triplets[0:idx]
-        logger.info("Using {0} highest-scoring triplets".format(len(triplets)))
+        logger.info("Using {} highest-scoring triplets".format(len(triplets)))
 
         branches = triplets
         if self._params.search_depth == "quads":
             quads = []
             for triplet in triplets:
                 quads.extend(self._extend_by_candidates(triplet))
-            logger.info("{0} quads".format(len(quads)))
+            logger.info("{} quads".format(len(quads)))
             quads = list(set(quads))  # filter duplicates
             if self._params.max_quads:
                 quads.sort(key=operator.attrgetter("total_weight"))
                 idx = self._params.max_quads
                 quads = quads[0:idx]
-            logger.info("Using {0} highest-scoring quads".format(len(quads)))
+            logger.info("Using {} highest-scoring quads".format(len(quads)))
             branches = quads
 
         # Sort branches by total deviation of observed distances from expected

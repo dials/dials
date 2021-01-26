@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 import math
 import warnings
@@ -111,7 +109,7 @@ def lru_equality_cache(maxsize=10):
     """
 
     def _decorator(f):
-        class Scope(object):
+        class Scope:
             pass
 
         cache_data = Scope()
@@ -192,7 +190,7 @@ def _apply_resolution_mask(mask, beam, panel, *args):
     _get_resolution_masker(beam, panel).apply(mask, *args)
 
 
-class MaskGenerator(object):
+class MaskGenerator:
     """Generate a mask."""
 
     def __init__(self, params):

@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import math
 
 from dials.algorithms.profile_model.modeller import EmpiricalProfileModeller
@@ -43,7 +41,7 @@ class Modeller(EmpiricalProfileModeller):
             self.add(indices, weights, profile)
 
 
-class Test(object):
+class Test:
     def setup_class(self):
         self.n = 9
         self.grid_size = (9, 9, 9)

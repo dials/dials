@@ -1,9 +1,7 @@
-from __future__ import absolute_import, division, print_function
-
 from scitbx.array_family import flex
 
 
-class SpotMatcher(object):
+class SpotMatcher:
     """Match the observed with predicted spots."""
 
     def __init__(self, max_separation=2):

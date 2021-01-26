@@ -1,6 +1,5 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.merge_reflection_lists
 
-from __future__ import absolute_import, division, print_function
 
 import sys
 
@@ -37,7 +36,7 @@ phil_scope = parse(
 )
 
 
-class Script(object):
+class Script:
     """A class to encapsulate the script."""
 
     def __init__(self):

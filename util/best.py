@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 import math
 import os
@@ -15,7 +13,7 @@ def write_background_file(file_name, imageset, n_bins):
     logger.info("Saving background file to %s" % file_name)
     with open(file_name, "w") as f:
         for d_, I_, sig_ in zip(d, I, sig):
-            f.write("%10.4f %10.2f %10.2f" % (d_, I_, sig_) + os.linesep)
+            f.write(f"{d_:10.4f} {I_:10.2f} {sig_:10.2f}" + os.linesep)
 
 
 def write_integrated_hkl(prefix, reflections):
@@ -33,7 +31,7 @@ def write_integrated_hkl(prefix, reflections):
         suffix = ""
         if flex.max(expt_ids) > 0:
             suffix = "%i" % (i_expt + 1)
-        file_name = "%s%s.hkl" % (prefix, suffix)
+        file_name = f"{prefix}{suffix}.hkl"
         logger.info("Saving reflections to %s" % file_name)
         with open(file_name, "w") as f:
             for i in range(len(integrated)):
@@ -158,6 +156,6 @@ def write_par_file(file_name, experiment):
         print("               %9.6f %9.6f %9.6f" % UB_mosflm[6:], file=f)
         print("CELL           %8.2f %8.2f %8.2f %6.2f %6.2f %6.2f" % uc_params, file=f)
         print("RASTER           %i %i %i %i %i" % (nxs, nys, nc, nrx, nry), file=f)
-        print("SEPARATION      %.3f  %.3f" % (spot_diameter, spot_diameter), file=f)
+        print(f"SEPARATION      {spot_diameter:.3f}  {spot_diameter:.3f}", file=f)
         print("BEAM           %8.3f %8.3f" % beam_centre, file=f)
         print("# end of parameter file for BEST", file=f)

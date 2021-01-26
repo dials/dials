@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import copy
 import itertools
 import optparse
@@ -155,7 +153,7 @@ ArgumentHandlingErrorInfo = namedtuple(
 )
 
 
-class Importer(object):
+class Importer:
     """A class to import the command line arguments."""
 
     def __init__(
@@ -356,7 +354,7 @@ class Importer(object):
         return unhandled
 
 
-class PhilCommandParser(object):
+class PhilCommandParser:
     """A class to parse phil parameters from positional arguments"""
 
     def __init__(
@@ -627,7 +625,7 @@ class PhilCommandParser(object):
         return input_phil_scope
 
 
-class OptionParserBase(optparse.OptionParser, object):
+class OptionParserBase(optparse.OptionParser):
     """The base class for the option parser."""
 
     def __init__(self, config_options=False, sort_options=False, **kwargs):
@@ -639,7 +637,7 @@ class OptionParserBase(optparse.OptionParser, object):
         """
 
         # Initialise the option parser
-        super(OptionParserBase, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         # Add an option to show configuration parameters
         if config_options:
@@ -716,7 +714,7 @@ class OptionParserBase(optparse.OptionParser, object):
         # Parse the command line arguments, this will separate out
         # options (e.g. -o, --option) and positional arguments, in
         # which phil options will be included.
-        options, args = super(OptionParserBase, self).parse_args(args=args)
+        options, args = super().parse_args(args=args)
 
         # Read any argument-specified PHIL file. Ignore duplicates.
         if options.phil:
@@ -758,7 +756,7 @@ class OptionParser(OptionParserBase):
         read_experiments_from_images=False,
         check_format=True,
         sort_options=False,
-        **kwargs
+        **kwargs,
     ):
         """
         Initialise the class.
@@ -781,10 +779,10 @@ class OptionParser(OptionParserBase):
         )
 
         # Initialise the option parser
-        super(OptionParser, self).__init__(
+        super().__init__(
             sort_options=sort_options,
             config_options=self.system_phil.as_str() != "",
-            **kwargs
+            **kwargs,
         )
 
     def parse_args(
@@ -811,9 +809,7 @@ class OptionParser(OptionParserBase):
         # Parse the command line arguments, this will separate out
         # options (e.g. -o, --option) and positional arguments, in
         # which phil options will be included.
-        options, args = super(OptionParser, self).parse_args(
-            args=args, quick_parse=quick_parse
-        )
+        options, args = super().parse_args(args=args, quick_parse=quick_parse)
 
         # Show config
         if hasattr(options, "show_config") and options.show_config:
@@ -928,7 +924,7 @@ class OptionParser(OptionParserBase):
                 for err in valid:
                     msg.append(
                         "    - {} {}".format(
-                            "{}:".format(err.type).ljust(slen + 1), err.message
+                            f"{err.type}:".ljust(slen + 1), err.message
                         )
                     )
         # The others
@@ -979,7 +975,7 @@ class OptionParser(OptionParserBase):
         :param formatter: The formatter to use
         :return: The formatted help text
         """
-        result = super(OptionParser, self).format_help(formatter=formatter)
+        result = super().format_help(formatter=formatter)
         return self._strip_rst_markup(result)
 
     def _export_autocomplete_hints(self):
@@ -1021,7 +1017,9 @@ class OptionParser(OptionParserBase):
 
             # Identify all names that are directly on this level
             # or represent parameter groups with a common prefix
-            top_elements = {"%s%s" % (x[0], "=" if len(x) == 1 else ".") for x in paths}
+            top_elements = {
+                "{}{}".format(x[0], "=" if len(x) == 1 else ".") for x in paths
+            }
 
             # Partition all names that are further down the tree by their prefix
             subpaths = {}
@@ -1035,7 +1033,7 @@ class OptionParser(OptionParserBase):
             for s in list(subpaths.keys()):
                 if len(subpaths[s]) == 1:
                     top_elements.remove("%s." % s)
-                    top_elements.add("%s.%s=" % (s, subpaths[s][0]))
+                    top_elements.add("{}.{}=".format(s, subpaths[s][0]))
                     del subpaths[s]
 
             result = {"": top_elements}

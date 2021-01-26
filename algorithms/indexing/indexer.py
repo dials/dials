@@ -1,7 +1,3 @@
-# coding: utf-8
-
-from __future__ import absolute_import, division, print_function
-
 import logging
 import math
 
@@ -300,7 +296,7 @@ indexing {
 phil_scope = iotbx.phil.parse(phil_str, process_includes=True)
 
 
-class Indexer(object):
+class Indexer:
     def __init__(self, reflections, experiments, params):
         self.reflections = reflections
         self.experiments = experiments

@@ -1,6 +1,5 @@
 """Testing functions for multivariate outlier rejection by the FAST-MCD
 algorithm"""
-from __future__ import absolute_import, division, print_function
 
 
 def test_maha():
@@ -212,7 +211,7 @@ def test_fast_mcd_large(dials_regression):
         dials_regression, "refinement_test_data", "outlier_rejection", "residuals.dat"
     )
 
-    with open(data_pth, "r") as f:
+    with open(data_pth) as f:
         residuals = f.readlines()
 
     # ignore first line, which is a header

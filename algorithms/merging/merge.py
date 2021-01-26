@@ -1,5 +1,4 @@
 """Merging functions for experiment lists and reflection tables."""
-from __future__ import absolute_import, division, print_function
 
 import logging
 
@@ -83,7 +82,7 @@ def prepare_merged_reflection_table(
     return merged_reflections
 
 
-class MTZDataClass(object):
+class MTZDataClass:
 
     """Container class (i.e. Python 3.7 dataclass) for per-wavelength mtz dataset."""
 

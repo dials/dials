@@ -1,6 +1,5 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
-from __future__ import absolute_import, division, print_function
 
 import logging
 import math
@@ -60,7 +59,7 @@ class ReciprocalLatticePng(Render3d):
         self.viewer = PngScene(settings=self.settings)
 
 
-class PngScene(object):
+class PngScene:
     def __init__(self, settings):
         self.settings = settings
         self.rotation_axis = None

@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 import re
 from functools import reduce
@@ -40,7 +38,7 @@ constraints
 phil_scope = parse(phil_str)
 
 
-class EqualShiftConstraint(object):
+class EqualShiftConstraint:
     """A single constraint between parameters of the same type in different
     parameterisations"""
 
@@ -58,7 +56,7 @@ class EqualShiftConstraint(object):
         return self.constrained_value + self._shifts
 
 
-class ConstraintManager(object):
+class ConstraintManager:
     def __init__(self, constraints, n_full_params):
 
         self._constraints = constraints
@@ -179,7 +177,7 @@ class SparseConstraintManager(ConstraintManager):
         return constrained_jacobian
 
 
-class ConstraintManagerFactory(object):
+class ConstraintManagerFactory:
     """Build equal shift constraints as requested in params and package into
     a constraints manager to be linked to the Refinery"""
 
@@ -237,7 +235,7 @@ class ConstraintManagerFactory(object):
                 + "|".join(prefixes)
                 + r"){1}(?![0-9])(\w*"
                 + pname
-                + ")(_sample{})?$".format(i)
+                + f")(_sample{i})?$"
             )
             indices = [j for j, s in enumerate(self._all_names) if patt2.match(s)]
             if len(indices) == 1:

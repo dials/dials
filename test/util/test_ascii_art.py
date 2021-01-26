@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import os
 
 import six
@@ -13,10 +11,7 @@ def test_spot_counts_per_image_plot(dials_regression):
     pickle_path = os.path.join(data_dir, "full.pickle")
 
     with open(pickle_path, "rb") as fh:
-        if six.PY3:
-            refl = pickle.load(fh, encoding="bytes")
-        else:
-            refl = pickle.load(fh)
+        refl = pickle.load(fh, encoding="bytes")
     output = ascii_art.spot_counts_per_image_plot(refl)
 
     expected_output = """\

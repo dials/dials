@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import collections
 
 from dials.util import tabulate
@@ -23,7 +21,7 @@ Result = collections.namedtuple(
 #        :param data: Other processed data
 
 
-class TimingInfo(object):
+class TimingInfo:
     """
     A class to contain timing info.
     """

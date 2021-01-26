@@ -1,7 +1,3 @@
-# coding: utf-8
-
-from __future__ import absolute_import, division, print_function
-
 import logging
 import math
 
@@ -16,7 +12,7 @@ Class to determine mosaicity and effective domain size for a crystal given a set
 """
 
 
-class NaveParameters(object):
+class NaveParameters:
     def __init__(self, params, experiments, reflections, refinery, graph_verbose=True):
         self.params = params
         self.experiments = experiments

@@ -1,6 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
-
 def test_generate_test_reflections(tmpdir):
     tmpdir.chdir()
     from libtbx.phil import command_line

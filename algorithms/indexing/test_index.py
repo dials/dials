@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import collections
 import glob
 import os
@@ -102,7 +100,7 @@ def run_indexing(
         rmsd_z = flex.mean(flex.pow2(obs_z - calc_z)) ** 0.5
         rmsds = (rmsd_x, rmsd_y, rmsd_z)
         for actual, expected in zip(rmsds, expected_rmsds):
-            assert actual <= expected, "%s %s" % (rmsds, expected_rmsds)
+            assert actual <= expected, f"{rmsds} {expected_rmsds}"
         assert experiment.identifier != ""
         expt = ExperimentList()
         expt.append(experiment)

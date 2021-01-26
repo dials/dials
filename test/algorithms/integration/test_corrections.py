@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 from dxtbx.model.experiment_list import ExperimentListFactory
 from scitbx import matrix
 

@@ -2,7 +2,6 @@
 #
 #   from dials.array_family import flex
 #
-from __future__ import absolute_import, division, print_function
 
 import collections
 import copy
@@ -43,7 +42,7 @@ else:
 
 
 @boost_adaptbx.boost.python.inject_into(dials_array_family_flex_ext.reflection_table)
-class _(object):
+class _:
     """
     An injector class to add additional methods to the reflection table.
     """
@@ -187,10 +186,7 @@ class _(object):
         if filename and hasattr(filename, "__fspath__"):
             filename = filename.__fspath__()
         with libtbx.smart_open.for_reading(filename, "rb") as infile:
-            if six.PY3:
-                result = pickle.load(infile, encoding="bytes")
-            else:
-                result = pickle.load(infile)
+            result = pickle.load(infile, encoding="bytes")
             assert isinstance(result, dials_array_family_flex_ext.reflection_table)
             return result
 
@@ -499,7 +495,7 @@ class _(object):
         x2, y2, z2 = other["xyzcal.px"].parts()
         p2 = other["panel"]
 
-        class Match(object):
+        class Match:
             def __init__(self):
                 self.a = []
                 self.b = []
@@ -803,8 +799,7 @@ class _(object):
         for l in index_list:
             tot += len(l)
         assert tot == len(self)
-        for experiment, indices in zip(experiments, index_list):
-            yield experiment, indices
+        yield from zip(experiments, index_list)
 
     def compute_background(self, experiments, image_volume=None):
         """
@@ -1311,7 +1306,7 @@ Found %s"""
         return default
 
 
-class reflection_table_selector(object):
+class reflection_table_selector:
     """
     A class to select columns from reflection table.
 

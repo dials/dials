@@ -1,7 +1,6 @@
 """
 Optimise the combination of profile and summation intensity values.
 """
-from __future__ import absolute_import, division, print_function
 
 import logging
 
@@ -81,7 +80,7 @@ def _make_reflection_table_from_scaler(scaler):
     return reflections
 
 
-class SingleDatasetIntensityCombiner(object):
+class SingleDatasetIntensityCombiner:
     """
     Class to combine profile and summation intensities for a single datset.
     """
@@ -259,7 +258,7 @@ def _calculate_suitable_combined_intensities(scaler, max_key):
     return combine_intensities(reflections, max_key)
 
 
-class MultiDatasetIntensityCombiner(object):
+class MultiDatasetIntensityCombiner:
     """
     Class to combine profile and summation intensities for multiple datasets.
     """

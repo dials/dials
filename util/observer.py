@@ -3,7 +3,6 @@ Define an interface for observers and subjects.
 
 A singleton decorator is also defined.
 """
-from __future__ import absolute_import, division, print_function
 
 import functools
 from collections import OrderedDict
@@ -20,7 +19,7 @@ def singleton(cls):
     return getinstance
 
 
-class Observer(object):
+class Observer:
     def __init__(self):
         self.data = {}
 
@@ -29,7 +28,7 @@ class Observer(object):
         pass
 
 
-class Subject(object):
+class Subject:
     def __init__(self, events):
         self.observers = {}
         for event in events:

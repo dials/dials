@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 from math import pi
 
@@ -13,7 +11,7 @@ logger = logging.getLogger(__name__)
 RAD2DEG = 180.0 / pi
 
 
-class CentroidOutlier(object):
+class CentroidOutlier:
     """Base class for centroid outlier detection algorithms"""
 
     def __init__(
@@ -220,7 +218,7 @@ class CentroidOutlier(object):
 
             elif nref > 0:
                 # too few reflections in the job
-                msg = "For job {0}, fewer than {1} reflections are present.".format(
+                msg = "For job {}, fewer than {} reflections are present.".format(
                     i + 1, self._min_num_obs
                 )
                 msg += " All reflections flagged as possible outliers."
@@ -247,15 +245,15 @@ class CentroidOutlier(object):
                 try:
                     row.append("{phi_start:.2f} - {phi_end:.2f}".format(**job))
                 except KeyError:
-                    row.append("{0:.2f} - {1:.2f}".format(0.0, 0.0))
+                    row.append("{:.2f} - {:.2f}".format(0.0, 0.0))
             if nref == 0:
                 p100 = 0
             else:
                 p100 = nout / nref * 100.0
                 if p100 > 30.0:
                     msg = (
-                        "{0:3.1f}% of reflections were flagged as outliers from job"
-                        " {1}"
+                        "{:3.1f}% of reflections were flagged as outliers from job"
+                        " {}"
                     ).format(p100, i + 1)
                     logger.debug(msg)
             row.extend([str(nref), str(nout), "%3.1f" % p100])
@@ -263,7 +261,7 @@ class CentroidOutlier(object):
 
         if self.nreject == 0:
             return False
-        logger.info("{} reflections have been flagged as outliers".format(self.nreject))
+        logger.info(f"{self.nreject} reflections have been flagged as outliers")
         logger.debug("Outlier rejections per job:")
         logger.debug(tabulate(rows, header))
 
@@ -406,7 +404,7 @@ outlier
 phil_scope = parse(phil_str)
 
 
-class CentroidOutlierFactory(object):
+class CentroidOutlierFactory:
     @staticmethod
     def from_parameters_and_colnames(params, colnames):
 
@@ -448,7 +446,7 @@ class CentroidOutlierFactory(object):
             separate_experiments=params.outlier.separate_experiments,
             separate_panels=params.outlier.separate_panels,
             block_width=params.outlier.block_width,
-            **kwargs
+            **kwargs,
         )
         return od
 

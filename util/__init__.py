@@ -105,17 +105,17 @@ def debug_context_manager(original_context_manager, name="", log_func=None):
     import threading
     from datetime import datetime
 
-    class DCM(object):
+    class DCM:
         def __init__(self, name, log_func):
             self._ocm = original_context_manager
             if name:
-                self._name = "%s-%s" % (name, str(hash(original_context_manager)))
+                self._name = "{}-{}".format(name, str(hash(original_context_manager)))
             else:
                 self._name = str(hash(original_context_manager))
             self._log_func = log_func
 
         def format_event(self, event):
-            return "%s %s: %s\n" % (
+            return "{} {}: {}\n".format(
                 datetime.now().strftime("%H:%M:%S.%f"),
                 self._name,
                 event,
@@ -129,20 +129,20 @@ def debug_context_manager(original_context_manager, name="", log_func=None):
                 raise Exception()
             except Exception:
                 parent = sys.exc_info()[2].tb_frame.f_back
-            call_code = "%s:%s" % (parent.f_code.co_filename, parent.f_lineno)
+            call_code = f"{parent.f_code.co_filename}:{parent.f_lineno}"
             call_process = multiprocessing.current_process().name
             call_thread = threading.currentThread().getName()
-            self.log("Knock %s:%s %s" % (call_process, call_thread, call_code))
+            self.log(f"Knock {call_process}:{call_thread} {call_code}")
             z = self._ocm.__enter__(*args, **kwargs)
-            self.log("Enter %s:%s %s" % (call_process, call_thread, call_code))
+            self.log(f"Enter {call_process}:{call_thread} {call_code}")
             return z
 
         def __exit__(self, *args, **kwargs):
             call_process = multiprocessing.current_process().name
             call_thread = threading.currentThread().getName()
-            self.log("Exit %s:%s" % (call_process, call_thread))
+            self.log(f"Exit {call_process}:{call_thread}")
             self._ocm.__exit__(*args, **kwargs)
-            self.log("Left %s:%s" % (call_process, call_thread))
+            self.log(f"Left {call_process}:{call_thread}")
 
     return DCM(name, log_func)
 

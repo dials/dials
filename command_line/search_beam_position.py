@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import cmath
 import concurrent.futures
 import copy
@@ -157,7 +155,7 @@ def optimize_origin_offset_local_scope(
         wide_search_offset = None
 
     # Do a simplex minimization
-    class simplex_minimizer(object):
+    class simplex_minimizer:
         def __init__(self, wide_search_offset):
             self.n = 2
             self.wide_search_offset = wide_search_offset

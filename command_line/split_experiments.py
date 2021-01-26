@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import functools
 
 from dxtbx.model.experiment_list import ExperimentList
@@ -26,7 +24,7 @@ Example::
 """
 
 
-class Script(object):
+class Script:
     def __init__(self):
         """Initialise the script."""
         # The phil scope

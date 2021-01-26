@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import wx
 
 from dials.viewer.viewer_low_level_util import (
@@ -10,7 +8,7 @@ from dials.viewer.viewer_low_level_util import (
 )
 
 
-class show_3d(object):
+class show_3d:
     """
 
     This is a useful class for developers to view 3D flex array(s) at low level code
@@ -87,7 +85,7 @@ class show_3d_wx_app(wx.App):
         self.ImgFrame.Show()
 
 
-class show_reflections(object):
+class show_reflections:
     def __init__(self, table, two_windows=False):
 
         # two_windows = True

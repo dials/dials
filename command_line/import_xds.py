@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import os
 
 from cctbx import sgtbx
@@ -16,7 +14,7 @@ from dials.util.command_line import Command
 from dials.util.options import OptionParser
 
 
-class SpotXDSImporter(object):
+class SpotXDSImporter:
     """Class to import a spot.xds file to a reflection table."""
 
     def __init__(self, spot_xds):
@@ -73,7 +71,7 @@ class SpotXDSImporter(object):
         Command.end("Saved reflection table to %s" % params.output.filename)
 
 
-class IntegrateHKLImporter(object):
+class IntegrateHKLImporter:
     """Class to import an integrate.hkl file to a reflection table."""
 
     def __init__(self, integrate_hkl, experiment):
@@ -165,7 +163,7 @@ class IntegrateHKLImporter(object):
         return matrix.sqr([int(round(e)) for e in (dA.inverse() * xA).elems])
 
 
-class XDSFileImporter(object):
+class XDSFileImporter:
     """Import a data block from xds."""
 
     def __init__(self, args):
@@ -370,7 +368,7 @@ class XDSFileImporter(object):
         experiment.crystal.set_A_at_scan_points(A_list)
 
 
-class Script(object):
+class Script:
     """A class to encapsulate the script."""
 
     def __init__(self):

@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import datetime
 import logging
 from collections import Counter
@@ -37,7 +35,7 @@ phil_scope = parse(
 )
 
 
-class Script(object):
+class Script:
     """A class for running the script."""
 
     def __init__(self):

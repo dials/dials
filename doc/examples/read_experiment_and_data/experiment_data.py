@@ -1,7 +1,5 @@
-# coding: utf-8
 # Example code for how to load experiments and reflections in the DIALS
 
-from __future__ import absolute_import, division, print_function
 
 from libtbx.phil import parse
 
@@ -23,7 +21,7 @@ phil_scope = parse(
 )
 
 
-class Script(object):
+class Script:
     """A class for running the script."""
 
     def __init__(self):
@@ -88,8 +86,8 @@ class Script(object):
         wavelength = beam.get_wavelength()
         s0 = matrix.col(beam.get_s0())
 
-        print(u"Wavelength: {:g}Å".format(wavelength))
-        print("Beam vector s0:\n{}".format(s0))
+        print(f"Wavelength: {wavelength:g}Å")
+        print(f"Beam vector s0:\n{s0}")
 
         # in here do some jiggery-pokery to cope with this being interpreted as
         # a rotation image in here i.e. if scan is not None; derive goniometer
@@ -109,7 +107,7 @@ class Script(object):
         else:
             R = matrix.sqr((1, 0, 0, 0, 1, 0, 0, 0, 1))
 
-        print("Rotation matrix:\n{}".format(R))
+        print(f"Rotation matrix:\n{R}")
 
         assert len(detector) == 1
 

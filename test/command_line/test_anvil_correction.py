@@ -2,7 +2,6 @@
 Tests for dials.command_line.anvil_correction.
 """
 
-from __future__ import absolute_import, division, print_function
 
 import copy
 

@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import collections
 import math
 import os
@@ -25,10 +23,7 @@ def data(dials_regression):  # read experiments and reflections
     )
     reflections = flex.reflection_table.from_file(reflections_filename)
     with open(reference_filename, "rb") as fh:
-        if six.PY3:
-            reference = pickle.load(fh, encoding="bytes")
-        else:
-            reference = pickle.load(fh)
+        reference = pickle.load(fh, encoding="bytes")
 
     Data = collections.namedtuple("Data", ["experiments", "reflections", "reference"])
     return Data(experiments=experiments, reflections=reflections, reference=reference)
@@ -78,7 +73,7 @@ def test_glm_background_calculator(data):
     assert errors == 333
 
 
-class IntensityCalculatorFactory(object):
+class IntensityCalculatorFactory:
     @staticmethod
     def create(data, detector_space=False, deconvolution=False):
         from dials.algorithms.integration.parallel_integrator import (

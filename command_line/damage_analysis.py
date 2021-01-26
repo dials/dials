@@ -1,4 +1,3 @@
-# coding: utf-8
 """
 The program dials.damage_analysis calculates dose dependent data quality statistics.
 
@@ -31,7 +30,6 @@ dials.damage_analysis scaled.mtz
 dials.damage_analysis scaled.expt scaled.refl shared_crystal=True
 
 """
-from __future__ import absolute_import, division, print_function
 
 import json
 import logging
@@ -98,7 +96,7 @@ include scope dials.pychef.phil_scope
 )
 
 
-class PychefRunner(object):
+class PychefRunner:
 
     """Class to prepare input data and run the pychef algorithm."""
 

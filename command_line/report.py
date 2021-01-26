@@ -1,7 +1,3 @@
-# coding: utf-8
-
-from __future__ import absolute_import, division, print_function
-
 import copy
 import itertools
 import math
@@ -152,7 +148,7 @@ def color_repeats(n=1):
     return itertools.cycle(color_list)
 
 
-class ScanVaryingCrystalAnalyser(object):
+class ScanVaryingCrystalAnalyser:
     """Analyse a scan-varying crystal."""
 
     def __init__(self, orientation_decomposition):
@@ -215,7 +211,7 @@ class ScanVaryingCrystalAnalyser(object):
                 "volume": vol,
             }
             if self._debug:
-                print("Crystal in Experiment {}".format(iexp))
+                print(f"Crystal in Experiment {iexp}")
                 print("Phi\ta\tb\tc\talpha\tbeta\tgamma\tVolume")
                 msg = "{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}"
                 line_dat = zip(phi, a, b, c, aa, bb, cc, vol)
@@ -370,7 +366,7 @@ the refinement algorithm accounting for unmodelled features in the data.
             phi3, phi2, phi1 = zip(*angles)
             angle_dat = {"phi": phi, "phi3": phi3, "phi2": phi2, "phi1": phi1}
             if self._debug:
-                print("Crystal in Experiment {}".format(iexp))
+                print(f"Crystal in Experiment {iexp}")
                 print("Image\tphi3\tphi2\tphi1")
                 msg = "{0}\t{1}\t{2}\t{3}"
                 line_dat = zip(phi, phi3, phi2, phi1)
@@ -446,7 +442,7 @@ incorrectly.
         return d
 
 
-class StrongSpotsAnalyser(object):
+class StrongSpotsAnalyser:
     """Analyse a list of strong spots."""
 
     def __init__(self, pixels_per_bin=10):
@@ -681,7 +677,7 @@ ice rings, or poor spot-finding parameters.
         }
 
 
-class CentroidAnalyser(object):
+class CentroidAnalyser:
     """Analyse the reflection centroids."""
 
     def __init__(self, grid_size=None, pixels_per_bin=10, centroid_diff_max=1.5):
@@ -1258,7 +1254,7 @@ class CentroidAnalyser(object):
         return d
 
 
-class IntensityAnalyser(object):
+class IntensityAnalyser:
     """Analyse the intensities."""
 
     def __init__(self, grid_size=None, pixels_per_bin=10):
@@ -1344,8 +1340,8 @@ class IntensityAnalyser(object):
                     }
                 ],
                 "layout": {
-                    "title": u"Log I/σ(I) histogram",
-                    "xaxis": {"title": u"Log I/σ(I)"},
+                    "title": "Log I/σ(I) histogram",
+                    "xaxis": {"title": "Log I/σ(I)"},
                     "yaxis": {"title": "Number of reflections"},
                     "bargap": 0,
                 },
@@ -1391,12 +1387,12 @@ class IntensityAnalyser(object):
                         "zauto": False,
                         "type": "heatmap",
                         "name": "i_over_sigma_%s" % intensity_type,
-                        "colorbar": {"title": u"Log I/σ(I)", "titleside": "right"},
+                        "colorbar": {"title": "Log I/σ(I)", "titleside": "right"},
                         "colorscale": "Jet",
                     }
                 ],
                 "layout": {
-                    "title": u"Distribution of I(%s)/σ vs X/Y" % intensity_type,
+                    "title": "Distribution of I(%s)/σ vs X/Y" % intensity_type,
                     "xaxis": {"domain": [0, 0.85], "title": "X", "showgrid": False},
                     "yaxis": {"title": "Y", "autorange": "reversed", "showgrid": False},
                     "width": 500,
@@ -1434,9 +1430,9 @@ class IntensityAnalyser(object):
                     }
                 ],
                 "layout": {
-                    "title": u"Distribution of I/σ(I) vs Z",
+                    "title": "Distribution of I/σ(I) vs Z",
                     "xaxis": {"title": "Z", "showgrid": False},
-                    "yaxis": {"title": u"Log I/σ(I)", "showgrid": False},
+                    "yaxis": {"title": "Log I/σ(I)", "showgrid": False},
                 },
             }
         }
@@ -1522,8 +1518,8 @@ class IntensityAnalyser(object):
         return d
 
 
-class ZScoreAnalyser(object):
-    u"""
+class ZScoreAnalyser:
+    """
     Analyse the distribution of intensity z-scores.
 
     z-scores are calculated as z = (I - <I>) / σ, where I is intensity,
@@ -1779,15 +1775,15 @@ class ZScoreAnalyser(object):
                     }
                 ],
                 "layout": {
-                    "title": u"z-scores versus I/σ",
-                    "xaxis": {"title": u"I/σ", "type": "log"},
+                    "title": "z-scores versus I/σ",
+                    "xaxis": {"title": "I/σ", "type": "log"},
                     "yaxis": {"title": "z-score"},
                 },
             }
         }
 
 
-class ReferenceProfileAnalyser(object):
+class ReferenceProfileAnalyser:
     """Analyse the reference profiles."""
 
     def __init__(self, grid_size=None, pixels_per_bin=10):
@@ -1909,7 +1905,7 @@ class ReferenceProfileAnalyser(object):
                 "layout": {
                     "title": "Reflection correlations vs resolution",
                     "xaxis": {
-                        "title": u"Resolution (Å)",
+                        "title": "Resolution (Å)",
                         "tickvals": tickvals,
                         "ticktext": ticktext,
                     },
@@ -2133,8 +2129,8 @@ class ReferenceProfileAnalyser(object):
                     }
                 ],
                 "layout": {
-                    "title": u"%s correlations vs Log I/σ(I)" % filename.capitalize(),
-                    "xaxis": {"title": u"Log I/σ(I)", "showgrid": False},
+                    "title": "%s correlations vs Log I/σ(I)" % filename.capitalize(),
+                    "xaxis": {"title": "Log I/σ(I)", "showgrid": False},
                     "yaxis": {
                         "title": "Correlation with reference profile",
                         "showgrid": False,
@@ -2144,7 +2140,7 @@ class ReferenceProfileAnalyser(object):
         }
 
 
-class ScalingModelAnalyser(object):
+class ScalingModelAnalyser:
     """Analyse a scaling-model."""
 
     def __call__(self, experiments):
@@ -2229,7 +2225,7 @@ def intensity_statistics(reflections, experiments):
     return resolution_plots, misc_plots, intensity_plots
 
 
-class Analyser(object):
+class Analyser:
     """Helper class to do all the analysis."""
 
     def __init__(self, params, grid_size=None, centroid_diff_max=1.5):
@@ -2383,7 +2379,7 @@ class Analyser(object):
                         "",
                         "Material:",
                         "%s" % panel.get_material(),
-                        u"μ:",
+                        "μ:",
                         "%g" % panel.get_mu(),
                     )
                 )
@@ -2415,12 +2411,12 @@ class Analyser(object):
                         expt_geom_table.append(
                             (
                                 "",
-                                u"Max resolution (corners) (Å):",
+                                "Max resolution (corners) (Å):",
                                 "%.2f"
                                 % panel.get_max_resolution_at_corners(
                                     expt.beam.get_s0()
                                 ),
-                                u"Max resolution (inscribed circle) (Å):",
+                                "Max resolution (inscribed circle) (Å):",
                                 "%.2f"
                                 % panel.get_max_resolution_ellipse(expt.beam.get_s0()),
                             )
@@ -2511,7 +2507,7 @@ class Analyser(object):
         return crystal_table, expt_geom_table
 
 
-class Script(object):
+class Script:
     """A class to encapsulate the script."""
 
     def __init__(self):

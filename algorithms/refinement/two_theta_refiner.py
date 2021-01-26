@@ -1,6 +1,5 @@
 """Versions of refinement classes for two theta refinement of the unit cell"""
 
-from __future__ import absolute_import, division, print_function
 
 import logging
 from math import pi, sqrt
@@ -26,7 +25,7 @@ RAD2DEG = 180.0 / pi
 DEG2RAD = pi / 180.0
 
 
-class ConstantTwoThetaWeightingStrategy(object):
+class ConstantTwoThetaWeightingStrategy:
     def calculate_weights(self, reflections):
 
         reflections["2theta.weights"] = flex.double(len(reflections), 1)
@@ -60,7 +59,7 @@ class TwoThetaReflectionManager(ReflectionManager):
     def __init__(self, *args, **kwargs):
 
         # call base __init__
-        super(TwoThetaReflectionManager, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         # set observed 2theta angles
         self._reflections["2theta_obs.rad"] = calc_2theta(
@@ -86,8 +85,7 @@ class TwoThetaReflectionManager(ReflectionManager):
         w_2theta = l["2theta.weights"]
 
         msg = (
-            "\nSummary statistics for {} observations".format(nref)
-            + " matched to predictions:"
+            f"\nSummary statistics for {nref} observations" + " matched to predictions:"
         )
         header = ["", "Min", "Q1", "Med", "Q3", "Max"]
         rows = []
@@ -214,7 +212,7 @@ class TwoThetaPredictionParameterisation(PredictionParameterisation):
     _grad_names = ("d2theta_dp",)
 
     def __init__(self, *args, **kwargs):
-        super(TwoThetaPredictionParameterisation, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         # check that only the unit cell is parameterised
         assert not self._detector_parameterisations
         assert not self._beam_parameterisations

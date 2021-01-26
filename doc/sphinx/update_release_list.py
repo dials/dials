@@ -6,8 +6,8 @@ from urllib.request import Request, urlopen
 
 
 def _download_button(text, version, link):
-    print("  %s %s -> %s" % (version, text, link))
-    return ".. button::\n   :text: DIALS %s %s\n   :link: %s\n\n" % (
+    print(f"  {version} {text} -> {link}")
+    return ".. button::\n   :text: DIALS {} {}\n   :link: {}\n\n".format(
         version,
         text,
         link,

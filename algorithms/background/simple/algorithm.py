@@ -1,7 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
-
-class BackgroundAlgorithm(object):
+class BackgroundAlgorithm:
     """Class to do background subtraction."""
 
     def __init__(self, experiments, outlier="nsigma", model="constant3d", **kwargs):
@@ -90,7 +87,7 @@ class BackgroundAlgorithm(object):
         return success
 
 
-class SimpleBackgroundCalculatorFactory(object):
+class SimpleBackgroundCalculatorFactory:
     """Class to do background subtraction."""
 
     @staticmethod

@@ -4,7 +4,6 @@ Definitions of scaling models.
 A scaling model is a collection of scaling model components with appropriate
 methods to define how these are composed into one model.
 """
-from __future__ import absolute_import, division, print_function
 
 import logging
 from collections import OrderedDict
@@ -183,7 +182,7 @@ n_modulation_bins = 20
 """
 
 
-class ScalingModelBase(object):
+class ScalingModelBase:
     """Abstract base class for scaling models."""
 
     id_ = None
@@ -340,15 +339,15 @@ class ScalingModelBase(object):
         """:obj:`str`: Return a string representation of a scaling model."""
         msg = ["Scaling model:"]
         msg.append("  type : " + str(self.id_))
-        for name, component in six.iteritems(self.components):
+        for name, component in self.components.items():
             msg.append("  " + str(name).capitalize() + " component:")
             if component.parameter_esds:
                 msg.append("    parameters (sigma)")
                 for p, e in zip(component.parameters, component.parameter_esds):
                     if p < 0.0:
-                        msg.append("    %.4f   (%.4f)" % (p, e))
+                        msg.append(f"    {p:.4f}   ({e:.4f})")
                     else:
-                        msg.append("     %.4f   (%.4f)" % (p, e))
+                        msg.append(f"     {p:.4f}   ({e:.4f})")
             else:
                 msg.append("    parameters")
                 for p in component.parameters:
@@ -409,7 +408,7 @@ class DoseDecay(ScalingModelBase):
 
     def __init__(self, parameters_dict, configdict, is_scaled=False):
         """Create the phyiscal scaling model components."""
-        super(DoseDecay, self).__init__(configdict, is_scaled)
+        super().__init__(configdict, is_scaled)
         if "scale" in configdict["corrections"]:
             scale_setup = parameters_dict["scale"]
             self._components["scale"] = SmoothScaleComponent1D(
@@ -573,7 +572,9 @@ class DoseDecay(ScalingModelBase):
     def from_dict(cls, obj):
         """Create a :obj:`PhysicalScalingModel` from a dictionary."""
         if obj["__id__"] != cls.id_:
-            raise RuntimeError("expected __id__ %s, got %s" % (cls.id_, obj["__id__"]))
+            raise RuntimeError(
+                "expected __id__ {}, got {}".format(cls.id_, obj["__id__"])
+            )
         (s_params, d_params, abs_params, B) = (None, None, None, None)
         (s_params_sds, d_params_sds, a_params_sds, B_sd) = (None, None, None, None)
         configdict = obj["configuration_parameters"]
@@ -621,7 +622,7 @@ class PhysicalScalingModel(ScalingModelBase):
 
     def __init__(self, parameters_dict, configdict, is_scaled=False):
         """Create the phyiscal scaling model components."""
-        super(PhysicalScalingModel, self).__init__(configdict, is_scaled)
+        super().__init__(configdict, is_scaled)
         if "scale" in configdict["corrections"]:
             scale_setup = parameters_dict["scale"]
             self._components["scale"] = SmoothScaleComponent1D(
@@ -809,7 +810,9 @@ class PhysicalScalingModel(ScalingModelBase):
     def from_dict(cls, obj):
         """Create a :obj:`PhysicalScalingModel` from a dictionary."""
         if obj["__id__"] != cls.id_:
-            raise RuntimeError("expected __id__ %s, got %s" % (cls.id_, obj["__id__"]))
+            raise RuntimeError(
+                "expected __id__ {}, got {}".format(cls.id_, obj["__id__"])
+            )
         (s_params, d_params, abs_params) = (None, None, None)
         (s_params_sds, d_params_sds, a_params_sds) = (None, None, None)
         configdict = obj["configuration_parameters"]
@@ -851,7 +854,7 @@ class ArrayScalingModel(ScalingModelBase):
 
     def __init__(self, parameters_dict, configdict, is_scaled=False):
         """Create the array scaling model components."""
-        super(ArrayScalingModel, self).__init__(configdict, is_scaled)
+        super().__init__(configdict, is_scaled)
         if not any(i in configdict["corrections"] for i in ["decay", "absorption"]):
             raise ValueError(
                 "Array model must have at least one of decay or absorption corrections"
@@ -1090,7 +1093,9 @@ class ArrayScalingModel(ScalingModelBase):
     def from_dict(cls, obj):
         """Create an :obj:`ArrayScalingModel` from a dictionary."""
         if obj["__id__"] != cls.id_:
-            raise RuntimeError("expected __id__ %s, got %s" % (cls.id_, obj["__id__"]))
+            raise RuntimeError(
+                "expected __id__ {}, got {}".format(cls.id_, obj["__id__"])
+            )
         configdict = obj["configuration_parameters"]
         (dec_params, abs_params, mod_params) = (None, None, None)
         (d_params_sds, a_params_sds, m_params_sds) = (None, None, None)
@@ -1135,7 +1140,7 @@ class KBScalingModel(ScalingModelBase):
 
     def __init__(self, parameters_dict, configdict, is_scaled=False):
         """Create the KB scaling model components."""
-        super(KBScalingModel, self).__init__(configdict, is_scaled)
+        super().__init__(configdict, is_scaled)
         if "scale" in configdict["corrections"]:
             self._components["scale"] = SingleScaleFactor(
                 parameters_dict["scale"]["parameters"],
@@ -1165,7 +1170,9 @@ class KBScalingModel(ScalingModelBase):
     def from_dict(cls, obj):
         """Create an :obj:`KBScalingModel` from a dictionary."""
         if obj["__id__"] != cls.id_:
-            raise RuntimeError("expected __id__ %s, got %s" % (cls.id_, obj["__id__"]))
+            raise RuntimeError(
+                "expected __id__ {}, got {}".format(cls.id_, obj["__id__"])
+            )
         configdict = obj["configuration_parameters"]
         (s_params, d_params) = (None, None)
         (s_params_sds, d_params_sds) = (None, None)

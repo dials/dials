@@ -1,5 +1,4 @@
 # LIBTBX_SET_DISPATCHER_NAME dials.import
-from __future__ import absolute_import, division, print_function
 
 import logging
 from collections import namedtuple
@@ -24,10 +23,7 @@ logger = logging.getLogger("dials.command_line.import")
 
 
 def _pickle_load(fh):
-    if six.PY3:
-        return pickle.load(fh, encoding="bytes")
-    else:
-        return pickle.load(fh)
+    return pickle.load(fh, encoding="bytes")
 
 
 help_message = """
@@ -191,7 +187,7 @@ phil_scope = parse(
 )
 
 
-class ImageSetImporter(object):
+class ImageSetImporter:
     """
     A class to manage the import of the experiments
     """
@@ -259,7 +255,7 @@ class ImageSetImporter(object):
         return imageset_list
 
 
-class ReferenceGeometryUpdater(object):
+class ReferenceGeometryUpdater:
     """
     A class to replace beam + detector with a reference
     """
@@ -328,7 +324,7 @@ class ReferenceGeometryUpdater(object):
         )
 
 
-class ManualGeometryUpdater(object):
+class ManualGeometryUpdater:
     """
     A class to update the geometry manually
     """
@@ -475,7 +471,7 @@ class ManualGeometryUpdater(object):
         return new_sequence
 
 
-class MetaDataUpdater(object):
+class MetaDataUpdater:
     """
     A class to manage updating the experiments metadata
     """
@@ -735,7 +731,7 @@ class MetaDataUpdater(object):
         return result
 
 
-class Script(object):
+class Script:
     """Class to parse the command line options."""
 
     def __init__(self, phil=phil_scope):

@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import collections
 import os
 import sys
@@ -109,20 +107,20 @@ def show_beam(detector, beam):
                 y_px,
             )
             x_raw_px, y_raw_px = beam_centre_raw_image_px(detector, beam.get_s0())
-            beam_centre_raw_px_str = "    px, raw image: (%.2f,%.2f)" % (
+            beam_centre_raw_px_str = "    px, raw image: ({:.2f},{:.2f})".format(
                 x_raw_px,
                 y_raw_px,
             )
             x_raw_mm, y_raw_mm = detector[panel_id].pixel_to_millimeter(
                 (x_raw_px, y_raw_px)
             )
-            beam_centre_raw_mm_str = "    mm, raw image: (%.2f,%.2f)" % (
+            beam_centre_raw_mm_str = "    mm, raw image: ({:.2f},{:.2f})".format(
                 x_raw_mm,
                 y_raw_mm,
             )
         else:
-            beam_centre_mm_str = "    mm: (%.2f,%.2f)" % (x, y)
-            beam_centre_px_str = "    px: (%.2f,%.2f)" % (x_px, y_px)
+            beam_centre_mm_str = f"    mm: ({x:.2f},{y:.2f})"
+            beam_centre_px_str = f"    px: ({x_px:.2f},{y_px:.2f})"
             beam_centre_raw_px_str = ""
             beam_centre_raw_mm_str = ""
 
@@ -151,13 +149,13 @@ def show_beam(detector, beam):
         xy = [detector[pnl].millimeter_to_pixel(e) for e in xy]
         x_px, y_px = zip(*xy)
 
-        s += "Beam centre range (mm): ([%.2f,%.2f],[%.2f,%.2f])\n" % (
+        s += "Beam centre range (mm): ([{:.2f},{:.2f}],[{:.2f},{:.2f}])\n".format(
             min(x_mm),
             max(x_mm),
             min(y_mm),
             max(y_mm),
         )
-        s += "Beam centre range (px): ([%.2f,%.2f],[%.2f,%.2f])\n" % (
+        s += "Beam centre range (px): ([{:.2f},{:.2f}],[{:.2f},{:.2f}])\n".format(
             min(x_px),
             max(x_px),
             min(y_px),
@@ -311,7 +309,7 @@ def show_image_statistics(experiments, im_type):
     elif im_type == "corrected":
         raw = False
     else:
-        raise ValueError("Unknown im_type: {0}".format(im_type))
+        raise ValueError(f"Unknown im_type: {im_type}")
 
     # To show image statistics, check_format has to be true. So we have to reinstatiate
     # the experiment list here
@@ -319,14 +317,14 @@ def show_image_statistics(experiments, im_type):
         experiments = ExperimentListFactory.from_json(
             experiments.as_json(), check_format=True
         )
-    except IOError as e:
+    except OSError as e:
         raise Sorry(
-            "Unable to read image data. Please check {0} is accessible".format(
+            "Unable to read image data. Please check {} is accessible".format(
                 e.filename
             )
         )
 
-    print("Five number summary of the {0} images".format(im_type))
+    print(f"Five number summary of the {im_type} images")
     for i_expt, expt in enumerate(experiments):
         for i in range(len(expt.imageset)):
             identifier = os.path.basename(expt.imageset.get_image_identifier(i))
@@ -341,7 +339,7 @@ def show_image_statistics(experiments, im_type):
                 flat_data.extend(p.as_1d())
             fns = five_number_summary(flat_data)
             print(
-                "{0}: Min: {1:.1f} Q1: {2:.1f} Med: {3:.1f} Q3: {4:.1f} Max: {5:.1f}".format(
+                "{}: Min: {:.1f} Q1: {:.1f} Med: {:.1f} Q3: {:.1f} Max: {:.1f}".format(
                     identifier, *fns
                 )
             )

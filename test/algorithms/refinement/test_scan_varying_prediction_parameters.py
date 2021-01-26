@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import sys
 from math import pi
 
@@ -30,7 +28,7 @@ from dials.algorithms.refinement.prediction.managed_predictors import (
 )
 
 
-class _Test(object):
+class _Test:
     def create_models(self, cmdline_overrides=None):
         from dxtbx.model import ScanFactory
         from libtbx.phil import parse

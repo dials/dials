@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 import math
 
@@ -185,7 +183,7 @@ def test_crystal_pointgroup_symmetry(reflections, experiment, params):
 
     logger.info("Check symmetry operations on %d reflections:" % ms.size())
     logger.info("")
-    logger.info("%20s %6s %5s" % ("Symop", "Nref", "CC"))
+    logger.info("{:>20} {:>6} {:>5}".format("Symop", "Nref", "CC"))
 
     true_symops = []
 
@@ -261,7 +259,7 @@ def test_P1_crystal_indexing(reflections, experiment, params):
 
     logger.info("Checking HKL origin:")
     logger.info("")
-    logger.info("dH dK dL %6s %5s" % ("Nref", "CC"))
+    logger.info("dH dK dL {:>6} {:>5}".format("Nref", "CC"))
 
     if params.reference:
         reference = flex.reflection_table.from_file(params.reference)

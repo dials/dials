@@ -1,9 +1,7 @@
-from __future__ import absolute_import, division, print_function
-
 from dials.viewer.bitmap_from_array import wxbmp_from_np_array
 
 
-class wxbitmap_convert(object):
+class wxbitmap_convert:
     """
     The main duty of this class is to convert
     from

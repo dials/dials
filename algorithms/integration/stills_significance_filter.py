@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import math
 
 from cctbx.crystal import symmetry
@@ -40,7 +38,7 @@ significance_filter
 )
 
 
-class SignificanceFilter(object):
+class SignificanceFilter:
     def __init__(self, params):
         self.params = params.significance_filter
         self.best_d_min = None

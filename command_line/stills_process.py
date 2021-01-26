@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import copy
 import glob
 import logging
@@ -323,7 +321,7 @@ def sync_geometry(src, dest):
             sync_geometry(src_child, dest_child)
 
 
-class Script(object):
+class Script:
     """A class for running the script."""
 
     def __init__(self):
@@ -624,7 +622,7 @@ class Script(object):
                         experiment.detector = imagesets[0].get_detector()
                     except RuntimeError as e:
                         logger.warning(
-                            "Error updating geometry on item %s, %s" % (tag, str(e))
+                            "Error updating geometry on item {}, {}".format(tag, str(e))
                         )
                         continue
 
@@ -683,7 +681,9 @@ class Script(object):
 
                         print("Getting next available process")
                         rankreq = comm.recv(source=MPI.ANY_SOURCE)
-                        print("Process %s is ready, sending %s\n" % (rankreq, item[0]))
+                        print(
+                            "Process {} is ready, sending {}\n".format(rankreq, item[0])
+                        )
                         comm.send(item, dest=rankreq)
                     # send a stop command to each process
                     print("MPI DONE, sending stops\n")
@@ -758,7 +758,7 @@ class Script(object):
             )
 
 
-class Processor(object):
+class Processor:
     def __init__(self, params, composite_tag=None, rank=0):
         self.params = params
         self.composite_tag = composite_tag
@@ -884,7 +884,7 @@ class Processor(object):
     def debug_start(self, tag):
         import socket
 
-        self.debug_str = "%s,%s" % (socket.gethostname(), tag)
+        self.debug_str = f"{socket.gethostname()},{tag}"
         self.debug_str += ",%s,%s,%s\n"
         self.debug_write("start")
 
@@ -1351,7 +1351,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
 
         for crystal_model in experiments.crystals():
             if hasattr(crystal_model, "get_domain_size_ang"):
-                log_str += ". Final ML model: domain size angstroms: %f, half mosaicity degrees: %f" % (
+                log_str += ". Final ML model: domain size angstroms: {:f}, half mosaicity degrees: {:f}".format(
                     crystal_model.get_domain_size_ang(),
                     crystal_model.get_half_mosaicity_deg(),
                 )
@@ -1689,10 +1689,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 ):
                     string = BytesIO(pickle.dumps(d, protocol=2))
                     info = tarfile.TarInfo(name=fname)
-                    if six.PY3:
-                        info.size = string.getbuffer().nbytes
-                    else:
-                        info.size = len(string.buf)
+                    info.size = string.getbuffer().nbytes
                     info.mtime = time.time()
                     tar.addfile(tarinfo=info, fileobj=string)
                 tar.close()

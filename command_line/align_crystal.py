@@ -1,6 +1,5 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
 
-from __future__ import absolute_import, division, print_function
 
 import collections
 import copy
@@ -108,7 +107,7 @@ def axis_type(vector, space_group):
     return axis_t
 
 
-class align_crystal(object):
+class align_crystal:
 
     vector_names = {a.elems: "a", b.elems: "b", c.elems: "c"}
 

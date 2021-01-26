@@ -1,6 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
-
 def generate_phil_scope():
     """
     Generate the phil scope for profile model
@@ -16,7 +13,7 @@ def generate_phil_scope():
 phil_scope = generate_phil_scope()
 
 
-class ProfileModelFactory(object):
+class ProfileModelFactory:
     """
     Factory for creating profile models
     """

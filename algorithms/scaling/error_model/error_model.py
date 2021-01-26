@@ -1,7 +1,6 @@
 """
 Error model classes for scaling.
 """
-from __future__ import absolute_import, division, print_function
 
 import logging
 from collections import OrderedDict
@@ -73,7 +72,7 @@ def calc_deltahl(Ih_table, n_h, sigmaprime):
     return delta_hl
 
 
-class ErrorModelRegressionAPM(object):
+class ErrorModelRegressionAPM:
 
     """Parameter manager for error model minimisation using the linear
     regression method.
@@ -141,7 +140,7 @@ class ErrorModelRegressionAPM(object):
         self.model.update([a, b])
 
 
-class ErrorModelA_APM(object):
+class ErrorModelA_APM:
 
     """Parameter manager for minimising A component with individual minimizer"""
 
@@ -162,7 +161,7 @@ class ErrorModelA_APM(object):
         self.model.components["a"].parameters *= self.x[1]
 
 
-class ErrorModelB_APM(object):
+class ErrorModelB_APM:
 
     """Parameter manager for minimising Bcomponent with individual minimizer"""
 
@@ -185,7 +184,7 @@ class ErrorModelB_APM(object):
         self.model.components["b"].parameters = flex.double([self.x[0]])
 
 
-class ErrorModelBinner(object):
+class ErrorModelBinner:
 
     """A binner for the error model data.
 
@@ -315,7 +314,7 @@ class ErrorModelBinner(object):
         return bin_vars
 
 
-class BComponent(object):
+class BComponent:
 
     """The basic error model B parameter component"""
 
@@ -324,7 +323,7 @@ class BComponent(object):
         self._n_params = 1
 
 
-class AComponent(object):
+class AComponent:
 
     """The basic error model A parameter component"""
 
@@ -333,7 +332,7 @@ class AComponent(object):
         self._n_params = 1
 
 
-class BasicErrorModel(object):
+class BasicErrorModel:
 
     """Definition of a basic two-parameter error model."""
 
@@ -480,7 +479,7 @@ class BasicErrorModel(object):
                     "",
                     "Error model details:",
                     "  Type: basic",
-                    "  Parameters: a = %.5f, b = %.5f" % (a, b),
+                    f"  Parameters: a = {a:.5f}, b = {b:.5f}",
                     "  estimated I/sigma asymptotic limit: %s" % ISa,
                     "",
                 )
@@ -490,16 +489,16 @@ class BasicErrorModel(object):
                 "",
                 "Error model details:",
                 "  Type: basic",
-                "  Parameters: a = %.5f, b = %.5f" % (a, b),
+                f"  Parameters: a = {a:.5f}, b = {b:.5f}",
                 "  Error model formula: "
-                + u"\u03C3"
+                + "\u03C3"
                 + "'"
-                + u"\xb2"
+                + "\xb2"
                 + " = a"
-                + u"\xb2"
+                + "\xb2"
                 + "("
-                + u"\u03C3\xb2"
-                " + (bI)" + u"\xb2" + ")",
+                + "\u03C3\xb2"
+                " + (bI)" + "\xb2" + ")",
                 "  estimated I/sigma asymptotic limit: %s" % ISa,
                 "",
             )
