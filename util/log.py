@@ -80,7 +80,7 @@ def config(verbosity=0, logfile=None):
         loglevel = logging.INFO
 
     if logfile:
-        fh = logging.FileHandler(filename=logfile, mode="w")
+        fh = logging.FileHandler(filename=logfile, mode="w", encoding="utf-8")
         fh.setLevel(loglevel)
         fh.setFormatter(DialsLogfileFormatter(timed=verbosity))
         dials_logger.addHandler(fh)
