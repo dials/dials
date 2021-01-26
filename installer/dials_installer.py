@@ -24,17 +24,13 @@ class installer(install_distribution.installer):
     modules = [
         # hot
         "annlib",
-        "boost",
-        "scons",
         "ccp4io",
-        "msgpack-3.1.1",
         # base
         "cbflib",
         "cctbx_project",
         "gui_resources",
         "ccp4io_adaptbx",
         "annlib_adaptbx",
-        "clipper",
         # dials
         "dxtbx",
         "dials",
@@ -112,12 +108,31 @@ class installer(install_distribution.installer):
                     total_size += os.path.getsize(fp)
                     num_files += 1
             print(
-                "Removing %9s, %4d files from %s"
-                % (humansize(total_size), num_files, subdir)
+                f"Removing {humansize(total_size):9}, {num_files:4d} files from {subdir}"
             )
             shutil.rmtree(fullpath)
             self._cleaned_size = self._cleaned_size + total_size
             self._cleaned_files = self._cleaned_files + num_files
+
+        def rmext(subdir, extension):
+            fullpath = os.path.join(directory, subdir)
+            if not os.path.exists(fullpath):
+                print(f"Skipping *{extension}", " " * 26, subdir)
+                return
+            filelist, total_size = [], 0
+            for dirpath, dirnames, filenames in os.walk(fullpath):
+                for f in filenames:
+                    if f.endswith(extension):
+                        fp = os.path.join(dirpath, f)
+                        filelist.append(fp)
+                        total_size += os.path.getsize(fp)
+            print(
+                f"Removing {humansize(total_size):9}, {len(filelist):4d} {extension} files from {subdir}"
+            )
+            for f in filelist:
+                os.remove(f)
+            self._cleaned_size = self._cleaned_size + total_size
+            self._cleaned_files = self._cleaned_files + len(filelist)
 
         def rmfile(filename):
             fullpath = os.path.join(directory, filename)
@@ -175,6 +190,7 @@ class installer(install_distribution.installer):
         rmdir("build/precommitbx")
         rmdir("build/regression_data")
         rmdir("build/xia2_regression")
+        rmext("build", ".o")
         for f in ("setpaths", "setpaths_debug", "setpaths_all", "unsetpaths"):
             for ext in (".sh", ".csh"):
                 rmfile(os.path.join("build", f + ext))
@@ -199,7 +215,7 @@ class installer(install_distribution.installer):
         rmdir("modules/cbflib/ply-3.2/doc")
         rmdir("modules/cbflib/ply-3.2/example")
         rmdir("modules/cbflib/ply-3.2/test")
-        rmfile("modules/cbflib/idx-s00-20131106040304531.cbf")
+        rmext("modules/cbflib", ".cbf")
         rmdir("modules/clipper/examples")
         print("-" * 60)
         print(
