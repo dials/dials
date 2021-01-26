@@ -7,7 +7,7 @@ from iotbx import mtz
 from libtbx.phil import parse
 
 from dials.array_family import flex
-from dials.util import log, show_mail_handle_errors
+from dials.util import log, show_mail_handle_errors, tabulate
 from dials.util.options import OptionParser
 
 logger = logging.getLogger("dials.command_line.import_mtz")
@@ -139,11 +139,29 @@ def read_mtzfile(filename, params, batch_offset=None):
         raise ValueError("Batch and intensity array sizes do not match")
     batches = batches.data()
 
+    logger.info("Reading batch headers to determine scan properties")
     scans = scan_info_from_batch_headers(mtz.object(file_name=filename))
+    header = ["Scan number", "image range", "batch range", "scan range"]
+    rows = []
+    for n, s in scans.items():
+        ifirst, ilast = s["start_image"], s["end_image"]
+        bfirst, blast = s["batch_begin"], s["batch_end"]
+        afirst, alast = s["angle_begin"], s["angle_end"]
+        rows.append(
+            [
+                f"{n}",
+                f"{ifirst} : {ilast}",
+                f"{bfirst} : {blast}",
+                f"{afirst} : {alast}",
+            ]
+        )
+    logger.info("Scan information determined from batch headers:")
+    logger.info(tabulate(rows, header))
 
     # Get the unit cell and space group
     unit_cell = intensities.unit_cell()
     space_group = intensities.crystal_symmetry().space_group()
+    logger.info(f"Space group : {space_group.info()} \nUnit cell : {str(unit_cell)}")
 
     # for some reason the indices aren't actually the indices, so do this:
     indices = mtz.object(file_name=filename).extract_original_index_miller_indices()
@@ -162,13 +180,20 @@ def read_mtzfile(filename, params, batch_offset=None):
     table["s1"] = flex.vec3_double(table.size(), (1, 1, 1))
 
     table["id"] = flex.int(table.size(), 0)
+    refls_per_scan = OrderedDict({})
     for i, scan in enumerate(scans.values()):
         batch_begin = scan["batch_begin"]
         batch_end = scan["batch_end"]
         sel = (batches >= batch_begin) & (batches <= batch_end)
         table["id"].set_selected(sel, i)
-        table.experiment_identifiers()[i] = str(i)
-        print(i, sel.count(True))
+        refls_per_scan[i + 1] = sel.count(True)
+    logger.info("Numbers of reflections determined per scan:")
+    logger.info(
+        tabulate(
+            [[i, v] for i, v in refls_per_scan.items()],
+            ["Scan number", "No. of reflections"],
+        )
+    )
 
     # now want to convert phi to z for each sweep
     if not phi:
@@ -222,7 +247,9 @@ def run(args=None, phil=phil_scope):
 
     table, unit_cell, space_group = read_mtzfile(params.input.mtzfile, params)
 
-    table.as_file("test.refl")
+    output = "test.refl"
+    logger.info(f"Saving extracted data to {output}")
+    table.as_file(output)
 
 
 if __name__ == "__main__":
