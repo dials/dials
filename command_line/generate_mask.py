@@ -61,10 +61,9 @@ phil_scope = phil.parse(
 
 
 def generate_mask(
-    experiments,  # type: ExperimentList
-    params,  # type: phil.scope_extract
-):
-    # type: (...) -> Tuple[Masks, Optional[ExperimentList]]
+    experiments: ExperimentList,
+    params: phil.scope_extract,
+) -> Tuple[Masks, Optional[ExperimentList]]:
     """
     Generate a pixel mask for each imageset in an experiment list.
 

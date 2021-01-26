@@ -822,8 +822,9 @@ class _:
             self, image_volume=image_volume
         )
 
-    def compute_summed_intensity(self, image_volume=None):
-        # type: (dials.model.data.MultiPanelImageVolume) -> None
+    def compute_summed_intensity(
+        self, image_volume: dials.model.data.MultiPanelImageVolume = None
+    ) -> None:
         """
         Compute intensity via summation integration.
         """

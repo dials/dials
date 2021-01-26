@@ -16,8 +16,9 @@ if typing.TYPE_CHECKING:
     from dials.model.data import MultiPanelImageVolume
 
 
-def sum_integrate_and_update_table(reflections, image_volume=None):
-    # type: (reflection_table, MultiPanelImageVolume) -> reflection_table
+def sum_integrate_and_update_table(
+    reflections: reflection_table, image_volume: MultiPanelImageVolume = None
+) -> reflection_table:
     """Perform 3D summation integration and update a reflection table.
 
     Arguments:

@@ -90,8 +90,9 @@ phil_scope = libtbx.phil.parse(
 carbon_attenuation_data = attenuation_coefficient.get_table("C")
 
 
-def goniometer_rotation(experiment, reflections):
-    # type: (Experiment, flex.reflection_table) -> Rotation
+def goniometer_rotation(
+    experiment: Experiment, reflections: flex.reflection_table
+) -> Rotation:
     """
     Calculate the goniometer rotation operator for each reflection.
 
@@ -151,8 +152,12 @@ def goniometer_rotation(experiment, reflections):
 
 
 def attenuation_correction(
-    experiment, reflections, dac_norm, thickness, density
-):  # type: (Experiment, flex.reflection_table, Vector, float, float) -> flex.double
+    experiment: Experiment,
+    reflections: flex.reflection_table,
+    dac_norm: Vector,
+    thickness: float,
+    density: float,
+) -> flex.double:
     """
     Calculate the correction factors for attenuation by a diamond anvil cell.
 
@@ -211,8 +216,12 @@ def attenuation_correction(
 
 
 def correct_intensities_for_dac_attenuation(
-    experiment, reflections, dac_norm, thickness, density=3.51
-):  # type: (Experiment, flex.reflection_table, Vector, float, float) -> None
+    experiment: Experiment,
+    reflections: flex.reflection_table,
+    dac_norm: Vector,
+    thickness: float,
+    density: float = 3.51,
+) -> None:
     """
     Boost integrated intensities to account for attenuation by a diamond anvil cell.
 

@@ -1279,8 +1279,9 @@ class SpotFrame(XrayFrame):
         for rd, m in zip(image_data, mask):
             rd.set_selected(~m, MASK_VAL)
 
-    def __get_imageset_filter(self, reflections, imageset):
-        # type: (flex.reflection_table, ImageSet) -> Optional[flex.bool]
+    def __get_imageset_filter(
+        self, reflections: flex.reflection_table, imageset: ImageSet
+    ) -> Optional[flex.bool]:
         """Get a filter to ensure only reflections from an imageset.
 
         This is not a well-defined problem because of unindexed reflections

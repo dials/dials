@@ -74,8 +74,12 @@ def filter_reflection_table_selection(
     return sel
 
 
-def filter_reflection_table(reflection_table, intensity_choice, *args, **kwargs):
-    # type: (flex.reflection_table, List[str], Any, Any) -> flex.reflection_table
+def filter_reflection_table(
+    reflection_table: flex.reflection_table,
+    intensity_choice: List[str],
+    *args: Any,
+    **kwargs: Any
+) -> flex.reflection_table:
     """Filter the data and delete unneeded intensity columns.
 
     A list of which intensities to filter on e.g "sum", "scale", "profile" or
@@ -102,7 +106,7 @@ def filter_reflection_table(reflection_table, intensity_choice, *args, **kwargs)
         raise ValueError("intensity_choice must be List[str]")
 
     if intensity_choice == ["scale"]:
-        reducer = ScaleIntensityReducer  # type: Type[FilterForExportAlgorithm]
+        reducer: Type[FilterForExportAlgorithm] = ScaleIntensityReducer
     elif intensity_choice == ["sum"]:
         reducer = SumIntensityReducer
     elif intensity_choice == ["profile"]:

@@ -97,8 +97,7 @@ class spot_wrapper:
         if self.frame is not None:
             create_load_image_event(self.frame, filename)
 
-    def _setup_zmq_endpoint(self, endpoint):
-        # type: (str) -> None
+    def _setup_zmq_endpoint(self, endpoint: str) -> None:
         """Create and bind a ZMQ endpoint"""
         try:
             import zmq
