@@ -276,7 +276,6 @@ class Importer(object):
         unhandled = []
         experiments = ExperimentListFactory.from_filenames(
             args,
-            verbose=verbose,
             unhandled=unhandled,
             compare_beam=compare_beam,
             compare_detector=compare_detector,

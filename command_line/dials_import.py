@@ -12,7 +12,6 @@ from dxtbx.model.experiment_list import (
     Experiment,
     ExperimentList,
     ExperimentListFactory,
-    ExperimentListTemplateImporter,
 )
 from libtbx.phil import parse
 
@@ -226,12 +225,11 @@ class ImageSetImporter(object):
             # Check if a template has been set and print help if not, otherwise try to
             # import the images based on the template input
             if len(self.params.input.template) > 0:
-                importer = ExperimentListTemplateImporter(
+                experiments = ExperimentListFactory.from_templates(
                     self.params.input.template,
                     image_range=self.params.geometry.scan.image_range,
                     format_kwargs=format_kwargs,
                 )
-                experiments = importer.experiments
                 if len(experiments) == 0:
                     raise Sorry(
                         "No experiments found matching template %s"
