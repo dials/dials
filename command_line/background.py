@@ -9,11 +9,11 @@ import iotbx.phil
 from libtbx.phil import parse
 from scitbx import matrix
 
+import dials.util.masking
 from dials.algorithms.spot_finding.factory import SpotFinderFactory
 from dials.algorithms.spot_finding.factory import phil_scope as spot_phil
 from dials.array_family import flex
 from dials.util import Sorry, show_mail_handle_errors
-from dials.util.masking import MaskGenerator
 from dials.util.options import OptionParser, flatten_experiments
 
 help_message = """
@@ -154,8 +154,7 @@ def background(imageset, indx, n_bins, corrected=False, mask_params=None):
         # Default mask params for trusted range
         mask_params = phil_scope.fetch(parse("")).extract().masking
 
-    mask_generator = MaskGenerator(mask_params)
-    mask = mask_generator.generate(imageset)
+    mask = dials.util.masking.generate_mask(imageset, mask_params)
 
     detector = imageset.get_detector()
     beam = imageset.get_beam()

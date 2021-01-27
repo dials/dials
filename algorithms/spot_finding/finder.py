@@ -791,7 +791,7 @@ class SpotFinder:
         :return: The observed spots
         """
         # The input mask
-        mask = self.mask_generator.generate(imageset)
+        mask = self.mask_generator(imageset)
         if self.mask is not None:
             mask = tuple(m1 & m2 for m1, m2 in zip(mask, self.mask))
 
