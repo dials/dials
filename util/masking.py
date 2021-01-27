@@ -2,7 +2,6 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import math
-import warnings
 from collections import namedtuple
 from typing import Tuple
 
@@ -26,10 +25,6 @@ phil_scope = parse(
   border = 0
     .type = int
     .help = "The border around the edge of the image."
-
-  use_trusted_range = False
-    .type = bool
-    .help = "Use the trusted range to mask bad pixels."
 
   d_min = None
     .help = "The high resolution limit in Angstrom for a pixel to be"
@@ -233,37 +228,7 @@ def generate_mask(
     masks = []
     for index, panel in enumerate(detector):
 
-        # Build a trusted mask by looking for pixels that are always outside
-        # the trusted range. This identifies bad pixels, but does not include
-        # pixels that are overloaded on some images.
-        if params.use_trusted_range:
-            warnings.warn(
-                "Checking for hot pixels using the trusted_range is"
-                " deprecated. https://github.com/dials/dials/issues/1156",
-                FutureWarning,
-            )
-            trusted_mask = None
-            low, high = panel.get_trusted_range()
-
-            # Take 10 evenly-spaced images from the imageset. Pixels outside
-            # the trusted mask on all of these images are considered bad and
-            # masked. https://github.com/dials/dials/issues/1061
-            stride = max(int(len(imageset) / 10), 1)
-            image_indices = range(0, len(imageset), stride)
-
-            for image_index in image_indices:
-                image_data = imageset.get_raw_data(image_index)[index].as_double()
-                frame_mask = (image_data > low) & (image_data < high)
-                if trusted_mask is None:
-                    trusted_mask = frame_mask
-                else:
-                    trusted_mask = trusted_mask | frame_mask
-
-                if trusted_mask.count(False) == 0:
-                    break
-            mask = trusted_mask
-        else:
-            mask = flex.bool(flex.grid(reversed(panel.get_image_size())), True)
+        mask = flex.bool(flex.grid(reversed(panel.get_image_size())), True)
 
         # Add a border around the image
         if params.border > 0:
