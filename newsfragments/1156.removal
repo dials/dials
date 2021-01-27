@@ -1,1 +1,1 @@
-Remove deprecated `use_trusted_range` parameter in spotfinding
+Remove previously deprecated ``use_trusted_range=`` parameter from masking configuration
