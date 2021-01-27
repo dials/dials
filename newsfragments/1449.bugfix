@@ -1,0 +1,1 @@
+Remove unnecessary extra call to imageset.get_raw_data() for the first image in spotfinding.

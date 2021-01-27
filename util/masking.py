@@ -205,13 +205,9 @@ class MaskGenerator(object):
         detector = imageset.get_detector()
         beam = imageset.get_beam()
 
-        # Get the first image
-        image = imageset.get_raw_data(0)
-        assert len(detector) == len(image)
-
         # Create the mask for each panel
         masks = []
-        for index, (im, panel) in enumerate(zip(image, detector)):
+        for index, panel in enumerate(detector):
 
             # Build a trusted mask by looking for pixels that are always outside
             # the trusted range. This identifies bad pixels, but does not include
@@ -243,7 +239,7 @@ class MaskGenerator(object):
                         break
                 mask = trusted_mask
             else:
-                mask = flex.bool(flex.grid(im.all()), True)
+                mask = flex.bool(flex.grid(reversed(panel.get_image_size())), True)
 
             # Add a border around the image
             if self.params.border > 0:
