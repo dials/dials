@@ -195,6 +195,26 @@ def _apply_resolution_mask(mask, beam, panel, *args):
     _get_resolution_masker(beam, panel).apply(mask, *args)
 
 
+class MaskGenerator:
+    """
+    Deprecated interface for generating mask.
+
+    To be upgraded to UserWarning in DIALS 3.4.
+    To be removed in DIALS 3.5.
+    """
+
+    def __init__(self, params):
+        warnings.warn(
+            "MaskGenerator is deprecated; please use dials.util.masking.generate_mask instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        self.params = params
+
+    def generate(self, imageset):
+        return generate_mask(imageset, self.params)
+
+
 def generate_mask(
     imageset: ImageSet, params: libtbx.phil.scope_extract
 ) -> Tuple[flex.bool]:
