@@ -11,6 +11,8 @@ from wxtbx.phil_controls.floatctrl import FloatCtrl as _FloatCtrl
 from wxtbx.phil_controls.intctrl import IntCtrl
 from wxtbx.phil_controls.strctrl import StrCtrl
 
+import dials.util.masking
+
 
 class FloatCtrl(_FloatCtrl):
 
@@ -665,24 +667,18 @@ class MaskSettingsPanel(wx.Panel):
             pickle.dump(mask, fh, protocol=pickle.HIGHEST_PROTOCOL)
 
     def OnSaveMaskParams(self, event):
-        from dials.util.masking import phil_scope
-
         file_name = self.params.output.mask_params
         with open(file_name, "w") as f:
             print("Saving parameters to %s" % file_name)
-            phil_scope.fetch_diff(phil_scope.format(self.params.masking)).show(f)
+            dials.util.masking.phil_scope.fetch_diff(
+                dials.util.masking.phil_scope.format(self.params.masking)
+            ).show(f)
 
     def UpdateMask(self):
-
         image_viewer_frame = self.GetParent().GetParent()
-
-        # Generate the mask
-        from dials.util.masking import MaskGenerator
-
-        generator = MaskGenerator(self.params.masking)
-        imageset = image_viewer_frame.imagesets[0]  # XXX
-        mask = generator.generate(imageset)
-
+        mask = dials.util.masking.generate_mask(
+            image_viewer_frame.imagesets[0], self.params.masking
+        )
         image_viewer_frame.mask_image_viewer = mask
         image_viewer_frame.update_settings(layout=False)
 
