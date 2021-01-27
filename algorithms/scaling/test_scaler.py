@@ -624,7 +624,6 @@ def test_update_error_model(mock_errormodel, mock_errormodel2):
 
     # now test for updating of reflection table
     # do again with second errormodel
-    scaler.global_Ih_table.reset_error_model()
     scaler._update_error_model(mock_errormodel2)
     assert list(block.variances) == list(original_vars)
     newvars = flex.double(range(1, 9))
