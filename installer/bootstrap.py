@@ -906,6 +906,8 @@ def update_sources(options):
             output = (result + " - " + output).replace(
                 "\n", "\n" + " " * (len(module + result) + 5)
             )
+            if result == "ERROR":
+                success = False
             if os.name == "posix" and sys.stdout.isatty():
                 if result == "OK":
                     output = "\x1b[32m" + output + "\x1b[0m"
@@ -913,7 +915,6 @@ def update_sources(options):
                     output = "\x1b[33m" + output + "\x1b[0m"
                 elif result == "ERROR":
                     output = "\x1b[31m" + output + "\x1b[0m"
-                    success = False
             print(module + ": " + output)
     except KeyboardInterrupt:
         update_pool.terminate()
