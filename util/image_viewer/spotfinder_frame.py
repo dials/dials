@@ -1521,7 +1521,9 @@ class SpotFrame(XrayFrame):
                         centroid = reflection["xyzobs.px.value"]
                         # ticket #107
                         if self.viewing_stills or (
-                            i_frame <= centroid[2] <= (i_frame + self.params.stack_images)
+                            i_frame
+                            <= centroid[2]
+                            <= (i_frame + self.params.stack_images)
                         ):
                             x, y = map_coords(
                                 centroid[0], centroid[1], reflection["panel"]
