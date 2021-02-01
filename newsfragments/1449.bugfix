@@ -1,1 +1,0 @@
-Remove unnecessary call to ``imageset.get_raw_data()`` while generating masks. This was causing performance issues when spotfinding.
