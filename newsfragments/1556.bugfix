@@ -1,3 +1,0 @@
-``dials.export``: Allow data with either summation or profile fitted
-intensities to be exported. Previously, both were (erroneously) required to be
-present.
