@@ -38,6 +38,11 @@ clean_env = {
     if key not in ("PYTHONPATH", "LD_LIBRARY_PATH", "DYLD_LIBRARY_PATH")
 }
 
+# On Windows, add DLL path for imports of shared libraries
+# https://docs.conda.io/projects/conda-build/en/latest/resources/use-shared-libraries.html#shared-libraries-in-windows
+if os.name == "nt":
+    clean_env["PATH"] = os.environ["PATH"] + os.pathsep + os.path.join(os.getcwd(), "conda_base", "Library", "bin")
+
 devnull = open(os.devnull, "wb")  # to redirect unwanted subprocess output
 
 
