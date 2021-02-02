@@ -36,7 +36,9 @@ def make_image_range_table(experiments, batch_manager):
                 str(j) for j in exp.scan.get_valid_image_ranges(exp.identifier)
             )
             image_range = exp.scan.get_image_range()
-            template = exp.imageset.get_template()
+            template = ""
+            if exp.imageset:
+                template = exp.imageset.get_template()
             b_0 = batch_manager._batch_increments[i]
             batch_params = batch_manager.batch_params[i]
             batch_range = batch_params["range"]

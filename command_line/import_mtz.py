@@ -1,11 +1,23 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
+import sys
 from collections import OrderedDict
 
+from dxtbx.model import (
+    Beam,
+    Crystal,
+    Detector,
+    Experiment,
+    ExperimentList,
+    Goniometer,
+    Scan,
+)
 from iotbx import mtz
 from libtbx.phil import parse
+from scitbx import matrix
 
+from dials.algorithms.refinement.refinement_helpers import set_obs_s1
 from dials.array_family import flex
 from dials.util import log, show_mail_handle_errors, tabulate
 from dials.util.options import OptionParser
@@ -21,10 +33,6 @@ phil_scope = parse(
     """
 
   input {
-
-    mtzfile = None
-      .type = str
-      .help = "We can also import an MTZ file"
 
     use_datasets = None
       .type = ints
@@ -51,9 +59,33 @@ phil_scope = parse(
 
     }
 
+    detector {
+        pixel_size = 0.172
+            .type = float(value_min=0.0)
+    }
+
+  }
+
+  output {
+
+    reflections = imported_mtz.refl
+      .type = str
+      .help = "Name of the output reflections file"
+
+    experiments = imported_mtz.expt
+      .type = str
+      .help = "Name of the output experiments file"
+
   }
 """
 )
+
+
+def detector_info_from_batch_headers(unmerged_mtz):
+    b0 = unmerged_mtz.batches()[0]
+    panel_size = int(b0.detlm()[1]), int(b0.detlm()[3])
+    panel_distance = b0.dx()[0]
+    return panel_size, panel_distance
 
 
 def scan_info_from_batch_headers(unmerged_mtz):
@@ -68,6 +100,8 @@ def scan_info_from_batch_headers(unmerged_mtz):
                 "batch_end": None,
                 "angle_begin": batches[0].phistt(),
                 "angle_end": None,
+                "umat_start": batches[0].umat(),
+                "s0n": batches[0].so(),
             }
         }
     )
@@ -90,6 +124,8 @@ def scan_info_from_batch_headers(unmerged_mtz):
                 "batch_end": None,
                 "angle_begin": b.phistt(),
                 "angle_end": None,
+                "umat_start": b.umat(),
+                "s0n": b.so(),
             }
 
         phi_end = b.phiend()
@@ -106,7 +142,8 @@ def read_mtzfile(filename, params, batch_offset=None):
     """
     Read the mtz file
     """
-    miller_arrays = mtz.object(file_name=filename).as_miller_arrays(
+    unmerged_mtz = mtz.object(file_name=filename)
+    miller_arrays = unmerged_mtz.as_miller_arrays(
         merge_equivalents=False, anomalous=True
     )
 
@@ -116,7 +153,12 @@ def read_mtzfile(filename, params, batch_offset=None):
     xpos = None
     ypos = None
     phi = None
+    # optional columns?
     partiality = None
+    bg = None
+    bgsig = None
+    lp = None
+    qe = None
     for array in miller_arrays:
         if array.info().labels == [params.input.labels.xpos]:
             xpos = array
@@ -131,16 +173,28 @@ def read_mtzfile(filename, params, batch_offset=None):
             intensities = array
         elif array.info().labels == ["BATCH"]:
             batches = array
+        elif array.info().labels == ["BG"]:
+            bg = array
+        elif array.info().labels == ["SIGBG"]:
+            bgsig = array
+        elif array.info().labels == ["LP"]:
+            lp = array
+        elif array.info().labels == ["QE"]:
+            qe = array
     if not intensities:
         raise KeyError("Intensities not found in mtz file, expected labels I, SIGI")
     if not batches:
         raise KeyError("Batch values not found")
+    if not phi:
+        raise KeyError(
+            "Phi/Rot values not found. Column label can be specified with labels.phi="
+        )
     if batches.data().size() != intensities.data().size():
         raise ValueError("Batch and intensity array sizes do not match")
     batches = batches.data()
 
     logger.info("Reading batch headers to determine scan properties")
-    scans = scan_info_from_batch_headers(mtz.object(file_name=filename))
+    scans = scan_info_from_batch_headers(unmerged_mtz)
     header = ["Scan number", "image range", "batch range", "scan range"]
     rows = []
     for n, s in scans.items():
@@ -158,10 +212,50 @@ def read_mtzfile(filename, params, batch_offset=None):
     logger.info("Scan information determined from batch headers:")
     logger.info(tabulate(rows, header))
 
+    panel_size, panel_distance = detector_info_from_batch_headers(unmerged_mtz)
+
     # Get the unit cell and space group
     unit_cell = intensities.unit_cell()
     space_group = intensities.crystal_symmetry().space_group()
     logger.info(f"Space group : {space_group.info()} \nUnit cell : {str(unit_cell)}")
+
+    experiments = ExperimentList()
+    Bmat = matrix.sqr(unit_cell.fractionalization_matrix()).transpose()
+    for scan in scans.values():
+        Umat = matrix.sqr(scan["umat_start"])
+        crystal = Crystal(A=Umat * Bmat, space_group=space_group)
+        n_images = scan["end_image"] - (scan["start_image"] - 1)
+        if params.input.oscillation_step:
+            assert params.input.oscillation_step > 0
+            logger.info(
+                "Using user-specified oscillation step for constructing the scan"
+            )
+            dxscan = Scan(
+                image_range=[scan["start_image"], scan["end_image"]],
+                oscillation=[0.0, params.input.oscillation_step],
+            )
+        else:
+            dxscan = Scan(
+                image_range=[scan["start_image"], scan["end_image"]],
+                oscillation=[0.0, (scan["angle_end"] - scan["angle_begin"]) / n_images],
+            )
+        beam = Beam(s0=tuple(list(scan["s0n"])))
+        goniometer = Goniometer((1.0, 0.0, 0.0))
+        d = Detector()
+        p = d.add_panel()
+        p.set_image_size(panel_size)
+        p.set_pixel_size(
+            (params.input.detector.pixel_size, params.input.detector.pixel_size)
+        )
+        experiments.append(
+            Experiment(
+                beam=beam,
+                scan=dxscan,
+                goniometer=goniometer,
+                crystal=crystal,
+                detector=d,
+            )
+        )
 
     # for some reason the indices aren't actually the indices, so do this:
     indices = mtz.object(file_name=filename).extract_original_index_miller_indices()
@@ -171,13 +265,23 @@ def read_mtzfile(filename, params, batch_offset=None):
     table = flex.reflection_table()
     table["miller_index"] = indices  # intensities.indices()
     table["d"] = intensities.d_spacings().data()
-    table["intensity"] = intensities.data()
-    table["variance"] = flex.pow2(intensities.sigmas())
-    table["partiality"] = partiality.data()
+    table["intensity.sum.value"] = intensities.data()
+    table["intensity.sum.variance"] = flex.pow2(intensities.sigmas())
+    table.set_flags(flex.bool(table.size(), True), table.flags.integrated_sum)
+    if partiality:
+        table["partiality"] = partiality.data()
+    if bg:
+        table["background.sum.value"] = bg.data()
+    if bgsig:
+        table["background.sum.variance"] = bgsig.data() ** 2
+    if lp:
+        table["lp"] = lp.data()
+    if qe:
+        table["qe"] = qe.data()
     table["partial_id"] = flex.double(range(0, table.size()))
 
-    # need s1
-    table["s1"] = flex.vec3_double(table.size(), (1, 1, 1))
+    # need s1 ##FIXME
+    # table["s1"] = flex.vec3_double(table.size(), (1, 1, 1))
 
     table["id"] = flex.int(table.size(), 0)
     refls_per_scan = OrderedDict({})
@@ -187,50 +291,49 @@ def read_mtzfile(filename, params, batch_offset=None):
         sel = (batches >= batch_begin) & (batches <= batch_end)
         table["id"].set_selected(sel, i)
         refls_per_scan[i + 1] = sel.count(True)
-    logger.info("Numbers of reflections determined per scan:")
     logger.info(
-        tabulate(
+        "Numbers of reflections determined per scan:\n"
+        + tabulate(
             [[i, v] for i, v in refls_per_scan.items()],
             ["Scan number", "No. of reflections"],
         )
     )
 
     # now want to convert phi to z for each sweep
-    if not phi:
-        z = flex.double(table.size(), 0)
-        for id_ in set(table["id"]):
-            sel = table["id"] == id_
-            phi_i = phi.select(sel)
-            if params.input.oscillation_step:
-                assert params.input.oscillation_step > 0
-                z_i = (phi_i.data() - min(phi_i.data())) / params.input.oscillation_step
-            else:
-                # try to approximate using batch
-                phirange = int(flex.max(phi_i.data())) - int(flex.min(phi_i.data()))
-                # add 1 because a 360 image sweep will have batches 1 to 360
-                batches_i = batches.select(sel)
-                batch_range = max(batches_i) - min(batches_i) + 1
-                z_i = (phi_i.data() - flex.min(phi_i.data())) * batch_range / phirange
-                print(batch_range, phirange, max(z_i), min(z_i))
-            z.set_selected(sel.iselection(), z_i)
+    if params.input.oscillation_step:
+        assert params.input.oscillation_step > 0
+        z = phi.data() / params.input.oscillation_step
     else:
-        # found a phi column
-        if params.input.oscillation_step:
-            assert params.input.oscillation_step > 0
-            z = phi.data() / params.input.oscillation_step
-        else:
-            z = phi.data()  # use scans info to determine step.
+        z = flex.double(table.size(), 0.0)
+        angle = phi.data()
+        for i, expt in enumerate(experiments):
+            if expt.scan.get_oscillation()[1] == 0:
+                raise ValueError(
+                    """
+    Unable to read scan oscillation step.
+    Please provide an input value for oscillation_step"""
+                )
+                sel = table["id"] == 0
+            angles_i = angle.select(sel)
+            z_i = angles_i / expt.scan.get_oscillation()[1]
+            z.set_selected(sel.iselection(), z_i)
 
     table["xyzobs.px.value"] = flex.vec3_double(xpos.data(), ypos.data(), z)
+    table["xyzcal.px"] = flex.vec3_double(xpos.data(), ypos.data(), z)
+    table["panel"] = flex.size_t(table.size(), 0)
 
-    return table, unit_cell, space_group
+    table.centroid_px_to_mm(experiments)
+    table["s1"] = flex.vec3_double(table.size(), (0, 0, 0))
+    set_obs_s1(table, experiments)
+
+    return table, experiments
 
 
 @show_mail_handle_errors()
 def run(args=None, phil=phil_scope):
     """Run the command-line script."""
 
-    usage = "dials.import_mtz input.mtzfile=example.mtz"
+    usage = "dials.import_mtz integrated.mtz"
 
     parser = OptionParser(
         usage=usage,
@@ -241,15 +344,27 @@ def run(args=None, phil=phil_scope):
         check_format=False,
     )
 
-    params, _ = parser.parse_args(args=args, show_diff_phil=False)
+    params, _, unhandled = parser.parse_args(
+        args=args, return_unhandled=True, show_diff_phil=True
+    )
 
     log.config(logfile="dials.command_line.import_mtz")
 
-    table, unit_cell, space_group = read_mtzfile(params.input.mtzfile, params)
+    if len(unhandled) == 1:
+        mtzfile = unhandled[0]
+    else:
+        raise ValueError("Only one input MTZ file expected")
 
-    output = "test.refl"
-    logger.info(f"Saving extracted data to {output}")
-    table.as_file(output)
+    try:
+        table, expts = read_mtzfile(mtzfile, params)
+    except ValueError as e:
+        sys.exit(str(e))
+
+    logger.info(f"Saving extracted data to {params.output.reflections}")
+    table.as_file(params.output.reflections)
+
+    logger.info(f"Saving extracted metadata to {params.output.experiments}")
+    expts.as_file(params.output.experiments)
 
 
 if __name__ == "__main__":
