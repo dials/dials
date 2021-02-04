@@ -147,7 +147,7 @@ def images_to_events(params):
             logger.info("-" * 20)
 
     t3 = time.time()
-    logger.info(f"Time taked for conversion: {t3 - t0:0.2f}s")
+    logger.info(f"Time taken for conversion: {t3 - t0:0.2f}s")
     # Get metadata from input file and write nxs
     logger.info("Writing experiment metadata to NeXus file...")
     # Check that the detector dimensions are saved correctly in input file
@@ -175,8 +175,8 @@ def images_to_events(params):
             event_mode=True,
         ).write_nexus_file()
     t4 = time.time()
-    logger.info(f"Total time taken: {t4 - t0:0.2f}s")
-    logger.info("=== EOF ===")
+    logger.info(f"Total processing time: {t4 - t0:0.2f}s")
+    logger.info("=" * 20 + " EOF " + "=" * 20)
 
 
 # TODO: save image_range information when it is applied

@@ -2,7 +2,7 @@
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
 """
-.
+Add doc
 """
 
 import os
