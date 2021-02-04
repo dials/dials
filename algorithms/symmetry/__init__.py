@@ -218,20 +218,20 @@ class symmetry_base(object):
           cctbx.miller.array: The normalised intensities.
         """
         # handle negative reflections to minimise effect on mean I values.
-        intensities.data().set_selected(intensities.data() < 0.0, 0.0)
+        work = intensities.deep_copy()
+        work.data().set_selected(work.data() < 0.0, 0.0)
 
         # set up binning objects
-        if intensities.size() > 20000:
+        if work.size() > 20000:
             n_refl_shells = 20
-        elif intensities.size() > 15000:
+        elif work.size() > 15000:
             n_refl_shells = 15
         else:
             n_refl_shells = 10
-        d_star_sq = intensities.d_star_sq().data()
+        d_star_sq = work.d_star_sq().data()
         step = (flex.max(d_star_sq) - flex.min(d_star_sq) + 1e-8) / n_refl_shells
-        intensities.setup_binner_d_star_sq_step(d_star_sq_step=step)
-
-        normalisations = intensities.intensity_quasi_normalisations()
+        work.setup_binner_d_star_sq_step(d_star_sq_step=step)
+        normalisations = work.intensity_quasi_normalisations()
         return intensities.customized_copy(
             data=(intensities.data() / normalisations.data()),
             sigmas=(intensities.sigmas() / normalisations.data()),
