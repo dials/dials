@@ -11,7 +11,7 @@ import logging
 from dials.array_family import flex
 from dials_algorithms_event_mode_ext import image_coord
 
-from make_nxs import CopyNexusStructure
+from dials_research.nexus.make_nxs import CopyNexusStructure
 
 CLOCK_FREQUENCY = int(6.4e8)
 SHUTTER_OPEN = 0x840
