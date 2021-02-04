@@ -1,4 +1,9 @@
+# LIBTBX_SET_DISPATCHER_NAME dials.modify_geometry
+# LIBTBX_SET_DISPATCHER_NAME dials.modify_experiment
+
 from __future__ import absolute_import, division, print_function
+
+import warnings
 
 import libtbx.phil
 
@@ -24,6 +29,13 @@ def run(args=None):
     from dials.util.options import OptionParser, flatten_experiments
 
     usage = "dials.modify_geometry [options] models.expt"
+
+    import libtbx.load_env
+
+    if libtbx.env.dispatcher_name == "dials.modify_geometry":
+        warnings.warn(
+            "dials.modify_geometry is now deprecated, please use dials.modify_experiment instead"
+        )
 
     parser = OptionParser(
         usage=usage,

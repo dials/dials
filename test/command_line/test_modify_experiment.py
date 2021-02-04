@@ -16,7 +16,7 @@ def test_modify_geometry(dials_regression, tmpdir):
     new_expt_json = tmpdir.join("modified.expt")
 
     result = procrunner.run(
-        ["dials.modify_geometry", orig_expt_json, "angles=10,20,30"],
+        ["dials.modify_experiment", orig_expt_json, "angles=10,20,30"],
         working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
