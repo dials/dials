@@ -23,7 +23,7 @@ class lbfgs_with_curvs(object):
 
         Args:
           target (dials.algorithms.target.Target): The target function to minimise.
-          coords (np.array): The starting coordinates for minimisation.
+          coords (np.ndarray): The starting coordinates for minimisation.
           use_curvatures (bool): Whether or not to use curvature information in the
             minimisation. Defaults to True.
           termination_params (scitbx.lbfgs.termination_parameters):

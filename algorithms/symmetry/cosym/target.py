@@ -309,11 +309,11 @@ class Target(object):
 
         return rij_matrix, wij_matrix
 
-    def compute_functional(self, x: np.array) -> float:
+    def compute_functional(self, x: np.ndarray) -> float:
         """Compute the target function at coordinates `x`.
 
         Args:
-          x (np.array):
+          x (np.ndarray):
             a flattened list of the N-dimensional vectors, i.e. coordinates in
             the first dimension are stored first, followed by the coordinates in
             the second dimension, etc.
@@ -334,11 +334,11 @@ class Target(object):
         f = 0.5 * elements.sum()
         return f
 
-    def compute_gradients_fd(self, x: np.array, eps=1e-6) -> np.array:
+    def compute_gradients_fd(self, x: np.ndarray, eps=1e-6) -> np.ndarray:
         """Compute the gradients at coordinates `x` using finite differences.
 
         Args:
-          x (np.array):
+          x (np.ndarray):
             a flattened list of the N-dimensional vectors, i.e. coordinates in
             the first dimension are stored first, followed by the coordinates in
             the second dimension, etc.
@@ -346,7 +346,7 @@ class Target(object):
             The value of epsilon to use in finite difference calculations.
 
         Returns:
-          grad (np.array):
+          grad (np.ndarray):
           The gradients of the target function with respect to the parameters.
         """
         x = copy.deepcopy(x)
@@ -360,17 +360,17 @@ class Target(object):
             grad[i] += (fp - fm) / (2 * eps)
         return grad
 
-    def compute_gradients(self, x: np.array) -> np.array:
+    def compute_gradients(self, x: np.ndarray) -> np.ndarray:
         """Compute the gradients of the target function at coordinates `x`.
 
         Args:
-          x (np.array):
+          x (np.ndarray):
             a flattened list of the N-dimensional vectors, i.e. coordinates in
             the first dimension are stored first, followed by the coordinates in
             the second dimension, etc.
 
         Returns:
-          Tuple[float, np.array]:
+          Tuple[float, np.ndarray]:
           f: The value of the target function at coordinates `x`.
           grad: The gradients of the target function with respect to the parameters.
         """
@@ -401,17 +401,17 @@ class Target(object):
 
         return grad
 
-    def curvatures(self, x: np.array) -> np.array:
+    def curvatures(self, x: np.ndarray) -> np.ndarray:
         """Compute the curvature of the target function at coordinates `x`.
 
         Args:
-          x (np.array):
+          x (np.ndarray):
             a flattened list of the N-dimensional vectors, i.e. coordinates in
             the first dimension are stored first, followed by the coordinates in
             the second dimension, etc.
 
         Returns:
-          curvs (np.array):
+          curvs (np.ndarray):
           The curvature of the target function with respect to the parameters.
         """
         NN = x.size // self.dim
@@ -427,11 +427,11 @@ class Target(object):
         curvs *= 2
         return curvs
 
-    def curvatures_fd(self, x: np.array, eps=1e-6) -> np.array:
+    def curvatures_fd(self, x: np.ndarray, eps=1e-6) -> np.ndarray:
         """Compute the curvatures at coordinates `x` using finite differences.
 
         Args:
-          x (np.array):
+          x (np.ndarray):
             a flattened list of the N-dimensional vectors, i.e. coordinates in
             the first dimension are stored first, followed by the coordinates in
             the second dimension, etc.
@@ -439,7 +439,7 @@ class Target(object):
             The value of epsilon to use in finite difference calculations.
 
         Returns:
-          curvs (np.array):
+          curvs (np.ndarray):
           The curvature of the target function with respect to the parameters.
         """
         x = copy.deepcopy(x)
