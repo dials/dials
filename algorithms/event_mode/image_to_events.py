@@ -115,6 +115,7 @@ def images_to_events(params):
     logger.info("Events will be written to %s" % params.output.events)
     with h5py.File(params.output.events, "x") as fout:
         block_size = 0
+        # Need to find an alternative place to save this.
         fout.create_dataset("time_per_frame", data=exposure_time)
         pos_dset = fout.create_dataset(
             "event_id",
