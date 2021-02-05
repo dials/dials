@@ -38,11 +38,6 @@ clean_env = {
     if key not in ("PYTHONPATH", "LD_LIBRARY_PATH", "DYLD_LIBRARY_PATH")
 }
 
-# On Windows, add DLL path for imports of shared libraries
-# https://docs.conda.io/projects/conda-build/en/latest/resources/use-shared-libraries.html#shared-libraries-in-windows
-if os.name == "nt":
-    clean_env["PATH"] = os.environ["PATH"] + os.pathsep + os.path.join(os.getcwd(), "conda_base", "Library", "bin")
-
 devnull = open(os.devnull, "wb")  # to redirect unwanted subprocess output
 
 
@@ -309,6 +304,9 @@ def run_indirect_command(command, args):
         filename = os.path.join("build", "indirection.cmd")
         with open(filename, "w") as fh:
             fh.write("call %s\\conda_base\\condabin\\activate.bat\r\n" % os.getcwd())
+            # add DLL path for imports of shared libraries
+            # https://docs.conda.io/projects/conda-build/en/latest/resources/use-shared-libraries.html#shared-libraries-in-windows
+            fh.write("SET PATH=%%PATH%%;%s\\conda_base\\Library\\bin\r\n" % os.getcwd())
             fh.write("shift\r\n")
             fh.write("%*\r\n")
         if not command.endswith((".bat", ".cmd", ".exe")):
