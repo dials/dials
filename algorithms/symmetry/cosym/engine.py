@@ -32,6 +32,8 @@ class lbfgs_with_curvs(object):
         self.target = target
 
         self.x = flex.double(coords)
+        self.f = None
+        self.g = None
 
         if use_curvatures:
             self.diag_mode = "always"
