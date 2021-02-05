@@ -253,22 +253,6 @@ channels:
 """.lstrip()
         )
 
-    # on Windows, also download the Visual C++ 2008 Redistributable
-    # use the same version as conda-forge
-    # https://github.com/conda-forge/vs2008_runtime-feedstock
-    if os.name == "nt":
-        # There are no scipy Windows packages in conda-forge,
-        # so install that plus downstream dependencies using pip.
-        # https://github.com/conda-forge/vs2008_runtime-feedstock
-        try:
-            os.mkdir("build")
-        except Exception:
-            pass
-        run_indirect_command(
-            os.path.join(prefix, "Scripts", "pip.exe"),
-            args=["install", "scipy", "scikit-learn"],
-        )
-
 
 def run_command(command, workdir):
     print("Running %s (in %s)" % (" ".join(command), workdir))
