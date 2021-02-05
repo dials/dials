@@ -3,7 +3,7 @@ jobs:
   pool:
     vmImage: windows-latest
   dependsOn: setup
-# condition: eq(variables['ENABLE_CACHE'], '1')
+  condition: eq(variables['ENABLE_CACHE'], '1')
   variables:
     CURRENT_WEEK: $[ dependencies.setup.outputs['constants.CURRENT_WEEK'] ]
     TODAY_ISO: $[ dependencies.setup.outputs['constants.TODAY_ISO'] ]
