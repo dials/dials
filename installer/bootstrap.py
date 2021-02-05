@@ -284,13 +284,14 @@ def run_command(command, workdir):
 
 def run_indirect_command(command, args):
     print("(via conda environment) " + command)
+    try:
+        os.mkdir("build")
+    except OSError:
+        pass
     if os.name == "nt":
         filename = os.path.join("build", "indirection.cmd")
         with open(filename, "w") as fh:
             fh.write("call %s\\conda_base\\condabin\\activate.bat\r\n" % os.getcwd())
-            # add DLL path for imports of shared libraries
-            # https://docs.conda.io/projects/conda-build/en/latest/resources/use-shared-libraries.html#shared-libraries-in-windows
-            fh.write("SET PATH=%%PATH%%;%s\\conda_base\\Library\\bin\r\n" % os.getcwd())
             fh.write("shift\r\n")
             fh.write("%*\r\n")
         if not command.endswith((".bat", ".cmd", ".exe")):
@@ -945,10 +946,9 @@ def run_tests():
 
 def refresh_build():
     print("Running libtbx.refresh")
-    dispatch_extension = ".bat" if os.name == "nt" else ""
-    run_command(
-        [os.path.join("build", "bin", "libtbx.refresh" + dispatch_extension)],
-        workdir=".",
+    run_indirect_command(
+        os.path.join("bin", "libtbx.refresh"),
+        args=[],
     )
 
 
@@ -984,7 +984,6 @@ def configure_build(config_flags):
         pass  # ensure we write a new-style environment setup script
 
     configcmd = [
-        conda_python,
         os.path.join("..", "modules", "cctbx_project", "libtbx", "configure.py"),
         "cctbx",
         "cbflib",
@@ -1002,9 +1001,9 @@ def configure_build(config_flags):
         "--skip_phenix_dispatchers",
     ] + config_flags
     print("Setting up build directory")
-    run_command(
-        command=configcmd,
-        workdir="build",
+    run_indirect_command(
+        command=conda_python,
+        args=configcmd,
     )
 
 
