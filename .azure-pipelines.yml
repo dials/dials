@@ -21,6 +21,13 @@ jobs:
     displayName: syntax validation
     pool:
       vmImage: ubuntu-20.04
+
+    # Silence a warning. This can be removed in April 2021
+    # https://github.com/microsoft/azure-pipelines-agent/blob/master/docs/design/percentEncoding.md
+    variables:
+    - name: DECODE_PERCENTS
+      value: true
+
     steps:
       - checkout: none
 
