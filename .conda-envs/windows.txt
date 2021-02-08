@@ -35,8 +35,8 @@ conda-forge::pytest-mock
 conda-forge::pytest-xdist
 conda-forge::reportlab
 conda-forge::requests
-# conda-forge::scikit-learn  # blocked by https://github.com/conda-forge/scipy-feedstock/issues/80
-# conda-forge::scipy  # blocked by https://github.com/conda-forge/scipy-feedstock/issues/80
+conda-forge::scikit-learn
+conda-forge::scipy
 conda-forge::scons
 conda-forge::setuptools
 conda-forge::six
