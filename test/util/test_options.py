@@ -2,8 +2,9 @@
 Tests for the functions in dials.util.options
 """
 
-import pytest
 from unittest.mock import Mock
+
+import pytest
 
 from dxtbx.model import Experiment, ExperimentList
 

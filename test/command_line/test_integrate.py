@@ -4,9 +4,9 @@ import json
 import math
 import os
 import shutil
-import pytest
 
 import procrunner
+import pytest
 
 from dxtbx.serialize import load
 
