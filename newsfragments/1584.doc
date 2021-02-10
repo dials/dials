@@ -1,4 +1,1 @@
-Improved error message.
-
-As we know what the "bad" parameters are, at least list them
-even if there isn't much we can do about it...
+More gracefully handle failures in ``dials.refine`` when reflection have zero weights.
