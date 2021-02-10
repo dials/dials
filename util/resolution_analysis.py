@@ -18,6 +18,7 @@ from cctbx.array_family import flex
 from iotbx.reflection_file_utils import label_table
 from scitbx.math import curve_fitting, five_number_summary
 
+from dials.algorithms import symmetry
 from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
 from dials.report import plots
 from dials.util import Sorry, tabulate
@@ -388,6 +389,9 @@ phil_str = """
     .expert_level = 1
   reference = None
     .type = path
+  emax = 4
+    .type = float(value_min = 0)
+    .help = "Reject reflecitons with normalised intensities E^2 > emax^2"
 """
 
 
@@ -509,6 +513,15 @@ class Resolutionizer(object):
             i_obs = i_obs.customized_copy(
                 space_group_info=self._params.space_group, info=i_obs.info()
             )
+
+        if self._params.emax:
+            normalised = symmetry.symmetry_base.quasi_normalisation(i_obs)
+            e2_cutoff = self._params.emax ** 2
+            sel = normalised.data() < e2_cutoff
+            logger.info(
+                f"Removing {sel.count(False)} Wilson outliers with E^2 >= {e2_cutoff}"
+            )
+            i_obs = i_obs.select(sel)
 
         self._intensities = i_obs
 
