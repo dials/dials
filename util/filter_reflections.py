@@ -206,9 +206,11 @@ def filtered_arrays_from_experiments_reflections(
             intensity_choice = ["scale"]
             intensity_to_use = "intensity.scale"
         else:
-            assert "intensity.sum.value" in refl
-            intensity_to_use = "intensity.sum"
-            intensity_choice = ["sum"]
+            assert ("intensity.sum.value") in refl or ("intensity.prf.value" in refl)
+            intensity_choice = []
+            if "intensity.sum.value" in refl:
+                intensity_choice.append("sum")
+                intensity_to_use = "intensity.sum"
             if "intensity.prf.value" in refl:
                 intensity_choice.append("profile")
                 intensity_to_use = "intensity.prf"

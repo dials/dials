@@ -85,7 +85,9 @@ def choose_initial_scaling_intensities(reflection_table, intensity_choice="profi
         )
     else:
         # first fill in summation intensities.
-        if "partiality" in reflection_table:
+        if ("partiality" in reflection_table) and (
+            "intensity.sum.value" in reflection_table
+        ):
             inverse_partiality = flex.double(reflection_table.size(), 1.0)
             nonzero_partiality_sel = reflection_table["partiality"] > 0.0
             good_refl = reflection_table.select(reflection_table["partiality"] > 0.0)
