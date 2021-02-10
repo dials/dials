@@ -846,9 +846,14 @@ def update_sources(options):
             "dials/ccp4io_adaptbx",
             "dials/dials",
             "dials/gui_resources",
-            "xia2/xia2",
         )
     }
+    repositories.update(
+        {
+            source.split("/")[1]: {"base-repository": source, "branch-local": "main"}
+            for source in ("xia2/xia2",)
+        }
+    )
     repositories["cctbx_project"] = {
         "base-repository": "cctbx/cctbx_project",
         "effective-repository": "dials/cctbx",
