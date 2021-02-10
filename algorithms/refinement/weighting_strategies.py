@@ -20,9 +20,10 @@ class StatisticalWeightingStrategy(object):
             sel = w > 0.0
             w.set_selected(sel, 1.0 / w.select(sel))
         reflections["xyzobs.mm.weights"] = flex.vec3_double(*parts)
-        if any(reflections["xyzobs.mm.weights"].norms() == 0.0):
+        indexed = reflections.select(reflections.get_flags(reflections.flags.indexed))
+        if any(indexed["xyzobs.mm.weights"].norms() == 0.0):
             raise DialsRefineConfigError(
-                "Cannot set statistical weights as some reflections have observed variances equal to zero"
+                "Cannot set statistical weights as some indexed reflections have observed variances equal to zero"
             )
 
         return reflections
