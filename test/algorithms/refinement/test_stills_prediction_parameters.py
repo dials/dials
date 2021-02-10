@@ -120,6 +120,9 @@ class _Test(object):
         self.reflections = flex.reflection_table.empty_standard(len(rays))
         self.reflections.update(rays)
 
+        # Set dummy observed variances to allow statistical weights to be set
+        self.reflections["xyzobs.mm.variance"] += (1e-3, 1e-3, 1e-6)
+
     def get_fd_gradients(self, pred_param, ref_predictor):
 
         # get finite difference gradients
