@@ -1,10 +1,14 @@
 from __future__ import absolute_import, division, print_function
 
+import copy
 import logging
 import math
+import time
 import warnings
 from collections import namedtuple
 from typing import Tuple
+
+from dxtbx_model_ext import SimplePxMmStrategy
 
 import libtbx.phil
 from cctbx import crystal
@@ -184,7 +188,13 @@ def generate_ice_ring_resolution_ranges(beam, panel, params):
 @lru_equality_cache(maxsize=3)
 def _get_resolution_masker(beam, panel):
     logger.debug("resolution masker cache miss")
-    return ResolutionMaskGenerator(beam, panel)
+    t0 = time.perf_counter()
+    panel = copy.deepcopy(panel)
+    panel.set_px_mm_strategy(SimplePxMmStrategy())
+    masker = ResolutionMaskGenerator(beam, panel)
+    t1 = time.perf_counter()
+    logger.debug(f"ResolutionMaskGenerator took {t1 - t0:.4f} seconds")
+    return masker
 
 
 def _apply_resolution_mask(mask, beam, panel, *args):
