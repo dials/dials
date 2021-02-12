@@ -12,7 +12,8 @@ from dxtbx.model.experiment_list import ExperimentListFactory
 from dials.array_family import flex
 from dials_algorithms_event_mode_ext import event_list
 
-from dials_research.nexus.make_nxs import CBF2NexusWriter, CopyNexusStructure
+from nexgen.CopyNexusStructure import copy_nexus
+from dials_research.nexus.make_nxs import CBF2NexusWriter
 
 logger = logging.getLogger("I2E")
 
@@ -159,14 +160,14 @@ def images_to_events(params):
             data_size = fh["entry/instrument/detector/module/data_size"][()]
 
         if np.all(data_size != imageset.get_raw_data(0)[0].all()):
-            CopyNexusStructure(
+            copy_nexus(
                 params.output.events,
                 params.input.experiments[0],
                 event_mode=True,
                 flip=True,
             )
         else:
-            CopyNexusStructure(
+            copy_nexus(
                 params.output.events, params.input.experiments[0], event_mode=True,
             )
     else:

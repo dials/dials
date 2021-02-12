@@ -11,7 +11,7 @@ import logging
 from dials.array_family import flex
 from dials_algorithms_event_mode_ext import image_coord
 
-from dials_research.nexus.make_nxs import CopyNexusStructure
+from nexgen.CopyNexusStructure import copy_nexus, copy_nexus_from_timepix
 
 CLOCK_FREQUENCY = int(6.4e8)
 SHUTTER_OPEN = 0x840
@@ -319,7 +319,12 @@ def events_to_images(event_data: h5py.File, exposure_time, image_file: h5py.File
     t5 = time.time()
     logger.info("")
     logger.info("Writing metadata to NeXus file...")
-    CopyNexusStructure(image_file.filename, event_data.filename)
+    if "Timepix" in description:
+        copy_nexus_from_timepix(
+            image_file.filename, event_data.filename, step=exposure_time
+        )
+    else:
+        copy_nexus(image_file.filename, event_data.filename)
     t6 = time.time()
     logger.info(f"Time taken: {t6 - t5:0.2f}s")
     logger.info(f"Total processing time: {t6 - t0:0.2f}s")
