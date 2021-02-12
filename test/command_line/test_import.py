@@ -494,7 +494,7 @@ def test_import_still_sequence_as_expts_subset_by_range(dials_data, tmpdir):
 
     iset = set(exp.imageset for exp in imported_exp)
     assert len(iset) == 1
-    assert len(iset[0]) == 3
+    assert len(imported_exp[0].imageset) == 3
 
     # verify scans, goniometers kept too
     assert all(exp.scan.get_oscillation() == (10.0, 0.0) for exp in imported_exp)
