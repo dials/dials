@@ -4,7 +4,81 @@ import os
 
 import procrunner
 import pytest
+
 from dxtbx.serialize import load
+
+
+@pytest.mark.parametrize("use_beam", ["True", "False"])
+@pytest.mark.parametrize("use_gonio", ["True", "False"])
+@pytest.mark.parametrize("use_detector", ["True", "False"])
+def test_reference_individual(dials_data, tmpdir, use_beam, use_gonio, use_detector):
+
+    expected_beam = {"True": 3, "False": 0.9795}
+    expected_gonio = {
+        "True": (7, 8, 9, 4, 5, 6, 1, 2, 3),
+        "False": (1, 0, 0, 0, 1, 0, 0, 0, 1),
+    }
+    expected_detector = {"True": "Fake panel", "False": "Panel"}
+
+    # Find the image files
+    image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
+
+    # Create an experiment with some faked geometry items
+    fake_phil = """
+      geometry {
+        beam.wavelength = 3
+        detector.panel.name = "Fake panel"
+        goniometer.fixed_rotation = 7,8,9,4,5,6,1,2,3
+      }
+  """
+    tmpdir.join("fake.phil").write(fake_phil)
+    fake_result = procrunner.run(
+        ["dials.import", "fake.phil", "output.experiments=fake_geometry.expt"]
+        + image_files,
+        working_directory=tmpdir,
+    )
+    assert not fake_result.returncode and not fake_result.stderr
+    assert tmpdir.join("fake_geometry.expt").check(file=1)
+
+    # Write an import phil file
+    import_phil = """
+      input {
+        reference_geometry = fake_geometry.expt
+        check_reference_geometry = False
+        use_beam_reference = %s
+        use_gonio_reference = %s
+        use_detector_reference = %s
+      }
+  """ % (
+        use_beam,
+        use_gonio,
+        use_detector,
+    )
+    tmpdir.join("test_reference_individual.phil").write(import_phil)
+
+    result = procrunner.run(
+        [
+            "dials.import",
+            "test_reference_individual.phil",
+            "output.experiments=reference_geometry.expt",
+        ]
+        + image_files,
+        working_directory=tmpdir,
+    )
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("reference_geometry.expt").check(file=1)
+
+    experiments = load.experiment_list(tmpdir.join("reference_geometry.expt").strpath)
+    assert experiments[0].identifier != ""
+    imgset = experiments[0].imageset
+
+    beam = imgset.get_beam()
+    goniometer = imgset.get_goniometer()
+    detector = imgset.get_detector()
+
+    assert beam.get_wavelength() == expected_beam[use_beam]
+    assert goniometer.get_fixed_rotation() == expected_gonio[use_gonio]
+    assert detector[0].get_name() == expected_detector[use_detector]
 
 
 def test_multiple_sequence_import_fails_when_not_allowed(dials_data, tmpdir):
@@ -315,7 +389,10 @@ def test_template_with_missing_image_fails(centroid_test_data_with_missing_image
     # This should fail because image #4 is missing
     for image_range in (None, (3, 5)):
         result = procrunner.run(
-            ["dials.import", f"template={centroid_test_data_with_missing_image}",]
+            [
+                "dials.import",
+                f"template={centroid_test_data_with_missing_image}",
+            ]
             + (["image_range=%i,%i" % image_range] if image_range else []),
             working_directory=centroid_test_data_with_missing_image.parent,
         )

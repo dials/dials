@@ -6,51 +6,53 @@ from __future__ import absolute_import, division, print_function
 import json
 import logging
 from collections import OrderedDict
-from dials.util import tabulate
 
 import six
+from jinja2 import ChoiceLoader, Environment, PackageLoader
+
 from cctbx import uctbx
-from dials.algorithms.scaling.plots import (
-    plot_outliers,
-    normal_probability_plot,
-    error_model_variance_plot,
-    error_regression_plot,
-)
-from dials.algorithms.scaling.model.model import (
-    plot_scaling_models,
-    make_combined_plots,
-)
-from dials.report.analysis import (
-    reflection_tables_to_batch_dependent_properties,
-    make_merging_statistics_summary,
-    table_1_summary,
-)
+from scitbx.array_family import flex
+
 from dials.algorithms.scaling.error_model.error_model import (
-    calc_sigmaprime,
     calc_deltahl,
+    calc_sigmaprime,
 )
 from dials.algorithms.scaling.error_model.error_model_target import (
     calculate_regression_x_y,
 )
-from dials.report.plots import (
-    scale_rmerge_vs_batch_plot,
-    i_over_sig_i_vs_batch_plot,
-    i_over_sig_i_vs_i_plot,
-    ResolutionPlotsAndStats,
-    IntensityStatisticsPlots,
-    AnomalousPlotter,
-    make_image_range_table,
+from dials.algorithms.scaling.model.model import (
+    make_combined_plots,
+    plot_scaling_models,
+)
+from dials.algorithms.scaling.plots import (
+    error_model_variance_plot,
+    error_regression_plot,
+    normal_probability_plot,
+    plot_outliers,
 )
 from dials.algorithms.scaling.scale_and_filter import make_scaling_filtering_plots
 from dials.algorithms.scaling.scaling_library import (
-    merging_stats_from_scaled_array,
     DialsMergingStatisticsError,
+    merging_stats_from_scaled_array,
 )
+from dials.report.analysis import (
+    make_merging_statistics_summary,
+    reflection_tables_to_batch_dependent_properties,
+    table_1_summary,
+)
+from dials.report.plots import (
+    AnomalousPlotter,
+    IntensityStatisticsPlots,
+    ResolutionPlotsAndStats,
+    i_over_sig_i_vs_batch_plot,
+    i_over_sig_i_vs_i_plot,
+    make_image_range_table,
+    scale_rmerge_vs_batch_plot,
+)
+from dials.util import tabulate
 from dials.util.batch_handling import batch_manager, get_image_ranges
 from dials.util.exclude_images import get_valid_image_ranges
 from dials.util.resolution_analysis import resolution_cc_half
-from jinja2 import Environment, ChoiceLoader, PackageLoader
-from scitbx.array_family import flex
 
 logger = logging.getLogger("dials")
 
@@ -101,7 +103,11 @@ def print_scaling_summary(script):
             if len(valid) > 1 or valid[0][0] != img[0] or valid[-1][1] != img[1]:
                 msg.append(
                     "Excluded images for experiment id: %s, image range: %s, limited range: %s"
-                    % (refl.experiment_identifiers().keys()[0], list(img), list(valid),)
+                    % (
+                        refl.experiment_identifiers().keys()[0],
+                        list(img),
+                        list(valid),
+                    )
                 )
     if msg:
         msg = ["Summary of image ranges removed:"] + msg
@@ -383,7 +389,9 @@ def make_merging_stats_plots(script):
         svb,
         batch_data,
     ) = reflection_tables_to_batch_dependent_properties(  # pylint: disable=unbalanced-tuple-unpacking
-        script.reflections, script.experiments, script.scaled_miller_array,
+        script.reflections,
+        script.experiments,
+        script.scaled_miller_array,
     )
     bm = batch_manager(batches, batch_data)
     image_range_tables = make_image_range_table(script.experiments, bm)

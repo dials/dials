@@ -9,16 +9,18 @@ from __future__ import absolute_import, division, print_function
 import imp
 import math
 import os
+
 import wx
 
-from . import pyslip
-from . import tile_generation
+from boost_adaptbx.boost.python import c_sizeof
+from rstbx.viewer import image as rv_image
+from rstbx.viewer import settings as rv_settings
+from wxtbx import bitmaps
+
 from ..rstbx_frame import EVT_EXTERNAL_UPDATE
 from ..rstbx_frame import XrayFrame as XFBaseClass
-from rstbx.viewer import settings as rv_settings, image as rv_image
-from wxtbx import bitmaps
-from boost_adaptbx.boost.python import c_sizeof
-from rstbx.viewer.frame import SettingsFrame
+from . import pyslip, tile_generation
+from .calibration_frame import SBSettingsFrame
 
 pyslip._Tiles = tile_generation._Tiles
 
@@ -124,7 +126,7 @@ class XrayFrame(XFBaseClass):
         self._img = None
 
         self._distl = None
-        self.toolbar = self.CreateToolBar(style=wx.TB_3DBUTTONS | wx.TB_TEXT)
+        self.toolbar = self.CreateToolBar(style=wx.TB_TEXT)
         self.setup_toolbar()
         self.toolbar.Realize()
         self.mb = wx.MenuBar()
@@ -165,8 +167,8 @@ class XrayFrame(XFBaseClass):
     def setup_toolbar(self):
         XFBaseClass.setup_toolbar(self)
 
-        btn = self.toolbar.AddLabelTool(
-            id=wx.ID_SAVEAS,
+        btn = self.toolbar.AddTool(
+            toolId=wx.ID_SAVEAS,
             label="Save As...",
             bitmap=bitmaps.fetch_icon_bitmap("actions", "save_all", 32),
             shortHelp="Save As...",
@@ -440,7 +442,6 @@ class XrayFrame(XFBaseClass):
 
         self._img = img  # XXX
 
-        self.settings_frame.set_image(self._img)
         self.update_statusbar()  # XXX Not always working?
         # self.Layout()
 
@@ -592,8 +593,6 @@ class XrayFrame(XFBaseClass):
         self.pyslip.Update()  # triggers redraw
 
     def OnCalibration(self, event):
-        from rstbx.slip_viewer.calibration_frame import SBSettingsFrame
-
         if not self._calibration_frame:
             self._calibration_frame = SBSettingsFrame(
                 self, wx.ID_ANY, "Quadrant calibration", style=wx.CAPTION | wx.CLOSE_BOX
@@ -838,7 +837,7 @@ class XrayFrame(XFBaseClass):
                 row_list = range(start_y_tile, stop_y_tile)
                 y_pix_start = start_y_tile * self.pyslip.tile_size_y - y_offset
 
-                bitmap = wx.EmptyBitmap(x2 - x1, y2 - y1)
+                bitmap = wx.Bitmap(x2 - x1, y2 - y1)
                 dc = wx.MemoryDC()
                 dc.SelectObject(bitmap)
 
@@ -854,7 +853,7 @@ class XrayFrame(XFBaseClass):
 
                 dc.SelectObject(wx.NullBitmap)
 
-                wximg = wx.ImageFromBitmap(bitmap)
+                wximg = bitmap.ConvertToImage()
                 imageout = Image.new("RGB", (wximg.GetWidth(), wximg.GetHeight()))
                 imageout.frombytes(bytes(wximg.GetData()))
 
@@ -937,8 +936,10 @@ class XrayFrame(XFBaseClass):
                         if layer.map_rel:
                             pp = []
                             for pelement in p:
-                                fs = self.pyslip.tiles.map_relative_to_picture_fast_slow(
-                                    pelement[0], pelement[1]
+                                fs = (
+                                    self.pyslip.tiles.map_relative_to_picture_fast_slow(
+                                        pelement[0], pelement[1]
+                                    )
                                 )
                                 pp.append(
                                     (
@@ -1032,8 +1033,10 @@ class XrayFrame(XFBaseClass):
                         path = pdf_canvas.beginPath()
                         for i, pp in enumerate(p):
                             if layer.map_rel:
-                                fs = self.pyslip.tiles.map_relative_to_picture_fast_slow(
-                                    pp[0], pp[1]
+                                fs = (
+                                    self.pyslip.tiles.map_relative_to_picture_fast_slow(
+                                        pp[0], pp[1]
+                                    )
                                 )
                             else:
                                 raise NotImplementedError(
@@ -1105,6 +1108,8 @@ class XrayFrame(XFBaseClass):
                         else:
                             txt = pdf_canvas.beginText(x=fs[0] - (w / 2), y=fs[1])
                         txt.setFont(fontname, fontsize * scale)
+                        if isinstance(textcolour, wx.Colour):
+                            textcolour = tuple(textcolour)
                         txt.setFillColor(textcolour)
                         txt.setStrokeColor(textcolour)
                         txt.textLine(tdata)
@@ -1113,11 +1118,3 @@ class XrayFrame(XFBaseClass):
             pdf_canvas.save()
 
         self.update_statusbar("Writing " + file_name + "..." + " Done.")
-
-
-def override_SF_set_image(self, image):
-    self.Layout()
-    self.Fit()
-
-
-SettingsFrame.set_image = override_SF_set_image

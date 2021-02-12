@@ -15,43 +15,45 @@ from __future__ import absolute_import, division, print_function
 import copy
 import logging
 import time
-from math import ceil
 from collections import OrderedDict
-from dials.util import tabulate
+from math import ceil
 
 import six
 from six.moves import cStringIO as StringIO
-from dials_scaling_ext import row_multiply
-from dials_scaling_ext import calc_sigmasq as cpp_calc_sigmasq
-from dials.array_family import flex
-from dials.algorithms.scaling.basis_functions import RefinerCalculator
-from dials.algorithms.scaling.outlier_rejection import determine_outlier_index_arrays
-from dials.algorithms.scaling.Ih_table import IhTable
-from dials.algorithms.scaling.target_function import ScalingTarget, ScalingTargetFixedIH
-from dials.algorithms.scaling.scaling_refiner import scaling_refinery
-from dials.algorithms.scaling.error_model.engine import run_error_model_refinement
-from dials.algorithms.scaling.parameter_handler import ScalingParameterManagerGenerator
-from dials.algorithms.scaling.scaling_utilities import (
-    log_memory_usage,
-    DialsMergingStatisticsError,
-)
-from dials.algorithms.scaling.scaling_library import (
-    scaled_data_as_miller_array,
-    merging_stats_from_scaled_array,
-)
-from dials.algorithms.scaling.combine_intensities import (
-    SingleDatasetIntensityCombiner,
-    MultiDatasetIntensityCombiner,
-)
-from dials.algorithms.scaling.reflection_selection import (
-    calculate_scaling_subset_ranges_with_E2,
-    calculate_scaling_subset_ranges,
-    select_connected_reflections_across_datasets,
-    _select_groups_on_Isigma_cutoff,
-)
-from dials.util.observer import Subject
+
 from libtbx import Auto
 from scitbx import sparse
+
+from dials.algorithms.scaling.basis_functions import RefinerCalculator
+from dials.algorithms.scaling.combine_intensities import (
+    MultiDatasetIntensityCombiner,
+    SingleDatasetIntensityCombiner,
+)
+from dials.algorithms.scaling.error_model.engine import run_error_model_refinement
+from dials.algorithms.scaling.Ih_table import IhTable
+from dials.algorithms.scaling.outlier_rejection import determine_outlier_index_arrays
+from dials.algorithms.scaling.parameter_handler import ScalingParameterManagerGenerator
+from dials.algorithms.scaling.reflection_selection import (
+    _select_groups_on_Isigma_cutoff,
+    calculate_scaling_subset_ranges,
+    calculate_scaling_subset_ranges_with_E2,
+    select_connected_reflections_across_datasets,
+)
+from dials.algorithms.scaling.scaling_library import (
+    merging_stats_from_scaled_array,
+    scaled_data_as_miller_array,
+)
+from dials.algorithms.scaling.scaling_refiner import scaling_refinery
+from dials.algorithms.scaling.scaling_utilities import (
+    DialsMergingStatisticsError,
+    log_memory_usage,
+)
+from dials.algorithms.scaling.target_function import ScalingTarget, ScalingTargetFixedIH
+from dials.array_family import flex
+from dials.util import tabulate
+from dials.util.observer import Subject
+from dials_scaling_ext import calc_sigmasq as cpp_calc_sigmasq
+from dials_scaling_ext import row_multiply
 
 logger = logging.getLogger("dials")
 
@@ -207,9 +209,7 @@ class ScalerBase(Subject):
         # error model should be determined using anomalous groups
         Ih_table, _ = self._create_global_Ih_table(anomalous=True, remove_outliers=True)
         try:
-            model = run_error_model_refinement(
-                self.params.weighting.error_model, Ih_table
-            )
+            model = run_error_model_refinement(self.error_model, Ih_table)
         except (ValueError, RuntimeError) as e:
             logger.info(e)
             logger.debug(e, exc_info=True)
@@ -317,10 +317,10 @@ uncertainty in the scaling model""" + (
     def _update_error_model(self, error_model, update_Ih=True):
         """Update the error model in Ih table."""
         self._error_model = error_model
-        if update_Ih:
-            self.global_Ih_table.update_error_model(error_model)
+        if update_Ih and error_model:
+            self.global_Ih_table.update_weights(error_model)
             if self._free_Ih_table:
-                self._free_Ih_table.update_error_model(error_model)
+                self._free_Ih_table.update_weights(error_model)
         for scaler in self.active_scalers:
             scaler.experiment.scaling_model.set_error_model(error_model)
 
@@ -328,7 +328,6 @@ uncertainty in the scaling model""" + (
         if parameter_manager.apm_list[0].var_cov_matrix:
             for i, scaler in enumerate(self.active_scalers):
                 scaler.update_var_cov(parameter_manager.apm_list[i])
-                scaler.experiment.scaling_model.set_scaling_model_as_scaled()
 
 
 class SingleScaler(ScalerBase):
@@ -373,6 +372,12 @@ class SingleScaler(ScalerBase):
         self.free_set_selection = flex.bool(self.n_suitable_refl, False)
         self._free_Ih_table = None  # An array of len n_suitable_refl
         self._configure_model_and_datastructures(for_multi=for_multi)
+        if self.params.weighting.error_model.error_model:
+            # reload current error model parameters, or create new null
+            self.experiment.scaling_model.load_error_model(
+                self.params.weighting.error_model
+            )
+            self._update_error_model(self.experiment.scaling_model.error_model)
         if "Imid" in self.experiment.scaling_model.configdict:
             self._combine_intensities(self.experiment.scaling_model.configdict["Imid"])
         if not self._experiment.scaling_model.is_scaled:
@@ -501,7 +506,6 @@ class SingleScaler(ScalerBase):
         )
         self.Ih_table.set_derivatives(derivs_i, block_id)
         self.Ih_table.set_inverse_scale_factors(scales_i, block_id)
-        self.Ih_table.update_weights(block_id)
         self.Ih_table.calc_Ih(block_id)
 
     def combine_intensities(self):
@@ -529,12 +533,9 @@ class SingleScaler(ScalerBase):
         else:
             intensity, variance = combiner.calculate_suitable_combined_intensities()
             # update data in reflection table
-            self._reflection_table["intensity"].set_selected(
-                self.suitable_refl_for_scaling_sel.iselection(), intensity
-            )
-            self._reflection_table["variance"].set_selected(
-                self.suitable_refl_for_scaling_sel.iselection(), variance
-            )
+            isel = self.suitable_refl_for_scaling_sel.iselection()
+            self._reflection_table["intensity"].set_selected(isel, intensity)
+            self._reflection_table["variance"].set_selected(isel, variance)
             if self.global_Ih_table:
                 self.global_Ih_table.update_data_in_blocks(
                     intensity, 0, column="intensity"
@@ -542,6 +543,7 @@ class SingleScaler(ScalerBase):
                 self.global_Ih_table.update_data_in_blocks(
                     variance, 0, column="variance"
                 )
+                self.global_Ih_table.update_weights(self.error_model)
                 self.global_Ih_table.calc_Ih()
             if self._free_Ih_table:
                 self._free_Ih_table.update_data_in_blocks(
@@ -550,6 +552,7 @@ class SingleScaler(ScalerBase):
                 self._free_Ih_table.update_data_in_blocks(
                     variance, 0, column="variance"
                 )
+                self._free_Ih_table.update_weights(self.error_model)
                 self._free_Ih_table.calc_Ih()
             self.experiment.scaling_model.record_intensity_combination_Imid(
                 combiner.max_key
@@ -723,14 +726,8 @@ attempting to use all reflections for minimisation."""
             anomalous=self.params.anomalous,
         )
         if self.error_model:
-            variance = self.reflection_table["variance"].select(
-                self.suitable_refl_for_scaling_sel
-            )
-            intensity = self.reflection_table["intensity"].select(
-                self.suitable_refl_for_scaling_sel
-            )
-            new_vars = self.error_model.update_variances(variance, intensity)
-            self._Ih_table.update_data_in_blocks(new_vars, 0, column="variance")
+            # update with the error model to add the correct weights
+            self._Ih_table.update_weights(self.error_model)
 
     def _create_global_Ih_table(
         self, free_set_percentage=0, anomalous=False, remove_outliers=False
@@ -843,6 +840,10 @@ attempting to use all reflections for minimisation."""
         for key in self.reflection_table.keys():
             if key not in self._initial_keys:
                 del self._reflection_table[key]
+        bad = self._reflection_table.get_flags(
+            self._reflection_table.flags.bad_for_scaling, all=False
+        )
+        self._reflection_table.set_flags(~bad, self.reflection_table.flags.scaled)
 
 
 class MultiScalerBase(ScalerBase):
@@ -942,7 +943,6 @@ class MultiScalerBase(ScalerBase):
             start_row_no += deriv.n_rows
         self.Ih_table.set_inverse_scale_factors(scales, block_id)
         self.Ih_table.set_derivatives(deriv_matrix, block_id)
-        self.Ih_table.update_weights(block_id)
         if calc_Ih:
             self.Ih_table.calc_Ih(block_id)
         # The parallelisation below would work if sparse matrices were
@@ -1002,7 +1002,11 @@ class MultiScalerBase(ScalerBase):
                 free_indices_list.append(scaler.free_set_selection.iselection())
                 indices_list.append((~scaler.free_set_selection).iselection())
             global_Ih_table = IhTable(
-                tables, space_group, indices_list, nblocks=1, anomalous=anomalous,
+                tables,
+                space_group,
+                indices_list,
+                nblocks=1,
+                anomalous=anomalous,
             )
             free_Ih_table = IhTable(
                 free_tables,
@@ -1027,15 +1031,7 @@ class MultiScalerBase(ScalerBase):
             anomalous=self.params.anomalous,
         )
         if self.error_model:
-            for i, scaler in enumerate(self.active_scalers):
-                variance = scaler.reflection_table["variance"].select(
-                    scaler.suitable_refl_for_scaling_sel
-                )
-                intensity = scaler.reflection_table["intensity"].select(
-                    scaler.suitable_refl_for_scaling_sel
-                )
-                new_vars = self.error_model.update_variances(variance, intensity)
-                self._Ih_table.update_data_in_blocks(new_vars, i, column="variance")
+            self._Ih_table.update_weights(self.error_model)
 
     def make_ready_for_scaling(self, outlier=True):
         """
@@ -1363,6 +1359,11 @@ class MultiScaler(MultiScalerBase):
         )
         # now select reflections from across the datasets
         self._select_reflections_for_scaling()
+        if self.params.weighting.error_model.error_model:
+            # all share same error model
+            self._update_error_model(
+                self.active_scalers[0].experiment.scaling_model.error_model
+            )
         self._create_Ih_table()
         # now add data to scale components from datasets
         self._update_model_data()
@@ -1391,12 +1392,9 @@ class MultiScaler(MultiScalerBase):
                         intensity,
                         variance,
                     ) = combiner.calculate_suitable_combined_intensities(i)
-                    scaler.reflection_table["intensity"].set_selected(
-                        scaler.suitable_refl_for_scaling_sel.iselection(), intensity
-                    )
-                    scaler.reflection_table["variance"].set_selected(
-                        scaler.suitable_refl_for_scaling_sel.iselection(), variance
-                    )
+                    isel = scaler.suitable_refl_for_scaling_sel.iselection()
+                    scaler.reflection_table["intensity"].set_selected(isel, intensity)
+                    scaler.reflection_table["variance"].set_selected(isel, variance)
                     self.global_Ih_table.update_data_in_blocks(
                         intensity, i, column="intensity"
                     )
@@ -1413,9 +1411,12 @@ class MultiScaler(MultiScalerBase):
                         self._free_Ih_table.update_data_in_blocks(
                             variance, i, column="variance"
                         )
-
+                #  update the weights in the Ih_table after updating I, V
+                error_model = self.active_scalers[0].error_model
+                self.global_Ih_table.update_weights(error_model=error_model)
                 self.global_Ih_table.calc_Ih()
                 if self._free_Ih_table:
+                    self._free_Ih_table.update_weights(error_model=error_model)
                     self._free_Ih_table.calc_Ih()
         else:
             for i, scaler in enumerate(self.single_scalers):
@@ -1439,6 +1440,13 @@ class MultiScaler(MultiScalerBase):
                     self._free_Ih_table.update_data_in_blocks(
                         variance, i, column="variance"
                     )
+            #  update the weights in the Ih_table after updating I, V
+            error_model = self.active_scalers[0].error_model
+            self.global_Ih_table.update_weights(error_model=error_model)
+            self.global_Ih_table.calc_Ih()
+            if self._free_Ih_table:
+                self._free_Ih_table.update_weights(error_model=error_model)
+                self._free_Ih_table.calc_Ih()
 
 
 class TargetScaler(MultiScalerBase):

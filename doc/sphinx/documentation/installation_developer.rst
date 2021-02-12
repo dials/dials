@@ -32,38 +32,31 @@ For subsequent login sessions, be sure to set the environment in order to use th
 
   source dials
 
-Creating a Relocatable Installer Bundle on Linux
-------------------------------------------------
-
-Starting with the developer build just created, we can create a tarball suitable for public
-distribution.  Caveat is that we build our 64-bit installer on Centos 5.4, so that most conceivable users
-will be installing on a more modern OS back-compatible with the installer.
-
-Change to the working directory used above.  Then::
-
-  ./modules/dials/installer/dials_installer.sh
-
-..creates an installer called tmp/dials-installer-dev.tar.gz
-
-This can be relocated to a new directory, untarred, then::
-
-  cd dials-installer-dev
-  ./install -h [prints a help message]
-  ./install --prefix=[absolute path for relocated dials installation]
+ModuleNotFoundError: No module named 'gltbx_gl_ext'
+---------------------------------------------------
+If you are seeing this error then you need to add libgl/glu/khr headers to your installation.
+`Please follow these instructions <https://github.com/dials/dials/issues/1465#issuecomment-715457232>`_.
 
 Downloading the DIALS regression test data
 ==========================================
 
-The DIALS regression test data, needed for some of the DIALS tests, can be
-obtained using the `dials-data package <https://pypi.org/project/dials-data/>`_.
+The DIALS regression test data, needed for some of the DIALS tests, will be downloaded automatically when needed
+via the `dials-data package <https://pypi.org/project/dials-data/>`_.
 See the `dials-data instructions <https://dials-data.readthedocs.io/en/latest/installation.html>`_
 for more information.
 
-There is also a private dials_regression repository that is still used for
-some historic tests.
+There is also a private dials_regression repository that is still used for some historic tests.
 For those with svn access to the CCI server, this can be obtained as
 follows, replacing "USERNAME" for your username::
 
   cd modules
   svn checkout svn+ssh://USERNAME@cci.lbl.gov/dials_regression/trunk dials_regression
-  libtbx.configure dials_regression
+
+You do not need to configure the dials_regression module to run dials or dxtbx tests.
+
+Keeping a Development Environment current
+=========================================
+
+While you can always create a new development environment from scratch using the instructions above,
+it may be much preferable to update an existing environment.
+For that you may find the `guide for updating a development environment <https://github.com/dials/dials/wiki/Updating-a-development-environment>`_ in the DIALS Github repository wiki handy.

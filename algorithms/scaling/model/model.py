@@ -9,43 +9,45 @@ from __future__ import absolute_import, division, print_function
 import logging
 from collections import OrderedDict
 
-from libtbx import phil, Auto
-from dials.array_family import flex
+import six
+
+from libtbx import Auto, phil
+
+from dials.algorithms.scaling.error_model.error_model import BasicErrorModel
 from dials.algorithms.scaling.model.components.scale_components import (
-    SingleScaleFactor,
-    SingleBScaleFactor,
-    SHScaleComponent,
     LinearDoseDecay,
     QuadraticDoseDecay,
+    SHScaleComponent,
+    SingleBScaleFactor,
+    SingleScaleFactor,
 )
 from dials.algorithms.scaling.model.components.smooth_scale_components import (
-    SmoothScaleComponent1D,
     SmoothBScaleComponent1D,
+    SmoothScaleComponent1D,
     SmoothScaleComponent2D,
     SmoothScaleComponent3D,
 )
-from dials.algorithms.scaling.scaling_utilities import sph_harm_table
 from dials.algorithms.scaling.plots import (
     plot_absorption_parameters,
     plot_absorption_surface,
-    plot_smooth_scales,
+    plot_array_absorption_plot,
     plot_array_decay_plot,
     plot_array_modulation_plot,
-    plot_array_absorption_plot,
     plot_dose_decay,
     plot_relative_Bs,
+    plot_smooth_scales,
 )
+from dials.algorithms.scaling.scaling_utilities import sph_harm_table
+from dials.array_family import flex
 from dials_scaling_ext import (
-    calc_theta_phi,
     calc_lookup_index,
+    calc_theta_phi,
     create_sph_harm_lookup_table,
 )
-import six
 
 logger = logging.getLogger("dials")
 
 import pkg_resources
-
 
 kb_model_phil_str = """\
 decay_correction = True
@@ -274,7 +276,6 @@ class ScalingModelBase(object):
             dict: A dictionary representation of the model.
         """
         dictionary = OrderedDict({"__id__": self.id_})
-        dictionary["is_scaled"] = self._is_scaled
         for key in self.components:
             dictionary[key] = OrderedDict(
                 [
@@ -297,6 +298,26 @@ class ScalingModelBase(object):
     def from_dict(cls, obj):
         """Create a scaling model from a dictionary."""
         raise NotImplementedError()
+
+    def load_error_model(self, error_params):
+        # load existing model if there, but use user-specified values if given
+        new_model = None
+        if (
+            "error_model_type" in self._configdict
+            and not error_params.reset_error_model
+        ):
+            if self._configdict["error_model_type"] == "BasicErrorModel":
+                p = self._configdict["error_model_parameters"]
+                a = None
+                b = None
+                if not error_params.basic.a:
+                    a = p[0]
+                if not error_params.basic.b:
+                    b = p[1]
+                new_model = BasicErrorModel(a, b, error_params.basic)
+        if not new_model:
+            new_model = BasicErrorModel(basic_params=error_params.basic)
+        self.set_error_model(new_model)
 
     def set_error_model(self, error_model):
         """Associate an error model with the dataset."""
@@ -556,7 +577,6 @@ class DoseDecay(ScalingModelBase):
         (s_params, d_params, abs_params, B) = (None, None, None, None)
         (s_params_sds, d_params_sds, a_params_sds, B_sd) = (None, None, None, None)
         configdict = obj["configuration_parameters"]
-        is_scaled = obj["is_scaled"]
         if "scale" in configdict["corrections"]:
             s_params = flex.double(obj["scale"]["parameters"])
             if "est_standard_devs" in obj["scale"]:
@@ -581,7 +601,7 @@ class DoseDecay(ScalingModelBase):
             "absorption": {"parameters": abs_params, "parameter_esds": a_params_sds},
         }
 
-        return cls(parameters_dict, configdict, is_scaled)
+        return cls(parameters_dict, configdict, is_scaled=True)
 
     def plot_model_components(self):
         d = OrderedDict()
@@ -793,7 +813,6 @@ class PhysicalScalingModel(ScalingModelBase):
         (s_params, d_params, abs_params) = (None, None, None)
         (s_params_sds, d_params_sds, a_params_sds) = (None, None, None)
         configdict = obj["configuration_parameters"]
-        is_scaled = obj["is_scaled"]
         if "scale" in configdict["corrections"]:
             s_params = flex.double(obj["scale"]["parameters"])
             if "est_standard_devs" in obj["scale"]:
@@ -812,8 +831,7 @@ class PhysicalScalingModel(ScalingModelBase):
             "decay": {"parameters": d_params, "parameter_esds": d_params_sds},
             "absorption": {"parameters": abs_params, "parameter_esds": a_params_sds},
         }
-
-        return cls(parameters_dict, configdict, is_scaled)
+        return cls(parameters_dict, configdict, is_scaled=True)
 
     def plot_model_components(self):
         d = OrderedDict()
@@ -1074,7 +1092,6 @@ class ArrayScalingModel(ScalingModelBase):
         if obj["__id__"] != cls.id_:
             raise RuntimeError("expected __id__ %s, got %s" % (cls.id_, obj["__id__"]))
         configdict = obj["configuration_parameters"]
-        is_scaled = obj["is_scaled"]
         (dec_params, abs_params, mod_params) = (None, None, None)
         (d_params_sds, a_params_sds, m_params_sds) = (None, None, None)
         if "decay" in configdict["corrections"]:
@@ -1096,7 +1113,7 @@ class ArrayScalingModel(ScalingModelBase):
             "modulation": {"parameters": mod_params, "parameter_esds": m_params_sds},
         }
 
-        return cls(parameters_dict, configdict, is_scaled)
+        return cls(parameters_dict, configdict, is_scaled=True)
 
     def plot_model_components(self):
         d = OrderedDict()
@@ -1150,7 +1167,6 @@ class KBScalingModel(ScalingModelBase):
         if obj["__id__"] != cls.id_:
             raise RuntimeError("expected __id__ %s, got %s" % (cls.id_, obj["__id__"]))
         configdict = obj["configuration_parameters"]
-        is_scaled = obj["is_scaled"]
         (s_params, d_params) = (None, None)
         (s_params_sds, d_params_sds) = (None, None)
         if "scale" in configdict["corrections"]:
@@ -1167,7 +1183,7 @@ class KBScalingModel(ScalingModelBase):
             "decay": {"parameters": d_params, "parameter_esds": d_params_sds},
         }
 
-        return cls(parameters_dict, configdict, is_scaled)
+        return cls(parameters_dict, configdict, is_scaled=True)
 
     @classmethod
     def from_data(cls, params, experiment, reflection_table):

@@ -1,12 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
-from scitbx.array_family import flex
-import scitbx.matrix
-from rstbx.indexing_api import tools
-from rstbx.dps_core.cell_assessment import unit_cell_too_small
-
-
 import logging
+
+import scitbx.matrix
+from rstbx.dps_core.cell_assessment import unit_cell_too_small
+from rstbx.indexing_api import tools
+from scitbx.array_family import flex
 
 logger = logging.getLogger(__name__)
 

@@ -5,8 +5,9 @@ import shutil
 
 import procrunner
 
-from dials.command_line.show import model_connectivity, run
 from dxtbx.serialize import load
+
+from dials.command_line.show import model_connectivity, run
 
 
 def test_dials_show(dials_regression):
@@ -51,6 +52,7 @@ Beam centre:
     mm: (212.48,220.00)
     px: (1235.34,1279.08)
 Scan:
+    number of images:   9
     image range:   {1,9}
     oscillation:   {0,0.2}
     exposure time: 0.2
@@ -119,6 +121,7 @@ Beam centre:
     mm: (210.76,205.28)
     px: (1225.35,1193.47)
 Scan:
+    number of images:   540
     image range:   {1,540}
     oscillation:   {82,0.15}
     exposure time: 0.067
@@ -175,6 +178,7 @@ Beam centre:
     mm: (212.48,220.00)
     px: (1235.34,1279.08)
 Scan:
+    number of images:   9
     image range:   {1,9}
     oscillation:   {0,0.2}
     exposure time: 0.2
@@ -223,7 +227,7 @@ Panel:
     )
 
     assert (
-        "\n".join(output[-41:])
+        "\n".join(output[-42:])
         == """
 Panel:
   name: row-23
@@ -259,6 +263,7 @@ Beam centre:
     mm, raw image: (191.95,444.63)
     px, raw image: (1116.00,2585.96)
 Scan:
+    number of images:   1
     image range:   {1,1}
     oscillation:   {0,0.1}
     exposure time: 0.2

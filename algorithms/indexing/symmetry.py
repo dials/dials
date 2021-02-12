@@ -7,11 +7,9 @@ from cctbx import crystal, sgtbx
 from cctbx.crystal_orientation import crystal_orientation
 from cctbx.sgtbx import change_of_basis_op, subgroups
 from cctbx.sgtbx.bravais_types import bravais_lattice
+from dxtbx.model import Crystal
 from rstbx.dps_core.lepage import iotbx_converter
 from scitbx.array_family import flex
-
-from dxtbx.model import Crystal
-
 
 logger = logging.getLogger(__name__)
 
@@ -156,8 +154,8 @@ class SymmetryHandler(object):
                 self.cb_op_inp_ref = (
                     self.target_symmetry_inp.change_of_basis_op_to_reference_setting()
                 )
-                self.target_symmetry_reference_setting = self.target_symmetry_inp.change_basis(
-                    self.cb_op_inp_ref
+                self.target_symmetry_reference_setting = (
+                    self.target_symmetry_inp.change_basis(self.cb_op_inp_ref)
                 )
                 self.cb_op_inp_best = (
                     self.target_symmetry_reference_setting.change_of_basis_op_to_best_cell()
@@ -177,8 +175,10 @@ class SymmetryHandler(object):
             self.target_symmetry_reference_setting.change_of_basis_op_to_primitive_setting()
         )
         if unit_cell:
-            self.target_symmetry_primitive = self.target_symmetry_reference_setting.change_basis(
-                cb_op_reference_to_primitive
+            self.target_symmetry_primitive = (
+                self.target_symmetry_reference_setting.change_basis(
+                    cb_op_reference_to_primitive
+                )
             )
         else:
             self.target_symmetry_primitive = crystal.symmetry(
@@ -198,7 +198,8 @@ class SymmetryHandler(object):
             )
         if self.target_symmetry_primitive:
             logger.debug(
-                "Target symmetry (primitive cell):\n%s", self.target_symmetry_primitive,
+                "Target symmetry (primitive cell):\n%s",
+                self.target_symmetry_primitive,
             )
         logger.debug("cb_op primitive->input: %s", self.cb_op_primitive_inp)
 

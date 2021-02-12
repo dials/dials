@@ -4,12 +4,13 @@ Optimise the combination of profile and summation intensity values.
 from __future__ import absolute_import, division, print_function
 
 import logging
-from dials.util import tabulate
 
 import boost_adaptbx.boost.python
-from cctbx import miller, crystal
+from cctbx import crystal, miller
+
 from dials.algorithms.scaling.scaling_utilities import DialsMergingStatisticsError
 from dials.array_family import flex
+from dials.util import tabulate
 
 miller_ext = boost_adaptbx.boost.python.import_ext("cctbx_miller_ext")
 logger = logging.getLogger("dials")
@@ -86,14 +87,14 @@ class SingleDatasetIntensityCombiner(object):
     """
 
     def __init__(self, scaler, use_Imid=None):
+        self.scaler = scaler
+        self.experiment = scaler.experiment
         if "intensity.prf.value" not in scaler.reflection_table:
             self.max_key = 1
             logger.info(
                 "No profile intensities found, skipping profile/summation intensity combination."
             )
             return
-        self.scaler = scaler
-        self.experiment = scaler.experiment
         if use_Imid is not None:
             self.max_key = use_Imid
         else:

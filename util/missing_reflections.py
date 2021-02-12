@@ -4,10 +4,10 @@ Tools for analysis of missing reflections.
 
 from annlib_ext import AnnAdaptor
 
+import cctbx.miller
 from boost_adaptbx import graph
 from boost_adaptbx.graph import connected_component_algorithm as cca
 
-import cctbx.miller
 from dials.array_family import flex
 
 
@@ -57,7 +57,9 @@ def connected_components(
 
     # Construct the graph of connected missing reflections
     g = graph.adjacency_list(
-        graph_type="undirected", vertex_type="vector", edge_type="set",
+        graph_type="undirected",
+        vertex_type="vector",
+        edge_type="set",
     )
     distance_cutoff = 2 ** 0.5
     for i in range(missing_set.size()):

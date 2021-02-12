@@ -6,36 +6,35 @@ import logging
 import math
 import sys
 
+import iotbx.cif.model
 from cctbx import miller, sgtbx
+from dxtbx.model.experiment_list import Experiment, ExperimentList
 from libtbx.phil import parse
 from libtbx.utils import format_float_with_standard_uncertainty
-import iotbx.cif.model
 
-from dxtbx.model.experiment_list import Experiment, ExperimentList
+import dials.util
 from dials.algorithms.refinement.corrgram import create_correlation_plots
-from dials.algorithms.refinement.engine import refinery_phil_scope
 from dials.algorithms.refinement.engine import LevenbergMarquardtIterations as Refinery
-from dials.algorithms.refinement.refiner import Refiner
+from dials.algorithms.refinement.engine import refinery_phil_scope
 from dials.algorithms.refinement.parameterisation.crystal_parameters import (
     CrystalUnitCellParameterisation,
 )
 from dials.algorithms.refinement.parameterisation.parameter_report import (
     ParameterReporter,
 )
+from dials.algorithms.refinement.refiner import Refiner
 from dials.algorithms.refinement.two_theta_refiner import (
-    TwoThetaReflectionManager,
-    TwoThetaTarget,
     TwoThetaExperimentsPredictor,
     TwoThetaPredictionParameterisation,
+    TwoThetaReflectionManager,
+    TwoThetaTarget,
 )
 from dials.array_family import flex
-from dials.util import log
-from dials.util.version import dials_version
-from dials.util import show_mail_on_error
+from dials.util import log, tabulate
 from dials.util.filter_reflections import filter_reflection_table
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.multi_dataset_handling import parse_multiple_datasets
-from dials.util import tabulate
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.two_theta_refine")
 
@@ -93,6 +92,10 @@ phil_scope = parse(
       .type = bool
       .help = "If integrated centroids are provided, filter these so that only"
               "those with both the 'integrated' and 'strong' flags are used"
+
+    partiality_threshold = 0.4
+      .type = float
+      .help = "Use only reflections with a partiality above this threshold."
 
     combine_crystal_models = True
       .type = bool
@@ -368,10 +371,13 @@ class Script(object):
         logger.info("Saving mmCIF information to %s", filename)
 
         block = iotbx.cif.model.block()
+        block["_audit.revision_id"] = 1
         block["_audit.creation_method"] = dials_version()
         block["_audit.creation_date"] = datetime.date.today().isoformat()
+        block["_entry.id"] = "two_theta_refine"
         #   block["_publ.section_references"] = '' # once there is a reference...
 
+        block["_cell.entry_id"] = "two_theta_refine"
         for cell, esd, cifname in zip(
             crystal.get_unit_cell().parameters(),
             crystal.get_cell_parameter_sd(),
@@ -390,6 +396,7 @@ class Script(object):
         block["_cell.volume_esd"] = "%f" % crystal.get_cell_volume_sd()
 
         used_reflections = refiner.get_matches()
+        block["_cell_measurement.entry_id"] = "two_theta_refine"
         block["_cell_measurement.reflns_used"] = len(used_reflections)
         block["_cell_measurement.theta_min"] = (
             flex.min(used_reflections["2theta_obs.rad"]) * 180 / math.pi / 2
@@ -397,6 +404,10 @@ class Script(object):
         block["_cell_measurement.theta_max"] = (
             flex.max(used_reflections["2theta_obs.rad"]) * 180 / math.pi / 2
         )
+        block["_exptl_crystal.id"] = 1
+        block["_diffrn.id"] = "two_theta_refine"
+        block["_diffrn.crystal_id"] = 1
+        block["_diffrn_reflns.diffrn_id"] = "two_theta_refine"
         block["_diffrn_reflns.number"] = len(used_reflections)
         miller_span = miller.index_span(used_reflections["miller_index"])
         min_h, min_k, min_l = miller_span.min()
@@ -419,11 +430,11 @@ class Script(object):
         with open(filename, "w") as fh:
             cif.show(out=fh)
 
-    def run(self):
+    def run(self, args=None):
         """Execute the script."""
 
         # Parse the command line
-        params, _ = self.parser.parse_args(show_diff_phil=False)
+        params, _ = self.parser.parse_args(args, show_diff_phil=False)
 
         # set up global reflections list
         reflections = flex.reflection_table()
@@ -477,7 +488,11 @@ class Script(object):
         # Filter data if scaled to remove outliers
         if "inverse_scale_factor" in reflections:
             try:
-                reflections = filter_reflection_table(reflections, ["scale"])
+                reflections = filter_reflection_table(
+                    reflections,
+                    ["scale"],
+                    partiality_threshold=params.refinement.partiality_threshold,
+                )
             except ValueError as e:
                 logger.warn(e)
                 logger.info(
@@ -539,7 +554,11 @@ class Script(object):
             self.generate_mmcif(crystals[0], refiner, filename=params.output.mmcif)
 
 
+@dials.util.show_mail_handle_errors()
+def run(args=None):
+    script = Script()
+    script.run(args)
+
+
 if __name__ == "__main__":
-    with show_mail_on_error():
-        script = Script()
-        script.run()
+    run()

@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
-from dials.extensions.simple_background_ext import SimpleBackgroundExt
+
 from dials.extensions.glm_background_ext import GLMBackgroundExt
+from dials.extensions.simple_background_ext import SimpleBackgroundExt
 
 
 class AutoBackgroundExt(object):

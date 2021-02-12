@@ -1,19 +1,22 @@
 """
 tests for functions in dials.util.exclude_images.py
 """
-from __future__ import absolute_import, division, print_function
+
 import copy
+from unittest.mock import Mock
+
 import pytest
-from mock import Mock
-from dxtbx.model import Experiment, Scan, ExperimentList
+
+from dxtbx.model import Experiment, ExperimentList, Scan
+
 from dials.array_family import flex
 from dials.util.exclude_images import (
     _parse_exclude_images_commands,
-    set_initial_valid_image_ranges,
-    get_valid_image_ranges,
+    exclude_image_ranges_for_scaling,
     exclude_image_ranges_from_scans,
     get_selection_for_valid_image_ranges,
-    exclude_image_ranges_for_scaling,
+    get_valid_image_ranges,
+    set_initial_valid_image_ranges,
 )
 
 

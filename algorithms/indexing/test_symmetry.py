@@ -2,10 +2,11 @@ from __future__ import absolute_import, division, print_function
 
 import pytest
 
+import scitbx.matrix
 from cctbx import crystal, sgtbx, uctbx
 from cctbx.sgtbx import bravais_types
-import scitbx.matrix
 from dxtbx.model import Crystal
+
 from dials.algorithms.indexing import symmetry
 
 
@@ -68,14 +69,16 @@ def test_SymmetryHandler(space_group_symbol):
     crystal_new.get_crystal_symmetry(assert_is_compatible_unit_cell=True)
 
     handler = symmetry.SymmetryHandler(
-        unit_cell=cs.minimum_cell().unit_cell(), space_group=sgtbx.space_group(),
+        unit_cell=cs.minimum_cell().unit_cell(),
+        space_group=sgtbx.space_group(),
     )
     assert handler.target_symmetry_primitive.unit_cell().parameters() == pytest.approx(
         cs.minimum_cell().unit_cell().parameters()
     )
     assert handler.target_symmetry_primitive.space_group() == sgtbx.space_group("P-1")
-    assert handler.target_symmetry_reference_setting.unit_cell().parameters() == pytest.approx(
-        cs.minimum_cell().unit_cell().parameters()
+    assert (
+        handler.target_symmetry_reference_setting.unit_cell().parameters()
+        == pytest.approx(cs.minimum_cell().unit_cell().parameters())
     )
     assert handler.target_symmetry_reference_setting.space_group() == sgtbx.space_group(
         "P-1"

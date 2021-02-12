@@ -3,10 +3,11 @@ from __future__ import absolute_import, division, print_function
 import logging
 import math
 
-from dials.array_family import flex
+from scitbx.matrix import col
+
 from dials.algorithms.integration.kapton_correction import get_absorption_correction
 from dials.algorithms.shoebox import MaskCode
-from scitbx.matrix import col
+from dials.array_family import flex
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -138,8 +139,8 @@ class KaptonTape_2019(object):
         self.faces = faces
 
     def get_kapton_path_mm(self, s1):
-        """ Get kapton path length traversed by an s1 vecto. If no kapton intersection or just touches the edge,
-            then None is returned"""
+        """Get kapton path length traversed by an s1 vecto. If no kapton intersection or just touches the edge,
+        then None is returned"""
         intersection_points = []
         # determine path length through kapton tape
         for face in self.faces:
@@ -189,8 +190,8 @@ class KaptonTape_2019(object):
         return absorption_correction
 
     def abs_correction_flex(self, s1_flex):
-        """ Compute the absorption correction using beers law. Takes in a flex array of s1 vectors, determines path lengths for each
-            and then determines absorption correction for each s1 vector """
+        """Compute the absorption correction using beers law. Takes in a flex array of s1 vectors, determines path lengths for each
+        and then determines absorption correction for each s1 vector"""
         kapton_faces = self.faces
         from dials.algorithms.integration import get_kapton_path_cpp
 
@@ -207,8 +208,8 @@ class KaptonTape_2019(object):
         return absorption_correction
 
     def distance_of_point_from_line(self, r0, r1, r2):
-        """ Evaluates distance between point and a line between two points
-            Note that implementation ignores z dimension"""
+        """Evaluates distance between point and a line between two points
+        Note that implementation ignores z dimension"""
         x0, y0, z0 = r0
         x1, y1, z1 = r1
         x2, y2, z2 = r2

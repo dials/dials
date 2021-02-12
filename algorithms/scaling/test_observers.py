@@ -1,19 +1,21 @@
-from __future__ import absolute_import, division, print_function
-import mock
+from unittest import mock
+
 import pytest
+
 from dxtbx.serialize import load
-from dials.array_family import flex
-from dials.algorithms.scaling.scaling_library import scaled_data_as_miller_array
+
 from dials.algorithms.scaling.observers import (
-    make_error_model_plots,
-    make_scaling_model_plots,
-    make_outlier_plots,
-    print_scaling_summary,
-    print_scaling_model_error_summary,
     ScalingHTMLContextManager,
+    make_error_model_plots,
     make_filtering_plots,
     make_merging_stats_plots,
+    make_outlier_plots,
+    make_scaling_model_plots,
+    print_scaling_model_error_summary,
+    print_scaling_summary,
 )
+from dials.algorithms.scaling.scaling_library import scaled_data_as_miller_array
+from dials.array_family import flex
 
 
 @pytest.fixture

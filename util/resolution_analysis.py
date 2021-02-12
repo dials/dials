@@ -10,24 +10,23 @@ import math
 import typing
 from collections import OrderedDict
 
+import iotbx.merging_statistics
 import iotbx.mtz
 import iotbx.phil
-import iotbx.merging_statistics
-from cctbx.array_family import flex
 from cctbx import miller, uctbx
+from cctbx.array_family import flex
 from iotbx.reflection_file_utils import label_table
-from scitbx.math import curve_fitting
-from scitbx.math import five_number_summary
+from scitbx.math import curve_fitting, five_number_summary
 
+from dials.algorithms import symmetry
 from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
 from dials.report import plots
-from dials.util import Sorry
+from dials.util import Sorry, tabulate
 from dials.util.batch_handling import (
-    calculate_batch_offsets,
     assign_batches_to_reflections,
+    calculate_batch_offsets,
 )
 from dials.util.filter_reflections import filter_reflection_table
-from dials.util import tabulate
 
 logger = logging.getLogger(__name__)
 
@@ -63,8 +62,8 @@ def tanh_fit(x, y, iqr_multiplier=None):
     """
     Fit a tanh function to the values y(x) and return this fit
 
-    x, y should be iterables containing floats of the same size. The order is the order
-    of polynomial to use for this fit. This is used for fitting a curve to CC½.
+    x, y should be iterables containing floats of the same size. This is used for
+    fitting a curve to CC½.
     """
 
     tf = curve_fitting.tanh_fit(x, y)
@@ -335,7 +334,7 @@ phil_str = """
     .expert_level = 1
   cc_ref = 0.1
     .type = float(value_min=0)
-    .help = "Minimum value of CC vs reference dataset in the outer resolution shell"
+    .help = "Minimum value of CC vs reference data set in the outer resolution shell"
     .short_caption = "Outer shell CCref"
     .expert_level = 1
   cc_half = 0.3
@@ -351,12 +350,12 @@ phil_str = """
   cc_half_fit = polynomial *tanh
     .type = choice
     .expert_level = 1
-  isigma = 0.25
+  isigma = None
     .type = float(value_min=0)
     .help = "Minimum value of the unmerged <I/sigI> in the outer resolution shell"
     .short_caption = "Outer shell unmerged <I/sigI>"
     .expert_level = 1
-  misigma = 1.0
+  misigma = None
     .type = float(value_min=0)
     .help = "Minimum value of the merged <I/sigI> in the outer resolution shell"
     .short_caption = "Outer shell merged <I/sigI>"
@@ -390,6 +389,9 @@ phil_str = """
     .expert_level = 1
   reference = None
     .type = path
+  emax = 4
+    .type = float(value_min = 0)
+    .help = "Reject reflecitons with normalised intensities E^2 > emax^2"
 """
 
 
@@ -511,6 +513,15 @@ class Resolutionizer(object):
             i_obs = i_obs.customized_copy(
                 space_group_info=self._params.space_group, info=i_obs.info()
             )
+
+        if self._params.emax:
+            normalised = symmetry.symmetry_base.quasi_normalisation(i_obs)
+            e2_cutoff = self._params.emax ** 2
+            sel = normalised.data() < e2_cutoff
+            logger.info(
+                f"Removing {sel.count(False)} Wilson outliers with E^2 >= {e2_cutoff}"
+            )
+            i_obs = i_obs.select(sel)
 
         self._intensities = i_obs
 
@@ -634,7 +645,11 @@ class Resolutionizer(object):
             if metric == metrics.CC_REF and not self._reference:
                 limit = None
             if limit:
-                result = self.resolution(metric, limit=limit)
+                try:
+                    result = self.resolution(metric, limit=limit)
+                except RuntimeError as e:
+                    logger.info(f"Resolution fit against {name} failed: {e}")
+                    continue
                 pretty_name = metric_to_output.get(metric, name)
                 if result.d_min:
                     logger.info(

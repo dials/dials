@@ -4,9 +4,12 @@ command line option, as well as obtaining a selection to use for selecting
 the corresponding reflections.
 """
 from __future__ import absolute_import, division, print_function
-from dials.array_family import flex
+
 from orderedset import OrderedSet
+
 import iotbx.phil
+
+from dials.array_family import flex
 
 phil_scope = iotbx.phil.parse(
     """
@@ -171,4 +174,5 @@ def exclude_image_ranges_for_scaling(reflections, experiments, exclude_images):
     for refl, exp in zip(reflections, experiments):
         sel = get_selection_for_valid_image_ranges(refl, exp)
         refl.set_flags(~sel, refl.flags.user_excluded_in_scaling)
+        refl.unset_flags(~sel, refl.flags.scaled)
     return reflections, experiments

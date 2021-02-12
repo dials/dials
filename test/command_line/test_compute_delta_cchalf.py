@@ -2,9 +2,11 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+
 import procrunner
 import pytest
-from dials.command_line.compute_delta_cchalf import phil_scope, CCHalfFromMTZ
+
+from dials.command_line.compute_delta_cchalf import CCHalfFromMTZ, phil_scope
 
 
 def test_compute_delta_cchalf_scaled_data(dials_data, tmpdir):

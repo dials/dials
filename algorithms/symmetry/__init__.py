@@ -12,14 +12,11 @@ logger = logging.getLogger(__name__)
 from six.moves import cStringIO as StringIO
 
 import libtbx
-from scitbx.array_family import flex
-from cctbx import adptbx
-from cctbx import sgtbx
-from cctbx import uctbx
+from cctbx import adptbx, sgtbx, uctbx
 from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from mmtbx import scaling
-from mmtbx.scaling import absolute_scaling
-from mmtbx.scaling import matthews
+from mmtbx.scaling import absolute_scaling, matthews
+from scitbx.array_family import flex
 
 from dials.util import resolution_analysis
 
@@ -53,7 +50,7 @@ class symmetry_base(object):
             intensities. If set to :data:`libtbx.Auto` then d_min will be
             automatically determined according to the parameters
             ``min_i_mean_over_sigma_mean`` and ``min_cc_half``.
-          min_i_mean_over_sigma_mean (float): minimum value of |I|/|sigma(I)| for
+          min_i_mean_over_sigma_mean (float): minimum value of :math:`|I|/|sigma(I)|` for
             automatic determination of resolution cutoff.
           min_cc_half (float): minimum value of CC½ for automatic determination of
             resolution cutoff.
@@ -221,20 +218,30 @@ class symmetry_base(object):
           cctbx.miller.array: The normalised intensities.
         """
         # handle negative reflections to minimise effect on mean I values.
-        intensities.data().set_selected(intensities.data() < 0.0, 0.0)
+        work = intensities.deep_copy()
+        work.data().set_selected(work.data() < 0.0, 0.0)
 
         # set up binning objects
-        if intensities.size() > 20000:
+        if work.size() > 20000:
             n_refl_shells = 20
-        elif intensities.size() > 15000:
+        elif work.size() > 15000:
             n_refl_shells = 15
         else:
             n_refl_shells = 10
-        d_star_sq = intensities.d_star_sq().data()
-        step = (flex.max(d_star_sq) - flex.min(d_star_sq) + 1e-8) / n_refl_shells
-        intensities.setup_binner_d_star_sq_step(d_star_sq_step=step)
-
-        normalisations = intensities.intensity_quasi_normalisations()
+        d_star_sq = work.d_star_sq().data()
+        d_star_sq_max = flex.max(d_star_sq)
+        d_star_sq_min = flex.min(d_star_sq)
+        span = d_star_sq_max - d_star_sq_min
+        d_star_sq_max += span * 1e-6
+        d_star_sq_min -= span * 1e-6
+        d_star_sq_step = (d_star_sq_max - d_star_sq_min) / n_refl_shells
+        work.setup_binner_d_star_sq_step(
+            d_min=uctbx.d_star_sq_as_d(d_star_sq_min),  # cctbx/cctbx_project#588
+            d_max=uctbx.d_star_sq_as_d(d_star_sq_max),  # cctbx/cctbx_project#588
+            d_star_sq_step=d_star_sq_step,
+            auto_binning=False,
+        )
+        normalisations = work.intensity_quasi_normalisations()
         return intensities.customized_copy(
             data=(intensities.data() / normalisations.data()),
             sigmas=(intensities.sigmas() / normalisations.data()),
@@ -357,8 +364,10 @@ def resolution_filter_from_reflections_experiments(
 ):
     """Run the resolution filter using native dials data formats."""
     rparams = resolution_analysis.phil_defaults.extract().resolution
-    resolutionizer = resolution_analysis.Resolutionizer.from_reflections_and_experiments(
-        reflections, experiments, rparams
+    resolutionizer = (
+        resolution_analysis.Resolutionizer.from_reflections_and_experiments(
+            reflections, experiments, rparams
+        )
     )
     return _resolution_filter(resolutionizer, min_i_mean_over_sigma_mean, min_cc_half)
 
@@ -377,7 +386,7 @@ def _resolution_filter(resolutionizer, min_i_mean_over_sigma_mean, min_cc_half):
             logger.info(u"I/σ(I) resolution filter failed with the following error:")
             logger.error(e)
         else:
-            if d_min_cc_half:
+            if d_min_isigi:
                 logger.info(
                     u"Resolution estimate from <I>/<σ(I)> > %.1f : %.2f",
                     min_i_mean_over_sigma_mean,

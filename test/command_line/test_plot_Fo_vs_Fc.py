@@ -1,14 +1,11 @@
-from __future__ import absolute_import, division, print_function
-
 import procrunner
 
 
-def test(dials_data, tmpdir):
+def test(dials_data, tmp_path):
     mtz_file = dials_data("lysozyme_electron_diffraction").join("refmac_final.mtz")
     result = procrunner.run(
-        ["dials.plot_Fo_vs_Fc", "hklin={0}".format(mtz_file.strpath)],
-        working_directory=tmpdir,
+        ["dials.plot_Fo_vs_Fc", "hklin=" + mtz_file.strpath], working_directory=tmp_path
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("Fo_vs_Fc.pdf").check()
-    assert "|Fe| = 42.0" in result["stdout"].decode()
+    assert tmp_path.joinpath("Fo_vs_Fc.pdf").is_file()
+    assert "|Fe| = 42.0" in result.stdout.decode()

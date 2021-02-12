@@ -4,9 +4,11 @@ from __future__ import absolute_import, division, print_function
 
 import procrunner
 import pytest
-from dials.array_family import flex
+
 from dxtbx.model import Beam, Experiment, ExperimentList
 from dxtbx.serialize import load
+
+from dials.array_family import flex
 
 
 def generate_exp(wavelength=1):

@@ -3,11 +3,10 @@ from __future__ import absolute_import, division, print_function
 import logging
 import math
 
-from cctbx import miller
-from cctbx import crystal
+from cctbx import crystal, miller
+
 from dials.array_family import flex
 from dials.util import tabulate
-
 
 logger = logging.getLogger("dials.command_line.compute_delta_cchalf")
 
@@ -16,7 +15,8 @@ def compute_mean_weighted_cc_half(intensities):
     cc_bins = intensities.cc_one_half_sigma_tau(use_binning=True, return_n_refl=True)
     bin_data = [b for b in cc_bins.data if b is not None]
     return flex.mean_weighted(
-        flex.double(b[0] for b in bin_data), flex.double(b[1] for b in bin_data),
+        flex.double(b[0] for b in bin_data),
+        flex.double(b[1] for b in bin_data),
     )
 
 
@@ -51,7 +51,8 @@ class PerGroupCChalfStatistics(object):
             miller.array(
                 miller.set(
                     crystal.symmetry(
-                        space_group=space_group, unit_cell=mean_unit_cell,
+                        space_group=space_group,
+                        unit_cell=mean_unit_cell,
                     ),
                     reflection_table["miller_index"],
                 ),

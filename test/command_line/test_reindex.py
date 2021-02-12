@@ -4,13 +4,16 @@ import os
 
 import procrunner
 import pytest
+
 import scitbx.matrix
 from cctbx import sgtbx
 from cctbx.sgtbx.lattice_symmetry import metric_subgroups
-from dxtbx.serialize import load
 from dxtbx.model import Crystal, Experiment, ExperimentList
-from dials.command_line.reindex import reindex_experiments
+from dxtbx.serialize import load
+
+import dials.command_line.reindex
 from dials.array_family import flex
+from dials.command_line.reindex import reindex_experiments
 
 
 def test_reindex(dials_regression, tmpdir):
@@ -238,3 +241,19 @@ def test_reindex_experiments():
         )
         # Check that the scan-varying A matrices have been copied as well
         assert cryst.num_scan_points == n_scan_points
+
+
+def test_reindex_cb_op_exit(dials_data):
+    data_dir = dials_data("insulin_processed")
+
+    # Want a SystemExit, rather than an uncaught exception
+    with pytest.raises(SystemExit) as e:
+        dials.command_line.reindex.run(
+            [
+                "change_of_basis_op=a+2*b+c,-b+c,a",
+                str(data_dir / "scaled.expt"),
+                str(data_dir / "scaled.refl"),
+            ]
+        )
+    # Make sure this is the expected error rather than e.g. an argument error
+    assert "Unsuitable value" in str(e.value)

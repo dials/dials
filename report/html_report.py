@@ -49,6 +49,7 @@ class html_report(object):
 
         elif self.external_dependencies == "embed":
             import os
+
             import libtbx.load_env
 
             css_dir = libtbx.env.find_in_repositories("dials/static/css")

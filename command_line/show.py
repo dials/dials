@@ -2,14 +2,18 @@ from __future__ import absolute_import, division, print_function
 
 import collections
 import os
+import sys
+
+import numpy as np
 
 import iotbx.phil
-import numpy as np
 from cctbx import uctbx
-from dials.array_family import flex
-from dials.util import Sorry, tabulate
 from dxtbx.model.experiment_list import ExperimentListFactory
 from scitbx.math import five_number_summary
+
+import dials.util
+from dials.array_family import flex
+from dials.util import Sorry, tabulate
 
 help_message = """
 
@@ -179,7 +183,8 @@ def show_goniometer(goniometer):
     return s
 
 
-def run(args):
+@dials.util.show_mail_handle_errors()
+def run(args=None):
     import dials.util.log
 
     dials.util.log.print_banner()
@@ -689,6 +694,4 @@ def show_reflections(
 
 
 if __name__ == "__main__":
-    import sys
-
-    run(sys.argv[1:])
+    run()

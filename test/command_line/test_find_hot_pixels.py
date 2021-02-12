@@ -9,6 +9,7 @@ def test(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.find_spots",
+            "nproc=1",
             "output.experiments=spotfinder.expt",
             "output.reflections=spotfinder.refl",
             "output.shoeboxes=True",

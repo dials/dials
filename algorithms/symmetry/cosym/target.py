@@ -4,14 +4,15 @@ from __future__ import absolute_import, division, print_function
 import copy
 import logging
 import math
+import warnings
+
 from orderedset import OrderedSet
+from scipy import sparse
 
 import cctbx.sgtbx.cosets
-from cctbx import miller
-from cctbx import sgtbx
+from cctbx import miller, sgtbx
 from cctbx.array_family import flex
 from libtbx import easy_mp
-from scipy import sparse
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,7 @@ class Target(object):
         dimensions=None,
         nproc=1,
     ):
-        r""""Intialise a Target object.
+        r"""Intialise a Target object.
 
         Args:
           intensities (cctbx.miller.array): The intensities on which to perform
@@ -84,15 +85,15 @@ class Target(object):
                 last_id = lid
                 self._lattices.append(n)
 
-        self._sym_ops = OrderedSet(["x,y,z"])
+        self.sym_ops = OrderedSet(["x,y,z"])
         self._lattice_group = lattice_group
-        self._sym_ops.update({op.as_xyz() for op in self._generate_twin_operators()})
+        self.sym_ops.update(op.as_xyz() for op in self._generate_twin_operators())
         if dimensions is None:
-            dimensions = max(2, len(self._sym_ops))
+            dimensions = max(2, len(self.sym_ops))
         self.set_dimensions(dimensions)
 
         self._lattice_group = copy.deepcopy(self._data.space_group())
-        for sym_op in self._sym_ops:
+        for sym_op in self.sym_ops:
             self._lattice_group.expand_smx(sym_op)
         self._patterson_group = self._lattice_group.build_derived_patterson_group()
 
@@ -157,7 +158,7 @@ class Target(object):
     def _compute_rij_wij(self, use_cache=True):
         """Compute the rij_wij matrix."""
         n_lattices = self._lattices.size()
-        n_sym_ops = len(self._sym_ops)
+        n_sym_ops = len(self.sym_ops)
 
         NN = n_lattices * n_sym_ops
 
@@ -169,7 +170,7 @@ class Target(object):
 
         indices = {}
         space_group_type = self._data.space_group().type()
-        for cb_op in self._sym_ops:
+        for cb_op in self.sym_ops:
             cb_op = sgtbx.change_of_basis_op(cb_op)
             indices_reindexed = cb_op.apply(self._data.indices())
             miller.map_to_asu(space_group_type, False, indices_reindexed)
@@ -178,7 +179,7 @@ class Target(object):
         def _compute_rij_matrix_one_row_block(i):
             rij_cache = {}
 
-            n_sym_ops = len(self._sym_ops)
+            n_sym_ops = len(self.sym_ops)
             NN = n_lattices * n_sym_ops
 
             rij_row = []
@@ -199,12 +200,12 @@ class Target(object):
                 j_lower, j_upper = self._lattice_lower_upper_index(j)
                 intensities_j = self._data.data()[j_lower:j_upper]
 
-                for k, cb_op_k in enumerate(self._sym_ops):
+                for k, cb_op_k in enumerate(self.sym_ops):
                     cb_op_k = sgtbx.change_of_basis_op(cb_op_k)
 
                     indices_i = indices[cb_op_k.as_xyz()][i_lower:i_upper]
 
-                    for kk, cb_op_kk in enumerate(self._sym_ops):
+                    for kk, cb_op_kk in enumerate(self.sym_ops):
                         if i == j and k == kk:
                             # don't include correlation of dataset with itself
                             continue
@@ -316,7 +317,7 @@ class Target(object):
         Returns:
           f (float): The value of the target function at coordinates `x`.
         """
-        assert (x.size() // self.dim) == (self._lattices.size() * len(self._sym_ops))
+        assert (x.size() // self.dim) == (self._lattices.size() * len(self.sym_ops))
         inner = self.rij_matrix.deep_copy()
         NN = x.size() // self.dim
         for i in range(self.dim):
@@ -460,4 +461,8 @@ class Target(object):
         Returns:
           List[cctbx.sgtbx.rt_mx]: The list of symmetry operations.
         """
-        return self._sym_ops
+        warnings.warn(
+            "get_sym_ops() is deprecated, use sym_ops property instead",
+            DeprecationWarning,
+        )
+        return self.sym_ops

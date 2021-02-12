@@ -2,19 +2,22 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import math
-from collections import namedtuple
 import warnings
+from collections import namedtuple
+from typing import Tuple
 
+import libtbx.phil
 from cctbx import crystal
+from dxtbx.masking import (
+    mask_untrusted_circle,
+    mask_untrusted_polygon,
+    mask_untrusted_rectangle,
+)
+from dxtbx.model import ImageSet
 from iotbx.phil import parse
 
 from dials.array_family import flex
 from dials.util.ext import ResolutionMaskGenerator
-from dxtbx.masking import (
-    mask_untrusted_rectangle,
-    mask_untrusted_circle,
-    mask_untrusted_polygon,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -23,10 +26,6 @@ phil_scope = parse(
   border = 0
     .type = int
     .help = "The border around the edge of the image."
-
-  use_trusted_range = False
-    .type = bool
-    .help = "Use the trusted range to mask bad pixels."
 
   d_min = None
     .help = "The high resolution limit in Angstrom for a pixel to be"
@@ -192,159 +191,151 @@ def _apply_resolution_mask(mask, beam, panel, *args):
     _get_resolution_masker(beam, panel).apply(mask, *args)
 
 
-class MaskGenerator(object):
-    """Generate a mask."""
+class MaskGenerator:
+    """
+    Deprecated interface for generating mask.
+
+    To be upgraded to UserWarning in DIALS 3.4.
+    To be removed in DIALS 3.5.
+    """
 
     def __init__(self, params):
-        """Set the parameters."""
+        warnings.warn(
+            "MaskGenerator is deprecated; please use dials.util.masking.generate_mask instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         self.params = params
 
     def generate(self, imageset):
-        """Generate the mask."""
-        # Get the detector and beam
-        detector = imageset.get_detector()
-        beam = imageset.get_beam()
+        return generate_mask(imageset, self.params)
 
-        # Get the first image
-        image = imageset.get_raw_data(0)
-        assert len(detector) == len(image)
 
-        # Create the mask for each panel
-        masks = []
-        for index, (im, panel) in enumerate(zip(image, detector)):
+def generate_mask(
+    imageset: ImageSet, params: libtbx.phil.scope_extract
+) -> Tuple[flex.bool]:
+    """Generate a mask based on the input parameters.
 
-            # Build a trusted mask by looking for pixels that are always outside
-            # the trusted range. This identifies bad pixels, but does not include
-            # pixels that are overloaded on some images.
-            if self.params.use_trusted_range:
-                warnings.warn(
-                    "Checking for hot pixels using the trusted_range is"
-                    " deprecated. https://github.com/dials/dials/issues/1156",
-                    FutureWarning,
-                )
-                trusted_mask = None
-                low, high = panel.get_trusted_range()
+    Args:
+      imageset (ImageSet): The imageset for which to generate a mask
+      params (libtbx.phil.scope_extract): The phil parameters for mask generation. This
+        should be an extract of `dials.util.masking.phil_scope`
+    """
+    # Get the detector and beam
+    detector = imageset.get_detector()
+    beam = imageset.get_beam()
 
-                # Take 10 evenly-spaced images from the imageset. Pixels outside
-                # the trusted mask on all of these images are considered bad and
-                # masked. https://github.com/dials/dials/issues/1061
-                stride = max(int(len(imageset) / 10), 1)
-                image_indices = range(0, len(imageset), stride)
+    # Create the mask for each panel
+    masks = []
+    for index, panel in enumerate(detector):
 
-                for image_index in image_indices:
-                    image_data = imageset.get_raw_data(image_index)[index].as_double()
-                    frame_mask = (image_data > low) & (image_data < high)
-                    if trusted_mask is None:
-                        trusted_mask = frame_mask
-                    else:
-                        trusted_mask = trusted_mask | frame_mask
+        mask = flex.bool(flex.grid(reversed(panel.get_image_size())), True)
 
-                    if trusted_mask.count(False) == 0:
-                        break
-                mask = trusted_mask
-            else:
-                mask = flex.bool(flex.grid(im.all()), True)
+        # Add a border around the image
+        if params.border > 0:
+            logger.debug(f"Generating border mask:\n border = {params.border}")
+            border = params.border
+            height, width = mask.all()
+            borderx = flex.bool(flex.grid(border, width), False)
+            bordery = flex.bool(flex.grid(height, border), False)
+            mask[0:border, :] = borderx
+            mask[-border:, :] = borderx
+            mask[:, 0:border] = bordery
+            mask[:, -border:] = bordery
 
-            # Add a border around the image
-            if self.params.border > 0:
-                logger.info("Generating border mask:")
-                logger.info(" border = %d" % self.params.border)
-                border = self.params.border
-                height, width = mask.all()
-                borderx = flex.bool(flex.grid(border, width), False)
-                bordery = flex.bool(flex.grid(height, border), False)
-                mask[0:border, :] = borderx
-                mask[-border:, :] = borderx
-                mask[:, 0:border] = bordery
-                mask[:, -border:] = bordery
+        # Apply the untrusted regions
+        for region in params.untrusted:
+            if region.panel is None:
+                region.panel = 0
+            if region.panel == index:
+                if not any(
+                    [region.circle, region.rectangle, region.polygon, region.pixel]
+                ):
+                    mask[:, :] = flex.bool(flex.grid(mask.focus()), False)
+                    continue
 
-            # Apply the untrusted regions
-            for region in self.params.untrusted:
-                if region.panel is None:
-                    region.panel = 0
-                if region.panel == index:
-                    if not any(
-                        [region.circle, region.rectangle, region.polygon, region.pixel]
-                    ):
-                        mask[:, :] = flex.bool(flex.grid(mask.focus()), False)
-                        continue
+                if region.circle is not None:
+                    xc, yc, radius = region.circle
+                    logger.debug(
+                        "Generating circle mask:\n"
+                        + f" panel = {region.panel}\n"
+                        + f" xc = {xc}\n"
+                        + f" yc = {yc}\n"
+                        + f" radius = {radius}"
+                    )
+                    mask_untrusted_circle(mask, xc, yc, radius)
+                if region.rectangle is not None:
+                    x0, x1, y0, y1 = region.rectangle
+                    logger.debug(
+                        "Generating rectangle mask:\n"
+                        + f" panel = {region.panel}\n"
+                        + f" x0 = {x0}\n"
+                        + f" y0 = {y0}\n"
+                        + f" x1 = {x1}\n"
+                        + f" y1 = {y1}"
+                    )
+                    mask_untrusted_rectangle(mask, x0, x1, y0, y1)
+                if region.polygon is not None:
+                    assert (
+                        len(region.polygon) % 2 == 0
+                    ), "Polygon must contain 2D coords"
+                    vertices = []
+                    for i in range(int(len(region.polygon) / 2)):
+                        x = region.polygon[2 * i]
+                        y = region.polygon[2 * i + 1]
+                        vertices.append((x, y))
+                    polygon = flex.vec2_double(vertices)
+                    logger.debug(
+                        f"Generating polygon mask:\n panel = {region.panel}\n"
+                        + "\n".join(f" coord = {vertex}" for vertex in vertices)
+                    )
+                    mask_untrusted_polygon(mask, polygon)
+                if region.pixel is not None:
+                    mask[region.pixel] = False
 
-                    if region.circle is not None:
-                        xc, yc, radius = region.circle
-                        logger.info("Generating circle mask:")
-                        logger.info(" panel = %d" % region.panel)
-                        logger.info(" xc = %d" % xc)
-                        logger.info(" yc = %d" % yc)
-                        logger.info(" radius = %d" % radius)
-                        mask_untrusted_circle(mask, xc, yc, radius)
-                    if region.rectangle is not None:
-                        x0, x1, y0, y1 = region.rectangle
-                        logger.info("Generating rectangle mask:")
-                        logger.info(" panel = %d" % region.panel)
-                        logger.info(" x0 = %d" % x0)
-                        logger.info(" y0 = %d" % y0)
-                        logger.info(" x1 = %d" % x1)
-                        logger.info(" y1 = %d" % y1)
-                        mask_untrusted_rectangle(mask, x0, x1, y0, y1)
-                    if region.polygon is not None:
-                        assert (
-                            len(region.polygon) % 2 == 0
-                        ), "Polygon must contain 2D coords"
-                        vertices = []
-                        for i in range(int(len(region.polygon) / 2)):
-                            x = region.polygon[2 * i]
-                            y = region.polygon[2 * i + 1]
-                            vertices.append((x, y))
-                        polygon = flex.vec2_double(vertices)
-                        logger.info("Generating polygon mask:")
-                        logger.info(" panel = %d" % region.panel)
-                        for vertex in vertices:
-                            logger.info(" coord = (%d, %d)" % (vertex))
-                        mask_untrusted_polygon(mask, polygon)
-                    if region.pixel is not None:
-                        mask[region.pixel] = False
+        # Generate high and low resolution masks
+        if params.d_min is not None:
+            logger.debug(f"Generating high resolution mask:\n d_min = {params.d_min}")
+            _apply_resolution_mask(mask, beam, panel, 0, params.d_min)
+        if params.d_max is not None:
+            logger.debug(f"Generating low resolution mask:\n d_max = {params.d_max}")
+            d_max = params.d_max
+            d_inf = max(d_max + 1, 1e9)
+            _apply_resolution_mask(mask, beam, panel, d_max, d_inf)
 
-            # Generate high and low resolution masks
-            if self.params.d_min is not None:
-                logger.info("Generating high resolution mask:")
-                logger.info(" d_min = %f" % self.params.d_min)
-                _apply_resolution_mask(mask, beam, panel, 0, self.params.d_min)
-            if self.params.d_max is not None:
-                logger.info("Generating low resolution mask:")
-                logger.info(" d_max = %f" % self.params.d_max)
-                d_max = self.params.d_max
-                d_inf = max(d_max + 1, 1e9)
-                _apply_resolution_mask(mask, beam, panel, d_max, d_inf)
-
-            try:
-                # Mask out the resolution range
-                for drange in self.params.resolution_range:
-                    d_min = min(drange)
-                    d_max = max(drange)
-                    assert d_min < d_max, "d_min must be < d_max"
-                    logger.info("Generating resolution range mask:")
-                    logger.info(" d_min = %f" % d_min)
-                    logger.info(" d_max = %f" % d_max)
-                    _apply_resolution_mask(mask, beam, panel, d_min, d_max)
-            except TypeError:
-                # Catch the default value None of self.params.resolution_range
-                if any(self.params.resolution_range):
-                    raise
-
-            # Mask out the resolution ranges for the ice rings
-            for drange in generate_ice_ring_resolution_ranges(
-                beam, panel, self.params.ice_rings
-            ):
+        try:
+            # Mask out the resolution range
+            for drange in params.resolution_range:
                 d_min = min(drange)
                 d_max = max(drange)
                 assert d_min < d_max, "d_min must be < d_max"
-                logger.info("Generating ice ring mask:")
-                logger.info(" d_min = %f" % d_min)
-                logger.info(" d_max = %f" % d_max)
+                logger.debug(
+                    "Generating resolution range mask:\n"
+                    + f" d_min = {d_min}\n"
+                    + f" d_max = {d_max}"
+                )
                 _apply_resolution_mask(mask, beam, panel, d_min, d_max)
+        except TypeError:
+            # Catch the default value None of params.resolution_range
+            if any(params.resolution_range):
+                raise
 
-            # Add to the list
-            masks.append(mask)
+        # Mask out the resolution ranges for the ice rings
+        for drange in generate_ice_ring_resolution_ranges(
+            beam, panel, params.ice_rings
+        ):
+            d_min = min(drange)
+            d_max = max(drange)
+            assert d_min < d_max, "d_min must be < d_max"
+            logger.debug(
+                "Generating ice ring mask:\n"
+                + f" d_min = {d_min:.4f}\n"
+                + f" d_max = {d_max:.4f}"
+            )
+            _apply_resolution_mask(mask, beam, panel, d_min, d_max)
 
-        # Return the mask
-        return tuple(masks)
+        # Add to the list
+        masks.append(mask)
+
+    # Return the mask
+    return tuple(masks)

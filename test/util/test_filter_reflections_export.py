@@ -26,29 +26,31 @@ As well as choosing the correct intensities, further filtering may be applied
 Lastly, partials should be correctly handled - being combined if appropriate,
 scaled and filtered below a given value where the values become unreliable.
 """
-from __future__ import absolute_import, division, print_function
+
+from unittest import mock
 
 import pytest
-import mock
-from dials.array_family import flex
+
+from cctbx import miller
 from dxtbx.model import Crystal, Experiment, ExperimentList
 from dxtbx.model.experiment_list import ExperimentListFactory
-from cctbx import miller
+
+from dials.array_family import flex
 from dials.util.filter_reflections import (
-    FilteringReductionMethods,
-    FilterForExportAlgorithm,
-    SumIntensityReducer,
-    PrfIntensityReducer,
-    SumAndPrfIntensityReducer,
-    ScaleIntensityReducer,
-    filter_reflection_table,
-    sum_partial_reflections,
-    _sum_prf_partials,
-    _sum_sum_partials,
-    _sum_scale_partials,
     AllSumPrfScaleIntensityReducer,
-    filtered_arrays_from_experiments_reflections,
+    FilterForExportAlgorithm,
+    FilteringReductionMethods,
     NoProfilesException,
+    PrfIntensityReducer,
+    ScaleIntensityReducer,
+    SumAndPrfIntensityReducer,
+    SumIntensityReducer,
+    _sum_prf_partials,
+    _sum_scale_partials,
+    _sum_sum_partials,
+    filter_reflection_table,
+    filtered_arrays_from_experiments_reflections,
+    sum_partial_reflections,
 )
 
 
@@ -91,6 +93,8 @@ def generate_integrated_test_reflections():
     r.set_flags(
         flex.bool([False, True, False, False, False, False]), r.flags.outlier_in_scaling
     )
+    bad = r.get_flags(r.flags.bad_for_scaling, all=False)
+    r.set_flags(~bad, r.flags.scaled)
     r["id"] = flex.int(6, 0)
     r["partial_id"] = flex.int([0, 1, 2, 3, 4, 5])
     return r
@@ -195,6 +199,8 @@ def test_filtered_arrays_from_experiments_reflections_with_batches(dials_data):
     expts = ExperimentListFactory.from_serialized_format(
         x4wide_dir.join("AUTOMATIC_DEFAULT_scaled.expt").strpath, check_format=False
     )
+    bad = refl.get_flags(refl.flags.bad_for_scaling, all=False)
+    refl.set_flags(~bad, refl.flags.scaled)
     miller_arrays, batches = filtered_arrays_from_experiments_reflections(
         expts, [refl], return_batches=True
     )

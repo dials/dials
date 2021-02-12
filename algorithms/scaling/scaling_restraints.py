@@ -2,7 +2,9 @@
 Restraints manager classes for scaling.
 """
 from __future__ import absolute_import, division, print_function
+
 from scitbx import sparse
+
 from dials.array_family import flex
 
 
@@ -49,8 +51,10 @@ class ScalingRestraintsCalculator(object):
             )
             cumul_restr_pos = 0
             for i, single_apm in enumerate(multi_parameter_manager.apm_list):
-                restraints = SingleScalingRestraintsCalculator.calculate_jacobian_restraints(
-                    single_apm
+                restraints = (
+                    SingleScalingRestraintsCalculator.calculate_jacobian_restraints(
+                        single_apm
+                    )
                 )
                 if restraints:
                     jacobian.assign_block(

@@ -5,10 +5,12 @@ import os
 import random
 
 import pytest
+
 from cctbx import sgtbx
-from dials.array_family import flex
-from dxtbx.model import ExperimentList, Experiment, Crystal
+from dxtbx.model import Crystal, Experiment, ExperimentList
 from dxtbx.serialize import load
+
+from dials.array_family import flex
 
 
 def test_accessing_invalid_key_throws_keyerror():
@@ -1178,7 +1180,7 @@ def test_to_from_msgpack(tmpdir):
 
 
 def test_experiment_identifiers():
-    from dxtbx.model import ExperimentList, Experiment
+    from dxtbx.model import Experiment, ExperimentList
 
     table = flex.reflection_table()
     table["id"] = flex.int([0, 1, 2, 3])
@@ -1448,3 +1450,69 @@ def test_calculate_entering_flags(dials_regression):
     flags = refl["entering"]
     assert flags.count(True) == 58283
     assert flags.count(False) == 57799
+
+
+def test_match_basic():
+    n = 100
+    s = 10
+
+    def r():
+        return random.random()
+
+    xyz = flex.vec3_double()
+
+    for j in range(n):
+        xyz.append((r() * s, r() * s, r() * s * 20))
+
+    order = list(range(n))
+
+    random.shuffle(order)
+
+    xyz2 = xyz.select(flex.size_t(order))
+
+    a = flex.reflection_table()
+    b = flex.reflection_table()
+
+    a["xyz"] = xyz
+    b["xyz"] = xyz2
+
+    mm, nn, distance = a.match(b, key="xyz", scale=(1.0, 1.0, 0.05))
+
+    a_ = a.select(mm.as_size_t())
+    b_ = b.select(nn.as_size_t())
+
+    for _a, _b in zip(a_["xyz"], b_["xyz"]):
+        assert _a == pytest.approx(_b)
+
+
+def test_match_mismatched_sizes():
+    n = 100
+    s = 10
+
+    def r():
+        return random.random()
+
+    xyz = flex.vec3_double()
+
+    for j in range(n):
+        xyz.append((r() * s, r() * s, r() * s * 20))
+
+    order = list(range(n))
+
+    random.shuffle(order)
+
+    xyz2 = xyz.select(flex.size_t(order))
+
+    a = flex.reflection_table()
+    b = flex.reflection_table()
+
+    a["xyz"] = xyz[: n // 2]
+    b["xyz"] = xyz2
+
+    mm, nn, distance = a.match(b, key="xyz", scale=(1.0, 1.0, 0.05))
+
+    a_ = a.select(mm.as_size_t())
+    b_ = b.select(nn.as_size_t())
+
+    for _a, _b in zip(a_["xyz"], b_["xyz"]):
+        assert _a == pytest.approx(_b)

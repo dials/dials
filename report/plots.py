@@ -5,17 +5,18 @@ for reports of several programs.
 """
 from __future__ import absolute_import, division, print_function
 
-from collections import OrderedDict
 import logging
+from collections import OrderedDict
 
 import numpy as np
-from cctbx import uctbx
-from scitbx.array_family import flex
-from scitbx.math import distributions
-from mmtbx.scaling.absolute_scaling import scattering_information, expected_intensity
-from mmtbx.scaling.matthews import matthews_rupp
 from scipy.optimize import least_squares
 from six.moves import cStringIO as StringIO
+
+from cctbx import uctbx
+from mmtbx.scaling.absolute_scaling import expected_intensity, scattering_information
+from mmtbx.scaling.matthews import matthews_rupp
+from scitbx.array_family import flex
+from scitbx.math import distributions
 
 logger = logging.getLogger("dials")
 
@@ -218,8 +219,8 @@ class IntensityStatisticsPlots:
         self.n_residues = mr.n_residues
         if not self._xanalysis and run_xtriage_analysis:
             # imports needed here or won't work, unsure why.
-            from mmtbx.scaling.xtriage import xtriage_analyses
             from mmtbx.scaling.xtriage import master_params as xtriage_master_params
+            from mmtbx.scaling.xtriage import xtriage_analyses
 
             xtriage_params = xtriage_master_params.fetch(sources=[]).extract()
             xtriage_params.scaling.input.xray_data.skip_sanity_checks = True
@@ -759,6 +760,7 @@ class ResolutionPlotsAndStats:
             "R<sub>merge</sub>",
             "R<sub>meas</sub>",
             "R<sub>pim</sub>",
+            "R<sub>anom</sub>",
             u"CC<sub>½</sub>",
         ]
         if not self.is_centric:
@@ -780,6 +782,7 @@ class ResolutionPlotsAndStats:
                 safe_format("%.3f", bin_stats.r_merge),
                 safe_format("%.3f", bin_stats.r_meas),
                 safe_format("%.3f", bin_stats.r_pim),
+                safe_format("%.3f", bin_stats.r_anom),
             ]
             if cc_half_method == "sigma_tau":
                 row.append(

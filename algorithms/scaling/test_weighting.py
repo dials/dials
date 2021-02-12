@@ -1,18 +1,20 @@
 """
 Test for the scaling weighting module.
 """
-from __future__ import absolute_import, division, print_function
+
+from unittest.mock import Mock
+
 import pytest
-from mock import Mock
-from dials.array_family import flex
+
 from dials.algorithms.scaling.weighting import (
-    get_weighting_scheme,
-    WeightingBase,
-    UnityWeights,
+    CauchyWeights,
     GemanMcClureWeights,
     HuberWeights,
-    CauchyWeights,
+    UnityWeights,
+    WeightingBase,
+    get_weighting_scheme,
 )
+from dials.array_family import flex
 
 
 @pytest.fixture

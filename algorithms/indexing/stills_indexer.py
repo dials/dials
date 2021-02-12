@@ -1,18 +1,19 @@
 from __future__ import absolute_import, division, print_function
 
 import copy
-import math
 import logging
+import math
 
 import libtbx
 from dxtbx.model.experiment_list import Experiment, ExperimentList
-from dials.array_family import flex
+
+from dials.algorithms.indexing import DialsIndexError, DialsIndexRefineError
 from dials.algorithms.indexing.indexer import Indexer
-from dials.util.multi_dataset_handling import generate_experiment_identifiers
 from dials.algorithms.indexing.known_orientation import IndexerKnownOrientation
 from dials.algorithms.indexing.lattice_search import BasisVectorSearch, LatticeSearch
 from dials.algorithms.indexing.nave_parameters import NaveParameters
-from dials.algorithms.indexing import DialsIndexError, DialsIndexRefineError
+from dials.array_family import flex
+from dials.util.multi_dataset_handling import generate_experiment_identifiers
 
 logger = logging.getLogger(__name__)
 
@@ -297,9 +298,10 @@ class StillsIndexer(Indexer):
                             )
                         )
                         assert (
-                            (refined_beam - known_beam).length()
-                            < self.params.stills.isoforms[minindex].rmsd_target_mm
-                        )
+                            refined_beam - known_beam
+                        ).length() < self.params.stills.isoforms[
+                            minindex
+                        ].rmsd_target_mm
                         # future--circle of confusion could be given as a separate length in mm instead of reusing rmsd_target
 
                     experiment = R.get_experiments()[0]
@@ -366,7 +368,7 @@ class StillsIndexer(Indexer):
                 except Exception as e:
                     s = str(e)
                     if len(experiments) == 1:
-                        raise DialsIndexRefineError(e.message)
+                        raise DialsIndexRefineError(e)
                     logger.info("Refinement failed:")
                     logger.info(s)
                     del experiments[-1]
@@ -685,8 +687,8 @@ class StillsIndexer(Indexer):
             m.miller_index = item["miller_index"]
             matches.append(m)
 
-        from rstbx.phil.phil_preferences import indexing_api_defs
         import iotbx.phil
+        from rstbx.phil.phil_preferences import indexing_api_defs
 
         hardcoded_phil = iotbx.phil.parse(input_string=indexing_api_defs).extract()
 

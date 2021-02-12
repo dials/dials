@@ -3,7 +3,6 @@ Figure out correct gradient expressions required for crystal unit cell
 restraints
 """
 
-# Python and cctbx imports
 from __future__ import absolute_import, division, print_function
 
 import math
@@ -11,17 +10,17 @@ import os
 
 
 def test(dials_regression):
-    from scitbx import matrix
     from libtbx.phil import parse
     from libtbx.test_utils import approx_equal
-
-    # Get modules to build models and minimiser using PHIL
-    from dials.test.algorithms.refinement import setup_geometry
+    from scitbx import matrix
 
     from dials.algorithms.refinement.parameterisation.crystal_parameters import (
         CrystalOrientationParameterisation,
         CrystalUnitCellParameterisation,
     )
+
+    # Get modules to build models and minimiser using PHIL
+    from dials.test.algorithms.refinement import setup_geometry
 
     # Symmetry constrained parameterisation for the unit cell
     DEG2RAD = math.pi / 180.0

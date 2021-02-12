@@ -5,7 +5,8 @@ from __future__ import absolute_import, division, print_function
 import sys
 
 from libtbx.phil import parse
-from dials.util import show_mail_on_error
+
+from dials.util import show_mail_handle_errors
 from dials.util.command_line import Command
 from dials.util.options import OptionParser
 
@@ -47,10 +48,10 @@ class Script(object):
             epilog=help_message, usage=usage, phil=phil_scope, read_reflections=True
         )
 
-    def run(self):
+    def run(self, args=None):
         """Run the script."""
         # Parse the command line arguments
-        params, options = self.parser.parse_args(show_diff_phil=True)
+        params, options = self.parser.parse_args(args, show_diff_phil=True)
         if len(params.input.reflections) == 0:
             self.parser.print_help()
             return
@@ -82,7 +83,11 @@ class Script(object):
         Command.end("Wrote %d reflections to %s" % (len(table), params.output))
 
 
+@show_mail_handle_errors()
+def run(args=None):
+    script = Script()
+    script.run(args)
+
+
 if __name__ == "__main__":
-    with show_mail_on_error():
-        script = Script()
-        script.run()
+    run()

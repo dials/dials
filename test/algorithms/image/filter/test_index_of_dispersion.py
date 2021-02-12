@@ -6,8 +6,9 @@ import pytest
 
 
 def test():
-    from dials.algorithms.image.filter import index_of_dispersion_filter
     from scitbx.array_family import flex
+
+    from dials.algorithms.image.filter import index_of_dispersion_filter
 
     # Create an image
     image = flex.random_double(2000 * 2000)

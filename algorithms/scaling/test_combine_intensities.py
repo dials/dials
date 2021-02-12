@@ -1,17 +1,20 @@
 """
 Tests for intensity combination.
 """
-from __future__ import absolute_import, division, print_function
+
+from unittest.mock import Mock
+
 import pytest
-from mock import Mock
-from dxtbx.model import Experiment, Crystal
-from dials.array_family import flex
-from dials.algorithms.scaling.scaling_utilities import calculate_prescaling_correction
+
+from dxtbx.model import Crystal, Experiment
+
 from dials.algorithms.scaling.combine_intensities import (
-    SingleDatasetIntensityCombiner,
     MultiDatasetIntensityCombiner,
+    SingleDatasetIntensityCombiner,
     combine_intensities,
 )
+from dials.algorithms.scaling.scaling_utilities import calculate_prescaling_correction
+from dials.array_family import flex
 
 
 @pytest.fixture(scope="module")

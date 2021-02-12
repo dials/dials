@@ -1,8 +1,7 @@
-from __future__ import absolute_import, division, print_function
+from unittest import mock
 
-from dials.array_family import flex
 import dials.util.phil
-import mock
+from dials.array_family import flex
 
 
 @mock.patch("dials.util.phil.ExperimentListFactory")

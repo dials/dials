@@ -1,11 +1,12 @@
-from __future__ import absolute_import, division, print_function
+from unittest.mock import Mock
 
 import pytest
+
 from cctbx.sgtbx import space_group, uctbx
+from scitbx import sparse
+
 from dials.algorithms.scaling.Ih_table import IhTable, IhTableBlock, map_indices_to_asu
 from dials.array_family import flex
-from mock import Mock
-from scitbx import sparse
 
 
 @pytest.fixture()
@@ -188,7 +189,7 @@ def test_IhTableblock_onedataset(large_reflection_table, test_sg):
     assert list(block.calc_nh()) == [2, 1, 2, 1, 1, 2, 2]
 
     # Test update error model
-    block.update_error_model(mock_error_model())
+    block.update_weights(mock_error_model())
     assert list(block.weights) == pytest.approx(
         [1.0, 1.0 / 2.0, 1.0 / 3.0, 1.0 / 4.0, 1.0 / 5.0, 1.0 / 6.0, 1.0 / 7.0]
     )
@@ -471,10 +472,6 @@ def test_IhTable_freework(large_reflection_table, small_reflection_table, test_s
     Ih_table.calc_Ih()
 
     # test setting data
-    # set intensities
-    new_I_block_1 = flex.double([4.0, 5.0, 6.0])
-    Ih_table.set_intensities(new_I_block_1, 1)
-    assert list(Ih_table.Ih_table_blocks[1].intensities) == list(new_I_block_1)
     # set scale factors
     new_s_block_2 = flex.double(range(1, 6))
     Ih_table.set_inverse_scale_factors(new_s_block_2, 2)
@@ -485,11 +482,6 @@ def test_IhTable_freework(large_reflection_table, small_reflection_table, test_s
     derivs = Mock()
     Ih_table.set_derivatives(derivs, 0)
     assert Ih_table.Ih_table_blocks[0].derivatives is derivs
-    # set variances
-    new_var_block_1 = flex.double([1.0, 2.0, 3.0])
-    Ih_table.set_variances(new_var_block_1, 1)
-    assert list(Ih_table.Ih_table_blocks[1].variances) == list(new_var_block_1)
-    assert list(Ih_table.Ih_table_blocks[1].weights) == list(1.0 / new_var_block_1)
 
     def update_vars_side_effect(*args):
         return flex.double([0.5] * len(args[0]))
@@ -498,12 +490,9 @@ def test_IhTable_freework(large_reflection_table, small_reflection_table, test_s
     em = Mock()
     em.update_variances.side_effect = update_vars_side_effect
 
-    Ih_table.update_error_model(em)
+    Ih_table.update_weights(em)
     for block in Ih_table.Ih_table_blocks:
         assert list(block.weights) == pytest.approx([2.0] * block.size)
-    Ih_table.reset_error_model()
-    for block in Ih_table.Ih_table_blocks:
-        assert list(block.weights) != [2.0] * block.size
 
     Ih_table.calc_Ih(1)
 

@@ -1,25 +1,29 @@
 """
 Tests for the scaler factory classes and helper functions.
 """
-from __future__ import absolute_import, division, print_function
+
+from unittest.mock import MagicMock, Mock
+
 import pytest
-from libtbx import phil
+
 from dxtbx.model import Crystal
-from mock import Mock, MagicMock
-from dials.array_family import flex
-from dials.util.options import OptionParser
+from libtbx import phil
+
+from dials.algorithms.scaling.error_model.error_model import BasicErrorModel
+from dials.algorithms.scaling.scaler import (
+    MultiScaler,
+    NullScaler,
+    SingleScaler,
+    TargetScaler,
+)
 from dials.algorithms.scaling.scaler_factory import (
+    MultiScalerFactory,
     SingleScalerFactory,
     TargetScalerFactory,
-    MultiScalerFactory,
     create_scaler,
 )
-from dials.algorithms.scaling.scaler import (
-    SingleScaler,
-    MultiScaler,
-    TargetScaler,
-    NullScaler,
-)
+from dials.array_family import flex
+from dials.util.options import OptionParser
 
 
 def generated_refl(not_integrated=False, idval=0):
@@ -85,10 +89,12 @@ def prf_sum_refl_to_filter():
     reflections["intensity.prf.variance"] = flex.double(5, 1.0)
     reflections["miller_index"] = flex.miller_index([(0, 0, 1)] * 5)
     reflections.set_flags(
-        flex.bool([False, False, True, True, True]), reflections.flags.integrated_sum,
+        flex.bool([False, False, True, True, True]),
+        reflections.flags.integrated_sum,
     )
     reflections.set_flags(
-        flex.bool([True, False, False, True, True]), reflections.flags.integrated_prf,
+        flex.bool([True, False, False, True, True]),
+        reflections.flags.integrated_prf,
     )
     return reflections
 
@@ -163,7 +169,7 @@ def mock_exp(mock_scaling_component, idval=0):
     exp.scaling_model.components = {"scale": mock_scaling_component}
     exp.scaling_model.consecutive_refinement_order = ["scale"]
     exp.scaling_model.is_scaled = False
-    exp.scaling_model.configdict = {}
+    exp.scaling_model.error_model = BasicErrorModel()
     exp.scaling_model.configure_reflection_table.side_effect = side_effect_config_table
     exp_dict = {
         "__id__": "crystal",

@@ -15,20 +15,25 @@ Examples::
 """
 
 from __future__ import absolute_import, division, print_function
+
 import copy
-import sys
 import logging
-import dials.util
+import sys
+
 import libtbx.phil
 from libtbx import Auto
-from dials.array_family import flex
-from dials.algorithms.refinement import RefinerFactory
-from dials.algorithms.refinement import DialsRefineConfigError, DialsRefineRuntimeError
-from dials.algorithms.refinement.corrgram import create_correlation_plots
+
+import dials.util
 import dials.util.log
+from dials.algorithms.refinement import (
+    DialsRefineConfigError,
+    DialsRefineRuntimeError,
+    RefinerFactory,
+)
+from dials.algorithms.refinement.corrgram import create_correlation_plots
+from dials.array_family import flex
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
-from dials.util.options import OptionParser
-from dials.util.options import reflections_and_experiments_from_files
 
 logger = logging.getLogger("dials.command_line.refine")
 
@@ -301,6 +306,7 @@ def run_dials_refine(experiments, reflections, params):
     return experiments, reflections, refiner, history
 
 
+@dials.util.show_mail_handle_errors()
 def run(args=None, phil=working_phil):
     """
     Set up refinement from command line options, files and PHIL parameters.
@@ -477,5 +483,4 @@ def run(args=None, phil=working_phil):
 
 
 if __name__ == "__main__":
-    with dials.util.show_mail_on_error():
-        run()
+    run()

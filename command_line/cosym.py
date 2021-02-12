@@ -1,41 +1,40 @@
 from __future__ import absolute_import, division, print_function
 
+import collections
 import logging
 import random
 import sys
 
 import iotbx.phil
 from cctbx import sgtbx
+from xfel.clustering.cluster_groups import unit_cell_info
+
+from dials.algorithms.clustering.unit_cell import UnitCellCluster
+from dials.algorithms.symmetry.cosym import CosymAnalysis
+from dials.algorithms.symmetry.cosym.observers import register_default_cosym_observers
+from dials.array_family import flex
 from dials.command_line.symmetry import (
     apply_change_of_basis_ops,
     change_of_basis_ops_to_minimum_cell,
     eliminate_sys_absent,
 )
-from dials.array_family import flex
-from dials.util import show_mail_on_error, Sorry
-from dials.util.options import reflections_and_experiments_from_files
+from dials.util import Sorry, log, show_mail_handle_errors
+from dials.util.exclude_images import get_selection_for_valid_image_ranges
+from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
     parse_multiple_datasets,
     select_datasets_on_identifiers,
 )
 from dials.util.observer import Subject
-from dials.util.exclude_images import get_selection_for_valid_image_ranges
-from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
-from dials.util import log
-from dials.util.options import OptionParser
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
-from dials.algorithms.symmetry.cosym.observers import register_default_cosym_observers
-from dials.algorithms.symmetry.cosym import CosymAnalysis
-from dials.algorithms.clustering.unit_cell import UnitCellCluster
-from xfel.clustering.cluster_groups import unit_cell_info
-
 
 logger = logging.getLogger("dials.command_line.cosym")
 
 phil_scope = iotbx.phil.parse(
     """\
-partiality_threshold = 0.99
+partiality_threshold = 0.4
   .type = float
   .help = "Use reflections with a partiality above the threshold."
 
@@ -133,8 +132,8 @@ class cosym(Subject):
         ]
         if len(exclude):
             logger.info(
-                f"Rejecting {len(exclude)} datasets from cosym analysis:"
-                f"couldn't determine consistent cb_op to minimum cell:\n"
+                f"Rejecting {len(exclude)} datasets from cosym analysis "
+                f"(couldn't determine consistent cb_op to minimum cell):\n"
                 f"{exclude}",
             )
             self._experiments, self._reflections = select_datasets_on_identifiers(
@@ -178,25 +177,20 @@ class cosym(Subject):
     def run(self):
         self.cosym_analysis.run()
 
-        space_groups = {}
         reindexing_ops = {}
+        sym_op_counts = {
+            cluster_id: collections.Counter(
+                ops[cluster_id] for ops in self.cosym_analysis.reindexing_ops.values()
+            )
+            for cluster_id in range(self.params.cluster.n_clusters)
+        }
+        identity_counts = [counts["x,y,z"] for counts in sym_op_counts.values()]
+        cluster_id = identity_counts.index(max(identity_counts))
         for dataset_id in self.cosym_analysis.reindexing_ops:
-            if 0 in self.cosym_analysis.reindexing_ops[dataset_id]:
-                cb_op = self.cosym_analysis.reindexing_ops[dataset_id][0]
+            if cluster_id in self.cosym_analysis.reindexing_ops[dataset_id]:
+                cb_op = self.cosym_analysis.reindexing_ops[dataset_id][cluster_id]
                 reindexing_ops.setdefault(cb_op, [])
                 reindexing_ops[cb_op].append(dataset_id)
-            if dataset_id in self.cosym_analysis.space_groups:
-                space_groups.setdefault(
-                    self.cosym_analysis.space_groups[dataset_id], []
-                )
-                space_groups[self.cosym_analysis.space_groups[dataset_id]].append(
-                    dataset_id
-                )
-
-        logger.info("Space groups:")
-        for sg, datasets in space_groups.items():
-            logger.info(str(sg.info().reference_setting()))
-            logger.info(datasets)
 
         logger.info("Reindexing operators:")
         for cb_op, datasets in reindexing_ops.items():
@@ -318,7 +312,8 @@ Examples::
 """
 
 
-def run(args):
+@show_mail_handle_errors()
+def run(args=None):
     usage = "dials.cosym [options] models.expt observations.refl"
 
     parser = OptionParser(
@@ -378,5 +373,4 @@ def run(args):
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
-        run(sys.argv[1:])
+    run()

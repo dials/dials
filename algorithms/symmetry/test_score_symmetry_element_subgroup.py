@@ -4,6 +4,7 @@ import pytest
 
 from cctbx import sgtbx
 from cctbx.sgtbx.lattice_symmetry import metric_subgroups
+
 from dials.algorithms.symmetry.cosym._generate_test_data import generate_intensities
 from dials.algorithms.symmetry.laue_group import (
     ScoreCorrelationCoefficient,
@@ -30,8 +31,8 @@ def test_score_correlation_coefficient():
     assert score_cc.p_s_given_cc == pytest.approx(0.6178439917879021)
 
     if 0:
-        from matplotlib import pyplot as plt
         import numpy as np
+        from matplotlib import pyplot as plt
 
         x = np.linspace(-1, 1)
         values = [(0.1, 1), (0.1, 0.8), (0.2, 1), (0.2, 0.8)]

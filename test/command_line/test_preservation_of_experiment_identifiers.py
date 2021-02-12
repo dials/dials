@@ -1,6 +1,8 @@
 """Test for the preservation of identifiers in dials processing."""
 import procrunner
+
 from dxtbx.serialize import load
+
 from dials.array_family import flex
 
 
@@ -29,7 +31,12 @@ def test_preservation_of_identifiers(dials_data, tmpdir):
 
     # Now find spots.
     result = procrunner.run(
-        ["dials.find_spots", imported_exp_path, "output.reflections=strong.refl"],
+        [
+            "dials.find_spots",
+            "nproc=1",
+            imported_exp_path,
+            "output.reflections=strong.refl",
+        ],
         working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
@@ -128,6 +135,7 @@ def test_preservation_of_identifiers(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.integrate",
+            "nproc=1",
             refined_refl_path,
             refined_exp_path,
             "output.reflections=integrated.refl",

@@ -4,11 +4,12 @@ import math
 from collections import namedtuple
 
 from scitbx import matrix
-from dials.array_family import flex
+
 from dials.algorithms.refinement.parameterisation.prediction_parameters import (
-    XYPhiPredictionParameterisation,
     SparseGradientVectorMixin,
+    XYPhiPredictionParameterisation,
 )
+from dials.array_family import flex
 
 
 class StateDerivativeCache(object):
@@ -293,6 +294,10 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
             # select the reflections of interest
             sel = reflections["id"] == iexp
             isel = sel.iselection()
+
+            # skip empty experiments (https://github.com/dials/dials/issues/1417)
+            if len(isel) == 0:
+                continue
 
             blocks = reflections["block"].select(isel)
 

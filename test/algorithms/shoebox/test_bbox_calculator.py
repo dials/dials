@@ -4,11 +4,14 @@ import math
 import random
 
 import pytest
+
+from dxtbx.serialize import load
 from scitbx import matrix
 
-from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator3D
-from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
-from dxtbx.serialize import load
+from dials.algorithms.profile_model.gaussian_rs import (
+    BBoxCalculator3D,
+    CoordinateSystem,
+)
 
 
 @pytest.fixture

@@ -4,19 +4,21 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 from collections import defaultdict
-from iotbx import mtz
-from cctbx import uctbx
 
-from dials.array_family import flex
-from dials.util.exclude_images import exclude_image_ranges_for_scaling
-from dials.util.multi_dataset_handling import select_datasets_on_identifiers
-from dials.util.filter_reflections import filter_reflection_table
-from dials.algorithms.statistics.delta_cchalf import PerGroupCChalfStatistics
+from jinja2 import ChoiceLoader, Environment, PackageLoader
+
+from cctbx import uctbx
+from iotbx import mtz
+
 from dials.algorithms.scaling.scale_and_filter import (
     make_histogram_plots,
     make_per_dataset_plot,
 )
-from jinja2 import Environment, ChoiceLoader, PackageLoader
+from dials.algorithms.statistics.delta_cchalf import PerGroupCChalfStatistics
+from dials.array_family import flex
+from dials.util.exclude_images import exclude_image_ranges_for_scaling
+from dials.util.filter_reflections import filter_reflection_table
+from dials.util.multi_dataset_handling import select_datasets_on_identifiers
 
 logger = logging.getLogger("dials.command_line.compute_delta_cchalf")
 
@@ -222,7 +224,8 @@ class CCHalfFromDials(object):
                 else:
                     end = max_img
                 image_groups.set_selected(
-                    (images_in_dataset >= start) & (images_in_dataset <= end), n,
+                    (images_in_dataset >= start) & (images_in_dataset <= end),
+                    n,
                 )
                 self.group_to_dose_range[n] = (start, end)
             table["group"] = image_groups
@@ -282,8 +285,8 @@ class CCHalfFromDials(object):
           output_reflections: The reflection table with data removed.
         """
         n_valid_reflections = self.reflection_table.get_flags(
-            self.reflection_table.flags.bad_for_scaling, all=False
-        ).count(False)
+            self.reflection_table.flags.scaled
+        ).count(True)
 
         self.ids_removed = self.statistics.exclude_groups
         self.datasets_removed = []
@@ -301,19 +304,18 @@ class CCHalfFromDials(object):
         )
 
         n_valid_filtered_reflections = output_reflections.get_flags(
-            output_reflections.flags.bad_for_scaling, all=False
-        ).count(False)
+            output_reflections.flags.scaled
+        ).count(True)
         self.n_reflections_removed = n_valid_reflections - n_valid_filtered_reflections
-
         return output_reflections
 
     def remove_image_ranges_below_cutoff(self):
         """Remove image ranges from the datasets."""
         reflections = self.reflection_table.select(self.reflection_table["id"] != -1)
 
-        n_valid_reflections = reflections.get_flags(
-            reflections.flags.bad_for_scaling, all=False
-        ).count(False)
+        n_valid_reflections = reflections.get_flags(reflections.flags.scaled).count(
+            True
+        )
         expid_to_tableid = {
             v: k
             for k, v in zip(
@@ -414,8 +416,8 @@ class CCHalfFromDials(object):
             output_reflections.extend(r)
 
         n_valid_filtered_reflections = output_reflections.get_flags(
-            output_reflections.flags.bad_for_scaling, all=False
-        ).count(False)
+            output_reflections.flags.scaled
+        ).count(True)
         self.image_ranges_removed = image_ranges_removed
         self.datasets_removed = experiments_to_delete
         self.ids_removed = ids_removed

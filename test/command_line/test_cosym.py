@@ -1,32 +1,31 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+
 import pytest
-import procrunner
 
 from cctbx import sgtbx, uctbx
 from dxtbx.serialize import load
-from dials.array_family import flex
+
+import dials.command_line.cosym as dials_cosym
 from dials.algorithms.symmetry.cosym._generate_test_data import (
     generate_experiments_reflections,
 )
+from dials.array_family import flex
+from dials.util import Sorry
 
 
 @pytest.mark.parametrize("space_group", [None, "P 1", "P 4"])
-def test_cosym(dials_data, tmpdir, space_group):
+def test_cosym(dials_data, run_in_tmpdir, space_group):
     mcp = dials_data("multi_crystal_proteinase_k")
-    command = ["dials.cosym", "space_group=" + str(space_group)]
+    args = ["space_group=" + str(space_group)]
     for i in [1, 2, 3, 4, 5, 7, 8, 10]:
-        command.append(mcp.join("experiments_%d.json" % i).strpath)
-        command.append(mcp.join("reflections_%d.pickle" % i).strpath)
-
-    result = procrunner.run(command, working_directory=tmpdir.strpath)
-    assert not result.returncode and not result.stderr
-    assert tmpdir.join("symmetrized.refl").check(file=1)
-    assert tmpdir.join("symmetrized.expt").check(file=1)
-    experiments = load.experiment_list(
-        tmpdir.join("symmetrized.expt").strpath, check_format=False
-    )
+        args.append(mcp.join("experiments_%d.json" % i).strpath)
+        args.append(mcp.join("reflections_%d.pickle" % i).strpath)
+    dials_cosym.run(args=args)
+    assert os.path.isfile("symmetrized.refl")
+    assert os.path.isfile("symmetrized.expt")
+    experiments = load.experiment_list("symmetrized.expt", check_format=False)
     if space_group is None:
         assert (
             experiments[0].crystal.get_space_group().type().lookup_symbol() == "P 4 2 2"
@@ -38,48 +37,42 @@ def test_cosym(dials_data, tmpdir, space_group):
         )
 
 
-def test_cosym_partial_dataset(dials_data, tmpdir):
+def test_cosym_partial_dataset(dials_data, run_in_tmpdir):
     """Test how cosym handles partial/bad datasets."""
     mcp = dials_data("multi_crystal_proteinase_k")
-    command = ["dials.cosym"]
+    args = []
     for i in [1, 2]:
-        command.append(mcp.join("experiments_%d.json" % i).strpath)
-        command.append(mcp.join("reflections_%d.pickle" % i).strpath)
+        args.append(mcp.join("experiments_%d.json" % i).strpath)
+        args.append(mcp.join("reflections_%d.pickle" % i).strpath)
     # Make one dataset that will be removed in prefiltering
     r = flex.reflection_table.from_file(mcp.join("reflections_8.pickle").strpath)
     r["partiality"] = flex.double(r.size(), 0.1)
-    r.as_file(tmpdir.join("renamed.refl").strpath)
-    command.append(tmpdir.join("renamed.refl").strpath)
-    command.append(mcp.join("experiments_8.json").strpath)
+    r.as_file("renamed.refl")
+    args.append("renamed.refl")
+    args.append(mcp.join("experiments_8.json").strpath)
     # Add another good dataset at the end of the input list
-    command.append(mcp.join("experiments_10.json").strpath)
-    command.append(mcp.join("reflections_10.pickle").strpath)
+    args.append(mcp.join("experiments_10.json").strpath)
+    args.append(mcp.join("reflections_10.pickle").strpath)
 
-    result = procrunner.run(command, working_directory=tmpdir.strpath)
-    assert not result.returncode and not result.stderr
-    assert tmpdir.join("symmetrized.refl").check(file=1)
-    assert tmpdir.join("symmetrized.expt").check(file=1)
-    experiments = load.experiment_list(
-        tmpdir.join("symmetrized.expt").strpath, check_format=False
-    )
+    dials_cosym.run(args=args)
+    assert os.path.exists("symmetrized.refl")
+    assert os.path.exists("symmetrized.expt")
+    experiments = load.experiment_list("symmetrized.expt", check_format=False)
     assert len(experiments) == 3
 
 
-def test_cosym_partial_dataset_raises_sorry(dials_data, tmpdir):
+def test_cosym_partial_dataset_raises_sorry(dials_data, run_in_tmpdir, capsys):
     """Test how cosym handles partial/bad datasets."""
     mcp = dials_data("multi_crystal_proteinase_k")
-    command = ["dials.cosym"]
-    command.append(tmpdir.join("renamed.refl").strpath)
-    command.append(mcp.join("experiments_8.json").strpath)
+    args = ["renamed.refl", mcp.join("experiments_8.json").strpath]
     r2 = flex.reflection_table.from_file(mcp.join("reflections_10.pickle").strpath)
     r2["partiality"] = flex.double(r2.size(), 0.1)
-    r2.as_file(tmpdir.join("renamed2.refl").strpath)
-    command.append(tmpdir.join("renamed2.refl").strpath)
-    command.append(mcp.join("experiments_10.json").strpath)
+    r2.as_file("renamed2.refl")
+    args.append("renamed2.refl")
+    args.append(mcp.join("experiments_10.json").strpath)
 
-    result = procrunner.run(command, working_directory=tmpdir.strpath)
-    # Sorry exceptions are only raised as text at the system level
-    assert result.stderr.startswith(b"Sorry")
+    with pytest.raises(Sorry):
+        dials_cosym.run(args=args)
 
 
 @pytest.mark.parametrize(
@@ -99,6 +92,7 @@ def test_cosym_partial_dataset_raises_sorry(dials_data, tmpdir):
         ("P321", (59.39, 59.39, 28.35, 90, 90, 120), None, 5, False, False),
     ],
 )
+@pytest.mark.xfail("os.name == 'nt'", reason="UnicodeEncodeError in logging")
 def test_synthetic(
     space_group,
     unit_cell,
@@ -106,9 +100,8 @@ def test_synthetic(
     sample_size,
     use_known_space_group,
     use_known_lattice_group,
-    tmpdir,
+    run_in_tmpdir,
 ):
-    os.chdir(tmpdir.strpath)
     space_group = sgtbx.space_group_info(space_group).group()
     if unit_cell is not None:
         unit_cell = uctbx.unit_cell(unit_cell)
@@ -122,15 +115,14 @@ def test_synthetic(
     )
 
     experiments.as_json("tmp.expt")
-    expt_file = tmpdir.join("tmp.expt").strpath
+    expt_file = "tmp.expt"
     joint_table = flex.reflection_table()
     for r in reflections:
         joint_table.extend(r)
     joint_table.as_file("tmp.refl")
-    refl_file = tmpdir.join("tmp.refl").strpath
+    refl_file = "tmp.refl"
 
-    command = [
-        "dials.cosym",
+    args = [
         expt_file,
         refl_file,
         "output.experiments=symmetrized.expt",
@@ -140,33 +132,18 @@ def test_synthetic(
     ]
 
     if use_known_space_group:
-        command.append("space_group=%s" % space_group.info())
+        args.append("space_group=%s" % space_group.info())
     if use_known_lattice_group:
-        command.append("lattice_group=%s" % space_group.info())
+        args.append("lattice_group=%s" % space_group.info())
     if dimensions is not None:
-        command.append("dimensions=%s" % dimensions)
+        args.append("dimensions=%s" % dimensions)
 
-    result = procrunner.run(command, working_directory=tmpdir.strpath)
-    assert not result.returncode and not result.stderr
-    assert tmpdir.join("symmetrized.refl").check(file=1)
-    assert tmpdir.join("symmetrized.expt").check(file=1)
-    assert tmpdir.join("cosym.html").check(file=1)
-    assert tmpdir.join("cosym.json").check(file=1)
-    """experiments, reflections = assign_unique_identifiers(experiments, reflections)
-    cosym_instance = cosym(experiments, reflections, params=params)
-    register_default_cosym_observers(cosym_instance)
-    cosym_instance.run()
-    cosym_instance.export()
-
-
-
-    assert os.path.exists(params.output.experiments)
-    assert os.path.exists(params.output.reflections)
-    assert os.path.exists(params.output.html)
-    assert os.path.exists(params.output.json)"""
-    cosym_expts = load.experiment_list(
-        tmpdir.join("symmetrized.expt").strpath, check_format=False
-    )
+    dials_cosym.run(args=args)
+    assert os.path.isfile("symmetrized.refl")
+    assert os.path.isfile("symmetrized.expt")
+    assert os.path.isfile("cosym.html")
+    assert os.path.isfile("cosym.json")
+    cosym_expts = load.experiment_list("symmetrized.expt", check_format=False)
     assert len(cosym_expts) == len(experiments)
     for expt in cosym_expts:
         if unit_cell is not None:
@@ -181,3 +158,75 @@ def test_synthetic(
             continue
         assert str(expt.crystal.get_space_group().info()) == str(space_group.info())
         assert expt.crystal.get_space_group() == space_group
+
+
+def test_reindexing_identity(mocker):
+    """
+    Default to choosing the cluster that contains the most identity reindexing ops.
+
+    This can be important if the lattice symmetry is only very approximately related by
+    pseudosymmetry to the true symmetry. If all potential reindexing ops are genuine
+    indexing ambiguities, then it doesn't matter which one is chosen, however if not,
+    then choosing the wrong one will distort the true unit cell. In such cases it is
+    likely that the input datasets were already indexed consistently, therefore default
+    to choosing the cluster that contains the most identity reindexing ops.
+    """
+    # patch the cosym object, including the __init__
+    mocker.patch.object(dials_cosym.cosym, "__init__", return_value=None, autospec=True)
+    cosym = dials_cosym.cosym(mocker.ANY, mocker.ANY)
+    cosym.observers = mocker.MagicMock()
+    cosym.cosym_analysis = mocker.Mock()
+    cosym._apply_reindexing_operators = mocker.Mock()
+    cosym.params = dials_cosym.phil_scope.extract()
+
+    # Mock cosym_analysis reindexing ops
+    cosym.params.cluster.n_clusters = 6
+    cosym.cosym_analysis.reindexing_ops = {
+        0: {
+            0: "-x,x+y,-z",
+            1: "x,-x-y,-z",
+            2: "-x,-y,z",
+            3: "x,y,z",
+            4: "-x-y,y,-z",
+            5: "x+y,-y,-z",
+        },
+        1: {
+            0: "-x,x+y,-z",
+            1: "x,-x-y,-z",
+            2: "-x,-y,z",
+            3: "x,y,z",
+            4: "-x-y,y,-z",
+            5: "x+y,-y,-z",
+        },
+        2: {
+            0: "-x,x+y,-z",
+            1: "x,-x-y,-z",
+            2: "-x,-y,z",
+            3: "x,y,z",
+            4: "-x-y,y,-z",
+            5: "x+y,-y,-z",
+        },
+        3: {
+            0: "-x,x+y,-z",
+            1: "x,-x-y,-z",
+            2: "-x,-y,z",
+            3: "x,y,z",
+            4: "-x-y,y,-z",
+            5: "x+y,-y,-z",
+        },
+        4: {
+            0: "-x,x+y,-z",
+            1: "x,-x-y,-z",
+            2: "-x,-y,z",
+            3: "x,y,z",
+            4: "-x-y,y,-z",
+            5: "x+y,-y,-z",
+        },
+    }
+    cosym.run()
+
+    # Assert that chosen reindexing ops were the identity ops
+    cosym._apply_reindexing_operators.assert_called_once_with(
+        {"x,y,z": [0, 1, 2, 3, 4]},
+        subgroup=mocker.ANY,
+    )
