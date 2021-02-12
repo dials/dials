@@ -501,7 +501,6 @@ class ExtractSpots:
                 assert len(pixel_labeller) == len(result[0]), "Inconsistent size"
                 for plabeller, plist in zip(pixel_labeller, result[0]):
                     plabeller.add(plist)
-                result[0] = None
 
             batch_multi_node_parallel_map(
                 func=ExtractSpotsParallelTask(function),
@@ -518,7 +517,7 @@ class ExtractSpots:
                 assert len(pixel_labeller) == len(result), "Inconsistent size"
                 for plabeller, plist in zip(pixel_labeller, result):
                     plabeller.add(plist)
-                    result.clear()
+                result.clear()
 
         # Create shoeboxes from pixel list
         return pixel_list_to_reflection_table(
