@@ -13,6 +13,7 @@ import urllib.parse
 import urllib.request
 
 import libtbx.phil
+from dxtbx.util import get_url_scheme
 
 import dials.util
 
@@ -221,7 +222,7 @@ def run(args=None):
     filenames = []
     args = []
     for arg in mixed_args:
-        if urllib.parse.urlparse(arg).scheme:
+        if get_url_scheme(arg):
             # Make this look like a path. If you squint. And are looking away.
             filenames.append("/" + urllib.parse.quote(arg))
         else:
