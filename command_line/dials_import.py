@@ -723,7 +723,7 @@ class MetaDataUpdater(object):
         return result
 
 
-class Script(object):
+class FileImporter(object):
     """Class to parse the command line options."""
 
     def __init__(self, phil=phil_scope):
@@ -740,7 +740,7 @@ class Script(object):
             epilog=help_message,
         )
 
-    def run(self, args=None):
+    def import_files(self, args=None):
         """Parse the options."""
 
         # Parse the command line arguments in two passes to set up logging early
@@ -934,8 +934,8 @@ class Script(object):
 
 @show_mail_handle_errors()
 def run(args=None):
-    script = Script()
-    script.run(args)
+    importer = FileImporter()
+    importer.import_files(args)
 
 
 if __name__ == "__main__":
