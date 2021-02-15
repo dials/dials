@@ -191,72 +191,60 @@ phil_scope = parse(
 )
 
 
-class ImageSetImporter(object):
+def import_image_set(params):
     """
-    A class to manage the import of the experiments
+    Return the image_set as defined by the command line arguments.
     """
 
-    def __init__(self, params):
-        """
-        Init the class
-        """
-        self.params = params
+    # Get the experiments
+    experiments = flatten_experiments(params.input.experiments)
 
-    def __call__(self):
-        """
-        Import the experiments
-        """
+    # Check we have some filenames
+    if len(experiments) == 0:
 
-        # Get the experiments
-        experiments = flatten_experiments(self.params.input.experiments)
+        # FIXME Should probably make this smarter since it requires editing here
+        # and in dials.import phil scope
+        try:
+            format_kwargs = {
+                "dynamic_shadowing": params.format.dynamic_shadowing,
+                "multi_panel": params.format.multi_panel,
+            }
+        except AttributeError:
+            format_kwargs = None
 
-        # Check we have some filenames
-        if len(experiments) == 0:
-
-            # FIXME Should probably make this smarter since it requires editing here
-            # and in dials.import phil scope
-            try:
-                format_kwargs = {
-                    "dynamic_shadowing": self.params.format.dynamic_shadowing,
-                    "multi_panel": self.params.format.multi_panel,
-                }
-            except AttributeError:
-                format_kwargs = None
-
-            # Check if a template has been set and print help if not, otherwise try to
-            # import the images based on the template input
-            if len(self.params.input.template) > 0:
-                importer = ExperimentListTemplateImporter(
-                    self.params.input.template,
-                    image_range=self.params.geometry.scan.image_range,
-                    format_kwargs=format_kwargs,
+        # Check if a template has been set and print help if not, otherwise try to
+        # import the images based on the template input
+        if len(params.input.template) > 0:
+            importer = ExperimentListTemplateImporter(
+                params.input.template,
+                image_range=params.geometry.scan.image_range,
+                format_kwargs=format_kwargs,
+            )
+            experiments = importer.experiments
+            if len(experiments) == 0:
+                raise Sorry(
+                    "No experiments found matching template %s"
+                    % params.input.experiments
                 )
-                experiments = importer.experiments
-                if len(experiments) == 0:
-                    raise Sorry(
-                        "No experiments found matching template %s"
-                        % self.params.input.experiments
-                    )
-            elif len(self.params.input.directory) > 0:
-                experiments = ExperimentListFactory.from_filenames(
-                    self.params.input.directory, format_kwargs=format_kwargs
+        elif len(params.input.directory) > 0:
+            experiments = ExperimentListFactory.from_filenames(
+                params.input.directory, format_kwargs=format_kwargs
+            )
+            if len(experiments) == 0:
+                raise Sorry(
+                    "No experiments found in directories %s" % params.input.directory
                 )
-                if len(experiments) == 0:
-                    raise Sorry(
-                        "No experiments found in directories %s"
-                        % self.params.input.directory
-                    )
-            else:
-                raise Sorry("No experiments found")
+        else:
+            raise Sorry("No experiments found")
 
-        if self.params.identifier_type:
-            generate_experiment_identifiers(experiments, self.params.identifier_type)
+    if params.identifier_type:
+        generate_experiment_identifiers(experiments, params.identifier_type)
 
-        # Get a list of all imagesets
-        imageset_list = experiments.imagesets()
+    # Get a list of all imagesets
+    imageset_list = experiments.imagesets()
 
-        # Return the experiments
-        return imageset_list
+    # Return the experiments
+    return imageset_list
 
 
 class ReferenceGeometryUpdater(object):
@@ -802,13 +790,13 @@ class Script(object):
             return
 
         # Setup the experiments importer
-        imageset_importer = ImageSetImporter(params)
+        imported_imageset = import_image_set(params)
 
         # Setup the metadata updater
         metadata_updater = MetaDataUpdater(params)
 
         # Extract the experiments and loop through
-        experiments = metadata_updater(imageset_importer())
+        experiments = metadata_updater(imported_imageset)
 
         # Compute some numbers
         num_sweeps = 0
