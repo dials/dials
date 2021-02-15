@@ -723,7 +723,7 @@ class MetaDataUpdater(object):
         return result
 
 
-class FileImporter(object):
+class ImageImporter(object):
     """Class to parse the command line options."""
 
     def __init__(self, phil=phil_scope):
@@ -740,7 +740,7 @@ class FileImporter(object):
             epilog=help_message,
         )
 
-    def import_files(self, args=None):
+    def import_image(self, args=None):
         """Parse the options."""
 
         # Parse the command line arguments in two passes to set up logging early
@@ -934,8 +934,8 @@ class FileImporter(object):
 
 @show_mail_handle_errors()
 def run(args=None):
-    importer = FileImporter()
-    importer.import_files(args)
+    importer = ImageImporter()
+    importer.import_image(args)
 
 
 if __name__ == "__main__":
