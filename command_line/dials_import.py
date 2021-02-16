@@ -191,12 +191,17 @@ phil_scope = parse(
 )
 
 
-def get_imageset(params):
+def _extract_or_read_imagesets(params):
     """
-    Return the image_set as defined by the command line arguments.
+    Return a list of ImageSets, importing them via alternative means if necessary.
 
-    :param params:
-    :return: list of imagesets
+    The "Alternative Means" means via params.input.template or .directory,
+    if the images to import haven't been specified directly.
+
+    Args:
+        params: The phil.scope_extract from dials.import
+
+    Returns: A list of ImageSet objects
     """
 
     # Get the experiments
@@ -240,6 +245,8 @@ def get_imageset(params):
         else:
             raise Sorry("No experiments found")
 
+    # TODO (Nick):  This looks redundant as the experiments are immediately discarded.
+    #               verify this, and remove if it is.
     if params.identifier_type:
         generate_experiment_identifiers(experiments, params.identifier_type)
 
@@ -792,14 +799,11 @@ class ImageImporter(object):
             self.parser.print_help()
             return
 
-        # Setup the experiments importer
-        imageset = get_imageset(params)
+        # Re-extract the imagesets to rebuild experiments from
+        imagesets = _extract_or_read_imagesets(params)
 
-        # Setup the metadata updater
         metadata_updater = MetaDataUpdater(params)
-
-        # Extract the experiments and loop through
-        experiments = metadata_updater(imageset)
+        experiments = metadata_updater(imagesets)
 
         # Compute some numbers
         num_sweeps = 0
