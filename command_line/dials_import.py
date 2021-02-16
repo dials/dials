@@ -191,9 +191,12 @@ phil_scope = parse(
 )
 
 
-def import_image_set(params):
+def get_imageset(params):
     """
     Return the image_set as defined by the command line arguments.
+
+    :param params:
+    :return: list of imagesets
     """
 
     # Get the experiments
@@ -790,13 +793,13 @@ class ImageImporter(object):
             return
 
         # Setup the experiments importer
-        imported_imageset = import_image_set(params)
+        imageset = get_imageset(params)
 
         # Setup the metadata updater
         metadata_updater = MetaDataUpdater(params)
 
         # Extract the experiments and loop through
-        experiments = metadata_updater(imported_imageset)
+        experiments = metadata_updater(imageset)
 
         # Compute some numbers
         num_sweeps = 0
