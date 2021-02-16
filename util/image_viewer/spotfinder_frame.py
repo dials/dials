@@ -1652,14 +1652,8 @@ class SpotFrame(XrayFrame):
                             raise
                     beam_x, beam_y = detector[panel].millimeter_to_pixel(beam_centre)
                     beam_x, beam_y = map_coords(beam_x, beam_y, panel)
-                    self.params.basis_vector_scale
-                    for i, h in enumerate(
-                        (
-                            (self.params.basis_vector_scale, 0, 0),
-                            (0, self.params.basis_vector_scale, 0),
-                            (0, 0, self.params.basis_vector_scale),
-                        )
-                    ):
+                    for i, h in enumerate(((1, 0, 0), (0, 1, 0), (0, 0, 1))):
+                        r = A * matrix.col(h) * self.params.basis_vector_scale
                         r = A * matrix.col(h)
                         if still:
                             s1 = matrix.col(beam.get_s0()) + r
