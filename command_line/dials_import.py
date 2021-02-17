@@ -575,7 +575,7 @@ class MetaDataUpdater(object):
                     # check if user has overridden the input - if yes, recall
                     # that these are in people numbers (1...) and are inclusive
                     if self.params.geometry.scan.image_range is not None:
-                        ustart, uend = self.params.geometry.scan.image_range
+                        user_start, user_end = self.params.geometry.scan.image_range
                         offset = imageset.get_scan().get_array_range()[0]
                         start, end = ustart - 1, uend
                     else:

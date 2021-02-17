@@ -471,10 +471,10 @@ def test_import_still_sequence_as_experiments_subset(dials_data, tmpdir):
     assert all(exp.goniometer is not None for exp in imported_exp)
 
 
-def test_import_still_sequence_as_expts_subset_by_range(dials_data, tmpdir):
+def test_import_still_sequence_as_expts_subset_by_range(dials_data, tmp_path):
     image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
 
-    out = "experiments_as_still.expt"
+    out = tmp_path / "experiments_as_still.expt"
 
     _ = procrunner.run(
         [
@@ -487,7 +487,7 @@ def test_import_still_sequence_as_expts_subset_by_range(dials_data, tmpdir):
         working_directory=tmpdir.strpath,
     )
 
-    imported_exp = load.experiment_list(tmpdir.join(out).strpath)
+    imported_exp = load.experiment_list(str(out))
     assert len(imported_exp) == 3
     for exp in imported_exp:
         assert exp.identifier != ""
