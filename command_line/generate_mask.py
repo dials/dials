@@ -30,7 +30,7 @@ from scitbx.array_family import flex
 
 import dials.util
 import dials.util.log
-from dials.util.masking import MaskGenerator
+import dials.util.masking
 from dials.util.options import OptionParser, flatten_experiments
 
 Masks = List[Tuple[flex.bool, ...]]
@@ -104,11 +104,8 @@ def generate_mask(
             for i in range(num_imagesets)
         ]
 
-    # Generate the mask
-    generator = MaskGenerator(params)
-
     for imageset, filename in zip(imagesets, filenames):
-        mask = generator.generate(imageset)
+        mask = dials.util.masking.generate_mask(imageset, params)
         masks.append(mask)
 
         # Save the mask to file

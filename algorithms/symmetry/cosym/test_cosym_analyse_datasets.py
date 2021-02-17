@@ -1,8 +1,8 @@
+import numpy as np
 import pytest
 
 import libtbx
 from cctbx import sgtbx
-from scitbx.array_family import flex
 
 from dials.algorithms.symmetry.cosym import CosymAnalysis, phil_scope
 from dials.algorithms.symmetry.cosym._generate_test_data import generate_test_data
@@ -151,7 +151,7 @@ def test_cosym(
 def test_reindexing_ops_for_dataset(mocker):
     # Mock a minimal CosymAnalysis instance
     self = mocker.Mock()
-    self.cluster_labels = flex.double([1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0])
+    self.cluster_labels = np.array([1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0])
     self.params.cluster.n_clusters = 2
     self.input_intensities = [mocker.Mock(), mocker.Mock()]
     self.cb_op_inp_min = sgtbx.change_of_basis_op()

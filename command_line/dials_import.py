@@ -185,72 +185,70 @@ phil_scope = parse(
 )
 
 
-class ImageSetImporter:
+def _extract_or_read_imagesets(params):
     """
-    A class to manage the import of the experiments
+    Return a list of ImageSets, importing them via alternative means if necessary.
+
+    The "Alternative Means" means via params.input.template or .directory,
+    if the images to import haven't been specified directly.
+
+    Args:
+        params: The phil.scope_extract from dials.import
+
+    Returns: A list of ImageSet objects
     """
 
-    def __init__(self, params):
-        """
-        Init the class
-        """
-        self.params = params
+    # Get the experiments
+    experiments = flatten_experiments(params.input.experiments)
 
-    def __call__(self):
-        """
-        Import the experiments
-        """
+    # Check we have some filenames
+    if len(experiments) == 0:
 
-        # Get the experiments
-        experiments = flatten_experiments(self.params.input.experiments)
+        # FIXME Should probably make this smarter since it requires editing here
+        # and in dials.import phil scope
+        try:
+            format_kwargs = {
+                "dynamic_shadowing": params.format.dynamic_shadowing,
+                "multi_panel": params.format.multi_panel,
+            }
+        except AttributeError:
+            format_kwargs = None
 
-        # Check we have some filenames
-        if len(experiments) == 0:
-
-            # FIXME Should probably make this smarter since it requires editing here
-            # and in dials.import phil scope
-            try:
-                format_kwargs = {
-                    "dynamic_shadowing": self.params.format.dynamic_shadowing,
-                    "multi_panel": self.params.format.multi_panel,
-                }
-            except AttributeError:
-                format_kwargs = None
-
-            # Check if a template has been set and print help if not, otherwise try to
-            # import the images based on the template input
-            if len(self.params.input.template) > 0:
-                importer = ExperimentListTemplateImporter(
-                    self.params.input.template,
-                    image_range=self.params.geometry.scan.image_range,
-                    format_kwargs=format_kwargs,
+        # Check if a template has been set and print help if not, otherwise try to
+        # import the images based on the template input
+        if len(params.input.template) > 0:
+            importer = ExperimentListTemplateImporter(
+                params.input.template,
+                image_range=params.geometry.scan.image_range,
+                format_kwargs=format_kwargs,
+            )
+            experiments = importer.experiments
+            if len(experiments) == 0:
+                raise Sorry(
+                    "No experiments found matching template %s"
+                    % params.input.experiments
                 )
-                experiments = importer.experiments
-                if len(experiments) == 0:
-                    raise Sorry(
-                        "No experiments found matching template %s"
-                        % self.params.input.experiments
-                    )
-            elif len(self.params.input.directory) > 0:
-                experiments = ExperimentListFactory.from_filenames(
-                    self.params.input.directory, format_kwargs=format_kwargs
+        elif len(params.input.directory) > 0:
+            experiments = ExperimentListFactory.from_filenames(
+                params.input.directory, format_kwargs=format_kwargs
+            )
+            if len(experiments) == 0:
+                raise Sorry(
+                    "No experiments found in directories %s" % params.input.directory
                 )
-                if len(experiments) == 0:
-                    raise Sorry(
-                        "No experiments found in directories %s"
-                        % self.params.input.directory
-                    )
-            else:
-                raise Sorry("No experiments found")
+        else:
+            raise Sorry("No experiments found")
 
-        if self.params.identifier_type:
-            generate_experiment_identifiers(experiments, self.params.identifier_type)
+    # TODO (Nick):  This looks redundant as the experiments are immediately discarded.
+    #               verify this, and remove if it is.
+    if params.identifier_type:
+        generate_experiment_identifiers(experiments, params.identifier_type)
 
-        # Get a list of all imagesets
-        imageset_list = experiments.imagesets()
+    # Get a list of all imagesets
+    imageset_list = experiments.imagesets()
 
-        # Return the experiments
-        return imageset_list
+    # Return the experiments
+    return imageset_list
 
 
 class ReferenceGeometryUpdater:
@@ -729,7 +727,7 @@ class MetaDataUpdater:
         return result
 
 
-class Script:
+class ImageImporter:
     """Class to parse the command line options."""
 
     def __init__(self, phil=phil_scope):
@@ -746,7 +744,7 @@ class Script:
             epilog=help_message,
         )
 
-    def run(self, args=None):
+    def import_image(self, args=None):
         """Parse the options."""
 
         # Parse the command line arguments in two passes to set up logging early
@@ -795,14 +793,11 @@ class Script:
             self.parser.print_help()
             return
 
-        # Setup the experiments importer
-        imageset_importer = ImageSetImporter(params)
+        # Re-extract the imagesets to rebuild experiments from
+        imagesets = _extract_or_read_imagesets(params)
 
-        # Setup the metadata updater
         metadata_updater = MetaDataUpdater(params)
-
-        # Extract the experiments and loop through
-        experiments = metadata_updater(imageset_importer())
+        experiments = metadata_updater(imagesets)
 
         # Compute some numbers
         num_sweeps = 0
@@ -938,8 +933,8 @@ class Script:
 
 @show_mail_handle_errors()
 def run(args=None):
-    script = Script()
-    script.run(args)
+    importer = ImageImporter()
+    importer.import_image(args)
 
 
 if __name__ == "__main__":

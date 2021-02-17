@@ -7,13 +7,13 @@ import sys
 import traceback
 from collections import defaultdict, namedtuple
 from glob import glob
-from urllib.parse import urlparse
 
 from orderedset import OrderedSet
 
 import libtbx.phil
 from dxtbx.model import ExperimentList
 from dxtbx.model.experiment_list import ExperimentListFactory
+from dxtbx.util import get_url_scheme
 
 from dials.array_family import flex
 from dials.util import Sorry
@@ -257,7 +257,7 @@ class Importer:
         args_new = []
         for arg in args:
             # Don't expand wildcards if URI-style filename
-            if "*" in arg and not urlparse(arg).scheme:
+            if "*" in arg and not get_url_scheme(arg):
                 args_new.extend(glob(arg))
             else:
                 args_new.append(arg)
@@ -461,7 +461,7 @@ class PhilCommandParser:
                     else:
                         raise
             # Treat "has a schema" as "looks like a URL (not phil)
-            elif "=" in arg and not urlparse(arg).scheme:
+            elif "=" in arg and not get_url_scheme(arg):
                 try:
                     user_phils.append(interpretor.process_arg(arg=arg))
                 except Exception:

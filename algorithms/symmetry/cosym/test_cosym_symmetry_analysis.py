@@ -1,11 +1,11 @@
+import numpy as np
 import pytest
 
 from cctbx import crystal, sgtbx, uctbx
-from scitbx.array_family import flex
 
 
 def test_symmetry_analysis():
-    coords = flex.double(
+    coords = np.array(
         [
             [0.835, 0.158],
             [0.772, 0.104],

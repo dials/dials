@@ -1,16 +1,14 @@
 import numpy as np
 
-from scitbx.array_family import flex
-
 
 def plot_coords(coords, labels=None, key="cosym_coordinates"):
 
-    coord_x = coords[:, 0:1].as_1d()
-    coord_y = coords[:, 1:2].as_1d()
-    assert coord_x.size() == coord_y.size(), (coord_x.size(), coord_y.size())
+    coord_x = coords[:, 0]
+    coord_y = coords[:, 1]
+    assert coord_x.size == coord_y.size, (coord_x.size, coord_y.size)
 
     if labels is None:
-        labels = flex.int(len(coord_x), -1)
+        labels = np.full(coord_x.shape[0], -1, dtype=np.int)
 
     unique_labels = set(labels)
     unique_labels = sorted(unique_labels)
@@ -28,13 +26,11 @@ def plot_coords(coords, labels=None, key="cosym_coordinates"):
         colours.insert(0, (0, 0, 0, 1))
     data = []
     for k, col in zip(unique_labels, colours):
-        isel = (labels == k).iselection()
-        coord_x_sel = coord_x.select(isel)
-        coord_y_sel = coord_y.select(isel)
+        isel = np.where(labels == k)[0]
         data.append(
             {
-                "x": list(coord_x_sel),
-                "y": list(coord_y_sel),
+                "x": coord_x[isel].tolist(),
+                "y": coord_y[isel].tolist(),
                 "mode": "markers",
                 "type": "scatter",
                 "marker": {
@@ -75,21 +71,19 @@ def plot_rij_histogram(rij_matrix, key="cosym_rij_histogram"):
       plot_name (str): The file name to save the plot to.
         If this is not defined then the plot is displayed in interactive mode.
     """
-    rij = rij_matrix.as_1d()
-    rij = rij.select(rij != 0)
-    hist = flex.histogram(
-        rij,
-        data_min=min(-1, flex.min(rij)),
-        data_max=max(1, flex.max(rij)),
-        n_slots=100,
+    hist, bin_edges = np.histogram(
+        rij_matrix[rij_matrix != 0],
+        bins=100,
+        range=(min(-1, rij_matrix.min()), max(1, rij_matrix.max())),
     )
+    bin_centers = bin_edges[:-1] + np.diff(bin_edges) / 2
 
     d = {
         key: {
             "data": [
                 {
-                    "x": list(hist.slot_centers()),
-                    "y": list(hist.slots()),
+                    "x": bin_centers.tolist(),
+                    "y": hist.tolist(),
                     "type": "bar",
                     "name": "Rij histogram",
                 }

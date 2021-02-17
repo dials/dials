@@ -3,6 +3,10 @@ import shutil
 import sys
 import traceback
 
+# This file needs to remain Python 2.7 compatible
+# due to the underlying cctbx installer logic
+
+
 installer_path = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 libtbx_path = os.path.join(installer_path, "lib")
 if libtbx_path not in sys.path:
@@ -106,7 +110,8 @@ class installer(install_distribution.installer):
                     total_size += os.path.getsize(fp)
                     num_files += 1
             print(
-                f"Removing {humansize(total_size):9}, {num_files:4d} files from {subdir}"
+                "Removing %9s, %4d files from %s"
+                % (humansize(total_size), num_files, subdir)
             )
             shutil.rmtree(fullpath)
             self._cleaned_size = self._cleaned_size + total_size
@@ -115,7 +120,7 @@ class installer(install_distribution.installer):
         def rmext(subdir, extension):
             fullpath = os.path.join(directory, subdir)
             if not os.path.exists(fullpath):
-                print(f"Skipping *{extension}", " " * 26, subdir)
+                print("Skipping *%s" % extension, " " * 26, subdir)
                 return
             filelist, total_size = [], 0
             for dirpath, dirnames, filenames in os.walk(fullpath):
@@ -125,7 +130,8 @@ class installer(install_distribution.installer):
                         filelist.append(fp)
                         total_size += os.path.getsize(fp)
             print(
-                f"Removing {humansize(total_size):9}, {len(filelist):4d} {extension} files from {subdir}"
+                "Removing %9s, %4d %s files from %s"
+                % (humansize(total_size), len(filelist), extension, subdir)
             )
             for f in filelist:
                 os.remove(f)

@@ -1,3 +1,24 @@
+DIALS 3.3.3 (2021-02-15)
+========================
+
+No changes to core DIALS in 3.3.3.
+
+
+DIALS 3.3.2 (2021-02-01)
+========================
+
+Bugfixes
+--------
+
+- Remove unnecessary call to ``imageset.get_raw_data()`` while generating
+  masks. This was causing performance issues when spotfinding. (`#1449 <https://github.com/dials/dials/issues/1449>`_)
+- ``dials.export``: Allow data with either summation or profile fitted
+  intensities to be exported. Previously, both were (erroneously)
+  required to be present. (`#1556 <https://github.com/dials/dials/issues/1556>`_)
+- ``dials.scale``: Fix crash if only summation intensities present and ``intensity_choice=combine`` (`#1557 <https://github.com/dials/dials/issues/1557>`_)
+- Fix unicode logging errors on Windows (`#1565 <https://github.com/dials/dials/issues/1565>`_)
+
+
 DIALS 3.3.1 (2021-01-18)
 ========================
 

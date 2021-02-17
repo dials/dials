@@ -26,23 +26,6 @@ _no_multiprocessing_on_windows = (
 )
 
 
-class Result:
-    """
-    A class to hold the result from spot finding on an image.
-
-    When doing multi processing, we can process the result of
-    each thread as it comes in instead of waiting for all results.
-    The purpose of this class is to allow us to set the pixel list
-    to None after each image to lower memory usage.
-    """
-
-    def __init__(self, pixel_list):
-        """
-        Set the pixel list
-        """
-        self.pixel_list = pixel_list
-
-
 class ExtractPixelsFromImage:
     """
     A class to extract pixels from a single image
@@ -171,7 +154,7 @@ class ExtractPixelsFromImage:
             logger.info("Found %d strong pixels on image %d", num_strong, frame + 1)
 
         # Return the result
-        return Result(pixel_list)
+        return pixel_list
 
 
 class ExtractPixelsFromImage2DNoShoeboxes(ExtractPixelsFromImage):
@@ -228,8 +211,8 @@ class ExtractPixelsFromImage2DNoShoeboxes(ExtractPixelsFromImage):
         result = super().__call__(index)
 
         # Add pixel lists to the labeller
-        assert len(pixel_labeller) == len(result.pixel_list), "Inconsistent size"
-        for plabeller, plist in zip(pixel_labeller, result.pixel_list):
+        assert len(pixel_labeller) == len(result), "Inconsistent size"
+        for plabeller, plist in zip(pixel_labeller, result):
             plabeller.add(plist)
 
         # Create shoeboxes from pixel list
@@ -516,12 +499,9 @@ class ExtractSpots:
             def process_output(result):
                 for message in result[1]:
                     logger.handle(message)
-                assert len(pixel_labeller) == len(
-                    result[0].pixel_list
-                ), "Inconsistent size"
-                for plabeller, plist in zip(pixel_labeller, result[0].pixel_list):
+                assert len(pixel_labeller) == len(result[0]), "Inconsistent size"
+                for plabeller, plist in zip(pixel_labeller, result[0]):
                     plabeller.add(plist)
-                result[0].pixel_list = None
 
             batch_multi_node_parallel_map(
                 func=ExtractSpotsParallelTask(function),
@@ -535,12 +515,10 @@ class ExtractSpots:
         else:
             for task in indices:
                 result = function(task)
-                assert len(pixel_labeller) == len(
-                    result.pixel_list
-                ), "Inconsistent size"
-                for plabeller, plist in zip(pixel_labeller, result.pixel_list):
+                assert len(pixel_labeller) == len(result), "Inconsistent size"
+                for plabeller, plist in zip(pixel_labeller, result):
                     plabeller.add(plist)
-                    result.pixel_list = None
+                result.clear()
 
         # Create shoeboxes from pixel list
         return pixel_list_to_reflection_table(
@@ -792,7 +770,7 @@ class SpotFinder:
         :return: The observed spots
         """
         # The input mask
-        mask = self.mask_generator.generate(imageset)
+        mask = self.mask_generator(imageset)
         if self.mask is not None:
             mask = tuple(m1 & m2 for m1, m2 in zip(mask, self.mask))
 
