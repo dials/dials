@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import dials_algorithms_centroid_simple_ext
 
 

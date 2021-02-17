@@ -1,6 +1,5 @@
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
-from __future__ import absolute_import, division, print_function
 
 import concurrent.futures
 import copy
@@ -248,12 +247,12 @@ def run(args=None, phil=working_phil):
         sys.exit(str(e))
 
     # Save experiments
-    logger.info("Saving refined experiments to %s" % params.output.experiments)
+    logger.info("Saving refined experiments to %s", params.output.experiments)
     assert indexed_experiments.is_consistent()
     indexed_experiments.as_file(params.output.experiments)
 
     # Save reflections
-    logger.info("Saving refined reflections to %s" % params.output.reflections)
+    logger.info("Saving refined reflections to %s", params.output.reflections)
     indexed_reflections.as_msgpack_file(filename=params.output.reflections)
 
 

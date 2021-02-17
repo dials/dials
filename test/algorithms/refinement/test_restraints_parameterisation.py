@@ -1,5 +1,4 @@
 """Tests for RestraintsParameterisation and associated classes used in refinement"""
-from __future__ import absolute_import, division, print_function
 
 import os
 import random

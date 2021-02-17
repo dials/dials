@@ -1,5 +1,4 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
-from __future__ import absolute_import, division, print_function
 
 import json
 import math

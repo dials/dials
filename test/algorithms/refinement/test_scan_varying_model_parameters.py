@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import math
 import random
 import textwrap
@@ -192,7 +190,7 @@ class _TestDetectorModel(ScanVaryingDetectorParameterisationSinglePanel):
         return ScanVaryingDetectorParameterisationSinglePanel.get_state(self)
 
 
-class _TestScanVaryingModelParameterisation(object):
+class _TestScanVaryingModelParameterisation:
     def __init__(self):
         # Let's say we have a scan of 100 images
         self.image_range = (1, 100)

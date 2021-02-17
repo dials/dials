@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 
 import scitbx.matrix
@@ -128,7 +126,7 @@ def find_matching_symmetry(
         return best_subgroup
 
 
-class SymmetryHandler(object):
+class SymmetryHandler:
     def __init__(self, unit_cell=None, space_group=None, max_delta=5):
 
         self._max_delta = max_delta

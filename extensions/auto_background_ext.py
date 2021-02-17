@@ -1,10 +1,8 @@
-from __future__ import absolute_import, division, print_function
-
 from dials.extensions.glm_background_ext import GLMBackgroundExt
 from dials.extensions.simple_background_ext import SimpleBackgroundExt
 
 
-class AutoBackgroundExt(object):
+class AutoBackgroundExt:
     """An extension class to automatically choose a background algorithm.
     If experiments all have counting detectors then the glm algorithm is
     chosen. Otherwise, the simple algorithm is chosen."""

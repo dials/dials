@@ -2,7 +2,6 @@
 Definition of the target function for error model minimisation.
 """
 
-from __future__ import absolute_import, division, print_function
 
 from dials.array_family import flex
 
@@ -23,7 +22,7 @@ def calculate_regression_x_y(Ih_table):
     return x, y
 
 
-class ErrorModelTarget(object):
+class ErrorModelTarget:
 
     """Error model target for finding slope of norm distribution.
     (i.e. the 'a' parameter of the basic error model)"""
@@ -71,7 +70,7 @@ class ErrorModelTarget(object):
 
 class ErrorModelTargetRegression(ErrorModelTarget):
     def __init__(self, error_model):
-        super(ErrorModelTargetRegression, self).__init__(error_model)
+        super().__init__(error_model)
         # calculate variances needed for minimisation.
         self.x, self.y = calculate_regression_x_y(self.error_model.filtered_Ih_table)
         self.n_refl = self.y.size()

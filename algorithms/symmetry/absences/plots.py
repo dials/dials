@@ -1,6 +1,4 @@
-# coding: utf-8
 """Definitions of plots for systematic absences."""
-from __future__ import absolute_import, division, print_function
 
 from collections import OrderedDict
 
@@ -44,13 +42,13 @@ def plot_screw_axes(screw_axes_data):
                         }
                     ],
                     "layout": {
-                        "title": u"I (merged) / σ (merged) along axis %s" % name,
+                        "title": f"I (merged) / σ (merged) along axis {name}",
                         "xaxis": {
                             "domain": [0, 1],
                             "anchor": "y",
                             "title": "index along axis",
                         },
-                        "yaxis": {"domain": [0, 1], "anchor": "x", "title": u"I/σ(I)"},
+                        "yaxis": {"domain": [0, 1], "anchor": "x", "title": "I/σ(I)"},
                     },
                 }
             }
@@ -86,13 +84,13 @@ def plot_screw_axes(screw_axes_data):
                         },
                     ],
                     "layout": {
-                        "title": u"I, σ (merged) along axis %s" % name,
+                        "title": f"I, σ (merged) along axis {name}",
                         "xaxis": {
                             "domain": [0, 1],
                             "anchor": "y",
                             "title": "index along axis",
                         },
-                        "yaxis": {"domain": [0, 1], "anchor": "x", "title": u"I, σ"},
+                        "yaxis": {"domain": [0, 1], "anchor": "x", "title": "I, σ"},
                     },
                 }
             }

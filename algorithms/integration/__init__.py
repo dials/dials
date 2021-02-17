@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import collections
 
 from dials.util import tabulate
@@ -23,7 +21,7 @@ Result = collections.namedtuple(
 #        :param data: Other processed data
 
 
-class TimingInfo(object):
+class TimingInfo:
     """
     A class to contain timing info.
     """
@@ -40,7 +38,7 @@ class TimingInfo(object):
     def __str__(self):
         """Convert to string."""
         rows = [
-            [description, "%.2f seconds" % value]
+            [description, f"{value:.2f} seconds"]
             for description, value in (
                 ["Read time", self.read],
                 ["Extract time", self.extract],

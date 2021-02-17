@@ -1,10 +1,7 @@
-# coding: utf-8
-
-from __future__ import absolute_import, division, print_function
-
 import logging
 import time
 from collections import Counter, OrderedDict
+from math import isclose
 
 from iotbx import mtz
 from libtbx import env
@@ -25,29 +22,21 @@ from dials.util.multi_dataset_handling import (
 )
 from dials.util.version import dials_version
 
-try:
-    from math import isclose
-except ImportError:
-    # Python 3 backport
-    def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
-        return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
-
-
 logger = logging.getLogger(__name__)
 
 
-class MTZWriterBase(object):
+class MTZWriterBase:
     """Helper for adding metadata, crystals and datasets to an mtz file object."""
 
     def __init__(self, space_group, unit_cell=None):
         """If a unit cell is provided, will be used as default unless specified
         for each crystal."""
         mtz_file = mtz.object()
-        mtz_file.set_title("From %s" % env.dispatcher_name)
+        mtz_file.set_title(f"From {env.dispatcher_name}")
         date_str = time.strftime("%Y-%m-%d at %H:%M:%S %Z")
         if time.strftime("%Z") != "GMT":
             date_str += time.strftime("  (%Y-%m-%d at %H:%M:%S %Z)", time.gmtime())
-        mtz_file.add_history("From %s, run on %s" % (dials_version(), date_str))
+        mtz_file.add_history(f"From {dials_version()}, run on {date_str}")
         mtz_file.set_space_group_info(space_group.info())
         self.mtz_file = mtz_file
         if unit_cell:
@@ -65,7 +54,7 @@ class MTZWriterBase(object):
             else:
                 unit_cell = self.unit_cell
         if not crystal_name:
-            crystal_name = "crystal_%s" % str(self.n_crystals + 1)
+            crystal_name = f"crystal_{self.n_crystals + 1}"
         if not project_name:
             project_name = "DIALS"
         self.current_crystal = self.mtz_file.add_crystal(
@@ -129,8 +118,8 @@ class MADMergedMTZWriter(MergedMTZWriter):
         suffix=None,
     ):
         if not suffix:
-            suffix = "_WAVE%s" % str(self.n_datasets)
-        super(MADMergedMTZWriter, self).add_dataset(
+            suffix = f"_WAVE{self.n_datasets}"
+        super().add_dataset(
             merged_array,
             anom_array,
             amplitudes,
@@ -585,9 +574,7 @@ def export_mtz(
     mtz_writer.write_columns(combined_data)
 
     logger.info(
-        "Saving {} integrated reflections to {}".format(
-            len(combined_data["id"]), filename
-        )
+        "Saving %s integrated reflections to %s", len(combined_data["id"]), filename
     )
     mtz_file = mtz_writer.mtz_file
     mtz_file.write(filename)

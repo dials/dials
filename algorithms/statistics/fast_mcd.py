@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import math
 
 from scitbx.array_family import flex
@@ -128,7 +126,7 @@ def mcd_finite_sample(p, n, alpha):
     return 1 / fp_alpha_n
 
 
-class FastMCD(object):
+class FastMCD:
     """Experimental implementation of the FAST-MCD algorithm of Rousseeuw and
     van Driessen"""
 

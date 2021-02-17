@@ -1,7 +1,3 @@
-# -*- coding: utf8 -*-
-
-from __future__ import absolute_import, division, print_function
-
 import logging
 
 from libtbx.phil import parse
@@ -123,7 +119,7 @@ def run(args=None, phil=phil_scope):
         else:
             if not len(reflections) == 1:
                 exit("Only one reflection table can be provided")
-            n_datasets = len(set(reflections[0]["id"]).difference(set([-1])))
+            n_datasets = len(set(reflections[0]["id"]).difference({-1}))
             if n_datasets != len(experiments):
                 exit(
                     """

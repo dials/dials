@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import os
 
 import pytest
@@ -87,9 +85,7 @@ def test_kapton(run_in_tmpdir):
     command_without_kapton = "dials.stills_process %s params_without_kapton.phil" % (
         image_file
     )
-    command_with_kapton = "dials.stills_process %s params_with_kapton.phil" % (
-        image_file
-    )
+    command_with_kapton = f"dials.stills_process {image_file} params_with_kapton.phil"
 
     libtbx.easy_run.fully_buffered(
         command=command_without_kapton, stdout_splitlines=True

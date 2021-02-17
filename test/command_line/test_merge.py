@@ -1,6 +1,5 @@
 """Tests for dials.merge command line program."""
 
-from __future__ import absolute_import, division, print_function
 
 import procrunner
 import pytest
@@ -42,15 +41,15 @@ def test_merge(dials_data, tmpdir, anomalous, truncate):
     refls = location.join("scaled_20_25.refl")
     expts = location.join("scaled_20_25.expt")
 
-    mtz_file = tmpdir.join("merge-%s-%s.mtz" % (anomalous, truncate))
+    mtz_file = tmpdir.join(f"merge-{anomalous}-{truncate}.mtz")
 
     command = [
         "dials.merge",
         refls,
         expts,
-        "truncate=%s" % truncate,
-        "anomalous=%s" % anomalous,
-        "output.mtz=%s" % mtz_file.strpath,
+        f"truncate={truncate}",
+        f"anomalous={anomalous}",
+        f"output.mtz={mtz_file.strpath}",
         "project_name=ham",
         "crystal_name=jam",
         "dataset_name=spam",
@@ -100,7 +99,7 @@ def test_merge_dmin_dmax(dials_data, tmpdir, best_unit_cell):
         "anomalous=False",
         "d_min=1.0",
         "d_max=8.0",
-        "output.mtz=%s" % mtz_file.strpath,
+        f"output.mtz={mtz_file.strpath}",
         "project_name=ham",
         "crystal_name=jam",
         "dataset_name=spam",
@@ -128,16 +127,16 @@ def test_merge_multi_wavelength(dials_data, tmpdir):
     """Test that merge handles multi-wavelength data suitably - should be
     exported into an mtz with seprate columns for each wavelength."""
 
-    mean_labels = ["%sIMEAN_WAVE%s" % (pre, i) for i in [1, 2] for pre in ["", "SIG"]]
+    mean_labels = [f"{pre}IMEAN_WAVE{i}" for i in [1, 2] for pre in ["", "SIG"]]
     anom_labels = [
-        "%sI_WAVE%s(%s)" % (pre, i, sgn)
+        f"{pre}I_WAVE{i}({sgn})"
         for i in [1, 2]
         for pre in ["", "SIG"]
         for sgn in ["+", "-"]
     ]
-    amp_labels = ["%sF_WAVE%s" % (pre, i) for i in [1, 2] for pre in ["", "SIG"]]
+    amp_labels = [f"{pre}F_WAVE{i}" for i in [1, 2] for pre in ["", "SIG"]]
     anom_amp_labels = [
-        "%sF_WAVE%s(%s)" % (pre, i, sgn)
+        f"{pre}F_WAVE{i}({sgn})"
         for i in [1, 2]
         for pre in ["", "SIG"]
         for sgn in ["+", "-"]

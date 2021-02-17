@@ -87,8 +87,9 @@ class ExtractPixelsFromImage:
             mask = tuple(m1 & m2 for m1, m2 in zip(mask, self.mask))
 
         logger.debug(
-            "Number of masked pixels for image %i: %i"
-            % (index, sum(m.count(False) for m in mask))
+            "Number of masked pixels for image %i: %i",
+            index,
+            sum(m.count(False) for m in mask),
         )
 
         # Add the images to the pixel lists
@@ -437,7 +438,7 @@ class ExtractSpots:
         mp_njobs = self.mp_njobs
         if mp_nproc is libtbx.Auto:
             mp_nproc = available_cores()
-            logger.info("Setting nproc={}".format(mp_nproc))
+            logger.info(f"Setting nproc={mp_nproc}")
         if os.name == "nt" and (mp_nproc > 1 or mp_njobs > 1):
             logger.warning(_no_multiprocessing_on_windows)
             mp_nproc = 1

@@ -1,4 +1,3 @@
-# coding: utf-8
 """
 This program performs scaling on integrated datasets, which attempts to improve
 the internal consistency of the reflection intensities by correcting for
@@ -33,12 +32,10 @@ Incremental scaling (with different options per dataset)::
 
   dials.scale integrated_2.refl integrated_2.expt scaled.refl scaled.expt physical.scale_interval=15.0
 """
-from __future__ import absolute_import, division, print_function
 
 import logging
 import sys
-
-from six.moves import cStringIO as StringIO
+from io import StringIO
 
 from libtbx import phil
 

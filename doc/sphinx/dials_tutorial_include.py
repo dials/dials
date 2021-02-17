@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import os
 
 import sphinx.directives.code as code
@@ -20,8 +18,7 @@ class DialsTutorialInclude(code.LiteralInclude):
     """Behaves like LiteralInclude but looks for files relative to the known
     DIALS output log directory."""
 
-    def run(self):
-        # type: () -> code.List[code.nodes.Node]
+    def run(self) -> code.List[code.nodes.Node]:
         document = self.state.document
         if not document.settings.file_insertion_enabled:
             return [

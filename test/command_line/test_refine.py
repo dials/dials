@@ -7,7 +7,6 @@ but also that the command line program is functioning and that the output models
 have not changed format and so on.
 """
 
-from __future__ import absolute_import, division, print_function
 
 import os
 

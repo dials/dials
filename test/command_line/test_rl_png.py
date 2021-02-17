@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import os
 
 import procrunner
@@ -23,7 +21,7 @@ def test_rl_png_imported_experiments(dials_data, tmpdir):
         "solution_2",
         "solution_3",
     ):
-        assert tmpdir.join("rl_%s.png" % s).check()
+        assert tmpdir.join(f"rl_{s}.png").check()
 
 
 def test_rl_png_refinement_data(dials_regression, tmpdir):
@@ -37,4 +35,4 @@ def test_rl_png_refinement_data(dials_regression, tmpdir):
     assert not result.returncode and not result.stderr
 
     for s in ("beam_vector", "e3", "rotation_axis", "a", "b", "c"):
-        assert tmpdir.join("rl_%s.png" % s).check()
+        assert tmpdir.join(f"rl_{s}.png").check()

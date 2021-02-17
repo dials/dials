@@ -1,5 +1,4 @@
 """Definitions of screw axes with methods for scoring against data."""
-from __future__ import absolute_import, division, print_function
 
 import logging
 import math
@@ -56,7 +55,7 @@ class ScrewAxis(Subject):
     name = None
 
     def __init__(self):
-        super(ScrewAxis, self).__init__(events=["selected data for scoring"])
+        super().__init__(events=["selected data for scoring"])
         self.equivalent_axes = []
         self.n_refl_used = (0.0, 0.0)
         self.miller_axis_vals = []

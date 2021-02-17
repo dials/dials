@@ -1,6 +1,3 @@
-# coding: utf-8
-from __future__ import absolute_import, division, print_function
-
 import sys
 
 from libtbx import phil
@@ -69,7 +66,7 @@ def run(args=None):
         )
     except ValueError as e:
         raise Sorry(e)
-    print("assigned identifiers: %s" % list(experiments.identifiers()))
+    print(f"assigned identifiers: {list(experiments.identifiers())}")
 
     experiments.as_file(params.output.experiments)
     joint_table = flex.reflection_table()

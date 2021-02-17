@@ -7,7 +7,6 @@ reject_outliers, to reject outlier and set flags given a reflection table
 and experiment object, and determine_outlier_index_arrays, which takes an
 Ih_table and returns flex.size_t index arrays of the outlier positions.
 """
-from __future__ import absolute_import, division, print_function
 
 import copy
 import logging
@@ -104,7 +103,7 @@ def determine_outlier_index_arrays(Ih_table, method="standard", zmax=6.0, target
         assert target is not None
         outlier_rej = TargetedOutlierRejection(Ih_table, zmax, target)
     elif method is not None:
-        raise ValueError("Invalid choice of outlier rejection method: %s" % method)
+        raise ValueError(f"Invalid choice of outlier rejection method: {method}")
     if not outlier_rej:
         return [flex.size_t([]) for _ in range(Ih_table.n_datasets)]
     outlier_rej.run()
@@ -116,12 +115,12 @@ def determine_outlier_index_arrays(Ih_table, method="standard", zmax=6.0, target
     else:
         msg = "A round of outlier rejection has been performed, \n"
     n_outliers = sum(len(i) for i in outlier_index_arrays)
-    msg += "{} outliers have been identified. \n".format(n_outliers)
+    msg += f"{n_outliers} outliers have been identified. \n"
     logger.info(msg)
     return outlier_index_arrays
 
 
-class OutlierRejectionBase(object):
+class OutlierRejectionBase:
     """
     Base class for outlier rejection algorithms using an IhTable datastructure.
 
@@ -199,7 +198,7 @@ class TargetedOutlierRejection(OutlierRejectionBase):
 Targeted outlier rejection requires a target Ih_table with nblocks = 1"""
         self._target_Ih_table_block = target.blocked_data_list[0]
         self._target_Ih_table_block.calc_Ih()
-        super(TargetedOutlierRejection, self).__init__(Ih_table, zmax)
+        super().__init__(Ih_table, zmax)
 
     def _do_outlier_rejection(self):
         """Add indices (w.r.t. the Ih_table data) to self._outlier_indices."""
@@ -255,7 +254,7 @@ class SimpleNormDevOutlierRejection(OutlierRejectionBase):
     """
 
     def __init__(self, Ih_table, zmax):
-        super(SimpleNormDevOutlierRejection, self).__init__(Ih_table, zmax)
+        super().__init__(Ih_table, zmax)
         self.weights = limit_outlier_weights(
             copy.deepcopy(self._Ih_table_block.weights),
             self._Ih_table_block.h_index_matrix,
@@ -300,7 +299,7 @@ class NormDevOutlierRejection(OutlierRejectionBase):
     """
 
     def __init__(self, Ih_table, zmax):
-        super(NormDevOutlierRejection, self).__init__(Ih_table, zmax)
+        super().__init__(Ih_table, zmax)
         self.weights = limit_outlier_weights(
             copy.deepcopy(self._Ih_table_block.weights),
             self._Ih_table_block.h_index_matrix,

@@ -1,10 +1,9 @@
 """Merging functions for experiment lists and reflection tables."""
-from __future__ import absolute_import, division, print_function
 
 import logging
+from io import StringIO
 
 from jinja2 import ChoiceLoader, Environment, PackageLoader
-from six.moves import cStringIO as StringIO
 
 from cctbx import uctbx
 from mmtbx.scaling import data_statistics
@@ -83,7 +82,7 @@ def prepare_merged_reflection_table(
     return merged_reflections
 
 
-class MTZDataClass(object):
+class MTZDataClass:
 
     """Container class (i.e. Python 3.7 dataclass) for per-wavelength mtz dataset."""
 

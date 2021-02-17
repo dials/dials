@@ -1,7 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
-
-class IntegrationAlgorithm(object):
+class IntegrationAlgorithm:
     """A class to perform bayesian integration"""
 
     def __init__(self, **kwargs):

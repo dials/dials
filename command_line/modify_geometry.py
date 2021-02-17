@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import libtbx.phil
 
 import dials.util
@@ -55,7 +53,7 @@ def run(args=None):
         imageset.set_scan(imageset_new.get_scan())
 
     if len(experiments):
-        print("Saving modified experiments to %s" % params.output.experiments)
+        print(f"Saving modified experiments to {params.output.experiments}")
         experiments.as_file(params.output.experiments)
 
 

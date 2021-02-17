@@ -1,13 +1,10 @@
-# coding: utf-8
 """
 Command line script to allow merging and truncating of a dials dataset.
 """
-from __future__ import absolute_import, division, print_function
 
 import logging
 import sys
-
-from six.moves import cStringIO as StringIO
+from io import StringIO
 
 from dxtbx.model import ExperimentList
 from iotbx import phil
@@ -269,9 +266,8 @@ can be processed with dials.merge"""
     ]:
         if k not in reflections[0]:
             raise Sorry(
-                """%s not found in the reflection table.
+                f"""{k} not found in the reflection table.
 Only scaled data can be processed with dials.merge"""
-                % k
             )
 
     try:

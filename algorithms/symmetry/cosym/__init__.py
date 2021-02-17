@@ -5,7 +5,6 @@ Acta Cryst. D74, 405-410 <https://doi.org/10.1107/S2059798318002978>`_ for
 determination of Patterson group symmetry from sparse multi-crystal data sets in
 the presence of an indexing ambiguity.
 """
-from __future__ import absolute_import, division, print_function
 
 import json
 import logging
@@ -123,7 +122,7 @@ class CosymAnalysis(symmetry_base, Subject):
             cosym anaylsis.
           params (libtbx.phil.scope_extract): Parameters for the analysis.
         """
-        super(CosymAnalysis, self).__init__(
+        super().__init__(
             intensities,
             normalisation=params.normalisation,
             lattice_symmetry_max_delta=params.lattice_symmetry_max_delta,
@@ -271,9 +270,9 @@ class CosymAnalysis(symmetry_base, Subject):
                     zip(dimensions, functional), headers=("Dimensions", "Functional")
                 )
             )
-            logger.info("Best number of dimensions: %i" % x_g)
+            logger.info("Best number of dimensions: %i", x_g)
             self.target.set_dimensions(int(x_g))
-            logger.info("Using %i dimensions for analysis" % self.target.dim)
+            logger.info("Using %i dimensions for analysis", self.target.dim)
 
     def run(self):
         self._intialise_target()
@@ -532,7 +531,7 @@ class CosymAnalysis(symmetry_base, Subject):
         return json.dumps(d, indent=indent)
 
 
-class SymmetryAnalysis(object):
+class SymmetryAnalysis:
     def __init__(self, coords, sym_ops, subgroups, cb_op_inp_min):
 
         import scipy.spatial.distance as ssd
@@ -600,9 +599,9 @@ class SymmetryAnalysis(object):
         for score in d["sym_op_scores"]:
             rows.append(
                 (
-                    "%.3f" % score["likelihood"],
-                    "%.2f" % score["z_cc"],
-                    "%.2f" % score["cc"],
+                    f"{score['likelihood']:.3f}",
+                    f"{score['z_cc']:.2f}",
+                    f"{score['cc']:.2f}",
                     score["stars"],
                     str(sgtbx.rt_mx(str(score["operator"])).r().info()),
                 )
@@ -631,11 +630,11 @@ class SymmetryAnalysis(object):
                         ).info()
                     ),
                     score["stars"],
-                    "%.3f" % score["likelihood"],
-                    "% .2f" % score["z_cc_net"],
-                    "% .2f" % score["z_cc_for"],
-                    "% .2f" % score["z_cc_against"],
-                    "%.1f" % score["max_angular_difference"],
+                    f"{score['likelihood']:.3f}",
+                    f"{score['z_cc_net']: .2f}",
+                    f"{score['z_cc_for']: .2f}",
+                    f"{score['z_cc_against']: .2f}",
+                    f"{score['max_angular_difference']:.1f}",
                     str(sgtbx.change_of_basis_op(str(score["cb_op"]))),
                 )
             )
@@ -658,8 +657,8 @@ class SymmetryAnalysis(object):
                 "%.3f %.3f %.3f %.1f %.1f %.1f" % tuple(best_subgroup["unit_cell"]),
             ),
             ("Reindex operator", best_subgroup["cb_op"]),
-            ("Laue group probability", "%.3f" % best_subgroup["likelihood"]),
-            ("Laue group confidence", "%.3f" % best_subgroup["confidence"]),
+            ("Laue group probability", f"{best_subgroup['likelihood']:.3f}"),
+            ("Laue group confidence", f"{best_subgroup['confidence']:.3f}"),
         )
 
     def __str__(self):
@@ -681,14 +680,14 @@ class SymmetryAnalysis(object):
             % self.best_solution.subgroup["best_subsym"].space_group_info()
         )
         output.append(
-            "Unit cell: %s" % self.best_solution.subgroup["best_subsym"].unit_cell()
+            f"Unit cell: {str(self.best_solution.subgroup['best_subsym'].unit_cell())}"
         )
         output.append(
             "Reindex operator: %s"
             % (self.best_solution.subgroup["cb_op_inp_best"] * self.cb_op_inp_min)
         )
-        output.append("Laue group probability: %.3f" % self.best_solution.likelihood)
-        output.append("Laue group confidence: %.3f" % self.best_solution.confidence)
+        output.append(f"Laue group probability: {self.best_solution.likelihood:.3f}")
+        output.append(f"Laue group confidence: {self.best_solution.confidence:.3f}")
         return "\n".join(output)
 
     def as_dict(self):
@@ -716,7 +715,7 @@ class SymmetryAnalysis(object):
         return d
 
 
-class ScoreSymmetryElement(object):
+class ScoreSymmetryElement:
     """Analyse intensities for presence of a given symmetry operation.
 
     1) Calculate the probability of observing this CC if the sym op is present,
@@ -785,7 +784,7 @@ class ScoreSymmetryElement(object):
         }
 
 
-class ScoreSubGroup(object):
+class ScoreSubGroup:
     """Score the probability of a given subgroup being the true subgroup.
 
     1) Calculates overall Zcc scores for symmetry elements present/absent from
@@ -845,7 +844,7 @@ class ScoreSubGroup(object):
         Returns:
           str:
         """
-        return "%s %.3f %.2f %.2f %.2f" % (
+        return "{} {:.3f} {:.2f} {:.2f} {:.2f}".format(
             self.subgroup["best_subsym"].space_group_info(),
             self.likelihood,
             self.z_cc_net,
@@ -897,6 +896,6 @@ class ScoreSubGroup(object):
             "z_cc_for": self.z_cc_for,
             "z_cc_against": self.z_cc_against,
             "max_angular_difference": self.subgroup["max_angular_difference"],
-            "cb_op": "%s" % (self.subgroup["cb_op_inp_best"]),
+            "cb_op": f"{self.subgroup['cb_op_inp_best']}",
             "stars": self.stars,
         }

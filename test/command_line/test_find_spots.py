@@ -1,10 +1,8 @@
-from __future__ import absolute_import, division, print_function
-
 import os
+import pickle
 
 import procrunner
 import pytest
-import six.moves.cPickle as pickle
 
 from dials.array_family import flex
 

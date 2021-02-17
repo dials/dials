@@ -1,6 +1,5 @@
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
-from __future__ import absolute_import, division, print_function
 
 import logging
 
@@ -94,7 +93,7 @@ spotfinder {
 working_phil = phil_scope.fetch(sources=[phil_overrides])
 
 
-class Script(object):
+class Script:
     """A class for running the script."""
 
     def __init__(self, phil=working_phil):
@@ -186,7 +185,7 @@ class Script(object):
                 selected.set_selected(reflections["id"] == i, True)
             ascii_plot = spot_counts_per_image_plot(reflections.select(selected))
             if len(ascii_plot):
-                logger.info("\nHistogram of per-image spot count for imageset %i:" % i)
+                logger.info("\nHistogram of per-image spot count for imageset %i:", i)
                 logger.info(ascii_plot)
 
         # Save the reflections to file
@@ -200,9 +199,7 @@ class Script(object):
 
         reflections.as_file(params.output.reflections)
         logger.info(
-            "Saved {} reflections to {}".format(
-                len(reflections), params.output.reflections
-            )
+            "Saved %s reflections to %s", len(reflections), params.output.reflections
         )
 
         # Reset the trusted ranges
@@ -215,7 +212,7 @@ class Script(object):
         # Save the experiments
         if params.output.experiments:
 
-            logger.info("Saving experiments to {}".format(params.output.experiments))
+            logger.info(f"Saving experiments to {params.output.experiments}")
             experiments.as_file(params.output.experiments)
 
         # Print some per image statistics

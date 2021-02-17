@@ -1,10 +1,7 @@
-# coding: utf-8
 #
 # Known issues: Recentering on resize and when switching between
 # different image types.  Ring centre on image switch.
 
-
-from __future__ import absolute_import, division, print_function
 
 import imp
 import math
@@ -29,7 +26,7 @@ int_bits = c_sizeof("int") * 8
 MASK_VAL = -(2 ** (int_bits - 1))
 
 
-class chooser_wrapper(object):
+class chooser_wrapper:
     def __init__(self, image_set, index):
         self.image_set = image_set
         self.path = os.path.basename(image_set.get_path(index))
@@ -161,7 +158,7 @@ class XrayFrame(XFBaseClass):
         # does not guarantee window creation. The frame calls Raise() so that it
         # will be shown. This addresses an error with PySlip requiring the
         # window to exist before instantiation.
-        super(XrayFrame, self).Show()
+        super().Show()
         self.Raise()
 
     def setup_toolbar(self):
@@ -203,7 +200,7 @@ class XrayFrame(XFBaseClass):
                 lon, lat
             )
 
-            posn_str = "Picture:  slow=%.3f / fast=%.3f pixels." % (
+            posn_str = "Picture:  slow={:.3f} / fast={:.3f} pixels.".format(
                 slow_picture,
                 fast_picture,
             )
@@ -214,7 +211,7 @@ class XrayFrame(XFBaseClass):
                 else:
                     readout = -1
 
-                coords_str = "slow=%.3f / fast=%.3f pixels" % (coords[0], coords[1])
+                coords_str = f"slow={coords[0]:.3f} / fast={coords[1]:.3f} pixels"
                 if len(coords) == 2:
                     posn_str += " Readout: " + coords_str + "."
                 elif readout >= 0:
@@ -253,7 +250,7 @@ class XrayFrame(XFBaseClass):
                     reso = self.pyslip.tiles.get_resolution(coords[1], coords[0])
 
                 if reso is not None:
-                    posn_str += " Resolution: %.3f" % (reso)
+                    posn_str += f" Resolution: {reso:.3f}"
 
             self.statusbar.SetStatusText(posn_str)
         else:
@@ -524,7 +521,7 @@ class XrayFrame(XFBaseClass):
         elif isinstance(file_name_or_data, chooser_wrapper):
             return str(file_name_or_data)
         else:
-            return super(XrayFrame, self).get_key(file_name_or_data)
+            return super().get_key(file_name_or_data)
 
     def update_settings(self, layout=True):
         # XXX The zoom level from the settings panel are not taken into

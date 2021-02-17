@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import scitbx.matrix
 import scitbx.random
 from cctbx import crystal, sgtbx

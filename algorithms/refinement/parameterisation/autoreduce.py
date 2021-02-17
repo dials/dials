@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 
 logger = logging.getLogger(__name__)
@@ -65,7 +63,7 @@ def count_associated_refs(result):
     return refs.count(True)
 
 
-class AutoReduce(object):
+class AutoReduce:
     """Checks for over-parameterisation of models and acts in that case.
 
     Tests each model parameterisation to ensure there are enough
@@ -144,7 +142,7 @@ class AutoReduce(object):
         ).iselection()
         if len(sel) > 0:
             names = ", ".join([self.param_names[i] for i in sel])
-            msg = "Too few reflections to parameterise {0}.\n".format(names)
+            msg = f"Too few reflections to parameterise {names}.\n"
             msg += (
                 "Try setting "
                 "refinement.parameterisation.auto_reduction.action "
@@ -167,7 +165,7 @@ class AutoReduce(object):
         isel = sel.iselection()
         if len(isel) > 0:
             names = ", ".join([self.param_names[i] for i in isel])
-            msg = "Too few reflections to parameterise {0}.\n".format(names)
+            msg = f"Too few reflections to parameterise {names}.\n"
             msg += "These parameters will be fixed for refinement."
             logger.warning(msg)
         self.pred_param.fix_params(sel)
@@ -228,7 +226,7 @@ class AutoReduce(object):
                 break
 
             names = ", ".join([self.param_names[i] for i in sel.iselection()])
-            msg = "Too few reflections to parameterise {0}.\n".format(names)
+            msg = f"Too few reflections to parameterise {names}.\n"
             msg += (
                 "These parameters will be fixed for refinement and "
                 "the associated reflections will be removed."

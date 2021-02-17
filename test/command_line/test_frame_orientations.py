@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import pytest
 
 from dials.command_line.frame_orientations import extract_experiment_data

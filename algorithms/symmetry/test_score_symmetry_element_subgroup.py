@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import pytest
 
 from cctbx import sgtbx
@@ -38,7 +36,7 @@ def test_score_correlation_coefficient():
         values = [(0.1, 1), (0.1, 0.8), (0.2, 1), (0.2, 0.8)]
         fig, axes = plt.subplots(nrows=2, ncols=2)
         for ax, (sigma_cc, expected_cc) in zip(axes.flatten(), values):
-            ax.set_title("E(CC) = %.1f, sigma(cc) = %.1f" % (expected_cc, sigma_cc))
+            ax.set_title(f"E(CC) = {expected_cc:.1f}, sigma(cc) = {sigma_cc:.1f}")
             p_cc_given_s = []
             p_cc_given_not_s = []
             p_s_given_cc = []

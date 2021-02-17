@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 
 # modified version of the ab_cluster function so we can access the scipy dendrogram object
@@ -81,9 +79,7 @@ class UnitCellCluster(Cluster):
         # 3. Create an array of sub-cluster objects from the clustering
         sub_clusters = []
         for cluster in range(max(cluster_ids)):
-            info_string = (
-                "Made using ab_cluster with t={}," " {} method, and {} linkage"
-            ).format(threshold, method, linkage_method)
+            info_string = f"Made using ab_cluster with t={threshold}, {method} method, and {linkage_method} linkage"
             sub_clusters.append(
                 self.make_sub_cluster(
                     [
@@ -91,7 +87,7 @@ class UnitCellCluster(Cluster):
                         for i in range(len(self.members))
                         if cluster_ids[i] == cluster + 1
                     ],
-                    "cluster_{}".format(cluster + 1),
+                    f"cluster_{cluster + 1}",
                     info_string,
                 )
             )
@@ -99,13 +95,13 @@ class UnitCellCluster(Cluster):
         sub_clusters = sorted(sub_clusters, key=lambda x: len(x.members))
         # Rename to order by size
         for num, cluster in enumerate(sub_clusters):
-            cluster.cname = "cluster_{}".format(num + 1)
+            cluster.cname = f"cluster_{num + 1}"
 
         # 3.5 optionally write out the clusters to files.
         if write_file_lists:
             for cluster in sub_clusters:
                 if len(cluster.members) > 1:
-                    cluster.dump_file_list(out_file_name="{}.lst".format(cluster.cname))
+                    cluster.dump_file_list(out_file_name=f"{cluster.cname}.lst")
 
         if labels is True:
             labels = [image.name for image in self.members]
@@ -150,7 +146,7 @@ class UnitCellCluster(Cluster):
                 ax.set_ylim(-ax.get_ylim()[1] / 100, ax.get_ylim()[1])
 
             if direct_visualisation:
-                fig.savefig("{}_dendogram.pdf".format(self.cname))
+                fig.savefig(f"{self.cname}_dendogram.pdf")
                 plt.show()
 
         return sub_clusters, dendrogram, ax

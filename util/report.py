@@ -1,9 +1,7 @@
-from __future__ import absolute_import, division, print_function
-
 from dials.util import tabulate
 
 
-class Array(object):
+class Array:
     """
     A class to represent an array
     """
@@ -39,7 +37,7 @@ class Array(object):
         return ""
 
 
-class Table(object):
+class Table:
     """
     A class to represent a table
     """
@@ -92,7 +90,7 @@ class Table(object):
         return "\n".join(text)
 
 
-class Report(object):
+class Report:
     """
     A class to represent the report
     """

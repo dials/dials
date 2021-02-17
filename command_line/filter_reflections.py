@@ -1,6 +1,5 @@
 # LIBTBX_SET_DISPATCHER_NAME dials.filter_reflections
 
-from __future__ import absolute_import, division, print_function
 
 import logging
 import token
@@ -130,7 +129,7 @@ def eval_flag_expression(expression, reflections):
         try:
             toknum, tokval, _, _, _ = next(g)
         except TokenError:
-            raise Sorry("errors found in {}".format(expression))
+            raise Sorry(f"errors found in {expression}")
         except StopIteration:
             break
 
@@ -140,19 +139,15 @@ def eval_flag_expression(expression, reflections):
 
         # Catch unwanted token types
         if toknum not in [token.OP, token.NAME, token.ENDMARKER]:
-            raise Sorry(
-                "invalid token {} found in {}".format(
-                    token.tok_name[toknum], expression
-                )
-            )
+            raise Sorry(f"invalid token {token.tok_name[toknum]} found in {expression}")
 
         # Catch unwanted operators
         if toknum is token.OP and tokval not in "()|&~":
-            raise Sorry("unrecognised operators found in {}".format(expression))
+            raise Sorry(f"unrecognised operators found in {expression}")
 
         # Catch unrecognised flag names
         if toknum is token.NAME and tokval not in flag_names:
-            raise Sorry("unrecognised flag name: {}".format(tokval))
+            raise Sorry(f"unrecognised flag name: {tokval}")
 
         # Replace names with valid lookups in the reflection table
         if toknum is token.NAME:
@@ -236,14 +231,14 @@ def run_filtering(params, experiments, reflections):
         if "partiality" not in reflections:
             raise Sorry("Reflection table has no partiality information")
 
-    print("{} reflections loaded".format(len(reflections)))
+    print(f"{len(reflections)} reflections loaded")
 
     # Filter by logical expression using flags
     if params.flag_expression is not None:
         inc = eval_flag_expression(params.flag_expression, reflections)
         reflections = reflections.select(inc)
 
-    print("Selected {} reflections by flags".format(len(reflections)))
+    print(f"Selected {len(reflections)} reflections by flags")
 
     # Filter based on experiment ID
     if params.id:
@@ -251,7 +246,7 @@ def run_filtering(params, experiments, reflections):
         for exp_id in params.id[1:]:
             selection = selection | (reflections["id"] == exp_id)
         reflections = reflections.select(selection)
-        print("Selected %d reflections by experiment id" % (len(reflections)))
+        print(f"Selected {len(reflections)} reflections by experiment id")
 
     # Filter based on panel number
     if params.panel:
@@ -259,19 +254,19 @@ def run_filtering(params, experiments, reflections):
         for pnl_id in params.panel[1:]:
             selection = selection | (reflections["panel"] == pnl_id)
         reflections = reflections.select(selection)
-        print("Selected %d reflections by panel number" % (len(reflections)))
+        print(f"Selected {len(reflections)} reflections by panel number")
 
     # Filter based on resolution
     if params.d_min is not None:
         selection = reflections["d"] >= params.d_min
         reflections = reflections.select(selection)
-        print("Selected %d reflections with d >= %f" % (len(reflections), params.d_min))
+        print(f"Selected {len(reflections)} reflections with d >= {params.d_min:f}")
 
     # Filter based on resolution
     if params.d_max is not None:
         selection = reflections["d"] <= params.d_max
         reflections = reflections.select(selection)
-        print("Selected %d reflections with d <= %f" % (len(reflections), params.d_max))
+        print(f"Selected {len(reflections)} reflections with d <= {params.d_max:f}")
 
     # Filter based on partiality
     if params.partiality.min is not None:
@@ -338,11 +333,7 @@ def run_filtering(params, experiments, reflections):
 
     # Save filtered reflections to file
     if params.output.reflections:
-        print(
-            "Saving {0} reflections to {1}".format(
-                len(reflections), params.output.reflections
-            )
-        )
+        print(f"Saving {len(reflections)} reflections to {params.output.reflections}")
         reflections.as_file(params.output.reflections)
 
 

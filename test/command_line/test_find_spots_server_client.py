@@ -61,7 +61,7 @@ def wait_for_server(port, max_wait=20):
             s.connect(("127.0.0.1", port))
             s.close()
             server_ok = True
-        except socket.error as e:
+        except OSError as e:
             if (e.errno != 111) and (e.errno != 61):
                 raise
             # ignore connection failures (111 connection refused on linux; 61 connection refused on mac)
@@ -93,7 +93,7 @@ def exercise_client(port, filenames):
     print(index_client_command)
     result = procrunner.run(index_client_command)
     assert not result.returncode and not result.stderr
-    out = "<document>%s</document>" % result.stdout
+    out = f"<document>{result.stdout}</document>"
 
     xmldoc = minidom.parseString(out)
     assert len(xmldoc.getElementsByTagName("image")) == 1
@@ -117,7 +117,7 @@ def exercise_client(port, filenames):
     client_command = client_command + filenames[1:]
     result = procrunner.run(client_command)
     assert not result.returncode and not result.stderr
-    out = "<document>%s</document>" % result.stdout
+    out = f"<document>{result.stdout}</document>"
 
     xmldoc = minidom.parseString(out)
     images = xmldoc.getElementsByTagName("image")

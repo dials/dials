@@ -1,8 +1,6 @@
-# coding: utf-8
 """
 Algorithms for analysis of resolution limits.
 """
-from __future__ import absolute_import, division, print_function
 
 import enum
 import logging
@@ -267,7 +265,7 @@ def interpolate_value(x, y, t):
     """Find the value of x: y(x) = t."""
 
     if t > max(y) or t < min(y):
-        raise RuntimeError("t outside of [%f, %f]" % (min(y), max(y)))
+        raise RuntimeError(f"t outside of [{min(y):f}, {max(y):f}]")
 
     for j in range(1, len(x)):
         x0 = x[j - 1]
@@ -458,7 +456,7 @@ def plot_result(metric, result):
                             ),
                         ],
                         "type": "scatter",
-                        "name": "d_min = %.2f Å" % result.d_min,
+                        "name": f"d_min = {result.d_min:.2f} Å",
                         "mode": "lines",
                         "line": {"color": "rgb(169, 169, 169)", "dash": "dot"},
                     }
@@ -486,7 +484,7 @@ class ResolutionResult(typing.NamedTuple):
     critical_values: flex.double = None
 
 
-class Resolutionizer(object):
+class Resolutionizer:
     """A class to calculate things from merging reflections."""
 
     def __init__(self, i_obs, params, batches=None, reference=None):

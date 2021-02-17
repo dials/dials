@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import copy
 import os
 
@@ -10,7 +8,7 @@ from .test_scan_static_reflection_predictor import (  # noqa: F401, used as test
 )
 
 
-class Data(object):
+class Data:
     def __init__(self, dials_regression):
         path = os.path.join(
             dials_regression,

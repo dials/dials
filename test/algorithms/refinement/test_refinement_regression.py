@@ -3,8 +3,6 @@ Regression test for refinement of beam, detector and crystal orientation
 parameters using generated reflection positions from ideal geometry.
 """
 
-from __future__ import absolute_import, division, print_function
-
 
 def test():
     # Python and cctbx imports

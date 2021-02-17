@@ -1,5 +1,4 @@
 """Tests for dials.compute_delta_cchalf."""
-from __future__ import absolute_import, division, print_function
 
 import os
 
@@ -36,7 +35,7 @@ def test_compute_delta_cchalf_scaled_data(dials_data, tmpdir):
     assert tmpdir.join("filtered.refl").check()
     assert tmpdir.join("delta_cchalf.dat").check()
     assert tmpdir.join("compute_delta_cchalf.html").check()
-    with open(tmpdir.join("delta_cchalf.dat").strpath, "r") as f:
+    with open(tmpdir.join("delta_cchalf.dat").strpath) as f:
         check_cchalf_result(f)
 
 
@@ -55,14 +54,14 @@ def test_compute_delta_cchalf_scaled_data_mtz(dials_data, tmpdir):
     # set cutoff to 0.0 to force one to be 'rejected'
     command = [
         "dials.compute_delta_cchalf",
-        "mtzfile=%s" % tmpdir.join("scaled.mtz").strpath,
+        f"mtzfile={tmpdir.join('scaled.mtz').strpath}",
         "stdcutoff=0.0",
     ]
     result = procrunner.run(command, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
     assert tmpdir.join("delta_cchalf.dat").check()
     assert tmpdir.join("compute_delta_cchalf.html").check()
-    with open(tmpdir.join("delta_cchalf.dat").strpath, "r") as f:
+    with open(tmpdir.join("delta_cchalf.dat").strpath) as f:
         check_cchalf_result(f)
 
 

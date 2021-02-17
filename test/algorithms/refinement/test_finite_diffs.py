@@ -1,8 +1,6 @@
 """Test analytical calculation of gradients of the target function versus finite
 difference calculations"""
 
-from __future__ import absolute_import, division, print_function
-
 
 def test(args=[]):
     # Python and cctbx imports

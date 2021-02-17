@@ -1,5 +1,4 @@
 """Seed clustering method for cosym analysis."""
-from __future__ import absolute_import, division, print_function
 
 import copy
 import logging
@@ -18,7 +17,7 @@ from libtbx import Auto
 from libtbx.utils import Sorry
 
 
-class seed_clustering(object):
+class seed_clustering:
     """Perform seed clustering of coordinates.
 
     Labels points into clusters such that cluster contains exactly one copy
@@ -211,15 +210,16 @@ class seed_clustering(object):
 
             count_negative = (sample_silhouette_values < 0).sum()
             logger.info("Clustering:")
-            logger.info("  Number of clusters: %i" % n)
+            logger.info("  Number of clusters: %i", n)
             logger.info(
-                "  Threshold score: %.3f (%.1f deg)"
-                % (threshold, math.degrees(math.acos(1 - threshold)))
+                "  Threshold score: %.3f (%.1f deg)",
+                threshold,
+                math.degrees(math.acos(1 - threshold)),
             )
-            logger.info("  Silhouette score: %.3f" % silhouette_avg)
+            logger.info("  Silhouette score: %.3f", silhouette_avg)
             logger.info(
-                "  -ve silhouette scores: %.1f%%"
-                % (100 * count_negative / sample_silhouette_values.size)
+                "  -ve silhouette scores: %.1f%%",
+                100 * count_negative / sample_silhouette_values.size,
             )
 
         if n_clusters is Auto:

@@ -1,7 +1,6 @@
-from __future__ import absolute_import, division, print_function
+import pickle
 
 import pytest
-import six.moves.cPickle as pickle
 
 from dxtbx.model import ExperimentList
 from libtbx import phil

@@ -1,17 +1,13 @@
-from __future__ import absolute_import, division, print_function
-
 import copy
 import glob
 import logging
 import os
+import pickle
 import sys
 import tarfile
 import time
 from collections import OrderedDict
-
-import six
-import six.moves.cPickle as pickle
-from six import BytesIO
+from io import BytesIO
 
 from dxtbx.model.experiment_list import (
     Experiment,
@@ -278,16 +274,16 @@ phil_scope = parse(control_phil_str + dials_phil_str, process_includes=True).fet
 
 
 def do_import(filename, load_models=True):
-    logger.info("Loading %s" % os.path.basename(filename))
+    logger.info("Loading %s", os.path.basename(filename))
     experiments = ExperimentListFactory.from_filenames([filename], load_models=False)
     if len(experiments) == 0:
         try:
             experiments = ExperimentListFactory.from_json_file(filename)
         except ValueError:
-            raise Abort("Could not load %s" % filename)
+            raise Abort(f"Could not load {filename}")
 
     if len(experiments) == 0:
-        raise Abort("Could not load %s" % filename)
+        raise Abort(f"Could not load {filename}")
 
     from dxtbx.imageset import ImageSetFactory
 
@@ -323,7 +319,7 @@ def sync_geometry(src, dest):
             sync_geometry(src_child, dest_child)
 
 
-class Script(object):
+class Script:
     """A class for running the script."""
 
     def __init__(self):
@@ -414,12 +410,12 @@ class Script(object):
             self.pr = cProfile.Profile()
             self.pr.enable()
 
-        print("Have %d files" % len(all_paths))
+        print(f"Have {len(all_paths)} files")
 
         # Mask validation
         for mask_path in params.spotfinder.lookup.mask, params.integration.lookup.mask:
             if mask_path is not None and not os.path.isfile(mask_path):
-                raise Sorry("Mask %s not found" % mask_path)
+                raise Sorry(f"Mask {mask_path} not found")
 
         # Save the options
         self.options = options
@@ -438,8 +434,8 @@ class Script(object):
                 error_path = os.path.join(
                     params.output.logging_dir, "error_rank%04d.out" % rank
                 )
-                print("Redirecting stdout to %s" % log_path)
-                print("Redirecting stderr to %s" % error_path)
+                print(f"Redirecting stdout to {log_path}")
+                print(f"Redirecting stderr to {error_path}")
                 sys.stdout = open(log_path, "a")
                 sys.stderr = open(error_path, "a")
                 print("Should be redirected now")
@@ -459,8 +455,8 @@ class Script(object):
         if len(bad_phils) > 0:
             self.parser.print_help()
             logger.error(
-                "Error: the following phil files were not understood: %s"
-                % (", ".join(bad_phils))
+                "Error: the following phil files were not understood: %s",
+                ", ".join(bad_phils),
             )
             return
 
@@ -549,8 +545,7 @@ class Script(object):
                         experiment.detector = imageset.get_detector()
                     except RuntimeError as e:
                         logger.warning(
-                            "Error updating geometry on item %s, %s"
-                            % (str(tag), str(e))
+                            "Error updating geometry on item %s, %s", tag, e
                         )
                         continue
 
@@ -606,12 +601,10 @@ class Script(object):
                     experiments = do_import(filename, load_models=True)
                     imagesets = experiments.imagesets()
                     if len(imagesets) == 0 or len(imagesets[0]) == 0:
-                        logger.info("Zero length imageset in file: %s" % filename)
+                        logger.info("Zero length imageset in file: %s", filename)
                         return
                     if len(imagesets) > 1:
-                        raise Abort(
-                            "Found more than one imageset in file: %s" % filename
-                        )
+                        raise Abort(f"Found more than one imageset in file: {filename}")
                     if len(imagesets[0]) > 1:
                         raise Abort(
                             "Found a multi-image file. Run again with pre_import=True"
@@ -624,7 +617,7 @@ class Script(object):
                         experiment.detector = imagesets[0].get_detector()
                     except RuntimeError as e:
                         logger.warning(
-                            "Error updating geometry on item %s, %s" % (tag, str(e))
+                            "Error updating geometry on item %s, %s", tag, e
                         )
                         continue
 
@@ -683,7 +676,7 @@ class Script(object):
 
                         print("Getting next available process")
                         rankreq = comm.recv(source=MPI.ANY_SOURCE)
-                        print("Process %s is ready, sending %s\n" % (rankreq, item[0]))
+                        print(f"Process {rankreq} is ready, sending {item[0]}\n")
                         comm.send(item, dest=rankreq)
                     # send a stop command to each process
                     print("MPI DONE, sending stops\n")
@@ -747,7 +740,7 @@ class Script(object):
 
         # Total Time
         logger.info("")
-        logger.info("Total Time Taken = %f seconds" % (time.time() - st))
+        logger.info("Total Time Taken = %f seconds", time.time() - st)
 
         if params.mp.debug.cProfile:
             self.pr.disable()
@@ -758,7 +751,7 @@ class Script(object):
             )
 
 
-class Processor(object):
+class Processor:
     def __init__(self, params, composite_tag=None, rank=0):
         self.params = params
         self.composite_tag = composite_tag
@@ -884,7 +877,7 @@ class Processor(object):
     def debug_start(self, tag):
         import socket
 
-        self.debug_str = "%s,%s" % (socket.gethostname(), tag)
+        self.debug_str = f"{socket.gethostname()},{tag}"
         self.debug_str += ",%s,%s,%s\n"
         self.debug_write("start")
 
@@ -945,7 +938,7 @@ class Processor(object):
                     < self.params.dispatch.hit_finder.minimum_number_of_reflections
                 ):
                     print("Not enough spots to index", tag)
-                    self.debug_write("not_enough_spots_%d" % len(observed), "stop")
+                    self.debug_write(f"not_enough_spots_{len(observed)}", "stop")
                     return
                 if (
                     self.params.dispatch.hit_finder.maximum_number_of_reflections
@@ -957,26 +950,26 @@ class Processor(object):
                         > self.params.dispatch.hit_finder.maximum_number_of_reflections
                     ):
                         print("Too many spots to index - Possibly junk", tag)
-                        self.debug_write("too_many_spots_%d" % len(observed), "stop")
+                        self.debug_write(f"too_many_spots_{len(observed)}", "stop")
                         return
                 self.debug_write("index_start")
                 experiments, indexed = self.index(experiments, observed)
             else:
                 print("Indexing turned off. Exiting")
-                self.debug_write("spotfinding_ok_%d" % len(observed), "done")
+                self.debug_write(f"spotfinding_ok_{len(observed)}", "done")
                 return
         except Exception as e:
             print("Couldn't index", tag, str(e))
             if not self.params.dispatch.squash_errors:
                 raise
-            self.debug_write("indexing_failed_%d" % len(observed), "stop")
+            self.debug_write(f"indexing_failed_{len(observed)}", "stop")
             return
         self.debug_write("refine_start")
         try:
             experiments, indexed = self.refine(experiments, indexed)
         except Exception as e:
             print("Error refining", tag, str(e))
-            self.debug_write("refine_failed_%d" % len(indexed), "fail")
+            self.debug_write(f"refine_failed_{len(indexed)}", "fail")
             if not self.params.dispatch.squash_errors:
                 raise
             return
@@ -986,15 +979,15 @@ class Processor(object):
                 integrated = self.integrate(experiments, indexed)
             else:
                 print("Integration turned off. Exiting")
-                self.debug_write("index_ok_%d" % len(indexed), "done")
+                self.debug_write(f"index_ok_{len(indexed)}", "done")
                 return
         except Exception as e:
             print("Error integrating", tag, str(e))
-            self.debug_write("integrate_failed_%d" % len(indexed), "fail")
+            self.debug_write(f"integrate_failed_{len(indexed)}", "fail")
             if not self.params.dispatch.squash_errors:
                 raise
             return
-        self.debug_write("integrate_ok_%d" % len(integrated), "done")
+        self.debug_write(f"integrate_ok_{len(integrated)}", "done")
 
     def pre_process(self, experiments):
         """Add any pre-processing steps here"""
@@ -1049,7 +1042,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 self.save_reflections(observed, self.params.output.strong_filename)
 
         logger.info("")
-        logger.info("Time Taken = %f seconds" % (time.time() - st))
+        logger.info("Time Taken = %f seconds", time.time() - st)
         return observed
 
     def index(self, experiments, reflections):
@@ -1088,10 +1081,10 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                     )
                     idxr.index()
                 except Exception as e:
-                    logger.info("Couldn't index using method %s" % method)
+                    logger.info("Couldn't index using method %s", method)
                     if indexing_error is None:
                         if e is None:
-                            e = Exception("Couldn't index using method %s" % method)
+                            e = Exception(f"Couldn't index using method {method}")
                         indexing_error = e
                 else:
                     indexing_error = None
@@ -1110,8 +1103,9 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 if sel.count(True) == 1:
                     filtered.extend(indexed.select(sel))
             logger.info(
-                "Filtered duplicate reflections, %d out of %d remaining"
-                % (len(filtered), len(indexed))
+                "Filtered duplicate reflections, %d out of %d remaining",
+                len(filtered),
+                len(indexed),
             )
             print(
                 "Filtered duplicate reflections, %d out of %d remaining"
@@ -1120,7 +1114,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
             indexed = filtered
 
         logger.info("")
-        logger.info("Time Taken = %f seconds" % (time.time() - st))
+        logger.info("Time Taken = %f seconds", time.time() - st)
         return experiments, indexed
 
     def refine(self, experiments, centroids):
@@ -1188,7 +1182,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
 
         if self.params.dispatch.refine:
             logger.info("")
-            logger.info("Time Taken = %f seconds" % (time.time() - st))
+            logger.info("Time Taken = %f seconds", time.time() - st)
 
         return experiments, centroids
 
@@ -1270,8 +1264,9 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
             accepted_expts = ExperimentList()
             accepted_refls = flex.reflection_table()
             logger.info(
-                "Removed %d reflections out of %d when applying significance filter"
-                % (len(integrated) - len(filtered_refls), len(integrated))
+                "Removed %d reflections out of %d when applying significance filter",
+                len(integrated) - len(filtered_refls),
+                len(integrated),
             )
             for expt_id, expt in enumerate(experiments):
                 refls = filtered_refls.select(filtered_refls["id"] == expt_id)
@@ -1281,8 +1276,8 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                     accepted_refls.extend(refls)
                 else:
                     logger.info(
-                        "Removed experiment %d which has no reflections left after applying significance filter"
-                        % expt_id
+                        "Removed experiment %d which has no reflections left after applying significance filter",
+                        expt_id,
                     )
 
             if len(accepted_refls) == 0:
@@ -1331,7 +1326,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
         )
 
         rmsd_indexed, _ = calc_2D_rmsd_and_displacements(indexed)
-        log_str = "RMSD indexed (px): %f\n" % (rmsd_indexed)
+        log_str = f"RMSD indexed (px): {rmsd_indexed:f}\n"
         for i in range(6):
             bright_integrated = integrated.select(
                 (
@@ -1351,7 +1346,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
 
         for crystal_model in experiments.crystals():
             if hasattr(crystal_model, "get_domain_size_ang"):
-                log_str += ". Final ML model: domain size angstroms: %f, half mosaicity degrees: %f" % (
+                log_str += ". Final ML model: domain size angstroms: {:f}, half mosaicity degrees: {:f}".format(
                     crystal_model.get_domain_size_ang(),
                     crystal_model.get_half_mosaicity_deg(),
                 )
@@ -1359,7 +1354,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
         logger.info(log_str)
 
         logger.info("")
-        logger.info("Time Taken = %f seconds" % (time.time() - st))
+        logger.info("Time Taken = %f seconds", time.time() - st)
         return integrated
 
     def write_integration_pickles(self, integrated, experiments, callback=None):
@@ -1436,12 +1431,12 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
         assert "miller_index" in reference
         assert "id" in reference
         logger.info("Processing reference reflections")
-        logger.info(" read %d strong spots" % len(reference))
+        logger.info(" read %d strong spots", len(reference))
         mask = reference.get_flags(reference.flags.indexed)
         rubbish = reference.select(~mask)
         if mask.count(False) > 0:
             reference.del_selected(~mask)
-            logger.info(" removing %d unindexed reflections" % mask.count(True))
+            logger.info(" removing %d unindexed reflections", mask.count(True))
         if len(reference) == 0:
             raise Sorry(
                 """
@@ -1454,7 +1449,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
         if mask.count(True) > 0:
             rubbish.extend(reference.select(mask))
             reference.del_selected(mask)
-            logger.info(" removing %d reflections with hkl (0,0,0)" % mask.count(True))
+            logger.info(" removing %d reflections with hkl (0,0,0)", mask.count(True))
         mask = reference["id"] < 0
         if mask.count(True) > 0:
             raise Sorry(
@@ -1464,17 +1459,17 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
       """
                 % mask.count(True)
             )
-        logger.info(" using %d indexed reflections" % len(reference))
-        logger.info(" found %d junk reflections" % len(rubbish))
-        logger.info(" time taken: %g" % (time.time() - st))
+        logger.info(" using %d indexed reflections", len(reference))
+        logger.info(" found %d junk reflections", len(rubbish))
+        logger.info(" time taken: %g", time.time() - st)
         return reference, rubbish
 
     def save_reflections(self, reflections, filename):
         """Save the reflections to file."""
         st = time.time()
-        logger.info("Saving %d reflections to %s" % (len(reflections), filename))
+        logger.info("Saving %d reflections to %s", len(reflections), filename)
         reflections.as_file(filename)
-        logger.info(" time taken: %g" % (time.time() - st))
+        logger.info(" time taken: %g", time.time() - st)
 
     def finalize(self):
         """Perform any final operations"""
@@ -1493,7 +1488,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 if rank % stride == 0:
                     subranks = [rank + i for i in range(1, stride) if rank + i < size]
                     for i in range(len(subranks)):
-                        logger.info("Rank %d waiting for sender" % rank)
+                        logger.info("Rank %d waiting for sender", rank)
                         (
                             sender,
                             imported_experiments,
@@ -1507,9 +1502,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                             int_pickles,
                             int_pickle_filenames,
                         ) = comm.recv(source=MPI.ANY_SOURCE)
-                        logger.info(
-                            "Rank %d recieved data from rank %d" % (rank, sender)
-                        )
+                        logger.info("Rank %d recieved data from rank %d", rank, sender)
 
                         def extend_with_bookkeeping(
                             src_expts, src_refls, dest_expts, dest_refls
@@ -1564,8 +1557,9 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 else:
                     destrank = (rank // stride) * stride
                     logger.info(
-                        "Rank %d sending results to rank %d"
-                        % (rank, (rank // stride) * stride)
+                        "Rank %d sending results to rank %d",
+                        rank,
+                        (rank // stride) * stride,
                     )
                     comm.send(
                         (
@@ -1689,10 +1683,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 ):
                     string = BytesIO(pickle.dumps(d, protocol=2))
                     info = tarfile.TarInfo(name=fname)
-                    if six.PY3:
-                        info.size = string.getbuffer().nbytes
-                    else:
-                        info.size = len(string.buf)
+                    info.size = string.getbuffer().nbytes
                     info.mtime = time.time()
                     tar.addfile(tarinfo=info, fileobj=string)
                 tar.close()

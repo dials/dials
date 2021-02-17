@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import os
 import shutil
 import sys
@@ -63,13 +61,13 @@ class installer(install_distribution.installer):
     def reconfigure(self, log=None, *args, **kwargs):
         """Intercept any errors and print log excerpt"""
         try:
-            return super(installer, self).reconfigure(log=log, *args, **kwargs)
+            return super().reconfigure(log=log, *args, **kwargs)
         except Exception:
             if not self.options.verbose:
                 print("\n" + " -=-" * 20)
                 print("\nAn error occured during installation\n")
                 print("Excerpt from installation log:")
-                with open(log.name, "r") as fh:
+                with open(log.name) as fh:
                     for line in fh.readlines()[-30:]:
                         print(" :", line, end="")
                 print("\nThis led to ", end="")
@@ -95,8 +93,8 @@ class installer(install_distribution.installer):
             while nbytes >= 1024 and i < len(suffixes) - 1:
                 nbytes /= 1024.0
                 i += 1
-            f = ("%.2f" % nbytes).rstrip("0").rstrip(".")
-            return "%s %s" % (f, suffixes[i])
+            f = f"{nbytes:.2f}".rstrip("0").rstrip(".")
+            return f"{f} {suffixes[i]}"
 
         self._cleaned_size, self._cleaned_files = 0, 0
 
@@ -146,7 +144,7 @@ class installer(install_distribution.installer):
                 print("Skipping", " " * 26, filename)
                 return
             filesize = os.path.getsize(fullpath)
-            print("Removing %9s, file %s" % (humansize(filesize), filename))
+            print(f"Removing {humansize(filesize):>9}, file {filename}")
             os.remove(fullpath)
             self._cleaned_size = self._cleaned_size + filesize
             self._cleaned_files = self._cleaned_files + 1

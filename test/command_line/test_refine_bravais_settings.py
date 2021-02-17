@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import json
 import os
 
@@ -194,7 +192,7 @@ def test_setting_c2_vs_i2(
             [
                 experiments_path.strpath,
                 refl_path.strpath,
-                "best_monoclinic_beta=%s" % best_monoclinic_beta,
+                f"best_monoclinic_beta={best_monoclinic_beta}",
             ]
         )
     expts_orig = load.experiment_list(experiments_path.strpath, check_format=False)

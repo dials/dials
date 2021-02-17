@@ -1,7 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
-
-class Test_Centroid(object):
+class Test_Centroid:
     EPS = 1e-7
 
     def setup_class(self):

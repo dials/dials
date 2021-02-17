@@ -1,9 +1,6 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 import sys
-
-from six.moves import cStringIO as StringIO
+from io import StringIO
 
 from iotbx.phil import parse
 from libtbx import Auto
@@ -542,7 +539,7 @@ def run(args=None):
         "json": export_json,
     }.get(params.format)
     if not exporter:
-        sys.exit("Unknown format: %s" % params.format)
+        sys.exit(f"Unknown format: {params.format}")
 
     # Export the data
     try:
