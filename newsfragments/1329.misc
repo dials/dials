@@ -1,0 +1,1 @@
+ΔCC½ histogram: plot normalised values instead of raw ΔCC½ values, making it easier to compare to the input stdcutoff parameter for filtering bad data sets. Also report CC½ values in the range +/-1 for consistency.

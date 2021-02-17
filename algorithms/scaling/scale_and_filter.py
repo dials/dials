@@ -24,7 +24,7 @@ filtering {
         min_completeness = None
             .type = float(value_min=0, value_max=100)
             .help = "Desired minimum completeness, as a percentage (0 - 100)."
-        mode = *dataset image_group
+        mode = *dataset image_group dose
             .type = choice
             .help = "Perform analysis on whole datasets or batch groups"
         group_size = 10
@@ -34,6 +34,13 @@ filtering {
         stdcutoff = 4.0
             .type = float
             .help = "Datasets with a ΔCC½ below (mean - stdcutoff*std) are removed"
+        deltacchalf_cutoff = None
+            .type = float
+            .help = "Datasets with a ΔCC½ below this value are removed"
+        fisher_transformation = False
+            .type = bool
+            .help = "Apply a Fisher transformation to the raw ΔCC½ values"
+
     }
     output {
         scale_and_filter_results = "scale_and_filter_results.json"
@@ -56,19 +63,18 @@ def log_cycle_results(results, scaling_script, filter_script):
     if not results.get_cycle_results():
         results.initial_n_reflections = scaling_script.scaled_miller_array.size()
 
-    cycle_results["delta_cc_half_values"] = filter_script.results_summary[
-        "per_dataset_delta_cc_half_values"
-    ]["delta_cc_half_values"]
-    cycle_results["mean_cc_half"] = filter_script.results_summary["mean_cc_half"]
-    removal_summary = filter_script.results_summary["dataset_removal"]
-    if removal_summary["mode"] == "image_group":
-        cycle_results["image_ranges_removed"] = removal_summary["image_ranges_removed"]
-    cycle_results["removed_datasets"] = removal_summary["experiments_fully_removed"]
-    cycle_results["removed_ids"] = removal_summary["experiment_ids_fully_removed"]
+    cycle_results["delta_cc_half_values"] = list(
+        filter_script.statistics.delta_cchalf_i
+    )
+    cycle_results["cutoff_value"] = filter_script.statistics.cutoff
+    cycle_results["mean_cc_half"] = filter_script.statistics.mean_cchalf
+    # removal_summary = filter_script.results_summary["dataset_removal"]
+    if filter_script.params.mode == "image_group":
+        cycle_results["image_ranges_removed"] = filter_script.image_ranges_removed
+    cycle_results["removed_datasets"] = filter_script.datasets_removed
+    cycle_results["removed_ids"] = list(filter_script.ids_removed)
 
-    cycle_results["n_removed"] = filter_script.results_summary["dataset_removal"][
-        "n_reflections_removed"
-    ]
+    cycle_results["n_removed"] = filter_script.n_reflections_removed
 
     n_removed = (
         sum(res["n_removed"] for res in results.get_cycle_results())
@@ -256,9 +262,9 @@ def make_filtering_merging_stats_plots(merging_stats):
                     }
                 ],
                 "layout": {
-                    "title": u"CC<sub>½</sub> vs cycle",
+                    "title": "CC<sub>½</sub> vs cycle",
                     "xaxis": {"title": "Cycle number"},
-                    "yaxis": {"title": u"CC<sub>½</sub>"},
+                    "yaxis": {"title": "CC<sub>½</sub>"},
                 },
             }
         }
@@ -294,9 +300,9 @@ def make_filtering_merging_stats_plots(merging_stats):
                     }
                 ],
                 "layout": {
-                    "title": u"<I/σ(I)> vs cycle",
+                    "title": "<I/σ(I)> vs cycle",
                     "xaxis": {"title": "Cycle number"},
-                    "yaxis": {"title": u"<I/σ(I)>"},
+                    "yaxis": {"title": "<I/σ(I)>"},
                 },
             }
         }
@@ -339,13 +345,13 @@ def make_filtering_merging_stats_plots(merging_stats):
                     }
                 ],
                 "layout": {
-                    "title": u"CC<sub>½</sub> vs resolution",
+                    "title": "CC<sub>½</sub> vs resolution",
                     "xaxis": {
-                        "title": u"Resolution (Å)",
+                        "title": "Resolution (Å)",
                         "tickvals": vals,
                         "ticktext": txt,
                     },
-                    "yaxis": {"title": u"CC<sub>½</sub>", "range": [0, 1]},
+                    "yaxis": {"title": "CC<sub>½</sub>", "range": [0, 1]},
                 },
             }
         }
@@ -366,7 +372,7 @@ def make_filtering_merging_stats_plots(merging_stats):
                 "layout": {
                     "title": "R-pim vs resolution",
                     "xaxis": {
-                        "title": u"Resolution (Å)",
+                        "title": "Resolution (Å)",
                         "tickvals": vals,
                         "ticktext": txt,
                     },
@@ -394,7 +400,7 @@ def make_filtering_merging_stats_plots(merging_stats):
                 "layout": {
                     "title": "R-merge vs resolution",
                     "xaxis": {
-                        "title": u"Resolution (Å)",
+                        "title": "Resolution (Å)",
                         "tickvals": vals,
                         "ticktext": txt,
                     },
@@ -444,6 +450,7 @@ def make_filtering_merging_stats_plots(merging_stats):
 def make_histogram_plots(cycle_results):
     """Make the histogram plots."""
     delta_cc_half_lists = [res["delta_cc_half_values"] for res in cycle_results]
+    cutoff_values = [res["cutoff_value"] for res in cycle_results]
     if not delta_cc_half_lists:
         return {}
 
@@ -456,16 +463,16 @@ def make_histogram_plots(cycle_results):
             "mean_cc_one_half_vs_cycle": {
                 "data": [
                     {
-                        "y": overall_mean_ccs,
                         "x": list(range(1, n + 1)),
+                        "y": overall_mean_ccs,
                         "type": "scatter",
                         "mode": "lines",
-                    }
+                    },
                 ],
                 "layout": {
-                    "title": u"Resolution-averaged CC<sub>½</sub> (σ-τ) vs cycle",
+                    "title": "Resolution-averaged CC<sub>½</sub> (σ-τ) vs cycle",
                     "xaxis": {"title": "Cycle number"},
-                    "yaxis": {"title": u"Resolution-averaged CC<sub>½</sub> (σ-τ)"},
+                    "yaxis": {"title": "Resolution-averaged CC<sub>½</sub> (σ-τ)"},
                 },
             }
         }
@@ -492,7 +499,7 @@ def make_histogram_plots(cycle_results):
                 n += count
         return bar_colors
 
-    def _add_new_histogram(d, hist, index):
+    def _add_new_histogram(d, hist, cutoff, index):
         d.update(
             {
                 "scale_filter_histograms_%s"
@@ -504,11 +511,19 @@ def make_histogram_plots(cycle_results):
                             "type": "bar",
                             "name": legends[index],
                             "marker": {"color": _color_bar_charts(hist.slots(), index)},
-                        }
+                        },
+                        {
+                            "x": [cutoff, cutoff],
+                            "y": [0, max(hist.slots())],
+                            "type": "scatter",
+                            "name": f"cutoff={cutoff:.3f}",
+                            "mode": "lines",
+                            "line": {"color": "rgb(169, 169, 169)", "dash": "dot"},
+                        },
                     ],
                     "layout": {
                         "title": "%s" % legends[index],
-                        "xaxis": {"title": u"ΔCC<sub>½</sub>"},
+                        "xaxis": {"title": "ΔCC<sub>½</sub>"},
                         "yaxis": {
                             "title": "Number of datasets/groups",
                             "range": [0, min(max(hist.slots()), 50)],
@@ -519,15 +534,13 @@ def make_histogram_plots(cycle_results):
             }
         )
 
-    for c, deltas in enumerate(delta_cc_half_lists):
-        hist = flex.histogram(
-            flex.double(deltas) * 100, min(deltas) * 100, max(deltas) * 100, n_slots=40
-        )
-        _add_new_histogram(d, hist, c)
+    for c, (deltas, cutoff) in enumerate(zip(delta_cc_half_lists, cutoff_values)):
+        hist = flex.histogram(flex.double(deltas), min(deltas), max(deltas), n_slots=40)
+        _add_new_histogram(d, hist, cutoff, c)
     return d
 
 
-def make_per_dataset_plot(delta_cchalf_i):
+def make_per_dataset_plot(group_ids, delta_cchalf_i, cumulative_delta_cchalf_i=None):
     """Make a line plot of ΔCC½ per group."""
 
     d = OrderedDict()
@@ -536,11 +549,23 @@ def make_per_dataset_plot(delta_cchalf_i):
             "per_dataset_plot": {
                 "data": [
                     {
-                        "y": [i * 100 for i in list(delta_cchalf_i.values())],
-                        "x": list(delta_cchalf_i.keys()),
+                        "x": list(group_ids),
+                        "y": list(delta_cchalf_i),
                         "type": "scatter",
                         "mode": "lines",
-                    }
+                        "label": "ΔCC<sub>½</sub>",
+                    },
+                    (
+                        {
+                            "x": list(group_ids),
+                            "y": list(cumulative_delta_cchalf_i),
+                            "type": "scatter",
+                            "mode": "lines",
+                            "label": "Cumulative ΔCC<sub>½</sub>",
+                        }
+                        if cumulative_delta_cchalf_i
+                        else {}
+                    ),
                 ],
                 "layout": {
                     "title": "ΔCC<sub>½</sub> vs group",

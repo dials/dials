@@ -29,7 +29,7 @@ phil_scope = parse(
 
   }
 
-  mode = *dataset image_group
+  mode = *dataset image_group dose cumulative_dose
     .type = choice
     .help = "Perform analysis on whole datasets or batch groups"
 
@@ -66,17 +66,25 @@ phil_scope = parse(
     .type = int(value_min=1)
     .help = "The number of resolution bins to use"
 
-  dmin = None
+  d_min = None
     .type = float
     .help = "The maximum resolution"
 
-  dmax = None
+  d_max = None
     .type = float
     .help = "The minimum resolution"
+
+  fisher_transformation = False
+    .type = bool
+    .help = "Apply a Fisher transformation to the raw ΔCC½ values"
 
   stdcutoff = 4.0
     .type = float
     .help = "Datasets with a ΔCC½ below (mean - stdcutoff*std) are removed"
+
+  deltacchalf_cutoff = None
+    .type = float
+    .help = "Datasets with a ΔCC½ below this value are removed"
 
   output {
     log = 'dials.compute_delta_cchalf.log'
@@ -134,9 +142,8 @@ of datasets in the reflection table (%s)
                     n_datasets,
                 )
             script = CCHalfFromDials(params, experiments, reflections[0])
-
-    script.run()
     script.output()
+    return script
 
 
 if __name__ == "__main__":
