@@ -167,6 +167,31 @@ def test_with_no_background():
     assert intensity[0] == pytest.approx(V[0], abs=eps)
 
 
+def test_mask():
+    np.random.seed(0)
+
+    # Create profile
+    p = gaussian((9, 9, 9), 1, (4, 4, 4), (2, 2, 2))
+    s = flex.sum(p)
+    p = p / s
+
+    # Copy profile
+    c = add_poisson_noise(100 * p)
+    b = flex.double(flex.grid(9, 9, 9), 0)
+    m = flex.bool(flex.grid(9, 9, 9), True)
+    m[4, 4, 4] = False
+
+    # Fit
+    fit = ProfileFitter(c, b, m, p)
+    intensity = fit.intensity()
+    V = fit.variance()
+    assert fit.niter() < fit.maxiter()
+
+    # Test intensity is approximately the same
+    assert intensity[0] == pytest.approx(flex.sum(c), rel=0.01)
+    assert intensity[0] == pytest.approx(V[0], abs=1e-3)
+
+
 def test_with_flat_background():
     np.random.seed(0)
 

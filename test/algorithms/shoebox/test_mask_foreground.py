@@ -1,61 +1,39 @@
 from __future__ import absolute_import, division, print_function
 
 import math
+from random import randint, seed
 
 import numpy as np
 
+from dxtbx.model.experiment_list import ExperimentList
 from scitbx import matrix
+
+from dials.algorithms.profile_model.gaussian_rs import (
+    CoordinateSystem,
+    MaskCalculator3D,
+)
+from dials.algorithms.shoebox import MaskCode
+from dials.array_family import flex
 
 
 def test(dials_data):
-    from dxtbx.model.experiment_list import Experiment, ExperimentList
-    from dxtbx.serialize import load
-
-    from dials.algorithms.profile_model.gaussian_rs import MaskCalculator3D, Model
-
-    sequence = load.imageset(
-        dials_data("centroid_test_data").join("sweep.json").strpath
-    )
-    crystal = load.crystal(
-        dials_data("centroid_test_data").join("crystal.json").strpath
+    experiment = ExperimentList.from_file(
+        dials_data("centroid_test_data").join("experiments.json")
     )
 
-    beam = sequence.get_beam()
-    detector = sequence.get_detector()
-    goniometer = sequence.get_goniometer()
-    scan = sequence.get_scan()
-    delta_d = 3 * beam.get_sigma_divergence(deg=False)
-    try:
-        mosaicity = crystal.get_mosaicity(deg=False)
-    except AttributeError:
-        mosaicity = 0
-    delta_m = 3 * mosaicity
-    nsigma = 3
-    profile_model = Model(None, nsigma, beam.get_sigma_divergence(deg=False), mosaicity)
-    experiment = ExperimentList()
-    experiment.append(
-        Experiment(
-            imageset=sequence,
-            beam=beam,
-            detector=detector,
-            goniometer=goniometer,
-            scan=scan,
-            crystal=crystal,
-            profile=profile_model,
-        )
-    )
+    beam = experiment[0].beam
+    detector = experiment[0].detector
+    goniometer = experiment[0].goniometer
+    scan = experiment[0].scan
+    delta_b = experiment[0].profile.delta_b()
+    delta_m = experiment[0].profile.delta_m()
 
     assert len(detector) == 1
 
     # Get the function object to mask the foreground
     mask_foreground = MaskCalculator3D(
-        beam, detector, goniometer, scan, delta_d, delta_m
+        beam, detector, goniometer, scan, delta_b, delta_m
     )
-
-    from scitbx.array_family import flex
-
-    from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
-    from dials.algorithms.shoebox import MaskCode
 
     s0 = beam.get_s0()
     m2 = goniometer.get_rotation_axis()
@@ -106,29 +84,29 @@ def test(dials_data):
                     e61, e62, e63 = rs_coord(x0 + i + 1, y0 + j, z0 + k + 1)
                     e71, e72, e73 = rs_coord(x0 + i, y0 + j + 1, z0 + k + 1)
                     e81, e82, e83 = rs_coord(x0 + i + 1, y0 + j + 1, z0 + k + 1)
-                    de1 = (e11 / delta_d) ** 2 + (
-                        e12 / delta_d
+                    de1 = (e11 / delta_b) ** 2 + (
+                        e12 / delta_b
                     ) ** 2  # +(e13/delta_m)**2
-                    de2 = (e21 / delta_d) ** 2 + (
-                        e22 / delta_d
+                    de2 = (e21 / delta_b) ** 2 + (
+                        e22 / delta_b
                     ) ** 2  # +(e23/delta_m)**2
-                    de3 = (e31 / delta_d) ** 2 + (
-                        e32 / delta_d
+                    de3 = (e31 / delta_b) ** 2 + (
+                        e32 / delta_b
                     ) ** 2  # +(e33/delta_m)**2
-                    de4 = (e41 / delta_d) ** 2 + (
-                        e42 / delta_d
+                    de4 = (e41 / delta_b) ** 2 + (
+                        e42 / delta_b
                     ) ** 2  # +(e43/delta_m)**2
-                    de5 = (e51 / delta_d) ** 2 + (
-                        e52 / delta_d
+                    de5 = (e51 / delta_b) ** 2 + (
+                        e52 / delta_b
                     ) ** 2  # +(e53/delta_m)**2
-                    de6 = (e61 / delta_d) ** 2 + (
-                        e62 / delta_d
+                    de6 = (e61 / delta_b) ** 2 + (
+                        e62 / delta_b
                     ) ** 2  # +(e63/delta_m)**2
-                    de7 = (e71 / delta_d) ** 2 + (
-                        e72 / delta_d
+                    de7 = (e71 / delta_b) ** 2 + (
+                        e72 / delta_b
                     ) ** 2  # +(e73/delta_m)**2
-                    de8 = (e81 / delta_d) ** 2 + (
-                        e82 / delta_d
+                    de8 = (e81 / delta_b) ** 2 + (
+                        e82 / delta_b
                     ) ** 2  # +(e83/delta_m)**2
                     de = math.sqrt(min([de1, de2, de3, de4, de5, de6, de7, de8]))
                     if (
@@ -158,11 +136,6 @@ def test(dials_data):
 
 
 def generate_reflections(detector, beam, scan, experiment, num):
-    from random import randint, seed
-
-    from dials.algorithms.shoebox import MaskCode
-    from dials.array_family import flex
-
     seed(0)
     assert len(detector) == 1
     beam_vector = flex.vec3_double(num)
