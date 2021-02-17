@@ -563,9 +563,19 @@ class MetaDataUpdater:
                 if imageset.get_scan().is_still():
                     # make lots of experiments all pointing at one
                     # image set
-                    start, end = imageset.get_scan().get_array_range()
+
+                    # check if user has overridden the input - if yes, recall
+                    # that these are in people numbers (1...) and are inclusive
+                    if self.params.geometry.scan.image_range:
+                        user_start, user_end = self.params.geometry.scan.image_range
+                        offset = imageset.get_scan().get_array_range()[0]
+                        start, end = user_start - 1, user_end
+                    else:
+                        start, end = imageset.get_scan().get_array_range()
+                        offset = 0
+
                     for j in range(start, end):
-                        subset = imageset[j : j + 1]
+                        subset = imageset[j - offset : j - offset + 1]
                         experiments.append(
                             Experiment(
                                 imageset=imageset,

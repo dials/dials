@@ -383,10 +383,7 @@ def test_template_with_missing_image_fails(centroid_test_data_with_missing_image
     # This should fail because image #4 is missing
     for image_range in (None, (3, 5)):
         result = procrunner.run(
-            [
-                "dials.import",
-                f"template={centroid_test_data_with_missing_image}",
-            ]
+            ["dials.import", f"template={centroid_test_data_with_missing_image}"]
             + (["image_range=%i,%i" % image_range] if image_range else []),
             working_directory=centroid_test_data_with_missing_image.parent,
         )
@@ -462,6 +459,40 @@ def test_import_still_sequence_as_experiments_subset(dials_data, tmpdir):
 
     iset = {exp.imageset for exp in imported_exp}
     assert len(iset) == 1
+
+    # verify scans, goniometers kept too
+    assert all(exp.scan.get_oscillation() == (10.0, 0.0) for exp in imported_exp)
+    assert all(exp.goniometer is not None for exp in imported_exp)
+
+
+def test_import_still_sequence_as_expts_subset_by_range(dials_data, tmp_path):
+    image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
+
+    out = tmp_path / "experiments_as_still.expt"
+
+    result = procrunner.run(
+        [
+            "dials.import",
+            "scan.oscillation=10,0",
+            "image_range=3,5",
+            f"output.experiments={out}",
+            *image_files,
+        ],
+        working_directory=tmp_path,
+    )
+
+    assert result.returncode == 0
+
+    imported_exp = load.experiment_list(out)
+    assert len(imported_exp) == 3
+    for exp in imported_exp:
+        assert exp.identifier != ""
+
+    iset = set(exp.imageset for exp in imported_exp)
+    assert len(iset) == 1
+    assert len(imported_exp[0].imageset) == 3
+
+    assert list(iset)[0].get_image_identifier(0) == image_files[2].strpath
 
     # verify scans, goniometers kept too
     assert all(exp.scan.get_oscillation() == (10.0, 0.0) for exp in imported_exp)
