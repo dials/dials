@@ -1,1 +1,1 @@
-More gracefully handle failures in ``dials.refine`` when reflection have zero weights.
+``dials.refine``: More informative error message when reflection have zero weights
