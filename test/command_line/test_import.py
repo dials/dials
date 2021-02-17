@@ -476,7 +476,7 @@ def test_import_still_sequence_as_expts_subset_by_range(dials_data, tmp_path):
 
     out = tmp_path / "experiments_as_still.expt"
 
-    _ = procrunner.run(
+    result = procrunner.run(
         [
             "dials.import",
             "scan.oscillation=10,0",
@@ -486,6 +486,8 @@ def test_import_still_sequence_as_expts_subset_by_range(dials_data, tmp_path):
         + [f.strpath for f in image_files],
         working_directory=tmp_path,
     )
+
+    assert result.returncode == 0
 
     imported_exp = load.experiment_list(str(out))
     assert len(imported_exp) == 3
