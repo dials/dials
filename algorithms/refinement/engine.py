@@ -817,7 +817,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
         log=None,
         tracking=None,
         max_iterations=20,
-        **kwds
+        **kwds,
     ):
 
         AdaptLstbx.__init__(
@@ -956,11 +956,11 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
         # early test for linear independence, require all right hand side elements to be non-zero
         RHS = self.step_equations().right_hand_side()
         if RHS.count(0.0) > 0:
+            p_names = [
+                b for a, b in zip(RHS, self._parameters.get_param_names()) if a == 0.0
+            ]
             raise DialsRefineRuntimeError(
-                r"""There is at least one normal equation with a right hand side of zero,
-meaning that the parameters are not all independent, and there is no unique
-solution.  Mathematically, some kind of row reduction needs to be performed
-before this can be solved."""
+                f"The normal equations have an indeterminate solution. The problematic parameters are {', '.join(p_names)}."
             )
 
         # return early if refinement is not possible
