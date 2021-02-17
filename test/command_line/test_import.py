@@ -484,7 +484,7 @@ def test_import_still_sequence_as_expts_subset_by_range(dials_data, tmp_path):
             "output.experiments=%s" % out,
         ]
         + [f.strpath for f in image_files],
-        working_directory=tmpdir.strpath,
+        working_directory=tmp_path,
     )
 
     imported_exp = load.experiment_list(str(out))
