@@ -577,7 +577,7 @@ class MetaDataUpdater(object):
                     if self.params.geometry.scan.image_range is not None:
                         user_start, user_end = self.params.geometry.scan.image_range
                         offset = imageset.get_scan().get_array_range()[0]
-                        start, end = ustart - 1, uend
+                        start, end = user_start - 1, user_end
                     else:
                         start, end = imageset.get_scan().get_array_range()
                         offset = 0
