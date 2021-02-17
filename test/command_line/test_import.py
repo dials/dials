@@ -481,15 +481,15 @@ def test_import_still_sequence_as_expts_subset_by_range(dials_data, tmp_path):
             "dials.import",
             "scan.oscillation=10,0",
             "image_range=3,5",
-            "output.experiments=%s" % out,
-        ]
-        + [f.strpath for f in image_files],
+            f"output.experiments={out}",
+            *image_files,
+        ],
         working_directory=tmp_path,
     )
 
     assert result.returncode == 0
 
-    imported_exp = load.experiment_list(str(out))
+    imported_exp = load.experiment_list(out)
     assert len(imported_exp) == 3
     for exp in imported_exp:
         assert exp.identifier != ""
