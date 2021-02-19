@@ -52,7 +52,7 @@ loop_
   GON_PHI    rotation  goniometer  GON_KAPPA  1.0000  -0.0059  -0.0059  .  .  .
 
 """
-    assert result.stdout.endswith(expected_output)
+    assert result.stdout.replace(b"\r\n", b"\n").endswith(expected_output)
 
     assert tmpdir.join("xoalign_config.py").check()
     expected_xoalign_config = """\
