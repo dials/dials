@@ -381,7 +381,8 @@ def centroid_test_data_with_missing_image(dials_data, tmp_path):
             (tmp_path / image.basename).symlink_to(image)
     except OSError:
         warnings.warn(
-            "Copying files where unable to symlink. On Windows, Administrators or users with Developer Mode can create symlinks freely."
+            "Copying files where unable to symlink. On Windows, Administrators"
+            " or users with Developer Mode can create symlinks freely."
         )
         for image in images:
             shutil.copy(image, tmp_path)
