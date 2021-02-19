@@ -1,4 +1,6 @@
 import os
+import shutil
+import warnings
 
 import procrunner
 import pytest
@@ -374,8 +376,15 @@ def centroid_test_data_with_missing_image(dials_data, tmp_path):
     images = dials_data("centroid_test_data").listdir(
         fil="centroid_*[1,2,3,5,6,7,8,9].cbf", sort=True
     )
-    for image in images:
-        (tmp_path / image.basename).symlink_to(image)
+    try:
+        for image in images:
+            (tmp_path / image.basename).symlink_to(image)
+    except OSError:
+        warnings.warn(
+            "Copying files where unable to symlink. On Windows, Administrators or users with Developer Mode can create symlinks freely."
+        )
+        for image in images:
+            shutil.copy(image, tmp_path)
     return tmp_path.joinpath("centroid_####.cbf")
 
 
