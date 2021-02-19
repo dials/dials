@@ -10,7 +10,7 @@ def test_align_crystal(dials_regression, tmpdir):
         working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
-    assert result.stdout.endswith(
+    assert result.stdout.replace(b"\r\n", b"\n").endswith(
         b"""\
 Angles between reciprocal cell axes and principal experimental axes:
 +---------------------+--------+--------+--------+
