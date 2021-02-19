@@ -44,7 +44,10 @@ def test_insulin_scaled(dials_data, capsys):
     assert "Completeness in resolution range: 0.792288" in captured.out
     assert "Completeness with d_max=infinity: 0.792288" in captured.out
     assert "# reflections |   % missing | Resolution range (Å)" in captured.out
-    assert "2925 |        20.6 | 1.84-1.45" in captured.out or "2924 |        20.6 | 1.84-1.45" in captured.out
+    assert (
+        "2925 |        20.6 | 1.84-1.45" in captured.out
+        or "2924 |        20.6 | 1.84-1.45" in captured.out
+    )
     assert "163 |         1.1 | 1.57-1.45" in captured.out
 
 
