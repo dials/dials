@@ -10,6 +10,7 @@ from optparse import SUPPRESS_HELP, OptionParser
 import procrunner
 import py
 
+import dials.util
 import dials_data.download
 
 
@@ -312,6 +313,7 @@ def extract_resolution(source, method):
     return float(resolution_line.split(":")[-1].strip())
 
 
+@dials.util.show_mail_handle_errors()
 def run(args=None):
     parser = OptionParser(
         description="Generate tutorial logs for DIALS documentation website"

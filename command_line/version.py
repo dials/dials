@@ -11,7 +11,10 @@ def version():
 
 
 def run(args=None):
-    version()
+    import dials.util
+
+    with dials.util.show_mail_handle_errors():
+        version()
 
 
 if __name__ == "__main__":
