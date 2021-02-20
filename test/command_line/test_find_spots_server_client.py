@@ -15,6 +15,8 @@ def server(tmp_path) -> int:
     """Fixture to load a find_spots_server server"""
     if sys.hexversion >= 0x3080000 and sys.platform == "darwin":
         pytest.skip("find_spots server known to be broken on MacOS with Python 3.8+")
+    if sys.platform == "win32":
+        pytest.skip("find_spots server is not supported on Windows")
 
     # Find a free port to run the server on
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
