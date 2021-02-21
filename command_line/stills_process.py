@@ -544,9 +544,7 @@ class Script:
                         experiment.beam = imageset.get_beam()
                         experiment.detector = imageset.get_detector()
                     except RuntimeError as e:
-                        logger.warning(
-                            "Error updating geometry on item %s, %s", tag, e
-                        )
+                        logger.warning("Error updating geometry on item %s, %s", tag, e)
                         continue
 
                     if self.reference_detector is not None:
@@ -616,9 +614,7 @@ class Script:
                         experiment.beam = imagesets[0].get_beam()
                         experiment.detector = imagesets[0].get_detector()
                     except RuntimeError as e:
-                        logger.warning(
-                            "Error updating geometry on item %s, %s", tag, e
-                        )
+                        logger.warning("Error updating geometry on item %s, %s", tag, e)
                         continue
 
                     if self.reference_detector is not None:

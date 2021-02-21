@@ -664,8 +664,8 @@ namespace dials { namespace algorithms {
      */
     bool check_bbox_valid(std::size_t flags, const Shoebox<> &sbox) const {
       return sbox.bbox[0] >= 0 && sbox.bbox[2] >= 0
-        && sbox.bbox[1] <= spec_.detector()[sbox.panel].get_image_size()[0]
-        && sbox.bbox[3] <= spec_.detector()[sbox.panel].get_image_size()[1];
+             && sbox.bbox[1] <= spec_.detector()[sbox.panel].get_image_size()[0]
+             && sbox.bbox[3] <= spec_.detector()[sbox.panel].get_image_size()[1];
     }
 
     /**
