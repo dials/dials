@@ -197,6 +197,14 @@ def show_mail_handle_errors():
     If a stack trace occurs, the user will be give the contact email to report
     the error to. If a sys.exit is caught, it will be converted to red, if
     appropriate.
+
+    On Windows this additionally changes the stdout/stderr encoding to UTF8,
+    which will only have an effect when the program output is redirected to
+    a file or another process. This change will outlive the calling context.
     """
+    if os.name == "nt":
+        import dxtbx.util
+
+        dxtbx.util.encode_output_as_utf8()
     with enable_faulthandler(), make_sys_exit_red(), show_mail_on_error():
         yield
