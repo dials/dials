@@ -1,4 +1,5 @@
 import os
+import shutil
 
 import procrunner
 import pytest
@@ -370,13 +371,22 @@ def test_extrapolate_scan(dials_data, tmpdir):
 
 @pytest.fixture
 def centroid_test_data_with_missing_image(dials_data, tmp_path):
-    # All the images except image #4
+    """
+    Provide a testset with a missing image (#4) in a temporary directory
+    (symlink if possible, copy if necessary), and clean up test files
+    afterwards to conserve disk space.
+    """
     images = dials_data("centroid_test_data").listdir(
         fil="centroid_*[1,2,3,5,6,7,8,9].cbf", sort=True
     )
     for image in images:
-        (tmp_path / image.basename).symlink_to(image)
-    return tmp_path.joinpath("centroid_####.cbf")
+        try:
+            (tmp_path / image.basename).symlink_to(image)
+        except OSError:
+            shutil.copy(image, tmp_path)
+    yield tmp_path.joinpath("centroid_####.cbf")
+    for image in images:
+        (tmp_path / image.basename).unlink()
 
 
 def test_template_with_missing_image_fails(centroid_test_data_with_missing_image):
