@@ -8,7 +8,6 @@ import iotbx.cif
 from cctbx import uctbx
 from dxtbx.model import ExperimentList
 from dxtbx.serialize import load
-from dxtbx.serialize.load import _decode_dict
 from iotbx import mtz
 
 from dials.array_family import flex
@@ -368,7 +367,7 @@ def test_json(dials_data, tmpdir):
     from dxtbx.model.experiment_list import ExperimentListFactory
 
     with tmpdir.join("rlp.json").open("rb") as f:
-        d = json.load(f, object_hook=_decode_dict)
+        d = json.load(f)
     assert set(d) == {"imageset_id", "experiments", "rlp", "experiment_id"}
     assert d["rlp"][:3] == [0.123454, 0.57687, 0.186465], d["rlp"][:3]
     assert d["imageset_id"][0] == 0
