@@ -68,7 +68,7 @@ class Target:
         cb_op_to_primitive = data.change_of_basis_op_to_primitive_setting()
         data = data.change_basis(cb_op_to_primitive).map_to_asu()
 
-        order = lattice_ids.argsort()
+        order = lattice_ids.argsort().astype(np.uint64) # Convert to uint64 avoids crashes on Windows
         sorted_data = data.data().select(flex.size_t(order))
         sorted_indices = data.indices().select(flex.size_t(order))
         self._lattice_ids = lattice_ids[order]
@@ -147,10 +147,10 @@ class Target:
         return operators
 
     def _lattice_lower_upper_index(self, lattice_id):
-        lower_index = self._lattices[lattice_id]
+        lower_index = int(self._lattices[lattice_id])
         upper_index = None
         if lattice_id < len(self._lattices) - 1:
-            upper_index = self._lattices[lattice_id + 1]
+            upper_index = int(self._lattices[lattice_id + 1])
         else:
             assert lattice_id == len(self._lattices) - 1
         return lower_index, upper_index
