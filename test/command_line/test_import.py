@@ -386,7 +386,10 @@ def centroid_test_data_with_missing_image(dials_data, tmp_path):
             shutil.copy(image, tmp_path)
     yield tmp_path.joinpath("centroid_####.cbf")
     for image in images:
-        (tmp_path / image.basename).unlink()
+        try:
+            (tmp_path / image.basename).unlink()
+        except PermissionError:
+            pass
 
 
 def test_template_with_missing_image_fails(centroid_test_data_with_missing_image):
@@ -430,10 +433,10 @@ def test_import_still_sequence_as_experiments(dials_data, tmpdir):
 
     out = "experiments_as_still.expt"
 
-    _ = procrunner.run(
+    procrunner.run(
         ["dials.import", "scan.oscillation=0,0", f"output.experiments={out}"]
         + [f.strpath for f in image_files],
-        working_directory=tmpdir.strpath,
+        working_directory=tmpdir,
     )
 
     imported_exp = load.experiment_list(tmpdir.join(out).strpath)
