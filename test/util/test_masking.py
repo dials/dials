@@ -196,3 +196,26 @@ def test_generate_mask(dials_data):
     for m, im in zip(mask, imageset.get_raw_data(0)):
         assert m.all() == im.all()
     assert mask[0].count(False) == 4060817
+
+
+@pytest.mark.parametrize(
+    "parallax_correction,expected", [(True, 1427394), (False, 1432002)]
+)
+def test_generate_mask_parallax_correction(parallax_correction, expected, dials_data):
+    expts = ExperimentListFactory.from_filenames(
+        [
+            f.strpath
+            for f in dials_data("centroid_test_data").listdir(fil="*.cbf", sort=True)
+        ]
+    )
+    imageset = expts[0].imageset
+    params = dials.util.masking.phil_scope.extract()
+    params.parallax_correction = parallax_correction
+    params.d_min = 1.2
+    params.d_max = 40
+    params.untrusted = []
+    mask = dials.util.masking.generate_mask(imageset, params)
+    assert len(mask) == len(imageset.get_detector())
+    for m, im in zip(mask, imageset.get_raw_data(0)):
+        assert m.all() == im.all()
+    assert mask[0].count(False) == expected

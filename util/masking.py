@@ -6,8 +6,6 @@ import warnings
 from collections import namedtuple
 from typing import Tuple
 
-from dxtbx_model_ext import SimplePxMmStrategy
-
 import libtbx.phil
 from cctbx import crystal
 from dxtbx.masking import (
@@ -15,7 +13,7 @@ from dxtbx.masking import (
     mask_untrusted_polygon,
     mask_untrusted_rectangle,
 )
-from dxtbx.model import ImageSet
+from dxtbx.model import ImageSet, SimplePxMmStrategy
 from iotbx.phil import parse
 
 from dials.array_family import flex
@@ -38,6 +36,12 @@ phil_scope = parse(
     .help = "The low resolution limit in Angstrom for a pixel to be"
             "accepted by the filtering algorithm."
     .type = float(value_min=0)
+
+  parallax_correction = None
+    .help = "Account for parallax correction when generating resolution masks."
+            "Set to ``False`` to use a faster, but less accurate, simple px-to-mm "
+            "mapping."
+    .type = bool
 
   resolution_range = None
     .multiple = true
@@ -187,8 +191,6 @@ def generate_ice_ring_resolution_ranges(beam, panel, params):
 def _get_resolution_masker(beam, panel):
     logger.debug("resolution masker cache miss")
     t0 = time.perf_counter()
-    panel = copy.deepcopy(panel)
-    panel.set_px_mm_strategy(SimplePxMmStrategy())
     masker = ResolutionMaskGenerator(beam, panel)
     t1 = time.perf_counter()
     logger.debug(f"ResolutionMaskGenerator took {t1 - t0:.4f} seconds")
@@ -300,6 +302,11 @@ def generate_mask(
                     mask_untrusted_polygon(mask, polygon)
                 if region.pixel is not None:
                     mask[region.pixel] = False
+
+        # PxMmStrategy to use for generating resolution masks
+        if params.parallax_correction is False:
+            panel = copy.deepcopy(panel)
+            panel.set_px_mm_strategy(SimplePxMmStrategy())
 
         # Generate high and low resolution masks
         if params.d_min is not None:
