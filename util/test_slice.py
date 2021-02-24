@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import copy
 
 from dxtbx.model import Experiment, ExperimentList, Scan

@@ -1,0 +1,1 @@
+``dials.import``: Selecting a subset of images with ``image_range=`` now works on stills

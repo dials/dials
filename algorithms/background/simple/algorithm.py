@@ -1,7 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
-
-class BackgroundAlgorithm(object):
+class BackgroundAlgorithm:
     """Class to do background subtraction."""
 
     def __init__(self, experiments, outlier="nsigma", model="constant3d", **kwargs):
@@ -34,7 +31,7 @@ class BackgroundAlgorithm(object):
                 return Linear2dModeller()
             elif model == "linear3d":
                 return Linear3dModeller()
-            raise RuntimeError("Unexpected background model: %s" % model)
+            raise RuntimeError(f"Unexpected background model: {model}")
 
         def select_rejector():
             if outlier == "null":
@@ -57,7 +54,7 @@ class BackgroundAlgorithm(object):
                 return TukeyOutlierRejector(
                     kwargs.get("lower", 1.5), kwargs.get("upper", 1.5)
                 )
-            raise RuntimeError("Unexpected outlier rejector: %s" % outlier)
+            raise RuntimeError(f"Unexpected outlier rejector: {outlier}")
 
         # Get the minimum number of pixels
         min_pixels = kwargs.get("min_pixels", 10)
@@ -90,7 +87,7 @@ class BackgroundAlgorithm(object):
         return success
 
 
-class SimpleBackgroundCalculatorFactory(object):
+class SimpleBackgroundCalculatorFactory:
     """Class to do background subtraction."""
 
     @staticmethod
@@ -126,7 +123,7 @@ class SimpleBackgroundCalculatorFactory(object):
                 return Linear2dModeller()
             elif model == "linear3d":
                 return Linear3dModeller()
-            raise RuntimeError("Unexpected background model: %s" % model)
+            raise RuntimeError(f"Unexpected background model: {model}")
 
         def select_rejector():
             if outlier == "null":
@@ -149,7 +146,7 @@ class SimpleBackgroundCalculatorFactory(object):
                 return TukeyOutlierRejector(
                     kwargs.get("lower", 1.5), kwargs.get("upper", 1.5)
                 )
-            raise RuntimeError("Unexpected outlier rejector: %s" % outlier)
+            raise RuntimeError(f"Unexpected outlier rejector: {outlier}")
 
         # Get the minimum number of pixels
         min_pixels = kwargs.get("min_pixels", 10)

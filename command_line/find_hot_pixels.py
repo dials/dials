@@ -1,6 +1,5 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
+import pickle
 
 import iotbx.phil
 
@@ -41,8 +40,6 @@ help_message = """
 
 @dials.util.show_mail_handle_errors()
 def run(args=None):
-    import six.moves.cPickle as pickle
-
     from dials.util import Sorry, log
 
     usage = "dials.find_hot_pixels [options] models.expt strong.refl"
@@ -93,7 +90,7 @@ def run(args=None):
     with open(params.output.mask, "wb") as fh:
         pickle.dump(mask, fh, pickle.HIGHEST_PROTOCOL)
 
-    print("Wrote hot pixel mask to %s" % params.output.mask)
+    print(f"Wrote hot pixel mask to {params.output.mask}")
 
 
 def hot_pixel_mask(imageset, reflections):
@@ -109,7 +106,7 @@ def hot_pixel_mask(imageset, reflections):
     for x, y in xylist:
         mask[y, x] = False
 
-    print("Found %d hot pixels" % len(xylist))
+    print(f"Found {len(xylist)} hot pixels")
 
     return (mask,)
 

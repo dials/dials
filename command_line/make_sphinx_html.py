@@ -1,7 +1,5 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.make_sphinx_html
 
-from __future__ import absolute_import, division, print_function
-
 import os
 import sys
 from optparse import SUPPRESS_HELP, OptionParser
@@ -9,9 +7,10 @@ from optparse import SUPPRESS_HELP, OptionParser
 import procrunner
 import py
 
-import dials
+import dials.util
 
 
+@dials.util.show_mail_handle_errors()
 def run(args=None):
     dials_dir = py.path.local(dials.__file__).dirpath()
     sphinx_dir = dials_dir / "doc" / "sphinx"

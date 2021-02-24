@@ -1,13 +1,10 @@
-# coding: utf-8
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
-from __future__ import absolute_import, division, print_function
 
 import copy
 import os
+import pickle
 import sys
-
-import six.moves.cPickle as pickle
 
 import iotbx.phil
 from cctbx import sgtbx
@@ -116,7 +113,7 @@ def derive_change_of_basis_op(from_hkl, to_hkl):
     change_of_basis_op = sgtbx.change_of_basis_op(
         sgtbx.rt_mx(sgtbx.rot_mx(r, denominator=denom))
     ).inverse()
-    print("discovered change_of_basis_op=%s" % (str(change_of_basis_op)))
+    print(f"discovered change_of_basis_op={change_of_basis_op}")
 
     # sanity check that this is the right cb_op
     assert (change_of_basis_op.apply(from_hkl) == to_hkl).count(False) == 0
@@ -282,11 +279,11 @@ experiments file must also be specified with the option: reference= """
             R, axis, angle, change_of_basis_op = difference_rotation_matrix_axis_angle(
                 cryst, reference_crystal
             )
-            print("Change of basis op: %s" % change_of_basis_op)
+            print(f"Change of basis op: {change_of_basis_op}")
             print("Rotation matrix to transform input crystal to reference::")
             print(R.mathematica_form(format="%.3f", one_row_per_line=True))
             print(
-                "Rotation of %.3f degrees" % angle,
+                f"Rotation of {angle:.3f} degrees",
                 "about axis (%.3f, %.3f, %.3f)" % axis,
             )
 
@@ -328,7 +325,7 @@ experiments file must also be specified with the option: reference= """
                 sys.exit(f"Error: {original_message} Is your change_of_basis_op valid?")
             raise
 
-        print("Saving reindexed experimental models to %s" % params.output.experiments)
+        print(f"Saving reindexed experimental models to {params.output.experiments}")
         experiments.as_file(params.output.experiments)
 
     if len(reflections):
@@ -357,7 +354,7 @@ experiments file must also be specified with the option: reference= """
         reflections["miller_index"].set_selected(sel, miller_indices_reindexed)
         reflections["miller_index"].set_selected(~sel, (0, 0, 0))
 
-        print("Saving reindexed reflections to %s" % params.output.reflections)
+        print(f"Saving reindexed reflections to {params.output.reflections}")
         with open(params.output.reflections, "wb") as fh:
             pickle.dump(reflections, fh, protocol=pickle.HIGHEST_PROTOCOL)
 

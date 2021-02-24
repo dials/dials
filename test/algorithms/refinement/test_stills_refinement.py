@@ -3,8 +3,6 @@ A simple test of stills refinement using fake data.
 Only the crystal is perturbed while the beam and detector are known.
 """
 
-from __future__ import absolute_import, division, print_function
-
 
 def test(args=[]):
     # Python and cctbx imports

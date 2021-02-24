@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import copy
 import logging
 import math
@@ -114,7 +112,7 @@ def lru_equality_cache(maxsize=10):
     """
 
     def _decorator(f):
-        class Scope(object):
+        class Scope:
             pass
 
         cache_data = Scope()

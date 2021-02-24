@@ -1,7 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
-
-class GaussianRSMaskCalculatorFactory(object):
+class GaussianRSMaskCalculatorFactory:
     """
     Factory class for mask calculator
     """
@@ -30,7 +27,7 @@ class GaussianRSMaskCalculatorFactory(object):
         return result
 
 
-class GaussianRSIntensityCalculatorFactory(object):
+class GaussianRSIntensityCalculatorFactory:
     """
     A class to create the intensity calculator
     """
@@ -48,7 +45,7 @@ class GaussianRSIntensityCalculatorFactory(object):
         return GaussianRSIntensityCalculator(data, detector_space, deconvolution)
 
 
-class GaussianRSReferenceCalculatorFactory(object):
+class GaussianRSReferenceCalculatorFactory:
     """
     A class to create the reference calculator
     """

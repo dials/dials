@@ -1,12 +1,10 @@
-from __future__ import absolute_import, division, print_function
-
 import copy
 import os
 
 import pytest
 
 
-class Data(object):
+class Data:
     def __init__(self, dials_data, dials_regression):
         from dxtbx.model.experiment_list import ExperimentListFactory
 

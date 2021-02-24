@@ -1,7 +1,6 @@
 """
 Test the observer module.
 """
-from __future__ import absolute_import, division, print_function
 
 from dials.util.observer import Observer, Subject, singleton
 
@@ -9,7 +8,7 @@ from dials.util.observer import Observer, Subject, singleton
 def test_singleton_decorator():
     """Test the singleton class decorator."""
 
-    class TestClass(object):
+    class TestClass:
         """Simplest class."""
 
         pass
@@ -82,7 +81,7 @@ def test_Subject():
         """Test subject implementation class."""
 
         def __init__(self):
-            super(MySubject, self).__init__(events=["event1"])
+            super().__init__(events=["event1"])
 
         @Subject.notify_event("event1")
         def test_method(self):

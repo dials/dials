@@ -1,11 +1,8 @@
-from __future__ import absolute_import, division, print_function
-
 import os
+import pickle
 
-import six.moves.cPickle as pickle
 import wx
 import wx.lib.colourselect
-from six.moves import range
 
 import rstbx.viewer.display
 import wxtbx.plots
@@ -34,7 +31,7 @@ class XrayFrame(wx.Frame):
     CHOOSER_SIZE = 1024
 
     def __init__(self, *args, **kwds):
-        super(XrayFrame, self).__init__(*args, **kwds)
+        super().__init__(*args, **kwds)
         self.settings = rstbx.viewer.settings()
         self.viewer = rstbx.viewer.display.XrayView(self, -1, size=(1024, 640))
         self.viewer.SetMinSize((640, 640))
@@ -178,7 +175,7 @@ class XrayFrame(wx.Frame):
         else:
             try:
                 self._img = rstbx.viewer.image(key)
-            except IOError:
+            except OSError:
                 raise Sorry(
                     (
                         "The file '%s' could not be recognized as a supported "
@@ -389,7 +386,7 @@ mag_levels = [8, 16, 24, 32, 48, 64]
 
 class ZoomFrame(wx.MiniFrame):
     def __init__(self, *args, **kwds):
-        super(ZoomFrame, self).__init__(*args, **kwds)
+        super().__init__(*args, **kwds)
         self.settings = self.GetParent().settings
         self.control_panel = wx.Panel(self)
         self.panel = rstbx.viewer.display.ZoomView(self, -1)
@@ -444,7 +441,7 @@ class ZoomFrame(wx.MiniFrame):
 
 class PlotFrame(wx.MiniFrame):
     def __init__(self, *args, **kwds):
-        super(PlotFrame, self).__init__(*args, **kwds)
+        super().__init__(*args, **kwds)
         self.plot = LinePlot(self, figure_size=(8, 3))
         szr = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(szr)
@@ -473,5 +470,5 @@ class LinePlot(wxtbx.plots.plot_container):
                 % (line.distance, line.lattice_length)
             )
         else:
-            ax.set_title("Line distance: %.2fmm" % line.distance)
+            ax.set_title(f"Line distance: {line.distance:.2f}mm")
         self.canvas.draw()

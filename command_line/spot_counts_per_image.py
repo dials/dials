@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import json
 import sys
 
@@ -99,7 +97,7 @@ def run(args=None):
         ("Overall statistics", ""),
         ("#spots", "%i" % overall_stats.n_spots_total),
         ("#spots_no_ice", "%i" % overall_stats.n_spots_no_ice),
-        ("d_min", "%.2f" % overall_stats.estimated_d_min),
+        ("d_min", f"{overall_stats.estimated_d_min:.2f}"),
         (
             "d_min (distl method 1)",
             "%.2f (%.2f)"
@@ -117,7 +115,7 @@ def run(args=None):
         if params.split_json:
             for k, v in stats._asdict().items():
                 start, end = params.json.split(".")
-                with open("%s_%s.%s" % (start, k, end), "w") as fp:
+                with open(f"{start}_{k}.{end}", "w") as fp:
                     json.dump(v, fp)
         if params.joint_json:
             with open(params.json, "w") as fp:

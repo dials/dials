@@ -1,10 +1,6 @@
-from __future__ import absolute_import, division, print_function
-
 import math
 import os
-
-import six
-import six.moves.cPickle as pickle
+import pickle
 
 
 def test_run(dials_regression):
@@ -33,10 +29,7 @@ def test_run(dials_regression):
     # Read the data
     rtable = flex.reflection_table.from_file(reflection_filename)
     with open(shoebox_filename, "rb") as fh:
-        if six.PY3:
-            shoeboxes, masks = pickle.load(fh, encoding="bytes")
-        else:
-            shoeboxes, masks = pickle.load(fh)
+        shoeboxes, masks = pickle.load(fh, encoding="bytes")
     assert len(rtable) == len(shoeboxes)
     assert len(rtable) == len(masks)
 

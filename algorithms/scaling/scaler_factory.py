@@ -1,7 +1,6 @@
 """
 Collection of factories for creating the scalers.
 """
-from __future__ import absolute_import, division, print_function
 
 import logging
 
@@ -54,7 +53,7 @@ def create_scaler(params, experiments, reflections):
     return scaler
 
 
-class ScalerFactory(object):
+class ScalerFactory:
     """Base class for Scaler Factories"""
 
     @staticmethod
@@ -216,7 +215,7 @@ class NullScalerFactory(ScalerFactory):
         return NullScaler(params, experiment, reflection_table)
 
 
-class MultiScalerFactory(object):
+class MultiScalerFactory:
     "Factory for creating a scaler for multiple datasets"
 
     @staticmethod
@@ -257,7 +256,7 @@ class MultiScalerFactory(object):
         return multiscaler
 
 
-class TargetScalerFactory(object):
+class TargetScalerFactory:
     "Factory for creating a targeted scaler for multiple datasets"
 
     @staticmethod

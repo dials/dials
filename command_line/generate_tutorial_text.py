@@ -1,6 +1,5 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.generate_tutorial_text
 
-from __future__ import absolute_import, division, print_function
 
 import functools
 import os
@@ -11,6 +10,7 @@ from optparse import SUPPRESS_HELP, OptionParser
 import procrunner
 import py
 
+import dials.util
 import dials_data.download
 
 
@@ -28,7 +28,7 @@ def _command_runner(
     result = procrunner.run(
         command, environment_override={"DIALS_NOBANNER": "1"}, **kwargs
     )
-    print("running command took {:.1f} seconds\n".format(result["runtime"]))
+    print(f"running command took {result['runtime']:.1f} seconds\n")
     assert not result.returncode, "Command execution failed"
     if store_output:
         store_output.write_binary(result.stdout, ensure=True)
@@ -68,7 +68,7 @@ def generate_processing_detail_text_thaumatin(options):
     tmpdir.join("dials.report.html").copy(outdir.join("dials.report.html"))
     runcmd(["dials.export", "integrated.refl", "integrated.expt"])
 
-    print("Updated result files written to {}".format(outdir.strpath))
+    print(f"Updated result files written to {outdir.strpath}")
     if not options.keep:
         tmpdir.remove(rec=1)
 
@@ -97,7 +97,7 @@ def generate_processing_detail_text_mpro_x0692(options):
         Please download data from https://zenodo.org/record/3730940 and extract,
         then set environment variable MPRO_X0692_DATA to the folder with Mpro-x0692_1_0*.cbf"""
         )
-    print("Using data: {}".format(datadir.strpath))
+    print(f"Using data: {datadir.strpath}")
 
     runcmd(["dials.import", datadir / "Mpro-x0692_1_0*.cbf"])
     runcmd(["dials.find_spots", "imported.expt", "nproc=4"])
@@ -128,14 +128,14 @@ def generate_processing_detail_text_mpro_x0692(options):
     runcmd(["dials.estimate_resolution", "scaled.expt", "scaled.refl"])
     d_min = extract_resolution(outdir / "dials.estimate_resolution.log", "cc_half")
     runcmd(
-        ["dials.scale", "scaled.expt", "scaled.refl", "d_min=%.2f" % d_min],
+        ["dials.scale", "scaled.expt", "scaled.refl", f"d_min={d_min:.2f}"],
         store_command=outdir / "dials.scale_cut.cmd",
         store_output=outdir / "dials.scale_cut.log",
     )
     runcmd(["dials.report", "scaled.expt", "scaled.refl"])
     tmpdir.join("dials.report.html").copy(outdir.join("dials.report.html"))
 
-    print("Updated result files written to {}".format(outdir.strpath))
+    print(f"Updated result files written to {outdir.strpath}")
     if not options.keep:
         tmpdir.remove(rec=1)
 
@@ -169,7 +169,7 @@ def generate_processing_detail_text_betalactamase(options):
         Please download C2sum_1 from https://zenodo.org/record/1014387 and extract,
         then set environment variable BETALACTAMASE_TUTORIAL_DATA to the folder with C2sum_1_*.cbf.gz"""
         )
-    print("Using data: {}".format(datadir.strpath))
+    print(f"Using data: {datadir.strpath}")
 
     runcmd(["dials.import", datadir / "C2sum_1*.cbf.gz"])
     runcmd(["dials.find_spots", "imported.expt", "nproc=4"])
@@ -205,7 +205,7 @@ def generate_processing_detail_text_betalactamase(options):
     runcmd(["dials.report", "scaled.expt", "scaled.refl"])
     tmpdir.join("dials.report.html").copy(outdir.join("dials.report.html"))
 
-    print("Updated result files written to {}".format(outdir.strpath))
+    print(f"Updated result files written to {outdir.strpath}")
     if not options.keep:
         tmpdir.remove(rec=1)
 
@@ -240,13 +240,13 @@ def generate_multi_crystal_symmetry_and_scaling(options):
     runcmd(["dials.estimate_resolution", "scaled.expt", "scaled.refl"])
     d_min = extract_resolution(outdir / "dials.estimate_resolution.log", "cc_half")
     runcmd(
-        ["dials.scale", "scaled.expt", "scaled.refl", "d_min=%.2f" % d_min],
+        ["dials.scale", "scaled.expt", "scaled.refl", f"d_min={d_min:.2f}"],
         store_command=outdir / "dials.scale_cut.cmd",
         store_output=outdir / "dials.scale_cut.log",
     )
     runcmd(["dials.compute_delta_cchalf", "scaled.refl", "scaled.expt"])
     runcmd(
-        ["dials.scale", "scaled.expt", "scaled.refl", "d_min=%.2f" % d_min],
+        ["dials.scale", "scaled.expt", "scaled.refl", f"d_min={d_min:.2f}"],
         store_command=outdir / "dials.scale_exclude.cmd",
         store_output=outdir / "dials.scale_exclude.log",
     )
@@ -255,7 +255,7 @@ def generate_multi_crystal_symmetry_and_scaling(options):
     tmpdir.join("dials.symmetry.html").copy(outdir.join("dials.symmetry.html"))
     runcmd(["dials.merge", "symmetrized.expt", "symmetrized.refl"])
 
-    print("Updated result files written to {}".format(outdir.strpath))
+    print(f"Updated result files written to {outdir.strpath}")
     if not options.keep:
         tmpdir.remove(rec=1)
 
@@ -265,7 +265,7 @@ def find_in_line(string, lines, start=0):
     for n, line in enumerate(lines[start:], start):
         if string in line:
             return n
-    raise RuntimeError("Could not find line '{}' in lines".format(string))
+    raise RuntimeError(f"Could not find line '{string}' in lines")
 
 
 def write_extract(destination, start, end, lines):
@@ -286,7 +286,7 @@ def write_extract(destination, start, end, lines):
         else:
             out_lines.append("")
 
-    destination.write_text(u"\n".join(out_lines), "latin-1")
+    destination.write_text("\n".join(out_lines), "latin-1")
 
 
 def extract_last_indexed_spot_count(source, destination):
@@ -308,11 +308,12 @@ def extract_resolution(source, method):
     lines = source.read_text("latin-1").split("\n")
 
     # Find the Resolution line
-    resolution_line = lines[find_in_line("Resolution %s" % method, lines)]
+    resolution_line = lines[find_in_line(f"Resolution {method}", lines)]
     # Parse and return the suggested resolution value
     return float(resolution_line.split(":")[-1].strip())
 
 
+@dials.util.show_mail_handle_errors()
 def run(args=None):
     parser = OptionParser(
         description="Generate tutorial logs for DIALS documentation website"

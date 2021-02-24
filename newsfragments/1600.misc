@@ -1,0 +1,1 @@
+Allow copy rather than symlink to fix tests on Windows

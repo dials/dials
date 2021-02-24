@@ -2,7 +2,6 @@
 Module of utility functions for scaling.
 """
 
-from __future__ import absolute_import, division, print_function
 
 import copy
 import logging
@@ -52,7 +51,7 @@ class BadDatasetForScalingException(Exception):
     pass
 
 
-class Reasons(object):
+class Reasons:
     def __init__(self):
         self.reasons = {}
 
@@ -61,7 +60,7 @@ class Reasons(object):
 
     def __repr__(self):
         reasonlist = [
-            "criterion: %s, reflections: %s\n" % (k, v)
+            f"criterion: {k}, reflections: {v}\n"
             for (k, v) in self.reasons.items()
             if v > 0
         ]

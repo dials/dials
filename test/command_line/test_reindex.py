@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import os
 
 import procrunner
@@ -58,7 +56,7 @@ def test_reindex(dials_regression, tmpdir):
         "dials.reindex",
         experiments_path,
         "space_group=P4",
-        "change_of_basis_op=%s" % str(cb_op),
+        f"change_of_basis_op={cb_op}",
         "output.experiments=P4.expt",
     ]
     result = procrunner.run(commands, working_directory=tmpdir)
@@ -70,7 +68,7 @@ def test_reindex(dials_regression, tmpdir):
     commands = [
         "dials.reindex",
         "P4.expt",
-        "change_of_basis_op=%s" % str(cb_op),
+        f"change_of_basis_op={cb_op}",
         "output.experiments=P4_reindexed.expt",
     ]
     result = procrunner.run(commands, working_directory=tmpdir)
@@ -175,7 +173,7 @@ def test_reindex_against_reference(dials_regression, tmpdir):
         "dials.reindex",
         "P4.refl",
         "P4.expt",
-        "change_of_basis_op=%s" % str(cb_op),
+        f"change_of_basis_op={cb_op}",
         "output.experiments=P4_reindexed.expt",
         "output.reflections=P4_reindexed.refl",
     ]

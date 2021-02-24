@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import os
 
 from dxtbx.model import Crystal
@@ -19,7 +17,7 @@ def dump(experiments, directory):
         if len(experiments) > 1:
             suffix = "_%i" % (i + 1)
 
-        sub_dir = "%s%s" % (directory, suffix)
+        sub_dir = f"{directory}{suffix}"
         if not os.path.isdir(sub_dir):
             os.makedirs(sub_dir)
         detector = experiment.detector
@@ -61,7 +59,7 @@ def dump(experiments, directory):
 
         index_mat = os.path.join(sub_dir, "index.mat")
         mosflm_in = os.path.join(sub_dir, "mosflm.in")
-        print("Exporting experiment to %s and %s" % (index_mat, mosflm_in))
+        print(f"Exporting experiment to {index_mat} and {mosflm_in}")
 
         with open(index_mat, "w") as f:
             f.write(format_mosflm_mat(w * A_mosflm, U_mosflm, cryst.get_unit_cell()))
@@ -107,15 +105,15 @@ def write_mosflm_input(
 ):
     lines = []
     if directory is not None:
-        lines.append("DIRECTORY %s" % directory)
+        lines.append(f"DIRECTORY {directory}")
     if template is not None:
-        lines.append("TEMPLATE %s" % template)
+        lines.append(f"TEMPLATE {template}")
     if symmetry is not None:
-        lines.append("SYMMETRY %s" % symmetry)
+        lines.append(f"SYMMETRY {symmetry}")
     if beam_centre is not None:
         lines.append("BEAM %.3f %.3f" % beam_centre)
     if distance is not None:
-        lines.append("DISTANCE %.4f" % distance)
+        lines.append(f"DISTANCE {distance:.4f}")
     if mat_file is not None:
-        lines.append("MATRIX %s" % mat_file)
+        lines.append(f"MATRIX {mat_file}")
     return "\n".join(lines)

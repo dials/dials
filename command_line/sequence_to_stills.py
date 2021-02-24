@@ -6,7 +6,6 @@ Example:
   dials.sequence_to_stills sequence.expt sequence.refl
 """
 
-from __future__ import absolute_import, division, print_function
 
 import logging
 
@@ -84,7 +83,7 @@ def sequence_to_stills(experiments, reflections, params):
             reflections["entering"] = flex.bool(len(reflections), False)
             new_reflections["entering"] = flex.bool()
         else:
-            raise RuntimeError("Expected key not found in reflection table: %s" % key)
+            raise RuntimeError(f"Expected key not found in reflection table: {key}")
 
     for expt_id, experiment in enumerate(experiments):
         # Get the goniometr setting matrix

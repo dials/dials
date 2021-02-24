@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import bz2
 import datetime
 import gzip
@@ -23,7 +21,7 @@ logger = logging.getLogger(__name__)
 RAD2DEG = 180.0 / math.pi
 
 
-class MMCIFOutputFile(object):
+class MMCIFOutputFile:
     """
     Class to output experiments and reflections as MMCIF file
     """
@@ -80,7 +78,7 @@ class MMCIFOutputFile(object):
             self._cif.show(out=fh, loop_format_strings=loop_format_strings)
 
         # Log
-        logger.info("Wrote reflections to %s" % filename)
+        logger.info("Wrote reflections to %s", filename)
 
     def make_cif_block(self, experiments, reflections):
         """Write the data to a cif block"""

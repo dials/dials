@@ -2,7 +2,6 @@
 Test derivatives typed up in dials_regression/doc/notes/prediction/stills_prediction_nave3.pdf
 """
 
-from __future__ import absolute_import, division, print_function
 
 import pytest
 
@@ -30,7 +29,7 @@ from dials.array_family import flex
 from dials.test.algorithms.refinement.setup_geometry import Extract
 
 
-class Predictor(object):
+class Predictor:
     def __init__(self, experiments):
 
         self._experiment = experiments[0]
@@ -56,7 +55,7 @@ class Predictor(object):
 
 
 # Simplied equivalent of a PredictionParameterisation class for this test
-class AnalyticalGradients(object):
+class AnalyticalGradients:
     """A class to implement the analytical gradient calculation in the document"""
 
     def __init__(
@@ -383,7 +382,7 @@ def test():
     for i, fd_grad in enumerate(fd_grads):
 
         ## compare FD with analytical calculations
-        print("\n\nParameter {0}: {1}".format(i, fd_grad["name"]))
+        print(f"\n\nParameter {i}: {fd_grad['name']}")
 
         print("d[s1]/dp for the first reflection")
         print("finite diff", fd_grad["ds1"][0])

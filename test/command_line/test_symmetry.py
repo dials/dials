@@ -1,7 +1,3 @@
-# coding: utf-8
-
-from __future__ import absolute_import, division, print_function
-
 import json
 import math
 import os
@@ -500,7 +496,7 @@ def test_eliminate_sys_absent():
 
 
 def test_few_reflections(dials_data, run_in_tmpdir):
-    u"""
+    """
     Test that dials.symmetry does something sensible if given few reflections.
 
     Use some example integrated data generated from a ten-image 1° sweep.  These

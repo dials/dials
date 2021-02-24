@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import copy
 import datetime
 import logging
@@ -115,7 +113,7 @@ phil_scope = parse(
 working_phil = phil_scope.fetch()
 
 
-class Script(object):
+class Script:
     """A class for running the script."""
 
     def __init__(self):
@@ -189,7 +187,7 @@ class Script(object):
         reflections = reflections.select(mask)
 
         logger.info(
-            "{0} out of {1} reflections remain after filtering to keep only strong"
+            "{} out of {} reflections remain after filtering to keep only strong"
             " and integrated centroids".format(len(reflections), orig_len)
         )
         return reflections
@@ -281,8 +279,8 @@ class Script(object):
         rows = []
         names = ["a", "b", "c", "alpha", "beta", "gamma"]
         for n, p, e in zip(names, cell, esd):
-            rows.append([n, "%9.5f" % p, "%9.5f" % e])
-        rows.append(["\nvolume", "\n%9.5f" % vol, "\n%9.5f" % vol_esd])
+            rows.append([n, f"{p:9.5f}", f"{e:9.5f}"])
+        rows.append(["\nvolume", f"\n{vol:9.5f}", f"\n{vol_esd:9.5f}"])
         return tabulate(rows, header)
 
     @staticmethod
@@ -329,7 +327,7 @@ class Script(object):
                 "angle_gamma",
             ],
         ):
-            block["_cell_%s" % cifname] = format_float_with_standard_uncertainty(
+            block[f"_cell_{cifname}"] = format_float_with_standard_uncertainty(
                 cell, esd
             )
         block["_cell_volume"] = format_float_with_standard_uncertainty(
@@ -390,10 +388,10 @@ class Script(object):
                 "angle_gamma",
             ],
         ):
-            block["_cell.%s" % cifname] = "%.8f" % cell
-            block["_cell.%s_esd" % cifname] = "%.8f" % esd
-        block["_cell.volume"] = "%f" % crystal.get_unit_cell().volume()
-        block["_cell.volume_esd"] = "%f" % crystal.get_cell_volume_sd()
+            block[f"_cell.{cifname}"] = f"{cell:.8f}"
+            block[f"_cell.{cifname}_esd"] = f"{esd:.8f}"
+        block["_cell.volume"] = f"{crystal.get_unit_cell().volume():f}"
+        block["_cell.volume_esd"] = f"{crystal.get_cell_volume_sd():f}"
 
         used_reflections = refiner.get_matches()
         block["_cell_measurement.entry_id"] = "two_theta_refine"
@@ -478,7 +476,7 @@ class Script(object):
 
         # Combine crystals?
         if params.refinement.combine_crystal_models and len(experiments) > 1:
-            logger.info("Combining {0} crystal models".format(len(experiments)))
+            logger.info("Combining %s crystal models", len(experiments))
             experiments = self.combine_crystals(experiments)
 
         # Filter integrated centroids?
@@ -507,7 +505,7 @@ class Script(object):
         if nexp == 1:
             logger.info("Performing refinement of a single Experiment...")
         else:
-            logger.info("Performing refinement of {} Experiments...".format(nexp))
+            logger.info(f"Performing refinement of {nexp} Experiments...")
         refiner.run()
 
         # get the refined experiments
@@ -533,9 +531,7 @@ class Script(object):
 
         # Save the refined experiments to file
         output_experiments_filename = params.output.experiments
-        logger.info(
-            "Saving refined experiments to {}".format(output_experiments_filename)
-        )
+        logger.info(f"Saving refined experiments to {output_experiments_filename}")
         experiments.as_file(output_experiments_filename)
 
         # Create correlation plots

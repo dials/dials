@@ -1,6 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
-
 def test():
     from dials.algorithms.profile_model.modeller import (
         MultiExpProfileModeller,
@@ -14,7 +11,7 @@ def test():
             self.accumulated = False
             self.finalized = False
             self.expected = expected
-            super(Modeller, self).__init__()
+            super().__init__()
 
         def model(self, reflections):
             assert reflections["id"].all_eq(self.index)

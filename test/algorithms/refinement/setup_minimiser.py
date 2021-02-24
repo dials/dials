@@ -1,6 +1,5 @@
 """Setup experimental geometry for refinement test cases"""
 
-from __future__ import absolute_import, division, print_function
 
 from libtbx.phil import command_line, parse
 
@@ -11,7 +10,7 @@ from dials.algorithms.refinement.engine import (
 )
 
 
-class Extract(object):
+class Extract:
     """Parse and extract minimiser setup from PHIL"""
 
     def __init__(

@@ -1,9 +1,7 @@
-from __future__ import absolute_import, division, print_function
-
 from scitbx.array_family import flex
 
 
-class Parameter(object):
+class Parameter:
     """A class to help formalise what a parameter is.
 
     A Parameter must have a numerical value (either a length or an angle). It may
@@ -96,16 +94,16 @@ class Parameter(object):
             msg += "    Axis: (%5.3f, %5.3f, %5.3f)" % tuple(self.axis) + "\n"
         except TypeError:
             msg += "    Axis: " + str(self.axis) + "\n"
-        msg += "    Value: %5.3f" % self.value + "\n"
+        msg += f"    Value: {self.value:5.3f}" + "\n"
         try:
-            msg += "    Sigma: %5.3f" % self.esd + "\n"
+            msg += f"    Sigma: {self.esd:5.3f}" + "\n"
         except TypeError:
             msg += "    Sigma: " + str(self.esd) + "\n"
 
         return msg
 
 
-class ModelParameterisation(object):
+class ModelParameterisation:
     """An abstract interface for the parameterisation of a model.
 
     Parameterisation of experimental objects, such as the detector, the beam,

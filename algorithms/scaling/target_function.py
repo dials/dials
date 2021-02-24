@@ -5,14 +5,13 @@ These are initialised with a scaler and an active parameter manager,
 and have implementations of residual/gradient calculations for
 scaling.
 """
-from __future__ import absolute_import, division, print_function
 
 from dials.algorithms.scaling.scaling_restraints import ScalingRestraintsCalculator
 from dials.array_family import flex
 from dials_scaling_ext import calc_dIh_by_dpi, calc_jacobian, row_multiply
 
 
-class ScalingTarget(object):
+class ScalingTarget:
     """
     A class to be used by a Scaling Refinery to calculate gradients,
     residuals etc required by the Refinery for minimisation.

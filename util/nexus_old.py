@@ -1,7 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
-
-class H5PYEncoder(object):
+class H5PYEncoder:
     """Encoder base class."""
 
     def encode(self, obj, handle):
@@ -9,7 +6,7 @@ class H5PYEncoder(object):
         raise RuntimeError("Overload!")
 
 
-class H5PYDecoder(object):
+class H5PYDecoder:
     """Decoder base class."""
 
     def decode(self, handle):
@@ -114,7 +111,7 @@ class ReflectionListDecoder(H5PYDecoder):
             return flex_type(list(data))
 
 
-class NexusFile(object):
+class NexusFile:
     """Interface to Nexus file."""
 
     def __init__(self, filename, mode="a"):

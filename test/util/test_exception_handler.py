@@ -1,12 +1,7 @@
-# -*- coding: utf-8 -*-
-
-from __future__ import absolute_import, division, print_function
-
 import os
 import sys
 
 import pytest
-import six
 
 import dials.util
 
@@ -26,9 +21,9 @@ def test_crash_with_plain_text():
 def test_crash_with_unicode():
     with pytest.raises(_SomeError) as exc:
         with dials.util.show_mail_on_error():
-            raise _SomeError(u"This is a 👹♔  𝓕คｎｃ¥ ｕηเᶜόＤ𝔼  🏆🍔 string")
-    assert u"report this error" in six.text_type(exc.value)
-    assert u"This is a" in six.text_type(exc.value)
+            raise _SomeError("This is a 👹♔  𝓕คｎｃ¥ ｕηเᶜόＤ𝔼  🏆🍔 string")
+    assert "report this error" in str(exc.value)
+    assert "This is a" in str(exc.value)
 
 
 def test_crash_with_bytestring():

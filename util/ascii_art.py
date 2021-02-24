@@ -1,7 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
-import six
-
 from dials.array_family import flex
 
 
@@ -14,7 +10,7 @@ def spot_counts_per_image_plot(reflections, **kwargs):
 
 
 def flex_histogram(z, char="*", width=60, height=10):
-    assert isinstance(char, six.string_types)
+    assert isinstance(char, str)
     assert len(char) == 1
 
     # with open('list.json', 'w') as fh:
@@ -34,7 +30,7 @@ def flex_histogram(z, char="*", width=60, height=10):
     # estimate the total number of images
     image_count = xmax - xmin + 1
     if image_count <= 1:
-        return "%i spots found on 1 image" % len(z)
+        return f"{len(z)} spots found on 1 image"
 
     # determine histogram width
     width = min(image_count, width)

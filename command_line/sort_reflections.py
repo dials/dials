@@ -1,6 +1,5 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.sort_reflections
 
-from __future__ import absolute_import, division, print_function
 
 import dials.util
 from dials.array_family import flex
@@ -15,7 +14,7 @@ Example::
 """
 
 
-class Sort(object):
+class Sort:
     """A class for running the script."""
 
     def __init__(self):
@@ -73,7 +72,7 @@ class Sort(object):
         assert params.key in reflections
 
         # Sort the reflections
-        print("Sorting by %s with reverse=%r" % (params.key, params.reverse))
+        print(f"Sorting by {params.key} with reverse={params.reverse!r}")
         perm = self.sort_permutation(reflections[params.key], params.reverse)
         reflections = reflections.select(perm)
 
@@ -85,7 +84,7 @@ class Sort(object):
 
         # Save sorted reflections to file
         if params.output:
-            print("Saving reflections to {}".format(params.output))
+            print(f"Saving reflections to {params.output}")
             reflections.as_file(params.output)
 
 

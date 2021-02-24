@@ -2,12 +2,9 @@
 Classes to initialise a 'parameter manager', to indicate to a
 refiner which components of the model are to be refined.
 """
-from __future__ import absolute_import, division, print_function
 
 import logging
 from collections import OrderedDict
-
-import six
 
 from scitbx import sparse
 
@@ -16,7 +13,7 @@ from dials.array_family import flex
 logger = logging.getLogger("dials")
 
 
-class active_parameter_manager(object):
+class active_parameter_manager:
     """
     Class to manage the current active parameters during minimisation.
 
@@ -37,7 +34,7 @@ class active_parameter_manager(object):
         self.var_cov_matrix = None
         self.components_list = []  # just a list of the component names
         n_cumul_params = 0
-        for component, obj in six.iteritems(components):
+        for component, obj in components.items():
             if component in selection_list:
                 assert hasattr(
                     obj, "parameters"
@@ -96,7 +93,7 @@ class active_parameter_manager(object):
             component["object"].free_parameter_esds = esds[start_idx:end_idx]
 
 
-class TargetInterface(object):
+class TargetInterface:
     def compute_functional_gradients(self, block):
         return self.target.compute_functional_gradients(block)
 
@@ -201,9 +198,7 @@ class shared_active_parameter_manager(multi_active_parameter_manager):
     """
 
     def __init__(self, target, components_list, selection_lists, apm_class, shared):
-        super(shared_active_parameter_manager, self).__init__(
-            target, components_list, selection_lists, apm_class
-        )
+        super().__init__(target, components_list, selection_lists, apm_class)
         n_unique_params = 0
         found_initial_shared = False
         # first loop over to work out how many unique parameters overall
@@ -312,7 +307,7 @@ class shared_active_parameter_manager(multi_active_parameter_manager):
             apm.calculate_model_state_uncertainties(sub_var_cov.as_dense_matrix())
 
 
-class ParameterManagerGenerator(object):
+class ParameterManagerGenerator:
     """
     Class to generate multi-dataset parameter managers for minimisation.
 

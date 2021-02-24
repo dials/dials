@@ -401,9 +401,10 @@ namespace dials { namespace algorithms {
         reference_cor[i] = 0.0;
         // reference_rmsd[i] = 0.0;
         flags[i] &= ~af::IntegratedPrf;
+        bool integrate = !(flags[i] & af::DontIntegrate);
 
         // Check if we want to use this reflection
-        if (check2(flags[i], sbox[i])) {
+        if (integrate) {
           try {
             // Get the reference profiles
             std::size_t index = sampler_->nearest(sbox[i].panel, xyzpx[i]);
@@ -609,19 +610,10 @@ namespace dials { namespace algorithms {
       bool integrated = flags & af::IntegratedSum;
 
       // Check if the bounding box is in the image
-      bool bbox_valid =
-        sbox.bbox[0] >= 0 && sbox.bbox[2] >= 0
-        && sbox.bbox[1] <= spec_.detector()[sbox.panel].get_image_size()[0]
-        && sbox.bbox[3] <= spec_.detector()[sbox.panel].get_image_size()[1];
+      bool bbox_valid = check_bbox_valid(flags, sbox);
 
       // Check if all pixels are valid
-      bool pixels_valid = true;
-      for (std::size_t i = 0; i < sbox.mask.size(); ++i) {
-        if (sbox.mask[i] & Foreground && !(sbox.mask[i] & Valid)) {
-          pixels_valid = false;
-          break;
-        }
-      }
+      bool pixels_valid = check_foreground_valid(flags, sbox);
 
       // Return whether to use or not
       return full && integrated && bbox_valid && pixels_valid;
@@ -638,19 +630,10 @@ namespace dials { namespace algorithms {
       bool integrate = !(flags & af::DontIntegrate);
 
       // Check if the bounding box is in the image
-      bool bbox_valid =
-        sbox.bbox[0] >= 0 && sbox.bbox[2] >= 0
-        && sbox.bbox[1] <= spec_.detector()[sbox.panel].get_image_size()[0]
-        && sbox.bbox[3] <= spec_.detector()[sbox.panel].get_image_size()[1];
+      bool bbox_valid = check_bbox_valid(flags, sbox);
 
       // Check if all pixels are valid
-      bool pixels_valid = true;
-      for (std::size_t i = 0; i < sbox.mask.size(); ++i) {
-        if (sbox.mask[i] & Foreground && !(sbox.mask[i] & Valid)) {
-          pixels_valid = false;
-          break;
-        }
-      }
+      bool pixels_valid = check_foreground_valid(flags, sbox);
 
       // Return whether to use or not
       return integrate && bbox_valid && pixels_valid;
@@ -667,13 +650,39 @@ namespace dials { namespace algorithms {
       bool integrate = !(flags & af::DontIntegrate);
 
       // Check if the bounding box is in the image
-      bool bbox_valid =
-        sbox.bbox[0] >= 0 && sbox.bbox[2] >= 0
-        && sbox.bbox[1] <= spec_.detector()[sbox.panel].get_image_size()[0]
-        && sbox.bbox[3] <= spec_.detector()[sbox.panel].get_image_size()[1];
+      bool bbox_valid = check_bbox_valid(flags, sbox);
 
       // Return whether to use or not
       return integrate && bbox_valid;
+    }
+
+    /**
+     * Check if the bounding box is in entirely within the image
+     * @param flags The reflection flags
+     * @param sbox The reflection shoebox
+     * @return True/False
+     */
+    bool check_bbox_valid(std::size_t flags, const Shoebox<> &sbox) const {
+      return sbox.bbox[0] >= 0 && sbox.bbox[2] >= 0
+             && sbox.bbox[1] <= spec_.detector()[sbox.panel].get_image_size()[0]
+             && sbox.bbox[3] <= spec_.detector()[sbox.panel].get_image_size()[1];
+    }
+
+    /**
+     * Check if all foreground pixels are valid
+     * @param flags The reflection flags
+     * @param sbox The reflection shoebox
+     * @return True/False
+     */
+    bool check_foreground_valid(std::size_t flags, const Shoebox<> &sbox) const {
+      bool pixels_valid = true;
+      for (std::size_t i = 0; i < sbox.mask.size(); ++i) {
+        if (sbox.mask[i] & Foreground && !(sbox.mask[i] & Valid)) {
+          pixels_valid = false;
+          break;
+        }
+      }
+      return pixels_valid;
     }
 
     TransformSpec spec_;

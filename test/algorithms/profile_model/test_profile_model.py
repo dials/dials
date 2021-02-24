@@ -1,6 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
-
 def test_load_and_dump():
     from dials.algorithms.profile_model.gaussian_rs import Model
 

@@ -1,7 +1,6 @@
 """
 Tests for scale components module.
 """
-from __future__ import absolute_import, division, print_function
 
 from math import exp
 
@@ -173,7 +172,7 @@ def test_SmoothScaleFactor1D():
     assert d[0, 0] / d[0, 1] == pytest.approx(exp(-1.0) / exp(0.0))
     sumexp = exp(-1.0 / 1.0) + exp(-0.0 / 1.0) + exp(-1.0 / 1.0)  # only averages 3 when
     # normalised position is exactly on a smoother position.
-    assert d[0, 1] == pytest.approx((exp(0.0) / sumexp))
+    assert d[0, 1] == pytest.approx(exp(0.0) / sumexp)
     T = d.transpose()
     assert sum(list(T[:, 0].as_dense_vector())) == 1.0  # should always be 1.0
     assert sum(list(T[:, 1].as_dense_vector())) == 1.0

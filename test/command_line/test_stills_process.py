@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import os
 
 import procrunner
@@ -141,7 +139,7 @@ def test_sacla_h5(dials_data, run_in_tmpdir, use_mpi, in_memory=False):
             subset = table.select(table["id"] == expt_id)
             assert len(subset) in n_refls, (result_filename, expt_id, len(table))
         assert "id" in table
-        assert set(table["id"]) == set((0, 1, 2, 3))
+        assert set(table["id"]) == {0, 1, 2, 3}
 
     # large ranges to handle platform-specific differences
     test_refl_table(
