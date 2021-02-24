@@ -582,12 +582,12 @@ def export_mtz(
     return mtz_file
 
 
-def match_wavelengths(experiments):
+def match_wavelengths(experiments, absolute_tolerance=1e-4):
     """Create a dictionary matching wavelength to experiments (index in list)"""
     wavelengths = OrderedDict()
     for i, x in enumerate(experiments):
         w = x.beam.get_wavelength()
-        matches = [isclose(w, k, rel_tol=1e-4) for k in wavelengths]
+        matches = [isclose(w, k, abs_tol=absolute_tolerance) for k in wavelengths]
         if not any(matches):
             wavelengths[w] = [i]
         else:
