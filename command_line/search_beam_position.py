@@ -257,7 +257,7 @@ def _get_origin_offset_score(
     trial_detector = dps_extended.get_new_detector(
         experiment.detector, trial_origin_offset
     )
-    experiment = copy.deepcopy(experiment)
+    experiment = copy.copy(experiment)
     experiment.detector = trial_detector
 
     # Key point for this is that the spots must correspond to detector
