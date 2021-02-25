@@ -1,0 +1,1 @@
+`dials.search_beam_centre`: was very slow for large data sets, now much faster
