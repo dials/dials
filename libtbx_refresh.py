@@ -1,6 +1,11 @@
+import sys
+
 import libtbx.pkg_utils
 
 import dials.precommitbx.nagger
+
+if sys.version_info.major == 2:
+    sys.exit("Python 2 is no longer supported")
 
 libtbx.pkg_utils.define_entry_points(
     {

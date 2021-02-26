@@ -1,13 +1,8 @@
 import logging
 import sys
-import warnings
 
 if sys.version_info.major == 2:
-    warnings.warn(
-        "Python 2 is no longer supported. "
-        "If you need Python 2.7 support please use the DIALS 2.2 release branch.",
-        UserWarning,
-    )
+    sys.exit("Python 2 is no longer supported")
 
 logging.getLogger("dials").addHandler(logging.NullHandler())
 
