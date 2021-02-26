@@ -43,7 +43,10 @@ namespace dials { namespace util {
         for (std::size_t i = 0; i < resolution_.accessor()[1]; ++i) {
           vec2<double> px(i + 0.5, j + 0.5);
           vec3<double> s1 = panel.get_pixel_lab_coord(px).normalize() * wavenumber;
-          resolution_(j, i) = 1/(s1 - s0).length();
+          vec3<double> r = s1 - s0;
+          double length = r.length();
+          DIALS_ASSERT(length > 0);
+          resolution_(j, i) = 1/length;
         }
       }
     }
