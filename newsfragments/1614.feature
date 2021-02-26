@@ -1,1 +1,1 @@
-``dials.reciprocal_lattice_viewer``: add an option to label the nearest reciprocal lattice point
+``dials.reciprocal_lattice_viewer``: Added an option to label the reciprocal lattice point nearest the centre
