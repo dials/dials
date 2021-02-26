@@ -68,7 +68,9 @@ class Target:
         cb_op_to_primitive = data.change_of_basis_op_to_primitive_setting()
         data = data.change_basis(cb_op_to_primitive).map_to_asu()
 
-        order = lattice_ids.argsort().astype(np.uint64) # Convert to uint64 avoids crashes on Windows
+        # Convert to uint64 avoids crashes on Windows when later constructing
+        # flex.size_t (https://github.com/cctbx/cctbx_project/issues/591)
+        order = lattice_ids.argsort().astype(np.uint64)
         sorted_data = data.data().select(flex.size_t(order))
         sorted_indices = data.indices().select(flex.size_t(order))
         self._lattice_ids = lattice_ids[order]
