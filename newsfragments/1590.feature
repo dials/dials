@@ -1,1 +1,1 @@
-New masking parameter ``parallax_correction=``. Set to ``False`` to speed up generation of resolution masks by disabling parallax correction.
+New masking parameter ``disable_parallax_correction=False``. Set to ``True`` to speed up generation of resolution masks by disabling parallax correction (this is only likely to have significant effect when spotfinding is spread across many independent processes).

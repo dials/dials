@@ -199,9 +199,11 @@ def test_generate_mask(dials_data):
 
 
 @pytest.mark.parametrize(
-    "parallax_correction,expected", [(True, 1427394), (False, 1432002)]
+    "disable_parallax_correction,expected", [(False, 1427394), (True, 1432002)]
 )
-def test_generate_mask_parallax_correction(parallax_correction, expected, dials_data):
+def test_generate_mask_parallax_correction(
+    disable_parallax_correction, expected, dials_data
+):
     expts = ExperimentListFactory.from_filenames(
         [
             f.strpath
@@ -210,7 +212,7 @@ def test_generate_mask_parallax_correction(parallax_correction, expected, dials_
     )
     imageset = expts[0].imageset
     params = dials.util.masking.phil_scope.extract()
-    params.parallax_correction = parallax_correction
+    params.disable_parallax_correction = disable_parallax_correction
     params.d_min = 1.2
     params.d_max = 40
     params.untrusted = []

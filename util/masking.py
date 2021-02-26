@@ -37,10 +37,10 @@ phil_scope = parse(
             "accepted by the filtering algorithm."
     .type = float(value_min=0)
 
-  parallax_correction = None
-    .help = "Account for parallax correction when generating resolution masks."
-            "Set to ``False`` to use a faster, but less accurate, simple px-to-mm "
-            "mapping."
+  disable_parallax_correction = False
+    .help = "Set to ``True`` to use a faster, but less accurate, simple px-to-mm "
+            "mapping by disabling accounting for parallax correction when generating "
+            "resolution masks."
     .type = bool
 
   resolution_range = None
@@ -303,7 +303,7 @@ def generate_mask(
                     mask[region.pixel] = False
 
         # PxMmStrategy to use for generating resolution masks
-        if params.parallax_correction is False:
+        if params.disable_parallax_correction:
             panel = copy.deepcopy(panel)
             panel.set_px_mm_strategy(SimplePxMmStrategy())
 
