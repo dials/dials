@@ -464,8 +464,13 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
             self.xspin = 1
             self.autospin = True
 
-    def set_points(self, reflections):
-        self.points = reflections["rlp"] * 100
+    def set_points(self, points):
+        self.points = points
+        self.points_display_list = None
+        if self.minimum_covering_sphere is None:
+            self.update_minimum_covering_sphere()
+
+    def set_points_data(self, reflections):
         self.points_data = {
             "panel": reflections["panel"],
             "id": reflections["id"],
@@ -473,9 +478,6 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
         }
         if "miller_index" in reflections:
             self.points_data["miller_index"] = reflections["miller_index"]
-        self.points_display_list = None
-        if self.minimum_covering_sphere is None:
-            self.update_minimum_covering_sphere()
 
     def set_colors(self, colors):
         assert len(colors) == len(self.points)
