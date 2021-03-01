@@ -4,9 +4,9 @@
 # Running bootstrap requires a minimum Python version of 2.7.
 
 # To download this file:
-# wget https://raw.githubusercontent.com/dials/dials/master/installer/bootstrap.py
+# wget https://raw.githubusercontent.com/dials/dials/main/installer/bootstrap.py
 # or
-# curl https://raw.githubusercontent.com/dials/dials/master/installer/bootstrap.py > bootstrap.py
+# curl https://raw.githubusercontent.com/dials/dials/main/installer/bootstrap.py > bootstrap.py
 
 from __future__ import absolute_import, division, print_function
 
@@ -835,25 +835,20 @@ def update_sources(options):
             pass
 
     repositories = {
-        source.split("/")[1]: {"base-repository": source, "branch-local": "master"}
-        for source in (
-            "cctbx/annlib_adaptbx",
-            "cctbx/cctbx_project",
-            "cctbx/dxtbx",
-            "dials/annlib",
-            "dials/cbflib",
-            "dials/ccp4io",
-            "dials/ccp4io_adaptbx",
-            "dials/dials",
-            "dials/gui_resources",
+        source.split("/")[1]: {"base-repository": source, "branch-local": branch}
+        for source, branch in (
+            ("cctbx/annlib_adaptbx", "master"),
+            ("cctbx/cctbx_project", "master"),
+            ("cctbx/dxtbx", "main"),
+            ("dials/annlib", "master"),
+            ("dials/cbflib", "master"),
+            ("dials/ccp4io", "master"),
+            ("dials/ccp4io_adaptbx", "master"),
+            ("dials/dials", "main"),
+            ("dials/gui_resources", "master"),
+            ("xia2/xia2", "main"),
         )
     }
-    repositories.update(
-        {
-            source.split("/")[1]: {"base-repository": source, "branch-local": "main"}
-            for source in ("xia2/xia2",)
-        }
-    )
     repositories["cctbx_project"] = {
         "base-repository": "cctbx/cctbx_project",
         "effective-repository": "dials/cctbx",

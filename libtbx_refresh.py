@@ -1,31 +1,11 @@
 import sys
 
-if sys.version_info.major == 2:
-    sys.exit("Python 2 is no longer supported")
-
-import libtbx.load_env
-
-exit(
-    ("=" * 80)
-    + """
-
-Your dials repository is still tracking 'master',
-but the main dials branch has been renamed to 'main'.
-
-Please go into your dials repository at %s and run the following commands:
-  git branch -m master main
-  git fetch origin
-  git branch -u origin/main main
-  git pull --rebase
-
-For more information please see https://github.com/dials/dials/issues/1546
-"""
-    % libtbx.env.dist_path("dials")
-)
-
 import libtbx.pkg_utils
 
 import dials.precommitbx.nagger
+
+if sys.version_info.major == 2:
+    sys.exit("Python 2 is no longer supported")
 
 libtbx.pkg_utils.define_entry_points(
     {
