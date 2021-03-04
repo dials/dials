@@ -19,9 +19,7 @@ def test_cosym_target(space_group):
     for i, d in enumerate(datasets[1:]):
         i += 1
         intensities = intensities.concatenate(d, assert_is_similar_symmetry=False)
-        dataset_ids[i * d.size() : (i + 1) * d.size()] = np.full(
-            d.size(), i, dtype=np.int
-        )
+        dataset_ids[i * d.size() : (i + 1) * d.size()] = np.full(d.size(), i, dtype=int)
 
     for weights in [None, "count", "standard_error"]:
         print(weights)

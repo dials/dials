@@ -1,6 +1,5 @@
 import logging
 import math
-import os
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +12,7 @@ def write_background_file(file_name, imageset, n_bins):
     logger.info("Saving background file to %s", file_name)
     with open(file_name, "w") as f:
         for d_, I_, sig_ in zip(d, I, sig):
-            f.write(f"{d_:10.4f} {I_:10.2f} {sig_:10.2f}" + os.linesep)
+            f.write(f"{d_:10.4f} {I_:10.2f} {sig_:10.2f}\n")
 
 
 def write_integrated_hkl(prefix, reflections):
@@ -36,8 +35,7 @@ def write_integrated_hkl(prefix, reflections):
         with open(file_name, "w") as f:
             for i in range(len(integrated)):
                 f.write(
-                    f"{h[i]:4.0f} {k[i]:4.0f} {l[i]:4.0f} {I[i]:10.2f} {sigI[i]:10.2f}"
-                    + os.linesep
+                    f"{h[i]:4.0f} {k[i]:4.0f} {l[i]:4.0f} {I[i]:10.2f} {sigI[i]:10.2f}\n"
                 )
 
 

@@ -82,7 +82,7 @@ class seed_clustering:
           0 .. n_sym_ops.
         """
         # initialise cluster labels: -1 signifies doesn't belong to a cluster
-        cluster_labels = np.full(self.coords.shape[0], -1, dtype=np.int)
+        cluster_labels = np.full(self.coords.shape[0], -1, dtype=int)
 
         cluster_id = 0
         while (cluster_labels == -1).sum() > 0:
@@ -235,7 +235,7 @@ class seed_clustering:
         else:
             threshold = thresholds[idx] - eps
             labels = hierarchy.fcluster(linkage_matrix, threshold, criterion="distance")
-            cluster_labels = np.full(self.coords.shape[0], -1, dtype=np.int)
+            cluster_labels = np.full(self.coords.shape[0], -1, dtype=int)
             for i in range(len(labels)):
                 cluster_labels[cluster_labels_input == i] = labels[i] - 1
 

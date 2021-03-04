@@ -182,7 +182,7 @@ def test():
 
         # compare with analytical calculation
         assert x_grads == pytest.approx(an_grads[i]["dX_dp"], abs=5.0e-6)
-        assert y_grads == pytest.approx(an_grads[i]["dY_dp"], abs=5.0e-6)
+        assert y_grads == pytest.approx(an_grads[i]["dY_dp"], abs=5.5e-6)
         assert phi_grads == pytest.approx(an_grads[i]["dphi_dp"], abs=5.0e-6)
 
     # return to the initial state

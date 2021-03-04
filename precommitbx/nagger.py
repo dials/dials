@@ -86,7 +86,7 @@ if [ -z "$DIALS_WITHOUT_PRECOMMITS" ]; then
   echo this check by setting the environment variable DIALS_WITHOUT_PRECOMMITS
 fi
 echo You can find more information about contributing to DIALS at:
-echo https://github.com/dials/dials/blob/master/CONTRIBUTING.md
+echo https://github.com/dials/dials/blob/main/CONTRIBUTING.md
 echo
 if [ -z "$DIALS_WITHOUT_PRECOMMITS" ]; then
   exit 1
