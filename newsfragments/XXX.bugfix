@@ -1,0 +1,1 @@
+dials.reindex: output data as messagepack not pickle, so the image viewer etc. works
