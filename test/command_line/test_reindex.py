@@ -99,7 +99,7 @@ def test_reindex(dials_regression, tmpdir):
         new_experiments2[0].crystal.get_A()
     )
 
-    # verify that the file can be read by dials.show - see #1616
+    # verify that the file can be read by dials.show
     commands = [
         "dials.show",
         tmpdir.join("reindexed.refl").strpath,
