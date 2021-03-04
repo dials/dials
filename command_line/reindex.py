@@ -3,7 +3,6 @@
 
 import copy
 import os
-import pickle
 import sys
 
 import iotbx.phil
@@ -355,8 +354,7 @@ experiments file must also be specified with the option: reference= """
         reflections["miller_index"].set_selected(~sel, (0, 0, 0))
 
         print(f"Saving reindexed reflections to {params.output.reflections}")
-        with open(params.output.reflections, "wb") as fh:
-            pickle.dump(reflections, fh, protocol=pickle.HIGHEST_PROTOCOL)
+        reflections.as_file(params.output.reflections)
 
 
 if __name__ == "__main__":
