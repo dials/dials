@@ -20,7 +20,7 @@ MTZ format exports the files as an unmerged mtz file, ready for input to
 downstream programs such as Pointless and Aimless. For exporting integrated,
 but unscaled data, the required input is a models.expt file and an
 integrated.refl file. For exporting scaled data, the required input is a
-models.expt file and a scaled.pickle file, also passing the option
+models.expt file and a scaled.refl file, also passing the option
 intensity=scale.
 
 NXS format exports the files as an NXmx file. The required input is a
@@ -42,14 +42,14 @@ mosflm.in file containing basic instructions for input to mosflm. The required
 input is an models.expt file.
 
 XDS format exports a models.expt file as XDS.INP and XPARM.XDS files. If a
-reflection pickle is given it will be exported as a SPOT.XDS file.
+reflection file is given it will be exported as a SPOT.XDS file.
 
 Examples::
 
   # Export to mtz
   dials.export models.expt integrated.refl
   dials.export models.expt integrated.refl mtz.hklout=integrated.mtz
-  dials.export models.expt scaled.pickle intensity=scale mtz.hklout=scaled.mtz
+  dials.export models.expt scaled.refl intensity=scale mtz.hklout=scaled.mtz
 
   # Export to nexus
   dials.export models.expt integrated.refl format=nxs
@@ -63,10 +63,10 @@ Examples::
   dials.export models.expt integrated.refl format=mosflm
 
   # Export to xds
-  dials.export strong.pickle format=xds
-  dials.export indexed.pickle format=xds
+  dials.export strong.refl format=xds
+  dials.export indexed.refl format=xds
   dials.export models.expt format=xds
-  dials.export models.expt indexed.pickle format=xds
+  dials.export models.expt indexed.refl format=xds
 """
 
 phil_scope = parse(
@@ -471,7 +471,7 @@ def run(args=None):
     from dials.util.options import OptionParser, reflections_and_experiments_from_files
     from dials.util.version import dials_version
 
-    usage = "dials.export models.expt reflections.pickle [options]"
+    usage = "dials.export models.expt reflections.refl [options]"
 
     # Create the option parser
     parser = OptionParser(
