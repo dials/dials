@@ -99,6 +99,14 @@ def test_reindex(dials_regression, tmpdir):
         new_experiments2[0].crystal.get_A()
     )
 
+    # verify that the file can be read by dials.show - see #1616
+    commands = [
+        "dials.show",
+        tmpdir.join("reindexed.refl").strpath,
+    ]
+    result = procrunner.run(commands, working_directory=tmpdir)
+    assert not result.returncode and not result.stderr
+
 
 def test_reindex_multi_sequence(dials_regression, tmpdir):
     data_dir = os.path.join(dials_regression, "indexing_test_data", "multi_sweep")
