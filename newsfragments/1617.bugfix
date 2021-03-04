@@ -1,1 +1,1 @@
-dials.reindex: output data as messagepack not pickle, so the image viewer etc. works
+dials.reindex: output reflections using MessagePack, rather than pickle, format for compatibility with downstream programs
