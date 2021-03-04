@@ -1,1 +1,0 @@
-dials.reindex: output reflections using MessagePack, rather than pickle, format for compatibility with downstream programs
