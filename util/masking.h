@@ -38,15 +38,15 @@ namespace dials { namespace util {
         : resolution_(
           af::c_grid<2>(panel.get_image_size()[1], panel.get_image_size()[0])) {
       vec3<double> s0 = beam.get_s0();
+      double wavenumber = 1.0 / beam.get_wavelength();
       for (std::size_t j = 0; j < resolution_.accessor()[0]; ++j) {
         for (std::size_t i = 0; i < resolution_.accessor()[1]; ++i) {
           vec2<double> px(i + 0.5, j + 0.5);
-          try {
-            resolution_(j, i) = panel.get_resolution_at_pixel(s0, px);
-          } catch (dxtbx::error) {
-            // Known failure: resolution at beam center is undefined
-            resolution_(j, i) = 0.0;
-          }
+          vec3<double> s1 = panel.get_pixel_lab_coord(px).normalize() * wavenumber;
+          vec3<double> r = s1 - s0;
+          double length = r.length();
+          DIALS_ASSERT(length > 0);
+          resolution_(j, i) = 1/length;
         }
       }
     }
