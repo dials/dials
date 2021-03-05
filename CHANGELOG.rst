@@ -1,3 +1,23 @@
+DIALS 3.3.4 (2021-03-05)
+========================
+
+Bugfixes
+--------
+
+- ``dials.import``: Selecting a subset of images with ``image_range=`` now works on stills (`#1592 <https://github.com/dials/dials/issues/1592>`_)
+- `dials.search_beam_centre`: Dramatically improved execution time for large data sets (`#1612 <https://github.com/dials/dials/issues/1612>`_)
+- ``dials.reindex``: Write ``.refl`` file output in the default
+  "MessagePack" format for better compatibility with downstream programs (`#1616 <https://github.com/dials/dials/issues/1616>`_)
+- ``dials.scale``: Fix rare memory crash from infinite loop, that could
+  occur with very bad quality datasets (`#1622 <https://github.com/dials/dials/issues/1622>`_)
+
+
+Improved Documentation
+----------------------
+
+- ``dials.refine``: More informative error message when reflections have weights of zero (`#1584 <https://github.com/dials/dials/issues/1584>`_)
+
+
 DIALS 3.3.3 (2021-02-15)
 ========================
 

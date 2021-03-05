@@ -1,2 +1,0 @@
-``dials.scale``: Fix rare memory crash from infinite loop, that could
-occur with very bad quality datasets

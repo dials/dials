@@ -1,2 +1,0 @@
-``dials.reindex``: Write ``.refl`` file output in the default
-"MessagePack" format for better compatibility with downstream programs
