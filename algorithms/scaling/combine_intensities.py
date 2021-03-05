@@ -145,7 +145,7 @@ class SingleDatasetIntensityCombiner(object):
             avg = flex.mean(raw_intensities)
             Imid = flex.max(raw_intensities) / 10.0
             Imid_list = [0, 1, avg, Imid]
-            while Imid > avg:
+            while (Imid > avg) and (Imid > 10):
                 Imid /= 10.0
                 Imid_list.append(Imid)
             self.Imids = Imid_list
@@ -337,7 +337,7 @@ class MultiDatasetIntensityCombiner(object):
             avg = flex.mean(raw_intensities)
             Imid = flex.max(raw_intensities) / 10.0
             Imid_list = [0, 1, avg, Imid]
-            while Imid > avg:
+            while (Imid > avg) and (Imid > 10):
                 Imid /= 10.0
                 Imid_list.append(Imid)
             self.Imids = Imid_list
