@@ -1,0 +1,1 @@
+``dials.scale``: Fix potential for memory crash in intensity combination in rare cases
