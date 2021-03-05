@@ -7,8 +7,6 @@ import copy
 import os
 import sys
 
-import six.moves.cPickle as pickle
-
 import iotbx.phil
 from cctbx import sgtbx
 from rstbx.symmetry.constraints import parameter_reduction
@@ -358,8 +356,7 @@ experiments file must also be specified with the option: reference= """
         reflections["miller_index"].set_selected(~sel, (0, 0, 0))
 
         print("Saving reindexed reflections to %s" % params.output.reflections)
-        with open(params.output.reflections, "wb") as fh:
-            pickle.dump(reflections, fh, protocol=pickle.HIGHEST_PROTOCOL)
+        reflections.as_file(params.output.reflections)
 
 
 if __name__ == "__main__":
