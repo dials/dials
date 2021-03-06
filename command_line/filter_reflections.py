@@ -107,6 +107,8 @@ phil_str = """
     include scope dials.util.masking.phil_scope ice_rings
 """
 
+phil_scope = parse(phil_str, process_includes=True)
+
 
 def eval_flag_expression(expression, reflections):
     """Test a Boolean expression of reflection flags for validity then
@@ -402,8 +404,6 @@ def run(args=None):
 
     flags = list(flex.reflection_table.flags.names.items())
     flags.sort(key=itemgetter(0))
-
-    phil_scope = parse(phil_str, process_includes=True)
 
     # The script usage
     usage = "usage: dials.filter_reflections [options] experiment.expt"
