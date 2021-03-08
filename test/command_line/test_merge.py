@@ -148,7 +148,7 @@ def test_merge_multi_wavelength(dials_data, tmpdir):
     refl2 = location.join("scaled_35.refl").strpath
     expt2 = location.join("scaled_35.expt").strpath
     expts1 = ExperimentListFactory.from_json_file(expt1, check_format=False)
-    expts1[0].beam.set_wavelength(0.5)
+    expts1[0].beam.set_wavelength(0.7)
     expts2 = ExperimentListFactory.from_json_file(expt2, check_format=False)
     expts1.extend(expts2)
 
@@ -181,9 +181,30 @@ def test_merge_multi_wavelength(dials_data, tmpdir):
     assert all(x in labels for x in amp_labels)
     assert all(x in labels for x in anom_amp_labels)
 
-    # 5 miller arrays for each dataset
-    assert m.as_miller_arrays()[0].info().wavelength == pytest.approx(0.5)
-    assert m.as_miller_arrays()[5].info().wavelength == pytest.approx(0.6889)
+    # 5 miller arrays for each dataset, check the expected number of reflections.
+    arrays = m.as_miller_arrays()
+    assert arrays[0].info().wavelength == pytest.approx(0.7)
+    assert arrays[5].info().wavelength == pytest.approx(0.6889)
+    assert abs(arrays[0].size() - 1223) < 10
+    assert abs(arrays[5].size() - 1453) < 10
+
+    # test changing the wavelength tolerance such that data is combined under
+    # one wavelength. Check the number of reflections to confirm this.
+    command = [
+        "dials.merge",
+        tmp_refl,
+        tmp_expt,
+        "truncate=True",
+        "anomalous=True",
+        "wavelength_tolerance=0.02",
+    ]
+    result = procrunner.run(command, working_directory=tmpdir)
+    assert not result.returncode and not result.stderr
+    m = mtz.object(tmpdir.join("merged.mtz").strpath)
+    arrays = m.as_miller_arrays()
+    assert arrays[0].info().wavelength == pytest.approx(0.7)
+    assert len(arrays) == 5
+    assert abs(arrays[0].size() - 1538) < 10
 
 
 def test_suitable_exit_for_bad_input_from_single_dataset(dials_data, tmpdir):
