@@ -194,6 +194,10 @@ phil_scope = iotbx.phil.parse(
       .help = "Cutoff z-score value for identifying outliers based on their
                normalised deviation within the group of equivalent reflections"
       .expert_level = 1
+    emax = 4
+      .type = float(value_min = 0)
+      .help = "Reject reflecitons with normalised intensities E^2 > emax^2"
+      .expert_level = 2
   }
   """
 )

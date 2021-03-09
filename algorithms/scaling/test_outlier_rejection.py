@@ -6,6 +6,7 @@ from unittest.mock import Mock
 
 import pytest
 
+from cctbx import uctbx
 from cctbx.sgtbx import space_group
 
 from dials.algorithms.scaling.Ih_table import IhTable
@@ -13,6 +14,7 @@ from dials.algorithms.scaling.outlier_rejection import (
     NormDevOutlierRejection,
     SimpleNormDevOutlierRejection,
     TargetedOutlierRejection,
+    determine_Esq_outlier_index_arrays,
     determine_outlier_index_arrays,
     limit_outlier_weights,
     reject_outliers,
@@ -31,6 +33,7 @@ def mock_exp_with_sg(test_sg):
     """Create a mock experiment with a space group"""
     exp = Mock()
     exp.crystal.get_space_group.return_value = test_sg
+    exp.crystal.get_unit_cell.return_value = uctbx.unit_cell((5, 5, 5, 90, 90, 90))
     return exp
 
 
@@ -382,3 +385,22 @@ def test_determine_outlier_index_arrays(generated_Ih_table, outlier_target_table
     assert not outliers[0]
     with pytest.raises(ValueError):
         _ = determine_outlier_index_arrays(generated_Ih_table, "badchoice")[0]
+
+
+def test_determine_Esq_outlier_index_arrays(
+    generated_Ih_table, mock_exp_with_sg, test_sg
+):
+    # Set the emax lower to check that two reflections are identified as outliers
+    outliers = determine_Esq_outlier_index_arrays(
+        generated_Ih_table, mock_exp_with_sg, emax=1.5
+    )
+    assert list(outliers[0]) == [8, 9]
+    # now split the dataset into two, to check the output is correctly formed
+    rt = generate_outlier_table()
+    rt1 = rt[0:9]
+    rt2 = rt[9:]
+    Ih_table = IhTable([rt1, rt2], test_sg)
+    outliers = determine_Esq_outlier_index_arrays(Ih_table, mock_exp_with_sg, emax=1.5)
+    assert list(outliers[0]) == [8]
+    assert list(outliers[1]) == [0]
+    assert len(outliers) == 2

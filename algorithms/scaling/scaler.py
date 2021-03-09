@@ -28,7 +28,10 @@ from dials.algorithms.scaling.combine_intensities import (
 )
 from dials.algorithms.scaling.error_model.engine import run_error_model_refinement
 from dials.algorithms.scaling.Ih_table import IhTable
-from dials.algorithms.scaling.outlier_rejection import determine_outlier_index_arrays
+from dials.algorithms.scaling.outlier_rejection import (
+    determine_Esq_outlier_index_arrays,
+    determine_outlier_index_arrays,
+)
 from dials.algorithms.scaling.parameter_handler import ScalingParameterManagerGenerator
 from dials.algorithms.scaling.reflection_selection import (
     _select_groups_on_Isigma_cutoff,
@@ -790,6 +793,9 @@ attempting to use all reflections for minimisation."""
         """Perform a round of outlier rejection, set a new outliers array."""
         assert self.global_Ih_table is not None
         if self.params.scaling_options.outlier_rejection:
+            E2_outlier_indices = determine_Esq_outlier_index_arrays(
+                self.global_Ih_table, self.experiment, self.params.scaling_options.emax
+            )[0]
             outlier_indices = determine_outlier_index_arrays(
                 self.global_Ih_table,
                 self.params.scaling_options.outlier_rejection,
@@ -797,7 +803,13 @@ attempting to use all reflections for minimisation."""
             )[0]
             self.outliers = flex.bool(self.n_suitable_refl, False)
             self.outliers.set_selected(outlier_indices, True)
+            self.outliers.set_selected(E2_outlier_indices, True)
             if self._free_Ih_table:
+                E2_outlier_indices = determine_Esq_outlier_index_arrays(
+                    self._free_Ih_table,
+                    self.experiment,
+                    self.params.scaling_options.emax,
+                )
                 free_outlier_indices = determine_outlier_index_arrays(
                     self._free_Ih_table,
                     self.params.scaling_options.outlier_rejection,
@@ -1067,27 +1079,41 @@ class MultiScalerBase(ScalerBase):
                 anomalous=self.params.anomalous
             )
         if self.params.scaling_options.outlier_rejection:
+            E2_outlier_indices = determine_Esq_outlier_index_arrays(
+                self.global_Ih_table,
+                self.active_scalers[0].experiment,
+                self.params.scaling_options.emax,
+            )
             outlier_index_arrays = determine_outlier_index_arrays(
                 self.global_Ih_table,
                 self.params.scaling_options.outlier_rejection,
                 self.params.scaling_options.outlier_zmax,
                 target=target,
             )
-            for outlier_indices, scaler in zip(
-                outlier_index_arrays, self.active_scalers
+            for E2_outliers, outlier_indices, scaler in zip(
+                E2_outlier_indices, outlier_index_arrays, self.active_scalers
             ):
                 scaler.outliers = flex.bool(scaler.n_suitable_refl, False)
+                scaler.outliers.set_selected(E2_outliers, True)
                 scaler.outliers.set_selected(outlier_indices, True)
             if self._free_Ih_table:
+                free_E2_outlier_indices = determine_Esq_outlier_index_arrays(
+                    self._free_Ih_table,
+                    self.active_scalers[0].experiment,
+                    self.params.scaling_options.emax,
+                )
                 free_outlier_index_arrays = determine_outlier_index_arrays(
                     self._free_Ih_table,
                     self.params.scaling_options.outlier_rejection,
                     self.params.scaling_options.outlier_zmax,
                     target=target,
                 )
-                for outlier_indices, scaler in zip(
-                    free_outlier_index_arrays, self.active_scalers
+                for E2_outlier_indices, outlier_indices, scaler in zip(
+                    free_E2_outlier_indices,
+                    free_outlier_index_arrays,
+                    self.active_scalers,
                 ):
+                    scaler.outliers.set_selected(E2_outlier_indices, True)
                     scaler.outliers.set_selected(outlier_indices, True)
         logger.debug("Finished outlier rejection.")
         log_memory_usage()

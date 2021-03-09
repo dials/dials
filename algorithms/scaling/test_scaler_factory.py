@@ -143,6 +143,7 @@ def generated_param():
     )
     parameters.__inject__("model", "KB")
     parameters.scaling_options.free_set_percentage = 50.0
+    parameters.scaling_options.emax = 0
     parameters.reflection_selection.method = "use_all"
     return parameters
 

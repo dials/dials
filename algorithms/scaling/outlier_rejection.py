@@ -14,6 +14,7 @@ import logging
 from scitbx.array_family import flex
 
 from dials.algorithms.scaling.Ih_table import IhTable
+from dials.util.normalisation import quasi_normalisation
 from dials_scaling_ext import determine_outlier_indices, limit_outlier_weights
 
 logger = logging.getLogger("dials")
@@ -69,6 +70,27 @@ def reject_outliers(reflection_table, experiment, method="standard", zmax=6.0):
     )
 
     return reflection_table
+
+
+def determine_Esq_outlier_index_arrays(Ih_table, experiment, emax=4.0):
+    # first calculate normalised intensities and set in the Ih_table.
+    if not emax:
+        return [flex.size_t() for _ in range(Ih_table.n_datasets)]
+    intensities = Ih_table.as_miller_array(experiment.crystal.get_unit_cell())
+    normalised_intensities = quasi_normalisation(intensities)
+
+    sel = normalised_intensities.data() > (emax ** 2)
+    logger.info(
+        f"{sel.count(True)} outliers identified from normalised intensity analysis (E\xb2 > {(emax ** 2)})"
+    )
+    outlier_indices = Ih_table.Ih_table_blocks[0].Ih_table["loc_indices"].select(sel)
+    datasets = Ih_table.Ih_table_blocks[0].Ih_table["dataset_id"].select(sel)
+    if Ih_table.n_datasets == 1:
+        return [outlier_indices]
+    final_outlier_arrays = []
+    for i in range(Ih_table.n_datasets):
+        final_outlier_arrays.append(outlier_indices.select(datasets == i))
+    return final_outlier_arrays
 
 
 def determine_outlier_index_arrays(Ih_table, method="standard", zmax=6.0, target=None):
