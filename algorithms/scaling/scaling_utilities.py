@@ -3,13 +3,13 @@ Module of utility functions for scaling.
 """
 
 
-import copy
 import logging
 from math import acos, pi
 
-from cctbx import miller, uctbx
+from cctbx import miller
 
 from dials.array_family import flex
+from dials.util.normalisation import quasi_normalisation as _quasi_normalisation
 from dials_scaling_ext import (
     calc_theta_phi,
     create_sph_harm_table,
@@ -139,49 +139,23 @@ def quasi_normalisation(reflection_table, experiment):
     )
 
     # handle negative reflections to minimise effect on mean I values.
-    rt_subset["intensity_for_norm"] = copy.deepcopy(rt_subset["intensity"])
-    rt_subset["intensity_for_norm"].set_selected(rt_subset["intensity"] < 0.0, 0.0)
-    miller_array = miller.array(miller_set, data=rt_subset["intensity_for_norm"])
-    n_refl = rt_subset.size()
-
-    # set up binning objects
-    if n_refl > 20000:
-        n_refl_shells = 20
-    elif n_refl > 15000:
-        n_refl_shells = 15
-    elif n_refl > 10000:
-        n_refl_shells = 10
-    else:
+    miller_array = miller.array(
+        miller_set, data=rt_subset["intensity"], sigmas=rt_subset["variance"] ** 0.5
+    )
+    if rt_subset.size() <= 10000:
         logger.info(
-            "No normalised intensity values were calculated, as an insufficient\n"
-            "number of reflections were detected. All normalised intensity \n"
-            "values will be set to 1 to allow use in scaling model determination. \n"
+            """
+Insufficient number of reflections (<10000) to calculate normalised intensities.
+All reflections will be considered for scaling model determination.
+"""
         )
         reflection_table["Esq"] = flex.double(reflection_table.size(), 1.0)
-        return reflection_table
-
-    d_star_sq = miller_array.d_star_sq().data()
-    d_star_sq_min = flex.min(d_star_sq)
-    d_star_sq_max = flex.max(d_star_sq)
-    span = d_star_sq_max - d_star_sq_min
-
-    relative_tolerance = 1e-6
-    d_star_sq_max += span * relative_tolerance
-    d_star_sq_min -= span * relative_tolerance
-    step = (d_star_sq_max - d_star_sq_min) / n_refl_shells
-    miller_array.setup_binner_d_star_sq_step(
-        auto_binning=False,
-        d_max=uctbx.d_star_sq_as_d(d_star_sq_max),
-        d_min=uctbx.d_star_sq_as_d(d_star_sq_min),
-        d_star_sq_step=step,
-    )
-
-    normalisations = miller_array.intensity_quasi_normalisations()
-    normalised_intensities = miller_array.customized_copy(
-        data=(miller_array.data() / normalisations.data())
-    )
-    reflection_table["Esq"] = flex.double(reflection_table.size(), 0.0)
-    reflection_table["Esq"].set_selected(good_refl_sel, normalised_intensities.data())
+    else:
+        normalised_intensities = _quasi_normalisation(miller_array)
+        reflection_table["Esq"] = flex.double(reflection_table.size(), 0.0)
+        reflection_table["Esq"].set_selected(
+            good_refl_sel, normalised_intensities.data()
+        )
     return reflection_table
 
 
