@@ -72,10 +72,8 @@ def reject_outliers(reflection_table, experiment, method="standard", zmax=6.0):
     return reflection_table
 
 
-def determine_Esq_outlier_index_arrays(Ih_table, experiment, emax=4.0):
+def determine_Esq_outlier_index_arrays(Ih_table, experiment, emax=10.0):
     # first calculate normalised intensities and set in the Ih_table.
-    if not emax:
-        return [flex.size_t() for _ in range(Ih_table.n_datasets)]
     intensities = Ih_table.as_miller_array(experiment.crystal.get_unit_cell())
     normalised_intensities = quasi_normalisation(intensities)
 
