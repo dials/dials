@@ -146,7 +146,7 @@ class symmetry_base:
         elif method == "kernel":
             normalise = self.kernel_normalisation
         elif method == "quasi":
-            normalise = self.quasi_normalisation
+            normalise = quasi_normalisation
         elif method == "ml_iso":
             normalise = self.ml_iso_normalisation
         elif method == "ml_aniso":
@@ -205,18 +205,6 @@ class symmetry_base:
             intensities, auto_kernel=True
         )
         return normalisation.normalised_miller.deep_copy().set_info(intensities.info())
-
-    @staticmethod
-    def quasi_normalisation(intensities):
-        """Quasi-normalisation of the input intensities.
-
-        Args:
-          intensities (cctbx.miller.array): The intensities to be normalised.
-
-        Returns:
-          cctbx.miller.array: The normalised intensities.
-        """
-        return quasi_normalisation(intensities)
 
     @staticmethod
     def ml_aniso_normalisation(intensities):

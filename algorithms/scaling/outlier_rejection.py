@@ -84,9 +84,9 @@ def determine_Esq_outlier_index_arrays(Ih_table, experiment, emax=4.0):
         f"{sel.count(True)} outliers identified from normalised intensity analysis (E\xb2 > {(emax ** 2)})"
     )
     outlier_indices = Ih_table.Ih_table_blocks[0].Ih_table["loc_indices"].select(sel)
-    datasets = Ih_table.Ih_table_blocks[0].Ih_table["dataset_id"].select(sel)
     if Ih_table.n_datasets == 1:
         return [outlier_indices]
+    datasets = Ih_table.Ih_table_blocks[0].Ih_table["dataset_id"].select(sel)
     final_outlier_arrays = []
     for i in range(Ih_table.n_datasets):
         final_outlier_arrays.append(outlier_indices.select(datasets == i))
