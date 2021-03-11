@@ -1,4 +1,3 @@
-# coding: utf-8
 # DIALS documentation build configuration file, created by
 # sphinx-quickstart on Thu Jul 24 15:08:40 2014.
 #
@@ -11,7 +10,6 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-from __future__ import absolute_import, division, print_function
 
 import datetime
 import os
@@ -63,9 +61,9 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = u"DIALS"
+project = "DIALS"
 copyright = (
-    u"%d, Diamond Light Source, Lawrence Berkeley National Laboratory and STFC"
+    "%d, Diamond Light Source, Lawrence Berkeley National Laboratory and STFC"
     % datetime.datetime.now().year
 )
 
@@ -227,7 +225,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
-latex_documents = [("index", "dials_manual.tex", u"DIALS Manual", u"DIALS", "manual")]
+latex_documents = [("index", "dials_manual.tex", "DIALS Manual", "DIALS", "manual")]
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
@@ -326,8 +324,8 @@ texinfo_documents = [
     (
         "index",
         "DIALS",
-        u"DIALS Documentation",
-        u"James Parkhurst",
+        "DIALS Documentation",
+        "James Parkhurst",
         "DIALS",
         "One line description of project.",
         "Miscellaneous",

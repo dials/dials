@@ -1,6 +1,5 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.find_bad_pixels
 
-from __future__ import absolute_import, division, print_function
 
 import concurrent.futures
 import math

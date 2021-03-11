@@ -1,10 +1,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.csv
-from __future__ import absolute_import, division, print_function
 
 import gzip
 import io
-
-import six
 
 import iotbx.phil
 from dxtbx.model import ExperimentList
@@ -63,11 +60,10 @@ def run(args=None):
 
     if params.output.compress:
         fout = gzip.GzipFile(params.output.csv, "w")
-        if six.PY3:
-            # GzipFile() always provides binary access only.
-            # Replace the file object with one that allows writing text:
-            fout = io.TextIOWrapper(fout)
-            # Rely on garbage collection to close the underlying GzipFile.
+        # GzipFile() always provides binary access only.
+        # Replace the file object with one that allows writing text:
+        fout = io.TextIOWrapper(fout)
+        # Rely on garbage collection to close the underlying GzipFile.
     else:
         fout = open(params.output.csv, "w")
 
@@ -93,7 +89,7 @@ def run(args=None):
         for _rlp in rlp:
             fout.write(fmt % (_rlp[0], _rlp[1], _rlp[2], k, k))
 
-        print("Appended %d spots to %s" % (len(rlp), params.output.csv))
+        print(f"Appended {len(rlp)} spots to {params.output.csv}")
 
     fout.close()
 

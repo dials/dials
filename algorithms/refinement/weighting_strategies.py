@@ -1,12 +1,11 @@
 """Contains classes used to provide weighting schemes as strategies for
 ReflectionManagers."""
-from __future__ import absolute_import, division, print_function
 
 from dials.algorithms.refinement import DialsRefineConfigError
 from dials.array_family import flex
 
 
-class StatisticalWeightingStrategy(object):
+class StatisticalWeightingStrategy:
     """Defines a single method that provides a ReflectionManager with a strategy
     for calculating weights for refinement"""
 
@@ -20,6 +19,11 @@ class StatisticalWeightingStrategy(object):
             sel = w > 0.0
             w.set_selected(sel, 1.0 / w.select(sel))
         reflections["xyzobs.mm.weights"] = flex.vec3_double(*parts)
+        indexed = reflections.select(reflections.get_flags(reflections.flags.indexed))
+        if any(indexed["xyzobs.mm.weights"].norms() == 0.0):
+            raise DialsRefineConfigError(
+                "Cannot set statistical weights as some indexed reflections have observed variances equal to zero"
+            )
 
         return reflections
 
@@ -36,9 +40,7 @@ class StillsWeightingStrategy(StatisticalWeightingStrategy):
         """Include weights for DeltaPsi"""
 
         # call parent class method to set X and Y weights
-        reflections = super(StillsWeightingStrategy, self).calculate_weights(
-            reflections
-        )
+        reflections = super().calculate_weights(reflections)
 
         reflections["delpsical.weights"] = flex.double(
             len(reflections), self._delpsi_constant
@@ -58,9 +60,7 @@ class ExternalDelPsiWeightingStrategy(StatisticalWeightingStrategy):
         provided in the reflection table"""
 
         # call parent class method to set X and Y weights
-        reflections = super(ExternalDelPsiWeightingStrategy, self).calculate_weights(
-            reflections
-        )
+        reflections = super().calculate_weights(reflections)
 
         if "delpsical.weights" not in reflections:
 
@@ -71,7 +71,7 @@ class ExternalDelPsiWeightingStrategy(StatisticalWeightingStrategy):
         return reflections
 
 
-class ConstantWeightingStrategy(object):
+class ConstantWeightingStrategy:
     def __init__(self, wx, wy, wz, stills=False):
         self._wx = wx
         self._wy = wy

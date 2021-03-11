@@ -3,7 +3,6 @@ Functions for handling exclusion of images ranges from scans based on a
 command line option, as well as obtaining a selection to use for selecting
 the corresponding reflections.
 """
-from __future__ import absolute_import, division, print_function
 
 from orderedset import OrderedSet
 

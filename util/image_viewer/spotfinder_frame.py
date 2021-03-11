@@ -800,7 +800,7 @@ class SpotFrame(XrayFrame):
                         (
                             x,
                             y,
-                            "%.2f" % d,
+                            f"{d:.2f}",
                             {
                                 "placement": "cc",
                                 "colour": "red",
@@ -1136,7 +1136,7 @@ class SpotFrame(XrayFrame):
                             self.dials_spotfinder_layers.append(
                                 self.pyslip.AddEllipseLayer(
                                     vertices,
-                                    color="#%s" % base_color,
+                                    color=f"#{base_color}",
                                     name="<all_foreground_circles_%d>" % key,
                                     width=2,
                                     show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
@@ -1279,8 +1279,9 @@ class SpotFrame(XrayFrame):
         for rd, m in zip(image_data, mask):
             rd.set_selected(~m, MASK_VAL)
 
-    def __get_imageset_filter(self, reflections, imageset):
-        # type: (flex.reflection_table, ImageSet) -> Optional[flex.bool]
+    def __get_imageset_filter(
+        self, reflections: flex.reflection_table, imageset: ImageSet
+    ) -> Optional[flex.bool]:
         """Get a filter to ensure only reflections from an imageset.
 
         This is not a well-defined problem because of unindexed reflections
@@ -1521,7 +1522,9 @@ class SpotFrame(XrayFrame):
                         centroid = reflection["xyzobs.px.value"]
                         # ticket #107
                         if self.viewing_stills or (
-                            i_frame <= centroid[2] <= (i_frame + self.params.stack_images)
+                            i_frame
+                            <= centroid[2]
+                            <= (i_frame + self.params.stack_images)
                         ):
                             x, y = map_coords(
                                 centroid[0], centroid[1], reflection["panel"]
@@ -1650,7 +1653,8 @@ class SpotFrame(XrayFrame):
                             raise
                     beam_x, beam_y = detector[panel].millimeter_to_pixel(beam_centre)
                     beam_x, beam_y = map_coords(beam_x, beam_y, panel)
-                    for i, h in enumerate(((10, 0, 0), (0, 10, 0), (0, 0, 10))):
+                    for i, h in enumerate(((1, 0, 0), (0, 1, 0), (0, 0, 1))):
+                        r = A * matrix.col(h) * self.params.basis_vector_scale
                         r = A * matrix.col(h)
                         if still:
                             s1 = matrix.col(beam.get_s0()) + r
@@ -1801,7 +1805,7 @@ class SpotSettingsPanel(wx.Panel):
         self.levels = self.GetParent().GetParent().pyslip.tiles.levels
         # from scitbx.math import continued_fraction as cf
         # choices = ["%s" %(cf.from_real(2**l).as_rational()) for l in self.levels]
-        choices = ["%g%%" % (100 * 2 ** l) for l in self.levels]
+        choices = [f"{100 * 2 ** l:g}%" for l in self.levels]
         self.zoom_ctrl = wx.Choice(self, -1, choices=choices)
         self.zoom_ctrl.SetSelection(self.settings.zoom_level)
         grid.Add(self.zoom_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
@@ -2260,7 +2264,7 @@ class SpotSettingsPanel(wx.Panel):
         dispersion.min_local = self.settings.min_local
         dispersion.sigma_background = self.settings.nsigma_b
         dispersion.sigma_strong = self.settings.nsigma_s
-        print("Saving parameters to %s" % self.settings.find_spots_phil)
+        print(f"Saving parameters to {self.settings.find_spots_phil}")
         with open(self.settings.find_spots_phil, "w") as f:
             find_spots_phil_scope.fetch_diff(find_spots_phil_scope.format(params)).show(
                 f

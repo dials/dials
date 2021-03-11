@@ -1,11 +1,8 @@
 # LIBTBX_SET_DISPATCHER_NAME dials.import
-from __future__ import absolute_import, division, print_function
 
 import logging
+import pickle
 from collections import namedtuple
-
-import six
-import six.moves.cPickle as pickle
 
 from dxtbx.imageset import ImageGrid, ImageSequence
 from dxtbx.model.experiment_list import (
@@ -23,10 +20,7 @@ logger = logging.getLogger("dials.command_line.import")
 
 
 def _pickle_load(fh):
-    if six.PY3:
-        return pickle.load(fh, encoding="bytes")
-    else:
-        return pickle.load(fh)
+    return pickle.load(fh, encoding="bytes")
 
 
 help_message = """
@@ -190,74 +184,72 @@ phil_scope = parse(
 )
 
 
-class ImageSetImporter(object):
+def _extract_or_read_imagesets(params):
     """
-    A class to manage the import of the experiments
+    Return a list of ImageSets, importing them via alternative means if necessary.
+
+    The "Alternative Means" means via params.input.template or .directory,
+    if the images to import haven't been specified directly.
+
+    Args:
+        params: The phil.scope_extract from dials.import
+
+    Returns: A list of ImageSet objects
     """
 
-    def __init__(self, params):
-        """
-        Init the class
-        """
-        self.params = params
+    # Get the experiments
+    experiments = flatten_experiments(params.input.experiments)
 
-    def __call__(self):
-        """
-        Import the experiments
-        """
+    # Check we have some filenames
+    if len(experiments) == 0:
 
-        # Get the experiments
-        experiments = flatten_experiments(self.params.input.experiments)
+        # FIXME Should probably make this smarter since it requires editing here
+        # and in dials.import phil scope
+        try:
+            format_kwargs = {
+                "dynamic_shadowing": params.format.dynamic_shadowing,
+                "multi_panel": params.format.multi_panel,
+            }
+        except AttributeError:
+            format_kwargs = None
 
-        # Check we have some filenames
-        if len(experiments) == 0:
-
-            # FIXME Should probably make this smarter since it requires editing here
-            # and in dials.import phil scope
-            try:
-                format_kwargs = {
-                    "dynamic_shadowing": self.params.format.dynamic_shadowing,
-                    "multi_panel": self.params.format.multi_panel,
-                }
-            except AttributeError:
-                format_kwargs = None
-
-            # Check if a template has been set and print help if not, otherwise try to
-            # import the images based on the template input
-            if len(self.params.input.template) > 0:
-                experiments = ExperimentListFactory.from_templates(
-                    self.params.input.template,
-                    image_range=self.params.geometry.scan.image_range,
-                    format_kwargs=format_kwargs,
+        # Check if a template has been set and print help if not, otherwise try to
+        # import the images based on the template input
+        if len(params.input.template) > 0:
+            experiments = ExperimentListFactory.from_templates(
+                params.input.template,
+                image_range=params.geometry.scan.image_range,
+                format_kwargs=format_kwargs,
+            )
+            if len(experiments) == 0:
+                raise Sorry(
+                    "No experiments found matching template %s"
+                    % params.input.experiments
                 )
-                if len(experiments) == 0:
-                    raise Sorry(
-                        "No experiments found matching template %s"
-                        % self.params.input.experiments
-                    )
-            elif len(self.params.input.directory) > 0:
-                experiments = ExperimentListFactory.from_filenames(
-                    self.params.input.directory, format_kwargs=format_kwargs
+        elif len(params.input.directory) > 0:
+            experiments = ExperimentListFactory.from_filenames(
+                params.input.directory, format_kwargs=format_kwargs
+            )
+            if len(experiments) == 0:
+                raise Sorry(
+                    "No experiments found in directories %s" % params.input.directory
                 )
-                if len(experiments) == 0:
-                    raise Sorry(
-                        "No experiments found in directories %s"
-                        % self.params.input.directory
-                    )
-            else:
-                raise Sorry("No experiments found")
+        else:
+            raise Sorry("No experiments found")
 
-        if self.params.identifier_type:
-            generate_experiment_identifiers(experiments, self.params.identifier_type)
+    # TODO (Nick):  This looks redundant as the experiments are immediately discarded.
+    #               verify this, and remove if it is.
+    if params.identifier_type:
+        generate_experiment_identifiers(experiments, params.identifier_type)
 
-        # Get a list of all imagesets
-        imageset_list = experiments.imagesets()
+    # Get a list of all imagesets
+    imageset_list = experiments.imagesets()
 
-        # Return the experiments
-        return imageset_list
+    # Return the experiments
+    return imageset_list
 
 
-class ReferenceGeometryUpdater(object):
+class ReferenceGeometryUpdater:
     """
     A class to replace beam + detector with a reference
     """
@@ -326,7 +318,7 @@ class ReferenceGeometryUpdater(object):
         )
 
 
-class ManualGeometryUpdater(object):
+class ManualGeometryUpdater:
     """
     A class to update the geometry manually
     """
@@ -473,7 +465,7 @@ class ManualGeometryUpdater(object):
         return new_sequence
 
 
-class MetaDataUpdater(object):
+class MetaDataUpdater:
     """
     A class to manage updating the experiments metadata
     """
@@ -506,7 +498,7 @@ class MetaDataUpdater(object):
             logger.info("")
             logger.info("Applying input geometry in the following order:")
             for i, item in enumerate(update_order, start=1):
-                logger.info("  %d. %s" % (i, item))
+                logger.info("  %d. %s", i, item)
             logger.info("")
 
     def __call__(self, imageset_list):
@@ -569,9 +561,19 @@ class MetaDataUpdater(object):
                 if imageset.get_scan().is_still():
                     # make lots of experiments all pointing at one
                     # image set
-                    start, end = imageset.get_scan().get_array_range()
+
+                    # check if user has overridden the input - if yes, recall
+                    # that these are in people numbers (1...) and are inclusive
+                    if self.params.geometry.scan.image_range:
+                        user_start, user_end = self.params.geometry.scan.image_range
+                        offset = imageset.get_scan().get_array_range()[0]
+                        start, end = user_start - 1, user_end
+                    else:
+                        start, end = imageset.get_scan().get_array_range()
+                        offset = 0
+
                     for j in range(start, end):
-                        subset = imageset[j : j + 1]
+                        subset = imageset[j - offset : j - offset + 1]
                         experiments.append(
                             Experiment(
                                 imageset=imageset,
@@ -733,7 +735,7 @@ class MetaDataUpdater(object):
         return result
 
 
-class Script(object):
+class ImageImporter:
     """Class to parse the command line options."""
 
     def __init__(self, phil=phil_scope):
@@ -750,7 +752,7 @@ class Script(object):
             epilog=help_message,
         )
 
-    def run(self, args=None):
+    def import_image(self, args=None):
         """Parse the options."""
 
         # Parse the command line arguments in two passes to set up logging early
@@ -799,14 +801,11 @@ class Script(object):
             self.parser.print_help()
             return
 
-        # Setup the experiments importer
-        imageset_importer = ImageSetImporter(params)
+        # Re-extract the imagesets to rebuild experiments from
+        imagesets = _extract_or_read_imagesets(params)
 
-        # Setup the metadata updater
         metadata_updater = MetaDataUpdater(params)
-
-        # Extract the experiments and loop through
-        experiments = metadata_updater(imageset_importer())
+        experiments = metadata_updater(imagesets)
 
         # Compute some numbers
         num_sweeps = 0
@@ -836,12 +835,12 @@ class Script(object):
         # Print out some bulk info
         logger.info("-" * 80)
         for f in format_list:
-            logger.info("  format: %s" % f)
-        logger.info("  num images: %d" % num_images)
+            logger.info("  format: %s", f)
+        logger.info("  num images: %d", num_images)
         logger.info("  sequences:")
-        logger.info("    still:    %d" % num_still_sequences)
-        logger.info("    sweep:    %d" % num_sweeps)
-        logger.info("  num stills: %d" % num_stills)
+        logger.info("    still:    %d", num_still_sequences)
+        logger.info("    sweep:    %d", num_sweeps)
+        logger.info("  num stills: %d", num_stills)
 
         # Print out info for all experiments
         for experiment in experiments:
@@ -855,14 +854,12 @@ class Script(object):
                 imageset_type = "stills"
 
             logger.debug("-" * 80)
-            logger.debug("  format: %s" % str(experiment.imageset.get_format_class()))
-            logger.debug("  imageset type: %s" % imageset_type)
+            logger.debug("  format: %s", str(experiment.imageset.get_format_class()))
+            logger.debug("  imageset type: %s", imageset_type)
             if image_range is None:
-                logger.debug("  num images:    %d" % len(experiment.imageset))
+                logger.debug("  num images:    %d", len(experiment.imageset))
             else:
-                logger.debug(
-                    "  num images:    %d" % (image_range[1] - image_range[0] + 1)
-                )
+                logger.debug("  num images:    %d", image_range[1] - image_range[0] + 1)
 
             logger.debug("")
             logger.debug(experiment.imageset.get_beam())
@@ -883,7 +880,7 @@ class Script(object):
         """
         if params.output.experiments:
             logger.info("-" * 80)
-            logger.info("Writing experiments to %s" % params.output.experiments)
+            logger.info("Writing experiments to %s", params.output.experiments)
             experiments.as_file(
                 params.output.experiments, compact=params.output.compact
             )
@@ -925,7 +922,7 @@ class Script(object):
         logger.info("")
         for i in range(1, len(sequences)):
             logger.info("=" * 80)
-            logger.info("Diff between sequence %d and %d" % (i - 1, i))
+            logger.info("Diff between sequence %d and %d", i - 1, i)
             logger.info("")
             self.print_sequence_diff(sequences[i - 1], sequences[i], params)
         logger.info("=" * 80)
@@ -944,8 +941,8 @@ class Script(object):
 
 @show_mail_handle_errors()
 def run(args=None):
-    script = Script()
-    script.run(args)
+    importer = ImageImporter()
+    importer.import_image(args)
 
 
 if __name__ == "__main__":

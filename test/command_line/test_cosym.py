@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import os
 
 import pytest
@@ -18,7 +16,7 @@ from dials.util import Sorry
 @pytest.mark.parametrize("space_group", [None, "P 1", "P 4"])
 def test_cosym(dials_data, run_in_tmpdir, space_group):
     mcp = dials_data("multi_crystal_proteinase_k")
-    args = ["space_group=" + str(space_group)]
+    args = ["space_group=" + str(space_group), "seed=0"]
     for i in [1, 2, 3, 4, 5, 7, 8, 10]:
         args.append(mcp.join("experiments_%d.json" % i).strpath)
         args.append(mcp.join("reflections_%d.pickle" % i).strpath)
@@ -132,11 +130,11 @@ def test_synthetic(
     ]
 
     if use_known_space_group:
-        args.append("space_group=%s" % space_group.info())
+        args.append(f"space_group={space_group.info()}")
     if use_known_lattice_group:
-        args.append("lattice_group=%s" % space_group.info())
+        args.append(f"lattice_group={space_group.info()}")
     if dimensions is not None:
-        args.append("dimensions=%s" % dimensions)
+        args.append(f"dimensions={dimensions}")
 
     dials_cosym.run(args=args)
     assert os.path.isfile("symmetrized.refl")

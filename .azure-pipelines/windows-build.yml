@@ -54,7 +54,7 @@ steps:
     echo
     echo Checking out latest dxtbx commit
     cd $(Pipeline.Workspace)/modules/dxtbx
-    git fetch origin master --depth=1
+    git fetch origin main --depth=1
     git checkout FETCH_HEAD
   displayName: Repository update (incremental)
   condition: ne(variables.REPOSITORIES_CACHED, 'false')

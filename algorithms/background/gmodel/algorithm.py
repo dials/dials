@@ -1,9 +1,7 @@
-from __future__ import absolute_import, division, print_function
-
-import six.moves.cPickle as pickle
+import pickle
 
 
-class ModelCache(object):
+class ModelCache:
     """
     A class to cache the model
     """
@@ -33,7 +31,7 @@ class ModelCache(object):
 global_model_cache = ModelCache()
 
 
-class BackgroundAlgorithm(object):
+class BackgroundAlgorithm:
     """Class to do background subtraction."""
 
     def __init__(
@@ -78,7 +76,7 @@ class BackgroundAlgorithm(object):
         return success
 
 
-class GModelBackgroundCalculatorFactory(object):
+class GModelBackgroundCalculatorFactory:
     """Class to do background subtraction."""
 
     @staticmethod

@@ -1,9 +1,7 @@
-from __future__ import absolute_import, division, print_function
-
 import random
 
 
-class TestExact(object):
+class TestExact:
     def setup_class(self):
         self.size = (9, 10, 11)
 
@@ -154,7 +152,7 @@ class TestExact(object):
         return (a, b, c, d), data, mask
 
 
-class TestPoisson(object):
+class TestPoisson:
     def setup_class(self):
         self.size = (9, 9, 9)
 
@@ -291,9 +289,7 @@ class TestPoisson(object):
             # from matplotlib import pylab
             # pylab.hist(list(z), 100)
             # pylab.show()
-            raise Exception(
-                "Mean %f (abs. value <0.1336), Sdev %f (>0.9, <1.1)" % (m, s)
-            )
+            raise Exception(f"Mean {m:f} (abs. value <0.1336), Sdev {s:f} (>0.9, <1.1)")
 
     def generate_background(self, size, N, A, B, C, D):
         from dials.algorithms.simulation.generate_test_reflections import (

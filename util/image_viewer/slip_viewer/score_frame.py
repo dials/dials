@@ -1,11 +1,6 @@
-# coding: utf-8
-
-from __future__ import absolute_import, division, print_function
-
 from collections import OrderedDict
 
 import wx
-from six.moves import range
 
 _scores = OrderedDict()
 
@@ -14,7 +9,7 @@ class ScoreSettingsFrame(wx.MiniFrame):
     # XXX Is this scoring or rating?
 
     def __init__(self, *args, **kwds):
-        super(ScoreSettingsFrame, self).__init__(*args, **kwds)
+        super().__init__(*args, **kwds)
         szr = wx.BoxSizer(wx.VERTICAL)
         panel = ScoreSettingsPanel(self)
         self.SetSizer(szr)
@@ -30,7 +25,7 @@ class ScoreSettingsPanel(wx.Panel):
     def __init__(self, *args, **kwds):
         from wxtbx import bitmaps
 
-        super(ScoreSettingsPanel, self).__init__(*args, **kwds)
+        super().__init__(*args, **kwds)
 
         # Needed for communication with the root frame.
         self._root_frame = self.GetParent().GetParent()
@@ -126,7 +121,7 @@ class ScoreSettingsPanel(wx.Panel):
                 stream = open(path, "w")
                 for (key, score) in _scores.items():
                     if score is None:
-                        print("%s None" % (key), file=stream)
+                        print(f"{key} None", file=stream)
                     else:
                         print("%s %d" % (key, score), file=stream)
                 stream.close()

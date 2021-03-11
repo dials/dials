@@ -214,7 +214,7 @@ def create_scaling_model(params, experiments, reflections):
                 model_class = entry_point.load()
                 break
         if not model_class:
-            raise ValueError("Unable to create scaling model of type %s" % params.model)
+            raise ValueError(f"Unable to create scaling model of type {params.model}")
 
     for expt, refl in zip(experiments, reflections):
         if not expt.scaling_model or params.overwrite_existing_models:
@@ -376,7 +376,7 @@ def merging_stats_from_scaled_array(
         )
     except (RuntimeError, Sorry) as e:
         raise DialsMergingStatisticsError(
-            "Error encountered during merging statistics calculation:\n%s" % e
+            f"Error encountered during merging statistics calculation:\n{e}"
         )
 
     anom_result = None

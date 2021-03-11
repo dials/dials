@@ -1,13 +1,11 @@
 """
 Helper functions/classes for making HTML report and scaling summary output.
 """
-from __future__ import absolute_import, division, print_function
 
 import json
 import logging
 from collections import OrderedDict
 
-import six
 from jinja2 import ChoiceLoader, Environment, PackageLoader
 
 from cctbx import uctbx
@@ -81,7 +79,7 @@ def assert_is_json_serialisable(thing, name, path=None):
             )
 
 
-class ScalingSummaryContextManager(object):
+class ScalingSummaryContextManager:
     def __init__(self, script):
         self.script = script
 
@@ -179,7 +177,7 @@ were considered for use when refining the scaling model.
         logger.info(table_1_summary(stats, anom_stats, cut_stats, cut_anom_stats))
 
 
-class ScalingHTMLContextManager(object):
+class ScalingHTMLContextManager:
     def __init__(self, script):
         self.script = script
 
@@ -249,8 +247,8 @@ def make_scaling_model_plots(experiments):
     for key in sorted(data.keys()):
         scaling_model_plots = plot_scaling_models(data[key])
         for plot in scaling_model_plots.values():
-            plot["layout"]["title"] += " (dataset %s)" % key
-        for name, plot in six.iteritems(scaling_model_plots):
+            plot["layout"]["title"] += f" (dataset {key})"
+        for name, plot in scaling_model_plots.items():
             d[name + "_" + str(key)] = plot
     graphs = {"scaling_model": d}
     return graphs
@@ -277,13 +275,13 @@ def print_scaling_model_error_summary(experiments):
         frac_high_uncertainty = (log_p_sigmas < 0.69315).count(True) / len(log_p_sigmas)
         if frac_high_uncertainty > 0.5:
             msg = (
-                "Warning: Over half ({0:.2f}%) of model parameters have signficant\n"
+                "Warning: Over half ({:.2f}%) of model parameters have signficant\n"
                 "uncertainty (sigma/abs(parameter) > 0.5), which could indicate a\n"
                 "poorly-determined scaling problem or overparameterisation.\n"
             ).format(frac_high_uncertainty * 100)
         else:
             msg = (
-                "{0:.2f}% of model parameters have signficant uncertainty\n"
+                "{:.2f}% of model parameters have signficant uncertainty\n"
                 "(sigma/abs(parameter) > 0.5)\n"
             ).format(frac_high_uncertainty * 100)
     return msg
@@ -314,7 +312,7 @@ def make_outlier_plots(reflection_tables, experiments):
         outlier_plots = plot_outliers(data[key])
         for plot in outlier_plots.values():
             if plot:  # may be null if no outliers
-                plot["layout"]["title"] += " (dataset %s)" % key
+                plot["layout"]["title"] += f" (dataset {key})"
         d["outlier_plot_" + str(key)] = outlier_plots["outlier_xy_positions"]
         d["outlier_plot_z" + str(key)] = outlier_plots["outliers_vs_z"]
     graphs = {"outlier_plots": d}

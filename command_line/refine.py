@@ -14,7 +14,6 @@ Examples::
   dials.refine indexed.expt indexed.refl scan_varying=(False/True/Auto)
 """
 
-from __future__ import absolute_import, division, print_function
 
 import copy
 import logging
@@ -199,7 +198,7 @@ def run_macrocycle(params, reflections, experiments):
     if nexp == 1:
         logger.info("Performing refinement of a single Experiment...")
     else:
-        logger.info("Performing refinement of {} Experiments...".format(nexp))
+        logger.info(f"Performing refinement of {nexp} Experiments...")
 
     # Refine and get the refinement history
     try:
@@ -290,7 +289,7 @@ def run_dials_refine(experiments, reflections, params):
         experiments = refiner.get_experiments()
     else:
         for i in range(params.n_static_macrocycles):
-            logger.info("\nStatic refinement macrocycle {}".format(i + 1))
+            logger.info("\nStatic refinement macrocycle %s", i + 1)
             refiner, reflections, history = run_macrocycle(
                 params, reflections, experiments
             )
@@ -390,8 +389,8 @@ def run(args=None, phil=working_phil):
             if e.crystal in crystal_has_scan:
                 if e.scan is not crystal_has_scan[e.crystal]:
                     logger.info(
-                        "Duplicating crystal model for scan-varying refinement of experiment %d"
-                        % j
+                        "Duplicating crystal model for scan-varying refinement of experiment %d",
+                        j,
                     )
                     e.crystal = copy.deepcopy(e.crystal)
             else:
@@ -411,9 +410,7 @@ def run(args=None, phil=working_phil):
 
     # Write table of centroids to file, if requested
     if params.output.centroids:
-        logger.info(
-            "Writing table of centroids to '{}'".format(params.output.centroids)
-        )
+        logger.info(f"Writing table of centroids to '{params.output.centroids}'")
         write_centroids_table(refiner, params.output.centroids)
 
     # Write scan-varying parameters to file, if there were any
@@ -431,9 +428,8 @@ def run(args=None, phil=working_phil):
             )
             if text:
                 logger.info(
-                    "Writing scan-varying parameter table to {}".format(
-                        params.output.parameter_table
-                    )
+                    "Writing scan-varying parameter table to %s",
+                    params.output.parameter_table,
                 )
                 f = open(params.output.parameter_table, "w")
                 f.write(text)
@@ -443,16 +439,15 @@ def run(args=None, phil=working_phil):
 
     # Save the refined experiments to file
     output_experiments_filename = params.output.experiments
-    logger.info("Saving refined experiments to {}".format(output_experiments_filename))
+    logger.info(f"Saving refined experiments to {output_experiments_filename}")
     experiments.as_file(output_experiments_filename)
 
     # Save reflections with updated predictions if requested (allow to switch
     # this off if it is a time-consuming step)
     if params.output.reflections:
         logger.info(
-            "Saving reflections with updated predictions to {}".format(
-                params.output.reflections
-            )
+            "Saving reflections with updated predictions to %s",
+            params.output.reflections,
         )
         if params.output.include_unused_reflections:
             reflections.as_file(params.output.reflections)
@@ -464,9 +459,7 @@ def run(args=None, phil=working_phil):
     if params.output.matches:
         matches = refiner.get_matches()
         logger.info(
-            "Saving matches (use for debugging purposes) to {}".format(
-                params.output.matches
-            )
+            "Saving matches (use for debugging purposes) to %s", params.output.matches
         )
         matches.as_file(params.output.matches)
 
@@ -476,9 +469,7 @@ def run(args=None, phil=working_phil):
 
     # Save refinement history
     if params.output.history:
-        logger.info(
-            "Saving refinement step history to {}".format(params.output.history)
-        )
+        logger.info(f"Saving refinement step history to {params.output.history}")
         history.to_json_file(params.output.history)
 
 

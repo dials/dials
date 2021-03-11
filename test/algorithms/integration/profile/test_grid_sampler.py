@@ -1,6 +1,5 @@
-from __future__ import absolute_import, division, print_function
-
 import math
+import pickle
 import random
 
 
@@ -224,8 +223,6 @@ def test_self_consistent():
 
 
 def test_pickle():
-    import six.moves.cPickle as pickle
-
     from dials.algorithms.profile_model.modeller import GridSampler
 
     width = 1000

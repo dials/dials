@@ -1,4 +1,6 @@
-from __future__ import absolute_import, division, print_function
+import random
+
+import numpy as np
 
 import scitbx.matrix
 import scitbx.random
@@ -73,12 +75,10 @@ def generate_test_data(
     twin_fractions=None,
     map_to_minimum=True,
 ):
-
-    import random
-
     if seed is not None:
         flex.set_random_seed(seed)
         random.seed(seed)
+        np.random.seed(seed)
 
     assert [unit_cell, lattice_group].count(None) > 0
 

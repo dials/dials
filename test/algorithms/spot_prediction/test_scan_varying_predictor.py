@@ -3,7 +3,6 @@ Test prediction of reflections using the scan-varying reflection
 predictor.
 """
 
-from __future__ import absolute_import, division, print_function
 
 import math
 

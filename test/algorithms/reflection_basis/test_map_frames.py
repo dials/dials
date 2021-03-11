@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import math
 import random
 
@@ -82,7 +80,7 @@ def test_map_frames_forward(dials_data):
         # Ensure the minimum and maximum are 0 < 1
         fmax = flex.max(fraction)
         fmin = flex.min(fraction)
-        assert fmax <= (1.0 + 5e-15) and fmax > 0.0, "%.16f not between 0 and 1" % fmax
+        assert fmax <= (1.0 + 5e-15) and fmax > 0.0, f"{fmax:.16f} not between 0 and 1"
         assert fmin >= 0.0 and fmin <= 1.0
 
         # Ensure the fraction for each image frame adds up to 1.0 for

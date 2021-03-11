@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import errno
 import os
 
@@ -74,7 +72,7 @@ def ensure_directory(path):
             raise
 
 
-class Script(object):
+class Script:
     """Class to run script."""
 
     def __init__(self):
@@ -157,7 +155,7 @@ class Script(object):
                 pass
 
             if self._debug:
-                print("Crystal in Experiment {}".format(iexp))
+                print(f"Crystal in Experiment {iexp}")
                 print("Phi\ta\tb\tc\talpha\tbeta\tgamma\tVolume")
                 msg = "{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}"
                 line_dat = zip(phi, a, b, c, aa, bb, cc, vol)
@@ -197,7 +195,7 @@ class Script(object):
             phi3, phi2, phi1 = zip(*angles)
             angle_dat = {"phi": phi, "phi3": phi3, "phi2": phi2, "phi1": phi1}
             if self._debug:
-                print("Crystal in Experiment {}".format(iexp))
+                print(f"Crystal in Experiment {iexp}")
                 print("Image\tphi3\tphi2\tphi1")
                 msg = "{0}\t{1}\t{2}\t{3}"
                 line_dat = zip(phi, phi3, phi2, phi1)
@@ -336,7 +334,7 @@ class Script(object):
 
         basename = os.path.join(self._directory, "unit_cell")
         fullname = basename + self._format
-        print("Saving unit cell plot to {}".format(fullname))
+        print(f"Saving unit cell plot to {fullname}")
         plt.savefig(fullname)
 
     def plot_orientation(self, dat):
@@ -369,7 +367,7 @@ class Script(object):
 
         basename = os.path.join(self._directory, "orientation")
         fullname = basename + self._format
-        print("Saving orientation plot to {}".format(fullname))
+        print(f"Saving orientation plot to {fullname}")
         plt.savefig(fullname)
 
     def plot_beam_centre(self, dat):
@@ -402,7 +400,7 @@ class Script(object):
 
         basename = os.path.join(self._directory, "beam_centre")
         fullname = basename + self._format
-        print("Saving beam centre plot to {}".format(fullname))
+        print(f"Saving beam centre plot to {fullname}")
         plt.savefig(fullname)
 
 

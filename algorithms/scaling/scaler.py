@@ -10,16 +10,13 @@ The SingleScaler is defined, for scaling of a single dataset, a MultiScaler is
 defined for scaling multiple datasets simultaneously and a TargetScaler is
 defined for targeted scaling.
 """
-from __future__ import absolute_import, division, print_function
 
 import copy
 import logging
 import time
 from collections import OrderedDict
+from io import StringIO
 from math import ceil
-
-import six
-from six.moves import cStringIO as StringIO
 
 from libtbx import Auto
 from scitbx import sparse
@@ -67,7 +64,7 @@ class ScalerBase(Subject):
 
     def __init__(self, params):
         """Define the properties of a scaler."""
-        super(ScalerBase, self).__init__(
+        super().__init__(
             events=[
                 "performed_scaling",
                 "performed_error_analysis",
@@ -347,7 +344,7 @@ class SingleScaler(ScalerBase):
             i in reflection_table
             for i in ["inverse_scale_factor", "intensity", "variance", "id"]
         )
-        super(SingleScaler, self).__init__(params)
+        super().__init__(params)
         self._experiment = experiment
         n_model_params = sum(val.n_params for val in self.components.values())
         self._var_cov_matrix = sparse.matrix(n_model_params, n_model_params)
@@ -480,7 +477,7 @@ class SingleScaler(ScalerBase):
             # first work out the order in self._var_cov_matrix
             cumul_pos_dict = {}
             n_cumul_params = 0
-            for name, component in six.iteritems(self.components):
+            for name, component in self.components.items():
                 cumul_pos_dict[name] = n_cumul_params
                 n_cumul_params += component.n_params
             # now get a var_cov_matrix subblock for pairs of parameters
@@ -784,7 +781,7 @@ attempting to use all reflections for minimisation."""
         self._global_Ih_table, self._free_Ih_table = self._create_global_Ih_table(
             free_set_percentage=free_set_percentage, anomalous=self.params.anomalous
         )
-        rows = [[key, str(val.n_params)] for key, val in six.iteritems(self.components)]
+        rows = [[key, str(val.n_params)] for key, val in self.components.items()]
         logger.info("The following corrections will be applied to this dataset: \n")
         logger.info(tabulate(rows, ["correction", "n_parameters"]))
 
@@ -851,7 +848,7 @@ class MultiScalerBase(ScalerBase):
 
     def __init__(self, single_scalers):
         """Initialise from a list of single scalers."""
-        super(MultiScalerBase, self).__init__(single_scalers[0].params)
+        super().__init__(single_scalers[0].params)
         self.single_scalers = single_scalers
 
     def remove_datasets(self, scalers, n_list):
@@ -1351,7 +1348,7 @@ class MultiScaler(MultiScalerBase):
         the data in the model components.
         """
         logger.info("Configuring a MultiScaler to handle the individual Scalers. \n")
-        super(MultiScaler, self).__init__(single_scalers)
+        super().__init__(single_scalers)
         logger.info("Determining symmetry equivalent reflections across datasets.\n")
         self._active_scalers = self.single_scalers
         self._global_Ih_table, self._free_Ih_table = self._create_global_Ih_table(
@@ -1465,7 +1462,7 @@ class TargetScaler(MultiScalerBase):
         the model components.
         """
         logger.info("\nInitialising a TargetScaler instance. \n")
-        super(TargetScaler, self).__init__(scaled_scalers)
+        super().__init__(scaled_scalers)
         logger.info("Determining symmetry equivalent reflections across datasets.\n")
         self.unscaled_scalers = unscaled_scalers
         self._active_scalers = unscaled_scalers
@@ -1496,7 +1493,7 @@ class TargetScaler(MultiScalerBase):
         return self._target_Ih_table
 
     def _create_Ih_table(self):
-        super(TargetScaler, self)._create_Ih_table()
+        super()._create_Ih_table()
         for block in self._Ih_table.blocked_data_list:
             # this step reduces the number of reflections in each block
             block.match_Ih_values_to_target(self._target_Ih_table)
@@ -1528,7 +1525,7 @@ class NullScaler(ScalerBase):
 
     def __init__(self, params, experiment, reflection):
         """Set the required properties to use as a scaler for targeted scaling."""
-        super(NullScaler, self).__init__(params)
+        super().__init__(params)
         self._experiment = experiment
         self._reflection_table = reflection
         self.n_suitable_refl = self._reflection_table.size()

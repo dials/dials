@@ -1,8 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
 import collections
-
-import six
 
 from dials.array_family import flex
 from dials.array_family.flex import Binner
@@ -180,7 +176,7 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
 
     def select(data, indices):
         # Select rows from columns
-        result = {key: value.select(indices) for key, value in six.iteritems(data)}
+        result = {key: value.select(indices) for key, value in data.items()}
         return result
 
     # Check the required columns are there
@@ -307,7 +303,7 @@ class IntegrationReport(Report):
         :param reflections: The reflection table
         """
         # Initialise the report class
-        super(IntegrationReport, self).__init__()
+        super().__init__()
 
         # Split the tables by experiment id
         tables = reflections.split_by_experiment_id()
@@ -350,11 +346,11 @@ class IntegrationReport(Report):
                         "%d" % report["n_ice"][i],
                         "%d" % report["n_summed"][i],
                         "%d" % report["n_fitted"][i],
-                        "%.2f" % report["mean_background"][i],
-                        "%.2f" % report["ios_sum"][i],
-                        "%.2f" % report["ios_prf"][i],
-                        "%.2f" % report["cc_prf"][i],
-                        "%.2f" % report["rmsd_xy"][i],
+                        f"{report['mean_background'][i]:.2f}",
+                        f"{report['ios_sum'][i]:.2f}",
+                        f"{report['ios_prf'][i]:.2f}",
+                        f"{report['cc_prf'][i]:.2f}",
+                        f"{report['rmsd_xy'][i]:.2f}",
                     ]
                 )
         self.add_table(table)
@@ -382,18 +378,18 @@ class IntegrationReport(Report):
                 table.rows.append(
                     [
                         "%d" % j,
-                        "%.2f" % report["bins"][i],
+                        f"{report['bins'][i]:.2f}",
                         "%d" % report["n_full"][i],
                         "%d" % report["n_partial"][i],
                         "%d" % report["n_overload"][i],
                         "%d" % report["n_ice"][i],
                         "%d" % report["n_summed"][i],
                         "%d" % report["n_fitted"][i],
-                        "%.2f" % report["mean_background"][i],
-                        "%.2f" % report["ios_sum"][i],
-                        "%.2f" % report["ios_prf"][i],
-                        "%.2f" % report["cc_prf"][i],
-                        "%.2f" % report["rmsd_xy"][i],
+                        f"{report['mean_background'][i]:.2f}",
+                        f"{report['ios_sum'][i]:.2f}",
+                        f"{report['ios_prf'][i]:.2f}",
+                        f"{report['cc_prf'][i]:.2f}",
+                        f"{report['rmsd_xy'][i]:.2f}",
                     ]
                 )
         self.add_table(table)
@@ -454,7 +450,7 @@ class ProfileModelReport(Report):
         :param reflections: The reflection table
         """
         # Initialise the report class
-        super(ProfileModelReport, self).__init__()
+        super().__init__()
 
         # Create the table
         table = Table()
@@ -480,10 +476,10 @@ class ProfileModelReport(Report):
                     [
                         "%d" % i,
                         "%d" % j,
-                        "%s" % model.valid(j),
-                        "%.2f" % model.coord(j)[0],
-                        "%.2f" % model.coord(j)[1],
-                        "%.2f" % model.coord(j)[2],
+                        f"{model.valid(j)}",
+                        f"{model.coord(j)[0]:.2f}",
+                        f"{model.coord(j)[1]:.2f}",
+                        f"{model.coord(j)[2]:.2f}",
                         "%d" % model.n_reflections(j),
                     ]
                 )
@@ -517,7 +513,7 @@ class ProfileValidationReport(Report):
         :param reflections: The reflection table
         """
         # Initialise the report class
-        super(ProfileValidationReport, self).__init__()
+        super().__init__()
 
         # Create the table
         table = Table()
@@ -561,8 +557,8 @@ class ProfileValidationReport(Report):
                         "%d" % i,
                         "%d" % j,
                         "%d" % num_validated,
-                        "%.2f" % mean_cc,
-                        "%.2f" % mean_nrmsd,
+                        f"{mean_cc:.2f}",
+                        f"{mean_nrmsd:.2f}",
                     ]
                 )
 

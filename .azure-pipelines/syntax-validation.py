@@ -12,7 +12,7 @@ for base, _, files in os.walk("."):
             continue
         filename = os.path.normpath(os.path.join(base, f))
         try:
-            with open(filename, "r") as fh:
+            with open(filename) as fh:
                 ast.parse(fh.read())
         except SyntaxError as se:
             failures += 1

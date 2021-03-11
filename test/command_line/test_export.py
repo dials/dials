@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import json
 import os
 
@@ -10,7 +8,6 @@ import iotbx.cif
 from cctbx import uctbx
 from dxtbx.model import ExperimentList
 from dxtbx.serialize import load
-from dxtbx.serialize.load import _decode_dict
 from iotbx import mtz
 
 from dials.array_family import flex
@@ -76,7 +73,7 @@ def test_mtz_recalculated_cell(dials_data, tmpdir):
             "format=mtz",
             tmpdir.join("refined_cell.expt"),
             scaled_refl,
-            "d_min=%f" % d_min,
+            f"d_min={d_min:f}",
         ],
         working_directory=tmpdir,
     )
@@ -100,7 +97,7 @@ def test_mtz_best_unit_cell(dials_data, tmpdir):
             "format=mtz",
             scaled_expt,
             scaled_refl,
-            "d_min=%f" % d_min,
+            f"d_min={d_min:f}",
             "best_unit_cell=%g,%g,%g,%g,%g,%g" % best_unit_cell.parameters(),
         ],
         working_directory=tmpdir,
@@ -212,7 +209,7 @@ def test_mtz_primitive_cell(dials_data, tmpdir):
             "dials.reindex",
             scaled_expt.strpath,
             scaled_refl.strpath,
-            'change_of_basis_op="%s"' % cb_op,
+            f'change_of_basis_op="{cb_op}"',
         ],
         working_directory=tmpdir.strpath,
     )
@@ -370,7 +367,7 @@ def test_json(dials_data, tmpdir):
     from dxtbx.model.experiment_list import ExperimentListFactory
 
     with tmpdir.join("rlp.json").open("rb") as f:
-        d = json.load(f, object_hook=_decode_dict)
+        d = json.load(f)
     assert set(d) == {"imageset_id", "experiments", "rlp", "experiment_id"}
     assert d["rlp"][:3] == [0.123454, 0.57687, 0.186465], d["rlp"][:3]
     assert d["imageset_id"][0] == 0

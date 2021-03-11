@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 """Tests for dials.split_experiments when experiment ids are set"""
 
 import procrunner
@@ -52,13 +50,11 @@ def test_split_chunk_sizes(tmpdir, option, with_identifiers):
     for j, n, intensities in zip(
         [0, 1, 2], [2, 2, 1], [[100.0, 200.0], [300.0, 400.0], [500.0]]
     ):
-        assert tmpdir.join("split_%s.refl" % j).check()
-        assert tmpdir.join("split_%s.expt" % j).check()
-        expts = load.experiment_list(
-            tmpdir.join("split_%s.expt" % j), check_format=False
-        )
+        assert tmpdir.join(f"split_{j}.refl").check()
+        assert tmpdir.join(f"split_{j}.expt").check()
+        expts = load.experiment_list(tmpdir.join(f"split_{j}.expt"), check_format=False)
         assert len(expts) == n
-        refls = flex.reflection_table.from_file(tmpdir.join("split_%s.refl" % j))
+        refls = flex.reflection_table.from_file(tmpdir.join(f"split_{j}.refl"))
         assert list(set(refls["id"])) == list(range(0, n))
         assert list(refls["intensity"]) == intensities
         refls.assert_experiment_identifiers_are_consistent(expts)

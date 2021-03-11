@@ -6,12 +6,8 @@ from urllib.request import Request, urlopen
 
 
 def _download_button(text, version, link):
-    print("  %s %s -> %s" % (version, text, link))
-    return ".. button::\n   :text: DIALS %s %s\n   :link: %s\n\n" % (
-        version,
-        text,
-        link,
-    )
+    print(f"  {version} {text} -> {link}")
+    return f".. button::\n   :text: DIALS {version} {text}\n   :link: {link}\n\n"
 
 
 if __name__ == "__main__":

@@ -79,14 +79,14 @@ message that the code in question is special and care should be taken.
 
 ## Pull Requests
 
+- To keep the `main` branch stable and facilitate code review we prefer to
+  have all code changes go through a pull request.
 - Include a newsfragment before merging. This is a file in the
   `newsfragments` folder with a description of your change. Try to make it
   a one-sentence summary aimed at a DIALS user, not a developer. The file is
-  numbered to match the issue or pull request and has 
-  [one of the allowed extensions from the list][news-README]. 
-  If you don't have an issue number you can also add the file after you've
-  created your pull request and use the PR number. Newsfragments are
-  processed on release by a tool named [towncrier] and make up our release notes. 
+  numbered to match the issue or pull request (use `xxx.` if you don't have
+  a number) and has [one of the allowed extensions from the list][news-README].
+  Newsfragments eventually become our release notes.
 - We aim to squash-merge most pull requests. However, if you are working on a
   longer-term feature branch, or making a lot of changes that might be a
   candidate for a non-squash merge - please try to keep commits a relatively
@@ -133,5 +133,4 @@ message that the code in question is special and care should be taken.
 [Zen of Python]: https://www.python.org/dev/peps/pep-0020/#the-zen-of-python
 [How to Write a Git Commit Message]: https://chris.beams.io/posts/git-commit
 [The Seven Rules]: https://chris.beams.io/posts/git-commit/#seven-rules
-[news-README]: https://github.com/dials/dials/blob/master/newsfragments/README.MD
-[towncrier]: https://github.com/twisted/towncrier
+[news-README]: https://github.com/dials/dials/blob/main/newsfragments/README.MD

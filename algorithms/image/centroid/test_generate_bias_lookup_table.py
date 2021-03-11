@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import pytest
 
 from dials.algorithms.image.centroid.generate_bias_lookup_table import (

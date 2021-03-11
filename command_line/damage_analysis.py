@@ -1,4 +1,3 @@
-# coding: utf-8
 """
 The program dials.damage_analysis calculates dose dependent data quality statistics.
 
@@ -31,7 +30,6 @@ dials.damage_analysis scaled.mtz
 dials.damage_analysis scaled.expt scaled.refl shared_crystal=True
 
 """
-from __future__ import absolute_import, division, print_function
 
 import json
 import logging
@@ -98,7 +96,7 @@ include scope dials.pychef.phil_scope
 )
 
 
-class PychefRunner(object):
+class PychefRunner:
 
     """Class to prepare input data and run the pychef algorithm."""
 
@@ -217,10 +215,10 @@ class PychefRunner(object):
             "Interpreting data using:\n  starting_doses=%s\n  dose_per_image=%s",
             ", ".join("%s" % i for i in start_doses)
             if len(set(start_doses)) > 1
-            else " all %s" % str(start_doses[0]),
+            else f" all {start_doses[0]}",
             ", ".join("%s" % i for i in doses_per_image)
             if len(set(doses_per_image)) > 1
-            else " all %s" % str(doses_per_image[0]),
+            else f" all {doses_per_image[0]}",
         )
 
         for expt, starting_dose, dose_per_img in zip(
@@ -329,7 +327,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
             parser.print_help()
             raise ValueError("Suitable input datafiles not provided")
     except (ValueError, KeyError) as e:
-        sys.exit("Error: %s" % str(e))
+        sys.exit(f"Error: {e}")
     else:
         script.run()
         script.make_html_report(params.output.html, params.output.json)

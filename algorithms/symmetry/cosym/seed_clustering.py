@@ -1,6 +1,6 @@
 """Seed clustering method for cosym analysis."""
-from __future__ import absolute_import, division, print_function
 
+import copy
 import logging
 
 logger = logging.getLogger(__name__)
@@ -15,10 +15,9 @@ from sklearn.neighbors import NearestNeighbors
 
 from libtbx import Auto
 from libtbx.utils import Sorry
-from scitbx.array_family import flex
 
 
-class seed_clustering(object):
+class seed_clustering:
     """Perform seed clustering of coordinates.
 
     Labels points into clusters such that cluster contains exactly one copy
@@ -32,7 +31,7 @@ class seed_clustering(object):
       http://scikit-learn.org/stable/auto_examples/cluster/plot_kmeans_silhouette_analysis.html
 
     Attributes:
-      cluster_labels (scitbx.array_family.flex.int): A label for each coordinate.
+      cluster_labels (np.ndarray): A label for each coordinate.
     """
 
     def __init__(
@@ -41,7 +40,7 @@ class seed_clustering(object):
         """Initialise a seed_clustering object.
 
         Args:
-          coordinates (scitbx.array_family.flex.double): The input array of coordinates
+          coordinates (np.ndarray): The input array of coordinates
             on which to perform the analysis. The dimensions of the array should
             be (dim, `n_datasets` * `n_sym_ops`), where dim is the number of
             dimensions being used for the analysis.
@@ -56,7 +55,7 @@ class seed_clustering(object):
 
         self.cluster_labels = self._label_clusters_first_pass(n_datasets, n_sym_ops)
 
-        if flex.max(self.cluster_labels) == 0:
+        if self.cluster_labels.max() == 0:
             # assume single cluster
             return
 
@@ -79,23 +78,20 @@ class seed_clustering(object):
           n_sym_ops (int): The number of symmetry operations.
 
         Returns:
-          cluster_labels (scitbx.array_family.flex.int): A label for each coordinate, labelled from
+          cluster_labels (np.ndarray): A label for each coordinate, labelled from
           0 .. n_sym_ops.
         """
         # initialise cluster labels: -1 signifies doesn't belong to a cluster
-        cluster_labels = flex.int(self.coords.all()[0], -1)
-        X_orig = self.coords.as_numpy_array()
+        cluster_labels = np.full(self.coords.shape[0], -1, dtype=int)
 
         cluster_id = 0
-        while cluster_labels.count(-1) > 0:
-            dataset_ids = (
-                flex.int_range(n_datasets * n_sym_ops) % n_datasets
-            ).as_numpy_array()
-            coord_ids = flex.int_range(dataset_ids.size).as_numpy_array()
+        while (cluster_labels == -1).sum() > 0:
+            coord_ids = np.arange(n_datasets * n_sym_ops)
+            dataset_ids = coord_ids % n_datasets
 
             # select only those points that don't already belong to a cluster
             sel = np.where(cluster_labels == -1)
-            X = X_orig[sel]
+            X = self.coords[sel]
             dataset_ids = dataset_ids[sel]
             coord_ids = coord_ids[sel]
 
@@ -104,8 +100,8 @@ class seed_clustering(object):
                 n_neighbors=min(11, len(X)), algorithm="brute", metric="cosine"
             ).fit(X)
             distances, indices = nbrs.kneighbors(X)
-            average_distance = flex.double([dist[1:].mean() for dist in distances])
-            i = flex.min_index(average_distance)
+            average_distance = np.array([dist[1:].mean() for dist in distances])
+            i = average_distance.argmin()
 
             d_id = dataset_ids[i]
             cluster = np.array([coord_ids[i]])
@@ -134,7 +130,7 @@ class seed_clustering(object):
                 xis = np.append(xis, [X[k]], axis=0)
 
             # label this cluster
-            cluster_labels.set_selected(flex.size_t(cluster.tolist()), cluster_id)
+            cluster_labels[cluster] = cluster_id
             cluster_id += 1
         return cluster_labels
 
@@ -148,11 +144,8 @@ class seed_clustering(object):
             the linkage matrix as output by :func:`scipy.cluster.hierarchy.linkage`.
         """
         cluster_centroids = []
-        X = self.coords.as_numpy_array()
-        for i in set(self.cluster_labels):
-            cluster_centroids.append(
-                X[(self.cluster_labels == i).iselection().as_numpy_array()].mean(axis=0)
-            )
+        for i in np.unique(self.cluster_labels):
+            cluster_centroids.append(self.coords[self.cluster_labels == i].mean(axis=0))
 
         # hierarchical clustering of cluster centroids, using cosine metric
         dist_mat = ssd.pdist(cluster_centroids, metric="cosine")
@@ -164,8 +157,8 @@ class seed_clustering(object):
         """Compare valid equal-sized clustering using silhouette scores.
 
         Args:
-          cluster_labels (scitbx.array_family.flex.int):
-          linkage_matrix (numpy.ndarray): The hierarchical clustering of centroids of the
+          cluster_labels (np.ndarray):
+          linkage_matrix (np.ndarray): The hierarchical clustering of centroids of the
             initial clustering as produced by
             :func:`scipy.cluster.hierarchy.linkage`.
           n_clusters (int): Optionally override the automatic determination of the
@@ -174,19 +167,18 @@ class seed_clustering(object):
             in automatic determination of the number of clusters.
 
         Returns:
-          cluster_labels (scitbx.array_family.flex.int): A label for each coordinate.
+          cluster_labels (np.ndarray): A label for each coordinate.
         """
         eps = 1e-6
-        X = self.coords.as_numpy_array()
 
         cluster_labels_input = cluster_labels
         distances = linkage_matrix[::, 2]
         distances = np.insert(distances, 0, 0)
-        silhouette_scores = flex.double()
-        thresholds = flex.double()
-        threshold_n_clusters = flex.size_t()
+        silhouette_scores = []
+        thresholds = []
+        threshold_n_clusters = []
         for threshold in distances[1:]:
-            cluster_labels = cluster_labels_input.deep_copy()
+            cluster_labels = copy.deepcopy(cluster_labels_input)
             labels = hierarchy.fcluster(
                 linkage_matrix, threshold - eps, criterion="distance"
             ).tolist()
@@ -201,17 +193,15 @@ class seed_clustering(object):
             elif n_clusters is not Auto and n != n_clusters:
                 continue
             for i in range(len(labels)):
-                cluster_labels.set_selected(
-                    cluster_labels_input == i, int(labels[i] - 1)
-                )
-            if len(set(cluster_labels)) == X.shape[0]:
+                cluster_labels[cluster_labels_input == i] = int(labels[i] - 1)
+            if len(np.unique(cluster_labels)) == self.coords.shape[0]:
                 # silhouette coefficient not defined if 1 dataset per cluster
                 # not sure what the default value should be
                 sample_silhouette_values = np.full(cluster_labels.size(), 0)
             else:
                 # Compute the silhouette scores for each sample
                 sample_silhouette_values = metrics.silhouette_samples(
-                    X, cluster_labels.as_numpy_array(), metric="cosine"
+                    self.coords, cluster_labels, metric="cosine"
                 )
             silhouette_avg = sample_silhouette_values.mean()
             silhouette_scores.append(silhouette_avg)
@@ -220,34 +210,33 @@ class seed_clustering(object):
 
             count_negative = (sample_silhouette_values < 0).sum()
             logger.info("Clustering:")
-            logger.info("  Number of clusters: %i" % n)
+            logger.info("  Number of clusters: %i", n)
             logger.info(
-                "  Threshold score: %.3f (%.1f deg)"
-                % (threshold, math.degrees(math.acos(1 - threshold)))
+                "  Threshold score: %.3f (%.1f deg)",
+                threshold,
+                math.degrees(math.acos(1 - threshold)),
             )
-            logger.info("  Silhouette score: %.3f" % silhouette_avg)
+            logger.info("  Silhouette score: %.3f", silhouette_avg)
             logger.info(
-                "  -ve silhouette scores: %.1f%%"
-                % (100 * count_negative / sample_silhouette_values.size)
+                "  -ve silhouette scores: %.1f%%",
+                100 * count_negative / sample_silhouette_values.size,
             )
 
         if n_clusters is Auto:
-            idx = flex.max_index(silhouette_scores)
+            idx = np.argmin(silhouette_scores)
         else:
-            idx = flex.first_index(threshold_n_clusters, n_clusters)
+            idx = threshold_n_clusters.index(n_clusters)
             if idx is None:
                 raise Sorry("No valid clustering with %i clusters" % n_clusters)
 
         if n_clusters is Auto and silhouette_scores[idx] < min_silhouette_score:
             # assume single cluster
-            cluster_labels = flex.int(cluster_labels.size(), 0)
+            cluster_labels = np.zeros(cluster_labels.size)
         else:
             threshold = thresholds[idx] - eps
             labels = hierarchy.fcluster(linkage_matrix, threshold, criterion="distance")
-            cluster_labels = flex.double(cluster_labels.size(), -1)
+            cluster_labels = np.full(self.coords.shape[0], -1, dtype=int)
             for i in range(len(labels)):
-                cluster_labels.set_selected(
-                    cluster_labels_input == i, float(labels[i] - 1)
-                )
+                cluster_labels[cluster_labels_input == i] = labels[i] - 1
 
         return cluster_labels, threshold

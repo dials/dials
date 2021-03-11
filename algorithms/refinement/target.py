@@ -1,7 +1,6 @@
 """Contains classes used to construct a target function for refinement,
 principally Target and ReflectionManager."""
 
-from __future__ import absolute_import, division, print_function
 
 import math
 
@@ -42,7 +41,7 @@ phil_scope = parse(phil_str)
 RAD_TO_DEG = 180.0 / math.pi
 
 
-class TargetFactory(object):
+class TargetFactory:
     @staticmethod
     def from_parameters_and_experiments(
         params,
@@ -107,7 +106,7 @@ class TargetFactory(object):
         )
 
 
-class Target(object):
+class Target:
     """Abstract interface for a target function class
 
     A Target object will be used by a Refinery. It will refer to a Reflection

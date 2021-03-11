@@ -5,9 +5,7 @@ Acta Cryst. D74, 405-410 <https://doi.org/10.1107/S2059798318002978>`_ for
 determination of Patterson group symmetry from sparse multi-crystal data sets in
 the presence of an indexing ambiguity.
 """
-from __future__ import absolute_import, division, print_function
 
-import copy
 import json
 import logging
 import math
@@ -24,7 +22,8 @@ from scitbx.array_family import flex
 import dials.util
 from dials.algorithms.indexing.symmetry import find_matching_symmetry
 from dials.algorithms.symmetry import symmetry_base
-from dials.algorithms.symmetry.cosym import engine, target
+from dials.algorithms.symmetry.cosym import engine as cosym_engine
+from dials.algorithms.symmetry.cosym import target
 from dials.algorithms.symmetry.laue_group import ScoreCorrelationCoefficient
 from dials.util.observer import Subject
 
@@ -72,25 +71,17 @@ min_pairs = 3
   .type = int(value_min=1)
   .help = 'Minimum number of pairs for inclusion of correlation coefficient in calculation of Rij matrix.'
 
-termination_params {
+minimization {
+  engine = *scitbx scipy
+    .type = choice
   max_iterations = 100
     .type = int(value_min=0)
   max_calls = None
     .type = int(value_min=0)
-  traditional_convergence_test = True
-    .type = bool
-  traditional_convergence_test_eps = 1
-    .type = float
-  drop_convergence_test_n_test_points=5
-    .type = int(value_min=2)
-  drop_convergence_test_max_drop_eps=1.e-5
-    .type = float(value_min=0)
-  drop_convergence_test_iteration_coefficient=2
-    .type = float(value_min=1)
 }
 
 cluster {
-  method = dbscan bisect minimize_divide agglomerative *seed
+  method = dbscan minimize_divide agglomerative *seed
     .type = choice
   n_clusters = auto
     .type = int(value_min=1)
@@ -99,10 +90,6 @@ cluster {
       .type = float(value_min=0)
     min_samples = 5
       .type = int(value_min=1)
-  }
-  bisect {
-    axis = 0
-      .type = int(value_min=0)
   }
   seed {
     min_silhouette_score = 0.2
@@ -135,7 +122,7 @@ class CosymAnalysis(symmetry_base, Subject):
             cosym anaylsis.
           params (libtbx.phil.scope_extract): Parameters for the analysis.
         """
-        super(CosymAnalysis, self).__init__(
+        super().__init__(
             intensities,
             normalisation=params.normalisation,
             lattice_symmetry_max_delta=params.lattice_symmetry_max_delta,
@@ -223,7 +210,7 @@ class CosymAnalysis(symmetry_base, Subject):
             )
         self.target = target.Target(
             self.intensities,
-            self.dataset_ids,
+            self.dataset_ids.as_numpy_array(),
             min_pairs=self.params.min_pairs,
             lattice_group=self.lattice_group,
             dimensions=dimensions,
@@ -241,30 +228,31 @@ class CosymAnalysis(symmetry_base, Subject):
             )
             dimensions = []
             functional = []
-            termination_params = copy.deepcopy(self.params.termination_params)
-            termination_params.max_iterations = min(
-                20, termination_params.max_iterations
-            )
             for dim in range(1, self.target.dim + 1):
                 logger.debug("Testing dimension: %i", dim)
                 self.target.set_dimensions(dim)
-                self._optimise(termination_params)
+                max_calls = self.params.minimization.max_calls
+                self._optimise(
+                    self.params.minimization.engine,
+                    max_iterations=self.params.minimization.max_iterations,
+                    max_calls=min(20, max_calls) if max_calls else max_calls,
+                )
                 dimensions.append(dim)
-                functional.append(self.minimizer.f)
+                functional.append(self.minimizer.fun)
 
             # Find the elbow point of the curve, in the same manner as that used by
             # distl spotfinder for resolution method 1 (Zhang et al 2006).
             # See also dials/algorithms/spot_finding/per_image_analysis.py
 
-            x = flex.double(dimensions)
-            y = flex.double(functional)
+            x = np.array(dimensions)
+            y = np.array(functional)
             slopes = (y[-1] - y[:-1]) / (x[-1] - x[:-1])
-            p_m = flex.min_index(slopes)
+            p_m = slopes.argmin()
 
             x1 = matrix.col((x[p_m], y[p_m]))
             x2 = matrix.col((x[-1], y[-1]))
 
-            gaps = flex.double()
+            gaps = []
             v = matrix.col(((x2[1] - x1[1]), -(x2[0] - x1[0]))).normalize()
 
             for i in range(p_m, len(x)):
@@ -273,7 +261,7 @@ class CosymAnalysis(symmetry_base, Subject):
                 g = abs(v.dot(r))
                 gaps.append(g)
 
-            p_g = flex.max_index(gaps)
+            p_g = np.array(gaps).argmax()
 
             x_g = x[p_g + p_m]
 
@@ -282,59 +270,55 @@ class CosymAnalysis(symmetry_base, Subject):
                     zip(dimensions, functional), headers=("Dimensions", "Functional")
                 )
             )
-            logger.info("Best number of dimensions: %i" % x_g)
+            logger.info("Best number of dimensions: %i", x_g)
             self.target.set_dimensions(int(x_g))
-            logger.info("Using %i dimensions for analysis" % self.target.dim)
+            logger.info("Using %i dimensions for analysis", self.target.dim)
 
     def run(self):
         self._intialise_target()
         self._determine_dimensions()
-        self._optimise(self.params.termination_params)
+        self._optimise(
+            self.params.minimization.engine,
+            max_iterations=self.params.minimization.max_iterations,
+            max_calls=self.params.minimization.max_calls,
+        )
         self._principal_component_analysis()
 
         self._analyse_symmetry()
         self._cluster_analysis()
 
     @Subject.notify_event(event="optimised")
-    def _optimise(self, termination_params):
+    def _optimise(self, engine, max_iterations=None, max_calls=None):
         NN = len(self.input_intensities)
-        dim = self.target.dim
         n_sym_ops = len(self.target.sym_ops)
-        coords = flex.random_double(NN * n_sym_ops * dim)
 
-        import scitbx.lbfgs
+        coords = np.random.rand(NN * n_sym_ops * self.target.dim)
+        if engine == "scitbx":
+            self.minimizer = cosym_engine.minimize_scitbx_lbfgs(
+                self.target,
+                coords,
+                use_curvatures=self.params.use_curvatures,
+                max_iterations=max_iterations,
+                max_calls=max_calls,
+            )
+        else:
+            self.minimizer = cosym_engine.minimize_scipy(
+                self.target,
+                coords,
+                method="L-BFGS-B",
+                max_iterations=max_iterations,
+                max_calls=max_calls,
+            )
 
-        tp = termination_params
-        termination_params = scitbx.lbfgs.termination_parameters(
-            traditional_convergence_test=tp.traditional_convergence_test,
-            traditional_convergence_test_eps=tp.traditional_convergence_test_eps,
-            drop_convergence_test_n_test_points=tp.drop_convergence_test_n_test_points,
-            drop_convergence_test_max_drop_eps=tp.drop_convergence_test_max_drop_eps,
-            drop_convergence_test_iteration_coefficient=tp.drop_convergence_test_iteration_coefficient,
-            # min_iterations=tp.min_iterations,
-            max_iterations=tp.max_iterations,
-            max_calls=tp.max_calls,
-        )
-
-        M = engine.lbfgs_with_curvs(
-            self.target,
-            coords,
-            use_curvatures=self.params.use_curvatures,
-            termination_params=termination_params,
-        )
-        self.minimizer = M
-
-        coords = M.x.deep_copy()
-        coords.reshape(flex.grid(dim, NN * n_sym_ops))
-        coords.matrix_transpose_in_place()
-        self.coords = coords
+        self.coords = self.minimizer.x.reshape(
+            self.target.dim, NN * n_sym_ops
+        ).transpose()
 
     def _principal_component_analysis(self):
         # Perform PCA
         from sklearn.decomposition import PCA
 
-        X = self.coords.as_numpy_array()
-        pca = PCA().fit(X)
+        pca = PCA().fit(self.coords)
         logger.info("Principal component analysis:")
         logger.info(
             "Explained variance: "
@@ -348,9 +332,7 @@ class CosymAnalysis(symmetry_base, Subject):
         self.explained_variance_ratio = pca.explained_variance_ratio_
         if self.target.dim > 3:
             pca.n_components = 3
-        x_reduced = pca.fit_transform(X)
-
-        self.coords_reduced = flex.double(np.ascontiguousarray(x_reduced))
+        self.coords_reduced = pca.fit_transform(self.coords)
 
     @Subject.notify_event(event="analysed_symmetry")
     def _analyse_symmetry(self):
@@ -392,11 +374,11 @@ class CosymAnalysis(symmetry_base, Subject):
         reindexing_ops = {}
         for i_cluster in range(self.params.cluster.n_clusters):
             # Select all points within this cluster
-            cluster_isel = (self.cluster_labels == i_cluster).iselection()
+            cluster_isel = np.where(self.cluster_labels == i_cluster)[0]
             # dataset_ids of each points within this cluster
             dataset_ids = cluster_isel % len(self.input_intensities)
             # Index into cluster_isel for points corresponding to the requested dataset_id
-            dataset_isel = (dataset_ids == dataset_id).iselection()
+            dataset_isel = np.where(dataset_ids == dataset_id)[0]
             for i in dataset_isel:
                 if i_cluster in reindexing_ops:
                     # Finished with this cluster so exit loop early
@@ -419,7 +401,7 @@ class CosymAnalysis(symmetry_base, Subject):
     def _cluster_analysis(self):
 
         if self.params.cluster.n_clusters == 1:
-            self.cluster_labels = flex.double(self.coords.all()[0])
+            self.cluster_labels = np.zeros(self.coords.shape[0])
         else:
             self.cluster_labels = self._do_clustering(self.params.cluster.method)
             # Number of clusters in labels, ignoring noise if present.
@@ -443,11 +425,10 @@ class CosymAnalysis(symmetry_base, Subject):
     def _do_clustering(self, method):
         if method == "dbscan":
             clustering = self._dbscan_clustering
-        elif method == "bisect":
-            clustering = self._bisect_clustering
         elif method == "minimize_divide":
             clustering = self._minimize_divide_clustering
         elif method == "agglomerative":
+            assert self.params.cluster.n_clusters is not Auto
             clustering = self._agglomerative_clustering
         elif method == "seed":
             clustering = self._seed_clustering
@@ -456,8 +437,7 @@ class CosymAnalysis(symmetry_base, Subject):
     def _dbscan_clustering(self):
         from sklearn.preprocessing import StandardScaler
 
-        X = self.coords_reduced.as_numpy_array()
-        X = StandardScaler().fit_transform(X)
+        X = StandardScaler().fit_transform(self.coords_reduced)
 
         # Perform cluster analysis
         from sklearn.cluster import DBSCAN
@@ -467,31 +447,20 @@ class CosymAnalysis(symmetry_base, Subject):
             min_samples=self.params.cluster.dbscan.min_samples,
         ).fit(X)
 
-        return flex.int(db.labels_.astype(np.int32))
-
-    def _bisect_clustering(self):
-        assert self.params.cluster.n_clusters in (2, Auto)
-        axis = self.params.cluster.bisect.axis
-        assert axis < self.coords_reduced.all()[1]
-        x = self.coords_reduced[:, axis : axis + 1].as_1d()
-        cluster_labels = flex.int(x.size(), 0)
-        cluster_labels.set_selected(x > 0, 1)
-        return cluster_labels
+        return db.labels_
 
     def _minimize_divide_clustering(self):
-        assert self.params.cluster.n_clusters in (2, Auto)
-        x = self.coords_reduced[:, :1].as_1d()
-        y = self.coords_reduced[:, 1:2].as_1d()
         from cctbx.merging.brehm_diederichs import minimize_divide
 
+        assert self.params.cluster.n_clusters in (2, Auto)
+        x = flex.double(self.coords_reduced[:, :1].flatten())
+        y = flex.double(self.coords_reduced[:, 1:2].flatten())
         selection = minimize_divide(x, y).plus_minus()
-        cluster_labels = flex.int(x.size(), 0)
-        cluster_labels.set_selected(selection, 1)
+        cluster_labels = np.zeros(x.size(), dtype=int)
+        cluster_labels[selection.as_numpy_array()] = 1
         return cluster_labels
 
     def _agglomerative_clustering(self):
-        X = self.coords.as_numpy_array()
-
         # Perform cluster analysis
         from sklearn.cluster import AgglomerativeClustering
 
@@ -500,8 +469,8 @@ class CosymAnalysis(symmetry_base, Subject):
             linkage="average",
             affinity="cosine",
         )
-        model.fit(X)
-        return flex.int(model.labels_.astype(np.int32))
+        model.fit(self.coords)
+        return model.labels_
 
     def _seed_clustering(self):
         from dials.algorithms.symmetry.cosym.seed_clustering import seed_clustering
@@ -562,16 +531,15 @@ class CosymAnalysis(symmetry_base, Subject):
         return json.dumps(d, indent=indent)
 
 
-class SymmetryAnalysis(object):
+class SymmetryAnalysis:
     def __init__(self, coords, sym_ops, subgroups, cb_op_inp_min):
 
         import scipy.spatial.distance as ssd
 
         self.subgroups = subgroups
         self.cb_op_inp_min = cb_op_inp_min
-        X = coords.as_numpy_array()
-        n_datasets = coords.all()[0] // len(sym_ops)
-        dist_mat = ssd.pdist(X, metric="cosine")
+        n_datasets = coords.shape[0] // len(sym_ops)
+        dist_mat = ssd.pdist(coords, metric="cosine")
         cos_angle = 1 - ssd.squareform(dist_mat)
 
         self._sym_ops_cos_angle = OrderedDict()
@@ -582,7 +550,7 @@ class SymmetryAnalysis(object):
                     op = sym_ops[ref_sym_op_id].inverse().multiply(sym_ops[sym_op_id])
                     op = op.new_denominators(1, 12)
                     comp_idx = n_datasets * sym_op_id + dataset_id
-                    self._sym_ops_cos_angle.setdefault(op, flex.double())
+                    self._sym_ops_cos_angle.setdefault(op, [])
                     self._sym_ops_cos_angle[op].append(cos_angle[ref_idx, comp_idx])
 
         self._score_symmetry_elements()
@@ -592,7 +560,7 @@ class SymmetryAnalysis(object):
         self.sym_op_scores = OrderedDict()
         for op, cos_angle in self._sym_ops_cos_angle.items():
             cc_true = 1
-            cc = flex.mean(cos_angle)
+            cc = np.mean(cos_angle)
             score = ScoreSymmetryElement(cc, sigma_cc=0.1, cc_true=cc_true)
             score.sym_op = op
             self.sym_op_scores[op] = score
@@ -631,9 +599,9 @@ class SymmetryAnalysis(object):
         for score in d["sym_op_scores"]:
             rows.append(
                 (
-                    "%.3f" % score["likelihood"],
-                    "%.2f" % score["z_cc"],
-                    "%.2f" % score["cc"],
+                    f"{score['likelihood']:.3f}",
+                    f"{score['z_cc']:.2f}",
+                    f"{score['cc']:.2f}",
                     score["stars"],
                     str(sgtbx.rt_mx(str(score["operator"])).r().info()),
                 )
@@ -662,11 +630,11 @@ class SymmetryAnalysis(object):
                         ).info()
                     ),
                     score["stars"],
-                    "%.3f" % score["likelihood"],
-                    "% .2f" % score["z_cc_net"],
-                    "% .2f" % score["z_cc_for"],
-                    "% .2f" % score["z_cc_against"],
-                    "%.1f" % score["max_angular_difference"],
+                    f"{score['likelihood']:.3f}",
+                    f"{score['z_cc_net']: .2f}",
+                    f"{score['z_cc_for']: .2f}",
+                    f"{score['z_cc_against']: .2f}",
+                    f"{score['max_angular_difference']:.1f}",
                     str(sgtbx.change_of_basis_op(str(score["cb_op"]))),
                 )
             )
@@ -689,8 +657,8 @@ class SymmetryAnalysis(object):
                 "%.3f %.3f %.3f %.1f %.1f %.1f" % tuple(best_subgroup["unit_cell"]),
             ),
             ("Reindex operator", best_subgroup["cb_op"]),
-            ("Laue group probability", "%.3f" % best_subgroup["likelihood"]),
-            ("Laue group confidence", "%.3f" % best_subgroup["confidence"]),
+            ("Laue group probability", f"{best_subgroup['likelihood']:.3f}"),
+            ("Laue group confidence", f"{best_subgroup['confidence']:.3f}"),
         )
 
     def __str__(self):
@@ -712,14 +680,14 @@ class SymmetryAnalysis(object):
             % self.best_solution.subgroup["best_subsym"].space_group_info()
         )
         output.append(
-            "Unit cell: %s" % self.best_solution.subgroup["best_subsym"].unit_cell()
+            f"Unit cell: {str(self.best_solution.subgroup['best_subsym'].unit_cell())}"
         )
         output.append(
             "Reindex operator: %s"
             % (self.best_solution.subgroup["cb_op_inp_best"] * self.cb_op_inp_min)
         )
-        output.append("Laue group probability: %.3f" % self.best_solution.likelihood)
-        output.append("Laue group confidence: %.3f" % self.best_solution.confidence)
+        output.append(f"Laue group probability: {self.best_solution.likelihood:.3f}")
+        output.append(f"Laue group confidence: {self.best_solution.confidence:.3f}")
         return "\n".join(output)
 
     def as_dict(self):
@@ -747,7 +715,7 @@ class SymmetryAnalysis(object):
         return d
 
 
-class ScoreSymmetryElement(object):
+class ScoreSymmetryElement:
     """Analyse intensities for presence of a given symmetry operation.
 
     1) Calculate the probability of observing this CC if the sym op is present,
@@ -816,7 +784,7 @@ class ScoreSymmetryElement(object):
         }
 
 
-class ScoreSubGroup(object):
+class ScoreSubGroup:
     """Score the probability of a given subgroup being the true subgroup.
 
     1) Calculates overall Zcc scores for symmetry elements present/absent from
@@ -876,7 +844,7 @@ class ScoreSubGroup(object):
         Returns:
           str:
         """
-        return "%s %.3f %.2f %.2f %.2f" % (
+        return "{} {:.3f} {:.2f} {:.2f} {:.2f}".format(
             self.subgroup["best_subsym"].space_group_info(),
             self.likelihood,
             self.z_cc_net,
@@ -928,6 +896,6 @@ class ScoreSubGroup(object):
             "z_cc_for": self.z_cc_for,
             "z_cc_against": self.z_cc_against,
             "max_angular_difference": self.subgroup["max_angular_difference"],
-            "cb_op": "%s" % (self.subgroup["cb_op_inp_best"]),
+            "cb_op": f"{self.subgroup['cb_op_inp_best']}",
             "stars": self.stars,
         }

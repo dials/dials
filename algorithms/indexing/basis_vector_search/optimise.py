@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import math
 
 from scitbx import lbfgs
@@ -19,7 +17,7 @@ def optimise_basis_vectors(reciprocal_lattice_points, vectors):
 
 # Optimise the initial basis vectors as per equation 11.4.3.4 of
 # Otwinowski et al, International Tables Vol. F, chapter 11.4 pp. 282-295
-class BasisVectorTarget(object):
+class BasisVectorTarget:
     def __init__(self, reciprocal_lattice_points):
         self.reciprocal_lattice_points = reciprocal_lattice_points
         self._xyz_parts = self.reciprocal_lattice_points.parts()
@@ -39,7 +37,7 @@ class BasisVectorTarget(object):
         return f, g
 
 
-class BasisVectorMinimiser(object):
+class BasisVectorMinimiser:
     def __init__(
         self,
         reciprocal_lattice_points,

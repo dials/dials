@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 from math import sqrt
 
 import pytest
@@ -7,7 +5,7 @@ import pytest
 from scitbx import matrix
 
 
-class Model(object):
+class Model:
     def __init__(self, test_nave_model=False):
         # Set up experimental models with regular geometry
         from dxtbx.model import BeamFactory, DetectorFactory, GoniometerFactory

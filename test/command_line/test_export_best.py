@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import procrunner
 
 
@@ -48,7 +46,7 @@ def test_export_best(dials_data, tmpdir):
     with tmpdir.join("best.dat").open("r") as f:
         lines = "".join(f.readlines()[:10])
     assert (
-        lines.replace("\r", "")
+        lines
         == """\
   181.8877       0.50       1.60
    63.1895       0.63       1.90
@@ -66,7 +64,7 @@ def test_export_best(dials_data, tmpdir):
     with tmpdir.join("best.hkl").open("r") as f:
         lines = "".join(f.readlines()[:10])
     assert (
-        lines.replace("\r", "")
+        lines
         == """\
  -20   27   -8      20.17      20.00
  -20   27   -7      74.13      21.59
@@ -83,7 +81,7 @@ def test_export_best(dials_data, tmpdir):
 
     lines = tmpdir.join("best.par").read()
     assert (
-        lines.replace("\r", "")
+        lines
         == """\
 # parameter file for BEST
 TITLE          From DIALS

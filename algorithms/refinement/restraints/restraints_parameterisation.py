@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 from collections import namedtuple
 
 from libtbx.phil import parse
@@ -77,7 +75,7 @@ ParamIndex = namedtuple("ParamIndex", ["parameterisation", "istart"])
 RestraintIndex = namedtuple("RestraintIndex", ["restraint", "istart"])
 
 
-class RestraintsParameterisation(object):
+class RestraintsParameterisation:
     def __init__(
         self,
         detector_parameterisations=None,
@@ -196,7 +194,7 @@ class RestraintsParameterisation(object):
         elif target == "median":
             tie = MedianUnitCellTie(model_parameterisations=params, sigma=sigma)
         else:
-            raise DialsRefineConfigError("target type {} not available".format(target))
+            raise DialsRefineConfigError(f"target type {target} not available")
 
         # add to the restraint list along with the global parameter indices
         self._group_model_restraints.append(RestraintIndex(tie, istarts))

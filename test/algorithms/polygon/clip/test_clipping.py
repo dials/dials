@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import math
 import random
 
@@ -214,7 +212,7 @@ def test_QuadWithConvexQuad_non_intersecting():
         assert len(result) == 0
 
 
-class TestLineWithRect(object):
+class TestLineWithRect:
     def test(self):
         self.box = ((-10, -10), (10, 10))
         for i in range(1000):

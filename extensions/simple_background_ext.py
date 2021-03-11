@@ -1,7 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
-
-class SimpleBackgroundExt(object):
+class SimpleBackgroundExt:
     """An extension class implementing simple background subtraction."""
 
     name = "simple"

@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 from scitbx import matrix
 
 from dials.algorithms.refinement.parameterisation.model_parameters import (
@@ -9,7 +7,7 @@ from dials.algorithms.refinement.parameterisation.model_parameters import (
 from dials.algorithms.refinement.refinement_helpers import dR_from_axis_and_angle
 
 
-class BeamMixin(object):
+class BeamMixin:
     """Mix-in class defining some functionality unique to beam parameterisations
     that can be shared by static and scan-varying versions"""
 

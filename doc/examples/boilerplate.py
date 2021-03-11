@@ -5,7 +5,6 @@ This can double as a helpful message which explains how the program is run.
 """
 
 # Always include a __future__ import if backward compatibility with Python 2 is intended
-from __future__ import absolute_import, division, print_function
 
 import logging
 import sys
@@ -64,10 +63,10 @@ phil_scope = libtbx.phil.parse(
 
 
 def do_boilerplate(
-    experiments,  # type: ExperimentList
-    reflections,  # type: flex.reflection_table
-    params,  # type: libtbx.phil.scope_extract
-):  # type: (...) -> (ExperimentList, flex.reflection_table)
+    experiments: ExperimentList,
+    reflections: flex.reflection_table,
+    params: libtbx.phil.scope_extract,
+) -> (ExperimentList, flex.reflection_table):
     """
     Write the behaviour of the program as functions and classes outside run().
 

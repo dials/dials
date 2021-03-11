@@ -1,6 +1,6 @@
 from unittest import mock
 
-from scitbx.array_family import flex
+import numpy as np
 
 from dials.algorithms.symmetry.cosym import observers
 
@@ -60,17 +60,15 @@ def test_SymmetryAnalysisObserver():
 
 
 def test_CosymClusterAnalysisObserver():
-    rij_matrix = flex.random_double(16)
-    rij_matrix.reshape(flex.grid(4, 4))
-    coords = flex.random_double(8)
-    coords.reshape(flex.grid(4, 2))
+    rij_matrix = np.random.rand(16).reshape(4, 4)
+    coords = np.random.rand(8).reshape(4, 2)
 
     # setup script
     script = mock.Mock()
     script.target = mock.Mock()
     script.target.rij_matrix = rij_matrix
     script.coords = coords
-    script.cluster_labels = flex.int(4, 0)
+    script.cluster_labels = np.zeros(4)
 
     # test the observer
     observer = observers.CosymClusterAnalysisObserver()

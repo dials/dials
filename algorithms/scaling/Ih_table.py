@@ -4,7 +4,6 @@ A datastructure for summing over groups of symmetry equivalent reflections.
 This module defines a blocked datastructures for summing over groups of
 symmetry equivalent reflections, as required for scaling.
 """
-from __future__ import absolute_import, division, print_function
 
 from orderedset import OrderedSet
 
@@ -37,7 +36,7 @@ def get_sorted_asu_indices(asu_indices, space_group, anomalous=False):
     return sorted_asu_miller_index, permuted
 
 
-class IhTable(object):
+class IhTable:
     """
     A class to manage access to Ih_table blocks.
 
@@ -393,7 +392,7 @@ class IhTable(object):
         return _reflection_table_to_iobs(joint_table, unit_cell, self.space_group)
 
 
-class IhTableBlock(object):
+class IhTableBlock:
     """
     A datastructure for efficient summations over symmetry equivalent reflections.
 
@@ -449,7 +448,7 @@ Not enough space left to add this data, please check for correct block initialis
         assert (
             dataset_id == self._setup_info["next_dataset"]
         ), """
-Datasets must be added in correct order: expected: %s, this dataset: %s""" % (
+Datasets must be added in correct order: expected: {}, this dataset: {}""".format(
             self._setup_info["next_dataset"],
             dataset_id,
         )
@@ -600,7 +599,7 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
     def inverse_scale_factors(self, new_scales):
         if new_scales.size() != self.size:
             assert 0, """attempting to set a new set of scale factors of different
-      length than previous assignment: was %s, attempting %s""" % (
+      length than previous assignment: was {}, attempting {}""".format(
                 self.inverse_scale_factors.size(),
                 new_scales.size(),
             )
@@ -641,7 +640,7 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
     def weights(self, new_weights):
         if new_weights.size() != self.size:
             assert 0, """attempting to set a new set of weights of different
-      length than previous assignment: was %s, attempting %s""" % (
+      length than previous assignment: was {}, attempting {}""".format(
                 self.size,
                 new_weights.size(),
             )

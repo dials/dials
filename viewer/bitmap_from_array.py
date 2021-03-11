@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 import wx
 
@@ -7,7 +5,7 @@ from dials.array_family import flex
 from dials_viewer_ext import rgb_img
 
 
-class wxbmp_from_np_array(object):
+class wxbmp_from_np_array:
     def __init__(
         self, lst_data_in, show_nums=True, palette="black2white", lst_data_mask_in=None
     ):

@@ -1,3 +1,44 @@
+DIALS 3.3.4 (2021-03-05)
+========================
+
+Bugfixes
+--------
+
+- ``dials.import``: Selecting a subset of images with ``image_range=`` now works on stills (`#1592 <https://github.com/dials/dials/issues/1592>`_)
+- `dials.search_beam_centre`: Dramatically improved execution time for large data sets (`#1612 <https://github.com/dials/dials/issues/1612>`_)
+- ``dials.reindex``: Write ``.refl`` file output in the default
+  "MessagePack" format for better compatibility with downstream programs (`#1616 <https://github.com/dials/dials/issues/1616>`_)
+- ``dials.scale``: Fix rare memory crash from infinite loop, that could
+  occur with very bad quality datasets (`#1622 <https://github.com/dials/dials/issues/1622>`_)
+
+
+Improved Documentation
+----------------------
+
+- ``dials.refine``: More informative error message when reflections have weights of zero (`#1584 <https://github.com/dials/dials/issues/1584>`_)
+
+
+DIALS 3.3.3 (2021-02-15)
+========================
+
+No changes to core DIALS in 3.3.3.
+
+
+DIALS 3.3.2 (2021-02-01)
+========================
+
+Bugfixes
+--------
+
+- Remove unnecessary call to ``imageset.get_raw_data()`` while generating
+  masks. This was causing performance issues when spotfinding. (`#1449 <https://github.com/dials/dials/issues/1449>`_)
+- ``dials.export``: Allow data with either summation or profile fitted
+  intensities to be exported. Previously, both were (erroneously)
+  required to be present. (`#1556 <https://github.com/dials/dials/issues/1556>`_)
+- ``dials.scale``: Fix crash if only summation intensities present and ``intensity_choice=combine`` (`#1557 <https://github.com/dials/dials/issues/1557>`_)
+- Fix unicode logging errors on Windows (`#1565 <https://github.com/dials/dials/issues/1565>`_)
+
+
 DIALS 3.3.1 (2021-01-18)
 ========================
 

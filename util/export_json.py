@@ -1,9 +1,7 @@
-from __future__ import absolute_import, division, print_function
-
 import json
 
 
-class ReciprocalLatticeJson(object):
+class ReciprocalLatticeJson:
     def __init__(self, experiments, reflections):
         self.experiments = experiments
         self.reflections = reflections

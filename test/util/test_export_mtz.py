@@ -2,7 +2,6 @@
 Unit testing for the export_mtz.py routines
 """
 
-from __future__ import absolute_import, division, print_function
 
 import itertools
 
@@ -25,10 +24,10 @@ def offset_ranges(offsets, ranges):
     return [(l + off, h + off) for off, (l, h) in zip(offsets, ranges)]
 
 
-class TestBatchRangeCalculations(object):
+class TestBatchRangeCalculations:
     "Test the calculation of non-overlapping batch ranges"
 
-    class MockScan(object):
+    class MockScan:
         def __init__(self, image_range):
             self._batch_offset = 0
             self._image_range = image_range
@@ -42,7 +41,7 @@ class TestBatchRangeCalculations(object):
         def get_image_range(self):
             return self._image_range
 
-    class MockExperiment(object):
+    class MockExperiment:
         def __init__(self, image_range, scan=True):
             assert len(image_range) == 2
             self.scaling_model = None

@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import pytest
 
 from cctbx.sgtbx import space_group, space_group_symbols
@@ -32,7 +30,7 @@ from dials.array_family import flex
 from dials.test.algorithms.refinement.setup_geometry import Extract
 
 
-class _Test(object):
+class _Test:
     def __init__(self):
         self.create_models()
         self.generate_reflections()
@@ -119,6 +117,9 @@ class _Test(object):
         # Make a standard reflection_table and copy in the ray data
         self.reflections = flex.reflection_table.empty_standard(len(rays))
         self.reflections.update(rays)
+
+        # Set dummy observed variances to allow statistical weights to be set
+        self.reflections["xyzobs.mm.variance"] += (1e-3, 1e-3, 1e-6)
 
     def get_fd_gradients(self, pred_param, ref_predictor):
 
@@ -210,7 +211,7 @@ def test_stills_pred_param(tc):
     for i, (an_grad, fd_grad) in enumerate(zip(an_grads, fd_grads)):
 
         # compare FD with analytical calculations
-        print("\nParameter {0}: {1}".format(i, fd_grad["name"]))
+        print(f"\nParameter {i}: {fd_grad['name']}")
 
         for name in ["dX_dp", "dY_dp", "dDeltaPsi_dp"]:
             print(name)
@@ -269,9 +270,7 @@ def test_stills_pred_param(tc):
                 assert flex.max(flex.abs(norm_error)) < 30
             except AssertionError as e:
                 e.args += (
-                    "extreme normalised error value: {}".format(
-                        flex.max(flex.abs(norm_error))
-                    ),
+                    f"extreme normalised error value: {flex.max(flex.abs(norm_error))}",
                 )
                 raise e
 
@@ -290,7 +289,7 @@ def test_stills_pred_param(tc):
                 try:
                     assert n_outliers < 250
                 except AssertionError as e:
-                    e.args += ("too many outliers rejected: {}".format(n_outliers),)
+                    e.args += (f"too many outliers rejected: {n_outliers}",)
                     raise e
 
                 print(
@@ -300,7 +299,7 @@ def test_stills_pred_param(tc):
                     ).format(n_outliers, tst_val)
                 )
                 # largest normalied error now about -4. for dX/dp of Detector0Tau1
-                assert abs(tst_val) < 6, "should be < 6, not %s" % tst_val
+                assert abs(tst_val) < 6, f"should be < 6, not {tst_val}"
 
 
 # In comparison with FD approximations, the worst gradients by far are dX/dp
@@ -335,7 +334,7 @@ def test_spherical_relp_stills_pred_param(tc):
 
     # compare FD with analytical calculations
     for i, (an_grad, fd_grad) in enumerate(zip(an_grads, fd_grads)):
-        print("\nParameter {0}: {1}".format(i, fd_grad["name"]))
+        print(f"\nParameter {i}: {fd_grad['name']}")
         for name in ["dX_dp", "dY_dp", "dDeltaPsi_dp"]:
             print(name)
             for a, b in zip(an_grad[name], fd_grad[name]):

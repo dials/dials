@@ -1,12 +1,10 @@
-from __future__ import absolute_import, division, print_function
-
 import json
 import math
 import os
 import shutil
-import pytest
 
 import procrunner
+import pytest
 
 from dxtbx.serialize import load
 
@@ -127,9 +125,9 @@ def test_basic_blocking_options(dials_data, tmp_path, block_size, block_units):
 
     args = ["dials.integrate", "modified_input.json", "nproc=2"]
     if block_size:
-        args.append("block.size=%s" % block_size)
+        args.append(f"block.size={block_size}")
     if block_units:
-        args.append("block.units=%s" % block_units)
+        args.append(f"block.units={block_units}")
 
     result = procrunner.run(args, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
@@ -420,7 +418,7 @@ def test_integrate_with_kapton(dials_regression, tmpdir):
     shutil.copy(pickle_path, loc)
     shutil.copy(image_path, loc)
 
-    with open(json_name, "w") as w, open(json_path, "r") as r:
+    with open(json_name, "w") as w, open(json_path) as r:
         w.write(r.read() % loc.replace("\\", "\\\\"))
 
     templ_phil = """
@@ -483,7 +481,7 @@ def test_integrate_with_kapton(dials_regression, tmpdir):
     results = []
     for mode in "kapton", "nokapton":
         table = flex.reflection_table.from_file(
-            tmpdir / ("idx-20161021225550223_integrated_%s.refl" % mode)
+            tmpdir / (f"idx-20161021225550223_integrated_{mode}.refl")
         )
         millers = table["miller_index"]
         test_indices = {"zero": (-5, 2, -6), "low": (-2, -20, 7), "high": (-1, -10, 4)}

@@ -1,11 +1,7 @@
-from __future__ import absolute_import, division, print_function
-
 import math
 import sys
 
-import six
 import wx
-from six.moves import range
 
 import scitbx.matrix
 from scitbx.array_family import flex
@@ -239,7 +235,7 @@ def get_flex_image_multipanel(
     return my_flex_image
 
 
-class _Tiles(object):
+class _Tiles:
     # maximum number of tiles held in each level cache
     MaxTileList = 512
 
@@ -269,7 +265,7 @@ class _Tiles(object):
         if file_name_or_data is None:
             self.raw_image = None
             return
-        if isinstance(file_name_or_data, six.string_types):
+        if isinstance(file_name_or_data, str):
             from iotbx.detectors import ImageFactory
 
             self.raw_image = ImageFactory(file_name_or_data)

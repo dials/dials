@@ -1,6 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
-
 def test_after_import_extensions():
     import dials.extensions
     from dials.extensions.dispersion_spotfinder_threshold_ext import (

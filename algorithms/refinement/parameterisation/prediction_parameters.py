@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 from collections import namedtuple
 
 from scitbx import matrix, sparse
@@ -23,7 +21,7 @@ ParamSet = namedtuple(
 )
 
 
-class PredictionParameterisation(object):
+class PredictionParameterisation:
     """
     Abstract interface for a class that groups together model parameterisations
     relating to diffraction geometry and provides:
@@ -663,7 +661,7 @@ class PredictionParameterisation(object):
         )
 
 
-class SparseGradientVectorMixin(object):
+class SparseGradientVectorMixin:
     """Mixin class to use sparse vectors for storage of gradients of the
     prediction formula"""
 

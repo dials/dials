@@ -1,8 +1,7 @@
-from __future__ import absolute_import, division, print_function
-
 import os
 
 import procrunner
+import pytest
 
 from dxtbx.model.experiment_list import ExperimentListFactory
 from libtbx import phil
@@ -56,6 +55,10 @@ def test1(dials_regression, run_in_tmpdir):
         )
 
 
+@pytest.mark.skipif(
+    os.name == "nt",
+    reason="Multiprocessing error on Windows: 'This class cannot be instantiated from Python'",
+)
 def test_multi_process_refinement_gives_same_results_as_single_process_refinement(
     dials_regression, run_in_tmpdir
 ):
