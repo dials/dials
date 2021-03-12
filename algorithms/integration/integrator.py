@@ -1142,8 +1142,8 @@ class Integrator:
         logger.info(heading("Processing reflections"))
         logger.info("")
 
-        # Create summary format
-        fmt = (
+        # Print the summary
+        logger.info(
             " Processing the following experiments:\n"
             "\n"
             " Experiments: %d\n"
@@ -1152,12 +1152,7 @@ class Integrator:
             " Goniometers: %d\n"
             " Scans:       %d\n"
             " Crystals:    %d\n"
-            " Imagesets:   %d\n"
-        )
-
-        # Print the summary
-        logger.info(
-            fmt,
+            " Imagesets:   %d\n",
             len(self.experiments),
             len(self.experiments.beams()),
             len(self.experiments.detectors()),

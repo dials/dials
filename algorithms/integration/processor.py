@@ -855,8 +855,7 @@ class _Manager:
         ) = assess_available_memory(self.params)
 
         report.append(
-            "  %-50s:%5.1f GB"
-            % ("Memory required per process", memory_required_per_process / 1e9)
+            f"  {'Memory required per process':50}:{memory_required_per_process/1e9:5.1f} GB"
         )
 
         output_level = logging.INFO
