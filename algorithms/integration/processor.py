@@ -278,9 +278,8 @@ class _Processor:
                 mp_nproc,
             )
         else:
-            logger.info(
-                " Using multiprocessing with %d parallel job(s)\n",
-            )
+            logger.info(" Using multiprocessing with %d parallel job(s)\n", mp_nproc)
+
         if mp_njobs * mp_nproc > 1:
 
             def process_output(result):
