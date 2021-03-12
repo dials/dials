@@ -196,7 +196,7 @@ phil_scope = iotbx.phil.parse(
       .expert_level = 1
     emax = 10
       .type = float(value_min = 0)
-      .help = "Reject reflecitons with normalised intensities E^2 > emax^2"
+      .help = "Reject reflections with normalised intensities E^2 > emax^2"
       .expert_level = 2
   }
   """
