@@ -502,7 +502,7 @@ def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
     assert tmpdir.join("analysis_results.json").check()
     result = get_merging_stats(tmpdir.join("unmerged.mtz").strpath)
     assert result.overall.r_pim < 0.175  # 12/06/20 was 0.171,
-    assert result.overall.cc_one_half > 0.95  # 03/02/20 was 0.961
+    assert result.overall.cc_one_half > 0.94  # 03/02/20 was 0.961
     assert result.overall.n_obs > 50000  # 03/02/20 was 50213
 
     with open(tmpdir.join("analysis_results.json").strpath) as f:

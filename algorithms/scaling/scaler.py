@@ -28,7 +28,10 @@ from dials.algorithms.scaling.combine_intensities import (
 )
 from dials.algorithms.scaling.error_model.engine import run_error_model_refinement
 from dials.algorithms.scaling.Ih_table import IhTable
-from dials.algorithms.scaling.outlier_rejection import determine_outlier_index_arrays
+from dials.algorithms.scaling.outlier_rejection import (
+    determine_Esq_outlier_index_arrays,
+    determine_outlier_index_arrays,
+)
 from dials.algorithms.scaling.parameter_handler import ScalingParameterManagerGenerator
 from dials.algorithms.scaling.reflection_selection import (
     _select_groups_on_Isigma_cutoff,
@@ -797,6 +800,13 @@ attempting to use all reflections for minimisation."""
             )[0]
             self.outliers = flex.bool(self.n_suitable_refl, False)
             self.outliers.set_selected(outlier_indices, True)
+            if self.params.scaling_options.emax:
+                Esq_outlier_indices = determine_Esq_outlier_index_arrays(
+                    self.global_Ih_table,
+                    self.experiment,
+                    self.params.scaling_options.emax,
+                )[0]
+                self.outliers.set_selected(Esq_outlier_indices, True)
             if self._free_Ih_table:
                 free_outlier_indices = determine_outlier_index_arrays(
                     self._free_Ih_table,
@@ -804,6 +814,13 @@ attempting to use all reflections for minimisation."""
                     self.params.scaling_options.outlier_zmax,
                 )[0]
                 self.outliers.set_selected(free_outlier_indices, True)
+                if self.params.scaling_options.emax:
+                    free_Esq_outlier_indices = determine_Esq_outlier_index_arrays(
+                        self._free_Ih_table,
+                        self.experiment,
+                        self.params.scaling_options.emax,
+                    )[0]
+                    self.outliers.set_selected(free_Esq_outlier_indices, True)
 
     def make_ready_for_scaling(self, outlier=True):
         """
@@ -1078,6 +1095,16 @@ class MultiScalerBase(ScalerBase):
             ):
                 scaler.outliers = flex.bool(scaler.n_suitable_refl, False)
                 scaler.outliers.set_selected(outlier_indices, True)
+            if self.params.scaling_options.emax:
+                Esq_outlier_indices = determine_Esq_outlier_index_arrays(
+                    self.global_Ih_table,
+                    self.active_scalers[0].experiment,
+                    self.params.scaling_options.emax,
+                )
+                for Esq_outliers, scaler in zip(
+                    Esq_outlier_indices, self.active_scalers
+                ):
+                    scaler.outliers.set_selected(Esq_outliers, True)
             if self._free_Ih_table:
                 free_outlier_index_arrays = determine_outlier_index_arrays(
                     self._free_Ih_table,
@@ -1086,9 +1113,22 @@ class MultiScalerBase(ScalerBase):
                     target=target,
                 )
                 for outlier_indices, scaler in zip(
-                    free_outlier_index_arrays, self.active_scalers
+                    free_outlier_index_arrays,
+                    self.active_scalers,
                 ):
                     scaler.outliers.set_selected(outlier_indices, True)
+                if self.params.scaling_options.emax:
+                    free_Esq_outlier_indices = determine_Esq_outlier_index_arrays(
+                        self._free_Ih_table,
+                        self.active_scalers[0].experiment,
+                        self.params.scaling_options.emax,
+                    )
+                    for Esq_outlier_indices, scaler in zip(
+                        free_Esq_outlier_indices,
+                        self.active_scalers,
+                    ):
+                        scaler.outliers.set_selected(Esq_outlier_indices, True)
+
         logger.debug("Finished outlier rejection.")
         log_memory_usage()
 

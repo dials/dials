@@ -103,6 +103,7 @@ def simple_reflection_table():
     """Create a small reflection table"""
     refl = flex.reflection_table()
     refl["intensity"] = flex.double([1.0, 2.0, 3.0])
+    refl["variance"] = flex.double([1.0, 2.0, 3.0])
     refl["d"] = flex.double([1.0, 2.0, 3.0])
     refl["miller_index"] = flex.miller_index([(0, 0, 3), (0, 0, 2), (0, 0, 1)])
     refl.set_flags(flex.bool(refl.size(), False), refl.flags.bad_for_scaling)
@@ -135,6 +136,7 @@ def refl_for_norm():
         )
     rt = flex.reflection_table()
     rt["intensity"] = intensity_array
+    rt["variance"] = intensity_array
     rt["miller_index"] = miller_indices
     rt.set_flags(flex.bool(11000, False), rt.flags.bad_for_scaling)
     return rt
