@@ -82,7 +82,7 @@ def _make_reflection_table_from_scaler(scaler):
 
 def _determine_Imids(combiner, raw_intensities):
     if not combiner.Imids:
-        avg = max(0, flex.mean(raw_intensities))
+        avg = max(10, flex.mean(raw_intensities))
         Imid = flex.max(raw_intensities) / 10.0
         Imid_list = [0, 1, avg, Imid]
         while Imid > avg:
