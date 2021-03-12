@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import math
 
 from iotbx import phil
@@ -61,7 +59,7 @@ absorption_defs = """
 absorption_phil_scope = phil.parse(absorption_defs, process_includes=True)
 
 
-class get_absorption_correction(object):
+class get_absorption_correction:
     def __init__(self):
         # Kapton, or polyimide.  C22H10N2O5 Density=1.43, Angle=90.deg
         # Photon Energy (eV), Atten Length (microns)
@@ -191,7 +189,7 @@ class get_absorption_correction(object):
         return microns / 1000.0
 
 
-class KaptonAbsorption(object):
+class KaptonAbsorption:
     def __init__(
         self,
         height_mm,
@@ -416,7 +414,7 @@ class KaptonAbsorption(object):
             return self.segments
 
 
-class image_kapton_correction(object):
+class image_kapton_correction:
     def __init__(
         self,
         panel_size_px=None,
@@ -573,7 +571,7 @@ class image_kapton_correction(object):
         return corrections, sigmas
 
 
-class multi_kapton_correction(object):
+class multi_kapton_correction:
     def __init__(self, experiments, integrated, kapton_params, logger=None):
         self.experiments = experiments
         self.reflections = integrated

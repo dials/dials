@@ -4,7 +4,6 @@ A datastructure for summing over groups of symmetry equivalent reflections.
 This module defines a blocked datastructures for summing over groups of
 symmetry equivalent reflections, as required for scaling.
 """
-from __future__ import absolute_import, division, print_function
 
 from orderedset import OrderedSet
 
@@ -37,7 +36,7 @@ def get_sorted_asu_indices(asu_indices, space_group, anomalous=False):
     return sorted_asu_miller_index, permuted
 
 
-class IhTable(object):
+class IhTable:
     """
     A class to manage access to Ih_table blocks.
 
@@ -49,9 +48,6 @@ class IhTable(object):
     This class acts as a 'master' to setup the block structure and control access
     to the underlying blocks - only metadata is kept in this class after
     initialisation, the reflections etc are all contained in the blocks.
-    To set data in the blocks, methods are provided by the master, e.g
-    set_intensities(intensities, block_id) which are delegated down to the
-    appropriate block.
 
     Attributes:
         space_group: The space group for the dataset.
@@ -143,8 +139,6 @@ class IhTable(object):
             end = block.dataset_info[dataset_id]["end_index"]
             sel = flex.size_t(range(start, end))
             block.Ih_table[column].set_selected(sel, data_for_block)
-            if column == "variance":
-                block.Ih_table["weights"].set_selected(sel, 1.0 / data_for_block)
 
     def get_block_selections_for_dataset(self, dataset):
         """Generate the block selection list for a given dataset."""
@@ -171,27 +165,15 @@ class IhTable(object):
             block.block_selections for block in self.Ih_table_blocks
         ]
 
-    def update_weights(self, block_id=None):
-        """Update weights (to allow iterative updating, not implemented)."""
-
-    def update_error_model(self, error_model):
+    def update_weights(self, error_model=None):
         """Update the error model in the blocks."""
         for block in self.Ih_table_blocks:
-            block.update_error_model(error_model)
-
-    def reset_error_model(self):
-        """Reset the weights in the blocks."""
-        for block in self.Ih_table_blocks:
-            block.reset_error_model()
+            block.update_weights(error_model)
 
     @property
     def blocked_data_list(self):
         """Return the list of IhTableBlock instances."""
         return self.Ih_table_blocks
-
-    def set_intensities(self, intensities, block_id):
-        """Set the intensities for a given block."""
-        self.Ih_table_blocks[block_id].Ih_table["intensity"] = intensities
 
     def set_derivatives(self, derivatives, block_id):
         """Set the derivatives matrix for a given block."""
@@ -200,11 +182,6 @@ class IhTable(object):
     def set_inverse_scale_factors(self, new_scales, block_id):
         """Set the inverse scale factors for a given block."""
         self.Ih_table_blocks[block_id].inverse_scale_factors = new_scales
-
-    def set_variances(self, new_variances, block_id):
-        """Set the variances and weights for a given block."""
-        self.Ih_table_blocks[block_id].Ih_table["variance"] = new_variances
-        self.Ih_table_blocks[block_id].Ih_table["weights"] = 1.0 / new_variances
 
     def calc_Ih(self, block_id=None):
         """Calculate the latest value of Ih, for a given block or for all blocks."""
@@ -415,7 +392,7 @@ class IhTable(object):
         return _reflection_table_to_iobs(joint_table, unit_cell, self.space_group)
 
 
-class IhTableBlock(object):
+class IhTableBlock:
     """
     A datastructure for efficient summations over symmetry equivalent reflections.
 
@@ -471,7 +448,7 @@ Not enough space left to add this data, please check for correct block initialis
         assert (
             dataset_id == self._setup_info["next_dataset"]
         ), """
-Datasets must be added in correct order: expected: %s, this dataset: %s""" % (
+Datasets must be added in correct order: expected: {}, this dataset: {}""".format(
             self._setup_info["next_dataset"],
             dataset_id,
         )
@@ -498,7 +475,7 @@ Datasets must be added in correct order: expected: %s, this dataset: %s""" % (
         ), """
 Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
         self.h_expand_matrix = self.h_index_matrix.transpose()
-        self.Ih_table["weights"] = 1.0 / self.Ih_table["variance"]
+        self.weights = 1.0 / self.variances
         self._setup_info["setup_complete"] = True
 
     def group_multiplicities(self):
@@ -548,23 +525,22 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
     def calc_Ih(self):
         """Calculate the current best estimate for Ih for each reflection group."""
         scale_factors = self.Ih_table["inverse_scale_factor"]
-        gsq = flex.pow2(scale_factors) * self.Ih_table["weights"]
+        gsq = flex.pow2(scale_factors) * self.weights
         sumgsq = gsq * self.h_index_matrix
-        gI = (scale_factors * self.Ih_table["intensity"]) * self.Ih_table["weights"]
+        gI = (scale_factors * self.Ih_table["intensity"]) * self.weights
         sumgI = gI * self.h_index_matrix
         Ih = sumgI / sumgsq
         self.Ih_table["Ih_values"] = Ih * self.h_expand_matrix
 
-    def update_error_model(self, error_model):
+    def update_weights(self, error_model=None):
         """Update the scaling weights based on an error model."""
-        sigmaprimesq = error_model.update_variances(
-            self.Ih_table["variance"], self.Ih_table["intensity"]
-        )
-        self.Ih_table["weights"] = 1.0 / sigmaprimesq
-
-    def reset_error_model(self):
-        """Reset the weights to their initial value."""
-        self.Ih_table["weights"] = 1.0 / self.Ih_table["variance"]
+        if error_model:
+            sigmaprimesq = error_model.update_variances(
+                self.variances, self.intensities
+            )
+            self.weights = 1.0 / sigmaprimesq
+        else:
+            self.weights = 1.0 / self.variances
 
     def calc_nh(self):
         """Calculate the number of refls in the group to which the reflection belongs.
@@ -623,7 +599,7 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
     def inverse_scale_factors(self, new_scales):
         if new_scales.size() != self.size:
             assert 0, """attempting to set a new set of scale factors of different
-      length than previous assignment: was %s, attempting %s""" % (
+      length than previous assignment: was {}, attempting {}""".format(
                 self.inverse_scale_factors.size(),
                 new_scales.size(),
             )
@@ -635,10 +611,20 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
         """The variances of the reflections."""
         return self.Ih_table["variance"]
 
+    @variances.setter
+    def variances(self, new_variances):
+        assert new_variances.size() == self.size
+        self.Ih_table["variance"] = new_variances
+
     @property
     def intensities(self):
         """The unscaled reflection intensities."""
         return self.Ih_table["intensity"]
+
+    @intensities.setter
+    def intensities(self, new_intensities):
+        assert new_intensities.size() == self.size
+        self.Ih_table["intensity"] = new_intensities
 
     @property
     def Ih_values(self):
@@ -654,7 +640,7 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
     def weights(self, new_weights):
         if new_weights.size() != self.size:
             assert 0, """attempting to set a new set of weights of different
-      length than previous assignment: was %s, attempting %s""" % (
+      length than previous assignment: was {}, attempting {}""".format(
                 self.size,
                 new_weights.size(),
             )

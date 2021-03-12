@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 from scitbx.array_family import flex
 
 from dials.algorithms.refinement.parameterisation.model_parameters import (
@@ -104,17 +102,15 @@ class GaussianSmoother(GS):
     """A Gaussian smoother for ScanVaryingModelParameterisations"""
 
     def value_weight(self, x, param):
-        result = super(GaussianSmoother, self).value_weight(x, flex.double(param.value))
+        result = super().value_weight(x, flex.double(param.value))
         return (result.get_value(), result.get_weight(), result.get_sumweight())
 
     def multi_value_weight(self, x, param):
-        result = super(GaussianSmoother, self).multi_value_weight(
-            flex.double(x), flex.double(param.value)
-        )
+        result = super().multi_value_weight(flex.double(x), flex.double(param.value))
         return (result.get_value(), result.get_weight(), result.get_sumweight())
 
     def positions(self):
-        return list(super(GaussianSmoother, self).positions())
+        return list(super().positions())
 
 
 class ScanVaryingModelParameterisation(ModelParameterisation):
@@ -327,9 +323,7 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
         # later calls, assumes compose has been called at image number t, so that
         # get_ds_dp will be specific for that image. Now call the base class method
         # and return the result
-        return super(
-            ScanVaryingModelParameterisation, self
-        ).calculate_state_uncertainties(self._var_cov)
+        return super().calculate_state_uncertainties(self._var_cov)
 
     def set_state_uncertainties(self, var_cov_list):
         """Send the calculated variance-covariance matrices for model state elements

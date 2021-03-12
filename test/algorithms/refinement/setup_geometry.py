@@ -1,6 +1,5 @@
 """Setup experimental geometry for refinement test cases"""
 
-from __future__ import absolute_import, division, print_function
 
 import random
 
@@ -18,7 +17,7 @@ def random_vector_close_to(vector, sd=0.5):
     )
 
 
-class Extract(object):
+class Extract:
     """Parse and extract geometry model from PHIL"""
 
     def __init__(

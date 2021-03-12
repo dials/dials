@@ -1,6 +1,5 @@
-from __future__ import absolute_import, division, print_function
-
 import os
+import shutil
 
 import procrunner
 import pytest
@@ -41,19 +40,15 @@ def test_reference_individual(dials_data, tmpdir, use_beam, use_gonio, use_detec
     assert tmpdir.join("fake_geometry.expt").check(file=1)
 
     # Write an import phil file
-    import_phil = """
-      input {
+    import_phil = f"""
+      input {{
         reference_geometry = fake_geometry.expt
         check_reference_geometry = False
-        use_beam_reference = %s
-        use_gonio_reference = %s
-        use_detector_reference = %s
-      }
-  """ % (
-        use_beam,
-        use_gonio,
-        use_detector,
-    )
+        use_beam_reference = {use_beam}
+        use_gonio_reference = {use_gonio}
+        use_detector_reference = {use_detector}
+      }}
+  """
     tmpdir.join("test_reference_individual.phil").write(import_phil)
 
     result = procrunner.run(
@@ -376,23 +371,32 @@ def test_extrapolate_scan(dials_data, tmpdir):
 
 @pytest.fixture
 def centroid_test_data_with_missing_image(dials_data, tmp_path):
-    # All the images except image #4
+    """
+    Provide a testset with a missing image (#4) in a temporary directory
+    (symlink if possible, copy if necessary), and clean up test files
+    afterwards to conserve disk space.
+    """
     images = dials_data("centroid_test_data").listdir(
         fil="centroid_*[1,2,3,5,6,7,8,9].cbf", sort=True
     )
     for image in images:
-        (tmp_path / image.basename).symlink_to(image)
-    return tmp_path.joinpath("centroid_####.cbf")
+        try:
+            (tmp_path / image.basename).symlink_to(image)
+        except OSError:
+            shutil.copy(image, tmp_path)
+    yield tmp_path.joinpath("centroid_####.cbf")
+    for image in images:
+        try:
+            (tmp_path / image.basename).unlink()
+        except PermissionError:
+            pass
 
 
 def test_template_with_missing_image_fails(centroid_test_data_with_missing_image):
     # This should fail because image #4 is missing
     for image_range in (None, (3, 5)):
         result = procrunner.run(
-            [
-                "dials.import",
-                f"template={centroid_test_data_with_missing_image}",
-            ]
+            ["dials.import", f"template={centroid_test_data_with_missing_image}"]
             + (["image_range=%i,%i" % image_range] if image_range else []),
             working_directory=centroid_test_data_with_missing_image.parent,
         )
@@ -429,10 +433,10 @@ def test_import_still_sequence_as_experiments(dials_data, tmpdir):
 
     out = "experiments_as_still.expt"
 
-    _ = procrunner.run(
-        ["dials.import", "scan.oscillation=0,0", "output.experiments=%s" % out]
+    procrunner.run(
+        ["dials.import", "scan.oscillation=0,0", f"output.experiments={out}"]
         + [f.strpath for f in image_files],
-        working_directory=tmpdir.strpath,
+        working_directory=tmpdir,
     )
 
     imported_exp = load.experiment_list(tmpdir.join(out).strpath)
@@ -440,7 +444,7 @@ def test_import_still_sequence_as_experiments(dials_data, tmpdir):
     for exp in imported_exp:
         assert exp.identifier != ""
 
-    iset = set(exp.imageset for exp in imported_exp)
+    iset = {exp.imageset for exp in imported_exp}
     assert len(iset) == 1
 
     # verify scans, goniometers kept too
@@ -456,7 +460,7 @@ def test_import_still_sequence_as_experiments_subset(dials_data, tmpdir):
     out = "experiments_as_still.expt"
 
     _ = procrunner.run(
-        ["dials.import", "scan.oscillation=10,0", "output.experiments=%s" % out]
+        ["dials.import", "scan.oscillation=10,0", f"output.experiments={out}"]
         + [f.strpath for f in image_files],
         working_directory=tmpdir.strpath,
     )
@@ -466,8 +470,42 @@ def test_import_still_sequence_as_experiments_subset(dials_data, tmpdir):
     for exp in imported_exp:
         assert exp.identifier != ""
 
+    iset = {exp.imageset for exp in imported_exp}
+    assert len(iset) == 1
+
+    # verify scans, goniometers kept too
+    assert all(exp.scan.get_oscillation() == (10.0, 0.0) for exp in imported_exp)
+    assert all(exp.goniometer is not None for exp in imported_exp)
+
+
+def test_import_still_sequence_as_expts_subset_by_range(dials_data, tmp_path):
+    image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
+
+    out = tmp_path / "experiments_as_still.expt"
+
+    result = procrunner.run(
+        [
+            "dials.import",
+            "scan.oscillation=10,0",
+            "image_range=3,5",
+            f"output.experiments={out}",
+            *image_files,
+        ],
+        working_directory=tmp_path,
+    )
+
+    assert result.returncode == 0
+
+    imported_exp = load.experiment_list(out)
+    assert len(imported_exp) == 3
+    for exp in imported_exp:
+        assert exp.identifier != ""
+
     iset = set(exp.imageset for exp in imported_exp)
     assert len(iset) == 1
+    assert len(imported_exp[0].imageset) == 3
+
+    assert list(iset)[0].get_image_identifier(0) == image_files[2].strpath
 
     # verify scans, goniometers kept too
     assert all(exp.scan.get_oscillation() == (10.0, 0.0) for exp in imported_exp)
@@ -481,7 +519,7 @@ def test_import_still_sequence_as_experiments_split_subset(dials_data, tmpdir):
     out = "experiments_as_still.expt"
 
     _ = procrunner.run(
-        ["dials.import", "scan.oscillation=10,0", "output.experiments=%s" % out]
+        ["dials.import", "scan.oscillation=10,0", f"output.experiments={out}"]
         + [f.strpath for f in image_files],
         working_directory=tmpdir.strpath,
     )
@@ -491,7 +529,7 @@ def test_import_still_sequence_as_experiments_split_subset(dials_data, tmpdir):
     for exp in imported_exp:
         assert exp.identifier != ""
 
-    iset = set(exp.imageset for exp in imported_exp)
+    iset = {exp.imageset for exp in imported_exp}
     assert len(iset) == 2
 
 

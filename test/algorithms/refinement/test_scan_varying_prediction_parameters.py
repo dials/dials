@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import sys
 from math import pi
 
@@ -30,7 +28,7 @@ from dials.algorithms.refinement.prediction.managed_predictors import (
 )
 
 
-class _Test(object):
+class _Test:
     def create_models(self, cmdline_overrides=None):
         from dxtbx.model import ScanFactory
         from libtbx.phil import parse
@@ -215,7 +213,7 @@ def test(cmdline_overrides=[]):
             for (a, b) in zip(phi_grads, an_grads[i]["dphi_dp"]):
                 assert a == pytest.approx(b, abs=1e-5)
         except AssertionError:
-            print("Failure for {}".format(p_names[i]))
+            print(f"Failure for {p_names[i]}")
             raise
 
     # return to the initial state

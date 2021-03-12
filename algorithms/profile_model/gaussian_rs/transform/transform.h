@@ -243,9 +243,6 @@ namespace dials {
         y0_ = bbox[2];
         shoebox_size_ = int3(bbox[5] - bbox[4], bbox[3] - bbox[2], bbox[1] - bbox[0]);
         DIALS_ASSERT(shoebox_size_.all_gt(0));
-        DIALS_ASSERT(bbox[0] >= 0 && bbox[2] >= 0);
-        DIALS_ASSERT(bbox[1] <= spec.detector()[panel].get_image_size()[0]);
-        DIALS_ASSERT(bbox[3] <= spec.detector()[panel].get_image_size()[1]);
         step_size_ = spec.step_size();
         grid_size_ = spec.grid_size();
         grid_cent_ = spec.grid_centre();
@@ -331,7 +328,15 @@ namespace dials {
         // frame to the grid point.
         af::c_grid<2> grid_size2(grid_size_[1], grid_size_[2]);
         for (std::size_t j = 0; j < shoebox_size_[1]; ++j) {
+          if (y0_ + j < 0 | y0_ + j >= panel.get_image_size()[1]) {
+            // This y-coordinate is outside the bounds of the panel
+            continue;
+          }
           for (std::size_t i = 0; i < shoebox_size_[2]; ++i) {
+            if (x0_ + i < 0 | x0_ + i >= panel.get_image_size()[0]) {
+              // This x-coordinate is outside the bounds of the panel
+              continue;
+            }
             vert4 input(gc_array(j, i),
                         gc_array(j, i + 1),
                         gc_array(j + 1, i + 1),
@@ -397,6 +402,7 @@ namespace dials {
         vec2<double> shoebox_centroid_px = panel.get_ray_intersection_px(s1_);
         double attenuation_length = panel.attenuation_length(shoebox_centroid_px);
 
+        // Mapping from shoebox image coordinate to transformed grid coordinate
         af::versa<vec2<double>, af::c_grid<2> > gc_array(
           af::c_grid<2>(shoebox_size_[1] + 1, shoebox_size_[2] + 1));
         for (int j = 0; j <= shoebox_size_[1]; ++j) {
@@ -413,7 +419,16 @@ namespace dials {
         // frame to the grid point.
         af::c_grid<2> grid_size2(grid_size_[1], grid_size_[2]);
         for (std::size_t j = 0; j < shoebox_size_[1]; ++j) {
+          if (y0_ + j < 0 | y0_ + j >= panel.get_image_size()[1]) {
+            // This y-coordinate is outside the bounds of the panel
+            continue;
+          }
           for (std::size_t i = 0; i < shoebox_size_[2]; ++i) {
+            if (x0_ + i < 0 | x0_ + i >= panel.get_image_size()[0]) {
+              // This x-coordinate is outside the bounds of the panel
+              continue;
+            }
+            // The corners of the image pixel mapped to transformed grid coordinates
             vert4 input(gc_array(j, i),
                         gc_array(j, i + 1),
                         gc_array(j + 1, i + 1),

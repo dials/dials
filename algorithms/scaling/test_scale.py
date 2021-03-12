@@ -1,10 +1,7 @@
-# coding: utf-8
-
 """
 Test the command line script dials.scale, for successful completion.
 """
 
-from __future__ import absolute_import, division, print_function
 
 import json
 
@@ -272,7 +269,7 @@ def test_targeted_scaling_against_mtz(dials_data, tmpdir):
     refl = location.join("scaled_30.refl").strpath
     expt = location.join("scaled_30.expt").strpath
     target_mtz = tmpdir.join("unmerged.mtz").strpath
-    command = ["dials.scale", refl, expt, "target_mtz=%s" % target_mtz]
+    command = ["dials.scale", refl, expt, f"target_mtz={target_mtz}"]
 
     result = procrunner.run(command, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
@@ -505,7 +502,7 @@ def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
     assert tmpdir.join("analysis_results.json").check()
     result = get_merging_stats(tmpdir.join("unmerged.mtz").strpath)
     assert result.overall.r_pim < 0.175  # 12/06/20 was 0.171,
-    assert result.overall.cc_one_half > 0.95  # 03/02/20 was 0.961
+    assert result.overall.cc_one_half > 0.94  # 03/02/20 was 0.961
     assert result.overall.n_obs > 50000  # 03/02/20 was 50213
 
     with open(tmpdir.join("analysis_results.json").strpath) as f:
@@ -574,7 +571,7 @@ def test_scale_best_unit_cell_d_min(dials_data, tmpdir):
     command = [
         "dials.scale",
         "best_unit_cell=%g,%g,%g,%g,%g,%g" % best_unit_cell.parameters(),
-        "d_min=%g" % d_min,
+        f"d_min={d_min:g}",
         "unmerged_mtz=unmerged.mtz",
         "merged_mtz=merged.mtz",
     ]
@@ -848,22 +845,22 @@ def test_scale_cross_validate(dials_data, tmpdir, mode, parameter, parameter_val
     refl = data_dir / "20_integrated.pickle"
     expt = data_dir / "20_integrated_experiments.json"
     extra_args = [
-        "cross_validation_mode=%s" % mode,
+        f"cross_validation_mode={mode}",
         "nfolds=2",
         "full_matrix=0",
         "error_model=None",
     ]
     if parameter:
-        extra_args += ["parameter=%s" % parameter]
+        extra_args += [f"parameter={parameter}"]
     if parameter_values:
-        extra_args += ["parameter_values=%s" % parameter_values]
+        extra_args += [f"parameter_values={parameter_values}"]
     command = ["dials.scale", refl, expt] + extra_args
     result = procrunner.run(command, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
 
 
 def test_few_reflections(dials_data):
-    u"""
+    """
     Test that dials.symmetry does something sensible if given few reflections.
 
     Use some example integrated data generated from two ten-image 1° sweeps.  These

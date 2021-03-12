@@ -3,10 +3,10 @@ conda-forge::biopython
 conda-forge::boost
 conda-forge::boost-cpp
 conda-forge::bzip2
-# conda-forge::c-compiler
+conda-forge::c-compiler
 conda-forge::colorlog
 conda-forge::conda
-# conda-forge::cxx-compiler
+conda-forge::cxx-compiler
 conda-forge::dials-data
 conda-forge::docutils
 conda-forge::eigen
@@ -35,8 +35,8 @@ conda-forge::pytest-mock
 conda-forge::pytest-xdist
 conda-forge::reportlab
 conda-forge::requests
-# conda-forge::scikit-learn  # blocked by https://github.com/conda-forge/scipy-feedstock/issues/80
-# conda-forge::scipy  # blocked by https://github.com/conda-forge/scipy-feedstock/issues/80
+conda-forge::scikit-learn
+conda-forge::scipy
 conda-forge::scons
 conda-forge::setuptools
 conda-forge::six

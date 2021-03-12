@@ -20,7 +20,6 @@ the scales for all reflections). The selection lists typically come from
 the Ih_table datastructures so that the data in the components is split in
 the same way as the data in the Ih_table datastructure.
 """
-from __future__ import absolute_import, division, print_function
 
 from scitbx import sparse
 
@@ -28,7 +27,7 @@ from dials.array_family import flex
 from dials_scaling_ext import calculate_harmonic_tables_from_selections
 
 
-class ScaleComponentBase(object):
+class ScaleComponentBase:
     """
     Base scale component class.
 
@@ -95,12 +94,9 @@ class ScaleComponentBase(object):
     def parameters(self, new_parameters):
         assert len(new_parameters) == len(
             self._parameters
-        ), """
+        ), f"""
 attempting to set a new set of parameters of different length than previous
-assignment: was %s, attempting %s""" % (
-            len(self._parameters),
-            len(new_parameters),
-        )
+assignment: was {len(self._parameters)}, attempting {len(new_parameters)}"""
         self._parameters = new_parameters
 
     @property
@@ -197,7 +193,7 @@ class SingleScaleFactor(ScaleComponentBase):
             len(initial_values) == 1
         ), """
 This model component can only hold a single parameter."""
-        super(SingleScaleFactor, self).__init__(initial_values, parameter_esds)
+        super().__init__(initial_values, parameter_esds)
 
     @ScaleComponentBase.data.setter
     def data(self, data):
@@ -253,7 +249,7 @@ class SingleBScaleFactor(ScaleComponentBase):
 
     def __init__(self, initial_values, parameter_esds=None):
         """Set the initial parameter values, parameter esds and n_params."""
-        super(SingleBScaleFactor, self).__init__(initial_values, parameter_esds)
+        super().__init__(initial_values, parameter_esds)
         self._d_values = []
 
     @property
@@ -326,7 +322,7 @@ class LinearDoseDecay(ScaleComponentBase):
 
     def __init__(self, initial_values, parameter_esds=None):
         """Set the initial parameter values, parameter esds and n_params."""
-        super(LinearDoseDecay, self).__init__(initial_values, parameter_esds)
+        super().__init__(initial_values, parameter_esds)
         self._d_values = []
         self._x = []  # rotation/time
 
@@ -437,7 +433,7 @@ class SHScaleComponent(ScaleComponentBase):
 
     def __init__(self, initial_values, parameter_esds=None):
         """Set the initial parameter values, parameter esds and n_params."""
-        super(SHScaleComponent, self).__init__(initial_values, parameter_esds)
+        super().__init__(initial_values, parameter_esds)
         self._harmonic_values = []
         self._matrices = []
 

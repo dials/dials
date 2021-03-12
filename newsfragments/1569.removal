@@ -1,0 +1,1 @@
+``dials.util.masking.MaskGenerator` is deprecated in favour of ``dials.util.masking.generate_mask``

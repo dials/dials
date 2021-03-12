@@ -21,7 +21,7 @@ class DialsLogfileFormatter:
     def format(self, record):
         if self.timed:
             elapsed_seconds = record.created - self.start_time
-            prefix = "{:6.1f}: ".format(elapsed_seconds)
+            prefix = f"{elapsed_seconds:6.1f}: "
         else:
             prefix = ""
         indent = len(prefix)
@@ -80,7 +80,7 @@ def config(verbosity=0, logfile=None):
         loglevel = logging.INFO
 
     if logfile:
-        fh = logging.FileHandler(filename=logfile, mode="w")
+        fh = logging.FileHandler(filename=logfile, mode="w", encoding="utf-8")
         fh.setLevel(loglevel)
         fh.setFormatter(DialsLogfileFormatter(timed=verbosity))
         dials_logger.addHandler(fh)
@@ -100,7 +100,7 @@ class CacheHandler(logging.Handler):
         """
         Initialise the handler
         """
-        super(CacheHandler, self).__init__()
+        super().__init__()
         self._messages = []
 
     def emit(self, record):
@@ -155,7 +155,7 @@ def print_banner(force=False, use_logging=False):
         print(_banner)
 
 
-class LoggingContext(object):
+class LoggingContext:
     # https://docs.python.org/3/howto/logging-cookbook.html#using-a-context-manager-for-selective-logging
     def __init__(self, logger, level=None):
         self.logger = logging.getLogger(logger) if isinstance(logger, str) else logger

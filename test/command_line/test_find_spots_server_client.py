@@ -15,6 +15,8 @@ def server(tmp_path) -> int:
     """Fixture to load a find_spots_server server"""
     if sys.hexversion >= 0x3080000 and sys.platform == "darwin":
         pytest.skip("find_spots server known to be broken on MacOS with Python 3.8+")
+    if sys.platform == "win32":
+        pytest.skip("find_spots server is not supported on Windows")
 
     # Find a free port to run the server on
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -61,7 +63,7 @@ def wait_for_server(port, max_wait=20):
             s.connect(("127.0.0.1", port))
             s.close()
             server_ok = True
-        except socket.error as e:
+        except OSError as e:
             if (e.errno != 111) and (e.errno != 61):
                 raise
             # ignore connection failures (111 connection refused on linux; 61 connection refused on mac)
@@ -93,7 +95,7 @@ def exercise_client(port, filenames):
     print(index_client_command)
     result = procrunner.run(index_client_command)
     assert not result.returncode and not result.stderr
-    out = "<document>%s</document>" % result.stdout
+    out = f"<document>{result.stdout}</document>"
 
     xmldoc = minidom.parseString(out)
     assert len(xmldoc.getElementsByTagName("image")) == 1
@@ -117,7 +119,7 @@ def exercise_client(port, filenames):
     client_command = client_command + filenames[1:]
     result = procrunner.run(client_command)
     assert not result.returncode and not result.stderr
-    out = "<document>%s</document>" % result.stdout
+    out = f"<document>{result.stdout}</document>"
 
     xmldoc = minidom.parseString(out)
     images = xmldoc.getElementsByTagName("image")

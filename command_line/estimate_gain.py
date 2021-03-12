@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division, print_function
+import pickle
 
 import iotbx.phil
 from scitbx.array_family import flex
@@ -89,7 +89,7 @@ def estimate_gain(imageset, kernel_size=(10, 10), output_gain_map=None, max_imag
         q3 = sorted_dispersion[nint(len(sorted_dispersion) * 3 / 4)]
         iqr = q3 - q1
 
-        print("q1, q2, q3: %.2f, %.2f, %.2f" % (q1, q2, q3))
+        print(f"q1, q2, q3: {q1:.2f}, {q2:.2f}, {q3:.2f}")
         if iqr == 0.0:
             raise Sorry("Unable to robustly estimate the variation of pixel values.")
 
@@ -98,7 +98,7 @@ def estimate_gain(imageset, kernel_size=(10, 10), output_gain_map=None, max_imag
         )
         sorted_dispersion = sorted_dispersion.select(inlier_sel)
         gain = sorted_dispersion[nint(len(sorted_dispersion) / 2)]
-        print("Estimated gain: %.2f" % gain)
+        print(f"Estimated gain: {gain:.2f}")
         gains.append(gain)
 
         if image_no == 0:
@@ -117,8 +117,6 @@ def estimate_gain(imageset, kernel_size=(10, 10), output_gain_map=None, max_imag
         if len(gains) > 1:
             raw_data = imageset.get_raw_data(0)
         # write the gain map
-        import six.moves.cPickle as pickle
-
         gain_map = flex.double(flex.grid(raw_data[0].all()), gain0)
         with open(output_gain_map, "wb") as fh:
             pickle.dump(gain_map, fh, protocol=pickle.HIGHEST_PROTOCOL)

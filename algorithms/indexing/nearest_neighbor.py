@@ -1,9 +1,7 @@
-from __future__ import absolute_import, division, print_function
-
 import math
 
 
-class NeighborAnalysis(object):
+class NeighborAnalysis:
     def __init__(
         self,
         reflections,
@@ -69,7 +67,7 @@ class NeighborAnalysis(object):
 
         assert (
             len(direct) > NEAR
-        ), "Too few spots (%d) for nearest neighbour analysis." % len(direct)
+        ), f"Too few spots ({len(direct)}) for nearest neighbour analysis."
 
         perm = flex.sort_permutation(direct)
         direct = direct.select(perm)

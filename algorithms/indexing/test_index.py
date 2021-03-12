@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import collections
 import glob
 import os
@@ -102,7 +100,7 @@ def run_indexing(
         rmsd_z = flex.mean(flex.pow2(obs_z - calc_z)) ** 0.5
         rmsds = (rmsd_x, rmsd_y, rmsd_z)
         for actual, expected in zip(rmsds, expected_rmsds):
-            assert actual <= expected, "%s %s" % (rmsds, expected_rmsds)
+            assert actual <= expected, f"{rmsds} {expected_rmsds}"
         assert experiment.identifier != ""
         expt = ExperimentList()
         expt.append(experiment)
@@ -343,8 +341,8 @@ def test_index_insulin_multi_sequence(insulin_spotfinding, tmpdir, method):
     extra_args = [
         'known_symmetry.unit_cell="%s %s %s %s %s %s"'
         % expected_unit_cell.parameters(),
-        'known_symmetry.space_group="Hall: %s"' % expected_hall_symbol,
-        "indexing.method=%s" % method,
+        f'known_symmetry.space_group="Hall: {expected_hall_symbol}"',
+        f"indexing.method={method}",
         "treat_single_image_as_still=False",
     ]
     run_indexing(
@@ -400,8 +398,8 @@ def test_index_insulin_force_stills(insulin_spotfinding_stills, tmpdir, method):
         "stills.indexer=stills",
         'known_symmetry.unit_cell="%s %s %s %s %s %s"'
         % expected_unit_cell.parameters(),
-        'known_symmetry.space_group="Hall: %s"' % expected_hall_symbol,
-        "indexing.method=%s" % method,
+        f'known_symmetry.space_group="Hall: {expected_hall_symbol}"',
+        f"indexing.method={method}",
     ]
 
     run_indexing(

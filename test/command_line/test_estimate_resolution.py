@@ -26,7 +26,7 @@ def test_x4wide(input_files, dials_data, run_in_tmpdir, capsys):
             "batch_range=1,20",
             "batch_range=70,90",
             "space_group=P43212",
-            "reference=%s" % reference_mtz,
+            f"reference={reference_mtz}",
             "cc_ref=0.9",
             "labels=IMEAN,SIGIMEAN",
             "html=resolutionizer.html",

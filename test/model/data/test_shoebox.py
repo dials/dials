@@ -1,10 +1,6 @@
-from __future__ import absolute_import, division, print_function
-
 import math
+import pickle
 import random
-
-import six
-import six.moves.cPickle as pickle
 
 from scitbx import matrix
 
@@ -305,10 +301,7 @@ def test_flatten():
 def test_all_foreground_valid():
     from dials.test.model.data.all_foreground_valid_data import data
 
-    if six.PY3:
-        shoeboxes = pickle.loads(bytes(data, encoding="latin-1"), encoding="bytes")
-    else:
-        shoeboxes = pickle.loads(data)
+    shoeboxes = pickle.loads(bytes(data, encoding="latin-1"), encoding="bytes")
     for i, shoebox in enumerate(shoeboxes):
         if i < 4:
             assert not shoebox.all_foreground_valid()

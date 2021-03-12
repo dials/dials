@@ -2,7 +2,6 @@
 Test refinement of multiple narrow sequences.
 """
 
-from __future__ import absolute_import, division, print_function
 
 import os
 
@@ -32,11 +31,11 @@ def test(dials_regression, run_in_tmpdir):
             "reference_from_experiment.detector=0",
         ]
         + [
-            "experiments={}/data/sweep_%03d/experiments.json".format(data_dir) % n
+            f"experiments={data_dir}/data/sweep_%03d/experiments.json" % n
             for n in selection
         ]
         + [
-            "reflections={}/data/sweep_%03d/reflections.pickle".format(data_dir) % n
+            f"reflections={data_dir}/data/sweep_%03d/reflections.pickle" % n
             for n in selection
         ]
     )
@@ -96,11 +95,11 @@ def test_order_invariance(dials_regression, run_in_tmpdir):
             "reference_from_experiment.detector=0",
         ]
         + [
-            "experiments={0}/data/sweep_%03d/experiments.json".format(data_dir) % n
+            f"experiments={data_dir}/data/sweep_%03d/experiments.json" % n
             for n in selection1
         ]
         + [
-            "reflections={0}/data/sweep_%03d/reflections.pickle".format(data_dir) % n
+            f"reflections={data_dir}/data/sweep_%03d/reflections.pickle" % n
             for n in selection1
         ]
     )
@@ -128,11 +127,11 @@ def test_order_invariance(dials_regression, run_in_tmpdir):
             "reference_from_experiment.detector=0",
         ]
         + [
-            "experiments={0}/data/sweep_%03d/experiments.json".format(data_dir) % n
+            f"experiments={data_dir}/data/sweep_%03d/experiments.json" % n
             for n in selection2
         ]
         + [
-            "reflections={0}/data/sweep_%03d/reflections.pickle".format(data_dir) % n
+            f"reflections={data_dir}/data/sweep_%03d/reflections.pickle" % n
             for n in selection2
         ]
     )

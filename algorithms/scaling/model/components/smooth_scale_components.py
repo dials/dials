@@ -5,7 +5,6 @@ These classes use a gaussian smoother (1D, 2D or 3D) to calculate the
 inverse scale factors and derivatives with respect to the component
 parameters.
 """
-from __future__ import absolute_import, division, print_function
 
 from math import ceil, floor
 
@@ -29,29 +28,27 @@ class GaussianSmoother1D(GS1D):
 
     def value_weight(self, x, value):
         """Return the value, weight and sumweight at a single point."""
-        result = super(GaussianSmoother1D, self).value_weight(x, value)
+        result = super().value_weight(x, value)
         return (result.get_value(), result.get_weight(), result.get_sumweight())
 
     def value_weight_first_fixed(self, x, value):
         """Return the value, weight and sumweight at a single point."""
-        result = super(GaussianSmoother1D, self).value_weight_first_fixed(x, value)
+        result = super().value_weight_first_fixed(x, value)
         return (result.get_value(), result.get_weight(), result.get_sumweight())
 
     def multi_value_weight(self, x, value):
         """Return the value, weight and sumweight at multiple points."""
-        result = super(GaussianSmoother1D, self).multi_value_weight(x, value)
+        result = super().multi_value_weight(x, value)
         return (result.get_value(), result.get_weight(), result.get_sumweight())
 
     def multi_value_weight_first_fixed(self, x, value):
         """Return the value, weight and sumweight at multiple points."""
-        result = super(GaussianSmoother1D, self).multi_value_weight_first_fixed(
-            x, value
-        )
+        result = super().multi_value_weight_first_fixed(x, value)
         return (result.get_value(), result.get_weight(), result.get_sumweight())
 
     def positions(self):
         """Return the smoother positions."""
-        return list(super(GaussianSmoother1D, self).positions())
+        return list(super().positions())
 
 
 class GaussianSmoother2D(GS2D):
@@ -59,21 +56,21 @@ class GaussianSmoother2D(GS2D):
 
     def value_weight(self, x, y, value):
         """Return the value, weight and sumweight at a single point."""
-        result = super(GaussianSmoother2D, self).value_weight(x, y, value)
+        result = super().value_weight(x, y, value)
         return (result.get_value(), result.get_weight(), result.get_sumweight())
 
     def multi_value_weight(self, x, y, value):
         """Return the value, weight and sumweight at multiple points."""
-        result = super(GaussianSmoother2D, self).multi_value_weight(x, y, value)
+        result = super().multi_value_weight(x, y, value)
         return (result.get_value(), result.get_weight(), result.get_sumweight())
 
     def x_positions(self):
         """Return the smoother x-positions."""
-        return list(super(GaussianSmoother2D, self).x_positions())
+        return list(super().x_positions())
 
     def y_positions(self):
         """Return the smoother y-positions."""
-        return list(super(GaussianSmoother2D, self).y_positions())
+        return list(super().y_positions())
 
 
 class GaussianSmoother3D(GS3D):
@@ -81,28 +78,28 @@ class GaussianSmoother3D(GS3D):
 
     def value_weight(self, x, y, z, value):
         """Return the value, weight and sumweight at a single point."""
-        result = super(GaussianSmoother3D, self).value_weight(x, y, z, value)
+        result = super().value_weight(x, y, z, value)
         return (result.get_value(), result.get_weight(), result.get_sumweight())
 
     def multi_value_weight(self, x, y, z, value):
         """Return the value, weight and sumweight at multiple points."""
-        result = super(GaussianSmoother3D, self).multi_value_weight(x, y, z, value)
+        result = super().multi_value_weight(x, y, z, value)
         return (result.get_value(), result.get_weight(), result.get_sumweight())
 
     def x_positions(self):
         """Return the smoother x-positions."""
-        return list(super(GaussianSmoother3D, self).x_positions())
+        return list(super().x_positions())
 
     def y_positions(self):
         """Return the smoother y-positions."""
-        return list(super(GaussianSmoother3D, self).y_positions())
+        return list(super().y_positions())
 
     def z_positions(self):
         """Return the smoother z-positions."""
-        return list(super(GaussianSmoother3D, self).z_positions())
+        return list(super().z_positions())
 
 
-class SmoothMixin(object):
+class SmoothMixin:
     """Mixin class for smooth scale factor components.
 
     This uses a Gaussian smoother to calculate scales and derivatives
@@ -144,7 +141,7 @@ class SmoothScaleComponent1D(ScaleComponentBase, SmoothMixin):
     null_parameter_value = 1.0
 
     def __init__(self, initial_values, parameter_esds=None):
-        super(SmoothScaleComponent1D, self).__init__(initial_values, parameter_esds)
+        super().__init__(initial_values, parameter_esds)
         self._normalised_values = []
         self._fixed_initial = False
 
@@ -291,7 +288,7 @@ class SmoothBScaleComponent1D(SmoothScaleComponent1D):
     null_parameter_value = 0.0
 
     def __init__(self, initial_values, parameter_esds=None):
-        super(SmoothBScaleComponent1D, self).__init__(initial_values, parameter_esds)
+        super().__init__(initial_values, parameter_esds)
         self._d_values = []
 
     @property
@@ -305,9 +302,7 @@ class SmoothBScaleComponent1D(SmoothScaleComponent1D):
         self._data = data
 
     def update_reflection_data(self, selection=None, block_selections=None):
-        super(SmoothBScaleComponent1D, self).update_reflection_data(
-            selection, block_selections
-        )
+        super().update_reflection_data(selection, block_selections)
         self._d_values = []
         data = self.data["d"]
         if selection:
@@ -319,9 +314,7 @@ class SmoothBScaleComponent1D(SmoothScaleComponent1D):
             self._d_values.append(data)
 
     def calculate_scales_and_derivatives(self, block_id=0):
-        scales, derivatives = super(
-            SmoothBScaleComponent1D, self
-        ).calculate_scales_and_derivatives(block_id)
+        scales, derivatives = super().calculate_scales_and_derivatives(block_id)
         if self._n_refl[block_id] == 0:
             return flex.double([]), sparse.matrix(0, 0)
         prefac = 1.0 / (2.0 * (self._d_values[block_id] * self._d_values[block_id]))
@@ -330,7 +323,7 @@ class SmoothBScaleComponent1D(SmoothScaleComponent1D):
         return s, d
 
     def calculate_scales(self, block_id=0):
-        s = super(SmoothBScaleComponent1D, self).calculate_scales(block_id)
+        s = super().calculate_scales(block_id)
         return flex.exp(s / (2.0 * flex.pow2(self._d_values[block_id])))
 
     def calculate_restraints(self):
@@ -362,7 +355,7 @@ class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
         ), """The shape
     information to initialise a 2D smoother is inconsistent with the length
     of the initial parameter list."""
-        super(SmoothScaleComponent2D, self).__init__(initial_values, parameter_esds)
+        super().__init__(initial_values, parameter_esds)
         self._n_x_params = shape[0]
         self._n_y_params = shape[1]
         self._normalised_x_values = None
@@ -500,7 +493,7 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
         ), """The
     shape information to initialise a 3D smoother is inconsistent with the
     length of the initial parameter list."""
-        super(SmoothScaleComponent3D, self).__init__(initial_values, parameter_esds)
+        super().__init__(initial_values, parameter_esds)
         self._n_x_params = shape[0]
         self._n_y_params = shape[1]
         self._n_z_params = shape[2]

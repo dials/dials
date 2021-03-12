@@ -8,13 +8,13 @@ schedules:
     displayName: Weekly midnight build
     branches:
       include:
-      - master
+      - main
     always: true
   - cron: "3 0 * * Tue-Sat,Sun"
     displayName: Daily midnight build
     branches:
       include:
-      - master
+      - main
 
 jobs:
   - job: setup

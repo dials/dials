@@ -1,7 +1,6 @@
 """
 Phil scope of options for scaling.
 """
-from __future__ import absolute_import, division, print_function
 
 import iotbx.phil
 
@@ -195,6 +194,10 @@ phil_scope = iotbx.phil.parse(
       .help = "Cutoff z-score value for identifying outliers based on their
                normalised deviation within the group of equivalent reflections"
       .expert_level = 1
+    emax = 10
+      .type = float(value_min = 0)
+      .help = "Reject reflections with normalised intensities E^2 > emax^2"
+      .expert_level = 2
   }
   """
 )

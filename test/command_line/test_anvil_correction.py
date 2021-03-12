@@ -2,7 +2,6 @@
 Tests for dials.command_line.anvil_correction.
 """
 
-from __future__ import absolute_import, division, print_function
 
 import copy
 
@@ -77,7 +76,7 @@ def test_correct_correction(dials_data):
         # Check that the applied corrections are correct.
         assert pytest.approx(intensity_correction, rel=1e-5) == list(
             target_correction
-        ), ("The applied intensity correction to %s doesn't seem to be correct." % case)
+        ), f"The applied intensity correction to {case} doesn't seem to be correct."
 
 
 def test_help_message(dials_data, capsys):

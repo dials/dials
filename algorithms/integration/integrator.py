@@ -1,16 +1,12 @@
-from __future__ import absolute_import, division, print_function
-
 import collections
 import functools
 import logging
 import math
+import pickle
 import random
 
-import six
-import six.moves.cPickle as pickle
-
 import dials.extensions
-from dials.algorithms.integration import processor, TimingInfo
+from dials.algorithms.integration import TimingInfo, processor
 from dials.algorithms.integration.filtering import IceRingFilter
 from dials.algorithms.integration.parallel_integrator import (
     IntegratorProcessor,
@@ -22,6 +18,7 @@ from dials.algorithms.integration.processor import (
     ProcessorFlat3D,
     ProcessorSingle2D,
     ProcessorStills,
+    assess_available_memory,
     build_processor,
     job,
 )
@@ -41,10 +38,8 @@ from dials_algorithms_integration_integrator_ext import (
     Executor,
     JobList,
     ReflectionManager,
+    max_memory_needed,
 )
-from dials.algorithms.integration.processor import assess_available_memory
-from dials_algorithms_integration_integrator_ext import max_memory_needed
-
 
 logger = logging.getLogger(__name__)
 
@@ -334,12 +329,12 @@ def nframes_hist(bbox, width=80, symbol="#", prefix=""):
     return hist([b[5] - b[4] for b in bbox], width=width, symbol=symbol, prefix=prefix)
 
 
-class Parameters(object):
+class Parameters:
     """
     A stack of classes to represent the integration parameters
     """
 
-    class Filter(object):
+    class Filter:
         """
         Filter parameters
         """
@@ -348,12 +343,12 @@ class Parameters(object):
             self.min_zeta = 0.05
             self.powder_filter = None
 
-    class Profile(object):
+    class Profile:
         """
         Profile parameters
         """
 
-        class Validation(object):
+        class Validation:
             def __init__(self):
                 self.number_of_partitions = 2
                 self.min_partition_size = 100
@@ -543,8 +538,9 @@ def _finalize_stills(reflections, experiments, params):
         ~integrated.get_flags(integrated.flags.foreground_includes_bad_pixels)
     )
     logger.info(
-        "Filtering %d reflections with at least one bad foreground pixel out of %d"
-        % (len_all - len(integrated), len_all)
+        "Filtering %d reflections with at least one bad foreground pixel out of %d",
+        len_all - len(integrated),
+        len_all,
     )
 
     # verify sigmas are sensible
@@ -565,8 +561,9 @@ def _finalize_stills(reflections, experiments, params):
             )
             if n == sel.count(True):
                 logger.info(
-                    "Filtering %d reflections with no integrated signal (sum and variance = 0) out of %d"
-                    % (n, len(integrated))
+                    "Filtering %d reflections with no integrated signal (sum and variance = 0) out of %d",
+                    n,
+                    len(integrated),
                 )
                 integrated = integrated.select(integrated["intensity.sum.variance"] > 0)
             else:
@@ -585,8 +582,8 @@ def _finalize_stills(reflections, experiments, params):
             )
         if (integrated["background.sum.variance"] == 0).count(True) > 0:
             logger.info(
-                "Filtering %d reflections with zero background variance"
-                % ((integrated["background.sum.variance"] == 0).count(True))
+                "Filtering %d reflections with zero background variance",
+                (integrated["background.sum.variance"] == 0).count(True),
             )
             integrated = integrated.select(integrated["background.sum.variance"] > 0)
         # apply detector gain to background summation variances
@@ -612,7 +609,7 @@ class ProfileModellerExecutor(Executor):
         """
         self.experiments = experiments
         self.profile_fitter = profile_fitter
-        super(ProfileModellerExecutor, self).__init__()
+        super().__init__()
 
     def initialize(self, frame0, frame1, reflections):
         """
@@ -634,15 +631,15 @@ class ProfileModellerExecutor(Executor):
 
         # Write some output
         logger.debug("")
-        logger.debug(" Beginning modelling job %d" % job.index)
+        logger.debug(" Beginning modelling job %d", job.index)
         logger.info("")
-        logger.info(" Frames: %d -> %d" % (frame0 + 1, frame1))
+        logger.info(" Frames: %d -> %d", frame0 + 1, frame1)
         logger.info("")
         logger.info(" Number of reflections")
-        logger.info("  Partial:     %d" % npart)
-        logger.info("  Full:        %d" % nfull)
-        logger.info("  In ice ring: %d" % nice)
-        logger.info("  Total:       %d" % ntot)
+        logger.info("  Partial:     %d", npart)
+        logger.info("  Full:        %d", nfull)
+        logger.info("  In ice ring: %d", nice)
+        logger.info("  Total:       %d", ntot)
         logger.info("")
 
         # Print a histogram of reflections on frames
@@ -680,7 +677,7 @@ class ProfileModellerExecutor(Executor):
         fmt = " Modelled % 5d / % 5d reflection profiles on image %d"
         nmod = reflections.get_flags(reflections.flags.used_in_modelling).count(True)
         ntot = len(reflections)
-        logger.debug(fmt % (nmod, ntot, frame + 1))
+        logger.debug(fmt, nmod, ntot, frame + 1)
 
     def finalize(self):
         """
@@ -714,7 +711,7 @@ class ProfileValidatorExecutor(Executor):
         """
         self.experiments = experiments
         self.profile_fitter = profile_fitter
-        super(ProfileValidatorExecutor, self).__init__()
+        super().__init__()
 
     def initialize(self, frame0, frame1, reflections):
         """
@@ -736,15 +733,15 @@ class ProfileValidatorExecutor(Executor):
 
         # Write some output
         logger.debug("")
-        logger.debug(" Beginning modelling job %d" % job.index)
+        logger.debug(" Beginning modelling job %d", job.index)
         logger.info("")
-        logger.info(" Frames: %d -> %d" % (frame0, frame1))
+        logger.info(" Frames: %d -> %d", frame0, frame1)
         logger.info("")
         logger.info(" Number of reflections")
-        logger.info("  Partial:     %d" % npart)
-        logger.info("  Full:        %d" % nfull)
-        logger.info("  In ice ring: %d" % nice)
-        logger.info("  Total:       %d" % ntot)
+        logger.info("  Partial:     %d", npart)
+        logger.info("  Full:        %d", nfull)
+        logger.info("  In ice ring: %d", nice)
+        logger.info("  Total:       %d", ntot)
         logger.info("")
 
         # Print a histogram of reflections on frames
@@ -784,7 +781,7 @@ class ProfileValidatorExecutor(Executor):
         fmt = " Validated % 5d / % 5d reflection profiles on image %d"
         nmod = reflections.get_flags(reflections.flags.used_in_modelling).count(True)
         ntot = len(reflections)
-        logger.debug(fmt % (nmod, ntot, frame + 1))
+        logger.debug(fmt, nmod, ntot, frame + 1)
 
     def finalize(self):
         """
@@ -819,7 +816,7 @@ class IntegratorExecutor(Executor):
         self.experiments = experiments
         self.overlaps = None
         self.profile_fitter = profile_fitter
-        super(IntegratorExecutor, self).__init__()
+        super().__init__()
 
     def initialize(self, frame0, frame1, reflections):
         """
@@ -842,16 +839,16 @@ class IntegratorExecutor(Executor):
 
         # Write some output
         logger.debug("")
-        logger.debug(" Beginning integration job %d" % job.index)
+        logger.debug(" Beginning integration job %d", job.index)
         logger.info("")
-        logger.info(" Frames: %d -> %d" % (frame0, frame1))
+        logger.info(" Frames: %d -> %d", frame0, frame1)
         logger.info("")
         logger.info(" Number of reflections")
-        logger.info("  Partial:     %d" % npart)
-        logger.info("  Full:        %d" % nfull)
-        logger.info("  In ice ring: %d" % nice)
-        logger.info("  Integrate:   %d" % nint)
-        logger.info("  Total:       %d" % ntot)
+        logger.info("  Partial:     %d", npart)
+        logger.info("  Full:        %d", nfull)
+        logger.info("  In ice ring: %d", nice)
+        logger.info("  Integrate:   %d", nint)
+        logger.info("  Total:       %d", ntot)
         logger.info("")
 
         # Print a histogram of reflections on frames
@@ -892,21 +889,23 @@ class IntegratorExecutor(Executor):
 
         # Compute the number of background/foreground pixels
         sbox = reflections["shoebox"]
-        code1 = MaskCode.Valid
-        code2 = MaskCode.Background | code1
-        code3 = MaskCode.BackgroundUsed | code2
-        code4 = MaskCode.Foreground | code1
-        reflections["num_pixels.valid"] = sbox.count_mask_values(code1)
-        reflections["num_pixels.background"] = sbox.count_mask_values(code2)
-        reflections["num_pixels.background_used"] = sbox.count_mask_values(code3)
-        reflections["num_pixels.foreground"] = sbox.count_mask_values(code4)
+        reflections["num_pixels.valid"] = sbox.count_mask_values(MaskCode.Valid)
+        reflections["num_pixels.background"] = sbox.count_mask_values(
+            MaskCode.Valid | MaskCode.Background
+        )
+        reflections["num_pixels.background_used"] = sbox.count_mask_values(
+            MaskCode.Valid | MaskCode.Background | MaskCode.BackgroundUsed
+        )
+        reflections["num_pixels.foreground"] = sbox.count_mask_values(
+            MaskCode.Valid | MaskCode.Foreground
+        )
 
         # Print some info
         fmt = " Integrated % 5d (sum) + % 5d (prf) / %5d reflections on image %d"
         nsum = reflections.get_flags(reflections.flags.integrated_sum).count(True)
         nprf = reflections.get_flags(reflections.flags.integrated_prf).count(True)
         ntot = len(reflections)
-        logger.debug(fmt % (nsum, nprf, ntot, frame + 1))
+        logger.debug(fmt, nsum, nprf, ntot, frame + 1)
 
     def finalize(self):
         """
@@ -927,7 +926,7 @@ class IntegratorExecutor(Executor):
         return (self.experiments, self.profile_fitter)
 
 
-class Integrator(object):
+class Integrator:
     """
     The integrator class
     """
@@ -1070,9 +1069,9 @@ class Integrator(object):
                 for i in range(len(finalized_profile_fitter)):
                     m = finalized_profile_fitter[i]
                     logger.debug("")
-                    logger.debug("Profiles for experiment %d" % i)
+                    logger.debug("Profiles for experiment %d", i)
                     for j in range(len(m)):
-                        logger.debug("Profile %d" % j)
+                        logger.debug("Profile %d", j)
                         try:
                             logger.debug(pprint.profile3d(m.data(j)))
                         except Exception:
@@ -1158,16 +1157,14 @@ class Integrator(object):
 
         # Print the summary
         logger.info(
-            fmt
-            % (
-                len(self.experiments),
-                len(self.experiments.beams()),
-                len(self.experiments.detectors()),
-                len(self.experiments.goniometers()),
-                len(self.experiments.scans()),
-                len(self.experiments.crystals()),
-                len(self.experiments.imagesets()),
-            )
+            fmt,
+            len(self.experiments),
+            len(self.experiments.beams()),
+            len(self.experiments.detectors()),
+            len(self.experiments.goniometers()),
+            len(self.experiments.scans()),
+            len(self.experiments.crystals()),
+            len(self.experiments.imagesets()),
         )
 
         # Initialize the reflections
@@ -1379,7 +1376,7 @@ class IntegratorStills(Integrator):
     finalize_reflections = staticmethod(_finalize_stills)
 
 
-class Integrator3DThreaded(object):
+class Integrator3DThreaded:
     """
     Integrator for 3D algorithms
     """
@@ -1460,16 +1457,14 @@ class Integrator3DThreaded(object):
 
         # Print the summary
         logger.info(
-            fmt
-            % (
-                len(self.experiments),
-                len(self.experiments.beams()),
-                len(self.experiments.detectors()),
-                len(self.experiments.goniometers()),
-                len(self.experiments.scans()),
-                len(self.experiments.crystals()),
-                len(self.experiments.imagesets()),
-            )
+            fmt,
+            len(self.experiments),
+            len(self.experiments.beams()),
+            len(self.experiments.detectors()),
+            len(self.experiments.goniometers()),
+            len(self.experiments.scans()),
+            len(self.experiments.crystals()),
+            len(self.experiments.imagesets()),
         )
 
         # Do the initialisation
@@ -1588,10 +1583,7 @@ def create_integrator(params, experiments, reflections):
         params.integration.lookup.mask, str
     ):
         with open(params.integration.lookup.mask, "rb") as infile:
-            if six.PY3:
-                params.integration.lookup.mask = pickle.load(infile, encoding="bytes")
-            else:
-                params.integration.lookup.mask = pickle.load(infile)
+            params.integration.lookup.mask = pickle.load(infile, encoding="bytes")
 
     # Set algorithms as reflection table defaults
     BackgroundAlgorithm = dials.extensions.Background.load(
@@ -1622,7 +1614,7 @@ def create_integrator(params, experiments, reflections):
         "3d_threaded": Integrator3DThreaded,
     }.get(params.integration.integrator)
     if not IntegratorClass:
-        raise ValueError("Unknown integration type %s" % params.integration.integrator)
+        raise ValueError(f"Unknown integration type {params.integration.integrator}")
 
     # Remove scan if stills
     if experiments.all_stills():

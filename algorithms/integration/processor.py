@@ -1,7 +1,3 @@
-# coding: utf-8
-
-from __future__ import absolute_import, division, print_function
-
 import itertools
 import logging
 import math
@@ -81,7 +77,7 @@ def assess_available_memory(params):
     ]
 
     def _report(description, numbytes):
-        report.append("  %-50s:%5.1f GB" % (description, numbytes / 1e9))
+        report.append(f"  {description:<50}:{numbytes/1e9:5.1f} GB")
 
     _report("Available system memory (excluding swap)", available_memory)
     _report("Available swap memory", available_swap)
@@ -144,13 +140,13 @@ def _average_bbox_size(reflections):
 
 
 @boost_adaptbx.boost.python.inject_into(Executor)
-class _(object):
+class _:
     @staticmethod
     def __getinitargs__():
         return ()
 
 
-class _Job(object):
+class _Job:
     def __init__(self):
         self.index = 0
         self.nthreads = 1
@@ -159,7 +155,7 @@ class _Job(object):
 job = _Job()
 
 
-class MultiProcessing(object):
+class MultiProcessing:
     """
     Multi processing parameters
     """
@@ -179,7 +175,7 @@ class MultiProcessing(object):
         self.n_subset_split = other.n_subset_split
 
 
-class Lookup(object):
+class Lookup:
     """
     Lookup parameters
     """
@@ -191,7 +187,7 @@ class Lookup(object):
         self.mask = other.mask
 
 
-class Block(object):
+class Block:
     """
     Block parameters
     """
@@ -211,7 +207,7 @@ class Block(object):
         self.max_memory_usage = other.max_memory_usage
 
 
-class Shoebox(object):
+class Shoebox:
     """
     Shoebox parameters
     """
@@ -225,7 +221,7 @@ class Shoebox(object):
         self.partials = other.partials
 
 
-class Debug(object):
+class Debug:
     """
     Debug parameters
     """
@@ -243,7 +239,7 @@ class Debug(object):
         self.separate_files = other.separate_files
 
 
-class Parameters(object):
+class Parameters:
     """
     Class to handle parameters for the processor
     """
@@ -281,7 +277,7 @@ def execute_parallel_task(task):
     return result, handlers[0].messages()
 
 
-class _Processor(object):
+class _Processor:
     """Processor interface class."""
 
     def __init__(self, manager):
@@ -342,11 +338,15 @@ class _Processor(object):
         if mp_njobs > 1:
             assert mp_method != "none" and mp_method is not None
             logger.info(
-                " Using %s with %d parallel job(s) and %d processes per node\n"
-                % (mp_method, mp_njobs, mp_nproc)
+                " Using %s with %d parallel job(s) and %d processes per node\n",
+                mp_method,
+                mp_njobs,
+                mp_nproc,
             )
         else:
-            logger.info(" Using multiprocessing with %d parallel job(s)\n" % (mp_nproc))
+            logger.info(
+                " Using multiprocessing with %d parallel job(s)\n",
+            )
         if mp_njobs * mp_nproc > 1:
 
             def process_output(result):
@@ -397,10 +397,10 @@ class _ProcessorRot(_Processor):
       """
             )
 
-        super(_ProcessorRot, self).__init__(manager)
+        super().__init__(manager)
 
 
-class NullTask(object):
+class NullTask:
     """
     A class to perform a null task.
     """
@@ -433,7 +433,7 @@ class NullTask(object):
         )
 
 
-class Task(object):
+class Task:
     """
     A class to perform a processing task.
     """
@@ -502,7 +502,7 @@ class Task(object):
             assert (frame1 - frame0) <= len(imageset)
             imageset = imageset[frame0:frame1]
         except Exception as e:
-            raise RuntimeError("Programmer Error: bad array range: %s" % str(e))
+            raise RuntimeError(f"Programmer Error: bad array range: {e}")
 
         try:
             frame0, frame1 = imageset.get_array_range()
@@ -586,7 +586,7 @@ class Task(object):
         )
 
 
-class _Manager(object):
+class _Manager:
     """
     A class to manage processing book-keeping
     """
@@ -631,7 +631,7 @@ class _Manager(object):
 
         if self.params.mp.nproc is libtbx.Auto:
             self.params.mp.nproc = available_cores()
-            logger.info("Setting nproc={}".format(self.params.mp.nproc))
+            logger.info(f"Setting nproc={self.params.mp.nproc}")
 
         # Compute the block size and processors
         self.compute_jobs()
@@ -796,7 +796,7 @@ class _Manager(object):
                 block_overlap = min(block_overlap, int(block_size_frames // 2))
             else:
                 raise RuntimeError(
-                    "Unknown block_size units %r" % self.params.block.units
+                    f"Unknown block_size units {self.params.block.units!r}"
                 )
             self.jobs.add(
                 (i0, i1),
@@ -820,8 +820,9 @@ class _Manager(object):
             assert num_partial >= num_full, "Invalid number of partials"
             if num_partial > num_full:
                 logger.info(
-                    " Split %d reflections into %d partial reflections\n"
-                    % (num_full, num_partial)
+                    " Split %d reflections into %d partial reflections\n",
+                    num_full,
+                    num_partial,
                 )
         else:
             num_full = len(self.reflections)
@@ -831,7 +832,7 @@ class _Manager(object):
             if num_partial > num_full:
                 num_split = num_partial - num_full
                 logger.info(
-                    " Split %d reflections overlapping job boundaries\n" % num_split
+                    " Split %d reflections overlapping job boundaries\n", num_split
                 )
 
         # Compute the partiality
@@ -979,7 +980,7 @@ class Processor3D(_ProcessorRot):
         manager = _Manager(experiments, reflections, params)
 
         # Initialise the processor
-        super(Processor3D, self).__init__(experiments, manager)
+        super().__init__(experiments, manager)
 
 
 class ProcessorFlat3D(_ProcessorRot):
@@ -996,7 +997,7 @@ class ProcessorFlat3D(_ProcessorRot):
         manager = _Manager(experiments, reflections, params)
 
         # Initialise the processor
-        super(ProcessorFlat3D, self).__init__(experiments, manager)
+        super().__init__(experiments, manager)
 
 
 class Processor2D(_ProcessorRot):
@@ -1012,7 +1013,7 @@ class Processor2D(_ProcessorRot):
         manager = _Manager(experiments, reflections, params)
 
         # Initialise the processor
-        super(Processor2D, self).__init__(experiments, manager)
+        super().__init__(experiments, manager)
 
 
 class ProcessorSingle2D(_ProcessorRot):
@@ -1031,7 +1032,7 @@ class ProcessorSingle2D(_ProcessorRot):
         manager = _Manager(experiments, reflections, params)
 
         # Initialise the processor
-        super(ProcessorSingle2D, self).__init__(experiments, manager)
+        super().__init__(experiments, manager)
 
 
 class ProcessorStills(_Processor):
@@ -1060,7 +1061,7 @@ class ProcessorStills(_Processor):
         manager = _Manager(experiments, reflections, params)
 
         # Initialise the processor
-        super(ProcessorStills, self).__init__(manager)
+        super().__init__(manager)
 
 
 def build_processor(Class, experiments, reflections, params=None):

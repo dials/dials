@@ -1,8 +1,6 @@
-# coding: utf-8
 """
 Algorithms for analysis of resolution limits.
 """
-from __future__ import absolute_import, division, print_function
 
 import enum
 import logging
@@ -26,6 +24,7 @@ from dials.util.batch_handling import (
     calculate_batch_offsets,
 )
 from dials.util.filter_reflections import filter_reflection_table
+from dials.util.normalisation import quasi_normalisation
 
 logger = logging.getLogger(__name__)
 
@@ -266,7 +265,7 @@ def interpolate_value(x, y, t):
     """Find the value of x: y(x) = t."""
 
     if t > max(y) or t < min(y):
-        raise RuntimeError("t outside of [%f, %f]" % (min(y), max(y)))
+        raise RuntimeError(f"t outside of [{min(y):f}, {max(y):f}]")
 
     for j in range(1, len(x)):
         x0 = x[j - 1]
@@ -388,6 +387,9 @@ phil_str = """
     .expert_level = 1
   reference = None
     .type = path
+  emax = 4
+    .type = float(value_min = 0)
+    .help = "Reject reflecitons with normalised intensities E^2 > emax^2"
 """
 
 
@@ -454,7 +456,7 @@ def plot_result(metric, result):
                             ),
                         ],
                         "type": "scatter",
-                        "name": "d_min = %.2f Å" % result.d_min,
+                        "name": f"d_min = {result.d_min:.2f} Å",
                         "mode": "lines",
                         "line": {"color": "rgb(169, 169, 169)", "dash": "dot"},
                     }
@@ -482,7 +484,7 @@ class ResolutionResult(typing.NamedTuple):
     critical_values: flex.double = None
 
 
-class Resolutionizer(object):
+class Resolutionizer:
     """A class to calculate things from merging reflections."""
 
     def __init__(self, i_obs, params, batches=None, reference=None):
@@ -509,6 +511,15 @@ class Resolutionizer(object):
             i_obs = i_obs.customized_copy(
                 space_group_info=self._params.space_group, info=i_obs.info()
             )
+
+        if self._params.emax:
+            normalised = quasi_normalisation(i_obs)
+            e2_cutoff = self._params.emax ** 2
+            sel = normalised.data() < e2_cutoff
+            logger.info(
+                f"Removing {sel.count(False)} Wilson outliers with E^2 >= {e2_cutoff}"
+            )
+            i_obs = i_obs.select(sel)
 
         self._intensities = i_obs
 

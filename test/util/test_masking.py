@@ -8,9 +8,9 @@ import libtbx
 from dxtbx.model.experiment_list import ExperimentListFactory
 from dxtbx.serialize import load
 
+import dials.util.masking
 from dials.algorithms.shadowing.filter import filter_shadowed_reflections
 from dials.array_family import flex
-from dials.util.masking import lru_equality_cache
 
 
 @pytest.mark.parametrize(
@@ -120,7 +120,7 @@ def test_lru_equality_cache_basic():
         callargs.append(arg)
         return result[-1]
 
-    fun = lru_equality_cache(maxsize=20)(_callappend)
+    fun = dials.util.masking.lru_equality_cache(maxsize=20)(_callappend)
     hits, misses, maxsize, currsize = fun.cache_info()
     assert hits == 0
     assert misses == 0
@@ -156,7 +156,7 @@ def test_lru_equality_cache_id():
     def _callappend(*arg):
         callargs.append(arg)
 
-    fun = lru_equality_cache(maxsize=1)(_callappend)
+    fun = dials.util.masking.lru_equality_cache(maxsize=1)(_callappend)
 
     class EqTester:
         def __init__(self, a):
@@ -175,3 +175,49 @@ def test_lru_equality_cache_id():
     fun(a)
     fun(b)
     assert fun.cache_info() == (1, 1, 1, 1)
+
+
+def test_generate_mask(dials_data):
+    imageset = load.imageset(
+        dials_data("centroid_test_data").join("sweep.json").strpath
+    )
+    params = dials.util.masking.phil_scope.extract()
+    params.border = 2
+    params.d_min = 1.5
+    params.d_max = 40
+    params.untrusted[0].rectangle = (500, 600, 700, 800)
+    params.untrusted[0].circle = (1000, 1200, 100)
+    params.untrusted[0].polygon = (1500, 1500, 1600, 1600, 1700, 1500, 1500, 1500)
+    params.untrusted[0].pixel = (1183, 1383)
+    params.resolution_range = [(3.1, 3.2), (5.1, 5.2)]
+    params.ice_rings.filter = True
+    mask = dials.util.masking.generate_mask(imageset, params)
+    assert len(mask) == len(imageset.get_detector())
+    for m, im in zip(mask, imageset.get_raw_data(0)):
+        assert m.all() == im.all()
+    assert mask[0].count(False) == 4060817
+
+
+@pytest.mark.parametrize(
+    "disable_parallax_correction,expected", [(False, 1427394), (True, 1432002)]
+)
+def test_generate_mask_parallax_correction(
+    disable_parallax_correction, expected, dials_data
+):
+    expts = ExperimentListFactory.from_filenames(
+        [
+            f.strpath
+            for f in dials_data("centroid_test_data").listdir(fil="*.cbf", sort=True)
+        ]
+    )
+    imageset = expts[0].imageset
+    params = dials.util.masking.phil_scope.extract()
+    params.disable_parallax_correction = disable_parallax_correction
+    params.d_min = 1.2
+    params.d_max = 40
+    params.untrusted = []
+    mask = dials.util.masking.generate_mask(imageset, params)
+    assert len(mask) == len(imageset.get_detector())
+    for m, im in zip(mask, imageset.get_raw_data(0)):
+        assert m.all() == im.all()
+    assert mask[0].count(False) == expected

@@ -12,8 +12,8 @@ from dials.array_family import flex
 
 
 def connected_components(
-    miller_array,  # type: cctbx.miller.array
-):  # type: (...) -> [{}]
+    miller_array: cctbx.miller.array,
+) -> [{}]:
     """
     Identify connected regions of missing reflections in the asymmetric unit.
 

@@ -1,6 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
-
 def test_run(dials_regression, run_in_tmpdir):
     from os.path import join
 

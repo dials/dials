@@ -1,9 +1,9 @@
-from __future__ import absolute_import, division, print_function
-
 import collections
 import logging
 import random
 import sys
+
+import numpy as np
 
 import iotbx.phil
 from cctbx import sgtbx
@@ -83,9 +83,7 @@ output {
 
 class cosym(Subject):
     def __init__(self, experiments, reflections, params=None):
-        super(cosym, self).__init__(
-            events=["run_cosym", "performed_unit_cell_clustering"]
-        )
+        super().__init__(events=["run_cosym", "performed_unit_cell_clustering"])
         if params is None:
             params = phil_scope.extract()
         self.params = params
@@ -180,26 +178,28 @@ class cosym(Subject):
         reindexing_ops = {}
         sym_op_counts = {
             cluster_id: collections.Counter(
-                ops[cluster_id] for ops in self.cosym_analysis.reindexing_ops.values()
+                ops.get(cluster_id)
+                for ops in self.cosym_analysis.reindexing_ops.values()
             )
             for cluster_id in range(self.params.cluster.n_clusters)
         }
-        identity_counts = [counts["x,y,z"] for counts in sym_op_counts.values()]
-        cluster_id = identity_counts.index(max(identity_counts))
-        for dataset_id in self.cosym_analysis.reindexing_ops:
-            if cluster_id in self.cosym_analysis.reindexing_ops[dataset_id]:
-                cb_op = self.cosym_analysis.reindexing_ops[dataset_id][cluster_id]
-                reindexing_ops.setdefault(cb_op, [])
-                reindexing_ops[cb_op].append(dataset_id)
+        if sym_op_counts:
+            identity_counts = [counts["x,y,z"] for counts in sym_op_counts.values()]
+            cluster_id = identity_counts.index(max(identity_counts))
+            for dataset_id in self.cosym_analysis.reindexing_ops:
+                if cluster_id in self.cosym_analysis.reindexing_ops[dataset_id]:
+                    cb_op = self.cosym_analysis.reindexing_ops[dataset_id][cluster_id]
+                    reindexing_ops.setdefault(cb_op, [])
+                    reindexing_ops[cb_op].append(dataset_id)
 
-        logger.info("Reindexing operators:")
-        for cb_op, datasets in reindexing_ops.items():
-            logger.info(cb_op)
-            logger.info(datasets)
+            logger.info("Reindexing operators:")
+            for cb_op, datasets in reindexing_ops.items():
+                logger.info(cb_op)
+                logger.info(datasets)
 
-        self._apply_reindexing_operators(
-            reindexing_ops, subgroup=self.cosym_analysis.best_subgroup
-        )
+            self._apply_reindexing_operators(
+                reindexing_ops, subgroup=self.cosym_analysis.best_subgroup
+            )
 
     def export(self):
         """Output the datafiles for cosym.
@@ -342,6 +342,7 @@ def run(args=None):
 
     if params.seed is not None:
         flex.set_random_seed(params.seed)
+        np.random.seed(params.seed)
         random.seed(params.seed)
 
     if not params.input.experiments or not params.input.reflections:

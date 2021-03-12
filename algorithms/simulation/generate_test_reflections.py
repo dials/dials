@@ -1,7 +1,6 @@
-from __future__ import absolute_import, division, print_function
-
 import itertools
 import math
+import pickle
 import random
 
 from libtbx.phil import parse
@@ -396,16 +395,11 @@ def main(params):
         else:
             underestimates.append(j)
 
-    print(
-        "%d overestimates, %d underestimates"
-        % (len(overestimates), len(underestimates))
-    )
+    print(f"{len(overestimates)} overestimates, {len(underestimates)} underestimates")
 
     overestimates = rlist.select(flex.size_t(overestimates))
     underestimates = rlist.select(flex.size_t(underestimates))
     # now pickle these, perhaps
-
-    import six.moves.cPickle as pickle
 
     if params.output.under:
         with open(params.output.under, "wb") as fh:

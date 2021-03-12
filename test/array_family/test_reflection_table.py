@@ -1,7 +1,6 @@
-from __future__ import absolute_import, division, print_function
-
 import copy
 import os
+import pickle
 import random
 
 import pytest
@@ -706,8 +705,6 @@ def test_serialize():
     table["col3"] = flex.std_string(c3)
 
     # Pickle, then unpickle
-    import six.moves.cPickle as pickle
-
     obj = pickle.dumps(table)
     new_table = pickle.loads(obj)
     assert new_table.is_consistent()
@@ -779,7 +776,7 @@ def test_extract_shoeboxes():
     reflections["shoebox"] = flex.shoebox(reflections["panel"], reflections["bbox"])
     reflections["shoebox"].allocate()
 
-    class FakeImageSet(object):
+    class FakeImageSet:
         def __init__(self):
             self.data = flex.int(range(height * width))
             self.data.reshape(flex.grid(height, width))
@@ -788,12 +785,12 @@ def test_extract_shoeboxes():
             return (frame0, frame1)
 
         def get_detector(self):
-            class FakeDetector(object):
+            class FakeDetector:
                 def __len__(self):
                     return npanels
 
                 def __getitem__(self, index):
-                    class FakePanel(object):
+                    class FakePanel:
                         def get_trusted_range(self):
                             return (-1, 1000000)
 
@@ -1244,8 +1241,6 @@ def test_experiment_identifiers():
         table.assert_experiment_identifiers_are_consistent()
 
     identifiers[3] = "mnop"
-
-    import six.moves.cPickle as pickle
 
     pickled = pickle.dumps(table)
     table2 = pickle.loads(pickled)

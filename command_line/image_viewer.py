@@ -1,6 +1,5 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
 
-from __future__ import absolute_import, division, print_function
 
 import pickle
 import sys
@@ -61,6 +60,8 @@ show_mask = False
   .type = bool
 show_basis_vectors = True
   .type = bool
+basis_vector_scale = 10
+  .type = float(value_min=0)
 display = *image mean variance dispersion sigma_b \
           sigma_s threshold global_threshold
   .type = choice

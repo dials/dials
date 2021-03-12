@@ -1,4 +1,3 @@
-# coding: utf-8
 """
 Mask images to remove unwanted pixels.
 
@@ -18,13 +17,11 @@ Examples::
   dials.generate_mask models.expt d_max=2.00
 """
 
-from __future__ import absolute_import, division, print_function
 
 import logging
 import os.path
+import pickle
 from typing import List, Optional, Tuple
-
-import six.moves.cPickle as pickle
 
 import libtbx.phil as phil
 from dxtbx.format.image import ImageBool
@@ -33,7 +30,7 @@ from scitbx.array_family import flex
 
 import dials.util
 import dials.util.log
-from dials.util.masking import MaskGenerator
+import dials.util.masking
 from dials.util.options import OptionParser, flatten_experiments
 
 Masks = List[Tuple[flex.bool, ...]]
@@ -63,10 +60,9 @@ phil_scope = phil.parse(
 
 
 def generate_mask(
-    experiments,  # type: ExperimentList
-    params,  # type: phil.scope_extract
-):
-    # type: (...) -> Tuple[Masks, Optional[ExperimentList]]
+    experiments: ExperimentList,
+    params: phil.scope_extract,
+) -> Tuple[Masks, Optional[ExperimentList]]:
     """
     Generate a pixel mask for each imageset in an experiment list.
 
@@ -108,11 +104,8 @@ def generate_mask(
             for i in range(num_imagesets)
         ]
 
-    # Generate the mask
-    generator = MaskGenerator(params)
-
     for imageset, filename in zip(imagesets, filenames):
-        mask = generator.generate(imageset)
+        mask = dials.util.masking.generate_mask(imageset, params)
         masks.append(mask)
 
         # Save the mask to file

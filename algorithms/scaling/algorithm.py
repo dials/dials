@@ -1,7 +1,6 @@
 """
 Definitions of the scaling algorithm.
 """
-from __future__ import absolute_import, division, print_function
 
 import gc
 import itertools
@@ -177,7 +176,7 @@ def prepare_input(params, experiments, reflections):
     return params, experiments, reflections
 
 
-class ScalingAlgorithm(object):
+class ScalingAlgorithm:
     def __init__(self, params, experiments, reflections):
         self.scaler = None
         self.scaled_miller_array = None
@@ -227,7 +226,7 @@ class ScalingAlgorithm(object):
                 logger.info(e)
 
             # All done!
-            logger.info("\nTotal time taken: {:.4f}s ".format(time.time() - start_time))
+            logger.info("\nTotal time taken: %.4fs ", time.time() - start_time)
             logger.info("%s%s%s", "\n", "=" * 80, "\n")
 
     def scale(self):
@@ -348,7 +347,7 @@ scaling from this point for an improved model.""",
 
 class ScaleAndFilterAlgorithm(ScalingAlgorithm):
     def __init__(self, params, experiments, reflections):
-        super(ScaleAndFilterAlgorithm, self).__init__(params, experiments, reflections)
+        super().__init__(params, experiments, reflections)
         if (
             params.filtering.deltacchalf.mode == "dataset"
             and self.scaler.id_ != "multi"
@@ -469,7 +468,7 @@ multi-dataset scaling mode (not single dataset or scaling against a reference)""
             with open(self.params.filtering.output.scale_and_filter_results, "w") as f:
                 json.dump(self.filtering_results.to_dict(), f, indent=2)
             # All done!
-            logger.info("\nTotal time taken: {:.4f}s ".format(time.time() - start_time))
+            logger.info("\nTotal time taken: %.4fs ", time.time() - start_time)
             logger.info("%s%s%s", "\n", "=" * 80, "\n")
 
     def run_scaling_cycle(self):
@@ -499,7 +498,7 @@ multi-dataset scaling mode (not single dataset or scaling against a reference)""
 
     def _run_final_scale_cycle(self, results):
         self._create_model_and_scaler()
-        super(ScaleAndFilterAlgorithm, self).run()
+        super().run()
         results.add_final_stats(self.merging_statistics_result)
         for table in self.reflections:
             bad = table.get_flags(table.flags.bad_for_scaling, all=False)

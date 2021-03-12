@@ -1,15 +1,13 @@
-# coding: utf-8
 """Methods for symmetry determination.
 
 This module provides a base class for symmetry determination algorithms.
 """
-from __future__ import absolute_import, division, print_function
 
 import logging
 
 logger = logging.getLogger(__name__)
 
-from six.moves import cStringIO as StringIO
+from io import StringIO
 
 import libtbx
 from cctbx import adptbx, sgtbx, uctbx
@@ -19,9 +17,10 @@ from mmtbx.scaling import absolute_scaling, matthews
 from scitbx.array_family import flex
 
 from dials.util import resolution_analysis
+from dials.util.normalisation import quasi_normalisation
 
 
-class symmetry_base(object):
+class symmetry_base:
     """Base class for symmetry analysis."""
 
     def __init__(
@@ -36,7 +35,7 @@ class symmetry_base(object):
         absolute_angle_tolerance=None,
         best_monoclinic_beta=True,
     ):
-        u"""Initialise a symmetry_base object.
+        """Initialise a symmetry_base object.
 
         Args:
           intensities (cctbx.miller.array): The intensities on which to perform
@@ -112,7 +111,7 @@ class symmetry_base(object):
         self.patterson_group = (
             self.lattice_group.build_derived_patterson_group().make_tidy()
         )
-        logger.info("Patterson group: %s" % self.patterson_group.info())
+        logger.info("Patterson group: %s", self.patterson_group.info())
 
         sel = self.patterson_group.epsilon(self.intensities.indices()) == 1
         self.intensities = self.intensities.select(sel)
@@ -137,8 +136,8 @@ class symmetry_base(object):
                     absolute_angle_tolerance,
                 ):
                     raise ValueError(
-                        "Incompatible unit cell: %s\n" % d.unit_cell()
-                        + "      median unit cell: %s" % self.median_unit_cell
+                        f"Incompatible unit cell: {d.unit_cell()}\n"
+                        + f"      median unit cell: {self.median_unit_cell}"
                     )
 
     def _normalise(self, method):
@@ -147,7 +146,7 @@ class symmetry_base(object):
         elif method == "kernel":
             normalise = self.kernel_normalisation
         elif method == "quasi":
-            normalise = self.quasi_normalisation
+            normalise = quasi_normalisation
         elif method == "ml_iso":
             normalise = self.ml_iso_normalisation
         elif method == "ml_aniso":
@@ -155,7 +154,7 @@ class symmetry_base(object):
 
         for i in range(int(flex.max(self.dataset_ids) + 1)):
             logger.info("\n" + "-" * 80 + "\n")
-            logger.info("Normalising intensities for dataset %i\n" % (i + 1))
+            logger.info("Normalising intensities for dataset %i\n", i + 1)
             intensities = self.intensities.select(self.dataset_ids == i)
             try:
                 intensities = normalise(intensities)
@@ -206,36 +205,6 @@ class symmetry_base(object):
             intensities, auto_kernel=True
         )
         return normalisation.normalised_miller.deep_copy().set_info(intensities.info())
-
-    @staticmethod
-    def quasi_normalisation(intensities):
-        """Quasi-normalisation of the input intensities.
-
-        Args:
-          intensities (cctbx.miller.array): The intensities to be normalised.
-
-        Returns:
-          cctbx.miller.array: The normalised intensities.
-        """
-        # handle negative reflections to minimise effect on mean I values.
-        intensities.data().set_selected(intensities.data() < 0.0, 0.0)
-
-        # set up binning objects
-        if intensities.size() > 20000:
-            n_refl_shells = 20
-        elif intensities.size() > 15000:
-            n_refl_shells = 15
-        else:
-            n_refl_shells = 10
-        d_star_sq = intensities.d_star_sq().data()
-        step = (flex.max(d_star_sq) - flex.min(d_star_sq) + 1e-8) / n_refl_shells
-        intensities.setup_binner_d_star_sq_step(d_star_sq_step=step)
-
-        normalisations = intensities.intensity_quasi_normalisations()
-        return intensities.customized_copy(
-            data=(intensities.data() / normalisations.data()),
-            sigmas=(intensities.sigmas() / normalisations.data()),
-        )
 
     @staticmethod
     def ml_aniso_normalisation(intensities):
@@ -289,14 +258,19 @@ class symmetry_base(object):
                 """\
   %5.2f, %5.2f, %5.2f
   %12.2f, %5.2f
-  %19.2f"""
-                % (b_cart[0], b_cart[3], b_cart[4], b_cart[1], b_cart[5], b_cart[2])
+  %19.2f""",
+                b_cart[0],
+                b_cart[3],
+                b_cart[4],
+                b_cart[1],
+                b_cart[5],
+                b_cart[2],
             )
         else:
             logger.info("ML estimate of overall B value:")
-            logger.info("   %5.2f A**2" % normalisation.b_wilson)
+            logger.info("   %5.2f A**2", normalisation.b_wilson)
         logger.info("ML estimate of  -log of scale factor:")
-        logger.info("  %5.2f" % (normalisation.p_scale))
+        logger.info("  %5.2f", normalisation.p_scale)
 
         s = StringIO()
         mr.show(out=s)
@@ -373,12 +347,12 @@ def _resolution_filter(resolutionizer, min_i_mean_over_sigma_mean, min_cc_half):
                 limit=min_i_mean_over_sigma_mean,
             ).d_min
         except RuntimeError as e:
-            logger.info(u"I/σ(I) resolution filter failed with the following error:")
+            logger.info("I/σ(I) resolution filter failed with the following error:")
             logger.error(e)
         else:
             if d_min_isigi:
                 logger.info(
-                    u"Resolution estimate from <I>/<σ(I)> > %.1f : %.2f",
+                    "Resolution estimate from <I>/<σ(I)> > %.1f : %.2f",
                     min_i_mean_over_sigma_mean,
                     d_min_isigi,
                 )
@@ -388,12 +362,12 @@ def _resolution_filter(resolutionizer, min_i_mean_over_sigma_mean, min_cc_half):
                 resolution_analysis.metrics.CC_HALF, limit=min_cc_half
             ).d_min
         except RuntimeError as e:
-            logger.info(u"CC½ resolution filter failed with the following error:")
+            logger.info("CC½ resolution filter failed with the following error:")
             logger.error(e)
         else:
             if d_min_cc_half:
                 logger.info(
-                    u"Resolution estimate from CC½ > %.2f: %.2f",
+                    "Resolution estimate from CC½ > %.2f: %.2f",
                     min_cc_half,
                     d_min_cc_half,
                 )

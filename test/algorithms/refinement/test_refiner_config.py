@@ -1,6 +1,5 @@
 """Test Refiners can be constructed with various configurations"""
 
-from __future__ import absolute_import, division, print_function
 
 import os
 from copy import deepcopy

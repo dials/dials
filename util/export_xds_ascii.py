@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import copy
 import logging
 import os
@@ -42,7 +40,7 @@ def export_xds_ascii(integrated_data, experiment_list, params, var_model=(1, 0))
         for i, experiment in enumerate(experiment_list):
             experiment_data = integrated_data.select(integrated_data["id"] == i)
             name, ext = os.path.splitext(params.xds_ascii.hklout)
-            filename = name + "_{}".format(i) + ext
+            filename = name + f"_{i}" + ext
             _export_experiment(filename, experiment_data, experiment, params, var_model)
 
 
@@ -188,15 +186,15 @@ def _export_experiment(filename, integrated_data, experiment, params, var_model=
                 "!STARTING_FRAME= %d" % image_range[0],
                 "!SPACE_GROUP_NUMBER= %d"
                 % experiment.crystal.get_space_group().type().number(),
-                "!UNIT_CELL_CONSTANTS= %s" % (cell_fmt % unit_cell.parameters()),
-                "!UNIT_CELL_A-AXIS= %s" % (axis_fmt % real_space_ABC[0:3]),
-                "!UNIT_CELL_B-AXIS= %s" % (axis_fmt % real_space_ABC[3:6]),
-                "!UNIT_CELL_C-AXIS= %s" % (axis_fmt % real_space_ABC[6:9]),
-                "!X-RAY_WAVELENGTH= %f" % experiment.beam.get_wavelength(),
+                f"!UNIT_CELL_CONSTANTS= {cell_fmt % unit_cell.parameters()}",
+                f"!UNIT_CELL_A-AXIS= {axis_fmt % real_space_ABC[0:3]}",
+                f"!UNIT_CELL_B-AXIS= {axis_fmt % real_space_ABC[3:6]}",
+                f"!UNIT_CELL_C-AXIS= {axis_fmt % real_space_ABC[6:9]}",
+                f"!X-RAY_WAVELENGTH= {experiment.beam.get_wavelength():f}",
                 "!INCIDENT_BEAM_DIRECTION= %f %f %f" % beam.elems,
                 "!NX= %d NY= %d QX= %f QY= %f" % (nx, ny, qx, qy),
-                "!ORGX= %9.2f ORGY= %9.2f" % (orgx, orgy),
-                "!DETECTOR_DISTANCE= %8.3f" % distance,
+                f"!ORGX= {orgx:9.2f} ORGY= {orgy:9.2f}",
+                f"!DETECTOR_DISTANCE= {distance:8.3f}",
                 "!DIRECTION_OF_DETECTOR_X-AXIS= %9.5f %9.5f %9.5f" % fast.elems,
                 "!DIRECTION_OF_DETECTOR_Y-AXIS= %9.5f %9.5f %9.5f" % slow.elems,
                 "!VARIANCE_MODEL= %7.3e %7.3e" % var_model,
@@ -268,4 +266,4 @@ def _export_experiment(filename, integrated_data, experiment, params, var_model=
 
     fout.write("!END_OF_DATA\n")
     fout.close()
-    logger.info("Output %d reflections to %s" % (nref, filename))
+    logger.info("Output %d reflections to %s", nref, filename)

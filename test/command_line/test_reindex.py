@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import os
 
 import procrunner
@@ -58,7 +56,7 @@ def test_reindex(dials_regression, tmpdir):
         "dials.reindex",
         experiments_path,
         "space_group=P4",
-        "change_of_basis_op=%s" % str(cb_op),
+        f"change_of_basis_op={cb_op}",
         "output.experiments=P4.expt",
     ]
     result = procrunner.run(commands, working_directory=tmpdir)
@@ -70,7 +68,7 @@ def test_reindex(dials_regression, tmpdir):
     commands = [
         "dials.reindex",
         "P4.expt",
-        "change_of_basis_op=%s" % str(cb_op),
+        f"change_of_basis_op={cb_op}",
         "output.experiments=P4_reindexed.expt",
     ]
     result = procrunner.run(commands, working_directory=tmpdir)
@@ -100,6 +98,14 @@ def test_reindex(dials_regression, tmpdir):
     assert new_experiments1[0].crystal.get_A() == pytest.approx(
         new_experiments2[0].crystal.get_A()
     )
+
+    # verify that the file can be read by dials.show
+    commands = [
+        "dials.show",
+        tmpdir.join("reindexed.refl").strpath,
+    ]
+    result = procrunner.run(commands, working_directory=tmpdir)
+    assert not result.returncode and not result.stderr
 
 
 def test_reindex_multi_sequence(dials_regression, tmpdir):
@@ -175,7 +181,7 @@ def test_reindex_against_reference(dials_regression, tmpdir):
         "dials.reindex",
         "P4.refl",
         "P4.expt",
-        "change_of_basis_op=%s" % str(cb_op),
+        f"change_of_basis_op={cb_op}",
         "output.experiments=P4_reindexed.expt",
         "output.reflections=P4_reindexed.refl",
     ]

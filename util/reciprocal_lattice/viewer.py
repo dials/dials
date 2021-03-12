@@ -1,6 +1,5 @@
-from __future__ import absolute_import, division, print_function
-
 import wx
+from annlib_ext import AnnAdaptorSelfInclude
 from wx.lib.agw import floatspin
 
 import gltbx
@@ -27,6 +26,8 @@ show_rotation_axis = False
 show_beam_vector = False
   .type = bool
 show_reciprocal_cell = False
+  .type = bool
+label_nearest_point = False
   .type = bool
 marker_size = 5
   .type = int(value_min=1)
@@ -298,7 +299,10 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
             setting="show_reciprocal_cell", label="Show reciprocal cell"
         )
         self.panel_sizer.Add(ctrls[0], 0, wx.ALL, 5)
-
+        ctrls = self.create_controls(
+            setting="label_nearest_point", label="Label nearest point"
+        )
+        self.panel_sizer.Add(ctrls[0], 0, wx.ALL, 5)
         self.reverse_phi_ctrl = self.create_controls(
             setting="reverse_phi", label="Invert rotation axis"
         )[0]
@@ -442,7 +446,7 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
 
 class RLVWindow(wx_viewer.show_points_and_lines_mixin):
     def __init__(self, settings, *args, **kwds):
-        super(RLVWindow, self).__init__(*args, **kwds)
+        super().__init__(*args, **kwds)
         self.settings = settings
         self.points = flex.vec3_double()
         self.colors = None
@@ -465,6 +469,15 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
         self.points_display_list = None
         if self.minimum_covering_sphere is None:
             self.update_minimum_covering_sphere()
+
+    def set_points_data(self, reflections):
+        self.points_data = {
+            "panel": reflections["panel"],
+            "id": reflections["id"],
+            "xyz": reflections["xyzobs.px.value"],
+        }
+        if "miller_index" in reflections:
+            self.points_data["miller_index"] = reflections["miller_index"]
 
     def set_colors(self, colors):
         assert len(colors) == len(self.points)
@@ -536,6 +549,9 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
                     j = (i + 1) % self.palette.size()
                     color = self.palette[j]
                     self.draw_cell(axes, color)
+
+        if self.settings.label_nearest_point:
+            self.label_nearest_point()
 
         self.GetParent().update_statusbar()
 
@@ -610,17 +626,40 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
         gl.glEnd()
         gl.glDisable(gl.GL_LINE_STIPPLE)
 
-    def rotate_view(self, x1, y1, x2, y2, shift_down=False, scale=0.1):
-        super(RLVWindow, self).rotate_view(
-            x1, y1, x2, y2, shift_down=shift_down, scale=scale
+    def label_nearest_point(self):
+        ann = AnnAdaptorSelfInclude(self.points.as_double(), 3)
+        ann.query(self.rotation_center)
+        i = ann.nn[0]
+        gltbx.fonts.ucs_bitmap_8x13.setup_call_lists()
+        gl.glDisable(gl.GL_LIGHTING)
+        gl.glColor3f(1.0, 1.0, 1.0)
+        gl.glLineWidth(1.0)
+        xyz = self.points_data["xyz"][i]
+        exp_id = self.points_data["id"][i]
+        panel = self.points_data["panel"][i]
+        label = (
+            f"id: {exp_id}\n"
+            f"panel: {panel}\n"
+            f"xyz: {xyz[0]:.1f} {xyz[1]:.1f} {xyz[2]:.1f}"
         )
+        if "miller_index" in self.points_data:
+            hkl = self.points_data["miller_index"][i]
+            label += f"\nhkl: {hkl}"
+        line_spacing = round(gltbx.fonts.ucs_bitmap_8x13.height())
+        for j, string in enumerate(label.splitlines()):
+            gl.glRasterPos3f(*self.points[i])
+            gl.glBitmap(0, 0, 0.0, 0.0, line_spacing, -j * line_spacing, b" ")
+            gltbx.fonts.ucs_bitmap_8x13.render_string(string)
+
+    def rotate_view(self, x1, y1, x2, y2, shift_down=False, scale=0.1):
+        super().rotate_view(x1, y1, x2, y2, shift_down=shift_down, scale=scale)
 
     def OnLeftUp(self, event):
         self.was_dragged = True
-        super(RLVWindow, self).OnLeftUp(event)
+        super().OnLeftUp(event)
 
     def initialize_modelview(self, eye_vector=None, angle=None):
-        super(RLVWindow, self).initialize_modelview(eye_vector=eye_vector, angle=angle)
+        super().initialize_modelview(eye_vector=eye_vector, angle=angle)
         self.rotation_center = (0, 0, 0)
         self.move_to_center_of_viewport(self.rotation_center)
         if self.settings.model_view_matrix is not None:

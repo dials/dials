@@ -1,8 +1,5 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 import math
-import os
 
 logger = logging.getLogger(__name__)
 
@@ -12,10 +9,10 @@ def write_background_file(file_name, imageset, n_bins):
 
     d, I, sig = background(imageset, imageset.indices()[0], n_bins=n_bins)
 
-    logger.info("Saving background file to %s" % file_name)
+    logger.info("Saving background file to %s", file_name)
     with open(file_name, "w") as f:
         for d_, I_, sig_ in zip(d, I, sig):
-            f.write("%10.4f %10.2f %10.2f" % (d_, I_, sig_) + os.linesep)
+            f.write(f"{d_:10.4f} {I_:10.2f} {sig_:10.2f}\n")
 
 
 def write_integrated_hkl(prefix, reflections):
@@ -33,14 +30,12 @@ def write_integrated_hkl(prefix, reflections):
         suffix = ""
         if flex.max(expt_ids) > 0:
             suffix = "%i" % (i_expt + 1)
-        file_name = "%s%s.hkl" % (prefix, suffix)
-        logger.info("Saving reflections to %s" % file_name)
+        file_name = f"{prefix}{suffix}.hkl"
+        logger.info("Saving reflections to %s", file_name)
         with open(file_name, "w") as f:
             for i in range(len(integrated)):
                 f.write(
-                    "%4.0f %4.0f %4.0f %10.2f %10.2f"
-                    % (h[i], k[i], l[i], I[i], sigI[i])
-                    + os.linesep
+                    f"{h[i]:4.0f} {k[i]:4.0f} {l[i]:4.0f} {I[i]:10.2f} {sigI[i]:10.2f}\n"
                 )
 
 
@@ -126,7 +121,7 @@ def write_par_file(file_name, experiment):
         symbol = symbol.replace(" ", "")
         return symbol
 
-    logger.info("Saving BEST parameter file to %s" % file_name)
+    logger.info("Saving BEST parameter file to %s", file_name)
     with open(file_name, "w") as f:
         print("# parameter file for BEST", file=f)
         print("TITLE          From DIALS", file=f)
@@ -137,27 +132,25 @@ def write_par_file(file_name, experiment):
             % (max(detector[0].get_image_size()) * detector[0].get_pixel_size()[0]),
             file=f,
         )
-        print("PIXEL          %s" % round(detector[0].get_pixel_size()[0], 10), file=f)
+        print(f"PIXEL          {round(detector[0].get_pixel_size()[0], 10)}", file=f)
         print("ROTAXIS        %4.2f %4.2f %4.2f" % rotation.elems, direction, file=f)
         print("POLAXIS        %4.2f %4.2f %4.2f" % polarization.elems, file=f)
         print("GAIN               1.00", file=f)  # correct for Pilatus images
         # http://strucbio.biologie.uni-konstanz.de/xdswiki/index.php/FAQ#You_said_that_the_XDS_deals_with_high_mosaicity._How_high_mosaicity_is_still_manageable.3F
         # http://journals.iucr.org/d/issues/2012/01/00/wd5161/index.html
         # Transform from XDS defintion of sigma_m to FWHM (MOSFLM mosaicity definition)
-        print(
-            "CMOSAIC            %.2f" % (experiment.profile.sigma_m() * 2.355), file=f
-        )
-        print("PHISTART           %.2f" % scan.get_oscillation_range()[0], file=f)
-        print("PHIWIDTH           %.2f" % scan.get_oscillation()[1], file=f)
-        print("DISTANCE        %7.2f" % distance, file=f)
-        print("WAVELENGTH      %.5f" % beam.get_wavelength(), file=f)
-        print("POLARISATION    %7.5f" % beam.get_polarization_fraction(), file=f)
-        print("SYMMETRY       %s" % space_group_symbol(cryst.get_space_group()), file=f)
+        print(f"CMOSAIC            {experiment.profile.sigma_m() * 2.355:.2f}", file=f)
+        print(f"PHISTART           {scan.get_oscillation_range()[0]:.2f}", file=f)
+        print(f"PHIWIDTH           {scan.get_oscillation()[1]:.2f}", file=f)
+        print(f"DISTANCE        {distance:7.2f}", file=f)
+        print(f"WAVELENGTH      {beam.get_wavelength():.5f}", file=f)
+        print(f"POLARISATION    {beam.get_polarization_fraction():7.5f}", file=f)
+        print(f"SYMMETRY       {space_group_symbol(cryst.get_space_group())}", file=f)
         print("UB             %9.6f %9.6f %9.6f" % UB_mosflm[:3], file=f)
         print("               %9.6f %9.6f %9.6f" % UB_mosflm[3:6], file=f)
         print("               %9.6f %9.6f %9.6f" % UB_mosflm[6:], file=f)
         print("CELL           %8.2f %8.2f %8.2f %6.2f %6.2f %6.2f" % uc_params, file=f)
         print("RASTER           %i %i %i %i %i" % (nxs, nys, nc, nrx, nry), file=f)
-        print("SEPARATION      %.3f  %.3f" % (spot_diameter, spot_diameter), file=f)
+        print(f"SEPARATION      {spot_diameter:.3f}  {spot_diameter:.3f}", file=f)
         print("BEAM           %8.3f %8.3f" % beam_centre, file=f)
         print("# end of parameter file for BEST", file=f)

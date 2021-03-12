@@ -1,6 +1,5 @@
 """Tests for dials.merge command line program."""
 
-from __future__ import absolute_import, division, print_function
 
 import procrunner
 import pytest
@@ -42,15 +41,15 @@ def test_merge(dials_data, tmpdir, anomalous, truncate):
     refls = location.join("scaled_20_25.refl")
     expts = location.join("scaled_20_25.expt")
 
-    mtz_file = tmpdir.join("merge-%s-%s.mtz" % (anomalous, truncate))
+    mtz_file = tmpdir.join(f"merge-{anomalous}-{truncate}.mtz")
 
     command = [
         "dials.merge",
         refls,
         expts,
-        "truncate=%s" % truncate,
-        "anomalous=%s" % anomalous,
-        "output.mtz=%s" % mtz_file.strpath,
+        f"truncate={truncate}",
+        f"anomalous={anomalous}",
+        f"output.mtz={mtz_file.strpath}",
         "project_name=ham",
         "crystal_name=jam",
         "dataset_name=spam",
@@ -100,7 +99,7 @@ def test_merge_dmin_dmax(dials_data, tmpdir, best_unit_cell):
         "anomalous=False",
         "d_min=1.0",
         "d_max=8.0",
-        "output.mtz=%s" % mtz_file.strpath,
+        f"output.mtz={mtz_file.strpath}",
         "project_name=ham",
         "crystal_name=jam",
         "dataset_name=spam",
@@ -128,16 +127,16 @@ def test_merge_multi_wavelength(dials_data, tmpdir):
     """Test that merge handles multi-wavelength data suitably - should be
     exported into an mtz with seprate columns for each wavelength."""
 
-    mean_labels = ["%sIMEAN_WAVE%s" % (pre, i) for i in [1, 2] for pre in ["", "SIG"]]
+    mean_labels = [f"{pre}IMEAN_WAVE{i}" for i in [1, 2] for pre in ["", "SIG"]]
     anom_labels = [
-        "%sI_WAVE%s(%s)" % (pre, i, sgn)
+        f"{pre}I_WAVE{i}({sgn})"
         for i in [1, 2]
         for pre in ["", "SIG"]
         for sgn in ["+", "-"]
     ]
-    amp_labels = ["%sF_WAVE%s" % (pre, i) for i in [1, 2] for pre in ["", "SIG"]]
+    amp_labels = [f"{pre}F_WAVE{i}" for i in [1, 2] for pre in ["", "SIG"]]
     anom_amp_labels = [
-        "%sF_WAVE%s(%s)" % (pre, i, sgn)
+        f"{pre}F_WAVE{i}({sgn})"
         for i in [1, 2]
         for pre in ["", "SIG"]
         for sgn in ["+", "-"]
@@ -149,7 +148,7 @@ def test_merge_multi_wavelength(dials_data, tmpdir):
     refl2 = location.join("scaled_35.refl").strpath
     expt2 = location.join("scaled_35.expt").strpath
     expts1 = ExperimentListFactory.from_json_file(expt1, check_format=False)
-    expts1[0].beam.set_wavelength(0.5)
+    expts1[0].beam.set_wavelength(0.7)
     expts2 = ExperimentListFactory.from_json_file(expt2, check_format=False)
     expts1.extend(expts2)
 
@@ -182,9 +181,30 @@ def test_merge_multi_wavelength(dials_data, tmpdir):
     assert all(x in labels for x in amp_labels)
     assert all(x in labels for x in anom_amp_labels)
 
-    # 5 miller arrays for each dataset
-    assert m.as_miller_arrays()[0].info().wavelength == pytest.approx(0.5)
-    assert m.as_miller_arrays()[5].info().wavelength == pytest.approx(0.6889)
+    # 5 miller arrays for each dataset, check the expected number of reflections.
+    arrays = m.as_miller_arrays()
+    assert arrays[0].info().wavelength == pytest.approx(0.7)
+    assert arrays[5].info().wavelength == pytest.approx(0.6889)
+    assert abs(arrays[0].size() - 1223) < 10
+    assert abs(arrays[5].size() - 1453) < 10
+
+    # test changing the wavelength tolerance such that data is combined under
+    # one wavelength. Check the number of reflections to confirm this.
+    command = [
+        "dials.merge",
+        tmp_refl,
+        tmp_expt,
+        "truncate=True",
+        "anomalous=True",
+        "wavelength_tolerance=0.02",
+    ]
+    result = procrunner.run(command, working_directory=tmpdir)
+    assert not result.returncode and not result.stderr
+    m = mtz.object(tmpdir.join("merged.mtz").strpath)
+    arrays = m.as_miller_arrays()
+    assert arrays[0].info().wavelength == pytest.approx(0.7)
+    assert len(arrays) == 5
+    assert abs(arrays[0].size() - 1538) < 10
 
 
 def test_suitable_exit_for_bad_input_from_single_dataset(dials_data, tmpdir):

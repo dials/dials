@@ -2,20 +2,18 @@
 This module defines an abstract CrossValidator and an implementation of a
 cross validator for dials.scale
 """
-from __future__ import absolute_import, division, print_function
 
 import itertools
 from copy import deepcopy
 
 import pkg_resources
-import six
 
 from libtbx import phil
 from libtbx.table_utils import simple_table
 from scitbx.array_family import flex
 
 
-class CrossValidator(object):
+class CrossValidator:
     """Abstract class defining common methods for cross validation and methods
     that must be implemented for concrete implementations"""
 
@@ -85,7 +83,7 @@ class CrossValidator(object):
         assert len(keys) == len(values)
         for i, v in enumerate(itertools.product(*values)):
             e = dict(zip(keys, v))
-            for k, val in six.iteritems(e):
+            for k, val in e.items():
                 self.results_dict[i]["configuration"].append(str(k) + "=" + str(val))
 
     def add_results_to_results_dict(self, config_no, results):

@@ -61,7 +61,6 @@ connected reflections between datasets. The reflections used for minimisation
 are those which are selected by either method - inter-dataset connectedness or
 intra-dataset connectedness.
 """
-from __future__ import absolute_import, division, print_function
 
 import logging
 from math import floor
@@ -325,16 +324,16 @@ def _determine_Isigma_selection(reflection_table, params):
     selection = Ioversigma > Isiglow
     if Isighigh != 0.0:
         selection &= Ioversigma < Isighigh
-        reason = "in I/sigma range (%s > I/sig > %s)" % (Isighigh, Isiglow)
+        reason = f"in I/sigma range ({Isighigh} > I/sig > {Isiglow})"
     else:
-        reason = "in I/sigma range (I/sig > %s)" % Isiglow
+        reason = f"in I/sigma range (I/sig > {Isiglow})"
     return selection, reason
 
 
 def _determine_partiality_selection(reflection_table, params):
     min_partiality = params.reflection_selection.min_partiality
     selection = reflection_table["partiality"] > min_partiality
-    reason = "above min partiality ( > %s)" % min_partiality
+    reason = f"above min partiality ( > {min_partiality})"
     return selection, reason
 
 
@@ -342,7 +341,7 @@ def _determine_d_range_selection(reflection_table, params):
     d_min, d_max = params.reflection_selection.d_range
     d_sel = reflection_table["d"] > d_min
     d_sel &= reflection_table["d"] < d_max
-    reason = "in d range (%s > d > %s)" % (d_max, d_min)
+    reason = f"in d range ({d_max} > d > {d_min})"
     return d_sel, reason
 
 
@@ -351,7 +350,7 @@ def _determine_E2_range_selection(reflection_table, params):
     sel1 = reflection_table["Esq"] > Elow
     sel2 = reflection_table["Esq"] < Ehigh
     Esq_sel = sel1 & sel2
-    reason = "in E^2 range (%s > E^2 > %s)" % (Ehigh, Elow)
+    reason = f"in E^2 range ({Ehigh} > E^2 > {Elow})"
     return Esq_sel, reason
 
 

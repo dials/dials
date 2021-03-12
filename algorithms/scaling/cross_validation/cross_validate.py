@@ -36,13 +36,10 @@ cross_validation_mode=multi parameter=physical.decay_interval parameter_values="
 cross_validation_mode=multi parameter=model parameter_values="array physical"
 """
 
-from __future__ import absolute_import, division, print_function
 
 import itertools
 import logging
 import time
-
-import six
 
 from libtbx import phil
 
@@ -154,7 +151,7 @@ def cross_validate(params, cross_validator):
 
         for i, v in enumerate(itertools.product(*values)):
             e = dict(zip(keys, v))
-            for k, val in six.iteritems(e):
+            for k, val in e.items():
                 params = cross_validator.set_parameter(params, k, val)
             for n in range(params.cross_validation.nfolds):
                 if n < 100.0 / free_set_percentage:
@@ -169,8 +166,7 @@ def cross_validate(params, cross_validator):
 
     finish_time = time.time()
     logger.info(
-        "\nCross-validation finished.\nTotal time taken: {:.4f}s ".format(
-            finish_time - start_time
-        )
+        "\nCross-validation finished.\nTotal time taken: %.4fs ",
+        finish_time - start_time,
     )
     logger.info("\n" + "=" * 80 + "\n")

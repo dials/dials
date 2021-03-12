@@ -1,8 +1,6 @@
-# coding: utf-8
 """
 Make plotly plots for html output by dials.scale, dials.report or xia2.report.
 """
-from __future__ import absolute_import, division, print_function
 
 import itertools
 import math
@@ -228,7 +226,7 @@ def _add_decay_model_scales_to_data(model, data, yaxis="y", resolution=3.0):
             "x": list(sample_values),
             "y": list(s),
             "type": "line",
-            "name": "Decay scale factor <br>at %s Angstrom" % resolution,
+            "name": f"Decay scale factor <br>at {resolution} Angstrom",
             "xaxis": "x",
             "yaxis": yaxis,
         }
@@ -387,7 +385,7 @@ def plot_absorption_parameters(physical_model):
                 "yref": "paper",
                 "x": start + (n / 2.0),
                 "y": 1,
-                "text": "l=%s" % ls[i],
+                "text": f"l={ls[i]}",
                 "showarrow": False,
                 "yshift": 20,
             }
@@ -881,7 +879,7 @@ def plot_array_decay_plot(array_model):
     tickvals = flex.double(range(n_y_bins + 1))
     resmin = (tickvals * configdict["res_bin_width"]) + configdict["resmin"]
     d = 1.0 / flex.sqrt((tickvals * configdict["res_bin_width"]) + resmin)
-    ticktext = ["%.3f" % i for i in d]
+    ticktext = [f"{i:.3f}" for i in d]
 
     return {
         "array_decay_plot": {

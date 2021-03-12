@@ -3,7 +3,6 @@
 Classes are inherited from the dials.refinement engine with a few
 methods overwritten to use them with scaling code."""
 
-from __future__ import absolute_import, division, print_function
 
 import logging
 
@@ -142,14 +141,14 @@ def print_step_table(refinery):
         rmsds = [r for r in refinery.history["rmsd"][i]]
         rows.append(
             [str(i), str(refinery.history["num_reflections"][i])]
-            + ["%.5g" % r for r in rmsds]
+            + [f"{r:.5g}" for r in rmsds]
         )
 
     logger.info(tabulate(rows, header))
     logger.info(refinery.history.reason_for_termination)
 
 
-class ScalingRefinery(object):
+class ScalingRefinery:
     "mixin class to add extra return method"
 
     def __init__(self, scaler, target, prediction_parameterisation, *args, **kwargs):

@@ -1,4 +1,3 @@
-# coding: utf-8
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 """
 This program is used to integrate the reflections on the diffraction images. It
@@ -20,7 +19,6 @@ Examples::
   dials.integrate models.expt refined.refl background.algorithm=glm
 """
 
-from __future__ import absolute_import, division, print_function
 
 import logging
 import math
@@ -570,8 +568,9 @@ def run_integration(params, experiments, reference=None):
     if not params.output.output_unintegrated_reflections:
         keep = reflections.get_flags(reflections.flags.integrated, all=False)
         logger.info(
-            "Removing %d unintegrated reflections of %d total"
-            % (keep.count(False), keep.size())
+            "Removing %d unintegrated reflections of %d total",
+            keep.count(False),
+            keep.size(),
         )
 
         reflections = reflections.select(keep)

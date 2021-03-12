@@ -2,11 +2,11 @@
 LevenbergMarquardtIterations, GaussNewtonIterations, SimpleLBFGS and LBFGScurvs
 are the current concrete implementations"""
 
-from __future__ import absolute_import, division, print_function
 
 import copy
 import json
 import logging
+from io import StringIO
 
 import libtbx
 from libtbx import easy_mp
@@ -135,7 +135,7 @@ class Journal(dict):
 
     @classmethod
     def from_json_file(cls, filename):
-        with open(filename, "r") as f:
+        with open(filename) as f:
             d = json.load(f)
         j = cls()
         j.update(d["data"])
@@ -144,7 +144,7 @@ class Journal(dict):
         return j
 
 
-class Refinery(object):
+class Refinery:
     """Interface for Refinery objects. This should be subclassed and the run
     method implemented."""
 
@@ -462,7 +462,7 @@ class Refinery(object):
         raise NotImplementedError()
 
 
-class DisableMPmixin(object):
+class DisableMPmixin:
     """A mixin class that disables setting of nproc for multiprocessing"""
 
     def set_nproc(self, nproc):
@@ -480,8 +480,6 @@ class AdaptLbfgs(Refinery):
         self._termination_params = lbfgs.termination_parameters(
             max_iterations=self._max_iterations
         )
-
-        from six.moves import cStringIO as StringIO
 
         self._log_string = StringIO
 
@@ -817,7 +815,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
         log=None,
         tracking=None,
         max_iterations=20,
-        **kwds
+        **kwds,
     ):
 
         AdaptLstbx.__init__(
@@ -956,11 +954,11 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
         # early test for linear independence, require all right hand side elements to be non-zero
         RHS = self.step_equations().right_hand_side()
         if RHS.count(0.0) > 0:
+            p_names = [
+                b for a, b in zip(RHS, self._parameters.get_param_names()) if a == 0.0
+            ]
             raise DialsRefineRuntimeError(
-                r"""There is at least one normal equation with a right hand side of zero,
-meaning that the parameters are not all independent, and there is no unique
-solution.  Mathematically, some kind of row reduction needs to be performed
-before this can be solved."""
+                f"The normal equations have an indeterminate solution. The problematic parameters are {', '.join(p_names)}."
             )
 
         # return early if refinement is not possible

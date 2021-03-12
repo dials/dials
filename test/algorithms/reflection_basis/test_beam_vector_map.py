@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import random
 
 import pytest
@@ -12,7 +10,7 @@ from dials.algorithms.profile_model.gaussian_rs.transform import beam_vector_map
 
 @pytest.fixture
 def sequence_and_model(dials_data):
-    class Test(object):
+    class Test:
         pass
 
     storage_class = Test()

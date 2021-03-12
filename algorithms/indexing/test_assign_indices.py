@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import copy
 import os
 import random
@@ -173,7 +171,7 @@ def test_assign_indices(space_group_symbol, experiment, crystal_factory):
     assert result.misindexed_local < (0.001 * len(result.reflections_local))
 
 
-class CompareGlobalLocal(object):
+class CompareGlobalLocal:
     def __init__(self, experiment, reflections, expected_miller_indices):
 
         index_reflections_global = AssignIndicesGlobal()

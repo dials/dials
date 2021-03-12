@@ -4,9 +4,9 @@
 # Running bootstrap requires a minimum Python version of 2.7.
 
 # To download this file:
-# wget https://raw.githubusercontent.com/dials/dials/master/installer/bootstrap.py
+# wget https://raw.githubusercontent.com/dials/dials/main/installer/bootstrap.py
 # or
-# curl https://raw.githubusercontent.com/dials/dials/master/installer/bootstrap.py > bootstrap.py
+# curl https://raw.githubusercontent.com/dials/dials/main/installer/bootstrap.py > bootstrap.py
 
 from __future__ import absolute_import, division, print_function
 
@@ -253,22 +253,6 @@ channels:
 """.lstrip()
         )
 
-    # on Windows, also download the Visual C++ 2008 Redistributable
-    # use the same version as conda-forge
-    # https://github.com/conda-forge/vs2008_runtime-feedstock
-    if os.name == "nt":
-        # There are no scipy Windows packages in conda-forge,
-        # so install that plus downstream dependencies using pip.
-        # https://github.com/conda-forge/vs2008_runtime-feedstock
-        try:
-            os.mkdir("build")
-        except Exception:
-            pass
-        run_indirect_command(
-            os.path.join(prefix, "Scripts", "pip.exe"),
-            args=["install", "scipy", "scikit-learn"],
-        )
-
 
 def run_command(command, workdir):
     print("Running %s (in %s)" % (" ".join(command), workdir))
@@ -300,6 +284,10 @@ def run_command(command, workdir):
 
 def run_indirect_command(command, args):
     print("(via conda environment) " + command)
+    try:
+        os.mkdir("build")
+    except OSError:
+        pass
     if os.name == "nt":
         filename = os.path.join("build", "indirection.cmd")
         with open(filename, "w") as fh:
@@ -847,18 +835,18 @@ def update_sources(options):
             pass
 
     repositories = {
-        source.split("/")[1]: {"base-repository": source, "branch-local": "master"}
-        for source in (
-            "cctbx/annlib_adaptbx",
-            "cctbx/cctbx_project",
-            "cctbx/dxtbx",
-            "dials/annlib",
-            "dials/cbflib",
-            "dials/ccp4io",
-            "dials/ccp4io_adaptbx",
-            "dials/dials",
-            "dials/gui_resources",
-            "xia2/xia2",
+        source.split("/")[1]: {"base-repository": source, "branch-local": branch}
+        for source, branch in (
+            ("cctbx/annlib_adaptbx", "master"),
+            ("cctbx/cctbx_project", "master"),
+            ("cctbx/dxtbx", "main"),
+            ("dials/annlib", "master"),
+            ("dials/cbflib", "master"),
+            ("dials/ccp4io", "master"),
+            ("dials/ccp4io_adaptbx", "master"),
+            ("dials/dials", "main"),
+            ("dials/gui_resources", "master"),
+            ("xia2/xia2", "main"),
         )
     }
     repositories["cctbx_project"] = {
@@ -906,6 +894,8 @@ def update_sources(options):
             output = (result + " - " + output).replace(
                 "\n", "\n" + " " * (len(module + result) + 5)
             )
+            if result == "ERROR":
+                success = False
             if os.name == "posix" and sys.stdout.isatty():
                 if result == "OK":
                     output = "\x1b[32m" + output + "\x1b[0m"
@@ -913,7 +903,6 @@ def update_sources(options):
                     output = "\x1b[33m" + output + "\x1b[0m"
                 elif result == "ERROR":
                     output = "\x1b[31m" + output + "\x1b[0m"
-                    success = False
             print(module + ": " + output)
     except KeyboardInterrupt:
         update_pool.terminate()
@@ -957,10 +946,9 @@ def run_tests():
 
 def refresh_build():
     print("Running libtbx.refresh")
-    dispatch_extension = ".bat" if os.name == "nt" else ""
-    run_command(
-        [os.path.join("build", "bin", "libtbx.refresh" + dispatch_extension)],
-        workdir=".",
+    run_indirect_command(
+        os.path.join("bin", "libtbx.refresh"),
+        args=[],
     )
 
 
@@ -996,7 +984,6 @@ def configure_build(config_flags):
         pass  # ensure we write a new-style environment setup script
 
     configcmd = [
-        conda_python,
         os.path.join("..", "modules", "cctbx_project", "libtbx", "configure.py"),
         "cctbx",
         "cbflib",
@@ -1014,9 +1001,9 @@ def configure_build(config_flags):
         "--skip_phenix_dispatchers",
     ] + config_flags
     print("Setting up build directory")
-    run_command(
-        command=configcmd,
-        workdir="build",
+    run_indirect_command(
+        command=conda_python,
+        args=configcmd,
     )
 
 
