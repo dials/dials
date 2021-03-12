@@ -122,6 +122,7 @@ class StillsIndexer(Indexer):
                 if (crystal_ids == -1).count(True) < min_reflections_for_indexing:
                     logger.info(
                         "Finish searching for more lattices: %i unindexed reflections remaining.",
+                        min_reflections_for_indexing,
                     )
                     break
 
