@@ -707,6 +707,40 @@ def test_multi_scale(dials_data, tmpdir):
     assert result.overall.cc_one_half > 0.997  # at #22/06/20, value was 0.999
 
 
+def test_multi_scale_individual_error_models(dials_data, tmpdir):
+    """Test standard scaling of two datasets."""
+
+    data_dir = dials_data("l_cysteine_dials_output")
+    refl_1 = data_dir / "20_integrated.pickle"
+    expt_1 = data_dir / "20_integrated_experiments.json"
+    refl_2 = data_dir / "25_integrated.pickle"
+    expt_2 = data_dir / "25_integrated_experiments.json"
+    extra_args = [
+        "unmerged_mtz=unmerged.mtz",
+        "error_model.grouping=individual",
+        "intensity_choice=profile",
+    ]
+
+    run_one_scaling(tmpdir, [refl_1, refl_2, expt_1, expt_2] + extra_args)
+
+    # Now inspect output, check it hasn't changed drastically, or if so verify
+    # that the new behaviour is more correct and update test accordingly.
+    result = get_merging_stats(tmpdir.join("unmerged.mtz").strpath)
+    expected_nobs = 5358  # 04/05/21
+    assert abs(result.overall.n_obs - expected_nobs) < 30
+    assert result.overall.r_pim < 0.015  # at 04/05/21, value was 0.013
+    assert result.overall.cc_one_half > 0.9975  # at 04/05/21, value was 0.999
+
+    # Test that different error models were determined for each sweep.
+    scaling_models = load.experiment_list(
+        tmpdir.join("scaled.expt").strpath, check_format=False
+    ).scaling_models()
+    params_1 = scaling_models[0].configdict["error_model_parameters"]
+    params_2 = scaling_models[1].configdict["error_model_parameters"]
+    assert params_1[0] != params_2[0]
+    assert params_1[1] != params_2[1]
+
+
 def test_multi_scale_exclude_images(dials_data, tmpdir):
     """Test scaling of multiple dataset with image exclusion."""
     data_dir = dials_data("l_cysteine_dials_output")

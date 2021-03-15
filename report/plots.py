@@ -133,7 +133,7 @@ def i_over_sig_i_vs_batch_plot(batch_manager, i_sig_i_vs_batch):
     }
 
 
-def i_over_sig_i_vs_i_plot(intensities, sigmas):
+def i_over_sig_i_vs_i_plot(intensities, sigmas, label=None):
     """Plot unscaled I / sigma_adjusted vs unscaled I."""
     sel = (intensities > 0) & (sigmas > 0)
     intensities = intensities.select(sel)
@@ -148,9 +148,11 @@ def i_over_sig_i_vs_i_plot(intensities, sigmas):
     z = np.empty(H.shape)
     z[:] = np.NAN
     z[nonzeros] = H[nonzeros]
-
+    key = f"i_over_sig_i_vs_i_{label}" if label is not None else "i_over_sig_i_vs_i"
+    title = "I/σ(I) vs I"
+    title = title + f" (error model {label})" if label is not None else title
     return {
-        "i_over_sig_i_vs_i": {
+        key: {
             "data": [
                 {
                     "x": xedges.tolist(),
@@ -166,7 +168,7 @@ def i_over_sig_i_vs_i_plot(intensities, sigmas):
                 }
             ],
             "layout": {
-                "title": "I/σ(I) vs I",
+                "title": title,
                 "xaxis": {"title": "log I"},
                 "yaxis": {"title": "I/σ(I)"},
             },
