@@ -1,1 +1,0 @@
-Fix ``dials.*`` commands crashing on Windows when unicode output is directed to a file

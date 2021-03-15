@@ -1,3 +1,0 @@
-PRs to DIALS will now be checked for newsfragments. If a newsfragment is
-added with the name ``XXX.{something}``, then it will be automatically
-renamed to match the PR number.

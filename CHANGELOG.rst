@@ -1,3 +1,74 @@
+DIALS 3.4.0 (2021-03-15)
+========================
+
+Features
+--------
+
+- ``dials.integrate``: Profile-fitting improvements; Profile fitting will now be attempted on
+  reflections with masked pixels, and the number of reflections qualifying for profile-fitting on
+  multi-panel detectors has dramatically increased. (`#1297 <https://github.com/dials/dials/issues/1297>`_)
+- ``dials.import``: When using ``reference_models=``, individual components of the model can be excluded with ``use_beam_reference=``, ``use_gonio_reference=`` and ``use_detector_reference=``. (`#1371 <https://github.com/dials/dials/issues/1371>`_)
+- ``flex.reflection_table.match`` can now match reflections with configurable
+  distance and scaling between any 3-vector column in the reflection tables. The
+  default is still ``"xyzobs.px.value"``. (`#1398 <https://github.com/dials/dials/issues/1398>`_)
+- ``dials.background``: Add option ``output.plot=`` to save an image to
+  disk, instead of displaying interactively. Image files can now also be
+  used directly. (`#1537 <https://github.com/dials/dials/issues/1537>`_)
+- ``dials.import``: The default ``tolerance.scan.oscillation=`` is increased to
+  3% of the image width, in order to accommodate electron diffraction datasets
+  with poor rotation stages. (`#1543 <https://github.com/dials/dials/issues/1543>`_)
+- ``dials.background``: Add support for multiple imagesets (`#1554 <https://github.com/dials/dials/issues/1554>`_)
+- dials.estimate_resolution: reject Wilson outliers to minimise effect of spurious observations from e.g. ice rings on the resulting resolution estimates (`#1580 <https://github.com/dials/dials/issues/1580>`_)
+- ``dials.cosym``: Use numpy in place of flex for large parts of cosym analysis (`#1581 <https://github.com/dials/dials/issues/1581>`_)
+- ``dials.cosym``: Add option to use scipy `L-BFGS-B <https://docs.scipy.org/doc/scipy/reference/optimize.minimize-lbfgsb.html>` minimization engine (``minimization.engine=scipy``) (`#1581 <https://github.com/dials/dials/issues/1581>`_)
+- New masking parameter ``disable_parallax_correction=False``. Set to ``True`` to speed up generation of resolution masks by disabling parallax correction (this is only likely to have significant effect when spotfinding is spread across many independent processes). (`#1590 <https://github.com/dials/dials/issues/1590>`_)
+- ``dials.image_viewer``: New parameter ``basis_vector_scale=`` to adjust the length of the basis vector overlay (`#1598 <https://github.com/dials/dials/issues/1598>`_)
+- ``dials.merge``: add option to set wavelength_tolerance for MAD datasets (`#1609 <https://github.com/dials/dials/issues/1609>`_)
+- ``dials.reciprocal_lattice_viewer``: Added an option to label the reciprocal lattice point nearest the centre (`#1614 <https://github.com/dials/dials/issues/1614>`_)
+- ``dials.scale``: An additional outlier rejection based on normalised intensities has been added (`#1627 <https://github.com/dials/dials/issues/1627>`_)
+
+
+Bugfixes
+--------
+
+- ``dials.image_viewer``: Fix various display issues relating to viewing still images (`#1463 <https://github.com/dials/dials/issues/1463>`_)
+- ``dials.background``: Fix crash when writing output plot with bad display configuration (`#1550 <https://github.com/dials/dials/issues/1550>`_)
+- ``dials.scale``: Fix issue of error model not always being carried through after
+  the profile/summation intensity combination step. (`#1566 <https://github.com/dials/dials/issues/1566>`_)
+- Fail bootstrap step if the git checkout fails in a non-interactive or non-posix environment (`#1572 <https://github.com/dials/dials/issues/1572>`_)
+- Fixes working towards direct support of Windows builds:
+
+  * Fix build errors by ensuring conda environment is correctly set up. (`#1575 <https://github.com/dials/dials/issues/1575>`_)
+  * Fix importing using paths with wildcards (`#1583 <https://github.com/dials/dials/issues/1583>`_)
+  * Fix ``dials.*`` commands crashing when unicode output is directed to a file (`#1602 <https://github.com/dials/dials/issues/1602>`_)
+  * Fix some type-related test failures (`#1608 <https://github.com/dials/dials/issues/1608>`_)
+
+
+Improved Documentation
+----------------------
+
+- Describe how to fix gltbx build failures for development installations on non-RHEL distributions (`#1561 <https://github.com/dials/dials/issues/1561>`_)
+- Replace references to ``.pickle`` with reflections / ``.refl`` in docstrings (`#1619 <https://github.com/dials/dials/issues/1619>`_)
+- Add documentation for ``dials.filter_reflections`` to the website. (`#1625 <https://github.com/dials/dials/issues/1625>`_)
+
+
+Deprecations and Removals
+-------------------------
+
+- Remove previously deprecated ``use_trusted_range=`` parameter from masking configuration (`#1156 <https://github.com/dials/dials/issues/1156>`_)
+- The main development branch of dials was renamed from 'master' to 'main'. (`#1546 <https://github.com/dials/dials/issues/1546>`_)
+- ``dials.background``: The ``plot=`` parameter to interactively display the background plot has
+  been removed. Use ``output.plot=`` to save to file instead. (`#1554 <https://github.com/dials/dials/issues/1554>`_)
+- Remove ``*.o`` files from the DIALS installer package (`#1564 <https://github.com/dials/dials/issues/1564>`_)
+- ``dials.util.masking.MaskGenerator`` is deprecated in favour of ``dials.util.masking.generate_mask`` (`#1569 <https://github.com/dials/dials/issues/1569>`_)
+
+
+Misc
+----
+
+- `#1530 <https://github.com/dials/dials/issues/1530>`_, `#1531 <https://github.com/dials/dials/issues/1531>`_, `#1532 <https://github.com/dials/dials/issues/1532>`_, `#1534 <https://github.com/dials/dials/issues/1534>`_, `#1535 <https://github.com/dials/dials/issues/1535>`_, `#1536 <https://github.com/dials/dials/issues/1536>`_, `#1542 <https://github.com/dials/dials/issues/1542>`_, `#1567 <https://github.com/dials/dials/issues/1567>`_, `#1570 <https://github.com/dials/dials/issues/1570>`_, `#1571 <https://github.com/dials/dials/issues/1571>`_, `#1588 <https://github.com/dials/dials/issues/1588>`_, `#1593 <https://github.com/dials/dials/issues/1593>`_, `#1597 <https://github.com/dials/dials/issues/1597>`_, `#1599 <https://github.com/dials/dials/issues/1599>`_, `#1600 <https://github.com/dials/dials/issues/1600>`_, `#1601 <https://github.com/dials/dials/issues/1601>`_, `#1603 <https://github.com/dials/dials/issues/1603>`_, `#1604 <https://github.com/dials/dials/issues/1604>`_, `#1613 <https://github.com/dials/dials/issues/1613>`_, `#1620 <https://github.com/dials/dials/issues/1620>`_, `#1621 <https://github.com/dials/dials/issues/1621>`_, `#1624 <https://github.com/dials/dials/issues/1624>`_, `#1626 <https://github.com/dials/dials/issues/1626>`_, `#1630 <https://github.com/dials/dials/issues/1630>`_
+
+
 DIALS 3.3.4 (2021-03-05)
 ========================
 

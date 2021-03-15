@@ -1,3 +1,0 @@
-``dials.background``: The ``plot=`` parameter to interactively display
-the background plot has been removed. Use ``output.plot=`` to save to
-file instead.

@@ -1,1 +1,0 @@
-Fix occassional test failure by also setting np.random.seed
