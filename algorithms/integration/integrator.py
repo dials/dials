@@ -6,7 +6,7 @@ import pickle
 import random
 
 import dials.extensions
-from dials.algorithms.integration import processor
+from dials.algorithms.integration import TimingInfo, processor
 from dials.algorithms.integration.filtering import IceRingFilter
 from dials.algorithms.integration.parallel_integrator import (
     IntegratorProcessor,
@@ -18,6 +18,7 @@ from dials.algorithms.integration.processor import (
     ProcessorFlat3D,
     ProcessorSingle2D,
     ProcessorStills,
+    assess_available_memory,
     build_processor,
     job,
 )
@@ -37,6 +38,7 @@ from dials_algorithms_integration_integrator_ext import (
     Executor,
     JobList,
     ReflectionManager,
+    max_memory_needed,
 )
 
 logger = logging.getLogger(__name__)
@@ -229,6 +231,10 @@ def generate_phil_scope():
         nproc = 1
           .type = int(value_min=1)
           .help = "The number of processes to use per cluster job"
+
+        multiprocessing.n_subset_split = None
+            .type = int(value_min=1)
+            .help = "Number of subsets to split the reflection table for integration."
       }
 
       summation {
@@ -376,6 +382,7 @@ class Parameters:
         mp.method = params.mp.method
         mp.nproc = params.mp.nproc
         mp.njobs = params.mp.njobs
+        mp.n_subset_split = params.mp.multiprocessing.n_subset_split
 
         # Set the lookup parameters
         lookup = processor.Lookup()
@@ -407,6 +414,7 @@ class Parameters:
         result.integration.debug.select = params.debug.select
         result.integration.debug.separate_files = params.debug.separate_files
         result.integration.summation = params.summation
+        result.integration.integrator = params.integrator
 
         result.debug_reference_filename = params.debug.reference.filename
         result.debug_reference_output = params.debug.reference.output
@@ -939,52 +947,13 @@ class Integrator:
         self.profile_model_report = None
         self.integration_report = None
 
-    def integrate(self):
+    def fit_profiles(self):
+        """Do profile fitting if appropriate.
+
+        Sets self.profile_validation_report and self.profile_model_report.
+
+        Returns profile_fitter (may be none)
         """
-        Integrate the data
-        """
-        # Ensure we get the same random sample each time
-        random.seed(0)
-
-        # Init the report
-        self.profile_model_report = None
-        self.integration_report = None
-
-        # Heading
-        logger.info("=" * 80)
-        logger.info("")
-        logger.info(heading("Processing reflections"))
-        logger.info("")
-
-        # Create summary format
-        fmt = (
-            " Processing the following experiments:\n"
-            "\n"
-            " Experiments: %d\n"
-            " Beams:       %d\n"
-            " Detectors:   %d\n"
-            " Goniometers: %d\n"
-            " Scans:       %d\n"
-            " Crystals:    %d\n"
-            " Imagesets:   %d\n"
-        )
-
-        # Print the summary
-        logger.info(
-            fmt,
-            len(self.experiments),
-            len(self.experiments.beams()),
-            len(self.experiments.detectors()),
-            len(self.experiments.goniometers()),
-            len(self.experiments.scans()),
-            len(self.experiments.crystals()),
-            len(self.experiments.imagesets()),
-        )
-
-        # Initialize the reflections
-        self.initialize_reflections(self.experiments, self.params, self.reflections)
-
-        # Check if we want to do some profile fitting
         fitting_class = [e.profile.fitting_class() for e in self.experiments]
         fitting_avail = all(c is not None for c in fitting_class)
         if self.params.profile.fitting and fitting_avail:
@@ -1154,6 +1123,50 @@ class Integrator:
 
                 # Set to the finalized fitter
                 profile_fitter = finalized_profile_fitter
+        return profile_fitter
+
+    def integrate(self):
+        """
+        Integrate the data
+        """
+        # Ensure we get the same random sample each time
+        random.seed(0)
+
+        # Init the report
+        self.profile_model_report = None
+        self.integration_report = None
+
+        # Heading
+        logger.info("=" * 80)
+        logger.info("")
+        logger.info(heading("Processing reflections"))
+        logger.info("")
+
+        # Print the summary
+        logger.info(
+            " Processing the following experiments:\n"
+            "\n"
+            " Experiments: %d\n"
+            " Beams:       %d\n"
+            " Detectors:   %d\n"
+            " Goniometers: %d\n"
+            " Scans:       %d\n"
+            " Crystals:    %d\n"
+            " Imagesets:   %d\n",
+            len(self.experiments),
+            len(self.experiments.beams()),
+            len(self.experiments.detectors()),
+            len(self.experiments.goniometers()),
+            len(self.experiments.scans()),
+            len(self.experiments.crystals()),
+            len(self.experiments.imagesets()),
+        )
+
+        # Initialize the reflections
+        self.initialize_reflections(self.experiments, self.params, self.reflections)
+
+        # Check if we want to do some profile fitting
+        profile_fitter = self.fit_profiles()
 
         logger.info("=" * 80)
         logger.info("")
@@ -1162,16 +1175,95 @@ class Integrator:
 
         # Create the data processor
         executor = IntegratorExecutor(self.experiments, profile_fitter)
-        processor = build_processor(
-            self.ProcessorClass,
-            self.experiments,
-            self.reflections,
-            self.params.integration,
-        )
-        processor.executor = executor
 
-        # Process the reflections
-        self.reflections, _, time_info = processor.process()
+        # determine the max memory needed during integration
+        def _determine_max_memory_needed(experiments, reflections):
+            max_needed = 0
+            for imageset in experiments.imagesets():
+                try:
+                    frame0, frame1 = imageset.get_array_range()
+                except RuntimeError:  # catch DXTBX_ASSERT if no scan in imageset
+                    frame0, frame1 = (0, len(imageset))
+                flatten = self.params.integration.integrator == "flat3d"
+                max_needed = max(
+                    max_memory_needed(reflections, frame0, frame1, flatten),
+                    max_needed,
+                )
+            assert max_needed > 0, "Could not determine memory requirements"
+            return max_needed
+
+        def _iterative_table_split(tables, experiments, available_memory):
+            split_tables = []
+            for table in tables:
+                mem_needed = _determine_max_memory_needed(experiments, table)
+                if mem_needed > available_memory:
+                    n_to_split = int(math.ceil(mem_needed / available_memory))
+                    flex.set_random_seed(0)
+                    split_tables.extend(table.random_split(n_to_split))
+                else:
+                    split_tables.append(table)
+            if len(split_tables) == len(tables):
+                # nothing was split, all passed memory check
+                return split_tables
+            # some tables were split - so need to check again that all are ok
+            return _iterative_table_split(split_tables, experiments, available_memory)
+
+        def _run_processor(reflections):
+            processor = build_processor(
+                self.ProcessorClass,
+                self.experiments,
+                reflections,
+                self.params.integration,
+            )
+            processor.executor = executor
+            # Process the reflections
+            reflections, _, time_info = processor.process()
+            return reflections, time_info
+
+        if self.params.integration.mp.method != "multiprocessing":
+            self.reflections, time_info = _run_processor(self.reflections)
+        else:
+            # need to do a memory check and decide whether to split table
+            available_immediate, _, __ = assess_available_memory(
+                self.params.integration
+            )
+
+            #  here don't consider nproc as the processor will reduce nproc to 1
+            # if necessary, only want to split if we can't even process with
+            # nproc = 1
+
+            if self.params.integration.mp.n_subset_split:
+                tables = self.reflections.random_split(
+                    self.params.integration.mp.n_subset_split
+                )
+            else:
+                tables = _iterative_table_split(
+                    [self.reflections],
+                    self.experiments,
+                    available_immediate,
+                )
+
+            if len(tables) == 1:
+                # will not fail a memory check in the processor, so proceed
+                self.reflections, time_info = _run_processor(self.reflections)
+            else:
+                # Split the reflections and process by perfoming multiple
+                # passes over each imageset
+                time_info = TimingInfo()
+                reflections = flex.reflection_table()
+
+                logger.info(
+                    """Predicted maximum memory needed exceeds available memory.
+Splitting reflection table into %s subsets for processing
+""",
+                    len(tables),
+                )
+                for i, table in enumerate(tables):
+                    logger.info("Processing subset %s of reflection table", i + 1)
+                    processed, this_time_info = _run_processor(table)
+                    reflections.extend(processed)
+                    time_info += this_time_info
+                self.reflections = reflections
 
         # Finalize the reflections
         self.reflections, self.experiments = self.finalize_reflections(

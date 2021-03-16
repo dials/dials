@@ -211,6 +211,63 @@ namespace dials { namespace algorithms { namespace boost_python {
     return result;
   }
 
+  // compute max integration memory needed for whole reflection table.
+  std::size_t max_memory_needed(af::reflection_table data, int frame0, int frame1, bool flatten){
+
+    // Check the input
+    DIALS_ASSERT(data.is_consistent());
+    DIALS_ASSERT(data.contains("bbox"));
+    DIALS_ASSERT(data.contains("id"));
+    DIALS_ASSERT(data.size() > 0);
+
+    // Get the bounding boxes
+    af::const_ref<int6> bbox = data["bbox"];
+    af::const_ref<int> id = data["id"];
+
+    // Check all the reflections are in range
+    for (std::size_t i = 0; i < bbox.size(); ++i) {
+      DIALS_ASSERT(id[i] >= 0);
+      DIALS_ASSERT(bbox[i][1] > bbox[i][0]);
+      DIALS_ASSERT(bbox[i][3] > bbox[i][2]);
+      DIALS_ASSERT(bbox[i][5] > bbox[i][4]);
+    }
+
+    af::shared<std::size_t> memory_to_alloc(frame1 - frame0, 0);
+    af::shared<std::size_t> memory_to_free(frame1 - frame0, 0);
+
+    for (std::size_t j = 0; j < data.size(); ++j) {
+      int6 b = bbox[j];
+      DIALS_ASSERT(b[4] >= frame0);
+      DIALS_ASSERT(b[5] <= frame1);
+      DIALS_ASSERT(b[5] > b[4]);
+      DIALS_ASSERT(b[3] > b[2]);
+      DIALS_ASSERT(b[1] > b[0]);
+      std::size_t xsize = b[1] - b[0];
+      std::size_t ysize = b[3] - b[2];
+      std::size_t zsize = b[5] - b[4];
+      std::size_t size = xsize * ysize;
+      if (!flatten) {
+        size *= zsize;
+      }
+      std::size_t nbytes = size
+                            * (sizeof(Shoebox<>::float_type)
+                              + sizeof(Shoebox<>::float_type) + sizeof(int));
+      memory_to_alloc[b[4] - frame0] += nbytes;
+      memory_to_free[b[5] - frame0 - 1] += nbytes;
+    }
+    std::size_t max_memory_usage = 0;
+    std::size_t cur_memory_usage = 0;
+    for (int frame = frame0; frame < frame1; ++frame) {
+      std::size_t j = frame - frame0;
+      cur_memory_usage += memory_to_alloc[j];
+      DIALS_ASSERT(memory_to_free[j] <= cur_memory_usage);
+      max_memory_usage = std::max(max_memory_usage, cur_memory_usage);
+      cur_memory_usage -= memory_to_free[j];
+    }
+    DIALS_ASSERT(cur_memory_usage == 0);
+    return max_memory_usage;
+  }
+
   /**
    * Wrapper class to allow python function to inherit
    */
@@ -284,6 +341,9 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("finished", &ShoeboxProcessor::finished)
       .def("extract_time", &ShoeboxProcessor::extract_time)
       .def("process_time", &ShoeboxProcessor::process_time);
+
+    def("max_memory_needed", &max_memory_needed,
+      (arg("reflection table"), arg("frame0"), arg("frame1"), arg("flatten")));
   }
 
 }}}  // namespace dials::algorithms::boost_python

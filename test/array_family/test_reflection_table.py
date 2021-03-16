@@ -1447,6 +1447,42 @@ def test_calculate_entering_flags(dials_regression):
     assert flags.count(False) == 57799
 
 
+def test_random_split():
+    """Test the reflection_table.random_split() method.
+
+    A random seed is set, so the result is reproducible.
+    """
+    flex.set_random_seed(0)
+    table = flex.reflection_table()
+    table["id"] = flex.int(range(0, 10))
+
+    # first test splitting into 2 or 3 tables.
+    split_tables = table.random_split(2)
+    expected = [[5, 7, 3, 0, 8], [2, 9, 6, 1, 4]]
+    for t, e in zip(split_tables, expected):
+        assert list(t["id"]) == e
+
+    split_tables = table.random_split(3)
+    expected = [[5, 7, 0], [4, 3, 8], [1, 9, 2, 6]]
+    for t, e in zip(split_tables, expected):
+        assert list(t["id"]) == e
+
+    # test that a float is handled
+    split_tables = table.random_split(1.0)
+    assert split_tables[0] is table
+
+    # values below 1 should just return the table
+    split_tables = table.random_split(0)
+    assert split_tables[0] is table
+
+    # if n > len(table), the table should split into n=len(table) tables with
+    # one entry.
+    split_tables = table.random_split(20)
+    assert len(split_tables) == 10
+    for t in split_tables:
+        assert len(t) == 1
+
+
 def test_match_basic():
     n = 100
     s = 10
