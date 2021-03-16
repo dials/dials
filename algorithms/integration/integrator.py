@@ -1181,7 +1181,10 @@ class Integrator:
             max_needed = 0
             for imageset in experiments.imagesets():
                 try:
-                    frame0, frame1 = imageset.get_array_range()
+                    if imageset.get_scan():
+                        frame0, frame1 = imageset.get_scan().get_array_range()
+                    else:
+                        raise RuntimeError
                 except RuntimeError:  # catch DXTBX_ASSERT if no scan in imageset
                     frame0, frame1 = (0, len(imageset))
                 flatten = self.params.integration.integrator == "flat3d"
