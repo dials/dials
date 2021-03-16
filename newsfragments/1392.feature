@@ -1,1 +1,1 @@
-In dials.integrate, handle high-memory processing by splitting data into subsets
+``dials.integrate``: Avoid crash when data is too large to process in memory, by splitting into subsets
