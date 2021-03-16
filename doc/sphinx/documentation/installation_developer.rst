@@ -8,11 +8,11 @@ Setting up a Development Environment on Linux or Mac
 Prerequisites:  make and change to a working directory to contain the new source code
 and build. Then download the bootstrap script::
 
-  wget https://raw.githubusercontent.com/dials/dials/master/installer/bootstrap.py
+  wget https://raw.githubusercontent.com/dials/dials/main/installer/bootstrap.py
 
 or if wget is not available::
 
-  curl https://raw.githubusercontent.com/dials/dials/master/installer/bootstrap.py > bootstrap.py
+  curl https://raw.githubusercontent.com/dials/dials/main/installer/bootstrap.py > bootstrap.py
 
 Then::
 
