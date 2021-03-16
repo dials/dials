@@ -46,12 +46,22 @@ jobs:
       - bash: |
           echo "##vso[task.setvariable variable=CURRENT_WEEK;isOutput=true]$(date +W%W)"
           echo "##vso[task.setvariable variable=TODAY_ISO;isOutput=true]$(date +%Y%m%d)"
+          echo
+          echo "Checking for waiting newsfragments:"
+          cd repository/newsfragments
+          \ls -1 --color=never | grep -v "^\([0-9]\+\|README\)\." && {
+          echo "##vso[task.setvariable variable=NEWSFRAGMENT_WAITING;isOutput=true]true"
+          } || {
+          echo "none found"
+          echo "##vso[task.setvariable variable=NEWSFRAGMENT_WAITING;isOutput=true]false"
+          }
         displayName: Set up build constants
         name: constants
 
   - job: flake8
     displayName: flake8 validation
     dependsOn: setup
+    condition: eq(dependencies.setup.outputs['constants.NEWSFRAGMENT_WAITING'], 'false')
     pool:
       vmImage: ubuntu-20.04
     steps:
