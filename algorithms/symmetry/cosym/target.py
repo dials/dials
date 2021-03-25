@@ -2,7 +2,6 @@
 
 import copy
 import logging
-import math
 import warnings
 
 import numpy as np
@@ -193,7 +192,7 @@ class Target:
             rij_row = []
             rij_col = []
             rij_data = []
-            if self._weights is not None:
+            if self._weights:
                 wij_row = []
                 wij_col = []
                 wij_data = []
@@ -259,26 +258,16 @@ class Target:
                             or (self._min_pairs is not None and n < self._min_pairs)
                         ):
                             continue
-
-                        if self._weights == "count":
-                            wij_row.extend([ik, jk])
-                            wij_col.extend([jk, ik])
-                            wij_data.extend([n, n])
-                        elif self._weights == "standard_error":
-                            assert n > 2
-                            # http://www.sjsu.edu/faculty/gerstman/StatPrimer/correlation.pdf
-                            se = math.sqrt((1 - cc ** 2) / (n - 2))
-                            wij = 1 / se
-                            wij_row.extend([ik, jk])
-                            wij_col.extend([jk, ik])
-                            wij_data.extend([wij, wij])
-
+                        if self._weights:
+                            wij_row.append(ik)
+                            wij_col.append(jk)
+                            wij_data.append(n)
                         rij_row.append(ik)
                         rij_col.append(jk)
                         rij_data.append(cc)
 
             rij = sparse.coo_matrix((rij_data, (rij_row, rij_col)), shape=(NN, NN))
-            if self._weights is not None:
+            if self._weights:
                 wij = sparse.coo_matrix((wij_data, (wij_row, wij_col)), shape=(NN, NN))
 
             return rij, wij
@@ -308,6 +297,12 @@ class Target:
         rij_matrix = rij_matrix.todense().astype(np.float64)
         if wij_matrix is not None:
             wij_matrix = wij_matrix.todense().astype(np.float64)
+            if self._weights == "standard_error":
+                # http://www.sjsu.edu/faculty/gerstman/StatPrimer/correlation.pdf
+                sel = np.where(wij_matrix > 2)
+                se = np.sqrt((1 - np.square(rij_matrix[sel])) / (wij_matrix[sel] - 2))
+                wij_matrix = np.zeros_like(rij_matrix)
+                wij_matrix[sel] = 1 / se
 
         return rij_matrix, wij_matrix
 
