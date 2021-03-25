@@ -1,1 +1,1 @@
-dials.cosym: fix factor of 2 error in target weights calculation
+``dials.cosym``: Fix factor of 2 error when calculating target weights
