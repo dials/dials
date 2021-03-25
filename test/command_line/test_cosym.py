@@ -13,10 +13,12 @@ from dials.array_family import flex
 from dials.util import Sorry
 
 
-@pytest.mark.parametrize("space_group", [None, "P 1", "P 4"])
-def test_cosym(dials_data, run_in_tmpdir, space_group):
+@pytest.mark.parametrize(
+    "space_group,engine", [(None, "scitbx"), ("P 1", "scipy"), ("P 4", "scipy")]
+)
+def test_cosym(dials_data, run_in_tmpdir, space_group, engine):
     mcp = dials_data("multi_crystal_proteinase_k")
-    args = ["space_group=" + str(space_group), "seed=0"]
+    args = ["space_group=" + str(space_group), "seed=0", f"engine={engine}"]
     for i in [1, 2, 3, 4, 5, 7, 8, 10]:
         args.append(mcp.join("experiments_%d.json" % i).strpath)
         args.append(mcp.join("reflections_%d.pickle" % i).strpath)
