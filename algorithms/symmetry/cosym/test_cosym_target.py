@@ -40,6 +40,10 @@ def test_cosym_target(space_group):
         c_fd = t.curvatures_fd(x, eps=1e-3)
         assert list(c) == pytest.approx(c_fd, rel=0.8e-1)
 
+        if weights == "count":
+            # Absolute upper limit on weights
+            assert t.wij_matrix.max() <= datasets[0].size()
+
         minimizer = engine.lbfgs_with_curvs(target=t, coords=x)
         # check functional has decreased and gradients are approximately zero
         f = t.compute_functional(minimizer.coords)
