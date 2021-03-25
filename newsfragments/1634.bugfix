@@ -1,1 +1,1 @@
-dials.cosym: Cache undefined Rij values to avoid attempting to recalculate them for pairs of data sets with no symmetry-related reflections. Only likely to have a significant performance benefit when handling many sparse data sets.
+``dials.cosym``: Cache cases where Rij is undefined, rather than recalculating each time. This can have significant performance benefits when handling large numbers of sparse data sets.
