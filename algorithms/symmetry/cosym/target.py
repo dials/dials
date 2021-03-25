@@ -248,10 +248,10 @@ class Target:
                             if corr.is_well_defined():
                                 cc = corr.coefficient()
                                 n = corr.n()
-                                rij_cache[key] = (cc, n)
                             else:
                                 cc = None
                                 n = None
+                            rij_cache[key] = (cc, n)
 
                         if (
                             n is None
