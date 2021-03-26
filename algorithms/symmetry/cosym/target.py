@@ -202,7 +202,7 @@ class Target:
             i_lower, i_upper = self._lattice_lower_upper_index(i)
             intensities_i = self._data.data()[i_lower:i_upper]
 
-            for j in range(n_lattices):
+            for j in range(i, n_lattices):
 
                 j_lower, j_upper = self._lattice_lower_upper_index(j)
                 intensities_j = self._data.data()[j_lower:j_upper]
@@ -262,9 +262,17 @@ class Target:
                             wij_row.append(ik)
                             wij_col.append(jk)
                             wij_data.append(n)
+                            if i != j:
+                                wij_row.append(jk)
+                                wij_col.append(ik)
+                                wij_data.append(n)
                         rij_row.append(ik)
                         rij_col.append(jk)
                         rij_data.append(cc)
+                        if i != j:
+                            rij_row.append(jk)
+                            rij_col.append(ik)
+                            rij_data.append(cc)
 
             rij = sparse.coo_matrix((rij_data, (rij_row, rij_col)), shape=(NN, NN))
             if self._weights:
