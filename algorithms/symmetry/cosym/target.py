@@ -319,12 +319,8 @@ class Target:
           f (float): The value of the target function at coordinates `x`.
         """
         assert (x.size // self.dim) == (len(self._lattices) * len(self.sym_ops))
-        inner = np.copy(self.rij_matrix)
-        NN = x.size // self.dim
-        for i in range(self.dim):
-            coord = x[i * NN : (i + 1) * NN]
-            inner -= np.outer(coord, coord)
-        elements = np.square(inner)
+        x = x.reshape((self.dim, x.size // self.dim))
+        elements = np.square(self.rij_matrix - x.T @ x)
         if self.wij_matrix is not None:
             np.multiply(self.wij_matrix, elements, out=elements)
         f = 0.5 * elements.sum()
