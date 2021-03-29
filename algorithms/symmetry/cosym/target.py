@@ -294,9 +294,9 @@ class Target:
                 else:
                     wij_matrix += wij
 
-        rij_matrix = rij_matrix.todense().astype(np.float64)
+        rij_matrix = rij_matrix.toarray().astype(np.float64)
         if wij_matrix is not None:
-            wij_matrix = wij_matrix.todense().astype(np.float64)
+            wij_matrix = wij_matrix.toarray().astype(np.float64)
             if self._weights == "standard_error":
                 # http://www.sjsu.edu/faculty/gerstman/StatPrimer/correlation.pdf
                 sel = np.where(wij_matrix > 2)
@@ -366,29 +366,12 @@ class Target:
           f: The value of the target function at coordinates `x`.
           grad: The gradients of the target function with respect to the parameters.
         """
+        x = x.reshape((self.dim, x.size // self.dim))
         if self.wij_matrix is not None:
             wrij_matrix = np.multiply(self.wij_matrix, self.rij_matrix)
+            grad = -2 * (x @ wrij_matrix - x @ np.multiply(self.wij_matrix, x.T @ x))
         else:
-            wrij_matrix = self.rij_matrix
-
-        NN = x.size // self.dim
-        coords = x.reshape((self.dim, NN))
-
-        # term 1
-        grad = np.empty(coords.shape)
-        for i in range(self.dim):
-            grad[i] = np.matmul(wrij_matrix, coords[i])
-
-        # term 2
-        tmp = np.empty(self.rij_matrix.shape)
-        for i in range(self.dim):
-            np.outer(coords[i], coords[i], out=tmp)
-            if self.wij_matrix is not None:
-                np.multiply(self.wij_matrix, tmp, out=tmp)
-            for j in range(self.dim):
-                grad[j] -= np.matmul(tmp, coords[j])
-        grad *= -2
-
+            grad = -2 * (x @ self.rij_matrix - x @ (x.T @ x))
         return grad.flatten()
 
     def curvatures(self, x: np.ndarray) -> np.ndarray:
