@@ -323,11 +323,10 @@ class Target:
         NN = x.size // self.dim
         for i in range(self.dim):
             coord = x[i * NN : (i + 1) * NN]
-            outer_prod = np.outer(coord, coord)
-            inner -= outer_prod
-        elements = np.power(inner, 2)
+            inner -= np.outer(coord, coord)
+        elements = np.square(inner)
         if self.wij_matrix is not None:
-            elements = np.multiply(self.wij_matrix, elements)
+            np.multiply(self.wij_matrix, elements, out=elements)
         f = 0.5 * elements.sum()
         return f
 
