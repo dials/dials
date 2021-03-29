@@ -370,31 +370,30 @@ class Target:
           f: The value of the target function at coordinates `x`.
           grad: The gradients of the target function with respect to the parameters.
         """
-        grad = np.empty(x.shape)
         if self.wij_matrix is not None:
             wrij_matrix = np.multiply(self.wij_matrix, self.rij_matrix)
         else:
             wrij_matrix = self.rij_matrix
 
-        coords = []
         NN = x.size // self.dim
-        for i in range(self.dim):
-            coords.append(x[i * NN : (i + 1) * NN])
+        coords = x.reshape((self.dim, NN))
 
         # term 1
+        grad = np.empty(coords.shape)
         for i in range(self.dim):
-            grad[i * NN : (i + 1) * NN] = np.matmul(wrij_matrix, coords[i])
+            grad[i] = np.matmul(wrij_matrix, coords[i])
 
+        # term 2
         tmp = np.empty(self.rij_matrix.shape)
         for i in range(self.dim):
             np.outer(coords[i], coords[i], out=tmp)
             if self.wij_matrix is not None:
                 np.multiply(self.wij_matrix, tmp, out=tmp)
             for j in range(self.dim):
-                grad[j * NN : (j + 1) * NN] -= np.matmul(tmp, coords[j])
+                grad[j] -= np.matmul(tmp, coords[j])
         grad *= -2
 
-        return grad
+        return grad.flatten()
 
     def curvatures(self, x: np.ndarray) -> np.ndarray:
         """Compute the curvature of the target function at coordinates `x`.
