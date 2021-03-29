@@ -385,14 +385,13 @@ class Target:
         for i in range(self.dim):
             grad[i * NN : (i + 1) * NN] = np.matmul(wrij_matrix, coords[i])
 
+        tmp = np.empty(self.rij_matrix.shape)
         for i in range(self.dim):
-            tmp_array = np.empty(x.shape)
-            tmp = np.outer(coords[i], coords[i])
+            np.outer(coords[i], coords[i], out=tmp)
             if self.wij_matrix is not None:
-                tmp = np.multiply(self.wij_matrix, tmp)
+                np.multiply(self.wij_matrix, tmp, out=tmp)
             for j in range(self.dim):
-                tmp_array[j * NN : (j + 1) * NN] = np.matmul(tmp, coords[j])
-            grad -= tmp_array
+                grad[j * NN : (j + 1) * NN] -= np.matmul(tmp, coords[j])
         grad *= -2
 
         return grad
