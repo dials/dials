@@ -418,7 +418,7 @@ class Target:
             wij = np.ones(self.rij_matrix.shape)
         for i in range(self.dim):
             curvs[i * NN : (i + 1) * NN] = np.matmul(
-                wij, np.power(x[i * NN : (i + 1) * NN], 2)
+                wij, np.square(x[i * NN : (i + 1) * NN])
             )
         curvs *= 2
         return curvs
