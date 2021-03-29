@@ -387,18 +387,13 @@ class Target:
           curvs (np.ndarray):
           The curvature of the target function with respect to the parameters.
         """
-        NN = x.size // self.dim
-        curvs = np.empty(x.shape)
         if self.wij_matrix is not None:
             wij = self.wij_matrix
         else:
             wij = np.ones(self.rij_matrix.shape)
-        for i in range(self.dim):
-            curvs[i * NN : (i + 1) * NN] = np.matmul(
-                wij, np.square(x[i * NN : (i + 1) * NN])
-            )
-        curvs *= 2
-        return curvs
+        x = x.reshape((self.dim, x.size // self.dim))
+        curvs = 2 * np.square(x) @ wij
+        return curvs.flatten()
 
     def curvatures_fd(self, x: np.ndarray, eps=1e-6) -> np.ndarray:
         """Compute the curvatures at coordinates `x` using finite differences.
