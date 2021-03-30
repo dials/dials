@@ -184,6 +184,12 @@ def generate_phil_scope():
           .type = bool
           .help = "Use profile fitting if available"
 
+        valid_foreground_threshold = 0.6
+          .type = float(value_min=0, value_max=1)
+          .help = "The minimum fraction of foreground pixels that must be valid"
+                  "in order for a reflection to be integrated by profile fitting."
+          .expert_level = 2
+
         sigma_b_multiplier = 2.0
           .type = float(value_min=1.0)
           .help = "Background box expansion factor"
@@ -356,6 +362,7 @@ class Parameters:
         def __init__(self):
             self.fitting = True
             self.sigma_b_multiplier = 2.0
+            self.valid_foreground_threshold = 0.6
             self.validation = Parameters.Profile.Validation()
 
     def __init__(self):
@@ -421,6 +428,9 @@ class Parameters:
 
         # Profile parameters
         result.profile.sigma_b_multiplier = params.profile.sigma_b_multiplier
+        result.profile.valid_foreground_threshold = (
+            params.profile.valid_foreground_threshold
+        )
 
         # Get the min zeta filter
         result.filter.min_zeta = params.filter.min_zeta
@@ -807,7 +817,9 @@ class IntegratorExecutor(Executor):
     The class to process the integration data
     """
 
-    def __init__(self, experiments, profile_fitter=None):
+    def __init__(
+        self, experiments, profile_fitter=None, valid_foreground_threshold=0.6
+    ):
         """
         Initialize the executor
 
@@ -816,6 +828,7 @@ class IntegratorExecutor(Executor):
         self.experiments = experiments
         self.overlaps = None
         self.profile_fitter = profile_fitter
+        self.valid_foreground_threshold = valid_foreground_threshold
         super().__init__()
 
     def initialize(self, frame0, frame1, reflections):
@@ -880,15 +893,24 @@ class IntegratorExecutor(Executor):
         # Check for invalid pixels in foreground/background
         reflections.contains_invalid_pixels()
 
+        # Exclude reflections where a high fraction of the foreground is masked
+        # e.g. due to a panel edge, as this will make the fitting unreliable.
+        sbox = reflections["shoebox"]
+        nvalfg = sbox.count_mask_values(MaskCode.Valid | MaskCode.Foreground)
+        nforeg = sbox.count_mask_values(MaskCode.Foreground)
+        fraction_valid = nvalfg.as_double() / nforeg.as_double()
+        selection = fraction_valid < self.valid_foreground_threshold
+        reflections.set_flags(selection, reflections.flags.dont_integrate)
+
         # Process the data
         reflections.compute_background(self.experiments)
         reflections.compute_centroid(self.experiments)
+
         reflections.compute_summed_intensity()
         if self.profile_fitter:
             reflections.compute_fitted_intensity(self.profile_fitter)
 
         # Compute the number of background/foreground pixels
-        sbox = reflections["shoebox"]
         reflections["num_pixels.valid"] = sbox.count_mask_values(MaskCode.Valid)
         reflections["num_pixels.background"] = sbox.count_mask_values(
             MaskCode.Valid | MaskCode.Background
@@ -896,9 +918,7 @@ class IntegratorExecutor(Executor):
         reflections["num_pixels.background_used"] = sbox.count_mask_values(
             MaskCode.Valid | MaskCode.Background | MaskCode.BackgroundUsed
         )
-        reflections["num_pixels.foreground"] = sbox.count_mask_values(
-            MaskCode.Valid | MaskCode.Foreground
-        )
+        reflections["num_pixels.foreground"] = nvalfg
 
         # Print some info
         fmt = " Integrated % 5d (sum) + % 5d (prf) / %5d reflections on image %d"
@@ -1174,7 +1194,11 @@ class Integrator:
         logger.info("")
 
         # Create the data processor
-        executor = IntegratorExecutor(self.experiments, profile_fitter)
+        executor = IntegratorExecutor(
+            self.experiments,
+            profile_fitter,
+            self.params.profile.valid_foreground_threshold,
+        )
 
         # determine the max memory needed during integration
         def _determine_max_memory_needed(experiments, reflections):
