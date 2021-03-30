@@ -121,11 +121,15 @@ def minimize_scipy(
       coords (np.array): The starting coordinates for
         minimisation.
     """
-
+    options = {}
+    if max_iterations:
+        options.update(maxiter=max_iterations)
+    if max_calls:
+        options.update(maxfun=max_calls)
     return scipy.optimize.minimize(
         fun=target.compute_functional,
         x0=coords,
         jac=target.compute_gradients,
         method=method,
-        options=dict(maxiter=max_iterations, maxfun=max_calls),
+        options=options,
     )
