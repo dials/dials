@@ -369,9 +369,9 @@ class Target:
         x = x.reshape((self.dim, x.size // self.dim))
         if self.wij_matrix is not None:
             wrij_matrix = np.multiply(self.wij_matrix, self.rij_matrix)
-            grad = -2 * (x @ wrij_matrix - x @ np.multiply(self.wij_matrix, x.T @ x))
+            grad = -2 * x @ (wrij_matrix - np.multiply(self.wij_matrix, x.T @ x))
         else:
-            grad = -2 * (x @ self.rij_matrix - x @ (x.T @ x))
+            grad = -2 * x @ (self.rij_matrix - x.T @ x)
         return grad.flatten()
 
     def curvatures(self, x: np.ndarray) -> np.ndarray:
