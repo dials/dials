@@ -254,6 +254,34 @@ def test_integration_with_sample_size(dials_data, tmpdir):
     assert dict(table.experiment_identifiers()) == {0: "foo"}
 
 
+def test_basic_integration_with_profile_fitting(dials_data, tmpdir):
+
+    expts = dials_data("centroid_test_data") / "indexed.expt"
+    refls = dials_data("centroid_test_data") / "indexed.refl"
+
+    result = procrunner.run(
+        [
+            "dials.integrate",
+            "nproc=1",
+            expts,
+            refls,
+            "profile.fitting=True",
+            "sampling.integrate_all_reflections=False",
+            "sampling.minimum_sample_size=500",
+            "prediction.padding=0",
+        ],
+        working_directory=tmpdir,
+    )
+    assert not result.returncode and not result.stderr
+    table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
+    assert len(table) == 500
+
+    prf = table.get_flags(table.flags.integrated_prf)
+    zero = table["intensity.prf.value"] == 0.0
+    prf_and_zero = prf & zero
+    assert prf_and_zero.count(True) == 0
+
+
 def test_multi_sweep(dials_regression, tmpdir):
 
     expts = os.path.join(
