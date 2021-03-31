@@ -1,2 +1,1 @@
-``dials.integrate``: Place a lower limit (0.75) on the fraction of a reflection's pixels
-that must be valid (not masked) in order for it to be profile-fitted in integration.
+``dials.integrate``: Reject reflections with a high number of invalid pixels, which were being integrated since 3.4.0. This restores better merging statistics, and prevents many reflections being incorrect profiled as zero-intensity.
