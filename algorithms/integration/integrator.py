@@ -362,7 +362,7 @@ class Parameters:
         def __init__(self):
             self.fitting = True
             self.sigma_b_multiplier = 2.0
-            self.valid_foreground_threshold = 0.6
+            self.valid_foreground_threshold = 0.75
             self.validation = Parameters.Profile.Validation()
 
     def __init__(self):
@@ -818,7 +818,7 @@ class IntegratorExecutor(Executor):
     """
 
     def __init__(
-        self, experiments, profile_fitter=None, valid_foreground_threshold=0.6
+        self, experiments, profile_fitter=None, valid_foreground_threshold=0.75
     ):
         """
         Initialize the executor
