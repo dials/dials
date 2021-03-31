@@ -1,0 +1,1 @@
+``dials.integrate``: Reject reflections with a high number of invalid pixels, which were being integrated since 3.4.0. This restores better merging statistics, and prevents many reflections being incorrect profiled as zero-intensity.
