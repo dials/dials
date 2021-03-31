@@ -184,7 +184,7 @@ def generate_phil_scope():
           .type = bool
           .help = "Use profile fitting if available"
 
-        valid_foreground_threshold = 0.6
+        valid_foreground_threshold = 0.75
           .type = float(value_min=0, value_max=1)
           .help = "The minimum fraction of foreground pixels that must be valid"
                   "in order for a reflection to be integrated by profile fitting."
