@@ -901,6 +901,10 @@ class IntegratorExecutor(Executor):
         fraction_valid = nvalfg.as_double() / nforeg.as_double()
         selection = fraction_valid < self.valid_foreground_threshold
         reflections.set_flags(selection, reflections.flags.dont_integrate)
+        logger.debug(
+            f"{selection.count(True)} reflections have"
+            " a fraction of valid pixels below the valid foreground threshold"
+        )
 
         # Process the data
         reflections.compute_background(self.experiments)
