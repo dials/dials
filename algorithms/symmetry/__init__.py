@@ -304,7 +304,7 @@ class symmetry_base:
             d_min = resolution_filter_from_array(
                 self.intensities, min_i_mean_over_sigma_mean, min_cc_half
             )
-            if d_min:
+            if d_min is not None:
                 logger.info("High resolution limit set to: %.2f", d_min)
             else:
                 logger.info("High resolution limit set to: None")
