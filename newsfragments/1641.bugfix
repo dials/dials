@@ -1,0 +1,1 @@
+Fix rare crash in symmetry calculations when no resolution limit could be calculated
