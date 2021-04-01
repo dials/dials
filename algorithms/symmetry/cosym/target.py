@@ -2,7 +2,6 @@
 
 import copy
 import logging
-import math
 import warnings
 
 import numpy as np
@@ -193,7 +192,7 @@ class Target:
             rij_row = []
             rij_col = []
             rij_data = []
-            if self._weights is not None:
+            if self._weights:
                 wij_row = []
                 wij_col = []
                 wij_data = []
@@ -248,10 +247,10 @@ class Target:
                             if corr.is_well_defined():
                                 cc = corr.coefficient()
                                 n = corr.n()
-                                rij_cache[key] = (cc, n)
                             else:
                                 cc = None
                                 n = None
+                            rij_cache[key] = (cc, n)
 
                         if (
                             n is None
@@ -259,26 +258,16 @@ class Target:
                             or (self._min_pairs is not None and n < self._min_pairs)
                         ):
                             continue
-
-                        if self._weights == "count":
-                            wij_row.extend([ik, jk])
-                            wij_col.extend([jk, ik])
-                            wij_data.extend([n, n])
-                        elif self._weights == "standard_error":
-                            assert n > 2
-                            # http://www.sjsu.edu/faculty/gerstman/StatPrimer/correlation.pdf
-                            se = math.sqrt((1 - cc ** 2) / (n - 2))
-                            wij = 1 / se
-                            wij_row.extend([ik, jk])
-                            wij_col.extend([jk, ik])
-                            wij_data.extend([wij, wij])
-
+                        if self._weights:
+                            wij_row.append(ik)
+                            wij_col.append(jk)
+                            wij_data.append(n)
                         rij_row.append(ik)
                         rij_col.append(jk)
                         rij_data.append(cc)
 
             rij = sparse.coo_matrix((rij_data, (rij_row, rij_col)), shape=(NN, NN))
-            if self._weights is not None:
+            if self._weights:
                 wij = sparse.coo_matrix((wij_data, (wij_row, wij_col)), shape=(NN, NN))
 
             return rij, wij
@@ -305,9 +294,15 @@ class Target:
                 else:
                     wij_matrix += wij
 
-        rij_matrix = rij_matrix.todense().astype(np.float64)
+        rij_matrix = rij_matrix.toarray().astype(np.float64)
         if wij_matrix is not None:
-            wij_matrix = wij_matrix.todense().astype(np.float64)
+            wij_matrix = wij_matrix.toarray().astype(np.float64)
+            if self._weights == "standard_error":
+                # http://www.sjsu.edu/faculty/gerstman/StatPrimer/correlation.pdf
+                sel = np.where(wij_matrix > 2)
+                se = np.sqrt((1 - np.square(rij_matrix[sel])) / (wij_matrix[sel] - 2))
+                wij_matrix = np.zeros_like(rij_matrix)
+                wij_matrix[sel] = 1 / se
 
         return rij_matrix, wij_matrix
 
@@ -324,15 +319,10 @@ class Target:
           f (float): The value of the target function at coordinates `x`.
         """
         assert (x.size // self.dim) == (len(self._lattices) * len(self.sym_ops))
-        inner = np.copy(self.rij_matrix)
-        NN = x.size // self.dim
-        for i in range(self.dim):
-            coord = x[i * NN : (i + 1) * NN]
-            outer_prod = np.outer(coord, coord)
-            inner -= outer_prod
-        elements = np.power(inner, 2)
+        x = x.reshape((self.dim, x.size // self.dim))
+        elements = np.square(self.rij_matrix - x.T @ x)
         if self.wij_matrix is not None:
-            elements = np.multiply(self.wij_matrix, elements)
+            np.multiply(self.wij_matrix, elements, out=elements)
         f = 0.5 * elements.sum()
         return f
 
@@ -376,32 +366,13 @@ class Target:
           f: The value of the target function at coordinates `x`.
           grad: The gradients of the target function with respect to the parameters.
         """
-        grad = np.empty(x.shape)
+        x = x.reshape((self.dim, x.size // self.dim))
         if self.wij_matrix is not None:
             wrij_matrix = np.multiply(self.wij_matrix, self.rij_matrix)
+            grad = -2 * x @ (wrij_matrix - np.multiply(self.wij_matrix, x.T @ x))
         else:
-            wrij_matrix = self.rij_matrix
-
-        coords = []
-        NN = x.size // self.dim
-        for i in range(self.dim):
-            coords.append(x[i * NN : (i + 1) * NN])
-
-        # term 1
-        for i in range(self.dim):
-            grad[i * NN : (i + 1) * NN] = np.matmul(wrij_matrix, coords[i])
-
-        for i in range(self.dim):
-            tmp_array = np.empty(x.shape)
-            tmp = np.outer(coords[i], coords[i])
-            if self.wij_matrix is not None:
-                tmp = np.multiply(self.wij_matrix, tmp)
-            for j in range(self.dim):
-                tmp_array[j * NN : (j + 1) * NN] = np.matmul(tmp, coords[j])
-            grad -= tmp_array
-        grad *= -2
-
-        return grad
+            grad = -2 * x @ (self.rij_matrix - x.T @ x)
+        return grad.flatten()
 
     def curvatures(self, x: np.ndarray) -> np.ndarray:
         """Compute the curvature of the target function at coordinates `x`.
@@ -416,18 +387,13 @@ class Target:
           curvs (np.ndarray):
           The curvature of the target function with respect to the parameters.
         """
-        NN = x.size // self.dim
-        curvs = np.empty(x.shape)
         if self.wij_matrix is not None:
             wij = self.wij_matrix
         else:
             wij = np.ones(self.rij_matrix.shape)
-        for i in range(self.dim):
-            curvs[i * NN : (i + 1) * NN] = np.matmul(
-                wij, np.power(x[i * NN : (i + 1) * NN], 2)
-            )
-        curvs *= 2
-        return curvs
+        x = x.reshape((self.dim, x.size // self.dim))
+        curvs = 2 * np.square(x) @ wij
+        return curvs.flatten()
 
     def curvatures_fd(self, x: np.ndarray, eps=1e-6) -> np.ndarray:
         """Compute the curvatures at coordinates `x` using finite differences.

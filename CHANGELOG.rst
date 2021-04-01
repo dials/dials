@@ -1,3 +1,23 @@
+DIALS 3.4.1 (2021-04-01)
+========================
+
+Features
+--------
+
+- ``dials.cosym``: Significantly faster via improved computation of functional, gradients and curvatures (`#1639 <https://github.com/dials/dials/issues/1639>`_)
+- ``dials.integrate``: Added parameter ``valid_foreground_threshold=``, to require a minimum fraction of valid pixels before profile fitting is attempted (`#1640 <https://github.com/dials/dials/issues/1640>`_)
+
+
+Bugfixes
+--------
+
+- ``dials.cosym``: Cache cases where Rij is undefined, rather than recalculating each time. This can have significant performance benefits when handling large numbers of sparse data sets. (`#1634 <https://github.com/dials/dials/issues/1634>`_)
+- ``dials.cosym``: Fix factor of 2 error when calculating target weights (`#1635 <https://github.com/dials/dials/issues/1635>`_)
+- ``dials.cosym``: Fix broken ``engine=scipy`` option (`#1636 <https://github.com/dials/dials/issues/1636>`_)
+- ``dials.integrate``: Reject reflections with a high number of invalid pixels, which were being integrated since 3.4.0. This restores better merging statistics, and prevents many reflections being incorrect profiled as zero-intensity. (`#1640 <https://github.com/dials/dials/issues/1640>`_)
+- Fix rare crash in symmetry calculations when no resolution limit could be calculated (`#1641 <https://github.com/dials/dials/issues/1641>`_)
+
+
 DIALS 3.4.0 (2021-03-15)
 ========================
 
