@@ -146,7 +146,7 @@ steps:
     set -e
     . dials
     conda install -p conda_base -y dials-data pytest-azurepipelines pytest-cov pytest-timeout
-    conda install -p conda_base -y -c conda-forge git-lfs distro pandas mpi4py
+    conda install -p conda_base -y git-lfs distro pandas mpi4py -c conda-forge
     dials.data info -v
     echo "##vso[task.setvariable variable=DIALS_DATA_VERSION_FULL]$(dials.data info -v | grep version.full)"
     echo "##vso[task.setvariable variable=DIALS_DATA_VERSION]$(dials.data info -v | grep version.major)"
