@@ -183,6 +183,8 @@ steps:
     git lfs install --local
     git lfs pull
     libtbx.configure xfel_regression
+  displayName: Clone and configure xfel_regression
+  workingDirectory: $(Pipeline.Workspace)
 
 # Finally, run the full regression test suite
 - bash: |
