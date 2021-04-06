@@ -29,32 +29,32 @@ jobs:
     parameters:
       conda_environment: .conda-envs/linux.txt
 
-- job: linux_uncached
-  pool:
-    vmImage: ubuntu-20.04
-  dependsOn: setup
-  condition: and(eq(variables['ENABLE_CACHE'], '0'),
-                 eq(dependencies.setup.outputs['constants.NEWSFRAGMENT_WAITING'], 'false'))
-  variables:
-    CURRENT_WEEK: $[ dependencies.setup.outputs['constants.CURRENT_WEEK'] ]
-    TODAY_ISO: $[ dependencies.setup.outputs['constants.TODAY_ISO'] ]
-    PYTHON_VERSION: 3.6
-    REPOSITORIES_CACHED: false
-    BASE_CACHED: false
-    BUILD_CACHED: false
-    DATA_CACHED: false
-  timeoutInMinutes: 150
-
-  steps:
-  # Dependencies required for building gltbx
-  - script: |
-      sudo apt-get update
-      sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev
-    displayName: Install dependencies
-
-  - template: unix-build.yml
-    parameters:
-      conda_environment: .conda-envs/linux.txt
+#- job: linux_uncached
+#  pool:
+#    vmImage: ubuntu-20.04
+#  dependsOn: setup
+#  condition: and(eq(variables['ENABLE_CACHE'], '0'),
+#                 eq(dependencies.setup.outputs['constants.NEWSFRAGMENT_WAITING'], 'false'))
+#  variables:
+#    CURRENT_WEEK: $[ dependencies.setup.outputs['constants.CURRENT_WEEK'] ]
+#    TODAY_ISO: $[ dependencies.setup.outputs['constants.TODAY_ISO'] ]
+#    PYTHON_VERSION: 3.6
+#    REPOSITORIES_CACHED: false
+#    BASE_CACHED: false
+#    BUILD_CACHED: false
+#    DATA_CACHED: false
+#  timeoutInMinutes: 150
+#
+#  steps:
+#  # Dependencies required for building gltbx
+#  - script: |
+#      sudo apt-get update
+#      sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev
+#    displayName: Install dependencies
+#
+#  - template: unix-build.yml
+#    parameters:
+#      conda_environment: .conda-envs/linux.txt
 
 - job: linux_uncached_xfel
   pool:
