@@ -115,7 +115,11 @@ class CacheHandler(logging.Handler):
 def config_simple_cached():
     """
     Configure the logging to use a cache.
+
+    Set the logger threshold level to match any existing DIALS logger.
     """
+
+    level = logging.getLogger("dials").getEffectiveLevel()
 
     # Configure the logging
     logging.config.dictConfig(
@@ -126,7 +130,7 @@ def config_simple_cached():
                 "cache": {"level": "DEBUG", "class": "dials.util.log.CacheHandler"}
             },
             "loggers": {
-                "dials": {"handlers": ["cache"], "level": "DEBUG", "propagate": True}
+                "dials": {"handlers": ["cache"], "level": level, "propagate": True}
             },
         }
     )
