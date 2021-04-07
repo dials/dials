@@ -189,13 +189,17 @@ steps:
 # Finally, run the full regression test suite
 - bash: |
     set -e
-    export DIALS_DATA=$(pwd)/data
+    #export DIALS_DATA=$(pwd)/data
     . dials
-    bash
+    #bash
     mkdir test; cd test
+    echo "ldd here"
     ldd /bin/bash
+    echo "printenv here"
+    printenv
+    echo "running tests"
     libtbx.run_tests_parallel module=xfel_regression nproc=auto
-    exit
+    #exit
   displayName: Run tests
   workingDirectory: $(Pipeline.Workspace)
 
