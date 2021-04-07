@@ -253,7 +253,7 @@ class ExtractSpotsParallelTask:
         result = self.function(task)
         handlers = logging.getLogger("dials").handlers
         assert len(handlers) == 1, "Invalid number of logging handlers"
-        return result, handlers[0].messages()
+        return result, handlers[0].records
 
 
 def pixel_list_to_shoeboxes(

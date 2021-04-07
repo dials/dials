@@ -82,7 +82,7 @@ class ProcessorImage:
                 result = task()
                 handlers = logging.getLogger("dials").handlers
                 assert len(handlers) == 1, "Invalid number of logging handlers"
-                return result, handlers[0].messages()
+                return result, handlers[0].records
 
             multi_node_parallel_map(
                 func=execute_task,

@@ -101,7 +101,7 @@ class CacheHandler(logging.Handler):
         Initialise the handler
         """
         super().__init__()
-        self._messages = []
+        self.records = []
 
     def emit(self, record):
         """
@@ -109,10 +109,7 @@ class CacheHandler(logging.Handler):
 
         :param record: The log record
         """
-        self._messages.append(record)
-
-    def messages(self):
-        return self._messages
+        self.records.append(record)
 
 
 def config_simple_cached():

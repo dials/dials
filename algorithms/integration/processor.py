@@ -274,7 +274,7 @@ def execute_parallel_task(task):
     result = task()
     handlers = logging.getLogger("dials").handlers
     assert len(handlers) == 1, "Invalid number of logging handlers"
-    return result, handlers[0].messages()
+    return result, handlers[0].records
 
 
 class _Processor:
