@@ -191,10 +191,11 @@ steps:
     set -e
     export DIALS_DATA=$(pwd)/data
     . dials
-    #bash
+    bash
     mkdir test; cd test
     ldd /bin/bash
     libtbx.run_tests_parallel module=xfel_regression nproc=auto
+    exit
   displayName: Run tests
   workingDirectory: $(Pipeline.Workspace)
 
