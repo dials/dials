@@ -195,6 +195,8 @@ steps:
     mkdir test; cd test
     echo "ldd here"
     ldd /bin/bash
+    echo "more ldd"
+    ldd `which bash`
     echo "printenv here"
     printenv
     echo "running tests"
