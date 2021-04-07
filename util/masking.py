@@ -204,14 +204,13 @@ class MaskGenerator:
     """
     Deprecated interface for generating mask.
 
-    To be upgraded to UserWarning in DIALS 3.4.
     To be removed in DIALS 3.5.
     """
 
     def __init__(self, params):
         warnings.warn(
             "MaskGenerator is deprecated; please use dials.util.masking.generate_mask instead",
-            DeprecationWarning,
+            UserWarning,
             stacklevel=2,
         )
         self.params = params
