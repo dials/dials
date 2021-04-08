@@ -15,6 +15,7 @@ import dials.util.log
 from dials.array_family import flex
 from dials.model.data import make_image
 from dials.util import tabulate
+from dials.util.log import rehandle_cached_records
 from dials.util.mp import available_cores, multi_node_parallel_map
 from dials_algorithms_integration_integrator_ext import (
     Executor,
@@ -274,7 +275,7 @@ def execute_parallel_task(task):
     result = task()
     handlers = logging.getLogger("dials").handlers
     assert len(handlers) == 1, "Invalid number of logging handlers"
-    return result, handlers[0].messages()
+    return result, handlers[0].records
 
 
 class _Processor:
@@ -349,8 +350,7 @@ class _Processor:
         if mp_njobs * mp_nproc > 1:
 
             def process_output(result):
-                for message in result[1]:
-                    logger.handle(message)
+                rehandle_cached_records(result[1])
                 self.manager.accumulate(result[0])
 
             multi_node_parallel_map(
