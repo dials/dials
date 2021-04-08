@@ -1,0 +1,1 @@
+Log messages from spot finding and integration no longer ignore logging level when using ``nproc > 1``. This mainly affects usage of dials from outside contexts.
