@@ -17,6 +17,7 @@ from dxtbx.model import ExperimentList
 from dials.array_family import flex
 from dials.model.data import PixelList, PixelListLabeller
 from dials.util import Sorry, log
+from dials.util.log import rehandle_cached_records
 from dials.util.mp import available_cores, batch_multi_node_parallel_map
 
 logger = logging.getLogger(__name__)
@@ -497,8 +498,7 @@ class ExtractSpots:
         if mp_nproc > 1 or mp_njobs > 1:
 
             def process_output(result):
-                for message in result[1]:
-                    logger.handle(message)
+                rehandle_cached_records(result[1])
                 assert len(pixel_labeller) == len(result[0]), "Inconsistent size"
                 for plabeller, plist in zip(pixel_labeller, result[0]):
                     plabeller.add(plist)

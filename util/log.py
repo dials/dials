@@ -2,6 +2,7 @@ import logging.config
 import os
 import sys
 import time
+from typing import List
 
 try:
     from colorlog import ColoredFormatter
@@ -130,6 +131,23 @@ def config_simple_cached():
             },
         }
     )
+
+
+def rehandle_cached_records(records: List[logging.LogRecord]) -> None:
+    """
+    Submit cached log records to the relevant loggers for handling.
+
+    Because the relevant logger's threshold log level may be higher than when the
+    original log message was created and cached, the record will only be re-handled
+    if its level meets the new threshold.
+
+    Args:
+        records:  Cached log records.
+    """
+    for record in records:
+        record_logger = logging.getLogger(record.name)
+        if record_logger.isEnabledFor(record.levelno):
+            record_logger.handle(record)
 
 
 _banner = (

@@ -6,6 +6,7 @@ import dials.algorithms.integration
 from dials.algorithms.integration.processor import job
 from dials.model.data import ImageVolume, MultiPanelImageVolume, make_image
 from dials.util import log
+from dials.util.log import rehandle_cached_records
 from dials.util.mp import multi_node_parallel_map
 from dials_algorithms_integration_integrator_ext import ReflectionManagerPerImage
 
@@ -71,8 +72,7 @@ class ProcessorImage:
         if mp_nproc > 1:
 
             def process_output(result):
-                for message in result[1]:
-                    logger.handle(message)
+                rehandle_cached_records(result[1])
                 self.manager.accumulate(result[0])
                 result[0].reflections = None
                 result[0].data = None
