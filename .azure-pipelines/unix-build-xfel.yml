@@ -189,20 +189,9 @@ steps:
 # Finally, run the full regression test suite
 - bash: |
     set -e
-    #export DIALS_DATA=$(pwd)/data
     . dials
-    #bash
-    ls -l modules/xfel_regression/merging_test_data/merge_thermo.csh
     mkdir test; cd test
-    #echo "ldd here"
-    #ldd /bin/bash
-    #echo "more ldd"
-    #ldd `which bash`
-    #echo "printenv here"
-    #printenv
-    echo "running tests"
     libtbx.run_tests_parallel module=xfel_regression nproc=auto
-    #exit
   displayName: Run tests
   workingDirectory: $(Pipeline.Workspace)
 
