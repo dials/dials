@@ -354,7 +354,7 @@ class CosymAnalysis(symmetry_base, Subject):
         )
         self.params.cluster.n_clusters = len(cosets.partitions)
 
-    def _reindexing_ops_for_dataset(self, dataset_id, sym_ops, cosets):
+    def _reindexing_ops(self, coords, sym_ops, cosets):
         """Identify the reindexing operator for each symmetry copy of the given dataset.
 
         Args:
@@ -362,38 +362,54 @@ class CosymAnalysis(symmetry_base, Subject):
                 dataset for which to identify reindexing ops
             sym_ops (list): List of cctbx.sgtbx.rt_mx used for the cosym symmetry
                 analysis
-            cosets (sgtbx.cosets.left_decomposition): Coset left decomposition of the
-                space group determined by the cosym analysis with respect to the lattice
-                group symmetry
 
         Returns:
             dict: The dictionary of reindexing operators for each copy of the dataset,
                 dataset_id. The keys are the id of the cluster containing that copy of
                 the dataset.
         """
-        reindexing_ops = {}
-        for i_cluster in range(self.params.cluster.n_clusters):
-            # Select all points within this cluster
-            cluster_isel = np.where(self.cluster_labels == i_cluster)[0]
-            # dataset_ids of each points within this cluster
-            dataset_ids = cluster_isel % len(self.input_intensities)
-            # Index into cluster_isel for points corresponding to the requested dataset_id
-            dataset_isel = np.where(dataset_ids == dataset_id)[0]
-            for i in dataset_isel:
-                if i_cluster in reindexing_ops:
-                    # Finished with this cluster so exit loop early
-                    break
-                # sym_op for this copy of the dataset
-                sym_op = sym_ops[cluster_isel[i] // len(self.input_intensities)]
-                for partition in cosets.partitions:
-                    if sym_op in partition:
-                        cb_op = sgtbx.change_of_basis_op(partition[0]).new_denominators(
-                            self.cb_op_inp_min
-                        )
-                        reindexing_ops[i_cluster] = (
+
+        from sklearn.neighbors import NearestNeighbors
+
+        reindexing_ops = []
+
+        n_datasets = len(self.input_intensities)
+        n_sym_ops = len(sym_ops)
+        coord_ids = np.arange(n_datasets * n_sym_ops)
+        dataset_ids = coord_ids % n_datasets
+
+        # choose a high density point as seed
+        X = coords
+        nbrs = NearestNeighbors(
+            n_neighbors=min(11, len(X)), algorithm="brute", metric="cosine"
+        ).fit(X)
+        distances, indices = nbrs.kneighbors(X)
+        average_distance = np.array([dist[1:].mean() for dist in distances])
+        i = average_distance.argmin()
+        i = 0
+        xis = np.array([X[i]])
+
+        for j in range(n_datasets):
+            sel = np.where(dataset_ids == j)
+            X = coords[sel]
+            # Find nearest neighbour in cosine-space to the current cluster centroid
+            nbrs = NearestNeighbors(
+                n_neighbors=min(1, len(X)), algorithm="brute", metric="cosine"
+            ).fit(X)
+            distances, indices = nbrs.kneighbors([xis.mean(axis=0)])
+            k = indices[0][0]
+            xis = np.append(xis, [X[k]], axis=0)
+            for partition in cosets.partitions:
+                if sym_ops[k] in partition:
+                    cb_op = sgtbx.change_of_basis_op(partition[0]).new_denominators(
+                        self.cb_op_inp_min
+                    )
+                    reindexing_ops.append(
+                        (
                             self.cb_op_inp_min.inverse() * cb_op * self.cb_op_inp_min
                         ).as_xyz()
-                        break
+                    )
+                    break
 
         return reindexing_ops
 
@@ -409,18 +425,11 @@ class CosymAnalysis(symmetry_base, Subject):
 
         sym_ops = [sgtbx.rt_mx(s).new_denominators(1, 12) for s in self.target.sym_ops]
 
-        reindexing_ops = {}
-
         cosets = sgtbx.cosets.left_decomposition(
             self.target._lattice_group,
             self.best_subgroup["subsym"].space_group().build_derived_acentric_group(),
         )
-
-        for dataset_id in range(len(self.input_intensities)):
-            reindexing_ops[dataset_id] = self._reindexing_ops_for_dataset(
-                dataset_id, sym_ops, cosets
-            )
-        self.reindexing_ops = reindexing_ops
+        self.reindexing_ops = self._reindexing_ops(self.coords, sym_ops, cosets)
 
     def _do_clustering(self, method):
         if method == "dbscan":

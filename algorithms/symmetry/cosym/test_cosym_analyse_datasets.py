@@ -1,4 +1,3 @@
-import numpy as np
 import pytest
 
 import libtbx
@@ -89,7 +88,7 @@ def test_cosym(
     expected_space_group = sgtbx.space_group_info(symbol=space_group).group()
 
     params = phil_scope.extract()
-    params.cluster.n_clusters = len(expected_reindexing_ops)
+    params.cluster.n_clusters = len(set(expected_reindexing_ops))
     params.dimensions = dimensions
     params.best_monoclinic_beta = best_monoclinic_beta
     if use_known_space_group:
@@ -109,60 +108,29 @@ def test_cosym(
             .group()
             .build_derived_patterson_group()
         )
-
-    reindexing_ops = {}
-    for dataset_id in cosym.reindexing_ops.keys():
-        if 0 in cosym.reindexing_ops[dataset_id]:
-            cb_op = cosym.reindexing_ops[dataset_id][0]
-            reindexing_ops.setdefault(cb_op, set())
-            reindexing_ops[cb_op].add(dataset_id)
-
-    assert len(reindexing_ops) == len(expected_reindexing_ops)
-
-    if use_known_space_group:
-        expected_sg = sgtbx.space_group_info(space_group).group()
-    else:
         expected_sg = (
             sgtbx.space_group_info(space_group).group().build_derived_patterson_group()
         )
+    else:
+        expected_sg = sgtbx.space_group_info(space_group).group()
     assert cosym.best_subgroup["best_subsym"].space_group() == expected_sg
+    assert len(cosym.reindexing_ops) == len(expected_reindexing_ops)
 
     space_group_info = cosym.best_subgroup["subsym"].space_group_info()
-    for cb_op, ridx_set in reindexing_ops.items():
-        for expected_set in expected_reindexing_ops.values():
-            assert (len(ridx_set.symmetric_difference(expected_set)) == 0) or (
-                len(ridx_set.intersection(expected_set)) == 0
-            )
-        for d_id in ridx_set:
-            reindexed = (
-                datasets[d_id]
-                .change_basis(sgtbx.change_of_basis_op(cb_op))
-                .customized_copy(
-                    space_group_info=space_group_info.change_basis(
-                        cosym.cb_op_inp_min.inverse()
-                    )
+    for d_id, cb_op in enumerate(cosym.reindexing_ops):
+        reindexed = (
+            datasets[d_id]
+            .change_basis(sgtbx.change_of_basis_op(cb_op))
+            .customized_copy(
+                space_group_info=space_group_info.change_basis(
+                    cosym.cb_op_inp_min.inverse()
                 )
             )
-            assert reindexed.is_compatible_unit_cell(), str(
-                reindexed.crystal_symmetry()
-            )
-
-
-def test_reindexing_ops_for_dataset(mocker):
-    # Mock a minimal CosymAnalysis instance
-    self = mocker.Mock()
-    self.cluster_labels = np.array([1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0])
-    self.params.cluster.n_clusters = 2
-    self.input_intensities = [mocker.Mock(), mocker.Mock()]
-    self.cb_op_inp_min = sgtbx.change_of_basis_op()
-
-    # Lattice symmetry and true space group
-    lattice_group = sgtbx.space_group_info(symbol="C 2 2 2 (x+y,z,-2*y)").group()
-    sg = sgtbx.space_group_info(symbol="P 1 2 1").group()
-    cosets = sgtbx.cosets.left_decomposition(lattice_group, sg)
-
-    # Finally run the method we're testing
-    reindexing_ops = CosymAnalysis._reindexing_ops_for_dataset(
-        self, 0, list(lattice_group.smx()), cosets
-    )
-    assert reindexing_ops == {0: "x+z,-y,-z", 1: "x,y,z"}
+        )
+        assert reindexed.is_compatible_unit_cell(), str(reindexed.crystal_symmetry())
+        assert (
+            reindexed.correlation(
+                datasets[0], assert_is_similar_symmetry=False
+            ).coefficient()
+            > 0.99
+        )

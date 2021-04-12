@@ -160,6 +160,7 @@ def test_synthetic(
         assert expt.crystal.get_space_group() == space_group
 
 
+@pytest.mark.skip
 def test_reindexing_identity(mocker):
     """
     Default to choosing the cluster that contains the most identity reindexing ops.

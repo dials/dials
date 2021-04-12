@@ -1,4 +1,3 @@
-import collections
 import logging
 import random
 import sys
@@ -174,32 +173,11 @@ class cosym(Subject):
     @Subject.notify_event(event="run_cosym")
     def run(self):
         self.cosym_analysis.run()
-
-        reindexing_ops = {}
-        sym_op_counts = {
-            cluster_id: collections.Counter(
-                ops.get(cluster_id)
-                for ops in self.cosym_analysis.reindexing_ops.values()
-            )
-            for cluster_id in range(self.params.cluster.n_clusters)
-        }
-        if sym_op_counts:
-            identity_counts = [counts["x,y,z"] for counts in sym_op_counts.values()]
-            cluster_id = identity_counts.index(max(identity_counts))
-            for dataset_id in self.cosym_analysis.reindexing_ops:
-                if cluster_id in self.cosym_analysis.reindexing_ops[dataset_id]:
-                    cb_op = self.cosym_analysis.reindexing_ops[dataset_id][cluster_id]
-                    reindexing_ops.setdefault(cb_op, [])
-                    reindexing_ops[cb_op].append(dataset_id)
-
-            logger.info("Reindexing operators:")
-            for cb_op, datasets in reindexing_ops.items():
-                logger.info(cb_op)
-                logger.info(datasets)
-
-            self._apply_reindexing_operators(
-                reindexing_ops, subgroup=self.cosym_analysis.best_subgroup
-            )
+        reindexing_ops = self.cosym_analysis.reindexing_ops
+        logger.info("Reindexing operators: %s", reindexing_ops)
+        self._apply_reindexing_operators(
+            reindexing_ops, subgroup=self.cosym_analysis.best_subgroup
+        )
 
     def export(self):
         """Output the datafiles for cosym.
@@ -222,26 +200,28 @@ class cosym(Subject):
 
     def _apply_reindexing_operators(self, reindexing_ops, subgroup=None):
         """Apply the reindexing operators to the reflections and experiments."""
-        for cb_op, dataset_ids in reindexing_ops.items():
+        for dataset_id, cb_op in enumerate(reindexing_ops):
             cb_op = sgtbx.change_of_basis_op(cb_op)
+            logger.info(
+                "Applying reindexing op %s to dataset %i", cb_op.as_xyz(), dataset_id
+            )
+            expt = self._experiments[dataset_id]
+            refl = self._reflections[dataset_id]
+            expt.crystal = expt.crystal.change_basis(cb_op)
             if subgroup is not None:
                 cb_op = subgroup["cb_op_inp_best"] * cb_op
-            for dataset_id in dataset_ids:
-                expt = self._experiments[dataset_id]
-                refl = self._reflections[dataset_id]
                 expt.crystal = expt.crystal.change_basis(cb_op)
-                if subgroup is not None:
-                    expt.crystal.set_space_group(
-                        subgroup["best_subsym"]
-                        .space_group()
-                        .build_derived_acentric_group()
-                    )
-                expt.crystal.set_unit_cell(
-                    expt.crystal.get_space_group().average_unit_cell(
-                        expt.crystal.get_unit_cell()
-                    )
+                expt.crystal.set_space_group(
+                    subgroup["best_subsym"].space_group().build_derived_acentric_group()
                 )
-                refl["miller_index"] = cb_op.apply(refl["miller_index"])
+            else:
+                expt.crystal = expt.crystal.change_basis(cb_op)
+            expt.crystal.set_unit_cell(
+                expt.crystal.get_space_group().average_unit_cell(
+                    expt.crystal.get_unit_cell()
+                )
+            )
+            refl["miller_index"] = cb_op.apply(refl["miller_index"])
 
     def _filter_min_reflections(self, experiments, reflections):
         identifiers = []
