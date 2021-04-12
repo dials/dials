@@ -1,3 +1,12 @@
+DIALS 3.4.2 (2021-04-12)
+========================
+
+Bugfixes
+--------
+
+- Log messages from spot finding and integration no longer ignore logging level when using ``nproc > 1``. This mainly affects usage of dials from outside contexts. (`#1645 <https://github.com/dials/dials/issues/1645>`_)
+
+
 DIALS 3.4.1 (2021-04-01)
 ========================
 
