@@ -17,7 +17,6 @@ import iotbx.phil
 from cctbx import sgtbx
 from libtbx import Auto
 from scitbx import matrix
-from scitbx.array_family import flex
 
 import dials.util
 from dials.algorithms.indexing.symmetry import find_matching_symmetry
@@ -78,23 +77,6 @@ minimization {
     .type = int(value_min=0)
   max_calls = None
     .type = int(value_min=0)
-}
-
-cluster {
-  method = dbscan minimize_divide agglomerative *seed
-    .type = choice
-  n_clusters = auto
-    .type = int(value_min=1)
-  dbscan {
-    eps = 0.5
-      .type = float(value_min=0)
-    min_samples = 5
-      .type = int(value_min=1)
-  }
-  seed {
-    min_silhouette_score = 0.2
-      .type = float(value_min=-1, value_max=1)
-  }
 }
 
 nproc = 1
@@ -285,7 +267,6 @@ class CosymAnalysis(symmetry_base, Subject):
         self._principal_component_analysis()
 
         self._analyse_symmetry()
-        self._cluster_analysis()
 
     @Subject.notify_event(event="optimised")
     def _optimise(self, engine, max_iterations=None, max_calls=None):
@@ -336,23 +317,24 @@ class CosymAnalysis(symmetry_base, Subject):
 
     @Subject.notify_event(event="analysed_symmetry")
     def _analyse_symmetry(self):
-        if self.input_space_group is not None:
+        sym_ops = [sgtbx.rt_mx(s).new_denominators(1, 12) for s in self.target.sym_ops]
+
+        if not self.input_space_group:
+            self._symmetry_analysis = SymmetryAnalysis(
+                self.coords, sym_ops, self.subgroups, self.cb_op_inp_min
+            )
+            logger.info(str(self._symmetry_analysis))
+            self.best_solution = self._symmetry_analysis.best_solution
+            self.best_subgroup = self.best_solution.subgroup
+        else:
             self.best_solution = None
             self._symmetry_analysis = None
-            return
-
-        sym_ops = [sgtbx.rt_mx(s).new_denominators(1, 12) for s in self.target.sym_ops]
-        self._symmetry_analysis = SymmetryAnalysis(
-            self.coords, sym_ops, self.subgroups, self.cb_op_inp_min
-        )
-        logger.info(str(self._symmetry_analysis))
-        self.best_solution = self._symmetry_analysis.best_solution
-        self.best_subgroup = self.best_solution.subgroup
 
         cosets = sgtbx.cosets.left_decomposition(
-            self.lattice_group, self.best_solution.subgroup["subsym"].space_group()
+            self.target._lattice_group,
+            self.best_subgroup["subsym"].space_group().build_derived_acentric_group(),
         )
-        self.params.cluster.n_clusters = len(cosets.partitions)
+        self.reindexing_ops = self._reindexing_ops(self.coords, sym_ops, cosets)
 
     def _reindexing_ops(self, coords, sym_ops, cosets):
         """Identify the reindexing operator for each symmetry copy of the given dataset.
@@ -412,86 +394,6 @@ class CosymAnalysis(symmetry_base, Subject):
                     break
 
         return reindexing_ops
-
-    @Subject.notify_event(event="analysed_clusters")
-    def _cluster_analysis(self):
-
-        if self.params.cluster.n_clusters == 1:
-            self.cluster_labels = np.zeros(self.coords.shape[0])
-        else:
-            self.cluster_labels = self._do_clustering(self.params.cluster.method)
-            # Number of clusters in labels, ignoring noise if present.
-            self.params.cluster.n_clusters = len(set(self.cluster_labels) - {-1})
-
-        sym_ops = [sgtbx.rt_mx(s).new_denominators(1, 12) for s in self.target.sym_ops]
-
-        cosets = sgtbx.cosets.left_decomposition(
-            self.target._lattice_group,
-            self.best_subgroup["subsym"].space_group().build_derived_acentric_group(),
-        )
-        self.reindexing_ops = self._reindexing_ops(self.coords, sym_ops, cosets)
-
-    def _do_clustering(self, method):
-        if method == "dbscan":
-            clustering = self._dbscan_clustering
-        elif method == "minimize_divide":
-            clustering = self._minimize_divide_clustering
-        elif method == "agglomerative":
-            assert self.params.cluster.n_clusters is not Auto
-            clustering = self._agglomerative_clustering
-        elif method == "seed":
-            clustering = self._seed_clustering
-        return clustering()
-
-    def _dbscan_clustering(self):
-        from sklearn.preprocessing import StandardScaler
-
-        X = StandardScaler().fit_transform(self.coords_reduced)
-
-        # Perform cluster analysis
-        from sklearn.cluster import DBSCAN
-
-        db = DBSCAN(
-            eps=self.params.cluster.dbscan.eps,
-            min_samples=self.params.cluster.dbscan.min_samples,
-        ).fit(X)
-
-        return db.labels_
-
-    def _minimize_divide_clustering(self):
-        from cctbx.merging.brehm_diederichs import minimize_divide
-
-        assert self.params.cluster.n_clusters in (2, Auto)
-        x = flex.double(self.coords_reduced[:, :1].flatten())
-        y = flex.double(self.coords_reduced[:, 1:2].flatten())
-        selection = minimize_divide(x, y).plus_minus()
-        cluster_labels = np.zeros(x.size(), dtype=int)
-        cluster_labels[selection.as_numpy_array()] = 1
-        return cluster_labels
-
-    def _agglomerative_clustering(self):
-        # Perform cluster analysis
-        from sklearn.cluster import AgglomerativeClustering
-
-        model = AgglomerativeClustering(
-            n_clusters=self.params.cluster.n_clusters,
-            linkage="average",
-            affinity="cosine",
-        )
-        model.fit(self.coords)
-        return model.labels_
-
-    def _seed_clustering(self):
-        from dials.algorithms.symmetry.cosym.seed_clustering import seed_clustering
-
-        clustering = seed_clustering(
-            self.coords,
-            len(self.input_intensities),
-            len(self.target.sym_ops),
-            min_silhouette_score=self.params.cluster.seed.min_silhouette_score,
-            n_clusters=self.params.cluster.n_clusters,
-        )
-        return clustering.cluster_labels
 
     def as_dict(self):
         """Return a dictionary representation of the results.

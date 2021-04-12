@@ -88,7 +88,6 @@ def test_cosym(
     expected_space_group = sgtbx.space_group_info(symbol=space_group).group()
 
     params = phil_scope.extract()
-    params.cluster.n_clusters = len(set(expected_reindexing_ops))
     params.dimensions = dimensions
     params.best_monoclinic_beta = best_monoclinic_beta
     if use_known_space_group:
