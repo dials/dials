@@ -1,1 +1,0 @@
-Log messages from spot finding and integration are no longer printed or saved to file in cases where they ought to be quiet.  For the most part, this benefits programs from outside DIALS that reuse DIALS code, like `screen19<https://pypi.org/project/screen19/>`_.
