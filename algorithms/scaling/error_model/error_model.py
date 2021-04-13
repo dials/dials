@@ -570,4 +570,30 @@ def filter_unsuitable_reflections(
     # now make sure any left also have n > 1
     sel = n_h > 1.0
     Ih_table = Ih_table.select(sel)
+
+    #  Filter groups with abnormally high internal variances.
+    # For a reasonable quality dataset, if b=0.04, a=1.25, then for large Imax,
+    # the ratio of the corrected per-reflection variance to the original is
+    # (var'/var)^2 ~= (ab)^2 Imax ~= Imax / 400. So filter any groups where the
+    # internal variance is more than 10x what would reasonably be expected after
+    # error model correction.
+    I = Ih_table.intensities
+    mu = Ih_table.Ih_values
+    g = Ih_table.inverse_scale_factors
+    n_h = flex.double(Ih_table.size, 1.0) * Ih_table.h_index_matrix
+
+    group_variances = (
+        (((I / g) - mu) ** 2)
+        * Ih_table.h_index_matrix
+        / (n_h - flex.double(n_h.size(), 1.0))
+    )
+    avg_variances = (Ih_table.variances / (g ** 2)) * Ih_table.h_index_matrix / n_h
+    ratio = group_variances / avg_variances
+    sel = ratio < max(50, (flex.max(mu) / 40.0))
+    logger.debug(
+        f"{sel.count(False)}/{sel.size()} symmetry groups excluded "
+        "from error model analysis due to high internal variance"
+    )
+    Ih_table = Ih_table.select_on_groups(sel)
+
     return Ih_table
