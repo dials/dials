@@ -116,6 +116,7 @@ def test_cosym(
     assert len(cosym.reindexing_ops) == len(expected_reindexing_ops)
 
     space_group_info = cosym.best_subgroup["subsym"].space_group_info()
+    reference = None
     for d_id, cb_op in enumerate(cosym.reindexing_ops):
         reindexed = (
             datasets[d_id]
@@ -127,9 +128,12 @@ def test_cosym(
             )
         )
         assert reindexed.is_compatible_unit_cell(), str(reindexed.crystal_symmetry())
-        assert (
-            reindexed.correlation(
-                datasets[0], assert_is_similar_symmetry=False
-            ).coefficient()
-            > 0.99
-        )
+        if reference:
+            assert (
+                reindexed.correlation(
+                    reference, assert_is_similar_symmetry=False
+                ).coefficient()
+                > 0.99
+            )
+        else:
+            reference = reindexed

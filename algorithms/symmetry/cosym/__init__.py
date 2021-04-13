@@ -374,7 +374,6 @@ class CosymAnalysis(symmetry_base, Subject):
         distances, indices = nbrs.kneighbors(X)
         average_distance = np.array([dist[1:].mean() for dist in distances])
         i = average_distance.argmin()
-        i = 0
         xis = np.array([X[i]])
 
         for j in range(n_datasets):
