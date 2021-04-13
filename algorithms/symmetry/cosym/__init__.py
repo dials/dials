@@ -10,8 +10,10 @@ import json
 import logging
 import math
 from collections import OrderedDict
+from typing import List
 
 import numpy as np
+from sklearn.neighbors import NearestNeighbors
 
 import iotbx.phil
 from cctbx import sgtbx
@@ -336,25 +338,29 @@ class CosymAnalysis(symmetry_base, Subject):
         )
         self.reindexing_ops = self._reindexing_ops(self.coords, sym_ops, cosets)
 
-    def _reindexing_ops(self, coords, sym_ops, cosets):
-        """Identify the reindexing operator for each symmetry copy of the given dataset.
+    def _reindexing_ops(
+        self,
+        coords: np.ndarray,
+        sym_ops: List[sgtbx.rt_mx],
+        cosets: sgtbx.cosets.left_decomposition,
+    ) -> List[sgtbx.change_of_basis_op]:
+        """Identify the reindexing operator for each dataset.
 
         Args:
-            dataset_id (int): The index into the input list of datasets defining the
-                dataset for which to identify reindexing ops
-            sym_ops (list): List of cctbx.sgtbx.rt_mx used for the cosym symmetry
-                analysis
+          coords (np.ndarray):
+            A flattened list of the N-dimensional vectors, i.e. coordinates in
+            the first dimension are stored first, followed by the coordinates in
+            the second dimension, etc.
+          sym_ops (List[sgtbx.rt_mx]): List of cctbx.sgtbx.rt_mx used for the cosym
+            symmetry analysis
+          cosets (sgtbx.cosets.left_decomposition): The left coset decomposition of the
+            lattice group with respect to the proposed Patterson group
 
         Returns:
-            dict: The dictionary of reindexing operators for each copy of the dataset,
-                dataset_id. The keys are the id of the cluster containing that copy of
-                the dataset.
+          List[sgtbx.change_of_basis_op]: A list of reindexing operators corresponding
+            to each dataset.
         """
-
-        from sklearn.neighbors import NearestNeighbors
-
         reindexing_ops = []
-
         n_datasets = len(self.input_intensities)
         n_sym_ops = len(sym_ops)
         coord_ids = np.arange(n_datasets * n_sym_ops)
