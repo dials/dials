@@ -37,31 +37,31 @@ def test_LoggingContext():
     assert dials_logger.getEffectiveLevel() == logging.DEBUG
 
 
-def test_cached_log_records(caplog):
+def _log_something(_: Any) -> List[logging.LogRecord]:
+    """
+    Create a dummy info log record.
+
+    A little dummy function to pass to the dials.util.mp parallel map functions,
+    which simply logs a single info message.
+
+    Args:
+        _:  Absorb the expected argument and do nothing with it.
+
+    Returns:
+        The log records created during the calling of this function.
+    """
     test_log_message = "Here's a test log message."
+    dials.util.log.config_simple_cached()
+    logger = logging.getLogger("dials")
+    logger.info(test_log_message)
+    (handler,) = logger.handlers
+    return handler.records
 
-    def log_something(_: Any) -> List[logging.LogRecord]:
-        """
-        Create a dummy info log record.
 
-        A little dummy function to pass to the dials.util.mp parallel map functions,
-        which simply logs a single info message.
-
-        Args:
-            _:  Absorb the expected argument and do nothing with it.
-
-        Returns:
-            The log records created during the calling of this function.
-        """
-        dials.util.log.config_simple_cached()
-        logger = logging.getLogger("dials")
-        logger.info(test_log_message)
-        (handler,) = logger.handlers
-        return handler.records
-
+def test_cached_log_records(caplog):
     # Generate some cached log messages in easy_mp child processes.
     results = multi_node_parallel_map(
-        log_something,
+        _log_something,
         iterable=range(5),
         njobs=2,
         nproc=2,
@@ -71,7 +71,7 @@ def test_cached_log_records(caplog):
     results = [record for records in results for record in records]
 
     results_batch = batch_multi_node_parallel_map(
-        log_something,
+        _log_something,
         range(5),
         njobs=2,
         nproc=2,
