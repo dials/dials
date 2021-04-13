@@ -366,8 +366,16 @@ class CosymAnalysis(symmetry_base, Subject):
         coord_ids = np.arange(n_datasets * n_sym_ops)
         dataset_ids = coord_ids % n_datasets
 
-        # choose first dataset as the seed
-        x0 = coords[0]
+        # choose a high density point as seed
+        X = coords
+        nbrs = NearestNeighbors(
+            n_neighbors=min(11, len(X)), algorithm="brute", metric="cosine"
+        ).fit(X)
+        distances, indices = nbrs.kneighbors(X)
+        average_distance = np.array([dist[1:].mean() for dist in distances])
+        i = average_distance.argmin()
+        i = 0
+        xis = np.array([X[i]])
 
         for j in range(n_datasets):
             sel = np.where(dataset_ids == j)
@@ -376,8 +384,9 @@ class CosymAnalysis(symmetry_base, Subject):
             nbrs = NearestNeighbors(
                 n_neighbors=min(1, len(X)), algorithm="brute", metric="cosine"
             ).fit(X)
-            distances, indices = nbrs.kneighbors([x0])
+            distances, indices = nbrs.kneighbors([xis.mean(axis=0)])
             k = indices[0][0]
+            xis = np.append(xis, [X[k]], axis=0)
             for partition in cosets.partitions:
                 if sym_ops[k] in partition:
                     cb_op = sgtbx.change_of_basis_op(partition[0]).new_denominators(
