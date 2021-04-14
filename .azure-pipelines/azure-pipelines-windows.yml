@@ -3,7 +3,7 @@ jobs:
   pool:
     vmImage: windows-latest
   dependsOn: setup
-  condition: and(eq(dependencies.setup.outputs['constants.NEWSFRAGMENT_WAITING'], 'false'))
+  condition: eq(dependencies.setup.outputs['constants.NEWSFRAGMENT_WAITING'], 'false')
   variables:
     CURRENT_WEEK: $[ dependencies.setup.outputs['constants.CURRENT_WEEK'] ]
     TODAY_ISO: $[ dependencies.setup.outputs['constants.TODAY_ISO'] ]
