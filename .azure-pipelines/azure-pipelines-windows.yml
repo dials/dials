@@ -10,12 +10,12 @@ jobs:
 
   strategy:
     matrix:
-      python36:
-        PYTHON_VERSION: 3.6
-#     python37:
-#       PYTHON_VERSION: 3.7
+      python37:
+        PYTHON_VERSION: 3.7
 #     python38:
 #       PYTHON_VERSION: 3.8
+#     python39:
+#       PYTHON_VERSION: 3.9
   timeoutInMinutes: 150
 
   steps:
