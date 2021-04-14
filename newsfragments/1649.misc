@@ -1,0 +1,2 @@
+``dials.scale``: Improve stability of error model determination by filtering symmetry
+groups with abnormally high internal variance.
