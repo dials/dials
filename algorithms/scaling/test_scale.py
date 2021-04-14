@@ -475,6 +475,21 @@ def test_scale_physical(dials_data, tmpdir):
     assert result.overall.n_obs > 2300  # at 07/01/19, was 2336, at 22/05/19 was 2311
 
 
+def test_scale_normal_equations_failure(dials_data, tmpdir):
+    location = dials_data("l_cysteine_dials_output")
+    refl = location.join("20_integrated.pickle").strpath
+    expt = location.join("20_integrated_experiments.json").strpath
+
+    # exclude a central region of data to force the failure of the full matrix
+    # minimiser due to indeterminate solution of the normal equations. In this
+    # case, the error should be caught and scaling can proceed.
+    command = ["dials.scale", refl, expt, "exclude_images=800:1400"]
+    result = procrunner.run(command, working_directory=tmpdir)
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("scaled.refl").check()
+    assert tmpdir.join("scaled.expt").check()
+
+
 def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
     """Test the scale and filter command line program."""
     location = dials_data("multi_crystal_proteinase_k")
