@@ -886,6 +886,8 @@ class MultiScalerBase(ScalerBase):
         #    self._experiment = scalers[0].experiments
         assert len(scalers) == initial_number - len(n_list)
         logger.info("Removed datasets: %s", n_list)
+        if not self.active_scalers:
+            raise ValueError("No datasets remain after filtering out bad datasets.")
 
     def get_free_set_reflections(self):
         """Get all reflections in the free set if it exists."""
