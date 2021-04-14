@@ -45,6 +45,7 @@ from dials.algorithms.scaling.scaling_library import (
 )
 from dials.algorithms.scaling.scaling_refiner import scaling_refinery
 from dials.algorithms.scaling.scaling_utilities import (
+    BadDatasetForScalingException,
     DialsMergingStatisticsError,
     log_memory_usage,
 )
@@ -1293,19 +1294,31 @@ class MultiScalerBase(ScalerBase):
             logger.info(tabulate(rows, header))
 
         elif self.params.reflection_selection.method == "intensity_ranges":
-            for scaler in self.active_scalers:
-                overall_scaling_selection = calculate_scaling_subset_ranges_with_E2(
-                    scaler.reflection_table, scaler.params
-                )
-                scaler.scaling_selection = overall_scaling_selection.select(
-                    scaler.suitable_refl_for_scaling_sel
-                )
-                if self._free_Ih_table:
-                    scaler.scaling_selection.set_selected(
-                        scaler.free_set_selection, False
+            datasets_to_remove = []
+            for i, scaler in enumerate(self.active_scalers):
+                try:
+                    overall_scaling_selection = calculate_scaling_subset_ranges_with_E2(
+                        scaler.reflection_table, scaler.params
                     )
-                scaler.scaling_subset_sel = copy.deepcopy(scaler.scaling_selection)
-                scaler.scaling_selection &= ~scaler.outliers
+                except BadDatasetForScalingException:
+                    datasets_to_remove.append(i)
+                else:
+                    scaler.scaling_selection = overall_scaling_selection.select(
+                        scaler.suitable_refl_for_scaling_sel
+                    )
+                    if self._free_Ih_table:
+                        scaler.scaling_selection.set_selected(
+                            scaler.free_set_selection, False
+                        )
+                    scaler.scaling_subset_sel = copy.deepcopy(scaler.scaling_selection)
+                    scaler.scaling_selection &= ~scaler.outliers
+            if datasets_to_remove:
+                self.remove_datasets(self.active_scalers, datasets_to_remove)
+                # Reinitialise the global datastructures for the reduced dataset.
+                (
+                    self._global_Ih_table,
+                    self._free_Ih_table,
+                ) = self._create_global_Ih_table(self.params.anomalous)
         elif self.params.reflection_selection.method == "use_all":
             block = self.global_Ih_table.Ih_table_blocks[0]
             n_mult = (block.calc_nh() > 1).count(True)
