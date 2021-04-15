@@ -1104,6 +1104,9 @@ be passed separately with quotes to avoid confusion (e.g
     )
 
     options = parser.parse_args()
+    if os.name == "nt" and options.python == "3.6":
+        sys.exit("Python 3.6 is not supported on Windows")
+
     print("Performing actions:", " ".join(options.actions))
 
     # Add sources

@@ -6,12 +6,6 @@
 
 steps:
 
-# Downgrade the installed vs2017+ to 2015, as cbflib_adaptbx won't build otherwise
-# This takes up 5 minutes of uncacheable build time :(
-- script: |
-    choco install microsoft-visual-cpp-build-tools
-  displayName: Install MSVC 2015 Build Tools
-
 # Obtain a shallow clone of the DIALS repository.
 # DIALS will not be able to report proper version numbers
 - checkout: self
@@ -99,14 +93,10 @@ steps:
 # If the build directory could not be loaded from cache then
 # create a new one using the bootstrap script
 - script: |
-    REM -- generic VS path setter, but only works if it is the only installation:
-    REM pushd "C:\Program Files (x86)\Microsoft Visual Studio\Installer\"
-    REM for /f "delims=" %%x in ('.\vswhere.exe -latest -property InstallationPath') do set VSPATH=%%x
-    REM popd
-    REM call "%VSPATH%\VC\Auxiliary\Build\vcvarsall.bat" x64
-
-    REM -- the above can be used once we start using the default compiler suite. Until then we need to:
-    call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
+    pushd "C:\Program Files (x86)\Microsoft Visual Studio\Installer\"
+    for /f "delims=" %%x in ('.\vswhere.exe -latest -property InstallationPath') do set VSPATH=%%x
+    popd
+    call "%VSPATH%\VC\Auxiliary\Build\vcvarsall.bat" x64
 
     python modules/dials/installer/bootstrap.py build
     REM -- ensure a copy of the environment loader is kept in the cache
@@ -118,14 +108,10 @@ steps:
 # If the build directory was loaded (or kick-started) from cache then
 # do an incremental build
 - script: |
-    REM -- generic VS path setter, but only works if it is the only installation:
-    REM pushd "C:\Program Files (x86)\Microsoft Visual Studio\Installer\"
-    REM for /f "delims=" %%x in ('.\vswhere.exe -latest -property InstallationPath') do set VSPATH=%%x
-    REM popd
-    REM call "%VSPATH%\VC\Auxiliary\Build\vcvarsall.bat" x64
-
-    REM -- the above can be used once we start using the default compiler suite. Until then we need to:
-    call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
+    pushd "C:\Program Files (x86)\Microsoft Visual Studio\Installer\"
+    for /f "delims=" %%x in ('.\vswhere.exe -latest -property InstallationPath') do set VSPATH=%%x
+    popd
+    call "%VSPATH%\VC\Auxiliary\Build\vcvarsall.bat" x64
 
     REM -- restore copy of the environment loader from the cache
     copy build\activate.bat dials.bat
