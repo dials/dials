@@ -775,6 +775,31 @@ def test_multi_scale_exclude_images(dials_data, tmpdir):
     assert nd2_scaled > 2800
 
 
+def test_scale_handle_bad_dataset(dials_data, tmpdir):
+    """Set command line parameters such that one dataset does not meet the
+    criteria for inclusion in scaling. Check that this is excluded and the
+    scaling job completes without failure."""
+    location = dials_data("multi_crystal_proteinase_k")
+    command = [
+        "dials.scale",
+        "reflection_selection.method=intensity_ranges",
+        "Isigma_range=90.0,1000",
+    ]
+    for i in range(1, 6):
+        command.append(location.join("experiments_" + str(i) + ".json").strpath)
+        command.append(location.join("reflections_" + str(i) + ".pickle").strpath)
+
+    result = procrunner.run(command, working_directory=tmpdir)
+    assert not result.returncode and not result.stderr
+
+    scaled_exp = tmpdir.join("scaled.expt").strpath
+    scaled_refl = tmpdir.join("scaled.refl").strpath
+    reflections = flex.reflection_table.from_file(scaled_refl)
+    expts = load.experiment_list(scaled_exp, check_format=False)
+    assert len(expts) == 4
+    assert len(reflections.experiment_identifiers()) == 4
+
+
 def test_targeted_scaling(dials_data, tmpdir):
     """Test the targeted scaling workflow."""
     location = dials_data("l_cysteine_4_sweeps_scaled")
