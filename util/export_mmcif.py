@@ -321,6 +321,7 @@ class MMCIFOutputFile:
                 crystal_symmetry=crystal_symmetry,
                 use_internal_variance=False,
                 eliminate_sys_absent=False,
+                assert_is_not_unique_set_under_symmetry=False,
             )
             merged_block = iotbx.cif.model.block()
             merged_block["_reflns.pdbx_ordinal"] = 1
