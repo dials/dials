@@ -1,3 +1,5 @@
+import math
+
 from dials.array_family import flex
 
 
@@ -24,8 +26,8 @@ def flex_histogram(z, char="*", width=60, height=10):
     z += epsilon
 
     # image numbers to display on x-axis label
-    xmin = int(round(min_z + 1e-16))
-    xmax = int(round(max_z))
+    xmin = int(math.ceil(min_z))
+    xmax = int(math.ceil(max_z))
 
     # estimate the total number of images
     image_count = xmax - xmin + 1
