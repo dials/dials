@@ -43,6 +43,7 @@ def test_LoggingContext():
     "os.name == 'nt'",
     reason="https://github.com/dials/dials/issues/1650",
     raises=AttributeError,
+    strict=True,
 )
 def test_cached_log_records(caplog):
     test_log_message = "Here's a test log message."

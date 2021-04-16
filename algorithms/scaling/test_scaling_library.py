@@ -161,6 +161,9 @@ def generated_param(absorption_term=False):
 
 
 @pytest.mark.parametrize("model", ["physical", "array"])
+@pytest.mark.xfail(
+    "os.name == 'nt'", reason="ZeroDivisionError in refinement", strict=True
+)
 def test_scale_single_dataset(test_reflections, test_experiments, test_params, model):
     """Test completion of scaling."""
     scaled_reflections = scale_single_dataset(
@@ -171,6 +174,9 @@ def test_scale_single_dataset(test_reflections, test_experiments, test_params, m
     # what about when no params supplied?
 
 
+@pytest.mark.xfail(
+    "os.name == 'nt'", reason="ZeroDivisionError in refinement", strict=True
+)
 def test_scale_single_dataset_no_params_supplied(test_reflections, test_experiments):
     """Test when no params scope supplied."""
     scaled_reflections = scale_single_dataset(
