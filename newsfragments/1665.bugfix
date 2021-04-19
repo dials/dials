@@ -1,1 +1,1 @@
-Per-image analysis service: significant speed up for hdf5 grid scans
+``dials.find_spots_server``: Significant speed up for hdf5 grid scans
