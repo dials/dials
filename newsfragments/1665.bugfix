@@ -1,1 +1,1 @@
-``dials.find_spots_server``: Significant speedup for HDF5 grid scans
+``dials.find_spots_server``: Significant performance improvement for HDF5 grid scans
