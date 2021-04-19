@@ -107,6 +107,11 @@ indexing_min_spots = 10
     # no need to write the hot mask in the server/client
     params.spotfinder.write_hot_mask = False
     experiments = ExperimentListFactory.from_filenames([filename])
+    if params.spotfinder.scan_range and len(experiments) > 1:
+        # This means we've imported a sequence of still image: select
+        # only the experiment, i.e. image, we're interested in
+        ((start, end),) = params.spotfinder.scan_range
+        experiments = experiments[start - 1 : end]
     t0 = time.time()
     reflections = flex.reflection_table.from_observations(experiments, params)
     t1 = time.time()
