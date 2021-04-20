@@ -475,6 +475,21 @@ def test_scale_physical(dials_data, tmpdir):
     assert result.overall.n_obs > 2300  # at 07/01/19, was 2336, at 22/05/19 was 2311
 
 
+def test_scale_normal_equations_failure(dials_data, tmpdir):
+    location = dials_data("l_cysteine_dials_output")
+    refl = location.join("20_integrated.pickle").strpath
+    expt = location.join("20_integrated_experiments.json").strpath
+
+    # exclude a central region of data to force the failure of the full matrix
+    # minimiser due to indeterminate solution of the normal equations. In this
+    # case, the error should be caught and scaling can proceed.
+    command = ["dials.scale", refl, expt, "exclude_images=800:1400"]
+    result = procrunner.run(command, working_directory=tmpdir)
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("scaled.refl").check()
+    assert tmpdir.join("scaled.expt").check()
+
+
 def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
     """Test the scale and filter command line program."""
     location = dials_data("multi_crystal_proteinase_k")
@@ -758,6 +773,31 @@ def test_multi_scale_exclude_images(dials_data, tmpdir):
     # full sweep would have 3210, expect ~2850
     assert nd2_scaled < 2900
     assert nd2_scaled > 2800
+
+
+def test_scale_handle_bad_dataset(dials_data, tmpdir):
+    """Set command line parameters such that one dataset does not meet the
+    criteria for inclusion in scaling. Check that this is excluded and the
+    scaling job completes without failure."""
+    location = dials_data("multi_crystal_proteinase_k")
+    command = [
+        "dials.scale",
+        "reflection_selection.method=intensity_ranges",
+        "Isigma_range=90.0,1000",
+    ]
+    for i in range(1, 6):
+        command.append(location.join("experiments_" + str(i) + ".json").strpath)
+        command.append(location.join("reflections_" + str(i) + ".pickle").strpath)
+
+    result = procrunner.run(command, working_directory=tmpdir)
+    assert not result.returncode and not result.stderr
+
+    scaled_exp = tmpdir.join("scaled.expt").strpath
+    scaled_refl = tmpdir.join("scaled.refl").strpath
+    reflections = flex.reflection_table.from_file(scaled_refl)
+    expts = load.experiment_list(scaled_exp, check_format=False)
+    assert len(expts) == 4
+    assert len(reflections.experiment_identifiers()) == 4
 
 
 def test_targeted_scaling(dials_data, tmpdir):

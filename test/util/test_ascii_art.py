@@ -95,3 +95,32 @@ oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
 1 image 10"""
     output = "\n".join(line.rstrip() for line in output.splitlines())
     assert output == expected_output
+
+    # If we do spotfinding on the first 3 images, then the spot centroids will be in the
+    # range z=0.5 to z=2.5
+    output = ascii_art.spot_counts_per_image_plot(
+        refl.select(refl["xyzobs.px.value"].parts()[2] <= 2.5),
+        char="#",
+        width=10,
+        height=15,
+    )
+    expected_output = """\
+624 spots found on 3 images (max 294 / bin)
+#
+#
+#
+#
+#
+#
+##
+###
+###
+###
+###
+###
+###
+###
+###
+1 3"""
+    output = "\n".join(line.rstrip() for line in output.splitlines())
+    assert output == expected_output

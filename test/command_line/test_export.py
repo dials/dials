@@ -5,12 +5,13 @@ import procrunner
 import pytest
 
 import iotbx.cif
-from cctbx import uctbx
-from dxtbx.model import ExperimentList
+from cctbx import sgtbx, uctbx
+from dxtbx.model.experiment_list import ExperimentList, ExperimentListFactory
 from dxtbx.serialize import load
 from iotbx import mtz
 
 from dials.array_family import flex
+from dials.command_line.slice_sequence import slice_experiments, slice_reflections
 from dials.util.multi_dataset_handling import assign_unique_identifiers
 
 
@@ -282,6 +283,38 @@ def test_mmcif_on_scaled_data(dials_data, tmpdir, pdb_version):
         assert "_pdbx_diffrn_data_section.id" in model["dials"].keys()
 
 
+def test_mmcif_p1_narrow_wedge(dials_data, tmpdir):
+    """Call dials.export format=mmcif after scaling"""
+    data_dir = dials_data("x4wide_processed")
+
+    refl = flex.reflection_table.from_file(data_dir / "AUTOMATIC_DEFAULT_scaled.refl")
+    refl = slice_reflections(refl, [(1, 3)])
+    refl.as_file(tmpdir / "p1_narrow.refl")
+
+    expts = ExperimentListFactory.from_serialized_format(
+        data_dir / "AUTOMATIC_DEFAULT_scaled.expt", check_format=False
+    )
+    expts = slice_experiments(expts, [(1, 3)])
+    expts[0].crystal.set_space_group(sgtbx.space_group())
+    expts.as_file(tmpdir / "p1_narrow.expt")
+
+    command = [
+        "dials.export",
+        "format=mmcif",
+        tmpdir / "p1_narrow.expt",
+        tmpdir / "p1_narrow.refl",
+        "mmcif.hklout=scaled.mmcif",
+        "compress=None",
+    ]
+    result = procrunner.run(command, working_directory=tmpdir.strpath)
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("scaled.mmcif").check(file=1)
+
+    model = iotbx.cif.reader(file_path=tmpdir.join("scaled.mmcif").strpath).model()
+    assert model["dials"]["_reflns.pdbx_redundancy"] == "1.0"
+    assert model["dials"]["_reflns.pdbx_CC_half"] == "0.0"
+
+
 def test_xds_ascii(dials_data, tmpdir):
     # Call dials.export
     result = procrunner.run(
@@ -363,8 +396,6 @@ def test_json(dials_data, tmpdir):
     )
     assert not result.returncode and not result.stderr
     assert tmpdir.join("rlp.json").check(file=1)
-
-    from dxtbx.model.experiment_list import ExperimentListFactory
 
     with tmpdir.join("rlp.json").open("rb") as f:
         d = json.load(f)

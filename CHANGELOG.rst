@@ -1,3 +1,16 @@
+DIALS 3.4.3 (2021-04-20)
+========================
+
+Bugfixes
+--------
+
+- ``dials.scale``: Fix crash when full-matrix minimisation is unsuccessful due to indeterminate normal equations. (`#1653 <https://github.com/dials/dials/issues/1653>`_)
+- ``dials.scale``: Fix crash when no reflections remain after initial filtering. (`#1654 <https://github.com/dials/dials/issues/1654>`_)
+- ``dials.export``: Fix error observed with ``format=mmcif`` for narrow sweeps with low symmetry (`#1656 <https://github.com/dials/dials/issues/1656>`_)
+- Fix image numbering inconsistency in ascii histogram of per-image spot counts (`#1660 <https://github.com/dials/dials/issues/1660>`_)
+- ``dials.find_spots_server``: Significant performance improvement for HDF5 grid scans. (`#1665 <https://github.com/dials/dials/issues/1665>`_)
+
+
 DIALS 3.4.2 (2021-04-12)
 ========================
 
