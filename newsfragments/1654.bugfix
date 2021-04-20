@@ -1,1 +1,0 @@
-``dials.scale``: Fix crash when no reflections remain after initial filtering.

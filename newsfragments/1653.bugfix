@@ -1,1 +1,0 @@
-``dials.scale``: Fix crash when full-matrix minimisation is unsuccessful due to indeterminate normal equations.
