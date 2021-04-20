@@ -1,1 +1,0 @@
-``dials.export``: Fix error observed with ``format=mmcif`` for narrow sweeps with low symmetry
