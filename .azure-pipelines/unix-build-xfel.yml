@@ -178,7 +178,7 @@ steps:
 - bash: |
     . dials
     cd modules
-    git clone -b env_test https://gitlab.com/cctbx/xfel_regression.git
+    git clone https://gitlab.com/cctbx/xfel_regression.git
     cd xfel_regression
     git lfs install --local
     git lfs pull
