@@ -1,0 +1,1 @@
+dials.cosym: remove clustering code as this is no longer a necessary part of determination of symmetry or reindexing operations, and serves no useful purporse.

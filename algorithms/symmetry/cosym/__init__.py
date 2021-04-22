@@ -10,14 +10,15 @@ import json
 import logging
 import math
 from collections import OrderedDict
+from typing import List
 
 import numpy as np
+from sklearn.neighbors import NearestNeighbors
 
 import iotbx.phil
 from cctbx import sgtbx
 from libtbx import Auto
 from scitbx import matrix
-from scitbx.array_family import flex
 
 import dials.util
 from dials.algorithms.indexing.symmetry import find_matching_symmetry
@@ -78,23 +79,6 @@ minimization {
     .type = int(value_min=0)
   max_calls = None
     .type = int(value_min=0)
-}
-
-cluster {
-  method = dbscan minimize_divide agglomerative *seed
-    .type = choice
-  n_clusters = auto
-    .type = int(value_min=1)
-  dbscan {
-    eps = 0.5
-      .type = float(value_min=0)
-    min_samples = 5
-      .type = int(value_min=1)
-  }
-  seed {
-    min_silhouette_score = 0.2
-      .type = float(value_min=-1, value_max=1)
-  }
 }
 
 nproc = 1
@@ -285,7 +269,6 @@ class CosymAnalysis(symmetry_base, Subject):
         self._principal_component_analysis()
 
         self._analyse_symmetry()
-        self._cluster_analysis()
 
     @Subject.notify_event(event="optimised")
     def _optimise(self, engine, max_iterations=None, max_calls=None):
@@ -336,153 +319,86 @@ class CosymAnalysis(symmetry_base, Subject):
 
     @Subject.notify_event(event="analysed_symmetry")
     def _analyse_symmetry(self):
-        if self.input_space_group is not None:
+        sym_ops = [sgtbx.rt_mx(s).new_denominators(1, 12) for s in self.target.sym_ops]
+
+        if not self.input_space_group:
+            self._symmetry_analysis = SymmetryAnalysis(
+                self.coords, sym_ops, self.subgroups, self.cb_op_inp_min
+            )
+            logger.info(str(self._symmetry_analysis))
+            self.best_solution = self._symmetry_analysis.best_solution
+            self.best_subgroup = self.best_solution.subgroup
+        else:
             self.best_solution = None
             self._symmetry_analysis = None
-            return
-
-        sym_ops = [sgtbx.rt_mx(s).new_denominators(1, 12) for s in self.target.sym_ops]
-        self._symmetry_analysis = SymmetryAnalysis(
-            self.coords, sym_ops, self.subgroups, self.cb_op_inp_min
-        )
-        logger.info(str(self._symmetry_analysis))
-        self.best_solution = self._symmetry_analysis.best_solution
-        self.best_subgroup = self.best_solution.subgroup
-
-        cosets = sgtbx.cosets.left_decomposition(
-            self.lattice_group, self.best_solution.subgroup["subsym"].space_group()
-        )
-        self.params.cluster.n_clusters = len(cosets.partitions)
-
-    def _reindexing_ops_for_dataset(self, dataset_id, sym_ops, cosets):
-        """Identify the reindexing operator for each symmetry copy of the given dataset.
-
-        Args:
-            dataset_id (int): The index into the input list of datasets defining the
-                dataset for which to identify reindexing ops
-            sym_ops (list): List of cctbx.sgtbx.rt_mx used for the cosym symmetry
-                analysis
-            cosets (sgtbx.cosets.left_decomposition): Coset left decomposition of the
-                space group determined by the cosym analysis with respect to the lattice
-                group symmetry
-
-        Returns:
-            dict: The dictionary of reindexing operators for each copy of the dataset,
-                dataset_id. The keys are the id of the cluster containing that copy of
-                the dataset.
-        """
-        reindexing_ops = {}
-        for i_cluster in range(self.params.cluster.n_clusters):
-            # Select all points within this cluster
-            cluster_isel = np.where(self.cluster_labels == i_cluster)[0]
-            # dataset_ids of each points within this cluster
-            dataset_ids = cluster_isel % len(self.input_intensities)
-            # Index into cluster_isel for points corresponding to the requested dataset_id
-            dataset_isel = np.where(dataset_ids == dataset_id)[0]
-            for i in dataset_isel:
-                if i_cluster in reindexing_ops:
-                    # Finished with this cluster so exit loop early
-                    break
-                # sym_op for this copy of the dataset
-                sym_op = sym_ops[cluster_isel[i] // len(self.input_intensities)]
-                for partition in cosets.partitions:
-                    if sym_op in partition:
-                        cb_op = sgtbx.change_of_basis_op(partition[0]).new_denominators(
-                            self.cb_op_inp_min
-                        )
-                        reindexing_ops[i_cluster] = (
-                            self.cb_op_inp_min.inverse() * cb_op * self.cb_op_inp_min
-                        ).as_xyz()
-                        break
-
-        return reindexing_ops
-
-    @Subject.notify_event(event="analysed_clusters")
-    def _cluster_analysis(self):
-
-        if self.params.cluster.n_clusters == 1:
-            self.cluster_labels = np.zeros(self.coords.shape[0])
-        else:
-            self.cluster_labels = self._do_clustering(self.params.cluster.method)
-            # Number of clusters in labels, ignoring noise if present.
-            self.params.cluster.n_clusters = len(set(self.cluster_labels) - {-1})
-
-        sym_ops = [sgtbx.rt_mx(s).new_denominators(1, 12) for s in self.target.sym_ops]
-
-        reindexing_ops = {}
 
         cosets = sgtbx.cosets.left_decomposition(
             self.target._lattice_group,
             self.best_subgroup["subsym"].space_group().build_derived_acentric_group(),
         )
+        self.reindexing_ops = self._reindexing_ops(self.coords, sym_ops, cosets)
 
-        for dataset_id in range(len(self.input_intensities)):
-            reindexing_ops[dataset_id] = self._reindexing_ops_for_dataset(
-                dataset_id, sym_ops, cosets
-            )
-        self.reindexing_ops = reindexing_ops
+    def _reindexing_ops(
+        self,
+        coords: np.ndarray,
+        sym_ops: List[sgtbx.rt_mx],
+        cosets: sgtbx.cosets.left_decomposition,
+    ) -> List[sgtbx.change_of_basis_op]:
+        """Identify the reindexing operator for each dataset.
 
-    def _do_clustering(self, method):
-        if method == "dbscan":
-            clustering = self._dbscan_clustering
-        elif method == "minimize_divide":
-            clustering = self._minimize_divide_clustering
-        elif method == "agglomerative":
-            assert self.params.cluster.n_clusters is not Auto
-            clustering = self._agglomerative_clustering
-        elif method == "seed":
-            clustering = self._seed_clustering
-        return clustering()
+        Args:
+          coords (np.ndarray):
+            A flattened list of the N-dimensional vectors, i.e. coordinates in
+            the first dimension are stored first, followed by the coordinates in
+            the second dimension, etc.
+          sym_ops (List[sgtbx.rt_mx]): List of cctbx.sgtbx.rt_mx used for the cosym
+            symmetry analysis
+          cosets (sgtbx.cosets.left_decomposition): The left coset decomposition of the
+            lattice group with respect to the proposed Patterson group
 
-    def _dbscan_clustering(self):
-        from sklearn.preprocessing import StandardScaler
+        Returns:
+          List[sgtbx.change_of_basis_op]: A list of reindexing operators corresponding
+            to each dataset.
+        """
+        reindexing_ops = []
+        n_datasets = len(self.input_intensities)
+        n_sym_ops = len(sym_ops)
+        coord_ids = np.arange(n_datasets * n_sym_ops)
+        dataset_ids = coord_ids % n_datasets
 
-        X = StandardScaler().fit_transform(self.coords_reduced)
-
-        # Perform cluster analysis
-        from sklearn.cluster import DBSCAN
-
-        db = DBSCAN(
-            eps=self.params.cluster.dbscan.eps,
-            min_samples=self.params.cluster.dbscan.min_samples,
+        # choose a high density point as seed
+        X = coords
+        nbrs = NearestNeighbors(
+            n_neighbors=min(11, len(X)), algorithm="brute", metric="cosine"
         ).fit(X)
+        distances, indices = nbrs.kneighbors(X)
+        average_distance = np.array([dist[1:].mean() for dist in distances])
+        i = average_distance.argmin()
+        xis = np.array([X[i]])
 
-        return db.labels_
+        for j in range(n_datasets):
+            sel = np.where(dataset_ids == j)
+            X = coords[sel]
+            # Find nearest neighbour in cosine-space to the current cluster centroid
+            nbrs = NearestNeighbors(
+                n_neighbors=min(1, len(X)), algorithm="brute", metric="cosine"
+            ).fit(X)
+            distances, indices = nbrs.kneighbors([xis.mean(axis=0)])
+            k = indices[0][0]
+            xis = np.append(xis, [X[k]], axis=0)
+            for partition in cosets.partitions:
+                if sym_ops[k] in partition:
+                    cb_op = sgtbx.change_of_basis_op(partition[0]).new_denominators(
+                        self.cb_op_inp_min
+                    )
+                    reindexing_ops.append(
+                        (
+                            self.cb_op_inp_min.inverse() * cb_op * self.cb_op_inp_min
+                        ).as_xyz()
+                    )
+                    break
 
-    def _minimize_divide_clustering(self):
-        from cctbx.merging.brehm_diederichs import minimize_divide
-
-        assert self.params.cluster.n_clusters in (2, Auto)
-        x = flex.double(self.coords_reduced[:, :1].flatten())
-        y = flex.double(self.coords_reduced[:, 1:2].flatten())
-        selection = minimize_divide(x, y).plus_minus()
-        cluster_labels = np.zeros(x.size(), dtype=int)
-        cluster_labels[selection.as_numpy_array()] = 1
-        return cluster_labels
-
-    def _agglomerative_clustering(self):
-        # Perform cluster analysis
-        from sklearn.cluster import AgglomerativeClustering
-
-        model = AgglomerativeClustering(
-            n_clusters=self.params.cluster.n_clusters,
-            linkage="average",
-            affinity="cosine",
-        )
-        model.fit(self.coords)
-        return model.labels_
-
-    def _seed_clustering(self):
-        from dials.algorithms.symmetry.cosym.seed_clustering import seed_clustering
-
-        clustering = seed_clustering(
-            self.coords,
-            len(self.input_intensities),
-            len(self.target.sym_ops),
-            min_silhouette_score=self.params.cluster.seed.min_silhouette_score,
-            n_clusters=self.params.cluster.n_clusters,
-        )
-        return clustering.cluster_labels
+        return reindexing_ops
 
     def as_dict(self):
         """Return a dictionary representation of the results.
