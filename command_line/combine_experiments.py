@@ -454,7 +454,9 @@ class Script(object):
                     fname.endswith(params.input.reflections_suffix)
                     or fname.endswith(params.input.experiments_suffix)
                 ):
-                    sys.exit("Did not understand argument %s" % fname)
+                    from libtbx.utils import Sorry
+
+                    raise Sorry("Did not understand argument %s")
 
             # Make (expt, refl) filename tuples
             if fnames:

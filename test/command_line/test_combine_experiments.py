@@ -424,3 +424,40 @@ def test_failed_tolerance_error(dials_regression, monkeypatch):
         script.run_with_preparsed(params, options)
     assert "Beam" in str(exc.value)
     print("Got (expected) error message:", exc.value)
+
+
+def test_mpi_combine(dials_data, tmpdir):
+    pytest.importorskip("mpi4py")
+    data_dir = dials_data("multi_crystal_proteinase_k")
+    cmd_ref = [
+        "dials.combine_experiments",
+        data_dir.join("experiments_*.*").strpath,
+        data_dir.join("reflection_*.*").strpath,
+        "output.experiments=" + tmpdir.join("ref.expt").strpath,
+        "output.reflections=" + tmpdir.join("ref.refl").strpath,
+    ]
+    cmd_test = [
+        "mpirun",
+        "-n",
+        "3",
+        "dials.combine_experiments",
+        data_dir.join("experiments_*.*").strpath,
+        data_dir.join("reflection_*.*").strpath,
+        "input.experiments_suffix=.json",
+        "input.reflections_suffix=.pickle",
+        "output.experiments=" + tmpdir.join("test.expt").strpath,
+        "output.reflections=" + tmpdir.join("test.refl").strpath,
+    ]
+
+    result_ref = procrunner.run(cmd_ref, working_directory=tmpdir)
+    result_test = procrunner.run(cmd_test, working_directory=tmpdir)
+    assert not result_ref.returncode and not result_ref.stderr
+    assert not result_test.returncode and not result_test.stderr
+
+    exps_ref = load.experiment_list(tmpdir.join("ref.expt").strpath)
+    exps_test = load.experiment_list(tmpdir.join("test.expt").strpath)
+    assert len(exps_ref) == len(exps_test)
+
+    refls_ref = flex.reflection_table.from_file(tmpdir.join("ref.refl"))
+    refls_test = flex.reflection_table.from_file(tmpdir.join("test.refl"))
+    assert len(refls_ref) == len(refls_test)
