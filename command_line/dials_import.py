@@ -4,6 +4,7 @@ import logging
 import pickle
 from collections import namedtuple
 
+import dxtbx.model.compare as compare
 from dxtbx.imageset import ImageGrid, ImageSequence
 from dxtbx.model.experiment_list import (
     Experiment,
@@ -928,15 +929,16 @@ class ImageImporter:
         logger.info("=" * 80)
         logger.info("")
 
-    def print_sequence_diff(self, sequence1, sequence2, params):
+    @staticmethod
+    def print_sequence_diff(sequence1, sequence2, params):
         """
         Print a diff between sequences.
         """
-        from dxtbx.model.experiment_list import SequenceDiff
-
-        diff = SequenceDiff(params.input.tolerance)
-        text = diff(sequence1, sequence2)
-        logger.info("\n".join(text))
+        logger.info(
+            compare.sequence_diff(
+                sequence1, sequence2, tolerance=params.input.tolerance
+            )
+        )
 
 
 @show_mail_handle_errors()
