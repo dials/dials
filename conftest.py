@@ -53,6 +53,10 @@ def pytest_configure(config):
 def dials_regression():
     """Return the absolute path to the dials_regression module as a string.
     Skip the test if dials_regression is not installed."""
+
+    if "DIALS_REGRESSION" in os.environ:
+        return os.environ["DIALS_REGRESSION"]
+
     try:
         import dials_regression as dr
 
