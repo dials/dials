@@ -126,7 +126,7 @@ def test(dials_data):
         if not all(m1 == m2 for m1, m2 in zip(mask, new_mask)):
             np.set_printoptions(threshold=10000)
             diff = (mask == new_mask).as_numpy_array()
-            print(diff.astype(np.int))
+            print(diff.astype(int))
             # print mask.as_numpy_array()
             # print new_mask.as_numpy_array()
             # print (new_mask.as_numpy_array()[:,:,:] %2) * (new_mask.as_numpy_array() == 5)

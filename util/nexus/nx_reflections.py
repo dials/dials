@@ -210,7 +210,7 @@ def read(handle, key):
     elif key == "partial_id":
         return flex.size_t(handle["reflection_id"][:].astype(int))
     elif key == "entering":
-        return flex.bool(handle["entering"][:].astype(np.bool))
+        return flex.bool(handle["entering"][:].astype(bool))
     elif key == "flags":
         return flex.size_t(handle["flags"][:].astype(int))
     elif key == "panel":
