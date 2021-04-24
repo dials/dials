@@ -9,14 +9,12 @@ steps:
 # Obtain a shallow clone of the DIALS repository.
 # DIALS will not be able to report proper version numbers
 - checkout: self
-  path: dials-checkout
+  path: modules/dials
   fetchDepth: 1
   displayName: Checkout $(Build.SourceBranch)
 
 # Download source repositories using the bootstrap script
 - powershell: |
-    New-Item -Force -ItemType Directory -Path modules
-    New-Item -Force -ItemType SymbolicLink -Path modules\dials -Value dials-checkout
     set PYTHONUNBUFFERED=TRUE
     python.exe modules\dials\installer\bootstrap.py update
   displayName: Repository checkout
