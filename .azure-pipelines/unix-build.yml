@@ -1,4 +1,5 @@
 # Variables:
+#   CACHE_VERSION: unique cache identifier
 #   CURRENT_WEEK: weekly changing cache identifier
 #   PYTHON_VERSION: string in the form of "3.x"
 #   TODAY_ISO: today's date in ISO format, eg. "20200531"

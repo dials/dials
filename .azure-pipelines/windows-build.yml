@@ -13,85 +13,24 @@ steps:
   fetchDepth: 1
   displayName: Checkout $(Build.SourceBranch)
 
-# Get all other source repositories from cache if available
-# Allow day-to-day incremental cache updates
-# Flush the cache once a week and whenever the bootstrap script is modified
-- task: Cache@2
-  inputs:
-    key: '"repositories" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | installer/bootstrap.py | "$(TODAY_ISO)"'
-    restoreKeys: |
-      "repositories" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | installer/bootstrap.py
-    path: $(Pipeline.Workspace)/modules
-    cacheHitVar: REPOSITORIES_CACHED
-  displayName: Restore repository cache
-
-# If other source repositories are not cached then download
-# them using the bootstrap script
+# Download source repositories using the bootstrap script
 - powershell: |
     New-Item -Force -ItemType Directory -Path modules
     New-Item -Force -ItemType SymbolicLink -Path modules\dials -Value dials-checkout
     set PYTHONUNBUFFERED=TRUE
     python.exe modules\dials\installer\bootstrap.py update
-  displayName: Repository checkout (initial)
+  displayName: Repository checkout
   failOnStderr: true
   workingDirectory: $(Pipeline.Workspace)
-  condition: eq(variables.REPOSITORIES_CACHED, 'false')
 
-# Update the cctbx_project and dxtbx repositories now,
-# unless they were just freshly cloned
-- script: |
-    echo
-    echo Checking out latest cctbx_project commit
-    cd $(Pipeline.Workspace)/modules/cctbx_project
-    git fetch upstream master --depth=1
-    git checkout FETCH_HEAD
-    echo
-    echo Checking out latest dxtbx commit
-    cd $(Pipeline.Workspace)/modules/dxtbx
-    git fetch origin main --depth=1
-    git checkout FETCH_HEAD
-  displayName: Repository update (incremental)
-  condition: ne(variables.REPOSITORIES_CACHED, 'false')
-
-# # Get a ready-made DIALS conda environment from cache if available
-# # Allow day-to-day incremental cache updates
-# # Flush the cache once a week and whenever the environment specification is modified
-# # Cache is not shared across operating systems and python versions
-# # # Disabled as the generated cache is unrestorable due to some link issues
-# - task: Cache@2
-#   inputs:
-#     key: '"base" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(Agent.OS)-$(Agent.Version)" | "$(PYTHON_VERSION)" | ${{ parameters.conda_environment }} | "$(TODAY_ISO)"'
-#     restoreKeys: |
-#       "base" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(Agent.OS)-$(Agent.Version)" | "$(PYTHON_VERSION)" | ${{ parameters.conda_environment }}
-#     path: $(Pipeline.Workspace)/conda_base
-#     cacheHitVar: BASE_CACHED
-#   displayName: Restore environment cache
-
-# If the conda environment could not be loaded from cache then
-# create a new one using the bootstrap script
+# Create a new conda environment using the bootstrap script
 - script: |
     set PYTHONUNBUFFERED=TRUE
     python modules/dials/installer/bootstrap.py base --python $(PYTHON_VERSION)
   displayName: Create python $(PYTHON_VERSION) environment
   workingDirectory: $(Pipeline.Workspace)
-# condition: eq(variables.BASE_CACHED, 'false')
 
-# Get a ready-made DIALS build directory from cache if available
-# Allow day-to-day incremental cache updates
-# Flush the cache once a week and whenever the environment specification
-# or the bootstrap script is modified.
-# Cache is not shared across operating systems and python versions
-- task: Cache@2
-  inputs:
-    key: '"build" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(Agent.OS)-$(Agent.Version)" | "$(PYTHON_VERSION)" | installer/bootstrap.py | ${{ parameters.conda_environment }} | "$(TODAY_ISO)"'
-    restoreKeys: |
-      "build" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(Agent.OS)-$(Agent.Version)" | "$(PYTHON_VERSION)" | installer/bootstrap.py | ${{ parameters.conda_environment }}
-    path: $(Pipeline.Workspace)/build
-    cacheHitVar: BUILD_CACHED
-  displayName: Restore cached build
-
-# If the build directory could not be loaded from cache then
-# create a new one using the bootstrap script
+# Build DIALS using the bootstrap script
 - script: |
     pushd "C:\Program Files (x86)\Microsoft Visual Studio\Installer\"
     for /f "delims=" %%x in ('.\vswhere.exe -latest -property InstallationPath') do set VSPATH=%%x
@@ -99,29 +38,8 @@ steps:
     call "%VSPATH%\VC\Auxiliary\Build\vcvarsall.bat" x64
 
     python modules/dials/installer/bootstrap.py build
-    REM -- ensure a copy of the environment loader is kept in the cache
-    copy dials.bat build\activate.bat
-  displayName: DIALS build (initial)
+  displayName: DIALS build
   workingDirectory: $(Pipeline.Workspace)
-  condition: eq(variables.BUILD_CACHED, 'false')
-
-# If the build directory was loaded (or kick-started) from cache then
-# do an incremental build
-- script: |
-    pushd "C:\Program Files (x86)\Microsoft Visual Studio\Installer\"
-    for /f "delims=" %%x in ('.\vswhere.exe -latest -property InstallationPath') do set VSPATH=%%x
-    popd
-    call "%VSPATH%\VC\Auxiliary\Build\vcvarsall.bat" x64
-
-    REM -- restore copy of the environment loader from the cache
-    copy build\activate.bat dials.bat
-    call dials.bat
-    cd build
-    libtbx.refresh
-    make
-  displayName: DIALS build (incremental)
-  workingDirectory: $(Pipeline.Workspace)
-  condition: ne(variables.BUILD_CACHED, 'false')
 
 # Ensure we are using up-to-date testing packages.
 # Extract the dials-data version so we can correctly cache regression data.
@@ -179,19 +97,19 @@ steps:
 # This is only relevant if we had cache misses, as free disk space is required to create cache archives
 - powershell: |
     echo "Disk space usage:"
-    Get-ChildItem -Directory | ForEach-Object { "{1,10:N2} MB  {0:S}" -f $_, ((Get-ChildItem $_ -Recurse -ErrorAction SilentlyContinue | Measure-Object -Property Length -sum).sum / 1Mb) }
+    Get-ChildItem -Directory | ForEach-Object { "{1,10:N2} MB  {0:S}" -f $_, ((Get-ChildItem $_ -Recurse -ErrorAction SilentlyContinue | Measure-Object -ErrorAction SilentlyContinue -Property Length -sum).sum / 1Mb) }
 
     echo ""
     echo "Build directory:"
     cd build
-    Get-ChildItem -Directory | ForEach-Object { "{1,10:N2} MB  {0:S}" -f $_, ((Get-ChildItem $_ -Recurse -ErrorAction SilentlyContinue | Measure-Object -Property Length -sum).sum / 1Mb) }
+    Get-ChildItem -Directory | ForEach-Object { "{1,10:N2} MB  {0:S}" -f $_, ((Get-ChildItem $_ -Recurse -ErrorAction SilentlyContinue | Measure-Object -ErrorAction SilentlyContinue -Property Length -sum).sum / 1Mb) }
     cd ..
 
     if (Test-Path -Path tests) {
       echo ""
       echo "Test artefacts:"
       cd tests
-      Get-ChildItem -Directory | ForEach-Object { "{1,10:N2} MB  {0:S}" -f $_, ((Get-ChildItem $_ -Recurse -ErrorAction SilentlyContinue | Measure-Object -Property Length -sum).sum / 1Mb) }
+      Get-ChildItem -Directory | ForEach-Object { "{1,10:N2} MB  {0:S}" -f $_, ((Get-ChildItem $_ -Recurse -ErrorAction SilentlyContinue | Measure-Object -ErrorAction SilentlyContinue -Property Length -sum).sum / 1Mb) }
       cd ..
 
       echo ""
@@ -203,37 +121,4 @@ steps:
     dir
   displayName: Recover disk space
   workingDirectory: $(Pipeline.Workspace)
-# condition: or(ne(variables.BASE_CACHED, 'true'),
-#               ne(variables.BUILD_CACHED, 'true'),
-#               ne(variables.DATA_CACHED, 'true'),
-#               ne(variables.REPOSITORIES_CACHED, 'true'))
-
-# If the downloaded repositories are to be cached then clean them up before the
-# snapshot is made
-- powershell: |
-    echo "Preparing repository cache"
-    Get-ChildItem | ForEach-Object {
-      if ($_.Name -match "dials") {
-        echo "  - Skipping dials"
-      } elseif ($_ -is [System.IO.FileInfo]) {
-        echo "  - Deleting file $_.Name"
-        Remove-Item $_
-      } elseif (Test-Path -Path (Join-Path -Path $_ -ChildPath "git")) {
-        if (($_.Name -match "cctbx_project") -or ($_.Name -match "dxtbx")) {
-          echo "  - Cleaning up $_.Name"
-          cd (Join-Path -Path $_ -ChildPath "git")
-          git reset --hard HEAD
-          git clean -dffxq
-          git repack -a -d
-          cd ..\..
-        } else {
-          echo "  - Removing version control from $_.Name"
-          Remove-Item -Path (Join-Path -Path $_ -ChildPath "git") -Recurse -Force
-        }
-      }
-    }
-    echo "Completed"
-    dir
-  displayName: Preparing cache
-  workingDirectory: $(Pipeline.Workspace)/modules
-  condition: ne(variables.REPOSITORIES_CACHED, 'true')
+# condition: ne(variables.DATA_CACHED, 'true')

@@ -1,3 +1,6 @@
+variables:
+  CACHE_VERSION: 20201102
+
 schedules:
   # nightly builds to populate caches
   - cron: "3 0 * * Mon"
@@ -85,6 +88,6 @@ jobs:
 
   - template: .azure-pipelines/azure-pipelines-linux.yml
 
-#  - template: .azure-pipelines/azure-pipelines-mac.yml
+  - template: .azure-pipelines/azure-pipelines-mac.yml
 
-#  - template: .azure-pipelines/azure-pipelines-windows.yml
+  - template: .azure-pipelines/azure-pipelines-windows.yml
