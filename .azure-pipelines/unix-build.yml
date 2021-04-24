@@ -43,7 +43,7 @@ steps:
     cp -av /usr/lib/x86_64-linux-gnu/libGLU.so* modules/lib
   displayName: Set up GL/GLU libraries and headers
   workingDirectory: $(Pipeline.Workspace)
-  condition: eq(variables['Agent.OS'], 'Linux')
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Linux'))
 
 # Build DIALS using the bootstrap script
 - bash: |
@@ -55,9 +55,10 @@ steps:
 # Ensure we are using up-to-date testing packages.
 # Extract the dials-data version so we can correctly cache regression data.
 - bash: |
-    set -eux
+    set -e
     . dials
     conda install -p conda_base -y dials-data pytest-azurepipelines pytest-cov pytest-timeout
+    set -ux
     dials.data info -v
     echo "##vso[task.setvariable variable=DIALS_DATA_VERSION_FULL]$(dials.data info -v | grep version.full)"
     echo "##vso[task.setvariable variable=DIALS_DATA_VERSION]$(dials.data info -v | grep version.major)"
@@ -88,9 +89,10 @@ steps:
 
 # Finally, run the full regression test suite
 - bash: |
-    set -eux
-    export DIALS_DATA=${PWD}/data
+    set -e
     . dials
+    set -ux
+    export DIALS_DATA=${PWD}/data
     cd modules/dials
     pytest -v -ra -n auto --basetemp="$(Pipeline.Workspace)/tests" --durations=10 \
         --cov=$(pwd) --cov-report=html --cov-report=xml --cov-branch \
@@ -108,6 +110,7 @@ steps:
 # Recover disk space after testing
 # This is only relevant if we had cache misses, as free disk space is required to create cache archives
 - bash: |
+    set -eux
     echo Disk space usage:
     df -h
     du -sh *
@@ -117,4 +120,4 @@ steps:
     rm -rf tests
   displayName: Recover disk space
   workingDirectory: $(Pipeline.Workspace)
-  condition: ne(variables.DATA_CACHED, 'true')
+  condition: and(succeeded(), ne(variables.DATA_CACHED, 'true'))
