@@ -12,20 +12,9 @@ steps:
   fetchDepth: 1
   displayName: Checkout $(Build.SourceBranch)
 
-# Copy libGL/libGLU into a place where they can be found during the
-# build. We don't include system libraries so that we don't accidentally
-# pick up libc and friends
-- bash: |
-    mkdir -p modules/lib
-    cp -av /usr/lib/x86_64-linux-gnu/libGL.so* modules/lib
-    cp -av /usr/lib/x86_64-linux-gnu/libGLU.so* modules/lib
-  displayName: Set up GL/GLU libraries
-  workingDirectory: $(Pipeline.Workspace)
-  condition: eq(variables['Agent.OS'], 'Linux')
-
 # Download source repositories using the bootstrap script
 - bash: |
-    set -e
+    set -eux
     mkdir -p modules
     ln -nsf ../dials-checkout modules/dials
     python modules/dials/installer/bootstrap.py update
@@ -34,7 +23,7 @@ steps:
 
 # Create a new conda environment using the bootstrap script
 - script: |
-    set -e
+    set -eux
     python modules/dials/installer/bootstrap.py base --python $(PYTHON_VERSION)
 
     # Immediately recover disk space used by miniconda installation
@@ -47,26 +36,27 @@ steps:
 # build. We don't include system headers so that we don't accidentally
 # pick up libc and friends
 - bash: |
-    set -e
-    mkdir -p build/include
+    set -eux
+    mkdir -p modules/lib build/include
     cp -av /usr/include/GL build/include
     cp -av /usr/include/KHR build/include
-  displayName: Set up GL/GLU headers
+    cp -av /usr/lib/x86_64-linux-gnu/libGL.so* modules/lib
+    cp -av /usr/lib/x86_64-linux-gnu/libGLU.so* modules/lib
+  displayName: Set up GL/GLU libraries and headers
   workingDirectory: $(Pipeline.Workspace)
   condition: eq(variables['Agent.OS'], 'Linux')
 
 # Build DIALS using the bootstrap script
 - bash: |
-    set -e
+    set -eux
     python modules/dials/installer/bootstrap.py build
-    cp -v dials build/activate  # ensure a copy is kept in the cache
   displayName: DIALS build
   workingDirectory: $(Pipeline.Workspace)
 
 # Ensure we are using up-to-date testing packages.
 # Extract the dials-data version so we can correctly cache regression data.
 - bash: |
-    set -e
+    set -eux
     . dials
     conda install -p conda_base -y dials-data pytest-azurepipelines pytest-cov pytest-timeout
     dials.data info -v
@@ -99,8 +89,8 @@ steps:
 
 # Finally, run the full regression test suite
 - bash: |
-    set -e
-    export DIALS_DATA=$(pwd)/data
+    set -eux
+    export DIALS_DATA=${PWD}/data
     . dials
     cd modules/dials
     pytest -v -ra -n auto --basetemp="$(Pipeline.Workspace)/tests" --durations=10 \
