@@ -1,7 +1,3 @@
-variables:
-  CACHE_VERSION: 20201102
-  ENABLE_CACHE: 0
-
 schedules:
   # nightly builds to populate caches
   - cron: "3 0 * * Mon"
