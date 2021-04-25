@@ -24,7 +24,7 @@ steps:
 # Create a new conda environment using the bootstrap script
 - script: |
     set PYTHONUNBUFFERED=TRUE
-    python modules/dials/installer/bootstrap.py base --python $(PYTHON_VERSION)
+    python modules/dials/installer/bootstrap.py base --mamba --python $(PYTHON_VERSION)
   displayName: Create python $(PYTHON_VERSION) environment
   workingDirectory: $(Pipeline.Workspace)
 

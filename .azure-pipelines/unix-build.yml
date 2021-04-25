@@ -23,11 +23,11 @@ steps:
 # Create a new conda environment using the bootstrap script
 - script: |
     set -eux
-    python modules/dials/installer/bootstrap.py base --python $(PYTHON_VERSION)
+    python modules/dials/installer/bootstrap.py base --mamba --python $(PYTHON_VERSION)
 
     # Immediately recover disk space used by miniconda installation
-    du -sh miniconda
-    rm -r miniconda
+    du -sh micromamba
+    rm -r micromamba
   displayName: Create python $(PYTHON_VERSION) environment
   workingDirectory: $(Pipeline.Workspace)
 
