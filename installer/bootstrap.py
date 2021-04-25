@@ -40,6 +40,8 @@ clean_env = {
 }
 
 devnull = open(os.devnull, "wb")  # to redirect unwanted subprocess output
+allowed_ssh_connections = {}
+concurrent_git_connection_limit = threading.Semaphore(5)
 
 
 def make_executable(filepath):
@@ -48,10 +50,6 @@ def make_executable(filepath):
         mode |= (mode & 0o444) >> 2  # copy R bits to X
         # r--r--r-- => 0o444
         os.chmod(filepath, mode)
-
-
-allowed_ssh_connections = {}
-concurrent_git_connection_limit = threading.Semaphore(5)
 
 
 def install_micromamba(python):
@@ -1230,6 +1228,12 @@ be passed separately with quotes to avoid confusion (e.g
         default=False,
         action="store_true",
     )
+    parser.add_argument(
+        "--clean",
+        help="Remove temporary conda environments and package caches after installation",
+        default=False,
+        action="store_true",
+    )
 
     options = parser.parse_args()
     if os.name == "nt" and options.python == "3.6":
@@ -1245,8 +1249,12 @@ be passed separately with quotes to avoid confusion (e.g
     if "base" in options.actions:
         if options.mamba:
             install_micromamba(options.python)
+            if options.clean:
+                shutil.rmtree(os.path.realpath("micromamba"))
         else:
             install_conda(options.python)
+            if options.clean:
+                shutil.rmtree(os.path.realpath("miniconda"))
 
     # Configure, make, get revision numbers
     if "build" in options.actions:
