@@ -7,6 +7,7 @@ import time
 import urllib.parse
 
 import libtbx.phil
+from cctbx import uctbx
 from dxtbx.model.experiment_list import ExperimentListFactory
 from libtbx.introspection import number_of_processors
 
@@ -73,6 +74,25 @@ To stop the server::
 stop = False
 
 
+def _filter_by_resolution(experiments, reflections, d_min=None, d_max=None):
+    reflections.centroid_px_to_mm(experiments)
+    reflections.map_centroids_to_reciprocal_space(experiments)
+    d_star_sq = flex.pow2(reflections["rlp"].norms())
+    reflections["d"] = uctbx.d_star_sq_as_d(d_star_sq)
+    # Filter based on resolution
+    if d_min is not None:
+        selection = reflections["d"] >= d_min
+        reflections = reflections.select(selection)
+        logger.debug(f"Selected {len(reflections)} reflections with d >= {d_min:f}")
+
+    # Filter based on resolution
+    if d_max is not None:
+        selection = reflections["d"] <= d_max
+        reflections = reflections.select(selection)
+        logger.debug(f"Selected {len(reflections)} reflections with d <= {d_max:f}")
+    return reflections
+
+
 def work(filename, cl=None):
     if cl is None:
         cl = []
@@ -118,8 +138,22 @@ indexing_min_spots = 10
         # only the experiment, i.e. image, we're interested in
         ((start, end),) = params.spotfinder.scan_range
         experiments = experiments[start - 1 : end]
+
+    # Avoid overhead of calculating per-pixel resolution masks in spotfinding
+    # and instead perform post-filtering of spot centroids by resolution
+    d_min = params.spotfinder.filter.d_min
+    d_max = params.spotfinder.filter.d_max
+    params.spotfinder.filter.d_min = None
+    params.spotfinder.filter.d_max = None
+
     t0 = time.time()
     reflections = flex.reflection_table.from_observations(experiments, params)
+
+    if d_min or d_max:
+        reflections = _filter_by_resolution(
+            experiments, reflections, d_min=d_min, d_max=d_max
+        )
+
     t1 = time.time()
     logger.info("Spotfinding took %.2f seconds", t1 - t0)
 
