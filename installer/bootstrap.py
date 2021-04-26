@@ -20,6 +20,7 @@ import socket as pysocket
 import stat
 import subprocess
 import sys
+import tarfile
 import threading
 import time
 import warnings
@@ -39,6 +40,8 @@ clean_env = {
 }
 
 devnull = open(os.devnull, "wb")  # to redirect unwanted subprocess output
+allowed_ssh_connections = {}
+concurrent_git_connection_limit = threading.Semaphore(5)
 
 
 def make_executable(filepath):
@@ -49,8 +52,125 @@ def make_executable(filepath):
         os.chmod(filepath, mode)
 
 
-allowed_ssh_connections = {}
-concurrent_git_connection_limit = threading.Semaphore(5)
+def install_micromamba(python):
+    """Download and install Micromamba"""
+    if sys.platform.startswith("linux"):
+        conda_platform = "linux"
+        member = "bin/micromamba"
+        url = "https://micromamba.snakepit.net/api/micromamba/linux-64/latest"
+    elif sys.platform == "darwin":
+        conda_platform = "macos"
+        member = "bin/micromamba"
+        url = "https://micromamba.snakepit.net/api/micromamba/osx-64/latest"
+    elif os.name == "nt":
+        conda_platform = "windows"
+        member = "Library/bin/micromamba.exe"
+        url = "https://micromamba.snakepit.net/api/micromamba/win-64/latest"
+    else:
+        raise NotImplementedError(
+            "Unsupported platform %s / %s" % (os.name, sys.platform)
+        )
+    mamba_prefix = os.path.realpath("micromamba")
+    clean_env["MAMBA_ROOT_PREFIX"] = mamba_prefix
+    mamba = os.path.join(mamba_prefix, member.split("/")[-1])
+    print("Downloading {url}:".format(url=url), end=" ")
+    result = download_to_file(url, os.path.join(mamba_prefix, "micromamba.tar.bz2"))
+    if result in (0, -1):
+        sys.exit("Micromamba download failed")
+    with tarfile.open(
+        os.path.join(mamba_prefix, "micromamba.tar.bz2"), "r:bz2"
+    ) as tar, open(mamba, "wb") as fh:
+        fh.write(tar.extractfile(member).read())
+    make_executable(mamba)
+
+    # verify micromamba works and check version
+    conda_info = subprocess.check_output([mamba, "--version"], env=clean_env)
+    if sys.version_info.major > 2:
+        conda_info = conda_info.decode("latin-1")
+    print("Using Micromamba version", conda_info.strip())
+
+    # identify packages required for environment
+    filename = os.path.join(
+        "modules",
+        "dials",
+        ".conda-envs",
+        "{platform}.txt".format(platform=conda_platform),
+    )
+    if not os.path.isfile(filename):
+        raise RuntimeError(
+            "The environment file {filename} is not available".format(filename=filename)
+        )
+
+    # install a new environment or update an existing one
+    prefix = os.path.realpath("conda_base")
+    if os.path.exists(prefix):
+        command = "install"
+        text_messages = ["Updating", "update of"]
+    else:
+        command = "create"
+        text_messages = ["Installing", "installation into"]
+    python_requirement = "conda-forge::python=%s.*" % python
+
+    command_list = [
+        mamba,
+        "--no-env",
+        "--no-rc",
+        "--prefix",
+        prefix,
+        "--root-prefix",
+        mamba_prefix,
+        command,
+        "--file",
+        filename,
+        "--yes",
+        "--channel",
+        "conda-forge",
+        "--override-channels",
+        python_requirement,
+    ]
+
+    print(
+        "{text} dials environment from {filename} with Python {python}".format(
+            text=text_messages[0], filename=filename, python=python
+        )
+    )
+    for retry in range(5):
+        retry += 1
+        try:
+            run_command(
+                command=command_list,
+                workdir=".",
+            )
+        except Exception:
+            print(
+                """
+*******************************************************************************
+There was a failure in constructing the conda environment.
+Attempt {retry} of 5 will start {retry} minute(s) from {t}.
+*******************************************************************************
+""".format(
+                    retry=retry, t=time.asctime()
+                )
+            )
+            time.sleep(retry * 60)
+        else:
+            break
+    else:
+        sys.exit(
+            """
+The conda environment could not be constructed. Please check that there is a
+working network connection for downloading conda packages.
+"""
+        )
+    print("Completed {text}:\n  {prefix}".format(text=text_messages[1], prefix=prefix))
+    with open(os.path.join(prefix, ".condarc"), "w") as fh:
+        fh.write(
+            """
+changeps1: False
+channels:
+  - conda-forge
+""".lstrip()
+        )
 
 
 def install_miniconda(location):
@@ -1102,6 +1222,18 @@ be passed separately with quotes to avoid confusion (e.g
             "Specify as repository@branch, eg. 'dials@dials-next'"
         ),
     )
+    parser.add_argument(
+        "--mamba",
+        help="Use micromamba over miniconda for the base installation step",
+        default=False,
+        action="store_true",
+    )
+    parser.add_argument(
+        "--clean",
+        help="Remove temporary conda environments and package caches after installation",
+        default=False,
+        action="store_true",
+    )
 
     options = parser.parse_args()
     if os.name == "nt" and options.python == "3.6":
@@ -1115,7 +1247,14 @@ be passed separately with quotes to avoid confusion (e.g
 
     # Build base packages
     if "base" in options.actions:
-        install_conda(options.python)
+        if options.mamba:
+            install_micromamba(options.python)
+            if options.clean:
+                shutil.rmtree(os.path.realpath("micromamba"))
+        else:
+            install_conda(options.python)
+            if options.clean:
+                shutil.rmtree(os.path.realpath("miniconda"))
 
     # Configure, make, get revision numbers
     if "build" in options.actions:

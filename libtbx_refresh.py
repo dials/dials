@@ -84,7 +84,7 @@ set PATH=%~dp0build\\bin;%PATH%
         script = """
 #!/bin/bash
 
-if [ -n "${LIBTBX_BUILD_RELOCATION_HINT}" ]; then
+if [ ! -z "${LIBTBX_BUILD_RELOCATION_HINT:-}" ]; then
   # possibly used for some logic in the installer
   LIBTBX_BUILD="${LIBTBX_BUILD_RELOCATION_HINT}"
   LIBTBX_BUILD_RELOCATION_HINT=
