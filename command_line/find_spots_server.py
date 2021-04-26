@@ -146,7 +146,7 @@ indexing_min_spots = 10
     params.spotfinder.filter.d_min = None
     params.spotfinder.filter.d_max = None
 
-    t0 = time.time()
+    t0 = time.perf_counter()
     reflections = flex.reflection_table.from_observations(experiments, params)
 
     if d_min or d_max:
@@ -154,7 +154,7 @@ indexing_min_spots = 10
             experiments, reflections, d_min=d_min, d_max=d_max
         )
 
-    t1 = time.time()
+    t1 = time.perf_counter()
     logger.info("Spotfinding took %.2f seconds", t1 - t0)
 
     imageset = experiments.imagesets()[0]
@@ -163,7 +163,7 @@ indexing_min_spots = 10
     stats = per_image_analysis.stats_for_reflection_table(
         reflections, filter_ice=filter_ice, ice_rings_width=ice_rings_width
     )._asdict()
-    t2 = time.time()
+    t2 = time.perf_counter()
     logger.info("Resolution analysis took %.2f seconds", t2 - t1)
 
     if index and stats["n_spots_no_ice"] > indexing_min_spots:
@@ -216,7 +216,7 @@ indexing_min_spots = 10
             logger.error(e)
             stats["error"] = str(e)
         finally:
-            t3 = time.time()
+            t3 = time.perf_counter()
             logger.info("Indexing took %.2f seconds", t3 - t2)
 
         if integrate and "lattices" in stats:
@@ -285,7 +285,7 @@ indexing_min_spots = 10
                 logger.error(e)
                 stats["error"] = str(e)
             finally:
-                t4 = time.time()
+                t4 = time.perf_counter()
                 logger.info("Integration took %.2f seconds", t4 - t3)
 
     return stats
