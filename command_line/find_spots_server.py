@@ -7,8 +7,19 @@ import time
 import urllib.parse
 
 import libtbx.phil
+from dxtbx.model.experiment_list import ExperimentListFactory
+from libtbx.introspection import number_of_processors
 
+from dials.algorithms.indexing import indexer
+from dials.algorithms.integration.integrator import create_integrator
+from dials.algorithms.profile_model.factory import ProfileModelFactory
+from dials.algorithms.spot_finding import per_image_analysis
+from dials.array_family import flex
+from dials.command_line.find_spots import phil_scope as find_spots_phil_scope
+from dials.command_line.index import phil_scope as index_phil_scope
+from dials.command_line.integrate import phil_scope as integrate_phil_scope
 from dials.util import Sorry, show_mail_handle_errors
+from dials.util.options import OptionParser
 
 logger = logging.getLogger("dials.command_line.find_spots_server")
 
@@ -92,11 +103,6 @@ indexing_min_spots = 10
     integrate = params.extract().integrate
     indexing_min_spots = params.extract().indexing_min_spots
 
-    from dxtbx.model.experiment_list import ExperimentListFactory
-
-    from dials.array_family import flex
-    from dials.command_line.find_spots import phil_scope as find_spots_phil_scope
-
     interp = find_spots_phil_scope.command_line_argument_interpreter()
     phil_scope, unhandled = interp.process_and_fetch(
         unhandled, custom_processor="collect_remaining"
@@ -116,7 +122,6 @@ indexing_min_spots = 10
     reflections = flex.reflection_table.from_observations(experiments, params)
     t1 = time.time()
     logger.info("Spotfinding took %.2f seconds", t1 - t0)
-    from dials.algorithms.spot_finding import per_image_analysis
 
     imageset = experiments.imagesets()[0]
     reflections.centroid_px_to_mm(experiments)
@@ -129,8 +134,6 @@ indexing_min_spots = 10
 
     if index and stats["n_spots_no_ice"] > indexing_min_spots:
         logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-        from dials.algorithms.indexing import indexer
-        from dials.command_line.index import phil_scope as index_phil_scope
 
         interp = index_phil_scope.command_line_argument_interpreter()
         phil_scope, unhandled = interp.process_and_fetch(
@@ -183,11 +186,6 @@ indexing_min_spots = 10
             logger.info("Indexing took %.2f seconds", t3 - t2)
 
         if integrate and "lattices" in stats:
-
-            from dials.algorithms.integration.integrator import create_integrator
-            from dials.algorithms.profile_model.factory import ProfileModelFactory
-            from dials.command_line.integrate import phil_scope as integrate_phil_scope
-
             interp = integrate_phil_scope.command_line_argument_interpreter()
             phil_scope, unhandled = interp.process_and_fetch(
                 unhandled, custom_processor="collect_remaining"
@@ -334,13 +332,9 @@ def run(args=None):
     if sys.hexversion >= 0x3080000 and sys.platform == "darwin":
         multiprocessing.set_start_method("fork")
 
-    from dials.util.options import OptionParser
-
     parser = OptionParser(usage=usage, phil=phil_scope, epilog=help_message)
     params, options = parser.parse_args(args, show_diff_phil=True)
     if params.nproc is libtbx.Auto:
-        from libtbx.introspection import number_of_processors
-
         params.nproc = number_of_processors(return_value_if_unknown=-1)
     main(params.nproc, params.port)
 
