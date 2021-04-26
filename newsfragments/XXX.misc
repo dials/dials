@@ -1,0 +1,1 @@
+Reinstate output of reindexing operations to ``dials.cosym`` log files (removed by dials/dials#1647)

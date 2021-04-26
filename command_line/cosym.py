@@ -174,6 +174,13 @@ class cosym(Subject):
     def run(self):
         self.cosym_analysis.run()
         reindexing_ops = self.cosym_analysis.reindexing_ops
+
+        # Log reindexing operators
+        logger.info("Reindexing operators:")
+        for cb_op in set(reindexing_ops):
+            datasets = [i for i, o in enumerate(reindexing_ops) if o == cb_op]
+            logger.info(f"{cb_op}: {datasets}")
+
         self._apply_reindexing_operators(
             reindexing_ops, subgroup=self.cosym_analysis.best_subgroup
         )
