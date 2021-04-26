@@ -5,6 +5,7 @@ import functools
 import os
 import sys
 import tempfile
+import time
 from optparse import SUPPRESS_HELP, OptionParser
 
 import procrunner
@@ -25,10 +26,11 @@ def _command_runner(
         store_output = output_directory.join(command[0] + ".log")
     if store_command:
         store_command.write(" ".join(str(e) for e in command), ensure=True)
+    start = time.perf_counter()
     result = procrunner.run(
         command, environment_override={"DIALS_NOBANNER": "1"}, **kwargs
     )
-    print(f"running command took {result['runtime']:.1f} seconds\n")
+    print(f"running command took {time.perf_counter() - start:.1f} seconds\n")
     assert not result.returncode, "Command execution failed"
     if store_output:
         store_output.write_binary(result.stdout, ensure=True)
