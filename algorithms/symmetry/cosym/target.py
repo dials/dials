@@ -28,7 +28,7 @@ class Target:
         intensities,
         lattice_ids,
         weights=None,
-        min_pairs=None,
+        min_pairs=3,
         lattice_group=None,
         dimensions=None,
         nproc=1,
@@ -181,7 +181,13 @@ class Target:
             cb_op = sgtbx.change_of_basis_op(cb_op)
             indices_reindexed = cb_op.apply(self._data.indices())
             miller.map_to_asu(space_group_type, False, indices_reindexed)
-            indices[cb_op.as_xyz()] = indices_reindexed
+            indices[cb_op.as_xyz()] = np.array(
+                [
+                    h.iround().as_numpy_array()
+                    for h in indices_reindexed.as_vec3_double().parts()
+                ]
+            ).transpose()
+        self._intensities = self._data.data().as_numpy_array()
 
         def _compute_rij_matrix_one_row_block(i):
             rij_cache = {}
@@ -200,12 +206,12 @@ class Target:
                 wij = None
 
             i_lower, i_upper = self._lattice_lower_upper_index(i)
-            intensities_i = self._data.data()[i_lower:i_upper]
+            intensities_i = self._intensities[i_lower:i_upper]
 
             for j in range(n_lattices):
 
                 j_lower, j_upper = self._lattice_lower_upper_index(j)
-                intensities_j = self._data.data()[j_lower:j_upper]
+                intensities_j = self._intensities[j_lower:j_upper]
 
                 for k, cb_op_k in enumerate(self.sym_ops):
                     cb_op_k = sgtbx.change_of_basis_op(cb_op_k)
@@ -227,29 +233,50 @@ class Target:
                         else:
                             indices_j = indices[cb_op_kk.as_xyz()][j_lower:j_upper]
 
-                            matches = miller.match_indices(indices_i, indices_j)
-                            pairs = matches.pairs()
-                            isel_i = pairs.column(0)
-                            isel_j = pairs.column(1)
-                            isel_i = isel_i.select(
-                                self._patterson_group.epsilon(indices_i.select(isel_i))
-                                == 1
-                            )
-                            isel_j = isel_j.select(
-                                self._patterson_group.epsilon(indices_j.select(isel_j))
-                                == 1
-                            )
-                            corr = flex.linear_correlation(
-                                intensities_i.select(isel_i),
-                                intensities_j.select(isel_j),
-                            )
+                            def match_miller_indices(indices_0, indices_1):
+                                offset = -np.min(
+                                    np.concatenate([indices_0, indices_1]), axis=0
+                                )
+                                dims = (
+                                    np.max(
+                                        np.concatenate([indices_0, indices_1]), axis=0
+                                    )
+                                    + offset
+                                    + 1
+                                )
+                                a = np.ravel_multi_index((indices_0 + offset).T, dims)
+                                b = np.ravel_multi_index((indices_1 + offset).T, dims)
+                                _, p0, p1 = np.intersect1d(a, b, return_indices=True)
+                                return p0, p1
 
-                            if corr.is_well_defined():
-                                cc = corr.coefficient()
-                                n = corr.n()
+                            isel_i, isel_j = match_miller_indices(indices_i, indices_j)
+
+                            # isel_i = isel_i[
+                            # np.where((self._patterson_group.epsilon(
+                            # flex.miller_index(indices_i[isel_i])
+                            # ) == 1).as_numpy_array())
+                            # ]
+                            # isel_j = isel_j[
+                            # np.where((self._patterson_group.epsilon(
+                            # flex.miller_index(indices_j[isel_j])
+                            # ) == 1).as_numpy_array())
+                            # ]
+
+                            import scipy.stats
+
+                            n = isel_i.size
+                            if n < self._min_pairs:
+                                n = None
+                                cc = None
                             else:
+                                cc, _ = scipy.stats.pearsonr(
+                                    intensities_i[isel_i],
+                                    intensities_j[isel_j],
+                                )
+                            if np.isnan(cc):
                                 cc = None
                                 n = None
+
                             rij_cache[key] = (cc, n)
 
                         if (
