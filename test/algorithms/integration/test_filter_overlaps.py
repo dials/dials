@@ -18,7 +18,7 @@ def test_for_overlaps(dials_regression):
     def is_overlap(code):
         return (code & code_overlap) == code_overlap
 
-    from dials.util.options import Importer, flatten_experiments, flatten_reflections
+    from dials.util.options import Importer, flatten_experiments, renumber_reflections
 
     # test data
     refl_path = os.path.join(
@@ -41,7 +41,7 @@ def test_for_overlaps(dials_regression):
         check_format=False,
     )
 
-    reflections = flatten_reflections(importer.reflections)
+    reflections = renumber_reflections(importer.reflections)
     experiments = flatten_experiments(importer.experiments)
 
     from dials.algorithms.integration.overlaps_filter import OverlapsFilterMultiExpt

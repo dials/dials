@@ -42,7 +42,7 @@ class Script:
         params, options = self.parser.parse_args(show_diff_phil=True)
 
         experiments = dials.util.options.flatten_experiments(params.input.experiments)
-        reflections = dials.util.options.flatten_reflections(params.input.reflections)
+        reflections = dials.util.options.renumber_reflections(params.input.reflections)
 
         if len(experiments) == 0:
             self.parser.print_help()

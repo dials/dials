@@ -24,7 +24,7 @@ import dials.util.log
 from dials.report.analysis import scaled_data_as_miller_array
 from dials.util import missing_reflections, tabulate
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
-from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
+from dials.util.options import OptionParser, flatten_experiments, renumber_reflections
 from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.missing_reflections")
@@ -68,7 +68,7 @@ def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
         logger.info("The following parameters have been modified:\n%s", diff_phil)
 
     experiments = flatten_experiments(params.input.experiments)
-    reflections = flatten_reflections(params.input.reflections)
+    reflections = renumber_reflections(params.input.reflections)
 
     if not experiments or not reflections:
         parser.print_help()

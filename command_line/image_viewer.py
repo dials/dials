@@ -8,7 +8,7 @@ import iotbx.phil
 
 import dials.util.log
 from dials.util.image_viewer.spotfinder_wrap import spot_wrapper
-from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
+from dials.util.options import OptionParser, flatten_experiments, renumber_reflections
 
 help_message = """
 
@@ -183,7 +183,7 @@ def run(args=None):
     )
     params, options = parser.parse_args(args, show_diff_phil=True)
     experiments = [x.data for x in params.input.experiments]
-    reflections = flatten_reflections(params.input.reflections)
+    reflections = renumber_reflections(params.input.reflections)
 
     if len(experiments) == 0:
         parser.print_help()

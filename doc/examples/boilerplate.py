@@ -28,9 +28,9 @@ from dials.array_family import flex
 
 # The DIALS option parser is based on the (old) standard Python option parser,
 # but contains customisations such as the parsing of PHIL parameters.
-# flatten_experiments & flatten_reflections are useful for combining multiple input
+# flatten_experiments & renumber_reflections are useful for combining multiple input
 # experiment lists and reflection tables into a single instance of each.
-from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
+from dials.util.options import OptionParser, flatten_experiments, renumber_reflections
 
 # Useful to know what version of DIALS we are running
 from dials.util.version import dials_version
@@ -146,7 +146,7 @@ def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
 
     # These functions are commonly used to collate the input.
     experiments = flatten_experiments(params.input.experiments)
-    reflections = flatten_reflections(params.input.reflections)
+    reflections = renumber_reflections(params.input.reflections)
 
     # You might well wish to check here that the command-line input is appropriate.
     if len(reflections) != 1:

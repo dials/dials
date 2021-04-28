@@ -29,12 +29,12 @@ class Script:
 
     def run(self, args=None):
 
-        from dials.util.options import flatten_reflections
+        from dials.util.options import renumber_reflections
         from dials.viewer.viewer_interface import extract_n_show
 
         # Parse the command line
         params, options = self.parser.parse_args(args, show_diff_phil=True)
-        table = flatten_reflections(params.input.reflections)
+        table = renumber_reflections(params.input.reflections)
         if len(table) == 0:
             self.parser.print_help()
             return

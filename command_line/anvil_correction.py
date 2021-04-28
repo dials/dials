@@ -37,7 +37,7 @@ from dials.util.multi_dataset_handling import (
     parse_multiple_datasets,
     sort_tables_to_experiments_order,
 )
-from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
+from dials.util.options import OptionParser, flatten_experiments, renumber_reflections
 
 try:
     from typing import List, Sequence, SupportsFloat
@@ -326,7 +326,7 @@ def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
 
     # These functions are commonly used to collate the input.
     experiments = flatten_experiments(params.input.experiments)
-    reflections_list = flatten_reflections(params.input.reflections)
+    reflections_list = renumber_reflections(params.input.reflections)
     # Work around parse_multiple_datasets dropping unindexed reflections.
     unindexed = flex.reflection_table()
     for r_table in reflections_list:

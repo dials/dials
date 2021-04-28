@@ -12,8 +12,8 @@ from dials.test.util import mock_reflection_file_object, mock_two_reflection_fil
 from dials.util import Sorry
 from dials.util.options import (
     OptionParser,
-    flatten_reflections,
     reflections_and_experiments_from_files,
+    renumber_reflections,
 )
 
 
@@ -34,7 +34,7 @@ def test_flatten_experiments_updating_id_values():
     """
     # Test the case of two single reflection tables.
     file_list = [mock_reflection_file_object(id_=0), mock_reflection_file_object(id_=0)]
-    rs = flatten_reflections(file_list)
+    rs = renumber_reflections(file_list)
     assert rs[0] is file_list[0].data
     assert list(rs[0]["id"]) == [-1, 0, 0]
     assert list(rs[0].experiment_identifiers().keys()) == [0]
@@ -46,7 +46,7 @@ def test_flatten_experiments_updating_id_values():
 
     # Now test the case where one reflection table contains two experiments
     file_list = [mock_two_reflection_file_object(), mock_reflection_file_object(id_=0)]
-    rs = flatten_reflections(file_list)
+    rs = renumber_reflections(file_list)
     assert rs[0] is file_list[0].data
     assert list(rs[0]["id"]) == [-1, 0, 0, 1, 1]
     assert list(rs[0].experiment_identifiers().keys()) == [0, 1]
@@ -60,7 +60,7 @@ def test_flatten_experiments_updating_id_values():
         mock_reflection_file_object(id_=0),
         mock_two_reflection_file_object(ids=[1, 2]),
     ]
-    rs = flatten_reflections(file_list)
+    rs = renumber_reflections(file_list)
     assert rs[0] is file_list[0].data
     assert list(rs[0]["id"]) == [-1, 0, 0]
     assert list(rs[0].experiment_identifiers().keys()) == [0]

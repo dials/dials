@@ -5,6 +5,7 @@ import os
 import pickle
 import sys
 import traceback
+import warnings
 from collections import defaultdict, namedtuple
 from glob import glob
 
@@ -1083,6 +1084,14 @@ class OptionParser(OptionParserBase):
 
 
 def flatten_reflections(filename_object_list):
+    warnings.warn(
+        "flatten_experiments has been renamed renumber_reflections",
+        PendingDeprecationWarning,
+    )
+    return renumber_reflections(filename_object_list)
+
+
+def renumber_reflections(filename_object_list):
     """
     Flatten a list of reflections tables
 
@@ -1120,7 +1129,7 @@ def reflections_and_experiments_from_files(
     If experiment identifiers are set, the order of the reflection tables is
     changed to match the order of experiments.
     """
-    tables = flatten_reflections(reflection_file_object_list)
+    tables = renumber_reflections(reflection_file_object_list)
 
     experiments = flatten_experiments(experiment_file_object_list)
 

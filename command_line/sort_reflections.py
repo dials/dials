@@ -56,11 +56,11 @@ class Sort:
 
     def run(self, args=None):
         """Execute the script."""
-        from dials.util.options import flatten_reflections
+        from dials.util.options import renumber_reflections
 
         # Parse the command line
         params, options = self.parser.parse_args(args, show_diff_phil=True)
-        reflections = flatten_reflections(params.input.reflections)
+        reflections = renumber_reflections(params.input.reflections)
         if not reflections:
             self.parser.print_help()
             return
