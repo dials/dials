@@ -5,8 +5,9 @@ import logging
 import warnings
 
 import numpy as np
+import scipy.sparse
+import scipy.stats
 from orderedset import OrderedSet
-from scipy import sparse
 
 import cctbx.sgtbx.cosets
 from cctbx import miller, sgtbx
@@ -176,6 +177,7 @@ class Target:
         # Pre-calculate miller indices after application of each cb_op. Only calculate
         # this once per cb_op instead of on-the-fly every time we need it.
         indices = {}
+        epsilons = {}
         space_group_type = self._data.space_group().type()
         for cb_op in self.sym_ops:
             cb_op = sgtbx.change_of_basis_op(cb_op)
@@ -187,7 +189,10 @@ class Target:
                     for h in indices_reindexed.as_vec3_double().parts()
                 ]
             ).transpose()
-        self._intensities = self._data.data().as_numpy_array()
+            epsilons[cb_op.as_xyz()] = self._patterson_group.epsilon(
+                indices_reindexed
+            ).as_numpy_array()
+        intensities = self._data.data().as_numpy_array()
 
         def _compute_rij_matrix_one_row_block(i):
             rij_cache = {}
@@ -206,17 +211,18 @@ class Target:
                 wij = None
 
             i_lower, i_upper = self._lattice_lower_upper_index(i)
-            intensities_i = self._intensities[i_lower:i_upper]
+            intensities_i = intensities[i_lower:i_upper]
 
             for j in range(n_lattices):
 
                 j_lower, j_upper = self._lattice_lower_upper_index(j)
-                intensities_j = self._intensities[j_lower:j_upper]
+                intensities_j = intensities[j_lower:j_upper]
 
                 for k, cb_op_k in enumerate(self.sym_ops):
                     cb_op_k = sgtbx.change_of_basis_op(cb_op_k)
 
                     indices_i = indices[cb_op_k.as_xyz()][i_lower:i_upper]
+                    epsilons_i = epsilons[cb_op_k.as_xyz()][i_lower:i_upper]
 
                     for kk, cb_op_kk in enumerate(self.sym_ops):
                         if i == j and k == kk:
@@ -232,6 +238,7 @@ class Target:
                             cc, n = rij_cache[key]
                         else:
                             indices_j = indices[cb_op_kk.as_xyz()][j_lower:j_upper]
+                            epsilons_j = epsilons[cb_op_k.as_xyz()][j_lower:j_upper]
 
                             def match_miller_indices(indices_0, indices_1):
                                 offset = -np.min(
@@ -251,18 +258,8 @@ class Target:
 
                             isel_i, isel_j = match_miller_indices(indices_i, indices_j)
 
-                            # isel_i = isel_i[
-                            # np.where((self._patterson_group.epsilon(
-                            # flex.miller_index(indices_i[isel_i])
-                            # ) == 1).as_numpy_array())
-                            # ]
-                            # isel_j = isel_j[
-                            # np.where((self._patterson_group.epsilon(
-                            # flex.miller_index(indices_j[isel_j])
-                            # ) == 1).as_numpy_array())
-                            # ]
-
-                            import scipy.stats
+                            isel_i = isel_i[epsilons_i[isel_i] == 1]
+                            isel_j = isel_j[epsilons_j[isel_j] == 1]
 
                             n = isel_i.size
                             if n < self._min_pairs:
@@ -293,9 +290,13 @@ class Target:
                         rij_col.append(jk)
                         rij_data.append(cc)
 
-            rij = sparse.coo_matrix((rij_data, (rij_row, rij_col)), shape=(NN, NN))
+            rij = scipy.sparse.coo_matrix(
+                (rij_data, (rij_row, rij_col)), shape=(NN, NN)
+            )
             if self._weights:
-                wij = sparse.coo_matrix((wij_data, (wij_row, wij_col)), shape=(NN, NN))
+                wij = scipy.sparse.coo_matrix(
+                    (wij_data, (wij_row, wij_col)), shape=(NN, NN)
+                )
 
             return rij, wij
 
