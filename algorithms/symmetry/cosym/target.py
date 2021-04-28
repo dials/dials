@@ -264,7 +264,7 @@ class Target:
                                     intensities_i[isel_i],
                                     intensities_j[isel_j],
                                 )
-                            if np.isnan(cc):
+                            if cc is not None and np.isnan(cc):
                                 cc = None
                                 n = None
 
