@@ -1,6 +1,8 @@
 import collections
 import math
 
+import numpy as np
+
 from cctbx import sgtbx, uctbx
 from libtbx.math_utils import nearest_integer as nint
 from scitbx import matrix
@@ -764,4 +766,21 @@ def plot_stats(stats, filename="per_image_analysis.png"):
     ax3.set_xlabel("Image #")
     ax3.legend(bbox_to_anchor=(1.05, 0.5), loc="center left", borderaxespad=0.0)
 
+    pyplot.savefig(filename, dpi=600, bbox_inches="tight")
+
+
+def plot2d(stats, grid, filename="per_image_analysis.png", snaked=True):
+    from matplotlib import pyplot
+
+    n_spots_total = np.array(stats.n_spots_total).reshape(grid)
+    total_intensity = np.array(stats.total_intensity).reshape(grid)
+    if snaked:
+        n_spots_total[1::2, :] = n_spots_total[1::2, ::-1]
+        total_intensity[1::2, :] = total_intensity[1::2, ::-1]
+
+    fig, (ax1, ax2) = pyplot.subplots(nrows=2)
+    nst = ax1.imshow(n_spots_total)
+    fig.colorbar(nst, ax=ax1, label="Number of spots")
+    ti = ax2.imshow(total_intensity)
+    fig.colorbar(ti, ax=ax2, label="Total intensity")
     pyplot.savefig(filename, dpi=600, bbox_inches="tight")

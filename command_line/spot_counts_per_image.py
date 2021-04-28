@@ -35,6 +35,10 @@ joint_json = True
   .type = bool
 id = None
   .type = int(value_min=0)
+grid = None
+  .type = ints(size=2, value_min=1)
+plot2d = None
+  .type = path
 """
 )
 
@@ -125,6 +129,12 @@ def run(args=None):
 
         matplotlib.use("Agg")
         per_image_analysis.plot_stats(stats, filename=params.plot)
+
+    if params.plot2d and params.grid:
+        import matplotlib
+
+        matplotlib.use("Agg")
+        per_image_analysis.plot2d(stats, grid=params.grid, filename=params.plot2d)
 
 
 if __name__ == "__main__":
