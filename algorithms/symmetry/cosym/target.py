@@ -194,6 +194,13 @@ class Target:
             ).as_numpy_array()
         intensities = self._data.data().as_numpy_array()
 
+        # Map indices to an array of flat 1d indices which can later be used for
+        # matching pairs of indices
+        offset = -np.min(np.concatenate(list(indices.values())), axis=0)
+        dims = np.max(np.concatenate(list(indices.values())), axis=0) + offset + 1
+        for cb_op, hkl in indices.items():
+            indices[cb_op] = np.ravel_multi_index((hkl + offset).T, dims)
+
         def _compute_rij_matrix_one_row_block(i):
             rij_cache = {}
 
@@ -240,23 +247,10 @@ class Target:
                             indices_j = indices[cb_op_kk.as_xyz()][j_lower:j_upper]
                             epsilons_j = epsilons[cb_op_k.as_xyz()][j_lower:j_upper]
 
-                            def match_miller_indices(indices_0, indices_1):
-                                offset = -np.min(
-                                    np.concatenate([indices_0, indices_1]), axis=0
-                                )
-                                dims = (
-                                    np.max(
-                                        np.concatenate([indices_0, indices_1]), axis=0
-                                    )
-                                    + offset
-                                    + 1
-                                )
-                                a = np.ravel_multi_index((indices_0 + offset).T, dims)
-                                b = np.ravel_multi_index((indices_1 + offset).T, dims)
-                                _, p0, p1 = np.intersect1d(a, b, return_indices=True)
-                                return p0, p1
-
-                            isel_i, isel_j = match_miller_indices(indices_i, indices_j)
+                            # Find pairs of matching miller indices
+                            _, isel_i, isel_j = np.intersect1d(
+                                indices_i, indices_j, return_indices=True
+                            )
 
                             isel_i = isel_i[epsilons_i[isel_i] == 1]
                             isel_j = isel_j[epsilons_j[isel_j] == 1]
