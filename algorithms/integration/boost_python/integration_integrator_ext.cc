@@ -212,8 +212,10 @@ namespace dials { namespace algorithms { namespace boost_python {
   }
 
   // compute max integration memory needed for whole reflection table.
-  std::size_t max_memory_needed(af::reflection_table data, int frame0, int frame1, bool flatten){
-
+  std::size_t max_memory_needed(af::reflection_table data,
+                                int frame0,
+                                int frame1,
+                                bool flatten) {
     // Check the input
     DIALS_ASSERT(data.is_consistent());
     DIALS_ASSERT(data.contains("bbox"));
@@ -249,9 +251,9 @@ namespace dials { namespace algorithms { namespace boost_python {
       if (!flatten) {
         size *= zsize;
       }
-      std::size_t nbytes = size
-                            * (sizeof(Shoebox<>::float_type)
-                              + sizeof(Shoebox<>::float_type) + sizeof(int));
+      std::size_t nbytes =
+        size
+        * (sizeof(Shoebox<>::float_type) + sizeof(Shoebox<>::float_type) + sizeof(int));
       memory_to_alloc[b[4] - frame0] += nbytes;
       memory_to_free[b[5] - frame0 - 1] += nbytes;
     }
@@ -342,8 +344,9 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("extract_time", &ShoeboxProcessor::extract_time)
       .def("process_time", &ShoeboxProcessor::process_time);
 
-    def("max_memory_needed", &max_memory_needed,
-      (arg("reflection table"), arg("frame0"), arg("frame1"), arg("flatten")));
+    def("max_memory_needed",
+        &max_memory_needed,
+        (arg("reflection table"), arg("frame0"), arg("frame1"), arg("flatten")));
   }
 
 }}}  // namespace dials::algorithms::boost_python

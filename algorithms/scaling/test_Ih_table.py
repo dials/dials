@@ -63,7 +63,7 @@ def generate_refl_2():
 
 
 def generated_refl_for_splitting_1():
-    """"Make a reflection table."""
+    """ "Make a reflection table."""
     reflections = flex.reflection_table()
     reflections["intensity"] = flex.double([1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
     reflections["variance"] = flex.double(6, 1.0)
