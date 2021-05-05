@@ -314,6 +314,7 @@ class ScalingModelBase:
                 new_model = BasicErrorModel(a, b, error_params.basic)
         if not new_model:
             new_model = BasicErrorModel(basic_params=error_params.basic)
+        logger.info(f"Loaded error model: {new_model}")
         self.set_error_model(new_model)
 
     def set_error_model(self, error_model):
