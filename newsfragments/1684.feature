@@ -1,1 +1,1 @@
-``dials.scale``: Add options to refine individual or grouped error models in scaling
+``dials.scale``: Add option ``error_model.grouping=`` to control refinement of either individual or grouped error models during scaling
