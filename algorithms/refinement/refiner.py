@@ -312,12 +312,10 @@ class RefinerFactory:
             params.refinement.parameterisation.scan_varying = False
 
         # Trim scans and calculate reflection block_width if required for scan-varying refinement
-        if (
-            params.refinement.parameterisation.scan_varying
-            and params.refinement.parameterisation.trim_scan_to_observations
-        ):
+        if params.refinement.parameterisation.scan_varying:
 
-            experiments = _trim_scans_to_observations(experiments, reflections)
+            if params.refinement.parameterisation.trim_scan_to_observations:
+                experiments = _trim_scans_to_observations(experiments, reflections)
 
             from dials.algorithms.refinement.reflection_manager import BlockCalculator
 
