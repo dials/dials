@@ -1,0 +1,1 @@
+``dials.refine``: bugfix for scan-varying refinement when ``trim_scan_to_observations=False`` is used.
