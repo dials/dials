@@ -311,9 +311,9 @@ class RefinerFactory:
         if params.refinement.parameterisation.scan_varying is libtbx.Auto:
             params.refinement.parameterisation.scan_varying = False
 
-        # Trim scans and calculate reflection block_width if required for scan-varying refinement
+        # Calculate reflection block_width for scan-varying refinement. Trim scans
+        # to the extent of the observations, if requested.
         if params.refinement.parameterisation.scan_varying:
-
             if params.refinement.parameterisation.trim_scan_to_observations:
                 experiments = _trim_scans_to_observations(experiments, reflections)
 
