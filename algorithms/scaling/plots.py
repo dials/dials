@@ -654,6 +654,11 @@ def normal_probability_plot(data, label=None):
     )
     title = "Normal probability plot with error model applied"
     title = title + f" (error model {label})" if label is not None else title
+    key_hist = f"nor_dev_hist_{label}" if label is not None else "nor_dev_hist"
+    title_hist = "Normal deviations with error model applied"
+    title_hist = (
+        title_hist + f" (error model {label})" if label is not None else title_hist
+    )
     return {
         key: {
             "data": [
@@ -693,7 +698,7 @@ high absolute values of x (>3), where there is typically a deviation away from
 the line due to wide tails of the distribution.
 """,
         },
-        "nor_dev_hist": {
+        key_hist: {
             "data": [
                 {
                     "x": list(histy.slot_centers()),
@@ -709,7 +714,7 @@ the line due to wide tails of the distribution.
                 },
             ],
             "layout": {
-                "title": "Normal deviations with error model applied",
+                "title": title_hist,
                 "xaxis": {"anchor": "y", "title": "Normalised deviation"},
                 "yaxis": {"anchor": "x", "title": "Number of reflections"},
             },
