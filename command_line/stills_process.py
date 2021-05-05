@@ -177,6 +177,10 @@ control_phil_str = """
         .help = Enable code profiling. Profiling file will be available in  \
                 the debug folder. Use (for example) runsnake to visualize   \
                 processing performance
+      output_debug_logs = True
+        .type = bool
+        .help = Whether to write debugging information for every image      \
+                processed
     }
   }
 """
@@ -664,6 +668,10 @@ class Script:
                 ]
                 do_work(rank, subset)
             else:
+                processor = Processor(
+                    copy.deepcopy(params), composite_tag="%04d" % rank, rank=rank
+                )
+
                 if rank == 0:
                     # server process
                     for item_num, item in enumerate(iterable):
@@ -682,15 +690,8 @@ class Script:
                         comm.send("endrun", dest=rankreq)
                     print("All stops sent.")
 
-                    # create an empty processor to handle any MPI finalize steps
-                    processor = Processor(
-                        copy.deepcopy(params), composite_tag="%04d" % rank, rank=rank
-                    )
-                    processor.finalize()
-
                 else:
                     # client process
-                    processor = None
                     while True:
                         # inform the server this process is ready for an event
                         print("Rank %d getting next task" % rank)
@@ -709,8 +710,7 @@ class Script:
                                 str(e),
                             )
                         print("Rank %d event processed" % rank)
-                    if processor:
-                        processor.finalize()
+                processor.finalize()
         else:
             from dxtbx.command_line.image_average import splitit
 
@@ -871,6 +871,9 @@ class Processor:
             )
 
     def debug_start(self, tag):
+        if not self.params.mp.debug.output_debug_logs:
+            return
+
         import socket
 
         self.debug_str = f"{socket.gethostname()},{tag}"
@@ -878,6 +881,9 @@ class Processor:
         self.debug_write("start")
 
     def debug_write(self, string, state=None):
+        if not self.params.mp.debug.output_debug_logs:
+            return
+
         from xfel.cxi.cspad_ana import cspad_tbx  # XXX move to common timestamp format
 
         ts = cspad_tbx.evt_timestamp()  # Now
