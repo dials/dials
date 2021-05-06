@@ -50,58 +50,6 @@ steps:
 
 # Ensure we are using up-to-date testing packages.
 # Extract the dials-data version so we can correctly cache regression data.
-- bash: |
-    set -e
-    . dials
-    conda install -p conda_base -y dials-data pytest-azurepipelines pytest-cov pytest-timeout
-    set -ux
-    dials.data info -v
-    echo "##vso[task.setvariable variable=DIALS_DATA_VERSION_FULL]$(dials.data info -v | grep version.full)"
-    echo "##vso[task.setvariable variable=DIALS_DATA_VERSION]$(dials.data info -v | grep version.major)"
-    #                                                                this is a bug in dials-data ^^^^^
-    mkdir -p data
-  displayName: Install additional packages
-  workingDirectory: $(Pipeline.Workspace)
-
-# Retrieve the regression data from cache if possible
-# The cache allows day-to-day incremental updates, which is relevant only if
-# tests are added that refer to datasets in dials-data that were not previously
-# referred to.
-# New versions of dials-data also lead to cache updates, kick-started from the
-# previous cache version.
-# The cache is shared across operating systems and python versions, and flushed
-# once a week and for dials-data major and minor releases (eg. 2.0->2.1).
-# Since dials-data ensures cache coherence this should not be affected by the
-# broken Azure cache bug.
-- task: Cache@2
-  inputs:
-    key: '"data" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(DIALS_DATA_VERSION)" | "$(TODAY_ISO)" | "$(DIALS_DATA_VERSION_FULL)"'
-    restoreKeys: |
-      "data" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(DIALS_DATA_VERSION)" | "$(TODAY_ISO)"
-      "data" | "$(CACHE_VERSION)-$(CURRENT_WEEK)" | "$(DIALS_DATA_VERSION)"
-    path: $(Pipeline.Workspace)/data
-    cacheHitVar: DATA_CACHED
-  displayName: Restore regression data cache
-
-# Finally, run the full regression test suite
-- bash: |
-    set -e
-    . dials
-    set -ux
-    export DIALS_DATA=${PWD}/data
-    cd modules/dials
-    pytest -v -ra -n auto --basetemp="$(Pipeline.Workspace)/tests" --durations=10 \
-        --cov=$(pwd) --cov-report=html --cov-report=xml --cov-branch \
-        --timeout=5400 --regression --runslow || echo "##vso[task.complete result=Failed;]Some tests failed"
-  displayName: Run tests
-  workingDirectory: $(Pipeline.Workspace)
-
-- bash: |
-    bash <(curl -s https://codecov.io/bash) -t $(CODECOV_TOKEN) -n "Python $(PYTHON_VERSION) $(Agent.OS)"
-  displayName: Publish coverage stats
-  continueOnError: True
-  timeoutInMinutes: 2
-  workingDirectory: $(Pipeline.Workspace)/modules/dials
 
 # Recover disk space after testing
 # This is only relevant if we had cache misses, as free disk space is required to create cache archives
@@ -112,8 +60,49 @@ steps:
     du -sh *
     echo
     echo Test artefacts:
+    # du -h tests
+    rm -rf tests
+  displayName: Recover disk space
+  workingDirectory: $(Pipeline.Workspace)
+# condition: and(succeeded(), ne(variables.DATA_CACHED, 'true'))
+
+# Expand test environment to allow running xfel tests
+- bash: |
+    set -e
+    . dials
+    conda install -p conda_base -y git-lfs distro pandas openmpi mpi4py bash -c conda-forge
+    cd modules
+    git clone https://gitlab.com/cctbx/xfel_regression.git
+    cd xfel_regression
+    git lfs install --local
+    git lfs pull
+    libtbx.configure xfel_regression
+  displayName: Prepare xfel_regression tests
+  workingDirectory: $(Pipeline.Workspace)
+
+# Finally, run the full regression test suite
+- bash: |
+    set -e
+    . dials
+    mkdir tests
+    cd tests
+    libtbx.run_tests_parallel module=xfel_regression nproc=auto
+  displayName: Run tests
+  workingDirectory: $(Pipeline.Workspace)
+
+# Recover disk space after testing
+# This is only relevant if we had cache misses, as free disk space is required to create cache archives
+- bash: |
+    set -eux
+    echo Disk space usage:
+    df -h
+    du -sh *
+    du -sh modules/xfel_regression
+    echo
+    echo Test artefacts:
     du -h tests
     rm -rf tests
   displayName: Recover disk space
   workingDirectory: $(Pipeline.Workspace)
-  condition: and(succeeded(), ne(variables.DATA_CACHED, 'true'))
+# condition: and(succeeded(), ne(variables.DATA_CACHED, 'true'))
+
