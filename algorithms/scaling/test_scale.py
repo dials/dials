@@ -475,6 +475,35 @@ def test_scale_physical(dials_data, tmpdir):
     assert result.overall.n_obs > 2300  # at 07/01/19, was 2336, at 22/05/19 was 2311
 
 
+def test_scale_set_absorption_level(dials_data, tmpdir):
+    """Test that the absorption parameters are correctly set for the absorption option."""
+    location = dials_data("l_cysteine_dials_output")
+    refl = location.join("20_integrated.pickle").strpath
+    expt = location.join("20_integrated_experiments.json").strpath
+
+    # exclude a central region of data to force the failure of the full matrix
+    # minimiser due to indeterminate solution of the normal equations. In this
+    # case, the error should be caught and scaling can proceed.
+    command = [
+        "dials.scale",
+        refl,
+        expt,
+        "absorption=medium",
+        "unmerged_mtz=unmerged.mtz",
+    ]
+    result = procrunner.run(command, working_directory=tmpdir)
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("scaled.refl").check()
+    assert tmpdir.join("scaled.expt").check()
+    expts = load.experiment_list(tmpdir.join("scaled.expt").strpath, check_format=False)
+    assert expts[0].scaling_model.configdict["lmax"] == 6
+    assert expts[0].scaling_model.configdict["abs_surface_weight"] == 5e4
+    result = get_merging_stats(tmpdir.join("unmerged.mtz").strpath)
+    assert result.overall.r_pim < 0.024
+    assert result.overall.cc_one_half > 0.995
+    assert result.overall.n_obs > 2300
+
+
 def test_scale_normal_equations_failure(dials_data, tmpdir):
     location = dials_data("l_cysteine_dials_output")
     refl = location.join("20_integrated.pickle").strpath

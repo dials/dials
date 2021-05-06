@@ -205,7 +205,6 @@ def create_scaling_model(params, experiments, reflections):
     """Loop through the experiments, creating the scaling models."""
     autos = [None, Auto, "auto", "Auto"]
     use_auto_model = params.model in autos
-
     # Determine non-auto model to use outside the loop over datasets.
     if not use_auto_model:
         model_class = None
@@ -232,6 +231,9 @@ def create_scaling_model(params, experiments, reflections):
             else:
                 model = model_class
             expt.scaling_model = model.from_data(params, expt, refl)
+        else:
+            # allow for updating of an existing model.
+            expt.scaling_model.update(params)
     return experiments
 
 

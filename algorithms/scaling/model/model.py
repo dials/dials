@@ -84,12 +84,12 @@ lmax = 4
     .type = int(value_min=2)
     .help = "Number of spherical harmonics to include for absorption"
             "correction, recommended to be no more than 6."
-    .expert_level = 1
+    .expert_level = 2
 surface_weight = 1e6
     .type = float(value_min=0.0)
     .help = "Restraint weight applied to spherical harmonic terms in the"
             "absorption correction."
-    .expert_level = 1
+    .expert_level = 2
 fix_initial = True
     .type = bool
     .help = "If performing full matrix minimisation, in the final cycle,"
@@ -122,15 +122,35 @@ absorption_correction = auto
     .type = bool
     .help = "Option to turn off absorption correction (default True if oscillation > 60.0)."
     .expert_level = 1
-lmax = 4
+absorption = low medium high
+    .type = choice
+    .help = "Expected degree of relative absorption for different scattering"
+            "paths through the crystal(s). If an option is selected, the"
+            "scaling model parameters lmax and surface_weight will be set to"
+            "appropriate values."
+            "Relative absorption increases as crystal size increases,"
+            "increases as wavelength increases and is increased as the crystal"
+            "dimensions become less equal (i.e. is higher for needle shaped"
+            "crystals and zero for a spherical crystal)."
+            "Definitions of the levels and approximate correction magnitude:"
+            "low:    ~1%% relative absorption, expected for crystals on the order"
+            "        of ~100um measured at ~1A wavelength."
+            "medium: ~5%% relative absorption"
+            "high:   >25%% relative absorption, e.g. for measurements at long"
+            "        wavelength or crystals with high absorption from heavy atoms."
+    .expert_level = 1
+lmax = auto
     .type = int(value_min=2)
     .help = "Number of spherical harmonics to include for absorption"
-            "correction, recommended to be no more than 6."
+            "correction, defaults to 4 if no absorption level is chosen."
+            "It is recommended that the value need be no more than 6."
     .expert_level = 1
-surface_weight = 1e6
+surface_weight = auto
     .type = float(value_min=0.0)
     .help = "Restraint weight applied to spherical harmonic terms in the"
-            "absorption correction."
+            "absorption correction. A lower restraint allows a higher amount"
+            "of absorption correction. Defaults to 5e5 if no absorption level"
+            "is chosen."
     .expert_level = 1
 fix_initial = True
     .type = bool
@@ -178,6 +198,8 @@ n_modulation_bins = 20
             "binning the detector position for the modulation correction."
     .expert_level = 2
 """
+
+autos = [None, Auto, "auto", "Auto"]
 
 
 class ScalingModelBase:
@@ -295,6 +317,9 @@ class ScalingModelBase:
     def from_dict(cls, obj):
         """Create a scaling model from a dictionary."""
         raise NotImplementedError()
+
+    def update(self, model_params):
+        pass
 
     def load_error_model(self, error_params):
         # load existing model if there, but use user-specified values if given
@@ -610,6 +635,19 @@ class DoseDecay(ScalingModelBase):
         return d
 
 
+def determine_auto_absorption_params(absorption):
+    if absorption == "high":
+        lmax = 6
+        surface_weight = 5e3
+    elif absorption == "medium":
+        lmax = 6
+        surface_weight = 5e4
+    else:  # low
+        lmax = 4
+        surface_weight = 5e5
+    return lmax, surface_weight
+
+
 class PhysicalScalingModel(ScalingModelBase):
     """A scaling model for a physical parameterisation."""
 
@@ -735,7 +773,6 @@ class PhysicalScalingModel(ScalingModelBase):
         configdict = OrderedDict({"corrections": []})
         parameters_dict = {}
 
-        autos = [None, Auto, "auto", "Auto"]
         osc_range = experiment.scan.get_oscillation_range()
         one_osc_width = experiment.scan.get_oscillation()[1]
         configdict.update({"valid_osc_range": osc_range})
@@ -791,10 +828,18 @@ class PhysicalScalingModel(ScalingModelBase):
             absorption_correction = params.absorption_correction
         if absorption_correction:
             configdict["corrections"].append("absorption")
-            lmax = params.lmax
+            if params.absorption:
+                lmax, surface_weight = determine_auto_absorption_params(
+                    params.absorption
+                )
+            else:
+                lmax, surface_weight = (params.lmax, params.surface_weight)
+                if lmax in autos:
+                    lmax = 4
+                if params.surface_weight in autos:
+                    surface_weight = 5e5
             n_abs_param = (2 * lmax) + (lmax ** 2)  # arithmetic sum formula (a1=3, d=2)
             configdict.update({"lmax": lmax})
-            surface_weight = params.surface_weight
             configdict.update({"abs_surface_weight": surface_weight})
             parameters_dict["absorption"] = {
                 "parameters": flex.double(n_abs_param, 0.0),
@@ -830,6 +875,39 @@ class PhysicalScalingModel(ScalingModelBase):
             "absorption": {"parameters": abs_params, "parameter_esds": a_params_sds},
         }
         return cls(parameters_dict, configdict, is_scaled=True)
+
+    def update(self, params):
+        """Update the model if new options chosen in the phil scope."""
+        if "absorption" in self.components:
+            new_lmax = None
+            if params.physical.absorption:
+                lmax, surface_weight = determine_auto_absorption_params(
+                    params.physical.absorption
+                )
+                self._configdict.update({"abs_surface_weight": surface_weight})
+                if lmax != self._configdict["lmax"]:
+                    new_lmax = lmax
+            else:  # check manually specified parameters.
+                if params.physical.surface_weight not in autos:
+                    self._configdict.update(
+                        {"abs_surface_weight": params.physical.surface_weight}
+                    )
+                if (params.physical.lmax not in autos) and (
+                    params.physical.lmax != self._configdict["lmax"]
+                ):
+                    new_lmax = params.physical.lmax
+            if new_lmax:
+                # need to change the parameters for this component
+                current_parameters = self.components["absorption"].parameters
+                n_abs_param = new_lmax * (2 + new_lmax)
+                self._configdict.update({"lmax": new_lmax})
+                new_parameters = flex.double(n_abs_param, 0.0)
+                # copy across matching parameters:
+                for i in range(0, min(n_abs_param, current_parameters.size())):
+                    new_parameters[i] = current_parameters[i]
+                self._components["absorption"] = SHScaleComponent(
+                    new_parameters, flex.double(n_abs_param, 0.0)
+                )
 
     def plot_model_components(self):
         d = OrderedDict()

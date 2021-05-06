@@ -76,6 +76,7 @@ def mock_physical_params():
     params.physical.absorption_correction = True
     params.physical.lmax = 4
     params.physical.decay_restraint = 1e-1
+    params.physical.surface_weight = "auto"
     return params
 
 
@@ -217,6 +218,28 @@ def test_physical_model_from_data(mock_physical_params, mock_exp, test_reflectio
     assert physicalmodel.configdict["lmax"] == (mock_physical_params.physical.lmax)
     assert physicalmodel.components["absorption"].n_params == 24
     assert list(physicalmodel.components["absorption"].parameters) == [0.0] * 24
+
+    # test updating the absorption parameters
+    mock_physical_params.physical.absorption = "high"
+    physicalmodel.update(mock_physical_params)
+    assert len(physicalmodel.components["absorption"].parameters) == 48
+    assert physicalmodel.configdict["abs_surface_weight"] == 5e3
+
+    mock_physical_params.physical.absorption = "medium"
+    physicalmodel.update(mock_physical_params)
+    assert len(physicalmodel.components["absorption"].parameters) == 48
+    assert physicalmodel.configdict["abs_surface_weight"] == 5e4
+
+    mock_physical_params.physical.absorption = None
+    mock_physical_params.physical.lmax = 4
+    physicalmodel.update(mock_physical_params)
+    assert len(physicalmodel.components["absorption"].parameters) == 24
+    assert physicalmodel.configdict["abs_surface_weight"] == 5e4
+
+    mock_physical_params.physical.surface_weight = 1e5
+    physicalmodel.update(mock_physical_params)
+    assert len(physicalmodel.components["absorption"].parameters) == 24
+    assert physicalmodel.configdict["abs_surface_weight"] == 1e5
 
 
 def test_PhysicalScalingModel(test_reflections, mock_exp):
