@@ -488,7 +488,7 @@ def test_scale_set_absorption_level(dials_data, tmpdir):
         "dials.scale",
         refl,
         expt,
-        "absorption=medium",
+        "absorption_level=medium",
         "unmerged_mtz=unmerged.mtz",
     ]
     result = procrunner.run(command, working_directory=tmpdir)

@@ -122,7 +122,7 @@ absorption_correction = auto
     .type = bool
     .help = "Option to turn off absorption correction (default True if oscillation > 60.0)."
     .expert_level = 1
-absorption = low medium high
+absorption_level = low medium high
     .type = choice
     .help = "Expected degree of relative absorption for different scattering"
             "paths through the crystal(s). If an option is selected, the"
@@ -142,14 +142,14 @@ absorption = low medium high
 lmax = auto
     .type = int(value_min=2)
     .help = "Number of spherical harmonics to include for absorption"
-            "correction, defaults to 4 if no absorption level is chosen."
+            "correction, defaults to 4 if no absorption_level is chosen."
             "It is recommended that the value need be no more than 6."
     .expert_level = 1
 surface_weight = auto
     .type = float(value_min=0.0)
     .help = "Restraint weight applied to spherical harmonic terms in the"
             "absorption correction. A lower restraint allows a higher amount"
-            "of absorption correction. Defaults to 5e5 if no absorption level"
+            "of absorption correction. Defaults to 5e5 if no absorption_level"
             "is chosen."
     .expert_level = 1
 fix_initial = True
@@ -828,10 +828,15 @@ class PhysicalScalingModel(ScalingModelBase):
             absorption_correction = params.absorption_correction
         if absorption_correction:
             configdict["corrections"].append("absorption")
-            if params.absorption:
+            if params.absorption_level:
                 lmax, surface_weight = determine_auto_absorption_params(
-                    params.absorption
+                    params.absorption_level
                 )
+                if (params.lmax not in autos) or (params.surface_weight not in autos):
+                    logger.info(
+                        """Using lmax, surface_weight parameters set by the absorption_level option,
+                        rather than user specified options"""
+                    )
             else:
                 lmax, surface_weight = (params.lmax, params.surface_weight)
                 if lmax in autos:
@@ -880,9 +885,9 @@ class PhysicalScalingModel(ScalingModelBase):
         """Update the model if new options chosen in the phil scope."""
         if "absorption" in self.components:
             new_lmax = None
-            if params.physical.absorption:
+            if params.physical.absorption_level:
                 lmax, surface_weight = determine_auto_absorption_params(
-                    params.physical.absorption
+                    params.physical.absorption_level
                 )
                 self._configdict.update({"abs_surface_weight": surface_weight})
                 if lmax != self._configdict["lmax"]:

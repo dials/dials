@@ -220,17 +220,17 @@ def test_physical_model_from_data(mock_physical_params, mock_exp, test_reflectio
     assert list(physicalmodel.components["absorption"].parameters) == [0.0] * 24
 
     # test updating the absorption parameters
-    mock_physical_params.physical.absorption = "high"
+    mock_physical_params.physical.absorption_level = "high"
     physicalmodel.update(mock_physical_params)
     assert len(physicalmodel.components["absorption"].parameters) == 48
     assert physicalmodel.configdict["abs_surface_weight"] == 5e3
 
-    mock_physical_params.physical.absorption = "medium"
+    mock_physical_params.physical.absorption_level = "medium"
     physicalmodel.update(mock_physical_params)
     assert len(physicalmodel.components["absorption"].parameters) == 48
     assert physicalmodel.configdict["abs_surface_weight"] == 5e4
 
-    mock_physical_params.physical.absorption = None
+    mock_physical_params.physical.absorption_level = None
     mock_physical_params.physical.lmax = 4
     physicalmodel.update(mock_physical_params)
     assert len(physicalmodel.components["absorption"].parameters) == 24
