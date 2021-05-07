@@ -105,6 +105,7 @@ namespace dials { namespace algorithms { namespace background {
             }
           }
         }
+        DIALS_ASSERT(count > 1);
         mean[k] = M;
         var[k] = S / (count - 1);
       }
@@ -145,17 +146,22 @@ namespace dials { namespace algorithms { namespace background {
       const af::const_ref<double, af::c_grid<3> > &data,
       const af::const_ref<bool, af::c_grid<3> > &mask) const {
       DIALS_ASSERT(data.size() == mask.size());
-      double mean = 0.0;
+
+      // Welford's one-pass mean and variance calculation
+      double M = 0;
+      double S = 0;
       std::size_t count = 0;
       for (std::size_t i = 0; i < data.size(); ++i) {
         if (mask[i]) {
-          mean += data[i];
           count++;
+          double x = data[i];
+          double oldM = M;
+          M = M + (x - M)/count;
+          S = S + (x - M)*(x-oldM);
         }
       }
       DIALS_ASSERT(count > 1);
-      mean /= count;
-      return boost::make_shared<Constant3dModel>(mean, mean / (count - 1));
+      return boost::make_shared<Constant3dModel>(M, S / (count - 1));
     }
   };
 
