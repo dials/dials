@@ -1,0 +1,1 @@
+``dials.spot_counts_per_image``: be more explicit in only supporting spotfinding output (i.e. unindexed reflections/experiments)
