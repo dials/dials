@@ -1,0 +1,1 @@
+``dials.integrate``: corrected background model variance calculation for integrating detectors.
