@@ -1,9 +1,5 @@
-import logging
-
 from dials.extensions.glm_background_ext import GLMBackgroundExt
 from dials.extensions.simple_background_ext import SimpleBackgroundExt
-
-logger = logging.getLogger(__name__)
 
 
 class AutoBackgroundExt:
@@ -35,14 +31,8 @@ class AutoBackgroundExt:
             counting_detector = False
 
         if counting_detector:
-            logger.info("Setting the GLM background algorithm for a counting detector")
-            logger.disabled = True
             ext = GLMBackgroundExt(params, experiments)
         else:
-            logger.info(
-                "Setting the simple background algorithm for an integrating detector"
-            )
-            logger.disabled = True
             ext = SimpleBackgroundExt(params, experiments)
 
         self._algorithm = ext._algorithm
