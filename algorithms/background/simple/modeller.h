@@ -87,7 +87,7 @@ namespace dials { namespace algorithms { namespace background {
       const af::const_ref<bool, af::c_grid<3> > &mask) const {
       DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
       af::shared<double> mean(data.accessor()[0], 0.0);
-      af::shared<double> var(data.accessor()[0], 0.0);
+      af::shared<double> sq_sem(data.accessor()[0], 0.0);
 
       for (std::size_t k = 0; k < data.accessor()[0]; ++k) {
         // Welford's one-pass mean and variance calculation
@@ -107,9 +107,10 @@ namespace dials { namespace algorithms { namespace background {
         }
         DIALS_ASSERT(count > 1);
         mean[k] = M;
-        var[k] = S / (count - 1);
+        // variance is S/(count-1), SEM^2 is variance/count
+        sq_sem[k] = S / (count*count - count);
       }
-      return boost::make_shared<Constant2dModel>(mean, var);
+      return boost::make_shared<Constant2dModel>(mean, sq_sem);
     }
   };
 
@@ -161,7 +162,8 @@ namespace dials { namespace algorithms { namespace background {
         }
       }
       DIALS_ASSERT(count > 1);
-      return boost::make_shared<Constant3dModel>(M, S / (count - 1));
+      // variance is S/(count-1), SEM^2 is variance/count
+      return boost::make_shared<Constant3dModel>(M, S / (count*count - count));
     }
   };
 
