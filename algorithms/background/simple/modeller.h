@@ -88,19 +88,25 @@ namespace dials { namespace algorithms { namespace background {
       DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
       af::shared<double> mean(data.accessor()[0], 0.0);
       af::shared<double> var(data.accessor()[0], 0.0);
+
       for (std::size_t k = 0; k < data.accessor()[0]; ++k) {
+        // Welford's one-pass mean and variance calculation
+        double M = 0;
+        double S = 0;
         std::size_t count = 0;
         for (std::size_t j = 0; j < data.accessor()[1]; ++j) {
           for (std::size_t i = 0; i < data.accessor()[2]; ++i) {
             if (mask(k, j, i)) {
-              mean[k] += data(k, j, i);
               count++;
+              double x = data(k, j, i);
+              double oldM = M;
+              M = M + (x - M)/count;
+              S = S + (x - M)*(x-oldM);
             }
           }
         }
-        DIALS_ASSERT(count > 1);
-        mean[k] /= count;
-        var[k] = mean[k] / (count - 1);
+        mean[k] = M;
+        var[k] = S / (count - 1);
       }
       return boost::make_shared<Constant2dModel>(mean, var);
     }
