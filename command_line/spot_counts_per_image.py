@@ -74,8 +74,8 @@ def run(args=None):
         reflections = reflections.select(reflections["id"] == params.id)
 
     all_stats = []
-    for i, expt in enumerate(experiments):
-        refl = reflections.select(reflections["id"] == i)
+    for expt in experiments:
+        refl = reflections.select(reflections["id"] == expt.index)
         stats = per_image_analysis.stats_per_image(
             expt, refl, resolution_analysis=params.resolution_analysis
         )

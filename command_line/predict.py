@@ -82,7 +82,7 @@ class Script:
 
         predicted_all = flex.reflection_table()
 
-        for i_expt, expt in enumerate(experiments):
+        for expt in experiments:
             if params.buffer_size > 0:
                 # Hack to make the predicter predict reflections outside of the range
                 # of the scan
@@ -106,7 +106,7 @@ class Script:
             predicted = flex.reflection_table.from_predictions(
                 expt, force_static=params.force_static, dmin=params.d_min
             )
-            predicted["id"] = flex.int(len(predicted), i_expt)
+            predicted["id"] = flex.int(len(predicted), expt.index)
             predicted_all.extend(predicted)
 
         # if we are not ignoring shadows, look for reflections in the masked

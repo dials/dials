@@ -195,13 +195,13 @@ class Script:
     @staticmethod
     def convert_to_P1(reflections, experiments):
         """Convert the input crystals to P 1 and reindex the reflections"""
-        for iexp, exp in enumerate(experiments):
-            sel = reflections["id"] == iexp
-            xl = exp.crystal
-            sg = xl.get_space_group()
+        for expt in experiments:
+            sel = reflections["id"] == expt.index
+            crystal = expt.crystal
+            sg = crystal.get_space_group()
             op = sg.info().change_of_basis_op_to_primitive_setting()
-            exp.crystal = xl.change_basis(op)
-            exp.crystal.set_space_group(sgtbx.space_group("P 1"))
+            expt.crystal = crystal.change_basis(op)
+            expt.crystal.set_space_group(sgtbx.space_group("P 1"))
             hkl_reindexed = op.apply(reflections["miller_index"].select(sel))
             reflections["miller_index"].set_selected(sel, hkl_reindexed)
         return reflections, experiments
