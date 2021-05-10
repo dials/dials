@@ -206,6 +206,34 @@ class CosymAnalysis(symmetry_base, Subject):
         if self.params.dimensions is Auto and self.target.dim == 2:
             self.params.dimensions = 2
         elif self.params.dimensions is Auto:
+
+            def find_elbow(x, y):
+
+                # Find the elbow point of the curve, in the same manner as that used by
+                # distl spotfinder for resolution method 1 (Zhang et al 2006).
+                # See also dials/algorithms/spot_finding/per_image_analysis.py
+
+                x = np.array(dimensions)
+                y = np.array(functional)
+                slopes = (y[-1] - y[:-1]) / (x[-1] - x[:-1])
+                p_m = slopes.argmin()
+
+                x1 = matrix.col((x[p_m], y[p_m]))
+                x2 = matrix.col((x[-1], y[-1]))
+
+                gaps = []
+                v = matrix.col(((x2[1] - x1[1]), -(x2[0] - x1[0]))).normalize()
+
+                for i in range(p_m, len(x)):
+                    x0 = matrix.col((x[i], y[i]))
+                    r = x1 - x0
+                    g = abs(v.dot(r))
+                    gaps.append(g)
+
+                p_g = np.array(gaps).argmax()
+                x_g = x[p_g + p_m]
+                return x_g
+
             logger.info("=" * 80)
             logger.info(
                 "\nAutomatic determination of number of dimensions for analysis"
@@ -223,38 +251,24 @@ class CosymAnalysis(symmetry_base, Subject):
                 )
                 dimensions.append(dim)
                 functional.append(self.minimizer.fun)
-
-            # Find the elbow point of the curve, in the same manner as that used by
-            # distl spotfinder for resolution method 1 (Zhang et al 2006).
-            # See also dials/algorithms/spot_finding/per_image_analysis.py
-
-            x = np.array(dimensions)
-            y = np.array(functional)
-            slopes = (y[-1] - y[:-1]) / (x[-1] - x[:-1])
-            p_m = slopes.argmin()
-
-            x1 = matrix.col((x[p_m], y[p_m]))
-            x2 = matrix.col((x[-1], y[-1]))
-
-            gaps = []
-            v = matrix.col(((x2[1] - x1[1]), -(x2[0] - x1[0]))).normalize()
-
-            for i in range(p_m, len(x)):
-                x0 = matrix.col((x[i], y[i]))
-                r = x1 - x0
-                g = abs(v.dot(r))
-                gaps.append(g)
-
-            p_g = np.array(gaps).argmax()
-
-            x_g = x[p_g + p_m]
+                if dim > 2:
+                    x_g = find_elbow(dimensions, functional)
+                    n_flat_points = dim - x_g
+                    logger.debug(f"x_g: %s, n_flat_points: %s", x_g, n_flat_points)
+                    if n_flat_points >= 2:
+                        # there are at least two "flat" points after the elbow
+                        break
 
             logger.info(
                 dials.util.tabulate(
-                    zip(dimensions, functional), headers=("Dimensions", "Functional")
+                    zip(
+                        [f"{dim}*" if x_g == dim else f"{dim}" for dim in dimensions],
+                        functional,
+                    ),
+                    headers=("Dimensions", "Functional"),
                 )
             )
-            logger.info("Best number of dimensions: %i", x_g)
+            logger.info("*best number of dimensions")
             self.target.set_dimensions(int(x_g))
             logger.info("Using %i dimensions for analysis", self.target.dim)
 
