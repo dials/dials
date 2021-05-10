@@ -243,7 +243,8 @@ def apply_change_of_basis_ops(experiments, reflections, change_of_basis_ops):
 
 
 def eliminate_sys_absent(experiments, reflections):
-    for i, expt in enumerate(experiments):
+    for expt in experiments:
+        i = expt.index
         if expt.crystal.get_space_group().n_ltr() > 1:
             effective_group = (
                 expt.crystal.get_space_group().build_derived_reflection_intensity_group(

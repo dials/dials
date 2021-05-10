@@ -245,8 +245,8 @@ def run(args=None):
 def show_experiments(experiments, show_scan_varying=False):
 
     text = []
-    for i_expt, expt in enumerate(experiments):
-        text.append("Experiment %i:" % i_expt)
+    for expt in experiments:
+        text.append("Experiment %i:" % expt.index)
         format_class = expt.imageset.get_format_class()
         if format_class.__name__ != "Format":
             text.append(f"Format class: {format_class.__name__}")
@@ -323,7 +323,7 @@ def show_image_statistics(experiments, im_type):
         )
 
     print(f"Five number summary of the {im_type} images")
-    for i_expt, expt in enumerate(experiments):
+    for expt in experiments:
         for i in range(len(expt.imageset)):
             identifier = os.path.basename(expt.imageset.get_image_identifier(i))
             if raw:
@@ -349,10 +349,10 @@ def model_connectivity(experiments):
         text.append(f"{model.capitalize()}:")
         models = getattr(experiments, f"{model}s")()
         rows = [[""] + [str(j) for j in range(len(models))]]
-        for j, e in enumerate(experiments):
-            row = ["Experiment %d" % j]
+        for expt in experiments:
+            row = ["Experiment %d" % expt.index]
             for m in models:
-                if getattr(e, model) is m:
+                if getattr(expt, model) is m:
                     row.append("x")
                 else:
                     row.append(".")

@@ -257,15 +257,15 @@ def sample_predictions(experiments, predicted, params):
     # this code is very similar to David's code in algorithms/refinement/reflection_manager.py!
 
     working_isel = flex.size_t()
-    for iexp, exp in enumerate(experiments):
+    for expt in experiments:
 
-        sel = predicted["id"] == iexp
+        sel = predicted["id"] == expt.index
         isel = sel.iselection()
         nrefs = sample_size = len(isel)
 
         # set sample size according to nref_per_degree (per experiment)
-        if exp.scan and nref_per_degree:
-            sequence_range_rad = exp.scan.get_oscillation_range(deg=False)
+        if expt.scan and nref_per_degree:
+            sequence_range_rad = expt.scan.get_oscillation_range(deg=False)
             width = math.degrees(abs(sequence_range_rad[1] - sequence_range_rad[0]))
             sample_size = int(nref_per_degree * width)
         else:
@@ -365,7 +365,7 @@ def split_for_scan_range(experiments, reference, scan_range):
             else:
                 new_scan = scan[index_start:index_end]
 
-            for i, e1 in enumerate(experiments):
+            for e1 in experiments:
                 e2 = Experiment()
                 e2.beam = e1.beam
                 e2.detector = e1.detector
@@ -374,10 +374,10 @@ def split_for_scan_range(experiments, reference, scan_range):
                 e2.profile = e1.profile
                 e2.imageset = new_iset
                 e2.scan = new_scan
-                new_reference_all[i]["id"] = flex.int(
+                new_reference_all[e1.index]["id"] = flex.int(
                     len(new_reference_all[i]), len(new_experiments)
                 )
-                new_reference.extend(new_reference_all[i])
+                new_reference.extend(new_reference_all[e1.index])
                 new_experiments.append(e2)
         experiments = new_experiments
         reference = new_reference
@@ -419,8 +419,8 @@ def run_integration(params, experiments, reference=None):
                 )
 
     # Print if we're using a mask
-    for i, exp in enumerate(experiments):
-        mask = exp.imageset.external_lookup.mask
+    for expt in experiments:
+        mask = expt.imageset.external_lookup.mask
         if mask.filename is not None:
             if mask.data:
                 logger.info("Using external mask: %s", mask.filename)
@@ -428,7 +428,7 @@ def run_integration(params, experiments, reference=None):
                     logger.info(" Mask has %d pixels masked", tile.data().count(False))
 
     # Print the experimental models
-    for i, exp in enumerate(experiments):
+    for expt in experiments:
         summary = "\n".join(
             (
                 "",
@@ -436,17 +436,17 @@ def run_integration(params, experiments, reference=None):
                 "",
                 "Experiments",
                 "",
-                "Models for experiment %d" % i,
+                "Models for experiment %d" % expt.index,
                 "",
-                str(exp.beam),
-                str(exp.detector),
+                str(expt.beam),
+                str(expt.detector),
             )
         )
-        if exp.goniometer:
-            summary += str(exp.goniometer) + "\n"
-        if exp.scan:
-            summary += str(exp.scan) + "\n"
-        summary += str(exp.crystal)
+        if expt.goniometer:
+            summary += str(expt.goniometer) + "\n"
+        if expt.scan:
+            summary += str(expt.scan) + "\n"
+        summary += str(expt.crystal)
         logger.info(summary)
 
     logger.info("\n".join(("", "=" * 80, "")))
@@ -457,7 +457,7 @@ def run_integration(params, experiments, reference=None):
         reference, rubbish = process_reference(reference)
 
         # Check pixels don't belong to neighbours
-        if exp.goniometer is not None and exp.scan is not None:
+        if expt.goniometer is not None and expt.scan is not None:
             reference = filter_reference_pixels(reference, experiments)
 
         # Modify experiment list if scan range is set.
@@ -525,17 +525,17 @@ def run_integration(params, experiments, reference=None):
                     tmp.experiment_identifiers()[new_id] = identifier
                 dest.extend(tmp)
 
-            for expt_id, experiment in enumerate(experiments):
-                if len(reference.select(reference["id"] == expt_id)) != 0:
-                    refl_extend(reference, f_reference, expt_id)
-                    refl_extend(predicted, f_predicted, expt_id)
-                    refl_extend(rubbish, f_rubbish, expt_id)
-                    f_experiments.append(experiment)
+            for expt in experiments:
+                if len(reference.select(reference["id"] == expt.index)) != 0:
+                    refl_extend(reference, f_reference, expt.index)
+                    refl_extend(predicted, f_predicted, expt.index)
+                    refl_extend(rubbish, f_rubbish, expt.index)
+                    f_experiments.append(expt)
                     good_expt_count += 1
                 else:
                     logger.info(
                         "Removing experiment %d: no reference reflections matched to predictions",
-                        expt_id,
+                        expt.index,
                     )
 
             reference = f_reference
@@ -608,11 +608,11 @@ def run_integration(params, experiments, reference=None):
             (reflections.size() - filtered_refls.size()),
             reflections.size(),
         )
-        for expt_id, expt in enumerate(experiments):
-            refls = filtered_refls.select(filtered_refls["id"] == expt_id)
+        for expt in experiments:
+            refls = filtered_refls.select(filtered_refls["id"] == expt.index)
             if refls:
                 accepted_expts.append(expt)
-                current_id = expt_id
+                current_id = expt.index
                 new_id = len(accepted_expts) - 1
                 refls["id"] = flex.int(len(refls), new_id)
                 if expt.identifier:
@@ -622,7 +622,7 @@ def run_integration(params, experiments, reference=None):
             else:
                 logger.info(
                     "Removed experiment %d which has no reflections left after applying significance filter",
-                    expt_id,
+                    expt.index,
                 )
 
         if not accepted_refls:

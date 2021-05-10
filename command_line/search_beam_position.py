@@ -118,12 +118,12 @@ def optimize_origin_offset_local_scope(
             return sum(
                 _get_origin_offset_score(
                     new_origin_offset,
-                    solution_lists[i],
-                    amax_lists[i],
-                    reflection_lists[i],
-                    experiment,
+                    solution_lists[expt.index],
+                    amax_lists[expt.index],
+                    reflection_lists[expt.index],
+                    expt,
                 )
-                for i, experiment in enumerate(experiments)
+                for expt in experiments
             )
 
         scores = flex.double(
@@ -175,13 +175,13 @@ def optimize_origin_offset_local_scope(
             if self.wide_search_offset is not None:
                 trial_origin_offset += self.wide_search_offset
             target = 0
-            for i, experiment in enumerate(experiments):
+            for expt in experiments:
                 target -= _get_origin_offset_score(
                     trial_origin_offset,
-                    solution_lists[i],
-                    amax_lists[i],
-                    reflection_lists[i],
-                    experiment,
+                    solution_lists[expt.index],
+                    amax_lists[expt.index],
+                    reflection_lists[expt.index],
+                    expt,
                 )
             return target
 
@@ -195,13 +195,13 @@ def optimize_origin_offset_local_scope(
             for x in range(-grid, grid + 1):
                 new_origin_offset = x * plot_px_sz * beamr1 + y * plot_px_sz * beamr2
                 score = 0
-                for i, experiment in enumerate(experiments):
+                for expt in experiments:
                     score += _get_origin_offset_score(
                         new_origin_offset,
-                        solution_lists[i],
-                        amax_lists[i],
-                        reflection_lists[i],
-                        experiment,
+                        solution_lists[expt.index],
+                        amax_lists[expt.index],
+                        reflection_lists[expt.index],
+                        expt,
                     )
                 scores.append(score)
 

@@ -173,19 +173,19 @@ class Script:
         # ascii spot count per image plot - per imageset
 
         imagesets = []
-        for i, experiment in enumerate(experiments):
+        for experiment in experiments:
             if experiment.imageset not in imagesets:
                 imagesets.append(experiment.imageset)
 
         for imageset in imagesets:
             selected = flex.bool(reflections.nrows(), False)
-            for i, experiment in enumerate(experiments):
-                if experiment.imageset is not imageset:
+            for expt in experiments:
+                if expt.imageset is not imageset:
                     continue
-                selected.set_selected(reflections["id"] == i, True)
+                selected.set_selected(reflections["id"] == expt.index, True)
             ascii_plot = spot_counts_per_image_plot(reflections.select(selected))
             if len(ascii_plot):
-                logger.info("\nHistogram of per-image spot count for imageset %i:", i)
+                logger.info("\nHistogram of per-image spot count for imageset %i:", expt.index)
                 logger.info(ascii_plot)
 
         # Save the reflections to file
@@ -217,9 +217,9 @@ class Script:
 
         # Print some per image statistics
         if params.per_image_statistics:
-            for i, experiment in enumerate(experiments):
-                logger.info("Number of centroids per image for imageset %i:", i)
-                refl = reflections.select(reflections["id"] == i)
+            for expt in experiments:
+                logger.info("Number of centroids per image for imageset %i:", expt.index)
+                refl = reflections.select(reflections["id"] == expt.index)
                 refl.centroid_px_to_mm([experiment])
                 refl.map_centroids_to_reciprocal_space([experiment])
                 stats = per_image_analysis.stats_per_image(

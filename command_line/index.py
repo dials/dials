@@ -172,8 +172,8 @@ def index(experiments, reflections, params):
             max_workers=params.indexing.nproc
         ) as pool:
             futures = []
-            for i_expt, expt in enumerate(experiments):
-                refl = reflections.select(reflections["imageset_id"] == i_expt)
+            for expt in experiments:
+                refl = reflections.select(reflections["imageset_id"] == expt.index)
                 refl["imageset_id"] = flex.size_t(len(refl), 0)
                 futures.append(
                     pool.submit(
