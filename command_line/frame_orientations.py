@@ -85,16 +85,16 @@ plot_filename = None
             "Angles between beam\nand axes a, b, c (deg)",
             "Angle from\nprevious image (deg)",
         ]
-        for iexp, exp in enumerate(experiments):
-            print(f"For Experiment id = {iexp}")
-            print(exp.beam)
-            print(exp.crystal)
-            print(exp.scan)
+        for expt in experiments:
+            print(f"For Experiment id = {expt.index}")
+            print(expt.beam)
+            print(expt.crystal)
+            print(expt.scan)
 
             if self.params.scale == "ewald_sphere_radius":
                 scale = 1.0 / exp.beam.get_wavelength()
             elif self.params.scale == "max_cell":
-                uc = exp.crystal.get_unit_cell()
+                uc = expt.crystal.get_unit_cell()
                 scale = max(uc.parameters()[0:3])
             else:
                 scale = 1.0
@@ -103,7 +103,7 @@ plot_filename = None
                 "calculate zone axis\n".format(self.params.scale, scale)
             )
 
-            dat = extract_experiment_data(exp, scale)
+            dat = extract_experiment_data(expt, scale)
             images = dat["images"]
             directions = dat["directions"]
             zone_axes = dat["zone_axes"]

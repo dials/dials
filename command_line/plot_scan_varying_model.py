@@ -115,10 +115,10 @@ class Script:
 
         # cell plot
         dat = []
-        for iexp, exp in enumerate(experiments):
+        for expt in experiments:
 
-            crystal = exp.crystal
-            scan = exp.scan
+            crystal = expt.crystal
+            scan = expt.scan
 
             if crystal.num_scan_points == 0:
                 print("Ignoring scan-static crystal")
@@ -167,10 +167,10 @@ class Script:
 
         # orientation plot
         dat = []
-        for iexp, exp in enumerate(experiments):
+        for expt in experiments:
 
-            crystal = exp.crystal
-            scan = exp.scan
+            crystal = expt.crystal
+            scan = expt.scan
 
             if crystal.num_scan_points == 0:
                 print("Ignoring scan-static crystal")
@@ -207,11 +207,11 @@ class Script:
 
         # beam centre plot
         dat = []
-        for iexp, exp in enumerate(experiments):
+        for expt in experiments:
 
-            beam = exp.beam
-            detector = exp.detector
-            scan = exp.scan
+            beam = expt.beam
+            detector = expt.detector
+            scan = expt.scan
 
             if beam.num_scan_points == 0:
                 print("Ignoring scan-static beam")

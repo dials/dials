@@ -385,16 +385,16 @@ def run(args=None, phil=working_phil):
         # split the crystals
 
         crystal_has_scan = {}
-        for j, e in enumerate(experiments):
-            if e.crystal in crystal_has_scan:
-                if e.scan is not crystal_has_scan[e.crystal]:
+        for expt in experiments:
+            if expt.crystal in crystal_has_scan:
+                if expt.scan is not crystal_has_scan[expt.crystal]:
                     logger.info(
                         "Duplicating crystal model for scan-varying refinement of experiment %d",
-                        j,
+                        expt.index,
                     )
-                    e.crystal = copy.deepcopy(e.crystal)
+                    expt.crystal = copy.deepcopy(expt.crystal)
             else:
-                crystal_has_scan[e.crystal] = e.scan
+                crystal_has_scan[expt.crystal] = expt.scan
 
     # Run refinement
     experiments, reflections, refiner, history = run_dials_refine(
