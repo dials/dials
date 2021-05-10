@@ -132,8 +132,10 @@ def _copy_experiments_for_refining(experiments):
 
     # Copy each experiment individually
     for experiment in experiments:
-        # Be inclusive about the initial copy
+        # Be inclusive about the initial copy - the index is special as this is
+        # not copied as part of the C constructor
         new_exp = copy.copy(experiment)
+        new_exp.index = experiment.index
 
         # Ensure every 'refined' attribute is uniquely copied
         for model in ["beam", "goniometer", "detector", "crystal"]:
@@ -170,17 +172,16 @@ def _trim_scans_to_observations(experiments, reflections):
     except KeyError:
         shoebox = None
 
-    for iexp, exp in enumerate(experiments):
-
-        sel = reflections["id"] == iexp
+    for expt in experiments:
+        sel = reflections["id"] == expt.index
         isel = sel.iselection()
         if obs_z is not None:
             exp_z = obs_z.select(isel)
         else:
             exp_phi = obs_phi.select(isel)
-            exp_z = exp.scan.get_array_index_from_angle(exp_phi, deg=False)
+            exp_z = expt.scan.get_array_index_from_angle(exp_phi, deg=False)
 
-        start, stop = exp.scan.get_array_range()
+        start, stop = expt.scan.get_array_range()
         min_exp_z = flex.min(exp_z)
         max_exp_z = flex.max(exp_z)
 
@@ -207,18 +208,18 @@ def _trim_scans_to_observations(experiments, reflections):
             logger.warning(
                 "The reflections for experiment {0} do not fill the scan range. The scan will be trimmed "
                 "to images {{{1},{2}}} to match the range of observed data".format(
-                    iexp, im_start, im_stop
+                    expt.index, im_start, im_stop
                 )
             )
 
             # Ensure the scan is unique to this experiment and set trimmed limits
-            exp.scan = copy.deepcopy(exp.scan)
+            expt.scan = copy.deepcopy(expt.scan)
             new_oscillation = (
-                exp.scan.get_angle_from_image_index(im_start),
-                exp.scan.get_oscillation()[1],
+                expt.scan.get_angle_from_image_index(im_start),
+                expt.scan.get_oscillation()[1],
             )
-            exp.scan.set_image_range((im_start, im_stop))
-            exp.scan.set_oscillation(new_oscillation)
+            expt.scan.set_image_range((im_start, im_stop))
+            expt.scan.set_oscillation(new_oscillation)
 
     return experiments
 
