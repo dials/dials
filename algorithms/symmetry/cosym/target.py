@@ -148,15 +148,6 @@ class Target:
 
         return operators
 
-    def _lattice_lower_upper_index(self, lattice_id):
-        lower_index = int(self._lattices[lattice_id])
-        upper_index = None
-        if lattice_id < len(self._lattices) - 1:
-            upper_index = int(self._lattices[lattice_id + 1])
-        else:
-            assert lattice_id == len(self._lattices) - 1
-        return lower_index, upper_index
-
     def _compute_rij_wij(self, use_cache=True):
         """Compute the rij_wij matrix.
 
