@@ -2,10 +2,7 @@
 A simple test of refinement using two crystals.
 """
 
-
 from math import pi
-
-import pytest
 
 from cctbx.sgtbx import space_group, space_group_symbols
 from cctbx.uctbx import unit_cell
@@ -36,7 +33,6 @@ from dials.algorithms.refinement.refiner import RefinerFactory, phil_scope
 from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
 
 
-@pytest.mark.slow
 def test(args=[]):
 
     #############################
