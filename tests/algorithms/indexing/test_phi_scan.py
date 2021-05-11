@@ -4,7 +4,7 @@ import pytest
 
 from cctbx import uctbx
 
-from dials.algorithms.indexing.test_index import run_indexing
+from dials.tests.algorithms.indexing.test_index import run_indexing
 
 
 def test_run(dials_regression, tmpdir):
