@@ -61,8 +61,8 @@ def make_multi_panel(single_panel_detector):
     """Create a 3x3 multi-panel detector filling the same space as
     a supplied single panel detector"""
 
-    from dials.test.algorithms.refinement.setup_geometry import random_vector_close_to
-    from dials.test.algorithms.refinement.test_multi_panel_detector_parameterisation import (
+    from dials.tests.algorithms.refinement.setup_geometry import random_vector_close_to
+    from dials.tests.algorithms.refinement.test_multi_panel_detector_parameterisation import (
         make_panel_in_array,
     )
 

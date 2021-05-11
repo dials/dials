@@ -77,7 +77,7 @@ def test_fd_derivatives():
     from libtbx.phil import parse
 
     # Import model builder
-    from dials.test.algorithms.refinement.setup_geometry import Extract
+    from dials.tests.algorithms.refinement.setup_geometry import Extract
 
     # Create models
     overrides = """geometry.parameters.crystal.a.length.range = 10 50
@@ -85,7 +85,7 @@ def test_fd_derivatives():
   geometry.parameters.crystal.c.length.range = 10 50"""
     master_phil = parse(
         """
-      include scope dials.test.algorithms.refinement.geometry_phil
+      include scope dials.tests.algorithms.refinement.geometry_phil
       """,
         process_includes=True,
     )

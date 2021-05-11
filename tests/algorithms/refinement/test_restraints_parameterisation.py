@@ -31,7 +31,7 @@ def test_single_crystal_restraints_gradients():
     from dials.algorithms.refinement.parameterisation.prediction_parameters import (
         XYPhiPredictionParameterisation,
     )
-    from dials.test.algorithms.refinement.setup_geometry import Extract
+    from dials.tests.algorithms.refinement.setup_geometry import Extract
 
     overrides = """geometry.parameters.crystal.a.length.range = 10 50
   geometry.parameters.crystal.b.length.range = 10 50
@@ -39,7 +39,7 @@ def test_single_crystal_restraints_gradients():
 
     master_phil = parse(
         """
-      include scope dials.test.algorithms.refinement.geometry_phil
+      include scope dials.tests.algorithms.refinement.geometry_phil
       """,
         process_includes=True,
     )
@@ -167,7 +167,7 @@ def test_two_triclinic_crystals():
     from dials.algorithms.refinement.parameterisation.prediction_parameters import (
         XYPhiPredictionParameterisation,
     )
-    from dials.test.algorithms.refinement.setup_geometry import Extract
+    from dials.tests.algorithms.refinement.setup_geometry import Extract
 
     overrides = """geometry.parameters.crystal.a.length.range = 10 50
   geometry.parameters.crystal.b.length.range = 10 50
@@ -175,7 +175,7 @@ def test_two_triclinic_crystals():
 
     master_phil = parse(
         """
-      include scope dials.test.algorithms.refinement.geometry_phil
+      include scope dials.tests.algorithms.refinement.geometry_phil
       """,
         process_includes=True,
     )

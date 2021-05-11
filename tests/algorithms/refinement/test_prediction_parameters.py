@@ -36,7 +36,7 @@ def test():
     from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
 
     ##### Import model builder
-    from dials.test.algorithms.refinement.setup_geometry import Extract
+    from dials.tests.algorithms.refinement.setup_geometry import Extract
 
     #### Create models
 
@@ -46,7 +46,7 @@ def test():
 
     master_phil = parse(
         """
-      include scope dials.test.algorithms.refinement.geometry_phil
+      include scope dials.tests.algorithms.refinement.geometry_phil
       """,
         process_includes=True,
     )

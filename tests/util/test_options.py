@@ -8,7 +8,10 @@ import pytest
 
 from dxtbx.model import Experiment, ExperimentList
 
-from dials.test.util import mock_reflection_file_object, mock_two_reflection_file_object
+from dials.tests.util import (
+    mock_reflection_file_object,
+    mock_two_reflection_file_object,
+)
 from dials.util import Sorry
 from dials.util.options import (
     OptionParser,

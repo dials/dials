@@ -19,7 +19,7 @@ def test(dials_regression):
     )
 
     # Get modules to build models and minimiser using PHIL
-    from dials.test.algorithms.refinement import setup_geometry
+    from dials.tests.algorithms.refinement import setup_geometry
 
     # Symmetry constrained parameterisation for the unit cell
     DEG2RAD = math.pi / 180.0
@@ -27,8 +27,8 @@ def test(dials_regression):
 
     master_phil = parse(
         """
-      include scope dials.test.algorithms.refinement.geometry_phil
-      include scope dials.test.algorithms.refinement.minimiser_phil
+      include scope dials.tests.algorithms.refinement.geometry_phil
+      include scope dials.tests.algorithms.refinement.minimiser_phil
       """,
         process_includes=True,
     )

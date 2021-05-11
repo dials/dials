@@ -18,7 +18,7 @@ from dials.algorithms.refinement.prediction.managed_predictors import (
     ScansRayPredictor,
 )
 from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
-from dials.test.algorithms.refinement import setup_geometry
+from dials.tests.algorithms.refinement import setup_geometry
 
 
 def setup_models(args):
@@ -27,7 +27,7 @@ def setup_models(args):
     # Setup experimental models
     master_phil = parse(
         """
-      include scope dials.test.algorithms.refinement.geometry_phil
+      include scope dials.tests.algorithms.refinement.geometry_phil
       """,
         process_includes=True,
     )

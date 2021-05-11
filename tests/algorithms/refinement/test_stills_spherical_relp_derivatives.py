@@ -26,7 +26,7 @@ from dials.algorithms.refinement.parameterisation.prediction_parameters_stills i
 from dials.algorithms.refinement.prediction.managed_predictors import ScansRayPredictor
 from dials.algorithms.spot_prediction import IndexGenerator, StillsReflectionPredictor
 from dials.array_family import flex
-from dials.test.algorithms.refinement.setup_geometry import Extract
+from dials.tests.algorithms.refinement.setup_geometry import Extract
 
 
 class Predictor:
@@ -236,7 +236,7 @@ def test():
 
     master_phil = parse(
         """
-      include scope dials.test.algorithms.refinement.geometry_phil
+      include scope dials.tests.algorithms.refinement.geometry_phil
       """,
         process_includes=True,
     )

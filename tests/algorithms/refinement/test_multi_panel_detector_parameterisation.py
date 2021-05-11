@@ -20,8 +20,8 @@ from libtbx.test_utils import approx_equal
 from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enlarge
 from scitbx import matrix
 
-import dials.test.algorithms.refinement.setup_geometry as setup_geometry
-import dials.test.algorithms.refinement.setup_minimiser as setup_minimiser
+import dials.tests.algorithms.refinement.setup_geometry as setup_geometry
+import dials.tests.algorithms.refinement.setup_minimiser as setup_minimiser
 from dials.algorithms.refinement.parameterisation.beam_parameters import (
     BeamParameterisation,
 )
@@ -79,8 +79,8 @@ def make_panel_in_array(array_elt, reference_panel):
 # Setup experimental models
 master_phil = parse(
     """
-    include scope dials.test.algorithms.refinement.geometry_phil
-    include scope dials.test.algorithms.refinement.minimiser_phil
+    include scope dials.tests.algorithms.refinement.geometry_phil
+    include scope dials.tests.algorithms.refinement.minimiser_phil
     """,
     process_includes=True,
 )

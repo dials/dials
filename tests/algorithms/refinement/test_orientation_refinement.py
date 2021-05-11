@@ -1,11 +1,19 @@
 """
-Regression test for refinement of beam, detector and crystal orientation
-parameters using generated reflection positions from ideal geometry.
+Test refinement of beam, detector and crystal orientation parameters
+using generated reflection positions from ideal geometry.
+
+Control of the experimental model and choice of minimiser is done via
+PHIL, which means we can do, for example:
+
+cctbx.python tst_orientation_refinement.py \
+"random_seed=3; engine=LBFGScurvs"
 """
 
 
-def test():
-    # Python and cctbx imports
+import sys
+
+
+def test(args=[]):
     from math import pi
 
     from cctbx.sgtbx import space_group, space_group_symbols
@@ -23,8 +31,8 @@ def test():
     from scitbx.array_family import flex
 
     # Get modules to build models and minimiser using PHIL
-    import dials.test.algorithms.refinement.setup_geometry as setup_geometry
-    import dials.test.algorithms.refinement.setup_minimiser as setup_minimiser
+    import dials.tests.algorithms.refinement.setup_geometry as setup_geometry
+    import dials.tests.algorithms.refinement.setup_minimiser as setup_minimiser
     from dials.algorithms.refinement.parameterisation.beam_parameters import (
         BeamParameterisation,
     )
@@ -60,46 +68,47 @@ def test():
     # Setup experimental models #
     #############################
 
-    override = """geometry.parameters
-  {
-    beam.wavelength.random=False
-    beam.wavelength.value=1.0
-    beam.direction.inclination.random=False
-    crystal.a.length.random=False
-    crystal.a.length.value=12.0
-    crystal.a.direction.method=exactly
-    crystal.a.direction.exactly.direction=1.0 0.002 -0.004
-    crystal.b.length.random=False
-    crystal.b.length.value=14.0
-    crystal.b.direction.method=exactly
-    crystal.b.direction.exactly.direction=-0.002 1.0 0.002
-    crystal.c.length.random=False
-    crystal.c.length.value=13.0
-    crystal.c.direction.method=exactly
-    crystal.c.direction.exactly.direction=0.002 -0.004 1.0
-    detector.directions.method=exactly
-    detector.directions.exactly.dir1=0.99 0.002 -0.004
-    detector.directions.exactly.norm=0.002 -0.001 0.99
-    detector.centre.method=exactly
-    detector.centre.exactly.value=1.0 -0.5 199.0
-  }"""
-
     master_phil = parse(
         """
-  include scope dials.test.algorithms.refinement.geometry_phil
-  include scope dials.test.algorithms.refinement.minimiser_phil
-  """,
+      include scope dials.tests.algorithms.refinement.geometry_phil
+      include scope dials.tests.algorithms.refinement.minimiser_phil
+      """,
         process_includes=True,
     )
 
-    models = setup_geometry.Extract(
-        master_phil, local_overrides=override, verbose=False
-    )
+    models = setup_geometry.Extract(master_phil, cmdline_args=args)
 
     mydetector = models.detector
     mygonio = models.goniometer
     mycrystal = models.crystal
     mybeam = models.beam
+
+    # Build a mock scan for a 180 degree sequence
+    sf = ScanFactory()
+    myscan = sf.make_scan(
+        image_range=(1, 1800),
+        exposure_times=0.1,
+        oscillation=(0, 0.1),
+        epochs=list(range(1800)),
+        deg=True,
+    )
+    sequence_range = myscan.get_oscillation_range(deg=False)
+    im_width = myscan.get_oscillation(deg=False)[1]
+    assert sequence_range == (0.0, pi)
+    assert approx_equal(im_width, 0.1 * pi / 180.0)
+
+    # Build an experiment list
+    experiments = ExperimentList()
+    experiments.append(
+        Experiment(
+            beam=mybeam,
+            detector=mydetector,
+            goniometer=mygonio,
+            scan=myscan,
+            crystal=mycrystal,
+            imageset=None,
+        )
+    )
 
     ###########################
     # Parameterise the models #
@@ -113,35 +122,14 @@ def test():
     # Fix beam to the X-Z plane (imgCIF geometry), fix wavelength
     s0_param.set_fixed([True, False, True])
 
+    # Fix crystal parameters
+    # xluc_param.set_fixed([True, True, True, True, True, True])
+
     ########################################################################
     # Link model parameterisations together into a parameterisation of the #
     # prediction equation                                                  #
     ########################################################################
 
-    # Build a mock scan for a 180 degree sequence
-    sf = ScanFactory()
-    myscan = sf.make_scan(
-        image_range=(1, 1800),
-        exposure_times=0.1,
-        oscillation=(0, 0.1),
-        epochs=list(range(1800)),
-        deg=True,
-    )
-
-    # Build an ExperimentList
-    experiments = ExperimentList()
-    experiments.append(
-        Experiment(
-            beam=mybeam,
-            detector=mydetector,
-            goniometer=mygonio,
-            scan=myscan,
-            crystal=mycrystal,
-            imageset=None,
-        )
-    )
-
-    # Create the PredictionParameterisation
     pred_param = XYPhiPredictionParameterisation(
         experiments, [det_param], [s0_param], [xlo_param], [xluc_param]
     )
@@ -150,28 +138,28 @@ def test():
     # Apply known parameter shifts #
     ################################
 
-    # shift detector by 1.0 mm each translation and 4 mrad each rotation
+    # shift detector by 1.0 mm each translation and 2 mrad each rotation
     det_p_vals = det_param.get_param_vals()
-    p_vals = [a + b for a, b in zip(det_p_vals, [1.0, 1.0, 1.0, 4.0, 4.0, 4.0])]
+    p_vals = [a + b for a, b in zip(det_p_vals, [1.0, 1.0, 1.0, 2.0, 2.0, 2.0])]
     det_param.set_param_vals(p_vals)
 
-    # shift beam by 4 mrad in free axis
+    # shift beam by 2 mrad in free axis
     s0_p_vals = s0_param.get_param_vals()
     p_vals = list(s0_p_vals)
 
-    p_vals[0] += 4.0
+    p_vals[0] += 2.0
     s0_param.set_param_vals(p_vals)
 
-    # rotate crystal a bit (=3 mrad each rotation)
+    # rotate crystal a bit (=2 mrad each rotation)
     xlo_p_vals = xlo_param.get_param_vals()
-    p_vals = [a + b for a, b in zip(xlo_p_vals, [3.0, 3.0, 3.0])]
+    p_vals = [a + b for a, b in zip(xlo_p_vals, [2.0, 2.0, 2.0])]
     xlo_param.set_param_vals(p_vals)
 
     # change unit cell a bit (=0.1 Angstrom length upsets, 0.1 degree of
-    # alpha and beta angles)
+    # gamma angle)
     xluc_p_vals = xluc_param.get_param_vals()
     cell_params = mycrystal.get_unit_cell().parameters()
-    cell_params = [a + b for a, b in zip(cell_params, [0.1, -0.1, 0.1, 0.1, -0.1, 0.0])]
+    cell_params = [a + b for a, b in zip(cell_params, [0.1, 0.1, 0.1, 0.0, 0.0, 0.1])]
     new_uc = unit_cell(cell_params)
     newB = matrix.sqr(new_uc.fractionalization_matrix()).transpose()
     S = symmetrize_reduce_enlarge(mycrystal.get_space_group())
@@ -183,6 +171,15 @@ def test():
     # Generate some reflections #
     #############################
 
+    print("Reflections will be generated with the following geometry:")
+    print(mybeam)
+    print(mydetector)
+    print(mycrystal)
+    print("Target values of parameters are")
+    msg = "Parameters: " + "%.5f " * len(pred_param)
+    print(msg % tuple(pred_param.get_param_vals()))
+    print()
+
     # All indices in a 2.0 Angstrom sphere
     resolution = 2.0
     index_generator = IndexGenerator(
@@ -192,14 +189,11 @@ def test():
     )
     indices = index_generator.to_array()
 
-    sequence_range = myscan.get_oscillation_range(deg=False)
-    im_width = myscan.get_oscillation(deg=False)[1]
-    assert sequence_range == (0.0, pi)
-    assert approx_equal(im_width, 0.1 * pi / 180.0)
-
     # Predict rays within the sequence range
     ray_predictor = ScansRayPredictor(experiments, sequence_range)
     obs_refs = ray_predictor(indices)
+
+    print("Total number of reflections excited", len(obs_refs))
 
     # Take only those rays that intersect the detector
     intersects = ray_intersection(mydetector, obs_refs)
@@ -222,8 +216,7 @@ def test():
     var_phi = flex.double(len(obs_refs), (im_width / 2.0) ** 2)
     obs_refs["xyzobs.mm.variance"] = flex.vec3_double(var_x, var_y, var_phi)
 
-    # The total number of observations should be 1128
-    assert len(obs_refs) == 1128
+    print("Total number of observations made", len(obs_refs))
 
     ###############################
     # Undo known parameter shifts #
@@ -234,13 +227,16 @@ def test():
     xlo_param.set_param_vals(xlo_p_vals)
     xluc_param.set_param_vals(xluc_p_vals)
 
+    print("Initial values of parameters are")
+    msg = "Parameters: " + "%.5f " * len(pred_param)
+    print(msg % tuple(pred_param.get_param_vals()))
+    print()
+
     #####################################
     # Select reflections for refinement #
     #####################################
 
-    refman = ReflectionManager(
-        obs_refs, experiments, outlier_detector=None, close_to_spindle_cutoff=0.1
-    )
+    refman = ReflectionManager(obs_refs, experiments)
 
     ##############################
     # Set up the target function #
@@ -248,51 +244,32 @@ def test():
 
     # The current 'achieved' criterion compares RMSD against 1/3 the pixel size and
     # 1/3 the image width in radians. For the simulated data, these are just made up
+
     mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
         experiments, ref_predictor, refman, pred_param, restraints_parameterisation=None
     )
 
-    ######################################
-    # Set up the LSTBX refinement engine #
-    ######################################
+    ################################
+    # Set up the refinement engine #
+    ################################
 
-    overrides = """minimiser.parameters.engine=GaussNewton
-  minimiser.parameters.logfile=None"""
     refiner = setup_minimiser.Extract(
-        master_phil, mytarget, pred_param, local_overrides=overrides
+        master_phil, mytarget, pred_param, cmdline_args=args
     ).refiner
+
+    print("Prior to refinement the experimental model is:")
+    print(mybeam)
+    print(mydetector)
+    print(mycrystal)
 
     refiner.run()
 
-    assert mytarget.achieved()
-    assert refiner.get_num_steps() == 1
-    assert approx_equal(
-        mytarget.rmsds(), (0.00508252354876, 0.00420954552156, 8.97303428289e-05)
-    )
+    print()
+    print("Refinement has completed with the following geometry:")
+    print(mybeam)
+    print(mydetector)
+    print(mycrystal)
 
-    ###############################
-    # Undo known parameter shifts #
-    ###############################
 
-    s0_param.set_param_vals(s0_p_vals)
-    det_param.set_param_vals(det_p_vals)
-    xlo_param.set_param_vals(xlo_p_vals)
-    xluc_param.set_param_vals(xluc_p_vals)
-
-    ######################################################
-    # Set up the LBFGS with curvatures refinement engine #
-    ######################################################
-
-    overrides = """minimiser.parameters.engine=LBFGScurvs
-  minimiser.parameters.logfile=None"""
-    refiner = setup_minimiser.Extract(
-        master_phil, mytarget, pred_param, local_overrides=overrides
-    ).refiner
-
-    refiner.run()
-
-    assert mytarget.achieved()
-    assert refiner.get_num_steps() == 9
-    assert approx_equal(
-        mytarget.rmsds(), (0.0558857700305, 0.0333446685335, 0.000347402754278)
-    )
+if __name__ == "__main__":
+    test(sys.argv[1:])

@@ -20,10 +20,10 @@ from dials.algorithms.refinement.reflection_manager import ReflectionManagerFact
 from dials.algorithms.refinement.reflection_manager import (
     phil_scope as refman_phil_scope,
 )
-from dials.test.algorithms.refinement.test_multi_panel_detector_parameterisation import (
+from dials.tests.algorithms.refinement.test_multi_panel_detector_parameterisation import (
     make_panel_in_array,
 )
-from dials.test.algorithms.refinement.test_stills_prediction_parameters import _Test
+from dials.tests.algorithms.refinement.test_stills_prediction_parameters import _Test
 
 
 @pytest.fixture(scope="session")
