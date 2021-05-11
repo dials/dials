@@ -196,7 +196,7 @@ def _trim_scans_to_observations(experiments, reflections):
         else:
             obs_start = int(min_exp_z)
             obs_stop = int(math.ceil(max_exp_z))
-            half_deg_in_images = int(math.ceil(0.5 / exp.scan.get_oscillation()[1]))
+            half_deg_in_images = int(math.ceil(0.5 / expt.scan.get_oscillation()[1]))
             obs_start -= half_deg_in_images
             obs_stop += half_deg_in_images
 
