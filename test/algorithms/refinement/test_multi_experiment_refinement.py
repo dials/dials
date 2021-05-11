@@ -115,6 +115,10 @@ def test(args=[]):
         )
     )
 
+    # assign index as these are being created ab initio
+    for j, expt in enumerate(experiments):
+        expt.index = j
+
     assert len(experiments.detectors()) == 1
 
     ##########################################################
