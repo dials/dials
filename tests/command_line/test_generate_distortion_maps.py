@@ -65,7 +65,6 @@ def test_translate(dials_regression, run_in_tmpdir):
     cmd = f"dials.import {image_path}"
     easy_run.fully_buffered(command=cmd).raise_if_errors()
     expt1 = ExperimentListFactory.from_serialized_format("imported.expt")[0]
-    det1 = expt1.detector
 
     # Should be no dx/dy lookup files
     assert not expt1.imageset.external_lookup.dx.filename
@@ -76,13 +75,13 @@ def test_translate(dials_regression, run_in_tmpdir):
 
     easy_run.fully_buffered(command=cmd).raise_if_errors()
     expt2 = ExperimentListFactory.from_serialized_format("corrected.expt")[0]
-    det2 = expt2.detector
 
     # Check that dx/dy lookup files have been set
     assert expt2.imageset.external_lookup.dx.filename
     assert expt2.imageset.external_lookup.dy.filename
 
-    # FIXME finish test by comparing px to mm positions for det1, det2
+    # FIXME finish test by comparing px to mm positions for expt1.detector
+    # and expt2.detector
 
 
 def test_elliptical_distortion(run_in_tmpdir):
