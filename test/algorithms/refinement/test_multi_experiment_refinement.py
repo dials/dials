@@ -2,46 +2,38 @@
 A simple test of refinement using two crystals.
 """
 
+from math import pi
+
+from cctbx.sgtbx import space_group, space_group_symbols
+from cctbx.uctbx import unit_cell
+from dxtbx.model import ScanFactory
+from dxtbx.model.experiment_list import Experiment, ExperimentList
+from libtbx.phil import parse
+from libtbx.test_utils import approx_equal
+from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enlarge
+from scitbx import matrix
+from scitbx.array_family import flex
+
+import dials.test.algorithms.refinement.setup_geometry as setup_geometry
+from dials.algorithms.refinement.parameterisation.beam_parameters import (
+    BeamParameterisation,
+)
+from dials.algorithms.refinement.parameterisation.crystal_parameters import (
+    CrystalOrientationParameterisation,
+    CrystalUnitCellParameterisation,
+)
+from dials.algorithms.refinement.parameterisation.detector_parameters import (
+    DetectorParameterisationSinglePanel,
+)
+from dials.algorithms.refinement.prediction.managed_predictors import (
+    ScansExperimentsPredictor,
+    ScansRayPredictor,
+)
+from dials.algorithms.refinement.refiner import RefinerFactory, phil_scope
+from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
+
 
 def test(args=[]):
-    # Python and cctbx imports
-    from math import pi
-
-    from cctbx.sgtbx import space_group, space_group_symbols
-
-    # Symmetry constrained parameterisation for the unit cell
-    from cctbx.uctbx import unit_cell
-
-    # We will set up a mock scan and a mock experiment list
-    from dxtbx.model import ScanFactory
-    from dxtbx.model.experiment_list import Experiment, ExperimentList
-    from libtbx.phil import parse
-    from libtbx.test_utils import approx_equal
-    from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enlarge
-    from scitbx import matrix
-    from scitbx.array_family import flex
-
-    # Get module to build models using PHIL
-    import dials.test.algorithms.refinement.setup_geometry as setup_geometry
-    from dials.algorithms.refinement.parameterisation.beam_parameters import (
-        BeamParameterisation,
-    )
-    from dials.algorithms.refinement.parameterisation.crystal_parameters import (
-        CrystalOrientationParameterisation,
-        CrystalUnitCellParameterisation,
-    )
-
-    # Model parameterisations
-    from dials.algorithms.refinement.parameterisation.detector_parameters import (
-        DetectorParameterisationSinglePanel,
-    )
-    from dials.algorithms.refinement.prediction.managed_predictors import (
-        ScansExperimentsPredictor,
-        ScansRayPredictor,
-    )
-
-    # Reflection prediction
-    from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
 
     #############################
     # Setup experimental models #
@@ -74,18 +66,18 @@ def test(args=[]):
     crystal2 = models.crystal
     mybeam = models.beam
 
-    # Build a mock scan for a 180 degree sequence
+    # Build a mock scan for an 18 degree sequence
     sf = ScanFactory()
     myscan = sf.make_scan(
-        image_range=(1, 1800),
+        image_range=(1, 180),
         exposure_times=0.1,
         oscillation=(0, 0.1),
-        epochs=list(range(1800)),
+        epochs=list(range(180)),
         deg=True,
     )
     sequence_range = myscan.get_oscillation_range(deg=False)
     im_width = myscan.get_oscillation(deg=False)[1]
-    assert sequence_range == (0.0, pi)
+    assert sequence_range == (0.0, pi / 10)
     assert approx_equal(im_width, 0.1 * pi / 180.0)
 
     # Build an experiment list
@@ -126,17 +118,6 @@ def test(args=[]):
 
     # Fix beam to the X-Z plane (imgCIF geometry), fix wavelength
     s0_param.set_fixed([True, False, True])
-
-    # Fix crystal parameters
-    # xluc_param.set_fixed([True, True, True, True, True, True])
-
-    ########################################################################
-    # Link model parameterisations together into a parameterisation of the #
-    # prediction equation                                                  #
-    ########################################################################
-
-    # pred_param = XYPhiPredictionParameterisation(experiments,
-    #  [det_param], [s0_param], [xlo_param], [xluc_param])
 
     ################################
     # Apply known parameter shifts #
@@ -183,14 +164,8 @@ def test(args=[]):
     # Generate some reflections #
     #############################
 
-    # print "Reflections will be generated with the following geometry:"
-    # print mybeam
-    # print mydetector
-    # print crystal1
-    # print crystal2
-
-    # All indices in a 2.0 Angstrom sphere for crystal1
-    resolution = 2.0
+    # All indices in a 2.5 Angstrom sphere for crystal1
+    resolution = 2.5
     index_generator = IndexGenerator(
         crystal1.get_unit_cell(),
         space_group(space_group_symbols(1).hall()).type(),
@@ -198,8 +173,8 @@ def test(args=[]):
     )
     indices1 = index_generator.to_array()
 
-    # All indices in a 2.0 Angstrom sphere for crystal2
-    resolution = 2.0
+    # All indices in a 2.5 Angstrom sphere for crystal2
+    resolution = 2.5
     index_generator = IndexGenerator(
         crystal2.get_unit_cell(),
         space_group(space_group_symbols(1).hall()).type(),
@@ -231,7 +206,7 @@ def test(args=[]):
     obs_refs2["xyzobs.mm.value"] = obs_refs2["xyzcal.mm"]
 
     # Invent some variances for the centroid positions of the simulated data
-    im_width = 0.1 * pi / 180.0
+    im_width = 0.1 * pi / 18.0
     px_size = mydetector[0].get_pixel_size()
     var_x = flex.double(len(obs_refs1), (px_size[0] / 2.0) ** 2)
     var_y = flex.double(len(obs_refs1), (px_size[1] / 2.0) ** 2)
@@ -241,9 +216,6 @@ def test(args=[]):
     var_y = flex.double(len(obs_refs2), (px_size[1] / 2.0) ** 2)
     var_phi = flex.double(len(obs_refs2), (im_width / 2.0) ** 2)
     obs_refs2["xyzobs.mm.variance"] = flex.vec3_double(var_x, var_y, var_phi)
-
-    # print "Total number of reflections excited for crystal1", len(obs_refs1)
-    # print "Total number of reflections excited for crystal2", len(obs_refs2)
 
     # concatenate reflection lists
     obs_refs1.extend(obs_refs2)
@@ -260,22 +232,8 @@ def test(args=[]):
     xl1uc_param.set_param_vals(xluc_p_vals[0])
     xl2uc_param.set_param_vals(xluc_p_vals[1])
 
-    # print "Initial values of parameters are"
-    # msg = "Parameters: " + "%.5f " * len(pred_param)
-    # print msg % tuple(pred_param.get_param_vals())
-    # print
-
-    # make a refiner
-    from dials.algorithms.refinement.refiner import phil_scope
-
-    params = phil_scope.fetch(source=parse("")).extract()
-
-    # in case we want a plot
-    params.refinement.refinery.journal.track_parameter_correlation = True
-
     # scan static first
-    from dials.algorithms.refinement.refiner import RefinerFactory
-
+    params = phil_scope.fetch(source=parse("")).extract()
     refiner = RefinerFactory.from_parameters_data_experiments(
         params, obs_refs, experiments
     )
@@ -292,4 +250,5 @@ def test(args=[]):
     # (https://github.com/dials/dials/issues/798)
     refined_experiments = refiner.get_experiments()
     sp = [xl.get_num_scan_points() for xl in refined_experiments.crystals()]
-    assert sp.count(1801) == 2
+
+    assert sp.count(181) == 2
