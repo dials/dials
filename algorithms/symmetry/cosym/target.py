@@ -1,6 +1,7 @@
 """Target function for cosym analysis."""
 
 import copy
+import itertools
 import logging
 import warnings
 
@@ -210,8 +211,6 @@ class Target:
             wij = np.zeros((NN, NN))
         else:
             wij = None
-
-        import itertools
 
         indices_lower = self._lattices[np.arange(n_lattices)]
         indices_upper = np.append(indices_lower[1:], intensities.size)
