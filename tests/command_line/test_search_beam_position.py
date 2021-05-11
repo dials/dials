@@ -8,8 +8,8 @@ from cctbx import uctbx
 from dxtbx.model import ExperimentList
 from dxtbx.serialize import load
 
-from dials.algorithms.indexing.test_index import run_indexing
 from dials.command_line import search_beam_position
+from dials.tests.algorithms.indexing.test_index import run_indexing
 
 
 def test_search_i04_weak_data_image_range(mocker, run_in_tmpdir, dials_regression):
