@@ -3,10 +3,6 @@ A simple test of refinement using two crystals.
 """
 
 
-import pytest
-
-
-@pytest.mark.slow
 def test(args=[]):
     # Python and cctbx imports
     from math import pi
