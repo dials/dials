@@ -2,7 +2,7 @@ import math
 
 from dxtbx.model.experiment_list import ExperimentListFactory
 
-from .reciprocal_space import Simulator
+from dials.algorithms.simulation.reciprocal_space import Simulator
 
 
 def test_simulation(dials_data):
