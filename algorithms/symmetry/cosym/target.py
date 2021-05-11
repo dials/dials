@@ -12,7 +12,6 @@ from orderedset import OrderedSet
 import cctbx.sgtbx.cosets
 from cctbx import miller, sgtbx
 from cctbx.array_family import flex
-from libtbx import easy_mp
 
 logger = logging.getLogger(__name__)
 
@@ -201,132 +200,97 @@ class Target:
         for cb_op, hkl in indices.items():
             indices[cb_op] = np.ravel_multi_index((hkl + offset).T, dims)
 
-        def _compute_rij_matrix_one_row_block(i):
-            rij_cache = {}
+        rij_cache = {}
 
-            n_sym_ops = len(self.sym_ops)
-            NN = n_lattices * n_sym_ops
+        n_sym_ops = len(self.sym_ops)
+        NN = n_lattices * n_sym_ops
 
-            rij_row = []
-            rij_col = []
-            rij_data = []
-            if self._weights:
-                wij_row = []
-                wij_col = []
-                wij_data = []
-            else:
-                wij = None
+        rij = np.zeros((NN, NN))
+        if self._weights:
+            wij = np.zeros((NN, NN))
+        else:
+            wij = None
 
-            i_lower, i_upper = self._lattice_lower_upper_index(i)
+        import itertools
+
+        indices_lower = self._lattices[np.arange(n_lattices)]
+        indices_upper = np.append(indices_lower[1:], intensities.size)
+        cb_ops = [sgtbx.change_of_basis_op(op) for op in self.sym_ops]
+
+        for i, j, k, kk in itertools.product(
+            range(n_lattices),
+            range(n_lattices),
+            range(n_sym_ops),
+            range(n_sym_ops),
+        ):
+            if i == j and k == kk:
+                # don't include correlation of dataset with itself
+                continue
+
+            i_lower = indices_lower[i]
+            i_upper = indices_upper[i]
+            j_lower = indices_lower[j]
+            j_upper = indices_upper[j]
+            cb_op_k = cb_ops[k]
+            cb_op_kk = cb_ops[kk]
+
             intensities_i = intensities[i_lower:i_upper]
+            intensities_j = intensities[j_lower:j_upper]
+            indices_i = indices[cb_op_k.as_xyz()][i_lower:i_upper]
+            epsilons_i = epsilons[cb_op_k.as_xyz()][i_lower:i_upper]
 
-            for j in range(n_lattices):
+            ik = i + (n_lattices * k)
+            jk = j + (n_lattices * kk)
 
-                j_lower, j_upper = self._lattice_lower_upper_index(j)
-                intensities_j = intensities[j_lower:j_upper]
+            key = (i, j, str(cb_op_k.inverse() * cb_op_kk))
+            if use_cache and key in rij_cache:
+                cc, n = rij_cache[key]
+            else:
+                indices_j = indices[cb_op_kk.as_xyz()][j_lower:j_upper]
+                epsilons_j = epsilons[cb_op_k.as_xyz()][j_lower:j_upper]
 
-                for k, cb_op_k in enumerate(self.sym_ops):
-                    cb_op_k = sgtbx.change_of_basis_op(cb_op_k)
-
-                    indices_i = indices[cb_op_k.as_xyz()][i_lower:i_upper]
-                    epsilons_i = epsilons[cb_op_k.as_xyz()][i_lower:i_upper]
-
-                    for kk, cb_op_kk in enumerate(self.sym_ops):
-                        if i == j and k == kk:
-                            # don't include correlation of dataset with itself
-                            continue
-                        cb_op_kk = sgtbx.change_of_basis_op(cb_op_kk)
-
-                        ik = i + (n_lattices * k)
-                        jk = j + (n_lattices * kk)
-
-                        key = (i, j, str(cb_op_k.inverse() * cb_op_kk))
-                        if use_cache and key in rij_cache:
-                            cc, n = rij_cache[key]
-                        else:
-                            indices_j = indices[cb_op_kk.as_xyz()][j_lower:j_upper]
-                            epsilons_j = epsilons[cb_op_k.as_xyz()][j_lower:j_upper]
-
-                            # Find pairs of matching miller indices
-                            _, isel_i, isel_j = np.intersect1d(
-                                indices_i, indices_j, return_indices=True
-                            )
-
-                            isel_i = isel_i[epsilons_i[isel_i] == 1]
-                            isel_j = isel_j[epsilons_j[isel_j] == 1]
-
-                            n = isel_i.size
-                            if n < self._min_pairs:
-                                n = None
-                                cc = None
-                            else:
-                                cc, _ = scipy.stats.pearsonr(
-                                    intensities_i[isel_i],
-                                    intensities_j[isel_j],
-                                )
-                            if cc is not None and np.isnan(cc):
-                                cc = None
-                                n = None
-
-                            rij_cache[key] = (cc, n)
-
-                        if (
-                            n is None
-                            or cc is None
-                            or (self._min_pairs is not None and n < self._min_pairs)
-                        ):
-                            continue
-                        if self._weights:
-                            wij_row.append(ik)
-                            wij_col.append(jk)
-                            wij_data.append(n)
-                        rij_row.append(ik)
-                        rij_col.append(jk)
-                        rij_data.append(cc)
-
-            rij = scipy.sparse.coo_matrix(
-                (rij_data, (rij_row, rij_col)), shape=(NN, NN)
-            )
-            if self._weights:
-                wij = scipy.sparse.coo_matrix(
-                    (wij_data, (wij_row, wij_col)), shape=(NN, NN)
+                # Find pairs of matching miller indices
+                _, isel_i, isel_j = np.intersect1d(
+                    indices_i, indices_j, return_indices=True
                 )
 
-            return rij, wij
+                isel_i = isel_i[epsilons_i[isel_i] == 1]
+                isel_j = isel_j[epsilons_j[isel_j] == 1]
 
-        args = [(i,) for i in range(n_lattices)]
-        results = easy_mp.parallel_map(
-            _compute_rij_matrix_one_row_block,
-            args,
-            processes=self._nproc,
-            iterable_type=easy_mp.posiargs,
-            method="multiprocessing",
-        )
-
-        rij_matrix = None
-        wij_matrix = None
-        for i, (rij, wij) in enumerate(results):
-            if rij_matrix is None:
-                rij_matrix = rij
-            else:
-                rij_matrix += rij
-            if wij is not None:
-                if wij_matrix is None:
-                    wij_matrix = wij
+                n = isel_i.size
+                if n < self._min_pairs:
+                    n = None
+                    cc = None
                 else:
-                    wij_matrix += wij
+                    cc, _ = scipy.stats.pearsonr(
+                        intensities_i[isel_i],
+                        intensities_j[isel_j],
+                    )
+                if cc is not None and np.isnan(cc):
+                    cc = None
+                    n = None
 
-        rij_matrix = rij_matrix.toarray().astype(np.float64)
-        if wij_matrix is not None:
-            wij_matrix = wij_matrix.toarray().astype(np.float64)
+                rij_cache[key] = (cc, n)
+
+            if (
+                n is None
+                or cc is None
+                or (self._min_pairs is not None and n < self._min_pairs)
+            ):
+                continue
+            if self._weights:
+                wij[ik, jk] = n
+            rij[ik, jk] = cc
+
+        if wij is not None:
             if self._weights == "standard_error":
                 # http://www.sjsu.edu/faculty/gerstman/StatPrimer/correlation.pdf
-                sel = np.where(wij_matrix > 2)
-                se = np.sqrt((1 - np.square(rij_matrix[sel])) / (wij_matrix[sel] - 2))
-                wij_matrix = np.zeros_like(rij_matrix)
-                wij_matrix[sel] = 1 / se
+                sel = np.where(wij > 2)
+                se = np.sqrt((1 - np.square(rij[sel])) / (wij[sel] - 2))
+                wij = np.zeros_like(rij)
+                wij[sel] = 1 / se
 
-        return rij_matrix, wij_matrix
+        return rij, wij
 
     def compute_functional(self, x: np.ndarray) -> float:
         """Compute the target function at coordinates `x`.
