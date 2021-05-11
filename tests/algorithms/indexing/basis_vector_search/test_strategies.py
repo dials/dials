@@ -1,6 +1,10 @@
 import pytest
 
-from . import FFT1D, FFT3D, RealSpaceGridSearch
+from dials.algorithms.indexing.basis_vector_search import (
+    FFT1D,
+    FFT3D,
+    RealSpaceGridSearch,
+)
 
 
 class TestStrategies:

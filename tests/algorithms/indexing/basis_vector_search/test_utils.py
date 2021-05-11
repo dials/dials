@@ -2,7 +2,11 @@ import pytest
 
 from scitbx import matrix
 
-from .utils import group_vectors, is_approximate_integer_multiple, vector_group
+from dials.algorithms.indexing.basis_vector_search.utils import (
+    group_vectors,
+    is_approximate_integer_multiple,
+    vector_group,
+)
 
 
 def test_is_approximate_integer_multiple():

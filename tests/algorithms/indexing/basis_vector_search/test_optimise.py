@@ -2,7 +2,7 @@ import random
 
 import pytest
 
-from . import fft3d, optimise
+from dials.algorithms.indexing.basis_vector_search import fft3d, optimise
 
 
 def test_optimise_basis_vectors(setup_rlp):
