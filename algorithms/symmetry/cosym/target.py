@@ -203,7 +203,7 @@ class Target:
                 column = np.ravel_multi_index((i, j), (n_sym_ops, n_lattices))
                 all_intensities[column, mil_ind[selection]] = intensities[selection]
 
-        rij = DataFrame(all_intensities).T.corr().values
+        rij = DataFrame(all_intensities).T.dropna(how="all").corr().values
         np.nan_to_num(rij, copy=False)
 
         if self._weights:
