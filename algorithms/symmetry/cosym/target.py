@@ -197,13 +197,13 @@ class Target:
         all_intensities.fill(np.nan)
 
         slices = np.append(self._lattices, intensities.size)
-        slices = map(slice, slices[:-1], slices[1:])
+        slices = list(map(slice, slices[:-1], slices[1:]))
         for i, mil_ind in enumerate(indices.values()):
             for j, selection in enumerate(slices):
                 column = np.ravel_multi_index((i, j), (n_sym_ops, n_lattices))
                 all_intensities[column, mil_ind[selection]] = intensities[selection]
 
-        rij = DataFrame(all_intensities).T.corr().values
+        rij = DataFrame(all_intensities).T.corr().fillna(0).values
 
         if self._weights:
             wij = np.zeros((NN, NN))
