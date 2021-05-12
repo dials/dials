@@ -133,8 +133,9 @@ absorption_level = low medium high
             "dimensions become less equal (i.e. is higher for needle shaped"
             "crystals and zero for a spherical crystal)."
             "Definitions of the levels and approximate correction magnitude:"
-            "low:    ~1%% relative absorption, expected for crystals on the order"
-            "        of ~100um measured at ~1A wavelength."
+            "low:    ~1%% relative absorption, expected for typical protein"
+            "        crystals (containing no strongly absorbing atoms) on the"
+            "        order of ~100um measured at ~1A wavelength."
             "medium: ~5%% relative absorption"
             "high:   >25%% relative absorption, e.g. for measurements at long"
             "        wavelength or crystals with high absorption from heavy atoms."
@@ -199,7 +200,7 @@ n_modulation_bins = 20
     .expert_level = 2
 """
 
-autos = [None, Auto, "auto", "Auto"]
+autos = [Auto, "auto", "Auto"]
 
 
 class ScalingModelBase:
@@ -818,7 +819,6 @@ class PhysicalScalingModel(ScalingModelBase):
                 "parameters": flex.double(n_decay_param, 0.0),
                 "parameter_esds": None,
             }
-
         if params.absorption_correction in autos:
             if abs_osc_range > 60.0:
                 absorption_correction = True
