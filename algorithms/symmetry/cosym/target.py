@@ -5,8 +5,8 @@ import logging
 import warnings
 
 import numpy as np
-from numpy import ma
 from orderedset import OrderedSet
+from pandas import DataFrame
 
 import cctbx.sgtbx.cosets
 from cctbx import miller, sgtbx
@@ -196,12 +196,14 @@ class Target:
         all_intensities = np.empty((NN, np.prod(dims)))
         all_intensities.fill(np.nan)
 
+        slices = np.append(self._lattices, intensities.size)
+        slices = map(slice, slices[:-1], slices[1:])
         for i, mil_ind in enumerate(indices.values()):
-            for j, lattice in enumerate(self._lattices):
+            for j, selection in enumerate(slices):
                 column = np.ravel_multi_index((i, j), (n_sym_ops, n_lattices))
-                all_intensities[column, mil_ind] = intensities[lattice]
+                all_intensities[column, mil_ind[selection]] = intensities[selection]
 
-        rij = ma.corrcoef(ma.masked_invalid(all_intensities))
+        rij = DataFrame(all_intensities).T.corr().values
 
         if self._weights:
             wij = np.zeros((NN, NN))
