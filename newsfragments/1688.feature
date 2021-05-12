@@ -1,1 +1,2 @@
-Add ``physical.absorption_level=low/medium/high`` option to ``dials.scale`` to enable automatic setting of suitable absorption correction parameters.
+``dials.scale``: Added ``physical.absorption_level=[low|medium|high]`` option for automatic setting of suitable absorption correction parameters.
+  
