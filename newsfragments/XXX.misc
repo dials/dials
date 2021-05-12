@@ -1,0 +1,1 @@
+``dials.scale``: make error_model_group option work on sweep numbers, as originally described.

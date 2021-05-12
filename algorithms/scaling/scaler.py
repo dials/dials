@@ -1395,7 +1395,7 @@ class MultiScalerBase(ScalerBase):
     def perform_error_optimisation(self, update_Ih=True):
         """Perform an optimisation of the sigma values."""
         if self.params.weighting.error_model.grouping == "combined":
-            minimisation_groups = [i for i, _ in enumerate(self.active_scalers)]
+            minimisation_groups = [[i for i, _ in enumerate(self.active_scalers)]]
         elif self.params.weighting.error_model.grouping == "individual":
             minimisation_groups = [[i] for i, _ in enumerate(self.active_scalers)]
         else:
@@ -1404,7 +1404,7 @@ class MultiScalerBase(ScalerBase):
                 logger.info(
                     """No error model groups defined, defaulting to combined error model optimisation"""
                 )
-                minimisation_groups = [i for i, _ in enumerate(self.active_scalers)]
+                minimisation_groups = [[i for i, _ in enumerate(self.active_scalers)]]
             else:
                 all_datasets = [i for i, _ in enumerate(self.active_scalers)]
                 # groups are defined in terms of sweeps (1,2,3,...), but here
