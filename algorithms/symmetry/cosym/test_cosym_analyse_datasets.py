@@ -1,9 +1,10 @@
+import numpy as np
 import pytest
 
 import libtbx
 from cctbx import sgtbx
 
-from dials.algorithms.symmetry.cosym import CosymAnalysis, phil_scope
+from dials.algorithms.symmetry.cosym import CosymAnalysis, find_elbow, phil_scope
 from dials.algorithms.symmetry.cosym._generate_test_data import generate_test_data
 
 
@@ -137,3 +138,38 @@ def test_cosym(
             )
         else:
             reference = reindexed
+
+
+def test_find_elbow():
+    y = np.array(
+        [
+            6748.2,
+            119.0,
+            119.7,
+            122.4,
+            121.0,
+            120.8,
+            125.0,
+            120.8,
+            120.8,
+            121.9,
+            120.5,
+            121.6,
+            122.4,
+            122.6,
+            121.3,
+            124.1,
+            121.6,
+            122.4,
+            122.5,
+            122.0,
+            122.3,
+            124.4,
+            121.5,
+            122.7,
+        ]
+    )
+    x = np.arange(len(y)) + 1
+    for i in range(3, len(y)):
+        elbow = find_elbow(x[:i], y[:i])
+        assert elbow == 2, (i, elbow)
