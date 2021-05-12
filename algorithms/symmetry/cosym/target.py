@@ -206,6 +206,8 @@ class Target:
         rij = DataFrame(all_intensities).T.dropna(how="all").corr().values
         np.nan_to_num(rij, copy=False)
 
+        # TODO: Reinstate the now broken weights calculation.
+
         if self._weights:
             wij = np.zeros((NN, NN))
         else:
