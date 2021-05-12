@@ -1,13 +1,11 @@
 """Target function for cosym analysis."""
 
 import copy
-import itertools
 import logging
 import warnings
 
 import numpy as np
-import scipy.sparse
-import scipy.stats
+from numpy import ma
 from orderedset import OrderedSet
 
 import cctbx.sgtbx.cosets
@@ -192,85 +190,26 @@ class Target:
         for cb_op, hkl in indices.items():
             indices[cb_op] = np.ravel_multi_index((hkl + offset).T, dims)
 
-        rij_cache = {}
-
         n_sym_ops = len(self.sym_ops)
         NN = n_lattices * n_sym_ops
 
-        rij = np.zeros((NN, NN))
+        all_intensities = np.empty((NN, np.prod(dims)))
+        all_intensities.fill(np.nan)
+
+        for i, mil_ind in enumerate(indices.values()):
+            for j, lattice in enumerate(self._lattices):
+                column = np.ravel_multi_index((i, j), (n_sym_ops, n_lattices))
+                all_intensities[column, mil_ind] = intensities[lattice]
+
+        rij = ma.corrcoef(ma.masked_invalid(all_intensities))
+
         if self._weights:
             wij = np.zeros((NN, NN))
         else:
             wij = None
 
-        indices_lower = self._lattices[np.arange(n_lattices)]
-        indices_upper = np.append(indices_lower[1:], intensities.size)
-        cb_ops = [sgtbx.change_of_basis_op(op) for op in self.sym_ops]
-
-        for i, j, k, kk in itertools.product(
-            range(n_lattices),
-            range(n_lattices),
-            range(n_sym_ops),
-            range(n_sym_ops),
-        ):
-            if i == j and k == kk:
-                # don't include correlation of dataset with itself
-                continue
-
-            i_lower = indices_lower[i]
-            i_upper = indices_upper[i]
-            j_lower = indices_lower[j]
-            j_upper = indices_upper[j]
-            cb_op_k = cb_ops[k]
-            cb_op_kk = cb_ops[kk]
-
-            intensities_i = intensities[i_lower:i_upper]
-            intensities_j = intensities[j_lower:j_upper]
-            indices_i = indices[cb_op_k.as_xyz()][i_lower:i_upper]
-            epsilons_i = epsilons[cb_op_k.as_xyz()][i_lower:i_upper]
-
-            ik = i + (n_lattices * k)
-            jk = j + (n_lattices * kk)
-
-            key = (i, j, str(cb_op_k.inverse() * cb_op_kk))
-            if use_cache and key in rij_cache:
-                cc, n = rij_cache[key]
-            else:
-                indices_j = indices[cb_op_kk.as_xyz()][j_lower:j_upper]
-                epsilons_j = epsilons[cb_op_k.as_xyz()][j_lower:j_upper]
-
-                # Find pairs of matching miller indices
-                _, isel_i, isel_j = np.intersect1d(
-                    indices_i, indices_j, return_indices=True
-                )
-
-                isel_i = isel_i[epsilons_i[isel_i] == 1]
-                isel_j = isel_j[epsilons_j[isel_j] == 1]
-
-                n = isel_i.size
-                if n < self._min_pairs:
-                    n = None
-                    cc = None
-                else:
-                    cc, _ = scipy.stats.pearsonr(
-                        intensities_i[isel_i],
-                        intensities_j[isel_j],
-                    )
-                if cc is not None and np.isnan(cc):
-                    cc = None
-                    n = None
-
-                rij_cache[key] = (cc, n)
-
-            if (
-                n is None
-                or cc is None
-                or (self._min_pairs is not None and n < self._min_pairs)
-            ):
-                continue
-            if self._weights:
-                wij[ik, jk] = n
-            rij[ik, jk] = cc
+            # if self._weights:
+            #     wij[ik, jk] = n
 
         if wij is not None:
             if self._weights == "standard_error":
