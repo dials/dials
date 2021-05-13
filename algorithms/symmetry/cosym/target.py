@@ -214,10 +214,12 @@ class Target:
             .values
         )
         np.nan_to_num(rij, copy=False)
+        np.fill_diagonal(rij, 0)
 
         if self._weights:
             valid = np.isfinite(all_intensities).astype(int)
             counts = valid.dot(valid.T)
+            np.fill_diagonal(counts, 0)
             if self._weights == "standard_error":
                 # http://www.sjsu.edu/faculty/gerstman/StatPrimer/correlation.pdf
                 sel = np.where((counts > 2) & (rij < 1))
