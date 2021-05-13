@@ -30,10 +30,13 @@ namespace dials { namespace algorithms { namespace background {
   public:
     virtual ~Model() {}
 
+    // The value of the background model at shoebox position x, y, z
     virtual double value(double z, double y, double x) const = 0;
 
+    // The parameters of the background model
     virtual af::shared<double> params() const = 0;
 
+    // The variances of the parameters from the model fit (not variances of the background values)
     virtual af::shared<double> variances() const = 0;
   };
 
