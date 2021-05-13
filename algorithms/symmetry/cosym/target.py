@@ -206,23 +206,19 @@ class Target:
         rij = DataFrame(all_intensities).T.dropna(how="all").corr().values
         np.nan_to_num(rij, copy=False)
 
-        # TODO: Reinstate the now broken weights calculation.
-
         if self._weights:
-            wij = np.zeros((NN, NN))
-        else:
-            wij = None
-
-            # if self._weights:
-            #     wij[ik, jk] = n
-
-        if wij is not None:
+            valid = np.isfinite(all_intensities).astype(int)
+            counts = valid.dot(valid.T)
             if self._weights == "standard_error":
                 # http://www.sjsu.edu/faculty/gerstman/StatPrimer/correlation.pdf
-                sel = np.where(wij > 2)
-                se = np.sqrt((1 - np.square(rij[sel])) / (wij[sel] - 2))
+                sel = np.where((counts > 2) & (rij < 1))
+                se = np.sqrt((1 - np.square(rij[sel])) / (counts[sel] - 2))
                 wij = np.zeros_like(rij)
                 wij[sel] = 1 / se
+            else:
+                wij = counts
+        else:
+            wij = None
 
         return rij, wij
 
