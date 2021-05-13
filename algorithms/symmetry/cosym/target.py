@@ -5,8 +5,8 @@ import logging
 import warnings
 
 import numpy as np
+import pandas as pd
 from orderedset import OrderedSet
-from pandas import DataFrame
 
 import cctbx.sgtbx.cosets
 from cctbx import miller, sgtbx
@@ -172,13 +172,14 @@ class Target:
             cb_op = sgtbx.change_of_basis_op(cb_op)
             indices_reindexed = cb_op.apply(self._data.indices())
             miller.map_to_asu(space_group_type, False, indices_reindexed)
-            indices[cb_op.as_xyz()] = np.array(
+            cb_op_str = cb_op.as_xyz()
+            indices[cb_op_str] = np.array(
                 [
                     h.iround().as_numpy_array()
                     for h in indices_reindexed.as_vec3_double().parts()
                 ]
             ).transpose()
-            epsilons[cb_op.as_xyz()] = self._patterson_group.epsilon(
+            epsilons[cb_op_str] = self._patterson_group.epsilon(
                 indices_reindexed
             ).as_numpy_array()
         intensities = self._data.data().as_numpy_array()
@@ -198,12 +199,20 @@ class Target:
 
         slices = np.append(self._lattices, intensities.size)
         slices = list(map(slice, slices[:-1], slices[1:]))
-        for i, mil_ind in enumerate(indices.values()):
+        for i, (mil_ind, eps) in enumerate(zip(indices.values(), epsilons.values())):
             for j, selection in enumerate(slices):
                 column = np.ravel_multi_index((i, j), (n_sym_ops, n_lattices))
-                all_intensities[column, mil_ind[selection]] = intensities[selection]
+                valid = eps[selection] == 1
+                all_intensities[column, mil_ind[selection][valid]] = intensities[
+                    selection
+                ][valid]
 
-        rij = DataFrame(all_intensities).T.dropna(how="all").corr().values
+        rij = (
+            pd.DataFrame(all_intensities)
+            .T.dropna(how="all")
+            .corr(min_periods=self._min_pairs)
+            .values
+        )
         np.nan_to_num(rij, copy=False)
 
         if self._weights:
