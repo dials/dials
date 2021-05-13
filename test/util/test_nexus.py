@@ -1,26 +1,16 @@
-def test_run(dials_regression, run_in_tmpdir):
-    from os.path import join
-
-    from dxtbx.model.experiment_list import ExperimentListFactory
+def test_run(dials_data, run_in_tmpdir):
+    from dxtbx.model.experiment_list import ExperimentList
 
     from dials.array_family import flex
     from dials.command_line.export import phil_scope
     from dials.util.nexus import dump, load
 
-    path = join(dials_regression, "nexus_test_data")
+    scaled_refl = dials_data("insulin_processed") / "scaled.refl"
+    scaled_expt = dials_data("insulin_processed") / "scaled.expt"
 
-    # Read the experiments
-    experiments1 = ExperimentListFactory.from_json_file(
-        join(path, "refined_experiments.json")
-    )
-
-    # Read the reflections
-    reflections1 = flex.reflection_table.from_file(join(path, "integrated.pickle"))
-
-    # Delete some columns for the test
-    del reflections1["s1"]
-    del reflections1["zeta"]
-    del reflections1["background.mse"]
+    # Read the experiments and reflections
+    experiments1 = ExperimentList.from_file(scaled_expt, check_format=False)
+    reflections1 = flex.reflection_table.from_file(scaled_refl)
 
     # Dump the reflections
     params = phil_scope.extract()
@@ -32,7 +22,7 @@ def test_run(dials_regression, run_in_tmpdir):
 
     EPS = 1e-7
 
-    # Check the reflections are OK
+    # Check the reflections read are same as input
     assert reflections1.nrows() == reflections2.nrows()
     assert reflections1.ncols() == reflections2.ncols()
     for key in reflections1.keys():
@@ -52,7 +42,7 @@ def test_run(dials_regression, run_in_tmpdir):
 
     # Test passed
 
-    # Check the experiments are ok
+    # Check the experiments are same as input
     assert len(experiments1) == len(experiments2)
     exp1 = experiments1[0]
     exp2 = experiments2[0]
