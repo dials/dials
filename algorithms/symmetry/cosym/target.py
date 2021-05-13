@@ -207,27 +207,34 @@ class Target:
                     selection
                 ][valid]
 
-        rij = (
-            pd.DataFrame(all_intensities)
-            .T.dropna(how="all")
-            .corr(min_periods=self._min_pairs)
-            .values
-        )
+        all_intensities = pd.DataFrame(all_intensities).T.dropna(how="all")
+        rij = all_intensities.corr().values
         np.nan_to_num(rij, copy=False)
         np.fill_diagonal(rij, 0)
 
         if self._weights:
-            valid = np.isfinite(all_intensities).astype(int)
-            counts = valid.dot(valid.T)
-            np.fill_diagonal(counts, 0)
+            # Set the weight for each correlation coefficient equal to the size of
+            # the sample used to calculate that coefficient.
+            sample_size = lambda x, y: np.count_nonzero(~np.isnan([x, y]).any(axis=0))
+            wij = all_intensities.corr(method=sample_size)
+
+            # Similarly, set the diagonal elements to the number of
+            diag = np.diag_indices_from(wij)
+            wij[diag] = np.count_nonzero(~np.isnan(all_intensities.values), axis=0)
+
             if self._weights == "standard_error":
                 # http://www.sjsu.edu/faculty/gerstman/StatPrimer/correlation.pdf
-                sel = np.where((counts > 2) & (rij < 1))
-                se = np.sqrt((1 - np.square(rij[sel])) / (counts[sel] - 2))
-                wij = np.zeros_like(rij)
-                wij[sel] = 1 / se
-            else:
-                wij = counts
+                right_upper = np.triu_indices_from(wij)
+
+                reciprocal_se = np.zeros_like(wij)
+                reciprocal_se[right_upper] = np.where(
+                    wij[right_upper] > 2,
+                    np.sqrt((wij[right_upper] - 2) / 1 - np.square(rij[right_upper])),
+                    0,
+                )
+
+                wij = reciprocal_se + reciprocal_se.T
+                wij[diag] = np.inf
         else:
             wij = None
 
