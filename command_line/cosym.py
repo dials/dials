@@ -156,7 +156,7 @@ class cosym(Subject):
         )
 
         datasets = [
-            ma.as_anomalous_array().merge_equivalents().array() for ma in datasets
+            ma.as_non_anomalous_array().merge_equivalents().array() for ma in datasets
         ]
         self.cosym_analysis = CosymAnalysis(datasets, self.params)
 
