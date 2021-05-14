@@ -3,6 +3,7 @@
 import copy
 import logging
 import warnings
+from itertools import combinations, starmap
 
 import numpy as np
 import pandas as pd
@@ -207,32 +208,34 @@ class Target:
                     selection
                 ][valid]
 
-        all_intensities = pd.DataFrame(all_intensities).T.dropna(how="all")
-        rij = all_intensities.corr().values
+        rij = pd.DataFrame(all_intensities).T.dropna(how="all").corr().values
+        # Set any NaN correlation coefficients to zero.
         np.nan_to_num(rij, copy=False)
+        # Cosym does not make use of the on-diagonal correlation coefficients.
         np.fill_diagonal(rij, 0)
 
         if self._weights:
             # Set the weight for each correlation coefficient equal to the size of
             # the sample used to calculate that coefficient.
-            sample_size = lambda x, y: np.count_nonzero(~np.isnan([x, y]).any(axis=0))
-            wij = all_intensities.corr(method=sample_size).values
+            wij = np.zeros_like(rij)
+            right_up = np.triu_indices_from(wij, k=1)
 
-            # Cosym does not make use of the on-diagonal correlation coefficients.
-            np.fill_diagonal(wij, 0)
+            sample_size = lambda x, y: np.count_nonzero(~np.isnan([x, y]).any(axis=0))
+            wij[right_up] = list(starmap(sample_size, combinations(all_intensities, 2)))
 
             if self._weights == "standard_error":
+                # Set each weights as the reciprocal of the standard error on the
+                # corresponding correlation coefficient.
                 # http://www.sjsu.edu/faculty/gerstman/StatPrimer/correlation.pdf
-                right_upper = np.triu_indices_from(wij)
+                with np.errstate(divide="ignore", invalid="ignore"):
+                    reciprocal_se = np.sqrt(
+                        (wij[right_up] - 2) / (1 - np.square(rij[right_up]))
+                    )
 
-                reciprocal_se = np.zeros_like(wij)
-                reciprocal_se[right_upper] = np.where(
-                    wij[right_upper] > 2,
-                    np.sqrt((wij[right_upper] - 2) / 1 - np.square(rij[right_upper])),
-                    0,
-                )
+                wij[right_up] = np.where(wij[right_up] > 2, reciprocal_se, 0)
 
-                wij = reciprocal_se + reciprocal_se.T
+            # Symmetrise the wij matrix.
+            wij += wij.T
         else:
             wij = None
 
