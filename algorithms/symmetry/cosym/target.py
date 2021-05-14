@@ -215,13 +215,14 @@ class Target:
         np.fill_diagonal(rij, 0)
 
         if self._weights:
-            # Set the weight for each correlation coefficient equal to the size of
-            # the sample used to calculate that coefficient.
             wij = np.zeros_like(rij)
             right_up = np.triu_indices_from(wij, k=1)
 
-            sample_size = lambda x, y: np.count_nonzero(~np.isnan([x, y]).any(axis=0))
-            wij[right_up] = list(starmap(sample_size, combinations(all_intensities, 2)))
+            # For each correlation coefficient, set the weight equal to the size of
+            # the sample used to calculate that coefficient.
+            pairwise_combinations = combinations(np.isfinite(all_intensities), 2)
+            sample_size = lambda x, y: np.count_nonzero(x & y)
+            wij[right_up] = list(starmap(sample_size, pairwise_combinations))
 
             if self._weights == "standard_error":
                 # Set each weights as the reciprocal of the standard error on the
