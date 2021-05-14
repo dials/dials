@@ -10,6 +10,7 @@
         "Jinja2",
         "msgpack",
         "orderedset",
+        "pandas",
         "procrunner>=1.0.2",
         "psutil",
         "pytest>=4.5,<5.0",
