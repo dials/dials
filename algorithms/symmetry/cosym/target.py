@@ -218,9 +218,8 @@ class Target:
             sample_size = lambda x, y: np.count_nonzero(~np.isnan([x, y]).any(axis=0))
             wij = all_intensities.corr(method=sample_size).values
 
-            # Similarly, set the diagonal elements to the number of
-            diag = np.diag_indices_from(wij)
-            wij[diag] = np.count_nonzero(~np.isnan(all_intensities.values), axis=0)
+            # Cosym does not make use of the on-diagonal correlation coefficients.
+            np.fill_diagonal(wij, 0)
 
             if self._weights == "standard_error":
                 # http://www.sjsu.edu/faculty/gerstman/StatPrimer/correlation.pdf
@@ -234,7 +233,6 @@ class Target:
                 )
 
                 wij = reciprocal_se + reciprocal_se.T
-                wij[diag] = np.inf
         else:
             wij = None
 
