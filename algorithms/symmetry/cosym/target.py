@@ -216,7 +216,7 @@ class Target:
             # Set the weight for each correlation coefficient equal to the size of
             # the sample used to calculate that coefficient.
             sample_size = lambda x, y: np.count_nonzero(~np.isnan([x, y]).any(axis=0))
-            wij = all_intensities.corr(method=sample_size)
+            wij = all_intensities.corr(method=sample_size).values
 
             # Similarly, set the diagonal elements to the number of
             diag = np.diag_indices_from(wij)
