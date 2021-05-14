@@ -204,9 +204,9 @@ class Target:
             for j, selection in enumerate(slices):
                 column = np.ravel_multi_index((i, j), (n_sym_ops, n_lattices))
                 valid = eps[selection] == 1
-                all_intensities[column, mil_ind[selection][valid]] = intensities[
-                    selection
-                ][valid]
+                valid_mil_ind = mil_ind[selection][valid]
+                valid_intensities = intensities[selection][valid]
+                all_intensities[column, valid_mil_ind] = valid_intensities
 
         rij = pd.DataFrame(all_intensities).T.dropna(how="all").corr().values
         # Set any NaN correlation coefficients to zero.
