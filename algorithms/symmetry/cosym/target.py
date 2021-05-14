@@ -1,9 +1,9 @@
 """Target function for cosym analysis."""
 
 import copy
+import itertools
 import logging
 import warnings
-from itertools import combinations, starmap
 
 import numpy as np
 import pandas as pd
@@ -220,9 +220,11 @@ class Target:
 
             # For each correlation coefficient, set the weight equal to the size of
             # the sample used to calculate that coefficient.
-            pairwise_combinations = combinations(np.isfinite(all_intensities), 2)
+            pairwise_combinations = itertools.combinations(
+                np.isfinite(all_intensities), 2
+            )
             sample_size = lambda x, y: np.count_nonzero(x & y)
-            wij[right_up] = list(starmap(sample_size, pairwise_combinations))
+            wij[right_up] = list(itertools.starmap(sample_size, pairwise_combinations))
 
             if self._weights == "standard_error":
                 # Set each weights as the reciprocal of the standard error on the
