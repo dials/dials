@@ -412,9 +412,10 @@ class Indexer:
                 from dxtbx.imageset import ImageSet  # , MemImageSet
 
                 for experiment in experiments:
-                    experiment.imageset = ImageSet(
-                        experiment.imageset.data(), experiment.imageset.indices()
-                    )
+                    if isinstance(experiment.imageset, ImageSequence):
+                        experiment.imageset = ImageSet(
+                            experiment.imageset.data(), experiment.imageset.indices()
+                        )
                     # if isinstance(imageset, MemImageSet):
                     #   imageset = MemImageSet(imagesequence._images, imagesequence.indices())
                     # else:

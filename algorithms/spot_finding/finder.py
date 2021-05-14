@@ -821,7 +821,10 @@ class SpotFinder:
 
             logger.info("\nFinding spots in image %s to %s...", j0, j1)
             j0 -= 1
-            r, h = extract_spots(imageset[j0:j1])
+            if len(imageset) == 1:
+                r, h = extract_spots(imageset)
+            else:
+                r, h = extract_spots(imageset[j0:j1])
             reflections.extend(r)
             if h is not None:
                 for h1, h2 in zip(hot_pixels, h):

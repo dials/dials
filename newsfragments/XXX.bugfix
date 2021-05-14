@@ -1,0 +1,1 @@
+Speed up processing still images by reducing the number of file reads per image
