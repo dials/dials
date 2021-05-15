@@ -70,7 +70,7 @@ steps:
 - bash: |
     set -e
     . dials
-    conda install -p conda_base -y git-lfs distro pandas openmpi mpi4py bash -c conda-forge
+    conda install -y bash distro git-lfs mpi4py openmpi pandas
     cd modules
     git clone https://gitlab.com/cctbx/xfel_regression.git
     cd xfel_regression
