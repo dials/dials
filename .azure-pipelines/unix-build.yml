@@ -84,11 +84,24 @@ steps:
 - bash: |
     set -e
     . dials
-    mkdir tests
-    cd tests
-    libtbx.run_tests_parallel module=xfel_regression nproc=auto
-  displayName: Run tests
+    mkdir -p tests/workdir
+    cd tests/workdir
+    libtbx.run_tests_parallel module=xfel_regression nproc=auto && {
+      echo "##vso[task.complete result=Succeeded;]XFEL regression tests passed" > ../xfel-regression.output
+    } || {
+      echo "##vso[task.complete result=Failed;]XFEL regression tests failed" > ../xfel-regression.output
+    }
+    mv run_tests_parallel_zlog ../xfel-regression.txt
+    cd ..
+    rm -rf workdir
+  displayName: Run xfel_regression tests
   workingDirectory: $(Pipeline.Workspace)
+
+- task: PublishPipelineArtifact@1
+  displayName: Store xfel_regression results
+  inputs:
+    pathToPublish: $(Pipeline.Workspace)/tests
+    artifactName: xfel-regression
 
 # Recover disk space after testing
 # This is only relevant if we had cache misses, as free disk space is required to create cache archives
