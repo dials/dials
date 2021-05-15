@@ -100,7 +100,7 @@ steps:
 - task: PublishPipelineArtifact@1
   displayName: Store xfel_regression results
   inputs:
-    pathToPublish: $(Pipeline.Workspace)/tests
+    targetPath: $(Pipeline.Workspace)/tests
     artifactName: xfel-regression
 
 # Recover disk space after testing
