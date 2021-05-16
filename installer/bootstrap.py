@@ -43,6 +43,8 @@ devnull = open(os.devnull, "wb")  # to redirect unwanted subprocess output
 allowed_ssh_connections = {}
 concurrent_git_connection_limit = threading.Semaphore(5)
 
+_prebuilt_cctbx_base = "2021.4"
+
 
 def make_executable(filepath):
     if os.name == "posix":
@@ -52,7 +54,7 @@ def make_executable(filepath):
         os.chmod(filepath, mode)
 
 
-def install_micromamba(python):
+def install_micromamba(python, include_cctbx):
     """Download and install Micromamba"""
     if sys.platform.startswith("linux"):
         conda_platform = "linux"
@@ -128,6 +130,8 @@ def install_micromamba(python):
         "--override-channels",
         python_requirement,
     ]
+    if include_cctbx:
+        command_list.append("cctbx-base=" + _prebuilt_cctbx_base)
 
     print(
         "{text} dials environment from {filename} with Python {python}".format(
@@ -210,7 +214,7 @@ def install_miniconda(location):
     run_command(command=command, workdir=".")
 
 
-def install_conda(python):
+def install_conda(python, include_cctbx):
     # Find relevant conda base installation
     conda_base = os.path.realpath("miniconda")
     if os.name == "nt":
@@ -319,6 +323,8 @@ environments exist and are working.
         "--override-channels",
         python_requirement,
     ]
+    if include_cctbx:
+        command_list.append("cctbx-base=" + _prebuilt_cctbx_base)
     if os.name == "nt":
         command_list = [
             "cmd.exe",
@@ -1064,10 +1070,10 @@ def run_tests():
     )
 
 
-def refresh_build():
+def refresh_build(prebuilt_cctbx):
     print("Running libtbx.refresh")
     run_indirect_command(
-        os.path.join("bin", "libtbx.refresh"),
+        "libtbx.refresh" if prebuilt_cctbx else os.path.join("bin", "libtbx.refresh"),
         args=[],
     )
 
@@ -1080,7 +1086,7 @@ def install_precommit():
     )
 
 
-def configure_build(config_flags):
+def configure_build(config_flags, prebuilt_cctbx):
     if os.name == "nt":
         conda_python = os.path.join(os.getcwd(), "conda_base", "python.exe")
     elif sys.platform.startswith("darwin"):
@@ -1089,6 +1095,10 @@ def configure_build(config_flags):
         )
     else:
         conda_python = os.path.join("..", "conda_base", "bin", "python")
+
+    # write a new-style environment setup script
+    with open(("dials.bat" if os.name == "nt" else "dials"), "w"):
+        pass  # ensure we write a new-style environment setup script
 
     if os.name != "nt" and not any(
         flag.startswith("--compiler=") for flag in config_flags
@@ -1099,15 +1109,17 @@ def configure_build(config_flags):
     if "--use_conda" not in config_flags:
         config_flags.append("--use_conda")
 
-    # write a new-style environment setup script
-    with open(("dials.bat" if os.name == "nt" else "dials"), "w"):
-        pass  # ensure we write a new-style environment setup script
+    print("Setting up build directory")
+    if prebuilt_cctbx:
+        run_indirect_command(
+            command="libtbx.configure",
+            args=["cbflib", "dials", "dxtbx", "prime", "xia2"],
+        )
+        return
 
     configcmd = [
         os.path.join("..", "modules", "cctbx_project", "libtbx", "configure.py"),
         "cctbx",
-        "cbflib",
-        "dxtbx",
         "scitbx",
         "libtbx",
         "iotbx",
@@ -1115,26 +1127,34 @@ def configure_build(config_flags):
         "smtbx",
         "gltbx",
         "wxtbx",
+        "cbflib",
+        "dxtbx",
         "dials",
         "xia2",
         "prime",
         "--skip_phenix_dispatchers",
     ] + config_flags
-    print("Setting up build directory")
+
     run_indirect_command(
         command=conda_python,
         args=configcmd,
     )
 
 
-def make_build():
+def make_build(prebuilt_cctbx):
     try:
         nproc = len(os.sched_getaffinity(0))
     except AttributeError:
         nproc = multiprocessing.cpu_count()
-    run_indirect_command(os.path.join("bin", "libtbx.scons"), args=["-j", str(nproc)])
-    # run build again to make sure everything is built
-    run_indirect_command(os.path.join("bin", "libtbx.scons"), args=["-j", str(nproc)])
+    if prebuilt_cctbx:
+        command = "libtbx.scons"
+    else:
+        command = os.path.join("bin", "libtbx.scons")
+
+    run_indirect_command(command, args=["-j", str(nproc)])
+    if not prebuilt_cctbx:
+        # run build again to make sure everything is built
+        run_indirect_command(command, args=["-j", str(nproc)])
 
 
 def repository_at_tag(string):
@@ -1234,6 +1254,14 @@ be passed separately with quotes to avoid confusion (e.g
         default=False,
         action="store_true",
     )
+    parser.add_argument(
+        # Use the conda-forge cctbx package instead of compiling cctbx from scratch
+        # This is not currently supported outside of CI builds
+        "--prebuilt-cctbx",
+        help=argparse.SUPPRESS,
+        default=False,
+        action="store_true",
+    )
 
     options = parser.parse_args()
     if os.name == "nt" and options.python == "3.6":
@@ -1248,19 +1276,19 @@ be passed separately with quotes to avoid confusion (e.g
     # Build base packages
     if "base" in options.actions:
         if options.mamba:
-            install_micromamba(options.python)
+            install_micromamba(options.python, include_cctbx=options.prebuilt_cctbx)
             if options.clean:
                 shutil.rmtree(os.path.realpath("micromamba"))
         else:
-            install_conda(options.python)
+            install_conda(options.python, include_cctbx=options.prebuilt_cctbx)
             if options.clean:
                 shutil.rmtree(os.path.realpath("miniconda"))
 
     # Configure, make, get revision numbers
     if "build" in options.actions:
-        configure_build(options.config_flags)
-        make_build()
-        refresh_build()
+        configure_build(options.config_flags, prebuilt_cctbx=options.prebuilt_cctbx)
+        make_build(prebuilt_cctbx=options.prebuilt_cctbx)
+        refresh_build(prebuilt_cctbx=options.prebuilt_cctbx)
         install_precommit()
 
     # Tests, tests
