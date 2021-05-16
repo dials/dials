@@ -6,6 +6,7 @@ jobs:
   variables:
     CURRENT_WEEK: $[ stageDependencies.prepare.setup.outputs['constants.CURRENT_WEEK'] ]
     TODAY_ISO: $[ stageDependencies.prepare.setup.outputs['constants.TODAY_ISO'] ]
+    SOURCE_BRANCH: $[ stageDependencies.prepare.setup.outputs['constants.BUILD_SOURCEBRANCH'] ]
   strategy:
     matrix:
       python36:

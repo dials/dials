@@ -2,6 +2,7 @@
 #   CACHE_VERSION: unique cache identifier
 #   CURRENT_WEEK: weekly changing cache identifier
 #   PYTHON_VERSION: string in the form of "3.x"
+#   SOURCE_BRANCH: starts with 'refs/pull/' if this is a PR build
 #   TODAY_ISO: today's date in ISO format, eg. "20200531"
 
 steps:
@@ -53,7 +54,7 @@ steps:
 - bash: |
     set -e
     . dials
-    conda install -p conda_base -y dials-data pytest-azurepipelines pytest-cov pytest-timeout
+    conda install -y dials-data pytest-azurepipelines pytest-cov pytest-timeout
     set -ux
     dials.data info -v
     echo "##vso[task.setvariable variable=DIALS_DATA_VERSION_FULL]$(dials.data info -v | grep version.full)"
@@ -117,6 +118,8 @@ steps:
     libtbx.configure xfel_regression
     wait
   displayName: Prepare xfel_regression tests
+  condition: and(succeeded(),
+                 startsWith(variables.SOURCE_BRANCH, 'refs/pull/'))
   workingDirectory: $(Pipeline.Workspace)
 
 # Finally, run the full regression test suite
@@ -135,26 +138,31 @@ steps:
     cd ..
     rm -rf workdir
   displayName: Run xfel_regression tests
+  condition: and(succeeded(),
+                 startsWith(variables.SOURCE_BRANCH, 'refs/pull/'))
   workingDirectory: $(Pipeline.Workspace)
 
 - task: PublishPipelineArtifact@1
   displayName: Store xfel_regression results
+  condition: and(succeeded(),
+                 startsWith(variables.SOURCE_BRANCH, 'refs/pull/'))
   inputs:
     targetPath: $(Pipeline.Workspace)/tests
     artifactName: xfel-regression - Python $(PYTHON_VERSION) $(Agent.OS)
 
-# Recover disk space after testing
+# Reclaim disk space after testing
 # This is only relevant if we had cache misses, as free disk space is required to create the dials-data cache archive
 - bash: |
     set -eux
-    echo Disk space usage:
+    echo -e "\e[1;32mOverall disk space usage:\e[0m"
     df -h
     du -sh *
-    du -sh modules/xfel_regression
-    echo
-    echo Test artefacts:
+    echo -e "\n\e[1;32mxfel-regression:\e[0m"
+    du -sh modules/xfel_regression || echo "xfel-regression not present"
+    rm -rf modules/xfel_regression
+    echo -e "\n\e[1;32mTest artefacts:\e[0m"
     du -h tests
     rm -rf tests
-  displayName: Recover disk space
+  displayName: Reclaim disk space
   workingDirectory: $(Pipeline.Workspace)
   condition: and(succeeded(), ne(variables.DATA_CACHED, 'true'))

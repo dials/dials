@@ -20,7 +20,7 @@ stages:
   displayName: Prepare
   jobs:
   - job: setup
-    displayName: syntax validation
+    displayName: static analysis
     pool:
       vmImage: ubuntu-20.04
     steps:
@@ -34,6 +34,7 @@ stages:
 
       # Run syntax validation on a shallow clone
       - bash: |
+          set -eux
           mkdir repository
           cd repository
           echo Checking out $(Build.SourceBranch) from $(Build.Repository.Uri)
@@ -44,8 +45,18 @@ stages:
           python .azure-pipelines/syntax-validation.py
         displayName: Syntax validation
 
-      # Set up date constants for caching in further build jobs
       - bash: |
+          set -eux
+          pip install flake8
+          cd repository
+          python .azure-pipelines/flake8-validation.py
+        displayName: Flake8 validation
+
+      # Set up constants for further build steps
+      - bash: |
+          set -eux
+          echo "##vso[task.setvariable variable=BUILD_REPOSITORY_NAME;isOutput=true]${BUILD_REPOSITORY_NAME}"
+          echo "##vso[task.setvariable variable=BUILD_SOURCEBRANCH;isOutput=true]${BUILD_SOURCEBRANCH}"
           echo "##vso[task.setvariable variable=CURRENT_WEEK;isOutput=true]$(date +W%W)"
           echo "##vso[task.setvariable variable=TODAY_ISO;isOutput=true]$(date +%Y%m%d)"
           echo
@@ -60,48 +71,33 @@ stages:
         displayName: Set up build constants
         name: constants
 
-  - job: flake8
-    displayName: flake8 validation
-    dependsOn: setup
-    condition: eq(dependencies.setup.outputs['constants.NEWSFRAGMENT_WAITING'], 'false')
-    pool:
-      vmImage: ubuntu-20.04
-    steps:
-      - checkout: none
-
-      # Use Python >=3.7 for flake8
-      - task: UsePythonVersion@0
-        displayName: Set up python
-        inputs:
-          versionSpec: 3.7
-
-      # Run flake8 validation on a shallow clone
-      - bash: |
-          pip install flake8 &
-          mkdir repository
-          cd repository
-          echo Checking out $(Build.SourceBranch) from $(Build.Repository.Uri)
-          git init
-          git remote add origin $(Build.Repository.Uri)
-          git fetch --depth 1 --no-recurse-submodules origin $(Build.SourceBranch)
-          git checkout FETCH_HEAD
-          wait
-          python .azure-pipelines/flake8-validation.py
-        displayName: Flake8 validation
-
 - stage: build
+  displayName: Build & Test
   dependsOn:
   - prepare
-  displayName: Build & Test
+  condition: and(succeeded(),
+                 eq(dependencies.prepare.outputs['setup.constants.NEWSFRAGMENT_WAITING'], 'false'))
   jobs:
     - template: .azure-pipelines/azure-pipelines-linux.yml
     - template: .azure-pipelines/azure-pipelines-mac.yml
     - template: .azure-pipelines/azure-pipelines-windows.yml
 
-- stage: Summary
+- stage: summary
+  displayName: Summary
   dependsOn:
+  - prepare
   - build
+  condition: and(succeeded(),
+                 eq(dependencies.prepare.outputs['setup.constants.NEWSFRAGMENT_WAITING'], 'false'),
+                 startsWith(dependencies.prepare.outputs['setup.constants.BUILD_SOURCEBRANCH'], 'refs/pull/'))
   jobs:
+    - job: pr
+      displayName: Ready to merge
+      pool:
+        vmImage: ubuntu-20.04
+      steps:
+        - checkout: none
+
     - job: xfel
       displayName: XFEL regression tests
       pool:
