@@ -2,10 +2,10 @@ jobs:
 - job: linux
   pool:
     vmImage: ubuntu-20.04
-  condition: eq(stageDependencies.prepare.outputs['setup.constants.NEWSFRAGMENT_WAITING'], 'false')
+  condition: eq(stageDependencies.prepare.setup.outputs['constants.NEWSFRAGMENT_WAITING'], 'false')
   variables:
-    CURRENT_WEEK: $[ stageDependencies.prepare.outputs['setup.constants.CURRENT_WEEK'] ]
-    TODAY_ISO: $[ stageDependencies.prepare.outputs['setup.constants.TODAY_ISO'] ]
+    CURRENT_WEEK: $[ stageDependencies.prepare.setup.outputs['constants.CURRENT_WEEK'] ]
+    TODAY_ISO: $[ stageDependencies.prepare.setup.outputs['constants.TODAY_ISO'] ]
   strategy:
     matrix:
       python36:
