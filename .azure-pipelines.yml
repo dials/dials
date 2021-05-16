@@ -90,7 +90,8 @@ stages:
         displayName: Flake8 validation
 
 - stage: build
-  dependsOn: prepare
+  dependsOn:
+  - prepare
   displayName: Build & Test
   jobs:
     - template: .azure-pipelines/azure-pipelines-linux.yml
@@ -98,7 +99,8 @@ stages:
   # - template: .azure-pipelines/azure-pipelines-windows.yml
 
 - stage: Summary
-  dependsOn: build
+  dependsOn:
+  - build
   jobs:
     - job: xfel
       displayName: XFEL regression tests
