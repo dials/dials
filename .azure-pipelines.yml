@@ -47,7 +47,7 @@ stages:
 
       - bash: |
           set -eux
-          # pip install flake8
+          pip install flake8
           cd repository
           python .azure-pipelines/flake8-validation.py
         displayName: Flake8 validation
