@@ -75,8 +75,7 @@ stages:
   displayName: Build & Test
   dependsOn:
   - prepare
-  condition: and(succeeded(),
-                 eq(dependencies.prepare.outputs['setup.constants.NEWSFRAGMENT_WAITING'], 'false'))
+  condition: eq(dependencies.prepare.outputs['setup.constants.NEWSFRAGMENT_WAITING'], 'false')
   jobs:
     - template: .azure-pipelines/azure-pipelines-linux.yml
     - template: .azure-pipelines/azure-pipelines-mac.yml
