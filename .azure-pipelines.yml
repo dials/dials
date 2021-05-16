@@ -96,7 +96,7 @@ stages:
   jobs:
     - template: .azure-pipelines/azure-pipelines-linux.yml
     - template: .azure-pipelines/azure-pipelines-mac.yml
-  # - template: .azure-pipelines/azure-pipelines-windows.yml
+    - template: .azure-pipelines/azure-pipelines-windows.yml
 
 - stage: Summary
   dependsOn:
