@@ -47,7 +47,7 @@ stages:
 
       - bash: |
           set -eux
-          pip install flake8
+          # pip install flake8
           cd repository
           python .azure-pipelines/flake8-validation.py
         displayName: Flake8 validation
@@ -86,8 +86,7 @@ stages:
   dependsOn:
   - prepare
   - build
-  condition: and(succeeded(),
-                 eq(dependencies.prepare.outputs['setup.constants.NEWSFRAGMENT_WAITING'], 'false'),
+  condition: and(eq(dependencies.prepare.outputs['setup.constants.NEWSFRAGMENT_WAITING'], 'false'),
                  startsWith(dependencies.prepare.outputs['setup.constants.BUILD_SOURCEBRANCH'], 'refs/pull/'))
   jobs:
     - job: pr
