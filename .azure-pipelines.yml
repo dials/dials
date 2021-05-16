@@ -1,5 +1,6 @@
 variables:
   CACHE_VERSION: 20201102
+  isPullRequest: $[startsWith(variables['Build.SourceBranch'], 'refs/pull/')]
 
 schedules:
   # nightly builds to populate caches
@@ -55,8 +56,6 @@ stages:
       # Set up constants for further build steps
       - bash: |
           set -eux
-          echo "##vso[task.setvariable variable=BUILD_REPOSITORY_NAME;isOutput=true]${BUILD_REPOSITORY_NAME}"
-          echo "##vso[task.setvariable variable=BUILD_SOURCEBRANCH;isOutput=true]${BUILD_SOURCEBRANCH}"
           echo "##vso[task.setvariable variable=CURRENT_WEEK;isOutput=true]$(date +W%W)"
           echo "##vso[task.setvariable variable=TODAY_ISO;isOutput=true]$(date +%Y%m%d)"
           echo
@@ -75,7 +74,8 @@ stages:
   displayName: Build & Test
   dependsOn:
   - prepare
-  condition: eq(dependencies.prepare.outputs['setup.constants.NEWSFRAGMENT_WAITING'], 'false')
+  condition: and(eq(dependencies.prepare.outputs['setup.constants.NEWSFRAGMENT_WAITING'], 'false'),
+                 succeeded())
   jobs:
     - template: .azure-pipelines/azure-pipelines-linux.yml
     - template: .azure-pipelines/azure-pipelines-mac.yml
@@ -87,7 +87,8 @@ stages:
   - prepare
   - build
   condition: and(eq(dependencies.prepare.outputs['setup.constants.NEWSFRAGMENT_WAITING'], 'false'),
-                 startsWith(dependencies.prepare.outputs['setup.constants.BUILD_SOURCEBRANCH'], 'refs/pull/'))
+                 eq(variables.isPullRequest, true),
+                 succeeded())
   jobs:
     - job: pr
       displayName: Ready to merge

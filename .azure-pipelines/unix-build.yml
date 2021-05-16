@@ -2,8 +2,8 @@
 #   CACHE_VERSION: unique cache identifier
 #   CURRENT_WEEK: weekly changing cache identifier
 #   PYTHON_VERSION: string in the form of "3.x"
-#   SOURCE_BRANCH: starts with 'refs/pull/' if this is a PR build
 #   TODAY_ISO: today's date in ISO format, eg. "20200531"
+#   isPullRequest: whether this is a pull request build
 
 steps:
 
@@ -94,7 +94,6 @@ steps:
     pytest -v -ra -n auto --basetemp="$(Pipeline.Workspace)/tests" --durations=10 \
         --cov=$(pwd) --cov-report=html --cov-report=xml --cov-branch \
         --timeout=5400 --regression || echo "##vso[task.complete result=Failed;]Some tests failed"
-    exit 1
   displayName: Run tests
   workingDirectory: $(Pipeline.Workspace)
 
@@ -119,8 +118,7 @@ steps:
     libtbx.configure xfel_regression
     wait
   displayName: Prepare xfel_regression tests
-  condition: and(succeeded(),
-                 startsWith(variables.SOURCE_BRANCH, 'refs/pull/'))
+  condition: and(eq(variables.isPullRequest, true), succeeded())
   workingDirectory: $(Pipeline.Workspace)
 
 # Finally, run the full regression test suite
@@ -139,14 +137,12 @@ steps:
     cd ..
     rm -rf workdir
   displayName: Run xfel_regression tests
-  condition: and(succeeded(),
-                 startsWith(variables.SOURCE_BRANCH, 'refs/pull/'))
+  condition: and(eq(variables.isPullRequest, true), succeeded())
   workingDirectory: $(Pipeline.Workspace)
 
 - task: PublishPipelineArtifact@1
   displayName: Store xfel_regression results
-  condition: and(succeeded(),
-                 startsWith(variables.SOURCE_BRANCH, 'refs/pull/'))
+  condition: and(eq(variables.isPullRequest, true), succeeded())
   inputs:
     targetPath: $(Pipeline.Workspace)/tests
     artifactName: xfel-regression - Python $(PYTHON_VERSION) $(Agent.OS)
@@ -154,7 +150,7 @@ steps:
 # Reclaim disk space after testing
 # This is only relevant if we had cache misses, as free disk space is required to create the dials-data cache archive
 - bash: |
-    set -eux
+    set -eu
     echo -e "\e[1;32mOverall disk space usage:\e[0m"
     df -h
     du -sh *
