@@ -208,7 +208,6 @@ def test_scan_varying_with_fixed_crystal(fix, dials_data, tmpdir):
     assert not result.returncode and not result.stderr
 
 
-@pytest.mark.slow
 def test_scan_varying_missing_segments_multi_crystal(dials_data, tmpdir):
     # https://github.com/dials/dials/issues/1053
     location = dials_data("i19_1_pdteet_index")
@@ -248,7 +247,6 @@ def test_scan_varying_missing_segments_multi_crystal(dials_data, tmpdir):
     assert image_ranges[1][0] == 1
 
 
-@pytest.mark.slow
 def test_scan_varying_multi_scan_one_crystal(dials_data, tmpdir):
     # https://github.com/dials/dials/issues/994
     location = dials_data("l_cysteine_dials_output")
