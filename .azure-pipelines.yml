@@ -18,7 +18,7 @@ schedules:
 
 stages:
 - stage: prepare
-  displayName: Prepare
+  displayName: Check
   jobs:
   - job: setup
     displayName: static analysis
@@ -81,7 +81,7 @@ stages:
     - template: .azure-pipelines/azure-pipelines-windows.yml
 
 - stage: summary
-  displayName: Summary
+  displayName: 'Summary:'
   dependsOn:
   - prepare
   - build
