@@ -1,1 +1,1 @@
-Promote dials.find_bad_pixels and add test.
+New command: ``dials.find_bad_pixels`` to <....????....>
