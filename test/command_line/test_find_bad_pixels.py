@@ -3,9 +3,7 @@ import procrunner
 
 def test_find_bad_pixels(dials_data, tmp_path):
 
-    image_files = [
-        str(f) for f in sorted(dials_data("x4wide", pathlib=True).glob("*.cbf"))
-    ]
+    image_files = sorted(dials_data("x4wide", pathlib=True).glob("*.cbf"))
     result = procrunner.run(
         [
             "dials.find_bad_pixels",
