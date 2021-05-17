@@ -14,7 +14,7 @@ help_message = """
 
 Examples::
 
-  dev.dials.find_bad_pixels data_master.h5 [nproc=8]
+  dials.find_bad_pixels data_master.h5 [nproc=8]
 
 """
 
