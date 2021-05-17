@@ -107,7 +107,7 @@ def find_constant_signal_pixels(imageset, images):
 
 @dials.util.show_mail_handle_errors()
 def run(args=None):
-    usage = "dev.dials.find_bad_pixels [options] data_master.h5"
+    usage = "dials.find_bad_pixels [options] data_master.h5"
 
     parser = OptionParser(
         usage=usage,
