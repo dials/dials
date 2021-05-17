@@ -253,8 +253,18 @@ def test_scan_varying_multi_scan_one_crystal(dials_data, tmpdir):
     refls = location.join("indexed.refl")
     expts = location.join("indexed.expt")
 
+    # Set options for quick rather than careful refinement
     result = procrunner.run(
-        ("dials.refine", expts, refls, "output.history=history.json"),
+        (
+            "dials.refine",
+            expts,
+            refls,
+            "output.history=history.json",
+            "outlier.algorithm=tukey",
+            "max_iterations=3",
+            "unit_cell.smoother.interval_width_degrees=72",
+            "orientation.smoother.interval_width_degrees=72",
+        ),
         working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
@@ -270,20 +280,10 @@ def test_scan_varying_multi_scan_one_crystal(dials_data, tmpdir):
     history = Journal.from_json_file(tmpdir.join("history.json").strpath)
 
     expected_rmsds = [
-        [0.102069933, 0.186479653, 0.000970519],
-        [0.078117368, 0.105479383, 0.000691489],
-        [0.058065104, 0.065957717, 0.000497565],
-        [0.042720574, 0.052950359, 0.000393993],
-        [0.034387246, 0.045392992, 0.000341015],
-        [0.031183632, 0.041773097, 0.000308778],
-        [0.029800047, 0.040413058, 0.000288812],
-        [0.029161629, 0.039836196, 0.000280338],
-        [0.028807767, 0.039529834, 0.000277679],
-        [0.028551526, 0.039361871, 0.000276772],
-        [0.028395222, 0.039322832, 0.000276637],
-        [0.028334067, 0.039332485, 0.000276678],
-        [0.028319859, 0.039338415, 0.000276687],
-        [0.028317563, 0.039339503, 0.000276691],
+        (0.14016587828475036, 0.22259315848378808, 0.00234991265544381),
+        (0.1212473654228743, 0.15740582269530204, 0.002128467221939613),
+        (0.11015915334487252, 0.1332217772539705, 0.001980680484554896),
+        (0.10432406373225399, 0.12781674128322154, 0.0018309940011838393),
     ]
     for a, b in zip(history["rmsd"], expected_rmsds):
         assert a == pytest.approx(b, abs=1e-6)
