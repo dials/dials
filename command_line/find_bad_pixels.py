@@ -1,6 +1,3 @@
-# LIBTBX_SET_DISPATCHER_NAME dev.dials.find_bad_pixels
-
-
 import concurrent.futures
 import math
 import sys
