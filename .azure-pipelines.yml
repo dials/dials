@@ -55,7 +55,6 @@ stages:
 
       # Set up constants for further build steps
       - bash: |
-          set -eux
           echo "##vso[task.setvariable variable=CURRENT_WEEK;isOutput=true]$(date +W%W)"
           echo "##vso[task.setvariable variable=TODAY_ISO;isOutput=true]$(date +%Y%m%d)"
           echo
