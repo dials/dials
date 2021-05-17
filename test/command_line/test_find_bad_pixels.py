@@ -1,7 +1,7 @@
 import procrunner
 
 
-def test_find_bad_pixels(dials_data, tmpdir):
+def test_find_bad_pixels(dials_data, tmp_path):
 
     image_files = [f.strpath for f in dials_data("x4wide").listdir("*.cbf", sort=True)]
     result = procrunner.run(
@@ -9,7 +9,7 @@ def test_find_bad_pixels(dials_data, tmpdir):
             "dials.find_bad_pixels",
         ]
         + image_files,
-        working_directory=tmpdir,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
 
