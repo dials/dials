@@ -412,6 +412,10 @@ class Indexer:
                 from dxtbx.imageset import ImageSet  # , MemImageSet
 
                 for experiment in experiments:
+                    # Elsewhere, checks are made for ImageSequence when picking between algorithms
+                    # specific to rotations vs. stills, so here reset any ImageSequences to stills.
+                    # Note, dials.stills_process resets ImageSequences to ImageSets already,
+                    # and it's not free (the ImageSet cache is dropped), only do it if needed
                     if isinstance(experiment.imageset, ImageSequence):
                         experiment.imageset = ImageSet(
                             experiment.imageset.data(), experiment.imageset.indices()
