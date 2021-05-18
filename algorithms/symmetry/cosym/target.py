@@ -210,7 +210,12 @@ class Target:
                 valid_intensities = intensities[selection][valid]
                 all_intensities[column, valid_mil_ind] = valid_intensities
 
-        rij = pd.DataFrame(all_intensities).T.dropna(how="all").corr().values
+        rij = (
+            pd.DataFrame(all_intensities)
+            .T.dropna(how="all")
+            .corr(min_periods=self._min_pairs)
+            .values
+        )
         # Set any NaN correlation coefficients to zero.
         np.nan_to_num(rij, copy=False)
         # Cosym does not make use of the on-diagonal correlation coefficients.
