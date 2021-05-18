@@ -165,6 +165,7 @@ class Target:
 
         """
         n_lattices = len(self._lattices)
+        n_sym_ops = len(self.sym_ops)
 
         # Pre-calculate miller indices after application of each cb_op. Only calculate
         # this once per cb_op instead of on-the-fly every time we need it.
@@ -194,31 +195,35 @@ class Target:
         for cb_op, hkl in indices.items():
             indices[cb_op] = np.ravel_multi_index((hkl + offset).T, dims)
 
-        n_sym_ops = len(self.sym_ops)
-        NN = n_lattices * n_sym_ops
+        # Create an empty 2D array of shape (m * n, L), where m is the number of sym
+        # ops, n is the number of lattices, and L is the number of unique miller indices
+        all_intensities = np.empty((n_sym_ops * n_lattices, np.prod(dims)))
 
-        all_intensities = np.empty((NN, np.prod(dims)))
+        # Populate all_intensities with intensity values, filling absent intensities
+        # with np.nan
         all_intensities.fill(np.nan)
-
         slices = np.append(self._lattices, intensities.size)
         slices = list(map(slice, slices[:-1], slices[1:]))
         for i, (mil_ind, eps) in enumerate(zip(indices.values(), epsilons.values())):
             for j, selection in enumerate(slices):
+                # map (i, j) to a column in all_intensities
                 column = np.ravel_multi_index((i, j), (n_sym_ops, n_lattices))
-                valid = eps[selection] == 1
-                valid_mil_ind = mil_ind[selection][valid]
-                valid_intensities = intensities[selection][valid]
+                epsilon_equals_one = eps[selection] == 1
+                valid_mil_ind = mil_ind[selection][epsilon_equals_one]
+                valid_intensities = intensities[selection][epsilon_equals_one]
                 all_intensities[column, valid_mil_ind] = valid_intensities
 
+        # Ideally we would use `np.ma.corrcoef` here, but it is broken, so use
+        # pd.DataFrame.corr() instead (see numpy/numpy#15601)
         rij = (
             pd.DataFrame(all_intensities)
             .T.dropna(how="all")
             .corr(min_periods=self._min_pairs)
             .values
         )
-        # Set any NaN correlation coefficients to zero.
+        # Set any NaN correlation coefficients to zero
         np.nan_to_num(rij, copy=False)
-        # Cosym does not make use of the on-diagonal correlation coefficients.
+        # Cosym does not make use of the on-diagonal correlation coefficients
         np.fill_diagonal(rij, 0)
 
         if self._weights:
@@ -226,14 +231,14 @@ class Target:
             right_up = np.triu_indices_from(wij, k=1)
 
             # For each correlation coefficient, set the weight equal to the size of
-            # the sample used to calculate that coefficient.
+            # the sample used to calculate that coefficient
             pairwise_combos = itertools.combinations(np.isfinite(all_intensities), 2)
             sample_size = lambda x, y: np.count_nonzero(x & y)
             wij[right_up] = list(itertools.starmap(sample_size, pairwise_combos))
 
             if self._weights == "standard_error":
                 # Set each weights as the reciprocal of the standard error on the
-                # corresponding correlation coefficient.
+                # corresponding correlation coefficient
                 # http://www.sjsu.edu/faculty/gerstman/StatPrimer/correlation.pdf
                 with np.errstate(divide="ignore", invalid="ignore"):
                     reciprocal_se = np.sqrt(
@@ -242,7 +247,7 @@ class Target:
 
                 wij[right_up] = np.where(wij[right_up] > 2, reciprocal_se, 0)
 
-            # Symmetrise the wij matrix.
+            # Symmetrise the wij matrix
             wij += wij.T
         else:
             wij = None
