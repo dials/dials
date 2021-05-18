@@ -31,7 +31,7 @@ class Target:
         min_pairs=3,
         lattice_group=None,
         dimensions=None,
-        nproc=1,
+        nproc=None,
     ):
         r"""Intialise a Target object.
 
@@ -55,13 +55,15 @@ class Target:
             in the analysis. If not set, then the number of dimensions used is
             equal to the greater of 2 or the number of symmetry operations in the
             lattice group.
-          nproc (int): number of processors to use for computing the rij matrix.
+          nproc (int): Deprecated
         """
+        if nproc is not None:
+            warnings.warn("nproc is deprecated", DeprecationWarning)
+
         if weights is not None:
             assert weights in ("count", "standard_error")
         self._weights = weights
         self._min_pairs = min_pairs
-        self._nproc = nproc
 
         data = intensities.customized_copy(anomalous_flag=False)
         cb_op_to_primitive = data.change_of_basis_op_to_primitive_setting()

@@ -81,9 +81,10 @@ minimization {
     .type = int(value_min=0)
 }
 
-nproc = 1
+nproc = None
   .type = int(value_min=1)
-  .help = "The number of processes to use."
+  .help = "Deprecated"
+  .deprecated = True
 """
 )
 
@@ -199,7 +200,6 @@ class CosymAnalysis(symmetry_base, Subject):
             lattice_group=self.lattice_group,
             dimensions=dimensions,
             weights=self.params.weights,
-            nproc=self.params.nproc,
         )
 
     def _determine_dimensions(self):
