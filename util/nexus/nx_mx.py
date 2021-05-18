@@ -642,7 +642,7 @@ def load_crystal(entry):
     nx_sample = get_nx_sample(entry, "sample")
 
     # Set the space group
-    space_group_symbol = nx_sample["unit_cell_group"][()]
+    space_group_symbol = h5str(nx_sample["unit_cell_group"][()])
 
     # Get depends on
     if h5str(nx_sample["depends_on"][()]) != ".":
@@ -688,7 +688,9 @@ def load_crystal(entry):
     assert orientation_matrix.all()[2] == 3
 
     # Construct the crystal model
-    crystal = Crystal(real_space_a, real_space_b, real_space_c, space_group_symbol)
+    crystal = Crystal(
+        real_space_a, real_space_b, real_space_c, "Hall: " + space_group_symbol
+    )
 
     # Sort out scan points
     if unit_cell.all()[0] > 1:
