@@ -13,7 +13,7 @@ jobs:
 #       PYTHON_VERSION: 3.7
 #     python38:
 #       PYTHON_VERSION: 3.8
-  timeoutInMinutes: 150
+  timeoutInMinutes: 90
 
   steps:
   - template: unix-build.yml

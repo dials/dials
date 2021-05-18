@@ -13,14 +13,9 @@ jobs:
 #        PYTHON_VERSION: 3.7
 #      python38:
 #        PYTHON_VERSION: 3.8
-  timeoutInMinutes: 150
+  timeoutInMinutes: 90
 
   steps:
-  # Dependencies required for building gltbx
-  - script: |
-      sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev
-    displayName: Install dependencies
-
   - template: unix-build.yml
     parameters:
       conda_environment: .conda-envs/linux.txt
