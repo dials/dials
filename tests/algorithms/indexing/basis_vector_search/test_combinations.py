@@ -3,6 +3,7 @@ import logging
 
 import scitbx.matrix
 from cctbx import crystal, sgtbx, uctbx
+from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from dxtbx.model import Crystal
 from scitbx.math import euler_angles_as_matrix
 
@@ -71,15 +72,13 @@ def test_combinations(setup_rlp):
                 target_sg = (
                     target_symmetry.space_group_info().reference_setting().group()
                 )
-                from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 
                 subgroups = metric_subgroups(
                     model.get_crystal_symmetry(), max_delta=5, bravais_types_only=False
                 )
-                if not target_sg.build_derived_patterson_group() in [
+                assert target_sg.build_derived_patterson_group() in [
                     g["ref_subsym"].space_group() for g in subgroups.result_groups
-                ]:
-                    assert 0
+                ]
 
 
 def test_filter_known_symmetry_no_matches(caplog):
