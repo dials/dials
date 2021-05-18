@@ -30,15 +30,15 @@ def test_run(dials_data, run_in_tmpdir):
         data2 = reflections2[key]
         assert data1.__class__ == data2.__class__
         if isinstance(data1, flex.double):
-            assert data1.all_approx_equal(data2)
+            assert data1.all_approx_equal(data2), key
         elif isinstance(data1, flex.int6):
             for p1, p2 in zip(data1.parts(), data2.parts()):
-                assert p1.all_eq(p2)
+                assert p1.all_eq(p2), key
         elif isinstance(data1, flex.vec3_double):
             for p1, p2 in zip(data1.parts(), data2.parts()):
-                assert p1.all_approx_equal(p2)
+                assert p1.all_approx_equal(p2), key
         else:
-            assert data1.all_eq(data2)
+            assert data1.all_eq(data2), key
 
     # Test passed
 
