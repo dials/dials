@@ -1,6 +1,6 @@
-import concurrent.futures
 import math
 import sys
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 import iotbx.phil
 from scitbx.array_family import flex
@@ -107,7 +107,7 @@ def find_constant_signal_pixels(imageset, images):
 
 @dials.util.show_mail_handle_errors()
 def run(args=None):
-    usage = "dials.find_bad_pixels [options] data_master.h5"
+    usage = "dials.find_bad_pixels [options] (data_master.h5|data_00*.cbf)"
 
     parser = OptionParser(
         usage=usage,
@@ -120,54 +120,66 @@ def run(args=None):
     params, options = parser.parse_args(args, show_diff_phil=True)
 
     experiments = flatten_experiments(params.input.experiments)
-    if len(experiments) != 1:
+
+    if len(experiments) == 0:
         parser.print_help()
-        sys.exit("Please pass an experiment list\n")
+        sys.exit("Please pass an experiment list or image data\n")
         return
 
-    imagesets = experiments.imagesets()
+    # assume that all data come from the same detector, if multiple experiments
+    # are passed (though could use the same principle for finding the set of
+    # all pixels which _can_ be unreliable too...)
 
-    if len(imagesets) != 1:
-        sys.exit("Please pass an experiment list that contains one imageset")
+    hot_mask = None
 
-    imageset = imagesets[0]
-    panels = imageset.get_detector()
-    detector = panels[0]
-    nfast, nslow = detector.get_image_size()
+    for experiment in experiments:
+        imageset = experiment.imageset
 
-    first, last = imageset.get_scan().get_image_range()
-    images = range(first, last + 1)
+        # TODO fix this for > 1 panel detectors
+        detector = experiment.detector[0]
+        nfast, nslow = detector.get_image_size()
 
-    if params.images is None and params.image_range is not None:
-        start, end = params.image_range
-        params.images = list(range(start, end + 1))
+        first, last = experiment.scan.get_image_range()
+        images = range(first, last + 1)
 
-    if params.images:
-        if min(params.images) < first or max(params.images) > last:
-            sys.exit("Image outside of scan range")
-        images = params.images
+        # TODO tidy up the logic here - it is _correct_ but a bit ...
+        # convoluted
+        if params.images is None and params.image_range is not None:
+            start, end = params.image_range
+            params.images = list(range(start, end + 1))
 
-    n = int(math.ceil(len(images) / params.nproc))
-    chunks = [images[i : i + n] for i in range(0, len(images), n)]
+        if params.images:
+            if min(params.images) < first or max(params.images) > last:
+                sys.exit("Image outside of scan range")
+            images = params.images
 
-    assert len(images) == sum(len(chunk) for chunk in chunks)
+        # work around dxtbx "features" to do with counting from (0, 1, -1, n)
+        images = [i - first + 1 for i in images]
 
-    if len(chunks) < params.nproc:
-        params.nproc = len(chunks)
+        n = int(math.ceil(len(images) / params.nproc))
+        chunks = [images[i : i + n] for i in range(0, len(images), n)]
 
-    total = None
+        assert len(images) == sum(len(chunk) for chunk in chunks)
 
-    with concurrent.futures.ProcessPoolExecutor(max_workers=params.nproc) as p:
-        jobs = []
-        for j in range(params.nproc):
-            jobs.append(p.submit(find_constant_signal_pixels, imageset, chunks[j]))
-        for job in concurrent.futures.as_completed(jobs):
-            if total is None:
-                total = job.result()
-            else:
-                total += job.result()
+        if len(chunks) < params.nproc:
+            params.nproc = len(chunks)
 
-    hot_mask = total >= (len(images) // 2)
+        total = None
+        with ProcessPoolExecutor(max_workers=params.nproc) as p:
+            jobs = []
+            for j in range(params.nproc):
+                jobs.append(p.submit(find_constant_signal_pixels, imageset, chunks[j]))
+            for job in as_completed(jobs):
+                if total is None:
+                    total = job.result()
+                else:
+                    total += job.result()
+
+        if hot_mask is None:
+            hot_mask = total >= (len(images) // 2)
+        else:
+            hot_mask = hot_mask & (total >= (len(images) // 2))
+
     hot_pixels = hot_mask.iselection()
 
     for h in hot_pixels:

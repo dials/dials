@@ -4,6 +4,7 @@ import procrunner
 def test_find_bad_pixels(dials_data, tmp_path):
 
     image_files = sorted(dials_data("x4wide", pathlib=True).glob("*.cbf"))
+    image_files = image_files[:10] + image_files[-10:]
     result = procrunner.run(
         [
             "dials.find_bad_pixels",
@@ -20,4 +21,4 @@ def test_find_bad_pixels(dials_data, tmp_path):
             assert record.split()[-1] == "8"
             count += 1
 
-    assert count == 27
+    assert count == 23
