@@ -4,6 +4,7 @@ import sys
 import wx
 
 import scitbx.matrix
+from dxtbx.model.detector_helpers import project_2d
 from scitbx.array_family import flex
 
 ######
@@ -114,6 +115,11 @@ def get_flex_image_multipanel(
             pass
     beam_center /= npanels / 1e-3
 
+    # Calculate 2D origin, fast and slow vectors for detector projected onto
+    # a best fit frame. FIXME this should be done once for the detector, not
+    # here for every image we want to display!
+    origin_2d, fast_2d, slow_2d = project_2d(panels)
+
     # XXX If a point is contained in two panels simultaneously, it will
     # be assigned to the panel defined first.  XXX Use a Z-buffer
     # instead?
@@ -160,6 +166,11 @@ def get_flex_image_multipanel(
         fast = scitbx.matrix.col(panel.get_fast_axis())
         slow = scitbx.matrix.col(panel.get_slow_axis())
         origin = scitbx.matrix.col(panel.get_origin()) * 1e-3 - beam_center
+
+        # Redefine axes according to precalculated 2D projection.
+        fast = scitbx.matrix.col(fast_2d[i] + (0,))
+        slow = scitbx.matrix.col(slow_2d[i] + (0,))
+        origin = scitbx.matrix.col(origin_2d[i] + (0,)) * 1e-3
 
         center = (
             origin
