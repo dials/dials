@@ -292,14 +292,28 @@ class _Tiles:
         if not isinstance(image_data, tuple):
             image_data = (image_data,)
 
-        self.flex_image = get_flex_image_multipanel(
-            brightness=self.current_brightness / 100,
-            panels=detector,
-            show_untrusted=self.show_untrusted,
-            image_data=image_data,
-            beam=self.raw_image.get_beam(),
-            color_scheme=self.current_color_scheme,
-        )
+        if len(detector) > 1:
+            self.flex_image = get_flex_image_multipanel(
+                brightness=self.current_brightness / 100,
+                panels=detector,
+                show_untrusted=self.show_untrusted,
+                image_data=image_data,
+                beam=self.raw_image.get_beam(),
+                color_scheme=self.current_color_scheme,
+            )
+        else:
+            if show_saturated:
+                saturation = self.raw_image.get_detector()[0].get_trusted_range()[1]
+            else:
+                saturation = 1e16
+            self.flex_image = get_flex_image(
+                brightness=self.current_brightness / 100,
+                data=image_data[0],
+                saturation=saturation,
+                vendortype=self.raw_image.get_vendortype(),
+                show_untrusted=self.show_untrusted,
+                color_scheme=self.current_color_scheme,
+            )
 
         if self.zoom_level >= 0:
             self.flex_image.adjust(color_scheme=self.current_color_scheme)
@@ -312,13 +326,28 @@ class _Tiles:
 
         detector = self.raw_image.get_detector()
         self.raw_image.set_image_data(raw_image_data)
+        if len(detector) == 1 and len(raw_image_data) == 1:
+            raw_image_data = raw_image_data[0]
 
-        self.flex_image = get_flex_image_multipanel(
-            brightness=self.current_brightness / 100,
-            panels=detector,
-            image_data=raw_image_data,
-            beam=self.raw_image.get_beam(),
-        )
+        if len(detector) > 1:
+            self.flex_image = get_flex_image_multipanel(
+                brightness=self.current_brightness / 100,
+                panels=detector,
+                image_data=raw_image_data,
+                beam=self.raw_image.get_beam(),
+            )
+        else:
+            if show_saturated:
+                saturation = self.raw_image.get_detector()[0].get_trusted_range()[1]
+            else:
+                saturation = 1e16
+            self.flex_image = get_flex_image(
+                brightness=self.current_brightness / 100,
+                data=raw_image_data,
+                saturation=saturation,
+                vendortype=self.raw_image.get_vendortype(),
+                show_untrusted=self.show_untrusted,
+            )
 
         self.flex_image.adjust(color_scheme=self.current_color_scheme)
 
@@ -327,14 +356,26 @@ class _Tiles:
         if not isinstance(image_data, tuple):
             image_data = (image_data,)
 
-        self.flex_image = get_flex_image_multipanel(
-            brightness=b / 100,
-            panels=self.raw_image.get_detector(),
-            show_untrusted=self.show_untrusted,
-            image_data=image_data,
-            beam=self.raw_image.get_beam(),
-            color_scheme=color_scheme,
-        )
+        if len(self.raw_image.get_detector()) > 1:
+            # XXX Special-case read of new-style images until multitile
+            # images are fully supported in dxtbx.
+            self.flex_image = get_flex_image_multipanel(
+                brightness=b / 100,
+                panels=self.raw_image.get_detector(),
+                show_untrusted=self.show_untrusted,
+                image_data=image_data,
+                beam=self.raw_image.get_beam(),
+                color_scheme=color_scheme,
+            )
+        else:
+            self.flex_image = get_flex_image(
+                brightness=b / 100,
+                data=image_data[0],
+                saturation=self.raw_image.get_detector()[0].get_trusted_range()[1],
+                vendortype=self.raw_image.get_vendortype(),
+                show_untrusted=self.show_untrusted,
+                color_scheme=color_scheme,
+            )
 
         self.reset_the_cache()
         self.UseLevel(self.zoom_level)
@@ -378,10 +419,8 @@ class _Tiles:
             wx_image = wx.Image(w / 2, h / 2)
             import PIL.Image as Image
 
-            Image_from_bytes = Image.frombytes(
-                "RGB", (512, 512), self.flex_image.as_bytes()
-            )
-            J = Image_from_bytes.resize((256, 256), Image.ANTIALIAS)
+            I = Image.frombytes("RGB", (512, 512), self.flex_image.as_bytes())
+            J = I.resize((256, 256), Image.ANTIALIAS)
             wx_image.SetData(J.tostring())
             return wx_image.ConvertToBitmap()
         elif self.raw_image is not None:
@@ -455,10 +494,20 @@ class _Tiles:
         )
 
     def get_initial_instrument_centering_within_picture_as_lon_lat(self):
-        if sys.platform.lower().find("linux") >= 0:
-            return 0.0, 0.0
+        detector = self.raw_image.get_detector()
+        if sys.platform.startswith("linux"):
+            if len(detector) > 1:
+                return 0.0, 0.0
+            else:
+                return (
+                    self.center_x_lon - self.extent[0],
+                    self.center_y_lat - self.extent[3],
+                )
         else:
-            return self.extent[0], self.extent[3]
+            if len(detector) > 1:
+                return self.extent[0], self.extent[3]
+            else:
+                return self.center_x_lon, self.center_y_lat
 
     def GetTile(self, x, y):
         # from libtbx.development.timers import Timer
@@ -506,7 +555,12 @@ class _Tiles:
         # output fast and slow picture coordinates in units of detector pixels
         # slow is pointing down (x).  fast is pointing right (y).
 
-        (size1, size2) = (self.flex_image.size1(), self.flex_image.size2())
+        detector = self.raw_image.get_detector()
+        if len(detector) == 1:
+            (size2, size1) = detector[0].get_image_size()
+        else:
+            # XXX Special-case until multitile detectors fully supported.
+            (size1, size2) = (self.flex_image.size1(), self.flex_image.size2())
 
         return (
             (size2 / 2.0) - (self.center_x_lon - longitude),
@@ -516,7 +570,12 @@ class _Tiles:
     def picture_fast_slow_to_lon_lat(self, pic_fast_pixel, pic_slow_pixel):
         # inverse of the preceding function
 
-        (size1, size2) = (self.flex_image.size1(), self.flex_image.size2())
+        detector = self.raw_image.get_detector()
+        if detector.num_panels() == 1:
+            (size1, size2) = detector.get_image_size()
+        else:
+            # XXX Special-case until multitile detectors fully supported.
+            (size1, size2) = (self.flex_image.size1(), self.flex_image.size2())
 
         return (
             (size2 / 2.0) - self.center_x_lon - pic_fast_pixel,
@@ -660,10 +719,14 @@ class _Tiles:
             return None
         beam = beam.get_s0()
 
-        if readout is None:
-            return None
+        if len(detector) > 1:
+            if readout is None:
+                return None
 
-        panel = detector[readout]
+            panel = detector[readout]
+
+        else:
+            panel = detector[0]
 
         if abs(panel.get_distance()) > 0:
             return panel.get_resolution_at_pixel(beam, (x, y))
@@ -671,7 +734,13 @@ class _Tiles:
             return None
 
     def get_detector_distance(self):
-        dist = self.raw_image.distance
+        detector = self.raw_image.get_detector()
+        if len(detector) == 1:
+            dist = abs(detector[0].get_distance())
+        else:
+            # XXX Special-case until multitile detectors fully
+            # supported.
+            dist = self.raw_image.distance
         twotheta = self.get_detector_2theta()
         if twotheta == 0.0:
             return dist
@@ -679,9 +748,17 @@ class _Tiles:
             return dist / math.cos(twotheta)
 
     def get_detector_2theta(self):
-        try:
-            two_theta = self.raw_image.twotheta * math.pi / 180
-        except AttributeError:
-            two_theta = 0
+        detector = self.raw_image.get_detector()
+        if len(detector) == 1:
+            n = scitbx.matrix.col(detector[0].get_normal())
+            s0 = scitbx.matrix.col(self.raw_image.get_beam().get_unit_s0())
+            two_theta = s0.angle(n, deg=False)
+        else:
+            # XXX Special-case until multitile detectors fully
+            # supported.
+            try:
+                two_theta = self.raw_image.twotheta * math.pi / 180
+            except AttributeError:
+                two_theta = 0
 
         return two_theta
