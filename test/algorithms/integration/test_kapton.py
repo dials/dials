@@ -1,5 +1,3 @@
-import os
-
 import pytest
 
 import libtbx
@@ -9,20 +7,17 @@ from libtbx.phil import parse
 from dials.array_family import flex
 
 
-def test_kapton(run_in_tmpdir):
+def test_kapton(run_in_tmpdir, dials_data):
     """Test script for kapton correction applied to integrated data.
     Currently only testing kapton 2019 correction on rayonix-340 at LCLS
-    xfel_regression folder needs to be present in modules directory for test to run"""
-    xfel_regression = libtbx.env.find_in_repositories(
-        relative_path="xfel_regression", test=os.path.isdir
+    """
+    image_file = (
+        dials_data("lcls_rayonix_kapton").join("hit-20181213155134902.cbf").strpath
     )
-    if not xfel_regression:
-        pytest.skip("test requires xfel_regression")
-
-    kapton_test_data = os.path.join(xfel_regression, "kapton_test_data", "rayonix340")
-    image_file = os.path.join(kapton_test_data, "hit-20181213155134902.cbf")
-    mask_file = os.path.join(kapton_test_data, "mask_rayonix340mx_4x4.pickle")
-    geom_file = os.path.join(kapton_test_data, "experiments_000.json")
+    mask_file = (
+        dials_data("lcls_rayonix_kapton").join("mask_rayonix340mx_4x4.pickle").strpath
+    )
+    geom_file = dials_data("lcls_rayonix_kapton").join("experiments_000.json").strpath
 
     # Create phil files for the two sitations being tests
     #  a. without kapton
