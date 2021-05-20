@@ -58,8 +58,7 @@ steps:
     set -ux
     dials.data info -v
     echo "##vso[task.setvariable variable=DIALS_DATA_VERSION_FULL]$(dials.data info -v | grep version.full)"
-    echo "##vso[task.setvariable variable=DIALS_DATA_VERSION]$(dials.data info -v | grep version.major)"
-    #                                                                this is a bug in dials-data ^^^^^
+    echo "##vso[task.setvariable variable=DIALS_DATA_VERSION]$(dials.data info -v | grep version.major_minor)"
     mkdir -p data
   displayName: Install additional packages
   workingDirectory: $(Pipeline.Workspace)
@@ -90,6 +89,7 @@ steps:
     . dials
     set -ux
     export DIALS_DATA=${PWD}/data
+    export PYTHONDEVMODE=1
     cd modules/dials
     pytest -v -ra -n auto --basetemp="$(Pipeline.Workspace)/tests" --durations=10 \
         --cov=$(pwd) --cov-report=html --cov-report=xml --cov-branch \
@@ -97,8 +97,7 @@ steps:
   displayName: Run tests
   workingDirectory: $(Pipeline.Workspace)
 
-- bash: |
-    bash <(curl -s https://codecov.io/bash) -t $(CODECOV_TOKEN) -n "Python $(PYTHON_VERSION) $(Agent.OS)"
+- bash: bash <(curl -s https://codecov.io/bash) -t $(CODECOV_TOKEN) -n "Python $(PYTHON_VERSION) $(Agent.OS)"
   displayName: Publish coverage stats
   continueOnError: True
   timeoutInMinutes: 2
@@ -145,7 +144,7 @@ steps:
   condition: and(eq(variables.isPullRequest, true), succeeded())
   inputs:
     targetPath: $(Pipeline.Workspace)/tests
-    artifactName: xfel-regression - Python $(PYTHON_VERSION) $(Agent.OS)
+    artifactName: xfel-regression - Python $(PYTHON_VERSION) $(Agent.OS) - Run $(System.JobAttempt)
 
 # Reclaim disk space after testing
 # This is only relevant if we had cache misses, as free disk space is required to create the dials-data cache archive
@@ -157,7 +156,7 @@ steps:
     echo -e "\n\e[1;32mxfel-regression:\e[0m"
     du -sh modules/xfel_regression || echo "xfel-regression not present"
     rm -rf modules/xfel_regression
-    echo -e "\n\e[1;32mTest artefacts:\e[0m"
+    echo -e "\n\e[1;32mTest artifacts:\e[0m"
     du -h tests
     rm -rf tests
   displayName: Reclaim disk space
