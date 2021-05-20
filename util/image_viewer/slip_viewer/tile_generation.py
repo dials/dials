@@ -114,9 +114,8 @@ def get_flex_image_multipanel(
             pass
     beam_center /= npanels / 1e-3
 
-    # Calculate 2D origin, fast and slow vectors for detector projected onto
-    # a best fit frame. FIXME this should be done once for the detector, not
-    # here for every image we want to display!
+    # Try to obtain precalculated 2D origin, fast and slow vectors for detector
+    # projected onto a best fit frame.
     try:
         projected_axes = panels.projected_2d
     except AttributeError:
