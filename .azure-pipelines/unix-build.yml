@@ -150,13 +150,13 @@ steps:
 # This is only relevant if we had cache misses, as free disk space is required to create the dials-data cache archive
 - bash: |
     set -eu
-    echo -e "\e[1;32mOverall disk space usage:\e[0m"
+    echo -e "\n##[section]Overall disk space usage:"
     df -h
     du -sh *
-    echo -e "\n\e[1;32mxfel-regression:\e[0m"
+    echo -e "\n##[section]xfel-regression:"
     du -sh modules/xfel_regression || echo "xfel-regression not present"
     rm -rf modules/xfel_regression
-    echo -e "\n\e[1;32mTest artifacts:\e[0m"
+    echo -e "\n##[section]Test artifacts:"
     du -h tests
     rm -rf tests
   displayName: Reclaim disk space
