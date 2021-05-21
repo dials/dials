@@ -4,6 +4,7 @@ import sys
 from PIL import Image
 
 import iotbx.phil
+from dxtbx.model.detector_helpers import project_2d
 
 from dials.algorithms.image.threshold import DispersionThresholdDebug
 from dials.array_family import flex
@@ -38,6 +39,8 @@ binning = 1
 brightness = 100
   .type = float(value_min=0.0)
 colour_scheme = *greyscale rainbow heatmap inverse_greyscale
+  .type = choice
+projection = lab *image
   .type = choice
 padding = 4
   .type = int(value_min=0)
@@ -139,6 +142,10 @@ def imageset_as_bitmaps(imageset, params):
     output_files = []
 
     detector = imageset.get_detector()
+
+    # Furnish detector with 2D projection axes
+    detector.projected_2d = project_2d(detector)
+    detector.projection = params.projection
 
     panel = detector[0]
     scan = imageset.get_scan()
