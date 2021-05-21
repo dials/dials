@@ -100,7 +100,7 @@ class SpotFrame(XrayFrame):
         for experiment_list in self.experiments:
             for experiment in experiment_list:
                 experiment.detector.projected_2d = project_2d(experiment.detector)
-                experiment.detector.projection = "lab"
+                experiment.detector.projection = self.params.projection
 
         self.viewing_stills = True
         for experiment_list in self.experiments:
