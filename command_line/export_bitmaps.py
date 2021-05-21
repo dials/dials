@@ -187,7 +187,7 @@ def imageset_as_bitmaps(imageset, params):
             # also binning doesn't work
             flex_image = get_flex_image_multipanel(
                 brightness=brightness,
-                panels=detector,
+                detector=detector,
                 image_data=image,
                 binning=binning,
                 beam=imageset.get_beam(),

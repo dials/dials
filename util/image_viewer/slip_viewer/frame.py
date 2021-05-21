@@ -687,7 +687,7 @@ class XrayFrame(XFBaseClass):
 
             flex_img = get_flex_image_multipanel(
                 brightness=self.settings.brightness / 100,
-                panels=detector,
+                detector=detector,
                 image_data=data,
                 beam=raw_img.get_beam(),
             )
@@ -827,7 +827,7 @@ class XrayFrame(XFBaseClass):
 
             flex_img = get_flex_image_multipanel(
                 brightness=self.settings.brightness / 100,
-                panels=detector,
+                detector=detector,
                 image_data=data,
                 beam=raw_img.get_beam(),
             )
