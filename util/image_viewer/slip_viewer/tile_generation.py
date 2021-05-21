@@ -43,7 +43,7 @@ def get_flex_image(
 
 
 def get_flex_image_multipanel(
-    panels,
+    detector,
     image_data,
     beam,
     brightness=1.0,
@@ -60,7 +60,7 @@ def get_flex_image_multipanel(
     from libtbx.test_utils import approx_equal
     from xfel.cftbx.detector.metrology import get_projection_matrix
 
-    assert len(panels) == len(image_data), (len(panels), len(image_data))
+    assert len(detector) == len(image_data), (len(detector), len(image_data))
 
     # Determine next multiple of eight of the largest panel size.
     data_max_focus = None
@@ -82,7 +82,7 @@ def get_flex_image_multipanel(
     # generic_flex_image supports only accepts a single common value for
     # the saturation.
     saturation = None
-    for panel in panels:
+    for panel in detector:
         if saturation is None:
             saturation = panel.get_trusted_range()[1]
         else:
@@ -90,7 +90,7 @@ def get_flex_image_multipanel(
     assert saturation is not None
 
     # Create rawdata and my_flex_image before populating it.
-    rawdata = flex.double(flex.grid(len(panels) * data_padded[0], data_padded[1]))
+    rawdata = flex.double(flex.grid(len(detector) * data_padded[0], data_padded[1]))
     my_flex_image = generic_flex_image(
         rawdata=rawdata,
         binning=binning,
@@ -106,7 +106,7 @@ def get_flex_image_multipanel(
     # not sure this makes sense for detector which is not on a plane?
     beam_center = scitbx.matrix.col((0, 0, 0))
     npanels = 0
-    for panel in panels:
+    for panel in detector:
         try:
             beam_center += scitbx.matrix.col(panel.get_beam_centre_lab(beam.get_s0()))
             npanels += 1
@@ -117,7 +117,7 @@ def get_flex_image_multipanel(
     # XXX If a point is contained in two panels simultaneously, it will
     # be assigned to the panel defined first.  XXX Use a Z-buffer
     # instead?
-    for i, panel in enumerate(panels):
+    for i, panel in enumerate(detector):
         # Determine the pixel size for the panel (in meters), as pixel
         # sizes need not be identical.
         data = image_data[i]
@@ -126,7 +126,7 @@ def get_flex_image_multipanel(
             panel.get_pixel_size()[1] * 1e-3,
         )
 
-        if len(panels) == 24 and panels[0].get_image_size() == (2463, 195):
+        if len(detector) == 24 and detector[0].get_image_size() == (2463, 195):
             rawdata.matrix_paste_block_in_place(
                 block=data.as_double(), i_row=i * data_padded[0], i_column=0
             )
@@ -137,7 +137,7 @@ def get_flex_image_multipanel(
 
             continue
 
-        elif len(panels) == 120 and panels[0].get_image_size() == (487, 195):
+        elif len(detector) == 120 and detector[0].get_image_size() == (487, 195):
             i_row = i // 5
             i_col = i % 5
             rawdata.matrix_paste_block_in_place(
@@ -150,16 +150,23 @@ def get_flex_image_multipanel(
 
             continue
 
-        # Get unit vectors in the fast and slow directions, as well as the
-        # the locations of the origin and the center of the panel, in
-        # meters. The origin is taken w.r.t. to average beam center of all
-        # panels. This avoids excessive translations that can result from
-        # rotations around the laboratory origin. Related to beam centre above
-        # and dials#380 not sure this is right for detectors which are not
-        # coplanar since system derived from first panel...
-        fast = scitbx.matrix.col(panel.get_fast_axis())
-        slow = scitbx.matrix.col(panel.get_slow_axis())
-        origin = scitbx.matrix.col(panel.get_origin()) * 1e-3 - beam_center
+        if getattr(detector, "projection", "lab") == "image":
+            # Get axes from precalculated 2D projection.
+            origin_2d, fast_2d, slow_2d = detector.projected_2d
+            fast = scitbx.matrix.col(fast_2d[i] + (0,))
+            slow = scitbx.matrix.col(slow_2d[i] + (0,))
+            origin = scitbx.matrix.col(origin_2d[i] + (0,)) * 1e-3
+        else:
+            # Get unit vectors in the fast and slow directions, as well as the
+            # the locations of the origin and the center of the panel, in
+            # meters. The origin is taken w.r.t. to average beam center of all
+            # panels. This avoids excessive translations that can result from
+            # rotations around the laboratory origin. Related to beam centre above
+            # and dials#380 not sure this is right for detectors which are not
+            # coplanar since system derived from first panel...
+            fast = scitbx.matrix.col(panel.get_fast_axis())
+            slow = scitbx.matrix.col(panel.get_slow_axis())
+            origin = scitbx.matrix.col(panel.get_origin()) * 1e-3 - beam_center
 
         center = (
             origin
@@ -294,7 +301,7 @@ class _Tiles:
 
         self.flex_image = get_flex_image_multipanel(
             brightness=self.current_brightness / 100,
-            panels=detector,
+            detector=detector,
             show_untrusted=self.show_untrusted,
             image_data=image_data,
             beam=self.raw_image.get_beam(),
@@ -315,7 +322,7 @@ class _Tiles:
 
         self.flex_image = get_flex_image_multipanel(
             brightness=self.current_brightness / 100,
-            panels=detector,
+            detector=detector,
             image_data=raw_image_data,
             beam=self.raw_image.get_beam(),
         )
@@ -329,7 +336,7 @@ class _Tiles:
 
         self.flex_image = get_flex_image_multipanel(
             brightness=b / 100,
-            panels=self.raw_image.get_detector(),
+            detector=self.raw_image.get_detector(),
             show_untrusted=self.show_untrusted,
             image_data=image_data,
             beam=self.raw_image.get_beam(),
