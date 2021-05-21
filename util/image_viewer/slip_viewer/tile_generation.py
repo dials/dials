@@ -150,7 +150,7 @@ def get_flex_image_multipanel(
 
             continue
 
-        if panels.projection == "image":
+        if getattr(panels, "projection", "lab") == "image":
             # Get axes from precalculated 2D projection.
             origin_2d, fast_2d, slow_2d = panels.projected_2d
             fast = scitbx.matrix.col(fast_2d[i] + (0,))
