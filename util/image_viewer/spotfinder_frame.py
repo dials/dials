@@ -1016,7 +1016,7 @@ class SpotFrame(XrayFrame):
             self.pyslip.tiles.update_brightness(new_brightness, new_color_scheme)
 
         detector = self.pyslip.tiles.raw_image.get_detector()
-        if self.params.project_onto == "image":
+        if self.params.projection == "image":
             if not hasattr(detector, "projected_2d"):
                 detector.projected_2d = project_2d(detector)
             elif detector.projected_2d is None:
@@ -1775,7 +1775,7 @@ class SpotSettingsPanel(wx.Panel):
         self.settings.image_type = "corrected"
         self.settings.brightness = self.params.brightness
         self.settings.color_scheme = self.params.color_scheme
-        self.settings.project_onto = self.params.project_onto
+        self.settings.projection = self.params.projection
         self.settings.show_spotfinder_spots = False
         self.settings.show_dials_spotfinder_spots = True
         self.settings.show_resolution_rings = self.params.show_resolution_rings
@@ -1834,7 +1834,7 @@ class SpotSettingsPanel(wx.Panel):
         projection_choices = ["lab", "image"]
         self.projection_ctrl = wx.Choice(self, -1, choices=projection_choices)
         self.projection_ctrl.SetSelection(
-            projection_choices.index(self.params.project_onto)
+            projection_choices.index(self.params.projection)
         )
         grid.Add(self.projection_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self._sizer.Fit(self)
@@ -2197,7 +2197,7 @@ class SpotSettingsPanel(wx.Panel):
             self.settings.show_basis_vectors = self.show_basis_vectors.GetValue()
             self.settings.dispersion_extended = self.threshold_algorithm.GetValue()
             self.settings.color_scheme = self.color_ctrl.GetSelection()
-            self.settings.project_onto = self.projection_ctrl.GetSelection()
+            self.settings.projection = self.projection_ctrl.GetSelection()
             self.settings.nsigma_b = self.nsigma_b_ctrl.GetPhilValue()
             self.settings.nsigma_s = self.nsigma_s_ctrl.GetPhilValue()
             self.settings.global_threshold = self.global_threshold_ctrl.GetPhilValue()
@@ -2275,7 +2275,7 @@ class SpotSettingsPanel(wx.Panel):
         pyslip.GotoPosition(center)
 
     def OnUpdateProjection(self, event):
-        self.params.project_onto = event.GetString()
+        self.params.projection = event.GetString()
         self.OnUpdateImage(event)
 
     def OnSaveFindSpotsParams(self, event):
