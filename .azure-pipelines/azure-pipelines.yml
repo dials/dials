@@ -10,6 +10,7 @@ stages:
     displayName: static analysis
     pool:
       vmImage: ubuntu-20.04
+    timeoutInMinutes: 10
     steps:
       - checkout: none
 
