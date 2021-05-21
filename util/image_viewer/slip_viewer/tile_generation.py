@@ -114,13 +114,6 @@ def get_flex_image_multipanel(
             pass
     beam_center /= npanels / 1e-3
 
-    # Try to obtain precalculated 2D origin, fast and slow vectors for detector
-    # projected onto a best fit frame.
-    try:
-        projected_axes = panels.projected_2d
-    except AttributeError:
-        projected_axes = None
-
     # XXX If a point is contained in two panels simultaneously, it will
     # be assigned to the panel defined first.  XXX Use a Z-buffer
     # instead?
@@ -157,9 +150,9 @@ def get_flex_image_multipanel(
 
             continue
 
-        if projected_axes:
+        if panels.projection == "image":
             # Get axes from precalculated 2D projection.
-            origin_2d, fast_2d, slow_2d = projected_axes
+            origin_2d, fast_2d, slow_2d = panels.projected_2d
             fast = scitbx.matrix.col(fast_2d[i] + (0,))
             slow = scitbx.matrix.col(slow_2d[i] + (0,))
             origin = scitbx.matrix.col(origin_2d[i] + (0,)) * 1e-3

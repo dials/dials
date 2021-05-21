@@ -96,6 +96,12 @@ class SpotFrame(XrayFrame):
 
         super().__init__(*args, **kwds)
 
+        # Precalculate best-fit frame for image display
+        for experiment_list in self.experiments:
+            for experiment in experiment_list:
+                experiment.detector.projected_2d = project_2d(experiment.detector)
+                experiment.detector.projection = "lab"
+
         self.viewing_stills = True
         for experiment_list in self.experiments:
             if any(exp.scan or exp.goniometer for exp in experiment_list):
@@ -1016,13 +1022,7 @@ class SpotFrame(XrayFrame):
             self.pyslip.tiles.update_brightness(new_brightness, new_color_scheme)
 
         detector = self.pyslip.tiles.raw_image.get_detector()
-        if self.params.projection == "image":
-            if not hasattr(detector, "projected_2d"):
-                detector.projected_2d = project_2d(detector)
-            elif detector.projected_2d is None:
-                detector.projected_2d = project_2d(detector)
-        else:
-            detector.projected_2d = None
+        detector.projection = self.params.projection
 
         if self.settings.show_beam_center:
             if self.beam_layer is None and hasattr(self, "beam_center_cross_data"):
