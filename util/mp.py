@@ -87,7 +87,7 @@ def parallel_map(
         )
 
 
-class MultiNodeClusterFunction:
+class __cluster_function_wrapper:
     """
     A function called by the multi node parallel map. On each cluster node, a
     nested parallel map using the multi processing method will be used.
@@ -101,9 +101,6 @@ class MultiNodeClusterFunction:
         preserve_order=True,
         preserve_exception_message=True,
     ):
-        """
-        Init the function
-        """
         self.func = func
         self.nproc = nproc
         self.asynchronous = asynchronous
@@ -111,9 +108,6 @@ class MultiNodeClusterFunction:
         self.preserve_exception_message = preserve_exception_message
 
     def __call__(self, iterable):
-        """
-        Call the function
-        """
         return libtbx.easy_mp.parallel_map(
             func=self.func,
             iterable=iterable,
@@ -164,7 +158,7 @@ def multi_node_parallel_map(
     """
 
     # The function to all on the cluster
-    cluster_func = MultiNodeClusterFunction(
+    cluster_func = __cluster_function_wrapper(
         func=func,
         nproc=nproc,
         asynchronous=asynchronous,
