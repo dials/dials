@@ -1,1 +1,0 @@
-`dials.find_spots` and `dials.integrate` - allow use of > 1 CPU on Windows
