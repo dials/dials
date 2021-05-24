@@ -1269,7 +1269,6 @@ class ReferenceCalculatorProcessor:
                 callback=process_output,
                 cluster_method=params.integration.mp.method,
                 preserve_order=True,
-                preserve_exception_message=True,
             )
         else:
             for task in reference_manager.tasks():
@@ -1345,7 +1344,6 @@ class IntegratorProcessor:
                 callback=process_output,
                 cluster_method=params.integration.mp.method,
                 preserve_order=True,
-                preserve_exception_message=True,
             )
         else:
             for task in integration_manager.tasks():

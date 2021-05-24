@@ -92,7 +92,6 @@ class ProcessorImage:
                 callback=process_output,
                 cluster_method=mp_method,
                 preserve_order=True,
-                preserve_exception_message=True,
             )
         else:
             for task in self.manager.tasks():
