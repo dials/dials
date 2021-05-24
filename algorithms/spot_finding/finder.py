@@ -4,7 +4,6 @@ Contains implementation interface for finding spots on one or many images
 
 import logging
 import math
-import os
 import pickle
 import warnings
 from typing import Iterable, Tuple

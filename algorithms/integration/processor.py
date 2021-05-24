@@ -1,7 +1,6 @@
 import itertools
 import logging
 import math
-import platform
 from time import time
 
 import psutil
