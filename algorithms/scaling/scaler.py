@@ -1394,9 +1394,8 @@ class MultiScalerBase(ScalerBase):
     @Subject.notify_event(event="performed_error_analysis")
     def perform_error_optimisation(self, update_Ih=True):
         """Perform an optimisation of the sigma values."""
-        all_datasets = [i for i, _ in enumerate(self.active_scalers)]
         if self.params.weighting.error_model.grouping == "combined":
-            minimisation_groups = [all_datasets]
+            minimisation_groups = [[i for i, _ in enumerate(self.active_scalers)]]
         elif self.params.weighting.error_model.grouping == "individual":
             minimisation_groups = [[i] for i, _ in enumerate(self.active_scalers)]
         else:
@@ -1405,11 +1404,18 @@ class MultiScalerBase(ScalerBase):
                 logger.info(
                     """No error model groups defined, defaulting to combined error model optimisation"""
                 )
-                minimisation_groups = [all_datasets]
+                minimisation_groups = [[i for i, _ in enumerate(self.active_scalers)]]
             else:
-                explicitly_grouped = [i for j in groups for i in j]
+                all_datasets = [i for i, _ in enumerate(self.active_scalers)]
+                # groups are defined in terms of sweeps (1,2,3,...), but here
+                # need to convert to dataset number (0, 1, 2,...)
+                explicitly_grouped = [i - 1 for j in groups for i in j]
+                if -1 in explicitly_grouped:  # sweeps provided indexed from 0
+                    explicitly_grouped = [i for j in groups for i in j]
+                    minimisation_groups = [[i for i in g] for g in groups]
+                else:
+                    minimisation_groups = [[i - 1 for i in g] for g in groups]
                 others = set(all_datasets).difference(set(explicitly_grouped))
-                minimisation_groups = copy.deepcopy(groups)
                 if others:
                     minimisation_groups += [list(others)]
 
@@ -1422,9 +1428,11 @@ class MultiScalerBase(ScalerBase):
             space_group = scalers[0].experiment.crystal.get_space_group()
             Ih_table = IhTable(tables, space_group, anomalous=True)
             if len(minimisation_groups) == 1:
-                logger.info("Determining a shared error model for all datasets")
+                logger.info("Determining a combined error model for all datasets")
             else:
-                logger.info(f"Error model determination for sweep {g}")
+                logger.info(
+                    f"Error model determination for sweep(s) {','.join(str(i+1) for i in g)}"
+                )
             try:
                 model = run_error_model_refinement(
                     scalers[0]._experiment.scaling_model.error_model, Ih_table

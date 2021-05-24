@@ -8,6 +8,7 @@ from wx.lib.intctrl import IntCtrl
 from cctbx import crystal, uctbx
 from cctbx.miller import index_generator
 from dxtbx.imageset import ImageSet
+from dxtbx.model.detector_helpers import project_2d
 from dxtbx.model.experiment_list import ExperimentList, ExperimentListFactory
 from libtbx.utils import flat_list
 from scitbx import matrix
@@ -94,6 +95,12 @@ class SpotFrame(XrayFrame):
         self.images = ImageCollectionWithSelection()
 
         super().__init__(*args, **kwds)
+
+        # Precalculate best-fit frame for image display
+        for experiment_list in self.experiments:
+            for experiment in experiment_list:
+                experiment.detector.projected_2d = project_2d(experiment.detector)
+                experiment.detector.projection = self.params.projection
 
         self.viewing_stills = True
         for experiment_list in self.experiments:
@@ -1014,6 +1021,9 @@ class SpotFrame(XrayFrame):
         ):
             self.pyslip.tiles.update_brightness(new_brightness, new_color_scheme)
 
+        detector = self.pyslip.tiles.raw_image.get_detector()
+        detector.projection = self.params.projection
+
         if self.settings.show_beam_center:
             if self.beam_layer is None and hasattr(self, "beam_center_cross_data"):
                 self.beam_layer = self.pyslip.AddPolygonLayer(
@@ -1765,6 +1775,7 @@ class SpotSettingsPanel(wx.Panel):
         self.settings.image_type = "corrected"
         self.settings.brightness = self.params.brightness
         self.settings.color_scheme = self.params.color_scheme
+        self.settings.projection = self.params.projection
         self.settings.show_spotfinder_spots = False
         self.settings.show_dials_spotfinder_spots = True
         self.settings.show_resolution_rings = self.params.show_resolution_rings
@@ -1798,7 +1809,7 @@ class SpotSettingsPanel(wx.Panel):
         s = self._sizer
         self.SetSizer(self._sizer)
 
-        grid = wx.FlexGridSizer(cols=2, rows=2, vgap=0, hgap=0)
+        grid = wx.FlexGridSizer(cols=2, rows=3, vgap=0, hgap=0)
         s.Add(grid)
         txt1 = wx.StaticText(self, -1, "Zoom level:")
         grid.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
@@ -1809,12 +1820,23 @@ class SpotSettingsPanel(wx.Panel):
         self.zoom_ctrl = wx.Choice(self, -1, choices=choices)
         self.zoom_ctrl.SetSelection(self.settings.zoom_level)
         grid.Add(self.zoom_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+
         txt11 = wx.StaticText(self, -1, "Color scheme:")
         grid.Add(txt11, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         color_schemes = ["grayscale", "rainbow", "heatmap", "invert"]
         self.color_ctrl = wx.Choice(self, -1, choices=color_schemes)
         self.color_ctrl.SetSelection(color_schemes.index(self.params.color_scheme))
         grid.Add(self.color_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self._sizer.Fit(self)
+
+        txt12 = wx.StaticText(self, -1, "Projection:")
+        grid.Add(txt12, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        projection_choices = ["lab", "image"]
+        self.projection_ctrl = wx.Choice(self, -1, choices=projection_choices)
+        self.projection_ctrl.SetSelection(
+            projection_choices.index(self.params.projection)
+        )
+        grid.Add(self.projection_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self._sizer.Fit(self)
 
         box = wx.BoxSizer(wx.HORIZONTAL)
@@ -2115,6 +2137,7 @@ class SpotSettingsPanel(wx.Panel):
         self.Bind(wx.EVT_CHOICE, self.OnUpdateImage, self.image_type_ctrl)
         self.Bind(wx.EVT_CHOICE, self.OnUpdateImage, self.stack_mode_ctrl)
         self.Bind(wx.EVT_CHOICE, self.OnUpdate, self.color_ctrl)
+        self.Bind(wx.EVT_CHOICE, self.OnUpdateProjection, self.projection_ctrl)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.resolution_rings_ctrl)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.ice_rings_ctrl)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.center_ctrl)
@@ -2174,6 +2197,7 @@ class SpotSettingsPanel(wx.Panel):
             self.settings.show_basis_vectors = self.show_basis_vectors.GetValue()
             self.settings.dispersion_extended = self.threshold_algorithm.GetValue()
             self.settings.color_scheme = self.color_ctrl.GetSelection()
+            self.settings.projection = self.projection_ctrl.GetSelection()
             self.settings.nsigma_b = self.nsigma_b_ctrl.GetPhilValue()
             self.settings.nsigma_s = self.nsigma_s_ctrl.GetPhilValue()
             self.settings.global_threshold = self.global_threshold_ctrl.GetPhilValue()
@@ -2249,6 +2273,10 @@ class SpotSettingsPanel(wx.Panel):
         pyslip.ZoomToLevel(self.settings.zoom_level)
         pyslip.ZoomIn((x, y), update=False)
         pyslip.GotoPosition(center)
+
+    def OnUpdateProjection(self, event):
+        self.params.projection = event.GetString()
+        self.OnUpdateImage(event)
 
     def OnSaveFindSpotsParams(self, event):
         params = find_spots_phil_scope.extract()

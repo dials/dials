@@ -2,12 +2,9 @@ jobs:
 - job: windows
   pool:
     vmImage: windows-latest
-  dependsOn: setup
-  condition: eq(dependencies.setup.outputs['constants.NEWSFRAGMENT_WAITING'], 'false')
   variables:
-    CURRENT_WEEK: $[ dependencies.setup.outputs['constants.CURRENT_WEEK'] ]
-    TODAY_ISO: $[ dependencies.setup.outputs['constants.TODAY_ISO'] ]
-
+    CURRENT_WEEK: $[ stageDependencies.prepare.setup.outputs['constants.CURRENT_WEEK'] ]
+    TODAY_ISO: $[ stageDependencies.prepare.setup.outputs['constants.TODAY_ISO'] ]
   strategy:
     matrix:
       python37:
