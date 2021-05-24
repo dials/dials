@@ -499,7 +499,8 @@ class Task:
 
             # I am 99% sure this is implied by all the code above
             assert (frame1 - frame0) <= len(imageset)
-            imageset = imageset[frame0:frame1]
+            if len(imageset) > 1:
+                imageset = imageset[frame0:frame1]
         except Exception as e:
             raise RuntimeError(f"Programmer Error: bad array range: {e}")
 
