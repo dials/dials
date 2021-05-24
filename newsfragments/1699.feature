@@ -1,1 +1,1 @@
-``dials.cosym``: Faster automatic determination of number of dimensions by returning early if an "elbow" has been detected
+``dials.cosym``: Faster searching of large-dimensional search spaces. For large data sets, this can save significant amounts of time.
