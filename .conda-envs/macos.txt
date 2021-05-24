@@ -25,6 +25,7 @@ conda-forge::msgpack-c
 conda-forge::msgpack-python
 conda-forge::numpy>=1.16
 conda-forge::orderedset
+conda-forge::pandas
 conda-forge::pillow>=5.4.1
 conda-forge::pip
 conda-forge::procrunner>=2.2.0
