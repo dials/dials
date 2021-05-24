@@ -95,9 +95,6 @@ def find_elbow(x: np.ndarray, y: np.ndarray) -> float:
 
     See also dials/algorithms/spot_finding/per_image_analysis.py
     """
-    # Find the elbow point of the curve, in the same manner as that used by
-    # distl spotfinder for resolution method 1 (Zhang et al 2006).
-    # See also dials/algorithms/spot_finding/per_image_analysis.py
 
     slopes = (y[-1] - y[:-1]) / (x[-1] - x[:-1])
     p_m = slopes.argmin()
