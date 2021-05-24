@@ -266,7 +266,7 @@ class SmoothScaleComponent1D(ScaleComponentBase, SmoothMixin):
         return value, dv_dp
 
     def calculate_scales(self, block_id=0):
-        """"Only calculate the scales if needed, for performance."""
+        """ "Only calculate the scales if needed, for performance."""
         if self._n_refl[block_id] > 1:
             value, _, __ = self._smoother.multi_value_weight(
                 self._normalised_values[block_id], self.value
@@ -622,7 +622,7 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
         return value, dv_dp
 
     def calculate_scales(self, block_id=0):
-        """"Only calculate the scales if needed, for performance."""
+        """ "Only calculate the scales if needed, for performance."""
         if self._n_refl[block_id] > 1:
             value, _, __ = self._smoother.multi_value_weight(
                 self._normalised_x_values[block_id],

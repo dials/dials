@@ -46,7 +46,7 @@ namespace dials { namespace util {
           vec3<double> r = s1 - s0;
           double length = r.length();
           DIALS_ASSERT(length > 0);
-          resolution_(j, i) = 1/length;
+          resolution_(j, i) = 1 / length;
         }
       }
     }

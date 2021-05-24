@@ -511,7 +511,7 @@ def plot_outliers(data):
     return d
 
 
-def error_model_variance_plot(data):
+def error_model_variance_plot(data, label=None):
     bin_variances = data["binning_info"]["bin_variances"]
     initial_variances = data["binning_info"]["initial_variances"]
     xs = data["binning_info"]["bin_boundaries"]
@@ -520,8 +520,15 @@ def error_model_variance_plot(data):
         str(round(xs[i], 1)) + " - " + str(round(xs[i + 1], 1))
         for i in range(len(xs) - 1)
     ]
+    key = (
+        f"error_model_variances_{label}"
+        if label is not None
+        else "error_model_variances"
+    )
+    title = "Error model variances of normalised deviations"
+    title = title + f" (error model {label})" if label is not None else title
     d = {
-        "error_model_variances": {
+        key: {
             "data": [
                 {
                     "x": x,
@@ -549,7 +556,7 @@ def error_model_variance_plot(data):
                 },
             ],
             "layout": {
-                "title": "Error model variances of normalised deviations",
+                "title": title,
                 "xaxis": {
                     "anchor": "y",
                     "title": "Intensity range, expected unscaled intensity (counts)",
@@ -570,13 +577,16 @@ best estimate, with a variance of one sigma.
     return d
 
 
-def error_regression_plot(data):
+def error_regression_plot(data, label=None):
     """Plot the data from the regression fit."""
     x = data["regression_x"]
     y = data["regression_y"]
     fit = (x * (data["model_a"] ** 2)) + ((data["model_a"] * data["model_b"]) ** 2)
+    key = f"regression_fit_{label}" if label is not None else "regression_fit"
+    title = "Error model regression plot"
+    title = title + f" (error model {label})" if label is not None else title
     return {
-        "regression_fit": {
+        key: {
             "data": [
                 {
                     "x": list(x),
@@ -593,7 +603,7 @@ def error_regression_plot(data):
                 },
             ],
             "layout": {
-                "title": "Error model regression plot",
+                "title": title,
                 "xaxis": {"anchor": "y", "title": "1/(I/sigma_obs) ^ 2"},
                 "yaxis": {"anchor": "x", "title": "1/(I/sigma) ^ 2 "},
             },
@@ -609,7 +619,7 @@ equivalents i.e. sigma_obs^2 = (Sum (I - g<Ih>)^2) / N-1.
     }
 
 
-def normal_probability_plot(data):
+def normal_probability_plot(data, label=None):
     """Plot the distribution of normal probabilities of errors."""
     norm = distributions.normal_distribution()
 
@@ -637,9 +647,20 @@ def normal_probability_plot(data):
         n * width * math.exp(-(sc ** 2) / 2.0) / ((2.0 * math.pi) ** 0.5)
         for sc in histy.slot_centers()
     ]
-
+    key = (
+        f"normal_distribution_plot_{label}"
+        if label is not None
+        else "normal_distribution_plot"
+    )
+    title = "Normal probability plot with error model applied"
+    title = title + f" (error model {label})" if label is not None else title
+    key_hist = f"nor_dev_hist_{label}" if label is not None else "nor_dev_hist"
+    title_hist = "Normal deviations with error model applied"
+    title_hist = (
+        title_hist + f" (error model {label})" if label is not None else title_hist
+    )
     return {
-        "normal_distribution_plot": {
+        key: {
             "data": [
                 {
                     "x": xedges.tolist(),
@@ -663,7 +684,7 @@ def normal_probability_plot(data):
                 },
             ],
             "layout": {
-                "title": "Normal probability plot with error model applied",
+                "title": title,
                 "xaxis": {"anchor": "y", "title": "Order statistic medians, m"},
                 "yaxis": {"anchor": "x", "title": "Ordered responses, z"},
             },
@@ -677,7 +698,7 @@ high absolute values of x (>3), where there is typically a deviation away from
 the line due to wide tails of the distribution.
 """,
         },
-        "nor_dev_hist": {
+        key_hist: {
             "data": [
                 {
                     "x": list(histy.slot_centers()),
@@ -693,7 +714,7 @@ the line due to wide tails of the distribution.
                 },
             ],
             "layout": {
-                "title": "Normal deviations with error model applied",
+                "title": title_hist,
                 "xaxis": {"anchor": "y", "title": "Normalised deviation"},
                 "yaxis": {"anchor": "x", "title": "Number of reflections"},
             },

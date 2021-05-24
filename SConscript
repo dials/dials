@@ -62,4 +62,4 @@ if not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include"):
     # list. This is done because errors occur when building the tests if it
     # isn't done. Replacing the libs afterwards still results in those errors.
     #
-    env.SConscript("test/SConscript", exports={"env": env})
+    env.SConscript("tests/SConscript", exports={"env": env})

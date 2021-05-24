@@ -43,7 +43,7 @@ conda-forge::scipy
 conda-forge::scons
 conda-forge::setuptools
 conda-forge::six
-conda-forge::sphinx>=3.2
+conda-forge::sphinx>=3.2,<4
 conda-forge::sqlite
 conda-forge::tabulate
 conda-forge::tqdm

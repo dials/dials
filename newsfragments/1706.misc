@@ -1,0 +1,1 @@
+Bootstrap receives a new ``--prebuilt-cctbx`` option to use a prebuilt cctbx package instead of building everything from scratch. This is not currently supported outside of automated builds.
