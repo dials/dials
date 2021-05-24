@@ -4,7 +4,6 @@ Contains implementation interface for finding spots on one or many images
 
 import logging
 import math
-import os
 import pickle
 import warnings
 from typing import Iterable, Tuple
@@ -21,10 +20,6 @@ from dials.util.log import rehandle_cached_records
 from dials.util.mp import available_cores, batch_multi_node_parallel_map
 
 logger = logging.getLogger(__name__)
-
-_no_multiprocessing_on_windows = (
-    "Multiprocessing is not available on windows. Setting nproc = 1, njobs = 1"
-)
 
 
 class ExtractPixelsFromImage:
@@ -440,10 +435,6 @@ class ExtractSpots:
         if mp_nproc is libtbx.Auto:
             mp_nproc = available_cores()
             logger.info(f"Setting nproc={mp_nproc}")
-        if os.name == "nt" and (mp_nproc > 1 or mp_njobs > 1):
-            logger.warning(_no_multiprocessing_on_windows)
-            mp_nproc = 1
-            mp_njobs = 1
         if mp_nproc * mp_njobs > len(imageset):
             mp_nproc = min(mp_nproc, len(imageset))
             mp_njobs = int(math.ceil(len(imageset) / mp_nproc))
@@ -540,10 +531,6 @@ class ExtractSpots:
         # Change the number of processors if necessary
         mp_nproc = self.mp_nproc
         mp_njobs = self.mp_njobs
-        if os.name == "nt" and (mp_nproc > 1 or mp_njobs > 1):
-            logger.warning(_no_multiprocessing_on_windows)
-            mp_nproc = 1
-            mp_njobs = 1
         if mp_nproc * mp_njobs > len(imageset):
             mp_nproc = min(mp_nproc, len(imageset))
             mp_njobs = int(math.ceil(len(imageset) / mp_nproc))
