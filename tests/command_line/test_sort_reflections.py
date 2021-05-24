@@ -4,7 +4,7 @@ import procrunner
 def test_sort_intensities(dials_data, tmpdir):
     result = procrunner.run(
         [
-            "dev.dials.sort_reflections",
+            "dials.sort_reflections",
             dials_data("centroid_test_data").join("integrated.pickle").strpath,
             "key=intensity.sum.value",
             "output=sorted1.refl",
@@ -23,7 +23,7 @@ def test_sort_intensities(dials_data, tmpdir):
 def test_reverse_sort_intensities(dials_data, tmpdir):
     result = procrunner.run(
         [
-            "dev.dials.sort_reflections",
+            "dials.sort_reflections",
             dials_data("centroid_test_data").join("integrated.pickle").strpath,
             "output=sorted2.refl",
             "key=intensity.sum.value",
@@ -43,7 +43,7 @@ def test_reverse_sort_intensities(dials_data, tmpdir):
 def test_default_sort_on_miller_index(dials_data, tmpdir):
     result = procrunner.run(
         [
-            "dev.dials.sort_reflections",
+            "dials.sort_reflections",
             dials_data("centroid_test_data").join("integrated.pickle").strpath,
             "output=sorted3.refl",
         ],
@@ -66,7 +66,7 @@ def test_default_sort_on_miller_index(dials_data, tmpdir):
 def test_default_sort_on_miller_index_verbose(dials_data, tmpdir):
     result = procrunner.run(
         [
-            "dev.dials.sort_reflections",
+            "dials.sort_reflections",
             dials_data("centroid_test_data").join("integrated.pickle").strpath,
             "output=sorted4.refl",
             "-v",

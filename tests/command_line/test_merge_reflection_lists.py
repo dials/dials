@@ -13,7 +13,7 @@ def test(run_in_tmpdir):
 
     result = procrunner.run(
         [
-            "dev.dials.merge_reflection_lists",
+            "dials.merge_reflection_lists",
             "temp1.refl",
             "temp2.refl",
             "method=update",
@@ -26,7 +26,7 @@ def test(run_in_tmpdir):
 
     result = procrunner.run(
         [
-            "dev.dials.merge_reflection_lists",
+            "dials.merge_reflection_lists",
             "temp1.refl",
             "temp2.refl",
             "method=extend",

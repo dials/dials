@@ -1,0 +1,1 @@
+``dev.dials.csv`` has been deprecated. Similar functionality is available with ``dials.export format=json``.

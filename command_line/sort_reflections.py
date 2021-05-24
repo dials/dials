@@ -1,4 +1,4 @@
-# LIBTBX_SET_DISPATCHER_NAME dev.dials.sort_reflections
+# LIBTBX_SET_DISPATCHER_NAME dials.sort_reflections
 
 
 import dials.util
@@ -10,7 +10,7 @@ Utility script to sort reflection tables by the values in a column.
 
 Example::
 
-  dev.dials.sort_reflections key=miller_index output=sorted.refl
+  dials.sort_reflections key=miller_index output=sorted.refl
 """
 
 
@@ -41,7 +41,7 @@ class Sort:
             """
         )
 
-        usage = "dev.dials.sort_reflections [options] observations.refl"
+        usage = "dials.sort_reflections [options] observations.refl"
 
         # Initialise the base class
         self.parser = OptionParser(

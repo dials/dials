@@ -2,6 +2,7 @@
 
 import gzip
 import io
+import warnings
 
 import iotbx.phil
 from dxtbx.model import ExperimentList
@@ -95,4 +96,9 @@ def run(args=None):
 
 
 if __name__ == "__main__":
+    warnings.warn(
+        "dev.dials.csv is deprecated. Similar functionality is available"
+        " with dials.export format=json",
+        DeprecationWarning,
+    )
     run()
