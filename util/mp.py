@@ -1,5 +1,6 @@
 import itertools
 import os
+import warnings
 
 import psutil
 
@@ -53,7 +54,7 @@ def parallel_map(
     asynchronous=True,
     callback=None,
     preserve_order=True,
-    preserve_exception_message=True,
+    preserve_exception_message=...,
     job_category="low",
 ):
     """
@@ -62,6 +63,13 @@ def parallel_map(
     the number of cores on a machine
     """
     from dials.util.cluster_map import cluster_map as drmaa_parallel_map
+
+    if preserve_exception_message is not Ellipsis:
+        warnings.warn(
+            "keyword argument 'preserve_exception_message' is deprecated",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
     if method == "drmaa":
         return drmaa_parallel_map(
@@ -83,7 +91,7 @@ def parallel_map(
             qsub_command=qsub_command,
             asynchronous=asynchronous,
             preserve_order=preserve_order,
-            preserve_exception_message=preserve_exception_message,
+            preserve_exception_message=True,
         )
 
 
@@ -99,13 +107,18 @@ class __cluster_function_wrapper:
         nproc=1,
         asynchronous=True,
         preserve_order=True,
-        preserve_exception_message=True,
+        preserve_exception_message=...,
     ):
         self.func = func
         self.nproc = nproc
         self.asynchronous = asynchronous
         self.preserve_order = (preserve_order,)
-        self.preserve_exception_message = preserve_exception_message
+        if preserve_exception_message is not Ellipsis:
+            warnings.warn(
+                "keyword argument 'preserve_exception_message' is deprecated",
+                DeprecationWarning,
+                stacklevel=2,
+            )
 
     def __call__(self, iterable):
         return libtbx.easy_mp.parallel_map(
@@ -115,7 +128,7 @@ class __cluster_function_wrapper:
             method="multiprocessing",
             asynchronous=self.asynchronous,
             preserve_order=self.preserve_order,
-            preserve_exception_message=self.preserve_exception_message,
+            preserve_exception_message=True,
         )
 
 
@@ -146,12 +159,18 @@ def multi_node_parallel_map(
     asynchronous=True,
     callback=None,
     preserve_order=True,
-    preserve_exception_message=True,
+    preserve_exception_message=...,
 ):
     """
     A wrapper function to call a function using multiple cluster nodes and with
     multiple processors on each node
     """
+    if preserve_exception_message is not Ellipsis:
+        warnings.warn(
+            "keyword argument 'preserve_exception_message' is deprecated",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
     # The function to all on the cluster
     cluster_func = __cluster_function_wrapper(
@@ -159,7 +178,7 @@ def multi_node_parallel_map(
         nproc=nproc,
         asynchronous=asynchronous,
         preserve_order=preserve_order,
-        preserve_exception_message=preserve_exception_message,
+        preserve_exception_message=True,
     )
 
     # Create the cluster iterable
@@ -181,7 +200,6 @@ def multi_node_parallel_map(
         processes=njobs,
         asynchronous=asynchronous,
         preserve_order=preserve_order,
-        preserve_exception_message=preserve_exception_message,
     )
 
     # return result
@@ -209,7 +227,6 @@ def batch_multi_node_parallel_map(
         cluster_method=cluster_method,
         callback=_iterable_wrapper(callback),
         preserve_order=True,
-        preserve_exception_message=True,
     )
 
 
