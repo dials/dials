@@ -184,26 +184,31 @@ namespace dials { namespace algorithms { namespace background {
 
       // Populate the background shoebox
       double mse = 0.0;
-      double sum1 = 0.0;
-      double sum2 = 0.0;
+      double M = 0;
+      double S = 0;
       std::size_t count = 0;
       for (std::size_t k = 0; k < background.accessor()[0]; ++k) {
         for (std::size_t j = 0; j < background.accessor()[1]; ++j) {
           for (std::size_t i = 0; i < background.accessor()[2]; ++i) {
             background(k, j, i) = model->value(k + 0.5, j + 0.5, i + 0.5);
             if (bgmask(k, j, i)) {
-              double tmp = (background(k, j, i) - data(k, j, i));
-              mse += tmp * tmp;
-              sum1 += data(k, j, i);
-              sum2 += data(k, j, i) * data(k, j, i);
-              count += 1;
+              // Accumulate mean and variance by Welford's one-pass algorithm
+              count++;
+              double x = data(k, j, i);
+              double oldM = M;
+              M = M + (x - M)/count;
+              S = S + (x - M)*(x-oldM);
+
+              // Also accumulate mean squared error of the background estimator
+              double residual = (background(k, j, i) - data(k, j, i));
+              mse += residual * residual;
             }
           }
         }
       }
       DIALS_ASSERT(count >= min_pixels_);
-      double mean = sum1 / count;
-      double var = sum2 / count - mean * mean;
+      double mean = M;
+      double var = S/(count-1);
       DIALS_ASSERT(mean >= 0);
       DIALS_ASSERT(var >= 0);
       double dispersion = mean > 0 ? var / mean : 0;
