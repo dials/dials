@@ -121,15 +121,17 @@ def get_flex_image_multipanel(
         # Determine the pixel size for the panel (in meters), as pixel
         # sizes need not be identical.
         data = image_data[i]
+
+        rawdata.matrix_paste_block_in_place(
+            block=data.as_double(), i_row=i * data_padded[0], i_column=0
+        )
+
         pixel_size = (
             panel.get_pixel_size()[0] * 1e-3,
             panel.get_pixel_size()[1] * 1e-3,
         )
 
         if len(detector) == 24 and detector[0].get_image_size() == (2463, 195):
-            rawdata.matrix_paste_block_in_place(
-                block=data.as_double(), i_row=i * data_padded[0], i_column=0
-            )
             # XXX hardcoded panel height and row gap
             my_flex_image.add_transformation_and_translation(
                 (1, 0, 0, 1), (-i * (195 + 17), 0)
@@ -140,9 +142,6 @@ def get_flex_image_multipanel(
         elif len(detector) == 120 and detector[0].get_image_size() == (487, 195):
             i_row = i // 5
             i_col = i % 5
-            rawdata.matrix_paste_block_in_place(
-                block=data.as_double(), i_row=i * data_padded[0], i_column=0
-            )
             # XXX hardcoded panel height and row gap
             my_flex_image.add_transformation_and_translation(
                 (1, 0, 0, 1), (-i_row * (195 + 17), -i_col * (487 + 7))
@@ -228,10 +227,6 @@ def get_flex_image_multipanel(
         # needs to be flipped to give (horizontal, vertical) size,
         # i.e. (width, height).
         Pf = get_projection_matrix(pixel_size, (data.focus()[1], data.focus()[0]))[0]
-
-        rawdata.matrix_paste_block_in_place(
-            block=data.as_double(), i_row=i * data_padded[0], i_column=0
-        )
 
         # Last row of T is always [0, 0, 0, 1].
         T = Pf * Tf * E

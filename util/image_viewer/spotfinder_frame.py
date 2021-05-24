@@ -96,11 +96,20 @@ class SpotFrame(XrayFrame):
 
         super().__init__(*args, **kwds)
 
-        # Precalculate best-fit frame for image display
+        # Precalculate best-fit frame for image display, except for P12M
         for experiment_list in self.experiments:
             for experiment in experiment_list:
-                experiment.detector.projected_2d = project_2d(experiment.detector)
-                experiment.detector.projection = self.params.projection
+                detector = experiment.detector
+                if len(detector) == 24 and detector[0].get_image_size() == (2463, 195):
+                    self.params.projection = None
+                elif len(detector) == 120 and detector[0].get_image_size() == (
+                    487,
+                    195,
+                ):
+                    self.params.projection = None
+                else:
+                    detector.projected_2d = project_2d(detector)
+                detector.projection = self.params.projection
 
         self.viewing_stills = True
         for experiment_list in self.experiments:
@@ -1830,12 +1839,17 @@ class SpotSettingsPanel(wx.Panel):
         self._sizer.Fit(self)
 
         txt12 = wx.StaticText(self, -1, "Projection:")
-        grid.Add(txt12, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         projection_choices = ["lab", "image"]
         self.projection_ctrl = wx.Choice(self, -1, choices=projection_choices)
-        self.projection_ctrl.SetSelection(
-            projection_choices.index(self.params.projection)
-        )
+        if self.params.projection is None:  # I23 special case
+            self.projection_ctrl.SetSelection(1)
+            self.projection_ctrl.Enable(False)
+            txt12.Enable(False)
+        else:
+            self.projection_ctrl.SetSelection(
+                projection_choices.index(self.params.projection)
+            )
+        grid.Add(txt12, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         grid.Add(self.projection_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self._sizer.Fit(self)
 
