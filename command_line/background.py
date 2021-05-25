@@ -153,14 +153,15 @@ def background(imageset, indx, n_bins, corrected=False, mask_params=None):
         # Default mask params for trusted range
         mask_params = phil_scope.fetch(parse("")).extract().masking
 
-    mask = dials.util.masking.generate_mask(imageset, mask_params)
-
     detector = imageset.get_detector()
     beam = imageset.get_beam()
+
     # Only working with single panel detector for now
     assert len(detector) == 1
     panel = detector[0]
-    mask = mask[0]
+    imageset_mask = imageset.get_mask(indx)[0]
+    mask = dials.util.masking.generate_mask(imageset, mask_params)[0]
+    mask = imageset_mask & mask
 
     n = matrix.col(panel.get_normal()).normalize()
     b = matrix.col(beam.get_s0()).normalize()
