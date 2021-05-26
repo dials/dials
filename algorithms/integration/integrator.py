@@ -1207,16 +1207,20 @@ class Integrator:
         # determine the max memory needed during integration
         def _determine_max_memory_needed(experiments, reflections):
             max_needed = 0
-
             for imageset in experiments.imagesets():
-                expt_ids = []
                 # find all experiments belonging to that imageset, as each
-                # imageset is processed as a whole for integration
-                for experiment in experiments:
-                    if experiment.imageset == imageset:
-                        expt_ids.append(experiment.identifier)
-                subset = reflections.select_on_experiment_identifiers(expt_ids)
-
+                # imageset is processed as a whole for integration.
+                if all(experiments.identifiers()):
+                    expt_ids = []
+                    for experiment in experiments:
+                        if experiment.imageset == imageset:
+                            expt_ids.append(experiment.identifier)
+                    subset = reflections.select_on_experiment_identifiers(expt_ids)
+                else:
+                    subset = flex.reflection_table()
+                    for j, experiment in enumerate(experiments):
+                        if experiment.imageset == imageset:
+                            subset.extend(reflections.select(reflections["id"] == j))
                 try:
                     if imageset.get_scan():
                         frame0, frame1 = imageset.get_scan().get_array_range()
