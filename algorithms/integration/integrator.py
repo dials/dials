@@ -1208,11 +1208,14 @@ class Integrator:
         def _determine_max_memory_needed(experiments, reflections):
             max_needed = 0
 
-            for experiment in experiments:
-                imageset = experiment.imageset
-                subset = reflections.select_on_experiment_identifiers(
-                    [experiment.identifier]
-                )
+            for imageset in experiments.imagesets():
+                expt_ids = []
+                # find all experiments belonging to that imageset, as each
+                # imageset is processed as a whole for integration
+                for experiment in experiments:
+                    if experiment.imageset == imageset:
+                        expt_ids.append(experiment.identifier)
+                subset = reflections.select_on_experiment_identifiers(expt_ids)
 
                 try:
                     if imageset.get_scan():
