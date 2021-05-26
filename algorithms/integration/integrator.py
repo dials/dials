@@ -1207,7 +1207,11 @@ class Integrator:
         # determine the max memory needed during integration
         def _determine_max_memory_needed(experiments, reflections):
             max_needed = 0
-            for imageset in experiments.imagesets():
+
+            for j, experiment in enumerate(experiments):
+                imageset = experiment.imageset
+                subset = reflections.select(reflections["id"] == j)
+
                 try:
                     if imageset.get_scan():
                         frame0, frame1 = imageset.get_scan().get_array_range()
@@ -1217,7 +1221,7 @@ class Integrator:
                     frame0, frame1 = (0, len(imageset))
                 flatten = self.params.integration.integrator == "flat3d"
                 max_needed = max(
-                    max_memory_needed(reflections, frame0, frame1, flatten),
+                    max_memory_needed(subset, frame0, frame1, flatten),
                     max_needed,
                 )
             assert max_needed > 0, "Could not determine memory requirements"

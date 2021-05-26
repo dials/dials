@@ -1,0 +1,1 @@
+dials.integrate: fix bug in memory use calculation for multi-sweep integration runs
