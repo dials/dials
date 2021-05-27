@@ -1,1 +1,0 @@
-Switch from ``hdf5-external-filter-plugins`` to ``hdf5plugin`` on Windows.

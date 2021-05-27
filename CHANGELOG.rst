@@ -1,3 +1,58 @@
+DIALS 3.5.0 (2021-05-27)
+========================
+
+Features
+--------
+
+- ``dials.integrate``: Avoid crash when data is too large to process in memory, by splitting into subsets (`#1392 <https://github.com/dials/dials/issues/1392>`_)
+- New bootstrap options: ``--mamba`` to install with `micromamba <https://github.com/mamba-org/mamba#micromamba>`_, and ``--clean`` to remove installation caches immediately after completion. (`#1676 <https://github.com/dials/dials/issues/1676>`_)
+- ``dials.find_spots_server``: Faster filtering of reflections by resolution (`#1680 <https://github.com/dials/dials/issues/1680>`_)
+- ``dials.scale``: Add option ``error_model.grouping=`` to control refinement of either individual or grouped error models during scaling (`#1684 <https://github.com/dials/dials/issues/1684>`_)
+- ``dials.scale``: Added ``physical.absorption_level=[low|medium|high]`` option for automatic setting of suitable absorption correction parameters. (`#1688 <https://github.com/dials/dials/issues/1688>`_)
+- ``dials.cosym``: Significantly faster calculation of Rij matrix of pairwise correlation coefficients (`#1693 <https://github.com/dials/dials/issues/1693>`_)
+- ``dials.sort_reflections`` and ``dials.merge_reflection_lists`` are now available without a ``dev.`` prefix. (`#1703 <https://github.com/dials/dials/issues/1703>`_)
+- New command: ``dials.find_bad_pixels`` to identify pixels which are identified as signal in >= 50% of images (`#1710 <https://github.com/dials/dials/issues/1710>`_)
+- ``dials.image_viewer``: Add selector to choose between a new default "image" and traditional "lab" coordinate frames. "image" frame attempts to align the fast/slow axes of the detector panels to screen x and y coordinates, so overall detector rotations will mostly be invisible. "lab" frame is the previous projection, where rotated detectors will appear rotated.
+  ``dials.export_bitmaps``: Gained this same ``projection=`` option. (`#1716 <https://github.com/dials/dials/issues/1716>`_)
+- ``dials.find_spots`` and ``dials.integrate``: `nproc=` now works with N > 1 on Windows. (`#1724 <https://github.com/dials/dials/issues/1724>`_)
+
+
+Bugfixes
+--------
+
+- Fix rare crash in symmetry calculations when no resolution limit could be calculated (`#1641 <https://github.com/dials/dials/issues/1641>`_)
+- ``dials.report``: Add units of pixels / images to centroid difference histograms (`#1677 <https://github.com/dials/dials/issues/1677>`_)
+- ``dials.refine``: Scan-varying refinement failed when ``trim_scan_to_observations=False`` was used. (`#1686 <https://github.com/dials/dials/issues/1686>`_)
+- ``dials.spot_counts_per_image``: Show an explicit error if given data that isn't spotfinding output (i.e. unindexed reflections/experiments). (`#1690 <https://github.com/dials/dials/issues/1690>`_)
+- ``dials.integrate``: Improved background model variance calculation for integrating detectors. (`#1692 <https://github.com/dials/dials/issues/1692>`_)
+- dials.stills_process: improve processing performance by preventing re-reading of image data (`#1705 <https://github.com/dials/dials/issues/1705>`_)
+- ``dials.background``: Correctly identify signal pixels for integrating detectors, and respect pre-calculated masks. (`#1726 <https://github.com/dials/dials/issues/1726>`_)
+- ``dials.integrate``: Fixed bug in memory-use calculation for multi-sweep integration runs (`#1728 <https://github.com/dials/dials/issues/1728>`_)
+
+
+Improved Documentation
+----------------------
+
+- Remove remaining 'master' references in the documentation. (`#1632 <https://github.com/dials/dials/issues/1632>`_)
+
+
+Deprecations and Removals
+-------------------------
+
+- The previously deprecated ``dials.util.masking.MaskGenerator`` now prints a user warning. Please use ````dials.util.masking.generate_mask`` instead. (`#1643 <https://github.com/dials/dials/issues/1643>`_)
+- ``dials.cosym``: Remove clustering code as this is no longer a necessary part of determination of symmetry or reindexing operations, and serves no useful purporse. (`#1647 <https://github.com/dials/dials/issues/1647>`_)
+- ``dials.cosym``: ``nproc=`` parameter is deprecated. The algorithm is much faster on single cores. (`#1693 <https://github.com/dials/dials/issues/1693>`_)
+- The pytest option ``--runslow`` was retired. The tests that it triggered will now always run. (`#1695 <https://github.com/dials/dials/issues/1695>`_)
+- ``dev.dials.csv`` has been deprecated. Similar functionality is available with ``dials.export format=json``. (`#1708 <https://github.com/dials/dials/issues/1708>`_)
+- ``dials.util.mp``: The ``preserve_exception_message`` argument has been deprecated. (`#1722 <https://github.com/dials/dials/issues/1722>`_)
+
+
+Misc
+----
+
+- `#1631 <https://github.com/dials/dials/issues/1631>`_, `#1633 <https://github.com/dials/dials/issues/1633>`_, `#1648 <https://github.com/dials/dials/issues/1648>`_, `#1649 <https://github.com/dials/dials/issues/1649>`_, `#1652 <https://github.com/dials/dials/issues/1652>`_, `#1661 <https://github.com/dials/dials/issues/1661>`_, `#1672 <https://github.com/dials/dials/issues/1672>`_, `#1673 <https://github.com/dials/dials/issues/1673>`_, `#1674 <https://github.com/dials/dials/issues/1674>`_, `#1675 <https://github.com/dials/dials/issues/1675>`_, `#1676 <https://github.com/dials/dials/issues/1676>`_, `#1678 <https://github.com/dials/dials/issues/1678>`_, `#1679 <https://github.com/dials/dials/issues/1679>`_, `#1687 <https://github.com/dials/dials/issues/1687>`_, `#1696 <https://github.com/dials/dials/issues/1696>`_, `#1697 <https://github.com/dials/dials/issues/1697>`_, `#1698 <https://github.com/dials/dials/issues/1698>`_, `#1701 <https://github.com/dials/dials/issues/1701>`_, `#1706 <https://github.com/dials/dials/issues/1706>`_, `#1707 <https://github.com/dials/dials/issues/1707>`_, `#1711 <https://github.com/dials/dials/issues/1711>`_, `#1713 <https://github.com/dials/dials/issues/1713>`_, `#1717 <https://github.com/dials/dials/issues/1717>`_, `#1718 <https://github.com/dials/dials/issues/1718>`_, `#1720 <https://github.com/dials/dials/issues/1720>`_
+
+
 DIALS 3.4.3 (2021-04-20)
 ========================
 
