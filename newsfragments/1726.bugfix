@@ -1,1 +1,1 @@
-``dials.background``: Correctly identify signal pixels for integrating detectors and respect pre-calculated masks.
+``dials.background``: Correctly identify signal pixels for integrating detectors, and respect pre-calculated masks.
