@@ -19,7 +19,7 @@ def test(dials_data, tmp_path):
 
     for line in result.stdout.splitlines():
         if line.startswith(b"Mean background"):
-            assert line.endswith(b"0.426")
+            assert line.endswith(b"0.559")
             break
 
 
