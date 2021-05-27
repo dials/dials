@@ -1211,10 +1211,11 @@ class Integrator:
                 # find all experiments belonging to that imageset, as each
                 # imageset is processed as a whole for integration.
                 if all(experiments.identifiers()):
-                    expt_ids = []
-                    for experiment in experiments:
-                        if experiment.imageset == imageset:
-                            expt_ids.append(experiment.identifier)
+                    expt_ids = [
+                        experiment.identifier
+                        for experiment in experiments
+                        if experiment.imageset == imageset
+                    ]
                     subset = reflections.select_on_experiment_identifiers(expt_ids)
                 else:
                     subset = flex.reflection_table()
