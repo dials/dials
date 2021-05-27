@@ -1208,6 +1208,20 @@ class Integrator:
         def _determine_max_memory_needed(experiments, reflections):
             max_needed = 0
             for imageset in experiments.imagesets():
+                # find all experiments belonging to that imageset, as each
+                # imageset is processed as a whole for integration.
+                if all(experiments.identifiers()):
+                    expt_ids = [
+                        experiment.identifier
+                        for experiment in experiments
+                        if experiment.imageset == imageset
+                    ]
+                    subset = reflections.select_on_experiment_identifiers(expt_ids)
+                else:
+                    subset = flex.reflection_table()
+                    for j, experiment in enumerate(experiments):
+                        if experiment.imageset == imageset:
+                            subset.extend(reflections.select(reflections["id"] == j))
                 try:
                     if imageset.get_scan():
                         frame0, frame1 = imageset.get_scan().get_array_range()
@@ -1217,7 +1231,7 @@ class Integrator:
                     frame0, frame1 = (0, len(imageset))
                 flatten = self.params.integration.integrator == "flat3d"
                 max_needed = max(
-                    max_memory_needed(reflections, frame0, frame1, flatten),
+                    max_memory_needed(subset, frame0, frame1, flatten),
                     max_needed,
                 )
             assert max_needed > 0, "Could not determine memory requirements"
