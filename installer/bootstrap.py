@@ -1243,8 +1243,15 @@ be passed separately with quotes to avoid confusion (e.g
         ),
     )
     parser.add_argument(
+        # Deprecated, 2021-05-28
         "--mamba",
-        help="Use micromamba over miniconda for the base installation step",
+        help=argparse.SUPPRESS,
+        default=False,
+        action="store_true",
+    )
+    parser.add_argument(
+        "--conda",
+        help="Use miniconda instead of micromamba for the base installation step",
         default=False,
         action="store_true",
     )
@@ -1275,14 +1282,14 @@ be passed separately with quotes to avoid confusion (e.g
 
     # Build base packages
     if "base" in options.actions:
-        if options.mamba:
-            install_micromamba(options.python, include_cctbx=options.prebuilt_cctbx)
-            if options.clean:
-                shutil.rmtree(os.path.realpath("micromamba"))
-        else:
+        if options.conda:
             install_conda(options.python, include_cctbx=options.prebuilt_cctbx)
             if options.clean:
                 shutil.rmtree(os.path.realpath("miniconda"))
+        else:
+            install_micromamba(options.python, include_cctbx=options.prebuilt_cctbx)
+            if options.clean:
+                shutil.rmtree(os.path.realpath("micromamba"))
 
     # Configure, make, get revision numbers
     if "build" in options.actions:
@@ -1296,6 +1303,12 @@ be passed separately with quotes to avoid confusion (e.g
         run_tests()
 
     print("\nBootstrap success: %s" % ", ".join(options.actions))
+
+    if options.mamba:
+        print(
+            "\nNOTE: --mamba is now the default, "
+            "you do not need to specify it any more"
+        )
 
 
 if __name__ == "__main__":
