@@ -1,5 +1,3 @@
-# LIBTBX_SET_DISPATCHER_NAME dials.estimate_resolution
-# LIBTBX_SET_DISPATCHER_NAME dials.resolutionizer
 """
 Estimate a resolution limit based on merging statistics calculated in resolution bins.
 
@@ -62,7 +60,6 @@ Use cc_ref resolution cutoff::
 import json
 import logging
 import sys
-import warnings
 
 from jinja2 import ChoiceLoader, Environment, PackageLoader
 
@@ -96,13 +93,6 @@ output {
 @show_mail_handle_errors()
 def run(args=None):
     usage = "dials.estimate_resolution [options] (scaled.expt scaled.refl | scaled_unmerged.mtz)"
-
-    import libtbx.load_env
-
-    if libtbx.env.dispatcher_name == "dials.resolutionizer":
-        warnings.warn(
-            "dials.resolutionizer is now deprecated, please use dials.estimate_resolution instead"
-        )
 
     parser = OptionParser(
         usage=usage,
