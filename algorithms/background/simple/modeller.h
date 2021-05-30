@@ -36,7 +36,8 @@ namespace dials { namespace algorithms { namespace background {
     // The parameters of the background model
     virtual af::shared<double> params() const = 0;
 
-    // The variances of the parameters from the model fit (not variances of the background values)
+    // The variances of the parameters from the model fit (not variances of the
+    // background values)
     virtual af::shared<double> variances() const = 0;
   };
 
@@ -103,15 +104,15 @@ namespace dials { namespace algorithms { namespace background {
               count++;
               double x = data(k, j, i);
               double oldM = M;
-              M = M + (x - M)/count;
-              S = S + (x - M)*(x-oldM);
+              M = M + (x - M) / count;
+              S = S + (x - M) * (x - oldM);
             }
           }
         }
         DIALS_ASSERT(count > 1);
         mean[k] = M;
         // variance is S/(count-1), SEM^2 is variance/count
-        sq_sem[k] = S / (count*count - count);
+        sq_sem[k] = S / (count * count - count);
       }
       return boost::make_shared<Constant2dModel>(mean, sq_sem);
     }
@@ -160,13 +161,13 @@ namespace dials { namespace algorithms { namespace background {
           count++;
           double x = data[i];
           double oldM = M;
-          M = M + (x - M)/count;
-          S = S + (x - M)*(x-oldM);
+          M = M + (x - M) / count;
+          S = S + (x - M) * (x - oldM);
         }
       }
       DIALS_ASSERT(count > 1);
       // variance is S/(count-1), SEM^2 is variance/count
-      return boost::make_shared<Constant3dModel>(M, S / (count*count - count));
+      return boost::make_shared<Constant3dModel>(M, S / (count * count - count));
     }
   };
 

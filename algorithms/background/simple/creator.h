@@ -196,8 +196,8 @@ namespace dials { namespace algorithms { namespace background {
               count++;
               double x = data(k, j, i);
               double oldM = M;
-              M = M + (x - M)/count;
-              S = S + (x - M)*(x-oldM);
+              M = M + (x - M) / count;
+              S = S + (x - M) * (x - oldM);
 
               // Also accumulate mean squared error of the background estimator
               double residual = (background(k, j, i) - data(k, j, i));
@@ -208,7 +208,7 @@ namespace dials { namespace algorithms { namespace background {
       }
       DIALS_ASSERT(count >= min_pixels_);
       double mean = M;
-      double var = S/(count-1);
+      double var = S / (count - 1);
       DIALS_ASSERT(mean >= 0);
       DIALS_ASSERT(var >= 0);
       double dispersion = mean > 0 ? var / mean : 0;
