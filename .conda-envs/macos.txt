@@ -14,7 +14,7 @@ conda-forge::future
 conda-forge::gemmi
 conda-forge::h5py>=3.1.0
 conda-forge::hdf5<1.11
-conda-forge::hdf5-external-filter-plugins==0.1.0[build_number='>=5']
+conda-forge::hdf5plugin
 conda-forge::iota
 conda-forge::jinja2
 conda-forge::jpeg
