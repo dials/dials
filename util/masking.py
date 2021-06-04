@@ -2,7 +2,6 @@ import copy
 import logging
 import math
 import time
-import warnings
 from collections import namedtuple
 from typing import Tuple
 
@@ -198,25 +197,6 @@ def _get_resolution_masker(beam, panel):
 
 def _apply_resolution_mask(mask, beam, panel, *args):
     _get_resolution_masker(beam, panel).apply(mask, *args)
-
-
-class MaskGenerator:
-    """
-    Deprecated interface for generating mask.
-
-    To be removed in DIALS 3.5.
-    """
-
-    def __init__(self, params):
-        warnings.warn(
-            "MaskGenerator is deprecated; please use dials.util.masking.generate_mask instead",
-            UserWarning,
-            stacklevel=2,
-        )
-        self.params = params
-
-    def generate(self, imageset):
-        return generate_mask(imageset, self.params)
 
 
 def generate_mask(
