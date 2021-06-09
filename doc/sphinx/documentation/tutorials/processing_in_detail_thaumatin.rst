@@ -339,53 +339,41 @@ damage.
 Integration
 ^^^^^^^^^^^
 
-After the refinement is done the next step is integration, which is performed
-by the program :doc:`dials.integrate <../programs/dials_integrate>`. Mostly,
-the default parameters are fine for Pilatus data, which will perform
-XDS-like 3D profile fitting while using a generalized linear model in order
-to fit a Poisson-distributed background model. We will also increase the
-number of processors used to speed the job up.
+Once you have refined the model the next step is to integrate the
+data - in effect this is using the refined model to calculate the
+positions where all of the reflections in the data set will be found
+and measure the background substracted intensities:
 
-.. dials_tutorial_include:: betalactamase/dials.integrate.cmd
+::
+   dials.integrate refined.expt refined.refl
 
-.. container:: toggle
+By default this will pass through the data twice, first looking at the
+shapes of the predicted spots to form a reference profile model then
+passing through a second time to use this profile model to integrate
+the data, by being fit to the transformed pixel values. This is by far
+the most computationally expensive step in the processing of the data!
 
-    .. container:: header
+by default all the processors in your computer are used, unless we
+think this will exceed the memory available in the machine. At times,
+however, if you have a large unit cell and / or a large data set you
+may find that processing on a desktop workstation is more appropriate
+than e.g. a laptop.
 
-        **Show/Hide Log**
+If you know in advance that the data do not diffract to anything close
+to the edges of the detector you can assign a resolution limit at this
+stage by adding `prediction.d_min=1.8` (say) to define a 1.8A
+resolution limit - this should in general not be necessary. At the end
+of integration two new files are created - `integrated.refl` and
+`integrated.expt` - looking at these in the image viewer e.g.
 
-    .. dials_tutorial_include:: betalactamase/dials.integrate.log
-        :linenos:
+::
+   dials.image_viewer integrated.expt integrated.refl
 
-Checking the log output, we see that after loading in the reference
-reflections from :file:`refined.refl`, new predictions are made up to the
-highest resolution at the corner of the detector. This is fine, but if we
-wanted to we could have adjusted the resolution limits using parameters
-:samp:`prediction.d_min` and :samp:`prediction.d_max`. The predictions are
-made using the scan-varying crystal model recorded in
-:file:`refined.expt`. This ensures that prediction is made using
-the smoothly varying lattice and orientation that we determined in the
-refinement step. As this scan-varying model was determined in advance of
-integration, each of the integration jobs is independent and we can take
-advantage of true parallelism during processing.
-
-The profile model is calculated from the reflections in
-:file:`refined.refl`. First reflections with a too small 'zeta'
-factor are filtered out. This essentially removes reflections that are too
-close to the spindle axis. In general these reflections require significant
-Lorentz corrections and as a result have less trustworthy intensities anyway.
-From the remaining reflection shoeboxes, the average beam divergence and
-reflecting range is calculated, providing the two Gaussian width parameters
-:math:`\sigma_D` and :math:`\sigma_M` used in the 3D profile model.
-
-Following this, independent integration jobs are set up. These jobs
-overlap, so reflections are assigned to one or more jobs. What follows are
-blocks of information specific to each integration job.
-
-After these jobs are finished, the reflections are 'post-processed', which
-includes the application of the LP correction to the intensities. Then
-summary tables are printed giving quality statistics first by frame, and
-then by resolution bin.
+can be very enlightening as you should see little red boxes around
+every reflection - if you select "integrated only" you can see what
+was and was not integrated. You may see a selection of reflections
+close to the rotation axis are missed - these are not well modelled or
+predicted in any program so typically excluded from processing. 
 
 
 Symmetry analysis
