@@ -373,7 +373,7 @@ class Parameters:
         self.integration = processor.Parameters()
         self.filter = Parameters.Filter()
         self.profile = Parameters.Profile()
-        self.debug_reference_filename = "reference_profiles.refl"
+        self.debug_reference_filename = "reference_profiles.pickle"
         self.debug_reference_output = False
 
     @staticmethod
