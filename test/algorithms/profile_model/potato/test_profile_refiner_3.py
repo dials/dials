@@ -1,6 +1,6 @@
 from __future__ import division, print_function
 
-import logging
+import os
 
 import numpy.random
 from numpy.random import choice as sample
@@ -18,10 +18,6 @@ from dials.algorithms.profile_model.potato.util.generate_simple import (
     generate_from_reflections_binned,
 )
 from dials.array_family import flex
-from dials.util import log
-
-logger = logging.getLogger("dials.test")
-log.config(info=None, debug=None)
 
 
 def generate_observations2(experiments, reflections, sigma):
@@ -43,12 +39,16 @@ def generate_observations2(experiments, reflections, sigma):
     return reflections
 
 
-def tst_ideal():
+def test_ideal(dials_regression):
 
     numpy.random.seed(100)
 
     # Ensure we have a data block
-    experiments = ExperimentListFactory.from_json_file("experiments.json")
+    # experiments = ExperimentListFactory.from_json_file("experiments.json")
+    # was being loaded locally, assumed to be file moved into dials_regression
+    experiments = ExperimentListFactory.from_json_file(
+        os.path.join(dials_regression, "potato_test_data", "experiments.json")
+    )
     experiments[0].scan.set_oscillation((0, 1.0), deg=True)
     experiments[0].beam.set_s0((0, 0, -1))
 
@@ -126,12 +126,16 @@ def tst_ideal():
     print("OK")
 
 
-def tst_binned():
+def test_binned(dials_regression):
 
     numpy.random.seed(100)
 
     # Ensure we have a data block
-    experiments = ExperimentListFactory.from_json_file("experiments.json")
+    # experiments = ExperimentListFactory.from_json_file("experiments.json")
+    # was being loaded locally, assumed to be file moved into dials_regression
+    experiments = ExperimentListFactory.from_json_file(
+        os.path.join(dials_regression, "potato_test_data", "experiments.json")
+    )
     experiments[0].scan.set_oscillation((0, 1.0), deg=True)
     experiments[0].beam.set_s0((0, 0, -1))
 
@@ -197,5 +201,5 @@ def tst_binned():
 
 
 if __name__ == "__main__":
-    tst_ideal()
+    test_ideal()
     # tst_binned()

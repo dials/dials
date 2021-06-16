@@ -99,7 +99,8 @@ def testdata(dials_regression):
     )
 
 
-def tmptest_first_derivatives(testdata):
+def test_first_derivatives(testdata):
+    # this was called tmptest - complete?
 
     experiment = testdata.experiment
     models = testdata.models

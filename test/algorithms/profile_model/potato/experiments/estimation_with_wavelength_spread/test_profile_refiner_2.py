@@ -7,11 +7,13 @@ from scipy.optimize import minimize
 
 from scitbx import matrix
 
-from dials.array_family import flex
-from dials_scratch.jmp.potato.model import compute_change_of_basis_operation
-from dials_scratch.jmp.potato.util.generate_simple import (
+from dials.algorithms.profile_model.potato.model import (
+    compute_change_of_basis_operation,
+)
+from dials.algorithms.profile_model.potato.util.generate_simple import (
     generate_with_wavelength_spread2,
 )
+from dials.array_family import flex
 
 
 def compute_beam_vector_rotation(s0):

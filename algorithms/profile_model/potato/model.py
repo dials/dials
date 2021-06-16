@@ -110,7 +110,8 @@ class SimpleProfileModelBase(ProfileModelBase):
 
         """
         s0 = matrix.col(experiments[0].beam.get_s0())
-        num = reflections.get_flags(reflections.flags.indexed).count(True)
+        # num = reflections.get_flags(reflections.flags.indexed).count(True)
+        num = reflections.size()
 
         # Compute the marginal variance for the 000 reflection
         S00 = experiments[0].crystal.mosaicity.sigma()[8]
@@ -291,6 +292,7 @@ class AngularProfileModelBase(ProfileModelBase):
         """
         s0 = matrix.col(experiments[0].beam.get_s0())
         num = reflections.get_flags(reflections.flags.indexed).count(True)
+        num = reflections.size()
         partiality = flex.double(len(reflections))
         partiality_variance = flex.double(len(reflections))
         for k in range(len(reflections)):

@@ -1,5 +1,6 @@
 from __future__ import division, print_function
 
+import os
 from math import log
 
 import numpy.random
@@ -14,9 +15,9 @@ from dials.algorithms.profile_model.potato.model import (
 from dials.algorithms.profile_model.potato.parameterisation import (
     Simple6MosaicityParameterisation,
 )
-from dials.algorithms.profile_model.potato.profile_refiner import (
-    ProfileRefiner,
-    ProfileRefinerData,
+from dials.algorithms.profile_model.potato.refiner import Refiner as ProfileRefiner
+from dials.algorithms.profile_model.potato.refiner import (
+    RefinerData as ProfileRefinerData,
 )
 from dials.algorithms.profile_model.potato.util.generate_simple import (
     generate_from_reflections,
@@ -118,12 +119,16 @@ def generate_observations2(experiments, reflections, sigma):
     return reflections
 
 
-def tst_ideal():
+def test_ideal(dials_regression):
 
     numpy.random.seed(100)
 
     # Ensure we have a data block
-    experiments = ExperimentListFactory.from_json_file("experiments.json")
+    # experiments = ExperimentListFactory.from_json_file("experiments.json")
+    # was being loaded locally, assumed to be file moved into dials_regression
+    experiments = ExperimentListFactory.from_json_file(
+        os.path.join(dials_regression, "potato_test_data", "experiments.json")
+    )
     experiments[0].scan.set_oscillation((0, 1.0), deg=True)
     experiments[0].beam.set_s0((0, 0, -1))
 
@@ -200,12 +205,16 @@ def tst_ideal():
     print("OK")
 
 
-def tst_binned():
+def test_binned(dials_regression):
 
     numpy.random.seed(100)
 
     # Ensure we have a data block
-    experiments = ExperimentListFactory.from_json_file("experiments.json")
+    # experiments = ExperimentListFactory.from_json_file("experiments.json")
+    # was being loaded locally, assumed to be file moved into dials_regression
+    experiments = ExperimentListFactory.from_json_file(
+        os.path.join(dials_regression, "potato_test_data", "experiments.json")
+    )
     experiments[0].scan.set_oscillation((0, 1.0), deg=True)
     experiments[0].beam.set_s0((0, 0, -1))
 
@@ -282,5 +291,5 @@ def tst_binned():
 
 
 if __name__ == "__main__":
-    tst_ideal()
-    tst_binned()
+    test_ideal()
+    test_binned()

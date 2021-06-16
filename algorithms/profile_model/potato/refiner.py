@@ -1094,7 +1094,8 @@ class RefinerData(object):
                     x = matrix.col(X[j, i])
                     Sobs += (x - xbar) * (x - xbar).transpose() * C[j, i]
             Sobs /= ctot
-            assert Sobs > 0, "BUG: variance must be > 0"
+            assert Sobs[0] > 0, "BUG: variance must be > 0"
+            assert Sobs[3] > 0, "BUG: variance must be > 0"
 
             # Compute the bias
             # zero = matrix.col((0, 0))

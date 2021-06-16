@@ -16,13 +16,13 @@ from __future__ import absolute_import, division
 import logging
 
 import libtbx.load_env
-from dxtbx.model.experiment_list import ExperimentListDumper
 from libtbx.phil import parse
 from libtbx.utils import Sorry
 
+from dials.algorithms.profile_model.potato.potato import Integrator
+from dials.array_family import flex
 from dials.util import log
 from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
-from dials_scratch.jmp.potato.potato import Integrator
 
 logger = logging.getLogger(libtbx.env.dispatcher_name)
 
@@ -46,7 +46,7 @@ phil_scope = parse(
       .help = "The output reflections"
   }
 
-  include scope dials_scratch.jmp.potato.potato.phil_scope
+  include scope dials.algorithms.profile_model.potato.potato.phil_scope
 
 """,
     process_includes=True,
@@ -99,7 +99,7 @@ class Script(object):
         reflections = reflections[0]
 
         # Configure logging
-        log.config(info="dials.potato.log", debug="dials.potato.debug.log")
+        log.config(verbosity=options.verbose, logfile="dials.potato.log")
 
         # Log the diff phil
         diff_phil = self.parser.diff_phil.as_str()
@@ -108,6 +108,7 @@ class Script(object):
             logger.info(diff_phil)
 
         # Contruct the integrator
+        reflections["id"] = flex.int(reflections.size(), 0)
         integrator = Integrator(experiments, reflections, params)
 
         # Do cycles of indexing and refinement
@@ -125,18 +126,10 @@ class Script(object):
         experiments = integrator.experiments
 
         # Save the reflections
-        reflections.as_pickle(params.output.reflections)
-
-        dump = ExperimentListDumper(experiments)
-        with open(params.output.experiments, "w") as outfile:
-            outfile.write(dump.as_json())
+        reflections.as_file(params.output.reflections)
+        experiments.as_file(params.output.experiments)
 
 
 if __name__ == "__main__":
-    from dials.util import halraiser
-
-    try:
-        script = Script()
-        script.run()
-    except Exception as e:
-        halraiser(e)
+    script = Script()
+    script.run()

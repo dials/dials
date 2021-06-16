@@ -3,6 +3,7 @@ from __future__ import division, print_function
 from math import log, sqrt
 
 import numpy.random
+import pytest
 
 from scitbx import matrix
 
@@ -12,10 +13,10 @@ from dials.algorithms.profile_model.potato.model import (
 from dials.algorithms.profile_model.potato.parameterisation import (
     Simple6MosaicityParameterisation,
 )
-from dials.algorithms.profile_model.potato.profile_refiner import (
-    MaximumLikelihoodTarget,
-    ProfileRefiner,
-    ProfileRefinerData,
+from dials.algorithms.profile_model.potato.refiner import MaximumLikelihoodTarget
+from dials.algorithms.profile_model.potato.refiner import Refiner as ProfileRefiner
+from dials.algorithms.profile_model.potato.refiner import (
+    RefinerData as ProfileRefinerData,
 )
 from dials.algorithms.profile_model.potato.util.generate_simple import (
     generate_simple,
@@ -107,7 +108,7 @@ class Target(object):
         return score
 
 
-def tst_ideal():
+def test_ideal():
 
     numpy.random.seed(100)
 
@@ -159,7 +160,7 @@ def tst_ideal():
     print("OK")
 
 
-def tst_binned():
+def test_binned():
 
     numpy.random.seed(100)
 
@@ -212,7 +213,10 @@ def tst_binned():
     print("OK")
 
 
-def tst_ml_target_class():
+@pytest.mark.xfail(
+    reason="generate_simple does not generate everything needed - outdated code?"
+)
+def test_ml_target_class():
     class SimplexTarget(object):
         def __init__(self, s0, s2_list, ctot_list, xbar_list, Sobs_list):
             self.s0 = s0
@@ -293,7 +297,10 @@ def tst_ml_target_class():
     print("OK")
 
 
-def tst_ml_target_class_2():
+@pytest.mark.xfail(
+    reason="generate_simple does not generate everything needed - outdated code?"
+)
+def test_ml_target_class_2():
 
     numpy.random.seed(100)
 
@@ -346,7 +353,7 @@ def tst_ml_target_class_2():
 
 
 if __name__ == "__main__":
-    tst_ideal()
-    tst_binned()
-    tst_ml_target_class()
-    tst_ml_target_class_2()
+    test_ideal()
+    test_binned()
+    test_ml_target_class()
+    test_ml_target_class_2()

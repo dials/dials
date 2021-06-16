@@ -29,13 +29,13 @@ from dials.algorithms.profile_model.potato.model import ProfileModelFactory
 from dials.algorithms.profile_model.potato.parameterisation import ModelState
 from dials.algorithms.profile_model.potato.refiner import Refiner as ProfileRefiner
 from dials.algorithms.profile_model.potato.refiner import RefinerData
-from dials.algorithms.refinement.refinement_helpers import corrgram
+from dials.algorithms.refinement.corrgram import corrgram
 from dials.algorithms.spot_prediction import IndexGenerator
 from dials.algorithms.statistics.fast_mcd import FastMCD, maha_dist_sq
 from dials.array_family import flex
 
 # Set matplotlib backend
-matplotlib.use("agg", warn=False)
+matplotlib.use("agg")  # , warn=False)
 
 logger = logging.getLogger("dials." + __name__)
 
@@ -389,6 +389,8 @@ class InitialIntegrator(object):
         # Save the experiments and reflections
         self.experiments = experiments
         self.reflections = reflections
+        sel = self.reflections.get_flags(self.reflections.flags.strong)
+        self.reflections = self.reflections.select(sel)
 
         # Save the old shoeboxes
         self.shoeboxes = self.reflections["shoebox"]
@@ -1165,7 +1167,9 @@ class Integrator(object):
         logger.info("Predicted %d reflections" % len(self.reflections))
 
         # Match with the reference reflections
-        _, _, unmatched = self.reflections.match_with_reference(self.reference)
+        # _, _, unmatched = self.reflections.match_with_reference(self.reference)
+        # commented out as broken and not actually needed as below code was
+        # already commented out
 
         # Add unmatched
         # columns = flex.std_string()
