@@ -975,12 +975,17 @@ def update_sources(options):
             ("xia2/xia2", "main"),
         )
     }
-    repositories["cctbx_project"] = {
-        "base-repository": "cctbx/cctbx_project",
-        "effective-repository": "dials/cctbx",
-        "branch-remote": "master",
-        "branch-local": "stable",
-    }
+    if options.prebuilt_cctbx:
+        repositories["cctbx_project"]["branch-local"] = (
+            "releases/" + _prebuilt_cctbx_base
+        )
+    else:
+        repositories["cctbx_project"] = {
+            "base-repository": "cctbx/cctbx_project",
+            "effective-repository": "dials/cctbx",
+            "branch-remote": "master",
+            "branch-local": "stable",
+        }
 
     for source, setting in options.branch:
         if source not in repositories:
