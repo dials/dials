@@ -1075,7 +1075,7 @@ class Integrator:
                 # Get the finalized modeller
                 finalized_profile_fitter = profile_fitter.finalized_model()
 
-                # Print profiles
+                # Dump reference profiles
                 if self.params.debug_reference_output:
                     reference_debug = []
                     for i in range(len(finalized_profile_fitter)):
@@ -1083,13 +1083,21 @@ class Integrator:
                         p = []
                         for j in range(len(m)):
                             try:
-                                p.append((m.data(j), m.mask(j)))
+                                p.append(
+                                    {
+                                        "data": m.data(j),
+                                        "mask": m.mask(j),
+                                        "coord": m.coord(j),
+                                        "n_reflections": m.n_reflections(j),
+                                    }
+                                )
                             except Exception:
                                 p.append(None)
-                    reference_debug.append(p)
+                        reference_debug.append(p)
                     with open(self.params.debug_reference_filename, "wb") as outfile:
                         pickle.dump(reference_debug, outfile)
 
+                # Print profiles
                 for i in range(len(finalized_profile_fitter)):
                     m = finalized_profile_fitter[i]
                     logger.debug("")
