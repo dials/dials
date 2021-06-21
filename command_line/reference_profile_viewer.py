@@ -61,16 +61,14 @@ class ProfilesFrame(wx.Frame):
     def __init__(self, profiles):
         wx.Frame.__init__(self, None, -1, self.title)
 
-        self.data = profiles
-
-        # FIXME overwrite data while this is still a bar chart explorer
-        self.data = [4, 5, 6]
+        self.profiles = profiles
+        self.data = self.profiles.get_profiles(experiment=0, block=0)
 
         self.create_menu()
         self.create_status_bar()
         self.create_main_panel()
 
-        self.textbox.SetValue(" ".join(map(str, self.data)))
+        self.textbox.SetValue("experiment: 0 block: 0")
         self.draw_figure()
 
     def create_menu(self):
@@ -84,7 +82,7 @@ class ProfilesFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.on_exit, m_exit)
 
         menu_help = wx.Menu()
-        m_about = menu_help.Append(-1, "&About\tF1", "About the demo")
+        m_about = menu_help.Append(-1, "&About\tF1", "About the program")
         self.Bind(wx.EVT_MENU, self.on_about, m_about)
 
         self.menubar.Append(menu_file, "&File")
@@ -100,20 +98,15 @@ class ProfilesFrame(wx.Frame):
         self.panel = wx.Panel(self)
 
         # Create the mpl Figure and FigCanvas objects.
-        # 5x4 inches, 100 dots-per-inch
+        # 7x5 inches, 100 dots-per-inch
         #
         self.dpi = 100
-        self.fig = Figure((5.0, 4.0), dpi=self.dpi)
+        self.fig = Figure((7.0, 5.0), dpi=self.dpi)
         self.canvas = FigCanvas(self.panel, -1, self.fig)
 
-        # Since we have only one plot, we can use add_axes
-        # instead of add_subplot, but then the subplot
-        # configuration tool in the navigation toolbar wouldn't
-        # work.
-        #
-        self.axes = self.fig.add_subplot(111)
+        self.set_axes()
 
-        # Bind the 'pick' event for clicking on one of the bars
+        # Bind the 'pick' event for clicking on one of the values
         #
         self.canvas.mpl_connect("pick_event", self.on_pick)
 
@@ -169,28 +162,39 @@ class ProfilesFrame(wx.Frame):
         self.panel.SetSizer(self.vbox)
         self.vbox.Fit(self)
 
+    def set_axes(self):
+        subplots = [e["subplot"] for e in self.data]
+        r, c = list(zip(*subplots))
+        nrows = max(r) + 1
+        ncols = max(c) + 1
+        self.axes = self.fig.subplots(nrows, ncols, sharex=True, sharey=True)
+
     def create_status_bar(self):
         self.statusbar = self.CreateStatusBar()
 
     def draw_figure(self):
         """Redraws the figure"""
-        str = self.textbox.GetValue()
-        self.data = list(map(int, str.split()))
-        x = range(len(self.data))
+        # str = self.textbox.GetValue()
+        # self.data = list(map(int, str.split()))
+        # x = range(len(self.data))
 
-        # clear the axes and redraw the plot anew
-        #
-        self.axes.clear()
-        self.axes.grid(self.cb_grid.IsChecked())
+        final_row_index = self.axes.shape[0] - 1
+        for profile in self.data:
+            subplot = profile["subplot"]
+            ax = self.axes[subplot]
+            ax.clear()
 
-        self.axes.bar(
-            x=list(x),
-            height=self.data,
-            width=self.slider_width.GetValue() / 100.0,
-            align="center",
-            alpha=0.44,
-            picker=5,
-        )
+            # for now, let's just sum down the first (Z?) axis
+            vals2D = profile["data"].sum(axis=0)
+            ax.imshow(vals2D)
+
+            if subplot[0] == final_row_index:
+                ax.set_xlabel(f"X: {profile['coord'][0]:.1f}")
+            if subplot[1] == 0:
+                ax.set_ylabel(f"Y: {profile['coord'][1]:.1f}")
+
+        self.fig.suptitle(f"Block Z: {profile['coord'][2]:.1f}")
+        self.fig.tight_layout()
 
         self.canvas.draw()
 
@@ -242,14 +246,10 @@ class ProfilesFrame(wx.Frame):
         self.Destroy()
 
     def on_about(self, event):
-        msg = """ A demo using wxPython with matplotlib:
+        msg = """A reference profile viewer for DIALS:
 
          * Use the matplotlib navigation bar
-         * Add values to the text box and press Enter (or click "Draw!")
-         * Show or hide the grid
-         * Drag the slider to modify the width of the bars
          * Save the plot to a file using the File menu
-         * Click on a bar to receive an informative message
         """
         dlg = wx.MessageDialog(self, msg, "About", wx.OK)
         dlg.ShowModal()
@@ -306,7 +306,7 @@ class ProfileStore:
             x, y, _ = profile["coord"]
             i = x_coords.index(x)
             j = y_coords.index(y)
-            profile["subplot"] = (i, j)
+            profile["subplot"] = (j, i)  # row (Y), then column (X)
             profile["data"] = profile["data"].as_numpy_array()
             profile["mask"] = profile["mask"].as_numpy_array()
 
