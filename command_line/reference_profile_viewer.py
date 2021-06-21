@@ -1,3 +1,5 @@
+# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
+
 """
 This demo demonstrates how to embed a matplotlib (mpl) plot
 into a wxPython GUI application, including:
@@ -15,32 +17,54 @@ Eli Bendersky (eliben@gmail.com)
 License: this code is in the public domain
 """
 import os
+import pickle
 
-# The recommended way to use wx with mpl is with the WXAgg
-# backend.
-#
 import matplotlib
 import wx
 
-# The code was updated to work with Python 3.8 and wxPython v4
-
 matplotlib.use("WXAgg")
+
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigCanvas
 from matplotlib.backends.backend_wxagg import (
     NavigationToolbar2WxAgg as NavigationToolbar,
 )
 from matplotlib.figure import Figure
 
+import libtbx.phil
 
-class BarsFrame(wx.Frame):
+import dials.util
+import dials.util.log
+from dials.util.options import OptionParser
+
+try:
+    from typing import List
+except ImportError:
+    pass
+
+
+# Define the master PHIL scope for this program.
+phil_scope = libtbx.phil.parse(
+    """
+    bool_parameter = False
+      .type = bool
+    integer_parameter = 0
+      .type = int
+    """
+)
+
+
+class ProfilesFrame(wx.Frame):
     """The main frame of the application"""
 
-    title = "Demo: wxPython with matplotlib"
+    title = "Reference profile viewer"
 
-    def __init__(self):
+    def __init__(self, profiles):
         wx.Frame.__init__(self, None, -1, self.title)
 
-        self.data = [5, 6, 9, 14]
+        self.data = profiles
+
+        # FIXME overwrite data while this is still a bar chart explorer
+        self.data = [4, 5, 6]
 
         self.create_menu()
         self.create_status_bar()
@@ -241,8 +265,109 @@ class BarsFrame(wx.Frame):
         self.statusbar.SetStatusText("")
 
 
-if __name__ == "__main__":
+class ProfileStore:
+    def __init__(self, filename):
+
+        with open(filename, "rb") as f:
+            data = pickle.load(f)
+
+        self._experiment_data = []
+        for d in data:
+            self._experiment_data.append(self._process_experiment(d))
+
+    def _process_experiment(self, data):
+
+        # Reorganise data by Z block
+        z_blocks = set(e["coord"][2] for e in data)
+        z_blocks = dict.fromkeys(z_blocks)
+        for model in data:
+            z_coord = model["coord"][2]
+            if z_blocks[z_coord] is None:
+                z_blocks[z_coord] = [
+                    model,
+                ]
+            else:
+                z_blocks[z_coord].append(model)
+
+        # Process within Z blocks
+        for k, v in z_blocks.items():
+            z_blocks[k] = self._process_block(v)
+
+        # Convert to list
+        keys = sorted(z_blocks.keys())
+        return [z_blocks[k] for k in keys]
+
+    @staticmethod
+    def _process_block(block):
+        x_coords = sorted(set(e["coord"][0] for e in block))
+        y_coords = sorted(set(e["coord"][1] for e in block))
+
+        for profile in block:
+            x, y, _ = profile["coord"]
+            i = x_coords.index(x)
+            j = y_coords.index(y)
+            profile["subplot"] = (i, j)
+            profile["data"] = profile["data"].as_numpy_array()
+            profile["mask"] = profile["mask"].as_numpy_array()
+
+        return block
+
+    def get_n_experiments(self):
+        return len(self._experiment_data)
+
+    def get_n_blocks(self, experiment):
+        return len(self._experiment_data[experiment])
+
+    def get_profiles(self, experiment, block):
+        return self._experiment_data[experiment][block]
+
+
+@dials.util.show_mail_on_error()
+def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
+    """
+    Check command-line input and call other functions to do the legwork.
+    Run the script, parsing arguments found in 'args' and using the PHIL scope
+    defined in 'phil'.
+    Try to keep this function minimal, defining only what is necessary to run
+    the program from the command line.
+    Args:
+        args: The arguments supplied by the user (default: sys.argv[1:])
+        phil: The PHIL scope definition (default: phil_scope, the master PHIL scope
+        for this program).
+    """
+    dials.util.log.print_banner()
+    usage = "dials.referemce_profile_viewer [options] reference_profiles.pickle"
+    parser = OptionParser(
+        usage=usage,
+        phil=phil,
+        read_reflections=False,
+        read_experiments=False,
+        check_format=False,
+        epilog=__doc__,
+    )
+
+    params, options, args = parser.parse_args(
+        args=args, show_diff_phil=False, return_unhandled=True
+    )
+    if len(args) != 1:
+        parser.print_help()
+        exit(0)
+    filename = args[0]
+    assert os.path.isfile(filename), filename
+
+    data = ProfileStore(filename)
+
+    # Do whatever this program is supposed to do.
+    show_reference_profile_viewer(data, params)
+
+
+def show_reference_profile_viewer(data, params):
     app = wx.App()
-    app.frame = BarsFrame()
+    app.frame = ProfilesFrame(data)
     app.frame.Show()
     app.MainLoop()
+
+
+# Keep this minimal. Calling run() should do exactly the same thing as running this
+if __name__ == "__main__":
+    run()
