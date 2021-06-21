@@ -180,7 +180,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       af::shared< vec3<double> >xyzcalpx;
       af::shared< vec3<double> >xyzcalmm;
       af::shared< std::size_t > panel_list;
-      af::shared< std::size_t > experiment_id;
+      af::shared< int > experiment_id;
 
       // Loop through the input miller indices
       for (std::size_t i = 0; i < h.size(); ++i) {

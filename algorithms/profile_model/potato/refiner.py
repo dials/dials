@@ -1,6 +1,7 @@
 from __future__ import division
 
 import logging
+import textwrap
 from math import log, pi, sqrt
 
 from scitbx import linalg, matrix
@@ -11,6 +12,7 @@ from dials.algorithms.profile_model.potato.model import (
 from dials.algorithms.profile_model.potato.parameterisation import ReflectionModelState
 from dials.algorithms.profile_model.potato.util.simplex import SimpleSimplex
 from dials.array_family import flex
+from dials.util import tabulate
 
 logger = logging.getLogger("dials." + __name__)
 
@@ -460,6 +462,7 @@ def line_search(func, x, p, tau=0.5, delta=1.0, tolerance=1e-7):
         min_delta = tolerance
     else:
         min_delta = tolerance / p.length()
+
     while delta > min_delta:
         try:
             fb = func(x + delta * p)
@@ -542,7 +545,6 @@ class FisherScoringMaximumLikelihoodBase(object):
 
             # Call an update
             self.callback(x)
-
             # Break the loop if the parameters change less than the tolerance
             if (x - x0).length() < self.tolerance:
                 break
@@ -764,31 +766,47 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
         format_string1 = "  Unit cell: (%.3f, %.3f, %.3f, %.3f, %.3f, %.3f)"
         format_string2 = "  | % .6f % .6f % .6f |"
         format_string3 = "  | % .2e % .2e % .2e |"
-        lines = [
-            "",
-            "Iteration: %d" % len(self.history),
-            "",
-            format_string1 % unit_cell,
-            "",
-            "  U matrix (orientation)",
-            format_string2 % tuple(U[0:3]),
-            format_string2 % tuple(U[3:6]),
-            format_string2 % tuple(U[6:9]),
-            "",
-            "  Sigma M",
-            format_string3 % tuple(M[0:3]),
-            format_string3 % tuple(M[3:6]),
-            format_string3 % tuple(M[6:9]),
-            "",
-            "  ln(L) = %f" % lnL,
-            "",
-            "  R.M.S.D (local) = %.5g" % sqrt(mse),
-            "",
-            "  R.M.S.D (pixel): X = %.3f, Y = %.3f" % tuple(rmsd),
-            "",
-            "-" * 80,
-        ]
-        logger.info("\n".join(lines))
+
+        logger.info(f"\nIteration: {len(self.history)}")
+        if not self.model.is_unit_cell_fixed():
+            logger.info("\n" + format_string1 % unit_cell)
+        if not self.model.is_orientation_fixed():
+            logger.info(
+                "\n".join(
+                    [
+                        "",
+                        "  U matrix (orientation)",
+                        format_string2 % tuple(U[0:3]),
+                        format_string2 % tuple(U[3:6]),
+                        format_string2 % tuple(U[6:9]),
+                    ]
+                )
+            )
+        if not self.model.is_mosaic_spread_fixed():
+            logger.info(
+                "\n".join(
+                    [
+                        "",
+                        "  Sigma M",
+                        format_string3 % tuple(M[0:3]),
+                        format_string3 % tuple(M[3:6]),
+                        format_string3 % tuple(M[6:9]),
+                    ]
+                )
+            )
+
+        logger.info(
+            "\n".join(
+                [
+                    "",
+                    "  ln(L) = %f" % lnL,
+                    "",
+                    "  R.M.S.D (local) = %.5g" % sqrt(mse),
+                    "",
+                    "  R.M.S.D (pixel): X = %.3f, Y = %.3f" % tuple(rmsd),
+                ]
+            )
+        )
 
         # Append the parameters to the history
         self.history.append(
@@ -906,23 +924,15 @@ class Refiner(object):
         """
 
         # Print information
-        logger.info("")
-        logger.info("#" * 80)
-        logger.info("#")
-        logger.info("# Running refinement")
-        logger.info("#")
-        logger.info("#" * 80)
-        logger.info("")
-        logger.info("Components to refine:")
+        logger.info("\nComponents to refine:")
         logger.info(" Orientation:       %s" % (not self.state.is_orientation_fixed()))
         logger.info(" Unit cell:         %s" % (not self.state.is_unit_cell_fixed()))
         logger.info(
             " RLP mosaicity:     %s" % (not self.state.is_mosaic_spread_fixed())
         )
         logger.info(
-            " Wavelength spread: %s" % (not self.state.is_wavelength_spread_fixed())
+            " Wavelength spread: %s\n" % (not self.state.is_wavelength_spread_fixed())
         )
-        logger.info("")
 
         # Initialise the algorithm
         ml = FisherScoringMaximumLikelihood(
@@ -944,22 +954,21 @@ class Refiner(object):
         # set the parameters
         self.state.set_active_parameters(self.parameters)
 
-        # Print the eigen values and vectors of sigma_m
-        logger.info("")
-        logger.info("#" * 80)
-        logger.info("#")
-        logger.info("# Decomposition of Sigma_M:")
-        logger.info("#")
-        logger.info("#" * 80)
-        print_eigen_values_and_vectors(self.state.get_M())
+        # Print summary table of refinement.
+        rows = []
+        headers = ["Iteration", "likelihood", "RMSD (pixel) X,Y"]
+        for i, h in enumerate(ml.history):
+            l = h["likelihood"]
+            rmsd = h["rmsd"]
+            rows.append([str(i), f"{l:.4f}", f"{rmsd[0]:.3f}, {rmsd[1]:.3f}"])
+        logger.info(
+            "\nRefinement steps:\n\n" + textwrap.indent(tabulate(rows, headers), " ")
+        )
 
-        # Print the condition number
-        # self.condition_number = ml.condition_number(self.parameters)
-        # logger.info("")
-        # logger.info("-"*80)
-        # logger.info("Condition number = %f" % self.condition_number)
-        # logger.info("-"*80)
-        # logger.info("")
+        # Print the eigen values and vectors of sigma_m
+        if not self.state.is_mosaic_spread_fixed():
+            logger.info("\nDecomposition of Sigma_M:")
+            print_eigen_values_and_vectors(self.state.get_M())
 
         # Save the history
         self.history = ml.history
@@ -1001,6 +1010,8 @@ class RefinerData(object):
     def __init__(self, s0, sp_list, h_list, ctot_list, mobs_list, sobs_list):
         """
         Init the data
+
+        ctot_list is a list of total counts per reflection
 
         """
         self.s0 = s0
@@ -1124,22 +1135,22 @@ class RefinerData(object):
         # refinement to be dominated by these reflections. Therefore, if the
         # intensity is greater than some value, damp the weighting accordingly
         def damp_outlier_intensity_weights(ctot_list):
+            n = ctot_list.size()
             sorted_ctot = sorted(ctot_list)
-            Q1 = sorted_ctot[len(ctot_list) // 4]
-            Q2 = sorted_ctot[len(ctot_list) // 2]
-            Q3 = sorted_ctot[3 * len(ctot_list) // 4]
+            Q1 = sorted_ctot[n // 4]
+            Q2 = sorted_ctot[n // 2]
+            Q3 = sorted_ctot[3 * n // 4]
             IQR = Q3 - Q1
             T = Q3 + 1.5 * IQR
-            logger.info("Median I = %.2f" % Q2)
-            logger.info("Q1/Q3 I = %.2f, %.2f" % (Q1, Q3))
-            logger.info("Damping effect of intensities > %f" % T)
+            logger.info(f"Median I = {Q2:.2f}\nQ1/Q3 I = {Q1:.2f}, {Q3:.2f}")
+            logger.info(f"Damping effect of intensities > {T:.2f}")
             ndamped = 0
-            for i in range(len(ctot_list)):
-                if ctot_list[i] > T:
-                    logger.info("Damping %.2f" % ctot_list[i])
+            for i, ctot in enumerate(ctot_list):
+                if ctot > T:
+                    logger.debug(f"Damping {ctot:.2f}")
                     ctot_list[i] = T
                     ndamped += 1
-            logger.info("Damped %d/%d reflections" % (ndamped, len(ctot_list)))
+            logger.info(f"Damped {ndamped}/{n} reflections")
             return ctot_list
 
         ctot_list = damp_outlier_intensity_weights(ctot_list)
@@ -1215,21 +1226,21 @@ def print_eigen_values_and_vectors(A):
     L = matrix.diag(eigen_decomposition.values())
 
     # Print the matrix eigen values
-    logger.info("")
-    logger.info("Eigen Values:")
-    logger.info("")
+    logger.info(" ")
+    logger.info(" Eigen Values:")
+    logger.info(" ")
     print_matrix(L, indent=2)
-    logger.info("")
+    logger.info(" ")
 
-    logger.info("Eigen Vectors:")
-    logger.info("")
+    logger.info(" Eigen Vectors:")
+    logger.info(" ")
     print_matrix(Q, indent=2)
-    logger.info("")
+    logger.info(" ")
 
-    logger.info("Mosaicity in degrees equivalent units")
-    logger.info("M1: %.5f degrees" % (sqrt(L[0]) * 180.0 / pi))
-    logger.info("M2: %.5f degrees" % (sqrt(L[4]) * 180.0 / pi))
-    logger.info("M3: %.5f degrees" % (sqrt(L[8]) * 180.0 / pi))
+    logger.info(" Mosaicity in degrees equivalent units")
+    logger.info(" M1: %.5f degrees" % (sqrt(L[0]) * 180.0 / pi))
+    logger.info(" M2: %.5f degrees" % (sqrt(L[4]) * 180.0 / pi))
+    logger.info(" M3: %.5f degrees" % (sqrt(L[8]) * 180.0 / pi))
 
 
 def print_matrix(A, fmt="%.3g", indent=0):

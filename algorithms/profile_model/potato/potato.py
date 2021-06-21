@@ -291,9 +291,8 @@ class Indexer(object):
 
     def _filter_reflections_based_on_centroid_distance(self):
         """
-            Filter reflections too far from predicted position
+        Filter reflections too far from predicted position
 
-        <<<<<<< HEAD
         """
 
         # Compute the x and y residuals
@@ -668,8 +667,7 @@ class Refiner(object):
         Do the profile refinement
 
         """
-        logger.info("")
-        logger.info("Refining profile parmameters")
+        logger.info("\n" + "=" * 80 + "\nRefining profile parmameters")
 
         # Create the parameterisation
         state = ModelState(
@@ -709,8 +707,7 @@ class Refiner(object):
         ):
             return
 
-        logger.info("")
-        logger.info("Refining crystal parmameters")
+        logger.info("\n" + "=" * 80 + "\nRefining crystal parmameters")
 
         # Create the parameterisation
         state = ModelState(
@@ -784,14 +781,10 @@ class Refiner(object):
                 min_p = p
 
         # Print some stuff
-        logger.info("")
-        logger.info("-" * 80)
         logger.info(
             "Quantile required to predicted all observed reflections = %.5f"
             % (1 - min_p)
         )
-        logger.info("-" * 80)
-        logger.info("")
 
     def _plot_distance_from_ewald_sphere(self, prefix):
         """
@@ -860,8 +853,7 @@ class FinalIntegrator(object):
         self.reflections = reflections
         self.sigma_d = sigma_d
 
-        # FIXME Need to set id to integer
-        self.reflections["id"] = self.reflections["id"].as_int()
+        logger.info("\n" + "=" * 80 + "\nIntegrating reflections")
 
         # Do the processing
         self._compute_bbox()
@@ -873,9 +865,17 @@ class FinalIntegrator(object):
         self._compute_centroid()
         self._compute_partiality()
 
+        self._print_report()
         # Plot the partialities
         if params.debug.output.plots:
             self._plot_partiality()
+
+    def _print_report(self):
+
+        from dials.algorithms.integration.report import IntegrationReport
+
+        report = IntegrationReport(self.experiments, self.reflections)
+        logger.info(report.tables[2].as_str())
 
     def _compute_bbox(self):
         """
@@ -1134,8 +1134,7 @@ class Integrator(object):
         Predict the reflections
 
         """
-        logger.info("")
-        logger.info("Predicting reflections")
+        logger.info("\n" + "=" * 80 + "\nPredicting reflections")
 
         # Set a resolution range
         if self.params.prediction.d_min is None:
@@ -1166,10 +1165,7 @@ class Integrator(object):
         self.reflections.compute_d(self.experiments)
         logger.info("Predicted %d reflections" % len(self.reflections))
 
-        # Match with the reference reflections
-        # _, _, unmatched = self.reflections.match_with_reference(self.reference)
-        # commented out as broken and not actually needed as below code was
-        # already commented out
+        _, _, unmatched = self.reflections.match_with_reference(self.reference)
 
         # Add unmatched
         # columns = flex.std_string()
