@@ -19,7 +19,10 @@ from libtbx import phil
 from libtbx.phil import parse
 from libtbx.utils import Sorry
 
-from dials.algorithms.profile_model.potato.potato import Integrator
+from dials.algorithms.profile_model.potato.potato import (
+    Integrator,
+    generate_html_report,
+)
 from dials.array_family import flex
 from dials.util import log, show_mail_handle_errors
 from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
@@ -52,6 +55,8 @@ phil_scope = parse(
       .help = "The output reflections"
 
     log = "dials.potato.log"
+      .type = str
+    html = "dials.potato.html"
       .type = str
   }
 
@@ -124,6 +129,8 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     reflections.as_file(params.output.reflections)
     logger.info(f"Saving the experiments to {params.output.experiments}")
     experiments.as_file(params.output.experiments)
+
+    generate_html_report(integrator, params.output.html)
 
 
 if __name__ == "__main__":

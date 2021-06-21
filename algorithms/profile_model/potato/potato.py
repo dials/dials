@@ -13,9 +13,11 @@ from __future__ import absolute_import, division
 
 import json
 import logging
+from collections import OrderedDict
 from math import floor, pi, sqrt
 
-import matplotlib
+import numpy as np
+from jinja2 import ChoiceLoader, Environment, PackageLoader
 
 from libtbx.phil import parse
 from scitbx import matrix
@@ -33,9 +35,6 @@ from dials.algorithms.refinement.corrgram import corrgram
 from dials.algorithms.spot_prediction import IndexGenerator
 from dials.algorithms.statistics.fast_mcd import FastMCD, maha_dist_sq
 from dials.array_family import flex
-
-# Set matplotlib backend
-matplotlib.use("agg")  # , warn=False)
 
 logger = logging.getLogger("dials." + __name__)
 
@@ -605,6 +604,7 @@ class Refiner(object):
         self.experiments = experiments
         self.reflections = reflections
         self.sigma_d = sigma_d
+        self.plots_data = OrderedDict()
 
         # Set the M params
         if not hasattr(self.experiments[0].crystal, "mosaicity"):
@@ -630,8 +630,8 @@ class Refiner(object):
         """
 
         # Make some plots
-        if self.params.debug.output.plots:
-            self._plot_distance_from_ewald_sphere("initial")
+        if self.params.output.html:
+            self._plot_distance_from_ewald_sphere("Initial")
 
         # Construct the profile refiner data
         self._refiner_data = RefinerData.from_reflections(
@@ -659,8 +659,8 @@ class Refiner(object):
             self._save_history()
 
         # Make some plots
-        if self.params.debug.output.plots:
-            self._plot_distance_from_ewald_sphere("final")
+        if self.params.output.html:
+            self._plot_distance_from_ewald_sphere("Final")
 
     def _refine_profile(self):
         """
@@ -791,20 +791,38 @@ class Refiner(object):
         Plot distance from Ewald sphere
 
         """
-        from matplotlib import pylab
 
         s0 = matrix.col(self.experiments[0].beam.get_s0())
         s2 = self.reflections["s2"]
         D = flex.double(s0.length() - matrix.col(s).length() for s in s2)
         Dmean = flex.sum(D) / len(D)
         Dvar = flex.sum(flex.double([(d - Dmean) ** 2 for d in D])) / len(D)
-        fig, ax1 = pylab.subplots(figsize=(10, 8))
-        ax1.hist(D, bins=max(5, min(int(0.2 * len(s2)), 20)))
-        ax1.set_xlabel("Distance from Ewald sphere (epsilon)")
-        ax1.axvline(x=0, color="black")
-        ax1.set_title("Mean(epsilon) = %.2e, Variance(epsilon) = %.2e" % (Dmean, Dvar))
-        fig.savefig("%s_epsilon_distribution.png" % prefix, dpi=300)
-        fig.clf()
+        hist, bin_edges = np.histogram(
+            D,
+            bins=max(5, min(int(0.2 * len(s2)), 20)),
+        )
+        bin_centers = bin_edges[:-1] + np.diff(bin_edges) / 2
+        self.plots_data.update(
+            {
+                f"{prefix}_epsilon_distribution": {
+                    "data": [
+                        (
+                            {
+                                "x": bin_centers.tolist(),
+                                "y": hist.tolist(),
+                                "type": "bar",
+                            }
+                        )
+                    ],
+                    "layout": {
+                        "title": f"{prefix} epsilon distribution. <br>Mean(epsilon) = {Dmean:.2e}, Variance(epsilon) = {Dvar:.2e}",
+                        "xaxis": {"title": "Distance from Ewald sphere (epsilon)"},
+                        "yaxis": {"title": "Frequency"},
+                        "bargap": 0,
+                    },
+                }
+            }
+        )
 
     def _plot_corrgram(self, corrmat, labels):
         """
@@ -852,6 +870,7 @@ class FinalIntegrator(object):
         self.experiments = experiments
         self.reflections = reflections
         self.sigma_d = sigma_d
+        self.plots_data = OrderedDict()
 
         logger.info("\n" + "=" * 80 + "\nIntegrating reflections")
 
@@ -867,7 +886,7 @@ class FinalIntegrator(object):
 
         self._print_report()
         # Plot the partialities
-        if params.debug.output.plots:
+        if params.output.html:
             self._plot_partiality()
 
     def _print_report(self):
@@ -1060,14 +1079,33 @@ class FinalIntegrator(object):
         Plot the partiality
 
         """
-        from matplotlib import pylab
 
-        P = self.reflections["partiality"]
-        fig, ax1 = pylab.subplots(figsize=(10, 8))
-        ax1.hist(P, bins=max(5, min(int(0.2 * len(P)), 20)))
-        ax1.set_xlabel("Scale factor")
-        fig.savefig("partiality.png", dpi=300)
-        fig.clf()
+        hist, bin_edges = np.histogram(
+            self.reflections["partiality"],
+            bins=max(5, min(int(0.2 * self.reflections.size()), 20)),
+        )
+        bin_centers = bin_edges[:-1] + np.diff(bin_edges) / 2
+        self.plots_data.update(
+            {
+                "partiality_distribution": {
+                    "data": [
+                        (
+                            {
+                                "x": bin_centers.tolist(),
+                                "y": hist.tolist(),
+                                "type": "bar",
+                            }
+                        )
+                    ],
+                    "layout": {
+                        "title": "Partiality distribution",
+                        "xaxis": {"title": "Partiality"},
+                        "yaxis": {"title": "Frequency"},
+                        "bargap": 0,
+                    },
+                }
+            }
+        )
 
 
 class Integrator(object):
@@ -1102,6 +1140,7 @@ class Integrator(object):
         self.reference = None
         self.reflections = None
         self.sigma_d = None
+        self.plots_data = OrderedDict()
 
     def reindex_strong_spots(self):
         """
@@ -1128,6 +1167,7 @@ class Integrator(object):
         refiner = Refiner(self.experiments, self.reference, self.sigma_d, self.params)
         self.experiments = refiner.experiments
         self.reference = refiner.reflections
+        self.plots_data.update(refiner.plots_data)
 
     def predict(self):
         """
@@ -1185,6 +1225,7 @@ class Integrator(object):
             self.params, self.experiments, self.reflections, self.sigma_d
         )
         self.reflections = integrator.reflections
+        self.plots_data.update(integrator.plots_data)
 
         # Delete shoeboxes if necessary
         if not self.params.debug.output.shoeboxes:
@@ -1198,3 +1239,23 @@ class Integrator(object):
         if not self.params.integration.corrections.partiality:
             del self.reflections["partiality"]
             del self.reflections["partiality.inv.variance"]
+
+
+def generate_html_report(integrator, filename):
+    loader = ChoiceLoader(
+        [
+            PackageLoader("dials", "templates"),
+            PackageLoader("dials", "static", encoding="utf-8"),
+        ]
+    )
+    env = Environment(loader=loader)
+    template = env.get_template("simple_report.html")
+    html = template.render(
+        page_title="DIALS SSX integration report",
+        panel_title="Integration plots",
+        panel_id="ewald",
+        graphs=integrator.plots_data,
+    )
+    logger.info(f"Writing html report to {filename}")
+    with open(filename, "wb") as f:
+        f.write(html.encode("utf-8", "xmlcharrefreplace"))
