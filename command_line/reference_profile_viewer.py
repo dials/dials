@@ -184,7 +184,10 @@ class ProfilesFrame(wx.Frame):
             ax = self.axes[subplot]
             ax.clear()
 
-            # for now, let's just sum down the first (Z?) axis
+            # for now, let's just sum down the first axis. Profiles are stored
+            # in ez, ey, ex order, where ex is orthogonal to s1 and s0, ey is
+            # orthogonal to s1 and ex, and ez is the axis that is dependent on
+            # the direction through the Ewald sphere
             vals2D = profile["data"].sum(axis=0)
             ax.imshow(vals2D)
 
