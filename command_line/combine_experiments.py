@@ -524,6 +524,9 @@ class Script:
             # Record initial mapping of ids for updating later.
             ids_map = dict(refs.experiment_identifiers())
 
+            # Keep track of mapping of imageset_ids old->new within this experimentlist
+            imageset_result_map = {}
+
             for k in refs.experiment_identifiers().keys():
                 del refs.experiment_identifiers()[k]
             for i, exp in enumerate(exps):
@@ -564,12 +567,14 @@ class Script:
                         )
                     )
 
-                # Only rewrite image
+                # Rewrite imageset_id, if the experiment has and imageset
                 if exp.imageset and "imageset_id" in sub_ref:
                     # Get the index of the imageset for this experiment and record how it changed
                     new_imageset_id = experiments.imagesets().index(
                         experiments[-1].imageset
                     )
+                    old_imageset_id = exps.imagesets().index(exp.imageset)
+                    imageset_result_map[old_imageset_id] = new_imageset_id
 
                     # Check for invalid(?) imageset_id indices... and leave if they are wrong
                     if len(set(sub_ref["imageset_id"])) != 1:
@@ -583,6 +588,18 @@ class Script:
                 reflections.extend(sub_ref)
 
                 global_id += 1
+
+            # Include unindexed reflections, if we can safely remap their imagesets
+            if "imageset_id" in reflections:
+                unindexed_refs = refs.select(refs["id"] == -1)
+                for old_id in set(unindexed_refs["imageset_id"]):
+                    subs = unindexed_refs.select(
+                        unindexed_refs["imageset_id"] == old_id
+                    )
+                    subs["imageset_id"] = flex.int(
+                        len(subs), imageset_result_map[old_id]
+                    )
+                    reflections.extend(subs)
 
         if (
             params.output.min_reflections_per_experiment is not None
