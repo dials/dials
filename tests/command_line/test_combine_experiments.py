@@ -442,10 +442,10 @@ def test_combine_imagesets(dials_data, tmp_path):
         "dials.index sweep2.expt strong2.refl output.reflections=index2.refl output.experiments=index2.expt",
         "dials.combine_experiments index1.expt index1.refl index2.expt index2.refl",
     ):
-        result = procrunner.run(command.split(), working_directory=tmpdir)
+        result = procrunner.run(command.split(), working_directory=tmp_path)
         assert not result.returncode and not result.stderr
 
-    comb = flex.reflection_table.from_file(os.path.join(tmpdir, "combined.refl"))
+    comb = flex.reflection_table.from_file(os.path.join(tmp_path, "combined.refl"))
 
     iset = comb["imageset_id"]
 
