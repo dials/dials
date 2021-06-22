@@ -431,22 +431,14 @@ def test_failed_tolerance_error(dials_regression, monkeypatch):
     reason="https://github.com/dials/dials/issues/1093",
 )
 def test_combine_imagesets(dials_data, tmp_path):
-    data = dials_data("l_cysteine_dials_output", pathlib=True)
+    data = dials_data("vmxi_proteinase_k_sweeps", pathlib=True)
 
-    for command in (
-        f"dials.import {data / 'l-cyst_01_000*.cbf'} output.experiments=sweep1.expt",
-        f"dials.import {data / 'l-cyst_02_000*.cbf'} output.experiments=sweep2.expt",
-        "dials.find_spots sweep1.expt output.reflections=strong1.refl",
-        "dials.find_spots sweep2.expt output.reflections=strong2.refl",
-        "dials.index sweep1.expt strong1.refl output.reflections=index1.refl output.experiments=index1.expt",
-        "dials.index sweep2.expt strong2.refl output.reflections=index2.refl output.experiments=index2.expt",
-        "dials.combine_experiments index1.expt index1.refl index2.expt index2.refl",
-    ):
-        result = procrunner.run(command.split(), working_directory=tmp_path)
-        assert not result.returncode and not result.stderr
+    os.chdir(tmp_path)
+    combine_experiments.run(
+        [str(x) for x in [*data.glob("*_[0123].expt"), *data.glob("*_[0123].refl")]]
+    )
 
     comb = flex.reflection_table.from_file(tmp_path / "combined.refl")
-
     iset = comb["imageset_id"]
 
-    assert set(iset) == {0, 1}
+    assert set(iset) == {0, 1, 2, 3}
