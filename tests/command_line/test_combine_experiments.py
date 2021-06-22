@@ -449,4 +449,4 @@ def test_combine_imagesets(dials_data, tmpdir):
 
     iset = comb["imageset_id"]
 
-    assert flex.max(iset) == 1
+    assert set(iset) == {0, 1}
