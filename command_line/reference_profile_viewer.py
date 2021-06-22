@@ -1,6 +1,6 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
 
-help_message = """
+"""
 Visualise the reference profiles from integration.
 
 Examples::
