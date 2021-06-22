@@ -175,7 +175,6 @@ class SpotFrame(XrayFrame):
         self._mask_frame = None
 
         self.display_foreground_circles_patch = False  # hard code this option, for now
-        self._dispersion_debug_memo = {}
 
         if (
             self.experiments is not None
@@ -962,28 +961,13 @@ class SpotFrame(XrayFrame):
         return image_data
 
     def _calculate_dispersion_debug(self, image):
-        request = {}
-        request["index"] = image.index
-        request["sum"] = self.params.stack_images
-        request["gain_value"] = self.settings.gain
-        request["nsigma_b"] = self.settings.nsigma_b
-        request["nsigma_s"] = self.settings.nsigma_s
-        request["global_threshold"] = self.settings.global_threshold
-        request["min_local"] = self.settings.min_local
-        request["size"] = self.settings.kernel_size
-        request["extended"] = self.settings.dispersion_extended
-
-        # If the request was already cached, return the result
-        # NOTE this is broken when I page through images in e.g. threshold mode or when I update the threshold params
-        if not self.viewing_stills and request == self._dispersion_debug_memo:
-            return self._kabsch_debug_list
 
         detector = image.get_detector()
         image_mask = self.get_mask(image)
         image_data = image.get_image_data()
-        assert request["gain_value"] > 0
+        assert self.settings.gain > 0
         gain_map = [
-            flex.double(image_data[i].accessor(), request["gain_value"])
+            flex.double(image_data[i].accessor(), self.settings.gain)
             for i in range(len(detector))
         ]
         if self.settings.dispersion_extended:
@@ -1005,8 +989,6 @@ class SpotFrame(XrayFrame):
                     self.settings.min_local,
                 )
             )
-        # Store the request in cache and return the result
-        self._dispersion_debug_memo = request
         self._kabsch_debug_list = kabsch_debug_list
         return kabsch_debug_list
 
