@@ -423,3 +423,30 @@ def test_failed_tolerance_error(dials_regression, monkeypatch):
         script.run_with_preparsed(params, options)
     assert "Beam" in str(exc.value)
     print("Got (expected) error message:", exc.value)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="https://github.com/dials/dials/issues/1093",
+)
+def test_combine_imagesets(dials_data, tmpdir):
+    data = dials_data("l_cysteine_dials_output")
+
+    for command in (
+        f"dials.import {data}/l-cyst_01_000*.cbf output.experiments=sweep1.expt",
+        f"dials.import {data}/l-cyst_02_000*.cbf output.experiments=sweep2.expt",
+        "dials.find_spots sweep1.expt output.reflections=strong1.refl",
+        "dials.find_spots sweep2.expt output.reflections=strong2.refl",
+        "dials.index sweep1.expt strong1.refl output.reflections=index1.refl output.experiments=index1.expt",
+        "dials.index sweep2.expt strong2.refl output.reflections=index2.refl output.experiments=index2.expt",
+        "dials.combine_experiments index1.expt index1.refl index2.expt index2.refl",
+    ):
+        result = procrunner.run(command.split(), working_directory=tmpdir)
+        assert not result.returncode and not result.stderr
+
+    comb = flex.reflection_table.from_file(os.path.join(tmpdir, "combined.refl"))
+
+    iset = comb["imageset_id"]
+
+    assert flex.max(iset) == 1
