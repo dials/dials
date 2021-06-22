@@ -1,1 +1,1 @@
-`dials.integrate`: change default value of `output_unintegrated_reflections` to False to reduce memory usage of downstream steps. `output_unintegrated_reflections=True` will restore previous behaviour
+``dials.integrate``: change default value of `output_unintegrated_reflections` to False to reduce memory usage of downstream steps. `output_unintegrated_reflections=True` will restore previous behaviour
