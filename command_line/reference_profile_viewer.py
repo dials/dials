@@ -93,7 +93,14 @@ class ProfilesFrame(wx.Frame):
 
         self.mask_checkbox = wx.CheckBox(self.panel, -1, "Mask")
         self.mask_checkbox.SetValue(True)
-        self.Bind(wx.EVT_CHECKBOX, self.on_mask_checkbox, self.mask_checkbox)
+        self.Bind(wx.EVT_CHECKBOX, self.redraw_on_event, self.mask_checkbox)
+
+        self.cmap_choice_label = wx.StaticText(self.panel, -1, "Colourmap: ")
+        self.cmap_choice = wx.Choice(
+            self.panel, -1, choices=["viridis", "viridis_r", "gray", "gray_r"]
+        )
+        self.cmap_choice.SetSelection(0)
+        self.Bind(wx.EVT_CHOICE, self.redraw_on_event, self.cmap_choice)
 
         # Create the navigation toolbar, tied to the canvas
         self.toolbar = NavigationToolbar(self.canvas)
@@ -111,6 +118,8 @@ class ProfilesFrame(wx.Frame):
         self.hbox.Add(self.block_selection_label, 0, flag=flags)
         self.hbox.Add(self.block_selection, 0, border=3, flag=flags)
         self.hbox.Add(self.mask_checkbox, 0, border=3, flag=flags)
+        self.hbox.Add(self.cmap_choice_label, 0, flag=flags)
+        self.hbox.Add(self.cmap_choice, 0, border=3, flag=flags)
 
         self.vbox.Add(self.hbox, 0, flag=wx.ALIGN_LEFT | wx.TOP)
 
@@ -141,7 +150,8 @@ class ProfilesFrame(wx.Frame):
             # orthogonal to s1 and ex, and ez is the axis that is dependent on
             # the direction through the Ewald sphere
             vals2D = profile["data"].sum(axis=0)
-            ax.imshow(vals2D)
+            cmap = self.cmap_choice.GetString(self.cmap_choice.GetSelection())
+            ax.imshow(vals2D, cmap=cmap)
 
             if self.mask_checkbox.IsChecked():
                 mask2D = (profile["mask"] - 1).sum(axis=0)
@@ -174,7 +184,7 @@ class ProfilesFrame(wx.Frame):
         self.draw_figure()
         self.block_selection.Enable()
 
-    def on_mask_checkbox(self, event):
+    def redraw_on_event(self, event):
         self.draw_figure()
 
     def on_save_plot(self, event):
