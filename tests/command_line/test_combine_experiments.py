@@ -431,7 +431,7 @@ def test_failed_tolerance_error(dials_regression, monkeypatch):
     reason="https://github.com/dials/dials/issues/1093",
 )
 def test_combine_imagesets(dials_data, tmp_path):
-    data = dials_data("l_cysteine_dials_output")
+    data = dials_data("l_cysteine_dials_output", pathlib=True)
 
     for command in (
         f"dials.import {data / 'l-cyst_01_000*.cbf'} output.experiments=sweep1.expt",
@@ -445,7 +445,7 @@ def test_combine_imagesets(dials_data, tmp_path):
         result = procrunner.run(command.split(), working_directory=tmp_path)
         assert not result.returncode and not result.stderr
 
-    comb = flex.reflection_table.from_file(os.path.join(tmp_path, "combined.refl"))
+    comb = flex.reflection_table.from_file(tmp_path / "combined.refl")
 
     iset = comb["imageset_id"]
 
