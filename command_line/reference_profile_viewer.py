@@ -67,8 +67,6 @@ class ProfilesFrame(wx.Frame):
         self.create_menu()
         self.create_status_bar()
         self.create_main_panel()
-
-        self.textbox.SetValue("experiment: 0 block: 0")
         self.draw_figure()
 
     def create_menu(self):
@@ -106,14 +104,11 @@ class ProfilesFrame(wx.Frame):
 
         self.set_axes()
 
-        # Bind the 'pick' event for clicking on one of the values
-        #
-        self.canvas.mpl_connect("pick_event", self.on_pick)
-
-        self.textbox = wx.TextCtrl(
-            self.panel, size=(200, -1), style=wx.TE_PROCESS_ENTER
+        self.expt_selection_label = wx.StaticText(self.panel, -1, "Experiment ID: ")
+        self.expt_selection = wx.SpinCtrl(
+            self.panel, -1, "0", max=self.profiles.get_n_experiments() - 1
         )
-        self.Bind(wx.EVT_TEXT_ENTER, self.on_text_enter, self.textbox)
+        self.Bind(wx.EVT_SPINCTRL, self.on_spin, self.expt_selection)
 
         self.drawbutton = wx.Button(self.panel, -1, "Draw!")
         self.Bind(wx.EVT_BUTTON, self.on_draw_button, self.drawbutton)
@@ -150,7 +145,8 @@ class ProfilesFrame(wx.Frame):
 
         self.hbox = wx.BoxSizer(wx.HORIZONTAL)
         flags = wx.ALIGN_LEFT | wx.ALL | wx.ALIGN_CENTER_VERTICAL
-        self.hbox.Add(self.textbox, 0, border=3, flag=flags)
+        self.hbox.Add(self.expt_selection_label, 0, flag=flags)
+        self.hbox.Add(self.expt_selection, 0, border=3, flag=flags)
         self.hbox.Add(self.drawbutton, 0, border=3, flag=flags)
         self.hbox.Add(self.cb_grid, 0, border=3, flag=flags)
         self.hbox.AddSpacer(30)
@@ -174,9 +170,6 @@ class ProfilesFrame(wx.Frame):
 
     def draw_figure(self):
         """Redraws the figure"""
-        # str = self.textbox.GetValue()
-        # self.data = list(map(int, str.split()))
-        # x = range(len(self.data))
 
         final_row_index = self.axes.shape[0] - 1
         for profile in self.data:
@@ -197,8 +190,6 @@ class ProfilesFrame(wx.Frame):
                 ax.set_ylabel(f"Y: {profile['coord'][1]:.1f}")
 
         self.fig.suptitle(f"Block Z: {profile['coord'][2]:.1f}")
-        self.fig.tight_layout()
-
         self.canvas.draw()
 
     def on_cb_grid(self, event):
@@ -210,22 +201,10 @@ class ProfilesFrame(wx.Frame):
     def on_draw_button(self, event):
         self.draw_figure()
 
-    def on_pick(self, event):
-        # The event received here is of the type
-        # matplotlib.backend_bases.PickEvent
-        #
-        # It carries lots of information, of which we're using
-        # only a small amount here.
-        #
-        box_points = event.artist.get_bbox().get_points()
-        msg = "You've clicked on a bar with coords:\n %s" % box_points
-
-        dlg = wx.MessageDialog(self, msg, "Click!", wx.OK | wx.ICON_INFORMATION)
-
-        dlg.ShowModal()
-        dlg.Destroy()
-
-    def on_text_enter(self, event):
+    def on_spin(self, event):
+        self.data = self.profiles.get_profiles(
+            experiment=self.expt_selection.GetValue(), block=0
+        )
         self.draw_figure()
 
     def on_save_plot(self, event):
