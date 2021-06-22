@@ -318,6 +318,13 @@ def test_multi_sweep(dials_regression, tmpdir):
     table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
     assert len(table) == 4020
     assert dict(table.experiment_identifiers()) == {0: "100", 1: "101"}
+    # check that each id has an imageset_id that is correctly set
+    assert len(set(table["imageset_id"])) == 2
+    sel = table["id"] == 0
+    assert set(table["imageset_id"].select(sel)) == set(0)
+    sel = table["id"] == 1
+    assert set(table["imageset_id"].select(sel)) == set(1)
+    assert list(experiments.identifiers) == ["100", "101"]
 
     # Check the results
     T1 = table[:2010]
@@ -375,6 +382,7 @@ def test_multi_lattice(dials_regression, tmpdir):
     table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
     assert len(table) == 5605
     assert dict(table.experiment_identifiers()) == {0: "100", 1: "101"}
+    assert len(set(table["imageset_id"])) == 1
 
     # Check output contains from two lattices
     exp_id = list(set(table["id"]))
