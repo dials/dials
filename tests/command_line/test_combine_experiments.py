@@ -423,3 +423,24 @@ def test_failed_tolerance_error(dials_regression, monkeypatch):
         script.run_with_preparsed(params, options)
     assert "Beam" in str(exc.value)
     print("Got (expected) error message:", exc.value)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="https://github.com/dials/dials/issues/1093",
+)
+def test_combine_imagesets(dials_data, tmp_path):
+    data = dials_data("vmxi_proteinase_k_sweeps", pathlib=True)
+    args = [
+        *data.glob("*_[0123].expt"),
+        *data.glob("*_[0123].refl"),
+        f"experiments_filename={tmp_path}/combined.expt",
+        f"reflections_file={tmp_path}/combined.refl",
+    ]
+    combine_experiments.run([str(x) for x in args])
+
+    comb = flex.reflection_table.from_file(tmp_path / "combined.refl")
+    iset = comb["imageset_id"]
+
+    assert set(iset) == {0, 1, 2, 3}
