@@ -6,13 +6,14 @@ Visualise the reference profiles from integration.
 Examples::
 
   dials.integrate refined.expt refined.refl debug.reference.output=True
-  dials.reference_profile_viewer reference_profiles.refl
+  dials.reference_profile_viewer reference_profiles.pickle
 """
 
 import os
 import pickle
 
 import matplotlib
+import numpy
 import wx
 
 matplotlib.use("WXAgg")
@@ -90,6 +91,10 @@ class ProfilesFrame(wx.Frame):
         )
         self.Bind(wx.EVT_SPINCTRL, self.on_spin_block, self.block_selection)
 
+        self.mask_checkbox = wx.CheckBox(self.panel, -1, "Mask")
+        self.mask_checkbox.SetValue(True)
+        self.Bind(wx.EVT_CHECKBOX, self.on_mask_checkbox, self.mask_checkbox)
+
         # Create the navigation toolbar, tied to the canvas
         self.toolbar = NavigationToolbar(self.canvas)
 
@@ -105,6 +110,7 @@ class ProfilesFrame(wx.Frame):
         self.hbox.Add(self.expt_selection, 0, border=3, flag=flags)
         self.hbox.Add(self.block_selection_label, 0, flag=flags)
         self.hbox.Add(self.block_selection, 0, border=3, flag=flags)
+        self.hbox.Add(self.mask_checkbox, 0, border=3, flag=flags)
 
         self.vbox.Add(self.hbox, 0, flag=wx.ALIGN_LEFT | wx.TOP)
 
@@ -137,8 +143,10 @@ class ProfilesFrame(wx.Frame):
             vals2D = profile["data"].sum(axis=0)
             ax.imshow(vals2D)
 
-            # FIXME also overlay mask
-            # https://stackoverflow.com/questions/17170229/setting-transparency-based-on-pixel-values-in-matplotlib
+            if self.mask_checkbox.IsChecked():
+                mask2D = (profile["mask"] - 1).sum(axis=0)
+                mask2D = numpy.ma.masked_where(mask2D == 0, mask2D)
+                ax.imshow(mask2D, cmap="Set1", interpolation="none")
 
             if subplot[0] == final_row_index:
                 ax.set_xlabel(f"X (px): {profile['coord'][0]:.1f}")
@@ -165,6 +173,9 @@ class ProfilesFrame(wx.Frame):
         )
         self.draw_figure()
         self.block_selection.Enable()
+
+    def on_mask_checkbox(self, event):
+        self.draw_figure()
 
     def on_save_plot(self, event):
         file_choices = "PNG (*.png)|*.png"
@@ -196,6 +207,9 @@ class ProfilesFrame(wx.Frame):
            down the e3 direction, hence the view is the
            integration of the profile as it passes through
            the Ewald sphere
+         * If any of the slices contains a masked pixel, the
+           equivalent pixel in the summed image is also
+           showed as masked
          * Save the plot to a file using the File menu
         """
         dlg = wx.MessageDialog(self, msg, "About", wx.OK)
