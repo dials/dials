@@ -430,12 +430,12 @@ def test_failed_tolerance_error(dials_regression, monkeypatch):
     raises=AssertionError,
     reason="https://github.com/dials/dials/issues/1093",
 )
-def test_combine_imagesets(dials_data, tmpdir):
+def test_combine_imagesets(dials_data, tmp_path):
     data = dials_data("l_cysteine_dials_output")
 
     for command in (
-        f"dials.import {data}/l-cyst_01_000*.cbf output.experiments=sweep1.expt",
-        f"dials.import {data}/l-cyst_02_000*.cbf output.experiments=sweep2.expt",
+        f"dials.import {data / 'l-cyst_01_000*.cbf'} output.experiments=sweep1.expt",
+        f"dials.import {data / 'l-cyst_02_000*.cbf'} output.experiments=sweep2.expt",
         "dials.find_spots sweep1.expt output.reflections=strong1.refl",
         "dials.find_spots sweep2.expt output.reflections=strong2.refl",
         "dials.index sweep1.expt strong1.refl output.reflections=index1.refl output.experiments=index1.expt",
