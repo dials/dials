@@ -108,7 +108,13 @@ class ProfilesFrame(wx.Frame):
         self.expt_selection = wx.SpinCtrl(
             self.panel, -1, "0", max=self.profiles.get_n_experiments() - 1
         )
-        self.Bind(wx.EVT_SPINCTRL, self.on_spin, self.expt_selection)
+        self.Bind(wx.EVT_SPINCTRL, self.on_spin_expt, self.expt_selection)
+
+        self.block_selection_label = wx.StaticText(self.panel, -1, "Block: ")
+        self.block_selection = wx.SpinCtrl(
+            self.panel, -1, "0", max=self.profiles.get_n_blocks(experiment=0) - 1
+        )
+        self.Bind(wx.EVT_SPINCTRL, self.on_spin_block, self.block_selection)
 
         self.drawbutton = wx.Button(self.panel, -1, "Draw!")
         self.Bind(wx.EVT_BUTTON, self.on_draw_button, self.drawbutton)
@@ -147,6 +153,8 @@ class ProfilesFrame(wx.Frame):
         flags = wx.ALIGN_LEFT | wx.ALL | wx.ALIGN_CENTER_VERTICAL
         self.hbox.Add(self.expt_selection_label, 0, flag=flags)
         self.hbox.Add(self.expt_selection, 0, border=3, flag=flags)
+        self.hbox.Add(self.block_selection_label, 0, flag=flags)
+        self.hbox.Add(self.block_selection, 0, border=3, flag=flags)
         self.hbox.Add(self.drawbutton, 0, border=3, flag=flags)
         self.hbox.Add(self.cb_grid, 0, border=3, flag=flags)
         self.hbox.AddSpacer(30)
@@ -201,11 +209,23 @@ class ProfilesFrame(wx.Frame):
     def on_draw_button(self, event):
         self.draw_figure()
 
-    def on_spin(self, event):
+    def on_spin_expt(self, event):
+        self.expt_selection.Disable()
+        exp_id = self.expt_selection.GetValue()
+        self.data = self.profiles.get_profiles(experiment=exp_id, block=0)
+        self.block_selection.SetValue(0)
+        self.block_selection.SetMax(self.profiles.get_n_blocks(exp_id) - 1)
+        self.draw_figure()
+        self.expt_selection.Enable()
+
+    def on_spin_block(self, event):
+        self.block_selection.Disable()
         self.data = self.profiles.get_profiles(
-            experiment=self.expt_selection.GetValue(), block=0
+            experiment=self.expt_selection.GetValue(),
+            block=self.block_selection.GetValue(),
         )
         self.draw_figure()
+        self.block_selection.Enable()
 
     def on_save_plot(self, event):
         file_choices = "PNG (*.png)|*.png"
