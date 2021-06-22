@@ -432,11 +432,13 @@ def test_failed_tolerance_error(dials_regression, monkeypatch):
 )
 def test_combine_imagesets(dials_data, tmp_path):
     data = dials_data("vmxi_proteinase_k_sweeps", pathlib=True)
-
-    os.chdir(tmp_path)
-    combine_experiments.run(
-        [str(x) for x in [*data.glob("*_[0123].expt"), *data.glob("*_[0123].refl")]]
-    )
+    args = [
+        *data.glob("*_[0123].expt"),
+        *data.glob("*_[0123].refl"),
+        f"experiments_filename={tmp_path}/combined.expt",
+        f"reflections_file={tmp_path}/combined.refl",
+    ]
+    combine_experiments.run([str(x) for x in args])
 
     comb = flex.reflection_table.from_file(tmp_path / "combined.refl")
     iset = comb["imageset_id"]
