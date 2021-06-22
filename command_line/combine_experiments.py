@@ -517,8 +517,10 @@ class Script:
         ):
             refs = ref_wrapper.data
             exps = exp_wrapper.data
+
             # Record initial mapping of ids for updating later.
             ids_map = dict(refs.experiment_identifiers())
+
             for k in refs.experiment_identifiers().keys():
                 del refs.experiment_identifiers()[k]
             for i, exp in enumerate(exps):
@@ -540,12 +542,13 @@ class Script:
 
                 nrefs_per_exp.append(n_sub_ref)
                 sub_ref["id"] = flex.int(len(sub_ref), global_id)
+
                 # now update identifiers if set.
                 if i in ids_map:
                     sub_ref.experiment_identifiers()[global_id] = ids_map[i]
                 if params.output.delete_shoeboxes and "shoebox" in sub_ref:
                     del sub_ref["shoebox"]
-                reflections.extend(sub_ref)
+
                 try:
                     experiments.append(combine(exp))
                 except ComparisonError as e:
@@ -557,6 +560,18 @@ class Script:
                             index, path, str(e)
                         )
                     )
+
+                # Get the index of the imageset for this experiment and record how it changed
+                new_imageset_id = experiments.imagesets().index(
+                    experiments[-1].imageset
+                )
+
+                # Update the imageset_id field if it exists
+                if "imageset_id" in sub_ref:
+                    assert len(set(sub_ref["imageset_id"])) == 1
+                    sub_ref["imageset_id"] = flex.int(len(sub_ref), new_imageset_id)
+
+                reflections.extend(sub_ref)
 
                 global_id += 1
 

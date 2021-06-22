@@ -425,11 +425,6 @@ def test_failed_tolerance_error(dials_regression, monkeypatch):
     print("Got (expected) error message:", exc.value)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="https://github.com/dials/dials/issues/1093",
-)
 def test_combine_imagesets(dials_data, tmp_path):
     data = dials_data("vmxi_proteinase_k_sweeps", pathlib=True)
     args = [
