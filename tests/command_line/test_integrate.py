@@ -157,9 +157,9 @@ def test_basic_threaded_integrate(dials_data, tmp_path):
     assert tmp_path.joinpath("integrated.expt").is_file()
 
     table = flex.reflection_table.from_file(tmp_path / "integrated.refl")
-    assert table.size() == 4204
+    assert table.size() == 3526
     assert set(table["id"]) == {0}
-    assert table.select(table["id"] == 0).size() == 4204
+    assert table.select(table["id"] == 0).size() == 3526
 
 
 def test_basic_integrate_output_integrated_only(dials_data, tmpdir):
