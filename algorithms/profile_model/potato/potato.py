@@ -93,6 +93,9 @@ phil_scope = parse(
     n_macro_cycles = 3
       .type = int
 
+    n_cycles = 3
+      .type = int
+
     min_n_reflections=10
       .type = int
 
@@ -616,7 +619,7 @@ class Refiner(object):
         self._preprocess()
 
         # Do the refinement
-        for i in range(3):
+        for i in range(self.params.refinement.n_cycles):
             self._refine_profile()
             self._refine_crystal()
 
@@ -1196,6 +1199,7 @@ class Integrator(object):
 
         # Get the covariance matrix
         profile = self.experiments[0].crystal.mosaicity
+        id_map = dict(self.strong.experiment_identifiers())
         self.reflections = profile.predict_reflections(
             self.experiments, miller_indices_to_test, self.params.prediction.probability
         )
@@ -1206,6 +1210,12 @@ class Integrator(object):
         logger.info("Predicted %d reflections" % len(self.reflections))
 
         _, _, unmatched = self.reflections.match_with_reference(self.reference)
+
+        # now set the identifiers
+        ids_ = set(self.reflections["id"])
+        assert ids_ == set(id_map.keys()), f"{ids_}, {id_map.keys()}"
+        for id_ in ids_:
+            self.reflections.experiment_identifiers()[id_] = id_map[id_]
 
         # Add unmatched
         # columns = flex.std_string()

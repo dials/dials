@@ -131,7 +131,8 @@ class SingleScalerFactory(ScalerFactory):
 
         # combine partial measurements of same reflection, to handle those reflections
         # that were split by dials.integrate  - changes size of reflection table.
-        reflection_table = sum_partial_reflections(reflection_table)
+        if "partial_id" in reflection_table:
+            reflection_table = sum_partial_reflections(reflection_table)
 
         if "inverse_scale_factor" not in reflection_table:
             reflection_table["inverse_scale_factor"] = flex.double(
