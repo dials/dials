@@ -213,6 +213,7 @@ def test_integration_with_sampling(dials_data, tmpdir):
             "modified_input.json",
             "profile.fitting=False",
             "sampling.integrate_all_reflections=False",
+            "sampling.random_seed=42",
             "prediction.padding=0",
         ],
         working_directory=tmpdir,
@@ -222,7 +223,10 @@ def test_integration_with_sampling(dials_data, tmpdir):
     assert experiments[0].identifier == "foo"
 
     table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
-    assert len(table) == 1000
+
+    # account for random number generator in sampling
+    assert len(table) == 839
+
     assert dict(table.experiment_identifiers()) == {0: "foo"}
 
 
