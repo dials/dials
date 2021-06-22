@@ -189,7 +189,13 @@ class ProfilesFrame(wx.Frame):
     def on_about(self, event):
         msg = """A reference profile viewer for DIALS:
 
-         * Explore reference profiles by experiment and block
+         * The reference profiles for the selected block of
+           images (Z) are displayed along with their X, Y
+           pixel positions
+         * The display sums slices of the Kabsch space shoebox
+           down the e3 direction, hence the view is the
+           integration of the profile as it passes through
+           the Ewald sphere
          * Save the plot to a file using the File menu
         """
         dlg = wx.MessageDialog(self, msg, "About", wx.OK)
