@@ -9,6 +9,7 @@ Examples::
   dials.reference_profile_viewer reference_profiles.pickle
 """
 
+import copy
 import os
 import pickle
 
@@ -150,13 +151,20 @@ class ProfilesFrame(wx.Frame):
             # orthogonal to s1 and ex, and ez is the axis that is dependent on
             # the direction through the Ewald sphere
             vals2D = profile["data"].sum(axis=0)
-            cmap = self.cmap_choice.GetString(self.cmap_choice.GetSelection())
-            ax.imshow(vals2D, cmap=cmap)
+            cmap = copy.copy(
+                matplotlib.cm.get_cmap(
+                    self.cmap_choice.GetString(self.cmap_choice.GetSelection())
+                )
+            )
 
+            # If any X, Y position is masked down the summed Z stack then mask
+            # it in the final image.
             if self.mask_checkbox.IsChecked():
                 mask2D = (profile["mask"] - 1).sum(axis=0)
-                mask2D = numpy.ma.masked_where(mask2D == 0, mask2D)
-                ax.imshow(mask2D, cmap="Set1", interpolation="none")
+                mask2D = mask2D != 0
+                vals2D[mask2D] = numpy.nan
+            cmap.set_bad(color="red")
+            ax.imshow(vals2D, cmap=cmap)
 
             if subplot[0] == final_row_index:
                 ax.set_xlabel(f"X (px): {profile['coord'][0]:.1f}")
