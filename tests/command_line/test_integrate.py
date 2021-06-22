@@ -39,7 +39,7 @@ def test_basic_integrate(dials_data, tmpdir):
 
     table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
     mask = table.get_flags(table.flags.integrated, all=False)
-    assert len(table) == 1996
+    assert len(table) == 1666
     assert mask.count(True) == 1666
     assert "id" in table
     for row in table.rows():
@@ -88,7 +88,7 @@ def test_basic_integrate(dials_data, tmpdir):
     table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
     assert dict(table.experiment_identifiers()) == {0: "bar"}
     mask1 = table.get_flags(table.flags.integrated, all=False)
-    assert len(table) == 1996
+    assert len(table) == 1666
     assert mask1.count(True) == 1666
     mask2 = originaltable.get_flags(table.flags.integrated, all=False)
     assert mask1.all_eq(mask2)
