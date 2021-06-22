@@ -113,6 +113,10 @@ phil_scope = parse(
               "reflections."
       .type = bool
 
+    random_seed = 0
+      .help = "Random seed for sampling"
+      .type = int
+
   }
 
   exclude_images = None
@@ -249,6 +253,9 @@ def sample_predictions(experiments, predicted, params):
     Returns:
         A subset of the original predicted table.
     """
+
+    if params.sampling.random_seed:
+        flex.set_random_seed(params.sampling.random_seed)
 
     nref_per_degree = params.sampling.reflections_per_degree
     min_sample_size = params.sampling.minimum_sample_size
