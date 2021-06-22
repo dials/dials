@@ -1,21 +1,14 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
 
+help_message = """
+Visualise the reference profiles from integration.
+
+Examples::
+
+  dials.integrate refined.expt refined.refl debug.reference.output=True
+  dials.reference_profile_viewer reference_profiles.refl
 """
-This demo demonstrates how to embed a matplotlib (mpl) plot
-into a wxPython GUI application, including:
 
-* Using the navigation toolbar
-* Adding data to the plot
-* Dynamically modifying the plot's properties
-* Processing mpl events
-* Saving the plot to a file from a menu
-
-The main goal is to serve as a basis for developing rich wx GUI
-applications featuring mpl plots (using the mpl OO API).
-
-Eli Bendersky (eliben@gmail.com)
-License: this code is in the public domain
-"""
 import os
 import pickle
 
@@ -30,27 +23,9 @@ from matplotlib.backends.backend_wxagg import (
 )
 from matplotlib.figure import Figure
 
-import libtbx.phil
-
 import dials.util
 import dials.util.log
 from dials.util.options import OptionParser
-
-try:
-    from typing import List
-except ImportError:
-    pass
-
-
-# Define the master PHIL scope for this program.
-phil_scope = libtbx.phil.parse(
-    """
-    bool_parameter = False
-      .type = bool
-    integer_parameter = 0
-      .type = int
-    """
-)
 
 
 class ProfilesFrame(wx.Frame):
@@ -97,7 +72,6 @@ class ProfilesFrame(wx.Frame):
 
         # Create the mpl Figure and FigCanvas objects.
         # 7x5 inches, 100 dots-per-inch
-        #
         self.dpi = 100
         self.fig = Figure((7.0, 5.0), dpi=self.dpi)
         self.canvas = FigCanvas(self.panel, -1, self.fig)
@@ -116,34 +90,10 @@ class ProfilesFrame(wx.Frame):
         )
         self.Bind(wx.EVT_SPINCTRL, self.on_spin_block, self.block_selection)
 
-        self.drawbutton = wx.Button(self.panel, -1, "Draw!")
-        self.Bind(wx.EVT_BUTTON, self.on_draw_button, self.drawbutton)
-
-        self.cb_grid = wx.CheckBox(self.panel, -1, "Show Grid", style=wx.ALIGN_RIGHT)
-        self.Bind(wx.EVT_CHECKBOX, self.on_cb_grid, self.cb_grid)
-
-        self.slider_label = wx.StaticText(self.panel, -1, "Bar width (%): ")
-        self.slider_width = wx.Slider(
-            self.panel,
-            -1,
-            value=20,
-            minValue=1,
-            maxValue=100,
-            style=wx.SL_AUTOTICKS | wx.SL_LABELS,
-        )
-        self.slider_width.SetTickFreq(10)
-        self.Bind(
-            wx.EVT_COMMAND_SCROLL_THUMBTRACK, self.on_slider_width, self.slider_width
-        )
-
         # Create the navigation toolbar, tied to the canvas
-        #
         self.toolbar = NavigationToolbar(self.canvas)
 
-        #
         # Layout with box sizers
-        #
-
         self.vbox = wx.BoxSizer(wx.VERTICAL)
         self.vbox.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
         self.vbox.Add(self.toolbar, 0, wx.EXPAND)
@@ -155,11 +105,6 @@ class ProfilesFrame(wx.Frame):
         self.hbox.Add(self.expt_selection, 0, border=3, flag=flags)
         self.hbox.Add(self.block_selection_label, 0, flag=flags)
         self.hbox.Add(self.block_selection, 0, border=3, flag=flags)
-        self.hbox.Add(self.drawbutton, 0, border=3, flag=flags)
-        self.hbox.Add(self.cb_grid, 0, border=3, flag=flags)
-        self.hbox.AddSpacer(30)
-        self.hbox.Add(self.slider_label, 0, flag=flags)
-        self.hbox.Add(self.slider_width, 0, border=3, flag=flags)
 
         self.vbox.Add(self.hbox, 0, flag=wx.ALIGN_LEFT | wx.TOP)
 
@@ -185,29 +130,23 @@ class ProfilesFrame(wx.Frame):
             ax = self.axes[subplot]
             ax.clear()
 
-            # for now, let's just sum down the first axis. Profiles are stored
+            # For now, let's just sum down the first axis. Profiles are stored
             # in ez, ey, ex order, where ex is orthogonal to s1 and s0, ey is
             # orthogonal to s1 and ex, and ez is the axis that is dependent on
             # the direction through the Ewald sphere
             vals2D = profile["data"].sum(axis=0)
             ax.imshow(vals2D)
 
+            # FIXME also overlay mask
+            # https://stackoverflow.com/questions/17170229/setting-transparency-based-on-pixel-values-in-matplotlib
+
             if subplot[0] == final_row_index:
-                ax.set_xlabel(f"X: {profile['coord'][0]:.1f}")
+                ax.set_xlabel(f"X (px): {profile['coord'][0]:.1f}")
             if subplot[1] == 0:
-                ax.set_ylabel(f"Y: {profile['coord'][1]:.1f}")
+                ax.set_ylabel(f"Y (px): {profile['coord'][1]:.1f}")
 
-        self.fig.suptitle(f"Block Z: {profile['coord'][2]:.1f}")
+        self.fig.suptitle(f"Block Z (im): {profile['coord'][2]:.1f}")
         self.canvas.draw()
-
-    def on_cb_grid(self, event):
-        self.draw_figure()
-
-    def on_slider_width(self, event):
-        self.draw_figure()
-
-    def on_draw_button(self, event):
-        self.draw_figure()
 
     def on_spin_expt(self, event):
         self.expt_selection.Disable()
@@ -234,7 +173,7 @@ class ProfilesFrame(wx.Frame):
             self,
             message="Save plot as...",
             defaultDir=os.getcwd(),
-            defaultFile="plot.png",
+            defaultFile="reference_profiles.png",
             wildcard=file_choices,
             style=wx.SAVE,
         )
@@ -250,7 +189,7 @@ class ProfilesFrame(wx.Frame):
     def on_about(self, event):
         msg = """A reference profile viewer for DIALS:
 
-         * Use the matplotlib navigation bar
+         * Explore reference profiles by experiment and block
          * Save the plot to a file using the File menu
         """
         dlg = wx.MessageDialog(self, msg, "About", wx.OK)
@@ -325,23 +264,11 @@ class ProfileStore:
 
 
 @dials.util.show_mail_on_error()
-def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
-    """
-    Check command-line input and call other functions to do the legwork.
-    Run the script, parsing arguments found in 'args' and using the PHIL scope
-    defined in 'phil'.
-    Try to keep this function minimal, defining only what is necessary to run
-    the program from the command line.
-    Args:
-        args: The arguments supplied by the user (default: sys.argv[1:])
-        phil: The PHIL scope definition (default: phil_scope, the master PHIL scope
-        for this program).
-    """
+def run():
     dials.util.log.print_banner()
-    usage = "dials.referemce_profile_viewer [options] reference_profiles.pickle"
+    usage = "dials.reference_profile_viewer [options] reference_profiles.pickle"
     parser = OptionParser(
         usage=usage,
-        phil=phil,
         read_reflections=False,
         read_experiments=False,
         check_format=False,
@@ -349,7 +276,7 @@ def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     )
 
     params, options, args = parser.parse_args(
-        args=args, show_diff_phil=False, return_unhandled=True
+        show_diff_phil=False, return_unhandled=True
     )
     if len(args) != 1:
         parser.print_help()
@@ -357,9 +284,10 @@ def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     filename = args[0]
     assert os.path.isfile(filename), filename
 
+    # Load data
     data = ProfileStore(filename)
 
-    # Do whatever this program is supposed to do.
+    # Start viewer
     show_reference_profile_viewer(data, params)
 
 
@@ -370,6 +298,5 @@ def show_reference_profile_viewer(data, params):
     app.MainLoop()
 
 
-# Keep this minimal. Calling run() should do exactly the same thing as running this
 if __name__ == "__main__":
     run()
