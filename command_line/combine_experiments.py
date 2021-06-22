@@ -1,3 +1,4 @@
+import logging
 import os
 import random
 import sys
@@ -21,6 +22,8 @@ from dials.algorithms.integration.stills_significance_filter import Significance
 from dials.array_family import flex
 from dials.util import tabulate
 from dials.util.options import OptionParser, flatten_experiments
+
+logger = logging.getLogger(__name__)
 
 help_message = """
 
@@ -561,15 +564,21 @@ class Script:
                         )
                     )
 
-                # Get the index of the imageset for this experiment and record how it changed
-                new_imageset_id = experiments.imagesets().index(
-                    experiments[-1].imageset
-                )
+                # Only rewrite image
+                if exp.imageset and "imageset_id" in sub_ref:
+                    # Get the index of the imageset for this experiment and record how it changed
+                    new_imageset_id = experiments.imagesets().index(
+                        experiments[-1].imageset
+                    )
 
-                # Update the imageset_id field if it exists
-                if "imageset_id" in sub_ref:
-                    assert len(set(sub_ref["imageset_id"])) == 1
-                    sub_ref["imageset_id"] = flex.int(len(sub_ref), new_imageset_id)
+                    # Check for invalid(?) imageset_id indices... and leave if they are wrong
+                    if len(set(sub_ref["imageset_id"])) != 1:
+                        logger.warning(
+                            "Warning: Experiment %d reflections appear to have come from multiple imagesets - output may be incorrect",
+                            i,
+                        )
+                    else:
+                        sub_ref["imageset_id"] = flex.int(len(sub_ref), new_imageset_id)
 
                 reflections.extend(sub_ref)
 
