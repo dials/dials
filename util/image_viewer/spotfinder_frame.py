@@ -176,6 +176,8 @@ class SpotFrame(XrayFrame):
 
         self.display_foreground_circles_patch = False  # hard code this option, for now
 
+        self._kabsch_debug_list_hash = 0
+
         if (
             self.experiments is not None
             and not self.reflections
@@ -962,6 +964,27 @@ class SpotFrame(XrayFrame):
 
     def _calculate_dispersion_debug(self, image):
 
+        # hash current settings
+
+        kabsch_debug_list_hash = hash(
+            (
+                image.index,
+                self.images.selected.image_set,
+                self.settings.gain,
+                self.settings.nsigma_b,
+                self.settings.nsigma_s,
+                self.settings.global_threshold,
+                self.settings.min_local,
+                tuple(self.settings.kernel_size),
+                self.settings.dispersion_extended,
+            )
+        )
+
+        # compare current settings to last calculation of "Kabsch debug" list
+
+        if kabsch_debug_list_hash == self._kabsch_debug_list_hash:
+            return self._kabsch_debug_list
+
         detector = image.get_detector()
         image_mask = self.get_mask(image)
         image_data = image.get_image_data()
@@ -990,6 +1013,7 @@ class SpotFrame(XrayFrame):
                 )
             )
         self._kabsch_debug_list = kabsch_debug_list
+        self._kabsch_debug_list_hash = kabsch_debug_list_hash
         return kabsch_debug_list
 
     def show_filters(self):
