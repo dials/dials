@@ -234,7 +234,7 @@ def install_conda(python, include_cctbx):
                 paths = f.readlines()
         except IOError:
             paths = []
-        environments = set(
+        environments = set(  # noqa; C401, Python 2.7 compatibility
             os.path.normpath(env.strip()) for env in paths if os.path.isdir(env.strip())
         )
         env_dirs = (
