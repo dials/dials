@@ -1,0 +1,1 @@
+Correctly handle imageset_id in ``dials.scale``, ``dials.cosym``, ``dials.symmetry``.

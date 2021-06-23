@@ -716,6 +716,11 @@ def test_multi_scale(dials_data, tmpdir):
     assert n_scaled == refls.get_flags(refls.flags.bad_for_scaling, all=False).count(
         False
     )
+    assert len(set(refls["id"])) == 2
+    assert len(set(refls["imageset_id"])) == 2
+    for id_ in range(2):
+        sel = refls["id"] == id_
+        assert set(refls["imageset_id"].select(sel)) == set([id_])
 
     # run again, optimising errors, and continuing from where last run left off.
     extra_args = [
