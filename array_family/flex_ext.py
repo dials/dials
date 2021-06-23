@@ -118,7 +118,7 @@ class _:
         :return: The reflection table of predictions
         """
         result = dials_array_family_flex_ext.reflection_table()
-        isets = OrderedSet([e.imageset.get_template() for e in experiments])
+        isets = OrderedSet([e.imageset for e in experiments])
         for i, e in enumerate(experiments):
             rlist = dials_array_family_flex_ext.reflection_table.from_predictions(
                 e,
@@ -131,7 +131,7 @@ class _:
             rlist["id"] = cctbx.array_family.flex.int(len(rlist), i)
             if e.identifier:
                 rlist.experiment_identifiers()[i] = e.identifier
-            iset_id = list(isets).index(e.imageset.get_template())
+            iset_id = list(isets).index(e.imageset)
             rlist["imageset_id"] = cctbx.array_family.flex.int(rlist.size(), iset_id)
             result.extend(rlist)
         return result

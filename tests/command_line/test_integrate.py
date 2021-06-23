@@ -254,6 +254,71 @@ def test_integration_with_sample_size(dials_data, tmpdir):
     assert dict(table.experiment_identifiers()) == {0: "foo"}
 
 
+def test_imageset_id_output_with_multi_sweep(dials_data, tmpdir):
+    """Test that imageset ids are correctly output for multi-sweep integration."""
+    # Just integrate 15 images for each sweep
+
+    images1 = dials_data("l_cysteine_dials_output") / "l-cyst_01_000*.cbf"
+    images2 = dials_data("l_cysteine_dials_output") / "l-cyst_02_000*.cbf"
+
+    result = procrunner.run(
+        ["dials.import", images1, images2], working_directory=tmpdir
+    )
+    assert not result.returncode and not result.stderr
+    result = procrunner.run(
+        ["dials.find_spots", tmpdir / "imported.expt", "nproc=1"],
+        working_directory=tmpdir,
+    )
+    assert not result.returncode and not result.stderr
+    result = procrunner.run(
+        ["dials.index", tmpdir / "imported.expt", tmpdir / "strong.refl"],
+        working_directory=tmpdir,
+    )
+    assert not result.returncode and not result.stderr
+
+    result = procrunner.run(
+        [
+            "dials.integrate",
+            "nproc=1",
+            tmpdir / "indexed.expt",
+            tmpdir / "indexed.refl",
+            "profile.fitting=False",
+            "gaussian_rs.min_spots.overall=0",
+        ],
+        working_directory=tmpdir,
+    )
+    assert not result.returncode and not result.stderr
+    table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
+    assert len(set(table["imageset_id"])) == 2
+    # check that we have approx 50% in each
+    n0 = (table["imageset_id"] == 0).count(True)
+    n = table.size()
+    n1 = (table["imageset_id"] == 1).count(True)
+    assert (n0 / n > 0.4) and (n0 / n < 0.6)
+    assert (n1 / n > 0.4) and (n1 / n < 0.6)
+
+    # now try again with adding unintegrated reflections
+    result = procrunner.run(
+        [
+            "dials.integrate",
+            "nproc=1",
+            tmpdir / "indexed.expt",
+            tmpdir / "indexed.refl",
+            "profile.fitting=False",
+            "gaussian_rs.min_spots.overall=0",
+            "output_unintegrated_reflections=False",
+        ],
+        working_directory=tmpdir,
+    )
+    assert not result.returncode and not result.stderr
+    # check that we have approx 50% in each
+    n0 = (table["imageset_id"] == 0).count(True)
+    n = table.size()
+    n1 = (table["imageset_id"] == 1).count(True)
+    assert (n0 / n > 0.4) and (n0 / n < 0.6)
+    assert (n1 / n > 0.4) and (n1 / n < 0.6)
+
+
 def test_basic_integration_with_profile_fitting(dials_data, tmpdir):
 
     expts = dials_data("centroid_test_data") / "indexed.expt"
@@ -318,13 +383,6 @@ def test_multi_sweep(dials_regression, tmpdir):
     table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
     assert len(table) == 4020
     assert dict(table.experiment_identifiers()) == {0: "100", 1: "101"}
-    # check that each id has an imageset_id that is correctly set
-    assert len(set(table["imageset_id"])) == 2
-    sel = table["id"] == 0
-    assert set(table["imageset_id"].select(sel)) == set(0)
-    sel = table["id"] == 1
-    assert set(table["imageset_id"].select(sel)) == set(1)
-    assert list(experiments.identifiers) == ["100", "101"]
 
     # Check the results
     T1 = table[:2010]
@@ -382,6 +440,7 @@ def test_multi_lattice(dials_regression, tmpdir):
     table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
     assert len(table) == 5605
     assert dict(table.experiment_identifiers()) == {0: "100", 1: "101"}
+    # both should only have the imageset_id of zero as they share an imageset
     assert len(set(table["imageset_id"])) == 1
 
     # Check output contains from two lattices
