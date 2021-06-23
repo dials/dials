@@ -262,17 +262,17 @@ def test_imageset_id_output_with_multi_sweep(dials_data, tmp_path):
     images2 = dials_data("l_cysteine_dials_output", pathlib=True) / "l-cyst_02_000*.cbf"
 
     result = procrunner.run(
-        ["dials.import", images1, images2], working_directory=tmpdir
+        ["dials.import", images1, images2], working_directory=tmp_path
     )
     assert not result.returncode and not result.stderr
     result = procrunner.run(
-        ["dials.find_spots", tmpdir / "imported.expt", "nproc=1"],
-        working_directory=tmpdir,
+        ["dials.find_spots", tmp_path / "imported.expt", "nproc=1"],
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
     result = procrunner.run(
-        ["dials.index", tmpdir / "imported.expt", tmpdir / "strong.refl"],
-        working_directory=tmpdir,
+        ["dials.index", tmp_path / "imported.expt", tmp_path / "strong.refl"],
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
 
@@ -280,15 +280,15 @@ def test_imageset_id_output_with_multi_sweep(dials_data, tmp_path):
         [
             "dials.integrate",
             "nproc=1",
-            tmpdir / "indexed.expt",
-            tmpdir / "indexed.refl",
+            tmp_path / "indexed.expt",
+            tmp_path / "indexed.refl",
             "profile.fitting=False",
             "gaussian_rs.min_spots.overall=0",
         ],
-        working_directory=tmpdir,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
+    table = flex.reflection_table.from_file(tmp_path / "integrated.refl")
     assert len(set(table["imageset_id"])) == 2
     # check that we have approx 50% in each
     n0 = (table["imageset_id"] == 0).count(True)
@@ -302,15 +302,17 @@ def test_imageset_id_output_with_multi_sweep(dials_data, tmp_path):
         [
             "dials.integrate",
             "nproc=1",
-            tmpdir / "indexed.expt",
-            tmpdir / "indexed.refl",
+            tmp_path / "indexed.expt",
+            tmp_path / "indexed.refl",
             "profile.fitting=False",
             "gaussian_rs.min_spots.overall=0",
             "output_unintegrated_reflections=False",
         ],
-        working_directory=tmpdir,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
+    table = flex.reflection_table.from_file(tmp_path / "integrated.refl")
+    assert len(set(table["imageset_id"])) == 2
     # check that we have approx 50% in each
     n0 = (table["imageset_id"] == 0).count(True)
     n = table.size()
