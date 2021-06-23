@@ -254,12 +254,12 @@ def test_integration_with_sample_size(dials_data, tmpdir):
     assert dict(table.experiment_identifiers()) == {0: "foo"}
 
 
-def test_imageset_id_output_with_multi_sweep(dials_data, tmpdir):
+def test_imageset_id_output_with_multi_sweep(dials_data, tmp_path):
     """Test that imageset ids are correctly output for multi-sweep integration."""
     # Just integrate 15 images for each sweep
 
-    images1 = dials_data("l_cysteine_dials_output") / "l-cyst_01_000*.cbf"
-    images2 = dials_data("l_cysteine_dials_output") / "l-cyst_02_000*.cbf"
+    images1 = dials_data("l_cysteine_dials_output", pathlib=True) / "l-cyst_01_000*.cbf"
+    images2 = dials_data("l_cysteine_dials_output", pathlib=True) / "l-cyst_02_000*.cbf"
 
     result = procrunner.run(
         ["dials.import", images1, images2], working_directory=tmpdir

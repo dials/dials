@@ -484,11 +484,11 @@ def run_integration(params, experiments, reference=None):
         force_static=params.prediction.force_static,
         padding=params.prediction.padding,
     )
-    isets = OrderedSet([e.imageset for e in experiments])
+    isets = OrderedSet(e.imageset for e in experiments)
     predicted["imageset_id"] = flex.int(predicted.size(), 0)
-    if len(list(isets)) > 1:
+    if len(isets) > 1:
         for e in experiments:
-            iset_id = list(isets).index(e.imageset)
+            iset_id = isets.index(e.imageset)
             for id_ in predicted.experiment_identifiers().keys():
                 identifier = predicted.experiment_identifiers()[id_]
                 if identifier == e.identifier:
