@@ -22,7 +22,18 @@ repos:
   - id: flake8
     additional_dependencies: ['flake8-comprehensions==3.5.0']
 
-# Syntax check and some basic flake8
+# Give a specific warning for added image files
+- repo: local
+  hooks:
+  - id: no-images
+    name: Check for image files
+    entry: >
+      Images for documentation should go into the documentation repository
+      https://github.com/dials/dials.github.io
+    language: fail
+    files: '.*\.png$'
+
+# Syntax validation and some basic sanity checks
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v3.2.0
   hooks:
@@ -34,13 +45,3 @@ repos:
   - id: no-commit-to-branch
     args: ['--branch', 'master']
     name: "Don't commit to 'master'"
-
-- repo: local
-  hooks:
-  - id: no-images
-    name: Check for image files
-    entry: >
-      Images for documentation should go into the documentation repository
-      https://github.com/dials/dials.github.io
-    language: fail
-    files: '.*\.png$'
