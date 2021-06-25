@@ -289,7 +289,7 @@ def test_imageset_id_output_with_multi_sweep(dials_data, tmp_path):
     )
     assert not result.returncode and not result.stderr
     table = flex.reflection_table.from_file(tmp_path / "integrated.refl")
-    assert len(set(table["imageset_id"])) == 2
+    assert set(table["imageset_id"]) == set([0, 1])
     # check that we have approx 50% in each
     n0 = (table["imageset_id"] == 0).count(True)
     n = table.size()
@@ -312,7 +312,7 @@ def test_imageset_id_output_with_multi_sweep(dials_data, tmp_path):
     )
     assert not result.returncode and not result.stderr
     table = flex.reflection_table.from_file(tmp_path / "integrated.refl")
-    assert len(set(table["imageset_id"])) == 2
+    assert set(table["imageset_id"]) == set([0, 1])
     # check that we have approx 50% in each
     n0 = (table["imageset_id"] == 0).count(True)
     n = table.size()
@@ -443,7 +443,7 @@ def test_multi_lattice(dials_regression, tmpdir):
     assert len(table) == 5605
     assert dict(table.experiment_identifiers()) == {0: "100", 1: "101"}
     # both should only have the imageset_id of zero as they share an imageset
-    assert len(set(table["imageset_id"])) == 1
+    assert set(table["imageset_id"]) == set([0])
 
     # Check output contains from two lattices
     exp_id = list(set(table["id"]))
