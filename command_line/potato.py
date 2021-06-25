@@ -68,6 +68,38 @@ phil_scope = parse(
 )
 
 
+def process_one_still(experiment, table, params):
+    single_elist = ExperimentList([experiment])
+    ids_map = dict(table.experiment_identifiers())
+    table["id"] = flex.int(table.size(), 0)  # set to zero so can integrate (
+    # this is how integration finds the image in the imageset)
+    del table.experiment_identifiers()[list(ids_map.keys())[0]]
+    table.experiment_identifiers()[0] = list(ids_map.values())[0]
+
+    integrator = Integrator(single_elist, table, params)
+    # Do cycles of indexing and refinement
+    for i in range(params.refinement.n_macro_cycles):
+        try:
+            integrator.reindex_strong_spots()
+        except RuntimeError as e:
+            logger.info(f"Processing failed due to error: {e}")
+            return (None, None, None)
+        else:
+            integrator.integrate_strong_spots()
+            try:
+                integrator.refine()
+            except RuntimeError as e:
+                logger.info(f"Processing failed due to error: {e}")
+                return (None, None, None)
+
+    # Do the integration
+    integrator.predict()
+    integrator.integrate()
+
+    # Get the reflections
+    return integrator.experiments, integrator.reflections, integrator.plots_data
+
+
 @show_mail_handle_errors()
 def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     """Run from the command-line."""
@@ -121,31 +153,9 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
 
     n_integrated = 0
     for n, (table, expt) in enumerate(zip(reflections, experiments)):
-
-        # Contruct the integrator
-        single_elist = ExperimentList([expt])
-        ids_map = dict(table.experiment_identifiers())
-        table["id"] = flex.int(table.size(), 0)  # set to zero so can integrate (
-        # this is how integration finds the image in the imageset)
-        del table.experiment_identifiers()[list(ids_map.keys())[0]]
-        table.experiment_identifiers()[0] = list(ids_map.values())[0]
-
-        integrator = Integrator(single_elist, table, params)
-
-        # Do cycles of indexing and refinement
-        for i in range(params.refinement.n_macro_cycles):
-            integrator.reindex_strong_spots()
-            integrator.integrate_strong_spots()
-            integrator.refine()
-
-        # Do the integration
-        integrator.predict()
-        integrator.integrate()
-
-        # Get the reflections
-        reflections = integrator.reflections
-        experiments = integrator.experiments
-
+        experiments, reflections, plots_data = process_one_still(expt, table, params)
+        if not (experiments and reflections):
+            continue
         # renumber actual id before extending
         ids_map = dict(reflections.experiment_identifiers())
         assert len(ids_map) == 1
@@ -168,7 +178,9 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     logger.info(f"Saving the experiments to {params.output.experiments}")
     integrated_experiments.as_file(params.output.experiments)
 
-    generate_html_report(integrator, params.output.html)
+    if params.output.html and plots_data:
+        # FIXME currently only plots for last image processed
+        generate_html_report(plots_data, params.output.html)
 
 
 if __name__ == "__main__":

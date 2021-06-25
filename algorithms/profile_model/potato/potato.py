@@ -1251,7 +1251,7 @@ class Integrator(object):
             del self.reflections["partiality.inv.variance"]
 
 
-def generate_html_report(integrator, filename):
+def generate_html_report(plots_data, filename):
     loader = ChoiceLoader(
         [
             PackageLoader("dials", "templates"),
@@ -1264,7 +1264,7 @@ def generate_html_report(integrator, filename):
         page_title="DIALS SSX integration report",
         panel_title="Integration plots",
         panel_id="ewald",
-        graphs=integrator.plots_data,
+        graphs=plots_data,
     )
     logger.info(f"Writing html report to {filename}")
     with open(filename, "wb") as f:
