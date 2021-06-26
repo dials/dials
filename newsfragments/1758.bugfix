@@ -1,0 +1,1 @@
+``dials.image_viewer``: Stacking images no longer gives incorrect results for multi-sweep data beyond the first sweep
