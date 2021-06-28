@@ -188,7 +188,7 @@ https://doi.org/10.1107/S0907444910014836
 def d_star_sq_to_d_ticks(d_star_sq, nticks):
     min_d_star_sq = min(d_star_sq)
     dstep = (max(d_star_sq) - min_d_star_sq) / nticks
-    tickvals = list(min_d_star_sq + (i * dstep) for i in range(nticks))
+    tickvals = [min_d_star_sq + (i * dstep) for i in range(nticks)]
     ticktext = [f"{uctbx.d_star_sq_as_d(dsq):.2f}" for dsq in tickvals]
     return tickvals, ticktext
 

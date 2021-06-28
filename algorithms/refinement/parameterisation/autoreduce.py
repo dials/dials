@@ -40,7 +40,7 @@ phil_scope = parse(phil_str)
 def id_associated_refs(result):
 
     # There are usually 3 parts to results: gradients in X, Y and Z
-    vals = [v for v in result.values()]
+    vals = list(result.values())
     try:
         vals = [v.as_dense_vector() for v in vals]
     except AttributeError:

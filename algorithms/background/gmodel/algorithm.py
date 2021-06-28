@@ -10,7 +10,7 @@ class ModelCache:
         """
         Create a model dictionary
         """
-        self.model = dict()
+        self.model = {}
 
     def get(self, name):
         """

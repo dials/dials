@@ -1487,15 +1487,15 @@ class SpotFrame(XrayFrame):
                                 per_spot_mean += pxl
                             per_spot_mean /= len(this_spot_foreground_pixels)
                             all_foreground_circles[reflection["id"]].append(
-                                dict(
-                                    position=per_spot_mean,
-                                    radius=max(
+                                {
+                                    "position": per_spot_mean,
+                                    "radius": max(
                                         [
                                             (t - per_spot_mean).length()
                                             for t in this_spot_foreground_pixels
                                         ]
                                     ),
-                                )
+                                }
                             )
 
                     if self.settings.show_shoebox:
