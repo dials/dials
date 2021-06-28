@@ -39,7 +39,7 @@ def test_basic_integrate(dials_data, tmpdir):
 
     table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
     mask = table.get_flags(table.flags.integrated, all=False)
-    assert len(table) == 1996
+    assert len(table) == 1666
     assert mask.count(True) == 1666
     assert "id" in table
     for row in table.rows():
@@ -88,7 +88,7 @@ def test_basic_integrate(dials_data, tmpdir):
     table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
     assert dict(table.experiment_identifiers()) == {0: "bar"}
     mask1 = table.get_flags(table.flags.integrated, all=False)
-    assert len(table) == 1996
+    assert len(table) == 1666
     assert mask1.count(True) == 1666
     mask2 = originaltable.get_flags(table.flags.integrated, all=False)
     assert mask1.all_eq(mask2)
@@ -157,9 +157,9 @@ def test_basic_threaded_integrate(dials_data, tmp_path):
     assert tmp_path.joinpath("integrated.expt").is_file()
 
     table = flex.reflection_table.from_file(tmp_path / "integrated.refl")
-    assert table.size() == 4204
+    assert table.size() == 3526
     assert set(table["id"]) == {0}
-    assert table.select(table["id"] == 0).size() == 4204
+    assert table.select(table["id"] == 0).size() == 3526
 
 
 def test_basic_integrate_output_integrated_only(dials_data, tmpdir):
@@ -213,6 +213,7 @@ def test_integration_with_sampling(dials_data, tmpdir):
             "modified_input.json",
             "profile.fitting=False",
             "sampling.integrate_all_reflections=False",
+            "sampling.random_seed=42",
             "prediction.padding=0",
         ],
         working_directory=tmpdir,
@@ -222,7 +223,10 @@ def test_integration_with_sampling(dials_data, tmpdir):
     assert experiments[0].identifier == "foo"
 
     table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
-    assert len(table) == 1000
+
+    # account for random number generator in sampling
+    assert len(table) == 839
+
     assert dict(table.experiment_identifiers()) == {0: "foo"}
 
 
@@ -241,6 +245,7 @@ def test_integration_with_sample_size(dials_data, tmpdir):
             "modified_input.json",
             "profile.fitting=False",
             "sampling.integrate_all_reflections=False",
+            "sampling.random_seed=42",
             "sampling.minimum_sample_size=500",
             "prediction.padding=0",
         ],
@@ -250,7 +255,7 @@ def test_integration_with_sample_size(dials_data, tmpdir):
     experiments = load.experiment_list(tmpdir.join("integrated.expt").strpath)
     assert experiments[0].identifier == "foo"
     table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
-    assert len(table) == 500
+    assert len(table) == 415
     assert dict(table.experiment_identifiers()) == {0: "foo"}
 
 
@@ -267,6 +272,7 @@ def test_basic_integration_with_profile_fitting(dials_data, tmpdir):
             refls,
             "profile.fitting=True",
             "sampling.integrate_all_reflections=False",
+            "sampling.random_seed=42",
             "sampling.minimum_sample_size=500",
             "prediction.padding=0",
         ],
@@ -274,7 +280,7 @@ def test_basic_integration_with_profile_fitting(dials_data, tmpdir):
     )
     assert not result.returncode and not result.stderr
     table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
-    assert len(table) == 500
+    assert len(table) == 436
 
     prf = table.get_flags(table.flags.integrated_prf)
     zero = table["intensity.prf.value"] == 0.0
