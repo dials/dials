@@ -1,0 +1,1 @@
+``dials.image_viewer``: Fix display of spotfinding intermediates (threshold, dispersion, etc) when viewing multiple still experiments
