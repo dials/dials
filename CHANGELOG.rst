@@ -1,3 +1,13 @@
+DIALS 3.5.2 (2021-06-28)
+========================
+
+Bugfixes
+--------
+
+- ``dials.image_viewer``: Fix display of spotfinding intermediates (threshold, dispersion, etc) when viewing multiple still experiments (`#1734 <https://github.com/dials/dials/issues/1734>`_)
+- ``dials.image_viewer``: Stacking images no longer gives incorrect results for multi-sweep data beyond the first sweep (`#1758 <https://github.com/dials/dials/issues/1758>`_)
+
+
 DIALS 3.5.1 (2021-06-14)
 ========================
 
