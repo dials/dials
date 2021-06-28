@@ -72,7 +72,7 @@ class flex_3d_frame(wx.Frame):
 
 class TupTable(gridlib.GridTableBase):
     def __init__(self, data, rowLabels=None, colLabels=None):
-        super().__init__(self)
+        super().__init__()
         self.data = data
         self.rowLabels = rowLabels
         self.colLabels = colLabels

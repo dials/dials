@@ -876,7 +876,7 @@ class SpotFrame(XrayFrame):
             i_frame = self.image_chooser.GetClientData(
                 self.image_chooser.GetSelection()
             ).index
-            imageset = self.image_chooser.GetClientData(i_frame).image_set
+            imageset = self.images.selected.image_set
 
             for i in range(1, self.params.stack_images):
                 if (i_frame + i) >= len(imageset):
