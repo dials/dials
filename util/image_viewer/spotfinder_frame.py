@@ -1575,11 +1575,11 @@ class SpotFrame(XrayFrame):
                 else:
                     phi = ref_list["xyzcal.mm"].parts()[2]
                     frame_numbers = scan.get_array_index_from_angle(phi * to_degrees)
-                n = 0  # buffer
+                n = self.params.stack_images
                 for i_expt in range(flex.max(ref_list["id"]) + 1):
                     expt_sel = ref_list["id"] == i_expt
-                    frame_predictions_sel = (frame_numbers >= (i_frame - n)) & (
-                        frame_numbers < (i_frame + 1 + n)
+                    frame_predictions_sel = (frame_numbers >= (i_frame)) & (
+                        frame_numbers < (i_frame + n)
                     )
 
                     sel = expt_sel
