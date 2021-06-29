@@ -322,12 +322,12 @@ def test_multi_sweep(dials_regression, tmpdir):
         assert expt.identifier == str(100 + i)
 
     table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
-    assert len(table) == 4020
+    assert len(table) == 3530
     assert dict(table.experiment_identifiers()) == {0: "100", 1: "101"}
 
     # Check the results
-    T1 = table[:2010]
-    T2 = table[2010:]
+    T1 = table[:1765]
+    T2 = table[1765:]
     ID1 = list(set(T1["id"]))
     ID2 = list(set(T2["id"]))
     assert len(ID1) == 1
@@ -379,7 +379,7 @@ def test_multi_lattice(dials_regression, tmpdir):
         assert expt.identifier == str(100 + i)
 
     table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
-    assert len(table) == 5605
+    assert len(table) == 4962
     assert dict(table.experiment_identifiers()) == {0: "100", 1: "101"}
 
     # Check output contains from two lattices
