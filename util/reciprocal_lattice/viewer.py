@@ -646,7 +646,7 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
             f"xyz: {xyz[0]:.1f} {xyz[1]:.1f} {xyz[2]:.1f}\n"
             f"res: {d_spacing:.2f}"
         )
-        if "miller_index" in self.points_data:
+        if "miller_index" in self.points_data and exp_id != -1:
             hkl = self.points_data["miller_index"][i]
             label += f"\nhkl: {hkl}"
         line_spacing = round(gltbx.fonts.ucs_bitmap_8x13.height())
