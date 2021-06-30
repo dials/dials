@@ -1870,7 +1870,7 @@ class SpotSettingsPanel(wx.Panel):
             self,
             value=self.settings.brightness,
             min=1,
-            max=1000,
+            max=500,
             name="brightness",
             style=wx.TE_PROCESS_ENTER,
         )
@@ -1880,9 +1880,9 @@ class SpotSettingsPanel(wx.Panel):
             self, -1, size=(150, -1), style=wx.SL_AUTOTICKS | wx.SL_LABELS
         )
         self.brightness_ctrl.SetMin(1)
-        self.brightness_ctrl.SetMax(1000)
+        self.brightness_ctrl.SetMax(500)
         self.brightness_ctrl.SetValue(self.settings.brightness)
-        self.brightness_ctrl.SetTickFreq(25)
+        self.brightness_ctrl.SetTickFreq(10)
         box.Add(self.brightness_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
 
         grid = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
