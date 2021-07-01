@@ -431,9 +431,6 @@ def test_output_rubbish(dials_data, tmpdir):
 
 
 def test_integrate_with_kapton(dials_regression, tmpdir):
-    tmpdir.chdir()
-    loc = tmpdir.strpath
-
     pickle_name = "idx-20161021225550223_indexed.pickle"
     json_name = "idx-20161021225550223_refined_experiments.json"
     image_name = "20161021225550223.pickle"
@@ -449,11 +446,11 @@ def test_integrate_with_kapton(dials_regression, tmpdir):
 
     assert os.path.exists(pickle_path)
     assert os.path.exists(json_path)
-    shutil.copy(pickle_path, loc)
-    shutil.copy(image_path, loc)
+    shutil.copy(pickle_path, tmpdir)
+    shutil.copy(image_path, tmpdir)
 
-    with open(json_name, "w") as w, open(json_path) as r:
-        w.write(r.read() % loc.replace("\\", "\\\\"))
+    with open(tmpdir / json_name, "w") as w, open(json_path) as r:
+        w.write(r.read() % tmpdir.strpath.replace("\\", "\\\\"))
 
     templ_phil = """
       output {
@@ -499,23 +496,24 @@ def test_integrate_with_kapton(dials_regression, tmpdir):
         "True",
     )
 
-    with open("integrate_without_kapton.phil", "w") as f:
+    with open(tmpdir / "integrate_without_kapton.phil", "w") as f:
         f.write(without_kapton_phil)
 
-    with open("integrate_with_kapton.phil", "w") as f:
+    with open(tmpdir / "integrate_with_kapton.phil", "w") as f:
         f.write(with_kapton_phil)
 
     # Call dials.integrate with and without kapton correction
     for phil in "integrate_without_kapton.phil", "integrate_with_kapton.phil":
         result = procrunner.run(
-            ["dials.integrate", "nproc=1", pickle_name, json_name, phil]
+            ["dials.integrate", "nproc=1", pickle_name, json_name, phil],
+            working_directory=tmpdir,
         )
         assert not result.returncode and not result.stderr
 
     results = []
     for mode in "kapton", "nokapton":
         table = flex.reflection_table.from_file(
-            tmpdir / (f"idx-20161021225550223_integrated_{mode}.refl")
+            tmpdir / f"idx-20161021225550223_integrated_{mode}.refl"
         )
         millers = table["miller_index"]
         test_indices = {"zero": (-5, 2, -6), "low": (-2, -20, 7), "high": (-1, -10, 4)}
