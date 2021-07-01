@@ -2,6 +2,7 @@
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
 import copy
+import os
 
 import wxtbx.app
 from scitbx.array_family import flex
@@ -60,7 +61,7 @@ def run(args=None):
     f = ReciprocalLatticeViewer(
         None,
         -1,
-        "Reflection data viewer",
+        os.path.realpath(params.input.reflections[0].filename),
         size=(1024, 768),
         settings=copy.deepcopy(params),
     )
