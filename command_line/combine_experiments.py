@@ -2,9 +2,9 @@ import os
 import random
 import sys
 
+import dxtbx.model.compare as compare
 import xfel.clustering.cluster
 from dxtbx.command_line.image_average import splitit
-from dxtbx.datablock import BeamDiff, DetectorDiff, GoniometerDiff
 from dxtbx.model.experiment_list import (
     BeamComparison,
     DetectorComparison,
@@ -264,14 +264,15 @@ class CombineWithReference:
         if self.ref_beam:
             if compare_beam:
                 if not compare_beam(self.ref_beam, experiment.beam):
-                    diff = BeamDiff(
-                        wavelength_tolerance=self.tolerance.beam.wavelength,
-                        direction_tolerance=self.tolerance.beam.direction,
-                        polarization_normal_tolerance=self.tolerance.beam.polarization_normal,
-                        polarization_fraction_tolerance=self.tolerance.beam.polarization_fraction,
-                    )
                     raise ComparisonError(
-                        "\n".join(diff(self.ref_beam, experiment.beam))
+                        compare.beam_diff(
+                            self.ref_beam,
+                            experiment.beam,
+                            wavelength_tolerance=self.tolerance.beam.wavelength,
+                            direction_tolerance=self.tolerance.beam.direction,
+                            polarization_normal_tolerance=self.tolerance.beam.polarization_normal,
+                            polarization_fraction_tolerance=self.tolerance.beam.polarization_fraction,
+                        )
                     )
             beam = self.ref_beam
         else:
@@ -282,13 +283,14 @@ class CombineWithReference:
         elif self.ref_detector and not self.average_detector:
             if compare_detector:
                 if not compare_detector(self.ref_detector, experiment.detector):
-                    diff = DetectorDiff(
-                        fast_axis_tolerance=self.tolerance.detector.fast_axis,
-                        slow_axis_tolerance=self.tolerance.detector.slow_axis,
-                        origin_tolerance=self.tolerance.detector.origin,
-                    )
                     raise ComparisonError(
-                        "\n".join(diff(self.ref_detector, experiment.detector))
+                        compare.detector_diff(
+                            self.ref_detector,
+                            experiment.detector,
+                            fast_axis_tolerance=self.tolerance.detector.fast_axis,
+                            slow_axis_tolerance=self.tolerance.detector.slow_axis,
+                            origin_tolerance=self.tolerance.detector.origin,
+                        )
                     )
             detector = self.ref_detector
         else:
@@ -297,13 +299,14 @@ class CombineWithReference:
         if self.ref_goniometer:
             if compare_goniometer:
                 if not compare_goniometer(self.ref_goniometer, experiment.goniometer):
-                    diff = GoniometerDiff(
-                        rotation_axis_tolerance=self.tolerance.goniometer.rotation_axis,
-                        fixed_rotation_tolerance=self.tolerance.goniometer.fixed_rotation,
-                        setting_rotation_tolerance=self.tolerance.goniometer.setting_rotation,
-                    )
                     raise ComparisonError(
-                        "\n".join(diff(self.ref_goniometer, experiment.goniometer))
+                        compare.goniometer_diff(
+                            self.ref_goniometer,
+                            experiment.goniometer,
+                            rotation_axis_tolerance=self.tolerance.goniometer.rotation_axis,
+                            fixed_rotation_tolerance=self.tolerance.goniometer.fixed_rotation,
+                            setting_rotation_tolerance=self.tolerance.goniometer.setting_rotation,
+                        )
                     )
             goniometer = self.ref_goniometer
         else:

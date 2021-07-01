@@ -16,7 +16,6 @@ from cctbx.array_family import flex
 from iotbx.reflection_file_utils import label_table
 from scitbx.math import curve_fitting, five_number_summary
 
-from dials.algorithms import symmetry
 from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
 from dials.report import plots
 from dials.util import Sorry, tabulate
@@ -25,6 +24,7 @@ from dials.util.batch_handling import (
     calculate_batch_offsets,
 )
 from dials.util.filter_reflections import filter_reflection_table
+from dials.util.normalisation import quasi_normalisation
 
 logger = logging.getLogger(__name__)
 
@@ -513,7 +513,7 @@ class Resolutionizer:
             )
 
         if self._params.emax:
-            normalised = symmetry.symmetry_base.quasi_normalisation(i_obs)
+            normalised = quasi_normalisation(i_obs)
             e2_cutoff = self._params.emax ** 2
             sel = normalised.data() < e2_cutoff
             logger.info(

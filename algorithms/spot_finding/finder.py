@@ -4,9 +4,7 @@ Contains implementation interface for finding spots on one or many images
 
 import logging
 import math
-import os
 import pickle
-import warnings
 from typing import Iterable, Tuple
 
 import libtbx
@@ -17,13 +15,10 @@ from dxtbx.model import ExperimentList
 from dials.array_family import flex
 from dials.model.data import PixelList, PixelListLabeller
 from dials.util import Sorry, log
+from dials.util.log import rehandle_cached_records
 from dials.util.mp import available_cores, batch_multi_node_parallel_map
 
 logger = logging.getLogger(__name__)
-
-_no_multiprocessing_on_windows = (
-    "Multiprocessing is not available on windows. Setting nproc = 1, njobs = 1"
-)
 
 
 class ExtractPixelsFromImage:
@@ -253,7 +248,7 @@ class ExtractSpotsParallelTask:
         result = self.function(task)
         handlers = logging.getLogger("dials").handlers
         assert len(handlers) == 1, "Invalid number of logging handlers"
-        return result, handlers[0].messages()
+        return result, handlers[0].records
 
 
 def pixel_list_to_shoeboxes(
@@ -439,10 +434,6 @@ class ExtractSpots:
         if mp_nproc is libtbx.Auto:
             mp_nproc = available_cores()
             logger.info(f"Setting nproc={mp_nproc}")
-        if os.name == "nt" and (mp_nproc > 1 or mp_njobs > 1):
-            logger.warning(_no_multiprocessing_on_windows)
-            mp_nproc = 1
-            mp_njobs = 1
         if mp_nproc * mp_njobs > len(imageset):
             mp_nproc = min(mp_nproc, len(imageset))
             mp_njobs = int(math.ceil(len(imageset) / mp_nproc))
@@ -497,8 +488,7 @@ class ExtractSpots:
         if mp_nproc > 1 or mp_njobs > 1:
 
             def process_output(result):
-                for message in result[1]:
-                    logger.handle(message)
+                rehandle_cached_records(result[1])
                 assert len(pixel_labeller) == len(result[0]), "Inconsistent size"
                 for plabeller, plist in zip(pixel_labeller, result[0]):
                     plabeller.add(plist)
@@ -540,10 +530,6 @@ class ExtractSpots:
         # Change the number of processors if necessary
         mp_nproc = self.mp_nproc
         mp_njobs = self.mp_njobs
-        if os.name == "nt" and (mp_nproc > 1 or mp_njobs > 1):
-            logger.warning(_no_multiprocessing_on_windows)
-            mp_nproc = 1
-            mp_njobs = 1
         if mp_nproc * mp_njobs > len(imageset):
             mp_nproc = min(mp_nproc, len(imageset))
             mp_njobs = int(math.ceil(len(imageset) / mp_nproc))
@@ -677,14 +663,6 @@ class SpotFinder:
         self.no_shoeboxes_2d = no_shoeboxes_2d
         self.min_chunksize = min_chunksize
         self.is_stills = is_stills
-
-    def __call__(self, experiments):
-        warnings.warn(
-            "Please use Spotfinder.find_spots to run spotfinding.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self.find_spots(experiments)
 
     def find_spots(self, experiments: ExperimentList) -> flex.reflection_table:
         """
@@ -821,7 +799,10 @@ class SpotFinder:
 
             logger.info("\nFinding spots in image %s to %s...", j0, j1)
             j0 -= 1
-            r, h = extract_spots(imageset[j0:j1])
+            if len(imageset) == 1:
+                r, h = extract_spots(imageset)
+            else:
+                r, h = extract_spots(imageset[j0:j1])
             reflections.extend(r)
             if h is not None:
                 for h1, h2 in zip(hot_pixels, h):

@@ -165,10 +165,10 @@ class IhTable:
             block.block_selections for block in self.Ih_table_blocks
         ]
 
-    def update_weights(self, error_model=None):
+    def update_weights(self, error_model=None, dataset_id=None):
         """Update the error model in the blocks."""
         for block in self.Ih_table_blocks:
-            block.update_weights(error_model)
+            block.update_weights(error_model, dataset_id)
 
     @property
     def blocked_data_list(self):
@@ -532,15 +532,26 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
         Ih = sumgI / sumgsq
         self.Ih_table["Ih_values"] = Ih * self.h_expand_matrix
 
-    def update_weights(self, error_model=None):
+    def update_weights(self, error_model=None, dataset_id=None):
         """Update the scaling weights based on an error model."""
         if error_model:
-            sigmaprimesq = error_model.update_variances(
-                self.variances, self.intensities
-            )
-            self.weights = 1.0 / sigmaprimesq
+            if dataset_id is not None:  # note the first dataset has an id of 0
+                sel = self.Ih_table["dataset_id"] == dataset_id
+                sigmaprimesq = error_model.update_variances(
+                    self.variances.select(sel), self.intensities.select(sel)
+                )
+                self.weights.set_selected(sel, 1.0 / sigmaprimesq)
+            else:
+                sigmaprimesq = error_model.update_variances(
+                    self.variances, self.intensities
+                )
+                self.weights = 1.0 / sigmaprimesq
         else:
-            self.weights = 1.0 / self.variances
+            if dataset_id is not None:  # note the first dataset has an id of 0
+                sel = self.Ih_table["dataset_id"] == dataset_id
+                self.weights.set_selected(sel, 1.0 / self.variances.select(sel))
+            else:
+                self.weights = 1.0 / self.variances
 
     def calc_nh(self):
         """Calculate the number of refls in the group to which the reflection belongs.

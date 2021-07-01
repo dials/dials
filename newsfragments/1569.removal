@@ -1,1 +1,1 @@
-``dials.util.masking.MaskGenerator` is deprecated in favour of ``dials.util.masking.generate_mask``
+The previously deprecated ``dials.util.masking.MaskGenerator`` has been removed. Please use ``dials.util.masking.generate_mask`` instead.

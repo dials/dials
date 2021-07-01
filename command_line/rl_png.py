@@ -77,6 +77,10 @@ class PngScene:
     def set_points(self, points):
         self.points = points
 
+    def set_points_data(self, reflections):
+        # we do not label reciprocal lattice points here
+        pass
+
     def set_colors(self, colors):
         # convert whites to black (background is white)
         colors.set_selected((colors.norms() == math.sqrt(3)), (0, 0, 0))

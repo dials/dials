@@ -67,6 +67,12 @@ def run(args=None):
         sys.exit("Only one reflection list may be passed")
     reflections = reflections[0]
 
+    if "miller_index" in reflections:
+        sys.exit("Only unindexed reflections are currently supported")
+
+    if any(experiments.crystals()):
+        sys.exit("Only unindexed experiments are currently supported")
+
     reflections.centroid_px_to_mm(experiments)
     reflections.map_centroids_to_reciprocal_space(experiments)
 

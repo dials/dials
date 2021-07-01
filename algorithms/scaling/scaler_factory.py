@@ -188,8 +188,12 @@ class SingleScalerFactory(ScalerFactory):
                 reflection_table = calc_crystal_frame_vectors(
                     reflection_table, experiment
                 )
-
-        return SingleScaler(params, experiment, reflection_table, for_multi)
+        try:
+            scaler = SingleScaler(params, experiment, reflection_table, for_multi)
+        except BadDatasetForScalingException as e:
+            raise ValueError(e)
+        else:
+            return scaler
 
 
 class NullScalerFactory(ScalerFactory):

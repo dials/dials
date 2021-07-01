@@ -52,6 +52,9 @@ d_min = None
 d_max = None
     .type = float
     .help = "Low resolution limit to apply to the data."
+wavelength_tolerance = 1e-4
+    .type = float(value_min=0.0)
+    .help = "Absolute tolerance for determining wavelength grouping for merging."
 combine_partials = True
     .type = bool
     .help = "Combine partials that have the same partial id into one
@@ -107,7 +110,10 @@ output {
 
 def merge_data_to_mtz(params, experiments, reflections):
     """Merge data (at each wavelength) and write to an mtz file object."""
-    wavelengths = match_wavelengths(experiments)  # wavelengths is an ordered dict
+    wavelengths = match_wavelengths(
+        experiments,
+        absolute_tolerance=params.wavelength_tolerance,
+    )  # wavelengths is an ordered dict
     mtz_datasets = [
         MTZDataClass(wavelength=w, project_name=params.output.project_name)
         for w in wavelengths.keys()

@@ -1,4 +1,4 @@
-# LIBTBX_SET_DISPATCHER_NAME dev.dials.merge_reflection_lists
+# LIBTBX_SET_DISPATCHER_NAME dials.merge_reflection_lists
 
 
 import sys
@@ -42,7 +42,7 @@ class Script:
     def __init__(self):
         """Initialise the script."""
         # The script usage
-        usage = "usage: dev.dials.merge_reflection_lists [options] /path/to/image/reflection/files"
+        usage = "usage: dials.merge_reflection_lists [options] /path/to/image/reflection/files"
         self.parser = OptionParser(
             epilog=help_message, usage=usage, phil=phil_scope, read_reflections=True
         )

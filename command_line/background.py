@@ -153,14 +153,15 @@ def background(imageset, indx, n_bins, corrected=False, mask_params=None):
         # Default mask params for trusted range
         mask_params = phil_scope.fetch(parse("")).extract().masking
 
-    mask = dials.util.masking.generate_mask(imageset, mask_params)
-
     detector = imageset.get_detector()
     beam = imageset.get_beam()
+
     # Only working with single panel detector for now
     assert len(detector) == 1
     panel = detector[0]
-    mask = mask[0]
+    imageset_mask = imageset.get_mask(indx)[0]
+    mask = dials.util.masking.generate_mask(imageset, mask_params)[0]
+    mask = imageset_mask & mask
 
     n = matrix.col(panel.get_normal()).normalize()
     b = matrix.col(beam.get_s0()).normalize()
@@ -169,18 +170,20 @@ def background(imageset, indx, n_bins, corrected=False, mask_params=None):
     if math.fabs(b.dot(n)) < 0.95:
         raise Sorry("Detector not perpendicular to beam")
 
-    if corrected:
-        data = imageset.get_corrected_data(indx)
-    else:
-        data = imageset.get_raw_data(indx)
-    assert len(data) == 1
-    data = data[0]
+    # Use corrected data to determine signal and background regions
+    corrected_data = imageset.get_corrected_data(indx)
+    assert len(corrected_data) == 1
+    corrected_data = corrected_data[0].as_double()
 
-    data = data.as_double()
+    # Use choice of raw or corrected data to evaluate the background values
+    if corrected:
+        data = corrected_data
+    else:
+        data = imageset.get_raw_data(indx)[0].as_double()
 
     spot_params = spot_phil.fetch(source=parse("")).extract()
     threshold_function = SpotFinderFactory.configure_threshold(spot_params)
-    peak_pixels = threshold_function.compute_threshold(data, mask)
+    peak_pixels = threshold_function.compute_threshold(corrected_data, mask)
     signal = data.select(peak_pixels.iselection())
     background_pixels = mask & ~peak_pixels
     background = data.select(background_pixels.iselection())

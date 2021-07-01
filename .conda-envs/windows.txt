@@ -3,10 +3,10 @@ conda-forge::biopython
 conda-forge::boost
 conda-forge::boost-cpp
 conda-forge::bzip2
-# conda-forge::c-compiler
+conda-forge::c-compiler
 conda-forge::colorlog
 conda-forge::conda
-# conda-forge::cxx-compiler
+conda-forge::cxx-compiler
 conda-forge::dials-data
 conda-forge::docutils
 conda-forge::eigen
@@ -14,7 +14,7 @@ conda-forge::future
 conda-forge::gemmi
 conda-forge::h5py>=3.1.0
 conda-forge::hdf5<1.11
-conda-forge::hdf5-external-filter-plugins==0.1.0[build_number='>=5']
+conda-forge::hdf5plugin
 conda-forge::iota
 conda-forge::jinja2
 conda-forge::jpeg
@@ -22,8 +22,9 @@ conda-forge::matplotlib-base>=3.0.2
 conda-forge::mrcfile
 conda-forge::msgpack-c
 conda-forge::msgpack-python
-conda-forge::numpy>=1.16
+conda-forge::numpy<1.21
 conda-forge::orderedset
+conda-forge::pandas
 conda-forge::pillow>=5.4.1
 conda-forge::pip
 conda-forge::procrunner>=2.2.0
@@ -40,7 +41,7 @@ conda-forge::scipy
 conda-forge::scons
 conda-forge::setuptools
 conda-forge::six
-conda-forge::sphinx>=3.2
+conda-forge::sphinx>=3.2,<4
 conda-forge::sqlite
 conda-forge::tabulate
 conda-forge::tqdm

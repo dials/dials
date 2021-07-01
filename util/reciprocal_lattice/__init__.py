@@ -222,6 +222,7 @@ class Render3d:
                 self.settings.partiality_max = flex.max(p)
         points = reflections["rlp"] * 100
         self.viewer.set_points(points)
+        self.viewer.set_points_data(reflections)
         colors = flex.vec3_double(len(points), (1, 1, 1))
 
         if len(points):

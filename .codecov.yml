@@ -12,5 +12,5 @@ coverage:
 comment:
   layout: "diff, flags"
   branches:
-    - master
+    - main
   after_n_builds: 2

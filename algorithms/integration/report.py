@@ -148,7 +148,7 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
 
         try:
             report["rmsd_xy"] = list(
-                indexer_sum.mean(data["xyz.rmsd"].select(data["int"]))
+                indexer_sum.mean(data["xyz.rmsd"].select(data["sum"]))
             )
         except Exception:
             report["rmsd_xy"] = [0.0] * len(binner)

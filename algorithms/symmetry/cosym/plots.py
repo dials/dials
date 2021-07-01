@@ -8,7 +8,7 @@ def plot_coords(coords, labels=None, key="cosym_coordinates"):
     assert coord_x.size == coord_y.size, (coord_x.size, coord_y.size)
 
     if labels is None:
-        labels = np.full(coord_x.shape[0], -1, dtype=np.int)
+        labels = np.full(coord_x.shape[0], -1, dtype=int)
 
     unique_labels = set(labels)
     unique_labels = sorted(unique_labels)

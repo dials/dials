@@ -253,7 +253,7 @@ def run(args=None, phil=working_phil):
 
     # Save reflections
     logger.info("Saving refined reflections to %s", params.output.reflections)
-    indexed_reflections.as_msgpack_file(filename=params.output.reflections)
+    indexed_reflections.as_file(filename=params.output.reflections)
 
 
 if __name__ == "__main__":

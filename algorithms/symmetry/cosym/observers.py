@@ -19,7 +19,7 @@ def register_default_cosym_observers(script):
         event="analysed_symmetry", observer=SymmetryAnalysisObserver()
     )
     script.cosym_analysis.register_observer(
-        event="analysed_clusters", observer=CosymClusterAnalysisObserver()
+        event="optimised", observer=CosymClusterAnalysisObserver()
     )
     script.register_observer(event="run_cosym", observer=UnitCellAnalysisObserver())
     script.register_observer(
@@ -91,14 +91,13 @@ class CosymClusterAnalysisObserver(Observer):
     def update(self, cosym):
         """Update the data in the observer."""
         self.data["coordinates"] = cosym.coords
-        self.data["labels"] = cosym.cluster_labels
         self.data["rij_matrix"] = cosym.target.rij_matrix
 
     def make_plots(self):
         """Generate cosym cluster analysis plot data."""
         d = OrderedDict()
         d.update(plot_rij_histogram(self.data["rij_matrix"]))
-        d.update(plot_coords(self.data["coordinates"], self.data["labels"]))
+        d.update(plot_coords(self.data["coordinates"]))
         graphs = {"cosym_graphs": d}
         return graphs
 

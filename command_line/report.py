@@ -773,7 +773,7 @@ class CentroidAnalyser:
                 ],
                 "layout": {
                     "title": "Difference between observed and calculated centroids",
-                    "xaxis": {"title": "Difference in position"},
+                    "xaxis": {"title": "Difference in position (pixels)"},
                     "yaxis": {"title": "Number of reflections"},
                     "bargap": 0,
                 },
@@ -833,7 +833,7 @@ class CentroidAnalyser:
                     "z": z1.transpose().tolist(),
                     "type": "heatmap",
                     "colorbar": {
-                        "title": "Difference in X position",
+                        "title": "Difference in X position (pixels)",
                         "titleside": "right",
                     },
                     "colorscale": "Jet",
@@ -857,7 +857,7 @@ class CentroidAnalyser:
                     "z": z2.transpose().tolist(),
                     "type": "heatmap",
                     "colorbar": {
-                        "title": "Difference in Y position",
+                        "title": "Difference in Y position (pixels)",
                         "titleside": "right",
                     },
                     "colorscale": "Jet",
@@ -912,7 +912,10 @@ class CentroidAnalyser:
                 "layout": {
                     "title": "Difference between observed and calculated centroids in Z",
                     "xaxis": {"title": "Z", "showgrid": False},
-                    "yaxis": {"title": "Difference in Z position", "showgrid": False},
+                    "yaxis": {
+                        "title": "Difference in Z position (images)",
+                        "showgrid": False,
+                    },
                 },
             }
         }

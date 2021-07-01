@@ -1,18 +1,17 @@
 """Target function for cosym analysis."""
 
 import copy
+import itertools
 import logging
-import math
 import warnings
 
 import numpy as np
+import pandas as pd
 from orderedset import OrderedSet
-from scipy import sparse
 
 import cctbx.sgtbx.cosets
 from cctbx import miller, sgtbx
 from cctbx.array_family import flex
-from libtbx import easy_mp
 
 logger = logging.getLogger(__name__)
 
@@ -29,10 +28,10 @@ class Target:
         intensities,
         lattice_ids,
         weights=None,
-        min_pairs=None,
+        min_pairs=3,
         lattice_group=None,
         dimensions=None,
-        nproc=1,
+        nproc=None,
     ):
         r"""Intialise a Target object.
 
@@ -56,13 +55,15 @@ class Target:
             in the analysis. If not set, then the number of dimensions used is
             equal to the greater of 2 or the number of symmetry operations in the
             lattice group.
-          nproc (int): number of processors to use for computing the rij matrix.
+          nproc (int): Deprecated
         """
+        if nproc is not None:
+            warnings.warn("nproc is deprecated", DeprecationWarning)
+
         if weights is not None:
             assert weights in ("count", "standard_error")
         self._weights = weights
         self._min_pairs = min_pairs
-        self._nproc = nproc
 
         data = intensities.customized_copy(anomalous_flag=False)
         cb_op_to_primitive = data.change_of_basis_op_to_primitive_setting()
@@ -148,15 +149,6 @@ class Target:
 
         return operators
 
-    def _lattice_lower_upper_index(self, lattice_id):
-        lower_index = int(self._lattices[lattice_id])
-        upper_index = None
-        if lattice_id < len(self._lattices) - 1:
-            upper_index = int(self._lattices[lattice_id + 1])
-        else:
-            assert lattice_id == len(self._lattices) - 1
-        return lower_index, upper_index
-
     def _compute_rij_wij(self, use_cache=True):
         """Compute the rij_wij matrix.
 
@@ -173,143 +165,94 @@ class Target:
 
         """
         n_lattices = len(self._lattices)
+        n_sym_ops = len(self.sym_ops)
 
         # Pre-calculate miller indices after application of each cb_op. Only calculate
         # this once per cb_op instead of on-the-fly every time we need it.
         indices = {}
+        epsilons = {}
         space_group_type = self._data.space_group().type()
         for cb_op in self.sym_ops:
             cb_op = sgtbx.change_of_basis_op(cb_op)
             indices_reindexed = cb_op.apply(self._data.indices())
             miller.map_to_asu(space_group_type, False, indices_reindexed)
-            indices[cb_op.as_xyz()] = indices_reindexed
+            cb_op_str = cb_op.as_xyz()
+            indices[cb_op_str] = np.array(
+                [
+                    h.iround().as_numpy_array()
+                    for h in indices_reindexed.as_vec3_double().parts()
+                ]
+            ).transpose()
+            epsilons[cb_op_str] = self._patterson_group.epsilon(
+                indices_reindexed
+            ).as_numpy_array()
+        intensities = self._data.data().as_numpy_array()
 
-        def _compute_rij_matrix_one_row_block(i):
-            rij_cache = {}
+        # Map indices to an array of flat 1d indices which can later be used for
+        # matching pairs of indices
+        offset = -np.min(np.concatenate(list(indices.values())), axis=0)
+        dims = np.max(np.concatenate(list(indices.values())), axis=0) + offset + 1
+        for cb_op, hkl in indices.items():
+            indices[cb_op] = np.ravel_multi_index((hkl + offset).T, dims)
 
-            n_sym_ops = len(self.sym_ops)
-            NN = n_lattices * n_sym_ops
+        # Create an empty 2D array of shape (m * n, L), where m is the number of sym
+        # ops, n is the number of lattices, and L is the number of unique miller indices
+        all_intensities = np.empty((n_sym_ops * n_lattices, np.prod(dims)))
 
-            rij_row = []
-            rij_col = []
-            rij_data = []
-            if self._weights is not None:
-                wij_row = []
-                wij_col = []
-                wij_data = []
-            else:
-                wij = None
+        # Populate all_intensities with intensity values, filling absent intensities
+        # with np.nan
+        all_intensities.fill(np.nan)
+        slices = np.append(self._lattices, intensities.size)
+        slices = list(map(slice, slices[:-1], slices[1:]))
+        for i, (mil_ind, eps) in enumerate(zip(indices.values(), epsilons.values())):
+            for j, selection in enumerate(slices):
+                # map (i, j) to a column in all_intensities
+                column = np.ravel_multi_index((i, j), (n_sym_ops, n_lattices))
+                epsilon_equals_one = eps[selection] == 1
+                valid_mil_ind = mil_ind[selection][epsilon_equals_one]
+                valid_intensities = intensities[selection][epsilon_equals_one]
+                all_intensities[column, valid_mil_ind] = valid_intensities
 
-            i_lower, i_upper = self._lattice_lower_upper_index(i)
-            intensities_i = self._data.data()[i_lower:i_upper]
-
-            for j in range(n_lattices):
-
-                j_lower, j_upper = self._lattice_lower_upper_index(j)
-                intensities_j = self._data.data()[j_lower:j_upper]
-
-                for k, cb_op_k in enumerate(self.sym_ops):
-                    cb_op_k = sgtbx.change_of_basis_op(cb_op_k)
-
-                    indices_i = indices[cb_op_k.as_xyz()][i_lower:i_upper]
-
-                    for kk, cb_op_kk in enumerate(self.sym_ops):
-                        if i == j and k == kk:
-                            # don't include correlation of dataset with itself
-                            continue
-                        cb_op_kk = sgtbx.change_of_basis_op(cb_op_kk)
-
-                        ik = i + (n_lattices * k)
-                        jk = j + (n_lattices * kk)
-
-                        key = (i, j, str(cb_op_k.inverse() * cb_op_kk))
-                        if use_cache and key in rij_cache:
-                            cc, n = rij_cache[key]
-                        else:
-                            indices_j = indices[cb_op_kk.as_xyz()][j_lower:j_upper]
-
-                            matches = miller.match_indices(indices_i, indices_j)
-                            pairs = matches.pairs()
-                            isel_i = pairs.column(0)
-                            isel_j = pairs.column(1)
-                            isel_i = isel_i.select(
-                                self._patterson_group.epsilon(indices_i.select(isel_i))
-                                == 1
-                            )
-                            isel_j = isel_j.select(
-                                self._patterson_group.epsilon(indices_j.select(isel_j))
-                                == 1
-                            )
-                            corr = flex.linear_correlation(
-                                intensities_i.select(isel_i),
-                                intensities_j.select(isel_j),
-                            )
-
-                            if corr.is_well_defined():
-                                cc = corr.coefficient()
-                                n = corr.n()
-                                rij_cache[key] = (cc, n)
-                            else:
-                                cc = None
-                                n = None
-
-                        if (
-                            n is None
-                            or cc is None
-                            or (self._min_pairs is not None and n < self._min_pairs)
-                        ):
-                            continue
-
-                        if self._weights == "count":
-                            wij_row.extend([ik, jk])
-                            wij_col.extend([jk, ik])
-                            wij_data.extend([n, n])
-                        elif self._weights == "standard_error":
-                            assert n > 2
-                            # http://www.sjsu.edu/faculty/gerstman/StatPrimer/correlation.pdf
-                            se = math.sqrt((1 - cc ** 2) / (n - 2))
-                            wij = 1 / se
-                            wij_row.extend([ik, jk])
-                            wij_col.extend([jk, ik])
-                            wij_data.extend([wij, wij])
-
-                        rij_row.append(ik)
-                        rij_col.append(jk)
-                        rij_data.append(cc)
-
-            rij = sparse.coo_matrix((rij_data, (rij_row, rij_col)), shape=(NN, NN))
-            if self._weights is not None:
-                wij = sparse.coo_matrix((wij_data, (wij_row, wij_col)), shape=(NN, NN))
-
-            return rij, wij
-
-        args = [(i,) for i in range(n_lattices)]
-        results = easy_mp.parallel_map(
-            _compute_rij_matrix_one_row_block,
-            args,
-            processes=self._nproc,
-            iterable_type=easy_mp.posiargs,
-            method="multiprocessing",
+        # Ideally we would use `np.ma.corrcoef` here, but it is broken, so use
+        # pd.DataFrame.corr() instead (see numpy/numpy#15601)
+        rij = (
+            pd.DataFrame(all_intensities)
+            .T.dropna(how="all")
+            .corr(min_periods=self._min_pairs)
+            .values
         )
+        # Set any NaN correlation coefficients to zero
+        np.nan_to_num(rij, copy=False)
+        # Cosym does not make use of the on-diagonal correlation coefficients
+        np.fill_diagonal(rij, 0)
 
-        rij_matrix = None
-        wij_matrix = None
-        for i, (rij, wij) in enumerate(results):
-            if rij_matrix is None:
-                rij_matrix = rij
-            else:
-                rij_matrix += rij
-            if wij is not None:
-                if wij_matrix is None:
-                    wij_matrix = wij
-                else:
-                    wij_matrix += wij
+        if self._weights:
+            wij = np.zeros_like(rij)
+            right_up = np.triu_indices_from(wij, k=1)
 
-        rij_matrix = rij_matrix.todense().astype(np.float64)
-        if wij_matrix is not None:
-            wij_matrix = wij_matrix.todense().astype(np.float64)
+            # For each correlation coefficient, set the weight equal to the size of
+            # the sample used to calculate that coefficient
+            pairwise_combos = itertools.combinations(np.isfinite(all_intensities), 2)
+            sample_size = lambda x, y: np.count_nonzero(x & y)
+            wij[right_up] = list(itertools.starmap(sample_size, pairwise_combos))
 
-        return rij_matrix, wij_matrix
+            if self._weights == "standard_error":
+                # Set each weights as the reciprocal of the standard error on the
+                # corresponding correlation coefficient
+                # http://www.sjsu.edu/faculty/gerstman/StatPrimer/correlation.pdf
+                with np.errstate(divide="ignore", invalid="ignore"):
+                    reciprocal_se = np.sqrt(
+                        (wij[right_up] - 2) / (1 - np.square(rij[right_up]))
+                    )
+
+                wij[right_up] = np.where(wij[right_up] > 2, reciprocal_se, 0)
+
+            # Symmetrise the wij matrix
+            wij += wij.T
+        else:
+            wij = None
+
+        return rij, wij
 
     def compute_functional(self, x: np.ndarray) -> float:
         """Compute the target function at coordinates `x`.
@@ -324,15 +267,10 @@ class Target:
           f (float): The value of the target function at coordinates `x`.
         """
         assert (x.size // self.dim) == (len(self._lattices) * len(self.sym_ops))
-        inner = np.copy(self.rij_matrix)
-        NN = x.size // self.dim
-        for i in range(self.dim):
-            coord = x[i * NN : (i + 1) * NN]
-            outer_prod = np.outer(coord, coord)
-            inner -= outer_prod
-        elements = np.power(inner, 2)
+        x = x.reshape((self.dim, x.size // self.dim))
+        elements = np.square(self.rij_matrix - x.T @ x)
         if self.wij_matrix is not None:
-            elements = np.multiply(self.wij_matrix, elements)
+            np.multiply(self.wij_matrix, elements, out=elements)
         f = 0.5 * elements.sum()
         return f
 
@@ -376,32 +314,13 @@ class Target:
           f: The value of the target function at coordinates `x`.
           grad: The gradients of the target function with respect to the parameters.
         """
-        grad = np.empty(x.shape)
+        x = x.reshape((self.dim, x.size // self.dim))
         if self.wij_matrix is not None:
             wrij_matrix = np.multiply(self.wij_matrix, self.rij_matrix)
+            grad = -2 * x @ (wrij_matrix - np.multiply(self.wij_matrix, x.T @ x))
         else:
-            wrij_matrix = self.rij_matrix
-
-        coords = []
-        NN = x.size // self.dim
-        for i in range(self.dim):
-            coords.append(x[i * NN : (i + 1) * NN])
-
-        # term 1
-        for i in range(self.dim):
-            grad[i * NN : (i + 1) * NN] = np.matmul(wrij_matrix, coords[i])
-
-        for i in range(self.dim):
-            tmp_array = np.empty(x.shape)
-            tmp = np.outer(coords[i], coords[i])
-            if self.wij_matrix is not None:
-                tmp = np.multiply(self.wij_matrix, tmp)
-            for j in range(self.dim):
-                tmp_array[j * NN : (j + 1) * NN] = np.matmul(tmp, coords[j])
-            grad -= tmp_array
-        grad *= -2
-
-        return grad
+            grad = -2 * x @ (self.rij_matrix - x.T @ x)
+        return grad.flatten()
 
     def curvatures(self, x: np.ndarray) -> np.ndarray:
         """Compute the curvature of the target function at coordinates `x`.
@@ -416,18 +335,13 @@ class Target:
           curvs (np.ndarray):
           The curvature of the target function with respect to the parameters.
         """
-        NN = x.size // self.dim
-        curvs = np.empty(x.shape)
         if self.wij_matrix is not None:
             wij = self.wij_matrix
         else:
             wij = np.ones(self.rij_matrix.shape)
-        for i in range(self.dim):
-            curvs[i * NN : (i + 1) * NN] = np.matmul(
-                wij, np.power(x[i * NN : (i + 1) * NN], 2)
-            )
-        curvs *= 2
-        return curvs
+        x = x.reshape((self.dim, x.size // self.dim))
+        curvs = 2 * np.square(x) @ wij
+        return curvs.flatten()
 
     def curvatures_fd(self, x: np.ndarray, eps=1e-6) -> np.ndarray:
         """Compute the curvatures at coordinates `x` using finite differences.

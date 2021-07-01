@@ -4,12 +4,12 @@ import logging
 import pickle
 from collections import namedtuple
 
+import dxtbx.model.compare as compare
 from dxtbx.imageset import ImageGrid, ImageSequence
 from dxtbx.model.experiment_list import (
     Experiment,
     ExperimentList,
     ExperimentListFactory,
-    ExperimentListTemplateImporter,
 )
 from libtbx.phil import parse
 
@@ -217,12 +217,11 @@ def _extract_or_read_imagesets(params):
         # Check if a template has been set and print help if not, otherwise try to
         # import the images based on the template input
         if len(params.input.template) > 0:
-            importer = ExperimentListTemplateImporter(
+            experiments = ExperimentListFactory.from_templates(
                 params.input.template,
                 image_range=params.geometry.scan.image_range,
                 format_kwargs=format_kwargs,
             )
-            experiments = importer.experiments
             if len(experiments) == 0:
                 raise Sorry(
                     "No experiments found matching template %s"
@@ -930,15 +929,16 @@ class ImageImporter:
         logger.info("=" * 80)
         logger.info("")
 
-    def print_sequence_diff(self, sequence1, sequence2, params):
+    @staticmethod
+    def print_sequence_diff(sequence1, sequence2, params):
         """
         Print a diff between sequences.
         """
-        from dxtbx.model.experiment_list import SequenceDiff
-
-        diff = SequenceDiff(params.input.tolerance)
-        text = diff(sequence1, sequence2)
-        logger.info("\n".join(text))
+        logger.info(
+            compare.sequence_diff(
+                sequence1, sequence2, tolerance=params.input.tolerance
+            )
+        )
 
 
 @show_mail_handle_errors()

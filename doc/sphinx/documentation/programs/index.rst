@@ -50,6 +50,7 @@ Utilities:
    dials_align_crystal
    dials_anvil_correction
    dials_missing_reflections
+   dials_filter_reflections
 
 Printable command line reference:
 

@@ -49,7 +49,7 @@ phil_scope = parse(
       .type = str
       .help = "The experiments output filename"
 
-    output_unintegrated_reflections = True
+    output_unintegrated_reflections = False
       .type = bool
       .expert_level = 2
       .help = "Include unintegrated reflections in output file"
@@ -112,6 +112,10 @@ phil_scope = parse(
       .help = "Override reflections_per_degree and integrate all predicted"
               "reflections."
       .type = bool
+
+    random_seed = 0
+      .help = "Random seed for sampling"
+      .type = int
 
   }
 
@@ -249,6 +253,9 @@ def sample_predictions(experiments, predicted, params):
     Returns:
         A subset of the original predicted table.
     """
+
+    if params.sampling.random_seed:
+        flex.set_random_seed(params.sampling.random_seed)
 
     nref_per_degree = params.sampling.reflections_per_degree
     min_sample_size = params.sampling.minimum_sample_size

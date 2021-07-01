@@ -79,7 +79,7 @@ message that the code in question is special and care should be taken.
 
 ## Pull Requests
 
-- To keep the `master` branch stable and facilitate code review we prefer to
+- To keep the `main` branch stable and facilitate code review we prefer to
   have all code changes go through a pull request.
 - Include a newsfragment before merging. This is a file in the
   `newsfragments` folder with a description of your change. Try to make it
@@ -133,4 +133,4 @@ message that the code in question is special and care should be taken.
 [Zen of Python]: https://www.python.org/dev/peps/pep-0020/#the-zen-of-python
 [How to Write a Git Commit Message]: https://chris.beams.io/posts/git-commit
 [The Seven Rules]: https://chris.beams.io/posts/git-commit/#seven-rules
-[news-README]: https://github.com/dials/dials/blob/master/newsfragments/README.MD
+[news-README]: https://github.com/dials/dials/blob/main/newsfragments/README.MD
