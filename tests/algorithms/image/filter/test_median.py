@@ -70,6 +70,6 @@ def test_masked_filter():
                 if len(pixels) & 1:
                     value = median(pixels.as_numpy_array())
                 else:
-                    pixels = sorted(list(pixels))
+                    pixels = sorted(pixels)
                     value = pixels[len(pixels) // 2]
                 assert result[j, i] == pytest.approx(value, abs=eps)

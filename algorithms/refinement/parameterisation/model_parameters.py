@@ -200,7 +200,7 @@ class ModelParameterisation:
             return [x for x in self._param if not x.get_fixed()]
 
         else:
-            return [x for x in self._param]
+            return list(self._param)
 
     def get_param_vals(self, only_free=True):
         """Get the values of the internal list of parameters as a sequence of

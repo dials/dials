@@ -138,7 +138,7 @@ def print_step_table(refinery):
 
     rows = []
     for i in range(refinery.history.get_nrows()):
-        rmsds = [r for r in refinery.history["rmsd"][i]]
+        rmsds = list(refinery.history["rmsd"][i])
         rows.append(
             [str(i), str(refinery.history["num_reflections"][i])]
             + [f"{r:.5g}" for r in rmsds]

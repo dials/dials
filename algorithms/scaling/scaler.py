@@ -1412,7 +1412,7 @@ class MultiScalerBase(ScalerBase):
                 explicitly_grouped = [i - 1 for j in groups for i in j]
                 if -1 in explicitly_grouped:  # sweeps provided indexed from 0
                     explicitly_grouped = [i for j in groups for i in j]
-                    minimisation_groups = [[i for i in g] for g in groups]
+                    minimisation_groups = [list(g) for g in groups]
                 else:
                     minimisation_groups = [[i - 1 for i in g] for g in groups]
                 others = set(all_datasets).difference(set(explicitly_grouped))

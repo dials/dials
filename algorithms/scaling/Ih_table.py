@@ -328,7 +328,7 @@ class IhTable:
             n_groups = block.h_index_matrix.n_cols
             groups_for_free_set = flex.bool(n_groups, False)
             for_free = flex.size_t(
-                [i for i in range(0 + offset, n_groups, interval_between_groups)]
+                list(range(0 + offset, n_groups, interval_between_groups))
             )
             groups_for_free_set.set_selected(for_free, True)
             free_block = block.select_on_groups(groups_for_free_set)
