@@ -1,3 +1,5 @@
+from math import pi
+
 import wx
 from annlib_ext import AnnAdaptorSelfInclude
 from wx.lib.agw import floatspin
@@ -6,6 +8,7 @@ import gltbx
 import gltbx.gl as gl
 import libtbx.phil
 import wxtbx.utils
+from libtbx import Auto
 from scitbx.array_family import flex
 from scitbx.math import minimum_covering_sphere
 from wxtbx.segmentedctrl import (
@@ -29,7 +32,7 @@ show_reciprocal_cell = False
   .type = bool
 label_nearest_point = False
   .type = bool
-marker_size = 5
+marker_size = Auto
   .type = int(value_min=1)
 autospin = False
   .type = bool
@@ -85,6 +88,17 @@ class ReciprocalLatticeViewer(wx.Frame, Render3d):
         if self.settings.beam_centre is not None:
             self.settings_panel.beam_fast_ctrl.SetValue(self.settings.beam_centre[0])
             self.settings_panel.beam_slow_ctrl.SetValue(self.settings.beam_centre[1])
+        if self.settings.marker_size is Auto:
+            max_radius = max(self.reflections["rlp"].norms())
+            volume = 4 / 3 * pi * max_radius ** 3
+            density = len(self.reflections) / volume
+            print(density)
+            # Set marker size to between 5 and 50 depending on density, where
+            # 1000 < density < 20000 ==> 50 < marker_size < 5
+            marker_size = (-45 / 19000) * density + (5 + 900 / 19)
+            marker_size = max(marker_size, 5)
+            marker_size = min(marker_size, 50)
+            self.settings.marker_size = marker_size
         self.settings_panel.marker_size_ctrl.SetValue(self.settings.marker_size)
         self.settings_panel.add_experiments_buttons()
 
