@@ -562,7 +562,10 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
         scale = max(max(s.box_max()), abs(min(s.box_min())))
         gltbx.fonts.ucs_bitmap_8x13.setup_call_lists()
         gl.glDisable(gl.GL_LIGHTING)
-        gl.glColor3f(1.0, 1.0, 1.0)
+        if self.settings.black_background:
+            gl.glColor3f(1.0, 1.0, 1.0)
+        else:
+            gl.glColor3f(0.0, 0.0, 0.0)
         gl.glLineWidth(1.0)
         gl.glBegin(gl.GL_LINES)
         gl.glVertex3f(0.0, 0.0, 0.0)
