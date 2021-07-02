@@ -1,0 +1,1 @@
+The reflection table ``match`` function now returns ``size_t`` index arrays rather than ``int``.
