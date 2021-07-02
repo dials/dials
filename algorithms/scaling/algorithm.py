@@ -42,6 +42,7 @@ from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
     parse_multiple_datasets,
     select_datasets_on_ids,
+    update_imageset_ids,
 )
 
 logger = logging.getLogger("dials")
@@ -306,7 +307,8 @@ class ScalingAlgorithm:
             for component in experiment.scaling_model.components.keys():
                 del experiment.scaling_model.components[component].data
         gc.collect()
-
+        # update imageset ids before combining reflection tables.
+        self.reflections = update_imageset_ids(self.experiments, self.reflections)
         joint_table = flex.reflection_table()
         for i in range(len(self.reflections)):
             joint_table.extend(self.reflections[i])

@@ -47,6 +47,16 @@ def test_symmetry_laue_only(dials_data, tmpdir):
         tmpdir.join("symmetrized.expt").strpath, check_format=False
     )
     assert str(exps[0].crystal.get_space_group().info()) == "P 2 2 2"
+    joint_reflections = flex.reflection_table.from_file(
+        tmpdir.join("symmetrized.refl").strpath
+    )
+    # check that there are 2 unique id and imageset_ids, and that these
+    # correctly correspond to each experiment
+    assert len(set(joint_reflections["id"])) == 2
+    assert len(set(joint_reflections["imageset_id"])) == 2
+    for id_ in range(2):
+        sel = joint_reflections["id"] == id_
+        assert set(joint_reflections["imageset_id"].select(sel)) == set([id_])
 
 
 def test_symmetry_basis_changes_for_C2(run_in_tmpdir):
