@@ -1,1 +1,1 @@
-``dials.reciprocal_lattice_viewer``: include d-spacing on nearest point labels.
+``dials.reciprocal_lattice_viewer``: Show resolution on the "nearest point" label
