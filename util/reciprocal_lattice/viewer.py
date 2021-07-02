@@ -471,10 +471,13 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
             self.update_minimum_covering_sphere()
 
     def set_points_data(self, reflections):
+        dstar = reflections["rlp"].norms()
+        dstar.set_selected(dstar == 0, 1e-8)
         self.points_data = {
             "panel": reflections["panel"],
             "id": reflections["id"],
             "xyz": reflections["xyzobs.px.value"],
+            "d_spacing": 1 / dstar,
         }
         if "miller_index" in reflections:
             self.points_data["miller_index"] = reflections["miller_index"]
@@ -637,12 +640,13 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
         xyz = self.points_data["xyz"][i]
         exp_id = self.points_data["id"][i]
         panel = self.points_data["panel"][i]
+        d_spacing = self.points_data["d_spacing"][i]
         label = (
-            f"id: {exp_id}\n"
-            f"panel: {panel}\n"
-            f"xyz: {xyz[0]:.1f} {xyz[1]:.1f} {xyz[2]:.1f}"
+            f"id: {exp_id}; panel: {panel}\n"
+            f"xyz: {xyz[0]:.1f} {xyz[1]:.1f} {xyz[2]:.1f}\n"
+            f"res: {d_spacing:.2f} Angstrom"
         )
-        if "miller_index" in self.points_data:
+        if "miller_index" in self.points_data and exp_id != -1:
             hkl = self.points_data["miller_index"][i]
             label += f"\nhkl: {hkl}"
         line_spacing = round(gltbx.fonts.ucs_bitmap_8x13.height())
