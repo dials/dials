@@ -23,6 +23,7 @@ Examples::
 
 import logging
 import sys
+from typing import List, Sequence, SupportsFloat
 
 import numpy as np
 from scipy.spatial.transform import Rotation
@@ -39,12 +40,7 @@ from dials.util.multi_dataset_handling import (
 )
 from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
 
-try:
-    from typing import List, Sequence, SupportsFloat
-except ImportError:
-    pass
-else:
-    Vector = Sequence[SupportsFloat]
+Vector = Sequence[SupportsFloat]
 
 
 logger = logging.getLogger("dials.command_line.anvil_correction")
