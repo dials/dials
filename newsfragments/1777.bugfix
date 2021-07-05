@@ -1,1 +1,1 @@
-Add buttons to clear unit cell and generic ring display in ``dials.image_viewer``.
+``dials.image_viewer``: Add buttons to clear unit cell and generic ring display
