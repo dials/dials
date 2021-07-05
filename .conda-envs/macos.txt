@@ -40,7 +40,7 @@ conda-forge::python.app
 conda-forge::reportlab
 conda-forge::requests
 conda-forge::scikit-learn
-conda-forge::scipy
+conda-forge::scipy>=1.4
 conda-forge::scons
 conda-forge::setuptools
 conda-forge::six
