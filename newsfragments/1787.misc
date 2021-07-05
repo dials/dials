@@ -1,1 +1,0 @@
-``dials.anvil_correction``:  Remove code that was introduced to accommodate older versions of SciPy, now unused.
