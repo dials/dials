@@ -46,3 +46,5 @@ conda-forge::tqdm
 conda-forge::urllib3
 conda-forge::wxpython>=4.0.1
 conda-forge::xz
+conda-forge::pybind11
+
