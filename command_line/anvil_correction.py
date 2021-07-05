@@ -146,7 +146,7 @@ def goniometer_rotation(
         fixed_rotation = Rotation.from_dcm(fixed_rotation)
 
     # Calculate the rotation operator representing the goniometer orientation for each
-    # reflection.  In the notation of dxtbx/model/goniometer.h this is S × R × F.
+    # reflection.  In the notation of dxtbx/model/goniometer.h this is S ∘ R ∘ F.
     return set_rotation * scan_rotation * fixed_rotation
 
 
