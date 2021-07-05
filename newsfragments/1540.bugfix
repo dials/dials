@@ -1,1 +1,1 @@
-When ``dials.reciprocal_lattice_viewer`` is started with ``black_background=False``, ensure the rotation axis and beam vector are displayed in black.
+``dials.reciprocal_lattice_viewer``: When starting with``black_background=False``, ensure the rotation axis and beam vector are displayed in black.
