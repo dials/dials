@@ -283,12 +283,19 @@ class UCSettingsPanel(wx.Panel):
             wx.ALL | wx.ALIGN_CENTER_VERTICAL,
             5,
         )
+        sizer.Add(box)
+
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        self.clear_button = wx.Button(self, -1, "Clear")
+        box.Add(self.clear_button, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.Bind(wx.EVT_BUTTON, self.OnClear, self.clear_button)
+        sizer.Add(box)
+
         origin_box = wx.BoxSizer(wx.HORIZONTAL)
         self.origin = wx.StaticText(self, label="")
         origin_box.Add(self.origin, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.Bind(EVT_FLOATSPIN, self.OnSpinCenter, self.spinner_slow)
 
-        sizer.Add(box)
         sizer.Add(origin_box)
 
         self.DrawRings()
@@ -296,6 +303,7 @@ class UCSettingsPanel(wx.Panel):
     def __del__(self):
         if hasattr(self, "_ring_layer") and self._ring_layer is not None:
             self._pyslip.DeleteLayer(self._ring_layer)
+            self._ring_layer = None
 
     def OnSpinCenter(self, event):
         obj = event.EventObject
@@ -324,6 +332,9 @@ class UCSettingsPanel(wx.Panel):
         self._spacegroup = obj.GetValue()
 
         self.DrawRings()
+
+    def OnClear(self, event):
+        self.__del__()
 
     def _draw_rings_layer(self, dc, data, map_rel):
         """Draw a points layer.
