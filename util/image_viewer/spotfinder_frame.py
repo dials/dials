@@ -1029,7 +1029,7 @@ class SpotFrame(XrayFrame):
     @staticmethod
     def _brightness_response(control_value):
         """Convert control brightness to pyslip brightness"""
-        return (0.5 * control_value) ** 2
+        return (0.25 * control_value) ** 2
 
     def update_settings(self, layout=True):
         # super(SpotFrame, self).update_settings(layout=layout)
@@ -1875,7 +1875,7 @@ class SpotSettingsPanel(wx.Panel):
             self,
             value=self.settings.brightness,
             min=1,
-            max=30,
+            max=100,
             name="brightness",
             style=wx.TE_PROCESS_ENTER,
         )
@@ -1885,9 +1885,9 @@ class SpotSettingsPanel(wx.Panel):
             self, -1, size=(150, -1), style=wx.SL_AUTOTICKS | wx.SL_LABELS
         )
         self.brightness_ctrl.SetMin(1)
-        self.brightness_ctrl.SetMax(30)
+        self.brightness_ctrl.SetMax(100)
         self.brightness_ctrl.SetValue(self.settings.brightness)
-        self.brightness_ctrl.SetTickFreq(1)
+        self.brightness_ctrl.SetTickFreq(2)
         box.Add(self.brightness_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
 
         grid = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
