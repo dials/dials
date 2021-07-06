@@ -4,8 +4,9 @@ Module of utility functions for scaling.
 
 
 import logging
-from math import acos, pi
+from math import acos
 
+import scitbx
 from cctbx import miller
 
 from dials.array_family import flex
@@ -67,33 +68,44 @@ class Reasons:
         return "Reflections passing individual criteria:\n" + "".join(reasonlist)
 
 
-def calc_crystal_frame_vectors(reflection_table, experiments):
+def calc_crystal_frame_vectors(reflection_table, experiment):
     """Calculate the diffraction vectors in the crystal frame."""
-    reflection_table["s0"] = flex.vec3_double(
-        [experiments.beam.get_sample_to_source_direction()] * len(reflection_table)
-    )
-    rot_axis = flex.vec3_double([experiments.goniometer.get_rotation_axis()])
-    angles = reflection_table["phi"] * -1.0 * pi / 180  # want to do an inverse rot.
-    reflection_table["s1c"] = rotate_vectors_about_axis(
-        rot_axis, reflection_table["s1"], angles
-    )
-    reflection_table["s0c"] = rotate_vectors_about_axis(
-        rot_axis, reflection_table["s0"], angles
-    )
-    reflection_table["s1c"] = align_rotation_axis_along_z(
-        rot_axis, reflection_table["s1c"]
-    )
-    reflection_table["s0c"] = align_rotation_axis_along_z(
-        rot_axis, reflection_table["s0c"]
-    )
+
+    gonio = experiment.goniometer
+    fixed_rotation = scitbx.matrix.sqr(gonio.get_fixed_rotation())
+    setting_rotation = scitbx.matrix.sqr(gonio.get_setting_rotation())
+    rotation_axis = scitbx.matrix.col(gonio.get_rotation_axis_datum())
+
+    s0c = flex.vec3_double(reflection_table.size(), (0, 0, 0))
+    s1c = flex.vec3_double(reflection_table.size(), (0, 0, 0))
+    # we want sample to source direction.
+    s0 = tuple(-1.0 * i for i in experiment.beam.get_unit_s0())
+    # exclude any data that has a bad s1.
+    lengths = flex.double(scitbx.matrix.col(v).length() for v in reflection_table["s1"])
+    sel = lengths > 0.0
+    sel_s1 = reflection_table["s1"].select(sel)
+    sel_z = reflection_table["xyzobs.px.value"].parts()[2].select(sel)
+    s1n = sel_s1.each_normalize()
+    for z, s1, index in zip(sel_z, s1n, sel.iselection()):
+        phi = experiment.scan.get_angle_from_array_index(z, deg=True)
+        rotation_matrix = rotation_axis.axis_and_angle_as_r3_rotation_matrix(
+            phi, deg=True
+        )
+        R_inv = (setting_rotation * rotation_matrix * fixed_rotation).inverse()
+        s0c[index] = R_inv * s0
+        s1c[index] = R_inv * s1
+
+    reflection_table["s0c"] = s0c
+    reflection_table["s1c"] = s1c
+
     return reflection_table
 
 
-def align_rotation_axis_along_z(exp_rot_axis, vectors):
+def align_axis_along_z(alignment_axis, vectors):
     """Rotate the coordinate system such that the exp_rot_axis is along z."""
-    if list(exp_rot_axis) == [(0.0, 0.0, 1.0)]:
+    if alignment_axis == (0.0, 0.0, 1.0):
         return vectors
-    (ux, uy, uz) = exp_rot_axis[0][0], exp_rot_axis[0][1], exp_rot_axis[0][2]
+    (ux, uy, uz) = alignment_axis
     cross_prod_uz = flex.vec3_double([(uy, -1.0 * ux, 0.0)])
     angle_between_u_z = +1.0 * acos(uz / ((ux ** 2 + uy ** 2 + uz ** 2) ** 0.5))
     phi = flex.double(vectors.size(), angle_between_u_z)

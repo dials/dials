@@ -25,6 +25,10 @@ def test_data(dials_data):
     expt = location.join("scaled_20_25.expt").strpath
 
     refls = flex.reflection_table.from_file(refl).split_by_experiment_id()
+    for r in refls:
+        r["s1c"] = r["s1"]  # just give any values for test
+        r["s0c"] = r["s1"]  # just give any values for test
+        r.set_flags(flex.bool(r.size(), True), r.flags.scaled)
     expts = load.experiment_list(expt, check_format=False)
     params = mock.Mock()
     return refls, expts, params
@@ -46,10 +50,11 @@ def test_script(test_data):
 
 # test things which require refls, expts, params
 def test_make_scaling_model_plots(test_data):
-    _, expts, __ = test_data
-    graphs = make_scaling_model_plots(expts)
+    refls, expts, __ = test_data
+    graphs = make_scaling_model_plots(expts, refls)
     assert graphs
-    assert len(graphs["scaling_model"]) == 6  # 2 models, 3 components each
+    assert len(graphs["scaling_model"]) == 12  # 2 models, 3 components each,
+    # (4 plots for each absorption correction)
 
 
 def test_print_scaling_model_error_summary(test_data):

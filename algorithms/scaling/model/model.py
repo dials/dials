@@ -26,7 +26,7 @@ from dials.algorithms.scaling.model.components.smooth_scale_components import (
 )
 from dials.algorithms.scaling.plots import (
     plot_absorption_parameters,
-    plot_absorption_surface,
+    plot_absorption_plots,
     plot_array_absorption_plot,
     plot_array_decay_plot,
     plot_array_modulation_plot,
@@ -246,7 +246,7 @@ class ScalingModelBase:
         """Add the required reflection table data to the model components."""
         raise NotImplementedError()
 
-    def plot_model_components(self):
+    def plot_model_components(self, reflection_table=None):
         """Return a dict of plots for plotting model components with plotly."""
         return {}
 
@@ -627,12 +627,12 @@ class DoseDecay(ScalingModelBase):
 
         return cls(parameters_dict, configdict, is_scaled=True)
 
-    def plot_model_components(self):
+    def plot_model_components(self, reflection_table=None):
         d = OrderedDict()
         d.update(plot_dose_decay(self))
         if "absorption" in self.components:
             d.update(plot_absorption_parameters(self))
-            d.update(plot_absorption_surface(self))
+            d.update(plot_absorption_plots(self, reflection_table))
         return d
 
 
@@ -914,12 +914,12 @@ class PhysicalScalingModel(ScalingModelBase):
                     new_parameters, flex.double(n_abs_param, 0.0)
                 )
 
-    def plot_model_components(self):
+    def plot_model_components(self, reflection_table=None):
         d = OrderedDict()
         d.update(plot_smooth_scales(self))
         if "absorption" in self.components:
             d.update(plot_absorption_parameters(self))
-            d.update(plot_absorption_surface(self))
+            d.update(plot_absorption_plots(self, reflection_table))
         return d
 
 
@@ -1196,7 +1196,7 @@ class ArrayScalingModel(ScalingModelBase):
 
         return cls(parameters_dict, configdict, is_scaled=True)
 
-    def plot_model_components(self):
+    def plot_model_components(self, reflection_table=None):
         d = OrderedDict()
         if "absorption" in self.components:
             d.update(plot_array_absorption_plot(self))
@@ -1381,12 +1381,12 @@ for entry_point_name, entry_point in _dxtbx_scaling_models.items():
     model_phil_scope.adopt_scope(ext_master_scope)
 
 
-def plot_scaling_models(model_dict):
+def plot_scaling_models(model_dict, reflection_table=None):
     """Return a dict of component plots for the model for plotting with plotly."""
     entry_point = _dxtbx_scaling_models.get(model_dict["__id__"])
     if entry_point:
         model = entry_point.load().from_dict(model_dict)
-        return model.plot_model_components()
+        return model.plot_model_components(reflection_table=reflection_table)
     return OrderedDict()
 
 
