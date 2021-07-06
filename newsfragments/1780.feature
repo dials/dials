@@ -1,1 +1,1 @@
-``dials.image_viewer``: allow control of the basis vector scale from the settings window.
+``dials.image_viewer``: Allow control of the basis vector scale from the settings window
