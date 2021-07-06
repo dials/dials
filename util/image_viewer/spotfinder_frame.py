@@ -640,6 +640,13 @@ class SpotFrame(XrayFrame):
             )
         self.settings_frame.Show()
 
+    def _choose_text_colour(self):
+        """Choose a text colour contrasting with the image pixels"""
+        if self.settings.color_scheme > 1:  # heatmap or invert
+            return "#cdcdcd"  # light grey
+        else:
+            return "#3b3b3b"  # dark grey
+
     def draw_resolution_rings(self, unit_cell=None, space_group=None):
         image = self.image_chooser.GetClientData(
             self.image_chooser.GetSelection()
@@ -663,10 +670,6 @@ class SpotFrame(XrayFrame):
                 [uctbx.d_star_sq_as_d((i + 1) * step) for i in range(0, n_rings)]
             )
         resolution_text_data = []
-        if self.settings.color_scheme > 1:  # heatmap or invert
-            textcolour = "white"
-        else:
-            textcolour = "black"
 
         wavelength = beam.get_wavelength()
         distance = detector[0].get_distance()
@@ -821,7 +824,6 @@ class SpotFrame(XrayFrame):
                             {
                                 "placement": "cc",
                                 "colour": "red",
-                                "textcolour": textcolour,
                             },
                         )
                     )
@@ -859,8 +861,8 @@ class SpotFrame(XrayFrame):
                 show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
                 selectable=False,
                 name="<resolution_text_layer>",
-                colour="red",
                 fontsize=self.settings.fontsize,
+                textcolour=self._choose_text_colour(),
                 update=False,
             )
 
@@ -1102,6 +1104,7 @@ class SpotFrame(XrayFrame):
                     show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
                     selectable=False,
                     fontsize=self.settings.fontsize,
+                    textcolour=self._choose_text_colour(),
                     name="<miller_indices_layer>",
                     update=False,
                 )
@@ -1232,7 +1235,7 @@ class SpotFrame(XrayFrame):
                     show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
                     selectable=False,
                     name="<vector_text_layer>",
-                    colour="#F62817",
+                    textcolour=self._choose_text_colour(),
                     update=False,
                     fontsize=self.settings.fontsize,
                 )
@@ -1616,10 +1619,6 @@ class SpotFrame(XrayFrame):
                                 and "miller_index" in reflection
                                 and reflection["miller_index"] != (0, 0, 0)
                             ):
-                                if self.settings.color_scheme > 1:  # heatmap or invert
-                                    textcolour = "white"
-                                else:
-                                    textcolour = "black"
                                 miller_indices_data.append(
                                     (
                                         x,
@@ -1628,7 +1627,6 @@ class SpotFrame(XrayFrame):
                                         {
                                             "placement": "ne",
                                             "radius": 0,
-                                            "textcolour": textcolour,
                                         },
                                     )
                                 )
