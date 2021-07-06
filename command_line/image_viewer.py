@@ -63,7 +63,7 @@ show_mask = False
 show_basis_vectors = True
   .type = bool
 basis_vector_scale = 10
-  .type = float(value_min=0)
+  .type = int(value_min=1, value_max=20)
 display = *image mean variance dispersion sigma_b \
           sigma_s threshold global_threshold
   .type = choice
