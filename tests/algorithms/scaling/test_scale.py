@@ -528,8 +528,9 @@ def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
         "filtering.method=deltacchalf",
         "stdcutoff=3.0",
         "mode=image_group",
+        "max_percent_removed=12.0",
         "max_cycles=6",
-        "d_min=1.4",
+        "d_min=1.9",
         "group_size=5",
         "unmerged_mtz=unmerged.mtz",
         "scale_and_filter_results=analysis_results.json",
@@ -545,9 +546,9 @@ def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
     assert tmpdir.join("scaled.expt").check()
     assert tmpdir.join("analysis_results.json").check()
     result = get_merging_stats(tmpdir.join("unmerged.mtz").strpath)
-    assert result.overall.r_pim < 0.175  # 12/06/20 was 0.171,
-    assert result.overall.cc_one_half > 0.94  # 03/02/20 was 0.961
-    assert result.overall.n_obs > 50000  # 03/02/20 was 50213
+    assert result.overall.r_pim < 0.13  # 07/07/21 was 0.127,
+    assert result.overall.cc_one_half > 0.94  # 07/07/21 was 0.952
+    assert result.overall.n_obs > 20000  # 07/07/21 was 21543
 
     with open(tmpdir.join("analysis_results.json").strpath) as f:
         analysis_results = json.load(f)
@@ -720,7 +721,7 @@ def test_multi_scale(dials_data, tmpdir):
     assert len(set(refls["imageset_id"])) == 2
     for id_ in range(2):
         sel = refls["id"] == id_
-        assert set(refls["imageset_id"].select(sel)) == set([id_])
+        assert set(refls["imageset_id"].select(sel)) == {id_}
 
     # run again, optimising errors, and continuing from where last run left off.
     extra_args = [

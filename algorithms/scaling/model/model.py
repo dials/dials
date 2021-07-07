@@ -781,7 +781,9 @@ class PhysicalScalingModel(ScalingModelBase):
         abs_osc_range = abs(osc_range[1] - osc_range[0])
 
         if params.scale_interval in autos or params.decay_interval in autos:
-            if abs_osc_range < 10.0:
+            if abs_osc_range < 5.0:
+                scale_interval, decay_interval = (1.0, 1.5)
+            elif abs_osc_range < 10.0:
                 scale_interval, decay_interval = (2.0, 3.0)
             elif abs_osc_range < 25.0:
                 scale_interval, decay_interval = (4.0, 5.0)
