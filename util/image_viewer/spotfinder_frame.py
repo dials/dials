@@ -2074,7 +2074,7 @@ class SpotSettingsPanel(wx.Panel):
         txt4 = wx.StaticText(self, -1, "Gain")
         grid1.Add(txt4, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.gain_ctrl = FloatCtrl(self, value=self.settings.gain, name="gain")
-        self.gain_ctrl.SetMin(0)
+        self.gain_ctrl.SetMin(1e-6)
         grid1.Add(self.gain_ctrl, 0, wx.ALL, 5)
 
         txt3 = wx.StaticText(self, -1, "Kernel size")
