@@ -2346,7 +2346,7 @@ class SpotSettingsPanel(wx.Panel):
             or self.settings.gain != self.gain_ctrl.GetPhilValue()
         ):
             self.GetParent().GetParent().show_filters()
-            self.OnUpdate(event)
+            self.OnUpdateImage(event)
 
     def OnDispersionThresholdDebug(self, event):
         button = event.GetEventObject()
