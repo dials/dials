@@ -92,7 +92,6 @@ class ReciprocalLatticeViewer(wx.Frame, Render3d):
             max_radius = max(self.reflections["rlp"].norms())
             volume = 4 / 3 * pi * max_radius ** 3
             density = len(self.reflections) / volume
-            print(density)
             # Set marker size to between 5 and 50 depending on density, where
             # 1000 < density < 20000 ==> 50 < marker_size < 5
             marker_size = (-45 / 19000) * density + (5 + 900 / 19)
