@@ -2349,10 +2349,18 @@ class SpotSettingsPanel(wx.Panel):
             self.OnUpdateImage(event)
 
     def OnDispersionThresholdDebug(self, event):
+
         button = event.GetEventObject()
         selected = button.GetLabelText()
 
         self.settings.display = selected
+
+        # Disable corrected/raw selection when showing Kabsch debug images
+        if self.settings.display != "image":
+            self.image_type_ctrl.SetSelection(0)
+            self.image_type_ctrl.Disable()
+        else:
+            self.image_type_ctrl.Enable()
 
         # reset buttons
         for btn in self.kabsch_buttons:
