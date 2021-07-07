@@ -826,7 +826,7 @@ class PhysicalScalingModel(ScalingModelBase):
                 absorption_correction = False
         else:
             absorption_correction = params.absorption_correction
-        if absorption_correction:
+        if absorption_correction or params.absorption_level:
             configdict["corrections"].append("absorption")
             if params.absorption_level:
                 lmax, surface_weight = determine_auto_absorption_params(
