@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
+import math
 import sys
 from collections import OrderedDict
 
@@ -12,10 +13,6 @@ from dxtbx.model import (
     ExperimentList,
     Goniometer,
     Scan,
-)
-from dxtbx.model.experiment_list import (
-    ExperimentListFactory,
-    ExperimentListTemplateImporter,
 )
 from iotbx import mtz
 from libtbx.phil import parse
@@ -67,17 +64,6 @@ phil_scope = parse(
         template = None
             .type = str
             .help = "The image sequence template"
-            .multiple = True
-
-        directory = None
-            .type = str
-            .help = "A directory with images"
-            .multiple = True
-
-        image = None
-            .type = str
-            .help = "An image for the dataset"
-            .multiple = True
     }
 
     detector {
@@ -109,7 +95,27 @@ def detector_info_from_batch_headers(unmerged_mtz):
     return panel_size, panel_distance
 
 
-def scan_info_from_batch_headers(unmerged_mtz):
+def mosflm_B_matrix(unit_cell):
+    rp = unit_cell.reciprocal_parameters()
+    p = unit_cell.parameters()
+    d2r = math.pi / 180.0
+    B = matrix.sqr(
+        (
+            rp[0],
+            rp[1] * math.cos(d2r * rp[5]),
+            rp[2] * math.cos(d2r * rp[4]),
+            0,
+            rp[1] * math.sin(d2r * rp[5]),
+            -rp[2] * math.sin(d2r * rp[4]) * math.cos(d2r * p[3]),
+            0,
+            0,
+            1.0 / p[2],
+        )
+    )
+    return B
+
+
+def scan_info_from_batch_headers(unmerged_mtz, verbose=True):
     batches = unmerged_mtz.batches()
 
     scans = OrderedDict(
@@ -156,14 +162,32 @@ def scan_info_from_batch_headers(unmerged_mtz):
     scans[scan_no]["batch_end"] = last_batch
     scans[scan_no]["end_image"] = last_batch - scans[scan_no]["batch_begin"] + 1
 
+    if verbose:
+        header = ["Scan number", "image range", "batch range", "scan range"]
+        rows = []
+        for n, s in scans.items():
+            ifirst, ilast = s["start_image"], s["end_image"]
+            bfirst, blast = s["batch_begin"], s["batch_end"]
+            afirst, alast = s["angle_begin"], s["angle_end"]
+            rows.append(
+                [
+                    f"{n}",
+                    f"{ifirst} : {ilast}",
+                    f"{bfirst} : {blast}",
+                    f"{afirst} : {alast}",
+                ]
+            )
+        logger.info("Scan information determined from batch headers:")
+        logger.info(tabulate(rows, header))
+
     return scans
 
 
-def read_mtzfile(filename, params, experiments=None, batch_offset=None):
-    """
-    Read the mtz file
-    """
-    unmerged_mtz = mtz.object(file_name=filename)
+def create_reflection_table_from_mtz(
+    unmerged_mtz, params, experiments, batch_offset=None
+):
+    """Extract reflection table data"""
+
     miller_arrays = unmerged_mtz.as_miller_arrays(
         merge_equivalents=False, anomalous=True
     )
@@ -229,104 +253,25 @@ def read_mtzfile(filename, params, experiments=None, batch_offset=None):
     if batches.data().size() != intensities.data().size():
         raise ValueError("Batch and intensity array sizes do not match")
     batches = batches.data()
-
-    # now sort out what the intensity columns are.
-    # if
-
-    logger.info("Reading batch headers to determine scan properties")
-    scans = scan_info_from_batch_headers(unmerged_mtz)
-    header = ["Scan number", "image range", "batch range", "scan range"]
-    rows = []
-    for n, s in scans.items():
-        ifirst, ilast = s["start_image"], s["end_image"]
-        bfirst, blast = s["batch_begin"], s["batch_end"]
-        afirst, alast = s["angle_begin"], s["angle_end"]
-        rows.append(
-            [
-                f"{n}",
-                f"{ifirst} : {ilast}",
-                f"{bfirst} : {blast}",
-                f"{afirst} : {alast}",
-            ]
-        )
-    logger.info("Scan information determined from batch headers:")
-    logger.info(tabulate(rows, header))
-
-    filled_experiments = None
-    if not experiments:
-        experiments = ExperimentList()
-        panel_size, panel_distance = detector_info_from_batch_headers(unmerged_mtz)
-    else:
-        # check that the number of experiments generated from dxtbx matches the
-        #  number of scans intepreted from the MTZ
-        nscans = len(scans.values())
-        if len(experiments) != nscans:
-            raise ValueError(
-                f"""
-Mismatch between number of experiments intepreted from image files ({len(experiments)})
-and number of scans intepreted from MTZ file ({nscans}"""
-            )
-        filled_experiments = experiments
-
-    # Get the unit cell and space group
-    unit_cell = intensities.unit_cell()
-    space_group = intensities.crystal_symmetry().space_group()
-    logger.info(f"Space group : {space_group.info()} \nUnit cell : {str(unit_cell)}")
-    Bmat = matrix.sqr(unit_cell.fractionalization_matrix()).transpose()
-
-    for i, scan in enumerate(scans.values()):
-        Umat = matrix.sqr(scan["umat_start"])
-        crystal = Crystal(A=Umat * Bmat, space_group=space_group)
-        if filled_experiments:
-            experiments[i].crystal = crystal
-        else:
-            n_images = scan["end_image"] - (scan["start_image"] - 1)
-            if params.input.oscillation_step:
-                assert params.input.oscillation_step > 0
-                logger.info(
-                    "Using user-specified oscillation step for constructing the scan"
-                )
-                dxscan = Scan(
-                    image_range=[scan["start_image"], scan["end_image"]],
-                    oscillation=[0.0, params.input.oscillation_step],
-                )
-            else:
-                dxscan = Scan(
-                    image_range=[scan["start_image"], scan["end_image"]],
-                    oscillation=[
-                        0.0,
-                        (scan["angle_end"] - scan["angle_begin"]) / n_images,
-                    ],
-                )
-            beam = Beam(s0=tuple(list(scan["s0n"])))
-            goniometer = Goniometer((1.0, 0.0, 0.0))  ###FIXME
-            d = Detector()
-            p = d.add_panel()
-            p.set_image_size(panel_size)
-            p.set_pixel_size(
-                (params.input.detector.pixel_size, params.input.detector.pixel_size)
-            )
-            experiments.append(
-                Experiment(
-                    beam=beam,
-                    scan=dxscan,
-                    goniometer=goniometer,
-                    crystal=crystal,
-                    detector=d,
-                )
-            )
-    if not filled_experiments:
-        filled_experiments = experiments
-
     # for some reason the indices aren't actually the indices, so do this:
-    indices = mtz.object(file_name=filename).extract_original_index_miller_indices()
-    # i_obs = i_obs.customized_copy(indices=indices, info=i_obs.info())
+    indices = unmerged_mtz.extract_original_index_miller_indices()
+
+    scans = scan_info_from_batch_headers(unmerged_mtz, verbose=False)
 
     # The reflection data
     table = flex.reflection_table()
-    table["miller_index"] = indices  # intensities.indices()
+    table["miller_index"] = indices
     table["d"] = intensities.d_spacings().data()
+    if partiality:
+        table["partiality"] = partiality.data()
+    else:
+        table["partiality"] = flex.double(table.size(), 1.0)
 
+    # extract the intensities. In dials, we work on raw intensities.
+    # In mtz files, the intensities already have corrections applied. i.e
+    # if we have IPR and LP, then intensity.prf.value = IPR/LP
+
+    # FIXME check these assumptions for aimless, xds, etc data
     # now see whether two or one sets of intensities were found
     if profile_intensities:
         table["intensity.sum.value"] = intensities.data()
@@ -335,24 +280,44 @@ and number of scans intepreted from MTZ file ({nscans}"""
         table["intensity.prf.variance"] = flex.pow2(profile_intensities.sigmas())
         table.set_flags(flex.bool(table.size(), True), table.flags.integrated_sum)
         table.set_flags(flex.bool(table.size(), True), table.flags.integrated_prf)
+        correction = flex.double(table.size(), 1.0)
+        if lp:
+            table["lp"] = lp.data()
+            assert lp.data().all_gt(0.0)
+            correction /= lp.data()
+        if qe:
+            table["qe"] = qe.data()
+            correction *= qe.data()
+        if qe or lp:
+            table["intensity.sum.value"] *= correction
+            table["intensity.sum.variance"] *= correction ** 2
+            table["intensity.prf.value"] *= correction
+            table["intensity.prf.variance"] *= correction ** 2
+        if partiality:
+            table["intensity.sum.value"] *= partiality.data()
+            table["intensity.sum.variance"] *= partiality.data() ** 2
+
     else:  # only one intensity set, assume profile intensities.
         table["intensity.prf.value"] = intensities.data()
         table["intensity.prf.variance"] = flex.pow2(intensities.sigmas())
         table.set_flags(flex.bool(table.size(), True), table.flags.integrated_prf)
-    if partiality:
-        table["partiality_applied"] = partiality.data()
+        correction = flex.double(table.size(), 1.0)
+        if lp:
+            table["lp"] = lp.data()
+            assert lp.data().all_gt(0.0)
+            correction /= lp.data()
+        if qe:
+            table["qe"] = qe.data()
+            correction *= qe.data()
+        if qe or lp:
+            table["intensity.prf.value"] *= correction
+            table["intensity.prf.variance"] *= correction ** 2
+
     if bg:
         table["background.sum.value"] = bg.data()
     if bgsig:
         table["background.sum.variance"] = bgsig.data() ** 2
-    if lp:
-        table["lp_applied"] = lp.data()
-    if qe:
-        table["qe_applied"] = qe.data()
     table["partial_id"] = flex.double(range(0, table.size()))
-
-    # need s1 ##FIXME
-    # table["s1"] = flex.vec3_double(table.size(), (1, 1, 1))
 
     table["id"] = flex.int(table.size(), 0)
     refls_per_scan = OrderedDict({})
@@ -397,31 +362,147 @@ and number of scans intepreted from MTZ file ({nscans}"""
     table["s1"] = flex.vec3_double(table.size(), (0, 0, 0))
     set_obs_s1(table, experiments)
 
-    return table, experiments
+    return table
 
 
-def load_from_images(params):
-    experiments = None
-    if params.input.images.directory:
+def create_experiments_from_MTZ(unmerged_mtz, params, intensity_labels=None):
+    if not intensity_labels:
+        intensity_labels = ["I", "SIGI"]
 
-        experiments = ExperimentListFactory.from_filenames(
-            params.input.images.directory
+    miller_arrays = unmerged_mtz.as_miller_arrays(
+        merge_equivalents=False, anomalous=True
+    )
+    intensities = None
+    for array in miller_arrays:
+        if array.info().labels == intensity_labels:
+            intensities = array
+            continue
+    if not intensities:
+        raise ValueError(
+            f"Unable to extract intensities using labels: {intensity_labels}"
         )
-    elif params.input.images.template:
-        experiments = ExperimentListTemplateImporter(
-            params.input.images.template
-        ).experiments
-    elif params.input.images.image:
-        from dials.util.options import Importer, flatten_experiments
 
-        experiments = flatten_experiments(
-            Importer(
-                [params.input.images.image],
-                read_experiments=False,
-                read_reflections=False,
-                read_experiments_from_images=True,
-            ).experiments
+    unit_cell = intensities.unit_cell()
+    space_group = intensities.crystal_symmetry().space_group()
+    logger.info(f"Space group : {space_group.info()} \nUnit cell : {str(unit_cell)}")
+
+    scans = scan_info_from_batch_headers(unmerged_mtz)
+
+    # Get the wavelength for the Beam object
+    wavelengths = set()
+    for c in unmerged_mtz.crystals():
+        for d in c.datasets():
+            if d.n_columns() > 0:
+                wavelengths.add(d.wavelength())
+    if len(wavelengths) > 1:
+        raise ValueError(
+            f"""More than one wavelength found in the MTZ file: {",".join(wavelengths)},
+only single wavelength MTZ files supported."""
+        )  ## FIXME allow multi-wave?
+    wavelength = list(wavelengths)[0]
+
+    # Get detector info from the headers
+    panel_size, panel_distance = detector_info_from_batch_headers(unmerged_mtz)
+
+    # Note, for the detector, any refinement of the origin and axes are lost -
+    # this information is not output to the MTZ files. But this shouldn't matter
+    # for post-integration work.
+
+    experiments = ExperimentList()
+    Bmat = mosflm_B_matrix(unit_cell)
+    for i, scan in enumerate(scans.values()):
+        Umat = matrix.sqr(scan["umat_start"])
+        ### FIXME do we need to transform by the fixed rotation?
+        crystal = Crystal(A=Umat.transpose() * Bmat, space_group=space_group)
+
+        # we weren't given the images, so have to try and reconstruct as much
+        # as possible from the mtz data.
+        n_images = scan["end_image"] - (scan["start_image"] - 1)
+        if params.input.oscillation_step:
+            assert params.input.oscillation_step > 0
+            logger.info(
+                "Using user-specified oscillation step for constructing the scan"
+            )
+            dxscan = Scan(
+                image_range=[scan["start_image"], scan["end_image"]],
+                oscillation=[0.0, params.input.oscillation_step],
+            )
+        else:
+            dxscan = Scan(
+                image_range=[scan["start_image"], scan["end_image"]],
+                oscillation=[
+                    0.0,
+                    (scan["angle_end"] - scan["angle_begin"]) / n_images,
+                ],
+            )
+
+        beam = Beam(direction=tuple(-1.0 * scan["s0n"]), wavelength=wavelength)
+        goniometer = Goniometer(
+            (1.0, 0.0, 0.0)
+        )  ###FIXME - we are only outputting one gonio axis in export_mtz
+        d = Detector()
+        p = d.add_panel()
+        p.set_image_size(panel_size)
+        p.set_pixel_size(
+            (params.input.detector.pixel_size, params.input.detector.pixel_size)
         )
+        experiments.append(
+            Experiment(
+                beam=beam,
+                scan=dxscan,
+                goniometer=goniometer,  ##FIXME
+                crystal=crystal,  ## FIXME - consistent UB settings
+                detector=d,  ##FIXME - do we need to allow setting more detector parameters?
+            )
+        )
+
+    return experiments
+
+
+def update_experiments_using_MTZ(experiments, unmerged_mtz, intensity_labels=None):
+    """Add crystals to the experiments using data in the MTZ batch headers."""
+    if not intensity_labels:
+        intensity_labels = ["I", "SIGI"]
+
+    miller_arrays = unmerged_mtz.as_miller_arrays(
+        merge_equivalents=False, anomalous=True
+    )
+    intensities = None
+    for array in miller_arrays:
+        if array.info().labels == intensity_labels:
+            intensities = array
+            continue
+    if not intensities:
+        raise ValueError(
+            f"Unable to extract intensities using labels: {intensity_labels}"
+        )
+
+    unit_cell = intensities.unit_cell()
+    space_group = intensities.crystal_symmetry().space_group()
+    logger.info(f"Space group : {space_group.info()} \nUnit cell : {str(unit_cell)}")
+
+    scans = scan_info_from_batch_headers(unmerged_mtz)
+
+    # check that the number of experiments generated from dxtbx matches the
+    #  number of scans intepreted from the MTZ
+    if len(experiments) != len(scans.values()):
+        raise ValueError(
+            f"""Mismatch between number of experiments intepreted from image files ({len(experiments)})
+and number of scans intepreted from MTZ file ({len(scans.values())}"""
+        )
+
+    Bmat = mosflm_B_matrix(unit_cell)
+    for i, scan in enumerate(scans.values()):
+        Umat = matrix.sqr(scan["umat_start"])
+        # In dials, we apply F to U before exporting to MTZ, so if we have
+        # this we want to use it to get back to the dials UB
+        ### FIXME what about mtz from other programs?
+        F = matrix.sqr(experiments[0].goniometer.get_fixed_rotation())
+        crystal = Crystal(
+            A=(F.inverse() * Umat.transpose() * Bmat), space_group=space_group
+        )
+        experiments[i].crystal = crystal
+
     return experiments
 
 
@@ -451,13 +532,24 @@ def run(args=None, phil=phil_scope):
     else:
         raise ValueError("Only one input MTZ file expected")
 
-    try:
-        experiments = load_from_images(params)
-    except ValueError as e:
-        sys.exit(str(e))
+    unmerged_mtz = mtz.object(file_name=mtzfile)
+
+    ### Ideally, the image template can be provided. This allows reading of
+    ### the (unrefined) detector models, goniometer, beam and scan. Then, we
+    ### only need to fill in the crystal model from the MTZ data. This will
+    ### invariably lose some of the scan varying models from refinement, however
+    ### these have minimal direct effect on the data reduction process.
+    if params.input.images.template:
+        try:
+            experiments = ExperimentList.from_templates([params.input.images.template])
+            experiments = update_experiments_using_MTZ(experiments, unmerged_mtz)
+        except ValueError as e:
+            sys.exit(str(e))
+    else:
+        experiments = create_experiments_from_MTZ(unmerged_mtz, params)
 
     try:
-        table, expts = read_mtzfile(mtzfile, params, experiments=experiments)
+        table = create_reflection_table_from_mtz(unmerged_mtz, params, experiments)
     except ValueError as e:
         sys.exit(str(e))
 
@@ -465,7 +557,7 @@ def run(args=None, phil=phil_scope):
     table.as_file(params.output.reflections)
 
     logger.info(f"Saving extracted metadata to {params.output.experiments}")
-    expts.as_file(params.output.experiments)
+    experiments.as_file(params.output.experiments)
 
 
 if __name__ == "__main__":
