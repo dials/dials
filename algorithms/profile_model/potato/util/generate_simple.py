@@ -180,6 +180,7 @@ def generate_from_reflections(s0, sigma, reflections):
 
     """
     s2_list = []
+    h_list = []
     ctot_list = []
     xbar_list = []
     Sobs_list = []
@@ -245,11 +246,12 @@ def generate_from_reflections(s0, sigma, reflections):
         Sobs /= ctot
 
         s2_list.append(s2)
+        h_list.append(reflections["miller_index"][k])
         ctot_list.append(ctot)
         xbar_list.append(xbar)
         Sobs_list.append(list(Sobs))
 
-    return s2_list, ctot_list, xbar_list, Sobs_list
+    return s2_list, h_list, ctot_list, xbar_list, Sobs_list
 
 
 def generate_from_reflections2(A, s0, sigma, reflections):
@@ -341,6 +343,7 @@ def generate_from_reflections_binned(s0, sigma, reflections):
 
     """
     s2_list = []
+    h_list = []
     ctot_list = []
     xbar_list = []
     Sobs_list = []
@@ -350,7 +353,7 @@ def generate_from_reflections_binned(s0, sigma, reflections):
 
         # Compute position in reciprocal space of the centre of the rlp
         s2 = matrix.col(reflections["s2"][k])
-
+        h = matrix.col(reflections["miller_index"][k])
         # Rotate the covariance matrix
         R = compute_change_of_basis_operation(s0, s2)
         sigmap = R * sigma * R.transpose()
@@ -420,11 +423,12 @@ def generate_from_reflections_binned(s0, sigma, reflections):
         Sobs /= ctot
 
         s2_list.append(s2)
+        h_list.append(h)
         ctot_list.append(ctot)
         xbar_list.append(xbar)
         Sobs_list.append(list(Sobs))
 
-    return s2_list, ctot_list, xbar_list, Sobs_list
+    return s2_list, h_list, ctot_list, xbar_list, Sobs_list
 
 
 def generate_with_wavelength_spread(s0, sigma_spot, sigma_wavelength, N=100):

@@ -1,5 +1,9 @@
 from __future__ import division
 
+from typing import Optional
+
+import numpy as np
+
 from scitbx import matrix
 
 from dials.algorithms.refinement.parameterisation.crystal_parameters import (
@@ -9,9 +13,35 @@ from dials.algorithms.refinement.parameterisation.crystal_parameters import (
 from dials.array_family import flex
 
 
-class Simple1MosaicityParameterisation(object):
+class BaseParameterisation(object):
+    def __init__(self, params: Optional[np.array] = None) -> None:
+        """
+        Initialise with the parameters
+
+        """
+        if params is not None:
+            assert len(params) == self.num_parameters()
+            self.params = params
+        else:
+            self.params = np.array([0.0] * self.num_parameters(), dtype=np.float)
+
+    @property
+    def parameters(self):
+        """
+        Return the parameters
+
+        """
+        return self.params
+
+    @parameters.setter
+    def parameters(self, params: np.array) -> None:
+        assert len(params) == self.num_parameters()
+        self.params = params
+
+
+class Simple1MosaicityParameterisation(BaseParameterisation):
     """
-    A simple mosaicity parameterisation that uses 6 parameters to describe a
+    A simple mosaicity parameterisation that uses 1 parameter to describe a
     multivariate normal reciprocal lattice profile. Sigma is enforced as positive
     definite by parameterising using the cholesky decomposition.
 
@@ -23,45 +53,21 @@ class Simple1MosaicityParameterisation(object):
 
     """
 
-    def __init__(self, params=None):
-        """
-        Initialise with the parameters
-
-        """
-        if params is not None:
-            assert len(params) == self.num_parameters()
-            self.params = params
-        else:
-            self.params = flex.double(self.num_parameters(), 0)
-
-    def is_angular(self):
+    @staticmethod
+    def is_angular():
         """
         Is angular
 
         """
         return False
 
-    def num_parameters(self):
+    @staticmethod
+    def num_parameters():
         """
         Get the number of parameters
 
         """
         return 1
-
-    def set_parameters(self, params):
-        """
-        Set the parameters
-
-        """
-        assert len(params) == self.num_parameters()
-        self.params = params
-
-    def parameters(self):
-        """
-        Return the parameters
-
-        """
-        return self.params
 
     def sigma(self):
         """
@@ -78,14 +84,14 @@ class Simple1MosaicityParameterisation(object):
         Compute the first derivatives of Sigma w.r.t the parameters
 
         """
-        (b1,) = self.params
+        b1 = self.params[0]
 
         dSdb1 = (2 * b1, 0, 0, 0, 2 * b1, 0, 0, 0, 2 * b1)
 
         return flex.mat3_double([dSdb1])
 
 
-class Simple6MosaicityParameterisation(object):
+class Simple6MosaicityParameterisation(BaseParameterisation):
     """
     A simple mosaicity parameterisation that uses 6 parameters to describe a
     multivariate normal reciprocal lattice profile. Sigma is enforced as positive
@@ -99,45 +105,21 @@ class Simple6MosaicityParameterisation(object):
 
     """
 
-    def __init__(self, params=None):
-        """
-        Initialise with the parameters
-
-        """
-        if params is not None:
-            assert len(params) == self.num_parameters()
-            self.params = params
-        else:
-            self.params = flex.double(self.num_parameters(), 0)
-
-    def is_angular(self):
+    @staticmethod
+    def is_angular():
         """
         Is angular
 
         """
         return False
 
-    def num_parameters(self):
+    @staticmethod
+    def num_parameters():
         """
         Get the number of parameters
 
         """
         return 6
-
-    def set_parameters(self, params):
-        """
-        Set the parameters
-
-        """
-        assert len(params) == self.num_parameters()
-        self.params = params
-
-    def parameters(self):
-        """
-        Return the parameters
-
-        """
-        return self.params
 
     def sigma(self):
         """
@@ -276,7 +258,7 @@ class Simple6MosaicityParameterisation(object):
         return d2
 
 
-class WavelengthSpreadParameterisation(object):
+class WavelengthSpreadParameterisation(BaseParameterisation):
     """
     A simple mosaicity parameterisation that uses 1 parameters to describe a
     multivariate normal wavelength spread. Sigma is enforced as positive
@@ -290,38 +272,13 @@ class WavelengthSpreadParameterisation(object):
 
     """
 
-    def __init__(self, params=None):
-        """
-        Initialise with the parameters
-
-        """
-        if params is not None:
-            assert len(params) == self.num_parameters()
-            self.params = params
-        else:
-            self.params = flex.double(self.num_parameters(), 0)
-
-    def num_parameters(self):
+    @staticmethod
+    def num_parameters():
         """
         Get the number of parameters
 
         """
         return 1
-
-    def set_parameters(self, params):
-        """
-        Set the parameters
-
-        """
-        assert len(params) == self.num_parameters()
-        self.params = params
-
-    def parameters(self):
-        """
-        Return the parameters
-
-        """
-        return self.params
 
     def sigma(self):
         """
@@ -338,7 +295,7 @@ class WavelengthSpreadParameterisation(object):
         return flex.double([2 * self.params[0]])
 
 
-class Angular2MosaicityParameterisation(object):
+class Angular2MosaicityParameterisation(BaseParameterisation):
     """
     A simple mosaicity parameterisation that uses 2 parameters to describe a
     multivariate normal angular mosaic spread. Sigma is enforced as positive
@@ -349,41 +306,20 @@ class Angular2MosaicityParameterisation(object):
     S = W*W^T
     """
 
-    def __init__(self, params=None):
-        """
-        Initialise with the parameters
-        """
-        if params is not None:
-            assert len(params) == self.num_parameters()
-            self.params = params
-        else:
-            self.params = flex.double(self.num_parameters(), 0)
-
-    def is_angular(self):
+    @staticmethod
+    def is_angular():
         """
         Is angular
 
         """
         return True
 
-    def num_parameters(self):
+    @staticmethod
+    def num_parameters():
         """
         Get the number of parameters
         """
         return 2
-
-    def set_parameters(self, params):
-        """
-        Set the parameters
-        """
-        assert len(params) == self.num_parameters()
-        self.params = params
-
-    def parameters(self):
-        """
-        Return the parameters
-        """
-        return self.params
 
     def sigma(self):
         """
@@ -407,7 +343,7 @@ class Angular2MosaicityParameterisation(object):
         return flex.mat3_double([d1, d2])
 
 
-class Angular4MosaicityParameterisation(object):
+class Angular4MosaicityParameterisation(BaseParameterisation):
     """
     A simple mosaicity parameterisation that uses 4 parameters to describe a
     multivariate normal angular mosaic spread. Sigma is enforced as positive
@@ -418,41 +354,20 @@ class Angular4MosaicityParameterisation(object):
     S = W*W^T
     """
 
-    def __init__(self, params=None):
-        """
-        Initialise with the parameters
-        """
-        if params is not None:
-            assert len(params) == self.num_parameters()
-            self.params = params
-        else:
-            self.params = flex.double(self.num_parameters(), 0)
-
-    def is_angular(self):
+    @staticmethod
+    def is_angular():
         """
         Is angular
 
         """
         return True
 
-    def num_parameters(self):
+    @staticmethod
+    def num_parameters():
         """
         Get the number of parameters
         """
         return 4
-
-    def set_parameters(self, params):
-        """
-        Set the parameters
-        """
-        assert len(params) == self.num_parameters()
-        self.params = params
-
-    def parameters(self):
-        """
-        Return the parameters
-        """
-        return self.params
 
     def sigma(self):
         """
@@ -631,7 +546,7 @@ class ModelState(object):
         Get the M parameters
 
         """
-        return self.M_parameterisation.parameters()
+        return flex.double(self.M_parameterisation.parameters)
 
     def get_L_params(self):
         """
@@ -639,7 +554,7 @@ class ModelState(object):
 
         """
         if self.L_parameterisation is not None:
-            return self.L_parameterisation.parameters()
+            return flex.double(self.L_parameterisation.parameters)
         return []
 
     def set_U_params(self, params):
@@ -661,7 +576,7 @@ class ModelState(object):
         Set the M parameters
 
         """
-        return self.M_parameterisation.set_parameters(params)
+        self.M_parameterisation.parameters = params
 
     def set_L_params(self, params):
         """
@@ -669,7 +584,7 @@ class ModelState(object):
 
         """
         if self.L_parameterisation is not None:
-            return self.L_parameterisation.set_parameters(params)
+            self.L_parameterisation.parameters = params
 
     def num_U_params(self):
         """

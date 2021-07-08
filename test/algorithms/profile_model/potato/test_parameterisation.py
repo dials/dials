@@ -1,10 +1,10 @@
 from __future__ import division, print_function
 
-import os
 from collections import namedtuple
 from os.path import join
 from random import randint, uniform
 
+import numpy as np
 import pytest
 
 from dxtbx.model.experiment_list import ExperimentListFactory
@@ -28,58 +28,58 @@ from dials.array_family import flex
 
 def test_Simple1MosaicityParameterisation():
 
-    p = Simple1MosaicityParameterisation(params=(1e-3,))
+    p = Simple1MosaicityParameterisation(params=np.array([1e-3]))
 
     assert p.is_angular() is False
     assert p.num_parameters() == 1
-    assert p.parameters() == (1e-3,)
-    p.set_parameters((2e-3,))
-    assert p.parameters() == (2e-3,)
-    assert p.sigma()[0] == pytest.approx(p.parameters()[0] ** 2)
+    assert p.parameters == (1e-3,)
+    p.parameters = np.array([2e-3])
+    assert p.parameters == (2e-3,)
+    assert p.sigma()[0] == pytest.approx(p.parameters[0] ** 2)
     assert p.sigma()[1] == 0
     assert p.sigma()[2] == 0
     assert p.sigma()[3] == 0
-    assert p.sigma()[4] == pytest.approx(p.parameters()[0] ** 2)
+    assert p.sigma()[4] == pytest.approx(p.parameters[0] ** 2)
     assert p.sigma()[5] == 0
     assert p.sigma()[6] == 0
     assert p.sigma()[7] == 0
-    assert p.sigma()[8] == pytest.approx(p.parameters()[0] ** 2)
+    assert p.sigma()[8] == pytest.approx(p.parameters[0] ** 2)
     d = p.first_derivatives()
     assert len(d) == 1
-    assert d[0][0] == pytest.approx(2 * p.parameters()[0])
+    assert d[0][0] == pytest.approx(2 * p.parameters[0])
     assert d[0][1] == 0
     assert d[0][2] == 0
     assert d[0][3] == 0
-    assert d[0][4] == pytest.approx(2 * p.parameters()[0])
+    assert d[0][4] == pytest.approx(2 * p.parameters[0])
     assert d[0][5] == 0
     assert d[0][6] == 0
     assert d[0][7] == 0
-    assert d[0][8] == pytest.approx(2 * p.parameters()[0])
+    assert d[0][8] == pytest.approx(2 * p.parameters[0])
 
 
 def test_Simple6MosaicityParameterisation():
 
-    params = (1e-3, 2e-3, 3e-3, 4e-3, 5e-3, 6e-3)
+    params = np.array([1e-3, 2e-3, 3e-3, 4e-3, 5e-3, 6e-3])
 
     p = Simple6MosaicityParameterisation(params=params)
 
     assert p.is_angular() is False
     assert p.num_parameters() == 6
-    assert p.parameters()[0] == pytest.approx(params[0])
-    assert p.parameters()[1] == pytest.approx(params[1])
-    assert p.parameters()[2] == pytest.approx(params[2])
-    assert p.parameters()[3] == pytest.approx(params[3])
-    assert p.parameters()[4] == pytest.approx(params[4])
-    assert p.parameters()[5] == pytest.approx(params[5])
+    assert p.parameters[0] == pytest.approx(params[0])
+    assert p.parameters[1] == pytest.approx(params[1])
+    assert p.parameters[2] == pytest.approx(params[2])
+    assert p.parameters[3] == pytest.approx(params[3])
+    assert p.parameters[4] == pytest.approx(params[4])
+    assert p.parameters[5] == pytest.approx(params[5])
 
-    params = (2e-3, 3e-3, 4e-3, 5e-3, 6e-3, 7e-3)
-    p.set_parameters(params)
-    assert p.parameters()[0] == pytest.approx(params[0])
-    assert p.parameters()[1] == pytest.approx(params[1])
-    assert p.parameters()[2] == pytest.approx(params[2])
-    assert p.parameters()[3] == pytest.approx(params[3])
-    assert p.parameters()[4] == pytest.approx(params[4])
-    assert p.parameters()[5] == pytest.approx(params[5])
+    params = np.array([2e-3, 3e-3, 4e-3, 5e-3, 6e-3, 7e-3])
+    p.parameters = params
+    assert p.parameters[0] == pytest.approx(params[0])
+    assert p.parameters[1] == pytest.approx(params[1])
+    assert p.parameters[2] == pytest.approx(params[2])
+    assert p.parameters[3] == pytest.approx(params[3])
+    assert p.parameters[4] == pytest.approx(params[4])
+    assert p.parameters[5] == pytest.approx(params[5])
 
     b1, b2, b3, b4, b5, b6 = params
     assert p.sigma()[0] == pytest.approx(b1 ** 2)
@@ -110,32 +110,32 @@ def test_Simple6MosaicityParameterisation():
 
 def test_WavelengthSpreadParameterisation():
 
-    params = (1e-3,)
+    params = np.array([1e-3])
 
     p = WavelengthSpreadParameterisation(params=params)
     assert p.num_parameters() == 1
-    assert p.parameters()[0] == pytest.approx(params[0])
-    params = (2e-3,)
-    p.set_parameters(params)
-    assert p.parameters()[0] == pytest.approx(params[0])
+    assert p.parameters[0] == pytest.approx(params[0])
+    params = np.array([2e-3])
+    p.parameters = params
+    assert p.parameters[0] == pytest.approx(params[0])
     assert p.sigma() == pytest.approx(params[0] ** 2)
     assert p.first_derivatives()[0] == pytest.approx(2 * params[0])
 
 
 def test_Angular2MosaicityParameterisation():
-    params = (1e-3, 2e-3)
+    params = np.array([1e-3, 2e-3])
 
     p = Angular2MosaicityParameterisation(params=params)
 
     assert p.is_angular() is True
     assert p.num_parameters() == 2
-    assert p.parameters()[0] == pytest.approx(params[0])
-    assert p.parameters()[1] == pytest.approx(params[1])
+    assert p.parameters[0] == pytest.approx(params[0])
+    assert p.parameters[1] == pytest.approx(params[1])
 
-    params = (2e-3, 3e-3)
-    p.set_parameters(params)
-    assert p.parameters()[0] == pytest.approx(params[0])
-    assert p.parameters()[1] == pytest.approx(params[1])
+    params = np.array([2e-3, 3e-3])
+    p.parameters = params
+    assert p.parameters[0] == pytest.approx(params[0])
+    assert p.parameters[1] == pytest.approx(params[1])
 
     b1, b2 = params
     assert p.sigma()[0] == pytest.approx(b1 ** 2)
@@ -158,23 +158,23 @@ def test_Angular2MosaicityParameterisation():
 
 
 def test_Angular4MosaicityParameterisation():
-    params = (1e-3, 2e-3, 3e-3, 4e-3)
+    params = np.array([1e-3, 2e-3, 3e-3, 4e-3])
 
     p = Angular4MosaicityParameterisation(params=params)
 
     assert p.is_angular() is True
     assert p.num_parameters() == 4
-    assert p.parameters()[0] == pytest.approx(params[0])
-    assert p.parameters()[1] == pytest.approx(params[1])
-    assert p.parameters()[2] == pytest.approx(params[2])
-    assert p.parameters()[3] == pytest.approx(params[3])
+    assert p.parameters[0] == pytest.approx(params[0])
+    assert p.parameters[1] == pytest.approx(params[1])
+    assert p.parameters[2] == pytest.approx(params[2])
+    assert p.parameters[3] == pytest.approx(params[3])
 
-    params = (2e-3, 3e-3, 4e-3, 5e-3)
-    p.set_parameters(params)
-    assert p.parameters()[0] == pytest.approx(params[0])
-    assert p.parameters()[1] == pytest.approx(params[1])
-    assert p.parameters()[2] == pytest.approx(params[2])
-    assert p.parameters()[3] == pytest.approx(params[3])
+    params = np.array([2e-3, 3e-3, 4e-3, 5e-3])
+    p.parameters = params
+    assert p.parameters[0] == pytest.approx(params[0])
+    assert p.parameters[1] == pytest.approx(params[1])
+    assert p.parameters[2] == pytest.approx(params[2])
+    assert p.parameters[3] == pytest.approx(params[3])
 
     b1, b2, b3, b4 = params
     assert p.sigma()[0] == pytest.approx(b1 ** 2)
@@ -288,7 +288,7 @@ def check_model_state_with_fixed(
 def test_ModelState(dials_regression):
 
     experiments = ExperimentListFactory.from_json_file(
-        os.path.join(dials_regression, "potato_test_data", "experiments.json")
+        join(dials_regression, "potato_test_data", "experiments.json")
     )
     experiments[0].scan.set_oscillation((0, 0.01), deg=True)
 
@@ -397,7 +397,7 @@ def check_reflection_model_state_with_fixed(
 def test_ReflectionModelState(dials_regression):
 
     experiments = ExperimentListFactory.from_json_file(
-        os.path.join(dials_regression, "potato_test_data", "experiments.json")
+        join(dials_regression, "potato_test_data", "experiments.json")
     )
     experiments[0].scan.set_oscillation((0, 0.01), deg=True)
 
@@ -525,8 +525,8 @@ def test_ReflectionModelState_derivatives(testdata):
 
         U_params = models[1].get_param_vals()
         B_params = models[2].get_param_vals()
-        M_params = flex.double(models[0][: mosaicity_parameterisation.num_parameters()])
-        L_params = flex.double(models[3])
+        M_params = np.array(models[0][: mosaicity_parameterisation.num_parameters()])
+        L_params = np.array(models[3])
 
         state = ModelState(
             experiment,

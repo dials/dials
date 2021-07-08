@@ -1,5 +1,5 @@
-import os
 from math import sqrt
+from os.path import join
 
 import pytest
 
@@ -41,7 +41,7 @@ def simple6_profile_model():
 def simple1_model_state(dials_regression):
 
     experiments = ExperimentListFactory.from_json_file(
-        os.path.join(dials_regression, "potato_test_data", "experiments.json")
+        join(dials_regression, "potato_test_data", "experiments.json")
     )
     experiments[0].scan.set_oscillation((0, 0.01), deg=True)
 
@@ -54,7 +54,7 @@ def simple1_model_state(dials_regression):
 def simple6_model_state(dials_regression):
 
     experiments = ExperimentListFactory.from_json_file(
-        os.path.join(dials_regression, "potato_test_data", "experiments.json")
+        join(dials_regression, "potato_test_data", "experiments.json")
     )
     experiments[0].scan.set_oscillation((0, 0.01), deg=True)
 
@@ -100,11 +100,11 @@ def test_Simple1ProfileModel_update_model(simple1_profile_model, simple1_model_s
 
 
 def test_Simple1ProfileModel_predict_reflections(
-    simple1_profile_model, dials_regression
+    dials_regression, simple1_profile_model
 ):
 
     experiments = ExperimentListFactory.from_json_file(
-        os.path.join(dials_regression, "potato_test_data", "experiments.json")
+        join(dials_regression, "potato_test_data", "experiments.json")
     )
     experiments[0].scan.set_oscillation((0, 0.01), deg=True)
 
@@ -121,20 +121,21 @@ def test_Simple1ProfileModel_predict_reflections(
         experiments, miller_indices, probability=0.9973
     )
 
-    s2 = reflections["s2"]
+    # s2 = reflections["s2"]
     s0 = matrix.col(experiments[0].beam.get_s0())
     quantile = chisq_quantile(3, 0.9973)
     sigma_inv = matrix.sqr(simple1_profile_model.sigma()).inverse()
 
-    for s2 in map(matrix.col, reflections["s2"]):
-        x = s2.normalize() * s0.length() - s2
+    for s2 in reflections["s2"]:
+        s2_ = matrix.col(s2)
+        x = s2_.normalize() * s0.length() - s2_
         d = (x.transpose() * sigma_inv * x)[0]
         assert d < quantile
 
 
-def test_Simple1ProfileModel_compute_bbox(simple1_profile_model, dials_regression):
+def test_Simple1ProfileModel_compute_bbox(dials_regression, simple1_profile_model):
     experiments = ExperimentListFactory.from_json_file(
-        os.path.join(dials_regression, "potato_test_data", "experiments.json")
+        join(dials_regression, "potato_test_data", "experiments.json")
     )
     experiments[0].scan.set_oscillation((0, 0.01), deg=True)
 
@@ -154,9 +155,9 @@ def test_Simple1ProfileModel_compute_bbox(simple1_profile_model, dials_regressio
     simple1_profile_model.compute_bbox(experiments, reflections)
 
 
-def test_Simple1ProfileModel_compute_mask(simple1_profile_model, dials_regression):
+def test_Simple1ProfileModel_compute_mask(dials_regression, simple1_profile_model):
     experiments = ExperimentListFactory.from_json_file(
-        os.path.join(dials_regression, "potato_test_data", "experiments.json")
+        join(dials_regression, "potato_test_data", "experiments.json")
     )
     experiments[0].scan.set_oscillation((0, 0.01), deg=True)
 
@@ -207,10 +208,10 @@ def test_Simple6ProfileModel_update_model(simple6_profile_model, simple6_model_s
 
 
 def test_Simple6ProfileModel_predict_reflections(
-    simple6_profile_model, dials_regression
+    dials_regression, simple6_profile_model
 ):
     experiments = ExperimentListFactory.from_json_file(
-        os.path.join(dials_regression, "potato_test_data", "experiments.json")
+        join(dials_regression, "potato_test_data", "experiments.json")
     )
     experiments[0].scan.set_oscillation((0, 0.01), deg=True)
 
@@ -238,9 +239,9 @@ def test_Simple6ProfileModel_predict_reflections(
         assert d < quantile
 
 
-def test_Simple6ProfileModel_compute_bbox(simple6_profile_model, dials_regression):
+def test_Simple6ProfileModel_compute_bbox(dials_regression, simple6_profile_model):
     experiments = ExperimentListFactory.from_json_file(
-        os.path.join(dials_regression, "potato_test_data", "experiments.json")
+        join(dials_regression, "potato_test_data", "experiments.json")
     )
     experiments[0].scan.set_oscillation((0, 0.01), deg=True)
 
@@ -270,9 +271,9 @@ def test_Simple6ProfileModel_compute_bbox(simple6_profile_model, dials_regressio
     simple6_profile_model.compute_bbox(experiments, reflections)
 
 
-def test_Simple6ProfileModel_compute_mask(simple6_profile_model, dials_regression):
+def test_Simple6ProfileModel_compute_mask(dials_regression, simple6_profile_model):
     experiments = ExperimentListFactory.from_json_file(
-        os.path.join(dials_regression, "potato_test_data", "experiments.json")
+        join(dials_regression, "potato_test_data", "experiments.json")
     )
     experiments[0].scan.set_oscillation((0, 0.01), deg=True)
 

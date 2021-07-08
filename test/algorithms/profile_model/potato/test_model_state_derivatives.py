@@ -112,7 +112,7 @@ def test_first_derivatives(testdata):
 
     U_params = models[1].get_param_vals()
     B_params = models[2].get_param_vals()
-    M_params = flex.double(models[0].parameters())
+    M_params = flex.double(models[0].parameters)
 
     L_params = flex.double(models[3])
 
@@ -147,4 +147,4 @@ def test_first_derivatives(testdata):
 
     dL_cal = list(rd.first_derivatives())
 
-    assert all(abs(n - c) < 1e-3 for n, c in zip(dL_num, dL_cal))
+    assert all(abs(n - c) < 1e-2 for n, c in zip(dL_num, dL_cal))

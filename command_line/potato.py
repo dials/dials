@@ -140,7 +140,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
 
     ## FIXME - experiment identifiers approach wont work if input strong.refl and refined.expt
     # for now - check image path and update identifiers to that of refined.expt?
-    if len(set(reflections[0]["id"])) > 1:
+    if len(set(reflections[0]["id"]).difference({-1})) > 1:
         logger.info("Attempting to split multi-still reflection table")
         reflections = reflections[0].split_by_experiment_id()
         if not (len(reflections) == len(experiments)):

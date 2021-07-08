@@ -1,7 +1,7 @@
 from __future__ import division, print_function
 
-import os
 from math import log
+from os.path import join
 
 import numpy.random
 from numpy.random import choice as sample
@@ -13,6 +13,7 @@ from dials.algorithms.profile_model.potato.model import (
     compute_change_of_basis_operation,
 )
 from dials.algorithms.profile_model.potato.parameterisation import (
+    ModelState,
     Simple6MosaicityParameterisation,
 )
 from dials.algorithms.profile_model.potato.refiner import Refiner as ProfileRefiner
@@ -127,7 +128,7 @@ def test_ideal(dials_regression):
     # experiments = ExperimentListFactory.from_json_file("experiments.json")
     # was being loaded locally, assumed to be file moved into dials_regression
     experiments = ExperimentListFactory.from_json_file(
-        os.path.join(dials_regression, "potato_test_data", "experiments.json")
+        join(dials_regression, "potato_test_data", "experiments.json")
     )
     experiments[0].scan.set_oscillation((0, 1.0), deg=True)
     experiments[0].beam.set_s0((0, 0, -1))
@@ -142,7 +143,7 @@ def test_ideal(dials_regression):
 
     reflections = generate_observations2(experiments, reflections, sigma)
 
-    s2_list, ctot_list, xbar_list, Sobs_list = generate_from_reflections(
+    s2_list, h_list, ctot_list, xbar_list, Sobs_list = generate_from_reflections(
         s0, sigma, reflections
     )
 
@@ -152,6 +153,7 @@ def test_ideal(dials_regression):
         return [d[i] for i in index]
 
     s2_list = select_sample(s2_list, index)
+    h_list = select_sample(h_list, index)
     ctot_list = select_sample(ctot_list, index)
     xbar_list = select_sample(xbar_list, index)
     Sobs_list = select_sample(Sobs_list, index)
@@ -161,12 +163,13 @@ def test_ideal(dials_regression):
     # values = flex.double((sqrt(1.1e-6), 0, sqrt(2.1e-6), 0, 0, sqrt(3.1e-6)))
     # offset = flex.double([sqrt(1e-7) for v in values])
 
-    parameterisation = Simple6MosaicityParameterisation((1, 0, 1, 0, 0, 1))
+    parameterisation = Simple6MosaicityParameterisation(flex.double([1, 0, 1, 0, 0, 1]))
     Sobs_list = flex.double(Sobs_list)
-    data = ProfileRefinerData(s0, s2_list, ctot_list, xbar_list, Sobs_list)
-    refiner = ProfileRefiner(parameterisation, data)
+    data = ProfileRefinerData(s0, s2_list, h_list, ctot_list, xbar_list, Sobs_list)
+    state = ModelState(experiments[0], parameterisation)
+    refiner = ProfileRefiner(state, data)
     refiner.refine()
-    params = refiner.parameters
+    params = refiner.state.M_parameterisation.parameters
     # optimizer = SimpleSimplex(
     #   values,
     #   offset,
@@ -213,7 +216,7 @@ def test_binned(dials_regression):
     # experiments = ExperimentListFactory.from_json_file("experiments.json")
     # was being loaded locally, assumed to be file moved into dials_regression
     experiments = ExperimentListFactory.from_json_file(
-        os.path.join(dials_regression, "potato_test_data", "experiments.json")
+        join(dials_regression, "potato_test_data", "experiments.json")
     )
     experiments[0].scan.set_oscillation((0, 1.0), deg=True)
     experiments[0].beam.set_s0((0, 0, -1))
@@ -228,7 +231,7 @@ def test_binned(dials_regression):
 
     reflections = generate_observations2(experiments, reflections, sigma)
 
-    s2_list, ctot_list, xbar_list, Sobs_list = generate_from_reflections_binned(
+    s2_list, hlist, ctot_list, xbar_list, Sobs_list = generate_from_reflections_binned(
         s0, sigma, reflections
     )
 
@@ -238,6 +241,7 @@ def test_binned(dials_regression):
         return [d[i] for i in index]
 
     s2_list = select_sample(s2_list, index)
+    hlist = select_sample(hlist, index)
     ctot_list = select_sample(ctot_list, index)
     xbar_list = select_sample(xbar_list, index)
     Sobs_list = select_sample(Sobs_list, index)
@@ -247,12 +251,15 @@ def test_binned(dials_regression):
     # values = flex.double((sqrt(1e-6), 0, sqrt(2e-6), 0, 0, sqrt(3e-6)))
     # offset = flex.double([sqrt(1e-7) for v in values])
 
-    parameterisation = Simple6MosaicityParameterisation((1, 0, 1, 0, 0, 1))
+    parameterisation = Simple6MosaicityParameterisation(flex.double([1, 0, 1, 0, 0, 1]))
     Sobs_list = flex.double(Sobs_list)
-    data = ProfileRefinerData(s0, s2_list, ctot_list, xbar_list, Sobs_list)
-    refiner = ProfileRefiner(parameterisation, data)
+    data = ProfileRefinerData(s0, s2_list, hlist, ctot_list, xbar_list, Sobs_list)
+    state = ModelState(
+        experiments[0], parameterisation, fix_unit_cell=True, fix_orientation=True
+    )
+    refiner = ProfileRefiner(state, data)
     refiner.refine()
-    params = refiner.parameters
+    params = refiner.state.M_parameterisation.parameters
     # optimizer = SimpleSimplex(
     #   values,
     #   offset,

@@ -1,6 +1,6 @@
 from __future__ import division, print_function
 
-import os
+from os.path import join
 
 import numpy.random
 from numpy.random import choice as sample
@@ -47,7 +47,7 @@ def test_ideal(dials_regression):
     # experiments = ExperimentListFactory.from_json_file("experiments.json")
     # was being loaded locally, assumed to be file moved into dials_regression
     experiments = ExperimentListFactory.from_json_file(
-        os.path.join(dials_regression, "potato_test_data", "experiments.json")
+        join(dials_regression, "potato_test_data", "experiments.json")
     )
     experiments[0].scan.set_oscillation((0, 1.0), deg=True)
     experiments[0].beam.set_s0((0, 0, -1))
@@ -82,14 +82,14 @@ def test_ideal(dials_regression):
     # values = flex.double((sqrt(1.1e-6), 0, sqrt(2.1e-6), 0, 0, sqrt(3.1e-6)))
     # offset = flex.double([sqrt(1e-7) for v in values])
 
-    # parameterisation = Simple6MosaicityParameterisation((1,0,1,0,0,1))
+    parameterisation = Simple6MosaicityParameterisation(flex.double([1, 0, 1, 0, 0, 1]))
     state = ModelState(
         experiments[0],
+        parameterisation,
         fix_orientation=False,
         fix_unit_cell=False,
-        fix_rlp_mosaicity=False,
+        fix_mosaic_spread=False,
         fix_wavelength_spread=True,
-        fix_angular_mosaicity=True,
     )
     state.set_M_params(flex.double((1, 0, 1, 0, 0, 1)))
     # state.set_L_params(flex.double((1,)))
@@ -134,7 +134,7 @@ def test_binned(dials_regression):
     # experiments = ExperimentListFactory.from_json_file("experiments.json")
     # was being loaded locally, assumed to be file moved into dials_regression
     experiments = ExperimentListFactory.from_json_file(
-        os.path.join(dials_regression, "potato_test_data", "experiments.json")
+        join(dials_regression, "potato_test_data", "experiments.json")
     )
     experiments[0].scan.set_oscillation((0, 1.0), deg=True)
     experiments[0].beam.set_s0((0, 0, -1))
@@ -149,7 +149,7 @@ def test_binned(dials_regression):
 
     reflections = generate_observations2(experiments, reflections, sigma)
 
-    s2_list, ctot_list, xbar_list, Sobs_list = generate_from_reflections_binned(
+    s2_list, hlist, ctot_list, xbar_list, Sobs_list = generate_from_reflections_binned(
         s0, sigma, reflections
     )
 
@@ -159,6 +159,7 @@ def test_binned(dials_regression):
         return [d[i] for i in index]
 
     s2_list = select_sample(s2_list, index)
+    hlist = select_sample(hlist, index)
     ctot_list = select_sample(ctot_list, index)
     xbar_list = select_sample(xbar_list, index)
     Sobs_list = select_sample(Sobs_list, index)
@@ -168,10 +169,18 @@ def test_binned(dials_regression):
     # values = flex.double((sqrt(1e-6), 0, sqrt(2e-6), 0, 0, sqrt(3e-6)))
     # offset = flex.double([sqrt(1e-7) for v in values])
 
-    parameterisation = Simple6MosaicityParameterisation((1, 0, 1, 0, 0, 1))
+    parameterisation = Simple6MosaicityParameterisation(flex.double([1, 0, 1, 0, 0, 1]))
+    state = ModelState(
+        experiments[0],
+        parameterisation,
+        fix_orientation=False,
+        fix_unit_cell=False,
+        fix_mosaic_spread=False,
+        fix_wavelength_spread=True,
+    )
     Sobs_list = flex.double(Sobs_list)
-    data = RefinerData(s0, s2_list, ctot_list, xbar_list, Sobs_list)
-    refiner = Refiner(parameterisation, data)
+    data = RefinerData(s0, s2_list, hlist, ctot_list, xbar_list, Sobs_list)
+    refiner = Refiner(state, data)
     refiner.refine()
     params = refiner.parameters
 

@@ -1,39 +1,39 @@
-from __future__ import division
-from __future__ import print_function
+from __future__ import division, print_function
+
 from collections import namedtuple
-from os.path import join
 from math import exp
-from random import uniform, randint
+from os.path import join
+from random import randint, uniform
+
 import pytest
+
 from dxtbx.model.experiment_list import ExperimentListFactory
 from scitbx import matrix
-from dials.array_family import flex
-from dials.algorithms.refinement.parameterisation.crystal_parameters import (
-    CrystalUnitCellParameterisation,
-    CrystalOrientationParameterisation,
-)
-from dials.algorithms.profile_model.potato.parameterisation import (
-    Simple1MosaicityParameterisation,
-    Simple6MosaicityParameterisation,
-    # Angular2MosaicityParameterisation,
-    # Angular4MosaicityParameterisation,
-    # WavelengthSpreadParameterisation,
-    ModelState,
-    ReflectionModelState,
-)
+
 from dials.algorithms.profile_model.potato.model import (
-    compute_change_of_basis_operation,
     Simple1ProfileModel,
     Simple6ProfileModel,
+    compute_change_of_basis_operation,
+)
+from dials.algorithms.profile_model.potato.parameterisation import (  # Angular2MosaicityParameterisation,; Angular4MosaicityParameterisation,; WavelengthSpreadParameterisation,
+    ModelState,
+    ReflectionModelState,
+    Simple1MosaicityParameterisation,
+    Simple6MosaicityParameterisation,
 )
 from dials.algorithms.profile_model.potato.refiner import (
     ConditionalDistribution,
-    rotate_vec3_double,
-    rotate_mat3_double,
-    ReflectionLikelihood,
-    RefinerData,
     Refiner,
+    RefinerData,
+    ReflectionLikelihood,
+    rotate_mat3_double,
+    rotate_vec3_double,
 )
+from dials.algorithms.refinement.parameterisation.crystal_parameters import (
+    CrystalOrientationParameterisation,
+    CrystalUnitCellParameterisation,
+)
+from dials.array_family import flex
 
 
 def first_derivative(func, x, h):

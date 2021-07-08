@@ -228,7 +228,7 @@ def test_ml_target_class():
         def target(self, params):
 
             parameterisation = Simple6MosaicityParameterisation(params)
-
+            # model, s0, sp_list, h_list, ctot_list, mobs_list, sobs_list
             t = MaximumLikelihoodTarget(
                 parameterisation,
                 self.s0,
