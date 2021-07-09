@@ -546,7 +546,7 @@ def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
     assert tmpdir.join("scaled.expt").check()
     assert tmpdir.join("analysis_results.json").check()
     result = get_merging_stats(tmpdir.join("unmerged.mtz").strpath)
-    assert result.overall.r_pim < 0.13  # 07/07/21 was 0.127,
+    assert result.overall.r_pim < 0.135  # 07/07/21 was 0.127,
     assert result.overall.cc_one_half > 0.94  # 07/07/21 was 0.952
     assert result.overall.n_obs > 20000  # 07/07/21 was 21543
 
