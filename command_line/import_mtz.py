@@ -1,3 +1,8 @@
+"""
+dials.import_mtz, a tool for creating DIALS working data formats (reflection
+tables and experiments) from an MTZ file.
+"""
+
 from __future__ import absolute_import, division, print_function
 
 import logging
@@ -45,6 +50,9 @@ phil_scope = parse(
               "angle to image number."
 
     labels {
+      intensity = "I,SIGI"
+        .type = str
+        .help = "column labels (Iname,SIGIname) for the intensity array"
       xpos = "XDET"
         .type = str
         .help = "column label for spot x-coordinate on the detector"
@@ -64,6 +72,9 @@ phil_scope = parse(
         template = None
             .type = str
             .help = "The image sequence template"
+        image_range = None
+            .type = ints(size=2)
+            .help = "First and last image in the template"
     }
 
     detector {
@@ -212,43 +223,54 @@ def create_reflection_table_from_mtz(
     xpos = None
     ypos = None
     phi = None
+    scale_used = None
     # optional columns?
     partiality = None
     bg = None
     bgsig = None
     lp = None
     qe = None
+    columns_found = []
     for array in miller_arrays:
-        if array.info().labels == [params.input.labels.xpos]:
+        labels = array.info().labels
+        columns_found.extend(labels)
+        if labels == [params.input.labels.xpos]:
             xpos = array
-        elif array.info().labels == [params.input.labels.ypos]:
+        elif labels == [params.input.labels.ypos]:
             ypos = array
-        elif array.info().labels == [params.input.labels.phi]:
+        elif labels == [params.input.labels.phi]:
             phi = array  # this is xyzcal.px
-        elif array.info().labels == [params.input.labels.partiality]:
+        elif labels == [params.input.labels.partiality]:
             partiality = array
             # want to transform from rotation angle to image number
-        elif array.info().labels == ["I", "SIGI"]:
+        elif labels == params.input.labels.intensity.split(","):
             intensities = array
-        elif array.info().labels == ["IPR", "SIGIPR"]:
+        elif labels == ["IPR", "SIGIPR"]:
             profile_intensities = array
-        elif array.info().labels == ["BATCH"]:
+        elif labels == ["BATCH"]:
             batches = array
-        elif array.info().labels == ["BG"]:
+        elif labels == ["BG"]:
             bg = array
-        elif array.info().labels == ["SIGBG"]:
+        elif labels == ["SIGBG"]:
             bgsig = array
-        elif array.info().labels == ["LP"]:
+        elif labels == ["LP"]:
             lp = array
-        elif array.info().labels == ["QE"]:
+        elif labels == ["QE"]:
             qe = array
+        elif labels == ["SCALEUSED"]:
+            scale_used = array
+    logger.info(f"Data arrays found in mtz file: {', '.join(columns_found)}")
     if not intensities:
-        raise KeyError("Intensities not found in mtz file, expected labels I, SIGI")
+        raise ValueError(
+            f"Intensities not found using labels {params.input.labels.intensity}"
+            + "\nIntensity column labels can be specified with labels.intensity='Iname,SIGIname'"
+        )
     if not batches:
-        raise KeyError("Batch values not found")
+        raise ValueError("Batch values not found")
     if not phi:
-        raise KeyError(
-            "Phi/Rot values not found. Column label can be specified with labels.phi="
+        raise ValueError(
+            f"""Phi/Rot values not found using labels {params.input.labels.phi}
+Phi/Rot column label can be specified with labels.phi='PHIname'"""
         )
     if batches.data().size() != intensities.data().size():
         raise ValueError("Batch and intensity array sizes do not match")
@@ -271,9 +293,32 @@ def create_reflection_table_from_mtz(
     # In mtz files, the intensities already have corrections applied. i.e
     # if we have IPR and LP, then intensity.prf.value = IPR/LP
 
+    # First, if the SCALEUSED column is there, indicates scaled data
+    # In that case, I,SIGI are scaled intensities
+    if scale_used:
+        logger.info(
+            """The intensity data with labels I,SIGI are interpeted as being
+scaled intensity data. Any further scaling correction will be made in
+addition to the existing correction (SCALEUSED)."""
+        )
+        # Assertion is that we want to use the scaled intensities.
+        # Set the scaled intensities as 'intensity.prf.value'
+        table["intensity.prf.value"] = intensities.data()
+        table["intensity.prf.variance"] = flex.pow2(intensities.sigmas())
+        table["scaledused"] = scale_used.data()
+        # now these have had corrections like lp applied already. So won't
+        # be wanting to apply these again, therefore don't set these columns.
+        table.set_flags(flex.bool(table.size(), True), table.flags.integrated_prf)
+
     # FIXME check these assumptions for aimless, xds, etc data
     # now see whether two or one sets of intensities were found
-    if profile_intensities:
+    elif profile_intensities and intensities:
+        logger.info(
+            f"""The intensity data with labels I,SIGI are interpeted as being
+summation integrated intensities.
+The data with labels IPR,SIGIPR are interpreted as being
+profile-fitted integrated intensities."""
+        )
         table["intensity.sum.value"] = intensities.data()
         table["intensity.sum.variance"] = flex.pow2(intensities.sigmas())
         table["intensity.prf.value"] = profile_intensities.data()
@@ -298,6 +343,10 @@ def create_reflection_table_from_mtz(
             table["intensity.sum.variance"] *= partiality.data() ** 2
 
     else:  # only one intensity set, assume profile intensities.
+        logger.info(
+            """The data with labels I,SIGI are interpreted as being
+profile-fitted integrated intensities."""
+        )
         table["intensity.prf.value"] = intensities.data()
         table["intensity.prf.variance"] = flex.pow2(intensities.sigmas())
         table.set_flags(flex.bool(table.size(), True), table.flags.integrated_prf)
@@ -345,11 +394,10 @@ def create_reflection_table_from_mtz(
         for i, expt in enumerate(experiments):
             if expt.scan.get_oscillation()[1] == 0:
                 raise ValueError(
-                    """
-    Unable to read scan oscillation step.
-    Please provide an input value for oscillation_step"""
+                    """Unable to read scan oscillation step.
+Please provide an input value for oscillation_step"""
                 )
-                sel = table["id"] == 0
+            sel = table["id"] == 0
             angles_i = angle.select(sel)
             z_i = angles_i / expt.scan.get_oscillation()[1]
             z.set_selected(sel.iselection(), z_i)
@@ -365,26 +413,26 @@ def create_reflection_table_from_mtz(
     return table
 
 
-def create_experiments_from_MTZ(unmerged_mtz, params, intensity_labels=None):
-    if not intensity_labels:
-        intensity_labels = ["I", "SIGI"]
+def create_experiments_from_MTZ(unmerged_mtz, params):
 
     miller_arrays = unmerged_mtz.as_miller_arrays(
         merge_equivalents=False, anomalous=True
     )
     intensities = None
     for array in miller_arrays:
-        if array.info().labels == intensity_labels:
+        if array.info().labels == params.input.labels.intensity.split(","):
             intensities = array
             continue
     if not intensities:
         raise ValueError(
-            f"Unable to extract intensities using labels: {intensity_labels}"
+            f"Unable to extract intensities using labels: {params.input.labels.intensity}"
         )
 
     unit_cell = intensities.unit_cell()
     space_group = intensities.crystal_symmetry().space_group()
-    logger.info(f"Space group : {space_group.info()} \nUnit cell : {str(unit_cell)}")
+    logger.info(
+        f"Space group : {space_group.info()} \nUnit cell parameters: {str(unit_cell)}"
+    )
 
     scans = scan_info_from_batch_headers(unmerged_mtz)
 
@@ -400,6 +448,16 @@ def create_experiments_from_MTZ(unmerged_mtz, params, intensity_labels=None):
 only single wavelength MTZ files supported."""
         )  ## FIXME allow multi-wave?
     wavelength = list(wavelengths)[0]
+    if wavelength == 0.0:
+        # try again
+        wavelengths = set()
+        for c in unmerged_mtz.crystals():
+            for d in c.datasets():
+                if d.wavelength() > 0.0:
+                    wavelengths.add(d.wavelength())
+        if len(wavelengths) != 1:
+            raise ValueError("Unable to find a single non-zero wavelength")
+        wavelength = list(wavelengths)[0]
 
     # Get detector info from the headers
     panel_size, panel_distance = detector_info_from_batch_headers(unmerged_mtz)
@@ -479,7 +537,9 @@ def update_experiments_using_MTZ(experiments, unmerged_mtz, intensity_labels=Non
 
     unit_cell = intensities.unit_cell()
     space_group = intensities.crystal_symmetry().space_group()
-    logger.info(f"Space group : {space_group.info()} \nUnit cell : {str(unit_cell)}")
+    logger.info(
+        f"Space group : {space_group.info()} \nUnit cell parameters: {str(unit_cell)}"
+    )
 
     scans = scan_info_from_batch_headers(unmerged_mtz)
 
@@ -490,6 +550,16 @@ def update_experiments_using_MTZ(experiments, unmerged_mtz, intensity_labels=Non
             f"""Mismatch between number of experiments intepreted from image files ({len(experiments)})
 and number of scans intepreted from MTZ file ({len(scans.values())}"""
         )
+    ## FIXME - what about large sweeps where there is no data at the edge of the
+    ## sweep, resulting in no data for those batches in the mtz?
+    for i, (expt, scan) in enumerate(zip(experiments, scans.values())):
+        if expt.scan.get_image_range() != (scan["start_image"], scan["end_image"]):
+            raise ValueError(
+                f"""
+Inconsistency between image range in experiments and mtz headers for sweep {i+1}.
+Scan image range from experiment: {expt.scan.get_image_range()}
+Scan image range from mtz headers: {(scan["start_image"], scan["end_image"])}"""
+            )
 
     Bmat = mosflm_B_matrix(unit_cell)
     for i, scan in enumerate(scans.values()):
@@ -525,14 +595,24 @@ def run(args=None, phil=phil_scope):
         args=args, return_unhandled=True, show_diff_phil=True
     )
 
-    log.config(logfile="dials.command_line.import_mtz")
+    log.config(logfile="dials.import_mtz.log")
 
     if len(unhandled) == 1:
         mtzfile = unhandled[0]
     else:
         raise ValueError("Only one input MTZ file expected")
 
+    logger.info(f"\nReading data from MTZ file: {mtzfile}\n")
     unmerged_mtz = mtz.object(file_name=mtzfile)
+
+    if len(params.input.labels.intensity.split(",")) != 2:
+        sys.exit(
+            str(
+                ValueError(
+                    "Intensity labels given must be two comma-separated values e.g 'I,SIGI' "
+                )
+            )
+        )
 
     ### Ideally, the image template can be provided. This allows reading of
     ### the (unrefined) detector models, goniometer, beam and scan. Then, we
@@ -541,8 +621,15 @@ def run(args=None, phil=phil_scope):
     ### these have minimal direct effect on the data reduction process.
     if params.input.images.template:
         try:
-            experiments = ExperimentList.from_templates([params.input.images.template])
-            experiments = update_experiments_using_MTZ(experiments, unmerged_mtz)
+            experiments = ExperimentList.from_templates(
+                [params.input.images.template],
+                image_range=params.input.images.image_range,
+            )
+            experiments = update_experiments_using_MTZ(
+                experiments,
+                unmerged_mtz,
+                intensity_labels=params.input.labels.intensity.split(","),
+            )
         except ValueError as e:
             sys.exit(str(e))
     else:

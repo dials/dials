@@ -105,6 +105,12 @@ class SingleDatasetIntensityCombiner:
                 "No profile intensities found, skipping profile/summation intensity combination."
             )
             return
+        elif "intensity.sum.value" not in scaler.reflection_table:
+            self.max_key = 0
+            logger.info(
+                "No summation intensities found, skipping profile/summation intensity combination."
+            )
+            return
         if use_Imid is not None:
             self.max_key = use_Imid
         else:
@@ -201,12 +207,10 @@ def combine_intensities(reflections, Imid):
     if "intensity.prf.value" in reflections:
         Ipr = reflections["intensity.prf.value"]
         Vpr = reflections["intensity.prf.variance"]
-    assert "intensity.sum.value" in reflections
-    assert "prescaling_correction" in reflections
-
+    if "intensity.sum.value" in reflections:
+        Isum = reflections["intensity.sum.value"]
+        Vsum = reflections["intensity.sum.variance"]
     conv = reflections["prescaling_correction"]
-    Isum = reflections["intensity.sum.value"]
-    Vsum = reflections["intensity.sum.variance"]
 
     not_prf = ~reflections.get_flags(reflections.flags.integrated_prf)
     not_sum = ~reflections.get_flags(reflections.flags.integrated_sum)
@@ -227,6 +231,17 @@ def combine_intensities(reflections, Imid):
             variance.set_selected(
                 not_sum.iselection(), (Vpr * conv * conv).select(not_sum)
             )
+    elif Imid == 0:
+        # i.e. prf is best, so use prf if exists, else sum
+        intensity = Ipr * conv
+        variance = Vpr * conv * conv
+        if "intensity.sum.value" in reflections:
+            intensity.set_selected(
+                not_prf.iselection(), (Isum * sum_conv).select(not_prf)
+            )
+            variance.set_selected(
+                not_prf.iselection(), (Vsum * sum_conv * sum_conv).select(not_prf)
+            )
     else:
         # first set as prf
         intensity = Ipr * conv
@@ -236,20 +251,15 @@ def combine_intensities(reflections, Imid):
         variance.set_selected(
             not_prf.iselection(), (Vsum * sum_conv * sum_conv).select(not_prf)
         )
-        if Imid == 0:  # done all we need to do.
-            pass
+        # calculate combined intensities, but only set for those where both prf and sum good
+        if "partiality" in reflections:
+            Int, Var = _calculate_combined_raw_intensities(
+                Ipr, Isum * inv_p, Vpr, Vsum * inv_p * inv_p, Imid
+            )
         else:
-            # calculate combined intensities, but only set for those where both prf and sum good
-            if "partiality" in reflections:
-                Int, Var = _calculate_combined_raw_intensities(
-                    Ipr, Isum * inv_p, Vpr, Vsum * inv_p * inv_p, Imid
-                )
-            else:
-                Int, Var = _calculate_combined_raw_intensities(
-                    Ipr, Isum, Vpr, Vsum, Imid
-                )
-            intensity.set_selected(both.iselection(), (Int * conv).select(both))
-            variance.set_selected(both.iselection(), (Var * conv * conv).select(both))
+            Int, Var = _calculate_combined_raw_intensities(Ipr, Isum, Vpr, Vsum, Imid)
+        intensity.set_selected(both.iselection(), (Int * conv).select(both))
+        variance.set_selected(both.iselection(), (Var * conv * conv).select(both))
 
     return intensity, variance
 
@@ -270,14 +280,32 @@ class MultiDatasetIntensityCombiner:
         # first copy across relevant data that's needed
         self.good_datasets = []
         for i, scaler in enumerate(self.active_scalers):
-            if "intensity.prf.value" in scaler.reflection_table:
+            if (
+                "intensity.prf.value" in scaler.reflection_table
+                and "intensity.sum.value" in scaler.reflection_table
+            ):
                 self.good_datasets.append(i)
         if not self.good_datasets:
-            self.max_key = 1
-            logger.info(
-                "No profile intensities found, skipping profile/summation intensity combination."
-            )
-            return
+            if all(
+                "intensity.sum.value" in s.reflection_table for s in self.active_scalers
+            ):
+                self.max_key = 1
+                logger.info(
+                    "No profile intensities found, skipping profile/summation intensity combination."
+                )
+                return
+            elif all(
+                "intensity.prf.value" in s.reflection_table for s in self.active_scalers
+            ):
+                self.max_key = 0
+                logger.info(
+                    "No summation intensities found, skipping profile/summation intensity combination."
+                )
+                return
+            else:
+                raise ValueError(
+                    "Different reflection tables contain different intensity types"
+                )
         self.datasets = [
             _make_reflection_table_from_scaler(self.active_scalers[i])
             for i in self.good_datasets

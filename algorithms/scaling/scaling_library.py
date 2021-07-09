@@ -62,9 +62,18 @@ def choose_initial_scaling_intensities(reflection_table, intensity_choice="profi
     all corrections applied except an inverse scale factor."""
     if intensity_choice == "profile":
         intensity_choice = "prf"  # rename to allow string matching with refl table
+    if (
+        "intensity.sum.value" not in reflection_table
+        and "intensity.prf.value" not in reflection_table
+    ):
+        raise ValueError(
+            "No summation or profile intensities found in the reflection table"
+        )
     if "intensity.prf.value" not in reflection_table:
         intensity_choice = "sum"
-    elif intensity_choice == "prf":
+    elif "intensity.sum.value" not in reflection_table:
+        intensity_choice = "prf"
+    if intensity_choice == "prf":
         if (
             reflection_table.get_flags(reflection_table.flags.integrated_prf).count(
                 True
