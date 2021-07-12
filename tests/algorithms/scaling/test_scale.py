@@ -528,9 +528,9 @@ def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
         "filtering.method=deltacchalf",
         "stdcutoff=3.0",
         "mode=image_group",
-        "max_percent_removed=12.0",
+        "max_percent_removed=6.0",
         "max_cycles=6",
-        "d_min=1.9",
+        "d_min=2.0",
         "group_size=5",
         "unmerged_mtz=unmerged.mtz",
         "scale_and_filter_results=analysis_results.json",
@@ -546,9 +546,9 @@ def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
     assert tmpdir.join("scaled.expt").check()
     assert tmpdir.join("analysis_results.json").check()
     result = get_merging_stats(tmpdir.join("unmerged.mtz").strpath)
-    assert result.overall.r_pim < 0.135  # 07/07/21 was 0.127,
-    assert result.overall.cc_one_half > 0.94  # 07/07/21 was 0.952
-    assert result.overall.n_obs > 20000  # 07/07/21 was 21543
+    assert result.overall.r_pim < 0.135  # 12/07/21 was 0.129,
+    assert result.overall.cc_one_half > 0.94  # 12/07/21 was 0.953
+    assert result.overall.n_obs > 19000  # 12/07/21 was 19579
 
     with open(tmpdir.join("analysis_results.json").strpath) as f:
         analysis_results = json.load(f)
@@ -556,9 +556,6 @@ def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
         [[16, 24], 4]
     ]
     assert analysis_results["cycle_results"]["2"]["image_ranges_removed"] == [
-        [[17, 24], 3]
-    ]
-    assert analysis_results["cycle_results"]["3"]["image_ranges_removed"] == [
         [[21, 25], 5]
     ]
     assert analysis_results["termination_reason"] == "max_percent_removed"
