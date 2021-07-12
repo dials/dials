@@ -1,3 +1,12 @@
+DIALS 3.5.3 (2021-07-12)
+========================
+
+Bugfixes
+--------
+
+- ``dials.image_viewer``: Fix the ``basis_vector_scale=`` parameter. (`#1769 <https://github.com/dials/dials/issues/1769>`_)
+
+
 DIALS 3.5.2 (2021-06-28)
 ========================
 
