@@ -418,15 +418,11 @@ multi-dataset scaling mode (not single dataset or scaling against a reference)""
                     logger.info(
                         "Finishing scaling and filtering as no data removed in this cycle."
                     )
+                    self.reflections = parse_multiple_datasets(
+                        [script.filtered_reflection_table]
+                    )
                     if self.params.scaling_options.full_matrix:
-                        self.reflections = parse_multiple_datasets(
-                            [script.filtered_reflection_table]
-                        )
                         results = self._run_final_scale_cycle(results)
-                    else:
-                        self.reflections = parse_multiple_datasets(
-                            [script.filtered_reflection_table]
-                        )
                     results.finish(termination_reason="no_more_removed")
                     break
 
