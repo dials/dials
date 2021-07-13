@@ -10,6 +10,69 @@ from dials.algorithms.refinement.parameterisation.prediction_parameters import (
 from dials.array_family import flex
 
 
+class SparseFlex:
+    """A wrapper for flex arrays that allows sparse storage by recording the
+    values as a dense array, the length of the sparse array and the indices
+    of the values into the sparse array. This is designed as a simple means
+    to achieve sparse storage of flex mat3 and vec3 arrays and allows some
+    operations to be performed with flex arrays and other SparseFlex arrays"""
+
+    def __init__(self, dimension, elements, indices):
+
+        self._non_zeroes = len(elements)
+        assert len(indices) == self._non_zeroes
+        assert dimension >= len(elements)
+        # Trust that max(indices) <= dimension rather than performing the check
+        # as that can involve iterating over a large number of indices.
+
+        self._size = dimension
+        self._data = elements
+        self._indices = indices
+
+    @property
+    def size(self):
+        return self._size
+
+    @property
+    def non_zeroes(self):
+        return self._non_zeroes
+
+    def as_dense_vector(self):
+        v = self._data.deep_copy()
+        v *= 0.0
+        v.resize(self._size)
+        v.set_selected(self._indices, self._data)
+        return v
+
+    def _extract_explicit_data(self, other):
+        """Return the flex array of explicit data elements if other is a flex
+        array or a SparseFlex"""
+
+        # Select only explicit elements if other is a flex array
+        try:
+            other = other.select(self._indices)
+        except AttributeError:
+            pass
+
+        # Take only the explicit data if other is a SparseFlex
+        if isinstance(other, SparseFlex):
+            other = other._data
+
+        return other
+
+    def __mul__(self, other):
+
+        other = self._extract_explicit_data(other)
+
+        return SparseFlex(self._size, self._data * other, self._indices)
+
+    def __rmul__(self, other):
+
+        other = self._extract_explicit_data(other)
+
+        return SparseFlex(self._size, other * self._data, self._indices)
+
+
 class StateDerivativeCache:
     """Keep derivatives of the model states in a memory-efficient format
     by storing each derivative once alongside the indices of reflections affected
