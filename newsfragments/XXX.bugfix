@@ -1,1 +1,1 @@
-``dials.scale``: Fix imageset_id bug when scaling and filtering and `no more removed` termination 
+``dials.scale``: Fix recently introduced imageset_id bug when scaling and filtering and `no more removed` termination 
