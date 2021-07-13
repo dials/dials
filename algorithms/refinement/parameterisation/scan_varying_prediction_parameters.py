@@ -15,7 +15,12 @@ class SparseFlex:
     values as a dense array, the length of the sparse array and the indices
     of the values into the sparse array. This is designed as a simple means
     to achieve sparse storage of flex mat3 and vec3 arrays and allows some
-    operations to be performed with flex arrays and other SparseFlex arrays"""
+    operations to be performed with flex arrays and other SparseFlex arrays.
+
+    The operations that can be performed are purposely limited. For example,
+    addition and subtraction are only performed between two SparseFlex arrays,
+    where it is assumed (not tested) that these have the same pattern of
+    structural zeroes."""
 
     def __init__(self, dimension, elements, indices):
 
@@ -77,6 +82,24 @@ class SparseFlex:
         other = self._extract_explicit_data(other)
 
         return SparseFlex(self._size, self._data / other, self._indices)
+
+    def __add__(self, other):
+
+        if not isinstance(other, SparseFlex):
+            raise TypeError("Addition is only defined between two SparseFlex arrays")
+
+        other = self._extract_explicit_data(other)
+
+        return SparseFlex(self._size, self._data + other, self._indices)
+
+    def __sub__(self, other):
+
+        if not isinstance(other, SparseFlex):
+            raise TypeError("Subtraction is only defined between two SparseFlex arrays")
+
+        other = self._extract_explicit_data(other)
+
+        return SparseFlex(self._size, self._data - other, self._indices)
 
 
 class StateDerivativeCache:

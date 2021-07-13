@@ -250,6 +250,16 @@ def test_SparseFlex_scalars():
     for a, b in zip(sf_half.as_dense_vector(), arr / 2.0):
         assert a == b
 
+    # Test addition of two SparseFlex[double]s
+    sf2 = sf_arr + sf_arr
+    for a, b in zip(sf2.as_dense_vector(), arr + arr):
+        assert a == b
+
+    # Test subtraction between two SparseFlex[double]s
+    sf3 = sf2 - sf_arr
+    for a, b in zip(sf3.as_dense_vector(), arr):
+        assert a == b
+
 
 def test_SparseFlex_matrices_and_vectors():
 
@@ -319,6 +329,16 @@ def test_SparseFlex_matrices_and_vectors():
     # Test matrix multiplication SparseFlex[mat3] * SparseFlex[mat3]
     sf_mat2 = sf_mat * sf_mat
     for a, b in zip(sf_mat2.as_dense_vector(), mat * mat):
+        assert a == b
+
+    # Test addition of two SparseFlex[vec3]s
+    sf2 = sf_vec + sf_vec
+    for a, b in zip(sf2.as_dense_vector(), vec + vec):
+        assert a == b
+
+    # Test subtraction between two SparseFlex[vec3]s
+    sf3 = sf2 - sf_vec
+    for a, b in zip(sf3.as_dense_vector(), vec):
         assert a == b
 
 
