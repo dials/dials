@@ -913,7 +913,7 @@ namespace dials { namespace algorithms {
       chebyshev_distance(cv_mask_.const_ref(), false, distance.ref());
 
       // Erode the strong pixel mask and set a mask containing only strong pixels
-      std::size_t erosion_distance = std::min(size[0], size[1]);
+      double erosion_distance = 0.5*std::min(size[0], size[1]);
       af::versa<int, af::c_grid<2> > temp_mask(image.accessor(), 0);
       for (std::size_t i = 0; i < image.size(); ++i) {
         if (temp[i]) {
@@ -931,7 +931,7 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < image.size(); ++i) {
         if (mask[i]) {
           double bnd_s = mean2_[i] + nsig_s * std::sqrt(gain[i] * mean2_[i]);
-          value_mask_[i] = (distance[i] >= erosion_distance) && (image[i] >= bnd_s);
+          value_mask_[i] = cv_mask_[i] && (image[i] >= bnd_s);
           final_mask_[i] = cv_mask_[i] && value_mask_[i] && global_mask_[i];
         }
         global_mask_[i] = temp_mask[i];
@@ -1179,15 +1179,16 @@ namespace dials { namespace algorithms {
      * @param dst The dispersion mask
      */
     void erode_dispersion_mask(const af::const_ref<bool, af::c_grid<2> > &mask,
+                               const af::const_ref<bool, af::c_grid<2> > &src,
                                af::ref<bool, af::c_grid<2> > dst) {
       // The distance array
       af::versa<int, af::c_grid<2> > distance(dst.accessor(), 0);
 
       // Compute the chebyshev distance to the nearest valid background pixel
-      chebyshev_distance(dst, false, distance.ref());
+      chebyshev_distance(src, false, distance.ref());
 
       // The erosion distance
-      std::size_t erosion_distance = std::min(kernel_size_[0], kernel_size_[1]);
+      double erosion_distance = 0.5*std::min(kernel_size_[0], kernel_size_[1]);
 
       // Compute the eroded mask
       for (std::size_t k = 0; k < dst.size(); ++k) {
@@ -1369,6 +1370,9 @@ namespace dials { namespace algorithms {
       // Cast the buffer to the table type
       af::ref<Data<T> > table(reinterpret_cast<Data<T> *>(&buffer_[0]), buffer_.size());
 
+      // Initialise a temp mask
+      af::versa< bool, af::c_grid<2> > temp_mask(mask.accessor()); 
+
       // compute the summed area table
       compute_sat(table, src, mask);
 
@@ -1378,10 +1382,10 @@ namespace dials { namespace algorithms {
       compute_dispersion_threshold(table, src, mask, dst);
 
       // Erode the dispersion mask
-      erode_dispersion_mask(mask, dst);
+      erode_dispersion_mask(mask, dst, temp_mask.ref());
 
       // Compute the summed area table again now excluding the threshold pixels
-      compute_sat(table, src, dst);
+      compute_sat(table, src, temp_mask.const_ref());
 
       // Compute the final threshold
       compute_final_threshold(table, src, mask, dst);
@@ -1411,6 +1415,9 @@ namespace dials { namespace algorithms {
       // Cast the buffer to the table type
       af::ref<Data<T> > table((Data<T> *)&buffer_[0], buffer_.size());
 
+      // Initialise a temp mask
+      af::versa< bool, af::c_grid<2> > temp_mask(mask.accessor()); 
+
       // compute the summed area table
       compute_sat(table, src, mask);
 
@@ -1420,10 +1427,10 @@ namespace dials { namespace algorithms {
       compute_dispersion_threshold(table, src, mask, gain, dst);
 
       // Erode the dispersion mask
-      erode_dispersion_mask(mask, dst);
+      erode_dispersion_mask(mask, dst, temp_mask.ref());
 
       // Compute the summed area table again now excluding the threshold pixels
-      compute_sat(table, src, dst);
+      compute_sat(table, src, temp_mask.const_ref());
 
       // Compute the final threshold
       compute_final_threshold(table, src, mask, gain, dst);
