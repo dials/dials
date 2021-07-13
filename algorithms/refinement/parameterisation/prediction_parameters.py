@@ -587,16 +587,16 @@ class PredictionParameterisation:
             u_w_inv = self._u_w_inv.select(isel)
             v_w_inv = self._v_w_inv.select(isel)
 
-            dpv_dbeam_p, dAngle_dbeam_p = derivatives_fn(
+            dpv_dp, dAngle_dp = derivatives_fn(
                 isel, parameterisation=p, reflections=reflections
             )
 
             # convert to dX/dp, dY/dp and assign the elements of the vectors
             # corresponding to this experiment
-            dX_dbeam_p, dY_dbeam_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
-                w_inv, u_w_inv, v_w_inv, dpv_dbeam_p
+            dX_dp, dY_dp = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
+                w_inv, u_w_inv, v_w_inv, dpv_dp
             )
-            for dX, dY, dAngle in zip(dX_dbeam_p, dY_dbeam_p, dAngle_dbeam_p):
+            for dX, dY, dAngle in zip(dX_dp, dY_dp, dAngle_dp):
                 if dX is not None:
                     results[self._iparam][self._grad_names[0]].set_selected(isel, dX)
                 if dY is not None:
