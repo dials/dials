@@ -424,7 +424,9 @@ multi-dataset scaling mode (not single dataset or scaling against a reference)""
                         )
                         results = self._run_final_scale_cycle(results)
                     else:
-                        self.reflections = [script.filtered_reflection_table]
+                        self.reflections = parse_multiple_datasets(
+                            [script.filtered_reflection_table]
+                        )
                     results.finish(termination_reason="no_more_removed")
                     break
 
