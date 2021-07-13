@@ -222,10 +222,40 @@ def test(cmdline_overrides=[]):
     pred_param.compose(reflections)
 
 
-def test_SparseFlex():
+def test_SparseFlex_scalars():
 
     size = 100
-    # Make dense mat3 and vec3 arrays with 50% explicit zeroes
+
+    # Make a dense double array with 50% explicit zeroes
+    arr = flex.random_double(size)
+    indices = flex.random_selection(size, int(size / 2))
+    elements = arr.select(indices)
+    arr *= 0.0
+    arr.set_selected(indices, elements)
+
+    # Make the equivalent SparseFlex
+    sf_arr = SparseFlex(size, elements, indices)
+
+    # Test multiplication of SparseFlex[double] by scalar
+    sf2 = sf_arr * 2.0  # __mul__
+    for a, b in zip(sf2.as_dense_vector(), arr * 2.0):
+        assert a == b
+
+    sf2 = 2.0 * sf_arr  # __rmul__
+    for a, b in zip(sf2.as_dense_vector(), 2.0 * arr):
+        assert a == b
+
+    # Test division of SparseFlex[double] by scalar
+    sf_half = sf_arr / 2.0
+    for a, b in zip(sf_half.as_dense_vector(), arr / 2.0):
+        assert a == b
+
+
+def test_SparseFlex_matrices_and_vectors():
+
+    size = 100
+
+    # Make a dense vec3 array with 50% explicit zeroes
     vec = flex.vec3_double(
         flex.random_double(size), flex.random_double(size), flex.random_double(size)
     )
@@ -234,9 +264,10 @@ def test_SparseFlex():
     vec *= 0.0
     vec.set_selected(indices, elements)
 
-    # Make the equivalent SparseFlex
+    # Make the equivalent SparseFlex[vec3]
     sf_vec = SparseFlex(size, elements, indices)
 
+    # Make a dense mat3 array with the same 50% explicit zeroes
     mat = flex.mat3_double(
         (flex.random_double_r3_rotation_matrix() for i in range(size))
     )
@@ -244,7 +275,7 @@ def test_SparseFlex():
     mat *= 0.0
     mat.set_selected(indices, elements)
 
-    # Make the equivalent SparseFlex
+    # Make the equivalent SparseFlex[mat3]
     sf_mat = SparseFlex(size, elements, indices)
 
     # Test multiplication of SparseFlex[vec3] by scalar
@@ -262,7 +293,7 @@ def test_SparseFlex():
     for a, b in zip(sf2.as_dense_vector(), mat * 2.0):
         assert a == b
 
-    # Test matrix multiplication SparseFlex[mat3] * flex.vec3_double. Use a
+    # Test matrix multiplication: SparseFlex[mat3] * flex.vec3_double. Use a
     # new vector which does not have explicit zero elements
     vec2 = flex.vec3_double(
         flex.random_double(size), flex.random_double(size), flex.random_double(size)
@@ -271,9 +302,23 @@ def test_SparseFlex():
     for a, b in zip(sf_rot.as_dense_vector(), mat * vec2):
         assert a == b
 
-    # Test matrix multiplication SparseFlex[mat3] * SparseFlex[vec3]
+    # Test matrix multiplication: SparseFlex[mat3] * SparseFlex[vec3]
     sf_rot = sf_mat * sf_vec
     for a, b in zip(sf_rot.as_dense_vector(), mat * vec):
+        assert a == b
+
+    # Test matrix multiplication: SparseFlex[mat3] * flex.mat3_double. Use a
+    # new matrix which does not have explicit zero elements
+    mat2 = flex.mat3_double(
+        (flex.random_double_r3_rotation_matrix() for i in range(size))
+    )
+    sf_mat2 = sf_mat * mat2
+    for a, b in zip(sf_mat2.as_dense_vector(), mat * mat2):
+        assert a == b
+
+    # Test matrix multiplication SparseFlex[mat3] * SparseFlex[mat3]
+    sf_mat2 = sf_mat * sf_mat
+    for a, b in zip(sf_mat2.as_dense_vector(), mat * mat):
         assert a == b
 
 

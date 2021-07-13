@@ -72,6 +72,12 @@ class SparseFlex:
 
         return SparseFlex(self._size, other * self._data, self._indices)
 
+    def __truediv__(self, other):
+
+        other = self._extract_explicit_data(other)
+
+        return SparseFlex(self._size, self._data / other, self._indices)
+
 
 class StateDerivativeCache:
     """Keep derivatives of the model states in a memory-efficient format
