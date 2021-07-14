@@ -22,17 +22,40 @@ class SparseFlex:
     where it is assumed (not tested) that these have the same pattern of
     structural zeroes."""
 
-    def __init__(self, dimension, elements, indices):
-
-        self._non_zeroes = len(elements)
-        assert len(indices) == self._non_zeroes
-        assert dimension >= len(elements)
-        # Trust that max(indices) <= dimension rather than performing the check
-        # as that can involve iterating over a large number of indices.
+    def __init__(self, dimension, elements=None, indices=None):
 
         self._size = dimension
-        self._data = elements
-        self._indices = indices
+        self._indices = flex.size_t(0)
+        self._non_zeroes = 0
+        self._data = None
+
+        if elements is not None:
+            self.extend(elements, indices)
+
+    def extend(self, elements, indices):
+
+        if len(elements) != len(indices):
+            raise ValueError(
+                "The arrays of elements and indices must be of equal length"
+            )
+        if flex.max(indices) > self._size - 1:
+            raise ValueError("The indices extend beyond the size of the store")
+
+        # Extend the data store. If this is the first time this is called
+        # this also sets the data type
+        if self._data is None:
+            self._data = elements
+        else:
+            self._data.extend(elements)
+        self._indices.extend(indices)
+        self._non_zeroes = len(self._data)
+
+        # Basic checks of consistency.
+        if self._size < len(self._data):
+            raise ValueError("data exceeds the size of the store")
+        unique_indices = set(self._indices)
+        if len(unique_indices) != len(self._indices):
+            raise ValueError("indices are not unique")
 
     @property
     def size(self):
