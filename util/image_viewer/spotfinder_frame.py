@@ -906,16 +906,17 @@ class SpotFrame(XrayFrame):
 
     def get_image_data(self, image):
         image.set_image_data(None)
-        if self.settings.image_type == "corrected":
-            image_data = image.get_image_data()
-        else:
-            image_data = image.get_image_data(corrected=False)
-        if isinstance(image_data, tuple):
-            image_data = tuple(id.as_double() for id in image_data)
-        else:
-            image_data = (image_data.as_double(),)
+        if self.settings.display == "image":
+            if self.settings.image_type == "corrected":
+                image_data = image.get_image_data()
+            else:
+                image_data = image.get_image_data(corrected=False)
+            if isinstance(image_data, tuple):
+                image_data = tuple(id.as_double() for id in image_data)
+            else:
+                image_data = (image_data.as_double(),)
 
-        if self.settings.display != "image":
+        else:
             kabsch_debug_list = self._calculate_dispersion_debug(image)
 
             if self.settings.display == "mean":
@@ -2074,7 +2075,7 @@ class SpotSettingsPanel(wx.Panel):
         txt4 = wx.StaticText(self, -1, "Gain")
         grid1.Add(txt4, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.gain_ctrl = FloatCtrl(self, value=self.settings.gain, name="gain")
-        self.gain_ctrl.SetMin(0)
+        self.gain_ctrl.SetMin(1e-6)
         grid1.Add(self.gain_ctrl, 0, wx.ALL, 5)
 
         txt3 = wx.StaticText(self, -1, "Kernel size")
@@ -2345,13 +2346,21 @@ class SpotSettingsPanel(wx.Panel):
             or self.settings.gain != self.gain_ctrl.GetPhilValue()
         ):
             self.GetParent().GetParent().show_filters()
-            self.OnUpdate(event)
+            self.OnUpdateImage(event)
 
     def OnDispersionThresholdDebug(self, event):
+
         button = event.GetEventObject()
         selected = button.GetLabelText()
 
         self.settings.display = selected
+
+        # Disable corrected/raw selection when showing Kabsch debug images
+        if self.settings.display != "image":
+            self.image_type_ctrl.SetSelection(0)
+            self.image_type_ctrl.Disable()
+        else:
+            self.image_type_ctrl.Enable()
 
         # reset buttons
         for btn in self.kabsch_buttons:
