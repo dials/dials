@@ -442,7 +442,7 @@ namespace dials { namespace algorithms {
       // The next dimensions: X -> Y -> Z -> X ...
       const int D_NEXT = (D + 1) % DIM;
 
-      // Keep recursing until we either reach the maximum recusion depth or
+      // Keep recursing until we either reach the maximum recursion depth or
       // the threshold of number of objects for brute force search is reached.
       if (depth < max_depth_ && last - first > BF_THRESHOLD) {
         IndexIterator mid;
