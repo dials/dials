@@ -63,7 +63,7 @@ namespace dials { namespace algorithms {
       result.px.position = algorithm.mean() + vec3<double>(bbox[0], bbox[2], bbox[4]);
       result.px.variance = algorithm.variance();
       result.px.std_err_sq = algorithm.mean_sq_error();
-    } catch (dials::error) {
+    } catch (dials::error const&) {
       double xmid = (bbox[1] + bbox[0]) / 2.0;
       double ymid = (bbox[3] + bbox[2]) / 2.0;
       double zmid = (bbox[5] + bbox[4]) / 2.0;

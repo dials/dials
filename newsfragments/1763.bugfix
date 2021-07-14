@@ -1,0 +1,1 @@
+Correctly handle reflection ``imageset_id`` column in ``dials.scale``, ``dials.cosym``, and ``dials.symmetry``.

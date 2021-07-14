@@ -528,8 +528,9 @@ def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
         "filtering.method=deltacchalf",
         "stdcutoff=3.0",
         "mode=image_group",
+        "max_percent_removed=6.0",
         "max_cycles=6",
-        "d_min=1.4",
+        "d_min=2.0",
         "group_size=5",
         "unmerged_mtz=unmerged.mtz",
         "scale_and_filter_results=analysis_results.json",
@@ -545,9 +546,9 @@ def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
     assert tmpdir.join("scaled.expt").check()
     assert tmpdir.join("analysis_results.json").check()
     result = get_merging_stats(tmpdir.join("unmerged.mtz").strpath)
-    assert result.overall.r_pim < 0.175  # 12/06/20 was 0.171,
-    assert result.overall.cc_one_half > 0.94  # 03/02/20 was 0.961
-    assert result.overall.n_obs > 50000  # 03/02/20 was 50213
+    assert result.overall.r_pim < 0.135  # 12/07/21 was 0.129,
+    assert result.overall.cc_one_half > 0.94  # 12/07/21 was 0.953
+    assert result.overall.n_obs > 19000  # 12/07/21 was 19579
 
     with open(tmpdir.join("analysis_results.json").strpath) as f:
         analysis_results = json.load(f)
@@ -555,12 +556,45 @@ def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
         [[16, 24], 4]
     ]
     assert analysis_results["cycle_results"]["2"]["image_ranges_removed"] == [
-        [[17, 24], 3]
-    ]
-    assert analysis_results["cycle_results"]["3"]["image_ranges_removed"] == [
         [[21, 25], 5]
     ]
     assert analysis_results["termination_reason"] == "max_percent_removed"
+
+
+def test_scale_and_filter_termination(dials_data, tmp_path):
+    """Test the scale and filter command line program,
+    when it terminates with a cycle of no reflections removed."""
+    location = dials_data("multi_crystal_proteinase_k", pathlib=True)
+
+    command = [
+        "dials.scale",
+        "filtering.method=deltacchalf",
+        "stdcutoff=2.0",
+        "max_percent_removed=40.0",
+        "max_cycles=8",
+        "d_min=2.0",
+        "unmerged_mtz=unmerged.mtz",
+        "scale_and_filter_results=analysis_results.json",
+        "error_model=None",
+        "full_matrix=False",
+    ]
+    for i in [1, 2, 3, 4, 5, 7, 10]:
+        command.append(location / f"experiments_{i}.json")
+        command.append(location / f"reflections_{i}.pickle")
+
+    result = procrunner.run(command, working_directory=tmp_path)
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "scaled.refl").is_file()
+    assert (tmp_path / "scaled.expt").is_file()
+    assert (tmp_path / "analysis_results.json").is_file()
+
+    analysis_results = json.load((tmp_path / "analysis_results.json").open())
+    assert analysis_results["termination_reason"] == "no_more_removed"
+    assert len(analysis_results["cycle_results"]["1"]["removed_datasets"]) == 1
+    assert analysis_results["cycle_results"]["2"]["removed_datasets"] == []
+    refls = flex.reflection_table.from_file(tmp_path / "scaled.refl")
+    assert len(set(refls["id"])) == 6
+    assert len(set(refls["imageset_id"])) == 6
 
 
 def test_scale_and_filter_image_group_single_dataset(dials_data, tmpdir):
@@ -716,6 +750,11 @@ def test_multi_scale(dials_data, tmpdir):
     assert n_scaled == refls.get_flags(refls.flags.bad_for_scaling, all=False).count(
         False
     )
+    assert len(set(refls["id"])) == 2
+    assert len(set(refls["imageset_id"])) == 2
+    for id_ in range(2):
+        sel = refls["id"] == id_
+        assert set(refls["imageset_id"].select(sel)) == {id_}
 
     # run again, optimising errors, and continuing from where last run left off.
     extra_args = [

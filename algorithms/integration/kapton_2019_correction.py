@@ -571,7 +571,7 @@ class multi_kapton_correction:
         ):
             # extract experiment details
             detector = expt.detector
-            panels = [p for p in detector]
+            panels = list(detector)
             panel_size_px = [p.get_image_size() for p in panels]
             pixel_size_mm = [p.get_pixel_size()[0] for p in panels]
             detector_dist_mm = [p.get_distance() for p in panels]

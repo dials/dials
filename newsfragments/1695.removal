@@ -1,1 +1,0 @@
-The pytest option ``--runslow`` was retired. The tests that it triggered will now always run.

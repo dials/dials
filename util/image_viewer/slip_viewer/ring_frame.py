@@ -133,6 +133,10 @@ class RingSettingsPanel(wx.Panel):
         )
         self.Bind(EVT_FLOATSPIN, self.OnSpinCenter, self.spinner_slow)
 
+        self.clear_button = wx.Button(self, -1, "Clear")
+        box.Add(self.clear_button, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.Bind(wx.EVT_BUTTON, self.OnClear, self.clear_button)
+
         sizer.Add(box)
 
         self.DrawRing()
@@ -140,6 +144,7 @@ class RingSettingsPanel(wx.Panel):
     def __del__(self):
         if hasattr(self, "_ring_layer") and self._ring_layer is not None:
             self._pyslip.DeleteLayer(self._ring_layer)
+            self._ring_layer = None
 
     def OnSlide(self, event):
         # Keep slider and spinner synchronized.
@@ -247,6 +252,9 @@ class RingSettingsPanel(wx.Panel):
             self._center[1] = obj.GetValue()
 
         self.DrawRing()
+
+    def OnClear(self, event):
+        self.__del__()
 
     def _draw_ring_layer(self, dc, data, map_rel):
         """Draw a points layer.

@@ -5,7 +5,6 @@ Contains implementation interface for finding spots on one or many images
 import logging
 import math
 import pickle
-import warnings
 from typing import Iterable, Tuple
 
 import libtbx
@@ -664,14 +663,6 @@ class SpotFinder:
         self.no_shoeboxes_2d = no_shoeboxes_2d
         self.min_chunksize = min_chunksize
         self.is_stills = is_stills
-
-    def __call__(self, experiments):
-        warnings.warn(
-            "Please use Spotfinder.find_spots to run spotfinding.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self.find_spots(experiments)
 
     def find_spots(self, experiments: ExperimentList) -> flex.reflection_table:
         """

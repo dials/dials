@@ -552,10 +552,10 @@ class DeltaCCHalf:
         Y = list(delta_cchalf_i.values())
         mean = sum(Y) / len(Y)
         sdev = sqrt(sum((yy - mean) ** 2 for yy in Y) / len(Y))
-        logger.info("\nmean delta_cc_half %s", (mean * 100))
-        logger.info("stddev delta_cc_half %s", (sdev * 100))
+        logger.info(f"\nmean delta_cc_half: {(mean * 100):.3f}")
+        logger.info(f"stddev delta_cc_half: {(sdev * 100):.3f}")
         cutoff_value = mean - stdcutoff * sdev
-        logger.info("cutoff value: %s \n", (cutoff_value * 100))
+        logger.info(f"cutoff value: {(cutoff_value * 100):.3f} \n")
         return cutoff_value
 
     def output_html_report(self):

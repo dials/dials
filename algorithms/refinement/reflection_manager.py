@@ -4,7 +4,6 @@ principally ReflectionManager."""
 import logging
 import math
 import random
-import warnings
 
 import libtbx
 from libtbx.phil import parse
@@ -81,10 +80,6 @@ phil_str = (
               "if they are included."
       .type = float(value_min=0,value_max=5)
       .expert_level = 1
-
-    trim_scan_edges = None
-      .type = float(value_min=0,value_max=5)
-      .help = Deprecated. Use scan_margin instead
 
     weighting_strategy
       .help = "Parameters to configure weighting strategy overrides"
@@ -311,14 +306,6 @@ class ReflectionManagerFactory:
             weighting_strategy = ConstantWeightingStrategy(
                 *params.weighting_strategy.constants, stills=do_stills
             )
-
-        # Check for deprecated parameter
-        if params.trim_scan_edges is not None:
-            warnings.warn(
-                "The parameter trim_scan_edges is deprecated and will be removed shortly",
-                FutureWarning,
-            )
-            params.scan_margin = params.trim_scan_edges
 
         return refman(
             reflections=reflections,

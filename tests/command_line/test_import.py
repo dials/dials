@@ -501,7 +501,7 @@ def test_import_still_sequence_as_expts_subset_by_range(dials_data, tmp_path):
     for exp in imported_exp:
         assert exp.identifier != ""
 
-    iset = set(exp.imageset for exp in imported_exp)
+    iset = {exp.imageset for exp in imported_exp}
     assert len(iset) == 1
     assert len(imported_exp[0].imageset) == 3
 

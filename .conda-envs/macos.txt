@@ -14,7 +14,7 @@ conda-forge::future
 conda-forge::gemmi
 conda-forge::h5py>=3.1.0
 conda-forge::hdf5<1.11
-conda-forge::hdf5-external-filter-plugins==0.1.0[build_number='>=5']
+conda-forge::hdf5plugin
 conda-forge::iota
 conda-forge::jinja2
 conda-forge::jpeg
@@ -23,7 +23,7 @@ conda-forge::matplotlib-base>=3.0.2
 conda-forge::mrcfile
 conda-forge::msgpack-c
 conda-forge::msgpack-python
-conda-forge::numpy>=1.16
+conda-forge::numpy<1.21
 conda-forge::orderedset
 conda-forge::pandas
 conda-forge::pillow>=5.4.1
@@ -31,6 +31,7 @@ conda-forge::pip
 conda-forge::procrunner>=2.2.0
 conda-forge::psutil
 conda-forge::pthread-stubs
+conda-forge::pybind11
 conda-forge::pyrtf
 conda-forge::pytest>=4.5
 conda-forge::pytest-forked

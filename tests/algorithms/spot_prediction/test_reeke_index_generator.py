@@ -57,7 +57,7 @@ class Test:
                 self.margin,
             )
             hkl = r.to_array()
-            hkl_sets.append(set(list(hkl)))
+            hkl_sets.append(set(hkl))
 
         # count common reflections in every set. For this example let's say we are
         # satisfied if 98% of the smallest set of generated indices are common

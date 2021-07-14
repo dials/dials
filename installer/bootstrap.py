@@ -43,7 +43,7 @@ devnull = open(os.devnull, "wb")  # to redirect unwanted subprocess output
 allowed_ssh_connections = {}
 concurrent_git_connection_limit = threading.Semaphore(5)
 
-_prebuilt_cctbx_base = "2021.4"
+_prebuilt_cctbx_base = "2021.6"  # July 2021 release
 
 
 def make_executable(filepath):
@@ -234,7 +234,7 @@ def install_conda(python, include_cctbx):
                 paths = f.readlines()
         except IOError:
             paths = []
-        environments = set(
+        environments = set(  # noqa; C401, Python 2.7 compatibility
             os.path.normpath(env.strip()) for env in paths if os.path.isdir(env.strip())
         )
         env_dirs = (
@@ -975,12 +975,17 @@ def update_sources(options):
             ("xia2/xia2", "main"),
         )
     }
-    repositories["cctbx_project"] = {
-        "base-repository": "cctbx/cctbx_project",
-        "effective-repository": "dials/cctbx",
-        "branch-remote": "master",
-        "branch-local": "stable",
-    }
+    if options.prebuilt_cctbx:
+        repositories["cctbx_project"]["branch-local"] = (
+            "releases/" + _prebuilt_cctbx_base
+        )
+    else:
+        repositories["cctbx_project"] = {
+            "base-repository": "cctbx/cctbx_project",
+            "effective-repository": "dials/cctbx",
+            "branch-remote": "master",
+            "branch-local": "stable",
+        }
 
     for source, setting in options.branch:
         if source not in repositories:
@@ -1229,7 +1234,7 @@ be passed separately with quotes to avoid confusion (e.g
     parser.add_argument(
         "--python",
         help="Install this minor version of Python (default: %(default)s)",
-        default="3.8",
+        default="3.9",
         choices=("3.6", "3.7", "3.8", "3.9"),
     )
     parser.add_argument(
@@ -1243,8 +1248,15 @@ be passed separately with quotes to avoid confusion (e.g
         ),
     )
     parser.add_argument(
+        # Deprecated, 2021-05-28
         "--mamba",
-        help="Use micromamba over miniconda for the base installation step",
+        help=argparse.SUPPRESS,
+        default=False,
+        action="store_true",
+    )
+    parser.add_argument(
+        "--conda",
+        help="Use miniconda instead of micromamba for the base installation step",
         default=False,
         action="store_true",
     )
@@ -1275,14 +1287,14 @@ be passed separately with quotes to avoid confusion (e.g
 
     # Build base packages
     if "base" in options.actions:
-        if options.mamba:
-            install_micromamba(options.python, include_cctbx=options.prebuilt_cctbx)
-            if options.clean:
-                shutil.rmtree(os.path.realpath("micromamba"))
-        else:
+        if options.conda:
             install_conda(options.python, include_cctbx=options.prebuilt_cctbx)
             if options.clean:
                 shutil.rmtree(os.path.realpath("miniconda"))
+        else:
+            install_micromamba(options.python, include_cctbx=options.prebuilt_cctbx)
+            if options.clean:
+                shutil.rmtree(os.path.realpath("micromamba"))
 
     # Configure, make, get revision numbers
     if "build" in options.actions:
@@ -1296,6 +1308,12 @@ be passed separately with quotes to avoid confusion (e.g
         run_tests()
 
     print("\nBootstrap success: %s" % ", ".join(options.actions))
+
+    if options.mamba:
+        print(
+            "\nNOTE: --mamba is now the default, "
+            "you do not need to specify it any more"
+        )
 
 
 if __name__ == "__main__":

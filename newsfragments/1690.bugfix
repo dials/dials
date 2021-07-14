@@ -1,1 +1,0 @@
-``dials.spot_counts_per_image``: Show an explicit error if given data that isn't spotfinding output (i.e. unindexed reflections/experiments).

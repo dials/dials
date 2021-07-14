@@ -44,7 +44,7 @@ def test_indexing():
     nz = 2
     sampler = GridSampler((width, height), scan_range, (nx, ny, nz))
     xstep, ystep, zstep = sampler.step_size()
-    xind = [[i for i in range(nx)]] * ny * nz
+    xind = [list(range(nx))] * ny * nz
     yind = [[j] * nx for j in range(ny)] * nz
     zind = [[k] * nx * ny for k in range(nz)]
     xind = [i for j in xind for i in j]

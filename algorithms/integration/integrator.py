@@ -373,7 +373,7 @@ class Parameters:
         self.integration = processor.Parameters()
         self.filter = Parameters.Filter()
         self.profile = Parameters.Profile()
-        self.debug_reference_filename = "reference_profiles.refl"
+        self.debug_reference_filename = "reference_profiles.pickle"
         self.debug_reference_output = False
 
     @staticmethod
@@ -1075,7 +1075,7 @@ class Integrator:
                 # Get the finalized modeller
                 finalized_profile_fitter = profile_fitter.finalized_model()
 
-                # Print profiles
+                # Dump reference profiles
                 if self.params.debug_reference_output:
                     reference_debug = []
                     for i in range(len(finalized_profile_fitter)):
@@ -1083,13 +1083,21 @@ class Integrator:
                         p = []
                         for j in range(len(m)):
                             try:
-                                p.append((m.data(j), m.mask(j)))
+                                p.append(
+                                    {
+                                        "data": m.data(j),
+                                        "mask": m.mask(j),
+                                        "coord": m.coord(j),
+                                        "n_reflections": m.n_reflections(j),
+                                    }
+                                )
                             except Exception:
                                 p.append(None)
-                    reference_debug.append(p)
+                        reference_debug.append(p)
                     with open(self.params.debug_reference_filename, "wb") as outfile:
                         pickle.dump(reference_debug, outfile)
 
+                # Print profiles
                 for i in range(len(finalized_profile_fitter)):
                     m = finalized_profile_fitter[i]
                     logger.debug("")
@@ -1208,6 +1216,20 @@ class Integrator:
         def _determine_max_memory_needed(experiments, reflections):
             max_needed = 0
             for imageset in experiments.imagesets():
+                # find all experiments belonging to that imageset, as each
+                # imageset is processed as a whole for integration.
+                if all(experiments.identifiers()):
+                    expt_ids = [
+                        experiment.identifier
+                        for experiment in experiments
+                        if experiment.imageset == imageset
+                    ]
+                    subset = reflections.select_on_experiment_identifiers(expt_ids)
+                else:
+                    subset = flex.reflection_table()
+                    for j, experiment in enumerate(experiments):
+                        if experiment.imageset == imageset:
+                            subset.extend(reflections.select(reflections["id"] == j))
                 try:
                     if imageset.get_scan():
                         frame0, frame1 = imageset.get_scan().get_array_range()
@@ -1217,7 +1239,7 @@ class Integrator:
                     frame0, frame1 = (0, len(imageset))
                 flatten = self.params.integration.integrator == "flat3d"
                 max_needed = max(
-                    max_memory_needed(reflections, frame0, frame1, flatten),
+                    max_memory_needed(subset, frame0, frame1, flatten),
                     max_needed,
                 )
             assert max_needed > 0, "Could not determine memory requirements"

@@ -423,3 +423,21 @@ def test_failed_tolerance_error(dials_regression, monkeypatch):
         script.run_with_preparsed(params, options)
     assert "Beam" in str(exc.value)
     print("Got (expected) error message:", exc.value)
+
+
+def test_combine_imagesets(dials_data, tmp_path):
+    data = dials_data("l_cysteine_dials_output", pathlib=True)
+    args = [
+        *sorted(data.glob("*_integrated.pickle")),
+        *sorted(data.glob("*_integrated_experiments.json")),
+        f"experiments_filename={tmp_path}/combined.expt",
+        f"reflections_file={tmp_path}/combined.refl",
+    ]
+    combine_experiments.run([str(x) for x in args])
+
+    comb = flex.reflection_table.from_file(tmp_path / "combined.refl")
+
+    assert set(comb["imageset_id"]) == {0, 1, 2, 3}
+
+    # Check that we have preserved unindexed reflections for all of these
+    assert set(comb.select(comb["id"] == -1)["imageset_id"]) == {0, 1, 2, 3}

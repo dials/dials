@@ -645,8 +645,8 @@ class _:
         ann = AnnAdaptorSelfInclude(r, 3)
         ann.query(x)
 
-        mm = cctbx.array_family.flex.int(range(xyz.size()))
-        nn, distance = ann.nn, cctbx.array_family.flex.sqrt(ann.distances)
+        mm = cctbx.array_family.flex.size_t_range(xyz.size())
+        nn, distance = ann.nn.as_size_t(), cctbx.array_family.flex.sqrt(ann.distances)
 
         sel = distance <= max_separation
 
