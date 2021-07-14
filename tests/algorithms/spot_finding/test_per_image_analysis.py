@@ -61,19 +61,17 @@ def test_stats_for_reflection_table(centroid_test_data):
     _, reflections = centroid_test_data
     stats = per_image_analysis.stats_for_reflection_table(reflections)
     result = stats._asdict()
-    expected = dict(
-        [
-            ("d_min_distl_method_1", 1.8771983880778702),
-            ("d_min_distl_method_2", 1.6293601446185495),
-            ("estimated_d_min", 1.446715534174674),
-            ("n_spots_4A", 76),
-            ("n_spots_no_ice", 578),
-            ("n_spots_total", 654),
-            ("noisiness_method_1", 0.021021021021021023),
-            ("noisiness_method_2", 0.0858974358974359),
-            ("total_intensity", 919847.0),
-        ]
-    )
+    expected = {
+        "d_min_distl_method_1": 1.8771983880778702,
+        "d_min_distl_method_2": 1.6293601446185495,
+        "estimated_d_min": 1.446715534174674,
+        "n_spots_4A": 76,
+        "n_spots_no_ice": 578,
+        "n_spots_total": 654,
+        "noisiness_method_1": 0.021021021021021023,
+        "noisiness_method_2": 0.0858974358974359,
+        "total_intensity": 919847.0,
+    }
     for k, v in expected.items():
         assert result[k] == pytest.approx(v)
 
@@ -86,19 +84,17 @@ def test_stats_for_reflection_table_no_resolution_analysis_no_ice_filtering(
         reflections, resolution_analysis=False, filter_ice=False
     )
     result = stats._asdict()
-    expected = dict(
-        [
-            ("d_min_distl_method_1", -1.0),
-            ("d_min_distl_method_2", -1.0),
-            ("estimated_d_min", -1.0),
-            ("n_spots_4A", 76),
-            ("n_spots_no_ice", 654),
-            ("n_spots_total", 654),
-            ("noisiness_method_1", -1.0),
-            ("noisiness_method_2", -1.0),
-            ("total_intensity", 961472.0),
-        ]
-    )
+    expected = {
+        "d_min_distl_method_1": -1.0,
+        "d_min_distl_method_2": -1.0,
+        "estimated_d_min": -1.0,
+        "n_spots_4A": 76,
+        "n_spots_no_ice": 654,
+        "n_spots_total": 654,
+        "noisiness_method_1": -1.0,
+        "noisiness_method_2": -1.0,
+        "total_intensity": 961472.0,
+    }
     for k, v in expected.items():
         assert result[k] == pytest.approx(v)
 

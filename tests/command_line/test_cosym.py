@@ -35,6 +35,14 @@ def test_cosym(dials_data, run_in_tmpdir, space_group, engine):
             experiments[0].crystal.get_space_group().type().lookup_symbol()
             == space_group
         )
+    joint_reflections = flex.reflection_table.from_file("symmetrized.refl")
+    # check that there are 8 unique id and imageset_ids, and that these
+    # correctly correspond to each experiment
+    assert len(set(joint_reflections["id"])) == 8
+    assert len(set(joint_reflections["imageset_id"])) == 8
+    for id_ in range(8):
+        sel = joint_reflections["id"] == id_
+        assert set(joint_reflections["imageset_id"].select(sel)) == set([id_])
 
 
 def test_cosym_partial_dataset(dials_data, run_in_tmpdir):

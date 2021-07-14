@@ -35,6 +35,7 @@ from dials.util.filter_reflections import filtered_arrays_from_experiments_refle
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
     parse_multiple_datasets,
+    update_imageset_ids,
 )
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
@@ -486,6 +487,7 @@ def _reindex_experiments_reflections(experiments, reflections, space_group, cb_o
         experiments, cb_op, space_group=space_group
     )
     reindexed_reflections = flex.reflection_table()
+    reflections = update_imageset_ids(experiments, reflections)
     for i in range(len(reindexed_experiments)):
         reindexed_refl = copy.deepcopy(reflections[i])
         reindexed_refl["miller_index"] = cb_op.apply(reindexed_refl["miller_index"])

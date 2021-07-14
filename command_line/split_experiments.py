@@ -1,5 +1,7 @@
 import functools
 
+from orderedset import OrderedSet
+
 from dxtbx.model.experiment_list import ExperimentList
 from libtbx.phil import parse
 
@@ -161,10 +163,13 @@ class Script:
                 expids = []
                 new_exps = ExperimentList()
                 exp_nos = wavelengths[wl]
+                imageset_ids = []  # record imageset ids to set in refl table
+                imagesets_found = OrderedSet()
                 for j in exp_nos:
                     expids.append(experiments[j].identifier)  # string
                     new_exps.append(experiments[j])
-
+                    imagesets_found.add(experiments[j].imageset)
+                    imageset_ids.append(imagesets_found.index(experiments[j].imageset))
                 experiment_filename = experiments_template(index=i)
                 print(
                     f"Saving experiments with wavelength {wl} to {experiment_filename}"
@@ -172,6 +177,14 @@ class Script:
                 new_exps.as_json(experiment_filename)
                 if reflections:
                     refls = reflections.select_on_experiment_identifiers(expids)
+                    refls["imageset_id"] = flex.int(refls.size(), 0)
+                    # now set the imageset ids
+                    for k, iset_id in enumerate(imageset_ids):
+                        # select the experiment based on id (unique per sweep),
+                        # and set the imageset_id (not necessarily unique per sweep
+                        # if imageset is shared)
+                        sel = refls["id"] == k
+                        refls["imageset_id"].set_selected(sel, iset_id)
                     reflections_filename = reflections_template(index=i)
                     print(
                         "Saving reflections with wavelength %s to %s"
@@ -193,10 +206,10 @@ class Script:
                     detector: {
                         "experiments": ExperimentList(),
                         "reflections": flex.reflection_table(),
+                        "imagesets_found": OrderedSet(),
                     }
                     for detector in experiments.detectors()
                 }
-
             for i, experiment in enumerate(experiments):
                 split_expt_id = experiments.detectors().index(experiment.detector)
                 experiment_filename = experiments_template(index=split_expt_id)
@@ -204,6 +217,9 @@ class Script:
                 split_data[experiment.detector]["experiments"].append(experiment)
                 if reflections is not None:
                     reflections_filename = reflections_template(index=split_expt_id)
+                    split_data[experiment.detector]["imagesets_found"].add(
+                        experiment.imageset
+                    )
                     print(
                         "Adding reflections for experiment %d to %s"
                         % (i, reflections_filename)
@@ -233,6 +249,10 @@ class Script:
                             len(ref_sel),
                             len(split_data[experiment.detector]["experiments"]) - 1,
                         )
+                    iset_id = split_data[experiment.detector]["imagesets_found"].index(
+                        experiment.imageset
+                    )
+                    ref_sel["imageset_id"] = flex.int(ref_sel.size(), iset_id)
                     split_data[experiment.detector]["reflections"].extend(ref_sel)
 
             for i, detector in enumerate(experiments.detectors()):
@@ -267,6 +287,8 @@ class Script:
                 chunk_refls = flex.reflection_table()
             else:
                 chunk_refls = None
+            next_iset_id = 0
+            imagesets_found = OrderedSet()
             for i, experiment in enumerate(experiments):
                 chunk_expts.append(experiment)
                 if reflections:
@@ -292,6 +314,13 @@ class Script:
                     else:
                         ref_sel = reflections.select(reflections["id"] == i)
                         ref_sel["id"] = flex.int(len(ref_sel), len(chunk_expts) - 1)
+                    if experiment.imageset not in imagesets_found:
+                        imagesets_found.add(experiment.imageset)
+                        ref_sel["imageset_id"] = flex.int(ref_sel.size(), next_iset_id)
+                        next_iset_id += 1
+                    else:
+                        iset_id = imagesets_found.index(experiment.imageset)
+                        ref_sel["imageset_id"] = flex.int(ref_sel.size(), iset_id)
                     chunk_refls.extend(ref_sel)
                 if params.output.chunk_sizes:
                     chunk_limit = params.output.chunk_sizes[chunk_counter]
@@ -329,6 +358,7 @@ class Script:
                         ref_sel.experiment_identifiers()[0] = identifier
                     else:
                         ref_sel["id"] = flex.int(len(ref_sel), 0)
+                    ref_sel["imageset_id"] = flex.int(len(ref_sel), 0)
                     ref_sel.as_file(reflections_filename)
 
         return

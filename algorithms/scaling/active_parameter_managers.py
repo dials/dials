@@ -344,7 +344,7 @@ class ParameterManagerGenerator:
         self.param_lists = [None] * len(data_managers)
         if self.mode == "concurrent":
             for i, data_manager in enumerate(self.data_managers):
-                self.param_lists[i] = [param for param in data_manager.components]
+                self.param_lists[i] = list(data_manager.components)
         else:  # mode=consecutive
             # Generate nested list indicating the names of active parameters
             # e.g consecutive_order for class is [["a", "b"], ["c"]],

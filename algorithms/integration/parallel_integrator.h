@@ -473,7 +473,7 @@ namespace dials { namespace algorithms {
       // Compute the background
       try {
         compute_background_(reflection);
-      } catch (dials::error) {
+      } catch (dials::error const&) {
         finalize_shoebox(reflection, adjacent_reflections, underload_, overload_);
         return;
       }
@@ -487,7 +487,7 @@ namespace dials { namespace algorithms {
       // Compute the profile fitted intensity
       try {
         compute_intensity_(reflection, adjacent_reflections);
-      } catch (dials::error) {
+      } catch (dials::error const&) {
         std::size_t flags = reflection.get<std::size_t>("flags");
         flags |= af::FailedDuringProfileFitting;
         reflection["flags"] = flags;

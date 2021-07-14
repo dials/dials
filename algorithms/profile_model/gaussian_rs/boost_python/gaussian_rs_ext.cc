@@ -87,7 +87,7 @@ namespace dials {
           try {
             data_list.append(obj.data(i));
             mask_list.append(obj.mask(i));
-          } catch (dials::error) {
+          } catch (dials::error const&) {
             data_list.append(data_type());
             mask_list.append(mask_type());
           }

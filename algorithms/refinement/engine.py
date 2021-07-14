@@ -687,7 +687,11 @@ class AdaptLstbx(Refinery, normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_
                         jacobian,
                         weights,
                     ) = self._target.compute_residuals_and_gradients(block)
-                    return dict(residuals=residuals, jacobian=jacobian, weights=weights)
+                    return {
+                        "residuals": residuals,
+                        "jacobian": jacobian,
+                        "weights": weights,
+                    }
 
                 def callback_wrapper(result):
                     j = result["jacobian"]
