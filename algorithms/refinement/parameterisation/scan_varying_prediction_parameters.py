@@ -101,6 +101,29 @@ class SparseFlex:
 
         return SparseFlex(self._size, self._data - other, self._indices)
 
+    def dot(self, other):
+
+        other = self._extract_explicit_data(other)
+
+        return SparseFlex(self._size, self._data.dot(other), self._indices)
+
+    def rotate_around_origin(self, direction, angle):
+
+        angle = self._extract_explicit_data(angle)
+        direction = self._extract_explicit_data(direction)
+        return SparseFlex(
+            self._size, self._data.rotate_around_origin(direction, angle), self._indices
+        )
+
+    def parts(self):
+
+        x, y, z = self._data.parts()
+        return (
+            SparseFlex(self._size, x, self._indices),
+            SparseFlex(self._size, y, self._indices),
+            SparseFlex(self._size, z, self._indices),
+        )
+
 
 class StateDerivativeCache:
     """Keep derivatives of the model states in a memory-efficient format

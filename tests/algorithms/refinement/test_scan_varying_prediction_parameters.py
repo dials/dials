@@ -261,7 +261,7 @@ def test_SparseFlex_scalars():
         assert a == b
 
 
-def test_SparseFlex_matrices_and_vectors():
+def test_SparseFlex_matrix_and_vector_arithmetic():
 
     size = 100
 
@@ -339,6 +339,48 @@ def test_SparseFlex_matrices_and_vectors():
     # Test subtraction between two SparseFlex[vec3]s
     sf3 = sf2 - sf_vec
     for a, b in zip(sf3.as_dense_vector(), vec):
+        assert a == b
+
+
+def test_SparseFlex_vec3_only_methods():
+
+    size = 100
+
+    # Make a dense vec3 array with 50% explicit zeroes
+    vec = flex.vec3_double(
+        flex.random_double(size), flex.random_double(size), flex.random_double(size)
+    )
+    indices = flex.random_selection(size, int(size / 2))
+    elements = vec.select(indices)
+    vec *= 0.0
+    vec.set_selected(indices, elements)
+
+    # Make the equivalent SparseFlex[vec3]
+    sf_vec = SparseFlex(size, elements, indices)
+
+    # Test dot product of SparseFlex[vec3] and flex.vec3_double. Use a
+    # new vector which does not have explicit zero elements
+    vec2 = flex.vec3_double(
+        flex.random_double(size), flex.random_double(size), flex.random_double(size)
+    )
+    dotprod = sf_vec.dot(vec2)
+    for a, b in zip(dotprod.as_dense_vector(), vec.dot(vec2)):
+        assert a == b
+
+    # Test dot product of SparseFlex[vec3] and SparseFlex[vec3]
+    dotprod = sf_vec.dot(sf_vec)
+    for a, b in zip(dotprod.as_dense_vector(), vec.dot(vec)):
+        assert a == b
+
+    # Test rotate_around_origin
+    directions = flex.vec3_double(
+        flex.random_double(size), flex.random_double(size), flex.random_double(size)
+    )
+    angles = flex.random_double(size) * pi
+    sf_rot = sf_vec.rotate_around_origin(directions, angles)
+    for a, b in zip(
+        sf_rot.as_dense_vector(), vec.rotate_around_origin(directions, angles)
+    ):
         assert a == b
 
 
