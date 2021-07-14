@@ -17,7 +17,7 @@ import dials.util
 help_message = """
 
 Calculates a stereographic projection image for the given crystal models and
-the given miller indices (either specified invidually, or for all miller indices
+the given miller indices (either specified individually, or for all miller indices
 up to a given hkl_limit). By default the projection is in the plane
 perpendicular to 0,0,1 reflection for the first crystal, however the projection
 can optionally be performed in the laboratory frame (frame=laboratory) in the

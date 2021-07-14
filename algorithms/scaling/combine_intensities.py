@@ -93,7 +93,7 @@ def _determine_Imids(combiner, raw_intensities):
 
 class SingleDatasetIntensityCombiner:
     """
-    Class to combine profile and summation intensities for a single datset.
+    Class to combine profile and summation intensities for a single dataset.
     """
 
     def __init__(self, scaler, use_Imid=None):
@@ -382,7 +382,7 @@ class MultiDatasetIntensityCombiner:
 
 
 def _get_Is_from_Imidval(reflections, Imid):
-    """Intepret the Imid value to extract and return the Icomb and Vcomb values."""
+    """Interpret the Imid value to extract and return the Icomb and Vcomb values."""
     if Imid == 0:  # special value to trigger prf
         Int = reflections["intensity.prf.value"]
         Var = reflections["intensity.prf.variance"]

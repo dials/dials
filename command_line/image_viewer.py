@@ -12,7 +12,7 @@ from dials.util.options import OptionParser, flatten_experiments, flatten_reflec
 
 help_message = """
 
-This program can be used for viewing diffraction images, optionally overlayed
+This program can be used for viewing diffraction images, optionally overlaid
 with the results of spot finding, indexing or integration.
 
 Examples::
@@ -159,7 +159,7 @@ load_models = True
 
 zmq_endpoint = None
   .type = str
-  .help = "The endpoint to bind a zeromq PULL socket to, for recieving commands"
+  .help = "The endpoint to bind a zeromq PULL socket to, for receiving commands"
   .expert_level = 3
 """,
     process_includes=True,

@@ -104,7 +104,7 @@ namespace dials { namespace algorithms {
    * Compute the correlation coefficient between two arrays
    * @param a an array
    * @param b an array
-   * @return The corrleation coefficient
+   * @return The correlation coefficient
    */
   template <typename T>
   T pearson_correlation_coefficient(const af::const_ref<T> &x,

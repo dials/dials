@@ -75,7 +75,7 @@ phil_scope = phil.parse(
               "minimisation for each option is repeated nfolds times, with an"
               "incremental offset for the free set. The max number of folds"
               "allowed is 1/free_set_percentage; if set greater than this then"
-              "the repetition will finish afer 1/free_set_percentage folds."
+              "the repetition will finish after 1/free_set_percentage folds."
       .expert_level = 2
   }
 """

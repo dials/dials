@@ -193,7 +193,7 @@ namespace dials { namespace algorithms {
     /**
      * Before exiting do some stuff on the shoebox
      * @param reflection The reflection
-     * @param adjacent_reflections The adjancent reflections
+     * @param adjacent_reflections The adjacent reflections
      */
     void finalize_shoebox(af::Reflection &reflection,
                           std::vector<af::Reflection> &adjacent_reflections,
@@ -285,7 +285,7 @@ namespace dials { namespace algorithms {
     /**
      * Delete the shoebox
      * @param reflection The reflection
-     * @param adjacent_reflections The adjancent reflections
+     * @param adjacent_reflections The adjacent reflections
      */
     void delete_shoebox(af::Reflection &reflection,
                         std::vector<af::Reflection> &adjacent_reflections) const {

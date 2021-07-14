@@ -279,7 +279,7 @@ namespace dials {
      * Transform the rotation to the reciprocal space coordinate system using
      * a fast approximate method.
      * @param phi_dash The rotation angle
-     * @retuns The e3 coordinate
+     * @returns The e3 coordinate
      */
     double from_rotation_angle_fast(double phi_dash) const {
       return zeta_ * (phi_dash - phi_);

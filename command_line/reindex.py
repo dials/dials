@@ -23,7 +23,7 @@ provided in h,k,l, or a,b,c or x,y,z conventions. By default the change of
 basis operator will also be applied to the space group in the indexed.expt
 file, however, optionally, a space group (including setting) to be applied
 AFTER applying the change of basis operator can be provided.
-Alternatively, to reindex an integated dataset in the case of indexing abiguity,
+Alternatively, to reindex an integated dataset in the case of indexing ambiguity,
 a reference dataset (models.expt and reflection.refl) in the same space
 group can be specified. In this case, any potential twin operators are tested,
 and the dataset is reindexed to the setting that gives the highest correlation

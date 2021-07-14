@@ -788,7 +788,7 @@ class _:
 
     def iterate_experiments_and_indices(self, experiments):
         """
-        A helper function to interate through experiments and indices of reflections
+        A helper function to iterate through experiments and indices of reflections
         for each experiment
         """
         assert len(experiments) > 0

@@ -84,7 +84,7 @@ namespace dials { namespace algorithms {
      * @param Y The background observations
      * @param B The initial estimate
      * @param c The huber tuning constant
-     * @param tolerance The stopping critera
+     * @param tolerance The stopping criteria
      * @param max_iter The maximum number of iterations
      */
     robust_estimator(const af::const_ref<double> &X,
@@ -121,7 +121,7 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * @returns The reletive error at the last iteration
+     * @returns The relative error at the last iteration
      */
     double error() const {
       return error_;

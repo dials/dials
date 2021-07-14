@@ -90,9 +90,9 @@ nproc = None
 
 
 class CosymAnalysis(symmetry_base, Subject):
-    """Peform cosym analysis.
+    """Perform cosym analysis.
 
-    Peform cosym analysis on the input intensities using the methods of
+    Perform cosym analysis on the input intensities using the methods of
     `Gildea, R. J. & Winter, G. (2018). Acta Cryst. D74, 405-410
     <https://doi.org/10.1107/S2059798318002978>`_ for
     determination of Patterson group symmetry from sparse multi-crystal data sets in
@@ -104,7 +104,7 @@ class CosymAnalysis(symmetry_base, Subject):
 
         Args:
           intensities (cctbx.miller.array): The intensities on which to perform
-            cosym anaylsis.
+            cosym analysis.
           params (libtbx.phil.scope_extract): Parameters for the analysis.
         """
         super().__init__(
@@ -684,7 +684,7 @@ class ScoreSymmetryElement:
 
         The dictionary will contain the following keys:
           - likelihood: The likelihood of the symmetry element being present
-          - z_cc: The Z-score for the correlation coefficent
+          - z_cc: The Z-score for the correlation coefficient
           - cc: The correlation coefficient for the symmetry element
           - operator: The xyz representation of the symmetry element
 

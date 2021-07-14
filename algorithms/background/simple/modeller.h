@@ -24,7 +24,7 @@ namespace dials { namespace algorithms { namespace background {
   using scitbx::matrix::inversion_in_place;
 
   /**
-   * An abtract class for the background model
+   * An abstract class for the background model
    */
   class Model {
   public:

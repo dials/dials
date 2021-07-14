@@ -47,7 +47,7 @@ namespace dials { namespace algorithms {
     af::versa<FloatType, af::c_grid<3> > bgrd = volume.extract_background(bbox);
     af::versa<int, af::c_grid<3> > mask = volume.extract_mask(bbox, index);
 
-    // Compute the foreground boolean mask and background substracted data
+    // Compute the foreground boolean mask and background subtracted data
     af::versa<FloatType, af::c_grid<3> > foreground_data(mask.accessor());
     af::versa<bool, af::c_grid<3> > foreground_mask(mask.accessor());
     for (std::size_t i = 0; i < mask.size(); ++i) {

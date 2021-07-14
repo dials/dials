@@ -33,11 +33,11 @@ class Target:
         dimensions=None,
         nproc=None,
     ):
-        r"""Intialise a Target object.
+        r"""Initialise a Target object.
 
         Args:
           intensities (cctbx.miller.array): The intensities on which to perform
-            cosym anaylsis.
+            cosym analysis.
           lattice_ids (np.ndarray): An array of equal size to
             `intensities` which maps each reflection to a given lattice (dataset).
           weights (str): Optionally include weights in the target function.

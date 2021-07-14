@@ -76,7 +76,7 @@ def mock_parameter_manager(mock_restrained_component, mock_unrestrained_componen
 
 @pytest.fixture
 def mock_unrestrained_apm(mock_unrestrained_component):
-    """Mock a paramater manager to handle no restrained components."""
+    """Mock a parameter manager to handle no restrained components."""
     apm = Mock()
     apm.components = OrderedDict(
         {
@@ -107,7 +107,7 @@ def mock_multi_apm(mock_parameter_manager):
 
 @pytest.fixture
 def mock_multi_unrestrained_apm(mock_unrestrained_apm):
-    """Mock a paramater manager to handle no restrained components."""
+    """Mock a parameter manager to handle no restrained components."""
     multi_apm = Mock()
     multi_apm.apm_list = [mock_unrestrained_apm, mock_unrestrained_apm]
     return multi_apm

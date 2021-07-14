@@ -219,7 +219,7 @@ class ScalingModelBase:
 
     @property
     def is_scaled(self):
-        """:obj:`bool`: Indicte whether this model has previously been refined."""
+        """:obj:`bool`: Indicate whether this model has previously been refined."""
         return self._is_scaled
 
     def fix_initial_parameter(self, params):
@@ -432,7 +432,7 @@ class DoseDecay(ScalingModelBase):
     phil_scope = phil.parse(dose_decay_model_phil_str)
 
     def __init__(self, parameters_dict, configdict, is_scaled=False):
-        """Create the phyiscal scaling model components."""
+        """Create the physical scaling model components."""
         super().__init__(configdict, is_scaled)
         if "scale" in configdict["corrections"]:
             scale_setup = parameters_dict["scale"]
@@ -657,7 +657,7 @@ class PhysicalScalingModel(ScalingModelBase):
     phil_scope = phil.parse(physical_model_phil_str)
 
     def __init__(self, parameters_dict, configdict, is_scaled=False):
-        """Create the phyiscal scaling model components."""
+        """Create the physical scaling model components."""
         super().__init__(configdict, is_scaled)
         if "scale" in configdict["corrections"]:
             scale_setup = parameters_dict["scale"]
@@ -1299,12 +1299,12 @@ def calculate_new_offset(
           existing parameters.
     """
     if n_old_param == 2:
-        return 0  # cant have less than two params
+        return 0  # can't have less than two params
     batch_difference = (new_image_0 - current_image_0) * new_norm_fac
     n_to_shift = int(batch_difference // 1)
     if batch_difference % 1 > 0.5:
         n_to_shift += 1
-    return min(n_old_param - n_new_param, n_to_shift)  # cant shift by more
+    return min(n_old_param - n_new_param, n_to_shift)  # can't shift by more
     # than difference between old and new
 
 

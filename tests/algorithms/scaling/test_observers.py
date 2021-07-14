@@ -57,7 +57,7 @@ def test_print_scaling_model_error_summary(test_data):
     msg = print_scaling_model_error_summary(expts)
     assert (
         msg
-        == """Warning: Over half (83.67%) of model parameters have signficant
+        == """Warning: Over half (83.67%) of model parameters have significant
 uncertainty (sigma/abs(parameter) > 0.5), which could indicate a
 poorly-determined scaling problem or overparameterisation.
 """

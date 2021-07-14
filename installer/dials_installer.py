@@ -67,7 +67,7 @@ class installer(install_distribution.installer):
         except Exception:
             if not self.options.verbose:
                 print("\n" + " -=-" * 20)
-                print("\nAn error occured during installation\n")
+                print("\nAn error occurred during installation\n")
                 print("Excerpt from installation log:")
                 with open(log.name, "r") as fh:
                     for line in fh.readlines()[-30:]:

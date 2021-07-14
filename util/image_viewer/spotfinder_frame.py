@@ -1746,7 +1746,7 @@ class SpotFrame(XrayFrame):
 
     def OnZeroMQEvent(self, event):
         message = event.message
-        print("ZMQ Event recieved by gui:", message)
+        print("ZMQ Event received by gui:", message)
         try:
             if message["command"] == "load_image":
                 filename = message["image"]

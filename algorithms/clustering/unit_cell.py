@@ -20,7 +20,7 @@ class UnitCellCluster(Cluster):
         labels="default",
     ):
         """
-        Hierarchical clustering using the unit cell dimentions.
+        Hierarchical clustering using the unit cell dimensions.
 
         :param threshold: the threshold to use for prunning the tree into clusters.
         :param method: which clustering method from scipy to use when creating the tree (see scipy.cluster.hierarchy)
@@ -29,12 +29,12 @@ class UnitCellCluster(Cluster):
         :param ax: if a matplotlib axes object is provided, plot to this.
                    Otherwise, create a new axes object and display on screen.
         :param write_file_lists: if True, write out the files that make up each cluster.
-        :param schnell: if True, use simple euclidian distance, otherwise, use Andrews-Bernstein
+        :param schnell: if True, use simple euclidean distance, otherwise, use Andrews-Bernstein
                         distance from Andrews & Bernstein J Appl Cryst 47:346 (2014) on the Niggli cells.
         :param doplot: Boolean flag for if the plotting should be done at all.
                        Runs faster if switched off.
         :param labels: 'default' will not display any labels for more than 100 images, but will display
-                       file names for fewer. This can be manually overidden with a boolean flag.
+                       file names for fewer. This can be manually overridden with a boolean flag.
         :return: A list of Clusters ordered by largest Cluster to smallest
 
         .. note::

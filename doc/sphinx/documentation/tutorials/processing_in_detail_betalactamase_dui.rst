@@ -342,7 +342,7 @@ Other useful plots in the report are:
 
 * **Difference between observed and calculated centroids vs phi**,
   which shows how the average
-  residuals in each of X, Y, and φ vary as a fuction of φ.
+  residuals in each of X, Y, and φ vary as a function of φ.
   If scan-varying refinement has been successful in capturing the real changes
   during the scan then we would expect these plots to be straight lines.
 
