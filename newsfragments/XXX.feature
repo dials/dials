@@ -1,0 +1,1 @@
+``dials.merge``: Include DANO/SIGDANO columns when ``anomalous=True`` and ``truncate=True``

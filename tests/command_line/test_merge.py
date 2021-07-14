@@ -35,7 +35,7 @@ def test_merge(dials_data, tmpdir, anomalous, truncate):
     mean_labels = ["IMEAN", "SIGIMEAN"]
     anom_labels = ["I(+)", "I(-)", "SIGI(+)", "SIGI(-)"]
     amp_labels = ["F", "SIGF"]
-    anom_amp_labels = ["F(+)", "SIGF(+)", "F(-)", "SIGF(-)"]
+    anom_amp_labels = ["F(+)", "SIGF(+)", "F(-)", "SIGF(-)", "DANO", "SIGDANO"]
 
     location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = location.join("scaled_20_25.refl")

@@ -79,6 +79,7 @@ class MergedMTZWriter(MTZWriterBase):
         anom_array=None,
         amplitudes=None,
         anom_amplitudes=None,
+        dano=None,
         multiplicities=None,
         suffix=None,
     ):
@@ -103,6 +104,10 @@ class MergedMTZWriter(MTZWriterBase):
             self.current_dataset.add_miller_array(amplitudes, "F" + suffix)
         if anom_amplitudes:
             self.current_dataset.add_miller_array(anom_amplitudes, "F" + suffix)
+        if dano:
+            self.current_dataset.add_miller_array(
+                dano, "DANO" + suffix, column_types="DQ"
+            )
 
 
 class MADMergedMTZWriter(MergedMTZWriter):
@@ -114,6 +119,7 @@ class MADMergedMTZWriter(MergedMTZWriter):
         anom_array=None,
         amplitudes=None,
         anom_amplitudes=None,
+        dano=None,
         multiplicities=None,
         suffix=None,
     ):
@@ -124,6 +130,7 @@ class MADMergedMTZWriter(MergedMTZWriter):
             anom_array,
             amplitudes,
             anom_amplitudes,
+            dano,
             multiplicities,
             suffix,
         )
