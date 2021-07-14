@@ -685,7 +685,7 @@ def test_model_factory_utilities():
 
     # Test initialise_smooth_input(osc_range, one_osc_width, interval)
     # This is initialised with the oscillation range, width of one osc and
-    # rotation interval in degress, returning
+    # rotation interval in degrees, returning
     n_param, norm_fac, rot_int = initialise_smooth_input([0, 10], 1.0, 1.0)
     assert (n_param, norm_fac, rot_int) == (12, 0.999, 1.0)
     n_param, norm_fac, rot_int = initialise_smooth_input([0, 10], 1.0, 12)
