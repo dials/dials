@@ -561,6 +561,42 @@ def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
     assert analysis_results["termination_reason"] == "max_percent_removed"
 
 
+def test_scale_and_filter_termination(dials_data, tmp_path):
+    """Test the scale and filter command line program,
+    when it terminates with a cycle of no reflections removed."""
+    location = dials_data("multi_crystal_proteinase_k", pathlib=True)
+
+    command = [
+        "dials.scale",
+        "filtering.method=deltacchalf",
+        "stdcutoff=2.0",
+        "max_percent_removed=40.0",
+        "max_cycles=8",
+        "d_min=2.0",
+        "unmerged_mtz=unmerged.mtz",
+        "scale_and_filter_results=analysis_results.json",
+        "error_model=None",
+        "full_matrix=False",
+    ]
+    for i in [1, 2, 3, 4, 5, 7, 10]:
+        command.append(location / f"experiments_{i}.json")
+        command.append(location / f"reflections_{i}.pickle")
+
+    result = procrunner.run(command, working_directory=tmp_path)
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "scaled.refl").is_file()
+    assert (tmp_path / "scaled.expt").is_file()
+    assert (tmp_path / "analysis_results.json").is_file()
+
+    analysis_results = json.load((tmp_path / "analysis_results.json").open())
+    assert analysis_results["termination_reason"] == "no_more_removed"
+    assert len(analysis_results["cycle_results"]["1"]["removed_datasets"]) == 1
+    assert analysis_results["cycle_results"]["2"]["removed_datasets"] == []
+    refls = flex.reflection_table.from_file(tmp_path / "scaled.refl")
+    assert len(set(refls["id"])) == 6
+    assert len(set(refls["imageset_id"])) == 6
+
+
 def test_scale_and_filter_image_group_single_dataset(dials_data, tmpdir):
     """Test the scale and filter deltacchalf.mode=image_group on a
     single data set."""
