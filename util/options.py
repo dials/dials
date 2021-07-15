@@ -438,7 +438,7 @@ class PhilCommandParser:
         # Parse the command line phil parameters
         user_phils = []
         unhandled = []
-        interpreter = self.system_phil.command_line_argument_interpreter()
+        interpretor = self.system_phil.command_line_argument_interpreter()
 
         def _is_a_phil_file(filename):
             return any(
