@@ -37,9 +37,9 @@ def test_merge(dials_data, tmpdir, anomalous, truncate):
     amp_labels = ["F", "SIGF"]
     anom_amp_labels = ["F(+)", "SIGF(+)", "F(-)", "SIGF(-)", "DANO", "SIGDANO"]
 
-    location = dials_data("l_cysteine_4_sweeps_scaled")
-    refls = location.join("scaled_20_25.refl")
-    expts = location.join("scaled_20_25.expt")
+    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    refls = location / "scaled_20_25.refl"
+    expts = location / "scaled_20_25.expt"
 
     mtz_file = tmpdir.join(f"merge-{anomalous}-{truncate}.mtz")
 
@@ -85,9 +85,9 @@ def test_merge(dials_data, tmpdir, anomalous, truncate):
 def test_merge_dmin_dmax(dials_data, tmpdir, best_unit_cell):
     """Test the d_min, d_max"""
 
-    location = dials_data("l_cysteine_4_sweeps_scaled")
-    refls = location.join("scaled_20_25.refl")
-    expts = location.join("scaled_20_25.expt")
+    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    refls = location / "scaled_20_25.refl"
+    expts = location / "scaled_20_25.expt"
 
     mtz_file = tmpdir.join("merge.mtz")
 
@@ -142,11 +142,11 @@ def test_merge_multi_wavelength(dials_data, tmpdir):
         for sgn in ["+", "-"]
     ]
 
-    location = dials_data("l_cysteine_4_sweeps_scaled")
-    refl1 = location.join("scaled_30.refl").strpath
-    expt1 = location.join("scaled_30.expt").strpath
-    refl2 = location.join("scaled_35.refl").strpath
-    expt2 = location.join("scaled_35.expt").strpath
+    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    refl1 = location / "scaled_30.refl"
+    expt1 = location / "scaled_30.expt"
+    refl2 = location / "scaled_35.refl"
+    expt2 = location / "scaled_35.expt"
     expts1 = ExperimentListFactory.from_json_file(expt1, check_format=False)
     expts1[0].beam.set_wavelength(0.7)
     expts2 = ExperimentListFactory.from_json_file(expt2, check_format=False)
@@ -181,12 +181,13 @@ def test_merge_multi_wavelength(dials_data, tmpdir):
     assert all(x in labels for x in amp_labels)
     assert all(x in labels for x in anom_amp_labels)
 
-    # 5 miller arrays for each dataset, check the expected number of reflections.
+    # 6 miller arrays for each dataset, check the expected number of reflections.
     arrays = m.as_miller_arrays()
+    assert len(arrays) == 12
     assert arrays[0].info().wavelength == pytest.approx(0.7)
-    assert arrays[5].info().wavelength == pytest.approx(0.6889)
-    assert abs(arrays[0].size() - 1223) < 10
-    assert abs(arrays[5].size() - 1453) < 10
+    assert arrays[6].info().wavelength == pytest.approx(0.6889)
+    assert abs(arrays[0].size() - 1223) < 10  # check number of miller indices
+    assert abs(arrays[6].size() - 1453) < 10  # check number of miller indices
 
     # test changing the wavelength tolerance such that data is combined under
     # one wavelength. Check the number of reflections to confirm this.
@@ -203,17 +204,17 @@ def test_merge_multi_wavelength(dials_data, tmpdir):
     m = mtz.object(tmpdir.join("merged.mtz").strpath)
     arrays = m.as_miller_arrays()
     assert arrays[0].info().wavelength == pytest.approx(0.7)
-    assert len(arrays) == 5
+    assert len(arrays) == 6
     assert abs(arrays[0].size() - 1538) < 10
 
 
 def test_suitable_exit_for_bad_input_from_single_dataset(dials_data, tmpdir):
-    location = dials_data("vmxi_proteinase_k_sweeps")
+    location = dials_data("vmxi_proteinase_k_sweeps", pathlib=True)
 
     command = [
         "dials.merge",
-        location.join("experiments_0.json"),
-        location.join("reflections_0.pickle"),
+        location / "experiments_0.json",
+        location / "reflections_0.pickle",
     ]
 
     # unscaled data
@@ -230,14 +231,14 @@ Only scaled data can be processed with dials.merge
 def test_suitable_exit_for_bad_input_with_more_than_one_reflection_table(
     dials_data, tmpdir
 ):
-    location = dials_data("vmxi_proteinase_k_sweeps")
+    location = dials_data("vmxi_proteinase_k_sweeps", pathlib=True)
 
     command = [
         "dials.merge",
-        location.join("experiments_0.json"),
-        location.join("reflections_0.pickle"),
-        location.join("experiments_1.json"),
-        location.join("reflections_1.pickle"),
+        location / "experiments_0.json",
+        location / "reflections_0.pickle",
+        location / "experiments_1.json",
+        location / "reflections_1.pickle",
     ]
 
     # more than one reflection table.
