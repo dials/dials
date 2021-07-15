@@ -26,7 +26,6 @@ class SparseFlex:
 
         self._size = dimension
         self._indices = flex.size_t(0)
-        self._non_zeroes = 0
         self._data = None
 
         if elements is not None:
@@ -52,8 +51,6 @@ class SparseFlex:
         except Exception as e:
             if "Boost.Python.ArgumentError" in str(type(e)):
                 raise TypeError("indices must be a flex.size_t array")
-
-        self._non_zeroes = len(self._data)
 
         # Basic checks of consistency.
         if self._size < len(self._data):
@@ -96,7 +93,7 @@ class SparseFlex:
 
     @property
     def non_zeroes(self):
-        return self._non_zeroes
+        return len(self._data)
 
     def as_dense_vector(self):
         v = self._data.deep_copy()
