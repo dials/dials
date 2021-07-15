@@ -47,7 +47,12 @@ class SparseFlex:
             self._data = elements
         else:
             self._data.extend(elements)
-        self._indices.extend(indices)
+        try:
+            self._indices.extend(indices)
+        except Exception as e:
+            if "Boost.Python.ArgumentError" in str(type(e)):
+                raise TypeError("indices must be a flex.size_t array")
+
         self._non_zeroes = len(self._data)
 
         # Basic checks of consistency.
