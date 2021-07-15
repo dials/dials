@@ -294,7 +294,7 @@ uncertainty in the scaling model""" + (
             )
 
     def _clean_reflection_tables(self):
-        """Remove unneccesary columns added to reflection tables."""
+        """Remove unnecessary columns added to reflection tables."""
         for scaler in self.active_scalers:
             scaler.clean_reflection_table()
 
@@ -420,12 +420,12 @@ class SingleScaler(ScalerBase):
 
     @property
     def reflection_table(self):
-        """The reflection table of the datatset."""
+        """The reflection table of the dataset."""
         return self._reflection_table
 
     @reflection_table.setter
     def reflection_table(self, new_table):
-        """Set the reflection table of the datatset."""
+        """Set the reflection table of the dataset."""
         self._reflection_table = new_table
 
     def fix_initial_parameter(self):
@@ -1636,7 +1636,7 @@ class TargetScaler(MultiScalerBase):
         self._round_of_outlier_rejection(target=self._target_Ih_table)
 
     def update_for_minimisation(self, apm, block_id):
-        """Calcalate the new parameters but don't calculate a new Ih."""
+        """Calculate the new parameters but don't calculate a new Ih."""
         self._update_for_minimisation(apm, block_id, calc_Ih=False)
 
     @Subject.notify_event(event="performed_scaling")

@@ -85,7 +85,7 @@ class IhTable:
 
         A list of flex.size_t indices can be provided - this allows the
         reflection table data to maintain a reference to a dataset from which
-        it was selecte; these will be used when making the block selections.
+        it was selected; these will be used when making the block selections.
         e.g selection = flex.bool([True, False, True])
             r_1 = r_master.select(selection)
             indices_list = selection.iselection() = flex.size_t([0, 2])

@@ -73,7 +73,7 @@ namespace dials { namespace algorithms { namespace shoebox {
     // Ensure we have a valid number of bboxes
     DIALS_ASSERT(bboxes.size() > 0);
 
-    // Create a list of all the pairs of collisions between bouding boxes.
+    // Create a list of all the pairs of collisions between bounding boxes.
     std::vector<std::pair<int, int> > collisions;
     detect_collisions3d(bboxes.begin(), bboxes.end(), collisions);
 

@@ -39,11 +39,11 @@ class LaueGroupAnalysis(symmetry_base):
         absolute_angle_tolerance=None,
         best_monoclinic_beta=True,
     ):
-        """Intialise a LaueGroupAnalysis object.
+        """Initialise a LaueGroupAnalysis object.
 
         Args:
           intensities (cctbx.miller.array): The intensities on which to perform
-            symmetry anaylsis.
+            symmetry analysis.
           normalisation (str): The normalisation method to use. Possible choices are
             'kernel', 'quasi', 'ml_iso' and 'ml_aniso'. Set to None to switch off
             normalisation altogether.
@@ -490,7 +490,7 @@ class ScoreSymmetryElement:
 
         Args:
           intensities (cctbx.miller.array): The intensities on which to perform
-            symmetry anaylsis.
+            symmetry analysis.
           sym_op (cctbx.sgtbx.rt_mx): The symmetry operation for analysis.
           cc_true (float): the expected value of CC if the symmetry element is present,
             E(CC; S)
@@ -568,7 +568,7 @@ class ScoreSymmetryElement:
 
         The dictionary will contain the following keys:
           - likelihood: The likelihood of the symmetry element being present
-          - z_cc: The Z-score for the correlation coefficent
+          - z_cc: The Z-score for the correlation coefficient
           - cc: The correlation coefficient for the symmetry element
           - n_ref: The number of reflections contributing to the correlation
             coefficient

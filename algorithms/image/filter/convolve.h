@@ -74,7 +74,7 @@ namespace dials { namespace algorithms {
   }
 
   /**
-   * Perform a seperable row convolution between an image and kernel
+   * Perform a separable row convolution between an image and kernel
    * @param image The image to filter
    * @param kernel The kernel to convolve with
    * @returns The convolved image
@@ -115,7 +115,7 @@ namespace dials { namespace algorithms {
   }
 
   /**
-   * Perform a seperable column convolution between an image and kernel
+   * Perform a separable column convolution between an image and kernel
    * @param image The image to filter
    * @param kernel The kernel to convolve with
    * @returns The convolved image

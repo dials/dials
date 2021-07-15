@@ -390,7 +390,7 @@ class PredictionParameterisation:
         """Extend results list by n empty results. These will each be a dictionary
         indexed by the given keys. The value for each key will be an empty vector of
         size m, to store the derivatives of n parameters, for m reflections. This
-        method may be overriden by a derived class to e.g. use sparse vectors"""
+        method may be overridden by a derived class to e.g. use sparse vectors"""
 
         new_results = []
         for i in range(n):

@@ -252,7 +252,7 @@ def test_calculate_prescaling_correction():
         0.8 / 0.4,
     ]
 
-    # Test compatibilty for old datasets
+    # Test compatibility for old datasets
     del reflection_table["qe"]
     reflection_table["dqe"] = flex.double([0.6, 0.5, 0.4])
     reflection_table = calculate_prescaling_correction(reflection_table)

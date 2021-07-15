@@ -258,7 +258,7 @@ def select_datasets_on_ids(
         return experiments, reflection_table_list
     if use_datasets and exclude_datasets:
         raise ValueError(
-            "The options use_datasets and exclude_datasets cannot be used in conjuction."
+            "The options use_datasets and exclude_datasets cannot be used in conjunction."
         )
 
     id_map = {}
@@ -322,7 +322,7 @@ def select_datasets_on_identifiers(
         return experiments, reflection_table_list
     if use_datasets and exclude_datasets:
         raise ValueError(
-            "The options use_datasets and exclude_datasets cannot be used in conjuction."
+            "The options use_datasets and exclude_datasets cannot be used in conjunction."
         )
     if experiments.identifiers().count("") > 0:
         raise ValueError(

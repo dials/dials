@@ -215,7 +215,7 @@ class Importer:
             self.unhandled = self.try_read_reflections(self.unhandled, verbose)
 
     def _handle_converter_error(self, argument, exception, type, validation=False):
-        "Record information about errors that occured processing an argument"
+        "Record information about errors that occurred processing an argument"
         self.handling_errors[argument].append(
             ArgumentHandlingErrorInfo(
                 name=argument,
@@ -546,7 +546,7 @@ class PhilCommandParser:
             load_models=load_models,
         )
 
-        # Grab a copy of the errors that occured in case the caller wants them
+        # Grab a copy of the errors that occurred in case the caller wants them
         self.handling_errors = importer.handling_errors
 
         # Add the cached arguments

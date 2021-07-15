@@ -627,7 +627,7 @@ class multi_kapton_correction:
             if len(refl_zero) > 0 and self.params.smart_sigmas:
                 # process nonzero intensity reflections with smart sigmas as requested
                 # but turn them off for zero intensity reflections to avoid a division by zero
-                # during error propogation. Not at all certain this is the best way.
+                # during error propagation. Not at all certain this is the best way.
                 self.corrected_reflections.extend(
                     correct(refl_nonzero, smart_sigmas=True)
                 )

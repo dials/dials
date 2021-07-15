@@ -141,7 +141,7 @@ namespace dials { namespace algorithms {
       return unbiased_variance() / sum_pixels_;
     }
 
-    /** @returns the Estimate of the bias in the centroid algoritm */
+    /** @returns the Estimate of the bias in the centroid algorithm */
     coord_type average_bias_estimate() const {
       coord_type variance = unbiased_variance();
       coord_type bias;

@@ -125,7 +125,7 @@ def test_merge_dmin_dmax(dials_data, tmpdir, best_unit_cell):
 
 def test_merge_multi_wavelength(dials_data, tmpdir):
     """Test that merge handles multi-wavelength data suitably - should be
-    exported into an mtz with seprate columns for each wavelength."""
+    exported into an mtz with separate columns for each wavelength."""
 
     mean_labels = [f"{pre}IMEAN_WAVE{i}" for i in [1, 2] for pre in ["", "SIG"]]
     anom_labels = [

@@ -117,7 +117,7 @@ def test_constrained_refinement(dials_regression, run_in_tmpdir):
     # use the 'centroid' data for this test. The 'regularized' experiments are
     # useful because the detector has fast and slow exactly aligned with X, -Y
     # so the distance is exactly along the normal vector and can be altered
-    # directly by changing the Z component of the orgin vector
+    # directly by changing the Z component of the origin vector
     data_dir = os.path.join(dials_regression, "refinement_test_data", "centroid")
     experiments_path = os.path.join(data_dir, "experiments_XPARM_REGULARIZED.json")
     pickle_path = os.path.join(data_dir, "spot_1000_xds.pickle")

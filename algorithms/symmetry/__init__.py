@@ -39,7 +39,7 @@ class symmetry_base:
 
         Args:
           intensities (cctbx.miller.array): The intensities on which to perform
-            symmetry anaylsis.
+            symmetry analysis.
           normalisation (str): The normalisation method to use. Possible choices are
             'kernel', 'quasi', 'ml_iso' and 'ml_aniso'. Set to None to switch off
             normalisation altogether.

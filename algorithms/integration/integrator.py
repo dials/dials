@@ -100,7 +100,7 @@ def generate_phil_scope():
           .help = "For block size auto the block size is calculated by sorting"
                   "reflections by the number of frames they cover and then"
                   "selecting the block size to be 2*nframes[threshold] such"
-                  "that 100*threshold % of reflections are guarenteed to be"
+                  "that 100*threshold % of reflections are guaranteed to be"
                   "fully contained in 1 block"
 
         force = False
@@ -215,7 +215,7 @@ def generate_phil_scope():
         min_zeta = 0.05
           .help = "Filter the reflections by the value of zeta. A value of less"
                   "than or equal to zero indicates that this will not be used. A"
-                  "positive value is used as the minimum permissable value."
+                  "positive value is used as the minimum permissible value."
           .type = float(value_min=0.0, value_max=1.0)
 
         ice_rings = False
@@ -1300,7 +1300,7 @@ class Integrator:
                 # will not fail a memory check in the processor, so proceed
                 self.reflections, time_info = _run_processor(self.reflections)
             else:
-                # Split the reflections and process by perfoming multiple
+                # Split the reflections and process by performing multiple
                 # passes over each imageset
                 time_info = TimingInfo()
                 reflections = flex.reflection_table()

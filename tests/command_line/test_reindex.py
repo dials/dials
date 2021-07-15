@@ -213,7 +213,7 @@ def test_reindex_against_reference(dials_regression, tmpdir):
     h3, k3, l3 = P4_reflections["miller_index"].as_vec3_double().parts()
 
     # hkl1 and hkl2 should be same, as should have been reindexed by against the
-    # reference, with the program determing a reindexing operator of a,-b,-c
+    # reference, with the program determining a reindexing operator of a,-b,-c
     assert list(h1) == pytest.approx(list(h2))
     assert list(l1) == pytest.approx(list(l2))
     assert list(k1) == pytest.approx(list(k2))
