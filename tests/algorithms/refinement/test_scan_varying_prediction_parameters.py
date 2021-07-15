@@ -384,6 +384,32 @@ def test_SparseFlex_vec3_only_methods():
         assert a == b
 
 
+def test_SparseFlex_select():
+
+    size = 100
+
+    # Make a dense double array with 50% explicit zeroes
+    arr = flex.random_double(size)
+    indices = flex.random_selection(size, int(size / 2))
+    elements = arr.select(indices)
+    arr *= 0.0
+    arr.set_selected(indices, elements)
+
+    # Make the equivalent SparseFlex
+    sf_arr = SparseFlex(size, elements, indices)
+
+    # Make a new random selection
+    isel = flex.random_selection(size, int(size / 2))
+
+    # Select
+    sf2 = sf_arr.select(isel)
+    arr2 = arr.select(isel)
+
+    # Check
+    for a, b in zip(sf2.as_dense_vector(), arr2):
+        assert a == b
+
+
 if __name__ == "__main__":
     cmdline_overrides = sys.argv[1:]
     test(cmdline_overrides)

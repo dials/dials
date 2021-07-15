@@ -62,6 +62,34 @@ class SparseFlex:
         if len(unique_indices) != len(self._indices):
             raise ValueError("indices are not unique")
 
+    def select(self, indices):
+
+        try:
+            indices = indices.iselection()
+        except AttributeError:
+            pass
+
+        # New object must have the dimension of the selection
+        dimension = len(indices)
+
+        # Find the common values between the request indices and this
+        # object's self._indices. Each time one is found, keep record
+        # of its position in this object's self._indices to subset the
+        # data, and its position in the request indices, as these become
+        # the new indices of the subsetted object.
+        #
+        # This should be converted to a C++ function.
+        index_a = flex.size_t(0)
+        index_b = flex.size_t(0)
+        for i_b, val in enumerate(indices):
+            i_a = flex.first_index(self._indices, val)
+            if i_a is not None:
+                index_a.append(i_a)
+                index_b.append(i_b)
+
+        elements = self._data.select(index_a)
+        return SparseFlex(dimension, elements, index_b)
+
     @property
     def size(self):
         return self._size
@@ -81,15 +109,15 @@ class SparseFlex:
         """Return the flex array of explicit data elements if other is a flex
         array or a SparseFlex"""
 
-        # Select only explicit elements if other is a flex array
+        # Take only the explicit data if other is a SparseFlex
+        if isinstance(other, SparseFlex):
+            return other._data
+
+        # Otherwise select only explicit elements from a flex array
         try:
             other = other.select(self._indices)
         except AttributeError:
             pass
-
-        # Take only the explicit data if other is a SparseFlex
-        if isinstance(other, SparseFlex):
-            other = other._data
 
         return other
 
