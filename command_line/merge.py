@@ -207,11 +207,13 @@ def merge_data_to_mtz(params, experiments, reflections):
 
         anom_amplitudes = None
         if params.truncate:
-            amplitudes, anom_amplitudes = truncate(merged_intensities)
+            amplitudes, anom_amplitudes, dano = truncate(merged_intensities)
             # This will add the data for F, SIGF
             mtz_dataset.amplitudes = amplitudes
             # This will add the data for F(+), F(-), SIGF(+), SIGF(-)
             mtz_dataset.anomalous_amplitudes = anom_amplitudes
+            # This will add the data for DANO, SIGDANO
+            mtz_dataset.dano = dano
 
         # print out analysis statistics
         show_wilson_scaling_analysis(merged_intensities)
