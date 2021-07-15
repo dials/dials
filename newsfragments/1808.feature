@@ -1,1 +1,1 @@
-``dials.algorithms.scaling.scaling_library.scaled_data_as_miller_array``: Set wavelength in returned ``miller.array``
+API: ``...scaling_library.scaled_data_as_miller_array`` now sets wavelength in the returned ``miller.array``
