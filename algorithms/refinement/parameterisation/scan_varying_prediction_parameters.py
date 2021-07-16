@@ -37,6 +37,8 @@ class SparseFlex:
             raise ValueError(
                 "The arrays of elements and indices must be of equal length"
             )
+        if len(elements) == 0:
+            return
         if flex.max(indices) > self._size - 1:
             raise ValueError("The indices extend beyond the size of the store")
 
@@ -65,6 +67,9 @@ class SparseFlex:
             indices = indices.iselection()
         except AttributeError:
             pass
+
+        if self._data is None:
+            return self
 
         # New object must have the dimension of the selection
         dimension = len(indices)
