@@ -107,6 +107,10 @@ class SparseFlex:
         v.set_selected(self._indices, self._data)
         return v
 
+    @property
+    def data_and_indices(self):
+        return (self._data, self._indices)
+
     def _extract_explicit_data(self, other):
         """Return the flex array of explicit data elements if other is a flex
         array or a SparseFlex"""
@@ -249,7 +253,43 @@ class StateDerivativeCache:
             if isel is not None:
                 ds_dp = ds_dp.select(isel)
 
+            # >>>>>>>>> test code to ensure the same results can be obtained
+            # by SparseFlex
+            # Now perform the same for sparse storage
+            sparse_ds_dp = SparseFlex(self._nref)
+
+            # Reconstitute full array from the cache
+            for pair in p_data:
+
+                elements = arr_type(len(pair.iselection), pair.derivative)
+                sparse_ds_dp.extend(elements, pair.iselection)
+
+            # First select only elements relevant to the current gradient calculation
+            # block (i.e. if nproc > 1 or gradient_calculation_blocksize was set)
+            if imatch is not None:
+                sparse_ds_dp = sparse_ds_dp.select(imatch)
+
+            # Now select only those reflections from the full list that are affected
+            # by this parameterisation
+            if isel is not None:
+                sparse_ds_dp = sparse_ds_dp.select(isel)
+
+            ## Now test that ds_dp and sparse_ds_dp are equal
+            # try:
+            #    for a, b in zip(sparse_ds_dp.as_dense_vector(), ds_dp):
+            #        assert a == b
+            # except AttributeError:
+            #    # as_dense_vector might fail if the SparseFlex is empty. In that
+            #    # case check that the dense array is all null
+            #    for b in ds_dp:
+            #        assert b == ds_dp[0]
+            ##>>>>>>>>> end test code
+
+            # The test above passes, but downstream manipulations are not working
+            # correctly. So yield the dense version for now and switch the
+            # commented statement to test the sparse version
             yield ds_dp
+            # yield sparse_ds_dp
 
     def clear(self):
         """Clear all cached values"""

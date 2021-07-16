@@ -596,14 +596,30 @@ class PredictionParameterisation:
             dX_dp, dY_dp = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
                 w_inv, u_w_inv, v_w_inv, dpv_dp
             )
+
+            # Loop over gradients and paste them into the correct rows in the
+            # results arrays, taking care of whether the gradients are flex
+            # or SparseFlex arrays.
             for dX, dY, dAngle in zip(dX_dp, dY_dp, dAngle_dp):
                 if dX is not None:
-                    results[self._iparam][self._grad_names[0]].set_selected(isel, dX)
+                    try:
+                        dX, indices = dX.data_and_indices
+                    except AttributeError:
+                        indices = isel
+                    results[self._iparam][self._grad_names[0]].set_selected(indices, dX)
                 if dY is not None:
-                    results[self._iparam][self._grad_names[1]].set_selected(isel, dY)
+                    try:
+                        dY, indices = dY.data_and_indices
+                    except AttributeError:
+                        indices = isel
+                    results[self._iparam][self._grad_names[1]].set_selected(indices, dY)
                 if dAngle is not None:
+                    try:
+                        dAngle, indices = dAngle.data_and_indices
+                    except AttributeError:
+                        indices = isel
                     results[self._iparam][self._grad_names[2]].set_selected(
-                        isel, dAngle
+                        indices, dAngle
                     )
                 if callback is not None:
                     results[self._iparam] = callback(results[self._iparam])
