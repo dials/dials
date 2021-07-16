@@ -383,6 +383,16 @@ def test_SparseFlex_vec3_only_methods():
     ):
         assert a == b
 
+    # Test parts
+    sf_x, sf_y, sf_z = sf_vec.parts()
+    x, y, z = vec.parts()
+    for a, b in zip(sf_x.as_dense_vector(), x):
+        assert a == b
+    for a, b in zip(sf_y.as_dense_vector(), y):
+        assert a == b
+    for a, b in zip(sf_z.as_dense_vector(), z):
+        assert a == b
+
 
 def test_SparseFlex_select():
 
