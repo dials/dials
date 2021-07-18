@@ -225,23 +225,21 @@ class StateDerivativeCache:
             raise TypeError("No model state derivatives found")
         if shape == (3, 1):
             arr_type = flex.vec3_double
-            null = (0, 0, 0)
         elif shape == (3, 3):
             arr_type = flex.mat3_double
-            null = (0, 0, 0, 0, 0, 0, 0, 0, 0)
         else:
             raise TypeError("Unrecognised model state derivative type")
 
         # Loop over the data for each parameter
         for p_data in entry:
 
-            # Build an empty array of the same length as the original reflection
-            # list used when the cache was filled
-            ds_dp = arr_type(self._nref, null)
+            ds_dp = SparseFlex(self._nref)
 
             # Reconstitute full array from the cache
             for pair in p_data:
-                ds_dp.set_selected(pair.iselection, pair.derivative)
+
+                elements = arr_type(len(pair.iselection), pair.derivative)
+                ds_dp.extend(elements, pair.iselection)
 
             # First select only elements relevant to the current gradient calculation
             # block (i.e. if nproc > 1 or gradient_calculation_blocksize was set)
@@ -253,43 +251,7 @@ class StateDerivativeCache:
             if isel is not None:
                 ds_dp = ds_dp.select(isel)
 
-            # >>>>>>>>> test code to ensure the same results can be obtained
-            # by SparseFlex
-            # Now perform the same for sparse storage
-            sparse_ds_dp = SparseFlex(self._nref)
-
-            # Reconstitute full array from the cache
-            for pair in p_data:
-
-                elements = arr_type(len(pair.iselection), pair.derivative)
-                sparse_ds_dp.extend(elements, pair.iselection)
-
-            # First select only elements relevant to the current gradient calculation
-            # block (i.e. if nproc > 1 or gradient_calculation_blocksize was set)
-            if imatch is not None:
-                sparse_ds_dp = sparse_ds_dp.select(imatch)
-
-            # Now select only those reflections from the full list that are affected
-            # by this parameterisation
-            if isel is not None:
-                sparse_ds_dp = sparse_ds_dp.select(isel)
-
-            ## Now test that ds_dp and sparse_ds_dp are equal
-            # try:
-            #    for a, b in zip(sparse_ds_dp.as_dense_vector(), ds_dp):
-            #        assert a == b
-            # except AttributeError:
-            #    # as_dense_vector might fail if the SparseFlex is empty. In that
-            #    # case check that the dense array is all null
-            #    for b in ds_dp:
-            #        assert b == ds_dp[0]
-            ##>>>>>>>>> end test code
-
-            # The test above passes, but downstream manipulations are not working
-            # correctly. So yield the dense version for now and switch the
-            # commented statement to test the sparse version
             yield ds_dp
-            # yield sparse_ds_dp
 
     def clear(self):
         """Clear all cached values"""

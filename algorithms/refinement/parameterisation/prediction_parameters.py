@@ -604,18 +604,21 @@ class PredictionParameterisation:
                 if dX is not None:
                     try:
                         dX, indices = dX.data_and_indices
+                        indices = isel.select(indices)
                     except AttributeError:
                         indices = isel
                     results[self._iparam][self._grad_names[0]].set_selected(indices, dX)
                 if dY is not None:
                     try:
                         dY, indices = dY.data_and_indices
+                        indices = isel.select(indices)
                     except AttributeError:
                         indices = isel
                     results[self._iparam][self._grad_names[1]].set_selected(indices, dY)
                 if dAngle is not None:
                     try:
                         dAngle, indices = dAngle.data_and_indices
+                        indices = isel.select(indices)
                     except AttributeError:
                         indices = isel
                     results[self._iparam][self._grad_names[2]].set_selected(
