@@ -83,8 +83,11 @@ class SparseFlex:
         # This should be converted to a C++ function.
         index_a = flex.size_t(0)
         index_b = flex.size_t(0)
+        lookup = {}
+        for i_a, val in enumerate(self._indices):
+            lookup[val] = i_a
         for i_b, val in enumerate(indices):
-            i_a = flex.first_index(self._indices, val)
+            i_a = lookup.get(val)
             if i_a is not None:
                 index_a.append(i_a)
                 index_b.append(i_b)
