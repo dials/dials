@@ -83,6 +83,12 @@ namespace dials_scaling { namespace boost_python {
         (arg("s0_selection"), arg("s1_selection"), arg("coefficients_list")));
   }
 
+  void export_calc_crystal_frame_vectors() {
+    def ("calc_crystal_frame_vectors",
+        &calc_crystal_frame_vectors,
+        (arg("table"), arg("Experiment")));
+  }
+
   void export_gaussian_smoother_first_fixed() {
     class_<GaussianSmootherFirstFixed>("GaussianSmootherFirstFixed", no_init)
       .def(init<vec2<double>, std::size_t>((arg("x_range"), arg("num_intervals"))))
