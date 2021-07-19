@@ -6,6 +6,7 @@ Module of utility functions for scaling.
 import logging
 from math import acos
 
+import scitbx
 from cctbx import miller
 
 from dials.array_family import flex
@@ -65,6 +66,39 @@ class Reasons:
             if v > 0
         ]
         return "Reflections passing individual criteria:\n" + "".join(reasonlist)
+
+
+def calc_crystal_frame_vectors(reflection_table, experiment):
+    """Calculate the diffraction vectors in the crystal frame."""
+
+    gonio = experiment.goniometer
+    fixed_rotation = scitbx.matrix.sqr(gonio.get_fixed_rotation())
+    setting_rotation = scitbx.matrix.sqr(gonio.get_setting_rotation())
+    rotation_axis = scitbx.matrix.col(gonio.get_rotation_axis_datum())
+
+    s0c = flex.vec3_double(reflection_table.size(), (0, 0, 0))
+    s1c = flex.vec3_double(reflection_table.size(), (0, 0, 0))
+    # we want sample to source direction.
+    s0 = tuple(-1.0 * i for i in experiment.beam.get_unit_s0())
+    # exclude any data that has a bad s1.
+    lengths = flex.double(scitbx.matrix.col(v).length() for v in reflection_table["s1"])
+    sel = lengths > 0.0
+    sel_s1 = reflection_table["s1"].select(sel)
+    sel_z = reflection_table["xyzobs.px.value"].parts()[2].select(sel)
+    s1n = sel_s1.each_normalize()
+    for z, s1, index in zip(sel_z, s1n, sel.iselection()):
+        phi = experiment.scan.get_angle_from_array_index(z, deg=True)
+        rotation_matrix = rotation_axis.axis_and_angle_as_r3_rotation_matrix(
+            phi, deg=True
+        )
+        R_inv = (setting_rotation * rotation_matrix * fixed_rotation).inverse()
+        s0c[index] = R_inv * s0
+        s1c[index] = R_inv * s1
+
+    reflection_table["s0c"] = s0c
+    reflection_table["s1c"] = s1c
+
+    return reflection_table
 
 
 def align_axis_along_z(alignment_axis, vectors):
