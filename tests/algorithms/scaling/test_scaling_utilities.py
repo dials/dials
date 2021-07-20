@@ -3,7 +3,6 @@ Tests for scaling utilities module.
 """
 
 from math import pi, sqrt
-from unittest.mock import Mock
 
 import numpy as np
 import pytest
@@ -41,39 +40,22 @@ from dials_scaling_ext import (
 
 
 @pytest.fixture(scope="module")
-def mock_exp():
-    """Create a mock experiments object."""
-    # beam along +z
-    # single axis goniometer with rotation axis along z
-    exp = Mock()
-    exp.beam.get_sample_to_source_direction.return_value = (0.0, 0.0, -1.0)
-    exp.beam.get_unit_s0.return_value = (0.0, 0.0, 1.0)
-    exp.scan = Scan(image_range=[1, 90], oscillation=[0.0, 1.0])
-    exp.goniometer.get_rotation_axis.return_value = (1.0, 0.0, 0.0)
-    exp.goniometer.get_fixed_rotation.return_value = (
-        1.0,
-        0.0,
-        0.0,
-        0.0,
-        1.0,
-        0.0,
-        0.0,
-        0.0,
-        1.0,
+def test_experiment_singleaxisgonio():
+    gonio = GoniometerFactory.from_dict(
+        {
+            "axes": [
+                [1.0, 0.0, 0.0],
+            ],
+            "angles": [0.0],
+            "names": ["GON_PHI"],
+            "scan_axis": 0,
+        }
     )
-    exp.goniometer.get_setting_rotation.return_value = (
-        1.0,
-        0.0,
-        0.0,
-        0.0,
-        1.0,
-        0.0,
-        0.0,
-        0.0,
-        1.0,
+    return Experiment(
+        beam=Beam(s0=(0.0, 0.0, 2.0)),
+        goniometer=gonio,
+        scan=Scan(image_range=[1, 90], oscillation=[0.0, 1.0]),
     )
-    exp.goniometer.get_rotation_axis_datum.return_value = (1.0, 0.0, 0.0)
-    return exp
 
 
 def test_experiments_multiaxisgonio():
@@ -243,10 +225,12 @@ def test_quasi_normalisation(simple_reflection_table, test_exp_E2, test_exp_P1):
     # and then the call to interpolate causes the last values to be incorrect.
 
 
-def test_calc_crystal_frame_vectors_single_axis_gonio(test_reflection_table, mock_exp):
+def test_calc_crystal_frame_vectors_single_axis_gonio(
+    test_reflection_table, test_experiment_singleaxisgonio
+):
     """Test the namesake function, to check that the vectors are correctly rotated
     into the crystal frame."""
-    rt, exp = test_reflection_table, mock_exp
+    rt, exp = test_reflection_table, test_experiment_singleaxisgonio
     reflection_table = calc_crystal_frame_vectors(rt, exp)
 
     # s0c and s1c are normalised. s0c points towards the source.
@@ -292,7 +276,7 @@ def test_calc_crystal_frame_vectors_single_axis_gonio(test_reflection_table, moc
         assert v1 == pytest.approx(v2)
 
 
-def test_calc_crystal_frame_vectors_multi_axis_gonio(test_reflection_table, mock_exp):
+def test_calc_crystal_frame_vectors_multi_axis_gonio(test_reflection_table):
     """Test the namesake function, to check that the vectors are correctly rotated
     into the crystal frame."""
     experiments = test_experiments_multiaxisgonio()
@@ -362,12 +346,12 @@ def test_calc_crystal_frame_vectors_multi_axis_gonio(test_reflection_table, mock
         assert v1 == pytest.approx(v2)
 
 
-def test_create_sph_harm_table(test_reflection_table, mock_exp):
+def test_create_sph_harm_table(test_reflection_table, test_experiment_singleaxisgonio):
     """Simple test for the spherical harmonic table, constructing the table step
     by step, and verifying the values of a few easy-to-calculate entries.
     This also acts as a test for the calc_theta_phi function as well."""
 
-    rt, exp = test_reflection_table, mock_exp
+    rt, exp = test_reflection_table, test_experiment_singleaxisgonio
     reflection_table = calc_crystal_frame_vectors(rt, exp)
     reflection_table["s0c"] = align_axis_along_z(
         (1.0, 0.0, 0.0), reflection_table["s0c"]
@@ -479,7 +463,7 @@ def test_calculate_harmonic_tables_from_selections():
 
 
 def test_equality_of_two_harmonic_table_methods(dials_data):
-    data_dir = dials_data("l_cysteine_dials_output")
+    data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
     pickle_path = data_dir / "20_integrated.pickle"
     sequence_path = data_dir / "20_integrated_experiments.json"
 
