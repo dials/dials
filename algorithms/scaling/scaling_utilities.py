@@ -99,7 +99,7 @@ def calc_crystal_frame_vectors(reflection_table, experiment):
     ).as_matrix()
     R_inv = np.linalg.inv(setting_rotation @ rotation_matrix @ fixed_rotation)
     s0c[non_zero] = R_inv @ s0
-    s1c[non_zero] = np.einsum("...ij,...j", R_inv, s1n)
+    s1c[non_zero] = np.einsum("ijk,ik->ij", R_inv, s1n)
 
     reflection_table["s0c"] = flex.vec3_double(s0c)
     reflection_table["s1c"] = flex.vec3_double(s1c)
