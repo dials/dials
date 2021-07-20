@@ -83,18 +83,19 @@ def calc_crystal_frame_vectors(reflection_table, experiment):
     s1c = np.zeros((len(reflection_table), 3))
     # we want sample to source direction.
     s0 = np.array(experiment.beam.get_unit_s0()) * -1
-    # exclude any data that has a bad s1.
     s1 = flumpy.to_numpy(reflection_table["s1"])
+    phi = flumpy.to_numpy(
+        experiment.scan.get_angle_from_array_index(
+            reflection_table["xyzobs.px.value"].parts()[2], deg=False
+        )
+    )
+    # exclude any data that has a bad s1.
     lengths = np.linalg.norm(s1, axis=1)
     non_zero = np.where(lengths > 0.0)
     sel_s1 = s1[non_zero]
-    sel_z = flumpy.to_numpy(reflection_table["xyzobs.px.value"].parts()[2])[non_zero]
     s1n = sel_s1 / lengths[non_zero][:, np.newaxis]
-    phi = flumpy.to_numpy(
-        experiment.scan.get_angle_from_array_index(flex.double(sel_z), deg=False)
-    )
     rotation_matrix = Rotation.from_rotvec(
-        phi[:, np.newaxis] * rotation_axis
+        phi[non_zero][:, np.newaxis] * rotation_axis
     ).as_matrix()
     R_inv = np.linalg.inv(setting_rotation @ rotation_matrix @ fixed_rotation)
     s0c[non_zero] = R_inv @ s0
@@ -102,7 +103,6 @@ def calc_crystal_frame_vectors(reflection_table, experiment):
 
     reflection_table["s0c"] = flex.vec3_double(s0c)
     reflection_table["s1c"] = flex.vec3_double(s1c)
-
     return reflection_table
 
 
