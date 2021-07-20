@@ -153,6 +153,9 @@ surface_weight = auto
             "of absorption correction. Defaults to 5e5 if no absorption_level"
             "is chosen."
     .expert_level = 1
+share.absorption = False
+    .type = bool
+    .help = "If True, a common absorption correction is refined across all sweeps".
 fix_initial = True
     .type = bool
     .help = "If performing full matrix minimisation, in the final cycle,"
@@ -828,6 +831,8 @@ class PhysicalScalingModel(ScalingModelBase):
             absorption_correction = params.absorption_correction
         if absorption_correction:
             configdict["corrections"].append("absorption")
+            if params.share.absorption:
+                configdict.update({"shared": ["absorption"]})
             if params.absorption_level:
                 lmax, surface_weight = determine_auto_absorption_params(
                     params.absorption_level
@@ -913,6 +918,8 @@ class PhysicalScalingModel(ScalingModelBase):
                 self._components["absorption"] = SHScaleComponent(
                     new_parameters, flex.double(n_abs_param, 0.0)
                 )
+            if params.physical.share.absorption:
+                self._configdict.update({"shared": ["absorption"]})
 
     def plot_model_components(self, reflection_table=None):
         d = OrderedDict()
@@ -921,6 +928,12 @@ class PhysicalScalingModel(ScalingModelBase):
             d.update(plot_absorption_parameters(self))
             d.update(plot_absorption_plots(self, reflection_table))
         return d
+
+    def get_shared_components(self):
+        if "shared" in self.configdict:
+            if "absorption" in self.configdict["shared"]:
+                return "absorption"
+        return None
 
 
 class ArrayScalingModel(ScalingModelBase):
