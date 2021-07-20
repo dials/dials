@@ -6,7 +6,9 @@ Module of utility functions for scaling.
 import logging
 from math import acos
 
-import scitbx
+import numpy as np
+from scipy.spatial.transform import Rotation
+
 from cctbx import miller
 
 from dials.array_family import flex
@@ -72,31 +74,35 @@ def calc_crystal_frame_vectors(reflection_table, experiment):
     """Calculate the diffraction vectors in the crystal frame."""
 
     gonio = experiment.goniometer
-    fixed_rotation = scitbx.matrix.sqr(gonio.get_fixed_rotation())
-    setting_rotation = scitbx.matrix.sqr(gonio.get_setting_rotation())
-    rotation_axis = scitbx.matrix.col(gonio.get_rotation_axis_datum())
+    fixed_rotation = Rotation.from_matrix(
+        np.array(gonio.get_fixed_rotation()).reshape(3, 3)
+    )
+    setting_rotation = Rotation.from_matrix(
+        np.array(gonio.get_setting_rotation()).reshape(3, 3)
+    )
+    rotation_axis = np.array(gonio.get_rotation_axis_datum())
 
-    s0c = flex.vec3_double(reflection_table.size(), (0, 0, 0))
-    s1c = flex.vec3_double(reflection_table.size(), (0, 0, 0))
+    s0c = np.zeros((len(reflection_table), 3))
+    s1c = np.zeros((len(reflection_table), 3))
     # we want sample to source direction.
-    s0 = tuple(-1.0 * i for i in experiment.beam.get_unit_s0())
+    s0 = np.array(experiment.beam.get_unit_s0()) * -1
     # exclude any data that has a bad s1.
-    lengths = flex.double(scitbx.matrix.col(v).length() for v in reflection_table["s1"])
-    sel = lengths > 0.0
-    sel_s1 = reflection_table["s1"].select(sel)
-    sel_z = reflection_table["xyzobs.px.value"].parts()[2].select(sel)
-    s1n = sel_s1.each_normalize()
-    for z, s1, index in zip(sel_z, s1n, sel.iselection()):
-        phi = experiment.scan.get_angle_from_array_index(z, deg=True)
-        rotation_matrix = rotation_axis.axis_and_angle_as_r3_rotation_matrix(
-            phi, deg=True
-        )
-        R_inv = (setting_rotation * rotation_matrix * fixed_rotation).inverse()
-        s0c[index] = R_inv * s0
-        s1c[index] = R_inv * s1
+    s1 = reflection_table["s1"].as_numpy_array()
+    lengths = np.linalg.norm(s1, axis=1)
+    non_zero = np.where(lengths > 0.0)
+    sel_s1 = s1[non_zero]
+    sel_z = reflection_table["xyzobs.px.value"].parts()[2].as_numpy_array()[non_zero]
+    s1n = sel_s1 / lengths[non_zero][:, np.newaxis]
+    phi = experiment.scan.get_angle_from_array_index(
+        flex.double(sel_z), deg=False
+    ).as_numpy_array()
+    rotation_matrix = Rotation.from_rotvec(phi[:, np.newaxis] * rotation_axis)
+    R_inv = (setting_rotation * rotation_matrix * fixed_rotation).inv().as_matrix()
+    s0c[non_zero] = R_inv @ s0
+    s1c[non_zero] = np.einsum("...ij,...j", R_inv, s1n)
 
-    reflection_table["s0c"] = s0c
-    reflection_table["s1c"] = s1c
+    reflection_table["s0c"] = flex.vec3_double(s0c)
+    reflection_table["s1c"] = flex.vec3_double(s1c)
 
     return reflection_table
 
