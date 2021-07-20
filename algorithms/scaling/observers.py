@@ -242,7 +242,7 @@ def _make_scaling_html(scaling_script):
 
 def make_scaling_model_plots(experiments, reflection_tables):
     """Collect scaling model plots for html report."""
-    data = {i: e.scaling_model.to_dict() for i, e in enumerate(experiments)}
+    data = {i: e.scaling_model for i, e in enumerate(experiments)}
     d = OrderedDict()
     combined_plots = make_combined_plots(data)
     if combined_plots:

@@ -11,11 +11,7 @@ from scitbx import math as scitbxmath
 from scitbx.math import distributions
 
 from dials.array_family import flex
-from dials_scaling_ext import (
-    calc_lookup_index,
-    calc_theta_phi,
-    create_sph_harm_lookup_table,
-)
+from dials_scaling_ext import calc_lookup_index, calc_theta_phi
 
 
 def _get_smooth_plotting_data_from_model(model, component="scale"):
@@ -556,23 +552,30 @@ the absorption correction surface are sampled when determining the absorption
 correction.""",
     }
 
-    s1c = reflection_table["s1c"].select(
-        reflection_table.get_flags(reflection_table.flags.scaled)
-    )
-    STEPS = 180
+    STEPS = 180  # do one point per degree
     phi = np.linspace(0, 2 * np.pi, 2 * STEPS)
     theta = np.linspace(0, np.pi, STEPS)
     THETA, _ = np.meshgrid(theta, phi)
     Intensity = np.empty(THETA.shape)
     Intensity[:] = np.NAN
 
-    s1_lookup_index = calc_lookup_index(calc_theta_phi(s1c), points_per_degree=1)
-    # if gridpoint in lookup index, add 1
-    for j in s1_lookup_index:
-        # x is phi, y is theta
-        x = j % 360
-        y = j // 360
-        Intensity[x, y] = 1
+    # note, the s1_lookup, s0_lookup is only calculated for large datasets, so
+    # for small datasets we need to calculate again.
+    if "s1_lookup" not in physical_model.components["absorption"].data:
+        s1_lookup = calc_lookup_index(
+            calc_theta_phi(reflection_table["s1c"]), points_per_degree=1
+        )
+        for j in set(s1_lookup):
+            x = j % 360
+            y = j // 360
+            Intensity[x, y] = 1
+    else:
+        s1_lookup = set(physical_model.components["absorption"].data["s1_lookup"])
+        for j in s1_lookup:
+            # x is phi, y is theta
+            x = (j % 720) // 2  # convert from two points per degree to one
+            y = (j // 720) // 2  # convert from two points per degree to one
+            Intensity[x, y] = 1
 
     d["vector_directions"]["data"].append(
         {
@@ -589,18 +592,24 @@ correction.""",
         }
     )
 
-    s0c = reflection_table["s0c"].select(
-        reflection_table.get_flags(reflection_table.flags.scaled)
-    )
     Intensity = np.empty(THETA.shape)
     Intensity[:] = np.NAN
 
-    s0_lookup_index = calc_lookup_index(calc_theta_phi(s0c), points_per_degree=1)
-    for j in s0_lookup_index:
-        # x is phi, y is theta
-        x = j % 360
-        y = j // 360
-        Intensity[x, y] = 2
+    if "s0_lookup" not in physical_model.components["absorption"].data:
+        s0_lookup = calc_lookup_index(
+            calc_theta_phi(reflection_table["s0c"]), points_per_degree=1
+        )
+        for j in set(s0_lookup):
+            x = j % 360
+            y = j // 360
+            Intensity[x, y] = 1
+    else:
+        s0_lookup = set(physical_model.components["absorption"].data["s0_lookup"])
+        for j in s0_lookup:
+            # x is phi, y is theta
+            x = (j % 720) // 2  # convert from two points per degree to one
+            y = (j // 720) // 2  # convert from two points per degree to one
+            Intensity[x, y] = 1
 
     d["vector_directions"]["data"].append(
         {
@@ -617,15 +626,6 @@ correction.""",
         }
     )
 
-    data = {"s1_lookup": s1_lookup_index, "s0_lookup": s0_lookup_index}
-
-    physical_model.components[
-        "absorption"
-    ].coefficients_list = create_sph_harm_lookup_table(
-        physical_model.configdict["lmax"], points_per_degree=1
-    )
-    physical_model.components["absorption"].data = data
-    physical_model.components["absorption"].update_reflection_data()
     scales = physical_model.components["absorption"].calculate_scales()
     hist = flex.histogram(scales, n_slots=min(100, int(scales.size() * 10)))
 

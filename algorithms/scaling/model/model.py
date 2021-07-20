@@ -1394,18 +1394,16 @@ for entry_point_name, entry_point in _dxtbx_scaling_models.items():
     model_phil_scope.adopt_scope(ext_master_scope)
 
 
-def plot_scaling_models(model_dict, reflection_table=None):
+def plot_scaling_models(model, reflection_table=None):
     """Return a dict of component plots for the model for plotting with plotly."""
-    entry_point = _dxtbx_scaling_models.get(model_dict["__id__"])
-    if entry_point:
-        model = entry_point.load().from_dict(model_dict)
-        return model.plot_model_components(reflection_table=reflection_table)
-    return OrderedDict()
+    return model.plot_model_components(reflection_table=reflection_table)
 
 
 def make_combined_plots(data):
     """Make any plots that require evaluation of all models."""
-    if all(d["__id__"] == "dose_decay" for d in data.values()):
-        relative_Bs = [d["relative_B"]["parameters"][0] for d in data.values()]
+    if all(d.id_ == "dose_decay" for d in data.values()):
+        relative_Bs = [
+            d.to_dict()["relative_B"]["parameters"][0] for d in data.values()
+        ]
         return plot_relative_Bs(relative_Bs)
     return {}

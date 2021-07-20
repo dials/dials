@@ -302,9 +302,6 @@ class ScalingAlgorithm:
         # joining reflection tables - just need experiments for mtz export
         # and a reflection table.
         del self.scaler
-        for experiment in self.experiments:
-            for component in experiment.scaling_model.components.keys():
-                del experiment.scaling_model.components[component].data
         gc.collect()
 
         joint_table = flex.reflection_table()

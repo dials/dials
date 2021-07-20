@@ -2152,7 +2152,7 @@ class ScalingModelAnalyser:
             for i, exp in enumerate(experiments):
                 model = exp.scaling_model
                 if model is not None:
-                    scaling_model_plots = plot_scaling_models(model.to_dict())
+                    scaling_model_plots = plot_scaling_models(model)
                     if scaling_model_plots:
                         for name, plot in scaling_model_plots.items():
                             d.update({name + "_" + str(i): plot})

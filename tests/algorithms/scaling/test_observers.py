@@ -31,6 +31,11 @@ def test_data(dials_data):
         r.set_flags(flex.bool(r.size(), True), r.flags.scaled)
     expts = load.experiment_list(expt, check_format=False)
     params = mock.Mock()
+    params.physical.decay_restraint = 1e5
+    for expt, refl in zip(expts, refls):
+        expt.scaling_model.configure_components(refl, expt, params)
+        expt.scaling_model.components["absorption"].update_reflection_data()
+
     return refls, expts, params
 
 
