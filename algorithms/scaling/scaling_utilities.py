@@ -9,6 +9,7 @@ from math import acos
 import numpy as np
 from scipy.spatial.transform import Rotation
 
+import dxtbx.flumpy as flumpy
 from cctbx import miller
 
 from dials.array_family import flex
@@ -87,15 +88,15 @@ def calc_crystal_frame_vectors(reflection_table, experiment):
     # we want sample to source direction.
     s0 = np.array(experiment.beam.get_unit_s0()) * -1
     # exclude any data that has a bad s1.
-    s1 = reflection_table["s1"].as_numpy_array()
+    s1 = flumpy.to_numpy(reflection_table["s1"])
     lengths = np.linalg.norm(s1, axis=1)
     non_zero = np.where(lengths > 0.0)
     sel_s1 = s1[non_zero]
-    sel_z = reflection_table["xyzobs.px.value"].parts()[2].as_numpy_array()[non_zero]
+    sel_z = flumpy.to_numpy(reflection_table["xyzobs.px.value"].parts()[2])[non_zero]
     s1n = sel_s1 / lengths[non_zero][:, np.newaxis]
-    phi = experiment.scan.get_angle_from_array_index(
-        flex.double(sel_z), deg=False
-    ).as_numpy_array()
+    phi = flumpy.to_numpy(
+        experiment.scan.get_angle_from_array_index(flex.double(sel_z), deg=False)
+    )
     rotation_matrix = Rotation.from_rotvec(phi[:, np.newaxis] * rotation_axis)
     R_inv = (setting_rotation * rotation_matrix * fixed_rotation).inv().as_matrix()
     s0c[non_zero] = R_inv @ s0
