@@ -75,12 +75,8 @@ def calc_crystal_frame_vectors(reflection_table, experiment):
     """Calculate the diffraction vectors in the crystal frame."""
 
     gonio = experiment.goniometer
-    fixed_rotation = Rotation.from_matrix(
-        np.array(gonio.get_fixed_rotation()).reshape(3, 3)
-    )
-    setting_rotation = Rotation.from_matrix(
-        np.array(gonio.get_setting_rotation()).reshape(3, 3)
-    )
+    fixed_rotation = np.array(gonio.get_fixed_rotation()).reshape(3, 3)
+    setting_rotation = np.array(gonio.get_setting_rotation()).reshape(3, 3)
     rotation_axis = np.array(gonio.get_rotation_axis_datum())
 
     s0c = np.zeros((len(reflection_table), 3))
@@ -97,8 +93,10 @@ def calc_crystal_frame_vectors(reflection_table, experiment):
     phi = flumpy.to_numpy(
         experiment.scan.get_angle_from_array_index(flex.double(sel_z), deg=False)
     )
-    rotation_matrix = Rotation.from_rotvec(phi[:, np.newaxis] * rotation_axis)
-    R_inv = (setting_rotation * rotation_matrix * fixed_rotation).inv().as_matrix()
+    rotation_matrix = Rotation.from_rotvec(
+        phi[:, np.newaxis] * rotation_axis
+    ).as_matrix()
+    R_inv = np.linalg.inv(setting_rotation @ rotation_matrix @ fixed_rotation)
     s0c[non_zero] = R_inv @ s0
     s1c[non_zero] = np.einsum("...ij,...j", R_inv, s1n)
 
