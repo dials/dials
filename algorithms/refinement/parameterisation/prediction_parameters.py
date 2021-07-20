@@ -534,9 +534,19 @@ class PredictionParameterisation:
                 iparam = self._iparam
                 for dX, dY in zip(dX_ddet_p, dY_ddet_p):
                     if dX is not None:
-                        results[iparam][self._grad_names[0]].set_selected(sub_isel, dX)
+                        try:
+                            dX, indices = dX.data_and_indices
+                            indices = sub_isel.select(indices)
+                        except AttributeError:
+                            indices = sub_isel
+                        results[iparam][self._grad_names[0]].set_selected(indices, dX)
                     if dY is not None:
-                        results[iparam][self._grad_names[1]].set_selected(sub_isel, dY)
+                        try:
+                            dY, indices = dY.data_and_indices
+                            indices = sub_isel.select(indices)
+                        except AttributeError:
+                            indices = sub_isel
+                        results[iparam][self._grad_names[1]].set_selected(indices, dY)
                     # increment the local parameter index pointer
                     iparam += 1
 
@@ -795,7 +805,7 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
                 continue
 
             # calculate the derivative of phi for this parameter
-            dphi = (r.dot(der) / e_r_s0) * -1.0
+            dphi = (der.dot(r) / e_r_s0) * -1.0
             dphi_dp.append(dphi)
 
             # calculate the derivative of pv for this parameter
