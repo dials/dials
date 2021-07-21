@@ -100,6 +100,9 @@ class SpotFrame(XrayFrame):
         for experiment_list in self.experiments:
             for experiment in experiment_list:
                 detector = experiment.detector
+                if not detector:
+                    self.params.projection = None
+                    continue
                 if len(detector) == 24 and detector[0].get_image_size() == (2463, 195):
                     self.params.projection = None
                 elif len(detector) == 120 and detector[0].get_image_size() == (
