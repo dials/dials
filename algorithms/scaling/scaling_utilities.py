@@ -101,8 +101,8 @@ def calc_crystal_frame_vectors(reflection_table, experiment):
     # Pairwise matrix multiplication of the arrays of R_inv matrices and s1n vectors
     s1c[non_zero] = np.einsum("ijk,ik->ij", R_inv, s1n)
 
-    reflection_table["s0c"] = flex.vec3_double(s0c)
-    reflection_table["s1c"] = flex.vec3_double(s1c)
+    reflection_table["s0c"] = flumpy.vec_from_numpy(s0c)
+    reflection_table["s1c"] = flumpy.vec_from_numpy(s1c)
     return reflection_table
 
 
