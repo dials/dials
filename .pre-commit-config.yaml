@@ -39,6 +39,7 @@ repos:
   hooks:
   - id: check-ast
   - id: check-yaml
+    args: ['--allow-multiple-documents']
   - id: check-merge-conflict
   - id: check-added-large-files
     args: ['--maxkb=200']
