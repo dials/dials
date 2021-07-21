@@ -119,7 +119,7 @@ namespace dials { namespace algorithms {
       // Compute the background
       try {
         compute_background_(reflection);
-      } catch (dials::error const&) {
+      } catch (dials::error const &) {
         finalize_shoebox(reflection, adjacent_reflections, underload_, overload_);
         return;
       }
@@ -133,7 +133,7 @@ namespace dials { namespace algorithms {
       // Compute the profile fitted intensity
       try {
         compute_reference_(reflection);
-      } catch (dials::error const&) {
+      } catch (dials::error const &) {
         // pass
       }
 

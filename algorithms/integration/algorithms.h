@@ -792,7 +792,7 @@ namespace dials { namespace algorithms {
         reflection["partiality"] = partiality;
         reflection["flags"] = reflection.get<std::size_t>("flags") | af::IntegratedPrf;
 
-      } catch (std::runtime_error const&) {
+      } catch (std::runtime_error const &) {
         // This is only thrown if the matrix is singular, in which case try and
         // do profile fitting with no deconvolution
         GaussianRSDetectorSpaceIntensityCalculator::exec(reflection,
@@ -1062,7 +1062,7 @@ namespace dials { namespace algorithms {
           try {
             reference.append(modeller_[i].data(j).const_ref(),
                              modeller_[i].mask(j).const_ref());
-          } catch (dials::error const&) {
+          } catch (dials::error const &) {
             af::versa<double, af::c_grid<3> > data;
             af::versa<bool, af::c_grid<3> > mask;
             reference.append(data.const_ref(), mask.const_ref());
