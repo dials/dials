@@ -553,9 +553,9 @@ dials::af::reflection_table calc_crystal_frame_vectors(
         double phi = experiment.get_scan()->get_angle_from_array_index(xyzobs[2]);
         scitbx::mat3<double> rotation_matrix = scitbx::math::r3_rotation::axis_and_angle_as_matrix(rotation_axis, phi);
         scitbx::mat3<double> R = setting_rotation * rotation_matrix * fixed_rotation;
-        scitbx::mat3<double> R_inv = R.inverse();
-        s0c[i] = R_inv * s0;
-        s1c[i] = R_inv * s1;
+        scitbx::mat3<double> R_T = R.transpose();
+        s0c[i] = R_T * s0;
+        s1c[i] = R_T * s1;
       }
     }
     table["s0c"] = s0c;
