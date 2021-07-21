@@ -602,14 +602,14 @@ correction.""",
         for j in set(s0_lookup):
             x = j % 360
             y = j // 360
-            Intensity[x, y] = 1
+            Intensity[x, y] = 2
     else:
         s0_lookup = set(physical_model.components["absorption"].data["s0_lookup"])
         for j in s0_lookup:
             # x is phi, y is theta
             x = (j % 720) // 2  # convert from two points per degree to one
             y = (j // 720) // 2  # convert from two points per degree to one
-            Intensity[x, y] = 1
+            Intensity[x, y] = 2
 
     d["vector_directions"]["data"].append(
         {
