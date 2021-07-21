@@ -1193,7 +1193,7 @@ namespace dials { namespace algorithms {
       // Compute the eroded mask
       for (std::size_t k = 0; k < dst.size(); ++k) {
         if (mask[k]) {
-          dst[k] = !(dst[k] && distance[k] >= erosion_distance);
+          dst[k] = !(src[k] && distance[k] >= erosion_distance);
         } else {
           dst[k] = false;
         }
@@ -1262,7 +1262,7 @@ namespace dials { namespace algorithms {
           //
           // Otherwise it is false
           if (mask[k] && m >= 0 && x >= 0) {
-            bool dispersion_mask = !dst[k];
+            bool dispersion_mask = dst[k];
             bool global_mask = src[k] > threshold_;
             double mean = (m >= 2 ? (x / m) : 0);
             bool local_mask = src[k] >= (mean + nsig_s_ * std::sqrt(mean));
@@ -1337,7 +1337,7 @@ namespace dials { namespace algorithms {
           //
           // Otherwise it is false
           if (mask[k] && m >= 0 && x >= 0) {
-            bool dispersion_mask = !dst[k];
+            bool dispersion_mask = dst[k];
             bool global_mask = src[k] > threshold_;
             double mean = (m >= 2 ? (x / m) : 0);
             bool local_mask = src[k] >= (mean + nsig_s_ * std::sqrt(gain[k] * mean));
