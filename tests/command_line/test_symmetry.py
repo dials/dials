@@ -56,7 +56,7 @@ def test_symmetry_laue_only(dials_data, tmpdir):
     assert len(set(joint_reflections["imageset_id"])) == 2
     for id_ in range(2):
         sel = joint_reflections["id"] == id_
-        assert set(joint_reflections["imageset_id"].select(sel)) == set([id_])
+        assert set(joint_reflections["imageset_id"].select(sel)) == {id_}
 
 
 def test_symmetry_basis_changes_for_C2(run_in_tmpdir):

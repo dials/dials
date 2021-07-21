@@ -414,4 +414,4 @@ def test_update_imageset_ids(dials_data):
     assert len(set(joint_reflections["imageset_id"])) == 8
     for id_ in range(8):
         sel = joint_reflections["id"] == id_
-        assert set(joint_reflections["imageset_id"].select(sel)) == set([id_])
+        assert set(joint_reflections["imageset_id"].select(sel)) == {id_}
