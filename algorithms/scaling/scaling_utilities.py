@@ -81,8 +81,7 @@ def calc_crystal_frame_vectors(reflection_table, experiment):
 
     s0c = np.zeros((len(reflection_table), 3))
     s1c = np.zeros((len(reflection_table), 3))
-    # we want sample to source direction.
-    s0 = np.array(experiment.beam.get_unit_s0()) * -1
+    s0 = np.array(experiment.beam.get_sample_to_source_direction())
     s1 = flumpy.to_numpy(reflection_table["s1"])
     phi = flumpy.to_numpy(
         experiment.scan.get_angle_from_array_index(
