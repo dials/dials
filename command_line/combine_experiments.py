@@ -842,9 +842,15 @@ class Script:
 
 @dials.util.show_mail_handle_errors()
 def run(args=None):
-    script = Script()
-    script.run(args)
+    from mpi4py import MPI
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank() # each process in MPI has a unique id, 0-indexed
+    size = comm.Get_size() # size: number of processes running in this job
 
+    if rank == 0:
+      script = Script()
+      script.run(args)
+    comm.barrier()
 
 if __name__ == "__main__":
     run()

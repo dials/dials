@@ -474,4 +474,10 @@ def run(args=None, phil=working_phil):
 
 
 if __name__ == "__main__":
-    run()
+    from mpi4py import MPI
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank() # each process in MPI has a unique id, 0-indexed
+    size = comm.Get_size() # size: number of processes running in this job
+    if rank == 0:
+        run()
+    comm.barrier()
