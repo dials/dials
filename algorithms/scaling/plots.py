@@ -403,7 +403,7 @@ def plot_absorption_parameters(physical_model):
     return d
 
 
-def plot_absorption_plots(physical_model, reflection_table):
+def plot_absorption_plots(physical_model, reflection_table=None):
     """Make a number of plots to help with the interpretation of the
     absorption correction."""
     # First plot the absorption surface
