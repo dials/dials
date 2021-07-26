@@ -2,13 +2,13 @@ repos:
 
 # Automatically sort imports
 - repo: https://github.com/PyCQA/isort
-  rev: 5.6.4
+  rev: 5.9.2
   hooks:
   - id: isort
 
 # Automatic source code formatting
 - repo: https://github.com/psf/black
-  rev: 21.4b2
+  rev: 21.6b0
   hooks:
   - id: black
     args: [--safe, --quiet]
@@ -35,10 +35,11 @@ repos:
 
 # Syntax validation and some basic sanity checks
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v3.2.0
+  rev: v4.0.1
   hooks:
   - id: check-ast
   - id: check-yaml
+    args: ['--allow-multiple-documents']
   - id: check-merge-conflict
   - id: check-added-large-files
     args: ['--maxkb=200']
