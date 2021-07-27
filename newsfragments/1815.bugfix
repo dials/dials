@@ -1,1 +1,0 @@
-``dials.scale``: Fix incorrect output files, for targeted scaling with more than one target dataset.
