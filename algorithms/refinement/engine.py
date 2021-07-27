@@ -717,13 +717,16 @@ class AdaptLstbx(Refinery, normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_
                 for block in blocks:
                     (
                         residuals,
-                        self._jacobian,
+                        jacobian,
                         weights,
                     ) = self._target.compute_residuals_and_gradients(block)
-                    j = self._jacobian
                     if self._constr_manager is not None:
-                        j = self._constr_manager.constrain_jacobian(j)
-                    self.add_equations(residuals, j, weights)
+                        jacobian = self._constr_manager.constrain_jacobian(jacobian)
+
+                    self.add_equations(residuals, jacobian, weights)
+
+                # Keep reference to the Jacobian in case required by the Journal
+                self._jacobian = jacobian
 
         # restraints terms
         restraints = self._target.compute_restraints_residuals_and_gradients()
