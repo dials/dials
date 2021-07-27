@@ -888,6 +888,11 @@ def test_targeted_scaling(dials_data, tmpdir):
 
     extra_args = ["model=KB", "only_target=True"]
     run_one_scaling(tmpdir, [refl_2, scaled_refl, expt_2, scaled_exp] + extra_args)
+    scaled_exp = tmpdir.join("scaled.expt").strpath
+    scaled_refl = tmpdir.join("scaled.refl").strpath
+    experiments_list = load.experiment_list(scaled_exp, check_format=False)
+    assert len(experiments_list.scaling_models()) == 1
+    assert experiments_list.scaling_models()[0].id_ == "KB"
 
 
 def test_incremental_scale_workflow(dials_data, tmpdir):

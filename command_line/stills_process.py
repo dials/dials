@@ -570,7 +570,8 @@ class Script:
 
         else:
             basenames = OrderedDict()
-            for filename in sorted(all_paths):
+            sorted_paths = sorted(all_paths)
+            for filename in sorted_paths:
                 basename = os.path.splitext(os.path.basename(filename))[0]
                 if basename in basenames:
                     basenames[basename] += 1
@@ -588,7 +589,7 @@ class Script:
                     or tag in self.params.input.image_tag
                 ):
                     tags.append(tag)
-                    all_paths2.append(all_paths[i])
+                    all_paths2.append(sorted_paths[i])
             all_paths = all_paths2
 
             # Wrapper function

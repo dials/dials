@@ -261,9 +261,10 @@ class ScalingAlgorithm:
             or self.params.scaling_options.target_mtz
             or self.params.scaling_options.only_target
         ):
-            self.experiments = self.experiments[:-1]
-            self.reflections = self.reflections[:-1]
-
+            # now remove things that were used as the target:
+            n_target = len(self.experiments) - len(self.scaler.active_scalers)
+            self.experiments = self.experiments[:-n_target]
+            self.reflections = self.reflections[:-n_target]
         # remove any bad datasets:
         removed_ids = self.scaler.removed_datasets
         if removed_ids:
