@@ -5,15 +5,15 @@ import procrunner
 import pytest
 
 from cctbx import uctbx
-from dxtbx.model.experiment_list import ExperimentListFactory
+from dxtbx.serialize import load
 from iotbx import mtz
 
 from dials.array_family import flex
 
 
 def validate_mtz(mtz_file, expected_labels, unexpected_labels=None):
-    assert mtz_file.check()
-    m = mtz.object(mtz_file.strpath)
+    assert mtz_file.is_file()
+    m = mtz.object(str(mtz_file))
 
     assert m.as_miller_arrays()[0].info().wavelength == pytest.approx(0.6889)
     labels = set()
@@ -28,7 +28,7 @@ def validate_mtz(mtz_file, expected_labels, unexpected_labels=None):
 
 @pytest.mark.parametrize("anomalous", [True, False])
 @pytest.mark.parametrize("truncate", [True, False])
-def test_merge(dials_data, tmpdir, anomalous, truncate):
+def test_merge(dials_data, tmp_path, anomalous, truncate):
     """Test the command line script with LCY data"""
     # Main options: truncate on/off, anomalous on/off
 
@@ -41,7 +41,7 @@ def test_merge(dials_data, tmpdir, anomalous, truncate):
     refls = location / "scaled_20_25.refl"
     expts = location / "scaled_20_25.expt"
 
-    mtz_file = tmpdir.join(f"merge-{anomalous}-{truncate}.mtz")
+    mtz_file = tmp_path / f"merge-{anomalous}-{truncate}.mtz"
 
     command = [
         "dials.merge",
@@ -49,17 +49,17 @@ def test_merge(dials_data, tmpdir, anomalous, truncate):
         expts,
         f"truncate={truncate}",
         f"anomalous={anomalous}",
-        f"output.mtz={mtz_file.strpath}",
+        f"output.mtz={str(mtz_file)}",
         "project_name=ham",
         "crystal_name=jam",
         "dataset_name=spam",
     ]
-    result = procrunner.run(command, working_directory=tmpdir)
+    result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
     if truncate and anomalous:
-        assert tmpdir.join("dials.merge.html").check()
+        assert (tmp_path / "dials.merge.html").is_file()
     else:
-        assert not tmpdir.join("dials.merge.html").check()
+        assert not (tmp_path / "dials.merge.html").is_file()
     expected_labels = mean_labels
     unexpected_labels = []
 
@@ -82,14 +82,14 @@ def test_merge(dials_data, tmpdir, anomalous, truncate):
 
 
 @pytest.mark.parametrize("best_unit_cell", [None, "5.5,8.1,12.0,90,90,90"])
-def test_merge_dmin_dmax(dials_data, tmpdir, best_unit_cell):
+def test_merge_dmin_dmax(dials_data, tmp_path, best_unit_cell):
     """Test the d_min, d_max"""
 
     location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
     refls = location / "scaled_20_25.refl"
     expts = location / "scaled_20_25.expt"
 
-    mtz_file = tmpdir.join("merge.mtz")
+    mtz_file = tmp_path / "merge.mtz"
 
     command = [
         "dials.merge",
@@ -99,17 +99,17 @@ def test_merge_dmin_dmax(dials_data, tmpdir, best_unit_cell):
         "anomalous=False",
         "d_min=1.0",
         "d_max=8.0",
-        f"output.mtz={mtz_file.strpath}",
+        f"output.mtz={str(mtz_file)}",
         "project_name=ham",
         "crystal_name=jam",
         "dataset_name=spam",
         f"best_unit_cell={best_unit_cell}",
     ]
-    result = procrunner.run(command, working_directory=tmpdir)
+    result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
 
     # check the unit cell was correctly set if using best_unit_cell
-    m = mtz.object(mtz_file.strpath)
+    m = mtz.object(str(mtz_file))
     if best_unit_cell:
         for ma in m.as_miller_arrays():
             assert uctbx.unit_cell(best_unit_cell).parameters() == pytest.approx(
@@ -123,7 +123,7 @@ def test_merge_dmin_dmax(dials_data, tmpdir, best_unit_cell):
     assert max_min_resolution[1] >= 1
 
 
-def test_merge_multi_wavelength(dials_data, tmpdir):
+def test_merge_multi_wavelength(dials_data, tmp_path):
     """Test that merge handles multi-wavelength data suitably - should be
     exported into an mtz with separate columns for each wavelength."""
 
@@ -147,32 +147,32 @@ def test_merge_multi_wavelength(dials_data, tmpdir):
     expt1 = location / "scaled_30.expt"
     refl2 = location / "scaled_35.refl"
     expt2 = location / "scaled_35.expt"
-    expts1 = ExperimentListFactory.from_json_file(expt1, check_format=False)
+    expts1 = load.experiment_list(expt1, check_format=False)
     expts1[0].beam.set_wavelength(0.7)
-    expts2 = ExperimentListFactory.from_json_file(expt2, check_format=False)
+    expts2 = load.experiment_list(expt2, check_format=False)
     expts1.extend(expts2)
 
-    tmp_expt = tmpdir.join("tmp.expt").strpath
+    tmp_expt = tmp_path / "tmp.expt"
     expts1.as_json(tmp_expt)
 
-    reflections1 = flex.reflection_table.from_pickle(refl1)
-    reflections2 = flex.reflection_table.from_pickle(refl2)
+    reflections1 = flex.reflection_table.from_file(refl1)
+    reflections2 = flex.reflection_table.from_file(refl2)
     # first need to resolve identifiers - usually done on loading
     reflections2["id"] = flex.int(reflections2.size(), 1)
     del reflections2.experiment_identifiers()[0]
     reflections2.experiment_identifiers()[1] = "3"
     reflections1.extend(reflections2)
 
-    tmp_refl = tmpdir.join("tmp.refl").strpath
+    tmp_refl = tmp_path / "tmp.refl"
     reflections1.as_file(tmp_refl)
 
     # Can now run after creating our 'fake' multiwavelength dataset
     command = ["dials.merge", tmp_refl, tmp_expt, "truncate=True", "anomalous=True"]
-    result = procrunner.run(command, working_directory=tmpdir)
+    result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("merged.mtz").check()
-    assert tmpdir.join("dials.merge.html").check()
-    m = mtz.object(tmpdir.join("merged.mtz").strpath)
+    assert (tmp_path / "merged.mtz").is_file()
+    assert (tmp_path / "dials.merge.html").is_file()
+    m = mtz.object(str(tmp_path / "merged.mtz"))
     labels = []
     for ma in m.as_miller_arrays(merge_equivalents=False):
         labels.extend(ma.info().labels)
@@ -199,16 +199,16 @@ def test_merge_multi_wavelength(dials_data, tmpdir):
         "anomalous=True",
         "wavelength_tolerance=0.02",
     ]
-    result = procrunner.run(command, working_directory=tmpdir)
+    result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
-    m = mtz.object(tmpdir.join("merged.mtz").strpath)
+    m = mtz.object(str(tmp_path / "merged.mtz"))
     arrays = m.as_miller_arrays()
     assert arrays[0].info().wavelength == pytest.approx(0.7)
     assert len(arrays) == 6
     assert abs(arrays[0].size() - 1538) < 10
 
 
-def test_suitable_exit_for_bad_input_from_single_dataset(dials_data, tmpdir):
+def test_suitable_exit_for_bad_input_from_single_dataset(dials_data, tmp_path):
     location = dials_data("vmxi_proteinase_k_sweeps", pathlib=True)
 
     command = [
@@ -218,7 +218,7 @@ def test_suitable_exit_for_bad_input_from_single_dataset(dials_data, tmpdir):
     ]
 
     # unscaled data
-    result = procrunner.run(command, working_directory=tmpdir)
+    result = procrunner.run(command, working_directory=tmp_path)
     assert result.returncode
     assert (
         result.stderr.replace(b"\r", b"")
@@ -229,7 +229,7 @@ Only scaled data can be processed with dials.merge
 
 
 def test_suitable_exit_for_bad_input_with_more_than_one_reflection_table(
-    dials_data, tmpdir
+    dials_data, tmp_path
 ):
     location = dials_data("vmxi_proteinase_k_sweeps", pathlib=True)
 
@@ -242,7 +242,7 @@ def test_suitable_exit_for_bad_input_with_more_than_one_reflection_table(
     ]
 
     # more than one reflection table.
-    result = procrunner.run(command, working_directory=tmpdir)
+    result = procrunner.run(command, working_directory=tmp_path)
     assert result.returncode
     assert (
         result.stderr.replace(b"\r", b"")

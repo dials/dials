@@ -20,9 +20,9 @@ from dials.array_family import flex
 
 @pytest.fixture
 def test_data(dials_data):
-    location = dials_data("l_cysteine_4_sweeps_scaled")
-    refl = location.join("scaled_20_25.refl").strpath
-    expt = location.join("scaled_20_25.expt").strpath
+    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    refl = location / "scaled_20_25.refl"
+    expt = location / "scaled_20_25.expt"
 
     refls = flex.reflection_table.from_file(refl).split_by_experiment_id()
     expts = load.experiment_list(expt, check_format=False)
@@ -94,12 +94,12 @@ def test_print_scaling_summary(test_script):
     print_scaling_summary(test_script)
 
 
-def test_ScalingHTMLContextManager(test_script, tmpdir):
+def test_ScalingHTMLContextManager(test_script, tmp_path):
     script = test_script
-    script.params.output.html = tmpdir.join("test.html").strpath
-    script.params.output.json = tmpdir.join("test.json").strpath
+    script.params.output.html = str(tmp_path / "test.html")
+    script.params.output.json = str(tmp_path / "test.json")
     with ScalingHTMLContextManager(script):
         pass
 
-    assert tmpdir.join("test.html").check()
-    assert tmpdir.join("test.json").check()
+    assert (tmp_path / "test.html").is_file()
+    assert (tmp_path / "test.json").is_file()
