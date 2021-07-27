@@ -494,7 +494,18 @@ class Refinery:
     def _jacobian_structure(self):
         """Calculate the structure of the Jacobian matrix and output as a table for
         display"""
-        return
+        result = []
+        p_names = self._parameters.get_param_names()
+        for name, col in zip(p_names, self._jacobian.cols()):
+            result.append(
+                {
+                    "parameter": name,
+                    "nrows": col.size,
+                    "structural_zeroes": (col.size - col.non_zeroes),
+                    "all_zeroes": ((col.as_dense_vector() == 0.0).count(True)),
+                }
+            )
+        return result
 
 
 class DisableMPmixin:
