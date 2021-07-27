@@ -1,3 +1,14 @@
+DIALS 3.5.4 (2021-07-27)
+========================
+
+Bugfixes
+--------
+
+- ``dials.stills_process``: Fix case where imagesets and experiment filenames could potentially disagree (`#1814 <https://github.com/dials/dials/issues/1814>`_)
+- ``dials.scale``: Fix incorrect output files, for targeted scaling with more than one target dataset. (`#1815 <https://github.com/dials/dials/issues/1815>`_)
+- ``dials.image_viewer``: Fix opening datasets with ``load_models=False`` (`#1818 <https://github.com/dials/dials/issues/1818>`_)
+
+
 DIALS 3.5.3 (2021-07-12)
 ========================
 
