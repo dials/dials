@@ -1,6 +1,10 @@
 import math
 from collections import namedtuple
 
+# from dials_refinement_helpers_ext import intersection_i_seqs_unsorted
+import numpy as np
+
+import dxtbx.flumpy as flumpy
 from scitbx import matrix
 
 from dials.algorithms.refinement.parameterisation.prediction_parameters import (
@@ -8,8 +12,6 @@ from dials.algorithms.refinement.parameterisation.prediction_parameters import (
     XYPhiPredictionParameterisation,
 )
 from dials.array_family import flex
-
-# from dials_refinement_helpers_ext import intersection_i_seqs_unsorted
 
 
 class SparseFlex:
@@ -76,24 +78,18 @@ class SparseFlex:
         # New object must have the dimension of the selection
         dimension = len(indices)
 
-        # Find the common values between the request indices and this
-        # object's self._indices. Each time one is found, keep record
-        # of its position in this object's self._indices to subset the
-        # data, and its position in the request indices, as these become
-        # the new indices of the subsetted object.
+        # Find the indices of common elements between these arrays using NumPy
+        _, index_a, index_b = np.intersect1d(
+            flumpy.to_numpy(self._indices),
+            flumpy.to_numpy(indices),
+            assume_unique=True,
+            return_indices=True,
+        )
+        index_a = flumpy.from_numpy(index_a.astype(np.ulonglong))
+        index_b = flumpy.from_numpy(index_b.astype(np.ulonglong))
 
-        # Original Python version - seems faster than the C++ intersection_i_seqs_unsorted!
-        index_a = flex.size_t(0)
-        index_b = flex.size_t(0)
-        lookup = {}
-        for i_a, val in enumerate(self._indices):
-            lookup[val] = i_a
-        for i_b, val in enumerate(indices):
-            i_a = lookup.get(val)
-            if i_a is not None:
-                index_a.append(i_a)
-                index_b.append(i_b)
-        # index_a, index_b = intersection_i_seqs_unsorted(self._indices, indices)
+        # The first set of indices select the data, while the second set
+        # provide their new indices
         elements = self._data.select(index_a)
         return SparseFlex(dimension, elements, index_b)
 

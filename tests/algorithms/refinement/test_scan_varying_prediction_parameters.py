@@ -1,8 +1,10 @@
 import sys
 from math import pi
 
+import numpy as np
 import pytest
 
+import dxtbx.flumpy as flumpy
 from dxtbx.model.experiment_list import Experiment, ExperimentList
 from scitbx.array_family import flex
 
@@ -427,7 +429,7 @@ def test_intersection_i_seqs_unsorted():
     for i in range(100):
         import time
 
-        size = 1000
+        size = 10000
 
         sel1 = flex.random_selection(size, int(size / 2))
         sel2 = flex.random_selection(size, int(size / 2))
@@ -461,14 +463,38 @@ def test_intersection_i_seqs_unsorted():
         for (
             a,
             b,
-        ) in zip(index_a_cpp, index_a):
+        ) in zip(index_b_cpp, index_b):
             assert a == b
 
-        exec_times.append((wc_time_cpp, wc_time_py))
+        # NumPy version
+        start = time.perf_counter_ns()
+        _, index_a, index_b = np.intersect1d(
+            flumpy.to_numpy(sel1),
+            flumpy.to_numpy(sel2),
+            assume_unique=True,
+            return_indices=True,
+        )
+        index_a = flumpy.from_numpy(index_a)
+        index_b = flumpy.from_numpy(index_b)
+        end = time.perf_counter_ns()
+        wc_time_numpy = end - start
+        for (
+            a,
+            b,
+        ) in zip(index_a_cpp, index_a):
+            assert a == b
+        for (
+            a,
+            b,
+        ) in zip(index_b_cpp, index_b):
+            assert a == b
 
-    tot_cpp, tot_py = zip(*exec_times)
+        exec_times.append((wc_time_cpp, wc_time_py, wc_time_numpy))
+
+    tot_cpp, tot_py, tot_numpy = zip(*exec_times)
     print(f"Total time in C++ function: {sum(tot_cpp)}")
     print(f"Total time in Python version: {sum(tot_py)}")
+    print(f"Total time in NumPy version: {sum(tot_numpy)}")
 
 
 if __name__ == "__main__":
