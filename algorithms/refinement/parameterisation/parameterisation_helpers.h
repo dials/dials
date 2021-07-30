@@ -11,6 +11,8 @@
 #include <dials/array_family/scitbx_shared_and_versa.h>
 //#include <dials/algorithms/refinement/rtmats.h>
 #include <scitbx/math/r3_rotation.h>
+#include <boost/python.hpp>
+#include <unordered_map>
 
 namespace dials { namespace refinement {
 
@@ -925,6 +927,36 @@ namespace dials { namespace refinement {
     mat3<double> dU_dphi2_;
     mat3<double> dU_dphi3_;
   };
+
+
+  // An extension of the scope of the intersection_i_seqs method that does not
+  // require that the arrays are sorted first.
+  boost::python::tuple
+  intersection_i_seqs_unsorted(
+    const af::const_ref<std::size_t> &left,
+    const af::const_ref<std::size_t> &right)
+  {
+    std::unordered_map<std::size_t, std::size_t> lookup;
+    for (std::size_t i_a = 0; i_a < left.size(); ++i_a) {
+      lookup[left[i_a]] = i_a;
+    }
+
+    af::shared<std::size_t> index_a;
+    af::shared<std::size_t> index_b;
+    std::size_t i_a;
+    for (std::size_t i_b = 0; i_b < right.size(); ++i_b) {
+        try {
+          i_a = lookup.at(right[i_b]);
+        }
+        catch (const std::out_of_range& oor) {
+          continue;
+        }
+        index_a.push_back(i_a);
+        index_b.push_back(i_b);
+    }
+
+    return boost::python::make_tuple(index_a, index_b);
+  }
 
 }}  // namespace dials::refinement
 

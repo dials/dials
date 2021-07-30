@@ -77,6 +77,11 @@ namespace dials { namespace refinement { namespace boost_python {
       .def("d2", &PanelGroupCompose::d2)
       .def("origin", &PanelGroupCompose::origin)
       .def("derivatives_for_panel", &PanelGroupCompose::derivatives_for_panel);
+
+    def("intersection_i_seqs_unsorted",
+        &intersection_i_seqs_unsorted,
+        (arg("left"),
+         arg("right")));
   }
 
 }}}  // namespace dials::refinement::boost_python
