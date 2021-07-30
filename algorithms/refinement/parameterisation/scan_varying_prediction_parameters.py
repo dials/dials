@@ -8,7 +8,8 @@ from dials.algorithms.refinement.parameterisation.prediction_parameters import (
     XYPhiPredictionParameterisation,
 )
 from dials.array_family import flex
-from dials_refinement_helpers_ext import intersection_i_seqs_unsorted
+
+# from dials_refinement_helpers_ext import intersection_i_seqs_unsorted
 
 
 class SparseFlex:
@@ -80,7 +81,19 @@ class SparseFlex:
         # of its position in this object's self._indices to subset the
         # data, and its position in the request indices, as these become
         # the new indices of the subsetted object.
-        index_a, index_b = intersection_i_seqs_unsorted(self._indices, indices)
+
+        # Original Python version - seems faster than the C++ intersection_i_seqs_unsorted!
+        index_a = flex.size_t(0)
+        index_b = flex.size_t(0)
+        lookup = {}
+        for i_a, val in enumerate(self._indices):
+            lookup[val] = i_a
+        for i_b, val in enumerate(indices):
+            i_a = lookup.get(val)
+            if i_a is not None:
+                index_a.append(i_a)
+                index_b.append(i_b)
+        # index_a, index_b = intersection_i_seqs_unsorted(self._indices, indices)
         elements = self._data.select(index_a)
         return SparseFlex(dimension, elements, index_b)
 
