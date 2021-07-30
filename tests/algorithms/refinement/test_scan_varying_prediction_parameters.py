@@ -27,6 +27,7 @@ from dials.algorithms.refinement.prediction.managed_predictors import (
     ScansExperimentsPredictor,
     ScansRayPredictor,
 )
+from dials_refinement_helpers_ext import intersection_i_seqs_unsorted
 
 
 class _Test:
@@ -418,6 +419,56 @@ def test_SparseFlex_select():
     # Check
     for a, b in zip(sf2.as_dense_vector(), arr2):
         assert a == b
+
+
+def test_intersection_i_seqs_unsorted():
+
+    exec_times = []
+    for i in range(100):
+        import time
+
+        size = 1000
+
+        sel1 = flex.random_selection(size, int(size / 2))
+        sel2 = flex.random_selection(size, int(size / 2))
+
+        # C++ version
+        start = time.perf_counter_ns()
+        index_a_cpp, index_b_cpp = intersection_i_seqs_unsorted(sel1, sel2)
+        end = time.perf_counter_ns()
+        wc_time_cpp = end - start
+
+        # Python version
+        start = time.perf_counter_ns()
+        index_a = flex.size_t(0)
+        index_b = flex.size_t(0)
+        lookup = {}
+        for i_a, val in enumerate(sel1):
+            lookup[val] = i_a
+        for i_b, val in enumerate(sel2):
+            i_a = lookup.get(val)
+            if i_a is not None:
+                index_a.append(i_a)
+                index_b.append(i_b)
+        end = time.perf_counter_ns()
+        wc_time_py = end - start
+
+        for (
+            a,
+            b,
+        ) in zip(index_a_cpp, index_a):
+            assert a == b
+        for (
+            a,
+            b,
+        ) in zip(index_a_cpp, index_a):
+            assert a == b
+
+        exec_times.append((wc_time_cpp, wc_time_py))
+
+    tot_cpp, tot_py = zip(*exec_times)
+    print(f"Total time in C++ function: {sum(tot_cpp)}")
+    print(f"Total time in Python version: {sum(tot_py)}")
 
 
 if __name__ == "__main__":
