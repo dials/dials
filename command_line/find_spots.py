@@ -177,12 +177,12 @@ class Script:
             if experiment.imageset not in imagesets:
                 imagesets.append(experiment.imageset)
 
-        for imageset in imagesets:
+        for i, imageset in enumerate(imagesets):
             selected = flex.bool(reflections.nrows(), False)
-            for i, experiment in enumerate(experiments):
+            for j, experiment in enumerate(experiments):
                 if experiment.imageset is not imageset:
                     continue
-                selected.set_selected(reflections["id"] == i, True)
+                selected.set_selected(reflections["id"] == j, True)
             ascii_plot = spot_counts_per_image_plot(reflections.select(selected))
             if len(ascii_plot):
                 logger.info("\nHistogram of per-image spot count for imageset %i:", i)
