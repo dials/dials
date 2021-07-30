@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+import dxtbx.flumpy as flumpy
 from cctbx import sgtbx
 from scitbx.array_family import flex
 
@@ -29,7 +30,7 @@ def test_cosym_target(space_group):
         assert t.dim == m
         assert t.rij_matrix.shape == (n * m, n * m)
         # x = np.random.rand(n * m * t.dim)
-        x = flex.random_double(n * m * t.dim).as_numpy_array()
+        x = flumpy.to_numpy(flex.random_double(n * m * t.dim))
         f0 = t.compute_functional(x)
         g = t.compute_gradients(x)
         g_fd = t.compute_gradients_fd(x)

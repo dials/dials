@@ -4,8 +4,8 @@ import logging
 
 import scipy.optimize
 
+import dxtbx.flumpy as flumpy
 import scitbx.lbfgs
-from scitbx.array_family import flex
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ class lbfgs_with_curvs:
         """
         self.target = target
 
-        self.x = flex.double(coords)
+        self.x = flumpy.from_numpy(coords)
         self.f = None
         self.g = None
 
@@ -42,7 +42,7 @@ class lbfgs_with_curvs:
         self.minimizer = scitbx.lbfgs.run(
             target_evaluator=self, termination_params=termination_params
         )
-        self.coords = self.x.as_numpy_array()
+        self.coords = flumpy.to_numpy(self.x)
 
     def compute_functional_gradients_diag(self):
         """Compute the functional, gradients and diagonal.
@@ -64,11 +64,11 @@ class lbfgs_with_curvs:
         Returns:
           tuple: A tuple of the functional, gradients and curvatures.
         """
-        x = self.x.as_numpy_array()
+        x = flumpy.to_numpy(self.x)
         self.f = self.target.compute_functional(x)
         self.g = self.target.compute_gradients(x)
         self.c = self.target.curvatures(x)
-        return self.f, flex.double(self.g), flex.double(self.c)
+        return self.f, flumpy.from_numpy(self.g), flumpy.from_numpy(self.c)
 
     def compute_functional_and_gradients(self):
         """Compute the functional and gradients.
@@ -76,10 +76,10 @@ class lbfgs_with_curvs:
         Returns:
           tuple: A tuple of the functional and gradients.
         """
-        x = self.x.as_numpy_array()
+        x = flumpy.to_numpy(self.x)
         self.f = self.target.compute_functional(x)
         self.g = self.target.compute_gradients(x)
-        return self.f, flex.double(self.g)
+        return self.f, flumpy.from_numpy(self.g)
 
     def callback_after_step(self, minimizer):
         """Log progress after each successful step of the minimisation."""

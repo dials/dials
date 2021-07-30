@@ -10,6 +10,7 @@ import pandas as pd
 from orderedset import OrderedSet
 
 import cctbx.sgtbx.cosets
+import dxtbx.flumpy as flumpy
 from cctbx import miller, sgtbx
 from cctbx.array_family import flex
 
@@ -179,14 +180,14 @@ class Target:
             cb_op_str = cb_op.as_xyz()
             indices[cb_op_str] = np.array(
                 [
-                    h.iround().as_numpy_array()
+                    flumpy.to_numpy(h.iround())
                     for h in indices_reindexed.as_vec3_double().parts()
                 ]
             ).transpose()
-            epsilons[cb_op_str] = self._patterson_group.epsilon(
-                indices_reindexed
-            ).as_numpy_array()
-        intensities = self._data.data().as_numpy_array()
+            epsilons[cb_op_str] = flumpy.to_numpy(
+                self._patterson_group.epsilon(indices_reindexed)
+            )
+        intensities = flumpy.to_numpy(self._data.data())
 
         # Map indices to an array of flat 1d indices which can later be used for
         # matching pairs of indices
