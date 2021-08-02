@@ -247,7 +247,7 @@ def test_scan_varying_missing_segments_multi_crystal(dials_data, tmpdir):
     assert image_ranges[1][0] == 1
 
 
-@pytest.mark.parametrize("gcb", ["None", "2000"])
+@pytest.mark.parametrize("gcb", ["None", "3000"])
 def test_scan_varying_multi_scan_one_crystal(gcb, dials_data, tmpdir):
     # https://github.com/dials/dials/issues/994
     location = dials_data("l_cysteine_dials_output")
@@ -263,8 +263,8 @@ def test_scan_varying_multi_scan_one_crystal(gcb, dials_data, tmpdir):
             "output.history=history.json",
             "outlier.algorithm=tukey",
             "max_iterations=3",
-            "unit_cell.smoother.interval_width_degrees=72",
-            "orientation.smoother.interval_width_degrees=72",
+            "unit_cell.smoother.interval_width_degrees=56",
+            "orientation.smoother.interval_width_degrees=56",
             "gradient_calculation_blocksize=" + gcb,
         ),
         working_directory=tmpdir,
@@ -282,10 +282,10 @@ def test_scan_varying_multi_scan_one_crystal(gcb, dials_data, tmpdir):
     history = Journal.from_json_file(tmpdir.join("history.json").strpath)
 
     expected_rmsds = [
-        (0.14016587828475036, 0.22259315848378808, 0.00234991265544381),
-        (0.1212473654228743, 0.15740582269530204, 0.002128467221939613),
-        (0.11015915334487252, 0.1332217772539705, 0.001980680484554896),
-        (0.10432406373225399, 0.12781674128322154, 0.0018309940011838393),
+        (0.1401658782847504, 0.2225931584837884, 0.002349912655443814),
+        (0.12060230585178289, 0.1585977879739876, 0.002114318828411418),
+        (0.10970832317567975, 0.1348574975434352, 0.001955034565537597),
+        (0.10373159352273859, 0.12827852889951505, 0.0017901404193256304),
     ]
     for a, b in zip(history["rmsd"], expected_rmsds):
         assert a == pytest.approx(b, abs=1e-6)
