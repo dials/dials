@@ -29,7 +29,6 @@ from dials.algorithms.refinement.prediction.managed_predictors import (
     ScansExperimentsPredictor,
     ScansRayPredictor,
 )
-from dials_refinement_helpers_ext import intersection_i_seqs_unsorted
 
 
 class _Test:
@@ -423,78 +422,53 @@ def test_SparseFlex_select():
         assert a == b
 
 
-def test_intersection_i_seqs_unsorted():
+def test_SparseFlex_select_intersection():
+    """SparseFlex.select requires the intersection of two size_t arrays, which
+    contain unique indices but are not sorted. The original Python solution is
+    slow, but there is a fast alternative using NumPy. Check these give the
+    same results."""
 
-    exec_times = []
-    for i in range(100):
-        import time
+    # Two random selections, randomly ordered
+    size = 1000
+    sel1 = flex.random_selection(size, int(size / 2))
+    perm = flex.random_permutation(int(size / 2))
+    sel1 = sel1.select(perm)
+    sel2 = flex.random_selection(size, int(size / 2))
+    perm = flex.random_permutation(int(size / 2))
+    sel2 = sel2.select(perm)
 
-        size = 10000
+    # Python version
+    index_a = flex.size_t(0)
+    index_b = flex.size_t(0)
+    lookup = {}
+    for i_a, val in enumerate(sel1):
+        lookup[val] = i_a
+    for i_b, val in enumerate(sel2):
+        i_a = lookup.get(val)
+        if i_a is not None:
+            index_a.append(i_a)
+            index_b.append(i_b)
 
-        sel1 = flex.random_selection(size, int(size / 2))
-        sel2 = flex.random_selection(size, int(size / 2))
+    # NumPy version, with conversions using flumpy
+    _, index_a_np, index_b_np = np.intersect1d(
+        flumpy.to_numpy(sel1),
+        flumpy.to_numpy(sel2),
+        assume_unique=True,
+        return_indices=True,
+    )
+    index_a_np = flumpy.from_numpy(index_a_np)
+    index_b_np = flumpy.from_numpy(index_b_np)
 
-        # C++ version
-        start = time.perf_counter_ns()
-        index_a_cpp, index_b_cpp = intersection_i_seqs_unsorted(sel1, sel2)
-        end = time.perf_counter_ns()
-        wc_time_cpp = end - start
-
-        # Python version
-        start = time.perf_counter_ns()
-        index_a = flex.size_t(0)
-        index_b = flex.size_t(0)
-        lookup = {}
-        for i_a, val in enumerate(sel1):
-            lookup[val] = i_a
-        for i_b, val in enumerate(sel2):
-            i_a = lookup.get(val)
-            if i_a is not None:
-                index_a.append(i_a)
-                index_b.append(i_b)
-        end = time.perf_counter_ns()
-        wc_time_py = end - start
-
-        for (
-            a,
-            b,
-        ) in zip(index_a_cpp, index_a):
-            assert a == b
-        for (
-            a,
-            b,
-        ) in zip(index_b_cpp, index_b):
-            assert a == b
-
-        # NumPy version
-        start = time.perf_counter_ns()
-        _, index_a, index_b = np.intersect1d(
-            flumpy.to_numpy(sel1),
-            flumpy.to_numpy(sel2),
-            assume_unique=True,
-            return_indices=True,
-        )
-        index_a = flumpy.from_numpy(index_a)
-        index_b = flumpy.from_numpy(index_b)
-        end = time.perf_counter_ns()
-        wc_time_numpy = end - start
-        for (
-            a,
-            b,
-        ) in zip(index_a_cpp, index_a):
-            assert a == b
-        for (
-            a,
-            b,
-        ) in zip(index_b_cpp, index_b):
-            assert a == b
-
-        exec_times.append((wc_time_cpp, wc_time_py, wc_time_numpy))
-
-    tot_cpp, tot_py, tot_numpy = zip(*exec_times)
-    print(f"Total time in C++ function: {sum(tot_cpp)}")
-    print(f"Total time in Python version: {sum(tot_py)}")
-    print(f"Total time in NumPy version: {sum(tot_numpy)}")
+    for (
+        a,
+        b,
+    ) in zip(index_a_np, index_a):
+        assert a == b
+    for (
+        a,
+        b,
+    ) in zip(index_b_np, index_b):
+        assert a == b
 
 
 if __name__ == "__main__":
