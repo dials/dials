@@ -88,6 +88,24 @@ class SparseFlex:
         index_a = flumpy.from_numpy(index_a.astype(np.ulonglong))
         index_b = flumpy.from_numpy(index_b.astype(np.ulonglong))
 
+        # DEBUG
+        # Repeat with the Python version and check all indices are the same
+        index_a_py = flex.size_t(0)
+        index_b_py = flex.size_t(0)
+        lookup = {}
+        for i_a, val in enumerate(self._indices):
+            lookup[val] = i_a
+        for i_b, val in enumerate(indices):
+            i_a = lookup.get(val)
+            if i_a is not None:
+                index_a_py.append(i_a)
+                index_b_py.append(i_b)
+        for a1, a2 in zip(index_a, index_a_py):
+            assert a1 == a2
+        for b1, b2 in zip(index_b, index_b_py):
+            assert b1 == b2
+        # END DEBUG
+
         # The first set of indices select the data, while the second set
         # provide their new indices
         elements = self._data.select(index_a)
