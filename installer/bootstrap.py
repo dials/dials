@@ -764,7 +764,10 @@ def git(module, git_available, ssh_available, reference_base, settings):
         direct_branch_checkout = ["-b", remote_branch]
     reference_parameters = []
     if reference_base and os.path.exists(os.path.join(reference_base, module, ".git")):
-        reference_parameters = ["--reference", os.path.join(reference_base, module)]
+        reference_parameters = [
+            "--reference-if-able",
+            os.path.join(reference_base, module),
+        ]
 
     with concurrent_git_connection_limit:
         p = subprocess.Popen(
