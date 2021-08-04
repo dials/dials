@@ -229,7 +229,7 @@ def generate_multi_crystal_symmetry_and_scaling(options):
         os.symlink(src, dst)
         input_files.append(dst.name)
     runcmd(["xia2.multiplex"] + input_files)
-    tmpdir.join("xia2.multiplex.html").copy(outdir.join("xia2.multiplex.html"))
+    shutil.copy(tmpdir / "xia2.multiplex.html", outdir)
     runcmd(["dials.cosym"] + input_files)
     shutil.copy(tmpdir / "dials.cosym.html", outdir)
     runcmd(["dials.scale", "symmetrized.expt", "symmetrized.refl"])
