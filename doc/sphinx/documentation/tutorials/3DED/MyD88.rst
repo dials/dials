@@ -126,7 +126,7 @@ Tilt axis orientation
 The diffraction geometry metadata printed by ``dials.show imported.expt``
 suggests that the orientation of the rotation axis is given by
 
-.. code-block:: bash
+.. code-block::
 
     Rotation axis:   {0.782563,-0.622571,0}
 
