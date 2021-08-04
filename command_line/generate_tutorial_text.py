@@ -42,6 +42,7 @@ def generate_processing_detail_text_thaumatin(options):
     tmpdir = pathlib.Path("./tmp-thaumatin")
     tmpdir.mkdir(exist_ok=True)
     outdir = options.output / "thaumatin"
+    outdir.mkdir(parents=True, exist_ok=True)
     runcmd = functools.partial(
         _command_runner, output_directory=outdir, working_directory=tmpdir
     )
@@ -139,6 +140,7 @@ def generate_processing_detail_text_betalactamase(options):
     tmpdir = pathlib.Path("./tmp-betalactamase")
     tmpdir.mkdir(exist_ok=True)
     outdir = options.output / "betalactamase"
+    outdir.mkdir(parents=True, exist_ok=True)
     runcmd = functools.partial(
         _command_runner, output_directory=outdir, working_directory=tmpdir
     )
@@ -209,6 +211,7 @@ def generate_multi_crystal_symmetry_and_scaling(options):
     tmpdir = pathlib.Path(tempfile.mkdtemp("_multi_crystal", dir="."))
     tmpdir.mkdir(exist_ok=True)
     outdir = options.output / "multi_crystal"
+    outdir.mkdir(parents=True, exist_ok=True)
     runcmd = functools.partial(
         _command_runner, output_directory=outdir, working_directory=tmpdir
     )
