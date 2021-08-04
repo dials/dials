@@ -8,12 +8,12 @@ Introduction
 ============
 
 DIALS has been successfully adapted for processing electron diffraction data
-collected using the 3DED or MicroED methods. The tutorials here work through
+collected using the 3DED or MicroED method. The tutorials here work through
 some example cases.
 
 .. toctree::
   :maxdepth: 1
 
-  3DED/lysozyme_nanocrystals
   3DED/MyD88
+  3DED/lysozyme_nanocrystals
 
