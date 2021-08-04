@@ -14,18 +14,18 @@ Introduction
 ============
 
 The structures of MyD88\ :sup:`TIR` domain higher-order assemblies were resolved
-by MicroED and SFX methods, providing insight into Toll-like receptor signal
+by MicroED and SFX, providing insight into Toll-like receptor signal
 transduction. Details are published in this article:
 
 .. pubmed:: 33972532 MyD88
 
 DIALS was not used during the original work, but the datasets have been made
-public, so we can show how to use DIALS to reproduce those results.
+public. So we can show how to use DIALS to reproduce the published results.
 
 Data
 ====
 
-The data for this tutorial are available online at SBGrid:
+The datasets for this tutorial are available online at SBGrid:
 
 `Clabbers, MT.B., H Xu, and X Zou. 2021. “Microcrystal Electron
 Diffraction Data for: Myeloid Differentiation Primary Response
@@ -51,7 +51,7 @@ Exploratory analysis
 
 Before we dive in and try to process all eighteen datasets we should perform some
 initial investigations to get a feel for the data and ensure the metadata
-describing the diffraction experiments are being read correctly. We might as well
+describing the diffraction experiments is being read correctly. We might as well
 take the first dataset for this. To start, we change our working directory to
 our processing area, and then list the contents of the dataset directory.
 
@@ -62,7 +62,7 @@ our processing area, and then list the contents of the dataset directory.
 
 We see that dataset 1 consists of 72 images with the extension ``.img``, with
 filenames numbered sequentially from ``00001.img`` to ``00072.img``. If the DIALS
-programs are in the ``PATH`` we can check if DIALS can interpret one of these
+programs are in the ``PATH`` we can now check if DIALS can interpret one of these
 images.
 
 .. code-block:: bash
@@ -71,7 +71,7 @@ images.
 
 The output shows us that indeed DIALS recognises this image. Near the top of the
 output we see ``Format class: FormatSMVTimePix_SU_516x516``, indicating that there
-is a specific image reader for this image rather than DIALS falling back on a
+is even a specific image reader for this image rather than DIALS falling back on a
 generic reader. That's a good start, but if we look carefully through the rest
 of the output we might spot a problem.
 
@@ -82,17 +82,18 @@ Detector distance
 
    distance: 2.193
 
-Those with experience with DIALS might know that distances in laboratory space
-in the program are measured in millimetres [*]_. This is evident from an earlier line,
+Those with experience with DIALS might know that laboratory space distances in
+the program are measured in millimetres [*]_. This is evident from an earlier line,
 ``pixel_size:{0.055,0.055}`` in which we see that the pixel size of the Timepix
-detector is 0.055 mm, or 55 µm, as expected.
+detector is 0.055 mm, i.e. 55 µm, as expected.
 
 .. [*] except for the wavelength, which is in Ångströms.
 
-Here we see a general problem with the SMV_ format used for these images. The
-format definition is not rigorous, so there is no way to know what units are in
+Here we see a general problem with the SMV_ file format used for these images. The
+format definition is not rigorous, so there is no way to *be sure* what units are in
 use. Despite that fact that almost all known SMV formats use millimetres for
-detector distance, this is not enforced, and we have clearly found an exception.
+detector distance, this is not enforced by any standard, and we have clearly
+found an exception.
 
 .. _SMV: https://strucbio.biologie.uni-konstanz.de/ccp4wiki/index.php/SMV_file_format
 
@@ -103,8 +104,8 @@ Let's assume the distance should be 2193 millimetres and import the full dataset
    dials.import ../../814/1/*.img distance=2193
 
 Looking at the metadata with ``dials.show show.imported.expt`` shows that the
-distance from the headers is now overwritten to be 2193 mm. At this point we
-can now view the images:
+distance from the headers is now overwritten to be 2193 mm. Let's now view the
+images:
 
 .. code-block:: bash
 
@@ -122,21 +123,21 @@ headers.
 Tilt axis orientation
 ---------------------
 
-The diffraction geometry metadata in ``imported.expt`` suggests that the orientation
-of the rotation axis is given by
+The diffraction geometry metadata printed by ``dials.show imported.expt``
+suggests that the orientation of the rotation axis is given by
 
 .. code-block:: bash
 
     Rotation axis:   {0.782563,-0.622571,0}
 
-But should we trust this? It is not as immediately visible as the beam centre,
-but sometimes we can get a visual clue from the image viewer.
+But should we trust this? It is not as immediately visible a thing as the beam centre,
+but sometimes we *can* get a visual clue from the image viewer.
 Thinking of the geometry of the diffraction experiment, we realise
 that spots that are perpendicular to the rotation axis appear and disappear
 rapidly during rotation of the sample. Conversely, spots located along the rotation
 axis remain in the diffracting condition for a long time. Therefore, by clicking
 through the diffraction images we can look for a direction in the images in which
-spots seem to persist for a long time. Doing this should produce a view similar
+spots seem to persist for a long time. Doing this quickly should produce a view similar
 to this animation:
 
 .. image:: https://dials.github.io/images/MyD88/diffraction_movie.gif
@@ -144,11 +145,11 @@ to this animation:
    :align: center
 
 If we look carefully we see that the spots in the lower left
-and upper right persist for more images than spots in the upper left and lower
+and upper right persist on more images than spots in the upper left and lower
 right. Therefore, we expect the rotation axis to be approximately along the
 lower left to upper right diagonal.
 
-We can also get some idea of this by stacking the images. It is helpful to alter
+We can also get some idea of the axis orientation by stacking the images. It is helpful to alter
 the ``Stack type`` on the ``Settings`` window first to select ``max``, and then
 in the main image viewer window change the value of ``Stack`` from ``1`` to
 ``72``. The view now shows a composite image consisting of the maximum value at
@@ -208,10 +209,10 @@ spot-finding.
 Spot-finding
 ------------
 
-Finding appropriate spot-finding settings can be challenging for electron diffraction
+Finding appropriate spot-finding settings can be challenging for some electron diffraction
 datasets with commonly-used types of integrating detectors. However, in this case
 the Timepix is a counting detector with a gain of 1.0, avoiding issues with
-improperly-modelled detector response. The default spot-finding settings used
+improperly-modelled detector response. The default spot-finding settings as used
 for X-ray photon counting detectors are also appropriate here. We can view the
 effect of these settings in the :doc:`dials.image_viewer<../../programs/dials_image_viewer>`.
 In this case we have ticked the box next to ``Threshold pixels`` in the ``Settings``
@@ -222,10 +223,11 @@ overlay.
    :width: 80%
    :align: center
 
-We see that much of the low resolution inelastic scatter around the direct beam
+The strong diffraction spots are clearly being found, but we also see that
+a big region of inelastic scatter around the direct beam
 is picked up by the spot-finding algorithm. This might cause problems with
 indexing. By using the ``Resolution`` reading at the bottom of the image viewer
-we see that most of this occurs within a resolution of 20 Å or higher, so we'll
+we see that most of this occurs within a d-spacing of 20 Å or higher, so we'll
 exclude that, but otherwise leave spot-finding settings as default:
 
 .. code-block:: bash
@@ -254,13 +256,14 @@ filtering steps. The log ends with an ASCII-art histogram:
 
     --------------------------------------------------------------------------------
 
-With X-ray datasets this can often be used as a quick assessment of radiation
+With X-ray datasets this histogram can often be used as a quick assessment of radiation
 damage. With electron diffraction that can be more difficult, both because the
 total rotation angle for the scan is usually smaller and because the Ewald sphere
 for electron diffraction is very flat. This means that the variability of this
-plot is rather high. Some orientations are close to zone axes and produce many
-spots whereas others off those directions produce bands of spots instead. This
-can be explored now in the image viewer with this command:
+plot is rather high. Some orientations are close to zone axes and have many
+spots in the diffracting condition, whereas other orientations produce
+bands of fewer spots instead. We can explore the found spots now in the image
+viewer with this command:
 
 .. code-block:: bash
 
@@ -295,14 +298,14 @@ side effect of this is that simultaneous refinement of the detector distance and
 the unit cell parameters is hardly possible. Changes in the distance can be offset
 by a scaling of the cell volume with negligible
 differences in the predicted spot positions. To avoid refinement wandering off
-to give unreasonable values for the cell and distance, we typically fix the detector
-distance by adding the option ``detector.fix=distance`` to jobs that include
+to give unreasonable values for both the cell and distance, we typically fix the latter
+by adding the option ``detector.fix=distance`` to jobs that include
 geometry refinement.
 
 We may also have some reasonable doubts about the accuracy of our estimated
 rotation axis orientation. Usually in DIALS the rotation axis is assumed to be
-fixed to the laboratory frame, but we can change that behaviour by setting the
-option ``goniometer.fix=None``. We will do indexing using the standard 3D FFT
+known very well and fixed to the laboratory frame, but we can change that behaviour by setting the
+option ``goniometer.fix=None``. We will otherwise do indexing using the standard 3D FFT
 algorithm and other parameters as default, so the command we need is:
 
 .. code-block:: bash
@@ -346,8 +349,8 @@ detail in this paper:
 
 .. pubmed:: 29872002 Electron diffraction
 
-To investigate the alternative we need invert the rotation axis on import and try
-indexing again. We don't need to run the spot-finding again, as the experimental
+To investigate the alternative we need to invert the rotation axis on import and try
+indexing again. We don't need to repeat the spot-finding though, as the experimental
 geometry does not affect the spots that are found on each image.
 
 .. code-block:: bash
@@ -357,7 +360,7 @@ geometry does not affect the spots that are found on each image.
 
 In this case there is one more indexed spot:
 
-.. code-block:: bash
+.. code-block::
 
   +------------+-------------+---------------+-------------+
   |   Imageset |   # indexed |   # unindexed | % indexed   |
@@ -365,9 +368,9 @@ In this case there is one more indexed spot:
   |          0 |         563 |            69 | 89.1%       |
   +------------+-------------+---------------+-------------+
 
-but most tellingly, the ``RMSD_Z`` value is significantly decreased:
+but most tellingly, the ``RMSD_Z`` value has significantly decreased:
 
-.. code-block:: bash
+.. code-block::
 
   RMSDs by experiment:
   +-------+--------+----------+----------+------------+
@@ -377,7 +380,7 @@ but most tellingly, the ``RMSD_Z`` value is significantly decreased:
   |     0 |    528 |   0.5165 |  0.67284 |    0.28888 |
   +-------+--------+----------+----------+------------+
 
-Here the RMSDs are the root mean square deviation between observed and predicted
+The RMSDs are the root mean square deviation between observed and predicted
 spot positions for reflections used in refinement. For both this job and the
 previous one, the positional RMSDs are less than 1 pixel
 in both X (fast) and Y (slow) directions on the image. However, the RMSD in
@@ -393,8 +396,8 @@ from our original guess.
   the box next to ``Invert rotation axis``. We see that the orientation of the
   spots changes, but they still make a clear lattice either way.
 
-In this case, we will continue with the second job. To ensure we are working
-with the right files, the correct steps up to this point are:
+In this case, we will continue with the inverted axis. As a recap and to ensure
+we are working with the right files, the correct steps up to this point are:
 
 .. code-block:: bash
 
@@ -409,7 +412,7 @@ Unless a space group is explicitly specified,
 :doc:`dials.index<../../programs/dials_index>` will return the
 best fitting triclinic (:math:`P\ 1`) solution. A separate program,
 :doc:`dials.refine_bravais_settings<../../programs/dials_refine_bravais_settings>`,
-can be used to analyse the lattice symmetry and suggest a higher-symmetry point
+can then be used to analyse the lattice symmetry and suggest a higher-symmetry point
 group. As this also does geometry refinement, we need to ensure the detector
 distance remains fixed:
 
@@ -433,9 +436,9 @@ a centred monoclinic lattice:
   +------------+--------------+--------+--------------+----------+-----------+------------------------------------------+----------+--------------+
   * = recommended solution
 
-If we knew nothing about the lattice beforehand we might continue and process with
+If we knew nothing about the crystal structure beforehand we might continue and process with
 this solution. However, here we are going to "cheat" slightly and look
-at the cell from the published paper. In there it is given as
+at the cell from the published paper. There it is given as
 
   =============== =====
   Cell dimensions
@@ -444,11 +447,11 @@ at the cell from the published paper. In there it is given as
   α, β, γ (°)     90.00, 107.70, 90.00
   =============== =====
 
-Clearly we have found a different cell! In fact, here it has found an
-:math:`I\ 2` setting but erroneously reports it as :math:`C\ 2`. This
+Clearly we have found a different cell! In fact, here ``dials.refine_bravais_settings`` found an
+:math:`I\ 2` setting but erroneously reported it as :math:`C\ 2`. This
 issue has been fixed (https://github.com/dials/dials/pull/1825) so that from the
 next release of DIALS the table above will correctly read ``mI``. The reason
-DIALS selects the :math:`I\ 2` setting is because by default DIALS favours
+DIALS selects the :math:`I\ 2` setting here is because by default it favours
 monoclinic centred cells that have β angles closer to 90°. However, we can change
 that behaviour and run again:
 
@@ -456,7 +459,7 @@ that behaviour and run again:
 
    dials.refine_bravais_settings indexed.expt indexed.refl detector.fix=distance best_monoclinic_beta=False
 
-and now we get
+and with that we get
 
 .. code-block::
 
@@ -479,7 +482,7 @@ the presumed detector distance of 2193 mm is still not correct.
 
 We will fix that in the next section, but first we have to reindex the reflections
 to match the chosen Bravais lattice solution, ``bravais_setting_2.expt``.
-To do that we need to take the change-of-basis operator from the solution table
+To do that we take the change-of-basis operator from the solution table
 and pass that into the :doc:`dials.reindex<../../programs/dials_reindex>`
 program:
 
@@ -503,7 +506,8 @@ affect the refined unit cell values.
 
 To set up a restraint we must write a file using
 `PHIL syntax <https://cci.lbl.gov/docs/cctbx/doc_low_phil/>`_. The interface
-to restraints is a bit awkward, but most of this can be copy-and-pasted, with
+to restraints is a bit awkward, but having written this once, we can then copy-and-paste
+it for other uses, with
 changes required only to the ``values`` and the ``sigmas``. So, in a text
 editor, copy these lines and save the file as ``restraint.phil``:
 
@@ -542,7 +546,7 @@ We added ``scan_varying=False`` to ensure that only "scan static" refinement is
 performed, otherwise we get one round of scan static refinement followed by a
 round of scan-varying refinement. The latter allows the crystal parameters to
 vary across the scan, but those smoothly-changing parameters are not affected by
-the restraint. In this case, we are not trying to get the most sophisticated,
+the restraint. In this situation, we are not trying to get a sophisticated,
 varying model for the diffraction geometry, but are just trying to correct the
 wrong detector distance.
 
@@ -556,7 +560,7 @@ At the end of the log we see that the unit cell now looks correct:
       Space group: C 1 2 1
 
 and the RMSDs still look about as good as before, so refinement appears to have
-been successful. We can get the detector distance by showing the output experiments
+been successful. We can see the new detector distance by showing the output experiments
 file:
 
 .. code-block:: bash
@@ -582,7 +586,7 @@ other steps to get back to the correctly indexed cell. We will skip the
 ``dials.refine_bravais_settings`` and ``dials.reindex`` steps now that we have
 determined the lattice symmetry, by selecting ``space_group=C2`` during the
 indexing job. This will make it easier to script these steps for the other
-datasets
+datasets.
 
 .. code-block:: bash
 
@@ -598,10 +602,10 @@ After indexing we usually run :doc:`dials.refine<../../programs/dials_refine>` t
 construct a more sophisticated model of the diffraction geometry prior to
 integration. In particular, by default this will perform a round of scan-varying
 refinement, in which the crystal model (unit cell and orientation) is allowed to
-vary as a function of image number. For some electron diffraction datasets for
+vary as a function of image number. For some electron diffraction datasets, for
 which the direct beam position appears to drift during data collection, we
 can also try to model scan-varying beam orientation, however we are not going
-to try that here. Following from the last ``dials.index`` job, our refinement
+to try that in this tutorial. Following from the last ``dials.index`` job, our refinement
 command is:
 
 .. code-block:: bash
@@ -626,7 +630,7 @@ The crystal model is printed at the end of the log:
                   { 0.0086, -0.0002, -0.0075}}
       A sampled at 73 scan points
 
-The unit cell here refers to the *static* cell refined during the first
+The unit cell printed here is the *static* cell refined during the first
 macrocycle of refinement. We can tell that there is a *scan-varying* cell model
 as well though, from the final line, ``A sampled at 73 scan points``.
 
@@ -684,8 +688,9 @@ reflections are centred in their integration boxes.
 
 Here we see that the fairly large rocking curve for the reflections means there
 are many overlapping shoeboxes. However, this is fine as long as the peak regions
-do not overlap. The size of the reflection shoebox model is given towards the top
-of ``dials.integrate.log``:
+do not overlap. We cannot easily see this here, but the limited number of failed
+profile fits tells us the peak regions are well separated. The size of the
+reflection shoebox model is given towards the top of ``dials.integrate.log``:
 
 .. code-block::
 
@@ -699,8 +704,8 @@ At this stage we would learn much more about the quality of the data from scalin
 and merging. However this single dataset is very incomplete. We should try
 integrating all the other datasets first and including them in the scaling job.
 
-Scripting processing
-====================
+Scripted processing
+===================
 
 During the :ref:`section-label-exploratory-analysis` we came up with a reasonable set of
 processing commands for dataset 1, while figuring out incorrect or missing
@@ -711,14 +716,14 @@ same way. This example uses a BASH shell script on Linux, but we could do
 similar on other systems.
 
 First we change to the directory above where we have been working on dataset 1,
-and if not already done, we'll make separate directories for all the datasets
+and if not already done, we'll make separate processing directories for all the datasets
 
 .. code-block:: bash
 
   cd ..
   mkdir -p {1..18}
 
-Now we'll use a text editor to make a file, called ``process.sh`` for example
+Now we'll use a text editor to make a file, called ``process.sh`` for example,
 and enter these lines:
 
 .. code-block:: bash
@@ -753,13 +758,15 @@ Scaling
 =======
 
 We now want to combine the 18 datasets, scale them together, and calculate merging
-statistics. We will use the :doc:`dials.scale<../../programs/dials_scale>` for
+statistics. We will use :doc:`dials.scale<../../programs/dials_scale>` for
 this. A particularly helpful feature of this program is its capability to
 automatically filter out bad parts of the combined dataset using the ΔCC½ metric.
 By default this removes complete datasets, which is useful for snapshot and small
-wedge serial crystallography where we are not paying so much attention to
-changes during the dataset caused by radiation damage. By contrast, in this case,
-we'd like to try filtering individual bad images rather than complete datasets.
+wedge serial crystallography where we tend to consider each dataset a unit and
+are not paying much attention to changes *within* each dataset caused, for example,
+by radiation damage. By contrast, in this case, we'd like to try filtering
+individual bad images rather than complete datasets. The command we need for that
+is the following:
 
 .. code-block:: bash
 
@@ -774,8 +781,9 @@ we'd like to try filtering individual bad images rather than complete datasets.
 
   cd ..
 
-The first three options set up the ΔCC½ filtering, in ``image_group`` mode rather
-than the default ``dataset``. We also set the ``group_size`` to 1 rather than the
+The first three options passed to ``dials.scale`` set up the ΔCC½ filtering,
+in ``image_group`` mode rather than the default ``dataset``, and we also set
+the ``group_size`` to 1 rather than the
 default 10 as these datasets are rather wide-sliced. The next option sets a
 resolution limit. We have chosen 3.0 Å here to match the processing published in
 the paper.
@@ -807,14 +815,14 @@ statistics:
   Total observations                            34189    1926    1184
   Total unique                                   2380     129     116
 
-This, and much more, is also saved to a HTML format report page. On Linux you
+These, and many more, details are also saved to a HTML format report page. On Linux you
 can usually open this up with the command
 
 .. code-block:: bash
 
-  xdg-open dials.scale.html
+  xdg-open scale/dials.scale.html
 
-This contains many useful plots, for example statistics as a function of
+This contains many useful plots, for example various statistics as a function of
 resolution:
 
 .. image:: https://dials.github.io/images/MyD88/cchalf.png
@@ -840,7 +848,7 @@ MTZ format (``scaled.mtz``) like this
 
   dials.export scale/scaled.expt scale/scaled.refl
 
-Though many downstream steps require the merged intensities, which we can
+However, many downstream steps require the merged intensities, which we can
 create using the ``dials.merge`` program.
 
 .. code-block:: bash
