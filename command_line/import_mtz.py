@@ -9,18 +9,15 @@ import logging
 import math
 import sys
 from collections import OrderedDict
+from dataclasses import dataclass
+from typing import List, Tuple
 
-from dxtbx.model import (
-    Beam,
-    Crystal,
-    Detector,
-    Experiment,
-    ExperimentList,
-    Goniometer,
-    Scan,
-)
-from iotbx import mtz
-from libtbx.phil import parse
+import cctbx
+import iotbx.mtz
+import libtbx.phil
+import scitbx.array_family
+from dxtbx.model import Beam, Crystal, Detector, Experiment, ExperimentList, Scan
+from dxtbx.model.goniometer import GoniometerFactory
 from scitbx import matrix
 
 from dials.algorithms.refinement.refinement_helpers import set_obs_s1
@@ -33,9 +30,24 @@ logger = logging.getLogger("dials.command_line.import_mtz")
 help_message = """
 
 This program makes DIALS datafiles from an MTZ input.
+
+More specifically, it is intended to allow importing of integrated MTZ files
+for data reduction in DIALS or dependent software, e.g. xia2.multiplex.
+As not all information can be contained within mtz files, there may be some
+less common program options that are not possible with these files imported
+from mtz.
+
+Ideally, the image template can be provided with image.template=, which allows
+reading of the (unrefined) detector models, goniometer, beam and scan, and the
+crystal model can be determined from the MTZ data.
+If the template is not provided, then the models are constructed from the header
+data. It is necessary to supply the detector pixel_size, and sometimes the scan
+oscillation step.
+
+
 """
 
-phil_scope = parse(
+phil_scope = libtbx.phil.parse(
     """
 
   input {
@@ -82,6 +94,8 @@ phil_scope = parse(
             .type = float(value_min=0.0)
     }
 
+    include scope dxtbx.model.goniometer.goniometer_phil_scope
+
   }
 
   output {
@@ -95,18 +109,21 @@ phil_scope = parse(
       .help = "Name of the output experiments file"
 
   }
-"""
+""",
+    process_includes=True,
 )
 
 
-def detector_info_from_batch_headers(unmerged_mtz):
+def detector_info_from_batch_headers(
+    unmerged_mtz: iotbx.mtz.object,
+) -> Tuple[Tuple[int, int], float]:
     b0 = unmerged_mtz.batches()[0]
     panel_size = int(b0.detlm()[1]), int(b0.detlm()[3])
     panel_distance = b0.dx()[0]
     return panel_size, panel_distance
 
 
-def mosflm_B_matrix(unit_cell):
+def mosflm_B_matrix(unit_cell: cctbx.uctbx.unit_cell) -> scitbx.matrix:
     rp = unit_cell.reciprocal_parameters()
     p = unit_cell.parameters()
     d2r = math.pi / 180.0
@@ -126,7 +143,9 @@ def mosflm_B_matrix(unit_cell):
     return B
 
 
-def scan_info_from_batch_headers(unmerged_mtz, verbose=True):
+def scan_info_from_batch_headers(
+    unmerged_mtz: iotbx.mtz.object, verbose: bool = True
+) -> OrderedDict:
     batches = unmerged_mtz.batches()
 
     scans = OrderedDict(
@@ -194,14 +213,87 @@ def scan_info_from_batch_headers(unmerged_mtz, verbose=True):
     return scans
 
 
-def create_reflection_table_from_mtz(
-    unmerged_mtz, params, experiments, batch_offset=None
-):
-    """Extract reflection table data"""
+@dataclass
+class MTZColumnData:
+    intensities: cctbx.miller.array = None
+    profile_intensities: cctbx.miller.array = None
+    batches: scitbx.array_family.flex.int = None
+    indices: cctbx.array_family.flex.miller_index = None
+    xpos: scitbx.array_family.flex.double = None
+    ypos: scitbx.array_family.flex.double = None
+    phi: scitbx.array_family.flex.double = None
+    scale_used: scitbx.array_family.flex.double = None
+    partiality: scitbx.array_family.flex.double = None
+    bg: scitbx.array_family.flex.double = None
+    bgsig: scitbx.array_family.flex.double = None
+    lp: scitbx.array_family.flex.double = None
+    qe: scitbx.array_family.flex.double = None
+
+
+def extract_data_from_mtz(
+    unmerged_mtz: iotbx.mtz.object, params: libtbx.phil.scope_extract
+) -> MTZColumnData:
 
     miller_arrays = unmerged_mtz.as_miller_arrays(
         merge_equivalents=False, anomalous=True
     )
+    labels = [label for array in miller_arrays for label in array.info().labels]
+    logger.info(f"\nData arrays found in mtz file: {', '.join(labels)}")
+
+    data = MTZColumnData()
+    data.indices = unmerged_mtz.extract_original_index_miller_indices()
+    for array in miller_arrays:
+        labels = array.info().labels
+        if labels == [params.input.labels.xpos]:
+            data.xpos = array.data()
+        elif labels == [params.input.labels.ypos]:
+            data.ypos = array.data()
+        elif labels == [params.input.labels.phi]:
+            data.phi = array.data()  # this is xyzcal.px
+        elif labels == [params.input.labels.partiality]:
+            data.partiality = array.data()
+            # want to transform from rotation angle to image number
+        elif labels == params.input.labels.intensity.split(","):
+            data.intensities = array
+        elif labels == ["IPR", "SIGIPR"]:
+            data.profile_intensities = array
+        elif labels == ["BATCH"]:
+            data.batches = array.data()
+        elif labels == ["BG"]:
+            data.bg = array.data()
+        elif labels == ["SIGBG"]:
+            data.bgsig = array.data()
+        elif labels == ["LP"]:
+            data.lp = array.data()
+        elif labels == ["QE"]:
+            data.qe = array.data()
+        elif labels == ["SCALEUSED"]:
+            data.scale_used = array.data()
+
+    if not data.intensities:
+        raise ValueError(
+            f"Intensities not found using labels {params.input.labels.intensity}"
+            + "\nIntensity column labels can be specified with labels.intensity='Iname,SIGIname'"
+        )
+    if not data.batches:
+        raise ValueError("Batch values not found")
+    if not data.phi:
+        raise ValueError(
+            f"""Phi/Rot values not found using labels {params.input.labels.phi}
+Phi/Rot column label can be specified with labels.phi='PHIname'"""
+        )
+    if data.batches.size() != data.intensities.data().size():
+        raise ValueError("Batch and intensity array sizes do not match")
+    return data
+
+
+def create_reflection_table_from_mtz(
+    unmerged_mtz: iotbx.mtz.object,
+    params: libtbx.phil.scope_extract,
+    experiments: ExperimentList,
+    batch_offset: int = None,
+) -> flex.reflection_table:
+    """Extract reflection table data"""
 
     # xds integrate.hkl file: IOBS,SIGMA are profile fitted values. Intensity
     # is LP corrected assuming unpolarised beam. Polarisation correction carried
@@ -216,78 +308,16 @@ def create_reflection_table_from_mtz(
     # Dials scaled.mtz - just I/SIGI are the scaled intensities i.e. ready for merging.
     # uniqueness is presence of SCALEUSED column.
 
-    # Select the desired columns
-    intensities = None
-    profile_intensities = None
-    batches = None
-    xpos = None
-    ypos = None
-    phi = None
-    scale_used = None
-    # optional columns?
-    partiality = None
-    bg = None
-    bgsig = None
-    lp = None
-    qe = None
-    columns_found = []
-    for array in miller_arrays:
-        labels = array.info().labels
-        columns_found.extend(labels)
-        if labels == [params.input.labels.xpos]:
-            xpos = array
-        elif labels == [params.input.labels.ypos]:
-            ypos = array
-        elif labels == [params.input.labels.phi]:
-            phi = array  # this is xyzcal.px
-        elif labels == [params.input.labels.partiality]:
-            partiality = array
-            # want to transform from rotation angle to image number
-        elif labels == params.input.labels.intensity.split(","):
-            intensities = array
-        elif labels == ["IPR", "SIGIPR"]:
-            profile_intensities = array
-        elif labels == ["BATCH"]:
-            batches = array
-        elif labels == ["BG"]:
-            bg = array
-        elif labels == ["SIGBG"]:
-            bgsig = array
-        elif labels == ["LP"]:
-            lp = array
-        elif labels == ["QE"]:
-            qe = array
-        elif labels == ["SCALEUSED"]:
-            scale_used = array
-    logger.info(f"Data arrays found in mtz file: {', '.join(columns_found)}")
-    if not intensities:
-        raise ValueError(
-            f"Intensities not found using labels {params.input.labels.intensity}"
-            + "\nIntensity column labels can be specified with labels.intensity='Iname,SIGIname'"
-        )
-    if not batches:
-        raise ValueError("Batch values not found")
-    if not phi:
-        raise ValueError(
-            f"""Phi/Rot values not found using labels {params.input.labels.phi}
-Phi/Rot column label can be specified with labels.phi='PHIname'"""
-        )
-    if batches.data().size() != intensities.data().size():
-        raise ValueError("Batch and intensity array sizes do not match")
-    batches = batches.data()
-    # for some reason the indices aren't actually the indices, so do this:
-    indices = unmerged_mtz.extract_original_index_miller_indices()
-
+    data = extract_data_from_mtz(unmerged_mtz, params)
     scans = scan_info_from_batch_headers(unmerged_mtz, verbose=False)
 
     # The reflection data
     table = flex.reflection_table()
-    table["miller_index"] = indices
-    table["d"] = intensities.d_spacings().data()
-    if partiality:
-        table["partiality"] = partiality.data()
-    else:
-        table["partiality"] = flex.double(table.size(), 1.0)
+    table["miller_index"] = data.indices
+    table["d"] = data.intensities.d_spacings().data()
+    table["partiality"] = (
+        data.partiality if data.partiality else flex.double(table.size(), 1.0)
+    )
 
     # extract the intensities. In dials, we work on raw intensities.
     # In mtz files, the intensities already have corrections applied. i.e
@@ -295,77 +325,78 @@ Phi/Rot column label can be specified with labels.phi='PHIname'"""
 
     # First, if the SCALEUSED column is there, indicates scaled data
     # In that case, I,SIGI are scaled intensities
-    if scale_used:
+    if data.scale_used:
         logger.info(
-            """The intensity data with labels I,SIGI are interpeted as being
+            """\nThe intensity data with labels I,SIGI are interpeted as being
 scaled intensity data. Any further scaling correction will be made in
 addition to the existing correction (SCALEUSED)."""
         )
         # Assertion is that we want to use the scaled intensities.
         # Set the scaled intensities as 'intensity.prf.value'
-        table["intensity.prf.value"] = intensities.data()
-        table["intensity.prf.variance"] = flex.pow2(intensities.sigmas())
-        table["scaledused"] = scale_used.data()
+        table["intensity.prf.value"] = data.intensities.data()
+        table["intensity.prf.variance"] = flex.pow2(data.intensities.sigmas())
+        table["scaleused"] = data.scale_used
         # now these have had corrections like lp applied already. So won't
         # be wanting to apply these again, therefore don't set these columns.
         table.set_flags(flex.bool(table.size(), True), table.flags.integrated_prf)
 
     # FIXME check these assumptions for aimless, xds, etc data
     # now see whether two or one sets of intensities were found
-    elif profile_intensities and intensities:
+    elif data.profile_intensities and data.intensities:
         logger.info(
-            f"""The intensity data with labels I,SIGI are interpeted as being
+            f"""\nThe intensity data with labels I,SIGI are interpeted as being
 summation integrated intensities.
 The data with labels IPR,SIGIPR are interpreted as being
 profile-fitted integrated intensities."""
         )
-        table["intensity.sum.value"] = intensities.data()
-        table["intensity.sum.variance"] = flex.pow2(intensities.sigmas())
-        table["intensity.prf.value"] = profile_intensities.data()
-        table["intensity.prf.variance"] = flex.pow2(profile_intensities.sigmas())
+        table["intensity.sum.value"] = data.intensities.data()
+        table["intensity.sum.variance"] = flex.pow2(data.intensities.sigmas())
+        table["intensity.prf.value"] = data.profile_intensities.data()
+        table["intensity.prf.variance"] = flex.pow2(data.profile_intensities.sigmas())
         table.set_flags(flex.bool(table.size(), True), table.flags.integrated_sum)
         table.set_flags(flex.bool(table.size(), True), table.flags.integrated_prf)
+        ## In DIALS, we work on raw values, so need to reverse the lp, qe, partiality corrections
         correction = flex.double(table.size(), 1.0)
-        if lp:
-            table["lp"] = lp.data()
-            assert lp.data().all_gt(0.0)
-            correction /= lp.data()
-        if qe:
-            table["qe"] = qe.data()
-            correction *= qe.data()
-        if qe or lp:
+        if data.lp:
+            table["lp"] = data.lp
+            assert data.lp.all_gt(0.0)
+            correction /= data.lp
+        if data.qe:
+            table["qe"] = data.qe
+            correction *= data.qe
+        if data.qe or data.lp:
             table["intensity.sum.value"] *= correction
             table["intensity.sum.variance"] *= correction ** 2
             table["intensity.prf.value"] *= correction
             table["intensity.prf.variance"] *= correction ** 2
-        if partiality:
-            table["intensity.sum.value"] *= partiality.data()
-            table["intensity.sum.variance"] *= partiality.data() ** 2
+        if data.partiality:
+            table["intensity.sum.value"] *= data.partiality
+            table["intensity.sum.variance"] *= data.partiality ** 2
 
     else:  # only one intensity set, assume profile intensities.
         logger.info(
             """The data with labels I,SIGI are interpreted as being
 profile-fitted integrated intensities."""
         )
-        table["intensity.prf.value"] = intensities.data()
-        table["intensity.prf.variance"] = flex.pow2(intensities.sigmas())
+        table["intensity.prf.value"] = data.intensities.data()
+        table["intensity.prf.variance"] = flex.pow2(data.intensities.sigmas())
         table.set_flags(flex.bool(table.size(), True), table.flags.integrated_prf)
         correction = flex.double(table.size(), 1.0)
-        if lp:
-            table["lp"] = lp.data()
-            assert lp.data().all_gt(0.0)
-            correction /= lp.data()
-        if qe:
-            table["qe"] = qe.data()
-            correction *= qe.data()
-        if qe or lp:
+        if data.lp:
+            table["lp"] = data.lp
+            assert data.lp.all_gt(0.0)
+            correction /= data.lp
+        if data.qe:
+            table["qe"] = data.qe
+            correction *= data.qe
+        if data.qe or data.lp:
             table["intensity.prf.value"] *= correction
             table["intensity.prf.variance"] *= correction ** 2
 
-    if bg:
-        table["background.sum.value"] = bg.data()
-    if bgsig:
-        table["background.sum.variance"] = bgsig.data() ** 2
+    if data.bg:
+        table["background.sum.value"] = data.bg
+    if data.bgsig:
+        table["background.sum.variance"] = data.bgsig ** 2
     table["partial_id"] = flex.double(range(0, table.size()))
 
     table["id"] = flex.int(table.size(), 0)
@@ -373,11 +404,11 @@ profile-fitted integrated intensities."""
     for i, scan in enumerate(scans.values()):
         batch_begin = scan["batch_begin"]
         batch_end = scan["batch_end"]
-        sel = (batches >= batch_begin) & (batches <= batch_end)
+        sel = (data.batches >= batch_begin) & (data.batches <= batch_end)
         table["id"].set_selected(sel, i)
         refls_per_scan[i + 1] = sel.count(True)
     logger.info(
-        "Numbers of reflections determined per scan:\n"
+        "\nNumbers of reflections determined per scan:\n"
         + tabulate(
             [[i, v] for i, v in refls_per_scan.items()],
             ["Scan number", "No. of reflections"],
@@ -387,10 +418,10 @@ profile-fitted integrated intensities."""
     # now want to convert phi to z for each sweep
     if params.input.oscillation_step:
         assert params.input.oscillation_step > 0
-        z = phi.data() / params.input.oscillation_step
+        z = data.phi / params.input.oscillation_step
     else:
         z = flex.double(table.size(), 0.0)
-        angle = phi.data()
+        angle = data.phi
         for i, expt in enumerate(experiments):
             if expt.scan.get_oscillation()[1] == 0:
                 raise ValueError(
@@ -402,8 +433,8 @@ Please provide an input value for oscillation_step"""
             z_i = angles_i / expt.scan.get_oscillation()[1]
             z.set_selected(sel.iselection(), z_i)
 
-    table["xyzobs.px.value"] = flex.vec3_double(xpos.data(), ypos.data(), z)
-    table["xyzcal.px"] = flex.vec3_double(xpos.data(), ypos.data(), z)
+    table["xyzobs.px.value"] = flex.vec3_double(data.xpos, data.ypos, z)
+    table["xyzcal.px"] = flex.vec3_double(data.xpos, data.ypos, z)
     table["panel"] = flex.size_t(table.size(), 0)
 
     table.centroid_px_to_mm(experiments)
@@ -413,7 +444,10 @@ Please provide an input value for oscillation_step"""
     return table
 
 
-def create_experiments_from_MTZ(unmerged_mtz, params):
+def create_experiments_from_mtz_without_image_template(
+    unmerged_mtz: iotbx.mtz.object,
+    params: libtbx.phil.scope_extract,
+) -> ExperimentList:
 
     miller_arrays = unmerged_mtz.as_miller_arrays(
         merge_equivalents=False, anomalous=True
@@ -495,9 +529,13 @@ only single wavelength MTZ files supported."""
             )
 
         beam = Beam(direction=tuple(-1.0 * scan["s0n"]), wavelength=wavelength)
-        goniometer = Goniometer(
-            (1.0, 0.0, 0.0)
-        )  ###FIXME - we are only outputting one gonio axis in export_mtz
+        goniometer = GoniometerFactory.from_phil(params.input)  ###FIXME - can
+        # we determine this from the mtz - are we only outputting one gonio axis
+        # in export_mtz. Perhaps for single sweep, can take several reflections
+        # and the UB matrix to solve the goniometer orientation?
+        if not goniometer:
+            # do the default goniometer
+            goniometer = GoniometerFactory.single_axis()
         d = Detector()
         p = d.add_panel()
         p.set_image_size(panel_size)
@@ -517,7 +555,11 @@ only single wavelength MTZ files supported."""
     return experiments
 
 
-def update_experiments_using_MTZ(experiments, unmerged_mtz, intensity_labels=None):
+def update_experiments_using_MTZ(
+    experiments: ExperimentList,
+    unmerged_mtz: iotbx.mtz.object,
+    intensity_labels: List[str] = None,
+) -> ExperimentList:
     """Add crystals to the experiments using data in the MTZ batch headers."""
     if not intensity_labels:
         intensity_labels = ["I", "SIGI"]
@@ -576,8 +618,34 @@ Scan image range from mtz headers: {(scan["start_image"], scan["end_image"])}"""
     return experiments
 
 
+def create_experiments_from_mtz(
+    unmerged_mtz: iotbx.mtz.object,
+    params: libtbx.phil.scope_extract,
+) -> ExperimentList:
+    ### Ideally, the image template can be provided. This allows reading of
+    ### the (unrefined) detector models, goniometer, beam and scan. Then, we
+    ### only need to fill in the crystal model from the MTZ data. This will
+    ### invariably lose some of the scan varying models from refinement, however
+    ### these have minimal direct effect on the data reduction process.
+    if params.input.images.template:
+        experiments = ExperimentList.from_templates(
+            [params.input.images.template],
+            image_range=params.input.images.image_range,
+        )
+        experiments = update_experiments_using_MTZ(
+            experiments,
+            unmerged_mtz,
+            intensity_labels=params.input.labels.intensity.split(","),
+        )
+    else:
+        experiments = create_experiments_from_mtz_without_image_template(
+            unmerged_mtz, params
+        )
+    return experiments
+
+
 @show_mail_handle_errors()
-def run(args=None, phil=phil_scope):
+def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     """Run the command-line script."""
 
     usage = "dials.import_mtz integrated.mtz"
@@ -603,7 +671,7 @@ def run(args=None, phil=phil_scope):
         raise ValueError("Only one input MTZ file expected")
 
     logger.info(f"\nReading data from MTZ file: {mtzfile}\n")
-    unmerged_mtz = mtz.object(file_name=mtzfile)
+    unmerged_mtz = iotbx.mtz.object(file_name=mtzfile)
 
     if len(params.input.labels.intensity.split(",")) != 2:
         sys.exit(
@@ -614,28 +682,8 @@ def run(args=None, phil=phil_scope):
             )
         )
 
-    ### Ideally, the image template can be provided. This allows reading of
-    ### the (unrefined) detector models, goniometer, beam and scan. Then, we
-    ### only need to fill in the crystal model from the MTZ data. This will
-    ### invariably lose some of the scan varying models from refinement, however
-    ### these have minimal direct effect on the data reduction process.
-    if params.input.images.template:
-        try:
-            experiments = ExperimentList.from_templates(
-                [params.input.images.template],
-                image_range=params.input.images.image_range,
-            )
-            experiments = update_experiments_using_MTZ(
-                experiments,
-                unmerged_mtz,
-                intensity_labels=params.input.labels.intensity.split(","),
-            )
-        except ValueError as e:
-            sys.exit(str(e))
-    else:
-        experiments = create_experiments_from_MTZ(unmerged_mtz, params)
-
     try:
+        experiments = create_experiments_from_mtz(unmerged_mtz, params)
         table = create_reflection_table_from_mtz(unmerged_mtz, params, experiments)
     except ValueError as e:
         sys.exit(str(e))
