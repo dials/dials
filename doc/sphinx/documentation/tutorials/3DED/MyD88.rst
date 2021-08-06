@@ -535,12 +535,18 @@ editor, copy these lines and save the file as ``restraint.phil``:
   }
 
 This describes a restraint to the known cell with reasonably strong ties, given
-by fairly low ``sigma`` values. Once we have this set up, we can run refinement
-like this:
+by fairly low ``sigma`` values.
+
+The detector distance is defined as the distance along the most direct line to
+the sample, so it is also affected by "tilt" and "twist" orientation angles.
+These are rather poorly-defined by the positions of diffraction spots, so
+while we want the detector distance to refine, we choose to constraint the
+orientation (rotational) parameters for the detector.
 
 .. code-block:: bash
 
-   dials.refine bravais_setting_2.expt reindexed.refl restraint.phil scan_varying=False
+  dials.refine bravais_setting_2.expt reindexed.refl restraint.phil\
+    detector.fix=orientation scan_varying=False
 
 We added ``scan_varying=False`` to ensure that only "scan static" refinement is
 performed, otherwise we get one round of scan static refinement followed by a
@@ -550,18 +556,18 @@ the restraint. In this situation, we are not trying to get a sophisticated,
 varying model for the diffraction geometry, but are just trying to correct the
 wrong detector distance.
 
-At the end of the log we see that the unit cell now looks correct:
+At the end of the log we see that the unit cell now looks more like what we expect:
 
 .. code-block::
 
   Final refined crystal model:
   Crystal:
-      Unit cell: 99.080(18), 31.010(18), 54.264(17), 90.0, 107.706(17), 90.0
+      Unit cell: 99.04(4), 31.09(2), 54.29(4), 90.0, 107.71(4), 90.0
       Space group: C 1 2 1
 
-and the RMSDs still look about as good as before, so refinement appears to have
-been successful. We can see the new detector distance by showing the output experiments
-file:
+and the RMSDs still look reasonably good, so refinement appears to have
+been successful. We can see the new detector distance by showing the output
+experiments file:
 
 .. code-block:: bash
 
@@ -571,15 +577,15 @@ which contains the line:
 
 .. code-block::
 
-  distance: 1772.4
+  distance: 1843.51
 
 .. note::
 
-  Repeating this procedure with all 18 datasets produces a distribution of
-  detector distances between about 1740 and 1810 mm. The median of that distribution
-  is at 1762 mm, so we might use *that* value for further processing.
-  Of course it is much preferred if the detector distance is properly calibrated
-  and stored along with the diffraction images!
+  It would be prudent to repeat this procedure with all 18 datasets, but for
+  the purposes of this tutorial we will take this value and assume it is
+  appropriate for the other data sets. In general, it is much preferred if the
+  detector distance is properly calibrated and stored along with the
+  diffraction images!
 
 We can now return to import with the correct detector distance, followed by the
 other steps to get back to the correctly indexed cell. We will skip the
@@ -590,7 +596,7 @@ datasets.
 
 .. code-block:: bash
 
-  dials.import ../../814/1/*.img distance=1762 goniometer.axis=-107,-122,0.0
+  dials.import ../../814/1/*.img distance=1843.51 goniometer.axis=-107,-122,0.0
   dials.find_spots imported.expt d_max=20
   dials.index imported.expt strong.refl detector.fix=distance goniometer.fix=None\
     space_group=C2 output.experiments=C2.expt output.reflections=C2.refl
@@ -605,8 +611,8 @@ refinement, in which the crystal model (unit cell and orientation) is allowed to
 vary as a function of image number. For some electron diffraction datasets, for
 which the direct beam position appears to drift during data collection, we
 can also try to model scan-varying beam orientation, however we are not going
-to try that in this tutorial. Following from the last ``dials.index`` job, our refinement
-command is:
+to try that in this tutorial. Following from the last ``dials.index`` job, our
+refinement command is:
 
 .. code-block:: bash
 
@@ -617,17 +623,17 @@ The crystal model is printed at the end of the log:
 .. code-block::
 
   Crystal:
-      Unit cell: 94.71(13), 29.746(16), 51.73(12), 90.0, 107.61(14), 90.0
+      Unit cell: 99.08(14), 31.103(16), 54.08(12), 90.0, 107.62(14), 90.0
       Space group: C 1 2 1
-      U matrix:  {{ 0.2692, -0.6800,  0.6820},
-                  {-0.2568, -0.7332, -0.6296},
-                  { 0.9282, -0.0057, -0.3720}}
-      B matrix:  {{ 0.0106,  0.0000,  0.0000},
-                  {-0.0000,  0.0336,  0.0000},
-                  { 0.0034, -0.0000,  0.0203}}
-      A = UB:    {{ 0.0051, -0.0229,  0.0138},
-                  {-0.0048, -0.0246, -0.0128},
-                  { 0.0086, -0.0002, -0.0075}}
+      U matrix:  {{ 0.2686, -0.6801,  0.6822},
+                  {-0.2567, -0.7331, -0.6298},
+                  { 0.9284, -0.0059, -0.3715}}
+      B matrix:  {{ 0.0101,  0.0000,  0.0000},
+                  {-0.0000,  0.0322,  0.0000},
+                  { 0.0032,  0.0000,  0.0194}}
+      A = UB:    {{ 0.0049, -0.0219,  0.0132},
+                  {-0.0046, -0.0236, -0.0122},
+                  { 0.0082, -0.0002, -0.0072}}
       A sampled at 73 scan points
 
 The unit cell printed here is the *static* cell refined during the first
@@ -654,25 +660,25 @@ fitting then we should investigate. In this case though, everything looks okay.
   +---------------------------------------+-----------+--------+--------+
   | Item                                  |   Overall |    Low |   High |
   |---------------------------------------+-----------+--------+--------|
-  | dmin                                  |      2.03 |   5.5  |   2.03 |
-  | dmax                                  |     45.15 |  45.15 |   2.06 |
-  | number fully recorded                 |   4320    | 539    |   9    |
-  | number partially recorded             |    960    | 113    |   2    |
-  | number with invalid background pixels |    994    |   0    |  11    |
-  | number with invalid foreground pixels |    402    |   0    |  11    |
+  | dmin                                  |      2.12 |   5.75 |   2.12 |
+  | dmax                                  |     47.23 |  47.23 |   2.16 |
+  | number fully recorded                 |   4326    | 539    |   9    |
+  | number partially recorded             |    951    | 111    |   2    |
+  | number with invalid background pixels |    998    |   0    |  11    |
+  | number with invalid foreground pixels |    407    |   0    |  11    |
   | number with overloaded pixels         |      0    |   0    |   0    |
   | number in powder rings                |      0    |   0    |   0    |
-  | number processed with summation       |   4854    | 644    |   0    |
-  | number processed with profile fitting |   4918    | 631    |   2    |
+  | number processed with summation       |   4862    | 650    |   0    |
+  | number processed with profile fitting |   4929    | 636    |   2    |
   | number failed in background modelling |      0    |   0    |   0    |
-  | number failed in summation            |    402    |   0    |  11    |
-  | number failed in profile fitting      |    338    |  13    |   9    |
-  | ibg                                   |     35.73 |  94.92 |  13.84 |
-  | i/sigi (summation)                    |      3.93 |  18.51 |   0    |
-  | i/sigi (profile fitting)              |      6.02 |  25.58 |   0    |
+  | number failed in summation            |    407    |   0    |  11    |
+  | number failed in profile fitting      |    340    |  14    |   9    |
+  | ibg                                   |     35.88 |  95.57 |  13.85 |
+  | i/sigi (summation)                    |      4.34 |  20.85 |   0    |
+  | i/sigi (profile fitting)              |      6.75 |  30.23 |   0    |
   | cc prf                                |      0.99 |   0.99 |   0.99 |
-  | cc_pearson sum/prf                    |      0.99 |   0.99 |   0    |
-  | cc_spearman sum/prf                   |      0.76 |   0.91 |   0    |
+  | cc_pearson sum/prf                    |      0.86 |   0.86 |   0    |
+  | cc_spearman sum/prf                   |      0.77 |   0.92 |   0    |
   +---------------------------------------+-----------+--------+--------+
 
 We can open the integration results in the image viewer, showing how well the
@@ -694,11 +700,11 @@ reflection shoebox model is given towards the top of ``dials.integrate.log``:
 
 .. code-block::
 
-  Using 456 / 457 reflections for sigma calculation
+  Using 458 / 458 reflections for sigma calculation
   Calculating E.S.D Beam Divergence.
   Calculating E.S.D Reflecting Range (mosaicity).
-   sigma b: 0.004093 degrees
-   sigma m: 1.104106 degrees
+   sigma b: 0.003931 degrees
+   sigma m: 1.087761 degrees
 
 At this stage we would learn much more about the quality of the data from scaling
 and merging. However this single dataset is very incomplete. We should try
@@ -734,7 +740,7 @@ and enter these lines:
   do
     cd "$i"
 
-    dials.import ../../814/"$i"/*.img goniometer.axis=-107,-122,0.0 distance=1762
+    dials.import ../../814/"$i"/*.img goniometer.axis=-107,-122,0.0 distance=1843.51
     dials.find_spots imported.expt d_max=20 d_min=2.5
     dials.index imported.expt strong.refl detector.fix=distance goniometer.fix=None space_group=C2
     dials.refine indexed.expt indexed.refl detector.fix=distance
@@ -765,8 +771,13 @@ By default this removes complete datasets, which is useful for snapshot and smal
 wedge serial crystallography where we tend to consider each dataset a unit and
 are not paying much attention to changes *within* each dataset caused, for example,
 by radiation damage. By contrast, in this case, we'd like to try filtering
-individual bad images rather than complete datasets. The command we need for that
-is the following:
+individual bad images rather than complete datasets.
+
+Also, ``dials.scale`` optimises the error model using reflections with an
+expected intensity above a particular value. For synchrotron X-ray datasets
+the default of 25.0 seems to work fine, but in this case that results in
+rather few reflections being used for error modelling in the the low resolution
+shells, so we will decrease that value to 10.0.
 
 .. code-block:: bash
 
@@ -777,6 +788,8 @@ is the following:
     filtering.method=deltacchalf\
     deltacchalf.mode=image_group\
     deltacchalf.group_size=1\
+    min_Ih=10.0\
+    d_max=35\
     d_min=3.0
 
   cd ..
@@ -784,9 +797,15 @@ is the following:
 The first three options passed to ``dials.scale`` set up the ΔCC½ filtering,
 in ``image_group`` mode rather than the default ``dataset``, and we also set
 the ``group_size`` to 1 rather than the
-default 10 as these datasets are rather wide-sliced. The next option sets a
-resolution limit. We have chosen 3.0 Å here to match the processing published in
-the paper.
+default 10 as these datasets are rather wide-sliced. We then set the error
+modelling inclusion cut-off, as explained above. Finally we set resolution limits.
+The low resolution cut-off of 35 Å was chosen to remove the lowest angle reflections
+in the region of high inelastic scatter, while the high resolution limit of 3.0 Å
+was chosen to match the processing published in the paper.
+
+There are many options to explore in scaling, and no claim is made here that this
+job is optimal! There is still much to be learned regarding the best handling of
+3DED data.
 
 At the end of the ``dials.scale.log`` we see a table summarising the merging
 statistics:
@@ -794,26 +813,26 @@ statistics:
 .. code-block::
 
                                                Overall    Low     High
-  High resolution limit                           3.00    8.13    3.00
-  Low resolution limit                           50.87   50.88    3.05
-  Completeness                                   77.7    76.3    81.7
-  Multiplicity                                   14.4    14.9    10.2
-  I/sigma                                        12.6    28.6     4.4
-  Rmerge(I)                                     0.385   0.247   1.238
-  Rmerge(I+/-)                                  0.381   0.247   1.222
-  Rmeas(I)                                      0.399   0.258   1.305
-  Rmeas(I+/-)                                   0.408   0.264   1.344
-  Rpim(I)                                       0.100   0.069   0.387
-  Rpim(I+/-)                                    0.136   0.087   0.532
-  CC half                                       0.993   0.994   0.326
-  Anomalous completeness                         79.6    82.5    80.9
-  Anomalous multiplicity                          7.6     8.6     5.3
-  Anomalous correlation                        -0.267  -0.413  -0.047
-  Anomalous slope                               1.337
-  dF/F                                          0.158
-  dI/s(dI)                                      1.058
-  Total observations                            34189    1926    1184
-  Total unique                                   2380     129     116
+  High resolution limit                           3.00    8.10    3.00
+  Low resolution limit                           31.27   31.27    3.05
+  Completeness                                   77.5    74.4    78.1
+  Multiplicity                                   13.5    14.9     6.9
+  I/sigma                                         6.8    12.8     1.8
+  Rmerge(I)                                     0.439   0.319   1.765
+  Rmerge(I+/-)                                  0.434   0.319   1.677
+  Rmeas(I)                                      0.456   0.330   1.910
+  Rmeas(I+/-)                                   0.464   0.338   1.890
+  Rpim(I)                                       0.114   0.080   0.673
+  Rpim(I+/-)                                    0.156   0.107   0.837
+  CC half                                       0.934   0.960   0.320
+  Anomalous completeness                         78.7    81.5    72.9
+  Anomalous multiplicity                          7.2     8.5     3.7
+  Anomalous correlation                        -0.350  -0.452  -0.253
+  Anomalous slope                               0.981
+  dF/F                                          0.168
+  dI/s(dI)                                      0.793
+  Total observations                            36758    2157     983
+  Total unique                                   2717     145     143
 
 These, and many more, details are also saved to a HTML format report page. On Linux you
 can usually open this up with the command
