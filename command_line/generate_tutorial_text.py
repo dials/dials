@@ -21,10 +21,11 @@ def _command_runner(
     """Run a command and write its output to a defined location"""
     print(" ".join(str(e) for e in command))
     if output_directory and store_command is None:
-        store_command = output_directory / (command[0] + ".cmd")
+        store_command = output_directory / f"{command[0]}.cmd"
     if output_directory and store_output is None:
-        store_output = output_directory / (command[0] + ".log")
+        store_output = output_directory / f"{command[0]}.log"
     if store_command:
+        store_command.parent.mkdir(parents=True, exist_ok=True)
         store_command.write_text(" ".join(str(e) for e in command))
     start = time.perf_counter()
     result = procrunner.run(
@@ -33,13 +34,14 @@ def _command_runner(
     print(f"running command took {time.perf_counter() - start:.1f} seconds\n")
     assert not result.returncode, "Command execution failed"
     if store_output:
+        store_output.parent.mkdir(parents=True, exist_ok=True)
         store_output.write_bytes(result.stdout)
 
 
 def generate_processing_detail_text_thaumatin(options):
     print("Generating thaumatin processing tutorial output")
 
-    tmpdir = pathlib.Path("./tmp-thaumatin")
+    tmpdir = pathlib.Path("tmp-thaumatin")
     tmpdir.mkdir(exist_ok=True)
     outdir = options.output / "thaumatin"
     outdir.mkdir(parents=True, exist_ok=True)
@@ -81,7 +83,7 @@ def generate_processing_detail_text_mpro_x0692(options):
     # See: https://www.ebi.ac.uk/pdbe/entry/pdb/5REL
     #      https://doi.org/10.5281/zenodo.3730940
 
-    tmpdir = pathlib.Path("./tmp-mpro_x0692")
+    tmpdir = pathlib.Path("tmp-mpro_x0692")
     tmpdir.mkdir(exist_ok=True)
     outdir = options.output / "mpro_x0692"
     outdir.mkdir(parents=True, exist_ok=True)
@@ -137,7 +139,7 @@ def generate_processing_detail_text_mpro_x0692(options):
 def generate_processing_detail_text_betalactamase(options):
     print("Generating Beta-lactamase processing tutorial output")
 
-    tmpdir = pathlib.Path("./tmp-betalactamase")
+    tmpdir = pathlib.Path("tmp-betalactamase")
     tmpdir.mkdir(exist_ok=True)
     outdir = options.output / "betalactamase"
     outdir.mkdir(parents=True, exist_ok=True)
@@ -317,42 +319,31 @@ def run(args=None):
     parser.add_argument("-?", action="help", help=argparse.SUPPRESS)
     parser.add_argument(
         "--beta",
-        dest="beta",
         action="store_true",
-        default=False,
         help="Generate betalactamase tutorial logs",
     )
     parser.add_argument(
         "--mpro_x0692",
-        dest="mpro_x0692",
         action="store_true",
-        default=False,
         help="Generate Mpro x0692 tutorial logs",
     )
     parser.add_argument(
         "--thaum",
-        dest="thaum",
         action="store_true",
-        default=False,
         help="Generate thaumatin tutorial logs",
     )
     parser.add_argument(
         "--multi_crystal",
-        dest="multi_crystal",
         action="store_true",
-        default=False,
         help="Generate multi-crystal tutorial logs",
     )
     parser.add_argument(
         "--keep",
-        dest="keep",
         action="store_true",
-        default=False,
         help="Keep temporary directories on successful generation",
     )
     parser.add_argument(
         "--output",
-        dest="output",
         action="store",
         type=pathlib.Path,
         default=".",
