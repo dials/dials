@@ -756,6 +756,18 @@ def git(module, git_available, ssh_available, reference_base, settings):
     else:
         remote_pattern = "https://github.com/%s.git"
 
+    if git_available:
+        # Determine the git version
+        p = subprocess.Popen(
+            ["git", "--version"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        )
+        output, _ = p.communicate()
+        output = output.decode("latin-1")
+        parts = output.split()
+        if p.returncode or not parts[:2] == ["git", "version"]:
+            raise RuntimeError("Could not determine git version")
+        git_version = tuple(int(x) for x in parts[2].split("."))
+
     secondary_remote = settings.get("effective-repository") and (
         settings["effective-repository"] != settings.get("base-repository")
     )
@@ -764,8 +776,15 @@ def git(module, git_available, ssh_available, reference_base, settings):
         direct_branch_checkout = ["-b", remote_branch]
     reference_parameters = []
     if reference_base and os.path.exists(os.path.join(reference_base, module, ".git")):
+        # Use -if-able so that we don't have errors over unreferenced submodules
+        reference_type = "--reference-if-able"
+        if git_version < (2, 11, 0):
+            # As a fallback, use the old parameter. This will fail if
+            # there are submodules and the reference does not have all
+            # the required submodules
+            reference_type = "--reference"
         reference_parameters = [
-            "--reference-if-able",
+            reference_type,
             os.path.join(reference_base, module),
         ]
 
