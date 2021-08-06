@@ -147,7 +147,15 @@ class Target:
             if partition[0].r().determinant() > 0:
                 operators.append(cb_op.apply(partition[0]))
 
-        return operators
+        # This is an awful hack to cover the two cases important for
+        # photosystem I: either hexagonal in P63 with a single merohedral twin
+        # operator, or monoclinic in P21 with 5 possible twin operators, where
+        # we want to pick the 3rd one.
+
+        if len(operators)==1:
+            return operators
+        else:
+            return operators[2:3]
 
     def _compute_rij_wij(self, use_cache=True):
         """Compute the rij_wij matrix.
