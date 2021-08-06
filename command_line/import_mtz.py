@@ -503,10 +503,6 @@ only single wavelength MTZ files supported."""
     experiments = ExperimentList()
     Bmat = mosflm_B_matrix(unit_cell)
     for i, scan in enumerate(scans.values()):
-        Umat = matrix.sqr(scan["umat_start"])
-        ### FIXME do we need to transform by the fixed rotation?
-        crystal = Crystal(A=Umat.transpose() * Bmat, space_group=space_group)
-
         # we weren't given the images, so have to try and reconstruct as much
         # as possible from the mtz data.
         n_images = scan["end_image"] - (scan["start_image"] - 1)
@@ -528,7 +524,9 @@ only single wavelength MTZ files supported."""
                 ],
             )
 
-        beam = Beam(direction=tuple(-1.0 * scan["s0n"]), wavelength=wavelength)
+        beam = Beam(
+            direction=(0, 0, 1.0), wavelength=wavelength
+        )  # we're enforcing DIALS geometry here
         goniometer = GoniometerFactory.from_phil(params.input)  ###FIXME - can
         # we determine this from the mtz - are we only outputting one gonio axis
         # in export_mtz. Perhaps for single sweep, can take several reflections
@@ -536,6 +534,12 @@ only single wavelength MTZ files supported."""
         if not goniometer:
             # do the default goniometer
             goniometer = GoniometerFactory.single_axis()
+        Umat = matrix.sqr(scan["umat_start"])
+        ### FIXME do we need to transform by the fixed rotation?
+        F = matrix.sqr(goniometer.get_fixed_rotation())
+        crystal = Crystal(
+            A=(F.inverse() * Umat.transpose() * Bmat), space_group=space_group
+        )
         d = Detector()
         p = d.add_panel()
         p.set_image_size(panel_size)
@@ -546,7 +550,7 @@ only single wavelength MTZ files supported."""
             Experiment(
                 beam=beam,
                 scan=dxscan,
-                goniometer=goniometer,  ##FIXME
+                goniometer=goniometer,
                 crystal=crystal,  ## FIXME - consistent UB settings
                 detector=d,  ##FIXME - do we need to allow setting more detector parameters?
             )
