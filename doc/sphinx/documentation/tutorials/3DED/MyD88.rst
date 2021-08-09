@@ -812,7 +812,7 @@ statistics:
 
 .. code-block::
 
-                                                  Overall    Low     High
+                                               Overall    Low     High
   High resolution limit                           3.00    8.10    3.00
   Low resolution limit                           31.27   31.27    3.05
   Completeness                                   77.5    74.4    78.1
