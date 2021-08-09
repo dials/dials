@@ -763,10 +763,13 @@ def git(module, git_available, ssh_available, reference_base, settings):
         )
         output, _ = p.communicate()
         output = output.decode("latin-1")
-        parts = output.split()
+        parts = output.split(" ", 2)
         if p.returncode or not parts[:2] == ["git", "version"]:
             raise RuntimeError("Could not determine git version")
-        git_version = tuple(int(x) for x in parts[2].split("."))
+        # Version comes in:
+        #    "git version x.y.z"
+        # or "git version x.y.z.windows.n"
+        git_version = tuple(int(x) if x.isnumeric() else x for x in parts[2].split("."))
 
     secondary_remote = settings.get("effective-repository") and (
         settings["effective-repository"] != settings.get("base-repository")
