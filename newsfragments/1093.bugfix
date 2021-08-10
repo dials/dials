@@ -1,0 +1,1 @@
+``dials.combine_experiments``: Correctly preserve mapping to images. This affects ``dials.image_viewer`` and ``dial.reciprocal_lattice_viewer``.

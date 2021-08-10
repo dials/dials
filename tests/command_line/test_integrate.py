@@ -259,6 +259,73 @@ def test_integration_with_sample_size(dials_data, tmpdir):
     assert dict(table.experiment_identifiers()) == {0: "foo"}
 
 
+def test_imageset_id_output_with_multi_sweep(dials_data, tmp_path):
+    """Test that imageset ids are correctly output for multi-sweep integration."""
+    # Just integrate 15 images for each sweep
+
+    images1 = dials_data("l_cysteine_dials_output", pathlib=True) / "l-cyst_01_000*.cbf"
+    images2 = dials_data("l_cysteine_dials_output", pathlib=True) / "l-cyst_02_000*.cbf"
+
+    result = procrunner.run(
+        ["dials.import", images1, images2], working_directory=tmp_path
+    )
+    assert not result.returncode and not result.stderr
+    result = procrunner.run(
+        ["dials.find_spots", tmp_path / "imported.expt", "nproc=1"],
+        working_directory=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+    result = procrunner.run(
+        ["dials.index", tmp_path / "imported.expt", tmp_path / "strong.refl"],
+        working_directory=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+
+    result = procrunner.run(
+        [
+            "dials.integrate",
+            "nproc=1",
+            tmp_path / "indexed.expt",
+            tmp_path / "indexed.refl",
+            "profile.fitting=False",
+            "gaussian_rs.min_spots.overall=0",
+        ],
+        working_directory=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+    table = flex.reflection_table.from_file(tmp_path / "integrated.refl")
+    assert set(table["imageset_id"]) == {0, 1}
+    # check that we have approx 50% in each
+    n0 = (table["imageset_id"] == 0).count(True)
+    n = table.size()
+    n1 = (table["imageset_id"] == 1).count(True)
+    assert (n0 / n > 0.4) and (n0 / n < 0.6)
+    assert (n1 / n > 0.4) and (n1 / n < 0.6)
+
+    # now try again with adding unintegrated reflections
+    result = procrunner.run(
+        [
+            "dials.integrate",
+            "nproc=1",
+            tmp_path / "indexed.expt",
+            tmp_path / "indexed.refl",
+            "profile.fitting=False",
+            "gaussian_rs.min_spots.overall=0",
+            "output_unintegrated_reflections=False",
+        ],
+        working_directory=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+    table = flex.reflection_table.from_file(tmp_path / "integrated.refl")
+    assert set(table["imageset_id"]) == {0, 1}
+    # check that we have approx 50% in each
+    n0 = (table["imageset_id"] == 0).count(True)
+    n = table.size()
+    n1 = (table["imageset_id"] == 1).count(True)
+    assert (n0 / n > 0.4) and (n0 / n < 0.6)
+    assert (n1 / n > 0.4) and (n1 / n < 0.6)
+
+
 def test_basic_integration_with_profile_fitting(dials_data, tmpdir):
 
     expts = dials_data("centroid_test_data") / "indexed.expt"
@@ -381,6 +448,8 @@ def test_multi_lattice(dials_regression, tmpdir):
     table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
     assert len(table) == 4962
     assert dict(table.experiment_identifiers()) == {0: "100", 1: "101"}
+    # both should only have the imageset_id of zero as they share an imageset
+    assert set(table["imageset_id"]) == {0}
 
     # Check output contains from two lattices
     exp_id = list(set(table["id"]))
@@ -431,9 +500,6 @@ def test_output_rubbish(dials_data, tmpdir):
 
 
 def test_integrate_with_kapton(dials_regression, tmpdir):
-    tmpdir.chdir()
-    loc = tmpdir.strpath
-
     pickle_name = "idx-20161021225550223_indexed.pickle"
     json_name = "idx-20161021225550223_refined_experiments.json"
     image_name = "20161021225550223.pickle"
@@ -449,11 +515,11 @@ def test_integrate_with_kapton(dials_regression, tmpdir):
 
     assert os.path.exists(pickle_path)
     assert os.path.exists(json_path)
-    shutil.copy(pickle_path, loc)
-    shutil.copy(image_path, loc)
+    shutil.copy(pickle_path, tmpdir)
+    shutil.copy(image_path, tmpdir)
 
-    with open(json_name, "w") as w, open(json_path) as r:
-        w.write(r.read() % loc.replace("\\", "\\\\"))
+    with open(tmpdir / json_name, "w") as w, open(json_path) as r:
+        w.write(r.read() % tmpdir.strpath.replace("\\", "\\\\"))
 
     templ_phil = """
       output {
@@ -499,23 +565,24 @@ def test_integrate_with_kapton(dials_regression, tmpdir):
         "True",
     )
 
-    with open("integrate_without_kapton.phil", "w") as f:
+    with open(tmpdir / "integrate_without_kapton.phil", "w") as f:
         f.write(without_kapton_phil)
 
-    with open("integrate_with_kapton.phil", "w") as f:
+    with open(tmpdir / "integrate_with_kapton.phil", "w") as f:
         f.write(with_kapton_phil)
 
     # Call dials.integrate with and without kapton correction
     for phil in "integrate_without_kapton.phil", "integrate_with_kapton.phil":
         result = procrunner.run(
-            ["dials.integrate", "nproc=1", pickle_name, json_name, phil]
+            ["dials.integrate", "nproc=1", pickle_name, json_name, phil],
+            working_directory=tmpdir,
         )
         assert not result.returncode and not result.stderr
 
     results = []
     for mode in "kapton", "nokapton":
         table = flex.reflection_table.from_file(
-            tmpdir / (f"idx-20161021225550223_integrated_{mode}.refl")
+            tmpdir / f"idx-20161021225550223_integrated_{mode}.refl"
         )
         millers = table["miller_index"]
         test_indices = {"zero": (-5, 2, -6), "low": (-2, -20, 7), "high": (-1, -10, 4)}

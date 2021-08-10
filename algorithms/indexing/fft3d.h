@@ -76,7 +76,7 @@ namespace dials { namespace algorithms {
           vec2<double> phi;
           try {
             phi = calculate_rotation_angles_(pstar0);
-          } catch (error) {
+          } catch (error const&) {
             continue;
           }
 

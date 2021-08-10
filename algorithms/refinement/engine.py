@@ -454,7 +454,7 @@ class Refinery:
     def run(self):
         """
         To be implemented by derived class. It is expected that each step of
-        refinement be preceeded by a call to prepare_for_step and followed by
+        refinement be preceded by a call to prepare_for_step and followed by
         calls to update_journal and test_for_termination (in that order).
         """
 
@@ -687,7 +687,11 @@ class AdaptLstbx(Refinery, normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_
                         jacobian,
                         weights,
                     ) = self._target.compute_residuals_and_gradients(block)
-                    return dict(residuals=residuals, jacobian=jacobian, weights=weights)
+                    return {
+                        "residuals": residuals,
+                        "jacobian": jacobian,
+                        "weights": weights,
+                    }
 
                 def callback_wrapper(result):
                     j = result["jacobian"]

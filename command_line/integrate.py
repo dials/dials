@@ -24,6 +24,8 @@ import logging
 import math
 import sys
 
+from orderedset import OrderedSet
+
 from dxtbx.model.experiment_list import Experiment, ExperimentList
 from libtbx.phil import parse
 
@@ -489,6 +491,17 @@ def run_integration(params, experiments, reference=None):
         force_static=params.prediction.force_static,
         padding=params.prediction.padding,
     )
+    isets = OrderedSet(e.imageset for e in experiments)
+    predicted["imageset_id"] = flex.int(predicted.size(), 0)
+    if len(isets) > 1:
+        for e in experiments:
+            iset_id = isets.index(e.imageset)
+            for id_ in predicted.experiment_identifiers().keys():
+                identifier = predicted.experiment_identifiers()[id_]
+                if identifier == e.identifier:
+                    sel = predicted["id"] == id_
+                    predicted["imageset_id"].set_selected(sel, iset_id)
+                    break
 
     # Match reference with predicted
     if reference:

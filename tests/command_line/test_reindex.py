@@ -151,8 +151,6 @@ def test_reindex_multi_sequence(dials_regression, tmpdir):
 
 def test_reindex_against_reference(dials_regression, tmpdir):
     """Test the reindexing against a reference dataset functionality."""
-    tmpdir.chdir()
-
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
     pickle_path = os.path.join(data_dir, "indexed.pickle")
     experiments_path = os.path.join(data_dir, "experiments.json")
@@ -169,9 +167,11 @@ def test_reindex_against_reference(dials_regression, tmpdir):
 
     result = procrunner.run(commands, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
-    assert os.path.exists("P4.refl")
-    assert os.path.exists("P4.expt")
-    new_experiments = load.experiment_list("P4.expt", check_format=False)
+    assert os.path.exists(tmpdir / "P4.refl")
+    assert os.path.exists(tmpdir / "P4.expt")
+    new_experiments = load.experiment_list(
+        tmpdir.join("P4.expt").strpath, check_format=False
+    )
     assert new_experiments[0].crystal.get_space_group().type().hall_symbol() == " P 4"
 
     # Now have something in P4, get another dataset in a different indexing scheme
@@ -213,7 +213,7 @@ def test_reindex_against_reference(dials_regression, tmpdir):
     h3, k3, l3 = P4_reflections["miller_index"].as_vec3_double().parts()
 
     # hkl1 and hkl2 should be same, as should have been reindexed by against the
-    # reference, with the program determing a reindexing operator of a,-b,-c
+    # reference, with the program determining a reindexing operator of a,-b,-c
     assert list(h1) == pytest.approx(list(h2))
     assert list(l1) == pytest.approx(list(l2))
     assert list(k1) == pytest.approx(list(k2))

@@ -5,6 +5,7 @@ Tests for dials.util.multi_dataset_handling functions
 import pytest
 
 from dxtbx.model import Experiment, ExperimentList
+from dxtbx.serialize import load
 
 from dials.array_family import flex
 from dials.tests.util import (
@@ -17,6 +18,7 @@ from dials.util.multi_dataset_handling import (
     renumber_table_id_columns,
     select_datasets_on_ids,
     sort_tables_to_experiments_order,
+    update_imageset_ids,
 )
 
 
@@ -381,3 +383,35 @@ def test_sort_tables_to_experiments_order_single_dataset_files():
     assert refls[1] is reflection_tables[1]
     assert list(refls[0].experiment_identifiers().values()) == ["0"]
     assert list(refls[1].experiment_identifiers().values()) == ["1"]
+
+
+def test_update_imageset_ids(dials_data):
+    expts = ExperimentList()
+    refls = []
+    for i in [1, 2, 3, 4, 5, 7, 8, 10]:
+        refls.append(
+            flex.reflection_table.from_file(
+                dials_data("multi_crystal_proteinase_k", pathlib=True)
+                / f"reflections_{i}.pickle"
+            )
+        )
+        expts.extend(
+            load.experiment_list(
+                dials_data("multi_crystal_proteinase_k", pathlib=True)
+                / f"experiments_{i}.json",
+                check_format=False,
+            )
+        )
+    # first make sure ids are set up correctly.
+    experiments, reflections = assign_unique_identifiers(expts, refls)
+    reflections = update_imageset_ids(experiments, reflections)
+    joint_reflections = flex.reflection_table()
+    for refls in reflections:
+        joint_reflections.extend(refls)
+    # check that there are 8 unique id and imageset_ids, and that these
+    # correctly correspond to each experiment
+    assert len(set(joint_reflections["id"])) == 8
+    assert len(set(joint_reflections["imageset_id"])) == 8
+    for id_ in range(8):
+        sel = joint_reflections["id"] == id_
+        assert set(joint_reflections["imageset_id"].select(sel)) == {id_}

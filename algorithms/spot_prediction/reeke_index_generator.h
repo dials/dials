@@ -273,7 +273,7 @@ namespace dials { namespace algorithms {
       dstarmax2_ = dstarmax_ * dstarmax_;
 
       // Determine the permutation order of columns of the setting matrix. Use
-      // the setting ans source vector from the beginning for this. As a
+      // the setting and source vector from the beginning for this. As a
       // side-effect set self._permutation.
       reeke_detail::permute_matrix perm(ub_beg, ub_end, axis, source_beg_);
       permutation_ = perm.permutation;

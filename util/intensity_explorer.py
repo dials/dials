@@ -49,7 +49,7 @@ class IntensityDist:
         :type elist: dxtbx.model.ExperimentList
         :param calculate_variances: Choose whether to calculate weighted
         aggregate variances.  Doing so incurs a performance penalty.
-        Defaullts to False.
+        Defaults to False.
         :type calculate_variances: bool
         :param keep_singles: Choose whether to keep multiplicity-1 reflections.
         Defaults to False.

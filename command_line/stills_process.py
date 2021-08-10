@@ -26,7 +26,7 @@ logger = logging.getLogger("dials.command_line.stills_process")
 
 help_message = """
 DIALS script for processing still images. Import, index, refine, and integrate are all done for each image
-seperately.
+separately.
 """
 
 control_phil_str = """
@@ -570,7 +570,8 @@ class Script:
 
         else:
             basenames = OrderedDict()
-            for filename in sorted(all_paths):
+            sorted_paths = sorted(all_paths)
+            for filename in sorted_paths:
                 basename = os.path.splitext(os.path.basename(filename))[0]
                 if basename in basenames:
                     basenames[basename] += 1
@@ -588,7 +589,7 @@ class Script:
                     or tag in self.params.input.image_tag
                 ):
                     tags.append(tag)
-                    all_paths2.append(all_paths[i])
+                    all_paths2.append(sorted_paths[i])
             all_paths = all_paths2
 
             # Wrapper function
@@ -727,7 +728,7 @@ class Script:
                 error_list = [r[2] for r in result]
                 if error_list.count(None) != len(error_list):
                     print(
-                        "Some processes failed excecution. Not all images may have processed. Error messages:"
+                        "Some processes failed execution. Not all images may have processed. Error messages:"
                     )
                     for error in error_list:
                         if error is None:
@@ -1504,7 +1505,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                             int_pickles,
                             int_pickle_filenames,
                         ) = comm.recv(source=MPI.ANY_SOURCE)
-                        logger.info("Rank %d recieved data from rank %d", rank, sender)
+                        logger.info("Rank %d received data from rank %d", rank, sender)
 
                         def extend_with_bookkeeping(
                             src_expts, src_refls, dest_expts, dest_refls

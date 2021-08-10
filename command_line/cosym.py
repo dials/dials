@@ -24,6 +24,7 @@ from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
     parse_multiple_datasets,
     select_datasets_on_identifiers,
+    update_imageset_ids,
 )
 from dials.util.observer import Subject
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
@@ -191,6 +192,7 @@ class cosym(Subject):
         This includes the cosym.json, reflections and experiments files."""
 
         reindexed_reflections = flex.reflection_table()
+        self._reflections = update_imageset_ids(self._experiments, self._reflections)
         for refl in self._reflections:
             reindexed_reflections.extend(refl)
         reindexed_reflections.reset_ids()

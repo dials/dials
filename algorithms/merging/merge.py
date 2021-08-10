@@ -96,6 +96,7 @@ class MTZDataClass:
         merged_anomalous_array=None,
         amplitudes=None,
         anomalous_amplitudes=None,
+        dano=None,
         multiplicities=None,
     ):
         self.wavelength = wavelength
@@ -106,6 +107,7 @@ class MTZDataClass:
         self.merged_anomalous_array = merged_anomalous_array
         self.amplitudes = amplitudes
         self.anomalous_amplitudes = anomalous_amplitudes
+        self.dano = dano
         self.multiplicities = multiplicities
 
 
@@ -144,6 +146,7 @@ def make_merged_mtz_file(mtz_datasets):
             dataset.merged_anomalous_array,
             dataset.amplitudes,
             dataset.anomalous_amplitudes,
+            dataset.dano,
             dataset.multiplicities,
         )
 
@@ -266,6 +269,8 @@ def truncate(merged_intensities):
             amplitudes: A normal all-positive miller amplitude array
             anom_amplitudes: An anomalous all-positive amplitude array, if the
                 input array has the anomalous_flag set, else None.
+            dano: The array of anomalous differences, if the input array has the
+                anomalous_flag set, else None.
     """
     logger.info("\nPerforming French-Wilson treatment of scaled intensities")
     out = StringIO()
@@ -275,13 +280,15 @@ def truncate(merged_intensities):
         assert anom_amplitudes.is_xray_amplitude_array()
         amplitudes = anom_amplitudes.as_non_anomalous_array()
         amplitudes = amplitudes.merge_equivalents(use_internal_variance=False).array()
+        dano = anom_amplitudes.anomalous_differences()
     else:
         anom_amplitudes = None
+        dano = None
         amplitudes = merged_intensities.french_wilson(log=out)
         n_removed = merged_intensities.size() - amplitudes.size()
     logger.info("Total number of rejected intensities %s", n_removed)
     logger.debug(out.getvalue())
-    return amplitudes, anom_amplitudes
+    return amplitudes, anom_amplitudes, dano
 
 
 def dano_over_sigdano_stats(anomalous_amplitudes, n_bins=20):

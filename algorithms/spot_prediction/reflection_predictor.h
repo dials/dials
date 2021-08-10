@@ -303,7 +303,7 @@ namespace dials { namespace algorithms {
               break;
             }
           }
-        } catch (dxtbx::error) {
+        } catch (dxtbx::error const &) {
           // do nothing
         }
       }
@@ -330,7 +330,7 @@ namespace dials { namespace algorithms {
             p.xyz_mm.push_back(vec3<double>(mm[0], mm[1], frames[j][0]));
             p.xyz_px.push_back(vec3<double>(px[0], px[1], frames[j][1]));
           }
-        } catch (dxtbx::error) {
+        } catch (dxtbx::error const &) {
           // do nothing
         }
       }
@@ -355,7 +355,7 @@ namespace dials { namespace algorithms {
             p.xyz_mm.push_back(vec3<double>(mm[0], mm[1], rays[i].angle));
             p.xyz_px.push_back(vec3<double>(px[0], px[1], frame));
             p.flags.push_back(af::Predicted);
-          } catch (dxtbx::error) {
+          } catch (dxtbx::error const &) {
             p.xyz_mm.push_back(vec3<double>(0, 0, rays[i].angle));
             p.xyz_px.push_back(vec3<double>(0, 0, frame));
             p.flags.push_back(0);
@@ -843,7 +843,7 @@ namespace dials { namespace algorithms {
         p.panel.push_back(panel);
         p.flags.push_back(af::Predicted);
 
-      } catch (dxtbx::error) {
+      } catch (dxtbx::error const &) {
         // do nothing
       }
     }
@@ -890,7 +890,7 @@ namespace dials { namespace algorithms {
             p.xyz_mm.push_back(vec3<double>(mm[0], mm[1], rays[i].angle));
             p.xyz_px.push_back(vec3<double>(px[0], px[1], frame));
             p.flags.push_back(af::Predicted);
-          } catch (dxtbx::error) {
+          } catch (dxtbx::error const &) {
             p.xyz_mm.push_back(vec3<double>(0, 0, rays[i].angle));
             p.xyz_px.push_back(vec3<double>(0, 0, frame));
             p.flags.push_back(0);
@@ -1139,7 +1139,7 @@ namespace dials { namespace algorithms {
         p.flags.push_back(af::Predicted);
         p.delpsi.push_back(delpsi);
 
-      } catch (dxtbx::error) {
+      } catch (dxtbx::error const &) {
         // do nothing
       }
     }

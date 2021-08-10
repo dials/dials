@@ -507,7 +507,7 @@ def run(args=None):
         params.input.reflections, params.input.experiments
     )
 
-    # do auto intepreting of intensity choice:
+    # do auto interpreting of intensity choice:
     # note that this may still fail certain checks further down the processing,
     # but these are the defaults to try
     if params.intensity in ([None], [Auto], ["auto"]) and reflections:

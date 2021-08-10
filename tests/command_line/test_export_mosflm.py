@@ -12,13 +12,13 @@ def test_export_mosflm(dials_regression, tmpdir):
         with (tmpdir / "experiments.json").open("w") as fo:
             fo.write(fi.read().replace("$DIALS_REGRESSION", dials_regression_escaped))
 
-    tmpdir.chdir()
-
-    result = procrunner.run(["dials.export", "format=mosflm", "experiments.json"])
+    result = procrunner.run(
+        ["dials.export", "format=mosflm", "experiments.json"], working_directory=tmpdir
+    )
     assert not result.returncode and not result.stderr
 
-    assert os.path.exists("mosflm/index.mat")
-    with open("mosflm/index.mat") as f:
+    assert os.path.exists(tmpdir / "mosflm" / "index.mat")
+    with open(tmpdir / "mosflm" / "index.mat") as f:
         lines = f.read()
     assert (
         lines
@@ -36,8 +36,8 @@ def test_export_mosflm(dials_regression, tmpdir):
             "\n"
         )
     )
-    assert os.path.exists("mosflm/mosflm.in")
-    with open("mosflm/mosflm.in") as f:
+    assert os.path.exists(tmpdir / "mosflm" / "mosflm.in")
+    with open(tmpdir / "mosflm" / "mosflm.in") as f:
         lines = f.read()
     assert (
         lines

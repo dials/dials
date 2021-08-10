@@ -31,7 +31,7 @@ def test_indexing():
     nz = 2
     sampler = SingleSampler(scan_range, nz)
     zstep = sampler.step_size()
-    zind = [k for k in range(nz)]
+    zind = list(range(nz))
 
     xp = [width * 0.5 for k in range(nz)]
     yp = [height * 0.5 for k in range(nz)]

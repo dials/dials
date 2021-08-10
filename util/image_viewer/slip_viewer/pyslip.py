@@ -261,7 +261,7 @@ class _Tiles:
 
         n  The required level
 
-        Returns a tuple (map_width, map_height, ppd_x, ppd_y) if succesful,
+        Returns a tuple (map_width, map_height, ppd_x, ppd_y) if successful,
         else None.  The width/height values are pixels.  The ppd_? values are
         pixels-per-degree values for X and Y direction.
         """
@@ -1628,7 +1628,7 @@ class PySlip(_BufferedCanvas):
         # draw points on map/view
         if map_rel:
             # GCDC device context permits antialiasing and transparent colors.
-            # But, signficant time savings by not allowing these features
+            # But, significant time savings by not allowing these features
             # It's not clear that we actually want or use them anyway
             # dc = wx.GCDC(dc)            # allow transparent colours
             dc.SetPen(wx.Pen(colour))
@@ -1669,7 +1669,7 @@ class PySlip(_BufferedCanvas):
         # draw points on map/view
         if map_rel:
             # GCDC device context permits antialiasing and transparent colors.
-            # But, signficant time savings by not allowing these features
+            # But, significant time savings by not allowing these features
             # It's not clear that we actually want or use them anyway
             # dc = wx.GCDC(dc)            # allow transparent colours
             dc.SetPen(wx.Pen(colour))

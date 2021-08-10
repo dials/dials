@@ -332,7 +332,7 @@ class MMCIFOutputFile:
             cif_block.update(merged_block)
 
         # Write the crystal information
-        # if v5, thats all so return
+        # if v5, that's all so return
         if self.params.mmcif.pdb_version == "v5":
             return cif_block
         # continue if v5_next

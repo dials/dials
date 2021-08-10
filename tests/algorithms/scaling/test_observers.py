@@ -20,9 +20,9 @@ from dials.array_family import flex
 
 @pytest.fixture
 def test_data(dials_data):
-    location = dials_data("l_cysteine_4_sweeps_scaled")
-    refl = location.join("scaled_20_25.refl").strpath
-    expt = location.join("scaled_20_25.expt").strpath
+    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    refl = location / "scaled_20_25.refl"
+    expt = location / "scaled_20_25.expt"
 
     refls = flex.reflection_table.from_file(refl).split_by_experiment_id()
     for r in refls:
@@ -67,7 +67,7 @@ def test_print_scaling_model_error_summary(test_data):
     msg = print_scaling_model_error_summary(expts)
     assert (
         msg
-        == """Warning: Over half (83.67%) of model parameters have signficant
+        == """Warning: Over half (83.67%) of model parameters have significant
 uncertainty (sigma/abs(parameter) > 0.5), which could indicate a
 poorly-determined scaling problem or overparameterisation.
 """
@@ -104,12 +104,12 @@ def test_print_scaling_summary(test_script):
     print_scaling_summary(test_script)
 
 
-def test_ScalingHTMLContextManager(test_script, tmpdir):
+def test_ScalingHTMLContextManager(test_script, tmp_path):
     script = test_script
-    script.params.output.html = tmpdir.join("test.html").strpath
-    script.params.output.json = tmpdir.join("test.json").strpath
+    script.params.output.html = str(tmp_path / "test.html")
+    script.params.output.json = str(tmp_path / "test.json")
     with ScalingHTMLContextManager(script):
         pass
 
-    assert tmpdir.join("test.html").check()
-    assert tmpdir.join("test.json").check()
+    assert (tmp_path / "test.html").is_file()
+    assert (tmp_path / "test.json").is_file()

@@ -78,7 +78,7 @@ class ErrorModelRegressionRefiner(SimpleLBFGS):
 
     """Use LBFGS for convenience, actually is a linear regression.
 
-    Therefore target.predict step is unneccesary."""
+    Therefore target.predict step is unnecessary."""
 
     def __init__(self, model, *args, **kwargs):
         self.model = model

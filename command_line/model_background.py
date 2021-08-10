@@ -117,7 +117,7 @@ class ImageGenerator:
             if bounded and vmax is None:
                 boundaries = {
                     "vmin": 0,
-                    "vmax": sorted(list(image))[int(0.99 * len(image))],
+                    "vmax": sorted(image)[int(0.99 * len(image))],
                 }
             elif bounded:
                 boundaries = {"vmin": 0, "vmax": vmax}

@@ -571,7 +571,7 @@ class multi_kapton_correction:
         ):
             # extract experiment details
             detector = expt.detector
-            panels = [p for p in detector]
+            panels = list(detector)
             panel_size_px = [p.get_image_size() for p in panels]
             pixel_size_mm = [p.get_pixel_size()[0] for p in panels]
             detector_dist_mm = [p.get_distance() for p in panels]
@@ -627,7 +627,7 @@ class multi_kapton_correction:
             if len(refl_zero) > 0 and self.params.smart_sigmas:
                 # process nonzero intensity reflections with smart sigmas as requested
                 # but turn them off for zero intensity reflections to avoid a division by zero
-                # during error propogation. Not at all certain this is the best way.
+                # during error propagation. Not at all certain this is the best way.
                 self.corrected_reflections.extend(
                     correct(refl_nonzero, smart_sigmas=True)
                 )

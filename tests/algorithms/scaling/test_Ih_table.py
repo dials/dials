@@ -35,7 +35,7 @@ def mock_error_model():
 
 
 def generate_refl_1():
-    """Generate a test reflection table. Note tha the variance values are chosen
+    """Generate a test reflection table. Note that the variance values are chosen
     as the 'True' Ih_values, which would be found if unity weights were chosen
     in this example."""
     reflections = flex.reflection_table()
@@ -252,7 +252,7 @@ def test_IhTableblock_onedataset(large_reflection_table, test_sg):
 
 def test_IhTableblock_twodatasets(large_reflection_table, test_sg):
     """Test direct initialisation of Ih_table block. Use the same reflection
-    table as previously to make comparions easier"""
+    table as previously to make comparisons easier"""
     asu_indices = map_indices_to_asu(large_reflection_table["miller_index"], test_sg)
     large_reflection_table["asu_miller_index"] = asu_indices
     n_groups = len(set(asu_indices))

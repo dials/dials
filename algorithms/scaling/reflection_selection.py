@@ -36,7 +36,7 @@ that has a reflection in the least populated class so far i.e. class 2.
 In this case, the first unused group is group 5:
 number of chosen reflections per class: [4, 4, 5]
 symmetry groups used:                   [1, 5]
-In this way, we build up the dataset by chosing the highest-connected groups
+In this way, we build up the dataset by choosing the highest-connected groups
 that have a reflection in the most-deficient class.
 
 Next we need to add a group with a reflection in class 0 (first we find is group 0):
