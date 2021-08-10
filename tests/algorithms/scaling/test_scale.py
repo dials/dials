@@ -929,7 +929,7 @@ def test_targeted_scaling(dials_data, tmp_path):
     assert experiments_list.scaling_models()[0].id_ == "KB"
 
 
-def test_shared_absorption_surface(dials_data, tmpdir):
+def test_shared_absorption_surface(dials_data, tmp_path):
     data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
     refl_1 = data_dir / "20_integrated.pickle"
     expt_1 = data_dir / "20_integrated_experiments.json"
@@ -938,9 +938,9 @@ def test_shared_absorption_surface(dials_data, tmpdir):
 
     # Do targeted scaling, use this as a chance to test the KB model as well.
     extra_args = ["share.absorption=True"]
-    run_one_scaling(tmpdir, [refl_1, expt_1, refl_2, expt_2] + extra_args)
+    run_one_scaling(tmp_path, [refl_1, expt_1, refl_2, expt_2] + extra_args)
 
-    expts = load.experiment_list(tmpdir.join("scaled.expt").strpath, check_format=False)
+    expts = load.experiment_list(tmp_path / "scaled.expt", check_format=False)
     assert (
         expts.scaling_models()[0].components["absorption"].parameters
         == expts.scaling_models()[1].components["absorption"].parameters
