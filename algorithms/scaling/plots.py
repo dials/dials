@@ -459,7 +459,7 @@ def plot_absorption_plots(physical_model, reflection_table=None):
     harmonics *= np.where(m != 0, math.sqrt(2) * (-1) ** (m % 2), 1)
 
     # Flatten together the l and m dimensions of the harmonics array.
-    harmonics = harmonics.reshape(-1, *harmonics.shape[2:])
+    harmonics.shape = -1, *harmonics.shape[2:]
     # Keep only the valid harmonics, for which l >= |m|.
     valid = np.ravel(l >= np.abs(m))
     harmonics = harmonics[valid]
