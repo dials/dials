@@ -435,9 +435,9 @@ def plot_absorption_plots(physical_model, reflection_table=None):
     order = int(-1.0 + ((1.0 + len(params)) ** 0.5))
     lfg = scitbxmath.log_factorial_generator(2 * order + 1)
     STEPS = 50
-    phi = np.linspace(0, 2 * np.pi, 2 * STEPS)
-    theta = np.linspace(0, np.pi, STEPS)
-    THETA, _ = np.meshgrid(theta, phi)
+    azimuth_ = np.linspace(0, 2 * np.pi, 2 * STEPS)
+    polar_ = np.linspace(0, np.pi, STEPS)
+    THETA, _ = np.meshgrid(azimuth_, polar_, indexing="ij")
     lmax = int(-1.0 + ((1.0 + len(params)) ** 0.5))
     Intensity = np.ones(THETA.shape)
     undiffracted_intensity = np.ones(THETA.shape)
@@ -446,8 +446,8 @@ def plot_absorption_plots(physical_model, reflection_table=None):
     nsssphe = scitbxmath.nss_spherical_harmonics(order, 50000, lfg)
     for l in range(1, lmax + 1):
         for m in range(-l, l + 1):
-            for it, t in enumerate(theta):
-                for ip, p in enumerate(phi):
+            for it, t in enumerate(polar_):
+                for ip, p in enumerate(azimuth_):
                     Ylm = nsssphe.spherical_harmonic(l, abs(m), t, p)
                     if m < 0:
                         r = sqrt2 * ((-1) ** m) * Ylm.imag
@@ -457,23 +457,17 @@ def plot_absorption_plots(physical_model, reflection_table=None):
                     else:
                         r = sqrt2 * ((-1) ** m) * Ylm.real
                     Intensity[ip, it] += params[counter] * r
-                    undiffracted_intensity[ip, it] += 0.5 * params[counter] * r
-                    p2 = (p + np.pi) % (2.0 * np.pi)
-                    t2 = np.pi - t
-                    Ylm = nsssphe.spherical_harmonic(l, abs(m), t2, p2)
-                    if m < 0:
-                        r = sqrt2 * ((-1) ** m) * Ylm.imag
-                    elif m == 0:
-                        assert Ylm.imag == 0.0
-                        r = Ylm.real
-                    else:
-                        r = sqrt2 * ((-1) ** m) * Ylm.real
-                    undiffracted_intensity[ip, it] += 0.5 * params[counter] * r
+                    # for the undiffracted intensity, we want to add the correction
+                    # at each point to the parity conjugate. We can use the fact
+                    # that the odd l terms are parity odd, and even are even, to
+                    # just calculate the even terms as follows
+                    if l % 2 == 0:
+                        undiffracted_intensity[ip, it] += params[counter] * r
             counter += 1
     d["absorption_surface"]["data"].append(
         {
-            "x": list(theta * 180.0 / np.pi),
-            "y": list(phi * 180.0 / np.pi),
+            "x": list(azimuth_ * 180.0 / np.pi),
+            "y": list(polar_ * 180.0 / np.pi),
             "z": list(Intensity.T.tolist()),
             "type": "heatmap",
             "colorscale": "Viridis",
@@ -510,8 +504,8 @@ corresponds to the laboratory x-axis.
 
     d["undiffracted_absorption_surface"]["data"].append(
         {
-            "x": list(theta * 180.0 / np.pi),
-            "y": list(phi * 180.0 / np.pi),
+            "x": list(azimuth_ * 180.0 / np.pi),
+            "y": list(polar_ * 180.0 / np.pi),
             "z": list(undiffracted_intensity.T.tolist()),
             "type": "heatmap",
             "colorscale": "Viridis",
@@ -557,9 +551,9 @@ x-axis.""",
     }
 
     STEPS = 180  # do one point per degree
-    phi = np.linspace(0, 2 * np.pi, 2 * STEPS)
-    theta = np.linspace(0, np.pi, STEPS)
-    THETA, _ = np.meshgrid(theta, phi)
+    azimuth_ = np.linspace(0, 2 * np.pi, 2 * STEPS)
+    polar_ = np.linspace(0, np.pi, STEPS)
+    THETA, _ = np.meshgrid(azimuth_, polar_, indexing="ij")
     Intensity = np.full(THETA.shape, np.NAN)
 
     # note, the s1_lookup, s0_lookup is only calculated for large datasets, so
@@ -568,20 +562,20 @@ x-axis.""",
         s1_lookup = calc_lookup_index(
             calc_theta_phi(reflection_table["s1c"]), points_per_degree=1
         )
-        y, x = np.divmod(np.unique(s1_lookup), 360)
-        Intensity[x, y] = 1
+        idx_polar, idx_azimuth = np.divmod(np.unique(s1_lookup), 360)
+        Intensity[idx_azimuth, idx_polar] = 1
     else:
         s1_lookup = np.unique(physical_model.components["absorption"].data["s1_lookup"])
         # x is phi, y is theta
-        y, x = np.divmod(s1_lookup, 720)
-        y = y // 2  # convert from two points per degree to one
-        x = x // 2
-        Intensity[x, y] = 1
+        idx_polar, idx_azimuth = np.divmod(s1_lookup, 720)
+        idx_polar = idx_polar // 2  # convert from two points per degree to one
+        idx_azimuth = idx_azimuth // 2
+        Intensity[idx_azimuth, idx_polar] = 1
 
     d["vector_directions"]["data"].append(
         {
-            "x": list(theta * 180.0 / np.pi),
-            "y": list(phi * 180.0 / np.pi),
+            "x": list(azimuth_ * 180.0 / np.pi),
+            "y": list(polar_ * 180.0 / np.pi),
             "z": list(Intensity.T.tolist()),
             "type": "heatmap",
             "colorscale": "Viridis",
@@ -599,20 +593,20 @@ x-axis.""",
         s0_lookup = calc_lookup_index(
             calc_theta_phi(reflection_table["s0c"]), points_per_degree=1
         )
-        y, x = np.divmod(np.unique(s0_lookup), 360)
-        Intensity[x, y] = 2
+        idx_polar, idx_azimuth = np.divmod(np.unique(s0_lookup), 360)
+        Intensity[idx_azimuth, idx_polar] = 2
     else:
         s0_lookup = np.unique(physical_model.components["absorption"].data["s0_lookup"])
         # x is phi, y is theta
-        y, x = np.divmod(s0_lookup, 720)
-        y = y // 2  # convert from two points per degree to one
-        x = x // 2
-        Intensity[x, y] = 2
+        idx_polar, idx_azimuth = np.divmod(s0_lookup, 720)
+        idx_polar = idx_polar // 2  # convert from two points per degree to one
+        idx_azimuth = idx_azimuth // 2
+        Intensity[idx_azimuth, idx_polar] = 2
 
     d["vector_directions"]["data"].append(
         {
-            "x": list(theta * 180.0 / np.pi),
-            "y": list(phi * 180.0 / np.pi),
+            "x": list(azimuth_ * 180.0 / np.pi),
+            "y": list(polar_ * 180.0 / np.pi),
             "z": list(Intensity.T.tolist()),
             "type": "heatmap",
             "colorscale": "Viridis",
