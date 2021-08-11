@@ -959,7 +959,7 @@ shifts and mis-orientations has improved the overall profile fitting
 mean :math:`\frac{I}{\sigma_I}` and correlation coefficients. However, comparing
 the tables of results binned by resolution we see that the improvements are limited
 to the low resolution, and the results are worse at high resolution. For example,
-we can make a quick plot of the profile fitting correlation coeffients.
+we can make a quick plot of the profile fitting correlation coefficients.
 
   .. image:: /figures/CC_metrology_comparison.png
 

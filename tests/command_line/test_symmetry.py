@@ -1,6 +1,5 @@
 import json
 import math
-import os
 
 import procrunner
 import pytest
@@ -48,14 +47,23 @@ def test_symmetry_laue_only(dials_data, tmpdir):
         tmpdir.join("symmetrized.expt").strpath, check_format=False
     )
     assert str(exps[0].crystal.get_space_group().info()) == "P 2 2 2"
+    joint_reflections = flex.reflection_table.from_file(
+        tmpdir.join("symmetrized.refl").strpath
+    )
+    # check that there are 2 unique id and imageset_ids, and that these
+    # correctly correspond to each experiment
+    assert len(set(joint_reflections["id"])) == 2
+    assert len(set(joint_reflections["imageset_id"])) == 2
+    for id_ in range(2):
+        sel = joint_reflections["id"] == id_
+        assert set(joint_reflections["imageset_id"].select(sel)) == {id_}
 
 
-def test_symmetry_basis_changes_for_C2(tmpdir):
+def test_symmetry_basis_changes_for_C2(run_in_tmpdir):
     """Test the correctness of change of basis operations in dials.symmetry
 
     Supply the unit cell of beta-lactamase, which triggers a change of
     basis from input to minimum during symmetry analysis."""
-    os.chdir(tmpdir.strpath)
     unit_cell = (53.173, 61.245, 69.292, 90.0, 93.04675, 90.0)
     space_group = sgtbx.space_group_info("C 2").group()
     experiments, reflections, _ = generate_experiments_reflections(
@@ -65,35 +73,35 @@ def test_symmetry_basis_changes_for_C2(tmpdir):
         map_to_minimum=False,
     )
     experiments.as_json("tmp.expt")
-    expt_file = tmpdir.join("tmp.expt").strpath
+    expt_file = run_in_tmpdir.join("tmp.expt").strpath
     joint_table = flex.reflection_table()
     for r in reflections:
         joint_table.extend(r)
     joint_table.as_file("tmp.refl")
-    refl_file = tmpdir.join("tmp.refl").strpath
+    refl_file = run_in_tmpdir.join("tmp.refl").strpath
 
     command = ["dials.symmetry", expt_file, refl_file, "json=symmetry.json"]
-    result = procrunner.run(command, working_directory=tmpdir.strpath)
+    result = procrunner.run(command, working_directory=run_in_tmpdir)
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("symmetrized.refl").check(file=1)
-    assert tmpdir.join("symmetrized.expt").check(file=1)
+    assert run_in_tmpdir.join("symmetrized.refl").check(file=1)
+    assert run_in_tmpdir.join("symmetrized.expt").check(file=1)
 
     expts = load.experiment_list(
-        tmpdir.join("symmetrized.expt").strpath, check_format=False
+        run_in_tmpdir.join("symmetrized.expt").strpath, check_format=False
     )
     for v, expected in zip(expts[0].crystal.get_unit_cell().parameters(), unit_cell):
         assert v == pytest.approx(expected)
 
     # Using the change of basis ops from the json output we should be able to
     # reindex the input experiments to match the output experiments
-    with tmpdir.join("symmetry.json").open() as f:
+    with run_in_tmpdir.join("symmetry.json").open() as f:
         d = json.load(f)
-        cs = experiments[0].crystal.get_crystal_symmetry()
-        cb_op_inp_min = sgtbx.change_of_basis_op(str(d["cb_op_inp_min"][0]))
-        cb_op_min_best = sgtbx.change_of_basis_op(str(d["subgroup_scores"][0]["cb_op"]))
-        assert cs.change_basis(cb_op_min_best * cb_op_inp_min).is_similar_symmetry(
-            expts[0].crystal.get_crystal_symmetry()
-        )
+    cs = experiments[0].crystal.get_crystal_symmetry()
+    cb_op_inp_min = sgtbx.change_of_basis_op(str(d["cb_op_inp_min"][0]))
+    cb_op_min_best = sgtbx.change_of_basis_op(str(d["subgroup_scores"][0]["cb_op"]))
+    assert cs.change_basis(cb_op_min_best * cb_op_inp_min).is_similar_symmetry(
+        expts[0].crystal.get_crystal_symmetry()
+    )
 
 
 @pytest.mark.parametrize("option", ["", "exclude_images=0:1500:1800"])

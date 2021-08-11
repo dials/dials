@@ -19,7 +19,7 @@ def test_kapton(run_in_tmpdir, dials_data):
     )
     geom_file = dials_data("lcls_rayonix_kapton").join("experiments_000.json").strpath
 
-    # Create phil files for the two sitations being tests
+    # Create phil files for the two situations being tests
     #  a. without kapton
     #  b. with kapton
 

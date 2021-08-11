@@ -1,3 +1,4 @@
+import logging
 import os
 import random
 import sys
@@ -22,6 +23,8 @@ from dials.array_family import flex
 from dials.util import tabulate
 from dials.util.options import OptionParser, flatten_experiments
 
+logger = logging.getLogger(__name__)
+
 help_message = """
 
 Utility script to combine multiple reflections and experiments files into
@@ -30,7 +33,7 @@ matched to reflections in the order they are provided as input.
 
 Reference models can be chosen from any of the input experiments files. These
 will replace all other models of that type in the output experiments file.
-This is useful, for example, for combining mutiple experiments that should
+This is useful, for example, for combining multiple experiments that should
 differ only in their crystal models. No checks are made to ensure that a
 reference model is a good replacement model.
 
@@ -157,7 +160,7 @@ phil_scope = parse(
       .type = int
       .expert_level = 2
       .help = "If not None, split the resultant combined set of experiments"
-              "into seperate files, each at most max_batch_size number of"
+              "into separate files, each at most max_batch_size number of"
               "experiments. Example, if there were 5500 experiments and"
               "max_batch_size is 1000, 6 experiment lists will be created,"
               "of sizes 917, 917, 917, 917, 916, 916"
@@ -517,8 +520,13 @@ class Script:
         ):
             refs = ref_wrapper.data
             exps = exp_wrapper.data
+
             # Record initial mapping of ids for updating later.
             ids_map = dict(refs.experiment_identifiers())
+
+            # Keep track of mapping of imageset_ids old->new within this experimentlist
+            imageset_result_map = {}
+
             for k in refs.experiment_identifiers().keys():
                 del refs.experiment_identifiers()[k]
             for i, exp in enumerate(exps):
@@ -540,12 +548,13 @@ class Script:
 
                 nrefs_per_exp.append(n_sub_ref)
                 sub_ref["id"] = flex.int(len(sub_ref), global_id)
+
                 # now update identifiers if set.
                 if i in ids_map:
                     sub_ref.experiment_identifiers()[global_id] = ids_map[i]
                 if params.output.delete_shoeboxes and "shoebox" in sub_ref:
                     del sub_ref["shoebox"]
-                reflections.extend(sub_ref)
+
                 try:
                     experiments.append(combine(exp))
                 except ComparisonError as e:
@@ -558,7 +567,39 @@ class Script:
                         )
                     )
 
+                # Rewrite imageset_id, if the experiment has and imageset
+                if exp.imageset and "imageset_id" in sub_ref:
+                    # Get the index of the imageset for this experiment and record how it changed
+                    new_imageset_id = experiments.imagesets().index(
+                        experiments[-1].imageset
+                    )
+                    old_imageset_id = exps.imagesets().index(exp.imageset)
+                    imageset_result_map[old_imageset_id] = new_imageset_id
+
+                    # Check for invalid(?) imageset_id indices... and leave if they are wrong
+                    if len(set(sub_ref["imageset_id"])) != 1:
+                        logger.warning(
+                            "Warning: Experiment %d reflections appear to have come from multiple imagesets - output may be incorrect",
+                            i,
+                        )
+                    else:
+                        sub_ref["imageset_id"] = flex.int(len(sub_ref), new_imageset_id)
+
+                reflections.extend(sub_ref)
+
                 global_id += 1
+
+            # Include unindexed reflections, if we can safely remap their imagesets
+            if "imageset_id" in reflections:
+                unindexed_refs = refs.select(refs["id"] == -1)
+                for old_id in set(unindexed_refs["imageset_id"]):
+                    subs = unindexed_refs.select(
+                        unindexed_refs["imageset_id"] == old_id
+                    )
+                    subs["imageset_id"] = flex.int(
+                        len(subs), imageset_result_map[old_id]
+                    )
+                    reflections.extend(subs)
 
         if (
             params.output.min_reflections_per_experiment is not None

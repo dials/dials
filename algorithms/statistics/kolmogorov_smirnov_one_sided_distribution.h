@@ -101,7 +101,7 @@ namespace dials { namespace algorithms {
     /**
      * A direct implementation of the PDF of the exact kolmogorov smirnov one
      * sided distribution as shown in Birnbaum, Z. & Tingey, F. (1951). Ann.
-     * Math. Stat. 592–596.  This formula was dirived from the log form of the
+     * Math. Stat. 592–596.  This formula was derived from the log form of the
      * sum.
      *
      * This implements the following equation.

@@ -56,7 +56,7 @@ def test_gaussian_smoother(plots=False):
     assert smoother.spacing() == 19.8
 
     # Use the single value smoother multiple times...
-    smooth_at = [e for e in range(1, 101)]
+    smooth_at = list(range(1, 101))
     data = [smoother.value_weight(e, myparam) for e in smooth_at]
     vals, weights, sumweights = zip(*data)
     assert len(smooth_at) == len(vals)

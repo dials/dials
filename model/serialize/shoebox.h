@@ -30,7 +30,7 @@ namespace dials { namespace model {
      */
     ShoeboxReader(const std::string &filename, const af::const_ref<std::size_t> &blocks)
         : filename_(filename), blocks_(blocks.begin(), blocks.end()) {
-      // Check we have atleast 1 block and that block array is valid
+      // Check we have at least 1 block and that block array is valid
       DIALS_ASSERT(blocks.size() >= 2);
       for (std::size_t i = 1; i < blocks.size(); ++i) {
         DIALS_ASSERT(blocks[i] > blocks[i - 1]);

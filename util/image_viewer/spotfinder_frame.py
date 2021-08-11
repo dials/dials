@@ -100,6 +100,9 @@ class SpotFrame(XrayFrame):
         for experiment_list in self.experiments:
             for experiment in experiment_list:
                 detector = experiment.detector
+                if not detector:
+                    self.params.projection = None
+                    continue
                 if len(detector) == 24 and detector[0].get_image_size() == (2463, 195):
                     self.params.projection = None
                 elif len(detector) == 120 and detector[0].get_image_size() == (
@@ -640,6 +643,13 @@ class SpotFrame(XrayFrame):
             )
         self.settings_frame.Show()
 
+    def _choose_text_colour(self):
+        """Choose a text colour contrasting with the image pixels"""
+        if self.settings.color_scheme > 1:  # heatmap or invert
+            return "#cdcdcd"  # light grey
+        else:
+            return "#3b3b3b"  # dark grey
+
     def draw_resolution_rings(self, unit_cell=None, space_group=None):
         image = self.image_chooser.GetClientData(
             self.image_chooser.GetSelection()
@@ -663,10 +673,6 @@ class SpotFrame(XrayFrame):
                 [uctbx.d_star_sq_as_d((i + 1) * step) for i in range(0, n_rings)]
             )
         resolution_text_data = []
-        if self.settings.color_scheme > 1:  # heatmap or invert
-            textcolour = "white"
-        else:
-            textcolour = "black"
 
         wavelength = beam.get_wavelength()
         distance = detector[0].get_distance()
@@ -821,7 +827,6 @@ class SpotFrame(XrayFrame):
                             {
                                 "placement": "cc",
                                 "colour": "red",
-                                "textcolour": textcolour,
                             },
                         )
                     )
@@ -859,8 +864,8 @@ class SpotFrame(XrayFrame):
                 show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
                 selectable=False,
                 name="<resolution_text_layer>",
-                colour="red",
                 fontsize=self.settings.fontsize,
+                textcolour=self._choose_text_colour(),
                 update=False,
             )
 
@@ -904,16 +909,17 @@ class SpotFrame(XrayFrame):
 
     def get_image_data(self, image):
         image.set_image_data(None)
-        if self.settings.image_type == "corrected":
-            image_data = image.get_image_data()
-        else:
-            image_data = image.get_image_data(corrected=False)
-        if isinstance(image_data, tuple):
-            image_data = tuple(id.as_double() for id in image_data)
-        else:
-            image_data = (image_data.as_double(),)
+        if self.settings.display == "image":
+            if self.settings.image_type == "corrected":
+                image_data = image.get_image_data()
+            else:
+                image_data = image.get_image_data(corrected=False)
+            if isinstance(image_data, tuple):
+                image_data = tuple(id.as_double() for id in image_data)
+            else:
+                image_data = (image_data.as_double(),)
 
-        if self.settings.display != "image":
+        else:
             kabsch_debug_list = self._calculate_dispersion_debug(image)
 
             if self.settings.display == "mean":
@@ -1102,6 +1108,7 @@ class SpotFrame(XrayFrame):
                     show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
                     selectable=False,
                     fontsize=self.settings.fontsize,
+                    textcolour=self._choose_text_colour(),
                     name="<miller_indices_layer>",
                     update=False,
                 )
@@ -1232,7 +1239,7 @@ class SpotFrame(XrayFrame):
                     show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
                     selectable=False,
                     name="<vector_text_layer>",
-                    colour="#F62817",
+                    textcolour=self._choose_text_colour(),
                     update=False,
                     fontsize=self.settings.fontsize,
                 )
@@ -1493,15 +1500,15 @@ class SpotFrame(XrayFrame):
                                 per_spot_mean += pxl
                             per_spot_mean /= len(this_spot_foreground_pixels)
                             all_foreground_circles[reflection["id"]].append(
-                                dict(
-                                    position=per_spot_mean,
-                                    radius=max(
+                                {
+                                    "position": per_spot_mean,
+                                    "radius": max(
                                         [
                                             (t - per_spot_mean).length()
                                             for t in this_spot_foreground_pixels
                                         ]
                                     ),
-                                )
+                                }
                             )
 
                     if self.settings.show_shoebox:
@@ -1616,10 +1623,6 @@ class SpotFrame(XrayFrame):
                                 and "miller_index" in reflection
                                 and reflection["miller_index"] != (0, 0, 0)
                             ):
-                                if self.settings.color_scheme > 1:  # heatmap or invert
-                                    textcolour = "white"
-                                else:
-                                    textcolour = "black"
                                 miller_indices_data.append(
                                     (
                                         x,
@@ -1628,7 +1631,6 @@ class SpotFrame(XrayFrame):
                                         {
                                             "placement": "ne",
                                             "radius": 0,
-                                            "textcolour": textcolour,
                                         },
                                     )
                                 )
@@ -1679,7 +1681,8 @@ class SpotFrame(XrayFrame):
                     beam_x, beam_y = detector[panel].millimeter_to_pixel(beam_centre)
                     beam_x, beam_y = map_coords(beam_x, beam_y, panel)
                     for i, h in enumerate(((1, 0, 0), (0, 1, 0), (0, 0, 1))):
-                        r = A * matrix.col(h) * self.params.basis_vector_scale
+                        r = A * matrix.col(h) * self.settings.basis_vector_scale
+
                         if still:
                             s1 = matrix.col(beam.get_s0()) + r
                         else:
@@ -1747,7 +1750,7 @@ class SpotFrame(XrayFrame):
 
     def OnZeroMQEvent(self, event):
         message = event.message
-        print("ZMQ Event recieved by gui:", message)
+        print("ZMQ Event received by gui:", message)
         try:
             if message["command"] == "load_image":
                 filename = message["image"]
@@ -1806,6 +1809,7 @@ class SpotSettingsPanel(wx.Panel):
         self.settings.show_predictions = self.params.show_predictions
         self.settings.show_miller_indices = self.params.show_miller_indices
         self.settings.fontsize = 10
+        self.settings.basis_vector_scale = self.params.basis_vector_scale
         self.settings.show_mask = self.params.show_mask
         self.settings.show_basis_vectors = self.params.show_basis_vectors
         self.settings.display = self.params.display
@@ -1884,7 +1888,7 @@ class SpotSettingsPanel(wx.Panel):
         self.brightness_ctrl.SetTickFreq(25)
         box.Add(self.brightness_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
 
-        grid = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
+        grid = wx.FlexGridSizer(cols=2, rows=2, vgap=0, hgap=0)
         s.Add(grid)
         # Font size control
         txt = wx.StaticText(self, -1, "Font size:")
@@ -1899,6 +1903,19 @@ class SpotSettingsPanel(wx.Panel):
             style=wx.TE_PROCESS_ENTER,
         )
         grid.Add(self.fontsize_ctrl, 0, wx.ALL, 5)
+
+        # Basis vector scale control
+        txt = wx.StaticText(self, -1, "Basis scale:")
+        grid.Add(txt, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.basis_vector_scale_ctrl = IntCtrl(
+            self,
+            value=self.settings.basis_vector_scale,
+            min=1,
+            max=20,
+            name="Basis scale",
+            style=wx.TE_PROCESS_ENTER,
+        )
+        grid.Add(self.basis_vector_scale_ctrl, 0, wx.ALL, 5)
 
         grid = wx.FlexGridSizer(cols=2, rows=8, vgap=0, hgap=0)
         s.Add(grid)
@@ -2061,7 +2078,7 @@ class SpotSettingsPanel(wx.Panel):
         txt4 = wx.StaticText(self, -1, "Gain")
         grid1.Add(txt4, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.gain_ctrl = FloatCtrl(self, value=self.settings.gain, name="gain")
-        self.gain_ctrl.SetMin(0)
+        self.gain_ctrl.SetMin(1e-6)
         grid1.Add(self.gain_ctrl, 0, wx.ALL, 5)
 
         txt3 = wx.StaticText(self, -1, "Kernel size")
@@ -2145,6 +2162,8 @@ class SpotSettingsPanel(wx.Panel):
 
         self.Bind(wx.EVT_TEXT_ENTER, self.OnUpdate, self.fontsize_ctrl)
         self.fontsize_ctrl.Bind(wx.EVT_KILL_FOCUS, self.OnUpdate)
+        self.Bind(wx.EVT_TEXT_ENTER, self.OnUpdate, self.basis_vector_scale_ctrl)
+        self.basis_vector_scale_ctrl.Bind(wx.EVT_KILL_FOCUS, self.OnUpdate)
 
         # Brightness-related events
         self.Bind(wx.EVT_SCROLL_CHANGED, self.OnUpdateBrightness, self.brightness_ctrl)
@@ -2212,6 +2231,7 @@ class SpotSettingsPanel(wx.Panel):
             self.settings.show_predictions = self.predictions.GetValue()
             self.settings.show_miller_indices = self.miller_indices.GetValue()
             self.settings.fontsize = self.fontsize_ctrl.GetValue()
+            self.settings.basis_vector_scale = self.basis_vector_scale_ctrl.GetValue()
             self.settings.show_mask = self.show_mask.GetValue()
             self.settings.show_basis_vectors = self.show_basis_vectors.GetValue()
             self.settings.dispersion_extended = self.threshold_algorithm.GetValue()
@@ -2329,13 +2349,21 @@ class SpotSettingsPanel(wx.Panel):
             or self.settings.gain != self.gain_ctrl.GetPhilValue()
         ):
             self.GetParent().GetParent().show_filters()
-            self.OnUpdate(event)
+            self.OnUpdateImage(event)
 
     def OnDispersionThresholdDebug(self, event):
+
         button = event.GetEventObject()
         selected = button.GetLabelText()
 
         self.settings.display = selected
+
+        # Disable corrected/raw selection when showing Kabsch debug images
+        if self.settings.display != "image":
+            self.image_type_ctrl.SetSelection(0)
+            self.image_type_ctrl.Disable()
+        else:
+            self.image_type_ctrl.Enable()
 
         # reset buttons
         for btn in self.kabsch_buttons:

@@ -80,9 +80,9 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < sbox.size(); ++i) {
         try {
           single(sbox[i]);
-        } catch (scitbx::error) {
+        } catch (scitbx::error const &) {
           success[i] = false;
-        } catch (dials::error) {
+        } catch (dials::error const &) {
           success[i] = false;
         }
       }
@@ -132,9 +132,9 @@ namespace dials { namespace algorithms {
 
           // Need to set the background in volume
           v.set_background(b, bgrd.const_ref());
-        } catch (scitbx::error) {
+        } catch (scitbx::error const &) {
           success[i] = false;
-        } catch (dials::error) {
+        } catch (dials::error const &) {
           success[i] = false;
         }
       }

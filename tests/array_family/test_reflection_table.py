@@ -1509,8 +1509,8 @@ def test_match_basic():
 
     mm, nn, distance = a.match(b, key="xyz", scale=(1.0, 1.0, 0.05))
 
-    a_ = a.select(mm.as_size_t())
-    b_ = b.select(nn.as_size_t())
+    a_ = a.select(mm)
+    b_ = b.select(nn)
 
     for _a, _b in zip(a_["xyz"], b_["xyz"]):
         assert _a == pytest.approx(_b)
@@ -1542,8 +1542,8 @@ def test_match_mismatched_sizes():
 
     mm, nn, distance = a.match(b, key="xyz", scale=(1.0, 1.0, 0.05))
 
-    a_ = a.select(mm.as_size_t())
-    b_ = b.select(nn.as_size_t())
+    a_ = a.select(mm)
+    b_ = b.select(nn)
 
     for _a, _b in zip(a_["xyz"], b_["xyz"]):
         assert _a == pytest.approx(_b)

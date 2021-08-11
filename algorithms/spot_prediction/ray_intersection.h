@@ -111,7 +111,7 @@ namespace dials { namespace algorithms {
         xyzcalmm[i][1] = coord.second[1];
         xyzcalmm[i][2] = phi[i];
         panel[i] = coord.first;
-      } catch (dxtbx::error) {
+      } catch (dxtbx::error const &) {
         success[i] = false;
       }
     }
@@ -137,7 +137,7 @@ namespace dials { namespace algorithms {
         xyzcalmm[i][1] = coord[1];
         xyzcalmm[i][2] = phi[i];
         panel[i] = panel_number;
-      } catch (dxtbx::error) {
+      } catch (dxtbx::error const &) {
         success[i] = false;
       }
     }
@@ -164,7 +164,7 @@ namespace dials { namespace algorithms {
         xyzcalmm[i][1] = coord[1];
         xyzcalmm[i][2] = phi[i];
         panel[i] = panel_numbers[i];
-      } catch (dxtbx::error) {
+      } catch (dxtbx::error const &) {
         success[i] = false;
       }
     }

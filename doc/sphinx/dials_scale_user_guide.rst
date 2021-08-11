@@ -202,7 +202,7 @@ across all resolution shells. In multi-dataset scaling, a separate selection
 is also made to find reflection groups that have a high connectedness across
 the datasets (choosing from groups with an average I/sigma above a cutoff).
 The parameters of the algorithm are therefore controllable with the following
-options, if one explicity chooses :samp:`reflection_selection.method=quasi_random`:
+options, if one explicitly chooses :samp:`reflection_selection.method=quasi_random`:
 :samp:`quasi_random.min_per_area`, :samp:`quasi_random.n_resolution_bins`,
 :samp:`quasi_random.multi_dataset.min_per_dataset` and
 :samp:`quasi_random.multi_dataset.Isigma_cutoff`. The :samp:`auto` option sets these

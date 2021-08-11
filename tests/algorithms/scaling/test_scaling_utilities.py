@@ -414,7 +414,7 @@ def test_calculate_prescaling_correction():
         0.8 / 0.4,
     ]
 
-    # Test compatibilty for old datasets
+    # Test compatibility for old datasets
     del reflection_table["qe"]
     reflection_table["dqe"] = flex.double([0.6, 0.5, 0.4])
     reflection_table = calculate_prescaling_correction(reflection_table)
@@ -463,9 +463,9 @@ def test_calculate_harmonic_tables_from_selections():
 
 
 def test_equality_of_two_harmonic_table_methods(dials_data):
-    data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
-    pickle_path = data_dir / "20_integrated.pickle"
-    sequence_path = data_dir / "20_integrated_experiments.json"
+    location = dials_data("l_cysteine_dials_output", pathlib=True)
+    refl = location / "20_integrated.pickle"
+    expt = location / "20_integrated_experiments.json"
 
     phil_scope = phil.parse(
         """
@@ -479,8 +479,8 @@ def test_equality_of_two_harmonic_table_methods(dials_data):
     lmax = 2
     params.physical.lmax = lmax
 
-    reflection_table = flex.reflection_table.from_file(pickle_path)
-    experiments = load.experiment_list(sequence_path, check_format=False)
+    reflection_table = flex.reflection_table.from_file(refl)
+    experiments = load.experiment_list(expt, check_format=False)
     experiments = create_scaling_model(params, experiments, [reflection_table])
 
     experiment = experiments[0]

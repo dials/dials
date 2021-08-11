@@ -50,7 +50,7 @@ def generated_param():
 
 
 def generate_refl_1():
-    """Generate a test reflection table. Note tha the variance values are chosen
+    """Generate a test reflection table. Note that the variance values are chosen
     as the 'True' Ih_values, which would be found if unity weights were chosen
     in this example."""
     reflections = flex.reflection_table()
@@ -129,7 +129,13 @@ no_bg_test_input = [
     # now background variance, high multiplicity
     [1, 100, [0.05, 5e-3], 1.0, 0.00],  # no background var, no systematic error
     [1, 100, [0.05, 5e-3], 1.0, 0.02],  # no background var, some systematic error
-    [1, 100, [0.05, 5e-3], 1.0, 0.04],  # no background var, signficant systematic error
+    [
+        1,
+        100,
+        [0.05, 5e-3],
+        1.0,
+        0.04,
+    ],  # no background var, significant systematic error
     [1, 100, [0.05, 5e-3], 1.4, 0.00],
 ]
 

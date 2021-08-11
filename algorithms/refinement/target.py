@@ -474,7 +474,7 @@ class Target:
     @staticmethod
     def _concatenate_gradients(grads):
         """concatenate gradient vectors and return a flex.double. This method
-        may be overriden for the case where these vectors use sparse storage"""
+        may be overridden for the case where these vectors use sparse storage"""
 
         result = grads[0]
         for g in grads[1:]:

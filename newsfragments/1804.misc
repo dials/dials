@@ -1,0 +1,1 @@
+``dials.scale``: Fix recently introduced imageset_id bug when scaling and filtering and `no more removed` termination 

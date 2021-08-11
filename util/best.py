@@ -138,7 +138,7 @@ def write_par_file(file_name, experiment):
         print("GAIN               1.00", file=f)  # correct for Pilatus images
         # http://strucbio.biologie.uni-konstanz.de/xdswiki/index.php/FAQ#You_said_that_the_XDS_deals_with_high_mosaicity._How_high_mosaicity_is_still_manageable.3F
         # http://journals.iucr.org/d/issues/2012/01/00/wd5161/index.html
-        # Transform from XDS defintion of sigma_m to FWHM (MOSFLM mosaicity definition)
+        # Transform from XDS definition of sigma_m to FWHM (MOSFLM mosaicity definition)
         print(f"CMOSAIC            {experiment.profile.sigma_m() * 2.355:.2f}", file=f)
         print(f"PHISTART           {scan.get_oscillation_range()[0]:.2f}", file=f)
         print(f"PHIWIDTH           {scan.get_oscillation()[1]:.2f}", file=f)

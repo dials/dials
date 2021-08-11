@@ -34,7 +34,7 @@ namespace dials {
      * Calculate the beam vector at every pixel on the detector, sub-divided
      * into (n_div * n_div) equal areas. This is done to remove a certain
      * amount of processing from being done per reflection and ensuring it
-     * is only done before the reflections are procesed.
+     * is only done before the reflections are processed.
      * @param detector The detector model
      * @param beam The beam model
      * @param n_div The number of sub-divisions to use

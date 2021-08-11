@@ -124,7 +124,7 @@ def run(args=None):
                         else f"{filenames[0]} image {indx}"
                     )
                 else:
-                    label = f"image {indx}" if len(images) > 1 else f""
+                    label = f"image {indx}" if len(images) > 1 else ""
                 ds2 = 1 / flex.pow2(d)
                 ax.plot(ds2, I, label=label)
             xticks = ax.get_xticks().tolist()

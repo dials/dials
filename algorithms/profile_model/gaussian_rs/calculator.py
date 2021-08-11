@@ -188,7 +188,7 @@ class ComputeEsdReflectingRange:
         """Estimate E.s.d reflecting range by maximum likelihood estimation."""
 
         def __init__(self, crystal, beam, detector, goniometer, scan, reflections):
-            """Initialise the optmization."""
+            """Initialise the optimization."""
             from scitbx import simplex
 
             # FIXME in here this code is very unstable or actually broken if
@@ -367,7 +367,7 @@ class ComputeEsdReflectingRange:
             # reflection as a whole. This results in the term log(Z)
             #
             # The second is the likelihood for each reflection modelling as a Poisson
-            # distribtution with shape given by sigma M. This gives sum(ci log(zi)) -
+            # distributions with shape given by sigma M. This gives sum(ci log(zi)) -
             # sum(ci)*log(sum(zi))
             #
             # If the reflection is recorded on 1 frame, the second component is zero

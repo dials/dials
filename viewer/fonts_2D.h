@@ -353,7 +353,7 @@ int get_digits(double nm, int (&dgt_num)[15]) {
   char asc_str[15];
 
   std::string str;
-  snprintf(asc_str, 15, "               ");
+  snprintf(asc_str, 15, "              ");
   snprintf(asc_str, 15, "%g", nm);
 
   // std::cout << "asc_str = <<" << asc_str << ">>\n\n";

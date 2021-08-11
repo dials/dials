@@ -1,3 +1,23 @@
+DIALS 3.5.4 (2021-07-27)
+========================
+
+Bugfixes
+--------
+
+- ``dials.stills_process``: Fix case where imagesets and experiment filenames could potentially disagree (`#1814 <https://github.com/dials/dials/issues/1814>`_)
+- ``dials.scale``: Fix incorrect output files, for targeted scaling with more than one target dataset. (`#1815 <https://github.com/dials/dials/issues/1815>`_)
+- ``dials.image_viewer``: Fix opening datasets with ``load_models=False`` (`#1818 <https://github.com/dials/dials/issues/1818>`_)
+
+
+DIALS 3.5.3 (2021-07-12)
+========================
+
+Bugfixes
+--------
+
+- ``dials.image_viewer``: Fix the ``basis_vector_scale=`` parameter. (`#1769 <https://github.com/dials/dials/issues/1769>`_)
+
+
 DIALS 3.5.2 (2021-06-28)
 ========================
 
@@ -366,7 +386,7 @@ Features
 - Python warnings are now highlighted on the console log and written to log files  (`#1401 <https://github.com/dials/dials/issues/1401>`_)
 - Exit error messages from commands will now be colourized  (`#1420 <https://github.com/dials/dials/issues/1420>`_)
 - Change the way ``dials.integrate`` splits data into blocks, to reduce
-  unneccesary data reads, increasing performance up to 35% in some cases  (`#1396 <https://github.com/dials/dials/issues/1396>`_)
+  unnecessary data reads, increasing performance up to 35% in some cases  (`#1396 <https://github.com/dials/dials/issues/1396>`_)
 - Add ``dials.util.mp.available_cores`` function  (`#1430 <https://github.com/dials/dials/issues/1430>`_)
 - ``dials.refine``: Trimming scans to observations for scan-varying refinement can
   now be turned off, using the parameter ``trim_scan_to_observations=False``  (`#1374 <https://github.com/dials/dials/issues/1374>`_)

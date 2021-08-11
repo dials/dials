@@ -656,7 +656,7 @@ class XrayFrame(XFBaseClass):
 
     def OnSaveAs(self, event):
         ### XXX TODO: Save overlays
-        ### XXX TODO: Fix bug where multi-asic images are slightly cropped due to tranformation error'
+        ### XXX TODO: Fix bug where multi-asic images are slightly cropped due to transformation error'
 
         import PIL.Image as Image
 

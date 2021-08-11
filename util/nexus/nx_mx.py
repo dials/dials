@@ -268,7 +268,7 @@ def dump_detector(entry, detector, beam, imageset, scan):
     # Create the detector depends on
     nx_detector["depends_on"] = "."
 
-    # Creat some data for example file
+    # Create some data for example file
     # data = [im.as_numpy_array() for im in imageset]
 
     # Create the nx data
