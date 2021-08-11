@@ -14,6 +14,7 @@ import argparse
 import json
 import multiprocessing.pool
 import os
+import platform
 import re
 import shutil
 import socket as pysocket
@@ -63,7 +64,10 @@ def install_micromamba(python, include_cctbx):
     elif sys.platform == "darwin":
         conda_platform = "macos"
         member = "bin/micromamba"
-        url = "https://micromamba.snakepit.net/api/micromamba/osx-64/latest"
+        if platform.machine() == "arm64":
+            url = "https://micromamba.snakepit.net/api/micromamba/osx-arm64/latest"
+        else:
+            url = "https://micromamba.snakepit.net/api/micromamba/osx-64/latest"
     elif os.name == "nt":
         conda_platform = "windows"
         member = "Library/bin/micromamba.exe"
