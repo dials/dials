@@ -6,8 +6,8 @@ import itertools
 import math
 
 import numpy as np
+import scipy.special
 
-from scitbx import math as scitbxmath
 from scitbx.math import distributions
 
 from dials.array_family import flex
@@ -430,45 +430,59 @@ def plot_absorption_plots(physical_model, reflection_table=None):
         }
     }
 
-    params = physical_model.components["absorption"].parameters
+    params = np.array(physical_model.components["absorption"].parameters)
 
-    order = int(-1.0 + ((1.0 + len(params)) ** 0.5))
-    lfg = scitbxmath.log_factorial_generator(2 * order + 1)
+    # Get the sampled range of l and m parameters of the spherical harmonics.
+    # There is one coefficient for each of the (lmax + 1)^2 - 1 spherical harmonics.
+    lmax = int(-1.0 + ((1.0 + params.size) ** 0.5))
+    l = np.arange(1, lmax + 1)
+    m = np.arange(-lmax, lmax + 1)
+
+    # Get the sampling points over the sphere.
     STEPS = 50
-    azimuth_ = np.linspace(0, 2 * np.pi, 2 * STEPS)
-    polar_ = np.linspace(0, np.pi, STEPS)
-    THETA, _ = np.meshgrid(azimuth_, polar_, indexing="ij")
-    lmax = int(-1.0 + ((1.0 + len(params)) ** 0.5))
-    Intensity = np.ones(THETA.shape)
-    undiffracted_intensity = np.ones(THETA.shape)
-    counter = 0
-    sqrt2 = math.sqrt(2)
-    nsssphe = scitbxmath.nss_spherical_harmonics(order, 50000, lfg)
-    for l in range(1, lmax + 1):
-        for m in range(-l, l + 1):
-            for it, t in enumerate(polar_):
-                for ip, p in enumerate(azimuth_):
-                    Ylm = nsssphe.spherical_harmonic(l, abs(m), t, p)
-                    if m < 0:
-                        r = sqrt2 * ((-1) ** m) * Ylm.imag
-                    elif m == 0:
-                        assert Ylm.imag == 0.0
-                        r = Ylm.real
-                    else:
-                        r = sqrt2 * ((-1) ** m) * Ylm.real
-                    Intensity[ip, it] += params[counter] * r
-                    # for the undiffracted intensity, we want to add the correction
-                    # at each point to the parity conjugate. We can use the fact
-                    # that the odd l terms are parity odd, and even are even, to
-                    # just calculate the even terms as follows
-                    if l % 2 == 0:
-                        undiffracted_intensity[ip, it] += params[counter] * r
-            counter += 1
+    zenith = np.linspace(0, np.pi, STEPS)
+    azimuth = np.linspace(0, 2 * np.pi, 2 * STEPS)
+
+    # Reshape l, m, zenith and azimuth for easy broadcasting.
+    l.shape = -1, 1, 1, 1
+    m.shape = 1, -1, 1, 1
+    zenith.shape = 1, 1, -1, 1
+    azimuth.shape = 1, 1, 1, -1
+
+    # Calculate the spherical harmonics for every combination of l, m, and both angles.
+    # For the invalid values |m| > l, a value of NaN will be used.
+    harmonics = scipy.special.sph_harm(m, l, azimuth, zenith)
+
+    # Convert the complex harmonics to their real forms.
+    # See https://en.wikipedia.org/wiki/Spherical_harmonics#Real_form.
+    harmonics = np.where(m >= 0, harmonics.real, harmonics.imag)
+    harmonics *= np.where(m != 0, math.sqrt(2) * (-1) ** (m % 2), 1)
+
+    # Flatten together the l and m dimensions of the harmonics array.
+    harmonics = harmonics.reshape(-1, *harmonics.shape[2:])
+    # Keep only the valid harmonics, for which l >= |m|.
+    valid = np.ravel(l >= np.abs(m))
+    harmonics = harmonics[valid]
+
+    # There's now a 1:1 correspondence between the coefficients in 'params' and the
+    # first axis of the array of 'harmonics'.
+    r = params.reshape(-1, 1, 1) * harmonics
+    intensity = 1 + r.sum(axis=0)
+
+    # For the purposes of calculating the undiffracted intensity, we need only the
+    # even-l harmonics.
+    l_even = np.tile(l % 2 == 0, (1, m.size, 1, 1))
+    l_even = l_even.flatten()[valid]
+    undiffracted_intensity = 1 + r[l_even].sum(axis=0)
+
+    # Flatten the angle arrays again.
+    zenith.shape = azimuth.shape = -1
+
     d["absorption_surface"]["data"].append(
         {
-            "x": list(azimuth_ * 180.0 / np.pi),
-            "y": list(polar_ * 180.0 / np.pi),
-            "z": list(Intensity.T.tolist()),
+            "x": np.rad2deg(azimuth).tolist(),
+            "y": np.rad2deg(zenith).tolist(),
+            "z": intensity.tolist(),
             "type": "heatmap",
             "colorscale": "Viridis",
             "colorbar": {"title": "inverse <br>scale factor"},
@@ -504,9 +518,9 @@ corresponds to the laboratory x-axis.
 
     d["undiffracted_absorption_surface"]["data"].append(
         {
-            "x": list(azimuth_ * 180.0 / np.pi),
-            "y": list(polar_ * 180.0 / np.pi),
-            "z": list(undiffracted_intensity.T.tolist()),
+            "x": np.rad2deg(azimuth * 180.0 / np.pi).tolist(),
+            "y": np.rad2deg(zenith * 180.0 / np.pi).tolist(),
+            "z": undiffracted_intensity.tolist(),
             "type": "heatmap",
             "colorscale": "Viridis",
             "colorbar": {"title": "inverse <br>scale factor"},
