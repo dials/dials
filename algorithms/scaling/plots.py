@@ -471,7 +471,8 @@ def plot_absorption_plots(physical_model, reflection_table=None):
 
     # For the purposes of calculating the undiffracted intensity, we need only the
     # even-l harmonics.
-    l_even = np.tile(l % 2 == 0, (1, m.size, 1, 1))
+    l.shape = -1, 1
+    l_even = np.tile(l % 2 == 0, (1, m.size))
     l_even = l_even.flatten()[valid]
     undiffracted_intensity = 1 + r[l_even].sum(axis=0)
 
