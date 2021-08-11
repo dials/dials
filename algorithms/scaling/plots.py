@@ -317,7 +317,9 @@ This plot shows the smoothly-varying absorption surface used to correct the
 data for the effects of absorption. It is important to note that this plot does
 not show the correction applied; the applied correction for a given reflection
 with scattering vectors s0, s1 is given by the average of the two values on this
-surface where the surface intersects those scattering vectors.
+surface where the surface intersects those scattering vectors. The plot is in the
+crystal reference frame, and the pole (polar angle 0) corresponds to the laboratory
+x-axis.
 
 The absorption correction uses a set of spherical harmonic functions as the
 basis of a smoothly varying absorption correction as a function of phi and
@@ -413,8 +415,16 @@ def plot_absorption_plots(physical_model, reflection_table=None):
             "data": [],
             "layout": {
                 "title": "Absorption correction surface",
-                "xaxis": {"domain": [0, 1], "anchor": "y", "title": "theta (degrees)"},
-                "yaxis": {"domain": [0, 1], "anchor": "x", "title": "phi (degrees)"},
+                "xaxis": {
+                    "domain": [0, 1],
+                    "anchor": "y",
+                    "title": "azimuthal angle (degrees)",
+                },
+                "yaxis": {
+                    "domain": [0, 1],
+                    "anchor": "x",
+                    "title": "polar angle (degrees)",
+                },
             },
             "help": absorption_help_msg,
         }
@@ -465,14 +475,23 @@ def plot_absorption_plots(physical_model, reflection_table=None):
         "data": [],
         "layout": {
             "title": "Undiffracted absorption correction",
-            "xaxis": {"domain": [0, 1], "anchor": "y", "title": "theta (degrees)"},
-            "yaxis": {"domain": [0, 1], "anchor": "x", "title": "phi (degrees)"},
+            "xaxis": {
+                "domain": [0, 1],
+                "anchor": "y",
+                "title": "azimuthal angle (degrees)",
+            },
+            "yaxis": {
+                "domain": [0, 1],
+                "anchor": "x",
+                "title": "polar angle (degrees)",
+            },
         },
         "help": """
 This plot shows the calculated relative absorption for a paths travelling
 straight through the crystal at a given direction in a crystal-fixed frame of
 reference (in spherical coordinates). This gives an indication of the effective
-shape of the crystal for absorbing x-rays.
+shape of the crystal for absorbing x-rays. In this plot, the pole (polar angle 0)
+corresponds to the laboratory x-axis.
 """,
     }
 
@@ -531,13 +550,13 @@ shape of the crystal for absorbing x-rays.
             "xaxis": {
                 "domain": [0, 1],
                 "anchor": "y",
-                "title": "theta (degrees)",
+                "title": "azimuthal angle (degrees)",
                 "range": [0, 360],
             },
             "yaxis": {
                 "domain": [0, 1],
                 "anchor": "x",
-                "title": "phi (degrees)",
+                "title": "polar angle (degrees)",
                 "range": [0, 180],
             },
             "coloraxis": {
@@ -549,7 +568,8 @@ This plot shows the scattering vector directions in the crystal reference frame
 used to determine the absorption correction. The s0 vectors are plotted in yellow,
 the s1 vectors are plotted in teal. This gives an indication of which parts of
 the absorption correction surface are sampled when determining the absorption
-correction.""",
+correction. In this plot, the pole (polar angle 0) corresponds to the laboratory
+x-axis.""",
     }
 
     STEPS = 180  # do one point per degree
