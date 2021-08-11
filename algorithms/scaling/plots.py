@@ -440,6 +440,7 @@ def plot_absorption_plots(physical_model, reflection_table=None):
     THETA, _ = np.meshgrid(theta, phi)
     lmax = int(-1.0 + ((1.0 + len(params)) ** 0.5))
     Intensity = np.ones(THETA.shape)
+    undiffracted_intensity = np.ones(THETA.shape)
     counter = 0
     sqrt2 = math.sqrt(2)
     nsssphe = scitbxmath.nss_spherical_harmonics(order, 50000, lfg)
@@ -456,6 +457,18 @@ def plot_absorption_plots(physical_model, reflection_table=None):
                     else:
                         r = sqrt2 * ((-1) ** m) * Ylm.real
                     Intensity[ip, it] += params[counter] * r
+                    undiffracted_intensity[ip, it] += 0.5 * params[counter] * r
+                    p2 = (p + np.pi) % (2.0 * np.pi)
+                    t2 = np.pi - t
+                    Ylm = nsssphe.spherical_harmonic(l, abs(m), t2, p2)
+                    if m < 0:
+                        r = sqrt2 * ((-1) ** m) * Ylm.imag
+                    elif m == 0:
+                        assert Ylm.imag == 0.0
+                        r = Ylm.real
+                    else:
+                        r = sqrt2 * ((-1) ** m) * Ylm.real
+                    undiffracted_intensity[ip, it] += 0.5 * params[counter] * r
             counter += 1
     d["absorption_surface"]["data"].append(
         {
@@ -495,40 +508,11 @@ corresponds to the laboratory x-axis.
 """,
     }
 
-    Intensity = np.ones(THETA.shape)
-    counter = 0
-    sqrt2 = math.sqrt(2)
-    nsssphe = scitbxmath.nss_spherical_harmonics(order, 50000, lfg)
-    for l in range(1, lmax + 1):
-        for m in range(-l, l + 1):
-            for it, t in enumerate(theta):
-                for ip, p in enumerate(phi):
-                    Ylm = nsssphe.spherical_harmonic(l, abs(m), t, p)
-                    if m < 0:
-                        r = sqrt2 * ((-1) ** m) * Ylm.imag
-                    elif m == 0:
-                        assert Ylm.imag == 0.0
-                        r = Ylm.real
-                    else:
-                        r = sqrt2 * ((-1) ** m) * Ylm.real
-                    Intensity[ip, it] += 0.5 * params[counter] * r
-                    p2 = (p + np.pi) % (2.0 * np.pi)
-                    t2 = np.pi - t
-                    Ylm = nsssphe.spherical_harmonic(l, abs(m), t2, p2)
-                    if m < 0:
-                        r = sqrt2 * ((-1) ** m) * Ylm.imag
-                    elif m == 0:
-                        assert Ylm.imag == 0.0
-                        r = Ylm.real
-                    else:
-                        r = sqrt2 * ((-1) ** m) * Ylm.real
-                    Intensity[ip, it] += 0.5 * params[counter] * r
-            counter += 1
     d["undiffracted_absorption_surface"]["data"].append(
         {
             "x": list(theta * 180.0 / np.pi),
             "y": list(phi * 180.0 / np.pi),
-            "z": list(Intensity.T.tolist()),
+            "z": list(undiffracted_intensity.T.tolist()),
             "type": "heatmap",
             "colorscale": "Viridis",
             "colorbar": {"title": "inverse <br>scale factor"},
