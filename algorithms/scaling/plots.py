@@ -467,7 +467,6 @@ def plot_absorption_plots(physical_model, reflection_table=None):
     # There's now a 1:1 correspondence between the coefficients in 'params' and the
     # first axis of the array of 'harmonics'.
     r = params.reshape(-1, 1, 1) * harmonics
-    intensity = 1 + r.sum(axis=0)
 
     # For the purposes of calculating the undiffracted intensity, we need only the
     # even-l harmonics.
@@ -475,6 +474,9 @@ def plot_absorption_plots(physical_model, reflection_table=None):
     l_even = np.tile(l % 2 == 0, (1, m.size))
     l_even = l_even.flatten()[valid]
     undiffracted_intensity = 1 + r[l_even].sum(axis=0)
+
+    # The diffracted intensity includes the odd-l contributions too.
+    intensity = undiffracted_intensity + r[~l_even].sum(axis=0)
 
     # Flatten the angle arrays again.
     zenith.shape = azimuth.shape = -1
