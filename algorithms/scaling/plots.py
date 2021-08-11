@@ -567,9 +567,11 @@ correction.""",
         y, x = np.divmod(np.unique(s1_lookup), 360)
         Intensity[x, y] = 1
     else:
-        s1_lookup = np.unique((physical_model.components["absorption"].data["s1_lookup"])
+        s1_lookup = np.unique(physical_model.components["absorption"].data["s1_lookup"])
         # x is phi, y is theta
-        y, x = np.divmod(s1_lookup, 720) // 2
+        y, x = np.divmod(s1_lookup, 720)
+        y = y // 2  # convert from two points per degree to one
+        x = x // 2
         Intensity[x, y] = 1
 
     d["vector_directions"]["data"].append(
@@ -598,7 +600,9 @@ correction.""",
     else:
         s0_lookup = np.unique(physical_model.components["absorption"].data["s0_lookup"])
         # x is phi, y is theta
-        y, x = np.divmod(j, 720) // 2  # convert from two points per degree to one
+        y, x = np.divmod(s0_lookup, 720)
+        y = y // 2  # convert from two points per degree to one
+        x = x // 2
         Intensity[x, y] = 2
 
     d["vector_directions"]["data"].append(
