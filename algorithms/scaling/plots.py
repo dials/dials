@@ -556,8 +556,7 @@ correction.""",
     phi = np.linspace(0, 2 * np.pi, 2 * STEPS)
     theta = np.linspace(0, np.pi, STEPS)
     THETA, _ = np.meshgrid(theta, phi)
-    Intensity = np.empty(THETA.shape)
-    Intensity[:] = np.NAN
+    Intensity = np.full(THETA.shape, np.NAN)
 
     # note, the s1_lookup, s0_lookup is only calculated for large datasets, so
     # for small datasets we need to calculate again.
@@ -565,17 +564,13 @@ correction.""",
         s1_lookup = calc_lookup_index(
             calc_theta_phi(reflection_table["s1c"]), points_per_degree=1
         )
-        for j in set(s1_lookup):
-            x = j % 360
-            y = j // 360
-            Intensity[x, y] = 1
+        y, x = np.divmod(np.unique(s1_lookup), 360)
+        Intensity[x, y] = 1
     else:
-        s1_lookup = set(physical_model.components["absorption"].data["s1_lookup"])
-        for j in s1_lookup:
-            # x is phi, y is theta
-            x = (j % 720) // 2  # convert from two points per degree to one
-            y = (j // 720) // 2  # convert from two points per degree to one
-            Intensity[x, y] = 1
+        s1_lookup = np.unique((physical_model.components["absorption"].data["s1_lookup"])
+        # x is phi, y is theta
+        y, x = np.divmod(s1_lookup, 720) // 2
+        Intensity[x, y] = 1
 
     d["vector_directions"]["data"].append(
         {
@@ -592,24 +587,19 @@ correction.""",
         }
     )
 
-    Intensity = np.empty(THETA.shape)
-    Intensity[:] = np.NAN
+    Intensity = np.full(THETA.shape, np.NAN)
 
     if "s0_lookup" not in physical_model.components["absorption"].data:
         s0_lookup = calc_lookup_index(
             calc_theta_phi(reflection_table["s0c"]), points_per_degree=1
         )
-        for j in set(s0_lookup):
-            x = j % 360
-            y = j // 360
-            Intensity[x, y] = 2
+        y, x = np.divmod(np.unique(s0_lookup), 360)
+        Intensity[x, y] = 2
     else:
-        s0_lookup = set(physical_model.components["absorption"].data["s0_lookup"])
-        for j in s0_lookup:
-            # x is phi, y is theta
-            x = (j % 720) // 2  # convert from two points per degree to one
-            y = (j // 720) // 2  # convert from two points per degree to one
-            Intensity[x, y] = 2
+        s0_lookup = np.unique(physical_model.components["absorption"].data["s0_lookup"])
+        # x is phi, y is theta
+        y, x = np.divmod(j, 720) // 2  # convert from two points per degree to one
+        Intensity[x, y] = 2
 
     d["vector_directions"]["data"].append(
         {
