@@ -23,6 +23,7 @@ from dials.algorithms.scaling.scaling_library import create_scaling_model
 from dials.algorithms.scaling.scaling_utilities import (
     Reasons,
     align_axis_along_z,
+    calc_crystal_frame_vectors,
     calculate_prescaling_correction,
     quasi_normalisation,
     set_wilson_outliers,
@@ -30,7 +31,6 @@ from dials.algorithms.scaling.scaling_utilities import (
 from dials.array_family import flex
 from dials.util.options import OptionParser
 from dials_scaling_ext import (
-    calc_crystal_frame_vectors,
     calc_lookup_index,
     calc_theta_phi,
     calculate_harmonic_tables_from_selections,

@@ -6,6 +6,10 @@ Module of utility functions for scaling.
 import logging
 from math import acos
 
+import numpy as np
+from scipy.spatial.transform import Rotation
+
+import dxtbx.flumpy as flumpy
 from cctbx import miller
 
 from dials.array_family import flex
@@ -65,6 +69,42 @@ class Reasons:
             if v > 0
         ]
         return "Reflections passing individual criteria:\n" + "".join(reasonlist)
+
+
+def calc_crystal_frame_vectors(reflection_table, experiment):
+    """Calculate the diffraction vectors in the crystal frame."""
+
+    gonio = experiment.goniometer
+    fixed_rotation = np.array(gonio.get_fixed_rotation()).reshape(3, 3)
+    setting_rotation = np.array(gonio.get_setting_rotation()).reshape(3, 3)
+    rotation_axis = np.array(gonio.get_rotation_axis_datum())
+
+    s0c = np.zeros((len(reflection_table), 3))
+    s1c = np.zeros((len(reflection_table), 3))
+    s0 = np.array(experiment.beam.get_sample_to_source_direction())
+    s1 = flumpy.to_numpy(reflection_table["s1"])
+    phi = flumpy.to_numpy(
+        experiment.scan.get_angle_from_array_index(
+            reflection_table["xyzobs.px.value"].parts()[2], deg=False
+        )
+    )
+    # exclude any data that has a bad s1.
+    lengths = np.linalg.norm(s1, axis=1)
+    non_zero = np.where(lengths > 0.0)
+    sel_s1 = s1[non_zero]
+    s1n = sel_s1 / lengths[non_zero][:, np.newaxis]
+    rotation_matrix = Rotation.from_rotvec(
+        phi[non_zero][:, np.newaxis] * rotation_axis
+    ).as_matrix()
+    R = setting_rotation @ rotation_matrix @ fixed_rotation
+    R_inv = np.transpose(R, axes=(0, 2, 1))
+    s0c[non_zero] = R_inv @ s0
+    # Pairwise matrix multiplication of the arrays of R_inv matrices and s1n vectors
+    s1c[non_zero] = np.einsum("ijk,ik->ij", R_inv, s1n)
+
+    reflection_table["s0c"] = flumpy.vec_from_numpy(s0c)
+    reflection_table["s1c"] = flumpy.vec_from_numpy(s1c)
+    return reflection_table
 
 
 def align_axis_along_z(alignment_axis, vectors):

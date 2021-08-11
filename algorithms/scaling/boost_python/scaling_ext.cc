@@ -19,7 +19,6 @@ namespace dials_scaling { namespace boost_python {
   void export_create_sph_harm_lookup_table();
   void export_gaussian_smoother_first_fixed();
   void export_limit_outlier_weights();
-  void export_calc_crystal_frame_vectors();
 
   BOOST_PYTHON_MODULE(dials_scaling_ext) {
     export_elementwise_square();
@@ -36,7 +35,6 @@ namespace dials_scaling { namespace boost_python {
     export_create_sph_harm_lookup_table();
     export_gaussian_smoother_first_fixed();
     export_limit_outlier_weights();
-    export_calc_crystal_frame_vectors();
   }
 
 }}  // namespace dials_scaling::boost_python

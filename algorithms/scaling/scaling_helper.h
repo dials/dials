@@ -1,14 +1,13 @@
 #ifndef DIALS_SCALING_SCALING_HELPER_H
 #define DIALS_SCALING_SCALING_HELPER_H
 
+#include <dials/array_family/scitbx_shared_and_versa.h>
 #include <scitbx/sparse/matrix.h>
 #include <scitbx/math/zernike.h>
 #include <scitbx/math/basic_statistics.h>
 #include <dials/error.h>
-#include <dxtbx/model/experiment.h>
 #include <math.h>
 #include <dials/algorithms/refinement/gaussian_smoother.h>
-#include <dials/array_family/reflection_table.h>
 
 typedef scitbx::sparse::matrix<double>::column_type col_type;
 
@@ -16,7 +15,6 @@ namespace dials_scaling {
 
 using namespace boost::python;
 using namespace dials::refinement;
-using namespace dials::algorithms;
 
 class GaussianSmootherFirstFixed : public dials::refinement::GaussianSmoother {
 public:
@@ -532,36 +530,6 @@ boost::python::list create_sph_harm_lookup_table(int lmax, int points_per_degree
   }
   return coefficients_list;
 }
-
-dials::af::reflection_table calc_crystal_frame_vectors(
-  dials::af::reflection_table table,
-  const dxtbx::model::Experiment &experiment
-  ) {
-    scitbx::mat3<double> fixed_rotation = experiment.get_goniometer()->get_fixed_rotation();
-    scitbx::mat3<double> setting_rotation = experiment.get_goniometer()->get_setting_rotation();
-    vec3<double> rotation_axis = experiment.get_goniometer()->get_rotation_axis_datum();
-
-    scitbx::af::shared<vec3<double>> s0c(table.size());
-    scitbx::af::shared<vec3<double>> s1c(table.size());
-    scitbx::af::shared<vec3<double>> s1_vec = table["s1"];
-    scitbx::af::shared<vec3<double>> xyzobs_vec = table["xyzobs.px.value"];
-    vec3<double> s0 = -1.0 * experiment.get_beam()->get_unit_s0();
-    for (int i=0; i < table.size(); i++){
-      vec3<double> s1 = s1_vec[i];
-      if ((std::pow(s1[0], 2) + std::pow(s1[1],2) + std::pow(s1[2],2)) > 0){
-        vec3<double> xyzobs = xyzobs_vec[i];
-        double phi = experiment.get_scan()->get_angle_from_array_index(xyzobs[2]);
-        scitbx::mat3<double> rotation_matrix = scitbx::math::r3_rotation::axis_and_angle_as_matrix(rotation_axis, phi);
-        scitbx::mat3<double> R = setting_rotation * rotation_matrix * fixed_rotation;
-        scitbx::mat3<double> R_T = R.transpose();
-        s0c[i] = R_T * s0;
-        s1c[i] = R_T * s1;
-      }
-    }
-    table["s0c"] = s0c;
-    table["s1c"] = s1c;
-    return table;
-  }
 
 }  // namespace dials_scaling
 

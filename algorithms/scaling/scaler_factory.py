@@ -17,6 +17,7 @@ from dials.algorithms.scaling.scaling_utilities import (
     BadDatasetForScalingException,
     Reasons,
     align_axis_along_z,
+    calc_crystal_frame_vectors,
     quasi_normalisation,
 )
 from dials.array_family import flex
@@ -24,7 +25,6 @@ from dials.util.filter_reflections import (
     filter_reflection_table_selection,
     sum_partial_reflections,
 )
-from dials_scaling_ext import calc_crystal_frame_vectors
 
 logger = logging.getLogger("dials")
 
