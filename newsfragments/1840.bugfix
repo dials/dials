@@ -1,0 +1,1 @@
+``dials.import``: Fail gracefully when `#` is missing from template.
