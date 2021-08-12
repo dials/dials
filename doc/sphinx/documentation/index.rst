@@ -10,6 +10,7 @@ Documentation and tutorials for DIALS:
 .. toctree::
    :maxdepth: 1
 
+   getting_started
    tutorials/index
    data_files
    programs/index
