@@ -88,6 +88,7 @@ class ReciprocalLatticeViewer(wx.Frame, Render3d):
         if self.settings.beam_centre is not None:
             self.settings_panel.beam_fast_ctrl.SetValue(self.settings.beam_centre[0])
             self.settings_panel.beam_slow_ctrl.SetValue(self.settings.beam_centre[1])
+            # print("load_models setting beam centre to", self.settings.beam_centre)
         if self.settings.marker_size is Auto:
             max_radius = max(self.reflections["rlp"].norms())
             volume = 4 / 3 * pi * max_radius ** 3
@@ -172,18 +173,7 @@ class ReciprocalLatticeViewer(wx.Frame, Render3d):
             )
 
     def update_settings(self, *args, **kwds):
-        detector = self.experiments[0].detector
-        beam = self.experiments[0].beam
-
-        try:
-            panel_id, beam_centre = detector.get_ray_intersection(beam.get_s0())
-        except RuntimeError:
-            # beam centre calculation fails if the beam falls between panels
-            pass
-        else:
-            if self.settings.beam_centre != beam_centre:
-                self.set_beam_centre(beam_centre)
-
+        self.set_beam_centre(self.settings.beam_centre_panel, self.settings.beam_centre)
         self.map_points_to_reciprocal_space()
         self.set_points()
         self.viewer.update_settings(*args, **kwds)
@@ -430,6 +420,7 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
         self.settings.n_max = int(self.n_max_ctrl.GetValue())
         self.settings.partiality_min = self.partiality_min_ctrl.GetValue()
         self.settings.partiality_max = self.partiality_max_ctrl.GetValue()
+        old_beam_centre = self.settings.beam_centre
         self.settings.beam_centre = (
             self.beam_fast_ctrl.GetValue(),
             self.beam_slow_ctrl.GetValue(),
@@ -454,7 +445,12 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
                     expt_ids.append(i - 1)
             self.settings.experiment_ids = expt_ids
 
-        self.parent.update_settings()
+        try:
+            self.parent.update_settings()
+        except ValueError:  # Handle beam centre changes, which could fail
+            self.settings.beam_centre = old_beam_centre
+            self.beam_fast_ctrl.SetValue(old_beam_centre[0])
+            self.beam_slow_ctrl.SetValue(old_beam_centre[1])
 
 
 class RLVWindow(wx_viewer.show_points_and_lines_mixin):
