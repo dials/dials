@@ -430,11 +430,11 @@ def plot_absorption_plots(physical_model, reflection_table=None):
         }
     }
 
-    params = np.array(physical_model.components["absorption"].parameters)
+    params = physical_model.components["absorption"].parameters
 
     # Get the sampled range of l and m parameters of the spherical harmonics.
     # There is one coefficient for each of the (lmax + 1)^2 - 1 spherical harmonics.
-    lmax = int(-1.0 + ((1.0 + params.size) ** 0.5))
+    lmax = int(-1.0 + ((1.0 + len(params)) ** 0.5))
     l = np.arange(1, lmax + 1)
     m = np.arange(-lmax, lmax + 1)
 
@@ -464,9 +464,8 @@ def plot_absorption_plots(physical_model, reflection_table=None):
     valid = np.ravel(l >= np.abs(m))
     harmonics = harmonics[valid]
 
-    # There's now a 1:1 correspondence between the coefficients in 'params' and the
-    # first axis of the array of 'harmonics'.
-    r = params.reshape(-1, 1, 1) * harmonics
+    # The coefficients in 'params' now correspond to the first axis of 'harmonics'.
+    r = np.reshape(params, (-1, 1, 1)) * harmonics
 
     # For the purposes of calculating the undiffracted intensity, we need only the
     # even-l harmonics.
