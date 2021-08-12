@@ -324,6 +324,19 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
 
         self.Bind(wx.EVT_CHECKBOX, self.OnChangeSettings, self.crystal_frame_ctrl)
 
+        self.beam_panel_ctrl = floatspin.FloatSpin(
+            parent=self, min_val=0, increment=1, digits=0
+        )
+        self.beam_panel_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
+        if wx.VERSION >= (2, 9):  # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
+            self.beam_panel_ctrl.SetBackgroundColour(self.GetBackgroundColour())
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        self.panel_sizer.Add(box)
+        label = wx.StaticText(self, -1, "Beam centre panel")
+        box.Add(label, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        box.Add(self.beam_panel_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.beam_panel_ctrl)
+
         self.beam_fast_ctrl = floatspin.FloatSpin(parent=self, increment=0.01, digits=2)
         self.beam_fast_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
         if wx.VERSION >= (2, 9):  # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
@@ -420,7 +433,10 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
         self.settings.n_max = int(self.n_max_ctrl.GetValue())
         self.settings.partiality_min = self.partiality_min_ctrl.GetValue()
         self.settings.partiality_max = self.partiality_max_ctrl.GetValue()
+
+        old_beam_panel = self.settings.beam_centre_panel
         old_beam_centre = self.settings.beam_centre
+        self.settings.beam_centre_panel = self.beam_panel_ctrl.GetValue()
         self.settings.beam_centre = (
             self.beam_fast_ctrl.GetValue(),
             self.beam_slow_ctrl.GetValue(),
@@ -448,7 +464,9 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
         try:
             self.parent.update_settings()
         except ValueError:  # Handle beam centre changes, which could fail
+            self.settings.beam_centre_panel = old_beam_panel
             self.settings.beam_centre = old_beam_centre
+            self.beam_panel_ctrl.SetValue(old_beam_panel)
             self.beam_fast_ctrl.SetValue(old_beam_centre[0])
             self.beam_slow_ctrl.SetValue(old_beam_centre[1])
 

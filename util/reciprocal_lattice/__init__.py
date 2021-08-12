@@ -274,6 +274,7 @@ class Render3d:
     def set_beam_centre(self, panel, beam_centre):
         detector = self.experiments[0].detector
         beam = self.experiments[0].beam
+        panel = int(panel)
 
         try:
             p = detector[panel]
