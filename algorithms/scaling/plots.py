@@ -455,7 +455,7 @@ def plot_absorption_plots(physical_model, reflection_table=None):
     # all m.  For the invalid values |m| > l, a value of NaN will be used.
     harmonics = scipy.special.sph_harm(m_non_negative, l, azimuth, polar)
 
-    # Convert the complex harmonics to their real forms.
+    # Convert the complex harmonics for non-negative m to the real forms for all m.
     # See https://en.wikipedia.org/wiki/Spherical_harmonics#Real_form.
     harmonics = np.concatenate((harmonics[:, :0:-1].imag, harmonics.real), axis=1)
     harmonics *= np.where(m != 0, math.sqrt(2) * (-1) ** (m % 2), 1)
