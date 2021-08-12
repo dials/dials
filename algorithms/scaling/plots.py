@@ -440,18 +440,18 @@ def plot_absorption_plots(physical_model, reflection_table=None):
 
     # Get the sampling points over the sphere.
     STEPS = 50
-    zenith = np.linspace(0, np.pi, STEPS)
+    polar = np.linspace(0, np.pi, STEPS)
     azimuth = np.linspace(0, 2 * np.pi, 2 * STEPS)
 
-    # Reshape l, m, zenith and azimuth for easy broadcasting.
+    # Reshape l, m, polar and azimuth for easy broadcasting.
     l.shape = -1, 1, 1, 1
     m.shape = 1, -1, 1, 1
-    zenith.shape = 1, 1, -1, 1
+    polar.shape = 1, 1, -1, 1
     azimuth.shape = 1, 1, 1, -1
 
     # Calculate the spherical harmonics for every combination of l, m, and both angles.
     # For the invalid values |m| > l, a value of NaN will be used.
-    harmonics = scipy.special.sph_harm(m, l, azimuth, zenith)
+    harmonics = scipy.special.sph_harm(m, l, azimuth, polar)
 
     # Convert the complex harmonics to their real forms.
     # See https://en.wikipedia.org/wiki/Spherical_harmonics#Real_form.
@@ -478,12 +478,12 @@ def plot_absorption_plots(physical_model, reflection_table=None):
     intensity = undiffracted_intensity + r[~l_even].sum(axis=0)
 
     # Flatten the angle arrays again.
-    zenith.shape = azimuth.shape = -1
+    polar.shape = azimuth.shape = -1
 
     d["absorption_surface"]["data"].append(
         {
             "x": np.rad2deg(azimuth).tolist(),
-            "y": np.rad2deg(zenith).tolist(),
+            "y": np.rad2deg(polar).tolist(),
             "z": intensity.tolist(),
             "type": "heatmap",
             "colorscale": "Viridis",
@@ -521,7 +521,7 @@ corresponds to the laboratory x-axis.
     d["undiffracted_absorption_surface"]["data"].append(
         {
             "x": np.rad2deg(azimuth * 180.0 / np.pi).tolist(),
-            "y": np.rad2deg(zenith * 180.0 / np.pi).tolist(),
+            "y": np.rad2deg(polar * 180.0 / np.pi).tolist(),
             "z": undiffracted_intensity.tolist(),
             "type": "heatmap",
             "colorscale": "Viridis",
