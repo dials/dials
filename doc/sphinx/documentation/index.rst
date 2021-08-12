@@ -10,9 +10,8 @@ Documentation and tutorials for DIALS:
 .. toctree::
    :maxdepth: 1
 
-   dials_2.0
-   data_files
    tutorials/index
+   data_files
    programs/index
    conventions
    installation_developer
