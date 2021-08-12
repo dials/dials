@@ -473,7 +473,7 @@ def plot_absorption_plots(physical_model, reflection_table=None):
     # even-l harmonics.
     l.shape = -1, 1
     l_even = np.tile(l % 2 == 0, (1, m.size))
-    l_even = l_even.flatten()[valid]
+    l_even = np.ravel(l_even)[valid]
     undiffracted_intensity = 1 + r[l_even].sum(axis=0)
 
     # The diffracted intensity includes the odd-l contributions too.
