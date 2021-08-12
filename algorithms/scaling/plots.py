@@ -437,6 +437,7 @@ def plot_absorption_plots(physical_model, reflection_table=None):
     lmax = int(-1.0 + ((1.0 + len(params)) ** 0.5))
     l = np.arange(1, lmax + 1)
     m = np.arange(-lmax, lmax + 1)
+    m_non_negative = m[lmax:]
 
     # Get the sampling points over the sphere.
     STEPS = 50
@@ -445,20 +446,19 @@ def plot_absorption_plots(physical_model, reflection_table=None):
 
     # Reshape l, m, polar and azimuth for easy broadcasting.
     l.shape = -1, 1, 1, 1
-    m.shape = 1, -1, 1, 1
+    m.shape = m_non_negative.shape = 1, -1, 1, 1
     polar.shape = 1, 1, -1, 1
     azimuth.shape = 1, 1, 1, -1
 
-    # Calculate the spherical harmonics for every combination of l, m, and both angles.
-    # For the invalid values |m| > l, a value of NaN will be used.
-    harmonics = scipy.special.sph_harm(m, l, azimuth, polar)
+    # Calculate the spherical harmonics for every combination of l, non-negative m,
+    # and both angles.  Only non-negative m is needed to later get the real forms for
+    # all m.  For the invalid values |m| > l, a value of NaN will be used.
+    harmonics = scipy.special.sph_harm(m_non_negative, l, azimuth, polar)
 
     # Convert the complex harmonics to their real forms.
     # See https://en.wikipedia.org/wiki/Spherical_harmonics#Real_form.
-    # Note, the SciPy harmonics include the Condon-Shortley phase
-    # See https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.sph_harm.html
-    harmonics = np.where(m >= 0, harmonics.real, harmonics.imag)
-    harmonics *= np.where(m != 0, math.sqrt(2), 1)
+    harmonics = np.concatenate((harmonics[:, :0:-1].imag, harmonics.real), axis=1)
+    harmonics *= np.where(m != 0, math.sqrt(2) * (-1) ** (m % 2), 1)
 
     # Flatten together the l and m dimensions of the harmonics array.
     harmonics.shape = -1, *harmonics.shape[2:]
