@@ -455,8 +455,10 @@ def plot_absorption_plots(physical_model, reflection_table=None):
 
     # Convert the complex harmonics to their real forms.
     # See https://en.wikipedia.org/wiki/Spherical_harmonics#Real_form.
+    # Note, the SciPy harmonics include the Condon-Shortley phase
+    # See https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.sph_harm.html
     harmonics = np.where(m >= 0, harmonics.real, harmonics.imag)
-    harmonics *= np.where(m != 0, math.sqrt(2) * (-1) ** (m % 2), 1)
+    harmonics *= np.where(m != 0, math.sqrt(2), 1)
 
     # Flatten together the l and m dimensions of the harmonics array.
     harmonics.shape = -1, *harmonics.shape[2:]
@@ -520,8 +522,8 @@ corresponds to the laboratory x-axis.
 
     d["undiffracted_absorption_surface"]["data"].append(
         {
-            "x": np.rad2deg(azimuth * 180.0 / np.pi).tolist(),
-            "y": np.rad2deg(polar * 180.0 / np.pi).tolist(),
+            "x": np.rad2deg(azimuth).tolist(),
+            "y": np.rad2deg(polar).tolist(),
             "z": undiffracted_intensity.tolist(),
             "type": "heatmap",
             "colorscale": "Viridis",
