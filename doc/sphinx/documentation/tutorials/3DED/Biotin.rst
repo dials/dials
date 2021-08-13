@@ -154,8 +154,40 @@ In the log file (``dials.find_spots.log``), note the number of spots
 found on each image. In this case, there are very few spots found in
 the first 9 images:
 
-.. image:: https://dials.github.io/images/Biotin_NIS/image006.png
-   :width: 40%
+.. code-block::
+
+    Found 28 strong pixels on image 1
+    Found 8 strong pixels on image 2
+    Found 27 strong pixels on image 3
+    Found 1 strong pixels on image 4
+    Found 8 strong pixels on image 5
+    Found 160 strong pixels on image 6
+    Found 55 strong pixels on image 7
+    Found 67 strong pixels on image 8
+    Found 50 strong pixels on image 9
+    Found 276 strong pixels on image 10
+    Found 347 strong pixels on image 11
+    Found 598 strong pixels on image 12
+    Found 584 strong pixels on image 13
+    Found 483 strong pixels on image 14
+    Found 506 strong pixels on image 15
+    Found 327 strong pixels on image 16
+    Found 422 strong pixels on image 17
+    Found 286 strong pixels on image 18
+    Found 413 strong pixels on image 19
+    Found 483 strong pixels on image 20
+    Found 328 strong pixels on image 21
+    Found 142 strong pixels on image 22
+    Found 189 strong pixels on image 23
+    Found 140 strong pixels on image 24
+    Found 424 strong pixels on image 25
+    Found 1031 strong pixels on image 26
+    Found 735 strong pixels on image 27
+    Found 419 strong pixels on image 28
+    Found 374 strong pixels on image 29
+    Found 500 strong pixels on image 30
+    Found 670 strong pixels on image 31
+    Found 718 strong pixels on image 32
 
 This is evident when opening the images with the image viewer:
 
@@ -184,12 +216,27 @@ In the log file (``dials.index.log``), note the final ``RMSD_X`` and
 ``RMSD_Y``. The smaller the value the better. Generally, values lower than
 3 are acceptable for electron diffraction data.
 
-.. image:: https://dials.github.io/images/Biotin_NIS/image010.png
+.. code-block::
+
+    RMSDs by experiment:
+    +-------+--------+----------+----------+------------+
+    |   Exp |   Nref |   RMSD_X |   RMSD_Y |     RMSD_Z |
+    |    id |        |     (px) |     (px) |   (images) |
+    |-------+--------+----------+----------+------------|
+    |     0 |    986 |   1.2036 |   1.8388 |    0.34601 |
+    +-------+--------+----------+----------+------------+
+
 
 Also note the % of spots indexed. 79% is quite good for electron
 diffraction, but lower values (~30%) are still okay.
 
-.. image:: https://dials.github.io/images/Biotin_NIS/image012.png
+.. code-block::
+
+    +------------+-------------+---------------+-------------+
+    |   Imageset |   # indexed |   # unindexed | % indexed   |
+    |------------+-------------+---------------+-------------|
+    |          0 |        1101 |           299 | 78.6%       |
+    +------------+-------------+---------------+-------------+
 
 Find the Bravais lattice (optional)
 ===================================
@@ -200,7 +247,25 @@ Find the Bravais lattice (optional)
 
 * Potential lattices are listed.
 * Note the ``Metric fit`` and ``rmsd`` values, as well as the
-  recommended solutions: |image014|
+  recommended solutions:
+
+  .. code-block::
+
+    Chiral space groups corresponding to each Bravais lattice:
+    aP: P1
+    mP: P2 P21
+    oP: P222 P2221 P21212 P212121
+    +------------+--------------+--------+--------------+----------+-----------+------------------------------------------+----------+----------+
+    |   Solution |   Metric fit |   rmsd | min/max cc   |   #spots | lattice   | unit_cell                                |   volume | cb_op    |
+    |------------+--------------+--------+--------------+----------+-----------+------------------------------------------+----------+----------|
+    |   *      5 |       0.4805 |  0.061 | 0.756/0.867  |     1013 | oP        | 5.53  11.00  22.27  90.00  90.00  90.00  |     1354 | a,b,c    |
+    |   *      4 |       0.4805 |  0.061 | 0.793/0.793  |     1012 | mP        | 5.42  10.79  21.81  90.00  90.13  90.00  |     1277 | a,b,c    |
+    |   *      3 |       0.4776 |  0.059 | 0.756/0.756  |     1002 | mP        | 5.79  23.31  11.50  90.00  90.25  90.00  |     1552 | -a,-c,-b |
+    |   *      2 |       0.4495 |  0.059 | 0.867/0.867  |     1003 | mP        | 12.96   6.54  26.30  90.00  89.45  90.00 |     2230 | -b,-a,-c |
+    |   *      1 |       0      |  0.062 | -/-          |      986 | aP        | 5.19  10.36  20.82  90.36  90.31  90.32  |     1120 | a,b,c    |
+    +------------+--------------+--------+--------------+----------+-----------+------------------------------------------+----------+----------+
+    * = recommended solution
+
 * Lattice choice is generally less straightforward for electron
   diffraction data.
 * When in doubt, process the data in P1 and determine the true symmetry
@@ -209,8 +274,6 @@ Find the Bravais lattice (optional)
 * In this case, we know that the biotin crystal should be |P212121|,
   Solution #5 (primitive orthorhombic), but let’s just process in P1 to
   start with.
-
-.. |image014| image:: https://dials.github.io/images/Biotin_NIS/image014.png
 
 Refine the cell
 ===============
@@ -229,7 +292,15 @@ Refine the cell
 
 Now the ``RMSD_X`` and ``RMSD_Y`` have decreased significantly:
 
-.. image:: https://dials.github.io/images/Biotin_NIS/image016.png
+.. code-block::
+
+    RMSDs by experiment:
+    +-------+--------+----------+----------+------------+
+    |   Exp |   Nref |   RMSD_X |   RMSD_Y |     RMSD_Z |
+    |    id |        |     (px) |     (px) |   (images) |
+    |-------+--------+----------+----------+------------|
+    |     0 |    903 |  0.79972 |   1.1824 |    0.23681 |
+    +-------+--------+----------+----------+------------+
 
 Integration
 ===========
@@ -313,7 +384,27 @@ directories
       ../802003_1/integrated.{expt,refl}\
       ../810542_1/integrated.{expt,refl}
 
-.. image:: https://dials.github.io/images/Biotin_NIS/image022.png
+Towards the end of the log we see:
+
+.. code-block::
+
+    Scoring all possible sub-groups
+    +-------------------+----+--------------+----------+--------+--------+---------+--------------------+
+    | Patterson group   |    |   Likelihood |   NetZcc |   Zcc+ |   Zcc- |   delta | Reindex operator   |
+    |-------------------+----+--------------+----------+--------+--------+---------+--------------------|
+    | P 1 2/m 1         | *  |        0.55  |     2.45 |   9.49 |   7.03 |     0.2 | -a,-c,-b           |
+    | P m m m           |    |        0.321 |     7.93 |   7.93 |   0    |     0.3 | -a,-b,c            |
+    | P -1              |    |        0.051 |    -7.93 |   0    |   7.93 |     0   | -a,-b,c            |
+    | P 1 2/m 1         |    |        0.039 |    -1.31 |   7.04 |   8.35 |     0.2 | -a,-b,c            |
+    | P 1 2/m 1         |    |        0.039 |    -1.33 |   7.02 |   8.35 |     0.3 | -b,-a,-c           |
+    +-------------------+----+--------------+----------+--------+--------+---------+--------------------+
+    Best solution: P 1 2/m 1
+    Unit cell: (5.18887, 20.8461, 10.2932, 90, 90.1936, 90)
+    Reindex operator: -a,-c,-b
+    Laue group probability: 0.550
+    Laue group confidence: 0.355
+    Reindexing operators:
+    x,y,z: [0, 1, 2, 3]
 
 * Note that the suggested Patterson group is ``P 1 2/m 1``, not ``P m m m``
   as we expect for biotin.
@@ -361,7 +452,19 @@ to exclude bad frames.
 
 Process as before and re-run ``dials.cosym`` with the trimmed data:
 
-.. image:: https://dials.github.io/images/Biotin_NIS/image024.png
+.. code-block::
+
+    +-------------------+-----+--------------+----------+--------+--------+---------+--------------------+
+    | Patterson group   |     |   Likelihood |   NetZcc |   Zcc+ |   Zcc- |   delta | Reindex operator   |
+    |-------------------+-----+--------------+----------+--------+--------+---------+--------------------|
+    | P m m m           | *** |        0.973 |     9.49 |   9.49 |   0    |     0.5 | a,b,c              |
+    | P 1 2/m 1         |     |        0.012 |     0.38 |   9.75 |   9.36 |     0.5 | -a,-c,-b           |
+    | P 1 2/m 1         |     |        0.007 |    -0.18 |   9.38 |   9.55 |     0.3 | -b,-a,-c           |
+    | P 1 2/m 1         |     |        0.007 |    -0.21 |   9.35 |   9.56 |     0.5 | a,b,c              |
+    | P -1              |     |        0.001 |    -9.49 |   0    |   9.49 |     0   | a,b,c              |
+    +-------------------+-----+--------------+----------+--------+--------+---------+--------------------+
+    Best solution: P m m m
+    Unit cell: (5.19177, 10.294, 20.8491, 90, 90, 90)
 
 Now the ``P m m m`` Patterson group is the most likely, as expected.
 
