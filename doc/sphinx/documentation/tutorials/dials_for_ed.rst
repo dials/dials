@@ -16,4 +16,5 @@ some example cases.
 
   3DED/MyD88
   3DED/lysozyme_nanocrystals
+  3DED/Biotin
 
