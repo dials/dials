@@ -23,7 +23,7 @@ from dials.util import log
 
 logger = logging.getLogger("dials.command_line.stills_process")
 
-SIG_B_CUTOFF = .1
+SIG_B_CUTOFF = 0.1
 
 help_message = """
 DIALS script for processing still images. Import, index, refine, and integrate are all done for each image
@@ -1215,19 +1215,21 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
         new_reflections = flex.reflection_table()
         for expt_id, expt in enumerate(experiments):
             if expt.profile.sigma_b() < SIG_B_CUTOFF:
-                refls = indexed.select(indexed['id']==expt_id)
-                refls['id'] = flex.int(len(refls), len(new_experiments))
-                #refls.reset_ids()
+                refls = indexed.select(indexed["id"] == expt_id)
+                refls["id"] = flex.int(len(refls), len(new_experiments))
+                # refls.reset_ids()
                 del refls.experiment_identifiers()[expt_id]
                 refls.experiment_identifiers()[len(new_experiments)] = expt.identifier
                 new_reflections.extend(refls)
                 new_experiments.append(expt)
             else:
-                logger.info("Rejected expt %d with sigma_b %f" %(expt_id, expt.profile.sigma_b))
+                logger.info(
+                    "Rejected expt %d with sigma_b %f" % (expt_id, expt.profile.sigma_b)
+                )
         experiments = new_experiments
         indexed = new_reflections
-        if len(experiments)==0:
-            raise RuntimeError('No experiments after filtering by sigma_b')
+        if len(experiments) == 0:
+            raise RuntimeError("No experiments after filtering by sigma_b")
         logger.info("")
         logger.info("=" * 80)
         logger.info("")
