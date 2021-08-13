@@ -88,7 +88,6 @@ class ReciprocalLatticeViewer(wx.Frame, Render3d):
         if self.settings.beam_centre is not None:
             self.settings_panel.beam_fast_ctrl.SetValue(self.settings.beam_centre[0])
             self.settings_panel.beam_slow_ctrl.SetValue(self.settings.beam_centre[1])
-            # print("load_models setting beam centre to", self.settings.beam_centre)
         if self.settings.marker_size is Auto:
             max_radius = max(self.reflections["rlp"].norms())
             volume = 4 / 3 * pi * max_radius ** 3
