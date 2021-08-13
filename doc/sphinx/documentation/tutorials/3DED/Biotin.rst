@@ -17,7 +17,7 @@ General Notes
 
 * Raw data for biotin can be downloaded from |biotin|
 * Data were collected with a Glacios TEM and a CETA-D camera using
-  Leginon by the continuous rotation method.
+  Leginon, by the continuous rotation method.
 * Information about Leginon [1]_
 * Information about the sample and data collection [2]_
 * Final structure deposited in CCDC:
@@ -99,7 +99,7 @@ Find the beam centre
 * Move the mouse to the center of the direct beam, not the center of
   the beamstop. It can be helpful to find Friedel pairs and draw lines
   between them. The beam center should be in the center of Friedel pairs.
-  |image003|
+  |image004|
 * Make a note of the slow and fast beam center values at the bottom of
   the window (red box).
 * Close the viewer
@@ -122,9 +122,9 @@ Generate a mask for the beam center (optional)
 
     dials.generate_mask imported.expt untrusted.circle=1059,988,100
 
-The first two numbers are the beam center and the second is the
-diameter of the mask. Note that the beam center values are flipped
-compared to the import step.
+* The first two numbers are the beam center and the second is the
+  diameter of the mask. Note that the beam center values are flipped
+  compared to the import step.
 
 Find spots
 ==========
@@ -220,8 +220,8 @@ Refine the cell
       beam.force_static=False beam.smoother.absolute_num_intervals=1
 
 * We fix the detector position and orientation with ``detector.fix=all``,
-  but now we are allowing the crystal unit cell and orientation, and
-  the beam direction parameters to vary on a frame-by-frame basis with
+  but now we are allowing the crystal unit cell, crystal orientation, and
+  beam direction parameters to vary on a frame-by-frame basis with
   ``scan_varying=True``.
 
 Now the ``RMSD_X`` and ``RMSD_Y`` have decreased significantly:
@@ -369,15 +369,15 @@ Starting from the output of ``dials.cosym``:
 * Let’s remove some of those images and see how that changes things:
   ``dials.scale symmetrized.expt symmetrized.refl nproc=8 d_min=0.8 exclude_images="1:49:101"``
 * Here we have removed images 49-101 from dataset #1 as these had a
-  fairly high \ :sub:`merge` |image028|
+  fairly high R\ :sub:`merge` |image028|
 * Note that the completeness in the lower resolution shells have
   decreased a small amount. Let’s try adding back in some frames to boost
   the completeness back to 100% in the low-resolution shells:
   ``dials.scale symmetrized.expt symmetrized.refl nproc=8 d_min=0.8 exclude_images="1:60:101"``
   |image030|
-* This looks a lot better in terms of completeness. * Looking at
-  ``dials.scale.html`` we can probably improve this a little by removing
-  some images from the end of dataset #2 |image032|
+* This looks a lot better in terms of completeness.
+* Looking at ``dials.scale.html`` we can probably improve this a little
+  by removing some images from the end of dataset #2 |image032|
 * So, we run ``dials.scale symmetrized.expt symmetrized.refl nproc=8 d_min=0.8 exclude_images="1:60:101" exclude_images="2:121:126"``
   |image034| |image036|
 * This looks reasonably good
