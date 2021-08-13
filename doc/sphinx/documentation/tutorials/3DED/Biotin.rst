@@ -52,8 +52,8 @@ Note about pedestal and offset
   data. Therefore, it can be beneficial to add back in a reasonable
   pedestal value, essentially resetting the zero point.
 * For data collected with Leginon, both the offset value applied
-  (LEGINON_OFFSET), and a suggested pedestal value (PEDESTAL) are listed
-  in the image metadata.
+  (LEGINON_OFFSET), and a suggested pedestal value (IMAGE_PEDESTAL) are
+  listed in the image metadata.
 
 Import images
 =============
@@ -94,8 +94,11 @@ Find the beam centre
 * Opens the imported experiment in the Image Viewer
 * Turn off |image003|
     * Note that the beam center from the image header is not accurate
+* It can be helpful to find the beam center using an image with good
+  diffraction spots. Try moving the slider at the top of the window to
+  image 45
 * Change Zoom to 50%. For weaker data you can also increase the
-  brightness value.
+  brightness value
 * Move the mouse to the center of the direct beam, not the center of
   the beamstop. It can be helpful to find Friedel pairs and draw lines
   between them. The beam center should be in the center of Friedel pairs.
@@ -254,9 +257,10 @@ quality of the individual dataset.
 Find the file ``dials.scale.html`` and open it in a web browser.
 
 * Note the useful statistics by resolution shells.
-* Keep in mind that merging statistics from incomplete data are less
-  reliable. It is generally best to wait to assess the final resolution
-  cutoff until data from multiple crystals have been combined.
+* Keep in mind that merging statistics from incomplete and low
+  multiplicity data are less reliable. It is generally best to wait to
+  assess the final resolution cutoff until data from multiple crystals
+  have been combined.
 * Scroll down the page a little and click |image019|. This brings up two
   graphs. Let’s focus on the "Scale and R\ :sub:`merge` vs batch" plot:
   |image020|
@@ -264,8 +268,8 @@ Find the file ``dials.scale.html`` and open it in a web browser.
   basis. Let’s focus on the orange R\ :sub:`merge`  line (right axis).
 * Note that there is an uptick in R\ :sub:`merge` at the beginning and
   the end of the dataset. The higher R\ :sub:`merge` values at the start
-  are likely due to the low number of spots that were found on the image,
-  due to suboptimal centering. The uptick at the end is more
+  are likely due to the low number of spots that were found on those
+  images, due to suboptimal centering. The uptick at the end is more
   likely to be due to radiation damage.
 * We will remove these high R\ :sub:`merge` frames after combining data
   from all four crystals.
@@ -334,14 +338,26 @@ to exclude bad frames.
 801406_1
     ``dials.import ../*.img slow_fast_beam_centre=988,1059 panel.pedestal=980 image_range=6,129``
 
+    .. image:: https://dials.github.io/images/Biotin_NIS/801406_1.png
+       :width: 50%
+
 801574_1
     ``dials.import ../*.img slow_fast_beam_centre=992,1022 panel.pedestal=831 image_range=1,101``
+
+    .. image:: https://dials.github.io/images/Biotin_NIS/801574_1.png
+       :width: 50%
 
 802003_1
     ``dials.import ../*.img slow_fast_beam_centre=986,1026 panel.pedestal=791 image_range=1,126``
 
+    .. image:: https://dials.github.io/images/Biotin_NIS/802003_1.png
+       :width: 50%
+
 810542_1
     ``dials.import ../*.img slow_fast_beam_centre=998,1024 panel.pedestal=1619 image_range=3,128``
+
+    .. image:: https://dials.github.io/images/Biotin_NIS/810542_1.png
+       :width: 50%
 
 Process as before and re-run ``dials.cosym`` with the trimmed data:
 
@@ -421,7 +437,7 @@ Solve the structure
 ===================
 
 Prepare an ``.ins`` file for SHELXT or SHELXD by either running XPREP or
-manually edit the .ins file as shown below:
+manually editing the .ins file as shown below:
 
 .. code-block::
 
