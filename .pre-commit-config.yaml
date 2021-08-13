@@ -44,5 +44,4 @@ repos:
   - id: check-added-large-files
     args: ['--maxkb=200']
   - id: no-commit-to-branch
-    args: ['--branch', 'master']
-    name: "Don't commit to 'master'"
+    name: "Don't commit to 'main'"
