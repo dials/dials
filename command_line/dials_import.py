@@ -218,17 +218,16 @@ def _extract_or_read_imagesets(params):
         # import the images based on the template input
         if len(params.input.template) > 0:
             if not all("#" in t for t in params.input.template):
-                raise Sorry(
-                    "Template requires al least one '#' token to search for available digits.\n"
-                    "Token '#' not found in all elements of template list %s"
-                    % params.input.template
+                # if no '#' treat template as experiment file
+                experiments = ExperimentListFactory.from_filenames(
+                    params.input.template, format_kwargs=format_kwargs
                 )
-
-            experiments = ExperimentListFactory.from_templates(
-                params.input.template,
-                image_range=params.geometry.scan.image_range,
-                format_kwargs=format_kwargs,
-            )
+            else:
+                experiments = ExperimentListFactory.from_templates(
+                    params.input.template,
+                    image_range=params.geometry.scan.image_range,
+                    format_kwargs=format_kwargs,
+                )
             if len(experiments) == 0:
                 raise Sorry(
                     "No experiments found matching template %s"
