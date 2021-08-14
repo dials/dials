@@ -1710,6 +1710,18 @@ class SpotFrame(XrayFrame):
                             )
                         )
 
+        self.settings.show_rotation_axis = True  # Force on for development
+        if self.settings.show_rotation_axis and not still:
+            for experiments in self.experiments:
+                for experiment in experiments:
+                    if experiment.imageset != imageset:
+                        continue
+                    gonio = imageset.get_goniometer()
+                    axis = gonio.get_rotation_axis()
+
+                    # use the first panel for coordinates
+                    panel = detector[0]
+
         return SpotfinderData(
             all_pix_data=all_pix_data,
             all_foreground_circles=all_foreground_circles,
