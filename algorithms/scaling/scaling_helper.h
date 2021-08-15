@@ -277,15 +277,17 @@ scitbx::sparse::matrix<double> row_multiply(scitbx::sparse::matrix<double> m,
 
 scitbx::af::shared<scitbx::vec2<double> > calc_theta_phi(
   scitbx::af::shared<scitbx::vec3<double> > xyz) {
-  // physics conventions, phi from 0 to 2pi (xy plane, 0 along x axis), theta from 0 to pi (angle from z)
+  // physics conventions, phi from 0 to 2pi (xy plane, 0 along x axis), theta from 0 to
+  // pi (angle from z)
   int n_obs = xyz.size();
   scitbx::af::shared<scitbx::vec2<double> > theta_phi(n_obs);
   for (int i = 0; i < n_obs; i++) {
     theta_phi[i] = scitbx::vec2<double>(
       std::atan2(pow(pow(xyz[i][1], 2) + pow(xyz[i][0], 2), 0.5), xyz[i][2]),
-      fmod(std::atan2(xyz[i][1], xyz[i][0]) + (2.0*scitbx::constants::pi), 2.0*scitbx::constants::pi)
-      );
-      //atan2 returns in -pi to pi range, with 0 along x. We want to make it go from 0 to 2pi
+      fmod(std::atan2(xyz[i][1], xyz[i][0]) + (2.0 * scitbx::constants::pi),
+           2.0 * scitbx::constants::pi));
+    // atan2 returns in -pi to pi range, with 0 along x. We want to make it go from 0 to
+    // 2pi
   }
   return theta_phi;
 }
@@ -501,7 +503,7 @@ boost::python::list create_sph_harm_lookup_table(int lmax, int points_per_degree
           double theta = (floor(i / (360.0 * points_per_degree)) * scitbx::constants::pi
                           / (180.0 * points_per_degree));
           double phi = ((i % (360 * points_per_degree)) * scitbx::constants::pi
-                         / (180.0 * points_per_degree));
+                        / (180.0 * points_per_degree));
           coefficients[i] =
             prefactor
             * (nsssphe.spherical_harmonic_direct(l, -1 * m, theta, phi).imag());
@@ -511,7 +513,7 @@ boost::python::list create_sph_harm_lookup_table(int lmax, int points_per_degree
           double theta = (floor(i / (360.0 * points_per_degree)) * scitbx::constants::pi
                           / (180.0 * points_per_degree));
           double phi = ((i % (360 * points_per_degree)) * scitbx::constants::pi
-                         / (180.0 * points_per_degree));
+                        / (180.0 * points_per_degree));
           coefficients[i] = nsssphe.spherical_harmonic_direct(l, 0, theta, phi).real();
         }
       } else {
@@ -520,7 +522,7 @@ boost::python::list create_sph_harm_lookup_table(int lmax, int points_per_degree
           double theta = (floor(i / (360.0 * points_per_degree)) * scitbx::constants::pi
                           / (180.0 * points_per_degree));
           double phi = ((i % (360 * points_per_degree)) * scitbx::constants::pi
-                         / (180.0 * points_per_degree));
+                        / (180.0 * points_per_degree));
           coefficients[i] =
             prefactor * (nsssphe.spherical_harmonic_direct(l, m, theta, phi).real());
         }
