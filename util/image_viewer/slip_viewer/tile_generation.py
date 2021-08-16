@@ -89,9 +89,9 @@ def get_flex_image_multipanel(
             assert approx_equal(saturation, panel.get_trusted_range()[1])
     assert saturation is not None
 
-    # Create rawdata and my_flex_image before populating it.
+    # Create rawdata and flex_image_multipanel before populating it.
     rawdata = flex.double(flex.grid(len(detector) * data_padded[0], data_padded[1]))
-    my_flex_image = generic_flex_image(
+    flex_image_multipanel = generic_flex_image(
         rawdata=rawdata,
         binning=binning,
         size1_readout=data_max_focus[0],
@@ -135,7 +135,7 @@ def get_flex_image_multipanel(
         # If the panel already has a 2d projection then use it
         if panel.has_projection_2d():
             panel_r, panel_t = panel.get_projection_2d()
-            my_flex_image.add_transformation_and_translation(panel_r, panel_t)
+            flex_image_multipanel.add_transformation_and_translation(panel_r, panel_t)
             continue
 
         if getattr(detector, "projection", "lab") == "image":
@@ -221,9 +221,9 @@ def get_flex_image_multipanel(
         T = Pf * Tf * E
         R = scitbx.matrix.sqr((T(0, 0), T(0, 1), T(1, 0), T(1, 1)))
         t = scitbx.matrix.col((T(0, 2), T(1, 2)))
-        my_flex_image.add_transformation_and_translation(R, t)
-    my_flex_image.followup_brightness_scale()
-    return my_flex_image
+        flex_image_multipanel.add_transformation_and_translation(R, t)
+    flex_image_multipanel.followup_brightness_scale()
+    return flex_image_multipanel
 
 
 class _Tiles:
