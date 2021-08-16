@@ -202,7 +202,7 @@ def generate_processing_detail_text_betalactamase(options):
     runcmd(["dials.report", "scaled.expt", "scaled.refl"])
     shutil.copy(tmpdir / "dials.report.html", outdir)
 
-    print(f"Updated result files written to {outdir.strpath}")
+    print(f"Updated result files written to {outdir}")
     if not options.keep:
         shutil.rmtree(tmpdir)
 
