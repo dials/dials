@@ -219,7 +219,7 @@ def _extract_or_read_imagesets(params):
         if len(params.input.template) > 0:
             if not all("#" in t for t in params.input.template):
                 raise Sorry(
-                    "Template requires al least one '#' token to search for available digits.\n"
+                    "Template requires at least one '#' token to search for available digits.\n"
                     "Token '#' not found in all elements of template list %s"
                     % params.input.template
                 )
