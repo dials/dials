@@ -41,6 +41,15 @@ Advanced command-line tutorials
    metrology_corrections
    multi_crystal_analysis
 
+DIALS for 3DED/MicroED
+
+.. toctree::
+   :maxdepth: 1
+
+   3DED/MyD88
+   3DED/lysozyme_nanocrystals
+   3DED/Biotin
+
 Developer tutorials
 
 .. toctree::
