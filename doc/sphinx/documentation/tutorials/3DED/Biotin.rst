@@ -243,7 +243,7 @@ Find the Bravais lattice (optional)
 
 .. code-block:: bash
 
-    dials.refine_bravais_settings indexed.refl indexed.expt detector.fix_list=distance
+    dials.refine_bravais_settings indexed.refl indexed.expt detector.fix=distance
 
 * Potential lattices are listed.
 * Note the ``Metric fit`` and ``rmsd`` values, as well as the
