@@ -30,6 +30,8 @@ steps:
 
 # Remove simtbx as it is broken on windows
 - bash: rm -rf modules/cctbx_project/simtbx
+  displayName: Remove simtbx
+  workingDirectory: $(Pipeline.Workspace)
 
 # Build DIALS using the bootstrap script
 - script: |
