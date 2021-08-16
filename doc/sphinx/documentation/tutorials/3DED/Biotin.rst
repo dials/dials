@@ -44,12 +44,12 @@ Note about pedestal and offset
   likely still contain valuable information and therefore should not be
   entirely excluded from the data.
 * SMV format, a common format for X-ray crystallography diffraction images,
-  does not allow for “unsigned data” (negative values). Because
+  does not allow for signed data (i.e. negative values). Because
   of this, Leginon adds an offset value to all pixels when converting to
   SMV format to make all values positive. Leginon also excludes negative
   values beyond a reasonable threshold.
-* Some data processing programs, such as DIALS, allow for unsigned
-  data. Therefore, it can be beneficial to add back in a reasonable
+* Some data processing programs, such as DIALS, allow for signed
+  data. Therefore, it can be beneficial to subtract a reasonable
   pedestal value, essentially resetting the zero point.
 * For data collected with Leginon, both the offset value applied
   (LEGINON_OFFSET), and a suggested pedestal value (IMAGE_PEDESTAL) are
@@ -560,7 +560,10 @@ Starting from the output of ``dials.cosym``:
 
 * This looks a lot better in terms of completeness.
 * Looking at ``dials.scale.html`` we can probably improve this a little
-  by removing some images from the end of dataset #2 |scale_plot_combined_exclude_1|
+  by removing some images from the end of dataset #2
+
+.. image:: https://dials.github.io/images/Biotin_NIS/scale_plot_combined_exclude_1.png
+
 * So, we run ``dials.scale symmetrized.expt symmetrized.refl nproc=8 d_min=0.8 exclude_images="1:60:101" exclude_images="2:121:126"``
 
   .. code-block::
@@ -593,12 +596,10 @@ Starting from the output of ``dials.cosym``:
 
     Resolution limit suggested from CC½ fit (limit CC½=0.3): 0.83
 
-  |scale_plot_combined_exclude_2|
+.. image:: https://dials.github.io/images/Biotin_NIS/scale_plot_combined_exclude_2.png
+
 * This looks reasonably good
 
-.. |scale_plot_combined_exclude_1| image:: https://dials.github.io/images/Biotin_NIS/scale_plot_combined_exclude_1.png
-
-.. |scale_plot_combined_exclude_2| image:: https://dials.github.io/images/Biotin_NIS/scale_plot_combined_exclude_2.png
 
 Export the data
 ===============
