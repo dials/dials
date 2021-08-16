@@ -118,6 +118,13 @@ def get_flex_image_multipanel(
     # be assigned to the panel defined first.  XXX Use a Z-buffer
     # instead?
     for i, panel in enumerate(detector):
+
+        # If the panel already has a 2d projection then use it
+        if panel.has_projection_2d():
+            panel_r, panel_t = panel.get_projection_2d()
+            my_flex_image.add_transformation_and_translation(panel_r, panel_t)
+            continue
+
         # Determine the pixel size for the panel (in meters), as pixel
         # sizes need not be identical.
         data = image_data[i]
@@ -130,24 +137,6 @@ def get_flex_image_multipanel(
             panel.get_pixel_size()[0] * 1e-3,
             panel.get_pixel_size()[1] * 1e-3,
         )
-
-        if len(detector) == 24 and detector[0].get_image_size() == (2463, 195):
-            # XXX hardcoded panel height and row gap
-            my_flex_image.add_transformation_and_translation(
-                (1, 0, 0, 1), (-i * (195 + 17), 0)
-            )
-
-            continue
-
-        elif len(detector) == 120 and detector[0].get_image_size() == (487, 195):
-            i_row = i // 5
-            i_col = i % 5
-            # XXX hardcoded panel height and row gap
-            my_flex_image.add_transformation_and_translation(
-                (1, 0, 0, 1), (-i_row * (195 + 17), -i_col * (487 + 7))
-            )
-
-            continue
 
         if getattr(detector, "projection", "lab") == "image":
             # Get axes from precalculated 2D projection.

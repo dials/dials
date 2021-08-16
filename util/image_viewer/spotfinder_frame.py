@@ -103,13 +103,9 @@ class SpotFrame(XrayFrame):
                 if not detector:
                     self.params.projection = None
                     continue
-                if len(detector) == 24 and detector[0].get_image_size() == (2463, 195):
+                if detector.has_projection_2d:
                     self.params.projection = None
-                elif len(detector) == 120 and detector[0].get_image_size() == (
-                    487,
-                    195,
-                ):
-                    self.params.projection = None
+                    continue
                 else:
                     detector.projected_2d = project_2d(detector)
                 detector.projection = self.params.projection
