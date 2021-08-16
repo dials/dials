@@ -1,1 +1,0 @@
-The previously deprecated ``dials.util.masking.MaskGenerator`` now prints a user warning. Please use ````dials.util.masking.generate_mask`` instead.

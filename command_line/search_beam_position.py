@@ -351,7 +351,7 @@ def run_dps(experiment, spots_mm, max_cell):
     # There must be at least 3 solutions to make a set, otherwise return empty result
     if len(solutions) < 3:
         return {}
-    return dict(solutions=flex.vec3_double(s.dvec for s in solutions), amax=DPS.amax)
+    return {"solutions": flex.vec3_double(s.dvec for s in solutions), "amax": DPS.amax}
 
 
 def discover_better_experimental_model(

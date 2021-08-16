@@ -128,7 +128,7 @@ def component(a, n):
 
 
 def find_centre_of_rotation(x1, x2, y1, y2):
-    """Find centre of rotation which takes postion x1 -> x2 and y1 -> y2"""
+    """Find centre of rotation which takes position x1 -> x2 and y1 -> y2"""
 
     # chords of rotation of x, y
 

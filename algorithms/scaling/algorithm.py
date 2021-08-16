@@ -42,6 +42,7 @@ from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
     parse_multiple_datasets,
     select_datasets_on_ids,
+    update_imageset_ids,
 )
 
 logger = logging.getLogger("dials")
@@ -261,9 +262,10 @@ class ScalingAlgorithm:
             or self.params.scaling_options.target_mtz
             or self.params.scaling_options.only_target
         ):
-            self.experiments = self.experiments[:-1]
-            self.reflections = self.reflections[:-1]
-
+            # now remove things that were used as the target:
+            n_target = len(self.experiments) - len(self.scaler.active_scalers)
+            self.experiments = self.experiments[:-n_target]
+            self.reflections = self.reflections[:-n_target]
         # remove any bad datasets:
         removed_ids = self.scaler.removed_datasets
         if removed_ids:
@@ -302,11 +304,9 @@ class ScalingAlgorithm:
         # joining reflection tables - just need experiments for mtz export
         # and a reflection table.
         del self.scaler
-        for experiment in self.experiments:
-            for component in experiment.scaling_model.components.keys():
-                del experiment.scaling_model.components[component].data
         gc.collect()
-
+        # update imageset ids before combining reflection tables.
+        self.reflections = update_imageset_ids(self.experiments, self.reflections)
         joint_table = flex.reflection_table()
         for i in range(len(self.reflections)):
             joint_table.extend(self.reflections[i])
@@ -416,13 +416,11 @@ multi-dataset scaling mode (not single dataset or scaling against a reference)""
                     logger.info(
                         "Finishing scaling and filtering as no data removed in this cycle."
                     )
+                    self.reflections = parse_multiple_datasets(
+                        [script.filtered_reflection_table]
+                    )
                     if self.params.scaling_options.full_matrix:
-                        self.reflections = parse_multiple_datasets(
-                            [script.filtered_reflection_table]
-                        )
                         results = self._run_final_scale_cycle(results)
-                    else:
-                        self.reflections = [script.filtered_reflection_table]
                     results.finish(termination_reason="no_more_removed")
                     break
 

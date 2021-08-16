@@ -1,5 +1,3 @@
-conda-forge::hdf5-external-filter-plugins
-
 conda-forge::colorlog
 conda-forge::dials-data
 conda-forge::mrcfile
@@ -17,6 +15,7 @@ conda-forge::docutils
 conda-forge::future
 conda-forge::h5py
 conda-forge::hdf5<1.11
+conda-forge::hdf5plugin
 conda-forge::jinja2
 conda-forge::jpeg
 conda-forge::matplotlib-base>=3.0.2
@@ -42,3 +41,4 @@ conda-forge::tqdm
 conda-forge::urllib3
 conda-forge::wxpython>=4.0.1
 conda-forge::xz
+conda-forge::pybind11

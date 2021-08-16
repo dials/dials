@@ -12,7 +12,7 @@ from dials.util.options import OptionParser, flatten_experiments, flatten_reflec
 
 help_message = """
 
-This program can be used for viewing diffraction images, optionally overlayed
+This program can be used for viewing diffraction images, optionally overlaid
 with the results of spot finding, indexing or integration.
 
 Examples::
@@ -31,6 +31,8 @@ phil_scope = iotbx.phil.parse(
 brightness = 100
   .type = int
 color_scheme = *grayscale rainbow heatmap invert
+  .type = choice
+projection = lab *image
   .type = choice
 show_beam_center = True
   .type = bool
@@ -61,7 +63,7 @@ show_mask = False
 show_basis_vectors = True
   .type = bool
 basis_vector_scale = 10
-  .type = float(value_min=0)
+  .type = int(value_min=1, value_max=20)
 display = *image mean variance dispersion sigma_b \
           sigma_s threshold global_threshold
   .type = choice
@@ -157,7 +159,7 @@ load_models = True
 
 zmq_endpoint = None
   .type = str
-  .help = "The endpoint to bind a zeromq PULL socket to, for recieving commands"
+  .help = "The endpoint to bind a zeromq PULL socket to, for receiving commands"
   .expert_level = 3
 """,
     process_includes=True,

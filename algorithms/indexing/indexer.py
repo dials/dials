@@ -48,7 +48,7 @@ max_cell_estimation
     .expert_level = 2
   step_size = 45
     .type = float(value_min=0)
-    .help = "Step size, in degrees, of the blocks used to peform the max_cell "
+    .help = "Step size, in degrees, of the blocks used to perform the max_cell "
             "estimation."
     .expert_level = 2
   nearest_neighbor_percentile = None
@@ -110,7 +110,7 @@ indexing {
       .help = "Target unit cell for indexing."
     relative_length_tolerance = 0.1
       .type = float
-      .help = "Relative tolerance for unit cell lengths in unit cell comparision."
+      .help = "Relative tolerance for unit cell lengths in unit cell comparison."
       .expert_level = 1
     absolute_angle_tolerance = 5
       .type = float
@@ -245,7 +245,7 @@ indexing {
     candidate_outlier_rejection = True
       .type = bool
       .expert_level = 1
-      .help = If True, while refining candiate basis solutions, also apply Sauter/ \
+      .help = If True, while refining candidate basis solutions, also apply Sauter/ \
               Poon (2010) outlier rejection
     refine_candidates_with_known_symmetry = False
       .type = bool
@@ -412,9 +412,14 @@ class Indexer:
                 from dxtbx.imageset import ImageSet  # , MemImageSet
 
                 for experiment in experiments:
-                    experiment.imageset = ImageSet(
-                        experiment.imageset.data(), experiment.imageset.indices()
-                    )
+                    # Elsewhere, checks are made for ImageSequence when picking between algorithms
+                    # specific to rotations vs. stills, so here reset any ImageSequences to stills.
+                    # Note, dials.stills_process resets ImageSequences to ImageSets already,
+                    # and it's not free (the ImageSet cache is dropped), only do it if needed
+                    if isinstance(experiment.imageset, ImageSequence):
+                        experiment.imageset = ImageSet(
+                            experiment.imageset.data(), experiment.imageset.indices()
+                        )
                     # if isinstance(imageset, MemImageSet):
                     #   imageset = MemImageSet(imagesequence._images, imagesequence.indices())
                     # else:

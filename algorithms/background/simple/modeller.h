@@ -24,16 +24,20 @@ namespace dials { namespace algorithms { namespace background {
   using scitbx::matrix::inversion_in_place;
 
   /**
-   * An abtract class for the background model
+   * An abstract class for the background model
    */
   class Model {
   public:
     virtual ~Model() {}
 
+    // The value of the background model at shoebox position x, y, z
     virtual double value(double z, double y, double x) const = 0;
 
+    // The parameters of the background model
     virtual af::shared<double> params() const = 0;
 
+    // The variances of the parameters from the model fit (not variances of the
+    // background values)
     virtual af::shared<double> variances() const = 0;
   };
 
@@ -87,22 +91,30 @@ namespace dials { namespace algorithms { namespace background {
       const af::const_ref<bool, af::c_grid<3> > &mask) const {
       DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
       af::shared<double> mean(data.accessor()[0], 0.0);
-      af::shared<double> var(data.accessor()[0], 0.0);
+      af::shared<double> sq_sem(data.accessor()[0], 0.0);
+
       for (std::size_t k = 0; k < data.accessor()[0]; ++k) {
+        // Welford's one-pass mean and variance calculation
+        double M = 0;
+        double S = 0;
         std::size_t count = 0;
         for (std::size_t j = 0; j < data.accessor()[1]; ++j) {
           for (std::size_t i = 0; i < data.accessor()[2]; ++i) {
             if (mask(k, j, i)) {
-              mean[k] += data(k, j, i);
               count++;
+              double x = data(k, j, i);
+              double oldM = M;
+              M = M + (x - M) / count;
+              S = S + (x - M) * (x - oldM);
             }
           }
         }
         DIALS_ASSERT(count > 1);
-        mean[k] /= count;
-        var[k] = mean[k] / (count - 1);
+        mean[k] = M;
+        // variance is S/(count-1), SEM^2 is variance/count
+        sq_sem[k] = S / (count * count - count);
       }
-      return boost::make_shared<Constant2dModel>(mean, var);
+      return boost::make_shared<Constant2dModel>(mean, sq_sem);
     }
   };
 
@@ -139,17 +151,23 @@ namespace dials { namespace algorithms { namespace background {
       const af::const_ref<double, af::c_grid<3> > &data,
       const af::const_ref<bool, af::c_grid<3> > &mask) const {
       DIALS_ASSERT(data.size() == mask.size());
-      double mean = 0.0;
+
+      // Welford's one-pass mean and variance calculation
+      double M = 0;
+      double S = 0;
       std::size_t count = 0;
       for (std::size_t i = 0; i < data.size(); ++i) {
         if (mask[i]) {
-          mean += data[i];
           count++;
+          double x = data[i];
+          double oldM = M;
+          M = M + (x - M) / count;
+          S = S + (x - M) * (x - oldM);
         }
       }
       DIALS_ASSERT(count > 1);
-      mean /= count;
-      return boost::make_shared<Constant3dModel>(mean, mean / (count - 1));
+      // variance is S/(count-1), SEM^2 is variance/count
+      return boost::make_shared<Constant3dModel>(M, S / (count * count - count));
     }
   };
 

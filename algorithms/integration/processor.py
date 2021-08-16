@@ -1,7 +1,6 @@
 import itertools
 import logging
 import math
-import platform
 from time import time
 
 import psutil
@@ -323,14 +322,7 @@ class _Processor:
         mp_method = self.manager.params.mp.method
         mp_njobs = self.manager.params.mp.njobs
         mp_nproc = self.manager.params.mp.nproc
-        if (
-            mp_njobs * mp_nproc
-        ) > 1 and platform.system() == "Windows":  # platform.system() forks which is bad for MPI, so don't use it unless nproc > 1
-            logger.warning(
-                "Multiprocessing is not available on windows. Setting nproc = 1\n"
-            )
-            mp_nproc = 1
-            mp_njobs = 1
+
         assert mp_nproc > 0, "Invalid number of processors"
         if mp_nproc * mp_njobs > len(self.manager):
             mp_nproc = min(mp_nproc, len(self.manager))
@@ -361,7 +353,6 @@ class _Processor:
                 callback=process_output,
                 cluster_method=mp_method,
                 preserve_order=True,
-                preserve_exception_message=True,
             )
         else:
             for task in self.manager.tasks():
@@ -499,7 +490,8 @@ class Task:
 
             # I am 99% sure this is implied by all the code above
             assert (frame1 - frame0) <= len(imageset)
-            imageset = imageset[frame0:frame1]
+            if len(imageset) > 1:
+                imageset = imageset[frame0:frame1]
         except Exception as e:
             raise RuntimeError(f"Programmer Error: bad array range: {e}")
 

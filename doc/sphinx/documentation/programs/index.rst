@@ -63,3 +63,20 @@ Printable command line reference:
   </iframe>
   </div>
   <a class="reference external" href="https://drive.google.com/file/d/0B0yDAeP5vfI7aW5ORWdORHVmOGs/preview" target="_blank">Open pdf in new tab</a>
+
+
+More details on most used DIALS algorithms:
+
+.. raw:: html
+
+  <iframe
+    src="https://docs.google.com/presentation/d/e/2PACX-1vSDBwscFn3Y6wnRf5NXlEW1faBYToPOlkirc9ctJQ9TYf975Vh5qmbTofXb0jPtD7W3MixldFZxA_2C/embed?start=false&loop=false&delayms=3000"
+    frameborder="0"
+    width="960"
+    height="749"
+    mozallowfullscreen="true"
+    webkitallowfullscreen="true">
+  </iframe>
+  <a class="reference external"
+    href="https://docs.google.com/presentation/d/e/2PACX-1vSDBwscFn3Y6wnRf5NXlEW1faBYToPOlkirc9ctJQ9TYf975Vh5qmbTofXb0jPtD7W3MixldFZxA_2C/embed?start=false&loop=false&delayms=3000">Open presentation in new tab
+  </a>

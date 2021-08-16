@@ -7,6 +7,7 @@ import logging
 from collections import OrderedDict
 
 from jinja2 import ChoiceLoader, Environment, PackageLoader
+from orderedset import OrderedSet
 
 from cctbx import uctbx
 from scitbx.array_family import flex
@@ -195,7 +196,9 @@ def _make_scaling_html(scaling_script):
     if not (html_file or json_file):
         return
     data = {}
-    data.update(make_scaling_model_plots(scaling_script.experiments))
+    data.update(
+        make_scaling_model_plots(scaling_script.experiments, scaling_script.reflections)
+    )
     data.update(
         make_outlier_plots(scaling_script.reflections, scaling_script.experiments)
     )
@@ -237,15 +240,15 @@ def _make_scaling_html(scaling_script):
             json.dump(data, outfile)
 
 
-def make_scaling_model_plots(experiments):
+def make_scaling_model_plots(experiments, reflection_tables):
     """Collect scaling model plots for html report."""
-    data = {i: e.scaling_model.to_dict() for i, e in enumerate(experiments)}
+    data = {i: e.scaling_model for i, e in enumerate(experiments)}
     d = OrderedDict()
     combined_plots = make_combined_plots(data)
     if combined_plots:
         d.update(combined_plots)
     for key in sorted(data.keys()):
-        scaling_model_plots = plot_scaling_models(data[key])
+        scaling_model_plots = plot_scaling_models(data[key], reflection_tables[key])
         for plot in scaling_model_plots.values():
             plot["layout"]["title"] += f" (dataset {key})"
         for name, plot in scaling_model_plots.items():
@@ -275,13 +278,13 @@ def print_scaling_model_error_summary(experiments):
         frac_high_uncertainty = (log_p_sigmas < 0.69315).count(True) / len(log_p_sigmas)
         if frac_high_uncertainty > 0.5:
             msg = (
-                "Warning: Over half ({:.2f}%) of model parameters have signficant\n"
+                "Warning: Over half ({:.2f}%) of model parameters have significant\n"
                 "uncertainty (sigma/abs(parameter) > 0.5), which could indicate a\n"
                 "poorly-determined scaling problem or overparameterisation.\n"
             ).format(frac_high_uncertainty * 100)
         else:
             msg = (
-                "{:.2f}% of model parameters have signficant uncertainty\n"
+                "{:.2f}% of model parameters have significant uncertainty\n"
                 "(sigma/abs(parameter) > 0.5)\n"
             ).format(frac_high_uncertainty * 100)
     return msg
@@ -321,37 +324,49 @@ def make_outlier_plots(reflection_tables, experiments):
 
 def make_error_model_plots(params, experiments):
     """Generate normal probability plot data."""
-    data = {}
-    if experiments[0].scaling_model.error_model:
-        em = experiments[0].scaling_model.error_model
-        if em.filtered_Ih_table:
-            table = em.filtered_Ih_table
-            data["intensity"] = table.intensities
-            sigmaprime = calc_sigmaprime(em.parameters, table)
-            data["delta_hl"] = calc_deltahl(table, table.calc_nh(), sigmaprime)
-            data["inv_scale"] = table.inverse_scale_factors
-            data["sigma"] = sigmaprime * data["inv_scale"]
-            data["binning_info"] = em.binner.binning_info
-            em.clear_Ih_table()
-            if params.weighting.error_model.basic.minimisation == "regression":
-                x, y = calculate_regression_x_y(em.filtered_Ih_table)
-                data["regression_x"] = x
-                data["regression_y"] = y
-                data["model_a"] = em.parameters[0]
-                data["model_b"] = em.parameters[1]
-        data["summary"] = str(em)
-
     d = {"error_model_plots": {}, "error_model_summary": "No error model applied"}
-    if "delta_hl" in data:
-        d["error_model_plots"].update(normal_probability_plot(data))
-        d["error_model_plots"].update(
-            i_over_sig_i_vs_i_plot(data["intensity"], data["sigma"])
-        )
-        d["error_model_plots"].update(error_model_variance_plot(data))
-        if "regression_x" in data:
-            d["error_model_plots"].update(error_regression_plot(data))
-    if "summary" in data:
-        d["error_model_summary"] = data["summary"]
+    error_model_data = []  # a list of dicts of error model data
+    if experiments[0].scaling_model.error_model:
+        error_models = [e.scaling_model.error_model for e in experiments]
+        unique_error_models = OrderedSet(error_models)
+        if len(unique_error_models) == 1:
+            d["error_model_summary"] = str(error_models[0])
+        else:
+            d["error_model_summary"] = ""
+            for i, e in enumerate(unique_error_models):
+                indices = [str(j + 1) for j, x in enumerate(error_models) if e is x]
+                d["error_model_summary"] += (
+                    f"\nError model {i+1}, applied to sweeps {', '.join(indices)}:"
+                    + str(e)
+                )
+        for em in unique_error_models:
+            if em.filtered_Ih_table:
+                data_i = {}
+                table = em.filtered_Ih_table
+                data_i["intensity"] = table.intensities
+                sigmaprime = calc_sigmaprime(em.parameters, table)
+                data_i["delta_hl"] = calc_deltahl(table, table.calc_nh(), sigmaprime)
+                data_i["inv_scale"] = table.inverse_scale_factors
+                data_i["sigma"] = sigmaprime * data_i["inv_scale"]
+                data_i["binning_info"] = em.binner.binning_info
+                em.clear_Ih_table()
+                if params.weighting.error_model.basic.minimisation == "regression":
+                    x, y = calculate_regression_x_y(em.filtered_Ih_table)
+                    data_i["regression_x"] = x
+                    data_i["regression_y"] = y
+                    data_i["model_a"] = em.parameters[0]
+                    data_i["model_b"] = em.parameters[1]
+                error_model_data.append(data_i)
+
+    if error_model_data:
+        for i, emd in enumerate(error_model_data):
+            d["error_model_plots"].update(normal_probability_plot(emd, label=i + 1))
+            d["error_model_plots"].update(
+                i_over_sig_i_vs_i_plot(emd["intensity"], emd["sigma"], label=i + 1)
+            )
+            d["error_model_plots"].update(error_model_variance_plot(emd, label=i + 1))
+            if "regression_x" in emd:
+                d["error_model_plots"].update(error_regression_plot(emd, label=i + 1))
     return d
 
 

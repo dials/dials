@@ -1,6 +1,6 @@
 This directory contains 3 groups of files:
 
-DIALS bootstrap - Python 3.6-3.8
+DIALS bootstrap - Python 3.6-3.9
 ================================
 linux.txt
 macos.txt

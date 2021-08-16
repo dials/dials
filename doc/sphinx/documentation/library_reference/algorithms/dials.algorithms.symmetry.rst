@@ -36,8 +36,3 @@ dials.algorithms.symmetry.cosym
     :undoc-members:
     :show-inheritance:
 
-.. automodule:: dials.algorithms.symmetry.cosym.seed_clustering
-    :members:
-    :undoc-members:
-    :show-inheritance:
-

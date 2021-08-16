@@ -74,6 +74,12 @@ class active_parameter_manager:
         """Get method for refinement engine access."""
         return self.x
 
+    def get_param_names(self):
+        l = []
+        for name, data in self.components.items():
+            l.extend([name + f"_param{j}" for j in range(data["n_params"])])
+        return l
+
     def calculate_model_state_uncertainties(self, var_cov):
         """Set var_cov matrices for each component to allow later calculation
         of errors."""
@@ -171,6 +177,13 @@ class multi_active_parameter_manager(TargetInterface):
     def get_param_vals(self):
         """Get method for refinement engine access."""
         return self.x
+
+    def get_param_names(self):
+        l = []
+        for i, apm in enumerate(self.apm_list):
+            for name, data in apm.components.items():
+                l.extend([name + f"_expt{i}_param{j}" for j in range(data["n_params"])])
+        return l
 
     def set_param_esds(self, esds):
         """Set the estimated standard deviations of the parameters."""
@@ -331,7 +344,7 @@ class ParameterManagerGenerator:
         self.param_lists = [None] * len(data_managers)
         if self.mode == "concurrent":
             for i, data_manager in enumerate(self.data_managers):
-                self.param_lists[i] = [param for param in data_manager.components]
+                self.param_lists[i] = list(data_manager.components)
         else:  # mode=consecutive
             # Generate nested list indicating the names of active parameters
             # e.g consecutive_order for class is [["a", "b"], ["c"]],

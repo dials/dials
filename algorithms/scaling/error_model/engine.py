@@ -39,8 +39,9 @@ def run_error_model_refinement(model, Ih_table):
             error_model_scope=model.params,
             max_iterations=100,
         )
-        refinery.run()
-        refinery.print_step_table()
+        if refinery:
+            refinery.run()
+            refinery.print_step_table()
         logger.info(model)
     model.finalise()
     return model
@@ -69,13 +70,15 @@ def error_model_refinery(model, active_parameters, error_model_scope, max_iterat
                 prediction_parameterisation=parameterisation,
                 max_iterations=max_iterations,
             )
+        else:
+            return None
 
 
 class ErrorModelRegressionRefiner(SimpleLBFGS):
 
     """Use LBFGS for convenience, actually is a linear regression.
 
-    Therefore target.predict step is unneccesary."""
+    Therefore target.predict step is unnecessary."""
 
     def __init__(self, model, *args, **kwargs):
         self.model = model

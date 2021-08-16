@@ -76,7 +76,7 @@ namespace dials { namespace algorithms { namespace polygon {
     }
 
     // Loop through all the edges of the clip polygon, starting with the
-    // last edge for conveneince
+    // last edge for convenience
     vertex_type e1 = target[target.size() - 1];
     for (std::size_t j = 0; j < target.size(); ++j) {
       vertex_type e2 = target[j];
@@ -146,7 +146,7 @@ namespace dials { namespace algorithms { namespace polygon {
     }
 
     // Loop through all the edges of the clip polygon, starting with the
-    // last edge for conveneince
+    // last edge for convenience
     vertex_type e1 = target[target.size() - 1];
     for (std::size_t j = 0; j < target.size(); ++j) {
       vertex_type e2 = target[j];

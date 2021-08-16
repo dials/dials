@@ -1,5 +1,6 @@
 import itertools
 import os
+import warnings
 
 import psutil
 
@@ -53,7 +54,7 @@ def parallel_map(
     asynchronous=True,
     callback=None,
     preserve_order=True,
-    preserve_exception_message=True,
+    preserve_exception_message=...,
     job_category="low",
 ):
     """
@@ -62,6 +63,13 @@ def parallel_map(
     the number of cores on a machine
     """
     from dials.util.cluster_map import cluster_map as drmaa_parallel_map
+
+    if preserve_exception_message is not Ellipsis:
+        warnings.warn(
+            "keyword argument 'preserve_exception_message' is deprecated",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
     if method == "drmaa":
         return drmaa_parallel_map(
@@ -83,11 +91,11 @@ def parallel_map(
             qsub_command=qsub_command,
             asynchronous=asynchronous,
             preserve_order=preserve_order,
-            preserve_exception_message=preserve_exception_message,
+            preserve_exception_message=True,
         )
 
 
-class MultiNodeClusterFunction:
+class __cluster_function_wrapper:
     """
     A function called by the multi node parallel map. On each cluster node, a
     nested parallel map using the multi processing method will be used.
@@ -99,21 +107,20 @@ class MultiNodeClusterFunction:
         nproc=1,
         asynchronous=True,
         preserve_order=True,
-        preserve_exception_message=True,
+        preserve_exception_message=...,
     ):
-        """
-        Init the function
-        """
         self.func = func
         self.nproc = nproc
         self.asynchronous = asynchronous
         self.preserve_order = (preserve_order,)
-        self.preserve_exception_message = preserve_exception_message
+        if preserve_exception_message is not Ellipsis:
+            warnings.warn(
+                "keyword argument 'preserve_exception_message' is deprecated",
+                DeprecationWarning,
+                stacklevel=2,
+            )
 
     def __call__(self, iterable):
-        """
-        Call the function
-        """
         return libtbx.easy_mp.parallel_map(
             func=self.func,
             iterable=iterable,
@@ -121,7 +128,7 @@ class MultiNodeClusterFunction:
             method="multiprocessing",
             asynchronous=self.asynchronous,
             preserve_order=self.preserve_order,
-            preserve_exception_message=self.preserve_exception_message,
+            preserve_exception_message=True,
         )
 
 
@@ -135,16 +142,12 @@ def _iterable_grouper(iterable, chunk_size):
         yield group
 
 
-def _create_iterable_wrapper(function):
-    """
-    Wraps a function so that it takes iterables and when called is applied to
-    each element of the iterable and returns a list of the return values.
-    """
+class _iterable_wrapper:
+    def __init__(self, function):
+        self.__function = function
 
-    def run_function(iterable):
-        return [function(item) for item in iterable]
-
-    return run_function
+    def __call__(self, iterable):
+        return [self.__function(item) for item in iterable]
 
 
 def multi_node_parallel_map(
@@ -156,20 +159,26 @@ def multi_node_parallel_map(
     asynchronous=True,
     callback=None,
     preserve_order=True,
-    preserve_exception_message=True,
+    preserve_exception_message=...,
 ):
     """
     A wrapper function to call a function using multiple cluster nodes and with
     multiple processors on each node
     """
+    if preserve_exception_message is not Ellipsis:
+        warnings.warn(
+            "keyword argument 'preserve_exception_message' is deprecated",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
     # The function to all on the cluster
-    cluster_func = MultiNodeClusterFunction(
+    cluster_func = __cluster_function_wrapper(
         func=func,
         nproc=nproc,
         asynchronous=asynchronous,
         preserve_order=preserve_order,
-        preserve_exception_message=preserve_exception_message,
+        preserve_exception_message=True,
     )
 
     # Create the cluster iterable
@@ -177,7 +186,7 @@ def multi_node_parallel_map(
 
     # Create the cluster callback
     if callback is not None:
-        cluster_callback = _create_iterable_wrapper(callback)
+        cluster_callback = _iterable_wrapper(callback)
     else:
         cluster_callback = None
 
@@ -191,7 +200,6 @@ def multi_node_parallel_map(
         processes=njobs,
         asynchronous=asynchronous,
         preserve_order=preserve_order,
-        preserve_exception_message=preserve_exception_message,
     )
 
     # return result
@@ -212,14 +220,13 @@ def batch_multi_node_parallel_map(
     """
     # Call the batches in parallel
     return multi_node_parallel_map(
-        func=_create_iterable_wrapper(func),
+        func=_iterable_wrapper(func),
         iterable=_iterable_grouper(iterable, chunksize),
         nproc=nproc,
         njobs=njobs,
         cluster_method=cluster_method,
-        callback=_create_iterable_wrapper(callback),
+        callback=_iterable_wrapper(callback),
         preserve_order=True,
-        preserve_exception_message=True,
     )
 
 

@@ -11,7 +11,7 @@ class BackgroundAlgorithm:
 
     def compute_background(self, reflections, image_volume=None):
         """
-        Compute the backgrond.
+        Compute the background.
 
         :param reflections: The list of reflections
         """

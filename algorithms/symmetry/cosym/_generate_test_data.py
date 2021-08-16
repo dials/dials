@@ -124,16 +124,14 @@ def generate_test_data(
     cb_ops = twin_ops
     cb_ops.insert(0, sgtbx.change_of_basis_op())
 
-    reindexing_ops = {}
+    reindexing_ops = []
 
     datasets = []
     rand_norm = scitbx.random.normal_distribution(mean=0, sigma=sigma)
     g = scitbx.random.variate(rand_norm)
     for i in range(sample_size):
         cb_op = random.choice(cb_ops)
-        if cb_op.as_xyz() not in reindexing_ops:
-            reindexing_ops[cb_op.as_xyz()] = set()
-        reindexing_ops[cb_op.as_xyz()].add(i)
+        reindexing_ops.append(cb_op.as_xyz())
         d = intensities.change_basis(cb_op).customized_copy(
             crystal_symmetry=intensities.crystal_symmetry()
         )

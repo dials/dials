@@ -293,7 +293,7 @@ class SimpleNormDevOutlierRejection(OutlierRejectionBase):
         ) * Ih_table.h_expand_matrix
         wg2sum = ((w * g * g) * Ih_table.h_index_matrix) * Ih_table.h_expand_matrix
 
-        # guard against zero divison errors - can happen due to rounding errors
+        # guard against zero division errors - can happen due to rounding errors
         # or bad data giving g values are very small
         zero_sel = wg2sum == 0.0
         # set as one for now, then mark as outlier below. This will only affect if
@@ -351,13 +351,13 @@ class NormDevOutlierRejection(OutlierRejectionBase):
         wg2sum = ((w * g * g) * Ih_table.h_index_matrix) * Ih_table.h_expand_matrix
         wgIsum_others = wgIsum - (w * g * intensity)
         wg2sum_others = wg2sum - (w * g * g)
-        # Now do the rejection analyis if n_in_group > 2
+        # Now do the rejection analysis if n_in_group > 2
         nh = Ih_table.calc_nh()
         sel = nh > 2
         wg2sum_others_sel = wg2sum_others.select(sel)
         wgIsum_others_sel = wgIsum_others.select(sel)
 
-        # guard against zero divison errors - can happen due to rounding errors
+        # guard against zero division errors - can happen due to rounding errors
         # or bad data giving g values are very small
         zero_sel = wg2sum_others_sel == 0.0
         # set as one for now, then mark as outlier below. This will only affect if

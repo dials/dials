@@ -600,7 +600,7 @@ namespace dials { namespace af { namespace boost_python { namespace flex_table_s
 
   /**
    * Update the table with column data from another table. New columns are added
-   * to the table and exisiting columns are over-written by columns from the
+   * to the table and existing columns are over-written by columns from the
    * other table.
    * @param self The current table
    * @param other The other table

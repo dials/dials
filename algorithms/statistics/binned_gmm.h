@@ -80,7 +80,7 @@ namespace dials { namespace algorithms {
   }  // namespace detail
 
   /**
-   * Compute the binned gaussian model withe a fixed mean using expectation
+   * Compute the binned gaussian model with a fixed mean using expectation
    * maximization
    */
   class BinnedGMMSingle1DFixedMean {

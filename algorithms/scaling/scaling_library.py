@@ -14,6 +14,7 @@ import uuid
 from copy import deepcopy
 from unittest.mock import Mock
 
+import numpy as np
 import pkg_resources
 
 import iotbx.merging_statistics
@@ -205,7 +206,6 @@ def create_scaling_model(params, experiments, reflections):
     """Loop through the experiments, creating the scaling models."""
     autos = [None, Auto, "auto", "Auto"]
     use_auto_model = params.model in autos
-
     # Determine non-auto model to use outside the loop over datasets.
     if not use_auto_model:
         model_class = None
@@ -232,6 +232,9 @@ def create_scaling_model(params, experiments, reflections):
             else:
                 model = model_class
             expt.scaling_model = model.from_data(params, expt, refl)
+        else:
+            # allow for updating of an existing model.
+            expt.scaling_model.update(params)
     return experiments
 
 
@@ -275,7 +278,11 @@ def create_Ih_table(
 
 
 def scaled_data_as_miller_array(
-    reflection_table_list, experiments, best_unit_cell=None, anomalous_flag=False
+    reflection_table_list,
+    experiments,
+    best_unit_cell=None,
+    anomalous_flag=False,
+    wavelength=None,
 ):
     """Get a scaled miller array from an experiment and reflection table."""
     if len(reflection_table_list) > 1:
@@ -334,7 +341,15 @@ will not be used for calculating merging statistics""",
         flex.sqrt(joint_table["intensity.scale.variance"])
         / joint_table["inverse_scale_factor"]
     )
-    i_obs.set_info(miller.array_info(source="DIALS", source_type="reflection_tables"))
+    if not wavelength:
+        wavelength = np.mean([expt.beam.get_wavelength() for expt in experiments])
+    i_obs.set_info(
+        miller.array_info(
+            source="DIALS",
+            source_type="reflection_tables",
+            wavelength=wavelength,
+        )
+    )
     return i_obs
 
 

@@ -38,7 +38,7 @@ cc_n_bins = None
 best_monoclinic_beta = True
   .type = bool
   .help = "If True, then for monoclinic centered cells, I2 will be preferred over C2 if"
-          "it gives a more oblique cell (i.e. smaller beta angle)."
+          "it gives a less oblique cell (i.e. smaller beta angle)."
 
 include scope dials.algorithms.refinement.refiner.phil_scope
 """,
@@ -178,6 +178,16 @@ bravais_lattice_to_lowest_symmetry_spacegroup_number = {
 }
 
 
+def lowest_symmetry_space_group_for_bravais_lattice(
+    bravais_lattice: str,
+) -> sgtbx.space_group:
+    if bravais_lattice == "mI":
+        return sgtbx.space_group_info("I2").group()
+    return sgtbx.space_group_info(
+        number=bravais_lattice_to_lowest_symmetry_spacegroup_number[bravais_lattice]
+    ).group()
+
+
 def refined_settings_from_refined_triclinic(experiments, reflections, params):
     """Generate a RefinedSettingsList from a triclinic model.
 
@@ -224,18 +234,17 @@ def refined_settings_from_refined_triclinic(experiments, reflections, params):
         refined_settings[j].setting_number = Nset - j
 
     for subgroup in refined_settings:
-        space_group = sgtbx.space_group_info(
-            number=bravais_lattice_to_lowest_symmetry_spacegroup_number[
-                subgroup["bravais"]
-            ]
-        ).group()
+        bravais_lattice = str(
+            bravais_types.bravais_lattice(group=subgroup["best_subsym"].space_group())
+        )
+        space_group = lowest_symmetry_space_group_for_bravais_lattice(bravais_lattice)
         orient = crystal_orientation(crystal.get_A(), True).change_basis(
             scitbx.matrix.sqr(
                 subgroup["cb_op_inp_best"].c().as_double_array()[0:9]
             ).transpose()
         )
         constrain_orient = orient.constrain(subgroup["system"])
-        subgroup["bravais"] = str(bravais_types.bravais_lattice(group=space_group))
+        subgroup["bravais"] = bravais_lattice
         subgroup.unrefined_crystal = dxtbx_crystal_from_orientation(
             constrain_orient, space_group
         )

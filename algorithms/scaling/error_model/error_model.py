@@ -30,9 +30,13 @@ phil_scope = phil.parse(
           .type = float
           .help = "Used this fixed value for the error model 'b' parameter"
           .expert_level = 2
-        minimisation = *individual regression
+        minimisation = *individual regression None
           .type = choice
-          .help = "The algorithm to use for basic error model minimisation"
+          .help = "The algorithm to use for basic error model minimisation."
+                  "For individual, the a and b parameters are optimised"
+                  "sequentially. For regression, a linear fit is made to"
+                  "determine both parameters concurrently. If minimisation=None,"
+                  "the model parameters are fixed to their initial or given values."
           .expert_level = 3
         min_Ih = 25.0
             .type = float
@@ -48,6 +52,21 @@ phil_scope = phil.parse(
         .type = bool
         .help = "If True, the error model is reset to the default at the start"
                 "of scaling, as opposed to loading the current error model."
+    grouping = individual grouped *combined
+        .type = choice
+        .help = "This options selects whether one error model is determined"
+                "for all sweeps (combined), whether one error model is"
+                "determined per-sweep (individual), or whether a custom"
+                "grouping should be used. If grouping=grouped, each group"
+                "should be specified with the error_model_group=parameter."
+        .expert_level = 2
+    error_model_group = None
+        .type = ints
+        .multiple = True
+        .help = "Specify a subset of sweeps which should share an error model."
+                "If no groups are specified here, this is interpreted to mean"
+                "that all sweeps should share a common error model."
+
     """
 )
 
@@ -570,4 +589,30 @@ def filter_unsuitable_reflections(
     # now make sure any left also have n > 1
     sel = n_h > 1.0
     Ih_table = Ih_table.select(sel)
+
+    #  Filter groups with abnormally high internal variances.
+    # For a reasonable quality dataset, if b=0.04, a=1.25, then for large Imax,
+    # the ratio of the corrected per-reflection variance to the original is
+    # (var'/var)^2 ~= (ab)^2 Imax ~= Imax / 400. So filter any groups where the
+    # internal variance is more than 10x what would reasonably be expected after
+    # error model correction.
+    I = Ih_table.intensities
+    mu = Ih_table.Ih_values
+    g = Ih_table.inverse_scale_factors
+    n_h = flex.double(Ih_table.size, 1.0) * Ih_table.h_index_matrix
+
+    group_variances = (
+        (((I / g) - mu) ** 2)
+        * Ih_table.h_index_matrix
+        / (n_h - flex.double(n_h.size(), 1.0))
+    )
+    avg_variances = (Ih_table.variances / (g ** 2)) * Ih_table.h_index_matrix / n_h
+    ratio = group_variances / avg_variances
+    sel = ratio < max(50, (flex.max(mu) / 40.0))
+    logger.debug(
+        f"{sel.count(False)}/{sel.size()} symmetry groups excluded "
+        "from error model analysis due to high internal variance"
+    )
+    Ih_table = Ih_table.select_on_groups(sel)
+
     return Ih_table

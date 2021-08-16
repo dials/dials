@@ -23,6 +23,7 @@ Examples::
 
 import logging
 import sys
+from typing import List, Sequence, SupportsFloat
 
 import numpy as np
 from scipy.spatial.transform import Rotation
@@ -39,12 +40,7 @@ from dials.util.multi_dataset_handling import (
 )
 from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
 
-try:
-    from typing import List, Sequence, SupportsFloat
-except ImportError:
-    pass
-else:
-    Vector = Sequence[SupportsFloat]
+Vector = Sequence[SupportsFloat]
 
 
 logger = logging.getLogger("dials.command_line.anvil_correction")
@@ -96,10 +92,13 @@ def goniometer_rotation(
     """
     Calculate the goniometer rotation operator for each reflection.
 
+    For each reflection, find the rotation operator that describes the position in
+    the lab frame that the sample was in when the reflection was measured.
+
     Following the DXTBX model of a goniometer, whereby a scan is only possible
-    around one physical axis at a time, the rotation operation (conventionally
+    around one physical axis at a time, the rotation operator (conventionally
     denoted R, here denoted R' to avoid confusion with the notation of
-    dxtbx/model/goniometer.h) can be calculated as R' = S · R · F.
+    dxtbx/model/goniometer.h) can be calculated as R' = S ∘ R ∘ F.
     Here:
         * S is the 'setting rotation', the operator denoting the position of all parent
         axes of the scan axis, which hence defines the orientation of the scan axis;
@@ -131,23 +130,15 @@ def goniometer_rotation(
     # Get the setting rotation.
     # In the notation of dxtbx/model/goniometer.h, this is S.
     set_rotation = np.array(experiment.goniometer.get_setting_rotation()).reshape(3, 3)
-    if hasattr(Rotation, "from_matrix"):
-        set_rotation = Rotation.from_matrix(set_rotation)
-    else:
-        # SciPy < 1.4.0. Can be removed after 15th of September 2020
-        set_rotation = Rotation.from_dcm(set_rotation)
+    set_rotation = Rotation.from_matrix(set_rotation)
 
     # Create a rotation operator for those axes that are fixed throughout the scan.
     # In the notation of dxtbx/model/goniometer.h, this is F.
     fixed_rotation = np.array(experiment.goniometer.get_fixed_rotation()).reshape(3, 3)
-    if hasattr(Rotation, "from_matrix"):
-        fixed_rotation = Rotation.from_matrix(fixed_rotation)
-    else:
-        # SciPy < 1.4.0. Can be removed after 15th of September 2020
-        fixed_rotation = Rotation.from_dcm(fixed_rotation)
+    fixed_rotation = Rotation.from_matrix(fixed_rotation)
 
     # Calculate the rotation operator representing the goniometer orientation for each
-    # reflection.  In the notation of dxtbx/model/goniometer.h this is S × R × F.
+    # reflection.  In the notation of dxtbx/model/goniometer.h this is S ∘ R ∘ F.
     return set_rotation * scan_rotation * fixed_rotation
 
 

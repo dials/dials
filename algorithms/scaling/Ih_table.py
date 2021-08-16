@@ -85,7 +85,7 @@ class IhTable:
 
         A list of flex.size_t indices can be provided - this allows the
         reflection table data to maintain a reference to a dataset from which
-        it was selecte; these will be used when making the block selections.
+        it was selected; these will be used when making the block selections.
         e.g selection = flex.bool([True, False, True])
             r_1 = r_master.select(selection)
             indices_list = selection.iselection() = flex.size_t([0, 2])
@@ -165,10 +165,10 @@ class IhTable:
             block.block_selections for block in self.Ih_table_blocks
         ]
 
-    def update_weights(self, error_model=None):
+    def update_weights(self, error_model=None, dataset_id=None):
         """Update the error model in the blocks."""
         for block in self.Ih_table_blocks:
-            block.update_weights(error_model)
+            block.update_weights(error_model, dataset_id)
 
     @property
     def blocked_data_list(self):
@@ -328,7 +328,7 @@ class IhTable:
             n_groups = block.h_index_matrix.n_cols
             groups_for_free_set = flex.bool(n_groups, False)
             for_free = flex.size_t(
-                [i for i in range(0 + offset, n_groups, interval_between_groups)]
+                list(range(0 + offset, n_groups, interval_between_groups))
             )
             groups_for_free_set.set_selected(for_free, True)
             free_block = block.select_on_groups(groups_for_free_set)
@@ -532,15 +532,26 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
         Ih = sumgI / sumgsq
         self.Ih_table["Ih_values"] = Ih * self.h_expand_matrix
 
-    def update_weights(self, error_model=None):
+    def update_weights(self, error_model=None, dataset_id=None):
         """Update the scaling weights based on an error model."""
         if error_model:
-            sigmaprimesq = error_model.update_variances(
-                self.variances, self.intensities
-            )
-            self.weights = 1.0 / sigmaprimesq
+            if dataset_id is not None:  # note the first dataset has an id of 0
+                sel = self.Ih_table["dataset_id"] == dataset_id
+                sigmaprimesq = error_model.update_variances(
+                    self.variances.select(sel), self.intensities.select(sel)
+                )
+                self.weights.set_selected(sel, 1.0 / sigmaprimesq)
+            else:
+                sigmaprimesq = error_model.update_variances(
+                    self.variances, self.intensities
+                )
+                self.weights = 1.0 / sigmaprimesq
         else:
-            self.weights = 1.0 / self.variances
+            if dataset_id is not None:  # note the first dataset has an id of 0
+                sel = self.Ih_table["dataset_id"] == dataset_id
+                self.weights.set_selected(sel, 1.0 / self.variances.select(sel))
+            else:
+                self.weights = 1.0 / self.variances
 
     def calc_nh(self):
         """Calculate the number of refls in the group to which the reflection belongs.

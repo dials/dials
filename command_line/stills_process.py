@@ -27,7 +27,7 @@ SIG_B_CUTOFF = 0.1
 
 help_message = """
 DIALS script for processing still images. Import, index, refine, and integrate are all done for each image
-seperately.
+separately.
 """
 
 control_phil_str = """
@@ -178,6 +178,10 @@ control_phil_str = """
         .help = Enable code profiling. Profiling file will be available in  \
                 the debug folder. Use (for example) runsnake to visualize   \
                 processing performance
+      output_debug_logs = True
+        .type = bool
+        .help = Whether to write debugging information for every image      \
+                processed
     }
   }
 """
@@ -565,7 +569,8 @@ class Script:
 
         else:
             basenames = OrderedDict()
-            for filename in sorted(all_paths):
+            sorted_paths = sorted(all_paths)
+            for filename in sorted_paths:
                 basename = os.path.splitext(os.path.basename(filename))[0]
                 if basename in basenames:
                     basenames[basename] += 1
@@ -583,7 +588,7 @@ class Script:
                     or tag in self.params.input.image_tag
                 ):
                     tags.append(tag)
-                    all_paths2.append(all_paths[i])
+                    all_paths2.append(sorted_paths[i])
             all_paths = all_paths2
 
             # Wrapper function
@@ -663,6 +668,10 @@ class Script:
                 ]
                 do_work(rank, subset)
             else:
+                processor = Processor(
+                    copy.deepcopy(params), composite_tag="%04d" % rank, rank=rank
+                )
+
                 if rank == 0:
                     # server process
                     for item_num, item in enumerate(iterable):
@@ -681,15 +690,8 @@ class Script:
                         comm.send("endrun", dest=rankreq)
                     print("All stops sent.")
 
-                    # create an empty processor to handle any MPI finalize steps
-                    processor = Processor(
-                        copy.deepcopy(params), composite_tag="%04d" % rank, rank=rank
-                    )
-                    processor.finalize()
-
                 else:
                     # client process
-                    processor = None
                     while True:
                         # inform the server this process is ready for an event
                         print("Rank %d getting next task" % rank)
@@ -708,8 +710,7 @@ class Script:
                                 str(e),
                             )
                         print("Rank %d event processed" % rank)
-                    if processor:
-                        processor.finalize()
+                processor.finalize()
         else:
             from dxtbx.command_line.image_average import splitit
 
@@ -726,7 +727,7 @@ class Script:
                 error_list = [r[2] for r in result]
                 if error_list.count(None) != len(error_list):
                     print(
-                        "Some processes failed excecution. Not all images may have processed. Error messages:"
+                        "Some processes failed execution. Not all images may have processed. Error messages:"
                     )
                     for error in error_list:
                         if error is None:
@@ -869,6 +870,9 @@ class Processor:
             )
 
     def debug_start(self, tag):
+        if not self.params.mp.debug.output_debug_logs:
+            return
+
         import socket
 
         self.debug_str = f"{socket.gethostname()},{tag}"
@@ -876,6 +880,9 @@ class Processor:
         self.debug_write("start")
 
     def debug_write(self, string, state=None):
+        if not self.params.mp.debug.output_debug_logs:
+            return
+
         from xfel.cxi.cspad_ana import cspad_tbx  # XXX move to common timestamp format
 
         ts = cspad_tbx.evt_timestamp()  # Now
@@ -1513,7 +1520,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                             int_pickles,
                             int_pickle_filenames,
                         ) = comm.recv(source=MPI.ANY_SOURCE)
-                        logger.info("Rank %d recieved data from rank %d", rank, sender)
+                        logger.info("Rank %d received data from rank %d", rank, sender)
 
                         def extend_with_bookkeeping(
                             src_expts, src_refls, dest_expts, dest_refls

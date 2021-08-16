@@ -14,8 +14,6 @@ try:
         [
             "flake8",
             "--exit-zero",
-            "--max-line-length=88",
-            "--select=E401,E711,E712,E713,E714,E721,E722,E901,F401,F402,F403,F405,F631,F632,F633,F811,F812,F821,F822,F841,F901,W191,W292,W293,W602,W603,W604,W605,W606",
         ],
         capture_output=True,
         check=True,

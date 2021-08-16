@@ -10,7 +10,7 @@ class ModelCache:
         """
         Create a model dictionary
         """
-        self.model = dict()
+        self.model = {}
 
     def get(self, name):
         """
@@ -60,7 +60,7 @@ class BackgroundAlgorithm:
 
     def compute_background(self, reflections, image_volume=None):
         """
-        Compute the backgrond.
+        Compute the background.
 
         :param reflections: The list of reflections
         """

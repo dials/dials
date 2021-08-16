@@ -35,6 +35,7 @@ from dials.util.filter_reflections import filtered_arrays_from_experiments_refle
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
     parse_multiple_datasets,
+    update_imageset_ids,
 )
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
@@ -86,7 +87,7 @@ change_of_basis_op = None
 best_monoclinic_beta = True
   .type = bool
   .help = "If True, then for monoclinic centered cells, I2 will be preferred over C2 if"
-          "it gives a more oblique cell (i.e. smaller beta angle)."
+          "it gives a less oblique cell (i.e. smaller beta angle)."
 
 systematic_absences {
 
@@ -279,7 +280,7 @@ def get_subset_for_symmetry(experiments, reflection_tables, exclude_images=None)
             sel = get_selection_for_valid_image_ranges(refl, expt)
             if not sel.count(False):
                 # Use first 360 degrees if <360 deg i.e. first measured data,
-                # but only if no reflections have been exlicitly excluded
+                # but only if no reflections have been explicitly excluded
                 # already
                 scan_end = int(math.ceil(360 / abs(expt.scan.get_oscillation()[1])))
                 if scan_end < len(expt.scan):
@@ -486,6 +487,7 @@ def _reindex_experiments_reflections(experiments, reflections, space_group, cb_o
         experiments, cb_op, space_group=space_group
     )
     reindexed_reflections = flex.reflection_table()
+    reflections = update_imageset_ids(experiments, reflections)
     for i in range(len(reindexed_experiments)):
         reindexed_refl = copy.deepcopy(reflections[i])
         reindexed_refl["miller_index"] = cb_op.apply(reindexed_refl["miller_index"])

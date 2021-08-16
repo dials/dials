@@ -195,9 +195,9 @@ class ScanVaryingCrystalAnalyser:
             cells = [crystal.get_unit_cell_at_scan_point(t) for t in scan_pts]
             cell_params = [e.parameters() for e in cells]
             a, b, c, aa, bb, cc = zip(*cell_params)
-            aa = list(round(i, ndigits=6) for i in aa)
-            bb = list(round(i, ndigits=6) for i in bb)
-            cc = list(round(i, ndigits=6) for i in cc)
+            aa = [round(i, ndigits=6) for i in aa]
+            bb = [round(i, ndigits=6) for i in bb]
+            cc = [round(i, ndigits=6) for i in cc]
             phi = [scan.get_angle_from_array_index(t) for t in scan_pts]
             vol = [e.volume() for e in cells]
             cell_dat = {
@@ -773,7 +773,7 @@ class CentroidAnalyser:
                 ],
                 "layout": {
                     "title": "Difference between observed and calculated centroids",
-                    "xaxis": {"title": "Difference in position"},
+                    "xaxis": {"title": "Difference in position (pixels)"},
                     "yaxis": {"title": "Number of reflections"},
                     "bargap": 0,
                 },
@@ -833,7 +833,7 @@ class CentroidAnalyser:
                     "z": z1.transpose().tolist(),
                     "type": "heatmap",
                     "colorbar": {
-                        "title": "Difference in X position",
+                        "title": "Difference in X position (pixels)",
                         "titleside": "right",
                     },
                     "colorscale": "Jet",
@@ -857,7 +857,7 @@ class CentroidAnalyser:
                     "z": z2.transpose().tolist(),
                     "type": "heatmap",
                     "colorbar": {
-                        "title": "Difference in Y position",
+                        "title": "Difference in Y position (pixels)",
                         "titleside": "right",
                     },
                     "colorscale": "Jet",
@@ -912,7 +912,10 @@ class CentroidAnalyser:
                 "layout": {
                     "title": "Difference between observed and calculated centroids in Z",
                     "xaxis": {"title": "Z", "showgrid": False},
-                    "yaxis": {"title": "Difference in Z position", "showgrid": False},
+                    "yaxis": {
+                        "title": "Difference in Z position (images)",
+                        "showgrid": False,
+                    },
                 },
             }
         }
@@ -1885,7 +1888,7 @@ class ReferenceProfileAnalyser:
         def d_star_sq_to_d_ticks(d_star_sq, nticks):
             min_d_star_sq = min(d_star_sq)
             dstep = (max(d_star_sq) - min_d_star_sq) / nticks
-            tickvals = list(min_d_star_sq + (i * dstep) for i in range(nticks))
+            tickvals = [min_d_star_sq + (i * dstep) for i in range(nticks)]
             ticktext = [f"{uctbx.d_star_sq_as_d(dsq):.2f}" for dsq in tickvals]
             return tickvals, ticktext
 
@@ -2149,7 +2152,7 @@ class ScalingModelAnalyser:
             for i, exp in enumerate(experiments):
                 model = exp.scaling_model
                 if model is not None:
-                    scaling_model_plots = plot_scaling_models(model.to_dict())
+                    scaling_model_plots = plot_scaling_models(model)
                     if scaling_model_plots:
                         for name, plot in scaling_model_plots.items():
                             d.update({name + "_" + str(i): plot})

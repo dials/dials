@@ -524,70 +524,7 @@ class XrayFrame(XFBaseClass):
             return super().get_key(file_name_or_data)
 
     def update_settings(self, layout=True):
-        # XXX The zoom level from the settings panel are not taken into
-        # account here.
-
-        new_brightness = self.settings.brightness
-        new_color_scheme = self.settings.color_scheme
-        if (
-            new_brightness is not self.pyslip.tiles.current_brightness
-            or new_color_scheme is not self.pyslip.tiles.current_color_scheme
-        ):
-            self.pyslip.tiles.update_brightness(new_brightness, new_color_scheme)
-
-        if self.settings.show_beam_center:
-            if self.beam_layer is None and hasattr(self, "beam_center_cross_data"):
-                self.beam_layer = self.pyslip.AddPolygonLayer(
-                    self.beam_center_cross_data,
-                    name="<beam_layer>",
-                    show_levels=[-2, -1, 0, 1, 2, 3, 4, 5],
-                    update=False,
-                )
-        elif self.beam_layer is not None:
-            self.pyslip.DeleteLayer(self.beam_layer, update=False)
-            self.beam_layer = None
-
-        if self.settings.show_spotfinder_spots:
-            if self.spotfinder_layer is None:
-                tdata = self.pyslip.tiles.get_spotfinder_data(self.params)
-                self.spotfinder_layer = self.pyslip.AddPointLayer(
-                    tdata,
-                    color="green",
-                    name="<spotfinder_layer>",
-                    radius=2,
-                    renderer=self.pyslip.LightweightDrawPointLayer,
-                    show_levels=[-2, -1, 0, 1, 2, 3, 4, 5],
-                )
-        elif self.spotfinder_layer is not None:
-            self.pyslip.DeleteLayer(self.spotfinder_layer)
-            self.spotfinder_layer = None
-
-        if self.settings.show_effective_tiling:
-            if self.tile_layer is None:
-                tdata, ttdata = self.pyslip.tiles.get_effective_tiling_data(self.params)
-                self.tile_layer = self.pyslip.AddPolygonLayer(
-                    tdata, name="<tiling_layer>", show_levels=[-2, -1, 0, 1, 2, 3, 4, 5]
-                )
-            if self.tile_text_layer is None:
-                self.tile_text_layer = self.pyslip.AddTextLayer(
-                    ttdata,
-                    name="<tiling_text_layer>",
-                    show_levels=[-2, -1, 0, 1, 2, 3, 4, 5],
-                    colour="#0000FFA0",
-                    textcolour="#0000FFA0",
-                    fontsize=30,
-                    placement="cc",
-                    radius=0,
-                )
-        elif (self.tile_layer is not None) and (self.tile_text_layer is not None):
-            self.pyslip.DeleteLayer(self.tile_layer)
-            self.tile_layer = None
-            self.pyslip.DeleteLayer(self.tile_text_layer)
-            self.tile_text_layer = None
-
-        if hasattr(self, "user_callback"):
-            self.user_callback(self)
-        self.pyslip.Update()  # triggers redraw
+        raise NotImplementedError()
 
     def OnCalibration(self, event):
         if not self._calibration_frame:
@@ -719,7 +656,7 @@ class XrayFrame(XFBaseClass):
 
     def OnSaveAs(self, event):
         ### XXX TODO: Save overlays
-        ### XXX TODO: Fix bug where multi-asic images are slightly cropped due to tranformation error'
+        ### XXX TODO: Fix bug where multi-asic images are slightly cropped due to transformation error'
 
         import PIL.Image as Image
 
@@ -750,7 +687,7 @@ class XrayFrame(XFBaseClass):
 
             flex_img = get_flex_image_multipanel(
                 brightness=self.settings.brightness / 100,
-                panels=detector,
+                detector=detector,
                 image_data=data,
                 beam=raw_img.get_beam(),
             )
@@ -890,7 +827,7 @@ class XrayFrame(XFBaseClass):
 
             flex_img = get_flex_image_multipanel(
                 brightness=self.settings.brightness / 100,
-                panels=detector,
+                detector=detector,
                 image_data=data,
                 beam=raw_img.get_beam(),
             )

@@ -26,7 +26,7 @@ from dials.algorithms.scaling.model.components.smooth_scale_components import (
 )
 from dials.algorithms.scaling.plots import (
     plot_absorption_parameters,
-    plot_absorption_surface,
+    plot_absorption_plots,
     plot_array_absorption_plot,
     plot_array_decay_plot,
     plot_array_modulation_plot,
@@ -84,12 +84,12 @@ lmax = 4
     .type = int(value_min=2)
     .help = "Number of spherical harmonics to include for absorption"
             "correction, recommended to be no more than 6."
-    .expert_level = 1
+    .expert_level = 2
 surface_weight = 1e6
     .type = float(value_min=0.0)
     .help = "Restraint weight applied to spherical harmonic terms in the"
             "absorption correction."
-    .expert_level = 1
+    .expert_level = 2
 fix_initial = True
     .type = bool
     .help = "If performing full matrix minimisation, in the final cycle,"
@@ -122,16 +122,40 @@ absorption_correction = auto
     .type = bool
     .help = "Option to turn off absorption correction (default True if oscillation > 60.0)."
     .expert_level = 1
-lmax = 4
+absorption_level = low medium high
+    .type = choice
+    .help = "Expected degree of relative absorption for different scattering"
+            "paths through the crystal(s). If an option is selected, the"
+            "scaling model parameters lmax and surface_weight will be set to"
+            "appropriate values."
+            "Relative absorption increases as crystal size increases,"
+            "increases as wavelength increases and is increased as the crystal"
+            "dimensions become less equal (i.e. is higher for needle shaped"
+            "crystals and zero for a spherical crystal)."
+            "Definitions of the levels and approximate correction magnitude:"
+            "low:    ~1%% relative absorption, expected for typical protein"
+            "        crystals (containing no strongly absorbing atoms) on the"
+            "        order of ~100um measured at ~1A wavelength."
+            "medium: ~5%% relative absorption"
+            "high:   >25%% relative absorption, e.g. for measurements at long"
+            "        wavelength or crystals with high absorption from heavy atoms."
+    .expert_level = 1
+lmax = auto
     .type = int(value_min=2)
     .help = "Number of spherical harmonics to include for absorption"
-            "correction, recommended to be no more than 6."
+            "correction, defaults to 4 if no absorption_level is chosen."
+            "It is recommended that the value need be no more than 6."
     .expert_level = 1
-surface_weight = 1e6
+surface_weight = auto
     .type = float(value_min=0.0)
     .help = "Restraint weight applied to spherical harmonic terms in the"
-            "absorption correction."
+            "absorption correction. A lower restraint allows a higher amount"
+            "of absorption correction. Defaults to 5e5 if no absorption_level"
+            "is chosen."
     .expert_level = 1
+share.absorption = False
+    .type = bool
+    .help = "If True, a common absorption correction is refined across all sweeps".
 fix_initial = True
     .type = bool
     .help = "If performing full matrix minimisation, in the final cycle,"
@@ -179,6 +203,8 @@ n_modulation_bins = 20
     .expert_level = 2
 """
 
+autos = [Auto, "auto", "Auto"]
+
 
 class ScalingModelBase:
     """Abstract base class for scaling models."""
@@ -196,7 +222,7 @@ class ScalingModelBase:
 
     @property
     def is_scaled(self):
-        """:obj:`bool`: Indicte whether this model has previously been refined."""
+        """:obj:`bool`: Indicate whether this model has previously been refined."""
         return self._is_scaled
 
     def fix_initial_parameter(self, params):
@@ -223,7 +249,7 @@ class ScalingModelBase:
         """Add the required reflection table data to the model components."""
         raise NotImplementedError()
 
-    def plot_model_components(self):
+    def plot_model_components(self, reflection_table=None):
         """Return a dict of plots for plotting model components with plotly."""
         return {}
 
@@ -296,6 +322,9 @@ class ScalingModelBase:
         """Create a scaling model from a dictionary."""
         raise NotImplementedError()
 
+    def update(self, model_params):
+        pass
+
     def load_error_model(self, error_params):
         # load existing model if there, but use user-specified values if given
         new_model = None
@@ -314,6 +343,7 @@ class ScalingModelBase:
                 new_model = BasicErrorModel(a, b, error_params.basic)
         if not new_model:
             new_model = BasicErrorModel(basic_params=error_params.basic)
+        logger.info(f"Loaded error model: {new_model}")
         self.set_error_model(new_model)
 
     def set_error_model(self, error_model):
@@ -405,7 +435,7 @@ class DoseDecay(ScalingModelBase):
     phil_scope = phil.parse(dose_decay_model_phil_str)
 
     def __init__(self, parameters_dict, configdict, is_scaled=False):
-        """Create the phyiscal scaling model components."""
+        """Create the physical scaling model components."""
         super().__init__(configdict, is_scaled)
         if "scale" in configdict["corrections"]:
             scale_setup = parameters_dict["scale"]
@@ -600,13 +630,26 @@ class DoseDecay(ScalingModelBase):
 
         return cls(parameters_dict, configdict, is_scaled=True)
 
-    def plot_model_components(self):
+    def plot_model_components(self, reflection_table=None):
         d = OrderedDict()
         d.update(plot_dose_decay(self))
         if "absorption" in self.components:
             d.update(plot_absorption_parameters(self))
-            d.update(plot_absorption_surface(self))
+            d.update(plot_absorption_plots(self, reflection_table))
         return d
+
+
+def determine_auto_absorption_params(absorption):
+    if absorption == "high":
+        lmax = 6
+        surface_weight = 5e3
+    elif absorption == "medium":
+        lmax = 6
+        surface_weight = 5e4
+    else:  # low
+        lmax = 4
+        surface_weight = 5e5
+    return lmax, surface_weight
 
 
 class PhysicalScalingModel(ScalingModelBase):
@@ -617,7 +660,7 @@ class PhysicalScalingModel(ScalingModelBase):
     phil_scope = phil.parse(physical_model_phil_str)
 
     def __init__(self, parameters_dict, configdict, is_scaled=False):
-        """Create the phyiscal scaling model components."""
+        """Create the physical scaling model components."""
         super().__init__(configdict, is_scaled)
         if "scale" in configdict["corrections"]:
             scale_setup = parameters_dict["scale"]
@@ -734,7 +777,6 @@ class PhysicalScalingModel(ScalingModelBase):
         configdict = OrderedDict({"corrections": []})
         parameters_dict = {}
 
-        autos = [None, Auto, "auto", "Auto"]
         osc_range = experiment.scan.get_oscillation_range()
         one_osc_width = experiment.scan.get_oscillation()[1]
         configdict.update({"valid_osc_range": osc_range})
@@ -742,7 +784,9 @@ class PhysicalScalingModel(ScalingModelBase):
         abs_osc_range = abs(osc_range[1] - osc_range[0])
 
         if params.scale_interval in autos or params.decay_interval in autos:
-            if abs_osc_range < 10.0:
+            if abs_osc_range < 5.0:
+                scale_interval, decay_interval = (1.0, 1.5)
+            elif abs_osc_range < 10.0:
                 scale_interval, decay_interval = (2.0, 3.0)
             elif abs_osc_range < 25.0:
                 scale_interval, decay_interval = (4.0, 5.0)
@@ -780,7 +824,6 @@ class PhysicalScalingModel(ScalingModelBase):
                 "parameters": flex.double(n_decay_param, 0.0),
                 "parameter_esds": None,
             }
-
         if params.absorption_correction in autos:
             if abs_osc_range > 60.0:
                 absorption_correction = True
@@ -788,12 +831,27 @@ class PhysicalScalingModel(ScalingModelBase):
                 absorption_correction = False
         else:
             absorption_correction = params.absorption_correction
-        if absorption_correction:
+        if absorption_correction or params.absorption_level:
             configdict["corrections"].append("absorption")
-            lmax = params.lmax
+            if params.share.absorption:
+                configdict.update({"shared": ["absorption"]})
+            if params.absorption_level:
+                lmax, surface_weight = determine_auto_absorption_params(
+                    params.absorption_level
+                )
+                if (params.lmax not in autos) or (params.surface_weight not in autos):
+                    logger.info(
+                        """Using lmax, surface_weight parameters set by the absorption_level option,
+                        rather than user specified options"""
+                    )
+            else:
+                lmax, surface_weight = (params.lmax, params.surface_weight)
+                if lmax in autos:
+                    lmax = 4
+                if params.surface_weight in autos:
+                    surface_weight = 5e5
             n_abs_param = (2 * lmax) + (lmax ** 2)  # arithmetic sum formula (a1=3, d=2)
             configdict.update({"lmax": lmax})
-            surface_weight = params.surface_weight
             configdict.update({"abs_surface_weight": surface_weight})
             parameters_dict["absorption"] = {
                 "parameters": flex.double(n_abs_param, 0.0),
@@ -830,13 +888,54 @@ class PhysicalScalingModel(ScalingModelBase):
         }
         return cls(parameters_dict, configdict, is_scaled=True)
 
-    def plot_model_components(self):
+    def update(self, params):
+        """Update the model if new options chosen in the phil scope."""
+        if "absorption" in self.components:
+            new_lmax = None
+            if params.physical.absorption_level:
+                lmax, surface_weight = determine_auto_absorption_params(
+                    params.physical.absorption_level
+                )
+                self._configdict.update({"abs_surface_weight": surface_weight})
+                if lmax != self._configdict["lmax"]:
+                    new_lmax = lmax
+            else:  # check manually specified parameters.
+                if params.physical.surface_weight not in autos:
+                    self._configdict.update(
+                        {"abs_surface_weight": params.physical.surface_weight}
+                    )
+                if (params.physical.lmax not in autos) and (
+                    params.physical.lmax != self._configdict["lmax"]
+                ):
+                    new_lmax = params.physical.lmax
+            if new_lmax:
+                # need to change the parameters for this component
+                current_parameters = self.components["absorption"].parameters
+                n_abs_param = new_lmax * (2 + new_lmax)
+                self._configdict.update({"lmax": new_lmax})
+                new_parameters = flex.double(n_abs_param, 0.0)
+                # copy across matching parameters:
+                for i in range(0, min(n_abs_param, current_parameters.size())):
+                    new_parameters[i] = current_parameters[i]
+                self._components["absorption"] = SHScaleComponent(
+                    new_parameters, flex.double(n_abs_param, 0.0)
+                )
+            if params.physical.share.absorption:
+                self._configdict.update({"shared": ["absorption"]})
+
+    def plot_model_components(self, reflection_table=None):
         d = OrderedDict()
         d.update(plot_smooth_scales(self))
         if "absorption" in self.components:
             d.update(plot_absorption_parameters(self))
-            d.update(plot_absorption_surface(self))
+            d.update(plot_absorption_plots(self, reflection_table))
         return d
+
+    def get_shared_components(self):
+        if "shared" in self.configdict:
+            if "absorption" in self.configdict["shared"]:
+                return "absorption"
+        return None
 
 
 class ArrayScalingModel(ScalingModelBase):
@@ -1112,7 +1211,7 @@ class ArrayScalingModel(ScalingModelBase):
 
         return cls(parameters_dict, configdict, is_scaled=True)
 
-    def plot_model_components(self):
+    def plot_model_components(self, reflection_table=None):
         d = OrderedDict()
         if "absorption" in self.components:
             d.update(plot_array_absorption_plot(self))
@@ -1213,12 +1312,12 @@ def calculate_new_offset(
           existing parameters.
     """
     if n_old_param == 2:
-        return 0  # cant have less than two params
+        return 0  # can't have less than two params
     batch_difference = (new_image_0 - current_image_0) * new_norm_fac
     n_to_shift = int(batch_difference // 1)
     if batch_difference % 1 > 0.5:
         n_to_shift += 1
-    return min(n_old_param - n_new_param, n_to_shift)  # cant shift by more
+    return min(n_old_param - n_new_param, n_to_shift)  # can't shift by more
     # than difference between old and new
 
 
@@ -1297,18 +1396,16 @@ for entry_point_name, entry_point in _dxtbx_scaling_models.items():
     model_phil_scope.adopt_scope(ext_master_scope)
 
 
-def plot_scaling_models(model_dict):
+def plot_scaling_models(model, reflection_table=None):
     """Return a dict of component plots for the model for plotting with plotly."""
-    entry_point = _dxtbx_scaling_models.get(model_dict["__id__"])
-    if entry_point:
-        model = entry_point.load().from_dict(model_dict)
-        return model.plot_model_components()
-    return OrderedDict()
+    return model.plot_model_components(reflection_table=reflection_table)
 
 
 def make_combined_plots(data):
     """Make any plots that require evaluation of all models."""
-    if all(d["__id__"] == "dose_decay" for d in data.values()):
-        relative_Bs = [d["relative_B"]["parameters"][0] for d in data.values()]
+    if all(d.id_ == "dose_decay" for d in data.values()):
+        relative_Bs = [
+            d.to_dict()["relative_B"]["parameters"][0] for d in data.values()
+        ]
         return plot_relative_Bs(relative_Bs)
     return {}
