@@ -673,7 +673,7 @@ successful in phasing challenging datasets here at NIS:
 
 * Note that you have to have the space group correct for SHELXD to work.
 * When you are having difficulties, try solving this in P1 and figuring
-  out the proper space group once you have a solution with ADDSYM in
+  out the proper space group once you have a solution with ``ADDSYM`` in
   PLATON.
 * It can help to increase the ``NTRY``. Try 50000 for challenging cases.
 
