@@ -57,7 +57,7 @@ lattice_symmetry_max_delta = 5.0
 best_monoclinic_beta = True
   .type = bool
   .help = "If True, then for monoclinic centered cells, I2 will be preferred over C2 if"
-          "it gives a more oblique cell (i.e. smaller beta angle)."
+          "it gives a less oblique cell (i.e. smaller beta angle)."
 
 dimensions = Auto
   .type = int(value_min=2)

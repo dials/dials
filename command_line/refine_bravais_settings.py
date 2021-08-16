@@ -78,6 +78,7 @@ def bravais_lattice_to_space_groups(chiral_only=True):
             bravais_lattice = bravais_types.bravais_lattice(group=sg)
             bravais_lattice_to_sg.setdefault(str(bravais_lattice), [])
             bravais_lattice_to_sg[str(bravais_lattice)].append(sg)
+    bravais_lattice_to_sg["mI"] = [sgtbx.space_group_info("I2").group()]
     return bravais_lattice_to_sg
 
 

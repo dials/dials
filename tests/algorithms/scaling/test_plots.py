@@ -2,7 +2,11 @@
 Tests for the dials.algorithms.scaling.plots module
 """
 
-from dials.algorithms.scaling.model.model import ArrayScalingModel, plot_scaling_models
+from dials.algorithms.scaling.model.model import (
+    ArrayScalingModel,
+    PhysicalScalingModel,
+    plot_scaling_models,
+)
 from dials.algorithms.scaling.plots import (
     normal_probability_plot,
     plot_array_absorption_plot,
@@ -138,7 +142,7 @@ def test_plot_scaling_models():
             "est_standard_devs": [0.005, 0.005, 0.005, 0.005],
         },
     }
-    d = plot_scaling_models(physical_dict)
+    d = plot_scaling_models(PhysicalScalingModel.from_dict(physical_dict))
     assert "smooth_scale_model" in d
     assert "absorption_surface" in d
     assert "absorption_parameters" in d

@@ -1,0 +1,1 @@
+Update scaling, merging and export tests to use pathlib objects, tmpdir->tmp_path etc

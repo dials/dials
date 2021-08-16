@@ -1,0 +1,1 @@
+Don't fail ``bootstrap.py`` if a submodule is missing a reference

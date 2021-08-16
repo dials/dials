@@ -1,12 +1,11 @@
 import json
-import os
 
 import procrunner
 import pytest
 
 import iotbx.cif
 from cctbx import sgtbx, uctbx
-from dxtbx.model.experiment_list import ExperimentList, ExperimentListFactory
+from dxtbx.model.experiment_list import ExperimentListFactory
 from dxtbx.serialize import load
 from iotbx import mtz
 
@@ -15,55 +14,59 @@ from dials.command_line.slice_sequence import slice_experiments, slice_reflectio
 from dials.util.multi_dataset_handling import assign_unique_identifiers
 
 
-def run_export(export_format, dials_data, tmpdir):
+def run_export(export_format, dials_data, tmp_path):
     result = procrunner.run(
         [
             "dials.export",
             "format=" + export_format,
-            dials_data("centroid_test_data").join("experiments.json"),
-            dials_data("centroid_test_data").join("integrated.pickle"),
+            dials_data("centroid_test_data", pathlib=True) / "experiments.json",
+            dials_data("centroid_test_data", pathlib=True) / "integrated.pickle",
         ],
-        working_directory=tmpdir,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("integrated." + export_format).check(file=1)
+    assert (tmp_path / f"integrated.{export_format}").is_file()
 
 
-def test_nxs(dials_data, tmpdir):
-    run_export("nxs", dials_data, tmpdir)
+def test_nxs(dials_data, tmp_path):
+    run_export("nxs", dials_data, tmp_path)
 
 
-def test_mtz(dials_data, tmpdir):
+def test_mtz(dials_data, tmp_path):
     result = procrunner.run(
         [
             "dials.export",
             "format=mtz",
             "project_name=ham",
             "crystal_name=spam",
-            dials_data("centroid_test_data").join("experiments.json"),
-            dials_data("centroid_test_data").join("integrated.pickle"),
+            dials_data("centroid_test_data", pathlib=True) / "experiments.json",
+            dials_data("centroid_test_data", pathlib=True) / "integrated.pickle",
         ],
-        working_directory=tmpdir,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("integrated.mtz").check(file=1)
-    mtz_obj = mtz.object(tmpdir.join("integrated.mtz").strpath)
+    assert (tmp_path / "integrated.mtz").is_file()
+    mtz_obj = mtz.object(str(tmp_path / "integrated.mtz"))
     assert mtz_obj.crystals()[1].name() == "spam"
     assert mtz_obj.crystals()[1].project_name() == "ham"
 
 
-def test_mtz_recalculated_cell(dials_data, tmpdir):
+def test_mtz_recalculated_cell(dials_data, tmp_path):
     # First run dials.two_theta_refine to ensure that the crystals have
     # recalculated_unit_cell set
-    scaled_expt = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled.expt")
-    scaled_refl = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled.refl")
+    scaled_expt = (
+        dials_data("x4wide_processed", pathlib=True) / "AUTOMATIC_DEFAULT_scaled.expt"
+    )
+    scaled_refl = (
+        dials_data("x4wide_processed", pathlib=True) / "AUTOMATIC_DEFAULT_scaled.refl"
+    )
     result = procrunner.run(
         ["dials.two_theta_refine", scaled_expt, scaled_refl],
-        working_directory=tmpdir,
+        working_directory=tmp_path,
     )
-    assert tmpdir.join("refined_cell.expt").check(file=1)
+    assert (tmp_path / "refined_cell.expt").is_file()
     refined_expt = load.experiment_list(
-        tmpdir.join("refined_cell.expt").strpath, check_format=False
+        tmp_path / "refined_cell.expt", check_format=False
     )
     ttr_cell = refined_expt.crystals()[0].get_recalculated_unit_cell()
 
@@ -72,24 +75,28 @@ def test_mtz_recalculated_cell(dials_data, tmpdir):
         [
             "dials.export",
             "format=mtz",
-            tmpdir.join("refined_cell.expt"),
+            tmp_path / "refined_cell.expt",
             scaled_refl,
             f"d_min={d_min:f}",
         ],
-        working_directory=tmpdir,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("scaled.mtz").check(file=1)
+    assert (tmp_path / "scaled.mtz").is_file()
     # The resulting mtz should have the same unit cell set as the recalculated_unit_cell
     # from dials.two_theta_refine
-    for ma in mtz.object(tmpdir.join("scaled.mtz").strpath).as_miller_arrays():
+    for ma in mtz.object(str(tmp_path / "scaled.mtz")).as_miller_arrays():
         assert ttr_cell.parameters() == pytest.approx(ma.unit_cell().parameters())
         assert ma.d_min() >= d_min
 
 
-def test_mtz_best_unit_cell(dials_data, tmpdir):
-    scaled_expt = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled.expt")
-    scaled_refl = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled.refl")
+def test_mtz_best_unit_cell(dials_data, tmp_path):
+    scaled_expt = (
+        dials_data("x4wide_processed", pathlib=True) / "AUTOMATIC_DEFAULT_scaled.expt"
+    )
+    scaled_refl = (
+        dials_data("x4wide_processed", pathlib=True) / "AUTOMATIC_DEFAULT_scaled.refl"
+    )
     best_unit_cell = uctbx.unit_cell((42, 42, 39, 90, 90, 90))
     d_min = 1.5
     result = procrunner.run(
@@ -101,33 +108,33 @@ def test_mtz_best_unit_cell(dials_data, tmpdir):
             f"d_min={d_min:f}",
             "best_unit_cell=%g,%g,%g,%g,%g,%g" % best_unit_cell.parameters(),
         ],
-        working_directory=tmpdir,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("scaled.mtz").check(file=1)
+    assert (tmp_path / "scaled.mtz").is_file()
     # The resulting mtz should have the best_unit_cell as input to dials.export
-    for ma in mtz.object(tmpdir.join("scaled.mtz").strpath).as_miller_arrays():
+    for ma in mtz.object(str(tmp_path / "scaled.mtz")).as_miller_arrays():
         assert best_unit_cell.parameters() == pytest.approx(ma.unit_cell().parameters())
         assert ma.d_min() >= d_min
 
 
-def test_multi_sequence_integrated_mtz(dials_data, tmpdir):
+def test_multi_sequence_integrated_mtz(dials_data, tmp_path):
     """Test dials.export on multi-sequence integrated data."""
     # first combine two integrated files
     result = procrunner.run(
         [
             "dials.combine_experiments",
-            dials_data("multi_crystal_proteinase_k").join("experiments_1.json"),
-            dials_data("multi_crystal_proteinase_k").join("reflections_1.pickle"),
-            dials_data("multi_crystal_proteinase_k").join("experiments_2.json"),
-            dials_data("multi_crystal_proteinase_k").join("reflections_2.pickle"),
+            dials_data("multi_crystal_proteinase_k") / "experiments_1.json",
+            dials_data("multi_crystal_proteinase_k") / "reflections_1.pickle",
+            dials_data("multi_crystal_proteinase_k") / "experiments_2.json",
+            dials_data("multi_crystal_proteinase_k") / "reflections_2.pickle",
         ],
-        working_directory=tmpdir,
+        working_directory=tmp_path,
     )
 
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("combined.refl").check(file=1)
-    assert tmpdir.join("combined.expt").check(file=1)
+    assert (tmp_path / "combined.refl").is_file()
+    assert (tmp_path / "combined.expt").is_file()
 
     # now export
     result = procrunner.run(
@@ -135,28 +142,24 @@ def test_multi_sequence_integrated_mtz(dials_data, tmpdir):
             "dials.export",
             "format=mtz",
             "mtz.hklout=integrated.mtz",
-            tmpdir.join("combined.refl").strpath,
-            tmpdir.join("combined.expt").strpath,
+            tmp_path / "combined.refl",
+            tmp_path / "combined.expt",
         ],
-        working_directory=tmpdir,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("integrated.mtz").check(file=1)
+    assert (tmp_path / "integrated.mtz").is_file()
 
 
-def test_mtz_multi_wavelength(dials_data, run_in_tmpdir):
+def test_mtz_multi_wavelength(dials_data, tmp_path):
     """Test multi-wavelength mtz export"""
     # First make suitable input - multi datasets experiment list and reflection
     # table with different wavelengths
-    mcp = dials_data("multi_crystal_proteinase_k")
-    exp_1 = load.experiment_list(
-        mcp.join("experiments_1.json").strpath, check_format=False
-    )
-    exp_2 = load.experiment_list(
-        mcp.join("experiments_2.json").strpath, check_format=False
-    )
-    refl_1 = flex.reflection_table.from_file(mcp.join("reflections_1.pickle").strpath)
-    refl_2 = flex.reflection_table.from_file(mcp.join("reflections_2.pickle").strpath)
+    mcp = dials_data("multi_crystal_proteinase_k", pathlib=True)
+    exp_1 = load.experiment_list(mcp / "experiments_1.json", check_format=False)
+    exp_2 = load.experiment_list(mcp / "experiments_2.json", check_format=False)
+    refl_1 = flex.reflection_table.from_file(mcp / "reflections_1.pickle")
+    refl_2 = flex.reflection_table.from_file(mcp / "reflections_2.pickle")
 
     exp_1[0].beam.set_wavelength(0.5)
     exp_2[0].beam.set_wavelength(1.0)
@@ -167,26 +170,26 @@ def test_mtz_multi_wavelength(dials_data, run_in_tmpdir):
     joint_refl = flex.reflection_table()
     for r in refls:
         joint_refl.extend(r)
-    exps.as_json("tmp_exp.expt")
-    joint_refl.as_file("tmp_refl.refl")
+    exps.as_json(tmp_path / "tmp_exp.expt")
+    joint_refl.as_file(tmp_path / "tmp_refl.refl")
 
     # Now run
     result = procrunner.run(
         [
             "dials.export",
-            "experiments=tmp_exp.expt",
-            "reflections=tmp_refl.refl",
+            tmp_path / "tmp_exp.expt",
+            tmp_path / "tmp_refl.refl",
             "format=mtz",
             "mtz.hklout=unmerged.mtz",
         ],
         environment_override={"DIALS_EXPORT_DO_NOT_CHECK_FORMAT": "True"},
-        working_directory=run_in_tmpdir.strpath,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert os.path.exists("unmerged.mtz")
+    assert (tmp_path / "unmerged.mtz").is_file()
 
     # Inspect output
-    m = mtz.object("unmerged.mtz").crystals()
+    m = mtz.object(str(tmp_path / "unmerged.mtz")).crystals()
     n_batches = []
     wavelengths = []
     for crystal in m:
@@ -197,34 +200,34 @@ def test_mtz_multi_wavelength(dials_data, run_in_tmpdir):
     assert wavelengths == [0, 0.5, 1.0]  # base, dataset1, dataset2
 
 
-def test_mtz_primitive_cell(dials_data, tmpdir):
-    scaled_expt = dials_data("insulin_processed") / "scaled.expt"
-    scaled_refl = dials_data("insulin_processed") / "scaled.refl"
+def test_mtz_primitive_cell(dials_data, tmp_path):
+    scaled_expt = dials_data("insulin_processed", pathlib=True) / "scaled.expt"
+    scaled_refl = dials_data("insulin_processed", pathlib=True) / "scaled.refl"
 
     # First reindex to the primitive setting
-    expts = ExperimentList.from_file(scaled_expt.strpath, check_format=False)
+    expts = load.experiment_list(scaled_expt, check_format=False)
     cs = expts[0].crystal.get_crystal_symmetry()
     cb_op = cs.change_of_basis_op_to_primitive_setting()
     procrunner.run(
         [
             "dials.reindex",
-            scaled_expt.strpath,
-            scaled_refl.strpath,
+            scaled_expt,
+            scaled_refl,
             f'change_of_basis_op="{cb_op}"',
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmp_path,
     )
 
     # Now export the reindexed experiments/reflections
     procrunner.run(
-        ["dials.export", "reindexed.expt", "reindexed.refl"],
-        working_directory=tmpdir.strpath,
+        ["dials.export", tmp_path / "reindexed.expt", tmp_path / "reindexed.refl"],
+        working_directory=tmp_path,
     )
 
-    mtz_obj = mtz.object(os.path.join(tmpdir.strpath, "scaled.mtz"))
+    mtz_obj = mtz.object(str(tmp_path / "scaled.mtz"))
     cs_primitive = cs.change_basis(cb_op)
     assert mtz_obj.space_group() == cs_primitive.space_group()
-    refl = flex.reflection_table.from_file(scaled_refl.strpath)
+    refl = flex.reflection_table.from_file(scaled_refl)
     refl = refl.select(~refl.get_flags(refl.flags.bad_for_scaling, all=False))
     for ma in mtz_obj.as_miller_arrays():
         assert ma.crystal_symmetry().is_similar_symmetry(cs_primitive)
@@ -235,14 +238,14 @@ def test_mtz_primitive_cell(dials_data, tmpdir):
 
 @pytest.mark.parametrize("compress", [None, "gz", "bz2", "xz"])
 @pytest.mark.parametrize("hklout", [None, "my.cif"])
-def test_mmcif(compress, hklout, dials_data, tmpdir):
+def test_mmcif(compress, hklout, dials_data, tmp_path):
     # Call dials.export after integration
 
     command = [
         "dials.export",
         "format=mmcif",
-        dials_data("centroid_test_data").join("experiments.json").strpath,
-        dials_data("centroid_test_data").join("integrated.pickle").strpath,
+        dials_data("centroid_test_data", pathlib=True) / "experiments.json",
+        dials_data("centroid_test_data", pathlib=True) / "integrated.pickle",
     ]
     if hklout is not None:
         command.append(f"mmcif.hklout={hklout}")
@@ -253,82 +256,86 @@ def test_mmcif(compress, hklout, dials_data, tmpdir):
         hklin = hklout + "." + compress
     else:
         hklin = hklout
-    result = procrunner.run(command, working_directory=tmpdir.strpath)
+    result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
-    assert tmpdir.join(hklin).check(file=1)
+    assert (tmp_path / hklin).is_file()
 
 
 @pytest.mark.parametrize("pdb_version", ["v5", "v5_next"])
-def test_mmcif_on_scaled_data(dials_data, tmpdir, pdb_version):
+def test_mmcif_on_scaled_data(dials_data, tmp_path, pdb_version):
     """Call dials.export format=mmcif after scaling"""
-    scaled_expt = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled.expt")
-    scaled_refl = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled.refl")
+    scaled_expt = (
+        dials_data("x4wide_processed", pathlib=True) / "AUTOMATIC_DEFAULT_scaled.expt"
+    )
+    scaled_refl = (
+        dials_data("x4wide_processed", pathlib=True) / "AUTOMATIC_DEFAULT_scaled.refl"
+    )
     command = [
         "dials.export",
         "format=mmcif",
-        scaled_expt.strpath,
-        scaled_refl.strpath,
+        scaled_expt,
+        scaled_refl,
         "mmcif.hklout=scaled.mmcif",
         "compress=None",
         f"pdb_version={pdb_version}",
     ]
-    result = procrunner.run(command, working_directory=tmpdir.strpath)
+    result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("scaled.mmcif").check(file=1)
+    assert (tmp_path / "scaled.mmcif").is_file()
 
-    model = iotbx.cif.reader(file_path=tmpdir.join("scaled.mmcif").strpath).model()
+    model = iotbx.cif.reader(file_path=str(tmp_path / "scaled.mmcif")).model()
     if pdb_version == "v5":
         assert "_pdbx_diffrn_data_section.id" not in model["dials"].keys()
     elif pdb_version == "v5_next":
         assert "_pdbx_diffrn_data_section.id" in model["dials"].keys()
 
 
-def test_mmcif_p1_narrow_wedge(dials_data, tmpdir):
+def test_mmcif_p1_narrow_wedge(dials_data, tmp_path):
     """Call dials.export format=mmcif after scaling"""
-    data_dir = dials_data("x4wide_processed")
+    data_dir = dials_data("x4wide_processed", pathlib=True)
 
     refl = flex.reflection_table.from_file(data_dir / "AUTOMATIC_DEFAULT_scaled.refl")
     refl = slice_reflections(refl, [(1, 3)])
-    refl.as_file(tmpdir / "p1_narrow.refl")
+    refl.as_file(tmp_path / "p1_narrow.refl")
 
-    expts = ExperimentListFactory.from_serialized_format(
+    expts = load.experiment_list(
         data_dir / "AUTOMATIC_DEFAULT_scaled.expt", check_format=False
     )
     expts = slice_experiments(expts, [(1, 3)])
     expts[0].crystal.set_space_group(sgtbx.space_group())
-    expts.as_file(tmpdir / "p1_narrow.expt")
+    expts.as_file(tmp_path / "p1_narrow.expt")
 
     command = [
         "dials.export",
         "format=mmcif",
-        tmpdir / "p1_narrow.expt",
-        tmpdir / "p1_narrow.refl",
+        tmp_path / "p1_narrow.expt",
+        tmp_path / "p1_narrow.refl",
         "mmcif.hklout=scaled.mmcif",
         "compress=None",
     ]
-    result = procrunner.run(command, working_directory=tmpdir.strpath)
+    result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("scaled.mmcif").check(file=1)
+    assert (tmp_path / "scaled.mmcif").is_file()
 
-    model = iotbx.cif.reader(file_path=tmpdir.join("scaled.mmcif").strpath).model()
+    model = iotbx.cif.reader(file_path=str(tmp_path / "scaled.mmcif")).model()
     assert model["dials"]["_reflns.pdbx_redundancy"] == "1.0"
     assert model["dials"]["_reflns.pdbx_CC_half"] == "0.0"
 
 
-def test_xds_ascii(dials_data, tmpdir):
+def test_xds_ascii(dials_data, tmp_path):
     # Call dials.export
     result = procrunner.run(
         [
             "dials.export",
             "intensity=sum",
             "format=xds_ascii",
-            dials_data("centroid_test_data").join("experiments.json").strpath,
-            dials_data("centroid_test_data").join("integrated.pickle").strpath,
+            dials_data("centroid_test_data", pathlib=True) / "experiments.json",
+            dials_data("centroid_test_data", pathlib=True) / "integrated.pickle",
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("DIALS.HKL").check(file=1)
+    assert (tmp_path / "DIALS.HKL").is_file()
 
     psi_values = {
         (-9, 7, -10): 153.430361,
@@ -337,7 +344,7 @@ def test_xds_ascii(dials_data, tmpdir):
         (2, 10, 20): 147.947274,
     }
 
-    with tmpdir.join("DIALS.HKL").open() as fh:
+    with (tmp_path / "DIALS.HKL").open() as fh:
         for record in fh:
             if record.startswith("!"):
                 continue
@@ -349,7 +356,7 @@ def test_xds_ascii(dials_data, tmpdir):
             assert psi == pytest.approx(psi_values[hkl], abs=0.1)
 
 
-def test_sadabs(dials_data, tmpdir):
+def test_sadabs(dials_data, tmp_path):
     # Call dials.export
     result = procrunner.run(
         [
@@ -357,13 +364,13 @@ def test_sadabs(dials_data, tmpdir):
             "intensity=sum",
             "mtz.partiality_threshold=0.99",
             "format=sadabs",
-            dials_data("centroid_test_data").join("experiments.json").strpath,
-            dials_data("centroid_test_data").join("integrated.pickle").strpath,
+            dials_data("centroid_test_data", pathlib=True) / "experiments.json",
+            dials_data("centroid_test_data", pathlib=True) / "integrated.pickle",
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("integrated.sad").check(file=1)
+    assert (tmp_path / "integrated.sad").is_file()
 
     direction_cosines = {
         (-9, 7, -10): (0.51253, -0.72107, 0.84696, -0.68476, -0.14130, -0.10561),
@@ -372,7 +379,7 @@ def test_sadabs(dials_data, tmpdir):
         (2, 10, 20): (0.51239, -0.46605, 0.84693, -0.61521, -0.14204, 0.63586),
     }
 
-    with tmpdir.join("integrated.sad").open() as fh:
+    with (tmp_path / "integrated.sad").open() as fh:
         for record in fh:
             record = record.replace("-", " -")
             tokens = record.split()
@@ -383,22 +390,21 @@ def test_sadabs(dials_data, tmpdir):
             assert cosines == pytest.approx(direction_cosines[hkl], abs=0.001)
 
 
-def test_json(dials_data, tmpdir):
+def test_json(dials_data, tmp_path):
     # Call dials.export
     result = procrunner.run(
         [
             "dials.export",
             "format=json",
-            dials_data("centroid_test_data").join("datablock.json").strpath,
-            dials_data("centroid_test_data").join("strong.pickle").strpath,
+            dials_data("centroid_test_data", pathlib=True) / "datablock.json",
+            dials_data("centroid_test_data", pathlib=True) / "strong.pickle",
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("rlp.json").check(file=1)
+    assert (tmp_path / "rlp.json").is_file()
 
-    with tmpdir.join("rlp.json").open("rb") as f:
-        d = json.load(f)
+    d = json.load((tmp_path / "rlp.json").open("rb"))
     assert set(d) == {"imageset_id", "experiments", "rlp", "experiment_id"}
     assert d["rlp"][:3] == [0.123454, 0.57687, 0.186465], d["rlp"][:3]
     assert d["imageset_id"][0] == 0
@@ -408,25 +414,24 @@ def test_json(dials_data, tmpdir):
     assert len(imgset) == 1
 
 
-def test_json_shortened(dials_data, tmpdir):
+def test_json_shortened(dials_data, tmp_path):
     # Call dials.export
     result = procrunner.run(
         [
             "dials.export",
             "format=json",
-            dials_data("centroid_test_data").join("experiments.json").strpath,
-            dials_data("centroid_test_data").join("integrated.pickle").strpath,
+            dials_data("centroid_test_data", pathlib=True) / "experiments.json",
+            dials_data("centroid_test_data", pathlib=True) / "integrated.pickle",
             "json.filename=integrated.json",
             "n_digits=4",
             "compact=False",
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("integrated.json").check(file=1)
+    assert (tmp_path / "integrated.json").is_file()
 
-    with tmpdir.join("integrated.json").open("rb") as f:
-        d = json.load(f)
+    d = json.load((tmp_path / "integrated.json").open("rb"))
     assert "imageset_id" in d
     assert "rlp" in d
     assert "experiment_id" in d
@@ -436,8 +441,8 @@ def test_json_shortened(dials_data, tmpdir):
 
 
 def test_export_sum_or_profile_only(dials_data, tmp_path):
-    expt = dials_data("insulin_processed") / "integrated.expt"
-    refl = dials_data("insulin_processed") / "integrated.refl"
+    expt = dials_data("insulin_processed", pathlib=True) / "integrated.expt"
+    refl = dials_data("insulin_processed", pathlib=True) / "integrated.refl"
 
     for remove in "prf", "sum":
         removed = tmp_path / f"removed_{remove}.refl"

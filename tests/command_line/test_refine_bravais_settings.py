@@ -196,9 +196,11 @@ def test_setting_c2_vs_i2(
             ]
         )
     expts_orig = load.experiment_list(experiments_path.strpath, check_format=False)
-
     expts = load.experiment_list(
         tmpdir.join("bravais_setting_2.expt").strpath, check_format=False
+    )
+    expected_bravais_lattice = str(
+        sgtbx.bravais_types.bravais_lattice(symbol=expected_space_group)
     )
     expts[0].crystal.get_space_group().type().lookup_symbol() == expected_space_group
     assert expts[0].crystal.get_unit_cell().parameters() == pytest.approx(
@@ -206,6 +208,7 @@ def test_setting_c2_vs_i2(
     )
     with tmpdir.join("bravais_summary.json").open("rb") as fh:
         bravais_summary = json.load(fh)
+    assert bravais_summary["2"]["bravais"] == expected_bravais_lattice
     # Verify that the cb_op converts from the input setting to the refined setting
     cb_op = sgtbx.change_of_basis_op(str(bravais_summary["2"]["cb_op"]))
     assert (
@@ -220,3 +223,8 @@ def test_setting_c2_vs_i2(
     )
     captured = capsys.readouterr()
     assert bravais_summary["2"]["cb_op"] in captured.out
+    assert f"| {expected_bravais_lattice}        |" in captured.out
+    expected_short_name = refine_bravais_settings.short_space_group_name(
+        sgtbx.space_group_info(expected_space_group).group()
+    )
+    assert f"{expected_bravais_lattice}: {expected_short_name}" in captured.out
