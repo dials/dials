@@ -71,12 +71,11 @@ output {
 
 
 def bravais_lattice_to_space_groups(chiral_only=True):
-    bravais_lattice_to_sg = collections.OrderedDict()
+    bravais_lattice_to_sg = collections.defaultdict(list)
     for sgn in range(230):
         sg = sgtbx.space_group_info(number=sgn + 1).group()
         if (not chiral_only) or (sg.is_chiral()):
             bravais_lattice = bravais_types.bravais_lattice(group=sg)
-            bravais_lattice_to_sg.setdefault(str(bravais_lattice), [])
             bravais_lattice_to_sg[str(bravais_lattice)].append(sg)
     bravais_lattice_to_sg["mI"] = [sgtbx.space_group_info("I2").group()]
     return bravais_lattice_to_sg

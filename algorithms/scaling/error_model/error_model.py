@@ -3,7 +3,6 @@ Error model classes for scaling.
 """
 
 import logging
-from collections import OrderedDict
 from math import exp, log
 
 from iotbx import phil
@@ -98,7 +97,7 @@ class ErrorModelRegressionAPM:
 
     def __init__(self, model, active_parameters):
         self.model = model
-        self.components = OrderedDict()
+        self.components = {}
         self.active_parameters = active_parameters  # e.g. ["a", "b"]
         self.x = flex.double([])
         n_cumul_params = 0

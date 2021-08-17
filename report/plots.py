@@ -4,7 +4,6 @@ for reports of several programs.
 """
 
 import logging
-from collections import OrderedDict
 from io import StringIO
 
 import numpy as np
@@ -236,14 +235,12 @@ class IntensityStatisticsPlots:
                 self._xanalysis = None
 
     def generate_resolution_dependent_plots(self):
-        d = OrderedDict()
-        d.update(self.second_moments_plot())
+        d = self.second_moments_plot()
         d.update(self.wilson_plot())
         return d
 
     def generate_miscellanous_plots(self):
-        d = OrderedDict()
-        d.update(self.cumulative_intensity_distribution_plot())
+        d = self.cumulative_intensity_distribution_plot()
         d.update(self.l_test_plot())
         d.update(self.multiplicity_histogram())
         return d
@@ -547,8 +544,7 @@ class ResolutionPlotsAndStats:
 
     def make_all_plots(self, cc_one_half_method=None):
         """Make a dictionary containing all available resolution-dependent plots."""
-        d = OrderedDict()
-        d.update(self.cc_one_half_plot(method=cc_one_half_method))
+        d = self.cc_one_half_plot(method=cc_one_half_method)
         d.update(self.i_over_sig_i_plot())
         d.update(self.completeness_plot())
         d.update(self.multiplicity_vs_resolution_plot())
@@ -871,7 +867,7 @@ class AnomalousPlotter:
             ).array()
 
     def make_plots(self):
-        d = OrderedDict()
+        d = {}
         if self.strong_cutoff > 0.0:
             d.update(self.del_anom_normal_plot(self.strong_merged, self.strong_cutoff))
             d.update(
