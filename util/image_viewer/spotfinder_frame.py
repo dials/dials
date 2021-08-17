@@ -103,7 +103,7 @@ class SpotFrame(XrayFrame):
                 if not detector:
                     self.params.projection = None
                     continue
-                if detector.has_projection_2d:
+                if detector.has_projection_2d():
                     self.params.projection = None
                     continue
                 else:
