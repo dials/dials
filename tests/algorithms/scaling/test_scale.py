@@ -2,8 +2,9 @@
 Test the command line script dials.scale, for successful completion.
 """
 
-
 import json
+import platform
+import sys
 
 import procrunner
 import pytest
@@ -519,6 +520,10 @@ def test_scale_normal_equations_failure(dials_data, tmp_path):
     assert (tmp_path / "scaled.expt").is_file()
 
 
+@pytest.mark.xfail(
+    sys.platform == "darwin" and platform.machine() == "arm64",
+    reason="CC1/2 somewhat differs for unknown reasons",
+)
 def test_scale_and_filter_image_group_mode(dials_data, tmp_path):
     """Test the scale and filter command line program."""
     location = dials_data("multi_crystal_proteinase_k", pathlib=True)
