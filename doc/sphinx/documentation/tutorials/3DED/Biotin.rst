@@ -8,7 +8,7 @@ Author: Jessica Bruhn, `NanoImaging Services <https://www.nanoimagingservices.co
 
 .. warning::
 
-  This tutorial was prepared using DIALS version 3.5.4 for Mac, downloaded
+  This tutorial was prepared using DIALS version 3.5.4, downloaded
   from :doc:`this site <../../../installation>`. Results may differ with other
   versions of the software.
 
@@ -24,8 +24,8 @@ General Notes
   `BIOTIN16 <https://dx.doi.org/10.5517/ccdc.csd.cc27ydsd>`_
 * Biotin: |C10H16N2O3S|, |P212121|, (5.1 Å, 10.4 Å, 20.8 Å, 90°, 90°, 90°)
 
-.. |biotin| image:: https://zenodo.org/badge/DOI/10.3389/fmolb.2021.648603.svg
-                  :target: https://zenodo.org/record/4737864#.YRYpH3VKhhE
+.. |biotin| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.4737864.svg
+            :target: https://doi.org/10.5281/zenodo.4737864
 
 .. [1] .. pubmed:: 33030237 Leginon
 
@@ -44,12 +44,12 @@ Note about pedestal and offset
   likely still contain valuable information and therefore should not be
   entirely excluded from the data.
 * SMV format, a common format for X-ray crystallography diffraction images,
-  does not allow for “unsigned data” (negative values). Because
+  does not allow for signed data (i.e. negative values). Because
   of this, Leginon adds an offset value to all pixels when converting to
   SMV format to make all values positive. Leginon also excludes negative
   values beyond a reasonable threshold.
-* Some data processing programs, such as DIALS, allow for unsigned
-  data. Therefore, it can be beneficial to add back in a reasonable
+* Some data processing programs, such as DIALS, allow for signed
+  data. Therefore, it can be beneficial to subtract a reasonable
   pedestal value, essentially resetting the zero point.
 * For data collected with Leginon, both the offset value applied
   (LEGINON_OFFSET), and a suggested pedestal value (IMAGE_PEDESTAL) are
@@ -223,9 +223,8 @@ In the log file (``dials.index.log``), note the final ``RMSD_X`` and
     |   Exp |   Nref |   RMSD_X |   RMSD_Y |     RMSD_Z |
     |    id |        |     (px) |     (px) |   (images) |
     |-------+--------+----------+----------+------------|
-    |     0 |    986 |   1.2036 |   1.8388 |    0.34601 |
+    |     0 |    988 |    1.205 |   1.8365 |    0.34229 |
     +-------+--------+----------+----------+------------+
-
 
 Also note the % of spots indexed. 79% is quite good for electron
 diffraction, but lower values (~30%) are still okay.
@@ -243,7 +242,7 @@ Find the Bravais lattice (optional)
 
 .. code-block:: bash
 
-    dials.refine_bravais_settings indexed.refl indexed.expt detector.fix_list=distance
+    dials.refine_bravais_settings indexed.refl indexed.expt detector.fix=distance
 
 * Potential lattices are listed.
 * Note the ``Metric fit`` and ``rmsd`` values, as well as the
@@ -258,11 +257,11 @@ Find the Bravais lattice (optional)
     +------------+--------------+--------+--------------+----------+-----------+------------------------------------------+----------+----------+
     |   Solution |   Metric fit |   rmsd | min/max cc   |   #spots | lattice   | unit_cell                                |   volume | cb_op    |
     |------------+--------------+--------+--------------+----------+-----------+------------------------------------------+----------+----------|
-    |   *      5 |       0.4805 |  0.061 | 0.756/0.867  |     1013 | oP        | 5.53  11.00  22.27  90.00  90.00  90.00  |     1354 | a,b,c    |
-    |   *      4 |       0.4805 |  0.061 | 0.793/0.793  |     1012 | mP        | 5.42  10.79  21.81  90.00  90.13  90.00  |     1277 | a,b,c    |
-    |   *      3 |       0.4776 |  0.059 | 0.756/0.756  |     1002 | mP        | 5.79  23.31  11.50  90.00  90.25  90.00  |     1552 | -a,-c,-b |
-    |   *      2 |       0.4495 |  0.059 | 0.867/0.867  |     1003 | mP        | 12.96   6.54  26.30  90.00  89.45  90.00 |     2230 | -b,-a,-c |
-    |   *      1 |       0      |  0.062 | -/-          |      986 | aP        | 5.19  10.36  20.82  90.36  90.31  90.32  |     1120 | a,b,c    |
+    |   *      5 |       0.4889 |  0.08  | 0.763/0.873  |      990 | oP        | 5.16  10.37  20.80  90.00  90.00  90.00  |     1112 | a,b,c    |
+    |   *      4 |       0.4856 |  0.079 | 0.798/0.798  |      979 | mP        | 5.17  10.36  20.81  90.00  90.26  90.00  |     1114 | a,b,c    |
+    |   *      3 |       0.4889 |  0.074 | 0.763/0.763  |      996 | mP        | 5.17  20.80  10.37  90.00  90.38  90.00  |     1115 | -a,-c,-b |
+    |   *      2 |       0.4718 |  0.068 | 0.873/0.873  |     1009 | mP        | 10.37   5.17  20.80  90.00  90.41  90.00 |     1115 | -b,-a,-c |
+    |   *      1 |       0      |  0.062 | -/-          |      989 | aP        | 5.20  10.36  20.82  90.35  90.33  90.33  |     1121 | a,b,c    |
     +------------+--------------+--------+--------------+----------+-----------+------------------------------------------+----------+----------+
     * = recommended solution
 
@@ -275,12 +274,21 @@ Find the Bravais lattice (optional)
   Solution #5 (primitive orthorhombic), but let’s just process in P1 to
   start with
 
-Refine the cell
-===============
+Refine the geometry
+===================
 
 .. code-block:: bash
 
-    dials.refine indexed.refl indexed.expt scan_varying=True\
+    dials.refine indexed.refl indexed.expt scan_varying=False detector.fix=distance
+
+* We start with a round of scan-static refinement. Although refinement is
+  done during indexing, it is good practice to run a separate round to
+  optimise the outlier rejection.
+* After that, we follow with scan-varying refinement
+
+.. code-block:: bash
+
+    dials.refine refined.refl refined.expt scan_varying=True\
       detector.fix=all parameterisation.block_width=0.25\
       beam.fix="all in_spindle_plane out_spindle_plane *wavelength"\
       beam.force_static=False beam.smoother.absolute_num_intervals=1
@@ -299,7 +307,7 @@ Now ``RMSD_X`` and ``RMSD_Y`` have decreased significantly:
     |   Exp |   Nref |   RMSD_X |   RMSD_Y |     RMSD_Z |
     |    id |        |     (px) |     (px) |   (images) |
     |-------+--------+----------+----------+------------|
-    |     0 |    903 |  0.79972 |   1.1824 |    0.23681 |
+    |     0 |    890 |  0.79025 |   1.1428 |    0.24032 |
     +-------+--------+----------+----------+------------+
 
 This looks like a good model for the experiment, so we will continue
@@ -337,7 +345,9 @@ Find the file ``dials.scale.html`` and open it in a web browser.
   have been combined.
 * Scroll down the page a little and click |analysis_by_image_number|. This brings up two
   graphs. Let’s focus on the "Scale and R\ :sub:`merge` vs batch" plot:
-  |scale_plot_801406_1|
+
+.. image:: https://dials.github.io/images/Biotin_NIS/scale_plot_801406_1.png
+
 * This plots the scale factor and R\ :sub:`merge` on a per frame (N)
   basis. Let’s focus on the orange R\ :sub:`merge`  line (right axis).
 * Note that there is an uptick in R\ :sub:`merge` at the beginning and
@@ -350,7 +360,6 @@ Find the file ``dials.scale.html`` and open it in a web browser.
 
 .. |analysis_by_image_number| image:: https://dials.github.io/images/Biotin_NIS/analysis_by_image_number.png
 
-.. |scale_plot_801406_1| image:: https://dials.github.io/images/Biotin_NIS/scale_plot_801406_1.png
 
 
 Other datasets
@@ -382,10 +391,10 @@ directories
 
     mkdir cosym
     cd cosym
-    dials.cosym ../801406_1/integrated.{expt,refl}\
-      ../801574_1/integrated.{expt,refl}\
-      ../802003_1/integrated.{expt,refl}\
-      ../810542_1/integrated.{expt,refl}
+    dials.cosym ../801406_1/DIALS/integrated.{expt,refl}\
+      ../801574_1/DIALS/integrated.{expt,refl}\
+      ../802003_1/DIALS/integrated.{expt,refl}\
+      ../810542_1/DIALS/integrated.{expt,refl}
 
 Towards the end of the log we see:
 
@@ -395,17 +404,17 @@ Towards the end of the log we see:
     +-------------------+----+--------------+----------+--------+--------+---------+--------------------+
     | Patterson group   |    |   Likelihood |   NetZcc |   Zcc+ |   Zcc- |   delta | Reindex operator   |
     |-------------------+----+--------------+----------+--------+--------+---------+--------------------|
-    | P 1 2/m 1         | *  |        0.55  |     2.45 |   9.49 |   7.03 |     0.2 | -a,-c,-b           |
-    | P m m m           |    |        0.321 |     7.93 |   7.93 |   0    |     0.3 | -a,-b,c            |
-    | P -1              |    |        0.051 |    -7.93 |   0    |   7.93 |     0   | -a,-b,c            |
-    | P 1 2/m 1         |    |        0.039 |    -1.31 |   7.04 |   8.35 |     0.2 | -a,-b,c            |
-    | P 1 2/m 1         |    |        0.039 |    -1.33 |   7.02 |   8.35 |     0.3 | -b,-a,-c           |
+    | P 1 2/m 1         | ** |        0.715 |     3.19 |   9.43 |   6.24 |     0.3 | -a,-c,-b           |
+    | P m m m           |    |        0.149 |     7.46 |   7.46 |   0    |     0.3 | -a,-b,c            |
+    | P -1              |    |        0.071 |    -7.46 |   0    |   7.46 |     0   | -a,-b,c            |
+    | P 1 2/m 1         |    |        0.033 |    -1.75 |   6.25 |   7.99 |     0.3 | -b,-a,-c           |
+    | P 1 2/m 1         |    |        0.032 |    -1.77 |   6.23 |   8    |     0.2 | -a,-b,c            |
     +-------------------+----+--------------+----------+--------+--------+---------+--------------------+
     Best solution: P 1 2/m 1
-    Unit cell: (5.18887, 20.8461, 10.2932, 90, 90.1936, 90)
+    Unit cell: (5.19032, 20.8498, 10.2916, 90, 90.2178, 90)
     Reindex operator: -a,-c,-b
-    Laue group probability: 0.550
-    Laue group confidence: 0.355
+    Laue group probability: 0.715
+    Laue group confidence: 0.636
     Reindexing operators:
     x,y,z: [0, 1, 2, 3]
 
@@ -460,14 +469,14 @@ Process as before and re-run ``dials.cosym`` with the trimmed data:
     +-------------------+-----+--------------+----------+--------+--------+---------+--------------------+
     | Patterson group   |     |   Likelihood |   NetZcc |   Zcc+ |   Zcc- |   delta | Reindex operator   |
     |-------------------+-----+--------------+----------+--------+--------+---------+--------------------|
-    | P m m m           | *** |        0.973 |     9.49 |   9.49 |   0    |     0.5 | a,b,c              |
-    | P 1 2/m 1         |     |        0.012 |     0.38 |   9.75 |   9.36 |     0.5 | -a,-c,-b           |
-    | P 1 2/m 1         |     |        0.007 |    -0.18 |   9.38 |   9.55 |     0.3 | -b,-a,-c           |
-    | P 1 2/m 1         |     |        0.007 |    -0.21 |   9.35 |   9.56 |     0.5 | a,b,c              |
-    | P -1              |     |        0.001 |    -9.49 |   0    |   9.49 |     0   | a,b,c              |
+    | P m m m           | *** |        0.975 |     9.51 |   9.51 |   0    |     0.5 | a,b,c              |
+    | P 1 2/m 1         |     |        0.011 |     0.36 |   9.75 |   9.39 |     0.5 | -a,-c,-b           |
+    | P 1 2/m 1         |     |        0.007 |    -0.17 |   9.4  |   9.56 |     0.3 | -b,-a,-c           |
+    | P 1 2/m 1         |     |        0.007 |    -0.19 |   9.38 |   9.57 |     0.5 | a,b,c              |
+    | P -1              |     |        0.001 |    -9.51 |   0    |   9.51 |     0   | a,b,c              |
     +-------------------+-----+--------------+----------+--------+--------+---------+--------------------+
     Best solution: P m m m
-    Unit cell: (5.19177, 10.294, 20.8491, 90, 90, 90)
+    Unit cell: (5.19159, 10.2937, 20.8531, 90, 90, 90)
 
 Now the ``P m m m`` Patterson group is the most likely, as expected.
 
@@ -498,27 +507,27 @@ Starting from the output of ``dials.cosym``:
                 ----------Merging statistics by resolution bin----------
 
      d_max  d_min   #obs  #uniq   mult.  %comp       <I>  <I/sI>    r_mrg   r_meas    r_pim   r_anom   cc1/2   cc_ano
-     20.86   2.17    945     92   10.27  97.87      20.7    28.0    0.113    0.119    0.035    0.082   0.993*  -0.045
-      2.17   1.72    947     69   13.72  98.57       9.7    14.2    0.168    0.175    0.046    0.079   0.988*  -0.202
-      1.72   1.51    941     79   11.91 100.00       8.9    10.1    0.178    0.186    0.051    0.130   0.977*   0.004
-      1.51   1.37   1027     71   14.46 100.00       4.4     5.6    0.270    0.280    0.072    0.194   0.960*  -0.257
-      1.37   1.27    869     63   13.79  96.92       3.5     4.1    0.327    0.340    0.088    0.292   0.908*  -0.100
-      1.27   1.20    973     76   12.80 100.00       3.1     3.3    0.349    0.366    0.102    0.248   0.828*  -0.521
-      1.20   1.14    925     65   14.23 100.00       2.5     2.8    0.363    0.377    0.098    0.263   0.861*  -0.286
-      1.14   1.09    996     68   14.65 100.00       1.8     1.9    0.450    0.468    0.122    0.352   0.653*   0.170
-      1.09   1.04    923     58   15.91 100.00       1.7     1.9    0.450    0.465    0.114    0.312   0.880*  -0.117
-      1.04   1.01   1046     77   13.58  96.25       1.0     1.0    0.621    0.645    0.164    0.380   0.826*  -0.332
-      1.01   0.98    864     62   13.94 100.00       0.8     0.7    0.621    0.645    0.164    0.413   0.778*  -0.322
-      0.98   0.95    933     68   13.72 100.00       0.5     0.5    1.007    1.045    0.270    0.496   0.600*  -0.174
-      0.95   0.92    881     70   12.59 100.00       0.4     0.5    1.175    1.222    0.324    0.620   0.417*   0.318
-      0.92   0.90    753     62   12.15 100.00       0.3     0.3    1.207    1.261    0.353    0.763   0.278  -0.354
-      0.90   0.88    629     60   10.48 100.00       0.2     0.2    1.869    1.962    0.573    1.211   0.529*   0.024
-      0.88   0.86    576     58    9.93  96.67       0.2     0.2    3.678    3.886    1.195    1.457   0.174   0.863*
-      0.86   0.84    513     76    6.75 100.00       0.1     0.1    2.149    2.331    0.815    1.436   0.183   0.001
-      0.84   0.83    425     65    6.54  98.48       0.2     0.1    1.931    2.088    0.730    1.172   0.471*  -0.097
-      0.83   0.81    423     63    6.71  95.45       0.2     0.1    2.437    2.679    0.998    1.816   0.048   0.056
-      0.81   0.80    278     59    4.71  88.06       0.1     0.1    2.368    2.677    1.133    1.317   0.160  -0.178
-     20.85   0.80  15867   1361   11.66  98.27       3.5     4.4    0.260    0.272    0.075    0.207   0.987*  -0.069
+     20.86   2.17    941     92   10.23  97.87      19.6    29.0    0.104    0.109    0.032    0.085   0.994*   0.001
+      2.17   1.72    943     69   13.67  98.57       8.8    22.8    0.158    0.164    0.044    0.074   0.989*  -0.263
+      1.72   1.51    935     79   11.84 100.00       8.3    17.9    0.161    0.169    0.046    0.114   0.983*  -0.011
+      1.51   1.37   1013     71   14.27 100.00       4.2    11.7    0.256    0.265    0.067    0.160   0.966*  -0.523
+      1.37   1.27    865     63   13.73  96.92       3.5     9.4    0.277    0.288    0.076    0.225   0.942*   0.051
+      1.27   1.20    970     76   12.76 100.00       3.2     8.3    0.307    0.322    0.091    0.213   0.816*  -0.612
+      1.20   1.14    917     65   14.11 100.00       2.9     7.7    0.310    0.323    0.085    0.259   0.881*   0.306
+      1.14   1.09    993     68   14.60 100.00       2.0     5.6    0.393    0.408    0.104    0.272   0.965*   0.167
+      1.09   1.04    920     58   15.86 100.00       2.0     5.7    0.428    0.442    0.110    0.276   0.915*  -0.078
+      1.04   1.01   1036     77   13.45  96.25       1.3     3.3    0.584    0.607    0.155    0.374   0.842*  -0.259
+      1.01   0.98    856     61   14.03 100.00       1.1     2.4    0.622    0.647    0.166    0.520   0.735*   0.219
+      0.98   0.95    931     69   13.49 100.00       0.6     1.5    0.873    0.910    0.246    0.628   0.495*  -0.306
+      0.95   0.92    876     70   12.51 100.00       0.5     1.2    0.964    1.004    0.268    0.696   0.333*  -0.261
+      0.92   0.90    751     62   12.11 100.00       0.3     0.9    1.146    1.194    0.326    0.805   0.491*  -0.324
+      0.90   0.88    631     60   10.52 100.00       0.3     0.5    1.556    1.648    0.505    1.224   0.554*   0.219
+      0.88   0.86    572     58    9.86  96.67       0.2     0.4    1.422    1.503    0.459    1.251   0.260  -0.050
+      0.86   0.84    513     76    6.75 100.00       0.2     0.3    1.791    1.939    0.673    1.371   0.322*   0.051
+      0.84   0.83    427     65    6.57  98.48       0.2     0.3    1.808    1.947    0.666    1.225   0.389*  -0.109
+      0.83   0.81    423     62    6.82  95.38       0.2     0.2    2.817    3.054    1.078    1.996   0.099   0.173
+      0.81   0.80    285     60    4.75  88.24       0.1     0.2    2.769    3.123    1.312    1.477  -0.003  -0.432
+     20.85   0.80  15798   1361   11.61  98.27       3.4     7.1    0.246    0.257    0.071    0.205   0.988*  -0.111
 
 
     Resolution limit suggested from CC½ fit (limit CC½=0.3): 0.83
@@ -533,34 +542,37 @@ Starting from the output of ``dials.cosym``:
                 ----------Merging statistics by resolution bin----------
 
      d_max  d_min   #obs  #uniq   mult.  %comp       <I>  <I/sI>    r_mrg   r_meas    r_pim   r_anom   cc1/2   cc_ano
-     20.86   2.17    973     94   10.35 100.00      21.1    27.5    0.108    0.113    0.033    0.077   0.995*  -0.101
-      2.17   1.72    964     71   13.58 100.00       9.5    13.7    0.165    0.172    0.045    0.078   0.989*  -0.169
-      1.72   1.51    971     79   12.29 100.00       8.8    10.0    0.178    0.185    0.050    0.123   0.968*   0.007
-      1.51   1.37   1047     71   14.75 100.00       4.2     5.6    0.271    0.280    0.071    0.196   0.958*  -0.420
-      1.37   1.27    895     65   13.77 100.00       3.3     3.9    0.329    0.341    0.088    0.290   0.921*   0.257
-      1.27   1.20   1007     76   13.25 100.00       2.9     3.2    0.352    0.367    0.100    0.235   0.824*  -0.201
-      1.20   1.14    940     65   14.46 100.00       2.4     2.7    0.364    0.378    0.097    0.255   0.831*  -0.217
-      1.14   1.09   1017     68   14.96 100.00       1.7     1.9    0.448    0.466    0.121    0.349   0.749*   0.468*
-      1.09   1.04    940     58   16.21 100.00       1.5     1.9    0.453    0.468    0.115    0.313   0.837*   0.078
-      1.04   1.01   1089     80   13.61 100.00       0.9     0.9    0.617    0.640    0.164    0.361   0.829*  -0.099
-      1.01   0.98    887     62   14.31 100.00       0.7     0.7    0.629    0.652    0.164    0.384   0.742*  -0.243
-      0.98   0.95    953     68   14.01 100.00       0.5     0.5    1.010    1.048    0.270    0.521   0.640*  -0.099
-      0.95   0.92    902     70   12.89 100.00       0.4     0.5    1.119    1.163    0.306    0.628   0.512*   0.245
-      0.92   0.90    761     62   12.27 100.00       0.3     0.3    1.230    1.284    0.357    0.751   0.313*  -0.143
-      0.90   0.88    640     60   10.67 100.00       0.2     0.2    1.834    1.925    0.560    1.253   0.468*   0.096
-      0.88   0.86    597     61    9.79 100.00       0.2     0.1    2.943    3.134    1.005    1.417   0.022   0.756*
-      0.86   0.84    539     76    7.09 100.00       0.1     0.1    2.064    2.221    0.760    1.483   0.164  -0.086
-      0.84   0.83    434     65    6.68  98.48       0.2     0.1    2.062    2.219    0.758    1.173   0.548*   0.251
-      0.83   0.81    432     63    6.86  95.45       0.2     0.1    2.328    2.538    0.914    1.730   0.042  -0.149
-      0.81   0.80    284     59    4.81  88.06       0.1     0.1    2.883    3.228    1.325    1.264   0.256  -0.289
-     20.85   0.80  16272   1373   11.85  99.13       3.4     4.3    0.251    0.262    0.071    0.193   0.990*  -0.200
+     20.86   2.17    968     94   10.30 100.00      20.3    27.6    0.110    0.116    0.034    0.079   0.995*  -0.080
+      2.17   1.72    961     71   13.54 100.00       9.1    13.3    0.164    0.170    0.045    0.075   0.989*  -0.492
+      1.72   1.51    966     79   12.23 100.00       8.5     9.7    0.178    0.185    0.051    0.126   0.968*   0.074
+      1.51   1.37   1034     71   14.56 100.00       4.1     5.2    0.282    0.292    0.074    0.178   0.960*  -0.365
+      1.37   1.27    891     65   13.71 100.00       3.1     3.6    0.332    0.345    0.090    0.288   0.906*  -0.148
+      1.27   1.20   1003     76   13.20 100.00       2.8     3.0    0.364    0.379    0.103    0.267   0.708*  -0.277
+      1.20   1.14    932     65   14.34 100.00       2.3     2.5    0.361    0.374    0.096    0.296   0.905*   0.020
+      1.14   1.09   1013     68   14.90 100.00       1.6     1.8    0.439    0.455    0.116    0.302   0.947*   0.242
+      1.09   1.04    937     58   16.16 100.00       1.5     1.7    0.477    0.493    0.121    0.361   0.812*  -0.213
+      1.04   1.01   1081     80   13.51 100.00       0.9     1.0    0.672    0.699    0.180    0.393   0.739*   0.044
+      1.01   0.98    879     61   14.41 100.00       0.8     0.7    0.710    0.736    0.184    0.554   0.523*  -0.264
+      0.98   0.95    951     69   13.78 100.00       0.5     0.4    0.917    0.953    0.249    0.481   0.571*  -0.105
+      0.95   0.92    897     70   12.81 100.00       0.4     0.4    1.082    1.124    0.294    0.796   0.386*  -0.125
+      0.92   0.90    760     62   12.26 100.00       0.2     0.2    1.439    1.500    0.409    0.920   0.346*  -0.262
+      0.90   0.88    642     60   10.70 100.00       0.2     0.2    1.777    1.866    0.544    1.208   0.514*   0.190
+      0.88   0.86    593     61    9.72 100.00       0.2     0.1    1.706    1.827    0.605    1.294  -0.290  -0.089
+      0.86   0.84    538     76    7.08 100.00       0.1     0.1    2.044    2.195    0.744    1.534   0.289*  -0.067
+      0.84   0.83    436     65    6.71  98.48       0.1     0.1    2.146    2.314    0.799    1.353   0.363*   0.005
+      0.83   0.81    432     62    6.97  95.38       0.2     0.1    3.472    3.752    1.306    1.794   0.137   0.052
+      0.81   0.80    291     60    4.85  88.24       0.1     0.1    4.041    4.519    1.851    1.350   0.128  -0.490
+     20.85   0.80  16205   1373   11.80  99.13       3.3     4.2    0.255    0.266    0.072    0.201   0.988*  -0.127
 
 
-    Resolution limit suggested from CC½ fit (limit CC½=0.3): 0.83
+    Resolution limit suggested from CC½ fit (limit CC½=0.3): 0.85
 
 * This looks a lot better in terms of completeness.
 * Looking at ``dials.scale.html`` we can probably improve this a little
-  by removing some images from the end of dataset #2 |scale_plot_combined_exclude_1|
+  by removing some images from the end of dataset #2
+
+.. image:: https://dials.github.io/images/Biotin_NIS/scale_plot_combined_exclude_1.png
+
 * So, we run ``dials.scale symmetrized.expt symmetrized.refl nproc=8 d_min=0.8 exclude_images="1:60:101" exclude_images="2:121:126"``
 
   .. code-block::
@@ -568,37 +580,32 @@ Starting from the output of ``dials.cosym``:
                 ----------Merging statistics by resolution bin----------
 
      d_max  d_min   #obs  #uniq   mult.  %comp       <I>  <I/sI>    r_mrg   r_meas    r_pim   r_anom   cc1/2   cc_ano
-     20.86   2.17    956     94   10.17 100.00      20.9    26.2    0.103    0.109    0.032    0.077   0.993*   0.041
-      2.17   1.72    946     71   13.32 100.00       9.5    14.7    0.160    0.166    0.044    0.076   0.988*  -0.279
-      1.72   1.51    959     79   12.14 100.00       8.9    10.9    0.174    0.182    0.050    0.122   0.972*   0.074
-      1.51   1.37   1031     71   14.52 100.00       4.3     6.2    0.263    0.273    0.070    0.192   0.961*  -0.261
-      1.37   1.27    888     65   13.66 100.00       3.4     4.4    0.328    0.341    0.089    0.286   0.912*  -0.057
-      1.27   1.20    991     76   13.04 100.00       3.0     3.7    0.347    0.362    0.099    0.231   0.762*  -0.086
-      1.20   1.14    922     65   14.18 100.00       2.5     3.1    0.359    0.373    0.097    0.253   0.857*   0.044
-      1.14   1.09    998     68   14.68 100.00       1.7     2.1    0.441    0.458    0.120    0.343   0.720*   0.136
-      1.09   1.04    924     58   15.93 100.00       1.6     2.1    0.450    0.465    0.115    0.308   0.875*  -0.059
-      1.04   1.01   1079     80   13.49 100.00       1.0     1.1    0.604    0.627    0.163    0.364   0.818*  -0.200
-      1.01   0.98    877     62   14.15 100.00       0.8     0.8    0.625    0.649    0.165    0.382   0.737*  -0.262
-      0.98   0.95    943     68   13.87 100.00       0.5     0.6    0.983    1.021    0.266    0.507   0.629*  -0.288
-      0.95   0.92    890     70   12.71 100.00       0.4     0.5    0.988    1.028    0.272    0.618   0.456*  -0.147
-      0.92   0.90    747     62   12.05 100.00       0.3     0.4    1.185    1.238    0.345    0.760   0.392*  -0.187
-      0.90   0.88    627     60   10.45 100.00       0.2     0.2    1.612    1.695    0.500    1.202   0.406*  -0.160
-      0.88   0.86    585     61    9.59 100.00       0.2     0.2    1.677    1.795    0.591    1.437   0.037  -0.085
-      0.86   0.84    530     76    6.97 100.00       0.1     0.1    2.135    2.309    0.812    1.517   0.136  -0.209
-      0.84   0.83    427     65    6.57  98.48       0.2     0.1    1.909    2.068    0.733    1.202   0.503*  -0.111
-      0.83   0.81    427     63    6.78  95.45       0.2     0.1    2.105    2.313    0.865    1.762   0.067   0.180
-      0.81   0.80    281     59    4.76  88.06       0.1     0.1    2.804    3.181    1.375    1.272   0.206  -0.245
-     20.85   0.80  16028   1373   11.67  99.13       3.4     4.5    0.246    0.257    0.071    0.197   0.989*  -0.090
+     20.86   2.17    954     94   10.15 100.00      20.4    27.4    0.105    0.110    0.033    0.077   0.993*  -0.028
+      2.17   1.72    943     71   13.28 100.00       9.1    13.5    0.161    0.168    0.044    0.075   0.991*  -0.079
+      1.72   1.51    957     79   12.11 100.00       8.4     9.9    0.178    0.186    0.051    0.126   0.971*   0.053
+      1.51   1.37   1017     71   14.32 100.00       4.1     5.3    0.272    0.282    0.073    0.177   0.956*  -0.203
+      1.37   1.27    885     65   13.62 100.00       3.1     3.7    0.334    0.347    0.090    0.288   0.908*  -0.017
+      1.27   1.20    988     76   13.00 100.00       2.7     3.1    0.359    0.375    0.102    0.265   0.722*  -0.331
+      1.20   1.14    914     65   14.06 100.00       2.3     2.6    0.352    0.366    0.096    0.295   0.900*   0.192
+      1.14   1.09    994     68   14.62 100.00       1.6     1.8    0.436    0.452    0.116    0.304   0.870*   0.185
+      1.09   1.04    920     58   15.86 100.00       1.4     1.8    0.475    0.490    0.122    0.364   0.761*  -0.397
+      1.04   1.01   1072     80   13.40 100.00       0.9     1.0    0.637    0.663    0.173    0.394   0.775*  -0.137
+      1.01   0.98    869     61   14.25 100.00       0.8     0.8    0.714    0.741    0.186    0.560   0.608*  -0.175
+      0.98   0.95    942     69   13.65 100.00       0.4     0.5    0.921    0.957    0.253    0.486   0.755*  -0.151
+      0.95   0.92    888     70   12.69 100.00       0.4     0.4    1.059    1.101    0.290    0.798   0.289*  -0.155
+      0.92   0.90    746     62   12.03 100.00       0.2     0.2    1.471    1.534    0.421    0.911   0.101  -0.218
+      0.90   0.88    629     60   10.48 100.00       0.2     0.2    1.635    1.719    0.507    1.189   0.550*   0.023
+      0.88   0.86    584     61    9.57 100.00       0.2     0.1    1.679    1.800    0.602    1.315  -0.212  -0.147
+      0.86   0.84    529     76    6.96 100.00       0.1     0.1    2.107    2.272    0.790    1.577   0.223  -0.078
+      0.84   0.83    429     65    6.60  98.48       0.1     0.1    2.101    2.274    0.802    1.318   0.569*  -0.058
+      0.83   0.81    426     62    6.87  95.38       0.2     0.1    2.047    2.232    0.808    1.842   0.220   0.046
+      0.81   0.80    287     60    4.78  88.24       0.1     0.1    4.537    5.104    2.145    1.340   0.100  -0.650
+     20.85   0.80  15973   1373   11.63  99.13       3.3     4.2    0.248    0.259    0.071    0.199   0.991*  -0.148
 
+.. image:: https://dials.github.io/images/Biotin_NIS/scale_plot_combined_exclude_2.png
 
-    Resolution limit suggested from CC½ fit (limit CC½=0.3): 0.83
-
-  |scale_plot_combined_exclude_2|
 * This looks reasonably good
 
-.. |scale_plot_combined_exclude_1| image:: https://dials.github.io/images/Biotin_NIS/scale_plot_combined_exclude_1.png
-
-.. |scale_plot_combined_exclude_2| image:: https://dials.github.io/images/Biotin_NIS/scale_plot_combined_exclude_2.png
 
 Export the data
 ===============
@@ -672,7 +679,7 @@ successful in phasing challenging datasets here at NIS:
 
 * Note that you have to have the space group correct for SHELXD to work.
 * When you are having difficulties, try solving this in P1 and figuring
-  out the proper space group once you have a solution with ADDSYM in
+  out the proper space group once you have a solution with ``ADDSYM`` in
   PLATON.
 * It can help to increase the ``NTRY``. Try 50000 for challenging cases.
 
