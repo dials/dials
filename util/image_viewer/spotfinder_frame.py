@@ -1711,16 +1711,65 @@ class SpotFrame(XrayFrame):
                         )
 
         self.settings.show_rotation_axis = True  # Force on for development
-        if self.settings.show_rotation_axis and not still:
+        if self.settings.show_rotation_axis:
             for experiments in self.experiments:
                 for experiment in experiments:
                     if experiment.imageset != imageset:
                         continue
+                    scan = imageset.get_scan()
+                    beam = imageset.get_beam()
                     gonio = imageset.get_goniometer()
+                    still = scan is None or gonio is None
+                    if still:
+                        continue
                     axis = gonio.get_rotation_axis()
+                    try:
+                        panel, beam_centre = detector.get_ray_intersection(
+                            beam.get_s0()
+                        )
+                    except RuntimeError as e:
+                        if "DXTBX_ASSERT(w_max > 0)" in str(e):
+                            # direct beam didn't hit a panel
+                            panel = 0
+                            beam_centre = detector[panel].get_ray_intersection(
+                                beam.get_s0()
+                            )
+                        else:
+                            raise
 
-                    # use the first panel for coordinates
-                    panel = detector[0]
+                    beam_x, beam_y = detector[panel].millimeter_to_pixel(beam_centre)
+                    beam_x, beam_y = map_coords(beam_x, beam_y, panel)
+
+                    # Need to set this to inscribed circle resolution
+                    r = matrix.col(axis) * 0.1
+                    a = matrix.col(beam.get_s0()) + r
+                    b = matrix.col(beam.get_s0()) - r
+
+                    panel_a = detector.get_panel_intersection(a)
+                    if panel_a < 0:
+                        continue
+                    panel_b = detector.get_panel_intersection(b)
+                    if panel_b < 0:
+                        continue
+                    x_a, y_a = detector[panel_a].get_ray_intersection_px(a)
+                    x_a, y_a = map_coords(x_a, y_a, panel_a)
+                    x_b, y_b = detector[panel_b].get_ray_intersection_px(b)
+                    x_b, y_b = map_coords(x_b, y_b, panel_b)
+                    axis_dict = dict(vector_dict)
+                    axis_dict["color"] = "#000000"
+                    vector_data.append((((x_b, y_b), (x_a, y_a)), axis_dict))
+                    vector_text_data.append(
+                        (
+                            x_a,
+                            y_a,
+                            "axis",
+                            {
+                                "placement": "ne",
+                                "fontsize": self.settings.fontsize,
+                                "color": "#000000",
+                            },
+                        )
+                    )
 
         return SpotfinderData(
             all_pix_data=all_pix_data,
