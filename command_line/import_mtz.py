@@ -12,15 +12,18 @@ from collections import OrderedDict
 from dataclasses import dataclass
 from typing import List, Tuple
 
+import numpy as np
+from scipy.spatial.transform import Rotation
+
 import cctbx
 import iotbx.mtz
 import libtbx.phil
 import scitbx.array_family
+from dxtbx import flumpy
 from dxtbx.model import Beam, Crystal, Detector, Experiment, ExperimentList, Scan
 from dxtbx.model.goniometer import GoniometerFactory
 from scitbx import matrix
 
-from dials.algorithms.refinement.refinement_helpers import set_obs_s1
 from dials.array_family import flex
 from dials.util import log, show_mail_handle_errors, tabulate
 from dials.util.options import OptionParser
@@ -41,8 +44,7 @@ Ideally, the image template can be provided with image.template=, which allows
 reading of the (unrefined) detector models, goniometer, beam and scan, and the
 crystal model can be determined from the MTZ data.
 If the template is not provided, then the models are constructed from the header
-data. It is necessary to supply the detector pixel_size, and sometimes the scan
-oscillation step.
+data. It may be necessary to provide the scan oscillation step.
 
 
 """
@@ -90,8 +92,9 @@ phil_scope = libtbx.phil.parse(
     }
 
     detector {
-        pixel_size = 0.172
+        pixel_size = None
             .type = float(value_min=0.0)
+            .help = "Pixel size in mm"
     }
 
     include scope dxtbx.model.goniometer.goniometer_phil_scope
@@ -428,7 +431,7 @@ profile-fitted integrated intensities."""
                     """Unable to read scan oscillation step.
 Please provide an input value for oscillation_step"""
                 )
-            sel = table["id"] == 0
+            sel = table["id"] == i
             angles_i = angle.select(sel)
             z_i = angles_i / expt.scan.get_oscillation()[1]
             z.set_selected(sel.iselection(), z_i)
@@ -436,10 +439,30 @@ Please provide an input value for oscillation_step"""
     table["xyzobs.px.value"] = flex.vec3_double(data.xpos, data.ypos, z)
     table["xyzcal.px"] = flex.vec3_double(data.xpos, data.ypos, z)
     table["panel"] = flex.size_t(table.size(), 0)
-
-    table.centroid_px_to_mm(experiments)
     table["s1"] = flex.vec3_double(table.size(), (0, 0, 0))
-    set_obs_s1(table, experiments)
+
+    for i, expt in enumerate(experiments):
+        fixed_rotation = np.array(expt.goniometer.get_fixed_rotation()).reshape(3, 3)
+        setting_rotation = np.array(expt.goniometer.get_setting_rotation()).reshape(
+            3, 3
+        )
+        rotation_axis = np.array(expt.goniometer.get_rotation_axis_datum())
+        sel = table["id"] == i
+        phi = flumpy.to_numpy(
+            expt.scan.get_angle_from_array_index(
+                table["xyzobs.px.value"].select(sel).parts()[2], deg=False
+            )
+        )
+        rotation_matrix = Rotation.from_rotvec(
+            phi[:, np.newaxis] * rotation_axis
+        ).as_matrix()
+        R = setting_rotation @ rotation_matrix @ fixed_rotation
+        s0 = expt.beam.get_s0()
+        UB = np.array(expt.crystal.get_A()).reshape(3, 3)
+        total_transform = R @ UB
+        hkl = flumpy.to_numpy(table["miller_index"].as_vec3_double())
+        s1 = np.einsum("ijk,ik->ij", total_transform, hkl)
+        table["s1"].set_selected(sel, flex.vec3_double([row + s0 for row in s1]))
 
     return table
 
@@ -543,16 +566,13 @@ only single wavelength MTZ files supported."""
         d = Detector()
         p = d.add_panel()
         p.set_image_size(panel_size)
-        p.set_pixel_size(
-            (params.input.detector.pixel_size, params.input.detector.pixel_size)
-        )
         experiments.append(
             Experiment(
                 beam=beam,
                 scan=dxscan,
                 goniometer=goniometer,
-                crystal=crystal,  ## FIXME - consistent UB settings
-                detector=d,  ##FIXME - do we need to allow setting more detector parameters?
+                crystal=crystal,
+                detector=d,
             )
         )
 

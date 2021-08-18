@@ -10,6 +10,10 @@ base_path = "/dls/mx-scratch/jbe/test_import_mtz/"
 dials_expt = base_path + "dials_integrated.expt"
 dials_refl = base_path + "dials_integrated.refl"
 
+image_template = (
+    "/dls/science/groups/scisoft/DIALS/dials_data/x4wide/X4_wide_M1S4_2_####.cbf"
+)
+
 
 def check_dials_refls(integrated_refls, imported_refls):
     # now check some random reflections
@@ -40,7 +44,7 @@ def test_import_dials_integrated_mtz_with_template(tmp_path):
         [
             "dials.import_mtz",
             integrated_mtz,
-            "images.template=/dls/science/groups/scisoft/DIALS/dials_data/x4wide/X4_wide_M1S4_2_####.cbf",
+            f"images.template={image_template}",
         ],
         working_directory=tmp_path,
     )
@@ -142,7 +146,7 @@ def test_import_3dii_integrated_mtz_with_template(tmp_path):
         [
             "dials.import_mtz",
             integrated_mtz,
-            "images.template=/dls/science/groups/scisoft/DIALS/dials_data/x4wide/X4_wide_M1S4_2_####.cbf",
+            f"images.template={image_template}",
         ],
         working_directory=tmp_path,
     )
