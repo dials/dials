@@ -4,7 +4,7 @@ import sys
 import wx
 
 import scitbx.matrix
-from dxtbx.model.detector_helpers import get_panel_2d_projection_from_axes
+from dxtbx.model.detector_helpers import get_panel_projection_2d_from_axes
 from scitbx.array_family import flex
 
 ######
@@ -149,7 +149,7 @@ def get_flex_image_multipanel(
                 slow = scitbx.matrix.col(panel.get_slow_axis())
                 origin = scitbx.matrix.col(panel.get_origin()) * 1e-3 - beam_center
 
-            panel_r, panel_t = get_panel_2d_projection_from_axes(
+            panel_r, panel_t = get_panel_projection_2d_from_axes(
                 panel, data, fast, slow, origin
             )
 
