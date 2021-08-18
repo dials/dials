@@ -1740,10 +1740,17 @@ class SpotFrame(XrayFrame):
                     beam_x, beam_y = detector[panel].millimeter_to_pixel(beam_centre)
                     beam_x, beam_y = map_coords(beam_x, beam_y, panel)
 
-                    # Need to set this to inscribed circle resolution
-                    r = matrix.col(axis) * 0.1
-                    a = matrix.col(beam.get_s0()) + r
-                    b = matrix.col(beam.get_s0()) - r
+                    # Find the plane containing the rotation axis and s0
+                    normal = matrix.col(beam.get_unit_s0()).cross(matrix.col(axis))
+
+                    # Find scattering angle at max inscribed resolution
+                    d_min = detector.get_max_inscribed_resolution(beam.get_s0())
+                    theta = math.asin(beam.get_wavelength() / (2.0 * d_min))
+
+                    # Rotate s0 in the plane so as to point to the inscribed circle
+                    # along the rotation axis
+                    a = matrix.col(beam.get_s0()).rotate(normal, 2.0 * theta)
+                    b = matrix.col(beam.get_s0()).rotate(normal, -2.0 * theta)
 
                     panel_a = detector.get_panel_intersection(a)
                     if panel_a < 0:
@@ -1756,7 +1763,7 @@ class SpotFrame(XrayFrame):
                     x_b, y_b = detector[panel_b].get_ray_intersection_px(b)
                     x_b, y_b = map_coords(x_b, y_b, panel_b)
                     axis_dict = dict(vector_dict)
-                    axis_dict["color"] = "#000000"
+                    axis_dict["color"] = "#1776f6"
                     vector_data.append((((x_b, y_b), (x_a, y_a)), axis_dict))
                     vector_text_data.append(
                         (
@@ -1766,7 +1773,7 @@ class SpotFrame(XrayFrame):
                             {
                                 "placement": "ne",
                                 "fontsize": self.settings.fontsize,
-                                "color": "#000000",
+                                "textcolor": "#1776f6",
                             },
                         )
                     )
