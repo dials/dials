@@ -83,6 +83,7 @@ stages:
     steps:
     # Dependencies required for building gltbx
     - script: |
+        sudo apt-get update
         sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev
       displayName: Install dependencies
 
