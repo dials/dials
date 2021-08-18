@@ -13,6 +13,7 @@ import cctbx.sgtbx.cosets
 from cctbx import miller, sgtbx
 from cctbx.array_family import flex
 from cctbx.uctbx.determine_unit_cell import NCDist
+from mmtbx.scaling.twin_analyses import twin_law_quality
 from xfel.clustering.singleframe import SingleFrame
 
 from dials.util import tabulate
@@ -103,13 +104,27 @@ class Target:
             uc_reindexed = uc_ref.change_basis(op)
             a = SingleFrame.make_g6(uc_ref.parameters())
             b = SingleFrame.make_g6(uc_reindexed.parameters())
+            tlq = twin_law_quality(self._data.crystal_symmetry(), op.c())
             row.append(NCDist(a, b))
+            row.append(tlq.delta_le_page()[0])
+            row.append(tlq.delta_lebedev())
+            row.append(tlq.delta_santoro())
             row.append(str(uc_reindexed))
             rows.append(row)
         logger.info(
             "\n%s\nNCdist metric for measuring similarity between unit cells:\n"
             "  Andrews, L. C. & Bernstein, H. J. (2014). J. Appl. Cryst. 47, 346-359.",
-            tabulate(rows, headers=("cb_op", "NCdist", "Reindexed unit cell")),
+            tabulate(
+                rows,
+                headers=(
+                    "cb_op",
+                    "NCdist",
+                    "Le Page delta",
+                    "Lebedev delta",
+                    "Santaro delta",
+                    "Reindexed unit cell",
+                ),
+            ),
         )
 
         if dimensions is None:
