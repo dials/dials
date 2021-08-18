@@ -4,6 +4,7 @@ import sys
 import wx
 
 import scitbx.matrix
+from dxtbx.model.detector_helpers import get_panel_2d_projection_from_axes
 from scitbx.array_family import flex
 
 ######
@@ -58,7 +59,6 @@ def get_flex_image_multipanel(
 
     from iotbx.detectors import generic_flex_image
     from libtbx.test_utils import approx_equal
-    from xfel.cftbx.detector.metrology import get_projection_matrix
 
     assert len(detector) == len(image_data), (len(detector), len(image_data))
 
@@ -127,101 +127,34 @@ def get_flex_image_multipanel(
             block=data.as_double(), i_row=i * data_padded[0], i_column=0
         )
 
-        pixel_size = (
-            panel.get_pixel_size()[0] * 1e-3,
-            panel.get_pixel_size()[1] * 1e-3,
-        )
-
         # If the panel already has a 2d projection then use it
         if panel.has_projection_2d():
             panel_r, panel_t = panel.get_projection_2d()
-            flex_image_multipanel.add_transformation_and_translation(panel_r, panel_t)
-            continue
-
-        if getattr(detector, "projection", "lab") == "image":
-            # Get axes from precalculated 2D projection.
-            origin_2d, fast_2d, slow_2d = detector.projected_2d
-            fast = scitbx.matrix.col(fast_2d[i] + (0,))
-            slow = scitbx.matrix.col(slow_2d[i] + (0,))
-            origin = scitbx.matrix.col(origin_2d[i] + (0,)) * 1e-3
         else:
-            # Get unit vectors in the fast and slow directions, as well as the
-            # the locations of the origin and the center of the panel, in
-            # meters. The origin is taken w.r.t. to average beam center of all
-            # panels. This avoids excessive translations that can result from
-            # rotations around the laboratory origin. Related to beam centre above
-            # and dials#380 not sure this is right for detectors which are not
-            # coplanar since system derived from first panel...
-            fast = scitbx.matrix.col(panel.get_fast_axis())
-            slow = scitbx.matrix.col(panel.get_slow_axis())
-            origin = scitbx.matrix.col(panel.get_origin()) * 1e-3 - beam_center
+            if getattr(detector, "projection", "lab") == "image":
+                # Get axes from precalculated 2D projection.
+                origin_2d, fast_2d, slow_2d = detector.projection_2d_axes
+                fast = scitbx.matrix.col(fast_2d[i] + (0,))
+                slow = scitbx.matrix.col(slow_2d[i] + (0,))
+                origin = scitbx.matrix.col(origin_2d[i] + (0,)) * 1e-3
+            else:
+                # Get unit vectors in the fast and slow directions, as well as the
+                # the locations of the origin and the center of the panel, in
+                # meters. The origin is taken w.r.t. to average beam center of all
+                # panels. This avoids excessive translations that can result from
+                # rotations around the laboratory origin. Related to beam centre above
+                # and dials#380 not sure this is right for detectors which are not
+                # coplanar since system derived from first panel...
+                fast = scitbx.matrix.col(panel.get_fast_axis())
+                slow = scitbx.matrix.col(panel.get_slow_axis())
+                origin = scitbx.matrix.col(panel.get_origin()) * 1e-3 - beam_center
 
-        center = (
-            origin
-            + (data.focus()[0] - 1) / 2 * pixel_size[1] * slow
-            + (data.focus()[1] - 1) / 2 * pixel_size[0] * fast
-        )
-        normal = slow.cross(fast).normalize()
-
-        # Determine rotational and translational components of the
-        # homogeneous transformation that maps the readout indices to the
-        # three-dimensional laboratory frame.
-        Rf = scitbx.matrix.sqr(
-            (
-                fast(0, 0),
-                fast(1, 0),
-                fast(2, 0),
-                -slow(0, 0),
-                -slow(1, 0),
-                -slow(2, 0),
-                normal(0, 0),
-                normal(1, 0),
-                normal(2, 0),
+            panel_r, panel_t = get_panel_2d_projection_from_axes(
+                panel, data, fast, slow, origin
             )
-        )
-        tf = -Rf * center
-        Tf = scitbx.matrix.sqr(
-            (
-                Rf(0, 0),
-                Rf(0, 1),
-                Rf(0, 2),
-                tf(0, 0),
-                Rf(1, 0),
-                Rf(1, 1),
-                Rf(1, 2),
-                tf(1, 0),
-                Rf(2, 0),
-                Rf(2, 1),
-                Rf(2, 2),
-                tf(2, 0),
-                0,
-                0,
-                0,
-                1,
-            )
-        )
 
-        # E maps picture coordinates onto metric Cartesian coordinates,
-        # i.e. [row, column, 1 ] -> [x, y, z, 1].  Both frames share the
-        # same origin, but the first coordinate of the screen coordinate
-        # system increases downwards, while the second increases towards
-        # the right.  XXX Is this orthographic projection the only one
-        # that makes any sense?
-        E = scitbx.matrix.rec(
-            elems=[0, +pixel_size[1], 0, -pixel_size[0], 0, 0, 0, 0, 0, 0, 0, 1],
-            n=[4, 3],
-        )
+        flex_image_multipanel.add_transformation_and_translation(panel_r, panel_t)
 
-        # P: [x, y, z, 1] -> [row, column, 1].  Note that data.focus()
-        # needs to be flipped to give (horizontal, vertical) size,
-        # i.e. (width, height).
-        Pf = get_projection_matrix(pixel_size, (data.focus()[1], data.focus()[0]))[0]
-
-        # Last row of T is always [0, 0, 0, 1].
-        T = Pf * Tf * E
-        R = scitbx.matrix.sqr((T(0, 0), T(0, 1), T(1, 0), T(1, 1)))
-        t = scitbx.matrix.col((T(0, 2), T(1, 2)))
-        flex_image_multipanel.add_transformation_and_translation(R, t)
     flex_image_multipanel.followup_brightness_scale()
     return flex_image_multipanel
 

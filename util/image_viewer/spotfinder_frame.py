@@ -8,7 +8,7 @@ from wx.lib.intctrl import IntCtrl
 from cctbx import crystal, uctbx
 from cctbx.miller import index_generator
 from dxtbx.imageset import ImageSet
-from dxtbx.model.detector_helpers import project_2d
+from dxtbx.model.detector_helpers import get_detector_projection_2d_axes
 from dxtbx.model.experiment_list import ExperimentList, ExperimentListFactory
 from libtbx.utils import flat_list
 from scitbx import matrix
@@ -107,7 +107,9 @@ class SpotFrame(XrayFrame):
                     self.params.projection = None
                     continue
                 else:
-                    detector.projected_2d = project_2d(detector)
+                    detector.projection_2d_axes = get_detector_projection_2d_axes(
+                        detector
+                    )
                 detector.projection = self.params.projection
 
         self.viewing_stills = True
