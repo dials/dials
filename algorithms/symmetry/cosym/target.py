@@ -12,6 +12,10 @@ from orderedset import OrderedSet
 import cctbx.sgtbx.cosets
 from cctbx import miller, sgtbx
 from cctbx.array_family import flex
+from cctbx.uctbx.determine_unit_cell import NCDist
+from xfel.clustering.singleframe import SingleFrame
+
+from dials.util import tabulate
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +94,24 @@ class Target:
         self.sym_ops = OrderedSet(["x,y,z"])
         self._lattice_group = lattice_group
         self.sym_ops.update(op.as_xyz() for op in self._generate_twin_operators())
+
+        rows = []
+        uc_ref = self._data.unit_cell()
+        for op in self.sym_ops:
+            op = sgtbx.change_of_basis_op(str(op))
+            row = [op.c().r().new_denominator(1).info()]
+            uc_reindexed = uc_ref.change_basis(op)
+            a = SingleFrame.make_g6(uc_ref.parameters())
+            b = SingleFrame.make_g6(uc_reindexed.parameters())
+            row.append(NCDist(a, b))
+            row.append(str(uc_reindexed))
+            rows.append(row)
+        logger.info(
+            "\n%s\nNCdist metric for measuring similarity between unit cells:\n"
+            "  Andrews, L. C. & Bernstein, H. J. (2014). J. Appl. Cryst. 47, 346-359.",
+            tabulate(rows, headers=("cb_op", "NCdist", "Reindexed unit cell")),
+        )
+
         if dimensions is None:
             dimensions = max(2, len(self.sym_ops))
         self.set_dimensions(dimensions)
