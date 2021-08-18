@@ -45,6 +45,7 @@ steps:
 # Build DIALS using the bootstrap script
 - bash: |
     set -eux
+    rm -rf modules/cctbx_project/simtbx
     python modules/dials/installer/bootstrap.py build
   displayName: DIALS build
   workingDirectory: $(Pipeline.Workspace)

@@ -36,10 +36,18 @@ Advanced command-line tutorials
    correcting_poor_initial_geometry_tutorial
    centring_vs_pseudocentring
    multi_lattice_tutorial
-   dials_for_ed
    multi_crystal_symmetry_and_scaling
    metrology_corrections
    multi_crystal_analysis
+
+DIALS for 3DED/MicroED
+
+.. toctree::
+   :maxdepth: 1
+
+   3DED/MyD88
+   3DED/lysozyme_nanocrystals
+   3DED/Biotin
 
 Developer tutorials
 

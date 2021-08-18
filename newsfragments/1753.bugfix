@@ -1,1 +1,0 @@
-``dials.integrate``: Change default configuration so that unintegrated reflections are not retained. This helps reduce memory usage of downstream tools. Set ``output_unintegrated_reflections=True`` to restore the previous behaviour.
