@@ -1639,6 +1639,74 @@ class SpotFrame(XrayFrame):
             # show overlapped pixels in a different color
             all_pix_data[max(all_pix_data.keys()) + 1] = overlapped_data
 
+        self.settings.show_rotation_axis = True  # Force on for development
+        if self.settings.show_rotation_axis:
+            for experiments in self.experiments:
+                for experiment in experiments:
+                    if experiment.imageset != imageset:
+                        continue
+                    scan = imageset.get_scan()
+                    beam = imageset.get_beam()
+                    gonio = imageset.get_goniometer()
+                    still = scan is None or gonio is None
+                    if still:
+                        continue
+                    axis = gonio.get_rotation_axis()
+                    try:
+                        panel, beam_centre = detector.get_ray_intersection(
+                            beam.get_s0()
+                        )
+                    except RuntimeError as e:
+                        if "DXTBX_ASSERT(w_max > 0)" in str(e):
+                            # direct beam didn't hit a panel
+                            panel = 0
+                            beam_centre = detector[panel].get_ray_intersection(
+                                beam.get_s0()
+                            )
+                        else:
+                            raise
+
+                    beam_x, beam_y = detector[panel].millimeter_to_pixel(beam_centre)
+                    beam_x, beam_y = map_coords(beam_x, beam_y, panel)
+
+                    # Find the plane containing the rotation axis and s0
+                    normal = matrix.col(beam.get_unit_s0()).cross(matrix.col(axis))
+
+                    # Find scattering angle at max inscribed resolution
+                    d_min = detector.get_max_inscribed_resolution(beam.get_s0())
+                    theta = math.asin(beam.get_wavelength() / (2.0 * d_min))
+
+                    # Rotate s0 in the plane so as to point to the inscribed circle
+                    # along the rotation axis
+                    a = matrix.col(beam.get_s0()).rotate(normal, 2.0 * theta)
+                    b = matrix.col(beam.get_s0()).rotate(normal, -2.0 * theta)
+
+                    panel_a = detector.get_panel_intersection(a)
+                    if panel_a < 0:
+                        continue
+                    panel_b = detector.get_panel_intersection(b)
+                    if panel_b < 0:
+                        continue
+                    x_a, y_a = detector[panel_a].get_ray_intersection_px(a)
+                    x_a, y_a = map_coords(x_a, y_a, panel_a)
+                    x_b, y_b = detector[panel_b].get_ray_intersection_px(b)
+                    x_b, y_b = map_coords(x_b, y_b, panel_b)
+                    axis_dict = dict(vector_dict)
+                    axis_dict["color"] = "#1776f6"
+                    vector_data.append((((x_b, y_b), (x_a, y_a)), axis_dict))
+                    vector_text_data.append(
+                        (
+                            x_a,
+                            y_a,
+                            "axis",
+                            {
+                                "placement": "ne",
+                                "fontsize": self.settings.fontsize,
+                                "textcolor": "#1776f6",
+                            },
+                        )
+                    )
+
         if (
             self.settings.show_basis_vectors
             and self.crystals is not None
@@ -1709,74 +1777,6 @@ class SpotFrame(XrayFrame):
                                 },
                             )
                         )
-
-        self.settings.show_rotation_axis = True  # Force on for development
-        if self.settings.show_rotation_axis:
-            for experiments in self.experiments:
-                for experiment in experiments:
-                    if experiment.imageset != imageset:
-                        continue
-                    scan = imageset.get_scan()
-                    beam = imageset.get_beam()
-                    gonio = imageset.get_goniometer()
-                    still = scan is None or gonio is None
-                    if still:
-                        continue
-                    axis = gonio.get_rotation_axis()
-                    try:
-                        panel, beam_centre = detector.get_ray_intersection(
-                            beam.get_s0()
-                        )
-                    except RuntimeError as e:
-                        if "DXTBX_ASSERT(w_max > 0)" in str(e):
-                            # direct beam didn't hit a panel
-                            panel = 0
-                            beam_centre = detector[panel].get_ray_intersection(
-                                beam.get_s0()
-                            )
-                        else:
-                            raise
-
-                    beam_x, beam_y = detector[panel].millimeter_to_pixel(beam_centre)
-                    beam_x, beam_y = map_coords(beam_x, beam_y, panel)
-
-                    # Find the plane containing the rotation axis and s0
-                    normal = matrix.col(beam.get_unit_s0()).cross(matrix.col(axis))
-
-                    # Find scattering angle at max inscribed resolution
-                    d_min = detector.get_max_inscribed_resolution(beam.get_s0())
-                    theta = math.asin(beam.get_wavelength() / (2.0 * d_min))
-
-                    # Rotate s0 in the plane so as to point to the inscribed circle
-                    # along the rotation axis
-                    a = matrix.col(beam.get_s0()).rotate(normal, 2.0 * theta)
-                    b = matrix.col(beam.get_s0()).rotate(normal, -2.0 * theta)
-
-                    panel_a = detector.get_panel_intersection(a)
-                    if panel_a < 0:
-                        continue
-                    panel_b = detector.get_panel_intersection(b)
-                    if panel_b < 0:
-                        continue
-                    x_a, y_a = detector[panel_a].get_ray_intersection_px(a)
-                    x_a, y_a = map_coords(x_a, y_a, panel_a)
-                    x_b, y_b = detector[panel_b].get_ray_intersection_px(b)
-                    x_b, y_b = map_coords(x_b, y_b, panel_b)
-                    axis_dict = dict(vector_dict)
-                    axis_dict["color"] = "#1776f6"
-                    vector_data.append((((x_b, y_b), (x_a, y_a)), axis_dict))
-                    vector_text_data.append(
-                        (
-                            x_a,
-                            y_a,
-                            "axis",
-                            {
-                                "placement": "ne",
-                                "fontsize": self.settings.fontsize,
-                                "textcolor": "#1776f6",
-                            },
-                        )
-                    )
 
         return SpotfinderData(
             all_pix_data=all_pix_data,
