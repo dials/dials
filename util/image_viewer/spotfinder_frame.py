@@ -1433,18 +1433,13 @@ class SpotFrame(XrayFrame):
         )
         return result
 
-    def get_spotfinder_data(self):
+    def _reflection_overlay_data(self, i_frame):
+
         fg_code = MaskCode.Valid | MaskCode.Foreground
         strong_code = MaskCode.Valid | MaskCode.Strong
         shoebox_dict = {"width": 2, "color": "#0000FFA0", "closed": False}
         ctr_mass_dict = {"width": 2, "color": "#FF0000", "closed": False}
-        if self.viewing_stills:
-            i_frame = self.images.selected_index  # NOTE, the underbar is intentional
-        else:
-            i_frame = self.images.selected.index
-        imageset = self.images.selected.image_set
-        if imageset.get_scan() is not None:
-            i_frame += imageset.get_scan().get_array_range()[0]
+
         shoebox_data = []
         all_pix_data = {}
         all_foreground_circles = {}
@@ -1453,26 +1448,6 @@ class SpotFrame(XrayFrame):
         max_pix_data = []
         predictions_data = []
         miller_indices_data = []
-        vector_data = []
-        vector_text_data = []
-        detector = self.pyslip.tiles.raw_image.get_detector()
-        scan = self.pyslip.tiles.raw_image.get_scan()
-        to_degrees = 180 / math.pi
-        # self.prediction_colours = ["#a6cee3", "#1f78b4", "#b2df8a", "#33a02c",
-        # "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00",
-        # "#cab2d6"] * 10
-        # alternative colour scheme
-        self.prediction_colours = [
-            "#e41a1c",
-            "#377eb8",
-            "#4daf4a",
-            "#984ea3",
-            "#ff7f00",
-            "#ffff33",
-            "#a65628",
-            "#f781bf",
-            "#999999",
-        ] * 10
 
         for ref_list_id, ref_list in enumerate(self.reflections):
             if self.viewing_stills and ref_list_id != i_frame:
@@ -1480,7 +1455,9 @@ class SpotFrame(XrayFrame):
 
             # If we have more than one imageset, then we could be on the wrong one
             if not self.have_one_imageset:
-                exp_filter = self.__get_imageset_filter(ref_list, imageset)
+                exp_filter = self.__get_imageset_filter(
+                    ref_list, self.images.selected.image_set
+                )
                 if exp_filter is None:
                     continue
                 ref_list = ref_list.select(exp_filter)
@@ -1646,7 +1623,8 @@ class SpotFrame(XrayFrame):
                     frame_numbers = ref_list["xyzcal.px"].parts()[2]
                 else:
                     phi = ref_list["xyzcal.mm"].parts()[2]
-                    frame_numbers = scan.get_array_index_from_angle(phi * to_degrees)
+                    scan = self.pyslip.tiles.raw_image.get_scan()
+                    frame_numbers = scan.get_array_index_from_angle(math.degrees(phi))
                 n = self.params.stack_images
                 for i_expt in range(flex.max(ref_list["id"]) + 1):
                     expt_sel = ref_list["id"] == i_expt
@@ -1671,6 +1649,7 @@ class SpotFrame(XrayFrame):
                                     reflection["panel"],
                                 )
                             elif "xyzcal.mm" in reflection:
+                                detector = self.pyslip.tiles.raw_image.get_detector()
                                 x, y = detector[
                                     reflection["panel"]
                                 ].millimeter_to_pixel(reflection["xyzcal.mm"][:2])
@@ -1704,6 +1683,43 @@ class SpotFrame(XrayFrame):
             # show overlapped pixels in a different color
             all_pix_data[max(all_pix_data.keys()) + 1] = overlapped_data
 
+        return {
+            "shoebox_data": shoebox_data,
+            "all_pix_data": all_pix_data,
+            "all_foreground_circles": all_foreground_circles,
+            "overlapped_data": overlapped_data,
+            "ctr_mass_data": ctr_mass_data,
+            "max_pix_data": max_pix_data,
+            "predictions_data": predictions_data,
+            "miller_indices_data": miller_indices_data,
+        }
+
+    def get_spotfinder_data(self):
+
+        self.prediction_colours = [
+            "#e41a1c",
+            "#377eb8",
+            "#4daf4a",
+            "#984ea3",
+            "#ff7f00",
+            "#ffff33",
+            "#a65628",
+            "#f781bf",
+            "#999999",
+        ] * 10
+
+        if self.viewing_stills:
+            i_frame = self.images.selected_index  # NOTE, the underbar is intentional
+        else:
+            i_frame = self.images.selected.index
+        imageset = self.images.selected.image_set
+        if imageset.get_scan() is not None:
+            i_frame += imageset.get_scan().get_array_range()[0]
+
+        refl_data = self._reflection_overlay_data(i_frame)
+
+        vector_data = []
+        vector_text_data = []
         if self.settings.show_rotation_axis:
             axis_data = self._rotation_axis_overlay_data()
             if axis_data:
@@ -1715,6 +1731,7 @@ class SpotFrame(XrayFrame):
             and self.crystals is not None
             and self.crystals[0] is not None
         ):
+            detector = self.pyslip.tiles.raw_image.get_detector()
             for experiments in self.experiments:
                 for i_expt, experiment in enumerate(experiments):
                     if experiment.imageset != imageset:
@@ -1789,13 +1806,13 @@ class SpotFrame(XrayFrame):
                         )
 
         return SpotfinderData(
-            all_pix_data=all_pix_data,
-            all_foreground_circles=all_foreground_circles,
-            shoebox_data=shoebox_data,
-            ctr_mass_data=ctr_mass_data,
-            max_pix_data=max_pix_data,
-            predictions_data=predictions_data,
-            miller_indices_data=miller_indices_data,
+            all_pix_data=refl_data["all_pix_data"],
+            all_foreground_circles=refl_data["all_foreground_circles"],
+            shoebox_data=refl_data["shoebox_data"],
+            ctr_mass_data=refl_data["ctr_mass_data"],
+            max_pix_data=refl_data["max_pix_data"],
+            predictions_data=refl_data["predictions_data"],
+            miller_indices_data=refl_data["miller_indices_data"],
             vector_data=vector_data,
             vector_text_data=vector_text_data,
         )
