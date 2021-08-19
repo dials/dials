@@ -96,7 +96,7 @@ class SpotFrame(XrayFrame):
 
         super().__init__(*args, **kwds)
 
-        # Precalculate best-fit frame for image display, except for P12M
+        # Precalculate best-fit frame for image display if required
         for experiment_list in self.experiments:
             for experiment in experiment_list:
                 detector = experiment.detector

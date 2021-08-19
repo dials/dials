@@ -128,7 +128,7 @@ def get_flex_image_multipanel(
         )
 
         # If the panel already has a 2d projection then use it
-        if panel.has_projection_2d():
+        if panel.get_projection_2d():
             panel_r, panel_t = panel.get_projection_2d()
         else:
             if getattr(detector, "projection", "lab") == "image":
