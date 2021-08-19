@@ -607,22 +607,3 @@ merging. To produce a scaled unmerged mtz file, one can use the ``dials.export``
 command on the scaled datafiles::
 
   dials.export scaled.refl scaled.expt
-
-It is also possible to export the integrated (unscaled) data in mtz
-format using :samp:`dials.export`. If you have an installation of CCP4_, symmetry
-analysis and scaling can then be continued with the ccp4 programs
-pointless_, aimless_ and ctruncate_ to generate a merged mtz file::
-
-  dials.export integrated.refl integrated.expt
-  pointless hklin integrated.mtz hklout sorted.mtz > pointless.log
-  aimless hklin sorted.mtz hklout scaled.mtz > aimless.log << EOF
-  resolution 1.4
-  anomalous off
-  EOF
-  ctruncate -hklin scaled.mtz -hklout truncated.mtz \
-  -colin '/*/*/[IMEAN,SIGIMEAN]' > ctruncate.log
-
-.. _CCP4: http://www.ccp4.ac.uk
-.. _aimless: http://www.ccp4.ac.uk/html/aimless.html
-.. _pointless: http://www.ccp4.ac.uk/html/pointless.html
-.. _ctruncate: http://www.ccp4.ac.uk/html/ctruncate.html
