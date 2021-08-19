@@ -1360,19 +1360,84 @@ class SpotFrame(XrayFrame):
 
         return selection
 
+    def map_coords(self, x, y, p):
+        """Convert coordinates in pixel, pixel, panel to picture coordinates
+        required for correct positioning of overlays"""
+        y, x = self.pyslip.tiles.flex_image.tile_readout_to_picture(p, y - 0.5, x - 0.5)
+        return self.pyslip.tiles.picture_fast_slow_to_map_relative(x, y)
+
+    def _rotation_axis_overlay_data(self):
+        imageset = self.images.selected.image_set
+        detector = self.pyslip.tiles.raw_image.get_detector()
+        scan = imageset.get_scan()
+        beam = imageset.get_beam()
+        gonio = imageset.get_goniometer()
+        still = scan is None or gonio is None
+        if still:
+            return
+        axis = gonio.get_rotation_axis()
+        try:
+            panel, beam_centre = detector.get_ray_intersection(beam.get_s0())
+        except RuntimeError as e:
+            if "DXTBX_ASSERT(w_max > 0)" in str(e):
+                # direct beam didn't hit a panel
+                panel = 0
+                beam_centre = detector[panel].get_ray_intersection(beam.get_s0())
+            else:
+                raise
+
+        beam_x, beam_y = detector[panel].millimeter_to_pixel(beam_centre)
+        beam_x, beam_y = self.map_coords(beam_x, beam_y, panel)
+
+        # Find the plane containing the rotation axis and s0
+        normal = matrix.col(beam.get_unit_s0()).cross(matrix.col(axis))
+
+        # Find scattering angle at max inscribed resolution
+        d_min = detector.get_max_inscribed_resolution(beam.get_s0())
+        theta = math.asin(beam.get_wavelength() / (2.0 * d_min))
+
+        # Rotate s0 in the plane so as to point to the inscribed circle
+        # along the rotation axis
+        a = matrix.col(beam.get_s0()).rotate(normal, 2.0 * theta)
+        b = matrix.col(beam.get_s0()).rotate(normal, -2.0 * theta)
+
+        panel_a = detector.get_panel_intersection(a)
+        if panel_a < 0:
+            return
+        panel_b = detector.get_panel_intersection(b)
+        if panel_b < 0:
+            return
+        x_a, y_a = detector[panel_a].get_ray_intersection_px(a)
+        x_a, y_a = self.map_coords(x_a, y_a, panel_a)
+        x_b, y_b = detector[panel_b].get_ray_intersection_px(b)
+        x_b, y_b = self.map_coords(x_b, y_b, panel_b)
+
+        result = []
+        result.append(
+            (
+                ((x_b, y_b), (x_a, y_a)),
+                {"width": 4, "color": "#1776f6", "closed": False},
+            )
+        )
+        result.append(
+            (
+                x_a,
+                y_a,
+                "axis",
+                {
+                    "placement": "ne",
+                    "fontsize": self.settings.fontsize,
+                    "textcolor": "#1776f6",
+                },
+            )
+        )
+        return result
+
     def get_spotfinder_data(self):
         fg_code = MaskCode.Valid | MaskCode.Foreground
         strong_code = MaskCode.Valid | MaskCode.Strong
-
-        def map_coords(x, y, p):
-            y, x = self.pyslip.tiles.flex_image.tile_readout_to_picture(
-                p, y - 0.5, x - 0.5
-            )
-            return self.pyslip.tiles.picture_fast_slow_to_map_relative(x, y)
-
         shoebox_dict = {"width": 2, "color": "#0000FFA0", "closed": False}
         ctr_mass_dict = {"width": 2, "color": "#FF0000", "closed": False}
-        vector_dict = {"width": 4, "color": "#F62817", "closed": False}
         if self.viewing_stills:
             i_frame = self.images.selected_index  # NOTE, the underbar is intentional
         else:
@@ -1470,7 +1535,7 @@ class SpotFrame(XrayFrame):
                                 if (mask_value == strong_code) or (
                                     mask_value == fg_code
                                 ):
-                                    x_, y_ = map_coords(
+                                    x_, y_ = self.map_coords(
                                         ix + x0 + 0.5, iy + y0 + 0.5, panel
                                     )
                                     this_spot_foreground_pixels.append(
@@ -1512,10 +1577,10 @@ class SpotFrame(XrayFrame):
                             )
 
                     if self.settings.show_shoebox:
-                        x0y0 = map_coords(x0, y0, panel)
-                        x0y1 = map_coords(x0, y1, panel)
-                        x1y0 = map_coords(x1, y0, panel)
-                        x1y1 = map_coords(x1, y1, panel)
+                        x0y0 = self.map_coords(x0, y0, panel)
+                        x0y1 = self.map_coords(x0, y1, panel)
+                        x1y0 = self.map_coords(x1, y0, panel)
+                        x1y1 = self.map_coords(x1, y1, panel)
                         # Change shoebox colour depending on index id
                         my_attrs = dict(shoebox_dict)
                         # Reflections with *only* strong set should get default
@@ -1543,7 +1608,7 @@ class SpotFrame(XrayFrame):
                         offset, i = divmod(offset, shoebox.all()[0])
                         max_index = (i, j, k)
                         if z0 + max_index[0] == i_frame or self.viewing_stills:
-                            x, y = map_coords(
+                            x, y = self.map_coords(
                                 x0 + max_index[2] + 0.5,
                                 y0 + max_index[1] + 0.5,
                                 reflection["panel"],
@@ -1558,13 +1623,13 @@ class SpotFrame(XrayFrame):
                             <= centroid[2]
                             <= (i_frame + self.params.stack_images)
                         ):
-                            x, y = map_coords(
+                            x, y = self.map_coords(
                                 centroid[0], centroid[1], reflection["panel"]
                             )
-                            xm1, ym1 = map_coords(
+                            xm1, ym1 = self.map_coords(
                                 centroid[0] - 1, centroid[1] - 1, reflection["panel"]
                             )
-                            xp1, yp1 = map_coords(
+                            xp1, yp1 = self.map_coords(
                                 centroid[0] + 1, centroid[1] + 1, reflection["panel"]
                             )
                             lines = [
@@ -1600,7 +1665,7 @@ class SpotFrame(XrayFrame):
                         ):
                             x = None
                             if "xyzcal.px" in reflection:
-                                x, y = map_coords(
+                                x, y = self.map_coords(
                                     reflection["xyzcal.px"][0],
                                     reflection["xyzcal.px"][1],
                                     reflection["panel"],
@@ -1609,7 +1674,7 @@ class SpotFrame(XrayFrame):
                                 x, y = detector[
                                     reflection["panel"]
                                 ].millimeter_to_pixel(reflection["xyzcal.mm"][:2])
-                                x, y = map_coords(x, y, reflection["panel"])
+                                x, y = self.map_coords(x, y, reflection["panel"])
                             if x is None:
                                 next
 
@@ -1640,71 +1705,10 @@ class SpotFrame(XrayFrame):
             all_pix_data[max(all_pix_data.keys()) + 1] = overlapped_data
 
         if self.settings.show_rotation_axis:
-            for experiments in self.experiments:
-                for experiment in experiments:
-                    if experiment.imageset != imageset:
-                        continue
-                    scan = imageset.get_scan()
-                    beam = imageset.get_beam()
-                    gonio = imageset.get_goniometer()
-                    still = scan is None or gonio is None
-                    if still:
-                        continue
-                    axis = gonio.get_rotation_axis()
-                    try:
-                        panel, beam_centre = detector.get_ray_intersection(
-                            beam.get_s0()
-                        )
-                    except RuntimeError as e:
-                        if "DXTBX_ASSERT(w_max > 0)" in str(e):
-                            # direct beam didn't hit a panel
-                            panel = 0
-                            beam_centre = detector[panel].get_ray_intersection(
-                                beam.get_s0()
-                            )
-                        else:
-                            raise
-
-                    beam_x, beam_y = detector[panel].millimeter_to_pixel(beam_centre)
-                    beam_x, beam_y = map_coords(beam_x, beam_y, panel)
-
-                    # Find the plane containing the rotation axis and s0
-                    normal = matrix.col(beam.get_unit_s0()).cross(matrix.col(axis))
-
-                    # Find scattering angle at max inscribed resolution
-                    d_min = detector.get_max_inscribed_resolution(beam.get_s0())
-                    theta = math.asin(beam.get_wavelength() / (2.0 * d_min))
-
-                    # Rotate s0 in the plane so as to point to the inscribed circle
-                    # along the rotation axis
-                    a = matrix.col(beam.get_s0()).rotate(normal, 2.0 * theta)
-                    b = matrix.col(beam.get_s0()).rotate(normal, -2.0 * theta)
-
-                    panel_a = detector.get_panel_intersection(a)
-                    if panel_a < 0:
-                        continue
-                    panel_b = detector.get_panel_intersection(b)
-                    if panel_b < 0:
-                        continue
-                    x_a, y_a = detector[panel_a].get_ray_intersection_px(a)
-                    x_a, y_a = map_coords(x_a, y_a, panel_a)
-                    x_b, y_b = detector[panel_b].get_ray_intersection_px(b)
-                    x_b, y_b = map_coords(x_b, y_b, panel_b)
-                    vector_data.append(
-                        (((x_b, y_b), (x_a, y_a)), {**vector_dict, "color": "#1776f6"})
-                    )
-                    vector_text_data.append(
-                        (
-                            x_a,
-                            y_a,
-                            "axis",
-                            {
-                                "placement": "ne",
-                                "fontsize": self.settings.fontsize,
-                                "textcolor": "#1776f6",
-                            },
-                        )
-                    )
+            axis_data = self._rotation_axis_overlay_data()
+            if axis_data:
+                vector_data.append(axis_data[0])
+                vector_text_data.append(axis_data[1])
 
         if (
             self.settings.show_basis_vectors
@@ -1746,7 +1750,7 @@ class SpotFrame(XrayFrame):
                         else:
                             raise
                     beam_x, beam_y = detector[panel].millimeter_to_pixel(beam_centre)
-                    beam_x, beam_y = map_coords(beam_x, beam_y, panel)
+                    beam_x, beam_y = self.map_coords(beam_x, beam_y, panel)
                     for i, h in enumerate(((1, 0, 0), (0, 1, 0), (0, 0, 1))):
                         r = A * matrix.col(h) * self.settings.basis_vector_scale
 
@@ -1759,9 +1763,16 @@ class SpotFrame(XrayFrame):
                         if panel < 0:
                             continue
                         x, y = detector[panel].get_ray_intersection_px(s1)
-                        x, y = map_coords(x, y, panel)
+                        x, y = self.map_coords(x, y, panel)
                         vector_data.append(
-                            (((beam_x, beam_y), (x, y)), {**vector_dict, "color": self.prediction_colours[i_expt]}),
+                            (
+                                ((beam_x, beam_y), (x, y)),
+                                {
+                                    "width": 4,
+                                    "color": self.prediction_colours[i_expt],
+                                    "closed": False,
+                                },
+                            ),
                         )
 
                         vector_text_data.append(
