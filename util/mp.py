@@ -178,7 +178,7 @@ def multi_node_parallel_map(
         nproc=nproc,
         asynchronous=asynchronous,
         preserve_order=preserve_order,
-        preserve_exception_message=True,
+        preserve_exception_message=preserve_exception_message,
     )
 
     # Create the cluster iterable
