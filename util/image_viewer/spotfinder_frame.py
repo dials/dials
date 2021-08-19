@@ -1639,7 +1639,6 @@ class SpotFrame(XrayFrame):
             # show overlapped pixels in a different color
             all_pix_data[max(all_pix_data.keys()) + 1] = overlapped_data
 
-        self.settings.show_rotation_axis = True  # Force on for development
         if self.settings.show_rotation_axis:
             for experiments in self.experiments:
                 for experiment in experiments:
@@ -1882,6 +1881,7 @@ class SpotSettingsPanel(wx.Panel):
         self.settings.basis_vector_scale = self.params.basis_vector_scale
         self.settings.show_mask = self.params.show_mask
         self.settings.show_basis_vectors = self.params.show_basis_vectors
+        self.settings.show_rotation_axis = self.params.show_rotation_axis
         self.settings.display = self.params.display
         if self.settings.display == "global_threshold":
             self.settings.display = "global"
@@ -1987,7 +1987,7 @@ class SpotSettingsPanel(wx.Panel):
         )
         grid.Add(self.basis_vector_scale_ctrl, 0, wx.ALL, 5)
 
-        grid = wx.FlexGridSizer(cols=2, rows=8, vgap=0, hgap=0)
+        grid = wx.FlexGridSizer(cols=2, rows=9, vgap=0, hgap=0)
         s.Add(grid)
 
         # Resolution rings control
@@ -2059,6 +2059,11 @@ class SpotSettingsPanel(wx.Panel):
         self.integrated = wx.CheckBox(self, -1, "Integrated only")
         self.integrated.SetValue(self.settings.show_integrated)
         grid.Add(self.integrated, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+
+        # Toggle rotation axis display
+        self.show_rotation_axis = wx.CheckBox(self, -1, "Rotation axis")
+        self.show_rotation_axis.SetValue(self.settings.show_rotation_axis)
+        grid.Add(self.show_rotation_axis, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
 
         grid = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
         self.clear_all_button = wx.Button(self, -1, "Clear all")
@@ -2259,6 +2264,7 @@ class SpotSettingsPanel(wx.Panel):
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.indexed)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.integrated)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.show_basis_vectors)
+        self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.show_rotation_axis)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdateShowMask, self.show_mask)
 
         self.Bind(wx.EVT_UPDATE_UI, self.UpdateZoomCtrl)
@@ -2304,6 +2310,7 @@ class SpotSettingsPanel(wx.Panel):
             self.settings.basis_vector_scale = self.basis_vector_scale_ctrl.GetValue()
             self.settings.show_mask = self.show_mask.GetValue()
             self.settings.show_basis_vectors = self.show_basis_vectors.GetValue()
+            self.settings.show_rotation_axis = self.show_rotation_axis.GetValue()
             self.settings.dispersion_extended = self.threshold_algorithm.GetValue()
             self.settings.color_scheme = self.color_ctrl.GetSelection()
             self.settings.projection = self.projection_ctrl.GetSelection()
@@ -2366,6 +2373,7 @@ class SpotSettingsPanel(wx.Panel):
             self.miller_indices,
             self.show_mask,
             self.show_basis_vectors,
+            self.show_rotation_axis,
             self.ice_rings_ctrl,
             self.resolution_rings_ctrl,
         ):
