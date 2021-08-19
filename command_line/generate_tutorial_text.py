@@ -2,6 +2,7 @@
 
 import argparse
 import functools
+import json
 import os
 import pathlib
 import shutil
@@ -103,8 +104,20 @@ def generate_processing_detail_text_mpro_x0692(options):
     extract_last_indexed_spot_count(
         outdir / "dials.index.log", outdir / "dials.index.log.extract_unindexed"
     )
-    runcmd(["dials.refine_bravais_settings", "indexed.expt", "indexed.refl"])
-    runcmd(["dials.reindex", "indexed.refl", "change_of_basis_op=a,-b,-a-b-2*c"])
+    runcmd(
+        [
+            "dials.refine_bravais_settings",
+            "indexed.expt",
+            "indexed.refl",
+            "best_monoclinic_beta=False",
+        ]
+    )
+    cb_op = extract_rbs_cb_op(
+        tmpdir / "bravais_summary.json",
+        outdir / "dials.refine_bravais_settings.log.cb_op",
+        2,
+    )
+    runcmd(["dials.reindex", "indexed.refl", f"change_of_basis_op={cb_op}"])
     runcmd(
         [
             "dials.refine",
@@ -119,7 +132,14 @@ def generate_processing_detail_text_mpro_x0692(options):
         store_output=outdir / "dials.sv_refine.log",
     )
     runcmd(["dials.integrate", "refined.expt", "refined.refl", "nproc=4"])
-    runcmd(["dials.symmetry", "integrated.expt", "integrated.refl"])
+    runcmd(
+        [
+            "dials.symmetry",
+            "integrated.expt",
+            "integrated.refl",
+            "best_monoclinic_beta=False",
+        ]
+    )
     runcmd(["dials.scale", "symmetrized.expt", "symmetrized.refl"])
     runcmd(["dials.estimate_resolution", "scaled.expt", "scaled.refl"])
     d_min = extract_resolution(outdir / "dials.estimate_resolution.log", "cc_half")
@@ -309,6 +329,12 @@ def extract_resolution(source, method):
     resolution_line = lines[find_in_line(f"Resolution {method}", lines)]
     # Parse and return the suggested resolution value
     return float(resolution_line.split(":")[-1].strip())
+
+
+def extract_rbs_cb_op(source, destination, solution):
+    cb_op = json.loads(source.read_text())[f"{solution}"]["cb_op"]
+    write_extract(destination, 1, 3, [cb_op])
+    return cb_op
 
 
 @dials.util.show_mail_handle_errors()
