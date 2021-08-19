@@ -1690,9 +1690,9 @@ class SpotFrame(XrayFrame):
                     x_a, y_a = map_coords(x_a, y_a, panel_a)
                     x_b, y_b = detector[panel_b].get_ray_intersection_px(b)
                     x_b, y_b = map_coords(x_b, y_b, panel_b)
-                    axis_dict = dict(vector_dict)
-                    axis_dict["color"] = "#1776f6"
-                    vector_data.append((((x_b, y_b), (x_a, y_a)), axis_dict))
+                    vector_data.append(
+                        (((x_b, y_b), (x_a, y_a)), {**vector_dict, "color": "#1776f6"})
+                    )
                     vector_text_data.append(
                         (
                             x_a,
