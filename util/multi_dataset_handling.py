@@ -152,7 +152,7 @@ def parse_multiple_datasets(reflections):
         dataset_ids = set(refl_table["id"]).difference({-1})
         dataset_id_list.extend(list(dataset_ids))
         if len(dataset_ids) > 1:
-            logger.info(
+            logger.debug(
                 "Detected existence of a multi-dataset reflection table \n"
                 "containing %s datasets. \n",
                 len(dataset_ids),
