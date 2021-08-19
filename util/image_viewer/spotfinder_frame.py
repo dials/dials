@@ -1848,7 +1848,7 @@ class SpotSettingsPanel(wx.Panel):
         txt12 = wx.StaticText(self, -1, "Projection:")
         projection_choices = ["lab", "image"]
         self.projection_ctrl = wx.Choice(self, -1, choices=projection_choices)
-        if self.params.projection is None:  # I23 special case
+        if self.params.projection is None:
             self.projection_ctrl.SetSelection(1)
             self.projection_ctrl.Enable(False)
             txt12.Enable(False)
