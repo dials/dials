@@ -77,7 +77,10 @@ Crystal:
 
 def test_dials_show_i04_weak_data(dials_regression):
     path = os.path.join(
-        dials_regression, "indexing_test_data", "i04_weak_data", "datablock_orig.json"
+        dials_regression,
+        "indexing_test_data",
+        "i04_weak_data",
+        "experiments_import.json",
     )
     result = procrunner.run(
         ["dials.show", path], environment_override={"DIALS_NOBANNER": "1"}
