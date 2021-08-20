@@ -235,7 +235,7 @@ def optimize(
 
         var = np.var(H)
 
-        print(f"Omega: {omega:8.2f}, variance: {var:5.2f}")
+        logger.info(f"Omega: {omega:8.2f}, variance: {var:5.2f}")
 
         if plot:
             plot_histo(
@@ -252,7 +252,7 @@ def optimize(
             best_omega = omega
             best_score = var
 
-    print(f"Best omega: {best_omega:.2f}; score: {best_score:.2f}")
+    logger.info(f"Best omega: {best_omega:.2f}; score: {best_score:.2f}")
 
     return best_omega
 
@@ -294,7 +294,7 @@ def parse_xds_inp(fn):
                 rotx, roty, rotz = [float(val) for val in inp]
 
             if match:
-                print(line)
+                logger.info(line)
 
     omega_current = np.degrees(np.arctan2(roty, rotx))
     pixelsize = qx / (distance * wavelength)
@@ -315,7 +315,7 @@ def load_spot_xds(fn, beam_center: [float, float], osc_angle: float, pixelsize: 
     http://xds.mpimf-heidelberg.mpg.de/html_doc/xds_files.html#SPOT.XDS
     """
     arr = np.loadtxt(fn)
-    print(arr.shape)
+    logger.info(arr.shape)
 
     osc_angle_rad = np.radians(osc_angle)
 
@@ -373,7 +373,7 @@ def run(args=None, phil=phil_scope):
         xds_inp = Path(xds_inp)
 
     if not xds_inp.exists():
-        print(f"No such file: {xds_inp}\n")
+        logger.info(f"No such file: {xds_inp}\n")
         sys.exit()
 
     beam_center, osc_angle, pixelsize, wavelength, omega_current = parse_xds_inp(
@@ -394,19 +394,17 @@ def run(args=None, phil=phil_scope):
     if omega_opposite > 180:
         omega_opposite -= 360
 
-    print()
-    print(f"Beam center: {beam_center[0]:.2f} {beam_center[1]:.2f}")
-    print(f"Oscillation angle (degrees): {osc_angle}")
-    print(f"Pixelsize: {pixelsize:.4f} px/Ångström")
-    print(f"Wavelength: {wavelength:.5f} Ångström")
-    print(f"Omega (current): {omega_current:.5f} degrees")
-    print(f"                 {np.radians(omega_current):.5f} radians")
+    logger.info(f"\nBeam center: {beam_center[0]:.2f} {beam_center[1]:.2f}")
+    logger.info(f"Oscillation angle (degrees): {osc_angle}")
+    logger.info(f"Pixelsize: {pixelsize:.4f} px/Ångström")
+    logger.info(f"Wavelength: {wavelength:.5f} Ångström")
+    logger.info(f"Omega (current): {omega_current:.5f} degrees")
+    logger.info(f"                 {np.radians(omega_current):.5f} radians")
 
     spot_xds = xds_inp.with_name("SPOT.XDS")
 
     if not spot_xds.exists():
-        print(f"Cannot find file: {spot_xds}")
-        sys.exit()
+        sys.exit(f"Cannot find file: {spot_xds}")
 
     arr = load_spot_xds(spot_xds, beam_center, osc_angle, pixelsize)
 
@@ -440,26 +438,28 @@ def run(args=None, phil=phil_scope):
 
         omega_final = omega_tmp
 
-        print("---")
-        print(f"Best omega (global search): {omega_global:.3f}")
-        print(f"Best omega (local search): {omega_local:.3f}")
-        print(f"Best omega (fine search): {omega_fine:.3f}")
+        logger.info("---")
+        logger.info(f"Best omega (global search): {omega_global:.3f}")
+        logger.info(f"Best omega (local search): {omega_local:.3f}")
+        logger.info(f"Best omega (fine search): {omega_fine:.3f}")
 
     xyz = make(arr, omega_final, wavelength)
     H, xedges, yedges = cylinder_histo(xyz)
 
     var = np.var(H)
-    print(f"Variance: {var:.2f}")
+    logger.info(f"Variance: {var:.2f}")
 
     # check opposite
     xyz_opp = make(arr, omega_final + 180, wavelength)
     H_opp, xedges_opp, yedges_opp = cylinder_histo(xyz_opp)
 
     var_opp = np.var(H_opp)
-    print(f"Variance (opposite): {var_opp:.2f}")
+    logger.info(f"Variance (opposite): {var_opp:.2f}")
 
     if var < var_opp:
-        print(f"\nOpposite angle ({omega_opposite:.2f} deg.) has higher variance!\n")
+        logger.info(
+            f"\nOpposite angle ({omega_opposite:.2f} deg.) has higher variance!\n"
+        )
 
     plot_histo(
         H, xedges, yedges, title=f"omega={omega_final:.2f}$^\\circ$ | var={var:.2f}"
@@ -476,51 +476,51 @@ def run(args=None, phil=phil_scope):
     omega_deg = omega_final
     omega_rad = np.radians(omega_final)
 
-    print(f"\nRotation axis found: {omega_deg:.2f} deg. / {omega_rad:.3f} rad.")
+    logger.info(f"\nRotation axis found: {omega_deg:.2f} deg. / {omega_rad:.3f} rad.")
 
-    print(" - Instamatic (config/camera/camera_name.yaml)")
+    logger.info(" - Instamatic (config/camera/camera_name.yaml)")
     omega_instamatic = omega_rad
-    print(f"    rotation_axis_vs_stage_xy: {omega_instamatic:.3f}")
+    logger.info(f"    rotation_axis_vs_stage_xy: {omega_instamatic:.3f}")
 
-    print(" - XDS")
+    logger.info(" - XDS")
     rot_x_xds, rot_y_xds, rot_z_xds = rotation_axis_to_xyz(omega_rad, setting="xds")
-    print(f"    ROTATION_AXIS= {rot_x_xds:.4f} {rot_y_xds:.4f} {rot_z_xds:.4f}")
-    print(" - XDS (opposite rotation)")
+    logger.info(f"    ROTATION_AXIS= {rot_x_xds:.4f} {rot_y_xds:.4f} {rot_z_xds:.4f}")
+    logger.info(" - XDS (opposite rotation)")
     rot_x_xds, rot_y_xds, rot_z_xds = rotation_axis_to_xyz(
         omega_rad, setting="xds", invert=True
     )
-    print(f"    ROTATION_AXIS= {rot_x_xds:.4f} {rot_y_xds:.4f} {rot_z_xds:.4f}")
+    logger.info(f"    ROTATION_AXIS= {rot_x_xds:.4f} {rot_y_xds:.4f} {rot_z_xds:.4f}")
 
-    print(" - DIALS")
+    logger.info(" - DIALS")
     rot_x_dials, rot_y_dials, rot_z_dials = rotation_axis_to_xyz(
         omega_rad, setting="dials"
     )
-    print(
+    logger.info(
         f"    geometry.goniometer.axes={rot_x_dials:.4f},{rot_y_dials:.4f},{rot_z_dials:.4f}"
     )
-    print(" - DIALS (opposite rotation)")
+    logger.info(" - DIALS (opposite rotation)")
     rot_x_dials, rot_y_dials, rot_z_dials = rotation_axis_to_xyz(
         omega_rad, setting="dials", invert=True
     )
-    print(
+    logger.info(
         f"    geometry.goniometer.axes={rot_x_dials:.4f},{rot_y_dials:.4f},{rot_z_dials:.4f}"
     )
 
-    print(" - PETS (.pts)")
+    logger.info(" - PETS (.pts)")
     omega_pets = omega_deg
     if omega_pets < 0:
         omega_pets += 360
     elif omega_pets > 360:
         omega_pets -= 360
-    print(f"    omega {omega_pets:.2f}")
+    logger.info(f"    omega {omega_pets:.2f}")
 
-    print(" - RED (.ed3d)")
+    logger.info(" - RED (.ed3d)")
     omega_red = omega_deg
     if omega_red < -180:
         omega_red += 360
     elif omega_red > 180:
         omega_red -= 360
-    print(f"    ROTATIONAXIS    {omega_red:.4f}")
+    logger.info(f"    ROTATIONAXIS    {omega_red:.4f}")
 
 
 if __name__ == "__main__":
