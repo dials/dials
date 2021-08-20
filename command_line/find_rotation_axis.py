@@ -17,9 +17,7 @@ import dials.util
 import dials.util.log
 
 # from dials.array_family import flex
-from dials.util.options import (
-    OptionParser,  # , flatten_experiments, flatten_reflections
-)
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
 # from dxtbx.model import ExperimentList
@@ -346,8 +344,8 @@ def run(args=None, phil=phil_scope):
     parser = OptionParser(
         usage=usage,
         phil=phil,
-        read_reflections=False,
-        read_experiments=False,
+        read_reflections=True,
+        read_experiments=True,
         check_format=False,
         epilog=__doc__,
     )
@@ -365,6 +363,24 @@ def run(args=None, phil=phil_scope):
     diff_phil = parser.diff_phil.as_str()
     if diff_phil:
         logger.info("The following parameters have been modified:\n%s", diff_phil)
+
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
+
+    # Configure the logging
+    dials.util.log.config(verbosity=options.verbose, logfile=params.output.log)
+
+    # Check the models and data
+    nexp = len(experiments)
+    if nexp > 1:
+        logger.info("Only the first experiment will be used for calculation")
+    if nexp == 0 or len(reflections) == 0:
+        parser.print_help()
+        return
+    if len(reflections) > 1:
+        sys.exit("Only one reflections list can be imported at present")
+    reflections = reflections[0]
 
     xds_inp = params.xds_inp
     if not xds_inp:
