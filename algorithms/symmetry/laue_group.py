@@ -62,7 +62,7 @@ class LaueGroupAnalysis(symmetry_base):
           absolute_angle_tolerance (float): Absolute angle tolerance in checking
             consistency of input unit cells against the median unit cell.
           best_monoclinic_beta (bool): If True, then for monoclinic centered cells, I2
-            will be preferred over C2 if it gives a more oblique cell (i.e. smaller
+            will be preferred over C2 if it gives a less oblique cell (i.e. smaller
             beta angle).
         """
         super().__init__(

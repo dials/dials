@@ -14,6 +14,7 @@ import argparse
 import json
 import multiprocessing.pool
 import os
+import platform
 import re
 import shutil
 import socket as pysocket
@@ -43,7 +44,7 @@ devnull = open(os.devnull, "wb")  # to redirect unwanted subprocess output
 allowed_ssh_connections = {}
 concurrent_git_connection_limit = threading.Semaphore(5)
 
-_prebuilt_cctbx_base = "2021.6"  # July 2021 release
+_prebuilt_cctbx_base = "2021.7"  # August 2021 release
 
 
 def make_executable(filepath):
@@ -63,7 +64,10 @@ def install_micromamba(python, include_cctbx):
     elif sys.platform == "darwin":
         conda_platform = "macos"
         member = "bin/micromamba"
-        url = "https://micromamba.snakepit.net/api/micromamba/osx-64/latest"
+        if platform.machine() == "arm64":
+            url = "https://micromamba.snakepit.net/api/micromamba/osx-arm64/latest"
+        else:
+            url = "https://micromamba.snakepit.net/api/micromamba/osx-64/latest"
     elif os.name == "nt":
         conda_platform = "windows"
         member = "Library/bin/micromamba.exe"
@@ -756,6 +760,21 @@ def git(module, git_available, ssh_available, reference_base, settings):
     else:
         remote_pattern = "https://github.com/%s.git"
 
+    if git_available:
+        # Determine the git version
+        p = subprocess.Popen(
+            ["git", "--version"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        )
+        output, _ = p.communicate()
+        output = output.decode("latin-1")
+        parts = output.split(" ", 2)
+        if p.returncode or not parts[:2] == ["git", "version"]:
+            raise RuntimeError("Could not determine git version")
+        # Version comes in:
+        #    "git version x.y.z"
+        # or "git version x.y.z.windows.n"
+        git_version = tuple(int(x) if x.isnumeric() else x for x in parts[2].split("."))
+
     secondary_remote = settings.get("effective-repository") and (
         settings["effective-repository"] != settings.get("base-repository")
     )
@@ -764,7 +783,17 @@ def git(module, git_available, ssh_available, reference_base, settings):
         direct_branch_checkout = ["-b", remote_branch]
     reference_parameters = []
     if reference_base and os.path.exists(os.path.join(reference_base, module, ".git")):
-        reference_parameters = ["--reference", os.path.join(reference_base, module)]
+        # Use -if-able so that we don't have errors over unreferenced submodules
+        reference_type = "--reference-if-able"
+        if git_version < (2, 11, 0):
+            # As a fallback, use the old parameter. This will fail if
+            # there are submodules and the reference does not have all
+            # the required submodules
+            reference_type = "--reference"
+        reference_parameters = [
+            reference_type,
+            os.path.join(reference_base, module),
+        ]
 
     with concurrent_git_connection_limit:
         p = subprocess.Popen(

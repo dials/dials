@@ -26,7 +26,7 @@ from dials.algorithms.scaling.model.components.smooth_scale_components import (
 )
 from dials.algorithms.scaling.plots import (
     plot_absorption_parameters,
-    plot_absorption_surface,
+    plot_absorption_plots,
     plot_array_absorption_plot,
     plot_array_decay_plot,
     plot_array_modulation_plot,
@@ -153,6 +153,9 @@ surface_weight = auto
             "of absorption correction. Defaults to 5e5 if no absorption_level"
             "is chosen."
     .expert_level = 1
+share.absorption = False
+    .type = bool
+    .help = "If True, a common absorption correction is refined across all sweeps".
 fix_initial = True
     .type = bool
     .help = "If performing full matrix minimisation, in the final cycle,"
@@ -246,7 +249,7 @@ class ScalingModelBase:
         """Add the required reflection table data to the model components."""
         raise NotImplementedError()
 
-    def plot_model_components(self):
+    def plot_model_components(self, reflection_table=None):
         """Return a dict of plots for plotting model components with plotly."""
         return {}
 
@@ -627,12 +630,12 @@ class DoseDecay(ScalingModelBase):
 
         return cls(parameters_dict, configdict, is_scaled=True)
 
-    def plot_model_components(self):
+    def plot_model_components(self, reflection_table=None):
         d = OrderedDict()
         d.update(plot_dose_decay(self))
         if "absorption" in self.components:
             d.update(plot_absorption_parameters(self))
-            d.update(plot_absorption_surface(self))
+            d.update(plot_absorption_plots(self, reflection_table))
         return d
 
 
@@ -830,6 +833,8 @@ class PhysicalScalingModel(ScalingModelBase):
             absorption_correction = params.absorption_correction
         if absorption_correction or params.absorption_level:
             configdict["corrections"].append("absorption")
+            if params.share.absorption:
+                configdict.update({"shared": ["absorption"]})
             if params.absorption_level:
                 lmax, surface_weight = determine_auto_absorption_params(
                     params.absorption_level
@@ -915,14 +920,22 @@ class PhysicalScalingModel(ScalingModelBase):
                 self._components["absorption"] = SHScaleComponent(
                     new_parameters, flex.double(n_abs_param, 0.0)
                 )
+            if params.physical.share.absorption:
+                self._configdict.update({"shared": ["absorption"]})
 
-    def plot_model_components(self):
+    def plot_model_components(self, reflection_table=None):
         d = OrderedDict()
         d.update(plot_smooth_scales(self))
         if "absorption" in self.components:
             d.update(plot_absorption_parameters(self))
-            d.update(plot_absorption_surface(self))
+            d.update(plot_absorption_plots(self, reflection_table))
         return d
+
+    def get_shared_components(self):
+        if "shared" in self.configdict:
+            if "absorption" in self.configdict["shared"]:
+                return "absorption"
+        return None
 
 
 class ArrayScalingModel(ScalingModelBase):
@@ -1198,7 +1211,7 @@ class ArrayScalingModel(ScalingModelBase):
 
         return cls(parameters_dict, configdict, is_scaled=True)
 
-    def plot_model_components(self):
+    def plot_model_components(self, reflection_table=None):
         d = OrderedDict()
         if "absorption" in self.components:
             d.update(plot_array_absorption_plot(self))
@@ -1383,18 +1396,16 @@ for entry_point_name, entry_point in _dxtbx_scaling_models.items():
     model_phil_scope.adopt_scope(ext_master_scope)
 
 
-def plot_scaling_models(model_dict):
+def plot_scaling_models(model, reflection_table=None):
     """Return a dict of component plots for the model for plotting with plotly."""
-    entry_point = _dxtbx_scaling_models.get(model_dict["__id__"])
-    if entry_point:
-        model = entry_point.load().from_dict(model_dict)
-        return model.plot_model_components()
-    return OrderedDict()
+    return model.plot_model_components(reflection_table=reflection_table)
 
 
 def make_combined_plots(data):
     """Make any plots that require evaluation of all models."""
-    if all(d["__id__"] == "dose_decay" for d in data.values()):
-        relative_Bs = [d["relative_B"]["parameters"][0] for d in data.values()]
+    if all(d.id_ == "dose_decay" for d in data.values()):
+        relative_Bs = [
+            d.to_dict()["relative_B"]["parameters"][0] for d in data.values()
+        ]
         return plot_relative_Bs(relative_Bs)
     return {}

@@ -1,6 +1,6 @@
-##############################
-DIALS for Electron Diffraction
-##############################
+#####################
+Lysozyme nanocrystals
+#####################
 
 .. highlight:: none
 
@@ -65,7 +65,7 @@ POSIX-compliant systems). For example (may require installation of curl):
   fi
 
 With the format class in place, we can look at images using
-:doc:`dials.image_viewer<../programs/dials_image_viewer>` and import them to
+:doc:`dials.image_viewer<../../programs/dials_image_viewer>` and import them to
 create a ``datablock.json``. However, for reasons outlined in the paper, the
 files have incomplete metadata. For successful processing, various aspects of
 the experimental geometry must be described during import so they override the
@@ -96,7 +96,7 @@ Dataset 1
 
 We need to override the default oscillation width, the orientation of the
 rotation axis and the detector position. We will do that by creating a PHIL
-file with parameters for :doc:`dials.import<../programs/dials_import>`
+file with parameters for :doc:`dials.import<../../programs/dials_import>`
 
 .. code-block:: bash
 
@@ -301,7 +301,7 @@ Spot-finding
 ============
 
 Suitable spot-finding settings were found interactively using the
-:doc:`dials.image_viewer<../programs/dials_image_viewer>`. The parameters used
+:doc:`dials.image_viewer<../../programs/dials_image_viewer>`. The parameters used
 varied a little between datasets.
 
 Dataset 1
@@ -523,14 +523,14 @@ For all these datasets there is significant uncertainty in the initial
 experimental model. Although indexing was successful in each case, the refined
 geometry shows some quite large differences compared with the initial geometry.
 This is immediately obvious from viewing the ``refined_experiments.json`` with
-the :doc:`dials.image_viewer<../programs/dials_image_viewer>`. For example, here
+the :doc:`dials.image_viewer<../../programs/dials_image_viewer>`. For example, here
 is one image from the first dataset:
 
-.. image:: /figures/dials_for_ed/frame_value_438.png
+.. image:: /figures/lysozyme_nanocrystals/frame_value_438.png
 
 We did not allow the orientation of the rotation axis to refine, so errors in
 that will have been compensated by changes in the detector orientation. The
-:doc:`dials.image_viewer<../programs/dials_image_viewer>` displays the image as
+:doc:`dials.image_viewer<../../programs/dials_image_viewer>` displays the image as
 seen in the laboratory frame rather than the detector frame, so the image looks
 rotated. The fact that the detector "fast" and "slow" axes are no longer
 aligned with the laboratory X and -Y axes would not in itself negatively affect

@@ -196,7 +196,9 @@ def _make_scaling_html(scaling_script):
     if not (html_file or json_file):
         return
     data = {}
-    data.update(make_scaling_model_plots(scaling_script.experiments))
+    data.update(
+        make_scaling_model_plots(scaling_script.experiments, scaling_script.reflections)
+    )
     data.update(
         make_outlier_plots(scaling_script.reflections, scaling_script.experiments)
     )
@@ -238,15 +240,15 @@ def _make_scaling_html(scaling_script):
             json.dump(data, outfile)
 
 
-def make_scaling_model_plots(experiments):
+def make_scaling_model_plots(experiments, reflection_tables):
     """Collect scaling model plots for html report."""
-    data = {i: e.scaling_model.to_dict() for i, e in enumerate(experiments)}
+    data = {i: e.scaling_model for i, e in enumerate(experiments)}
     d = OrderedDict()
     combined_plots = make_combined_plots(data)
     if combined_plots:
         d.update(combined_plots)
     for key in sorted(data.keys()):
-        scaling_model_plots = plot_scaling_models(data[key])
+        scaling_model_plots = plot_scaling_models(data[key], reflection_tables[key])
         for plot in scaling_model_plots.values():
             plot["layout"]["title"] += f" (dataset {key})"
         for name, plot in scaling_model_plots.items():

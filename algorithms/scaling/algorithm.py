@@ -304,9 +304,6 @@ class ScalingAlgorithm:
         # joining reflection tables - just need experiments for mtz export
         # and a reflection table.
         del self.scaler
-        for experiment in self.experiments:
-            for component in experiment.scaling_model.components.keys():
-                del experiment.scaling_model.components[component].data
         gc.collect()
         # update imageset ids before combining reflection tables.
         self.reflections = update_imageset_ids(self.experiments, self.reflections)
