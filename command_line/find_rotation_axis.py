@@ -1,4 +1,69 @@
+"""
+Optimise the rotation axis orientation using the method from Gorelik et al.
+(https://www.doi.org/10.1007/978-94-007-5580-2) with code adapted from
+Stef Smeets's edtools (https://github.com/instamatic-dev/edtools).
+
+Examples::
+
+  dials.find_rotation_axis imported.expt strong.refl
+"""
+
+import logging
 import sys
+
+import libtbx.phil
+
+import dials.util
+import dials.util.log
+
+# from dials.array_family import flex
+from dials.util.options import (
+    OptionParser,  # , flatten_experiments, flatten_reflections
+)
+from dials.util.version import dials_version
+
+# from dxtbx.model import ExperimentList
+
+
+# Define a logger.
+logger = logging.getLogger("dials.find_rotation_axis")
+
+# Define the master PHIL scope for this program.
+phil_scope = libtbx.phil.parse(
+    """
+xds_inp = None
+    .type = path
+    .help = "Path to XDS.INP file (also reads SPOT.XDS in the same directory)"
+
+view = False
+    .type = bool
+    .help = "View phi/theta histogram with current rotation axis (omega)"
+
+optimise = True
+    .type = bool
+    .help = "Optimise the rotation axis"
+
+finetune = False
+    .type = bool
+    .help = "Fine-tune rotation axis from the value in XDS.INP or given with omega=VAL"
+
+omega = None
+    .type = float
+    .help = "Use the given value of omega to plot the histogram or as starting point for the optimization"
+
+opposite = False
+    .type = bool
+    .help = Try the opposite value as the one defined in XDS.INP (or as given by omega=VAL)"
+
+output {
+    experiments = optimised.expt
+        .type = path
+    log = "dials.find_rotation_axis.log"
+        .type = str
+}
+"""
+)
+
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -262,71 +327,46 @@ def load_spot_xds(fn, beam_center: [float, float], osc_angle: float, pixelsize: 
     return np.c_[reflections, angle]
 
 
-def main():
-    import argparse
+@dials.util.show_mail_on_error()
+def run(args=None, phil=phil_scope):
+    """
+    Load diffraction geometry and spot positions, optimise rotation axis
+    orientation and save output files as specified.
 
-    description = """Use this script to find the rotation axis
-Reads XDS.INP for parameters and SPOT.XDS (COLSPOT) for spot positions
+    Args:
+        args (list): Additional command-line arguments
+        phil: The working PHIL parameters
 
-Usage: python find_rotation_axis.py XDS.INP"""
+    Returns:
+        None
+    """
 
-    parser = argparse.ArgumentParser(
-        description=description, formatter_class=argparse.RawDescriptionHelpFormatter
+    usage = "dials.find_rotation_axis [options] imported.expt strong.refl"
+
+    parser = OptionParser(
+        usage=usage,
+        phil=phil,
+        read_reflections=False,
+        read_experiments=False,
+        check_format=False,
+        epilog=__doc__,
     )
 
-    parser.add_argument(
-        "args",
-        type=str,
-        nargs="?",
-        metavar="FILE",
-        help="Path to XDS.INP file (also reads SPOT.XDS in the same directory)",
-    )
+    params, options = parser.parse_args(args=args, show_diff_phil=False)
 
-    parser.add_argument(
-        "-v",
-        "--view",
-        action="store_true",
-        dest="view",
-        help="View phi/theta histogram with current rotation axis (omega)",
-    )
+    # Configure the logging.
+    dials.util.log.config(options.verbose, logfile=params.output.log)
 
-    parser.add_argument(
-        "-f",
-        "--finetune",
-        action="store_true",
-        dest="finetune",
-        help="Fine-tune rotation axis from the value in XDS.INP or given with -o)",
-    )
+    # Log the dials version
+    logger.info(dials_version())
 
-    parser.add_argument(
-        "-o",
-        "--omega",
-        action="store",
-        type=float,
-        dest="omega_input",
-        help="Use the given value of omega to plot the histogram or as starting point for the optimization",
-    )
+    # Log the difference between the PHIL scope definition and the active PHIL scope,
+    # which will include the parsed user inputs.
+    diff_phil = parser.diff_phil.as_str()
+    if diff_phil:
+        logger.info("The following parameters have been modified:\n%s", diff_phil)
 
-    parser.add_argument(
-        "-p",
-        "--opposite",
-        action="store_true",
-        dest="opposite",
-        help="Try the opposite value as the one defined in XDS.INP (or as given by `--omega`",
-    )
-
-    parser.set_defaults(
-        args="XDS.INP",
-        view=False,
-        optimize=True,
-        finetune=False,
-        opposite=False,
-        omega_input=None,
-    )
-
-    options = parser.parse_args()
-
-    xds_inp = options.args
+    xds_inp = params.xds_inp
     if not xds_inp:
         xds_inp = Path("XDS.INP")
     else:
@@ -334,19 +374,18 @@ Usage: python find_rotation_axis.py XDS.INP"""
 
     if not xds_inp.exists():
         print(f"No such file: {xds_inp}\n")
-        print(description)
         sys.exit()
 
     beam_center, osc_angle, pixelsize, wavelength, omega_current = parse_xds_inp(
         xds_inp
     )
 
-    if options.omega_input is not None:
-        omega_current = options.omega_input
+    if params.omega is not None:
+        omega_current = params.omega
 
     omega_opposite = omega_current + 180
 
-    if options.opposite:
+    if params.opposite:
         omega_current = omega_opposite
 
     if omega_current > 180:
@@ -373,9 +412,9 @@ Usage: python find_rotation_axis.py XDS.INP"""
 
     hist_bins = 1000, 500
 
-    if options.view:
+    if params.view:
         omega_final = omega_current
-    elif options.optimize:
+    elif params.optimise:
         global xvals
         global vvals
         xvals = []
@@ -383,7 +422,7 @@ Usage: python find_rotation_axis.py XDS.INP"""
 
         omega_global = omega_local = omega_fine = 0
 
-        if options.finetune:
+        if params.finetune:
             omega_tmp = omega_global = omega_current
         else:
             omega_tmp = 0
@@ -426,7 +465,7 @@ Usage: python find_rotation_axis.py XDS.INP"""
         H, xedges, yedges, title=f"omega={omega_final:.2f}$^\\circ$ | var={var:.2f}"
     )
 
-    if options.optimize and not options.view:
+    if params.optimise and not params.view:
         # Plot rotation axis distribution curve
         plt.scatter(xvals, vvals, marker="+", lw=1.0, color="red")
         plt.xlabel("Rotation axis position ($^\\circ$)")
@@ -485,4 +524,4 @@ Usage: python find_rotation_axis.py XDS.INP"""
 
 
 if __name__ == "__main__":
-    main()
+    run()
