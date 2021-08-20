@@ -11,6 +11,7 @@ Examples::
 import logging
 import sys
 
+import dxtbx.flumpy as flumpy
 import libtbx.phil
 
 import dials.util
@@ -325,6 +326,11 @@ def load_spot_xds(fn, beam_center: [float, float], osc_angle: float, pixelsize: 
     return np.c_[reflections, angle]
 
 
+def extract_spot_data(reflections):
+    """From the spot positions, extract reciprocal space X, Y and angle positions
+    for each reflection"""
+
+
 @dials.util.show_mail_on_error()
 def run(args=None, phil=phil_scope):
     """
@@ -373,8 +379,6 @@ def run(args=None, phil=phil_scope):
 
     # Check the models and data
     nexp = len(experiments)
-    if nexp > 1:
-        logger.info("Only the first experiment will be used for calculation")
     if nexp == 0 or len(reflections) == 0:
         parser.print_help()
         return
@@ -395,6 +399,10 @@ def run(args=None, phil=phil_scope):
     beam_center, osc_angle, pixelsize, wavelength, omega_current = parse_xds_inp(
         xds_inp
     )
+
+    osc_angle = experiments[0].scan.get_oscillation()[1]
+    rotx, roty, _ = experiments[0].goniometer.get_rotation_axis()
+    omega_current = np.degrees(np.arctan2(roty, rotx))
 
     if params.omega is not None:
         omega_current = params.omega
@@ -423,6 +431,20 @@ def run(args=None, phil=phil_scope):
         sys.exit(f"Cannot find file: {spot_xds}")
 
     arr = load_spot_xds(spot_xds, beam_center, osc_angle, pixelsize)
+
+    # Map reflections to reciprocal space
+    reflections.centroid_px_to_mm(experiments)
+    reflections.map_centroids_to_reciprocal_space(
+        experiments, calculated=False, crystal_frame=False
+    )
+    x, y, _ = reflections["rlp"].parts()
+    _, _, angle = reflections["xyzobs.mm.value"].parts()
+    arr2 = flumpy.to_numpy(x)
+    arr2 = np.c_[x, flumpy.to_numpy(y)]
+    arr2 = np.c_[arr2, flumpy.to_numpy(angle)]
+
+    # arr2 (from DIALS) can be used in place of arr (from XDS) now, but the
+    # result appears to be inverted. This is to be investigated further.
 
     hist_bins = 1000, 500
 
