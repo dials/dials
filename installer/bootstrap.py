@@ -14,6 +14,7 @@ import argparse
 import json
 import multiprocessing.pool
 import os
+import platform
 import re
 import shutil
 import socket as pysocket
@@ -63,7 +64,10 @@ def install_micromamba(python, include_cctbx):
     elif sys.platform == "darwin":
         conda_platform = "macos"
         member = "bin/micromamba"
-        url = "https://micromamba.snakepit.net/api/micromamba/osx-64/latest"
+        if platform.machine() == "arm64":
+            url = "https://micromamba.snakepit.net/api/micromamba/osx-arm64/latest"
+        else:
+            url = "https://micromamba.snakepit.net/api/micromamba/osx-64/latest"
     elif os.name == "nt":
         conda_platform = "windows"
         member = "Library/bin/micromamba.exe"
@@ -1260,7 +1264,7 @@ be passed separately with quotes to avoid confusion (e.g
         "--python",
         help="Install this minor version of Python (default: %(default)s)",
         default="3.9",
-        choices=("3.6", "3.7", "3.8", "3.9"),
+        choices=("3.7", "3.8", "3.9"),
     )
     parser.add_argument(
         "--branch",
@@ -1271,13 +1275,6 @@ be passed separately with quotes to avoid confusion (e.g
             "during 'update' step when a repository is newly cloned set it to a given branch."
             "Specify as repository@branch, eg. 'dials@dials-next'"
         ),
-    )
-    parser.add_argument(
-        # Deprecated, 2021-05-28
-        "--mamba",
-        help=argparse.SUPPRESS,
-        default=False,
-        action="store_true",
     )
     parser.add_argument(
         "--conda",
@@ -1301,8 +1298,6 @@ be passed separately with quotes to avoid confusion (e.g
     )
 
     options = parser.parse_args()
-    if os.name == "nt" and options.python == "3.6":
-        sys.exit("Python 3.6 is not supported on Windows")
 
     print("Performing actions:", " ".join(options.actions))
 
@@ -1333,12 +1328,6 @@ be passed separately with quotes to avoid confusion (e.g
         run_tests()
 
     print("\nBootstrap success: %s" % ", ".join(options.actions))
-
-    if options.mamba:
-        print(
-            "\nNOTE: --mamba is now the default, "
-            "you do not need to specify it any more"
-        )
 
 
 if __name__ == "__main__":

@@ -1,1 +1,0 @@
-Fix windows builds by explicitly calling pytest through libtbx.python
