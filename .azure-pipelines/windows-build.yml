@@ -28,11 +28,6 @@ steps:
   displayName: Create python $(PYTHON_VERSION) environment
   workingDirectory: $(Pipeline.Workspace)
 
-# Remove simtbx as it is broken on windows
-- bash: rm -rf modules/cctbx_project/simtbx
-  displayName: Remove simtbx
-  workingDirectory: $(Pipeline.Workspace)
-
 # Build DIALS using the bootstrap script
 - script: |
     pushd "C:\Program Files (x86)\Microsoft Visual Studio\Installer\"
