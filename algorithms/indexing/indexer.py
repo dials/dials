@@ -541,12 +541,14 @@ class Indexer:
 
             if len(experiments) == 0:
                 new_expts = self.find_lattices()
-                generate_experiment_identifiers(new_expts)
+                generate_experiment_identifiers(new_expts, identifier_type='PIN')
                 experiments.extend(new_expts)
             else:
                 try:
+                    n_start = len(experiments)
                     new = self.find_lattices()
-                    generate_experiment_identifiers(new)
+                    generate_experiment_identifiers(
+                        new, identifier_type='PIN', n_start=n_start)
                     experiments.extend(new)
                 except DialsIndexError:
                     logger.info("Indexing remaining reflections failed")

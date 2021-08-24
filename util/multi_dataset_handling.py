@@ -34,13 +34,28 @@ phil_scope = iotbx.phil.parse(
 )
 
 
-def generate_experiment_identifiers(experiments, identifier_type="uuid"):
+def generate_experiment_identifiers(
+    experiments,
+    identifier_type="uuid",
+    n_start=0
+):
     """Generate unique identifiers for each experiment."""
     if identifier_type == "uuid":
         for expt in experiments:
             expt.identifier = str(uuid.uuid4())
     elif identifier_type == "timestamp":
         pass
+    elif identifier_type == "PIN":
+        done_expts = {}
+        for expt in experiments:
+            iset = expt.imageset
+            path = iset.paths()[0]
+            single_file_index = iset.indices()[0]
+            key = "%s_%s" %(path, single_file_index)
+            n_hits = done_expts.setdefault(key, n_start)
+            done_expts(key) = n_hits + 1
+            ident = "%s_%s_%s" %(path, single_file_index, n_hits)
+            expt.identifier = ident
 
 
 def sort_tables_to_experiments_order(reflection_tables, experiments):
