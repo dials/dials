@@ -8,7 +8,7 @@ from wx.lib.intctrl import IntCtrl
 from cctbx import crystal, uctbx
 from cctbx.miller import index_generator
 from dxtbx.imageset import ImageSet
-from dxtbx.model.detector_helpers import project_2d
+from dxtbx.model.detector_helpers import get_detector_projection_2d_axes
 from dxtbx.model.experiment_list import ExperimentList, ExperimentListFactory
 from libtbx.utils import flat_list
 from scitbx import matrix
@@ -96,22 +96,20 @@ class SpotFrame(XrayFrame):
 
         super().__init__(*args, **kwds)
 
-        # Precalculate best-fit frame for image display, except for P12M
+        # Precalculate best-fit frame for image display if required
         for experiment_list in self.experiments:
             for experiment in experiment_list:
                 detector = experiment.detector
                 if not detector:
                     self.params.projection = None
                     continue
-                if len(detector) == 24 and detector[0].get_image_size() == (2463, 195):
+                if detector.has_projection_2d():
                     self.params.projection = None
-                elif len(detector) == 120 and detector[0].get_image_size() == (
-                    487,
-                    195,
-                ):
-                    self.params.projection = None
+                    continue
                 else:
-                    detector.projected_2d = project_2d(detector)
+                    detector.projection_2d_axes = get_detector_projection_2d_axes(
+                        detector
+                    )
                 detector.projection = self.params.projection
 
         self.viewing_stills = True
@@ -1858,7 +1856,7 @@ class SpotSettingsPanel(wx.Panel):
         txt12 = wx.StaticText(self, -1, "Projection:")
         projection_choices = ["lab", "image"]
         self.projection_ctrl = wx.Choice(self, -1, choices=projection_choices)
-        if self.params.projection is None:  # I23 special case
+        if self.params.projection is None:
             self.projection_ctrl.SetSelection(1)
             self.projection_ctrl.Enable(False)
             txt12.Enable(False)
