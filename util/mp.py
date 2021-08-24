@@ -54,7 +54,6 @@ def parallel_map(
     asynchronous=True,
     callback=None,
     preserve_order=True,
-    preserve_exception_message=...,
     job_category="low",
 ):
     """
@@ -64,12 +63,11 @@ def parallel_map(
     """
     from dials.util.cluster_map import cluster_map as drmaa_parallel_map
 
-    if preserve_exception_message is not Ellipsis:
-        warnings.warn(
-            "keyword argument 'preserve_exception_message' is deprecated",
-            DeprecationWarning,
-            stacklevel=2,
-        )
+    warnings.warn(
+        "The dials.util.parallel_map function is deprecated",
+        DeprecationWarning,
+        stacklevel=2,
+    )
 
     if method == "drmaa":
         return drmaa_parallel_map(
@@ -107,18 +105,11 @@ class __cluster_function_wrapper:
         nproc=1,
         asynchronous=True,
         preserve_order=True,
-        preserve_exception_message=...,
     ):
         self.func = func
         self.nproc = nproc
         self.asynchronous = asynchronous
         self.preserve_order = (preserve_order,)
-        if preserve_exception_message is not Ellipsis:
-            warnings.warn(
-                "keyword argument 'preserve_exception_message' is deprecated",
-                DeprecationWarning,
-                stacklevel=2,
-            )
 
     def __call__(self, iterable):
         return libtbx.easy_mp.parallel_map(
@@ -159,18 +150,11 @@ def multi_node_parallel_map(
     asynchronous=True,
     callback=None,
     preserve_order=True,
-    preserve_exception_message=...,
 ):
     """
     A wrapper function to call a function using multiple cluster nodes and with
     multiple processors on each node
     """
-    if preserve_exception_message is not Ellipsis:
-        warnings.warn(
-            "keyword argument 'preserve_exception_message' is deprecated",
-            DeprecationWarning,
-            stacklevel=2,
-        )
 
     # The function to all on the cluster
     cluster_func = __cluster_function_wrapper(
@@ -178,7 +162,6 @@ def multi_node_parallel_map(
         nproc=nproc,
         asynchronous=asynchronous,
         preserve_order=preserve_order,
-        preserve_exception_message=preserve_exception_message,
     )
 
     # Create the cluster iterable
@@ -191,16 +174,32 @@ def multi_node_parallel_map(
         cluster_callback = None
 
     # Do the parallel map on the cluster
-    result = parallel_map(
-        func=cluster_func,
-        iterable=cluster_iterable,
-        callback=cluster_callback,
-        method=cluster_method,
-        nslots=nproc,
-        processes=njobs,
-        asynchronous=asynchronous,
-        preserve_order=preserve_order,
-    )
+    # Call either drmaa or easy_mp to do a parallel map calculation.
+    # This function is set up so that in each case we can select
+    # the number of cores on a machine
+    if cluster_method == "drmaa":
+        from dials.util.cluster_map import cluster_map as drmaa_parallel_map
+
+        result = drmaa_parallel_map(
+            func=cluster_func,
+            iterable=cluster_iterable,
+            callback=cluster_callback,
+            nslots=nproc,
+            njobs=njobs,
+            job_category="low",
+        )
+    else:
+        result = libtbx.easy_mp.parallel_map(
+            func=cluster_func,
+            iterable=cluster_iterable,
+            callback=cluster_callback,
+            method=cluster_method,
+            processes=njobs,
+            qsub_command=f"qsub -pe smp {nproc}",
+            asynchronous=asynchronous,
+            preserve_order=preserve_order,
+            preserve_exception_message=True,
+        )
 
     # return result
     return [item for rlist in result for item in rlist]
