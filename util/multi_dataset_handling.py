@@ -53,7 +53,7 @@ def generate_experiment_identifiers(
             single_file_index = iset.indices()[0]
             key = "%s_%s" %(path, single_file_index)
             n_hits = done_expts.setdefault(key, n_start)
-            done_expts(key) = n_hits + 1
+            done_expts[key] = n_hits + 1
             ident = "%s_%s_%s" %(path, single_file_index, n_hits)
             expt.identifier = ident
 
