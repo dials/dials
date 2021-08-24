@@ -1694,7 +1694,13 @@ class SpotFrame(XrayFrame):
                         x, y = detector[panel].get_ray_intersection_px(s1)
                         x, y = map_coords(x, y, panel)
                         vector_data.append(
-                            (((beam_x, beam_y), (x, y)), {**vector_dict, "color": self.prediction_colours[i_expt]}),
+                            (
+                                ((beam_x, beam_y), (x, y)),
+                                {
+                                    **vector_dict,
+                                    "color": self.prediction_colours[i_expt],
+                                },
+                            ),
                         )
 
                         vector_text_data.append(
