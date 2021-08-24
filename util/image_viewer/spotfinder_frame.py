@@ -1643,7 +1643,7 @@ class SpotFrame(XrayFrame):
             and self.crystals[0] is not None
         ):
             for experiments in self.experiments:
-                for experiment in experiments:
+                for i_expt, experiment in enumerate(experiments):
                     if experiment.imageset != imageset:
                         continue
                     crystal_model = experiment.crystal
@@ -1691,7 +1691,15 @@ class SpotFrame(XrayFrame):
                             continue
                         x, y = detector[panel].get_ray_intersection_px(s1)
                         x, y = map_coords(x, y, panel)
-                        vector_data.append((((beam_x, beam_y), (x, y)), vector_dict))
+                        vector_data.append(
+                            (
+                                ((beam_x, beam_y), (x, y)),
+                                {
+                                    **vector_dict,
+                                    "color": self.prediction_colours[i_expt],
+                                },
+                            ),
+                        )
 
                         vector_text_data.append(
                             (
@@ -1701,7 +1709,7 @@ class SpotFrame(XrayFrame):
                                 {
                                     "placement": "ne",
                                     "fontsize": self.settings.fontsize,
-                                    "color": "#F62817",
+                                    "textcolor": self.prediction_colours[i_expt],
                                 },
                             )
                         )
