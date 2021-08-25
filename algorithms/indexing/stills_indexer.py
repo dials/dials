@@ -132,8 +132,7 @@ class StillsIndexer(Indexer):
             if len(experiments) == 0:
                 new = self.find_lattices()
                 generate_experiment_identifiers(
-                    new,
-                    identifier_type=self.params.identifier_type
+                    new, identifier_type=self.params.identifier_type
                 )
                 experiments.extend(new)
                 if len(experiments) == 0:
@@ -145,7 +144,7 @@ class StillsIndexer(Indexer):
                     generate_experiment_identifiers(
                         new,
                         identifier_type=self.params.identifier_type,
-                        n_start=n_start
+                        n_start=n_start,
                     )
                     experiments.extend(new)
                 except Exception as e:

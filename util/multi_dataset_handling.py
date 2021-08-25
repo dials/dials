@@ -34,11 +34,7 @@ phil_scope = iotbx.phil.parse(
 )
 
 
-def generate_experiment_identifiers(
-    experiments,
-    identifier_type="uuid",
-    n_start=0
-):
+def generate_experiment_identifiers(experiments, identifier_type="uuid", n_start=0):
     """Generate unique identifiers for each experiment."""
     if identifier_type == "uuid":
         for expt in experiments:
@@ -51,10 +47,10 @@ def generate_experiment_identifiers(
             iset = expt.imageset
             path = iset.paths()[0]
             single_file_index = iset.indices()[0]
-            key = "%s_%s" %(path, single_file_index)
+            key = "%s_%s" % (path, single_file_index)
             n_hits = done_expts.setdefault(key, n_start)
             done_expts[key] = n_hits + 1
-            ident = "%s_%s_%s" %(path, single_file_index, n_hits)
+            ident = "%s_%s_%s" % (path, single_file_index, n_hits)
             expt.identifier = ident
 
 
