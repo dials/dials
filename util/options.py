@@ -1,5 +1,6 @@
 import copy
 import itertools
+import logging
 import optparse
 import os
 import pickle
@@ -22,6 +23,8 @@ from dials.util.multi_dataset_handling import (
     sort_tables_to_experiments_order,
 )
 from dials.util.phil import FilenameDataWrapper
+
+logger = logging.getLogger(__name__)
 
 tolerance_phil_scope = libtbx.phil.parse(
     """
@@ -258,7 +261,11 @@ class Importer:
         for arg in args:
             # Don't expand wildcards if URI-style filename
             if "*" in arg and not get_url_scheme(arg):
-                args_new.extend(glob(arg))
+                filenames = glob(arg)
+                if not filenames:
+                    logger.warning("No files found with pattern %s" % arg)
+                else:
+                    args_new.extend(glob(arg))
             else:
                 args_new.append(arg)
         args = args_new
