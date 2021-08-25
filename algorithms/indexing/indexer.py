@@ -76,7 +76,9 @@ indexing {
     .help = "The number of processes to use."
   identifier_type = *uuid timestamp PIN None
     .type = choice
-    .help = "Type of unique identifier to generate."
+    .help = "Type of unique identifier to generate. PIN (path, index, "
+            "n_lattices) identifiers are stable across processing runs but "
+            "only implemented for stills."
   mm_search_scope = 4.0
     .help = "Global radius of origin offset search."
     .type = float(value_min=0)
@@ -544,19 +546,12 @@ class Indexer:
 
             if len(experiments) == 0:
                 new_expts = self.find_lattices()
-                generate_experiment_identifiers(
-                    new_expts,
-                    identifier_type=self.params.identifier_type
-                )
+                generate_experiment_identifiers(new_expts)
                 experiments.extend(new_expts)
             else:
                 try:
-                    n_start = len(experiments)
                     new = self.find_lattices()
-                    generate_experiment_identifiers(
-                        new,
-                        identifier_type=self.params.identifier_type,
-                        n_start=n_start)
+                    generate_experiment_identifiers(new)
                     experiments.extend(new)
                 except DialsIndexError:
                     logger.info("Indexing remaining reflections failed")
