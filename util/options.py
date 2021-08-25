@@ -271,20 +271,25 @@ class Importer:
         args = args_new
 
         unhandled = []
-        experiments = ExperimentListFactory.from_filenames(
-            args,
-            unhandled=unhandled,
-            compare_beam=compare_beam,
-            compare_detector=compare_detector,
-            compare_goniometer=compare_goniometer,
-            scan_tolerance=scan_tolerance,
-            format_kwargs=format_kwargs,
-            load_models=load_models,
-        )
-        if experiments:
-            self.experiments.append(
-                FilenameDataWrapper(filename="<image files>", data=experiments)
+
+        try:
+            experiments = ExperimentListFactory.from_filenames(
+                args,
+                unhandled=unhandled,
+                compare_beam=compare_beam,
+                compare_detector=compare_detector,
+                compare_goniometer=compare_goniometer,
+                scan_tolerance=scan_tolerance,
+                format_kwargs=format_kwargs,
+                load_models=load_models,
             )
+            if experiments:
+                self.experiments.append(
+                    FilenameDataWrapper(filename="<image files>", data=experiments)
+                )
+        except FileNotFoundError as e:
+            logger.error("File %s not found", e.filename)
+
         return unhandled
 
     def try_read_experiments(self, args, check_format, verbose):
