@@ -14,11 +14,7 @@ from cctbx import miller
 
 from dials.array_family import flex
 from dials.util.normalisation import quasi_normalisation as _quasi_normalisation
-from dials_scaling_ext import (
-    calc_theta_phi,
-    create_sph_harm_table,
-    rotate_vectors_about_axis,
-)
+from dials_scaling_ext import rotate_vectors_about_axis
 
 logger = logging.getLogger("dials")
 
@@ -117,15 +113,6 @@ def align_axis_along_z(alignment_axis, vectors):
     phi = flex.double(vectors.size(), angle_between_u_z)
     new_vectors = rotate_vectors_about_axis(cross_prod_uz, vectors, phi)
     return flex.vec3_double(new_vectors)
-
-
-def sph_harm_table(reflection_table, lmax):
-    """Calculate the spherical harmonic table for a spherical
-    harmonic absorption correction."""
-    theta_phi = calc_theta_phi(reflection_table["s0c"])
-    theta_phi_2 = calc_theta_phi(reflection_table["s1c"])
-    sph_h_t = create_sph_harm_table(theta_phi, theta_phi_2, lmax)
-    return sph_h_t
 
 
 def quasi_normalisation(reflection_table, experiment):

@@ -35,12 +35,6 @@ namespace dials_scaling { namespace boost_python {
          arg("sumgsq")));
   }
 
-  void export_sph_harm_table() {
-    def("create_sph_harm_table",
-        &create_sph_harm_table,
-        (arg("s0_theta_phi"), arg("s1_theta_phi"), arg("lmax")));
-  }
-
   void export_rotate_vectors_about_axis() {
     def("rotate_vectors_about_axis",
         &rotate_vectors_about_axis,
@@ -69,18 +63,6 @@ namespace dials_scaling { namespace boost_python {
     def("calc_lookup_index",
         &calc_lookup_index,
         (arg("thetaphi"), arg("points_per_degree")));
-  }
-
-  void export_create_sph_harm_lookup_table() {
-    def("create_sph_harm_lookup_table",
-        &create_sph_harm_lookup_table,
-        (arg("lmax"), arg("points_per_degree")));
-  }
-
-  void export_calculate_harmonic_tables_from_selections() {
-    def("calculate_harmonic_tables_from_selections",
-        &calculate_harmonic_tables_from_selections,
-        (arg("s0_selection"), arg("s1_selection"), arg("coefficients_list")));
   }
 
   void export_gaussian_smoother_first_fixed() {

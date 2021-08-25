@@ -4,6 +4,9 @@ return the scale factors and derivatives of the scale factors w.r.t.
 the parameters
 """
 
+import numpy as np
+
+from dxtbx import flumpy
 from scitbx import sparse
 
 from dials.array_family import flex
@@ -57,9 +60,16 @@ class RefinerCalculator:
                     scale_multipliers *= s1
             if apm.constant_g_values:
                 scale_multipliers *= apm.constant_g_values[block_id]
-            next_deriv = row_multiply(d, scale_multipliers)
+            if isinstance(d, np.ndarray):
+                next_deriv = np.transpose(d * scale_multipliers).copy()
+                next_deriv = flumpy.from_numpy(next_deriv)
+            else:
+                next_deriv = row_multiply(d, scale_multipliers)
             derivatives.assign_block(next_deriv, 0, col_idx)
-            col_idx += d.n_cols
+            if isinstance(d, np.ndarray):
+                col_idx += d.shape[0]
+            else:
+                col_idx += d.n_cols
         return derivatives
 
     @classmethod

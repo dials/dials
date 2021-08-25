@@ -3,7 +3,7 @@
 
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <scitbx/sparse/matrix.h>
-#include <scitbx/math/zernike.h>
+#include <scitbx/constants.h>
 #include <scitbx/math/basic_statistics.h>
 #include <dials/error.h>
 #include <math.h>
@@ -15,6 +15,7 @@ namespace dials_scaling {
 
 using namespace boost::python;
 using namespace dials::refinement;
+using scitbx::constants::pi;
 
 class GaussianSmootherFirstFixed : public dials::refinement::GaussianSmoother {
 public:
@@ -392,147 +393,6 @@ scitbx::af::shared<scitbx::vec3<double> > rotate_vectors_about_axis(
   return rotated_vectors;
 }
 
-/**
- * Spherical harmonic table
- */
-
-using scitbx::math::zernike::log_factorial_generator;
-using scitbx::math::zernike::nss_spherical_harmonics;
-using scitbx::sparse::matrix;
-using scitbx::sparse::vector;
-
-boost::python::tuple calculate_harmonic_tables_from_selections(
-  scitbx::af::shared<std::size_t> s0_selection,
-  scitbx::af::shared<std::size_t> s1_selection,
-  boost::python::list coefficients_list) {
-  int n_refl = s0_selection.size();
-  int n_param = boost::python::len(coefficients_list);
-  boost::python::list output_coefficients_list;
-  matrix<double> coefficients_matrix(n_refl, n_param);
-  // loop though each param first, then loop over selection
-  for (int i = 0; i < n_param; ++i) {
-    scitbx::af::shared<double> coefs =
-      boost::python::extract<scitbx::af::shared<double> >(coefficients_list[i]);
-    scitbx::af::shared<double> coef_for_output(n_refl);
-    // loop though each reflection
-    for (int j = 0; j < n_refl; ++j) {
-      double val0 = coefs[s0_selection[j]];
-      double val1 = coefs[s1_selection[j]];
-      double value = (val0 + val1) / 2.0;
-      coefficients_matrix(j, i) = value;
-      coef_for_output[j] = value;
-    }
-    output_coefficients_list.append(coef_for_output);
-  }
-  return boost::python::make_tuple(output_coefficients_list, coefficients_matrix);
 }
-
-matrix<double> create_sph_harm_table(
-  scitbx::af::shared<scitbx::vec2<double> > const s0_theta_phi,
-  scitbx::af::shared<scitbx::vec2<double> > const s1_theta_phi,
-  int lmax) {
-  nss_spherical_harmonics<double> nsssphe(
-    lmax, 50000, log_factorial_generator<double>((2 * lmax) + 1));
-  int n_abs_param = (2 * lmax) + (pow(double(lmax), 2));
-  int n_obs = s1_theta_phi.size();
-  matrix<double> sph_harm_terms_(n_abs_param, n_obs);
-  double sqrt2 = 1.414213562;
-  int counter = 0;
-  for (int l = 1; l < lmax + 1; l++) {
-    for (int m = -1 * l; m < l + 1; m++) {
-      if (m < 0) {
-        double prefactor = sqrt2 * pow(-1.0, m) / 2.0;
-        for (int i = 0; i < n_obs; i++) {
-          sph_harm_terms_(counter, i) =
-            prefactor
-            * (nsssphe
-                 .spherical_harmonic_direct(
-                   l, -1 * m, s0_theta_phi[i][0], s0_theta_phi[i][1])
-                 .imag()
-               + nsssphe
-                   .spherical_harmonic_direct(
-                     l, -1 * m, s1_theta_phi[i][0], s1_theta_phi[i][1])
-                   .imag());
-        }
-      } else if (m == 0) {
-        for (int i = 0; i < n_obs; i++) {
-          sph_harm_terms_(counter, i) =
-            (0.5
-             * (nsssphe
-                  .spherical_harmonic_direct(
-                    l, 0, s0_theta_phi[i][0], s0_theta_phi[i][1])
-                  .real()
-                + nsssphe
-                    .spherical_harmonic_direct(
-                      l, 0, s1_theta_phi[i][0], s1_theta_phi[i][1])
-                    .real()));
-        }
-      } else {
-        double prefactor = sqrt2 * pow(-1.0, m) / 2.0;
-        for (int i = 0; i < n_obs; i++) {
-          double val = prefactor
-                       * (nsssphe
-                            .spherical_harmonic_direct(
-                              l, m, s0_theta_phi[i][0], s0_theta_phi[i][1])
-                            .real()
-                          + nsssphe
-                              .spherical_harmonic_direct(
-                                l, m, s1_theta_phi[i][0], s1_theta_phi[i][1])
-                              .real());
-          sph_harm_terms_(counter, i) = val;
-        }
-      }
-      counter += 1;
-    }
-  }
-  return sph_harm_terms_;
-}
-
-boost::python::list create_sph_harm_lookup_table(int lmax, int points_per_degree) {
-  nss_spherical_harmonics<double> nsssphe(
-    lmax, 50000, log_factorial_generator<double>((2 * lmax) + 1));
-  boost::python::list coefficients_list;
-  double sqrt2 = 1.414213562;
-  int n_items = 360 * 180 * points_per_degree * points_per_degree;
-  for (int l = 1; l < lmax + 1; l++) {
-    for (int m = -1 * l; m < l + 1; m++) {
-      scitbx::af::shared<double> coefficients(n_items);
-      if (m < 0) {
-        double prefactor = sqrt2 * pow(-1.0, m);
-        for (int i = 0; i < n_items; i++) {
-          double theta = (floor(i / (360.0 * points_per_degree)) * scitbx::constants::pi
-                          / (180.0 * points_per_degree));
-          double phi = ((i % (360 * points_per_degree)) * scitbx::constants::pi
-                        / (180.0 * points_per_degree));
-          coefficients[i] =
-            prefactor
-            * (nsssphe.spherical_harmonic_direct(l, -1 * m, theta, phi).imag());
-        }
-      } else if (m == 0) {
-        for (int i = 0; i < n_items; i++) {
-          double theta = (floor(i / (360.0 * points_per_degree)) * scitbx::constants::pi
-                          / (180.0 * points_per_degree));
-          double phi = ((i % (360 * points_per_degree)) * scitbx::constants::pi
-                        / (180.0 * points_per_degree));
-          coefficients[i] = nsssphe.spherical_harmonic_direct(l, 0, theta, phi).real();
-        }
-      } else {
-        double prefactor = sqrt2 * pow(-1.0, m);
-        for (int i = 0; i < n_items; i++) {
-          double theta = (floor(i / (360.0 * points_per_degree)) * scitbx::constants::pi
-                          / (180.0 * points_per_degree));
-          double phi = ((i % (360 * points_per_degree)) * scitbx::constants::pi
-                        / (180.0 * points_per_degree));
-          coefficients[i] =
-            prefactor * (nsssphe.spherical_harmonic_direct(l, m, theta, phi).real());
-        }
-      }
-      coefficients_list.append(coefficients);
-    }
-  }
-  return coefficients_list;
-}
-
-}  // namespace dials_scaling
 
 #endif  // DIALS_SCALING_SCALING_HELPER_H

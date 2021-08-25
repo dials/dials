@@ -21,10 +21,23 @@ the Ih_table datastructures so that the data in the components is split in
 the same way as the data in the Ih_table datastructure.
 """
 
+import numpy as np
+
+from dxtbx import flumpy
 from scitbx import sparse
 
 from dials.array_family import flex
-from dials_scaling_ext import calculate_harmonic_tables_from_selections
+
+
+def lookup_harmonics_coefficients(n0, n1, harmonics: np.ndarray) -> np.ndarray:
+    # n0, n1 are scitbx arrays of ints.
+    # harmonics - first axis is unique l,m values, 2nd and third axis are polar
+    # and azimuth.
+    # n0, n1 are index into flattened polar-azimuth array
+    val0 = harmonics.reshape(harmonics.shape[0], -1)[:, n0]
+    val1 = harmonics.reshape(harmonics.shape[0], -1)[:, n1]
+    coefficients_matrix = (val0 + val1) / 2.0
+    return coefficients_matrix
 
 
 class ScaleComponentBase:
@@ -504,83 +517,51 @@ class SHScaleComponent(ScaleComponentBase):
         if selection:
             n0 = self.data["s0_lookup"].select(selection)
             n1 = self.data["s1_lookup"].select(selection)
-            values, matrix = calculate_harmonic_tables_from_selections(
-                n0, n1, self.coefficients_list
-            )
+            values = lookup_harmonics_coefficients(n0, n1, self.coefficients_list)
             self._harmonic_values = [values]
-            self._matrices = [matrix]
+            self._matrices = [values.T]
         elif block_selections:
             self._harmonic_values = []
             self._matrices = []
             for sel in block_selections:
                 n0 = self.data["s0_lookup"].select(sel)
                 n1 = self.data["s1_lookup"].select(sel)
-                values, matrix = calculate_harmonic_tables_from_selections(
-                    n0, n1, self.coefficients_list
-                )
+                values = lookup_harmonics_coefficients(n0, n1, self.coefficients_list)
                 self._harmonic_values.append(values)
-                self._matrices.append(matrix)
+                self._matrices.append(values.T)
         else:
             n0 = self.data["s0_lookup"]
             n1 = self.data["s1_lookup"]
-            values, matrix = calculate_harmonic_tables_from_selections(
-                n0, n1, self.coefficients_list
-            )
+            values = lookup_harmonics_coefficients(n0, n1, self.coefficients_list)
             self._harmonic_values = [values]
-            self._matrices = [matrix]
-        self._n_refl = [val[0].size() for val in self._harmonic_values]
+            self._matrices = [values.T]
+        self._n_refl = [val.shape[1] for val in self._harmonic_values]
 
     def _update_reflection_data_speedmode(self, selection=None, block_selections=None):
         if selection:
-            sel_sph_harm_table = self.data["sph_harm_table"].select_columns(
-                selection.iselection()
-            )
-            self._harmonic_values = [sel_sph_harm_table.transpose()]
+            self._harmonic_values = [
+                self.data["sph_harm_table"][:, selection.iselection()]
+            ]
         elif block_selections:
-            self._harmonic_values = []
-            for sel in block_selections:
-                block_sph_harm_table = self.data["sph_harm_table"].select_columns(sel)
-                self._harmonic_values.append(block_sph_harm_table.transpose())
+            self._harmonic_values = [
+                self.data["sph_harm_table"][:, sel] for sel in block_selections
+            ]
         else:
-            self._harmonic_values = [self.data["sph_harm_table"].transpose()]
-        self._n_refl = [val.n_rows for val in self._harmonic_values]
+            self._harmonic_values = [self.data["sph_harm_table"]]
+        self._n_refl = [val.shape[1] for val in self._harmonic_values]
 
     def calculate_scales(self, block_id=0):
         """Calculate and return inverse scales for a given block."""
-        if self._mode == "speed":
-            return self._calculate_scales_and_derivatives_speedmode(
-                block_id, derivatives=False
-            )
-        elif self._mode == "memory":
-            return self._calculate_scales_and_derivatives_memorymode(
-                block_id, derivatives=False
-            )
+        multiplied_terms = (
+            np.array(self._parameters)[:, np.newaxis] * self._harmonic_values[block_id]
+        )
+        abs_scale = np.sum(multiplied_terms, axis=0) + 1
+        return flumpy.from_numpy(abs_scale)
 
     def calculate_scales_and_derivatives(self, block_id=0):
         """Calculate and return inverse scales and derivatives for a given block."""
-        if self._mode == "speed":
-            return self._calculate_scales_and_derivatives_speedmode(block_id)
-        elif self._mode == "memory":
-            return self._calculate_scales_and_derivatives_memorymode(block_id)
-
-    def _calculate_scales_and_derivatives_speedmode(self, block_id, derivatives=True):
-        abs_scale = flex.double(
-            self._harmonic_values[block_id].n_rows, 1.0
-        )  # Unity term
-        for i, col in enumerate(self._harmonic_values[block_id].cols()):
-            abs_scale += flex.double(col.as_dense_vector() * self._parameters[i])
-        if derivatives:
-            return abs_scale, self._harmonic_values[block_id]
-        return abs_scale
-
-    def _calculate_scales_and_derivatives_memorymode(self, block_id, derivatives=True):
-        abs_scale = flex.double(
-            self._harmonic_values[block_id][0].size(), 1.0
-        )  # Unity term
-        for i, arr in enumerate(
-            self._harmonic_values[block_id]
-        ):  # iterate over a list of arrays
-            abs_scale += arr * self._parameters[i]
-        if derivatives:
-            return abs_scale, self._matrices[block_id]
-        return abs_scale
+        multiplied_terms = (
+            np.array(self._parameters)[:, np.newaxis] * self._harmonic_values[block_id]
+        )
+        abs_scale = np.sum(multiplied_terms, axis=0) + 1
+        return flumpy.from_numpy(abs_scale), self._harmonic_values[block_id]

@@ -18,6 +18,9 @@ from collections import OrderedDict
 from io import StringIO
 from math import ceil
 
+import numpy as np
+
+from dxtbx import flumpy
 from libtbx import Auto
 from scitbx import sparse
 
@@ -599,7 +602,13 @@ class SingleScaler(ScalerBase):
                     n_param = self.components[component].n_params
                     for k, component_2 in enumerate(self.components):
                         if component_2 != component:
-                            d_block = row_multiply(d_block, scales_list[k])
+                            if isinstance(d_block, np.ndarray):
+                                d_block = d_block * scales_list[k]
+                            else:
+                                d_block = row_multiply(d_block, scales_list[k])
+                    if isinstance(d_block, np.ndarray):
+                        d_block = np.transpose(d_block * scales_list[k]).copy()
+                        d_block = flumpy.from_numpy(d_block)
                     jacobian.assign_block(d_block, 0, n_cumulative_param)
                     n_cumulative_param += n_param
                 all_invsfvars.extend(
@@ -1721,7 +1730,11 @@ def calc_sf_variances(components, var_cov):
         n_param = components[component].n_params
         for j, component_2 in enumerate(components):
             if component_2 != component:
-                d_block = row_multiply(d_block, scales_list[j])
+                if isinstance(d_block, np.ndarray):
+                    d_block = np.transpose(d_block * scales_list[j]).copy()
+                    d_block = flumpy.from_numpy(d_block)
+                else:
+                    d_block = row_multiply(d_block, scales_list[j])
         jacobian.assign_block(d_block, 0, n_cumulative_param)
         n_cumulative_param += n_param
     return cpp_calc_sigmasq(jacobian.transpose(), var_cov)

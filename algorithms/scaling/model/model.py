@@ -6,7 +6,11 @@ methods to define how these are composed into one model.
 """
 
 import logging
+import math
 from collections import OrderedDict
+
+import numpy as np
+import scipy
 
 from libtbx import Auto, phil
 
@@ -34,13 +38,66 @@ from dials.algorithms.scaling.plots import (
     plot_relative_Bs,
     plot_smooth_scales,
 )
-from dials.algorithms.scaling.scaling_utilities import sph_harm_table
 from dials.array_family import flex
-from dials_scaling_ext import (
-    calc_lookup_index,
-    calc_theta_phi,
-    create_sph_harm_lookup_table,
-)
+from dials_scaling_ext import calc_lookup_index, calc_theta_phi
+
+
+def calculate_harmonics_coefficients(s0c, s1c, lmax):
+    # case where using all reflections to directly calculate
+    harmonics_s0c = create_spherical_harmonics_direct(lmax, s0c)
+    harmonics_s1c = create_spherical_harmonics_direct(lmax, s1c)
+    coefficients_matrix = (harmonics_s0c + harmonics_s1c) / 2.0
+    return coefficients_matrix
+
+
+def create_spherical_harmonics_direct(lmax, sc):
+    # calc values of theta and phi to get polar and azimuth
+    theta_phi = calc_theta_phi(sc)
+    polar, azimuth = np.array(theta_phi).T
+    return _create_spherical_harmonics(lmax, polar, azimuth)
+
+
+def create_spherical_harmonics_grid(lmax: int, points_per_degree: int):
+    polar = np.linspace(0, np.pi, points_per_degree * 180)
+    azimuth = np.linspace(0, 2 * np.pi, points_per_degree * 360)
+    polar.shape = -1, 1
+    azimuth.shape = 1, -1
+    return _create_spherical_harmonics(lmax, polar, azimuth)
+
+
+def _create_spherical_harmonics(lmax: int, polar, azimuth) -> np.ndarray:
+    # Get the sampled range of l and m parameters of the spherical harmonics.
+    # There is one coefficient for each of the (lmax + 1)^2 - 1 spherical harmonics.
+
+    l = np.arange(1, lmax + 1)
+    m = np.arange(-lmax, lmax + 1)
+    m_non_negative = m[lmax:]
+
+    # Reshape l, m, polar and azimuth for easy broadcasting.
+    angle_values_dimensions = (1,) * polar.ndim
+    l.shape = -1, 1, *angle_values_dimensions
+    m.shape = m_non_negative.shape = 1, -1, *angle_values_dimensions
+    polar.shape = 1, 1, *polar.shape
+    azimuth.shape = 1, 1, *azimuth.shape
+
+    # Calculate the spherical harmonics for every combination of l, non-negative m,
+    # and both angles.  Only non-negative m is needed to later get the real forms for
+    # all m.  For the invalid values |m| > l, a value of NaN will be used.
+    harmonics = scipy.special.sph_harm(m_non_negative, l, azimuth, polar)
+
+    # Convert the complex harmonics for non-negative m to the real forms for all m.
+    # See https://en.wikipedia.org/wiki/Spherical_harmonics#Real_form.
+    harmonics = np.concatenate((harmonics[:, :0:-1].imag, harmonics.real), axis=1)
+    harmonics *= np.where(m != 0, math.sqrt(2) * (-1) ** (m % 2), 1)
+
+    # Flatten together the l and m dimensions of the harmonics array.
+    harmonics.shape = -1, *harmonics.shape[2:]
+    # Keep only the valid harmonics, for which l >= |m|.
+    valid = np.ravel(l >= np.abs(m))
+    harmonics = harmonics[valid]
+
+    return harmonics
+
 
 logger = logging.getLogger("dials")
 
@@ -399,14 +456,16 @@ def _add_absorption_component_to_physically_derived_model(model, reflection_tabl
         s0_lookup_index = calc_lookup_index(theta_phi_0, points_per_degree=2)
         s1_lookup_index = calc_lookup_index(theta_phi_1, points_per_degree=2)
         if SHScaleComponent.coefficients_list is None:
-            SHScaleComponent.coefficients_list = create_sph_harm_lookup_table(
+            SHScaleComponent.coefficients_list = create_spherical_harmonics_grid(
                 lmax, points_per_degree=2
-            )  # set the class variable and share
+            )
+            # set the class variable and share
         elif len(SHScaleComponent.coefficients_list) < (lmax * (2.0 + lmax)):
             # this (rare) case can happen if adding a new dataset with a larger lmax!
-            SHScaleComponent.coefficients_list = create_sph_harm_lookup_table(
+            SHScaleComponent.coefficients_list = create_spherical_harmonics_grid(
                 lmax, points_per_degree=2
-            )  # set the class variable and share
+            )
+            # set the class variable and share
         model.components["absorption"].data = {
             "s0_lookup": s0_lookup_index,
             "s1_lookup": s1_lookup_index,
@@ -414,7 +473,11 @@ def _add_absorption_component_to_physically_derived_model(model, reflection_tabl
     # here just pass in good reflections
     else:
         model.components["absorption"].data = {
-            "sph_harm_table": sph_harm_table(reflection_table, lmax)
+            "sph_harm_table": calculate_harmonics_coefficients(
+                reflection_table["s0c"],
+                reflection_table["s1c"],
+                lmax,
+            )
         }
     surface_weight = model.configdict["abs_surface_weight"]
     parameter_restraints = flex.double([])
