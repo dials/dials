@@ -1238,11 +1238,15 @@ Found %s"""
         self["rlp"] = cctbx.array_family.flex.vec3_double(len(self))
         panel_numbers = cctbx.array_family.flex.size_t(self["panel"])
 
+        # crystal_frame is not used in indexing, but is a feature of the
+        # reciprocal lattice viewer -> but if we are looking at the crystal
+        # coordinate frame we need to look at the experiments independently
+
         for i, expt in enumerate(experiments):
-            if "id" in self:
-                sel_expt = self["id"] == i
-            else:
+            if not crystal_frame and "imageset_id" in self:
                 sel_expt = self["imageset_id"] == i
+            else:
+                sel_expt = self["id"] == i
 
             for i_panel in range(len(expt.detector)):
                 sel = sel_expt & (panel_numbers == i_panel)
