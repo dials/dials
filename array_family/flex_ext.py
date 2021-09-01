@@ -1239,10 +1239,10 @@ Found %s"""
         panel_numbers = cctbx.array_family.flex.size_t(self["panel"])
 
         for i, expt in enumerate(experiments):
-            if "imageset_id" in self:
-                sel_expt = self["imageset_id"] == i
-            else:
+            if "id" in self:
                 sel_expt = self["id"] == i
+            else:
+                sel_expt = self["imageset_id"] == i
 
             for i_panel in range(len(expt.detector)):
                 sel = sel_expt & (panel_numbers == i_panel)
