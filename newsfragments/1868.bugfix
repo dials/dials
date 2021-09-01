@@ -1,1 +1,1 @@
-reciprocal lattice viewer: if multiple lattices on single scan, when showing in crystal frame map each lattice independently so they are aligned correctly in reciprocal space. 
+``dials.reciprocal_lattice_viewer``: In cases with multiple lattices, "Crystal Frame" now aligns all crystal frames, rather than just the first. Unindexed reflections are no longer shown in this mode.
