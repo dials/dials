@@ -27,6 +27,7 @@ conda-forge::numpy<1.21
 conda-forge::orderedset
 conda-forge::pandas
 conda-forge::pillow>=5.4.1
+conda-forge::pint
 conda-forge::pip
 conda-forge::procrunner>=2.2.0
 conda-forge::psutil
