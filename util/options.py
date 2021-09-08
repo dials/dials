@@ -262,10 +262,10 @@ class Importer:
             # Don't expand wildcards if URI-style filename
             if "*" in arg and not get_url_scheme(arg):
                 filenames = glob(arg)
-                if not filenames:
-                    logger.warning("No files found with pattern %s" % arg)
+                if filenames:
+                    args_new.extend(filenames)
                 else:
-                    args_new.extend(glob(arg))
+                    logger.warning("No files found with pattern %s" % arg)
             else:
                 args_new.append(arg)
         args = args_new
