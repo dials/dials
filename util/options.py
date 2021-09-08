@@ -283,12 +283,13 @@ class Importer:
                 format_kwargs=format_kwargs,
                 load_models=load_models,
             )
+        except FileNotFoundError as e:
+            logger.error("File %s not found", e.filename)
+        else:
             if experiments:
                 self.experiments.append(
                     FilenameDataWrapper(filename="<image files>", data=experiments)
                 )
-        except FileNotFoundError as e:
-            logger.error("File %s not found", e.filename)
 
         return unhandled
 
