@@ -732,6 +732,45 @@ def test_index_ED_still_low_res_spot_match(dials_data, tmpdir, indexer_type, fix
     )
 
 
+@pytest.mark.parametrize(
+    "cell_params",
+    [
+        (44.47, 52.85, 62.23, 115.14, 101.72, 90.01),
+        pytest.param(
+            (52.85, 62.23, 44.47, 101.72, 90.01, 115.14), marks=pytest.mark.xfail()
+        ),
+    ],
+)
+def test_unconventional_P1_cell(dials_data, tmpdir, cell_params):
+    """
+    Indexing in P1 should succeed even if the cell parameters are provided in
+    a non-conventional setting
+    """
+    data_dir = dials_data("mpro_x0305_processed")
+    experiment = data_dir.join("imported.expt").strpath
+    reflections = data_dir.join("strong.refl").strpath
+
+    cell_params_str = ",".join([str(x) for x in cell_params])
+    extra_args = [
+        "indexing.method=fft3d",
+        "known_symmetry.space_group=P1",
+        "known_symmetry.unit_cell=" + cell_params_str,
+    ]
+    expected_unit_cell = uctbx.unit_cell(cell_params)
+    expected_rmsds = (1, 1, 1)
+    expected_hall_symbol = " P 1"
+
+    run_indexing(
+        reflections,
+        experiment,
+        tmpdir,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+    )
+
+
 def test_real_space_grid_search_no_unit_cell(dials_regression, tmpdir):
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
     experiments_json = os.path.join(data_dir, "experiments_import.json")
