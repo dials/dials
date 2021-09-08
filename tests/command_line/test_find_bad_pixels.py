@@ -18,7 +18,7 @@ def test_find_bad_pixels(dials_data, tmp_path):
     count = 0
     for record in result.stdout.decode().split("\n"):
         if "mask" in record:
-            assert record.split()[-1] == "8"
+            assert record.split()[-1] == "16"
             count += 1
 
     assert count == 23
