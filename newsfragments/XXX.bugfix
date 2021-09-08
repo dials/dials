@@ -1,0 +1,2 @@
+dials.find_bad_pixels: change output pixel format to write out input to Diamond
+bad pixel mask program correctly (C ordering, 16 which indicates noisy pixel)
