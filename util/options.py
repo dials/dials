@@ -265,7 +265,7 @@ class Importer:
                 if filenames:
                     args_new.extend(filenames)
                 else:
-                    logger.warning("No files found with pattern %s" % arg)
+                    logger.warning(f"No files found with pattern {arg}")
             else:
                 args_new.append(arg)
         args = args_new
@@ -284,7 +284,7 @@ class Importer:
                 load_models=load_models,
             )
         except FileNotFoundError as e:
-            logger.error("File %s not found", e.filename)
+            logger.error(f"File {e.filename} not found")
         else:
             if experiments:
                 self.experiments.append(
