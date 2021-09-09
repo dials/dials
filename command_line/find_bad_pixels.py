@@ -193,7 +193,7 @@ def run(args=None):
     hot_pixels = hot_mask.iselection()
 
     for h in hot_pixels:
-        print("    mask[%d, %d] = 16" % (h // nfast, h % nfast))
+        print(f"mask: {h // nfast} {h % nfast} 16")
 
 
 if __name__ == "__main__":

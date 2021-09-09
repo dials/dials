@@ -1,5 +1,3 @@
-import re
-
 import procrunner
 
 
@@ -44,9 +42,9 @@ def test_find_bad_pixels(dials_data, tmp_path):
     # verify bad pixels
     for record in result.stdout.decode().split("\n"):
         if "mask" in record:
-            tokens = re.split(r"\W+|[|]", record)
-            assert tokens[-1] == "16"
-            position = tuple(map(int, tokens[2:4]))
+            tokens = tuple(map(int, record.split()[1:]))
+            assert tokens[-1] == 16
+            position = tokens[:2]
             locations.remove(position)
 
     assert len(locations) == 0
