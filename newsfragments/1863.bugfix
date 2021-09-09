@@ -1,1 +1,1 @@
-Error when trying to import a missing file now handled more elegantly. A warning is now given when trying to import files using a wildcard and none are found.
+dials.import: More helpful error message when trying to import a missing file. A warning is now given when trying to import files using a wildcard and none are found.
