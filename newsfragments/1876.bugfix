@@ -1,2 +1,1 @@
-dials.find_bad_pixels: change output pixel format to write out input to Diamond
-bad pixel mask program correctly (C ordering, 16 which indicates noisy pixel)
+dials.find_bad_pixels: update output for compatibility with Diamond Light Source bad pixel mask program (pixel coordinates in row-major order; set mask value to 16 which corresponds to a noisy pixel)
