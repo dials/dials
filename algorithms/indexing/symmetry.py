@@ -145,20 +145,24 @@ class SymmetryHandler:
                 space_group
             ), "space_group must be provided in combination with unit_cell"
 
-            if target_space_group:
-                self.target_symmetry_inp = crystal.symmetry(
-                    unit_cell=unit_cell, space_group=target_space_group
+            self.target_symmetry_inp = crystal.symmetry(
+                unit_cell=unit_cell, space_group=target_space_group
+            )
+            if str(bravais_lattice(group=target_space_group)) == "aP":
+                self.cb_op_inp_ref = (
+                    self.target_symmetry_inp.change_of_basis_op_to_minimum_cell()
                 )
+            else:
                 self.cb_op_inp_ref = (
                     self.target_symmetry_inp.change_of_basis_op_to_reference_setting()
                 )
-                self.target_symmetry_reference_setting = (
-                    self.target_symmetry_inp.change_basis(self.cb_op_inp_ref)
-                )
-                self.cb_op_inp_best = (
-                    self.target_symmetry_reference_setting.change_of_basis_op_to_best_cell()
-                    * self.cb_op_inp_ref
-                )
+            self.target_symmetry_reference_setting = (
+                self.target_symmetry_inp.change_basis(self.cb_op_inp_ref)
+            )
+            self.cb_op_inp_best = (
+                self.target_symmetry_reference_setting.change_of_basis_op_to_best_cell()
+                * self.cb_op_inp_ref
+            )
 
         elif target_space_group is not None:
             self.target_symmetry_inp = crystal.symmetry(space_group=target_space_group)

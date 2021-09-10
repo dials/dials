@@ -736,9 +736,7 @@ def test_index_ED_still_low_res_spot_match(dials_data, tmpdir, indexer_type, fix
     "cell_params",
     [
         (44.47, 52.85, 62.23, 115.14, 101.72, 90.01),
-        pytest.param(
-            (52.85, 62.23, 44.47, 101.72, 90.01, 115.14), marks=pytest.mark.xfail()
-        ),
+        (52.85, 62.23, 44.47, 101.72, 90.01, 115.14),
     ],
 )
 def test_unconventional_P1_cell(dials_data, tmpdir, cell_params):
@@ -746,9 +744,9 @@ def test_unconventional_P1_cell(dials_data, tmpdir, cell_params):
     Indexing in P1 should succeed even if the cell parameters are provided in
     a non-conventional setting
     """
-    data_dir = dials_data("mpro_x0305_processed")
-    experiment = data_dir.join("imported.expt").strpath
-    reflections = data_dir.join("strong.refl").strpath
+    data_dir = dials_data("mpro_x0305_processed", pathlib=True)
+    experiment = data_dir / "imported.expt"
+    reflections = data_dir / "strong.refl"
 
     cell_params_str = ",".join([str(x) for x in cell_params])
     extra_args = [
