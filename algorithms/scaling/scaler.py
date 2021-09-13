@@ -446,6 +446,11 @@ class SingleScaler(ScalerBase):
         return self.experiment.scaling_model.components
 
     @property
+    def fixed_components(self):
+        """Shortcut to the scaling model fixed components."""
+        return self.experiment.scaling_model.fixed_components
+
+    @property
     def consecutive_refinement_order(self):
         """Link to consecutive refinement order for parameter manager."""
         return self.experiment.scaling_model.consecutive_refinement_order

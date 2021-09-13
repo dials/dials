@@ -46,15 +46,25 @@ logger = logging.getLogger("dials")
 
 import pkg_resources
 
-kb_model_phil_str = """\
+base_model_phil_str = """\
+correction.fix = None
+    .type = strings
+    .help = "If specified, this correction will not be refined in this scaling run"
+"""
+
+kb_model_phil_str = (
+    """\
 decay_correction = True
     .type = bool
     .help = "Option to turn off decay correction (for physical/array/KB
             default models)."
     .expert_level = 1
 """
+    + base_model_phil_str
+)
 
-dose_decay_model_phil_str = """\
+dose_decay_model_phil_str = (
+    """\
 scale_interval = 2.0
     .type = float(value_min=1.0)
     .help = "Rotation (phi) interval between model parameters for the scale"
@@ -97,9 +107,12 @@ fix_initial = True
             "scale factor error estimates."
     .expert_level = 2
 """
+    + base_model_phil_str
+)
 
 
-physical_model_phil_str = """\
+physical_model_phil_str = (
+    """\
 scale_interval = auto
     .type = float(value_min=1.0)
     .help = "Rotation (phi) interval between model parameters for the scale"
@@ -163,8 +176,11 @@ fix_initial = True
             "scale factor error estimates."
     .expert_level = 2
 """
+    + base_model_phil_str
+)
 
-array_model_phil_str = """\
+array_model_phil_str = (
+    """\
 decay_correction = True
     .type = bool
     .help = "Option to turn off decay correction (a 2D grid of parameters as"
@@ -202,6 +218,8 @@ n_modulation_bins = 20
             "binning the detector position for the modulation correction."
     .expert_level = 2
 """
+    + base_model_phil_str
+)
 
 autos = [Auto, "auto", "Auto"]
 
@@ -219,6 +237,7 @@ class ScalingModelBase:
         self._configdict = configdict
         self._is_scaled = is_scaled
         self._error_model = None
+        self._fixed_components = []
 
     @property
     def is_scaled(self):
@@ -228,6 +247,14 @@ class ScalingModelBase:
     def fix_initial_parameter(self, params):
         """Fix a parameter of the scaling model."""
         return False
+
+    @property
+    def fixed_components(self):
+        return self._fixed_components
+
+    @fixed_components.setter
+    def fixed_components(self, components):
+        self._fixed_components = components
 
     def limit_image_range(self, new_image_range):
         """Modify the model if necessary due to reducing the image range.
@@ -594,7 +621,10 @@ class DoseDecay(ScalingModelBase):
                 "parameter_esds": None,
             }
 
-        return cls(parameters_dict, configdict)
+        model = cls(parameters_dict, configdict)
+        if params.correction.fix:
+            model.fixed_components = params.correction.fix
+        return model
 
     @classmethod
     def from_dict(cls, obj):
@@ -858,7 +888,10 @@ class PhysicalScalingModel(ScalingModelBase):
                 "parameter_esds": None,
             }
 
-        return cls(parameters_dict, configdict)
+        model = cls(parameters_dict, configdict)
+        if params.correction.fix:
+            model.fixed_components = params.correction.fix
+        return model
 
     @classmethod
     def from_dict(cls, obj):
@@ -1180,7 +1213,10 @@ class ArrayScalingModel(ScalingModelBase):
                 "parameter_esds": None,
             }
 
-        return cls(parameters_dict, configdict)
+        model = cls(parameters_dict, configdict)
+        if params.correction.fix:
+            model.fixed_components = params.correction.fix
+        return model
 
     @classmethod
     def from_dict(cls, obj):
@@ -1299,7 +1335,10 @@ class KBScalingModel(ScalingModelBase):
             "parameter_esds": None,
         }
 
-        return cls(parameters_dict, configdict)
+        model = cls(parameters_dict, configdict)
+        if params.correction.fix:
+            model.fixed_components = params.correction.fix
+        return model
 
 
 def calculate_new_offset(
