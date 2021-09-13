@@ -966,7 +966,10 @@ class PhysicalScalingModel(ScalingModelBase):
 
     def get_shared_components(self):
         if "shared" in self.configdict:
-            if "absorption" in self.configdict["shared"]:
+            if (
+                "absorption" in self.configdict["shared"]
+                and "absorption" not in self.fixed_components
+            ):
                 return "absorption"
         return None
 
