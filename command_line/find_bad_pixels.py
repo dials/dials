@@ -14,7 +14,7 @@ help_message = """
 
 Identify unreliable pixels in a sequence of images: defined to be those pixels
 which read as signal in spot finding in 50% or over of images. Outputs data in
-the order slow, fast (e.g. C ordering) as ::
+the order slow, fast (i.e. row-major order) as ::
 
   mask[slow, fast] = 16
 
