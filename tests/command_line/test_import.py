@@ -259,7 +259,7 @@ def test_import_beam_centre(dials_data, tmpdir):
     assert beam_centre == pytest.approx((200, 100))
 
 
-def test_slow_fast_beam_centre(dials_regression, run_in_tmpdir):
+def test_fast_slow_beam_centre(dials_regression, run_in_tmpdir):
     # test slow_fast_beam_centre with a multi-panel CS-PAD image
     impath = os.path.join(
         dials_regression,
@@ -270,15 +270,15 @@ def test_slow_fast_beam_centre(dials_regression, run_in_tmpdir):
     result = procrunner.run(
         [
             "dials.import",
-            "slow_fast_beam_centre=134,42,18",
-            "output.experiments=slow_fast_beam_centre.expt",
+            "fast_slow_beam_centre=42,134,18",
+            "output.experiments=fast_slow_beam_centre.expt",
             impath,
         ]
     )
     assert not result.returncode and not result.stderr
-    assert os.path.exists("slow_fast_beam_centre.expt")
+    assert os.path.exists("fast_slow_beam_centre.expt")
 
-    experiments = load.experiment_list("slow_fast_beam_centre.expt")
+    experiments = load.experiment_list("fast_slow_beam_centre.expt")
     imgset = experiments[0].imageset
     assert experiments[0].identifier != ""
     # beam centre on 18th panel
