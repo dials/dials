@@ -502,9 +502,16 @@ class DoseDecay(ScalingModelBase):
 
     def get_shared_components(self):
         if "shared" in self.configdict:
-            if "decay" in self.configdict["shared"]:
+            if (
+                "decay" in self.configdict["shared"]
+                and "decay" not in self.fixed_components
+            ):
                 return "decay"
         return None
+
+    def update(self, params):
+        if params.dose_decay.correction.fix:
+            self.fixed_components = params.dose_decay.correction.fix
 
     def configure_components(self, reflection_table, experiment, params):
         """Add the required reflection table data to the model components."""
@@ -923,6 +930,8 @@ class PhysicalScalingModel(ScalingModelBase):
 
     def update(self, params):
         """Update the model if new options chosen in the phil scope."""
+        if params.physical.correction.fix:
+            self.fixed_components = params.physical.correction.fix
         if "absorption" in self.components:
             new_lmax = None
             if params.physical.absorption_level:
@@ -1018,6 +1027,10 @@ class ArrayScalingModel(ScalingModelBase):
     def consecutive_refinement_order(self):
         """:obj:`list`: a nested list of component names to indicate scaling order."""
         return [["decay"], ["absorption"], ["modulation"]]
+
+    def update(self, params):
+        if params.array.correction.fix:
+            self.fixed_components = params.array.correction.fix
 
     def configure_components(self, reflection_table, experiment, params):
         """Add the required reflection table data to the model components."""
@@ -1295,6 +1308,10 @@ class KBScalingModel(ScalingModelBase):
     def consecutive_refinement_order(self):
         """:obj:`list`: a nested list of component names to indicate scaling order."""
         return [["scale", "decay"]]
+
+    def update(self, params):
+        if params.KB.correction.fix:
+            self.fixed_components = params.KB.correction.fix
 
     @classmethod
     def from_dict(cls, obj):
