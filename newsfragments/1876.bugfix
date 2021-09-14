@@ -1,1 +1,1 @@
-dials.find_bad_pixels: update output for compatibility with Diamond Light Source bad pixel mask program (pixel coordinates in row-major order; set mask value to 16 which corresponds to a noisy pixel)
+``dials.find_bad_pixels``: Pixel coordinates are now reported in row-major order, and mask value is now set to 16, which corresponds internally to "noisy pixel".
