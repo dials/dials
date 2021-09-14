@@ -137,9 +137,9 @@ def test_plot_scaling_models():
             "est_standard_devs": [0.05, 0.1],
         },
         "absorption": {
-            "n_parameters": 4,
-            "parameters": [0.1, -0.1, 0.05, -0.05],
-            "est_standard_devs": [0.005, 0.005, 0.005, 0.005],
+            "n_parameters": 3,
+            "parameters": [0.1, -0.1, 0.05],
+            "est_standard_devs": [0.005, 0.005, 0.005],
         },
     }
     d = plot_scaling_models(PhysicalScalingModel.from_dict(physical_dict))

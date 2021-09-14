@@ -50,6 +50,14 @@ class RefinerCalculator:
         if len(scales) == 1:
             # only one active parameter, so don't need to chain rule any derivatives
             # for block_id in range(len(apm.n_obs)):
+            if isinstance(derivatives_list[0], np.ndarray):
+                derivatives = sparse.matrix(
+                    derivatives_list[0].shape[1], derivatives_list[0].shape[0]
+                )
+                derivatives.assign_block(
+                    flumpy.from_numpy(np.transpose(derivatives_list[0]).copy()), 0, 0
+                )
+                return derivatives
             return derivatives_list[0]
         derivatives = sparse.matrix(apm.n_obs[block_id], apm.n_active_params)
         col_idx = 0

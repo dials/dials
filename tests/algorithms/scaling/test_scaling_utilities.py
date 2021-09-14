@@ -19,6 +19,10 @@ from dxtbx.serialize import load
 from libtbx import phil
 from scitbx.sparse import matrix  # noqa: F401 - Needed to call calc_theta_phi
 
+from dials.algorithms.scaling.model.model import (
+    calculate_harmonics_coefficients,
+    create_spherical_harmonics_grid,
+)
 from dials.algorithms.scaling.scaling_library import create_scaling_model
 from dials.algorithms.scaling.scaling_utilities import (
     Reasons,
@@ -30,13 +34,7 @@ from dials.algorithms.scaling.scaling_utilities import (
 )
 from dials.array_family import flex
 from dials.util.options import OptionParser
-from dials_scaling_ext import (
-    calc_lookup_index,
-    calc_theta_phi,
-    calculate_harmonic_tables_from_selections,
-    create_sph_harm_lookup_table,
-    create_sph_harm_table,
-)
+from dials_scaling_ext import calc_lookup_index, calc_theta_phi
 
 
 @pytest.fixture(scope="module")
@@ -346,10 +344,8 @@ def test_calc_crystal_frame_vectors_multi_axis_gonio(test_reflection_table):
         assert v1 == pytest.approx(v2)
 
 
-def test_create_sph_harm_table(test_reflection_table, test_experiment_singleaxisgonio):
-    """Simple test for the spherical harmonic table, constructing the table step
-    by step, and verifying the values of a few easy-to-calculate entries.
-    This also acts as a test for the calc_theta_phi function as well."""
+def test_calc_theta_phi(test_reflection_table, test_experiment_singleaxisgonio):
+    """Simple test for the calc_theta_phi function."""
 
     rt, exp = test_reflection_table, test_experiment_singleaxisgonio
     reflection_table = calc_crystal_frame_vectors(rt, exp)
@@ -380,16 +376,6 @@ def test_create_sph_harm_table(test_reflection_table, test_experiment_singleaxis
     ]
     for v1, v2 in zip(theta_phi_2, expected):
         assert v1 == pytest.approx(v2)
-    sph_h_t = create_sph_harm_table(theta_phi, theta_phi_2, 2)
-    Y10 = ((3.0 / (8.0 * pi)) ** 0.5) / 2.0
-    Y20 = -1.0 * ((5.0 / (256.0 * pi)) ** 0.5)
-    assert sph_h_t[1, 0] == pytest.approx(Y10)
-    assert sph_h_t[1, 1] == pytest.approx(Y10)
-    assert sph_h_t[1, 2] == pytest.approx(Y10)
-    assert sph_h_t[5, 0] == pytest.approx(Y20)
-    assert sph_h_t[5, 1] == pytest.approx(Y20)
-    assert sph_h_t[5, 2] == pytest.approx(Y20)
-    # Now test that you get the same by just calling the function.
 
 
 def test_calculate_wilson_outliers(wilson_test_reflection_table):
@@ -438,30 +424,6 @@ criterion: test reason, reflections: 100
     assert reasons.__repr__() == expected_output
 
 
-def test_calculate_harmonic_tables_from_selections():
-    selection = flex.size_t([1, 0, 2, 3, 1])
-    coefficients = [flex.double([10, 11, 12, 13]), flex.double([20, 21, 22, 23])]
-
-    arrays, mat = calculate_harmonic_tables_from_selections(
-        selection, selection, coefficients
-    )
-    assert len(arrays) == 2
-    assert mat.n_cols == 2
-    assert mat.n_rows == 5
-    assert list(arrays[0]) == [11, 10, 12, 13, 11]
-    assert list(arrays[1]) == [21, 20, 22, 23, 21]
-    assert mat[0, 0] == arrays[0][0]
-    assert mat[1, 0] == arrays[0][1]
-    assert mat[2, 0] == arrays[0][2]
-    assert mat[3, 0] == arrays[0][3]
-    assert mat[4, 0] == arrays[0][4]
-    assert mat[0, 1] == arrays[1][0]
-    assert mat[1, 1] == arrays[1][1]
-    assert mat[2, 1] == arrays[1][2]
-    assert mat[3, 1] == arrays[1][3]
-    assert mat[4, 1] == arrays[1][4]
-
-
 def test_equality_of_two_harmonic_table_methods(dials_data):
     location = dials_data("l_cysteine_dials_output", pathlib=True)
     refl = location / "20_integrated.pickle"
@@ -504,14 +466,15 @@ def test_equality_of_two_harmonic_table_methods(dials_data):
     s1_lookup_index = calc_lookup_index(theta_phi_1, points_per_degree)
     print(list(s0_lookup_index[0:20]))
     print(list(s1_lookup_index[0:20]))
-    coefficients_list = create_sph_harm_lookup_table(lmax, points_per_degree)
+
+    # coefficients_list = create_sph_harm_lookup_table(lmax, points_per_degree)
     experiment.scaling_model.components["absorption"].data = {
         "s0_lookup": s0_lookup_index,
         "s1_lookup": s1_lookup_index,
     }
     experiment.scaling_model.components[
         "absorption"
-    ].coefficients_list = coefficients_list
+    ].coefficients_list = create_spherical_harmonics_grid(lmax, points_per_degree)
     assert experiment.scaling_model.components["absorption"]._mode == "memory"
     experiment.scaling_model.components["absorption"].update_reflection_data()
     absorption = experiment.scaling_model.components["absorption"]
@@ -520,13 +483,17 @@ def test_equality_of_two_harmonic_table_methods(dials_data):
     experiment.scaling_model.components["absorption"].parameters = flex.double(
         [0.1, -0.1, 0.05, 0.02, 0.01, -0.05, 0.12, -0.035]
     )
-    scales, derivatives = experiment.scaling_model.components[
+    scales, _ = experiment.scaling_model.components[
         "absorption"
     ].calculate_scales_and_derivatives()
 
     # Old method:
 
-    old_data = {"sph_harm_table": create_sph_harm_table(theta_phi_0, theta_phi_1, lmax)}
+    old_data = {
+        "sph_harm_table": calculate_harmonics_coefficients(
+            reflection_table["s0c"], reflection_table["s1c"], lmax
+        )
+    }
     experiment.scaling_model.components["absorption"].data = old_data
     assert experiment.scaling_model.components["absorption"]._mode == "speed"
     experiment.scaling_model.components["absorption"].update_reflection_data()
@@ -534,13 +501,13 @@ def test_equality_of_two_harmonic_table_methods(dials_data):
     for i in range(0, 8):
         print(i)
         assert list(harmonic_values_list[i]) == pytest.approx(
-            list(old_harmonic_values.col(i).as_dense_vector()), abs=0.01
+            list(old_harmonic_values[i, :]), abs=0.01
         )
 
     experiment.scaling_model.components["absorption"].parameters = flex.double(
         [0.1, -0.1, 0.05, 0.02, 0.01, -0.05, 0.12, -0.035]
     )
-    scales_1, derivatives_1 = experiment.scaling_model.components[
+    scales_1, _ = experiment.scaling_model.components[
         "absorption"
     ].calculate_scales_and_derivatives()
 

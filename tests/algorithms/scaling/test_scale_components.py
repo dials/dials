@@ -4,6 +4,7 @@ Tests for scale components module.
 
 from math import exp
 
+import numpy as np
 import pytest
 
 from scitbx import sparse
@@ -104,32 +105,30 @@ def test_SHScalefactor():
 
     # Test functionality just by setting sph_harm_table directly and calling
     # update_reflection_data to initialise the harmonic values.
-    harmonic_values = sparse.matrix(3, 1)
-    harmonic_values[0, 0] = initial_val
-    harmonic_values[1, 0] = initial_val
-    harmonic_values[2, 0] = initial_val
+
+    harmonic_values = np.array([initial_val] * 3).reshape(3, 1)
     SF.data = {"sph_harm_table": harmonic_values}
     SF.update_reflection_data()
     print(SF.harmonic_values)
     assert SF.harmonic_values[0][0, 0] == initial_val
-    assert SF.harmonic_values[0][0, 1] == initial_val
-    assert SF.harmonic_values[0][0, 2] == initial_val
+    assert SF.harmonic_values[0][1, 0] == initial_val
+    assert SF.harmonic_values[0][2, 0] == initial_val
     s, d = SF.calculate_scales_and_derivatives()
     assert list(s) == [1.0 + (3.0 * initial_val * initial_param)]
     assert d[0, 0] == initial_val
-    assert d[0, 1] == initial_val
-    assert d[0, 2] == initial_val
+    assert d[1, 0] == initial_val
+    assert d[2, 0] == initial_val
     s, d = SF.calculate_scales_and_derivatives()
 
     # Test functionality of passing in a selection
     harmonic_values = sparse.matrix(3, 2)
+    harmonic_values = np.empty(shape=(3, 2))
     harmonic_values[0, 0] = initial_val
-    harmonic_values[0, 1] = initial_val
+    harmonic_values[1, 0] = initial_val
     harmonic_values[2, 0] = initial_val
     SF.data = {"sph_harm_table": harmonic_values}
     SF.update_reflection_data(flex.bool([False, True]))
-    assert SF.harmonic_values[0].n_rows == 1
-    assert SF.harmonic_values[0].n_cols == 3
+    assert SF.harmonic_values[0].shape == (3, 1)
     assert SF.n_refl[0] == 1
 
     # Test setting of restraints and that restraints are calculated.
