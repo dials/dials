@@ -1356,8 +1356,8 @@ class KBScalingModel(ScalingModelBase):
         }
 
         model = cls(parameters_dict, configdict)
-        if params.correction.fix:
-            model.fixed_components = params.correction.fix
+        if params.KB.correction.fix:
+            model.fixed_components = params.KB.correction.fix
         return model
 
 

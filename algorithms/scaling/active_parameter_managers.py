@@ -364,7 +364,7 @@ class ParameterManagerGenerator:
                     ]
                     for f in data_manager.fixed_components:
                         try:
-                            components.remove(f)
+                            corrlist.remove(f)
                         except ValueError:
                             continue
                     if corrlist:
