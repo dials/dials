@@ -10,6 +10,11 @@ Examples::
 
 import logging
 import sys
+from pathlib import Path
+
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
 
 import dxtbx.flumpy as flumpy
 import libtbx.phil
@@ -52,7 +57,7 @@ omega = None
 
 opposite = False
     .type = bool
-    .help = Try the opposite value as the one defined in XDS.INP (or as given by omega=VAL)"
+    .help = "Try the opposite value as the one defined in XDS.INP (or as given by omega=VAL)"
 
 output {
     experiments = optimised.expt
@@ -60,14 +65,13 @@ output {
 
     log = "dials.find_rotation_axis.log"
         .type = str
+
+    plot = find_rotation_axis
+        .type = str
+        .help = "Filename prefix for plots. Set to None for no plots"
 }
 """
 )
-
-from pathlib import Path
-
-import matplotlib.pyplot as plt
-import numpy as np
 
 
 def rotation_axis_to_xyz(rotation_axis, invert=False, setting="xds"):
@@ -155,8 +159,9 @@ def cylinder_histo(xyz, bins=(1000, 500)):
     return H, xedges, yedges
 
 
-def plot_histo(H, xedges, yedges, title="Histogram"):
+def plot_histo(H, xedges, yedges, title="Histogram", filename=None):
     """Plot the histogram of the cylindrical projection."""
+    plt.figure(figsize=(10, 7))
     plt.imshow(
         H.T,
         interpolation="nearest",
@@ -169,7 +174,10 @@ def plot_histo(H, xedges, yedges, title="Histogram"):
     plt.ylim(-np.pi / 2, np.pi / 2)
     plt.xlabel("phi ($\\pi$)")
     plt.ylabel("theta ($\\pi$)")
-    plt.show()
+    if filename:
+        plt.savefig(filename)
+    else:
+        plt.show()
 
 
 def make(arr, omega: float, wavelength: float):
@@ -515,17 +523,28 @@ def run(args=None, phil=phil_scope):
             f"\nOpposite angle ({omega_opposite:.2f} deg.) has higher variance!\n"
         )
 
-    plot_histo(
-        H, xedges, yedges, title=f"omega={omega_final:.2f}$^\\circ$ | var={var:.2f}"
-    )
+    if params.output.plot:
+        matplotlib.use("Agg")
+        hist_filename = params.output.plot + "-histogram.png"
+        plot_histo(
+            H,
+            xedges,
+            yedges,
+            title=f"omega={omega_final:.2f}$^\\circ$ | var={var:.2f}",
+            filename=hist_filename,
+        )
 
-    if params.optimise and not params.view:
-        # Plot rotation axis distribution curve
-        plt.scatter(xvals, vvals, marker="+", lw=1.0, color="red")
-        plt.xlabel("Rotation axis position ($^\\circ$)")
-        plt.ylabel("Variance of the polar coordinate histogram")
-        plt.title(f"Rotation axis determination | Maximum @ {omega_final:.2f}$^\\circ$")
-        plt.show()
+        if params.optimise and not params.view:
+            # Plot rotation axis distribution curve
+            plt.figure(figsize=(10, 7))
+            plt.scatter(xvals, vvals, marker="+", lw=1.0, color="red")
+            plt.xlabel("Rotation axis position ($^\\circ$)")
+            plt.ylabel("Variance of the polar coordinate histogram")
+            plt.title(
+                f"Rotation axis determination | Maximum @ {omega_final:.2f}$^\\circ$"
+            )
+            projection_filename = params.output.plot + "-projection.png"
+            plt.savefig(projection_filename)
 
     omega_deg = omega_final
     omega_rad = np.radians(omega_final)
