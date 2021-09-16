@@ -342,9 +342,6 @@ def run(args=None, phil=phil_scope):
         params.input.reflections, params.input.experiments
     )
 
-    # Configure the logging
-    dials.util.log.config(verbosity=options.verbose, logfile=params.output.log)
-
     # Check the models and data
     nexp = len(experiments)
     if nexp > 1:
