@@ -326,9 +326,34 @@ def load_spot_xds(fn, beam_center: [float, float], osc_angle: float, pixelsize: 
     return np.c_[reflections, angle]
 
 
-def extract_spot_data(reflections):
+def extract_spot_data(reflections, experiments):
     """From the spot positions, extract reciprocal space X, Y and angle positions
     for each reflection"""
+    # Map reflections to reciprocal space
+    reflections.centroid_px_to_mm(experiments)
+
+    reflections["s1"] = flex.vec3_double(len(reflections))
+    panel_numbers = flex.size_t(reflections["panel"])
+
+    for i, expt in enumerate(experiments):
+        if "imageset_id" in reflections:
+            sel_expt = reflections["imageset_id"] == i
+        else:
+            sel_expt = reflections["id"] == i
+
+        for i_panel in range(len(expt.detector)):
+            sel = sel_expt & (panel_numbers == i_panel)
+            x, y, _ = reflections["xyzobs.mm.value"].select(sel).parts()
+            s1 = expt.detector[i_panel].get_lab_coord(flex.vec2_double(x, y))
+            s1 = s1 / s1.norms() * (1 / expt.beam.get_wavelength())
+            reflections["s1"].set_selected(sel, s1)
+
+    x, y, _ = reflections["s1"].parts()
+    _, _, angle = reflections["xyzobs.mm.value"].parts()
+    arr = flumpy.to_numpy(x)
+    arr = np.c_[x, flumpy.to_numpy(-y)]  # Y is inverted to match XDS calculation
+    arr = np.c_[arr, flumpy.to_numpy(angle)]
+    return arr
 
 
 @dials.util.show_mail_on_error()
@@ -390,24 +415,29 @@ def run(args=None, phil=phil_scope):
         sys.exit("Only one reflections list can be imported at present")
     reflections = reflections[0]
     expt = experiments[0]
+    wavelength = expt.beam.get_wavelength()
 
     xds_inp = params.xds_inp
-    if not xds_inp:
-        xds_inp = Path("XDS.INP")
-    else:
+    if xds_inp:
+        # XDS version
         xds_inp = Path(xds_inp)
 
-    if not xds_inp.exists():
-        logger.info(f"No such file: {xds_inp}\n")
-        sys.exit()
-
-    beam_center, osc_angle, pixelsize, wavelength, omega_current = parse_xds_inp(
-        xds_inp
-    )
-
-    osc_angle = expt.scan.get_oscillation()[1]
-    rotx, roty, _ = expt.goniometer.get_rotation_axis()
-    omega_current = np.degrees(np.arctan2(roty, rotx))
+        beam_center, osc_angle, pixelsize, wavelength, omega_current = parse_xds_inp(
+            xds_inp
+        )
+        spot_xds = xds_inp.with_name("SPOT.XDS")
+        if not spot_xds.exists():
+            sys.exit(f"Cannot find file: {spot_xds}")
+        logger.info(f"\nBeam center: {beam_center[0]:.2f} {beam_center[1]:.2f}")
+        logger.info(f"Oscillation angle (degrees): {osc_angle}")
+        logger.info(f"Pixelsize: {pixelsize:.4f} px/Ångström")
+        arr = load_spot_xds(spot_xds, beam_center, osc_angle, pixelsize)
+    else:
+        # DIALS version
+        osc_angle = expt.scan.get_oscillation()[1]
+        rotx, roty, _ = expt.goniometer.get_rotation_axis()
+        omega_current = np.degrees(np.arctan2(roty, rotx))
+        arr = extract_spot_data(reflections, experiments)
 
     if params.omega is not None:
         omega_current = params.omega
@@ -423,48 +453,9 @@ def run(args=None, phil=phil_scope):
     if omega_opposite > 180:
         omega_opposite -= 360
 
-    logger.info(f"\nBeam center: {beam_center[0]:.2f} {beam_center[1]:.2f}")
-    logger.info(f"Oscillation angle (degrees): {osc_angle}")
-    logger.info(f"Pixelsize: {pixelsize:.4f} px/Ångström")
     logger.info(f"Wavelength: {wavelength:.5f} Ångström")
     logger.info(f"Omega (current): {omega_current:.5f} degrees")
     logger.info(f"                 {np.radians(omega_current):.5f} radians")
-
-    spot_xds = xds_inp.with_name("SPOT.XDS")
-
-    if not spot_xds.exists():
-        sys.exit(f"Cannot find file: {spot_xds}")
-
-    arr = load_spot_xds(spot_xds, beam_center, osc_angle, pixelsize)
-
-    # Map reflections to reciprocal space
-    reflections.centroid_px_to_mm(experiments)
-
-    reflections["s1"] = flex.vec3_double(len(reflections))
-    reflections["rlp"] = flex.vec3_double(len(reflections))
-    panel_numbers = flex.size_t(reflections["panel"])
-
-    for i, expt in enumerate(experiments):
-        if "imageset_id" in reflections:
-            sel_expt = reflections["imageset_id"] == i
-        else:
-            sel_expt = reflections["id"] == i
-
-        for i_panel in range(len(expt.detector)):
-            sel = sel_expt & (panel_numbers == i_panel)
-            x, y, _ = reflections["xyzobs.mm.value"].select(sel).parts()
-            s1 = expt.detector[i_panel].get_lab_coord(flex.vec2_double(x, y))
-            s1 = s1 / s1.norms() * (1 / expt.beam.get_wavelength())
-            reflections["s1"].set_selected(sel, s1)
-
-    x, y, _ = reflections["s1"].parts()
-    _, _, angle = reflections["xyzobs.mm.value"].parts()
-    arr2 = flumpy.to_numpy(x)
-    arr2 = np.c_[x, flumpy.to_numpy(y)]
-    arr2 = np.c_[arr2, flumpy.to_numpy(angle)]
-
-    # arr2 (from DIALS) can be used in place of arr (from XDS) now, but the
-    # result appears to be inverted and shifted. This is to be investigated further.
 
     hist_bins = 1000, 500
 
