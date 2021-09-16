@@ -1,10 +1,18 @@
+import pathlib
+
 import procrunner
 
+from dxtbx.model.experiment_list import ExperimentListFactory
 
-def test(dials_data, tmpdir):
-    input_filename = dials_data("centroid_test_data").join("datablock.json").strpath
-    mask_filename = dials_data("centroid_test_data").join("lookup_mask.pickle").strpath
-    output_filename = tmpdir.join("output.expt").strpath
+
+def test_experiments(dials_data, tmp_path):
+    input_filename = (
+        dials_data("centroid_test_data", pathlib=True) / "imported_experiments.json"
+    )
+    mask_filename = (
+        dials_data("centroid_test_data", pathlib=True) / "lookup_mask.pickle"
+    )
+    output_filename = tmp_path / "output.expt"
 
     result = procrunner.run(
         [
@@ -13,41 +21,12 @@ def test(dials_data, tmpdir):
             f"input.mask={mask_filename}",
             f"output.experiments={output_filename}",
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-
-    from dxtbx.model.experiment_list import ExperimentListFactory
-
-    experiments = ExperimentListFactory.from_json_file(output_filename)
-
-    assert len(experiments) == 1
-    imagesets = experiments.imagesets()
-    assert len(imagesets) == 1
-    imageset = imagesets[0]
-    assert imageset.external_lookup.mask.filename == mask_filename
-
-
-def test_experiments(dials_data, tmpdir):
-    input_filename = dials_data("centroid_test_data").join("experiments.json").strpath
-    mask_filename = dials_data("centroid_test_data").join("lookup_mask.pickle").strpath
-    output_filename = tmpdir.join("output.expt").strpath
-
-    result = procrunner.run(
-        [
-            "dials.apply_mask",
-            f"input.experiments={input_filename}",
-            f"input.mask={mask_filename}",
-            f"output.experiments={output_filename}",
-        ],
-        working_directory=tmpdir.strpath,
-    )
-    assert not result.returncode and not result.stderr
-
-    from dxtbx.model.experiment_list import ExperimentListFactory
 
     experiments = ExperimentListFactory.from_json_file(output_filename)
 
     assert len(experiments) == 1
     imageset = experiments[0].imageset
-    assert imageset.external_lookup.mask.filename == mask_filename
+    assert pathlib.Path(imageset.external_lookup.mask.filename) == mask_filename
