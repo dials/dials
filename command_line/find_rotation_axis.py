@@ -74,8 +74,8 @@ output {
 )
 
 
-def rotation_axis_to_xyz(rotation_axis, invert=False, setting="xds"):
-    """Convert rotation axis angle to XYZ vector compatible with 'xds', or 'dials'
+def rotation_axis_to_xyz(rotation_axis, invert=False):
+    """Convert rotation axis angle to XYZ vector compatible with DIALS
     Set invert to 'True' for anti-clockwise rotation
     """
     if invert:
@@ -85,12 +85,7 @@ def rotation_axis_to_xyz(rotation_axis, invert=False, setting="xds"):
     rot_y = np.sin(rotation_axis)
     rot_z = 0
 
-    if setting == "dials":
-        return rot_x, -rot_y, rot_z
-    elif setting == "xds":
-        return rot_x, rot_y, rot_z
-    else:
-        raise ValueError("Must be one of {'dials', 'xds'}")
+    return rot_x, -rot_y, rot_z
 
 
 def rotation_matrix(axis, theta):
@@ -550,7 +545,7 @@ def run(args=None, phil=phil_scope):
     omega_rad = np.radians(omega_final)
 
     logger.info(f"\nRotation axis found: {omega_deg:.2f} deg. / {omega_rad:.3f} rad.")
-    expt.goniometer.set_rotation_axis(rotation_axis_to_xyz(omega_rad, setting="dials"))
+    expt.goniometer.set_rotation_axis(rotation_axis_to_xyz(omega_rad))
     logger.info(str(expt.goniometer))
 
     logger.info(f"Saving optimised experiments to {params.output.experiments}")
