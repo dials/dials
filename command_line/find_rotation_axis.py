@@ -41,7 +41,7 @@ xds_inp = None
 
 view = False
     .type = bool
-    .help = "View phi/theta histogram with current rotation axis (omega)"
+    .help = "View phi/theta histogram with current rotation axis (azimuth)"
 
 optimise = True
     .type = bool
@@ -49,15 +49,15 @@ optimise = True
 
 finetune = False
     .type = bool
-    .help = "Fine-tune rotation axis from the value in XDS.INP or given with omega=VAL"
+    .help = "Fine-tune rotation axis from the value in XDS.INP or given with azimuth=VAL"
 
-omega = None
+azimuth = None
     .type = float
-    .help = "Use the given value of omega to plot the histogram or as starting point for the optimization"
+    .help = "Use the given value of azimuth to plot the histogram or as starting point for the optimization"
 
 opposite = False
     .type = bool
-    .help = "Try the opposite value as the one defined in XDS.INP (or as given by omega=VAL)"
+    .help = "Try the opposite value as the one defined in XDS.INP (or as given by azimuth=VAL)"
 
 output {
     experiments = optimised.expt
@@ -175,12 +175,11 @@ def plot_histo(H, xedges, yedges, title="Histogram", filename=None):
         plt.show()
 
 
-def make(arr, omega: float, wavelength: float):
+def make(arr, azimuth: float, wavelength: float):
     """
-    Prepare xyz (reciprocal space coordinates) from reflection positions/angle (`arr`),
-    which is the list of reflections read from XDS (SPOT.XDS)
+    Prepare xyz (reciprocal space coordinates) from reflection positions/angle (`arr`).
 
-    omega: rotation axis (degrees), which is defined by the angle between x
+    azimuth: rotation axis (degrees), which is defined by the angle between x
         (horizontal axis pointing right) and the rotation axis going in clockwise direction
 
     Note that:
@@ -191,8 +190,8 @@ def make(arr, omega: float, wavelength: float):
     reflections = arr[:, 0:2]
     angle = arr[:, 2]
 
-    omega_rad = np.radians(omega)
-    r = make_2d_rotmat(omega_rad)
+    azimuth_rad = np.radians(azimuth)
+    r = make_2d_rotmat(azimuth_rad)
 
     refs_ = np.dot(reflections, r)
 
@@ -210,7 +209,7 @@ def make(arr, omega: float, wavelength: float):
 
 def optimize(
     arr,
-    omega_start: float,
+    azimuth_start: float,
     wavelength=float,
     plusminus: int = 180,
     step: int = 10,
@@ -218,46 +217,46 @@ def optimize(
     plot: bool = False,
 ) -> float:
     """
-    Optimize the value of omega around the given point.
+    Optimize the value of azimuth around the given point.
 
-    omega_start: defines the starting angle
-    step, plusminus: together with omega_start define the range of values to loop over
+    azimuth_start: defines the starting angle
+    step, plusminus: together with azimuth_start define the range of values to loop over
     hist_bins: size of the 2d histogram to produce the final phi/theta plot
     plot: toggle to plot the histogram after each step
     """
 
-    r = np.arange(omega_start - plusminus, omega_start + plusminus, step)
+    r = np.arange(azimuth_start - plusminus, azimuth_start + plusminus, step)
 
     best_score = 0
-    best_omega = 0
+    best_azimuth = 0
 
-    for omega in r:
-        xyz = make(arr, omega, wavelength)
+    for azimuth in r:
+        xyz = make(arr, azimuth, wavelength)
 
         H, xedges, yedges = cylinder_histo(xyz, bins=hist_bins)
 
         var = np.var(H)
 
-        logger.info(f"Omega: {omega:8.2f}, variance: {var:5.2f}")
+        logger.info(f"azimuth: {azimuth:8.2f}, variance: {var:5.2f}")
 
         if plot:
             plot_histo(
                 H,
                 xedges,
                 yedges,
-                title=f"omega={omega:.2f}$^\\circ$ | variance: {var:.2f}",
+                title=f"azimuth={azimuth:.2f}$^\\circ$ | variance: {var:.2f}",
             )
 
-        xvals.append(omega)
+        xvals.append(azimuth)
         vvals.append(var)
 
         if var > best_score:
-            best_omega = omega
+            best_azimuth = azimuth
             best_score = var
 
-    logger.info(f"Best omega: {best_omega:.2f}; score: {best_score:.2f}")
+    logger.info(f"Best azimuth: {best_azimuth:.2f}; score: {best_score:.2f}")
 
-    return best_omega
+    return best_azimuth
 
 
 def parse_xds_inp(fn):
@@ -299,10 +298,10 @@ def parse_xds_inp(fn):
             if match:
                 logger.info(line)
 
-    omega_current = np.degrees(np.arctan2(roty, rotx))
+    azimuth_current = np.degrees(np.arctan2(roty, rotx))
     pixelsize = qx / (distance * wavelength)
 
-    return np.array((orgx, orgy)), osc_angle, pixelsize, wavelength, omega_current
+    return np.array((orgx, orgy)), osc_angle, pixelsize, wavelength, azimuth_current
 
 
 def load_spot_xds(fn, beam_center: [float, float], osc_angle: float, pixelsize: float):
@@ -430,7 +429,7 @@ def run(args=None, phil=phil_scope):
         # XDS version
         xds_inp = Path(xds_inp)
 
-        beam_center, osc_angle, pixelsize, wavelength, omega_current = parse_xds_inp(
+        beam_center, osc_angle, pixelsize, wavelength, azimuth_current = parse_xds_inp(
             xds_inp
         )
         spot_xds = xds_inp.with_name("SPOT.XDS")
@@ -444,70 +443,70 @@ def run(args=None, phil=phil_scope):
         # DIALS version
         osc_angle = expt.scan.get_oscillation()[1]
         rotx, roty, _ = expt.goniometer.get_rotation_axis()
-        omega_current = np.degrees(np.arctan2(roty, rotx))
+        azimuth_current = np.degrees(np.arctan2(roty, rotx))
         arr = extract_spot_data(reflections, experiments)
 
-    if params.omega is not None:
-        omega_current = params.omega
+    if params.azimuth is not None:
+        azimuth_current = params.azimuth
 
-    omega_opposite = omega_current + 180
+    azimuth_opposite = azimuth_current + 180
 
     if params.opposite:
-        omega_current = omega_opposite
+        azimuth_current = azimuth_opposite
 
-    if omega_current > 180:
-        omega_current -= 360
+    if azimuth_current > 180:
+        azimuth_current -= 360
 
-    if omega_opposite > 180:
-        omega_opposite -= 360
+    if azimuth_opposite > 180:
+        azimuth_opposite -= 360
 
     logger.info(f"Wavelength: {wavelength:.5f} Ångström")
-    logger.info(f"Omega (current): {omega_current:.5f} degrees")
-    logger.info(f"                 {np.radians(omega_current):.5f} radians")
+    logger.info(f"azimuth (current): {azimuth_current:.5f} degrees")
+    logger.info(f"                 {np.radians(azimuth_current):.5f} radians")
 
     hist_bins = 1000, 500
 
     if params.view:
-        omega_final = omega_current
+        azimuth_final = azimuth_current
     elif params.optimise:
         global xvals
         global vvals
         xvals = []
         vvals = []
 
-        omega_global = omega_local = omega_fine = 0
+        azimuth_global = azimuth_local = azimuth_fine = 0
 
         if params.finetune:
-            omega_tmp = omega_global = omega_current
+            azimuth_tmp = azimuth_global = azimuth_current
         else:
-            omega_tmp = 0
-            omega_global = omega_tmp = optimize(
-                arr, omega_tmp, wavelength, plusminus=180, step=5, hist_bins=hist_bins
+            azimuth_tmp = 0
+            azimuth_global = azimuth_tmp = optimize(
+                arr, azimuth_tmp, wavelength, plusminus=180, step=5, hist_bins=hist_bins
             )
 
-        omega_local = omega_tmp = optimize(
-            arr, omega_tmp, wavelength, plusminus=5, step=1, hist_bins=hist_bins
+        azimuth_local = azimuth_tmp = optimize(
+            arr, azimuth_tmp, wavelength, plusminus=5, step=1, hist_bins=hist_bins
         )
 
-        omega_fine = omega_tmp = optimize(
-            arr, omega_tmp, wavelength, plusminus=1, step=0.1, hist_bins=hist_bins
+        azimuth_fine = azimuth_tmp = optimize(
+            arr, azimuth_tmp, wavelength, plusminus=1, step=0.1, hist_bins=hist_bins
         )
 
-        omega_final = omega_tmp
+        azimuth_final = azimuth_tmp
 
         logger.info("---")
-        logger.info(f"Best omega (global search): {omega_global:.3f}")
-        logger.info(f"Best omega (local search): {omega_local:.3f}")
-        logger.info(f"Best omega (fine search): {omega_fine:.3f}")
+        logger.info(f"Best azimuth (global search): {azimuth_global:.3f}")
+        logger.info(f"Best azimuth (local search): {azimuth_local:.3f}")
+        logger.info(f"Best azimuth (fine search): {azimuth_fine:.3f}")
 
-    xyz = make(arr, omega_final, wavelength)
+    xyz = make(arr, azimuth_final, wavelength)
     H, xedges, yedges = cylinder_histo(xyz)
 
     var = np.var(H)
     logger.info(f"Variance: {var:.2f}")
 
     # check opposite
-    xyz_opp = make(arr, omega_final + 180, wavelength)
+    xyz_opp = make(arr, azimuth_final + 180, wavelength)
     H_opp, xedges_opp, yedges_opp = cylinder_histo(xyz_opp)
 
     var_opp = np.var(H_opp)
@@ -515,7 +514,7 @@ def run(args=None, phil=phil_scope):
 
     if var < var_opp:
         logger.info(
-            f"\nOpposite angle ({omega_opposite:.2f} deg.) has higher variance!\n"
+            f"\nOpposite angle ({azimuth_opposite:.2f} deg.) has higher variance!\n"
         )
 
     if params.output.plot:
@@ -525,7 +524,7 @@ def run(args=None, phil=phil_scope):
             H,
             xedges,
             yedges,
-            title=f"omega={omega_final:.2f}$^\\circ$ | var={var:.2f}",
+            title=f"azimuth={azimuth_final:.2f}$^\\circ$ | var={var:.2f}",
             filename=hist_filename,
         )
 
@@ -536,16 +535,18 @@ def run(args=None, phil=phil_scope):
             plt.xlabel("Rotation axis position ($^\\circ$)")
             plt.ylabel("Variance of the polar coordinate histogram")
             plt.title(
-                f"Rotation axis determination | Maximum @ {omega_final:.2f}$^\\circ$"
+                f"Rotation axis determination | Maximum @ {azimuth_final:.2f}$^\\circ$"
             )
             projection_filename = params.output.plot + "-projection.png"
             plt.savefig(projection_filename)
 
-    omega_deg = omega_final
-    omega_rad = np.radians(omega_final)
+    azimuth_deg = azimuth_final
+    azimuth_rad = np.radians(azimuth_final)
 
-    logger.info(f"\nRotation axis found: {omega_deg:.2f} deg. / {omega_rad:.3f} rad.")
-    expt.goniometer.set_rotation_axis(rotation_axis_to_xyz(omega_rad))
+    logger.info(
+        f"\nRotation axis found: {azimuth_deg:.2f} deg. / {azimuth_rad:.3f} rad."
+    )
+    expt.goniometer.set_rotation_axis(rotation_axis_to_xyz(azimuth_rad))
     logger.info(str(expt.goniometer))
 
     logger.info(f"Saving optimised experiments to {params.output.experiments}")
