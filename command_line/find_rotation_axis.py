@@ -10,7 +10,6 @@ Examples::
 
 import logging
 import sys
-from pathlib import Path
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -35,10 +34,6 @@ logger = logging.getLogger("dials.find_rotation_axis")
 # Define the master PHIL scope for this program.
 phil_scope = libtbx.phil.parse(
     """
-xds_inp = None
-    .type = path
-    .help = "Path to XDS.INP file (also reads SPOT.XDS in the same directory)"
-
 max_two_theta = 10.0
     .type = float
     .help = "Scattering angle limit to select reflections only in the central"
@@ -52,9 +47,10 @@ optimise = True
     .type = bool
     .help = "Optimise the rotation axis"
 
-finetune = False
+global_search = True
     .type = bool
-    .help = "Fine-tune rotation axis from the value in XDS.INP or given with azimuth=VAL"
+    .help = "Perform global search of the azimuthal angle. If False, only a local search will be performed"
+            "around the start value or the value given by azimuth=VAL"
 
 azimuth = None
     .type = float
@@ -62,7 +58,7 @@ azimuth = None
 
 opposite = False
     .type = bool
-    .help = "Try the opposite value as the one defined in XDS.INP (or as given by azimuth=VAL)"
+    .help = "Try the opposite from the initial value (or as given by azimuth=VAL)"
 
 output {
     experiments = optimised.expt
@@ -186,10 +182,6 @@ def make(arr, azimuth: float, wavelength: float):
 
     azimuth: rotation axis (degrees), which is defined by the angle between x
         (horizontal axis pointing right) and the rotation axis going in clockwise direction
-
-    Note that:
-        1. x<->y are flipped
-    This is to ensure to match the XDS convention with the one I'm used to
     """
 
     reflections = arr[:, 0:2]
@@ -200,7 +192,7 @@ def make(arr, azimuth: float, wavelength: float):
 
     refs_ = np.dot(reflections, r)
 
-    y, x = refs_.T  # NOTE 1
+    y, x = refs_.T
 
     R = 1 / wavelength
     C = R - np.sqrt(R ** 2 - x ** 2 - y ** 2).reshape(-1, 1)
@@ -212,7 +204,7 @@ def make(arr, azimuth: float, wavelength: float):
     return xyz
 
 
-def optimize(
+def optimise(
     arr,
     azimuth_start: float,
     wavelength=float,
@@ -222,7 +214,7 @@ def optimize(
     plot: bool = False,
 ) -> float:
     """
-    Optimize the value of azimuth around the given point.
+    optimise the value of azimuth around the given point.
 
     azimuth_start: defines the starting angle
     step, plusminus: together with azimuth_start define the range of values to loop over
@@ -262,76 +254,6 @@ def optimize(
     logger.info(f"Best azimuth: {best_azimuth:.2f}; score: {best_score:.2f}")
 
     return best_azimuth
-
-
-def parse_xds_inp(fn):
-    """
-    Parse the XDS.INP file to find the required numbers for the optimization
-    Looks for wavelength, pixelsize, beam_center, oscillation range
-    """
-    with open(fn, "r") as f:
-        for line in f:
-            line = line.split("!", 1)[0].strip()
-            match = False
-
-            if "X-RAY_WAVELENGTH" in line:
-                match = True
-                wavelength = float(line.rsplit("X-RAY_WAVELENGTH=")[1].split()[0])
-            if "ORGX=" in line:
-                match = True
-                orgx = float(line.rsplit("ORGX=")[1].split()[0])
-            if "ORGY=" in line:
-                match = True
-                orgy = float(line.rsplit("ORGY=")[1].split()[0])
-            if "OSCILLATION_RANGE=" in line:
-                match = True
-                osc_angle = float(line.rsplit("OSCILLATION_RANGE=")[1].split()[0])
-            if "QX=" in line:
-                match = True
-                qx = float(line.rsplit("QX=")[1].split()[0])
-            # if "QY=" in line:
-            #    match = True
-            #    qy = float(line.rsplit("QY=")[1].split()[0])
-            if "DETECTOR_DISTANCE=" in line:
-                match = True
-                distance = float(line.rsplit("DETECTOR_DISTANCE=")[1].split()[0])
-            if "ROTATION_AXIS=" in line:
-                match = True
-                inp = line.rsplit("ROTATION_AXIS=")[1].split()[0:3]
-                rotx, roty, rotz = [float(val) for val in inp]
-
-            if match:
-                logger.info(line)
-
-    azimuth_current = np.degrees(np.arctan2(roty, rotx))
-    pixelsize = qx / (distance * wavelength)
-
-    return np.array((orgx, orgy)), osc_angle, pixelsize, wavelength, azimuth_current
-
-
-def load_spot_xds(fn, beam_center: [float, float], osc_angle: float, pixelsize: float):
-    """
-    Load the given SPOT.XDS file (`fn`) and return an array with the reciprocal
-        x, y, and angle for the centroid of each reflection
-
-    beam_center: coordinates of the primary beam, read from XDS.INP
-    osc_angle: oscillation_angle (degrees) per frame, will be multiplied by the average frame number
-        that a reflection appears on (column 3 in `arr`)
-    pixelsize: defined in px/Ångström
-
-    http://xds.mpimf-heidelberg.mpg.de/html_doc/xds_files.html#SPOT.XDS
-    """
-    arr = np.loadtxt(fn)
-    logger.info(arr.shape)
-
-    osc_angle_rad = np.radians(osc_angle)
-
-    reflections = arr[:, 0:2] - beam_center
-    angle = arr[:, 2] * osc_angle_rad
-
-    reflections *= pixelsize
-
-    return np.c_[reflections, angle]
 
 
 def extract_spot_data(reflections, experiments, max_two_theta):
@@ -439,28 +361,9 @@ def run(args=None, phil=phil_scope):
     reflections = reflections[0]
     expt = experiments[0]
     wavelength = expt.beam.get_wavelength()
-
-    xds_inp = params.xds_inp
-    if xds_inp:
-        # XDS version
-        xds_inp = Path(xds_inp)
-
-        beam_center, osc_angle, pixelsize, wavelength, azimuth_current = parse_xds_inp(
-            xds_inp
-        )
-        spot_xds = xds_inp.with_name("SPOT.XDS")
-        if not spot_xds.exists():
-            sys.exit(f"Cannot find file: {spot_xds}")
-        logger.info(f"\nBeam center: {beam_center[0]:.2f} {beam_center[1]:.2f}")
-        logger.info(f"Oscillation angle (degrees): {osc_angle}")
-        logger.info(f"Pixelsize: {pixelsize:.4f} px/Ångström")
-        arr = load_spot_xds(spot_xds, beam_center, osc_angle, pixelsize)
-    else:
-        # DIALS version
-        osc_angle = expt.scan.get_oscillation()[1]
-        rotx, roty, _ = expt.goniometer.get_rotation_axis()
-        azimuth_current = np.degrees(np.arctan2(roty, rotx))
-        arr = extract_spot_data(reflections, experiments, params.max_two_theta)
+    rotx, roty, _ = expt.goniometer.get_rotation_axis()
+    azimuth_current = np.degrees(np.arctan2(roty, rotx))
+    arr = extract_spot_data(reflections, experiments, params.max_two_theta)
 
     if params.azimuth is not None:
         azimuth_current = params.azimuth
@@ -492,19 +395,22 @@ def run(args=None, phil=phil_scope):
 
         azimuth_global = azimuth_local = azimuth_fine = 0
 
-        if params.finetune:
+        if not params.global_search:
             azimuth_tmp = azimuth_global = azimuth_current
         else:
+            logger.info("Performing global search")
             azimuth_tmp = 0
-            azimuth_global = azimuth_tmp = optimize(
+            azimuth_global = azimuth_tmp = optimise(
                 arr, azimuth_tmp, wavelength, plusminus=180, step=5, hist_bins=hist_bins
             )
 
-        azimuth_local = azimuth_tmp = optimize(
+        logger.info("Performing local search")
+        azimuth_local = azimuth_tmp = optimise(
             arr, azimuth_tmp, wavelength, plusminus=5, step=1, hist_bins=hist_bins
         )
 
-        azimuth_fine = azimuth_tmp = optimize(
+        logger.info("Performing fine search")
+        azimuth_fine = azimuth_tmp = optimise(
             arr, azimuth_tmp, wavelength, plusminus=1, step=0.1, hist_bins=hist_bins
         )
 
