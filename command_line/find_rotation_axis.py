@@ -24,7 +24,7 @@ from dials.array_family import flex
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
-# Define a logger.
+# Define a logger
 logger = logging.getLogger("dials.find_rotation_axis")
 
 # Define the master PHIL scope for this program.
@@ -57,6 +57,7 @@ opposite = False
 output {
     experiments = optimised.expt
         .type = path
+
     log = "dials.find_rotation_axis.log"
         .type = str
 }
@@ -351,7 +352,9 @@ def extract_spot_data(reflections, experiments):
     x, y, _ = reflections["s1"].parts()
     _, _, angle = reflections["xyzobs.mm.value"].parts()
     arr = flumpy.to_numpy(x)
-    arr = np.c_[x, flumpy.to_numpy(-y)]  # Y is inverted to match XDS calculation
+    arr = np.c_[
+        x, flumpy.to_numpy(-y)
+    ]  # Y is inverted to match calculation in edtools.find_rotation_axis
     arr = np.c_[arr, flumpy.to_numpy(angle)]
     return arr
 
@@ -408,6 +411,8 @@ def run(args=None, phil=phil_scope):
         logger.info(
             "Only the first experiment will be used to determine oscillation and current rotation axis"
         )
+        if len(experiments.goniometers()) > 1:
+            sys.exit("Multiple experiments must share a goniometer model")
     if nexp == 0 or len(reflections) == 0:
         parser.print_help()
         return
@@ -526,50 +531,11 @@ def run(args=None, phil=phil_scope):
     omega_rad = np.radians(omega_final)
 
     logger.info(f"\nRotation axis found: {omega_deg:.2f} deg. / {omega_rad:.3f} rad.")
+    expt.goniometer.set_rotation_axis(rotation_axis_to_xyz(omega_rad, setting="dials"))
+    logger.info(str(expt.goniometer))
 
-    logger.info(" - Instamatic (config/camera/camera_name.yaml)")
-    omega_instamatic = omega_rad
-    logger.info(f"    rotation_axis_vs_stage_xy: {omega_instamatic:.3f}")
-
-    logger.info(" - XDS")
-    rot_x_xds, rot_y_xds, rot_z_xds = rotation_axis_to_xyz(omega_rad, setting="xds")
-    logger.info(f"    ROTATION_AXIS= {rot_x_xds:.4f} {rot_y_xds:.4f} {rot_z_xds:.4f}")
-    logger.info(" - XDS (opposite rotation)")
-    rot_x_xds, rot_y_xds, rot_z_xds = rotation_axis_to_xyz(
-        omega_rad, setting="xds", invert=True
-    )
-    logger.info(f"    ROTATION_AXIS= {rot_x_xds:.4f} {rot_y_xds:.4f} {rot_z_xds:.4f}")
-
-    logger.info(" - DIALS")
-    rot_x_dials, rot_y_dials, rot_z_dials = rotation_axis_to_xyz(
-        omega_rad, setting="dials"
-    )
-    logger.info(
-        f"    geometry.goniometer.axes={rot_x_dials:.4f},{rot_y_dials:.4f},{rot_z_dials:.4f}"
-    )
-    logger.info(" - DIALS (opposite rotation)")
-    rot_x_dials, rot_y_dials, rot_z_dials = rotation_axis_to_xyz(
-        omega_rad, setting="dials", invert=True
-    )
-    logger.info(
-        f"    geometry.goniometer.axes={rot_x_dials:.4f},{rot_y_dials:.4f},{rot_z_dials:.4f}"
-    )
-
-    logger.info(" - PETS (.pts)")
-    omega_pets = omega_deg
-    if omega_pets < 0:
-        omega_pets += 360
-    elif omega_pets > 360:
-        omega_pets -= 360
-    logger.info(f"    omega {omega_pets:.2f}")
-
-    logger.info(" - RED (.ed3d)")
-    omega_red = omega_deg
-    if omega_red < -180:
-        omega_red += 360
-    elif omega_red > 180:
-        omega_red -= 360
-    logger.info(f"    ROTATIONAXIS    {omega_red:.4f}")
+    logger.info(f"Saving optimised experiments to {params.output.experiments}")
+    experiments.as_file(params.output.experiments)
 
 
 if __name__ == "__main__":
