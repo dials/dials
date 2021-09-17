@@ -3,6 +3,11 @@ Optimise the rotation axis orientation using the method from Gorelik et al.
 (https://www.doi.org/10.1007/978-94-007-5580-2) with code adapted from
 Stef Smeets's edtools (https://github.com/instamatic-dev/edtools).
 
+Three levels of search can be performed: a global search, a local search and a
+fine search. At each trial position the sharpness of a cylindrical projection of
+reciprocal lattice points is assessed via its variance. The correct orientation
+maximises this variance.
+
 Examples::
 
   dials.find_rotation_axis imported.expt strong.refl
@@ -49,16 +54,19 @@ optimise = True
 
 global_search = True
     .type = bool
-    .help = "Perform global search of the azimuthal angle. If False, only a local search will be performed"
-            "around the start value or the value given by azimuth=VAL"
+    .help = "Perform global search of the azimuthal angle. If False, only a"
+            "local search will be performed around the start value or the value"
+            "given by azimuth=VAL"
 
 azimuth = None
     .type = float
-    .help = "Use the given value of azimuth to plot the histogram or as starting point for the optimization"
+    .help = "Use the given value of azimuth to plot the histogram or as the"
+            "starting point for the optimization"
 
 opposite = False
     .type = bool
-    .help = "Try the opposite from the initial value (or as given by azimuth=VAL)"
+    .help = "Try the opposite from the initial value (or that given by"
+            "azimuth=VAL)"
 
 output {
     experiments = optimised.expt
@@ -76,8 +84,9 @@ output {
 
 
 def rotation_axis_to_xyz(rotation_axis, invert=False):
-    """Convert rotation axis angle to XYZ vector compatible with DIALS
-    Set invert to 'True' for anti-clockwise rotation
+    """
+    Convert rotation axis angle to XYZ vector compatible with DIALS. Set invert
+    to 'True' for anti-clockwise rotation
     """
     if invert:
         rotation_axis += np.pi
@@ -91,8 +100,6 @@ def rotation_axis_to_xyz(rotation_axis, invert=False):
 
 def rotation_matrix(axis, theta):
     """Calculates the rotation matrix around axis of angle theta (radians)"""
-
-    # axis = axis/np.sqrt(np.dot(axis,axis))
 
     l = np.sqrt(np.dot(axis, axis))
     axis = axis / l
@@ -122,7 +129,10 @@ def random_sample(arr, n):
 
 
 def xyz2cyl(arr):
-    """Take a set of reflections in XYZ and convert to polar (cylindrical) coordinates"""
+    """
+    Take a set of reflections in XYZ and convert to polar (cylindrical)
+    coordinates
+    """
     sx, sy, sz = arr.T
     out = np.empty((len(arr), 2))
     np.hypot(sx, sy, out=out[:, 0])
@@ -132,8 +142,10 @@ def xyz2cyl(arr):
 
 
 def cylinder_histo(xyz, bins=(1000, 500)):
-    """Take reciprocal lattice vectors in XYZ format and output cylindrical projection.
-    `Bins` gives the resolution of the 2D histogram."""
+    """
+    Take reciprocal lattice vectors in XYZ format and output cylindrical
+    projection. `bins` gives the resolution of the 2D histogram.
+    """
     i, j = np.triu_indices(len(xyz), k=1)
     diffs = xyz[i] - xyz[j]
     polar = xyz2cyl(diffs)
@@ -178,10 +190,11 @@ def plot_histo(H, xedges, yedges, title="Histogram", filename=None):
 
 def make(arr, azimuth: float, wavelength: float):
     """
-    Prepare xyz (reciprocal space coordinates) from reflection positions/angle (`arr`).
-
-    azimuth: rotation axis (degrees), which is defined by the angle between x
-        (horizontal axis pointing right) and the rotation axis going in clockwise direction
+    Prepare xyz (reciprocal space coordinates) from reflection positions/angle
+    (`arr`). The azimuth angle (in degrees) gives the orientation of the
+    rotation axis in the plane of the image, defined as the angle between x
+    (horizontal axis pointing right) and the rotation axis going in a clockwise
+    direction
     """
 
     reflections = arr[:, 0:2]
@@ -214,12 +227,17 @@ def optimise(
     plot: bool = False,
 ) -> float:
     """
-    optimise the value of azimuth around the given point.
+    Optimise the value of azimuth around the given point.
 
-    azimuth_start: defines the starting angle
-    step, plusminus: together with azimuth_start define the range of values to loop over
-    hist_bins: size of the 2d histogram to produce the final phi/theta plot
-    plot: toggle to plot the histogram after each step
+    Args:
+        azimuth_start: defines the starting angle
+        step, plusminus: together with azimuth_start define the range of values
+            to loop over
+        hist_bins: size of the 2d histogram to produce the final phi/theta plot
+        plot: toggle to plot the histogram after each step
+
+    Returns:
+        The best value for the azimuth angle
     """
 
     r = np.arange(azimuth_start - plusminus, azimuth_start + plusminus, step)
@@ -257,8 +275,10 @@ def optimise(
 
 
 def extract_spot_data(reflections, experiments, max_two_theta):
-    """From the spot positions, extract reciprocal space X, Y and angle positions
-    for each reflection up to the scattering angle max_two_theta"""
+    """
+    From the spot positions, extract reciprocal space X, Y and angle positions
+    for each reflection up to the scattering angle max_two_theta
+    """
     # Map reflections to reciprocal space
     reflections.centroid_px_to_mm(experiments)
 
@@ -332,8 +352,8 @@ def run(args=None, phil=phil_scope):
     # Log the dials version
     logger.info(dials_version())
 
-    # Log the difference between the PHIL scope definition and the active PHIL scope,
-    # which will include the parsed user inputs.
+    # Log the difference between the PHIL scope definition and the active PHIL
+    # scope, which will include the parsed user inputs.
     diff_phil = parser.diff_phil.as_str()
     if diff_phil:
         logger.info("The following parameters have been modified:\n%s", diff_phil)
@@ -377,7 +397,7 @@ def run(args=None, phil=phil_scope):
         azimuth_opposite -= 360
 
     logger.info(f"Wavelength: {wavelength:.5f} Ångström")
-    logger.info(f"azimuth (current): {azimuth_current:.5f} degrees")
+    logger.info(f"Azimuth (current): {azimuth_current:.5f} degrees")
     logger.info(f"                 {np.radians(azimuth_current):.5f} radians")
 
     hist_bins = 1000, 500
@@ -433,7 +453,7 @@ def run(args=None, phil=phil_scope):
 
     if var < var_opp:
         logger.info(
-            f"\nOpposite angle ({azimuth_opposite:.2f} deg.) has higher variance!\n"
+            f"\nOpposite angle ({azimuth_opposite:.2f}°) has higher variance!\n"
         )
 
     if params.output.plot:
