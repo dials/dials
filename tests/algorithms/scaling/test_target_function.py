@@ -130,6 +130,11 @@ def mock_single_Ih_table():
     Ih_table.derivatives = sparse.matrix(3, 1, [{0: 1.0, 1: 2.0, 2: 3.0}])
     Ih_table.h_index_matrix = sparse.matrix(3, 2, [{0: 1, 1: 1}, {2: 1}])
     Ih_table.h_expand_matrix = Ih_table.h_index_matrix.transpose()
+
+    def sum_in_groups_side_effect(*args):
+        return args[0] * Ih_table.h_index_matrix
+
+    Ih_table.sum_in_groups = sum_in_groups_side_effect
     return Ih_table
 
 
@@ -207,7 +212,6 @@ def mock_apm_unrestrained(mock_unrestrained_component):
 def test_target_function_methods():
     """Test for the target methods required for the refinement engine."""
     target = ScalingTarget()
-
     r, w = target.compute_residuals(mock_single_Ih_table())
     assert r.size() == w.size()
     assert r == pytest.approx([-1.0, 0.0, 1.0])

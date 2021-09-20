@@ -490,9 +490,7 @@ def create_datastructures_for_target_mtz(experiments, mtz_file):
                 [experiments[0]], [r_tplus], anomalous=True
             ).blocked_data_list[0]
             r_t["intensity"] = Ih_table.Ih_values
-            inv_var = (
-                Ih_table.weights * Ih_table.h_index_matrix
-            ) * Ih_table.h_expand_matrix
+            inv_var = Ih_table.sum_in_groups(Ih_table.weights, output="per_refl")
             r_t["variance"] = 1.0 / inv_var
             r_t["miller_index"] = Ih_table.miller_index
     else:

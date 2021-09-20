@@ -288,10 +288,8 @@ class SimpleNormDevOutlierRejection(OutlierRejectionBase):
         intensity = Ih_table.intensities
         g = Ih_table.inverse_scale_factors
         w = self.weights
-        wgIsum = (
-            (w * g * intensity) * Ih_table.h_index_matrix
-        ) * Ih_table.h_expand_matrix
-        wg2sum = ((w * g * g) * Ih_table.h_index_matrix) * Ih_table.h_expand_matrix
+        wgIsum = Ih_table.sum_in_groups(w * g * intensity, output="per_refl")
+        wg2sum = Ih_table.sum_in_groups(w * g * g, output="per_refl")
 
         # guard against zero division errors - can happen due to rounding errors
         # or bad data giving g values are very small
@@ -345,10 +343,8 @@ class NormDevOutlierRejection(OutlierRejectionBase):
         intensity = Ih_table.intensities
         g = Ih_table.inverse_scale_factors
         w = self.weights
-        wgIsum = (
-            (w * g * intensity) * Ih_table.h_index_matrix
-        ) * Ih_table.h_expand_matrix
-        wg2sum = ((w * g * g) * Ih_table.h_index_matrix) * Ih_table.h_expand_matrix
+        wgIsum = Ih_table.sum_in_groups(w * g * intensity, output="per_refl")
+        wg2sum = Ih_table.sum_in_groups(w * g * g, output="per_refl")
         wgIsum_others = wgIsum - (w * g * intensity)
         wg2sum_others = wg2sum - (w * g * g)
         # Now do the rejection analysis if n_in_group > 2

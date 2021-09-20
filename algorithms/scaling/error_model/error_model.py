@@ -571,10 +571,8 @@ def filter_unsuitable_reflections(
         Ih_table = Ih_table.select(sel)
 
     n = Ih_table.size
-    sum_I_over_var = (
-        Ih_table.intensities / Ih_table.variances
-    ) * Ih_table.h_index_matrix
-    n_per_group = flex.double(n, 1) * Ih_table.h_index_matrix
+    sum_I_over_var = Ih_table.sum_in_groups(Ih_table.intensities / Ih_table.variances)
+    n_per_group = Ih_table.sum_in_groups(flex.double(n, 1))
     avg_I_over_var = sum_I_over_var / n_per_group
     sel = avg_I_over_var > 0.85
     Ih_table = Ih_table.select_on_groups(sel)
@@ -610,14 +608,12 @@ def filter_unsuitable_reflections(
     I = Ih_table.intensities
     mu = Ih_table.Ih_values
     g = Ih_table.inverse_scale_factors
-    n_h = flex.double(Ih_table.size, 1.0) * Ih_table.h_index_matrix
+    n_h = Ih_table.sum_in_groups(flex.double(Ih_table.size, 1.0))
 
-    group_variances = (
-        (((I / g) - mu) ** 2)
-        * Ih_table.h_index_matrix
-        / (n_h - flex.double(n_h.size(), 1.0))
+    group_variances = Ih_table.sum_in_groups(((I / g) - mu) ** 2) / (
+        n_h - flex.double(n_h.size(), 1.0)
     )
-    avg_variances = (Ih_table.variances / (g ** 2)) * Ih_table.h_index_matrix / n_h
+    avg_variances = Ih_table.sum_in_groups(Ih_table.variances / (g ** 2)) / n_h
     ratio = group_variances / avg_variances
     sel = ratio < max(50, (flex.max(mu) / 40.0))
     logger.debug(

@@ -325,7 +325,7 @@ class IhTable:
         free_reflection_table = flex.reflection_table()
         free_indices = flex.size_t()
         for j, block in enumerate(self.Ih_table_blocks):
-            n_groups = block.h_index_matrix.n_cols
+            n_groups = block.n_groups
             groups_for_free_set = flex.bool(n_groups, False)
             for_free = flex.size_t(
                 list(range(0 + offset, n_groups, interval_between_groups))
@@ -478,16 +478,16 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
         self.weights = 1.0 / self.variances
         self._setup_info["setup_complete"] = True
 
-    def group_multiplicities(self):
+    def group_multiplicities(self, output="per_group"):
         """Return the multiplicities of the symmetry groups."""
-        return flex.double(self.size, 1.0) * self.h_index_matrix
+        return self.sum_in_groups(flex.double(self.size, 1.0), output=output)
 
     def select(self, sel):
         """Select a subset of the data, returning a new IhTableBlock object."""
         Ih_table = self.Ih_table.select(sel)
         h_idx_sel = self.h_expand_matrix.select_columns(sel.iselection())
         reduced_h_idx = h_idx_sel.transpose()
-        unity = flex.double(reduced_h_idx.n_rows, 1.0)
+        unity = flex.double(Ih_table.size(), 1.0)
         nz_col_sel = (unity * reduced_h_idx) > 0
         h_index_matrix = reduced_h_idx.select_columns(nz_col_sel.iselection())
         h_expand = h_index_matrix.transpose()
@@ -524,11 +524,9 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
 
     def calc_Ih(self):
         """Calculate the current best estimate for Ih for each reflection group."""
-        scale_factors = self.Ih_table["inverse_scale_factor"]
-        gsq = flex.pow2(scale_factors) * self.weights
-        sumgsq = gsq * self.h_index_matrix
-        gI = (scale_factors * self.Ih_table["intensity"]) * self.weights
-        sumgI = gI * self.h_index_matrix
+        scale_factors = self.inverse_scale_factors
+        sumgsq = self.sum_in_groups(flex.pow2(scale_factors) * self.weights)
+        sumgI = self.sum_in_groups(scale_factors * self.intensities * self.weights)
         Ih = sumgI / sumgsq
         self.Ih_table["Ih_values"] = Ih * self.h_expand_matrix
 
@@ -557,9 +555,7 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
         """Calculate the number of refls in the group to which the reflection belongs.
 
         This is a vector of length n_refl."""
-        return (
-            flex.double(self.size, 1.0) * self.h_index_matrix
-        ) * self.h_expand_matrix
+        return self.sum_in_groups(flex.double(self.size, 1.0), output="per_refl")
 
     def match_Ih_values_to_target(self, target_Ih_table):
         """
@@ -692,6 +688,21 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
             d_min=uctbx.d_star_sq_as_d(d_star_sq_min),
             d_star_sq_step=step,
         )
+
+    def sum_in_groups(self, array, output="per_group"):
+        """
+        Sums an array object over the symmetry equivalent groups.
+        The array's final dimension must equal the size of the Ih_table.
+        """
+        if output == "per_group":
+            return array * self.h_index_matrix
+        elif output == "per_refl":  # return the summed quantity per reflection
+            return (array * self.h_index_matrix) * self.h_expand_matrix
+        else:
+            raise ValueError(
+                f"""Bad value for output= parameter
+(value={output}, allowed values: per_group, per_refl)"""
+            )
 
 
 def _reflection_table_to_iobs(table, unit_cell, space_group):

@@ -61,7 +61,7 @@ class ScalingTarget:
     def calculate_gradients(Ih_table):
         """Return a gradient vector on length len(self.apm.x)."""
         gsq = flex.pow2(Ih_table.inverse_scale_factors) * Ih_table.weights
-        sumgsq = gsq * Ih_table.h_index_matrix
+        sumgsq = Ih_table.sum_in_groups(gsq)
         prefactor = (
             -2.0
             * Ih_table.weights
@@ -79,7 +79,7 @@ class ScalingTarget:
         )
         term_1 = (prefactor * Ih_table.Ih_values) * Ih_table.derivatives
         term_2 = (
-            prefactor * Ih_table.inverse_scale_factors * Ih_table.h_index_matrix
+            Ih_table.sum_in_groups(prefactor * Ih_table.inverse_scale_factors)
         ) * dIh_by_dpi
         gradient = term_1 + term_2
         return gradient
@@ -88,7 +88,7 @@ class ScalingTarget:
     def calculate_jacobian(Ih_table):
         """Calculate the jacobian matrix, size Ih_table.size by len(self.apm.x)."""
         gsq = flex.pow2(Ih_table.inverse_scale_factors) * Ih_table.weights
-        sumgsq = gsq * Ih_table.h_index_matrix
+        sumgsq = Ih_table.sum_in_groups(gsq)
         dIh = (
             Ih_table.intensities
             - (Ih_table.Ih_values * 2.0 * Ih_table.inverse_scale_factors)

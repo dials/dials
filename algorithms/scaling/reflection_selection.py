@@ -85,8 +85,9 @@ def _build_class_matrix(reflections, class_matrix, offset=0):
 
 def _select_groups_on_Isigma_cutoff(Ih_table, cutoff=2.0):
     """Select groups with multiplicity>1, Isigma>cutoff"""
-    I_over_sigma = Ih_table.intensities / flex.sqrt(Ih_table.variances)
-    sumIsigm = I_over_sigma * Ih_table.h_index_matrix
+    sumIsigm = Ih_table.sum_in_groups(
+        Ih_table.intensities / flex.sqrt(Ih_table.variances)
+    )
     n = Ih_table.group_multiplicities()
     avg_Isigma = sumIsigm / n
     sel = avg_Isigma > cutoff
@@ -124,7 +125,7 @@ def _perform_quasi_random_selection(
     Ih_table.Ih_table["class_index"] = Ih_table.Ih_table["dataset_id"]
 
     class_matrix = _build_class_matrix(Ih_table.Ih_table, class_matrix)
-    segments_in_groups = class_matrix * Ih_table.h_index_matrix
+    segments_in_groups = Ih_table.sum_in_groups(class_matrix)
     total = flex.double(segments_in_groups.n_cols, 0)
     for i, col in enumerate(segments_in_groups.cols()):
         total[i] = col.non_zeroes

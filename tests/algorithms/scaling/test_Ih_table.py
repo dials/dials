@@ -385,6 +385,19 @@ def test_IhTable_split_into_blocks(
     expected_h_idx_matrix[5, 2] = 1
     assert block_list[1].h_index_matrix == expected_h_idx_matrix
 
+    s = flex.double([1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
+    assert list(block_list[1].sum_in_groups(s, "per_group")) == [5.0, 10.0, 6.0]
+    assert list(block_list[1].sum_in_groups(s, "per_refl")) == [
+        5.0,
+        10.0,
+        10.0,
+        5.0,
+        10.0,
+        6.0,
+    ]
+    with pytest.raises(ValueError):
+        block_list[1].sum_in_groups(s, "invalid")
+
     # check that only dataset 1 intensities are updated
     new_intensities = flex.double([60.0, 50.0, 40.0, 30.0, 20.0, 10.0])
     Ih_table.update_data_in_blocks(data=new_intensities, dataset_id=0)

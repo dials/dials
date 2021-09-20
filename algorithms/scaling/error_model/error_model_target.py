@@ -8,14 +8,11 @@ from dials.array_family import flex
 
 def calculate_regression_x_y(Ih_table):
     """Calculate regression data points."""
-    n = Ih_table.group_multiplicities() - 1.0
-    group_variances = (
-        flex.pow2(
-            Ih_table.intensities - (Ih_table.inverse_scale_factors * Ih_table.Ih_values)
-        )
-        * Ih_table.h_index_matrix
-    ) / n
-    sigmasq_obs = group_variances * Ih_table.h_expand_matrix
+    n = Ih_table.group_multiplicities(output="per_refl")
+    var_over_n_minus_1 = flex.pow2(
+        Ih_table.intensities - (Ih_table.inverse_scale_factors * Ih_table.Ih_values)
+    ) / (n - 1.0)
+    sigmasq_obs = Ih_table.sum_in_groups(var_over_n_minus_1, output="per_refl")
     isq = flex.pow2(Ih_table.intensities)
     y = sigmasq_obs / isq
     x = Ih_table.variances / isq
