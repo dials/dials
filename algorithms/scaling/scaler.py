@@ -18,6 +18,9 @@ from collections import OrderedDict
 from io import StringIO
 from math import ceil
 
+import numpy as np
+
+from dxtbx import flumpy
 from libtbx import Auto
 from scitbx import sparse
 
@@ -210,11 +213,11 @@ class ScalerBase(Subject):
         # First adjust variances
         for scaler in self.active_scalers:
             if scaler._experiment.scaling_model.error_model:
-                scaler.reflection_table[
-                    "variance"
-                ] = scaler._experiment.scaling_model.error_model.update_variances(
-                    scaler.reflection_table["variance"],
-                    scaler.reflection_table["intensity"],
+                scaler.reflection_table["variance"] = flumpy.from_numpy(
+                    scaler._experiment.scaling_model.error_model.update_variances(
+                        scaler.reflection_table["variance"],
+                        scaler.reflection_table["intensity"],
+                    )
                 )
             # now increase the errors slightly to take into account the uncertainty in the
             # inverse scale factors
@@ -502,7 +505,7 @@ class SingleScaler(ScalerBase):
             apm_i, block_id
         )
         self.Ih_table.set_derivatives(derivs_i, block_id)
-        self.Ih_table.set_inverse_scale_factors(scales_i, block_id)
+        self.Ih_table.set_inverse_scale_factors(flumpy.to_numpy(scales_i), block_id)
         self.Ih_table.calc_Ih(block_id)
 
     def combine_intensities(self):
@@ -650,17 +653,19 @@ class SingleScaler(ScalerBase):
             # do the random reflection selection.
             block = self.global_Ih_table.Ih_table_blocks[0]
             suitable_table = self.get_valid_reflections()
-            presel = calculate_scaling_subset_ranges(
-                suitable_table, self.params, print_summary=True
+            presel = flumpy.to_numpy(
+                calculate_scaling_subset_ranges(
+                    suitable_table, self.params, print_summary=True
+                )
             )
-            preselection = presel.select(block.Ih_table["loc_indices"])
+            preselection = presel[block.Ih_table["loc_indices"].to_numpy()]
             presel_block = block.select(preselection)
             # then select random groups
             n_h_over_1 = presel_block.calc_nh() > 1
-            if True in n_h_over_1:
+            if n_h_over_1.any():
                 presel_block = presel_block.select(n_h_over_1)
                 min_groups = self.params.reflection_selection.random.min_groups
-                avg_multi = flex.mean(presel_block.group_multiplicities())
+                avg_multi = np.mean(presel_block.group_multiplicities())
                 min_refl = self.params.reflection_selection.random.min_reflections
                 n_groups_in_table = presel_block.n_groups
                 n_groups_to_sel = max(int(ceil(min_refl / avg_multi)), min_groups)
@@ -670,21 +675,29 @@ class SingleScaler(ScalerBase):
                     avg_multi,
                 )
                 if n_groups_to_sel < n_groups_in_table:
-                    isel = flex.random_selection(n_groups_in_table, n_groups_to_sel)
-                    loc_indices = presel_block.select_on_groups_isel(isel).Ih_table[
-                        "loc_indices"
-                    ]
+                    isel = flumpy.to_numpy(
+                        flex.random_selection(n_groups_in_table, n_groups_to_sel)
+                    )
+                    loc_indices = (
+                        presel_block.select_on_groups(isel)
+                        .Ih_table["loc_indices"]
+                        .to_numpy()
+                    )
                 else:
-                    loc_indices = presel_block.Ih_table["loc_indices"]
+                    loc_indices = presel_block.Ih_table["loc_indices"].to_numpy()
                     n_groups_to_sel = n_groups_in_table
-                self.scaling_selection = flex.bool(self.n_suitable_refl, False)
-                self.scaling_selection.set_selected(loc_indices, True)
+                self.scaling_selection = np.full(
+                    self.n_suitable_refl, False, dtype=bool
+                )
+                # flex.bool(self.n_suitable_refl, False)
+                self.scaling_selection[loc_indices] = True
+                self.scaling_selection = flumpy.from_numpy(self.scaling_selection)
                 logger.info(
                     """Randomly selected %s/%s groups (m>1) to use for scaling model
 minimisation (%s reflections)""",
                     n_groups_to_sel,
                     n_groups_in_table,
-                    loc_indices.size(),
+                    loc_indices.size,
                 )
             else:
                 logger.warning(
@@ -714,6 +727,7 @@ attempting to use all reflections for minimisation."""
         """Use the data in the Ih_table to update the model data."""
         assert self.Ih_table is not None
         block_selections = self.Ih_table.get_block_selections_for_dataset(dataset=0)
+        block_selections = [flumpy.from_numpy(b) for b in block_selections]
         for component in self.components.values():
             component.update_reflection_data(block_selections=block_selections)
 
@@ -746,9 +760,11 @@ attempting to use all reflections for minimisation."""
             anomalous=anomalous,
         )
         if free_set_percentage:
-            loc_indices = global_Ih_table.blocked_data_list[-1].Ih_table["loc_indices"]
+            loc_indices = (
+                global_Ih_table.blocked_data_list[-1].Ih_table["loc_indices"].to_numpy()
+            )
             self.free_set_selection = flex.bool(self.n_suitable_refl, False)
-            self.free_set_selection.set_selected(loc_indices, True)
+            self.free_set_selection.set_selected(flumpy.from_numpy(loc_indices), True)
             global_Ih_table = IhTable(
                 [sel_reflections.select(~self.free_set_selection)],
                 self.experiment.crystal.get_space_group(),
@@ -799,6 +815,7 @@ attempting to use all reflections for minimisation."""
                 self.params.scaling_options.outlier_rejection,
                 self.params.scaling_options.outlier_zmax,
             )[0]
+            outlier_indices = flumpy.from_numpy(outlier_indices)
             self.outliers = flex.bool(self.n_suitable_refl, False)
             self.outliers.set_selected(outlier_indices, True)
             if self.params.scaling_options.emax:
@@ -807,21 +824,25 @@ attempting to use all reflections for minimisation."""
                     self.experiment,
                     self.params.scaling_options.emax,
                 )[0]
-                self.outliers.set_selected(Esq_outlier_indices, True)
+                self.outliers.set_selected(flumpy.from_numpy(Esq_outlier_indices), True)
             if self._free_Ih_table:
                 free_outlier_indices = determine_outlier_index_arrays(
                     self._free_Ih_table,
                     self.params.scaling_options.outlier_rejection,
                     self.params.scaling_options.outlier_zmax,
                 )[0]
-                self.outliers.set_selected(free_outlier_indices, True)
+                self.outliers.set_selected(
+                    flumpy.from_numpy(free_outlier_indices), True
+                )
                 if self.params.scaling_options.emax:
                     free_Esq_outlier_indices = determine_Esq_outlier_index_arrays(
                         self._free_Ih_table,
                         self.experiment,
                         self.params.scaling_options.emax,
                     )[0]
-                    self.outliers.set_selected(free_Esq_outlier_indices, True)
+                    self.outliers.set_selected(
+                        flumpy.from_numpy(free_Esq_outlier_indices), True
+                    )
 
     def make_ready_for_scaling(self, outlier=True):
         """
@@ -958,7 +979,7 @@ class MultiScalerBase(ScalerBase):
         for j, deriv in enumerate(derivs):
             deriv_matrix.assign_block(deriv, start_row_no, apm.apm_data[j]["start_idx"])
             start_row_no += deriv.n_rows
-        self.Ih_table.set_inverse_scale_factors(scales, block_id)
+        self.Ih_table.set_inverse_scale_factors(flumpy.to_numpy(scales), block_id)
         self.Ih_table.set_derivatives(deriv_matrix, block_id)
         if calc_Ih:
             self.Ih_table.calc_Ih(block_id)
@@ -977,8 +998,11 @@ class MultiScalerBase(ScalerBase):
     def _update_model_data(self):
         for i, scaler in enumerate(self.active_scalers):
             block_selections = self.Ih_table.get_block_selections_for_dataset(i)
+            these_block_selections = [flumpy.from_numpy(b) for b in block_selections]
             for component in scaler.components.values():
-                component.update_reflection_data(block_selections=block_selections)
+                component.update_reflection_data(
+                    block_selections=these_block_selections
+                )
 
     def _create_global_Ih_table(self, anomalous=False, remove_outliers=False):
         if remove_outliers:
@@ -1009,11 +1033,18 @@ class MultiScalerBase(ScalerBase):
             indices_list = []
             free_indices_list = []
             for i, scaler in enumerate(self.active_scalers):
-                sel = global_Ih_table.Ih_table_blocks[-1].Ih_table["dataset_id"] == i
+                sel = (
+                    global_Ih_table.Ih_table_blocks[-1]
+                    .Ih_table["dataset_id"]
+                    .to_numpy()
+                    == i
+                )
                 indiv_Ih_block = global_Ih_table.Ih_table_blocks[-1].select(sel)
-                loc_indices = indiv_Ih_block.Ih_table["loc_indices"]
+                loc_indices = indiv_Ih_block.Ih_table["loc_indices"].to_numpy()
                 scaler.free_set_selection = flex.bool(scaler.n_suitable_refl, False)
-                scaler.free_set_selection.set_selected(loc_indices, True)
+                scaler.free_set_selection.set_selected(
+                    flumpy.from_numpy(loc_indices), True
+                )
                 tables.append(scaler.get_work_set_reflections())
                 free_tables.append(scaler.get_free_set_reflections())
                 free_indices_list.append(scaler.free_set_selection.iselection())
@@ -1099,7 +1130,7 @@ class MultiScalerBase(ScalerBase):
                 outlier_index_arrays, self.active_scalers
             ):
                 scaler.outliers = flex.bool(scaler.n_suitable_refl, False)
-                scaler.outliers.set_selected(outlier_indices, True)
+                scaler.outliers.set_selected(flumpy.from_numpy(outlier_indices), True)
             if self.params.scaling_options.emax:
                 Esq_outlier_indices = determine_Esq_outlier_index_arrays(
                     self.global_Ih_table,
@@ -1109,7 +1140,7 @@ class MultiScalerBase(ScalerBase):
                 for Esq_outliers, scaler in zip(
                     Esq_outlier_indices, self.active_scalers
                 ):
-                    scaler.outliers.set_selected(Esq_outliers, True)
+                    scaler.outliers.set_selected(flumpy.from_numpy(Esq_outliers), True)
             if self._free_Ih_table:
                 free_outlier_index_arrays = determine_outlier_index_arrays(
                     self._free_Ih_table,
@@ -1121,7 +1152,9 @@ class MultiScalerBase(ScalerBase):
                     free_outlier_index_arrays,
                     self.active_scalers,
                 ):
-                    scaler.outliers.set_selected(outlier_indices, True)
+                    scaler.outliers.set_selected(
+                        flumpy.from_numpy(outlier_indices), True
+                    )
                 if self.params.scaling_options.emax:
                     free_Esq_outlier_indices = determine_Esq_outlier_index_arrays(
                         self._free_Ih_table,
@@ -1132,7 +1165,9 @@ class MultiScalerBase(ScalerBase):
                         free_Esq_outlier_indices,
                         self.active_scalers,
                     ):
-                        scaler.outliers.set_selected(Esq_outlier_indices, True)
+                        scaler.outliers.set_selected(
+                            flumpy.from_numpy(Esq_outlier_indices), True
+                        )
 
         logger.debug("Finished outlier rejection.")
         log_memory_usage()
@@ -1147,9 +1182,10 @@ class MultiScalerBase(ScalerBase):
         ):
             random_phil = self.params.reflection_selection.random
             block = self.global_Ih_table.Ih_table_blocks[0]
-            sel_block = block.select(block.calc_nh() > 1)
+            sel = block.calc_nh() > 1
+            sel_block = block.select(sel)
             total_refl_available = sel_block.size
-            avg_multi_overall = flex.mean(sel_block.group_multiplicities())
+            avg_multi_overall = np.mean(sel_block.group_multiplicities())
             n_datasets = len(self.active_scalers)
             total_target = max(
                 avg_multi_overall * random_phil.min_groups, random_phil.min_reflections
@@ -1194,16 +1230,17 @@ class MultiScalerBase(ScalerBase):
                 # scaler.scaling_selection = flex.bool(scaler.n_suitable_refl, False)
                 # now select randomly within dataset, first do preselection.
                 if min_cross_dataset > 0:
-                    indiv_Ih_block = global_block.select(
-                        global_block.Ih_table["dataset_id"] == i
-                    )
+                    sel = global_block.Ih_table["dataset_id"].to_numpy() == i
+                    indiv_Ih_block = global_block.select(sel)
                     suitable_table = scaler.reflection_table.select(
                         scaler.suitable_refl_for_scaling_sel
                     )
-                    presel = calculate_scaling_subset_ranges(
-                        suitable_table, self.params
+                    presel = flumpy.to_numpy(
+                        calculate_scaling_subset_ranges(suitable_table, self.params)
                     )
-                    preselection = presel.select(indiv_Ih_block.Ih_table["loc_indices"])
+                    preselection = presel[
+                        indiv_Ih_block.Ih_table["loc_indices"].to_numpy()
+                    ]
                     block = indiv_Ih_block.select(preselection)
                     # have a block of individual dataset to chose from.
 
@@ -1214,20 +1251,28 @@ class MultiScalerBase(ScalerBase):
                         n_groups = int(
                             ceil(
                                 min_cross_dataset
-                                / flex.mean(block.group_multiplicities())
+                                / np.mean(block.group_multiplicities())
                             )
                         )
                         n_groups_in_table = block.n_groups
                         if n_groups < n_groups_in_table:
-                            isel = flex.random_selection(n_groups_in_table, n_groups)
-                            loc_indices = block.select_on_groups_isel(isel).Ih_table[
-                                "loc_indices"
-                            ]
-                            scaler.scaling_selection.set_selected(loc_indices, True)
+                            isel = flumpy.to_numpy(
+                                flex.random_selection(n_groups_in_table, n_groups)
+                            )
+                            loc_indices = (
+                                block.select_on_groups(isel)
+                                .Ih_table["loc_indices"]
+                                .to_numpy()
+                            )
+                            scaler.scaling_selection.set_selected(
+                                flumpy.from_numpy(loc_indices), True
+                            )
                         else:
-                            loc_indices = block.Ih_table["loc_indices"]
-                            scaler.scaling_selection.set_selected(loc_indices, True)
-                        n_refl = loc_indices.size()
+                            loc_indices = block.Ih_table["loc_indices"].to_numpy()
+                            scaler.scaling_selection.set_selected(
+                                flumpy.from_numpy(loc_indices), True
+                            )
+                        n_refl = loc_indices.size
                     else:  # no refl with multiplicity > 1.
                         n_refl = 0
                 else:
@@ -1246,12 +1291,16 @@ class MultiScalerBase(ScalerBase):
 
                 n_groups_in_table = global_block.n_groups
                 if n_groups_to_sel < n_groups_in_table:
-                    isel = flex.random_selection(n_groups_in_table, n_groups_to_sel)
-                    sel_block = global_block.select_on_groups_isel(isel)
+                    isel = flumpy.to_numpy(
+                        flex.random_selection(n_groups_in_table, n_groups_to_sel)
+                    )
+                    sel_block = global_block.select_on_groups(isel)
                 else:  # just use all
                     sel_block = global_block
             else:
-                sel_block = global_block.select_on_groups_isel(flex.size_t())
+                sel_block = global_block.select_on_groups(
+                    np.array([], dtype=np.uint).reshape((0,))
+                )
 
             header = [
                 "Dataset id",
@@ -1264,17 +1313,19 @@ class MultiScalerBase(ScalerBase):
             total_overall = 0
 
             for i, scaler in enumerate(self.active_scalers):
-                sel = sel_block.Ih_table["dataset_id"] == i
+                sel = sel_block.Ih_table["dataset_id"].to_numpy() == i
                 indiv_block = sel_block.select(sel)
-                loc_indices = indiv_block.Ih_table["loc_indices"]
-                scaler.scaling_selection.set_selected(loc_indices, True)
+                loc_indices = indiv_block.Ih_table["loc_indices"].to_numpy()
+                scaler.scaling_selection.set_selected(
+                    flumpy.from_numpy(loc_indices), True
+                )
                 n = scaler.scaling_selection.count(True)
                 rows.append(
                     [
                         scaler.reflection_table.experiment_identifiers().keys()[0],
                         str(n_connected_by_dataset[i]),
                         str(total_indiv_dataset[i]),
-                        str(loc_indices.size()),
+                        str(loc_indices.size),
                         str(n),
                     ]
                 )
@@ -1325,7 +1376,7 @@ class MultiScalerBase(ScalerBase):
                 ) = self._create_global_Ih_table(self.params.anomalous)
         elif self.params.reflection_selection.method == "use_all":
             block = self.global_Ih_table.Ih_table_blocks[0]
-            n_mult = (block.calc_nh() > 1).count(True)
+            n_mult = np.count_nonzero(block.calc_nh() > 1)
             logger.info(
                 "Using all reflections (%s) for minimisation (%s with m>1)",
                 block.size,
@@ -1352,7 +1403,7 @@ class MultiScalerBase(ScalerBase):
                 raise SystemExit(
                     "No groups left with multiplicity >1, scaling not possible."
                 )
-            avg_multi = flex.mean(block.group_multiplicities())
+            avg_multi = np.mean(block.group_multiplicities())
             n_groups_to_sel = max(
                 random_phil.min_groups,
                 int(ceil(random_phil.min_reflections / avg_multi)),
@@ -1361,7 +1412,7 @@ class MultiScalerBase(ScalerBase):
             n_groups_in_table = block.n_groups
             if n_groups_to_sel < n_groups_in_table:
                 isel = flex.random_selection(n_groups_in_table, n_groups_to_sel)
-                sel_block = block.select_on_groups_isel(isel)
+                sel_block = block.select_on_groups(flumpy.to_numpy(isel))
             else:  # just use all
                 sel_block = block
             logger.info(
@@ -1371,11 +1422,13 @@ class MultiScalerBase(ScalerBase):
                 sel_block.size,
             )
             for i, scaler in enumerate(self.active_scalers):
-                sel = sel_block.Ih_table["dataset_id"] == i
+                sel = sel_block.Ih_table["dataset_id"].to_numpy() == i
                 indiv_block = sel_block.select(sel)
-                loc_indices = indiv_block.Ih_table["loc_indices"]
+                loc_indices = indiv_block.Ih_table["loc_indices"].to_numpy()
                 scaler.scaling_selection = flex.bool(scaler.n_suitable_refl, False)
-                scaler.scaling_selection.set_selected(loc_indices, True)
+                scaler.scaling_selection.set_selected(
+                    flumpy.from_numpy(loc_indices), True
+                )
                 scaler.scaling_subset_sel = copy.deepcopy(scaler.scaling_selection)
                 scaler.scaling_selection &= ~scaler.outliers
         else:
