@@ -1,3 +1,12 @@
+DIALS 3.6.2 (2021-09-21)
+========================
+
+Bugfixes
+--------
+
+- ``dials.reciprocal_lattice_viewer``: In cases with multiple lattices, "Crystal Frame" now aligns all crystal frames, rather than just the first. Unindexed reflections are no longer shown in this mode. (`#1868 <https://github.com/dials/dials/issues/1868>`_)
+
+
 DIALS 3.6.1 (2021-09-06)
 ========================
 
