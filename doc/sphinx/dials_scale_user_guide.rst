@@ -36,9 +36,9 @@ multi-sweep/multi-crystal experiment. These are example options to use:
 - :samp:`d_min=2.0`  Applies a resolution cutoff at the given resolution (in Angstrom).
 - :samp:`exclude_images="100:120"`  Removes a section of images for a single
   sweep dataset. Multiple commands like this can be used to exclude multiple ranges.
-  In the case of multiple-sweeps, one must also provide the experiment id that
+  In the case of multiple-sweeps, one must also provide the experiment ID that
   the exclusion should apply to, with the syntax :samp:`exclude_images="a:b:c"`
-  where `a` is the experiment id (a number starting at :samp:`0`), `b` is the initial
+  where `a` is the experiment ID (a number starting at :samp:`0`), `b` is the initial
   image to exclude and `c` is the final image to exclude.
 - :samp:`exclude_datasets="10 50 79"`  Removes whole datasets, based on
   the dataset number; useful for large multi-crystal datasets.
@@ -46,8 +46,7 @@ multi-sweep/multi-crystal experiment. These are example options to use:
 **Anomalous data**
 During scaling, the option :samp:`anomalous=[True|False]` determines whether
 anomalous pairs (I+/I-) are combined during scaling model minimisation and outlier
-rejection. By default, :samp:`anomalous=False`, which is a suitable scaling protocol
-in DIALS for data with some anomalous signal, however for strongly anomalous data,
+rejection. By default, :samp:`anomalous=False`, which is suitable for data with some anomalous signal, however for strongly anomalous data,
 the anomalous signal strength may be enhanced when scaling with :samp:`anomalous=True`
 
 **Controlling the absorption correction**
@@ -74,7 +73,7 @@ programs to have more extensive control over the program options):
 One choice that is made automatically during scaling is whether summation or
 profile intensities seem give the best estimate of the integrated intensity
 (or a combination of the two). To see the result of this combination, inspect the
-table in the scaling logfile, which scores a set of Imid values on Rpim \& CC1/2.
+table in the scaling log, which scores a set of Imid values on Rpim \& CC1/2.
 To specify which intensity choice to use, there are a couple of options:
 
 - :samp:`intensity_choice=[profile|sum|combine]`  Choose from profile, sum or combine (default is combine)
@@ -89,11 +88,11 @@ account for additional systematic errors not suffiently modelled during integrat
 an important correction and should improve the data quality for typical
 macromolecular crystallographic data, for poorer quality data the model parameters
 may become overinflated.
-If so, then this correction can be controlled with the commands:
+If so, then this correction can be controlled with the parameters:
 
 - :samp:`error_model=None`  Don't apply an error model.
 - :samp:`error_model.basic.minimisation=None`  Don't refine the error model in this
-  scaling run. Will keep the preexisting error model parameters, or the default
+  scaling run. Will keep the pre-existing error model parameters, or the default
   error model (:samp:`a=1.0, b=0.02`) on a first scaling run.
 
 For the multi-sweep case, a single error model is applied to the combined dataset,
@@ -108,8 +107,8 @@ model can be refined on sweeps individually or as groups.
 
 **Controlling partials**
 By default, reflections with a partiality above 0.4 are included in the output
-datafiles and merging statistics from dials.scale. This threshold can be changed
-with the command:
+data files and merging statistics from dials.scale. This threshold can be changed
+with the parameters:
 
 - :samp:`partiality_threshold=0.95`  Disregard all measurements with partialities
   below this value.
