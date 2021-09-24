@@ -63,7 +63,7 @@ class ErrorModelTarget:
     # The following methods are for adaptlbfgs.
     def compute_functional_gradients(self, apm):
         """Compute the functional and gradients vector."""
-        return np.sum(self.calculate_residuals(apm)), self.calculate_gradients(apm)
+        return flex.sum(self.calculate_residuals(apm)), self.calculate_gradients(apm)
 
     def compute_restraints_functional_gradients(self, _):
         """Compute the restraints for the functional and gradients."""

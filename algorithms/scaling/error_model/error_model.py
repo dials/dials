@@ -468,8 +468,8 @@ class BasicErrorModel:
             self.filtered_Ih_table, self.filtered_Ih_table.calc_nh(), sigmaprime
         )
         central_cutoff = 1.5
-        n = delta_hl.size()
-        self.sortedy = np.sort(flumpy.to_numpy(delta_hl))
+        n = delta_hl.size
+        self.sortedy = np.sort(delta_hl)
         v1 = norm.cdf(-central_cutoff)
         v2 = norm.cdf(central_cutoff)
         idx_cutoff_min = ceil(

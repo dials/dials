@@ -102,8 +102,8 @@ class IhTable:
         if indices_lists:
             assert len(indices_lists) == len(reflection_tables)
         self.anomalous = anomalous
-        self.asu_index_dict = {}
-        self.free_asu_index_dict = {}
+        self._asu_index_dict = {}
+        self._free_asu_index_dict = {}
         self.space_group = space_group
         self.n_work_blocks = nblocks
         self.n_datasets = len(reflection_tables)
@@ -275,7 +275,7 @@ class IhTable:
                 block_id += 1
                 next_boundary = group_boundaries[block_id + 1]
                 group_id_in_block_i = 0
-            self.asu_index_dict[tuple(index)] = (group_id_in_block_i, block_id)
+            self._asu_index_dict[tuple(index)] = group_id_in_block_i
             group_id_in_block_i += 1
         # record the number in the last work block
         self.properties_dict["n_unique_in_each_block"].append(group_id_in_block_i)
@@ -286,7 +286,7 @@ class IhTable:
         if free_asu_index_set is not None:
             for index in free_asu_index_set:
                 # no boundaries as all go into the final block
-                self.free_asu_index_dict[tuple(index)] = (group_id_in_block_i, block_id)
+                self._free_asu_index_dict[tuple(index)] = group_id_in_block_i
                 group_id_in_block_i += 1
         # record the number in the free block
         self.properties_dict["n_unique_in_each_block"].append(group_id_in_block_i)
@@ -347,24 +347,29 @@ class IhTable:
             df["loc_indices"] = flumpy.to_numpy(indices_array)
         else:
             df["loc_indices"] = np.arange(df.shape[0], dtype=np.uint)
-        df = df.iloc[pd.Series(flumpy.to_numpy(perm))]
+        df = df.iloc[flumpy.to_numpy(perm)]
         hkl = hkl.select(perm)
         df["dataset_id"] = np.full(df.shape[0], dataset_id, dtype=np.uint)
         # if data are sorted by asu_index, then up until boundary, should be in same
         # block (still need to read group_id though)
-
         # sort data, get group ids and block_ids
-        group_ids = np.zeros(sorted_asu_indices.size(), dtype=np.int)
+        group_ids = np.zeros(sorted_asu_indices.size(), dtype=np.uint)
         boundary = self.properties_dict["miller_index_boundaries"][0]
         boundary_id = 0
         boundaries_for_this_datset = [0]  # use to slice
         # make this a c++ method for speed?
+        prev = (0, 0, 0)
+        group_id = -1
         for i, index in enumerate(sorted_asu_indices):
-            while index >= boundary:
-                boundaries_for_this_datset.append(i)
-                boundary_id += 1
-                boundary = self.properties_dict["miller_index_boundaries"][boundary_id]
-            group_id, _ = self.asu_index_dict[index]
+            if index != prev:
+                while index >= boundary:
+                    boundaries_for_this_datset.append(i)
+                    boundary_id += 1
+                    boundary = self.properties_dict["miller_index_boundaries"][
+                        boundary_id
+                    ]
+                group_id = self._asu_index_dict[tuple(index)]
+                prev = index
             group_ids[i] = group_id
         while len(boundaries_for_this_datset) < self.n_work_blocks + 1:
             # catch case where last boundaries aren't reached
@@ -392,7 +397,7 @@ class IhTable:
             groups_for_free_set = np.full(n_groups, False, dtype=bool)
             for_free = np.array(
                 [
-                    tuple(i) in self.free_asu_index_dict
+                    tuple(i) in self._free_asu_index_dict
                     for i in OrderedSet(block.asu_miller_index)
                 ]
             )
@@ -432,7 +437,8 @@ class IhTable:
             n_groups=len(set(free_hkl)), n_refl=n_refl, n_datasets=len(datasets)
         )
         group_ids = np.array(
-            [self.free_asu_index_dict[tuple(index)][0] for index in free_hkl]
+            [self._free_asu_index_dict[tuple(index)] for index in free_hkl],
+            dtype=np.uint,
         )
         for id_, t in zip(datasets, tables):
             dataset_sel = free_reflection_table["dataset_id"].to_numpy() == id_
@@ -504,8 +510,8 @@ class IhTableBlock:
         self.h_expand_matrix = None
         self.derivatives = None
         self.binner = None
-        self._csc_rows = np.array([], dtype=np.int).reshape((0,))
-        self._csc_cols = np.array([], dtype=np.int).reshape((0,))
+        self._csc_rows = np.array([], dtype=np.uint).reshape((0,))
+        self._csc_cols = np.array([], dtype=np.uint).reshape((0,))
         self._csc_h_index_matrix = None
         self._csc_h_expand_matrix = None
         self._hkl = flex.miller_index([])
@@ -538,13 +544,16 @@ Datasets must be added in correct order: expected: {}, this dataset: {}""".forma
             self._setup_info["next_dataset"],
             dataset_id,
         )
-        rows = np.empty(group_ids.size, dtype=np.int)
-        cols = np.empty(group_ids.size, dtype=np.int)
         for i, id_ in enumerate(group_ids):
             rowidx = i + self._setup_info["next_row"]
             self.h_index_matrix[rowidx, int(id_)] = 1.0
-            rows[i] = rowidx
-            cols[i] = id_
+        cols = group_ids
+        rows = np.arange(
+            start=self._setup_info["next_row"],
+            stop=self._setup_info["next_row"] + group_ids.size,
+            dtype=np.uint,
+        )
+
         self._csc_cols = np.concatenate([self._csc_cols, cols])
         self._csc_rows = np.concatenate([self._csc_rows, rows])
         self._hkl.extend(hkl)
@@ -554,7 +563,6 @@ Datasets must be added in correct order: expected: {}, this dataset: {}""".forma
         self._setup_info["next_dataset"] += 1
         self.dataset_info[dataset_id]["end_index"] = self._setup_info["next_row"]
         self.Ih_table = pd.concat([self.Ih_table, reflections], ignore_index=True)
-        # self.Ih_table.extend(reflections)
         if "loc_indices" in reflections:
             self.block_selections[dataset_id] = reflections["loc_indices"].to_numpy()
         else:
