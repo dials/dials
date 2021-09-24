@@ -2,6 +2,8 @@
 Tests for the dials.algorithms.scaling.plots module
 """
 
+from scitbx.array_family import flex
+
 from dials.algorithms.scaling.model.model import (
     ArrayScalingModel,
     PhysicalScalingModel,
@@ -151,7 +153,7 @@ def test_plot_scaling_models():
 
 
 def test_normal_probability_plot():
-    data = {"delta_hl": list(range(20))}
+    data = {"delta_hl": flex.double(range(20))}
     d = normal_probability_plot(data)
     assert "normal_distribution_plot" in d
 

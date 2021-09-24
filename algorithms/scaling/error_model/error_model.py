@@ -4,11 +4,14 @@ Error model classes for scaling.
 
 import logging
 from collections import OrderedDict
-from math import exp, log
+from math import ceil, exp, log
 
+import numpy as np
+from scipy.stats import norm
+
+from dxtbx import flumpy
 from iotbx import phil
 from scitbx import sparse
-from scitbx.math.distributions import normal_distribution
 
 from dials.array_family import flex
 from dials.util import tabulate
@@ -454,19 +457,27 @@ class BasicErrorModel:
         delta_hl = calc_deltahl(
             self.filtered_Ih_table, self.filtered_Ih_table.calc_nh(), sigmaprime
         )
-        norm = normal_distribution()
-        n = len(delta_hl)
-        if n <= 10:
-            a = 3 / 8
-        else:
-            a = 0.5
-        self.sortedy = flex.sorted(flex.double(delta_hl))
-        self.sortedx = flex.double(
-            [norm.quantile((i + 1 - a) / (n + 1 - (2 * a))) for i in range(n)]
+        central_cutoff = 1.5
+        n = delta_hl.size()
+        self.sortedy = np.sort(flumpy.to_numpy(delta_hl))
+        v1 = norm.cdf(-central_cutoff)
+        v2 = norm.cdf(central_cutoff)
+        idx_cutoff_min = ceil(
+            (v1 * n) - 0.5
+        )  # first one within the central cutoff range
+        idx_cutoff_max = ceil(
+            (v2 * n) - 0.5
+        )  # first one above the central cutoff range
+        central_n = idx_cutoff_max - idx_cutoff_min
+        v = np.linspace(
+            start=(idx_cutoff_min + 0.5) / n,
+            stop=(idx_cutoff_max + 0.5) / n,
+            endpoint=False,
+            num=central_n,
         )
-        central_sel = (self.sortedx < 1.5) & (self.sortedx > -1.5)
-        self.sortedx = self.sortedx.select(central_sel)
-        self.sortedy = self.sortedy.select(central_sel)
+
+        self.sortedx = flumpy.from_numpy(norm.ppf(v))
+        self.sortedy = flumpy.from_numpy(self.sortedy[idx_cutoff_min:idx_cutoff_max])
 
     def update(self, parameters):
         """Update the model with new parameters."""
@@ -614,5 +625,10 @@ def filter_unsuitable_reflections(
         "from error model analysis due to high internal variance"
     )
     Ih_table = Ih_table.select_on_groups(sel)
-
+    n = Ih_table.size
+    if n < min_reflections_required:
+        raise ValueError(
+            "Insufficient reflections (%s < %s) to perform error modelling."
+            % (n, min_reflections_required)
+        )
     return Ih_table
