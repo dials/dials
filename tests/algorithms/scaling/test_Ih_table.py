@@ -523,7 +523,7 @@ def test_IhTable_freework(large_reflection_table, small_reflection_table, test_s
     assert Ih_table.Ih_table_blocks[0].derivatives is derivs
 
     def update_vars_side_effect(*args):
-        return flex.double([0.5] * len(args[0]))
+        return np.array([0.5] * len(args[0]))
 
     # test setting an error model
     em = Mock()

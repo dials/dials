@@ -153,7 +153,7 @@ def test_plot_scaling_models():
 
 
 def test_normal_probability_plot():
-    data = {"delta_hl": np.arange(20, dtype=np.float)}
+    data = {"delta_hl": np.arange(20, dtype=float)}
     d = normal_probability_plot(data)
     assert "normal_distribution_plot" in d
 

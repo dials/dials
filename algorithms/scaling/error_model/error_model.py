@@ -215,7 +215,7 @@ class ErrorModelBinner:
         self.binning_info = {
             "initial_variances": [],
             "bin_boundaries": [],
-            "mean_intensities": np.array([], dtype=np.float).reshape((0,)),
+            "mean_intensities": np.array([], dtype=float).reshape((0,)),
             "bin_variances": [],
             "refl_per_bin": [],
             "n_reflections": None,
@@ -258,7 +258,7 @@ class ErrorModelBinner:
         ]
         boundaries[-1] = min_Ih - 0.01
         self.binning_info["bin_boundaries"] = np.array(boundaries)
-        self.binning_info["refl_per_bin"] = np.array([], dtype=np.float).reshape((0,))
+        self.binning_info["refl_per_bin"] = np.array([], dtype=float).reshape((0,))
 
         n_cumul = 0
         if Ih.size > 100 * self.min_reflections_required:
@@ -306,8 +306,8 @@ class ErrorModelBinner:
             return summation_matrix
         new_sum_matrix = sparse.matrix(summation_matrix.n_rows, n_new_cols)
         next_col = 0
-        refl_per_bin = np.array([], dtype=np.float).reshape((0,))
-        new_bounds = np.array([], dtype=np.float).reshape((0,))
+        refl_per_bin = np.array([], dtype=float).reshape((0,))
+        new_bounds = np.array([], dtype=float).reshape((0,))
         for i, col in enumerate(summation_matrix.cols()):
             if i not in cols_to_del:
                 new_sum_matrix[:, next_col] = col

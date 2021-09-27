@@ -389,7 +389,7 @@ class IhTable:
         """Extract a free set from all blocks."""
         assert not self.free_Ih_table
         free_reflection_table = pd.DataFrame()
-        free_indices = np.array([], dtype=np.int).reshape((0,))
+        free_indices = np.array([], dtype=int).reshape((0,))
         free_hkl = flex.miller_index([])
         # for each block, remove a fraction of the groups
         for j, block in enumerate(self.Ih_table_blocks):
@@ -682,7 +682,7 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
                 target_Ih_table.blocked_data_list[0].Ih_values,
             )
         )
-        new_Ih_values = np.zeros(self.size)
+        new_Ih_values = np.zeros(self.size, dtype=float)
         location_in_unscaled_array = 0
         sorted_asu_indices, permuted = get_sorted_asu_indices(
             self.asu_miller_index,
@@ -697,7 +697,7 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
                     n_in_group, target_asu_Ih_dict[miller_idx]
                 )
             location_in_unscaled_array += n_in_group
-        self.Ih_table.loc[permuted, "Ih_values"] = new_Ih_values
+        self.Ih_table.loc[flumpy.to_numpy(permuted), "Ih_values"] = new_Ih_values
         sel = self.Ih_values != 0.0
         new_table = self.select(sel)
         # now set attributes to update object
