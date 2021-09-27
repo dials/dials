@@ -312,12 +312,14 @@ class ErrorModelBinner:
             if i not in cols_to_del:
                 new_sum_matrix[:, next_col] = col
                 next_col += 1
-                new_bounds = np.append(new_bounds, [boundaries[i]])
+                new_bounds = np.append(
+                    new_bounds, [self.binning_info["bin_boundaries"][i]]
+                )
                 refl_per_bin = np.append(
                     refl_per_bin, [self.binning_info["refl_per_bin"][i]]
                 )
         self.binning_info["refl_per_bin"] = refl_per_bin
-        new_bounds = np.append(new_bounds, [boundaries[-1]])
+        new_bounds = np.append(new_bounds, [self.binning_info["bin_boundaries"][-1]])
         self.binning_info["bin_boundaries"] = new_bounds
         for i in range(len(new_bounds) - 1):
             maximum = new_bounds[i]
