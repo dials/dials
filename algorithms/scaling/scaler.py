@@ -1182,10 +1182,10 @@ class MultiScalerBase(ScalerBase):
         ):
             random_phil = self.params.reflection_selection.random
             block = self.global_Ih_table.Ih_table_blocks[0]
-            sel = block.calc_nh() > 1
-            sel_block = block.select(sel)
-            total_refl_available = sel_block.size
-            avg_multi_overall = np.mean(sel_block.group_multiplicities())
+            m = block.group_multiplicities()
+            mover1 = m[m > 1]
+            total_refl_available = np.sum(mover1)
+            avg_multi_overall = np.mean(mover1)
             n_datasets = len(self.active_scalers)
             total_target = max(
                 avg_multi_overall * random_phil.min_groups, random_phil.min_reflections
@@ -1195,7 +1195,6 @@ class MultiScalerBase(ScalerBase):
             target_for_qr = min(1000, random_phil.min_groups) * avg_multi_overall
             # ^ select this many for qr, then some from individual, then some
             # from overall.
-
             indices, dataset_ids = select_connected_reflections_across_datasets(
                 self.global_Ih_table,
                 self.active_scalers[0].experiment,
