@@ -122,10 +122,8 @@ def make_output(model, params):
     table = model.filtered_Ih_table
     data["intensity"] = flumpy.from_numpy(table.intensities)
     sigmaprime = calc_sigmaprime(model.parameters, table)
-    data["delta_hl"] = flumpy.from_numpy(
-        calc_deltahl(table, table.calc_nh(), sigmaprime)
-    )
-    data["inv_scale"] = flumpy.from_numpy(table.inverse_scale_factors)
+    data["delta_hl"] = calc_deltahl(table, table.calc_nh(), sigmaprime)
+    data["inv_scale"] = table.inverse_scale_factors
     data["sigma"] = flumpy.from_numpy(sigmaprime * table.inverse_scale_factors)
     data["binning_info"] = model.binner.binning_info
     d = {"error_model_plots": {}}
@@ -137,8 +135,8 @@ def make_output(model, params):
 
     if params.basic.minimisation == "regression":
         x, y = calculate_regression_x_y(model.filtered_Ih_table)
-        data["regression_x"] = flumpy.from_numpy(x)
-        data["regression_y"] = flumpy.from_numpy(y)
+        data["regression_x"] = x
+        data["regression_y"] = y
         data["model_a"] = model.parameters[0]
         data["model_b"] = model.parameters[1]
         d["error_model_plots"].update(error_regression_plot(data))

@@ -454,23 +454,19 @@ class IhTable:
     ) -> miller.array:
         """Get a scaled miller array from the Ih_table and an experiment."""
         blocked_data_list = self.blocked_data_list
-        indices = flex.miller_index([])
+        joint_table = flex.reflection_table([])
         if self.free_Ih_table:
             if return_free_set_data:
                 blocked_data_list = [blocked_data_list[-1]]
             else:
                 blocked_data_list = blocked_data_list[:-1]
         if len(blocked_data_list) > 1:
-            joint_table = pd.concat([block.Ih_table for block in blocked_data_list])
             for block in blocked_data_list:
-                indices.extend(block.asu_miller_index)
+                joint_table.extend(block.as_reflection_table())
         else:
-            joint_table = blocked_data_list[0].Ih_table
-            indices.extend(blocked_data_list[0].asu_miller_index)
+            joint_table = blocked_data_list[0].as_reflection_table()
         # Filter out negative scale factors to avoid merging statistics errors.
-        return _reflection_table_to_iobs(
-            joint_table, indices, unit_cell, self.space_group
-        )
+        return _reflection_table_to_iobs(joint_table, unit_cell, self.space_group)
 
 
 class IhTableBlock:
@@ -694,7 +690,7 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
             anomalous=target_Ih_table.anomalous,
         )
         for j, miller_idx in enumerate(OrderedSet(sorted_asu_indices)):
-            n_in_group = self.h_index_matrix.col(j).non_zeroes
+            n_in_group = self._csc_h_index_matrix.getcol(j).count_nonzero()
             if miller_idx in target_asu_Ih_dict:
                 i = location_in_unscaled_array
                 new_Ih_values[np.arange(i, i + n_in_group, dtype=np.uint)] = np.full(
@@ -776,7 +772,7 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
     @property
     def n_groups(self) -> int:
         """Return the length of the stored Ih_table (a reflection table)."""
-        return self.h_index_matrix.n_cols
+        return self._csc_h_index_matrix.shape[1]
 
     @property
     def asu_miller_index(self) -> flex.miller_index:
@@ -791,7 +787,7 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
     ) -> None:
         """Create a binner for the reflections contained in the table."""
         ma = _reflection_table_to_iobs(
-            self.Ih_table, self.asu_miller_index, unit_cell, space_group
+            self.as_reflection_table(), unit_cell, space_group
         )
         # need d star sq step
         d_star_sq = ma.d_star_sq().data()
@@ -812,14 +808,12 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
         )
 
     def sum_in_groups(
-        self, array: Union[pd.Series, np.array], output: str = "per_group"
+        self, array: Union[csc_matrix, np.array], output: str = "per_group"
     ) -> np.array:
         """
         Sums an array object over the symmetry equivalent groups.
         The array's final dimension must equal the size of the Ih_table.
         """
-        if isinstance(array, pd.Series):
-            array = array.to_numpy()
         if output == "per_group":
             return array @ self._csc_h_index_matrix
         elif output == "per_refl":  # return the summed quantity per reflection
@@ -830,37 +824,33 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
 (value={output}, allowed values: per_group, per_refl)"""
             )
 
+    def as_reflection_table(self) -> flex.reflection_table:
+        """Return the data in flex reflection table format"""
+        table = flex.reflection_table()
+        table["asu_miller_index"] = self.asu_miller_index
+        for k, v in self.Ih_table.iteritems():
+            table[k] = flumpy.from_numpy(v.to_numpy())
+        return table
+
 
 def _reflection_table_to_iobs(
     table: flex.reflection_table,
-    indices: flex.miller_index,
     unit_cell: uctbx.unit_cell,
     space_group: sgtbx.space_group,
 ) -> miller.array:
-    # indices = flex.miller_index(
-    #    [(i, j, k) for i, j, k in zip(table["h"], table["k"], table["l"])]
-    # )  # FIXME
     miller_set = miller.set(
         crystal_symmetry=crystal.symmetry(
             unit_cell=unit_cell,
             space_group=space_group,
             assert_is_compatible_unit_cell=False,
         ),
-        indices=indices,
+        indices=table["asu_miller_index"],
         anomalous_flag=False,
     )
     i_obs = miller.array(
-        miller_set,
-        data=flumpy.from_numpy(
-            table["intensity"].to_numpy() / table["inverse_scale_factor"].to_numpy()
-        ),
+        miller_set, data=table["intensity"] / table["inverse_scale_factor"]
     )
     i_obs.set_observation_type_xray_intensity()
-    i_obs.set_sigmas(
-        flumpy.from_numpy(
-            np.sqrt(table["variance"].to_numpy())
-            / table["inverse_scale_factor"].to_numpy()
-        )
-    )
+    i_obs.set_sigmas(flex.sqrt(table["variance"]) / table["inverse_scale_factor"])
     i_obs.set_info(miller.array_info(source="DIALS", source_type="reflection_tables"))
     return i_obs
