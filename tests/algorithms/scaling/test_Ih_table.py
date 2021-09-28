@@ -150,7 +150,7 @@ def test_IhTableblock_onedataset(large_reflection_table, test_sg):
     n_groups = len(set(asu_indices))
     n_refl = large_reflection_table.size()
     block = IhTableBlock(n_groups=n_groups, n_refl=n_refl)
-    group_ids = np.array([0, 1, 0, 2, 3, 4, 4], dtype=np.uint)
+    group_ids = np.array([0, 1, 0, 2, 3, 4, 4], dtype=np.uint64)
 
     df = refl_table_to_df(large_reflection_table)
 
@@ -280,13 +280,13 @@ def test_IhTableblock_twodatasets(large_reflection_table, test_sg):
 
     block.add_data(
         0,
-        np.array([0, 1, 3, 4, 4], dtype=np.uint),
+        np.array([0, 1, 3, 4, 4], dtype=np.uint64),
         refl_table_to_df(dataset_1),
         dataset_1["miller_index"],
     )
     block.add_data(
         1,
-        np.array([0, 2], dtype=np.uint),
+        np.array([0, 2], dtype=np.uint64),
         refl_table_to_df(dataset_2),
         dataset_2["miller_index"],
     )

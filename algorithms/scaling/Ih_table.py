@@ -346,14 +346,14 @@ class IhTable:
         if indices_array:
             df["loc_indices"] = flumpy.to_numpy(indices_array)
         else:
-            df["loc_indices"] = np.arange(df.shape[0], dtype=np.uint)
+            df["loc_indices"] = np.arange(df.shape[0], dtype=np.uint64)
         df = df.iloc[flumpy.to_numpy(perm)]
         hkl = hkl.select(perm)
-        df["dataset_id"] = np.full(df.shape[0], dataset_id, dtype=np.uint)
+        df["dataset_id"] = np.full(df.shape[0], dataset_id, dtype=np.uint64)
         # if data are sorted by asu_index, then up until boundary, should be in same
         # block (still need to read group_id though)
         # sort data, get group ids and block_ids
-        group_ids = np.zeros(sorted_asu_indices.size(), dtype=np.uint)
+        group_ids = np.zeros(sorted_asu_indices.size(), dtype=np.uint64)
         boundary = self.properties_dict["miller_index_boundaries"][0]
         boundary_id = 0
         boundaries_for_this_datset = [0]  # use to slice
@@ -438,7 +438,7 @@ class IhTable:
         )
         group_ids = np.array(
             [self._free_asu_index_dict[tuple(index)] for index in free_hkl],
-            dtype=np.uint,
+            dtype=np.uint64,
         )
         for id_, t in zip(datasets, tables):
             dataset_sel = free_reflection_table["dataset_id"].to_numpy() == id_
@@ -506,8 +506,8 @@ class IhTableBlock:
         self.h_expand_matrix = None
         self.derivatives = None
         self.binner = None
-        self._csc_rows = np.array([], dtype=np.uint).reshape((0,))
-        self._csc_cols = np.array([], dtype=np.uint).reshape((0,))
+        self._csc_rows = np.array([], dtype=np.uint64).reshape((0,))
+        self._csc_cols = np.array([], dtype=np.uint64).reshape((0,))
         self._csc_h_index_matrix = None
         self._csc_h_expand_matrix = None
         self._hkl = flex.miller_index([])
@@ -547,7 +547,7 @@ Datasets must be added in correct order: expected: {}, this dataset: {}""".forma
         rows = np.arange(
             start=self._setup_info["next_row"],
             stop=self._setup_info["next_row"] + group_ids.size,
-            dtype=np.uint,
+            dtype=np.uint64,
         )
 
         self._csc_cols = np.concatenate([self._csc_cols, cols])
@@ -563,7 +563,7 @@ Datasets must be added in correct order: expected: {}, this dataset: {}""".forma
             self.block_selections[dataset_id] = reflections["loc_indices"].to_numpy()
         else:
             self.block_selections[dataset_id] = np.arange(
-                reflections.shape[0], dtype=np.uint
+                reflections.shape[0], dtype=np.uint64
             )
         if self._setup_info["next_dataset"] == len(self.block_selections):
             self._complete_setup()
@@ -693,7 +693,7 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
             n_in_group = self._csc_h_index_matrix.getcol(j).count_nonzero()
             if miller_idx in target_asu_Ih_dict:
                 i = location_in_unscaled_array
-                new_Ih_values[np.arange(i, i + n_in_group, dtype=np.uint)] = np.full(
+                new_Ih_values[np.arange(i, i + n_in_group, dtype=np.uint64)] = np.full(
                     n_in_group, target_asu_Ih_dict[miller_idx]
                 )
             location_in_unscaled_array += n_in_group

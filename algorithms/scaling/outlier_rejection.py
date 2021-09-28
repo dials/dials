@@ -180,9 +180,9 @@ Outlier rejection algorithms require an Ih_table with nblocks = 1"""
         self._Ih_table_block = Ih_table.blocked_data_list[0]
         self._n_datasets = Ih_table.n_datasets
         self._block_selections = Ih_table.blocked_selection_list[0]
-        self._datasets = np.array([], dtype=np.uint).reshape((0,))  # flex.int([])
+        self._datasets = np.array([], dtype=np.uint64).reshape((0,))  # flex.int([])
         self._zmax = zmax
-        self._outlier_indices = np.array([], dtype=np.uint).reshape(
+        self._outlier_indices = np.array([], dtype=np.uint64).reshape(
             (0,)
         )  # flex.size_t([])
         self.final_outlier_arrays = None

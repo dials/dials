@@ -1298,7 +1298,7 @@ class MultiScalerBase(ScalerBase):
                     sel_block = global_block
             else:
                 sel_block = global_block.select_on_groups(
-                    np.array([], dtype=np.uint).reshape((0,))
+                    np.array([], dtype=np.uint64).reshape((0,))
                 )
 
             header = [
