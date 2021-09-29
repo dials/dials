@@ -397,7 +397,7 @@ def run(args=None, phil=phil_scope):
 
     logger.info(
         f"Wavelength: {wavelength:.5f} Ångström\n"
-        + f"Azimuth (current): {azimuth_current:.5f} degrees\n"
+        f"Azimuth (current): {azimuth_current:.5f} degrees\n"
         f"                 {np.radians(azimuth_current):.5f} radians"
     )
 
