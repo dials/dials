@@ -396,9 +396,11 @@ def run(args=None, phil=phil_scope):
     if azimuth_opposite > 180:
         azimuth_opposite -= 360
 
-    logger.info(f"Wavelength: {wavelength:.5f} Ångström")
-    logger.info(f"Azimuth (current): {azimuth_current:.5f} degrees")
-    logger.info(f"                 {np.radians(azimuth_current):.5f} radians")
+    logger.info(
+        f"Wavelength: {wavelength:.5f} Ångström\n"
+        + f"Azimuth (current): {azimuth_current:.5f} degrees\n"
+        f"                 {np.radians(azimuth_current):.5f} radians"
+    )
 
     hist_bins = 1000, 500
 
@@ -433,10 +435,12 @@ def run(args=None, phil=phil_scope):
 
         azimuth_final = azimuth_tmp
 
-        logger.info("---")
-        logger.info(f"Best azimuth (global search): {azimuth_global:.3f}")
-        logger.info(f"Best azimuth (local search): {azimuth_local:.3f}")
-        logger.info(f"Best azimuth (fine search): {azimuth_fine:.3f}")
+        logger.info(
+            "---\n"
+            f"Best azimuth (global search): {azimuth_global:.3f}\n"
+            f"Best azimuth (local search): {azimuth_local:.3f}\n"
+            f"Best azimuth (fine search): {azimuth_fine:.3f}"
+        )
 
     xyz = make(arr, azimuth_final, wavelength)
     H, xedges, yedges = cylinder_histo(xyz)
