@@ -5,7 +5,7 @@
     "conda_required": [],
     "python_required": [
         "colorlog",
-        "dials-data>=2.2.2",
+        "dials-data>=2.2.13",
         'futures;python_version<="2.7"',
         "Jinja2",
         "msgpack",
