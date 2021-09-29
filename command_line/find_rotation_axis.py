@@ -1,6 +1,6 @@
 """
 Optimise the rotation axis orientation using the method from Gorelik et al.
-(https://www.doi.org/10.1007/978-94-007-5580-2) with code adapted from
+(https://doi.org/10.1007/978-94-007-5580-2_31) with code adapted from
 Stef Smeets's edtools (https://github.com/instamatic-dev/edtools).
 
 Three levels of search can be performed: a global search, a local search and a
@@ -26,7 +26,6 @@ import libtbx.phil
 import dials.util
 import dials.util.log
 
-# from dxtbx.model import ExperimentList
 from dials.array_family import flex
 
 # from dials.array_family import flex
