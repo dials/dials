@@ -17,6 +17,7 @@ import sys
 from jinja2 import ChoiceLoader, Environment, PackageLoader
 
 import libtbx.phil
+from dxtbx import flumpy
 from iotbx import phil
 
 from dials.algorithms.scaling.combine_intensities import combine_intensities
@@ -119,11 +120,11 @@ def make_output(model, params):
 
     data = {}
     table = model.filtered_Ih_table
-    data["intensity"] = table.intensities
+    data["intensity"] = flumpy.from_numpy(table.intensities)
     sigmaprime = calc_sigmaprime(model.parameters, table)
     data["delta_hl"] = calc_deltahl(table, table.calc_nh(), sigmaprime)
     data["inv_scale"] = table.inverse_scale_factors
-    data["sigma"] = sigmaprime * data["inv_scale"]
+    data["sigma"] = flumpy.from_numpy(sigmaprime * table.inverse_scale_factors)
     data["binning_info"] = model.binner.binning_info
     d = {"error_model_plots": {}}
     d["error_model_plots"].update(normal_probability_plot(data))

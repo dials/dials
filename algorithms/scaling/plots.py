@@ -809,8 +809,8 @@ equivalents i.e. sigma_obs^2 = (Sum (I - g<Ih>)^2) / N-1.
 def normal_probability_plot(data, label=None):
     """Plot the distribution of normal probabilities of errors."""
 
-    n = data["delta_hl"].size()
-    y = np.sort(flumpy.to_numpy(data["delta_hl"]))
+    n = data["delta_hl"].size
+    y = np.sort(data["delta_hl"])
     delta = 0.5 / n
     v = np.linspace(start=delta, stop=1.0 - delta, endpoint=True, num=n)
     x = norm.ppf(v)
