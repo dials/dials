@@ -230,6 +230,8 @@ class IhTable:
         sorted_joint_asu_indices, _ = get_sorted_asu_indices(
             joint_asu_indices, self.space_group, self.anomalous
         )
+        if not sorted_joint_asu_indices:
+            raise ValueError("No data found in input file(s)")
 
         asu_index_set = OrderedSet(sorted_joint_asu_indices)
         n_unique_groups = len(asu_index_set)
