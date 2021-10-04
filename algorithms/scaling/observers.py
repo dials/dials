@@ -10,8 +10,8 @@ from jinja2 import ChoiceLoader, Environment, PackageLoader
 from orderedset import OrderedSet
 
 from cctbx import uctbx
-from scitbx.array_family import flex
 from dxtbx import flumpy
+from scitbx.array_family import flex
 
 from dials.algorithms.scaling.error_model.error_model import (
     calc_deltahl,
@@ -365,7 +365,9 @@ def make_error_model_plots(params, experiments):
             d["error_model_plots"].update(
                 i_over_sig_i_vs_i_plot(
                     flumpy.from_numpy(emd["intensity"]),
-                    flumpy.from_numpy(emd["sigma"]), label=i + 1)
+                    flumpy.from_numpy(emd["sigma"]),
+                    label=i + 1,
+                )
             )
             d["error_model_plots"].update(error_model_variance_plot(emd, label=i + 1))
             if "regression_x" in emd:

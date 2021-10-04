@@ -25,7 +25,6 @@ import libtbx.phil
 
 import dials.util
 import dials.util.log
-
 from dials.array_family import flex
 
 # from dials.array_family import flex
