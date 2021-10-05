@@ -481,6 +481,7 @@ def test_DoseDecayModel(test_reflections, mock_exp):
         "s_norm_fac": 1.0,
         "scale_rot_interval": 2.0,
         "resolution_dependence": "quadratic",
+        "dose_dependence": "linear_time",
     }
 
     parameters_dict = {

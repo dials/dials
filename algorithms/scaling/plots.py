@@ -19,25 +19,16 @@ def _get_smooth_plotting_data_from_model(model, component="scale"):
     """Return a tuple of phis, parameters, parameter esds,
     sample positions for plotting and sample scale values."""
     valid_osc = model.configdict["valid_osc_range"]
-    if model.id_ == "physical":
-        sample_values = flex.double(
-            np.linspace(
-                valid_osc[0],
-                valid_osc[1],
-                int((valid_osc[1] - valid_osc[0]) / 0.1) + 1,
-                endpoint=True,
-            )
-        )  # Make a grid of
-        # points with 10 points per degree.
-    elif model.id_ == "dose_decay":
-        sample_values = flex.double(
-            np.linspace(
-                0.0,
-                abs(valid_osc[1] - valid_osc[0]),
-                int((abs(valid_osc[1] - valid_osc[0])) / 0.1) + 1,
-                endpoint=True,
-            )
+    sample_values = flex.double(
+        np.linspace(
+            valid_osc[0],
+            valid_osc[1],
+            int((valid_osc[1] - valid_osc[0]) / 0.1) + 1,
+            endpoint=True,
         )
+    )  # Make a grid of
+    # points with 10 points per degree.
+
     if component == "scale":
         if "scale" in model.configdict["corrections"]:
             scale_SF = model.components["scale"]
@@ -46,8 +37,6 @@ def _get_smooth_plotting_data_from_model(model, component="scale"):
             scale_SF.update_reflection_data()
             s = scale_SF.calculate_scales()
             offset = valid_osc[0]
-            if model.id_ == "dose_decay":
-                offset = 0
             smoother_phis = [
                 (i * model.configdict["scale_rot_interval"]) + offset
                 for i in scale_SF.smoother.positions()
@@ -197,38 +186,51 @@ def _add_decay_model_scales_to_data(model, data, yaxis="y", resolution=3.0):
     configdict = model.configdict
     valid_osc = configdict["valid_osc_range"]
 
-    if model.id_ == "physical":
-        sample_values = flex.double(
-            np.linspace(
-                valid_osc[0],
-                valid_osc[1],
-                int((valid_osc[1] - valid_osc[0]) / 0.1) + 1,
-                endpoint=True,
-            )
-        )  # Make a grid of
-        # points with 10 points per degree.
-    elif model.id_ == "dose_decay":
-        sample_values = flex.double(
-            np.linspace(
-                0.0,
-                abs(valid_osc[1] - valid_osc[0]),
-                int((abs(valid_osc[1] - valid_osc[0])) / 0.1) + 1,
-                endpoint=True,
-            )
+    sample_values = flex.double(
+        np.linspace(
+            valid_osc[0],
+            valid_osc[1],
+            int((valid_osc[1] - valid_osc[0]) / 0.1) + 1,
+            endpoint=True,
         )
+    )  # Make a grid of
+    # points with 10 points per degree.
     d = flex.double(sample_values.size(), resolution)
 
-    if "decay" in model.components:
-        decay_SF = model.components["decay"]
+    decay_SF = model.components["decay"]
+    if model.id_ == "physical":
         decay_SF.data = {"x": sample_values, "d": d}
-        decay_SF.update_reflection_data()
-        s = decay_SF.calculate_scales()
+    elif model.id_ == "dose_decay":
+        if model.configdict["dose_dependence"] == "linear_time":
+            model_values = flex.double(
+                np.linspace(
+                    0.0,
+                    abs(valid_osc[1] - valid_osc[0]),
+                    int((abs(valid_osc[1] - valid_osc[0])) / 0.1) + 1,
+                    endpoint=True,
+                )
+            )
+            decay_SF.data = {"x": model_values, "d": d}
+        elif model.configdict["dose_dependence"] == "cell_volume_decay":
+            phi_to_dvol = model.configdict["phi_to_dvol"]
+            # to get the right length array for plotting ->
+            sample_values = flex.double(list(phi_to_dvol.keys()))
+            dvol = flex.double(list(phi_to_dvol.values()))
+            d = flex.double(dvol.size(), resolution)
+            decay_SF.data = {"x": dvol, "d": d}
+    decay_SF.update_reflection_data()
+    s = decay_SF.calculate_scales()
+
+    name = f"Decay scale factor <br>at {resolution} Angstrom"
+    if model.id_ == "dose_decay":
+        name += f"<br>(model = dose_decay, <br> dose_dependence = <br>{model.configdict['dose_dependence']})"
+
     data.append(
         {
             "x": list(sample_values),
             "y": list(s),
             "type": "line",
-            "name": f"Decay scale factor <br>at {resolution} Angstrom",
+            "name": name,
             "xaxis": "x",
             "yaxis": yaxis,
         }

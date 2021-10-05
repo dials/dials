@@ -7,6 +7,7 @@ methods to define how these are composed into one model.
 
 import logging
 from collections import OrderedDict
+from math import floor
 
 from libtbx import Auto, phil
 
@@ -59,53 +60,6 @@ decay_correction = True
     .help = "Option to turn off decay correction (for physical/array/KB
             default models)."
     .expert_level = 1
-"""
-    + base_model_phil_str
-)
-
-dose_decay_model_phil_str = (
-    """\
-scale_interval = 2.0
-    .type = float(value_min=1.0)
-    .help = "Rotation (phi) interval between model parameters for the scale"
-            "component."
-    .expert_level = 1
-relative_B_correction = True
-    .type = bool
-    .help = "Option to turn off relative B correction."
-    .expert_level = 1
-decay_correction = True
-    .type = bool
-    .help = "Option to turn off decay correction."
-    .expert_level = 1
-share.decay = True
-    .type = bool
-    .help = "Share the decay model between sweeps."
-    .expert_level = 1
-resolution_dependence = *quadratic linear
-    .type = choice
-    .help = "Use a dose model that depends linearly or quadratically on 1/d"
-    .expert_level = 1
-absorption_correction = False
-    .type = bool
-    .help = "Option to turn on spherical harmonic absorption correction."
-    .expert_level = 1
-lmax = 4
-    .type = int(value_min=2)
-    .help = "Number of spherical harmonics to include for absorption"
-            "correction, recommended to be no more than 6."
-    .expert_level = 2
-surface_weight = 1e6
-    .type = float(value_min=0.0)
-    .help = "Restraint weight applied to spherical harmonic terms in the"
-            "absorption correction."
-    .expert_level = 2
-fix_initial = True
-    .type = bool
-    .help = "If performing full matrix minimisation, in the final cycle,"
-            "constrain the initial parameter for more reliable parameter and"
-            "scale factor error estimates."
-    .expert_level = 2
 """
     + base_model_phil_str
 )
@@ -178,6 +132,26 @@ fix_initial = True
 """
     + base_model_phil_str
 )
+
+dose_decay_model_phil_str = physical_model_phil_str + (
+    """\
+relative_B_correction = True
+    .type = bool
+    .help = "Option to turn off relative B correction."
+    .expert_level = 1
+share.decay = True
+    .type = bool
+    .help = "Share the decay model between sweeps."
+    .expert_level = 1
+resolution_dependence = *quadratic linear
+    .type = choice
+    .help = "Use a dose model that depends linearly or quadratically on 1/d"
+    .expert_level = 1
+dose_dependence = *linear_time cell_volume_decay
+    .type = choice
+"""
+)
+
 
 array_model_phil_str = (
     """\
@@ -451,6 +425,58 @@ def _add_absorption_component_to_physically_derived_model(model, reflection_tabl
     model.components["absorption"].parameter_restraints = parameter_restraints
 
 
+def determine_auto_absorption_params(absorption):
+    if absorption == "high":
+        lmax = 6
+        surface_weight = 5e3
+    elif absorption == "medium":
+        lmax = 6
+        surface_weight = 5e4
+    else:  # low
+        lmax = 4
+        surface_weight = 5e5
+    return lmax, surface_weight
+
+
+def _add_physical_absorption_surface(params, parameters_dict, configdict):
+    osc_range = configdict["valid_osc_range"]
+    abs_osc_range = abs(osc_range[1] - osc_range[0])
+    if params.absorption_correction in autos:
+        if abs_osc_range > 60.0:
+            absorption_correction = True
+        else:
+            absorption_correction = False
+    else:
+        absorption_correction = params.absorption_correction
+    if absorption_correction or params.absorption_level:
+        configdict["corrections"].append("absorption")
+        if params.share.absorption:
+            configdict.update({"shared": ["absorption"]})
+        if params.absorption_level:
+            lmax, surface_weight = determine_auto_absorption_params(
+                params.absorption_level
+            )
+            if (params.lmax not in autos) or (params.surface_weight not in autos):
+                logger.info(
+                    """Using lmax, surface_weight parameters set by the absorption_level option,
+                    rather than user specified options"""
+                )
+        else:
+            lmax, surface_weight = (params.lmax, params.surface_weight)
+            if lmax in autos:
+                lmax = 4
+            if params.surface_weight in autos:
+                surface_weight = 5e5
+        n_abs_param = (2 * lmax) + (lmax ** 2)  # arithmetic sum formula (a1=3, d=2)
+        configdict.update({"lmax": lmax})
+        configdict.update({"abs_surface_weight": surface_weight})
+        parameters_dict["absorption"] = {
+            "parameters": flex.double(n_abs_param, 0.0),
+            "parameter_esds": None,
+        }
+    return parameters_dict
+
+
 class DoseDecay(ScalingModelBase):
 
     """A model similar to the physical model, where an exponential decay
@@ -515,12 +541,49 @@ class DoseDecay(ScalingModelBase):
 
     def configure_components(self, reflection_table, experiment, params):
         """Add the required reflection table data to the model components."""
-        phi = reflection_table["xyzobs.px.value"].parts()[2]
+        phi_refl = reflection_table["xyzobs.px.value"].parts()[2]
         if "scale" in self.components:
-            norm = phi * self._configdict["s_norm_fac"]
+            norm = phi_refl * self._configdict["s_norm_fac"]
             self.components["scale"].data = {"x": norm}
         if "decay" in self.components:
-            self.components["decay"].data = {"x": phi, "d": reflection_table["d"]}
+            if self._configdict["dose_dependence"] == "linear_time":
+                self.components["decay"].data = {
+                    "x": phi_refl,
+                    "d": reflection_table["d"],
+                }
+            elif self._configdict["dose_dependence"] == "cell_volume_decay":
+                if experiment.crystal.num_scan_points == 0:
+                    raise ValueError(
+                        "Dose dependent on cell volume changes requires a scan varying crystal model from refinement"
+                    )
+                scan_pts = list(range(experiment.crystal.num_scan_points))
+                cells = [
+                    experiment.crystal.get_unit_cell_at_scan_point(t) for t in scan_pts
+                ]
+                phi = [experiment.scan.get_angle_from_array_index(t) for t in scan_pts]
+                vol = [e.volume() for e in cells]
+
+                phi_refl = experiment.scan.get_angle_from_array_index(
+                    reflection_table["xyzobs.px.value"].parts()[2], deg=True
+                )
+                v0 = vol[0]
+                vend = vol[-1]
+                dv = [((v - v0) / (vend - v0)) for v in vol]
+                self.configdict["phi_to_dvol"] = {k: v for k, v in zip(phi, dv)}
+                dp = phi[1] - phi[0]
+                idx = [floor((p - phi[0]) / dp) for p in phi_refl]
+                assert max(idx) < len(phi), f"assert {max(idx)} <= {len(phi)}"
+                assert min(idx) >= 0, f"assert {min(idx)} >= 0"
+                dvol_refl = flex.double([dv[i] for i in idx])
+                self.components["decay"].data = {
+                    "x": dvol_refl,
+                    "d": reflection_table["d"],
+                }
+            else:
+                raise ValueError(
+                    f"Dose dependence {self._configdict['dose_dependence']} not a recognised option"
+                )
+
         if "relative_B" in self.components:
             self.components["relative_B"].data = {"d": reflection_table["d"]}
         if "absorption" in self.components:
@@ -590,8 +653,26 @@ class DoseDecay(ScalingModelBase):
             configdict.update({"shared": ["decay"]})
 
         configdict["corrections"].append("scale")
+
+        abs_osc_range = abs(osc_range[1] - osc_range[0])
+
+        if params.scale_interval in autos:
+            if abs_osc_range < 5.0:
+                scale_interval = 1.0
+            elif abs_osc_range < 10.0:
+                scale_interval = 2.0
+            elif abs_osc_range < 25.0:
+                scale_interval = 4.0
+            elif abs_osc_range < 90.0:
+                scale_interval = 8.0
+            else:
+                scale_interval = 15.0
+
+        if params.scale_interval not in autos:
+            scale_interval = params.scale_interval
+
         n_scale_param, s_norm_fac, scale_rot_int = initialise_smooth_input(
-            osc_range, one_osc_width, params.scale_interval
+            osc_range, one_osc_width, scale_interval
         )
         configdict.update(
             {"s_norm_fac": s_norm_fac, "scale_rot_interval": scale_rot_int}
@@ -611,22 +692,15 @@ class DoseDecay(ScalingModelBase):
         if params.decay_correction:
             configdict["corrections"].append("decay")
             configdict.update({"resolution_dependence": params.resolution_dependence})
+            configdict.update({"dose_dependence": params.dose_dependence})
             parameters_dict["decay"] = {
                 "parameters": flex.double(1, 0.0),
                 "parameter_esds": None,
             }
 
-        if params.absorption_correction:
-            configdict["corrections"].append("absorption")
-            n_abs_param = params.lmax * (
-                2 + params.lmax
-            )  # arithmetic sum formula (a1=3, d=2)
-            configdict.update({"lmax": params.lmax})
-            configdict.update({"abs_surface_weight": params.surface_weight})
-            parameters_dict["absorption"] = {
-                "parameters": flex.double(n_abs_param, 0.0),
-                "parameter_esds": None,
-            }
+        parameters_dict = _add_physical_absorption_surface(
+            params, parameters_dict, configdict
+        )
 
         model = cls(parameters_dict, configdict)
         if params.correction.fix:
@@ -674,19 +748,6 @@ class DoseDecay(ScalingModelBase):
             d.update(plot_absorption_parameters(self))
             d.update(plot_absorption_plots(self, reflection_table))
         return d
-
-
-def determine_auto_absorption_params(absorption):
-    if absorption == "high":
-        lmax = 6
-        surface_weight = 5e3
-    elif absorption == "medium":
-        lmax = 6
-        surface_weight = 5e4
-    else:  # low
-        lmax = 4
-        surface_weight = 5e5
-    return lmax, surface_weight
 
 
 class PhysicalScalingModel(ScalingModelBase):
@@ -861,39 +922,10 @@ class PhysicalScalingModel(ScalingModelBase):
                 "parameters": flex.double(n_decay_param, 0.0),
                 "parameter_esds": None,
             }
-        if params.absorption_correction in autos:
-            if abs_osc_range > 60.0:
-                absorption_correction = True
-            else:
-                absorption_correction = False
-        else:
-            absorption_correction = params.absorption_correction
-        if absorption_correction or params.absorption_level:
-            configdict["corrections"].append("absorption")
-            if params.share.absorption:
-                configdict.update({"shared": ["absorption"]})
-            if params.absorption_level:
-                lmax, surface_weight = determine_auto_absorption_params(
-                    params.absorption_level
-                )
-                if (params.lmax not in autos) or (params.surface_weight not in autos):
-                    logger.info(
-                        """Using lmax, surface_weight parameters set by the absorption_level option,
-                        rather than user specified options"""
-                    )
-            else:
-                lmax, surface_weight = (params.lmax, params.surface_weight)
-                if lmax in autos:
-                    lmax = 4
-                if params.surface_weight in autos:
-                    surface_weight = 5e5
-            n_abs_param = (2 * lmax) + (lmax ** 2)  # arithmetic sum formula (a1=3, d=2)
-            configdict.update({"lmax": lmax})
-            configdict.update({"abs_surface_weight": surface_weight})
-            parameters_dict["absorption"] = {
-                "parameters": flex.double(n_abs_param, 0.0),
-                "parameter_esds": None,
-            }
+
+        parameters_dict = _add_physical_absorption_surface(
+            params, parameters_dict, configdict
+        )
 
         model = cls(parameters_dict, configdict)
         if params.correction.fix:

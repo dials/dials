@@ -489,7 +489,7 @@ def test_scale_set_absorption_level(dials_data, tmp_path):
         "dials.scale",
         refl,
         expt,
-        "absorption_level=medium",
+        "physical.absorption_level=medium",
         "unmerged_mtz=unmerged.mtz",
     ]
     result = procrunner.run(command, working_directory=tmp_path)
@@ -654,6 +654,24 @@ def test_scale_dose_decay_model(dials_data, tmp_path):
         command.append(location / f"experiments_{i}.json")
         command.append(location / f"reflections_{i}.pickle")
 
+    result = procrunner.run(command, working_directory=tmp_path)
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "scaled.refl").is_file()
+    assert (tmp_path / "scaled.expt").is_file()
+    assert (tmp_path / "dials.scale.html").is_file()
+    expts = load.experiment_list(tmp_path / "scaled.expt", check_format=False)
+    assert expts[0].scaling_model.id_ == "dose_decay"
+
+
+def test_scale_cell_volume_dose_decay(dials_data, tmp_path):
+    data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
+    command = [
+        "dials.scale",
+        data_dir / "20_integrated.pickle",
+        data_dir / "20_integrated_experiments.json",
+        "model=dose_decay",
+        "dose_dependence=cell_volume_decay",
+    ]
     result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
     assert (tmp_path / "scaled.refl").is_file()
@@ -960,7 +978,7 @@ def test_shared_absorption_surface(dials_data, tmp_path):
     expt_2 = data_dir / "25_integrated_experiments.json"
 
     # Do targeted scaling, use this as a chance to test the KB model as well.
-    extra_args = ["share.absorption=True"]
+    extra_args = ["physical.share.absorption=True"]
     run_one_scaling(tmp_path, [refl_1, expt_1, refl_2, expt_2] + extra_args)
 
     expts = load.experiment_list(tmp_path / "scaled.expt", check_format=False)
