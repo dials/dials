@@ -3,8 +3,9 @@
 import os
 
 import procrunner
+import pytest
 
-from dials.command_line.compute_delta_cchalf import CCHalfFromMTZ, phil_scope
+from dials.command_line.compute_delta_cchalf import CCHalfFromMTZ, phil_scope, run
 
 
 def check_cchalf_result(fileobj):
@@ -12,6 +13,20 @@ def check_cchalf_result(fileobj):
     lines = fileobj.readlines()
     assert lines[0] == "1 -0.004673\n"
     assert lines[1] == "0 0.001234\n"
+
+
+def test_suitable_exit_on_bad_input(dials_data, run_in_tmpdir):
+    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    refl = location / "scaled_35.refl"
+    expt = location / "scaled_35.expt"
+
+    args = [str(refl), str(expt)]
+    with pytest.raises(SystemExit):
+        run(args)
+
+    args = [str(refl), str(expt), "mode=image_group", "group_size=10000"]
+    with pytest.raises(SystemExit):
+        run(args)
 
 
 def test_compute_delta_cchalf_scaled_data(dials_data, tmpdir):
