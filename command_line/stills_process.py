@@ -111,7 +111,7 @@ control_phil_str = """
     output_dir = .
       .type = str
       .help = Directory output files will be placed
-    composite_output = False
+    composite_output = True
       .type = bool
       .help = If True, save one set of experiment/reflection files per process, where each is a \
               concatenated list of all the successful events examined by that process. \
@@ -120,12 +120,13 @@ control_phil_str = """
     logging_dir = None
       .type = str
       .help = Directory output log files will be placed
-    experiments_filename = %s_imported.expt
+    experiments_filename = None
       .type = str
-      .help = The filename for output experiments
-    strong_filename = %s_strong.refl
+      .help = The filename for output experiments. For example, %s_imported.expt
+    strong_filename = None
       .type = str
-      .help = The filename for strong reflections from spot finder output.
+      .help = The filename for strong reflections from spot finder output. For example: \
+              %s_strong.refl
     indexed_filename = %s_indexed.refl
       .type = str
       .help = The filename for indexed reflections.
