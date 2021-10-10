@@ -191,6 +191,9 @@ dials_phil_str = """
       .type = str
       .help = Provide an models.expt file with exactly one detector model. Data processing will use \
               that geometry instead of the geometry found in the image headers.
+    sync_reference_geom = True
+      .type = bool
+      .help = ensures the reference hierarchy agrees with the image format
   }
 
   output {
@@ -561,12 +564,15 @@ class Script:
 
                     if self.reference_detector is not None:
                         experiment = experiments[0]
-                        imageset = experiment.imageset
-                        sync_geometry(
-                            self.reference_detector.hierarchy(),
-                            imageset.get_detector().hierarchy(),
-                        )
-                        experiment.detector = imageset.get_detector()
+                        if self.params.input.sync_reference_geom:
+                            imageset = experiment.imageset
+                            sync_geometry(
+                                self.reference_detector.hierarchy(),
+                                imageset.get_detector().hierarchy(),
+                            )
+                            experiment.detector = imageset.get_detector()
+                        else:
+                            experiment.detector = copy.deepcopy(self.reference_detector)
 
                     processor.process_experiments(tag, experiments)
                     imageset.clear_cache()
@@ -631,12 +637,17 @@ class Script:
                         continue
 
                     if self.reference_detector is not None:
-                        imageset = experiments[0].imageset
-                        sync_geometry(
-                            self.reference_detector.hierarchy(),
-                            imageset.get_detector().hierarchy(),
-                        )
-                        experiments[0].detector = imageset.get_detector()
+                        if self.params.input.sync_reference_geom:
+                            imageset = experiments[0].imageset
+                            sync_geometry(
+                                self.reference_detector.hierarchy(),
+                                imageset.get_detector().hierarchy(),
+                            )
+                            experiments[0].detector = imageset.get_detector()
+                        else:
+                            experiments[0].detector = copy.deepcopy(
+                                self.reference_detector
+                            )
 
                     processor.process_experiments(tag, experiments)
                 if finalize:
