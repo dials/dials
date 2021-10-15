@@ -583,270 +583,232 @@ class Indexer(object):
             )
 
 
-class Refiner(object):
+def refine_profile(experiment, profile, refiner_data, wavelength_spread_model):
+    """Do the profile refinement"""
+    logger.info("\n" + "=" * 80 + "\nRefining profile parmameters")
+
+    # Create the parameterisation
+    state = ModelState(
+        experiment,
+        profile.parameterisation(),
+        fix_orientation=True,
+        fix_unit_cell=True,
+        fix_wavelength_spread=wavelength_spread_model == "delta",
+    )
+
+    # Create the refiner and refine
+    refiner = ProfileRefiner(state, refiner_data)
+    refiner.refine()
+
+    # Set the profile parameters
+    profile.update_model(state)
+    # Set the mosaicity
+    experiment.crystal.mosaicity = profile
+
+    return refiner
+
+
+def refine_crystal(
+    experiment,
+    profile,
+    refiner_data,
+    fix_unit_cell=False,
+    fix_orientation=False,
+    wavelength_spread_model="delta",
+):
     """
-    A class to do the refinement
+    Do the crystal refinement
+
+    """
+    if (fix_unit_cell is True) and (fix_orientation is True):
+        return
+
+    logger.info("\n" + "=" * 80 + "\nRefining crystal parmameters")
+
+    # Create the parameterisation
+    state = ModelState(
+        experiment,
+        profile.parameterisation(),
+        fix_mosaic_spread=True,
+        fix_unit_cell=fix_unit_cell,
+        fix_orientation=fix_orientation,
+        fix_wavelength_spread=wavelength_spread_model == "delta",
+    )
+
+    # Create the refiner and refine
+    refiner = ProfileRefiner(state, refiner_data)
+    refiner.refine()
+
+    return refiner
+
+
+def plot_distance_from_ewald_sphere(experiment, reflection_table, prefix):
+    """Plot distance from Ewald sphere"""
+
+    s0 = matrix.col(experiment.beam.get_s0())
+    s2 = reflection_table["s2"]
+    D = flex.double(s0.length() - matrix.col(s).length() for s in s2)
+    Dmean = flex.sum(D) / len(D)
+    Dvar = flex.sum(flex.double([(d - Dmean) ** 2 for d in D])) / len(D)
+    hist, bin_edges = np.histogram(
+        D,
+        bins=max(5, min(int(0.2 * len(s2)), 20)),
+    )
+    bin_centers = bin_edges[:-1] + np.diff(bin_edges) / 2
+    plot = {
+        f"{prefix}_epsilon_distribution": {
+            "data": [
+                (
+                    {
+                        "x": bin_centers.tolist(),
+                        "y": hist.tolist(),
+                        "type": "bar",
+                    }
+                )
+            ],
+            "layout": {
+                "title": f"{prefix} epsilon distribution. <br>Mean(epsilon) = {Dmean:.2e}, Variance(epsilon) = {Dvar:.2e}",
+                "xaxis": {"title": "Distance from Ewald sphere (epsilon)"},
+                "yaxis": {"title": "Frequency"},
+                "bargap": 0,
+            },
+        }
+    }
+    return plot
+
+
+def predict_after_potato_refinement(experiment, reflection_table):
+    """
+    Predict the position of the spots
 
     """
 
-    def __init__(self, experiments, reflections, sigma_d, params):
-        """
-        Initialise the refiner
+    # Get some stuff from experiment
+    A = matrix.sqr(experiment.crystal.get_A())
+    s0 = matrix.col(experiment.beam.get_s0())
 
-        """
+    # Compute the vector to the reciprocal lattice point
+    # since this is not on the ewald sphere, lets call it s2
+    h = reflection_table["miller_index"]
+    s1 = flex.vec3_double(len(h))
+    s2 = flex.vec3_double(len(h))
+    for i in range(len(reflection_table)):
+        r = A * matrix.col(h[i])
+        s2[i] = s0 + r
+        s1[i] = matrix.col(s2[i]).normalize() * s0.length()
+    reflection_table["s1"] = s1
+    reflection_table["s2"] = s2
+    reflection_table["entering"] = flex.bool(len(h), False)
 
-        # Save the experiments and reflections
-        self.params = params
-        self.experiments = experiments
-        self.reflections = reflections
-        self.sigma_d = sigma_d
-        self.plots_data = OrderedDict()
+    # Compute the ray intersections
+    xyzpx = flex.vec3_double()
+    xyzmm = flex.vec3_double()
+    for i in range(len(s2)):
+        ss = s1[i]
+        mm = experiment.detector[0].get_ray_intersection(ss)
+        px = experiment.detector[0].millimeter_to_pixel(mm)
+        xyzpx.append(px + (0,))
+        xyzmm.append(mm + (0,))
+    reflection_table["xyzcal.mm"] = xyzmm
+    reflection_table["xyzcal.px"] = xyzpx
+    return reflection_table
 
-        # Set the M params
-        if not hasattr(self.experiments[0].crystal, "mosaicity"):
-            self.profile = ProfileModelFactory.from_sigma_d(self.params, sigma_d)
-        else:
-            self.profile = self.experiments[0].crystal.mosaicity
 
-        # Preprocess the reflections
-        self._preprocess()
+def compute_prediction_probability(experiment, reflection_table):
 
-        # Do the refinement
-        for i in range(self.params.refinement.n_cycles):
-            self._refine_profile()
-            self._refine_crystal()
+    # Get stuff from experiment
+    s0 = matrix.col(experiment.beam.get_s0())
+    profile = experiment.crystal.mosaicity
 
-        # Post process the reflections
-        self._postprocess()
+    # Loop through reflections
+    min_p = None
+    for i in range(len(reflection_table)):
+        s2 = matrix.col(reflection_table[i]["s2"])
+        s3 = s2.normalize() * s0.length()
+        r = s2 - s0
+        epsilon = s3 - s2
+        sigma = profile.sigma_for_reflection(s0, r)
+        sigma_inv = sigma.inverse()
+        d = (epsilon.transpose() * sigma_inv * epsilon)[0]
+        p = chisq_pdf(3, d)
+        if min_p is None or p < min_p:
+            min_p = p
 
-    def _preprocess(self):
-        """
-        Preprocess the reflections
+    # Print some stuff
+    logger.info(
+        "Quantile required to predicted all observed reflections = %.5f" % (1 - min_p)
+    )
 
-        """
 
-        # Make some plots
-        if self.params.output.html:
-            self._plot_distance_from_ewald_sphere("Initial")
+def run_potato_refinement(experiments, reflection_table, sigma_d, params):
+    """Runs potato refinement on strong spots.
 
-        # Construct the profile refiner data
-        self._refiner_data = RefinerData.from_reflections(
-            self.experiments[0], self.reflections
+    Creates the necessarry data needed, then runs cycles of profile and crystal
+    refinement,"""
+
+    output_data = {
+        "plots_data": OrderedDict(),
+        "refiner_output": {
+            "history": [],
+            "correlation": None,
+            "labels": None,
+        },
+    }
+
+    # Set the M params
+    if not hasattr(experiments[0].crystal, "mosaicity"):
+        profile = ProfileModelFactory.from_sigma_d(params, sigma_d)
+    else:
+        profile = experiments[0].crystal.mosaicity
+
+    # Preprocess the reflections
+    # Make some plots
+    if params.output.html:
+        output_data["plots_data"].update(
+            plot_distance_from_ewald_sphere(experiments[0], reflection_table, "Initial")
         )
 
-    def _postprocess(self):
-        """
-        Postprocess the reflections
+    # Construct the profile refiner data
+    refiner_data = RefinerData.from_reflections(experiments[0], reflection_table)
 
-        """
-
-        # Update predictions
-        self._predict()
-
-        # Compute prob
-        self._compute_prediction_probability()
-
-        # Save the profile model
-        if self.params.debug.output.profile_model:
-            self._save_profile_model()
-
-        # Save the history
-        if self.params.debug.output.history:
-            self._save_history()
-
-        # Make some plots
-        if self.params.output.html:
-            self._plot_distance_from_ewald_sphere("Final")
-
-    def _refine_profile(self):
-        """
-        Do the profile refinement
-
-        """
-        logger.info("\n" + "=" * 80 + "\nRefining profile parmameters")
-
-        # Create the parameterisation
-        state = ModelState(
-            self.experiments[0],
-            self.profile.parameterisation(),
-            fix_orientation=True,
-            fix_unit_cell=True,
-            fix_wavelength_spread=self.params.profile.wavelength_spread.model
-            == "delta",
+    # Do the refinement
+    for _ in range(params.refinement.n_cycles):
+        # refine the profile
+        refiner = refine_profile(
+            experiments[0],
+            profile,
+            refiner_data,
+            wavelength_spread_model=params.profile.wavelength_spread.model,
         )
 
-        # Create the refiner and refine
-        refiner = ProfileRefiner(state, self._refiner_data)
-        refiner.refine()
+        # Save some data for plotting later.
+        output_data["refiner_output"]["history"].append(refiner.history)
+        output_data["refiner_output"]["correlation"] = refiner.correlation()
+        output_data["refiner_output"]["labels"] = refiner.labels()
 
-        # Save the history
-        self.history = refiner.history
-
-        # Set the profile parameters
-        self.profile.update_model(state)
-
-        # Set the mosaicity
-        self.experiments[0].crystal.mosaicity = self.profile
-
-        # Plot the corrgram
-        if self.params.debug.output.plots:
-            self._plot_corrgram(refiner.correlation(), refiner.labels())
-
-    def _refine_crystal(self):
-        """
-        Do the crystal refinement
-
-        """
-        if (
-            self.params.profile.unit_cell.fixed is True
-            and self.params.profile.orientation.fixed is True
-        ):
-            return
-
-        logger.info("\n" + "=" * 80 + "\nRefining crystal parmameters")
-
-        # Create the parameterisation
-        state = ModelState(
-            self.experiments[0],
-            self.profile.parameterisation(),
-            fix_mosaic_spread=True,
-            fix_unit_cell=self.params.profile.unit_cell.fixed,
-            fix_orientation=self.params.profile.orientation.fixed,
-            fix_wavelength_spread=self.params.profile.wavelength_spread.model
-            == "delta",
+        # refine the crystal
+        _ = refine_crystal(
+            experiments[0],
+            profile,
+            refiner_data,
+            fix_unit_cell=params.profile.unit_cell.fixed,
+            fix_orientation=params.profile.orientation.fixed,
+            wavelength_spread_model=params.profile.wavelength_spread.model,
         )
 
-        # Create the refiner and refine
-        refiner = ProfileRefiner(state, self._refiner_data)
-        refiner.refine()
+    # Post process the reflections
+    # Update predictions
+    reflection_table = predict_after_potato_refinement(experiments[0], reflection_table)
+    # Compute prob
+    compute_prediction_probability(experiments[0], reflection_table)
 
-    def _predict(self):
-        """
-        Predict the position of the spots
-
-        """
-
-        # Get some stuff from experiment
-        A = matrix.sqr(self.experiments[0].crystal.get_A())
-        s0 = matrix.col(self.experiments[0].beam.get_s0())
-
-        # Compute the vector to the reciprocal lattice point
-        # since this is not on the ewald sphere, lets call it s2
-        h = self.reflections["miller_index"]
-        s1 = flex.vec3_double(len(h))
-        s2 = flex.vec3_double(len(h))
-        for i in range(len(self.reflections)):
-            r = A * matrix.col(h[i])
-            s2[i] = s0 + r
-            s1[i] = matrix.col(s2[i]).normalize() * s0.length()
-        self.reflections["s1"] = s1
-        self.reflections["s2"] = s2
-        self.reflections["entering"] = flex.bool(len(h), False)
-
-        # Compute the ray intersections
-        xyzpx = flex.vec3_double()
-        xyzmm = flex.vec3_double()
-        for i in range(len(s2)):
-            ss = s1[i]
-            mm = self.experiments[0].detector[0].get_ray_intersection(ss)
-            px = self.experiments[0].detector[0].millimeter_to_pixel(mm)
-            xyzpx.append(px + (0,))
-            xyzmm.append(mm + (0,))
-        self.reflections["xyzcal.mm"] = xyzmm
-        self.reflections["xyzcal.px"] = xyzpx
-        logger.info("Do prediction for %d reflections" % len(self.reflections))
-
-    def _compute_prediction_probability(self):
-
-        # Get stuff from experiment
-        s0 = matrix.col(self.experiments[0].beam.get_s0())
-        profile = self.experiments[0].crystal.mosaicity
-
-        # Loop through reflections
-        min_p = None
-        for i in range(len(self.reflections)):
-            s2 = matrix.col(self.reflections[i]["s2"])
-            s3 = s2.normalize() * s0.length()
-            r = s2 - s0
-            epsilon = s3 - s2
-            sigma = profile.sigma_for_reflection(s0, r)
-            sigma_inv = sigma.inverse()
-            d = (epsilon.transpose() * sigma_inv * epsilon)[0]
-            p = chisq_pdf(3, d)
-            if min_p is None or p < min_p:
-                min_p = p
-
-        # Print some stuff
-        logger.info(
-            "Quantile required to predicted all observed reflections = %.5f"
-            % (1 - min_p)
+    # Make some plots
+    if params.output.html:
+        output_data["plots_data"].update(
+            plot_distance_from_ewald_sphere(experiments[0], reflection_table, "Final")
         )
 
-    def _plot_distance_from_ewald_sphere(self, prefix):
-        """
-        Plot distance from Ewald sphere
-
-        """
-
-        s0 = matrix.col(self.experiments[0].beam.get_s0())
-        s2 = self.reflections["s2"]
-        D = flex.double(s0.length() - matrix.col(s).length() for s in s2)
-        Dmean = flex.sum(D) / len(D)
-        Dvar = flex.sum(flex.double([(d - Dmean) ** 2 for d in D])) / len(D)
-        hist, bin_edges = np.histogram(
-            D,
-            bins=max(5, min(int(0.2 * len(s2)), 20)),
-        )
-        bin_centers = bin_edges[:-1] + np.diff(bin_edges) / 2
-        self.plots_data.update(
-            {
-                f"{prefix}_epsilon_distribution": {
-                    "data": [
-                        (
-                            {
-                                "x": bin_centers.tolist(),
-                                "y": hist.tolist(),
-                                "type": "bar",
-                            }
-                        )
-                    ],
-                    "layout": {
-                        "title": f"{prefix} epsilon distribution. <br>Mean(epsilon) = {Dmean:.2e}, Variance(epsilon) = {Dvar:.2e}",
-                        "xaxis": {"title": "Distance from Ewald sphere (epsilon)"},
-                        "yaxis": {"title": "Frequency"},
-                        "bargap": 0,
-                    },
-                }
-            }
-        )
-
-    def _plot_corrgram(self, corrmat, labels):
-        """
-        Plot a corrgram of correlations between parameters
-
-        """
-        plt = corrgram(corrmat, labels)
-        plt.savefig("corrgram.png", dpi=300)
-        plt.clf()
-
-    def _save_profile_model(self):
-        """
-        Save the profile model to file
-
-        """
-        with open("profile_model.json", "w") as outfile:
-            data = {
-                "rlp_mosaicity": tuple(self.experiments[0].crystal.mosaicity.sigma())
-            }
-            json.dump(data, outfile, indent=2)
-
-    def _save_history(self):
-        """
-        Save the history
-
-        """
-        with open("history.json", "w") as outfile:
-            json.dump(self.history, outfile, indent=2)
+    return experiments, reflection_table, output_data
 
 
 class Integrator(object):
@@ -913,10 +875,38 @@ class Integrator(object):
         Do the refinement of profile and crystal parameters
 
         """
-        refiner = Refiner(self.experiments, self.reference, self.sigma_d, self.params)
-        self.experiments = refiner.experiments
-        self.reference = refiner.reflections
-        self.plots_data.update(refiner.plots_data)
+
+        self.experiments, self.reference, output_data = run_potato_refinement(
+            self.experiments,
+            self.reference,
+            self.sigma_d,
+            self.params,
+        )
+        self.plots_data.update(output_data["plots_data"])
+
+        # Plot the corrgram
+        if self.params.debug.output.plots:
+            plt = corrgram(
+                output_data["refiner_output"]["correlation"],
+                output_data["refiner_output"]["labels"],
+            )
+            plt.savefig("corrgram.png", dpi=300)
+            plt.clf()
+        # Save the history
+        if self.params.debug.output.history:
+            with open("history.json", "w") as outfile:
+                json.dump(
+                    output_data["refiner_output"]["history"][-1], outfile, indent=2
+                )
+        # Save the profile model
+        if self.params.debug.output.profile_model:
+            with open("profile_model.json", "w") as outfile:
+                data = {
+                    "rlp_mosaicity": tuple(
+                        self.experiments[0].crystal.mosaicity.sigma()
+                    )
+                }
+                json.dump(data, outfile, indent=2)
 
     def predict(self):
         """
