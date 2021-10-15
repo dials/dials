@@ -169,7 +169,7 @@ def _compute_beam_vector(experiment, reflection_table):
     return s1_obs
 
 
-def _compute_bbox(experiment, reflection_table, sigma_d):
+def _compute_bbox(experiment, reflection_table, sigma_d, s1="s1_obs"):
     """Compute the bounding box"""
 
     # Initialise the bounding box calculator
@@ -185,7 +185,7 @@ def _compute_bbox(experiment, reflection_table, sigma_d):
 
     # Compute the bounding box
     bbox = compute_bbox(
-        reflection_table["s1_obs"],
+        reflection_table[s1],
         reflection_table["xyzcal.px"].parts()[2],
         reflection_table["panel"],
     )
@@ -193,7 +193,9 @@ def _compute_bbox(experiment, reflection_table, sigma_d):
     return bbox
 
 
-def _compute_mask(experiment, reflection_table, sigma_d, old_shoeboxes):
+def _compute_mask(
+    experiment, reflection_table, sigma_d, s1="s1_obs", strong_shoeboxes=None
+):
     """Compute the spot mask"""
 
     # Initialise the mask calculator
@@ -210,48 +212,74 @@ def _compute_mask(experiment, reflection_table, sigma_d, old_shoeboxes):
     # Compute the reflection mask
     mask_foreground(
         reflection_table["shoebox"],
-        reflection_table["s1_obs"],
+        reflection_table[s1],
         reflection_table["xyzcal.px"].parts()[2],
         reflection_table["panel"],
     )
 
-    # Apply strong spot mask
-    assert len(reflection_table) == len(old_shoeboxes)
-    new_shoeboxes = reflection_table["shoebox"]
-    old_shoeboxes = old_shoeboxes
-    for s in range(len(new_shoeboxes)):
-        bbox_old = old_shoeboxes[s].bbox
-        mask_old = old_shoeboxes[s].mask
-        bbox_new = new_shoeboxes[s].bbox
-        mask_new = new_shoeboxes[s].mask
-        for j in range(mask_old.all()[1]):
-            for i in range(mask_old.all()[2]):
-                ii = bbox_old[0] + i - bbox_new[0]
-                jj = bbox_old[2] + j - bbox_new[2]
-                if mask_old[0, j, i] == 5:
-                    if (
-                        ii >= 0
-                        and jj >= 0
-                        and jj < mask_new.all()[1]
-                        and ii < mask_new.all()[2]
-                    ):
-                        assert mask_new[0, jj, ii] & (1 << 0)
-                        mask_new[0, jj, ii] |= (1 << 2) | (1 << 3)
+    # if strong_shoeboxes given, apply the mask from this
+    if strong_shoeboxes:
+        # Apply strong spot mask
+        assert len(reflection_table) == len(strong_shoeboxes)
+        new_shoeboxes = reflection_table["shoebox"]
+        for s in range(len(new_shoeboxes)):
+            bbox_old = strong_shoeboxes[s].bbox
+            mask_old = strong_shoeboxes[s].mask
+            bbox_new = new_shoeboxes[s].bbox
+            mask_new = new_shoeboxes[s].mask
+            for j in range(mask_old.all()[1]):
+                for i in range(mask_old.all()[2]):
+                    ii = bbox_old[0] + i - bbox_new[0]
+                    jj = bbox_old[2] + j - bbox_new[2]
+                    if mask_old[0, j, i] == 5:
+                        if (
+                            ii >= 0
+                            and jj >= 0
+                            and jj < mask_new.all()[1]
+                            and ii < mask_new.all()[2]
+                        ):
+                            assert mask_new[0, jj, ii] & (1 << 0)
+                            mask_new[0, jj, ii] |= (1 << 2) | (1 << 3)
+
+
+def _plot_partiality(reflection_table):
+    """Plot the partiality"""
+
+    hist, bin_edges = np.histogram(
+        reflection_table["partiality"],
+        bins=max(5, min(int(0.2 * reflection_table.size()), 20)),
+    )
+    bin_centers = bin_edges[:-1] + np.diff(bin_edges) / 2
+    plots_dict = {
+        "partiality_distribution": {
+            "data": [
+                (
+                    {
+                        "x": bin_centers.tolist(),
+                        "y": hist.tolist(),
+                        "type": "bar",
+                    }
+                )
+            ],
+            "layout": {
+                "title": "Partiality distribution",
+                "xaxis": {"title": "Partiality"},
+                "yaxis": {"title": "Frequency"},
+                "bargap": 0,
+            },
+        }
+    }
+    return plots_dict
 
 
 def initial_integrator(experiments, reflection_table):
     """Performs an initial integration of strong spots"""
 
-    experiment = experiments[
-        0
-    ]  # some functions require an experimentlist, others just the experiment
+    # some functions require an experimentlist, others just the experiment
+    experiment = experiments[0]
     sel = reflection_table.get_flags(reflection_table.flags.strong)
     strong_refls = reflection_table.select(sel)
-
-    # Save the old shoeboxes
-    old_shoeboxes = strong_refls["shoebox"]
-
-    # Do the processing
+    strong_shoeboxes = strong_refls["shoebox"]  # Save the strong shoeboxes
 
     # Compute and initial spot size estimate and beam vector
     sigma_d = ComputeEsdBeamDivergence(experiment.detector, strong_refls).sigma()
@@ -260,12 +288,8 @@ def initial_integrator(experiments, reflection_table):
         f"Initial sigma d estimate for {len(strong_refls)} reflections\n",
         f"Sigma D: {sigma_degrees:.5f} degrees\n",
     )
-    strong_refls["s1_obs"] = _compute_beam_vector(
-        experiment,
-        strong_refls,
-    )
-
-    strong_refls["bbox"] = _compute_bbox(experiment, strong_refls, sigma_d)
+    strong_refls["s1_obs"] = _compute_beam_vector(experiment, strong_refls)
+    strong_refls["bbox"] = _compute_bbox(experiment, strong_refls, sigma_d, "s1_obs")
 
     # allocate and extract shoebox
     strong_refls["shoebox"] = flex.shoebox(
@@ -273,7 +297,7 @@ def initial_integrator(experiments, reflection_table):
     )
     strong_refls.extract_shoeboxes(experiment.imageset)
 
-    _compute_mask(experiment, strong_refls, sigma_d, old_shoeboxes)
+    _compute_mask(experiment, strong_refls, sigma_d, "s1_obs", strong_shoeboxes)
 
     logger.info(
         f"Computing background, intensity and centroids for {len(strong_refls)} reflections"
@@ -281,14 +305,67 @@ def initial_integrator(experiments, reflection_table):
     strong_refls.compute_background(experiments)
     strong_refls.compute_summed_intensity()
 
-    flag = strong_refls.flags.integrated_sum
-    n_sum = strong_refls.get_flags(flag).count(True)
+    n_sum = strong_refls.get_flags(strong_refls.flags.integrated_sum).count(True)
     logger.info(f"{n_sum} reflections integrated")
 
     strong_refls.compute_centroid(experiments)
     strong_refls.compute_d(experiments)
 
     return strong_refls, sigma_d
+
+
+def final_integrator(
+    experiments,
+    reflection_table,
+    sigma_d,
+    use_crude_shoebox_mask=False,
+    shoebox_probability=0.9973,
+):
+    """Performs an initial integration of all predicted spots"""
+
+    experiment = experiments[0]
+    logger.info("\n" + "=" * 80 + "\nIntegrating reflections")
+
+    # first compute the bbox
+    if use_crude_shoebox_mask:
+        reflection_table["bbox"] = _compute_bbox(
+            experiment, reflection_table, sigma_d, "s1"
+        )
+    else:
+        # compute bbox from model
+        profile = experiment.crystal.mosaicity
+        profile.compute_bbox(experiments, reflection_table, shoebox_probability)
+
+    # Select reflections within detector
+    x0, x1, y0, y1, _, _ = reflection_table["bbox"].parts()
+    xsize, ysize = experiment.detector[0].get_image_size()
+    selection = (x1 > 0) & (y1 > 0) & (x0 < xsize) & (y0 < ysize)
+    reflection_table = reflection_table.select(selection)
+
+    reflection_table["shoebox"] = flex.shoebox(
+        reflection_table["panel"], reflection_table["bbox"], allocate=True
+    )
+    reflection_table.extract_shoeboxes(experiment.imageset)
+
+    if use_crude_shoebox_mask:
+        _compute_mask(experiment, reflection_table, sigma_d, "s1")
+    else:
+        # compute the mask from the model.
+        profile = experiment.crystal.mosaicity
+        profile.compute_mask(experiments, reflection_table, shoebox_probability)
+
+    logger.info(
+        f"Computing background, intensity, corrections for {len(reflection_table)} reflections"
+    )
+    reflection_table.compute_background(experiments)
+    reflection_table.compute_summed_intensity()
+    reflection_table.compute_corrections(experiments)
+    reflection_table.compute_centroid(experiments)
+
+    profile = experiment.crystal.mosaicity
+    profile.compute_partiality(experiments, reflection_table)
+
+    return reflection_table
 
 
 class Indexer(object):
@@ -772,261 +849,6 @@ class Refiner(object):
             json.dump(self.history, outfile, indent=2)
 
 
-class FinalIntegrator(object):
-    """
-    Do the final refinement
-
-    """
-
-    def __init__(self, params, experiments, reflections, sigma_d):
-        """
-        Initialise the refiner
-
-        """
-
-        # Save some stuff
-        self.params = params
-        self.experiments = experiments
-        self.reflections = reflections
-        self.sigma_d = sigma_d
-        self.plots_data = OrderedDict()
-
-        logger.info("\n" + "=" * 80 + "\nIntegrating reflections")
-
-        # Do the processing
-        self._compute_bbox()
-        self._allocate_shoebox()
-        self._extract_shoebox()
-        self._compute_mask()
-        self._compute_background()
-        self._compute_intensity()
-        self._compute_centroid()
-        self._compute_partiality()
-
-        self._print_report()
-        # Plot the partialities
-        if params.output.html:
-            self._plot_partiality()
-
-    def _print_report(self):
-
-        from dials.algorithms.integration.report import IntegrationReport
-
-        report = IntegrationReport(self.experiments, self.reflections)
-        logger.info(report.tables[2].as_str())
-
-    def _compute_bbox(self):
-        """
-        Do crude bbox calculation from sigma_b or from model
-
-        """
-        if self.params.integration.use_crude_shoebox_mask:
-            self._compute_bbox_from_sigma_d()
-        else:
-            self._compute_bbox_from_model()
-
-    def _compute_bbox_from_sigma_d(self):
-        """
-        Compute the bounding box
-
-        """
-
-        logger.info(
-            "Computing the bounding box for %d reflections" % len(self.reflections)
-        )
-
-        # Initialise the bounding box calculator
-        compute_bbox = BBoxCalculator(
-            self.experiments[0].crystal,
-            self.experiments[0].beam,
-            self.experiments[0].detector,
-            self.experiments[0].goniometer,
-            self.experiments[0].scan,
-            self.sigma_d * 6,
-            0,
-        )
-
-        # Compute the bounding box
-        bbox = compute_bbox(
-            self.reflections["s1"],
-            self.reflections["xyzcal.px"].parts()[2],
-            self.reflections["panel"],
-        )
-
-        # Set in the reflection table
-        self.reflections["bbox"] = bbox
-
-        # Select reflections within detector
-        x0, x1, y0, y1, _, _ = self.reflections["bbox"].parts()
-        xsize, ysize = self.experiments[0].detector[0].get_image_size()
-        selection = (x1 > 0) & (y1 > 0) & (x0 < xsize) & (y0 < ysize)
-        self.reflections = self.reflections.select(selection)
-        logger.info("Filtered reflections with bbox outside image range")
-        logger.info("Kept %d reflections" % len(self.reflections))
-
-    def _compute_bbox_from_model(self):
-        """
-        Compute the bounding box
-
-        """
-        # Compute the bounding box
-        profile = self.experiments[0].crystal.mosaicity
-        profile.compute_bbox(
-            self.experiments,
-            self.reflections,
-            self.params.integration.shoebox.probability,
-        )
-
-        # Select reflections within detector
-        x0, x1, y0, y1, _, _ = self.reflections["bbox"].parts()
-        xsize, ysize = self.experiments[0].detector[0].get_image_size()
-        selection = (x1 > 0) & (y1 > 0) & (x0 < xsize) & (y0 < ysize)
-        self.reflections = self.reflections.select(selection)
-        logger.info("Filtered reflections with bbox outside image range")
-        logger.info("Kept %d reflections" % len(self.reflections))
-
-    def _allocate_shoebox(self):
-        """
-        Allocate the shoebox
-
-        """
-        self.reflections["shoebox"] = flex.shoebox(
-            self.reflections["panel"], self.reflections["bbox"], allocate=True
-        )
-
-    def _compute_mask(self):
-        """
-        Compute the reflection mask
-
-        """
-        if self.params.integration.use_crude_shoebox_mask:
-            self._compute_mask_from_sigma_d()
-        else:
-            self._compute_mask_from_model()
-
-    def _compute_mask_from_sigma_d(self):
-        """
-        Compute the spot mask
-
-        """
-        logger.info(
-            "Creating the foreground mask for %d reflections" % len(self.reflections)
-        )
-
-        # Initialise the mask calculator
-        mask_foreground = MaskCalculator(
-            self.experiments[0].crystal,
-            self.experiments[0].beam,
-            self.experiments[0].detector,
-            self.experiments[0].goniometer,
-            self.experiments[0].scan,
-            self.sigma_d * 3,
-            0,
-        )
-
-        # Compute the reflection mask
-        mask_foreground(
-            self.reflections["shoebox"],
-            self.reflections["s1"],
-            self.reflections["xyzcal.px"].parts()[2],
-            self.reflections["panel"],
-        )
-
-    def _compute_mask_from_model(self):
-        """
-        Compute the reflection mask
-
-        """
-        profile = self.experiments[0].crystal.mosaicity
-        profile.compute_mask(
-            self.experiments,
-            self.reflections,
-            self.params.integration.shoebox.probability,
-        )
-
-    def _extract_shoebox(self):
-        """
-        Extract the shoebox
-
-        """
-        logger.info(
-            "Extracting shoebox from image for %d reflections" % len(self.reflections)
-        )
-        self.reflections.extract_shoeboxes(self.experiments[0].imageset)
-
-    def _compute_background(self):
-        """
-        Compute the reflection background
-
-        """
-        logger.info("Computing background for %d reflections" % len(self.reflections))
-        self.reflections.compute_background(self.experiments)
-
-    def _compute_intensity(self):
-        """
-        Compute the reflection intensity
-
-        """
-        logger.info("Computing intensity for %d reflections" % len(self.reflections))
-        self.reflections.compute_summed_intensity()
-        self.reflections.compute_corrections(self.experiments)
-        logger.info(
-            "%d reflections integrated"
-            % self.reflections.get_flags(self.reflections.flags.integrated_sum).count(
-                True
-            )
-        )
-
-    def _compute_centroid(self):
-        """
-        Compute the reflection centroid
-
-        """
-        logger.info("Computing centroid for %d reflections" % len(self.reflections))
-        self.reflections.compute_centroid(self.experiments)
-
-    def _compute_partiality(self):
-        """
-        Compute the partiality
-
-        """
-        profile = self.experiments[0].crystal.mosaicity
-        profile.compute_partiality(self.experiments, self.reflections)
-
-    def _plot_partiality(self):
-        """
-        Plot the partiality
-
-        """
-
-        hist, bin_edges = np.histogram(
-            self.reflections["partiality"],
-            bins=max(5, min(int(0.2 * self.reflections.size()), 20)),
-        )
-        bin_centers = bin_edges[:-1] + np.diff(bin_edges) / 2
-        self.plots_data.update(
-            {
-                "partiality_distribution": {
-                    "data": [
-                        (
-                            {
-                                "x": bin_centers.tolist(),
-                                "y": hist.tolist(),
-                                "type": "bar",
-                            }
-                        )
-                    ],
-                    "layout": {
-                        "title": "Partiality distribution",
-                        "xaxis": {"title": "Partiality"},
-                        "yaxis": {"title": "Frequency"},
-                        "bargap": 0,
-                    },
-                }
-            }
-        )
-
-
 class Integrator(object):
     """
     Class to perform integration of stills in the following way:
@@ -1155,11 +977,22 @@ class Integrator(object):
         Do an final integration of the reflections
 
         """
-        integrator = FinalIntegrator(
-            self.params, self.experiments, self.reflections, self.sigma_d
+        self.reflections = final_integrator(
+            self.experiments,
+            self.reflections,
+            self.sigma_d,
+            self.params.integration.use_crude_shoebox_mask,
+            self.params.integration.shoebox.probability,
         )
-        self.reflections = integrator.reflections
-        self.plots_data.update(integrator.plots_data)
+
+        from dials.algorithms.integration.report import IntegrationReport
+
+        report = IntegrationReport(self.experiments, self.reflections)
+        logger.info(report.tables[2].as_str())
+
+        # Plot the partialities
+        if self.params.output.html:
+            self.plots_data.update(_plot_partiality(self.reflections))
 
         # Delete shoeboxes if necessary
         if not self.params.debug.output.shoeboxes:
