@@ -2,12 +2,10 @@ from __future__ import division, print_function
 
 from collections import namedtuple
 from math import exp
-from os.path import join
 from random import randint, uniform
 
 import pytest
 
-from dxtbx.model.experiment_list import ExperimentListFactory
 from scitbx import matrix
 
 from dials.algorithms.profile_model.potato.model import (
@@ -89,7 +87,7 @@ def generate_data(experiments, reflections):
 
 
 @pytest.fixture
-def testdata(dials_regression):
+def testdata(test_experiment):
 
     TestData = namedtuple(
         "TestData",
@@ -106,10 +104,7 @@ def testdata(dials_regression):
         ],
     )
 
-    experiments = ExperimentListFactory.from_json_file(
-        join(dials_regression, "potato_test_data", "experiments.json")
-    )
-    experiments[0].scan.set_oscillation((0, 0.01), deg=True)
+    experiments = [test_experiment]
     reflections = flex.reflection_table.from_predictions_multi(experiments)
 
     models, s0, sp, h, ctot, mobs, Sobs = generate_data(experiments, reflections)

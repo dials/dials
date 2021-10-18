@@ -1,11 +1,8 @@
 from __future__ import division, print_function
 
-from os.path import join
-
 import numpy.random
 from numpy.random import choice as sample
 
-from dxtbx.model.experiment_list import ExperimentListFactory
 from scitbx import matrix
 
 from dials.algorithms.profile_model.potato.parameterisation import (
@@ -39,16 +36,11 @@ def generate_observations2(experiments, reflections, sigma):
     return reflections
 
 
-def test_ideal(dials_regression):
+def test_ideal(test_experiment):
 
     numpy.random.seed(100)
 
-    # Ensure we have a data block
-    # experiments = ExperimentListFactory.from_json_file("experiments.json")
-    # was being loaded locally, assumed to be file moved into dials_regression
-    experiments = ExperimentListFactory.from_json_file(
-        join(dials_regression, "potato_test_data", "experiments.json")
-    )
+    experiments = [test_experiment]
     experiments[0].scan.set_oscillation((0, 1.0), deg=True)
     experiments[0].beam.set_s0((0, 0, -1))
 
@@ -126,16 +118,11 @@ def test_ideal(dials_regression):
     print("OK")
 
 
-def test_binned(dials_regression):
+def test_binned(test_experiment):
 
     numpy.random.seed(100)
 
-    # Ensure we have a data block
-    # experiments = ExperimentListFactory.from_json_file("experiments.json")
-    # was being loaded locally, assumed to be file moved into dials_regression
-    experiments = ExperimentListFactory.from_json_file(
-        join(dials_regression, "potato_test_data", "experiments.json")
-    )
+    experiments = [test_experiment]
     experiments[0].scan.set_oscillation((0, 1.0), deg=True)
     experiments[0].beam.set_s0((0, 0, -1))
 

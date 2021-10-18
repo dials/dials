@@ -1,9 +1,7 @@
 from math import sqrt
-from os.path import join
 
 import pytest
 
-from dxtbx.model.experiment_list import ExperimentListFactory
 from scitbx import matrix
 
 from dials.algorithms.profile_model.potato import chisq_quantile
@@ -19,6 +17,8 @@ from dials.algorithms.profile_model.potato.parameterisation import (
 )
 from dials.algorithms.spot_prediction import IndexGenerator
 from dials.array_family import flex
+
+# from dials.test.algorithms.profile_model.potato import test_experiment
 
 
 @pytest.fixture
@@ -38,27 +38,17 @@ def simple6_profile_model():
 
 
 @pytest.fixture
-def simple1_model_state(dials_regression):
+def simple1_model_state(test_experiment):
 
-    experiments = ExperimentListFactory.from_json_file(
-        join(dials_regression, "potato_test_data", "experiments.json")
-    )
-    experiments[0].scan.set_oscillation((0, 0.01), deg=True)
-
-    state = ModelState(experiments[0], Simple1MosaicityParameterisation())
+    state = ModelState(test_experiment, Simple1MosaicityParameterisation())
 
     return state
 
 
 @pytest.fixture
-def simple6_model_state(dials_regression):
+def simple6_model_state(test_experiment):
 
-    experiments = ExperimentListFactory.from_json_file(
-        join(dials_regression, "potato_test_data", "experiments.json")
-    )
-    experiments[0].scan.set_oscillation((0, 0.01), deg=True)
-
-    state = ModelState(experiments[0], Simple6MosaicityParameterisation())
+    state = ModelState(test_experiment, Simple6MosaicityParameterisation())
 
     return state
 
@@ -100,29 +90,25 @@ def test_Simple1ProfileModel_update_model(simple1_profile_model, simple1_model_s
 
 
 def test_Simple1ProfileModel_predict_reflections(
-    dials_regression, simple1_profile_model
+    simple1_profile_model,
+    test_experiment,
 ):
-
-    experiments = ExperimentListFactory.from_json_file(
-        join(dials_regression, "potato_test_data", "experiments.json")
-    )
-    experiments[0].scan.set_oscillation((0, 0.01), deg=True)
 
     # Create the index generator
     index_generator = IndexGenerator(
-        experiments[0].crystal.get_unit_cell(),
-        experiments[0].crystal.get_space_group().type(),
+        test_experiment.crystal.get_unit_cell(),
+        test_experiment.crystal.get_space_group().type(),
         2.0,
     )
 
     # Get an array of miller indices
     miller_indices = index_generator.to_array()
     reflections = simple1_profile_model.predict_reflections(
-        experiments, miller_indices, probability=0.9973
+        [test_experiment], miller_indices, probability=0.9973
     )
 
     # s2 = reflections["s2"]
-    s0 = matrix.col(experiments[0].beam.get_s0())
+    s0 = matrix.col(test_experiment.beam.get_s0())
     quantile = chisq_quantile(3, 0.9973)
     sigma_inv = matrix.sqr(simple1_profile_model.sigma()).inverse()
 
@@ -133,11 +119,9 @@ def test_Simple1ProfileModel_predict_reflections(
         assert d < quantile
 
 
-def test_Simple1ProfileModel_compute_bbox(dials_regression, simple1_profile_model):
-    experiments = ExperimentListFactory.from_json_file(
-        join(dials_regression, "potato_test_data", "experiments.json")
-    )
-    experiments[0].scan.set_oscillation((0, 0.01), deg=True)
+def test_Simple1ProfileModel_compute_bbox(simple1_profile_model, test_experiment):
+
+    experiments = [test_experiment]
 
     # Create the index generator
     index_generator = IndexGenerator(
@@ -155,11 +139,8 @@ def test_Simple1ProfileModel_compute_bbox(dials_regression, simple1_profile_mode
     simple1_profile_model.compute_bbox(experiments, reflections)
 
 
-def test_Simple1ProfileModel_compute_mask(dials_regression, simple1_profile_model):
-    experiments = ExperimentListFactory.from_json_file(
-        join(dials_regression, "potato_test_data", "experiments.json")
-    )
-    experiments[0].scan.set_oscillation((0, 0.01), deg=True)
+def test_Simple1ProfileModel_compute_mask(simple1_profile_model, test_experiment):
+    experiments = [test_experiment]
 
     # Create the index generator
     index_generator = IndexGenerator(
@@ -208,12 +189,9 @@ def test_Simple6ProfileModel_update_model(simple6_profile_model, simple6_model_s
 
 
 def test_Simple6ProfileModel_predict_reflections(
-    dials_regression, simple6_profile_model
+    simple6_profile_model, test_experiment
 ):
-    experiments = ExperimentListFactory.from_json_file(
-        join(dials_regression, "potato_test_data", "experiments.json")
-    )
-    experiments[0].scan.set_oscillation((0, 0.01), deg=True)
+    experiments = [test_experiment]
 
     # Create the index generator
     index_generator = IndexGenerator(
@@ -239,11 +217,8 @@ def test_Simple6ProfileModel_predict_reflections(
         assert d < quantile
 
 
-def test_Simple6ProfileModel_compute_bbox(dials_regression, simple6_profile_model):
-    experiments = ExperimentListFactory.from_json_file(
-        join(dials_regression, "potato_test_data", "experiments.json")
-    )
-    experiments[0].scan.set_oscillation((0, 0.01), deg=True)
+def test_Simple6ProfileModel_compute_bbox(simple6_profile_model, test_experiment):
+    experiments = [test_experiment]
 
     # Create the index generator
     index_generator = IndexGenerator(
@@ -271,11 +246,8 @@ def test_Simple6ProfileModel_compute_bbox(dials_regression, simple6_profile_mode
     simple6_profile_model.compute_bbox(experiments, reflections)
 
 
-def test_Simple6ProfileModel_compute_mask(dials_regression, simple6_profile_model):
-    experiments = ExperimentListFactory.from_json_file(
-        join(dials_regression, "potato_test_data", "experiments.json")
-    )
-    experiments[0].scan.set_oscillation((0, 0.01), deg=True)
+def test_Simple6ProfileModel_compute_mask(simple6_profile_model, test_experiment):
+    experiments = [test_experiment]
 
     # Create the index generator
     index_generator = IndexGenerator(

@@ -1,12 +1,10 @@
 from __future__ import division, print_function
 
 from math import sqrt
-from os.path import join
 from random import sample, seed
 
 import pytest
 
-from dxtbx.model.experiment_list import ExperimentListFactory
 from scitbx import matrix
 
 from dials.algorithms.profile_model.potato.model import (
@@ -61,19 +59,14 @@ def generate_observations(experiments, reflections, sigma):
 
 
 @pytest.mark.xfail(reason="outdated code")
-def test_simplex(dials_regression):
+def test_simplex(test_experiment):
 
     from dials.array_family import flex
 
     seed(0)
 
-    # Ensure we have a data block
-    # experiments = ExperimentListFactory.from_json_file("experiments.json")
-    # was loading a local file, assumed to be that moved to dials_regression
-    experiments = ExperimentListFactory.from_json_file(
-        join(dials_regression, "potato_test_data", "experiments.json")
-    )
-    experiments[0].scan.set_oscillation((0, 1), deg=True)
+    experiments = [test_experiment]
+    experiments[0].scan.set_oscillation((0, 1.0), deg=True)
     # experiments[0].scan = experiments[0].scan[0:1]
     # experiments[0].imageset = experiments[0].imageset[0:1]
 

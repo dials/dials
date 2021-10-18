@@ -1,13 +1,11 @@
 from __future__ import division, print_function
 
 from collections import namedtuple
-from os.path import join
 from random import randint, uniform
 
 import numpy as np
 import pytest
 
-from dxtbx.model.experiment_list import ExperimentListFactory
 from scitbx import matrix
 
 from dials.algorithms.profile_model.potato.parameterisation import (
@@ -285,12 +283,9 @@ def check_model_state_with_fixed(
     state.set_active_parameters(new_params)
 
 
-def test_ModelState(dials_regression):
+def test_ModelState(test_experiment):
 
-    experiments = ExperimentListFactory.from_json_file(
-        join(dials_regression, "potato_test_data", "experiments.json")
-    )
-    experiments[0].scan.set_oscillation((0, 0.01), deg=True)
+    experiments = [test_experiment]
 
     S1 = Simple1MosaicityParameterisation()
     S6 = Simple6MosaicityParameterisation()
@@ -394,12 +389,9 @@ def check_reflection_model_state_with_fixed(
         dL_dp = dL_dp[:-num_params]
 
 
-def test_ReflectionModelState(dials_regression):
+def test_ReflectionModelState(test_experiment):
 
-    experiments = ExperimentListFactory.from_json_file(
-        join(dials_regression, "potato_test_data", "experiments.json")
-    )
-    experiments[0].scan.set_oscillation((0, 0.01), deg=True)
+    experiments = [test_experiment]
 
     S1 = Simple1MosaicityParameterisation()
     S6 = Simple6MosaicityParameterisation()
@@ -481,16 +473,13 @@ def generate_data(experiments, reflections):
 
 
 @pytest.fixture
-def testdata(dials_regression):
+def testdata(test_experiment):
 
     TestData = namedtuple(
         "TestData", ["experiment", "models", "s0", "h", "ctot", "mobs", "Sobs"]
     )
 
-    experiments = ExperimentListFactory.from_json_file(
-        join(dials_regression, "potato_test_data", "experiments.json")
-    )
-    experiments[0].scan.set_oscillation((0, 0.01), deg=True)
+    experiments = [test_experiment]
     reflections = flex.reflection_table.from_predictions_multi(experiments)
 
     models, s0, h, ctot, mobs, Sobs = generate_data(experiments, reflections)
