@@ -45,10 +45,7 @@ max_two_theta = 10.0
 view = False
     .type = bool
     .help = "View phi/theta histogram with current rotation axis (azimuth)"
-
-optimise = True
-    .type = bool
-    .help = "Optimise the rotation axis"
+            "instead of performing an optimisation"
 
 global_search = True
     .type = bool
@@ -404,7 +401,7 @@ def run(args=None, phil=phil_scope):
 
     if params.view:
         azimuth_final = azimuth_current
-    elif params.optimise:
+    else:
         global xvals
         global vvals
         xvals = []
@@ -469,7 +466,7 @@ def run(args=None, phil=phil_scope):
             filename=hist_filename,
         )
 
-        if params.optimise and not params.view:
+        if not params.view:
             # Plot rotation axis distribution curve
             plt.figure(figsize=(10, 7))
             plt.scatter(xvals, vvals, marker="+", lw=1.0, color="red")
