@@ -1,0 +1,211 @@
+import logging
+from math import floor, sqrt
+
+from cctbx.array_family import flex
+from scitbx import matrix
+
+from dials.algorithms.profile_model.potato import chisq_quantile
+from dials.algorithms.statistics.fast_mcd import FastMCD, maha_dist_sq
+
+logger = logging.getLogger("dials." + __name__)
+
+
+def _index(reflection_table, experiment, fail_on_bad_index=False):
+    """Index the strong spots"""
+
+    # Get some stuff from experiment
+    A = matrix.sqr(experiment.crystal.get_A())
+    s0 = matrix.col(experiment.beam.get_s0())
+    detector = experiment.detector
+
+    # Create array if necessary
+    if "miller_index" not in reflection_table:
+        reflection_table["miller_index"] = flex.miller_index(len(reflection_table))
+
+    # Index all the reflections
+    xyz_list = reflection_table["xyzobs.px.value"]
+    miller_index = reflection_table["miller_index"]
+    selection = flex.size_t()
+    num_reindexed = 0
+    for i in range(len(reflection_table)):
+
+        # Get the observed pixel coordinate
+        x, y, _ = xyz_list[i]
+
+        # Get the lab coord
+        s1 = (
+            matrix.col(detector[0].get_pixel_lab_coord((x, y))).normalize()
+            * s0.length()
+        )
+
+        # Get the reciprocal lattice vector
+        r = s1 - s0
+
+        # Compute the fractional miller index
+        hf = A.inverse() * r
+
+        # Compute the integer miller index
+        h = matrix.col(
+            (
+                int(floor(hf[0] + 0.5)),
+                int(floor(hf[1] + 0.5)),
+                int(floor(hf[2] + 0.5)),
+            )
+        )
+
+        # Print warning if reindexing
+        if tuple(h) != miller_index[i]:
+            logger.warn(
+                "Reindexing (% 3d, % 3d, % 3d) -> (% 3d, % 3d, % 3d)"
+                % (miller_index[i] + tuple(h))
+            )
+            num_reindexed += 1
+            miller_index[i] = h
+            if fail_on_bad_index:
+                raise RuntimeError("Bad index")
+
+        # If its not indexed as 0, 0, 0 then append
+        if h != matrix.col((0, 0, 0)) and (h - hf).length() < 0.3:
+            selection.append(i)
+
+    # Print some info
+    logger.info(
+        "Reindexed %d/%d input reflections" % (num_reindexed, len(reflection_table))
+    )
+    logger.info(
+        "Selected %d/%d input reflections" % (len(selection), len(reflection_table))
+    )
+
+    # Select all the indexed reflections
+    reflection_table.set_flags(selection, reflection_table.flags.indexed)
+    reflection_table = reflection_table.select(selection)
+    return reflection_table
+
+
+def _predict(reflection_table, experiment):
+    """
+    Predict the position of the spots
+
+    """
+
+    # Get some stuff from experiment
+    A = matrix.sqr(experiment.crystal.get_A())
+    s0 = matrix.col(experiment.beam.get_s0())
+
+    # Compute the vector to the reciprocal lattice point
+    # since this is not on the ewald sphere, lets call it s2
+    h = reflection_table["miller_index"]
+    s1 = flex.vec3_double(len(h))
+    s2 = flex.vec3_double(len(h))
+    for i in range(len(reflection_table)):
+        r = A * matrix.col(h[i])
+        s2[i] = s0 + r
+        s1[i] = matrix.col(s2[i]).normalize() * s0.length()
+    reflection_table["s1"] = s1
+    reflection_table["s2"] = s2
+    reflection_table["entering"] = flex.bool(len(h), False)
+
+    # Compute the ray intersections
+    xyzpx = flex.vec3_double()
+    xyzmm = flex.vec3_double()
+    for i in range(len(s2)):
+        ss = s1[i]
+        mm = experiment.detector[0].get_ray_intersection(ss)
+        px = experiment.detector[0].millimeter_to_pixel(mm)
+        xyzpx.append(px + (0,))
+        xyzmm.append(mm + (0,))
+    reflection_table["xyzcal.mm"] = xyzmm
+    reflection_table["xyzcal.px"] = xyzpx
+    logger.info("Do prediction for %d reflections" % len(reflection_table))
+    return reflection_table
+
+
+def _filter_reflections_based_on_centroid_distance(
+    reflection_table,
+    experiment,
+    outlier_probability=0.975,
+    max_separation=2,
+):
+    """
+    Filter reflections too far from predicted position
+
+    """
+
+    # Compute the x and y residuals
+    Xobs, Yobs, _ = reflection_table["xyzobs.px.value"].parts()
+    Xcal, Ycal, _ = reflection_table["xyzcal.px"].parts()
+    Xres = Xobs - Xcal
+    Yres = Yobs - Ycal
+
+    # Compute the epsilon residual
+    s0_length = 1.0 / experiment.beam.get_wavelength()
+    s1x, s1y, s1z = reflection_table["s2"].parts()
+    s1_length = flex.sqrt(s1x ** 2 + s1y ** 2 + s1z ** 2)
+    Eres = s1_length - s0_length
+
+    # Initialise the fast_mcd outlier algorithm
+    # fast_mcd = FastMCD((Xres, Yres, Eres))
+    fast_mcd = FastMCD((Xres, Yres))
+
+    # get location and MCD scatter estimate
+    T, S = fast_mcd.get_corrected_T_and_S()
+
+    # get squared Mahalanobis distances
+    # d2s = maha_dist_sq((Xres, Yres, Eres), T, S)
+    d2s = maha_dist_sq((Xres, Yres), T, S)
+
+    # Compute the cutoff
+    mahasq_cutoff = chisq_quantile(2, outlier_probability)
+
+    # compare to the threshold and select reflections
+    selection1 = d2s < mahasq_cutoff
+    selection2 = flex.sqrt(Xres ** 2 + Yres ** 2) < max_separation
+    selection = selection1 & selection2
+    reflection_table = reflection_table.select(selection)
+    n_refl = reflection_table.size()
+
+    # Print some stuff
+    logger.info("-" * 80)
+    logger.info("Centroid outlier rejection")
+    logger.info(f" Using MCD algorithm with probability = {outlier_probability}")
+    logger.info(" Max X residual: %f" % flex.max(flex.abs(Xres)))
+    logger.info(" Max Y residual: %f" % flex.max(flex.abs(Yres)))
+    logger.info(" Max E residual: %f" % flex.max(flex.abs(Eres)))
+    logger.info(" Mean X RMSD: %f" % (sqrt(flex.sum(Xres ** 2) / len(Xres))))
+    logger.info(" Mean Y RMSD: %f" % (sqrt(flex.sum(Yres ** 2) / len(Yres))))
+    logger.info(" Mean E RMSD: %f" % (sqrt(flex.sum(Eres ** 2) / len(Eres))))
+    logger.info(" MCD location estimate: %.4f, %.4f" % tuple(T))
+    logger.info(
+        """ MCD scatter estimate:
+    %.7f, %.7f,
+    %.7f, %.7f"""
+        % tuple(list(S))
+    )
+    logger.info(" Number of outliers: %d" % selection1.count(False))
+    logger.info(
+        " Number of reflections with residual > %0.2f pixels: %d"
+        % (max_separation, selection2.count(False))
+    )
+    logger.info(f"Number of reflections selection for refinement: {n_refl}")
+    logger.info("-" * 80)
+
+    return reflection_table
+
+
+def reindex(
+    reflection_table,
+    experiment,
+    outlier_probability=0.975,
+    max_separation=2,
+    fail_on_bad_index=False,
+):
+    """Reindex strong spots and perform filtering"""
+    reflection_table = _index(reflection_table, experiment, fail_on_bad_index)
+    reflection_table = _predict(reflection_table, experiment)
+    reflection_table = _filter_reflections_based_on_centroid_distance(
+        reflection_table,
+        experiment,
+        outlier_probability=outlier_probability,
+        max_separation=max_separation,
+    )
+    return reflection_table

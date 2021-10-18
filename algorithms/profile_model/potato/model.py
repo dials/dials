@@ -437,23 +437,21 @@ class ProfileModelFactory(object):
     """
 
     @classmethod
-    def from_sigma_d(Class, params, sigma_d):
+    def from_sigma_d(Class, model, sigma_d):
         """
         Construct a profile model from an initial sigma estimate
 
         """
-        if params.profile.rlp_mosaicity.model == "simple1":
+        if model == "simple1":
             return Simple1ProfileModel.from_sigma_d(sigma_d)
-        elif params.profile.rlp_mosaicity.model == "simple6":
+        elif model == "simple6":
             return Simple6ProfileModel.from_sigma_d(sigma_d)
-        elif params.profile.rlp_mosaicity.model == "angular2":
+        elif model == "angular2":
             return Angular2ProfileModel.from_sigma_d(sigma_d)
-        elif params.profile.rlp_mosaicity.model == "angular4":
+        elif model == "angular4":
             return Angular4ProfileModel.from_sigma_d(sigma_d)
 
-        raise RuntimeError(
-            "Unknown profile model: %s" % params.profile.rlp_mosaicity.model
-        )
+        raise RuntimeError(f"Unknown profile model: {model}")
 
 
 def compute_change_of_basis_operation(s0, s2):

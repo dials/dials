@@ -716,7 +716,6 @@ class ReflectionModelState(object):
         Initialise with the state and compute derivatives
 
         """
-
         # Get a load of matrices
         A = state.get_A()
         U = state.get_U()

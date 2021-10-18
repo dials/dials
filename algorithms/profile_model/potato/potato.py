@@ -14,9 +14,8 @@ from __future__ import absolute_import, division
 import json
 import logging
 from collections import OrderedDict
-from math import floor, pi, sqrt
+from math import pi
 
-import numpy as np
 from jinja2 import ChoiceLoader, Environment, PackageLoader
 
 from libtbx.phil import parse
@@ -26,14 +25,18 @@ from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator, MaskCalcu
 from dials.algorithms.profile_model.gaussian_rs.calculator import (
     ComputeEsdBeamDivergence,
 )
-from dials.algorithms.profile_model.potato import chisq_pdf, chisq_quantile
+from dials.algorithms.profile_model.potato import chisq_pdf
+from dials.algorithms.profile_model.potato.indexer import reindex
 from dials.algorithms.profile_model.potato.model import ProfileModelFactory
 from dials.algorithms.profile_model.potato.parameterisation import ModelState
+from dials.algorithms.profile_model.potato.plots import (
+    plot_distance_from_ewald_sphere,
+    plot_partiality,
+)
 from dials.algorithms.profile_model.potato.refiner import Refiner as ProfileRefiner
 from dials.algorithms.profile_model.potato.refiner import RefinerData
 from dials.algorithms.refinement.corrgram import corrgram
 from dials.algorithms.spot_prediction import IndexGenerator
-from dials.algorithms.statistics.fast_mcd import FastMCD, maha_dist_sq
 from dials.array_family import flex
 
 logger = logging.getLogger("dials." + __name__)
@@ -242,36 +245,6 @@ def _compute_mask(
                             mask_new[0, jj, ii] |= (1 << 2) | (1 << 3)
 
 
-def _plot_partiality(reflection_table):
-    """Plot the partiality"""
-
-    hist, bin_edges = np.histogram(
-        reflection_table["partiality"],
-        bins=max(5, min(int(0.2 * reflection_table.size()), 20)),
-    )
-    bin_centers = bin_edges[:-1] + np.diff(bin_edges) / 2
-    plots_dict = {
-        "partiality_distribution": {
-            "data": [
-                (
-                    {
-                        "x": bin_centers.tolist(),
-                        "y": hist.tolist(),
-                        "type": "bar",
-                    }
-                )
-            ],
-            "layout": {
-                "title": "Partiality distribution",
-                "xaxis": {"title": "Partiality"},
-                "yaxis": {"title": "Frequency"},
-                "bargap": 0,
-            },
-        }
-    }
-    return plots_dict
-
-
 def initial_integrator(experiments, reflection_table):
     """Performs an initial integration of strong spots"""
 
@@ -285,8 +258,8 @@ def initial_integrator(experiments, reflection_table):
     sigma_d = ComputeEsdBeamDivergence(experiment.detector, strong_refls).sigma()
     sigma_degrees = sigma_d * 180 / pi
     logger.info(
-        f"Initial sigma d estimate for {len(strong_refls)} reflections\n",
-        f"Sigma D: {sigma_degrees:.5f} degrees\n",
+        f"Initial sigma d estimate for {len(strong_refls)} reflections\n"
+        + f"Sigma D: {sigma_degrees:.5f} degrees\n",
     )
     strong_refls["s1_obs"] = _compute_beam_vector(experiment, strong_refls)
     strong_refls["bbox"] = _compute_bbox(experiment, strong_refls, sigma_d, "s1_obs")
@@ -368,222 +341,7 @@ def final_integrator(
     return reflection_table
 
 
-class Indexer(object):
-    """
-    A class to reindex the strong spot list
-
-    """
-
-    def __init__(self, params, experiments, reflections):
-        """
-        Do the indexing
-
-        """
-
-        # Save some state
-        self.params = params
-        self.experiments = experiments
-        self.reflections = reflections
-
-        # Do the processing
-        self._index()
-        self._predict()
-        self._filter_reflections_based_on_centroid_distance()
-
-    def _index(self):
-        """
-        Index the strong spots
-
-        """
-
-        # Get some stuff from experiment
-        A = matrix.sqr(self.experiments[0].crystal.get_A())
-        s0 = matrix.col(self.experiments[0].beam.get_s0())
-        detector = self.experiments[0].detector
-
-        # Create array if necessary
-        if "miller_index" not in self.reflections:
-            self.reflections["miller_index"] = flex.miller_index(len(self.reflections))
-
-        # Index all the reflections
-        xyz_list = self.reflections["xyzobs.px.value"]
-        miller_index = self.reflections["miller_index"]
-        selection = flex.size_t()
-        num_reindexed = 0
-        for i in range(len(self.reflections)):
-
-            # Get the observed pixel coordinate
-            x, y, _ = xyz_list[i]
-
-            # Get the lab coord
-            s1 = (
-                matrix.col(detector[0].get_pixel_lab_coord((x, y))).normalize()
-                * s0.length()
-            )
-
-            # Get the reciprocal lattice vector
-            r = s1 - s0
-
-            # Compute the fractional miller index
-            hf = A.inverse() * r
-
-            # Compute the integer miller index
-            h = matrix.col(
-                (
-                    int(floor(hf[0] + 0.5)),
-                    int(floor(hf[1] + 0.5)),
-                    int(floor(hf[2] + 0.5)),
-                )
-            )
-
-            # Print warning if reindexing
-            if tuple(h) != miller_index[i]:
-                logger.warn(
-                    "Reindexing (% 3d, % 3d, % 3d) -> (% 3d, % 3d, % 3d)"
-                    % (miller_index[i] + tuple(h))
-                )
-                num_reindexed += 1
-                miller_index[i] = h
-                if self.params.indexing.fail_on_bad_index:
-                    raise RuntimeError("Bad index")
-
-            # If its not indexed as 0, 0, 0 then append
-            if h != matrix.col((0, 0, 0)) and (h - hf).length() < 0.3:
-                selection.append(i)
-
-        # Print some info
-        logger.info(
-            "Reindexed %d/%d input reflections" % (num_reindexed, len(self.reflections))
-        )
-        logger.info(
-            "Selected %d/%d input reflections" % (len(selection), len(self.reflections))
-        )
-
-        # Select all the indexed reflections
-        self.reflections.set_flags(selection, self.reflections.flags.indexed)
-        self.reflections = self.reflections.select(selection)
-
-    def _predict(self):
-        """
-        Predict the position of the spots
-
-        """
-
-        # Get some stuff from experiment
-        A = matrix.sqr(self.experiments[0].crystal.get_A())
-        s0 = matrix.col(self.experiments[0].beam.get_s0())
-
-        # Compute the vector to the reciprocal lattice point
-        # since this is not on the ewald sphere, lets call it s2
-        h = self.reflections["miller_index"]
-        s1 = flex.vec3_double(len(h))
-        s2 = flex.vec3_double(len(h))
-        for i in range(len(self.reflections)):
-            r = A * matrix.col(h[i])
-            s2[i] = s0 + r
-            s1[i] = matrix.col(s2[i]).normalize() * s0.length()
-        self.reflections["s1"] = s1
-        self.reflections["s2"] = s2
-        self.reflections["entering"] = flex.bool(len(h), False)
-
-        # Compute the ray intersections
-        xyzpx = flex.vec3_double()
-        xyzmm = flex.vec3_double()
-        for i in range(len(s2)):
-            ss = s1[i]
-            mm = self.experiments[0].detector[0].get_ray_intersection(ss)
-            px = self.experiments[0].detector[0].millimeter_to_pixel(mm)
-            xyzpx.append(px + (0,))
-            xyzmm.append(mm + (0,))
-        self.reflections["xyzcal.mm"] = xyzmm
-        self.reflections["xyzcal.px"] = xyzpx
-        logger.info("Do prediction for %d reflections" % len(self.reflections))
-
-    def _filter_reflections_based_on_centroid_distance(self):
-        """
-        Filter reflections too far from predicted position
-
-        """
-
-        # Compute the x and y residuals
-        Xobs, Yobs, _ = self.reflections["xyzobs.px.value"].parts()
-        Xcal, Ycal, _ = self.reflections["xyzcal.px"].parts()
-        Xres = Xobs - Xcal
-        Yres = Yobs - Ycal
-
-        # Compute the epsilon residual
-        s0_length = 1.0 / self.experiments[0].beam.get_wavelength()
-        s1x, s1y, s1z = self.reflections["s2"].parts()
-        s1_length = flex.sqrt(s1x ** 2 + s1y ** 2 + s1z ** 2)
-        Eres = s1_length - s0_length
-
-        # Initialise the fast_mcd outlier algorithm
-        # fast_mcd = FastMCD((Xres, Yres, Eres))
-        fast_mcd = FastMCD((Xres, Yres))
-
-        # get location and MCD scatter estimate
-        T, S = fast_mcd.get_corrected_T_and_S()
-
-        # get squared Mahalanobis distances
-        # d2s = maha_dist_sq((Xres, Yres, Eres), T, S)
-        d2s = maha_dist_sq((Xres, Yres), T, S)
-
-        # Compute the cutoff
-        mahasq_cutoff = chisq_quantile(2, self.params.refinement.outlier_probability)
-
-        # compare to the threshold and select reflections
-        selection1 = d2s < mahasq_cutoff
-        selection2 = (
-            flex.sqrt(Xres ** 2 + Yres ** 2) < self.params.refinement.max_separation
-        )
-        selection = selection1 & selection2
-        self.reflections = self.reflections.select(selection)
-
-        # Print some stuff
-        logger.info("-" * 80)
-        logger.info("Centroid outlier rejection")
-        logger.info(
-            " Using MCD algorithm with probability = %f"
-            % self.params.refinement.outlier_probability
-        )
-        logger.info(" Max X residual: %f" % flex.max(flex.abs(Xres)))
-        logger.info(" Max Y residual: %f" % flex.max(flex.abs(Yres)))
-        logger.info(" Max E residual: %f" % flex.max(flex.abs(Eres)))
-        logger.info(" Mean X RMSD: %f" % (sqrt(flex.sum(Xres ** 2) / len(Xres))))
-        logger.info(" Mean Y RMSD: %f" % (sqrt(flex.sum(Yres ** 2) / len(Yres))))
-        logger.info(" Mean E RMSD: %f" % (sqrt(flex.sum(Eres ** 2) / len(Eres))))
-        logger.info(" MCD location estimate: %.4f, %.4f" % tuple(T))
-        logger.info(
-            """ MCD scatter estimate:
-      %.7f, %.7f,
-      %.7f, %.7f"""
-            % tuple(list(S))
-        )
-        # logger.info(" MCD location estimate: %.4f, %.4f, %.4f" % tuple(T))
-        # logger.info(''' MCD scatter estimate:
-        #   %.7f, %.7f, %.7f,
-        #   %.7f, %.7f, %.7f,
-        #   %.7f, %.7f, %.7f''' % tuple(list(S)))
-        logger.info(" Number of outliers: %d" % selection1.count(False))
-        logger.info(
-            " Number of reflections with residual > %0.2f pixels: %d"
-            % (self.params.refinement.max_separation, selection2.count(False))
-        )
-        logger.info(
-            " Number of reflections selection for refinement: %d"
-            % len(self.reflections)
-        )
-        logger.info("-" * 80)
-
-        # Throw exception
-        if len(self.reflections) < self.params.refinement.min_n_reflections:
-            raise RuntimeError(
-                "Too few reflections to perform refinement: got %d, expected %d"
-                % (len(self.reflections), self.params.refinement.min_n_reflections)
-            )
-
-
-def refine_profile(experiment, profile, refiner_data, wavelength_spread_model):
+def refine_profile(experiment, profile, refiner_data, wavelength_spread_model="delta"):
     """Do the profile refinement"""
     logger.info("\n" + "=" * 80 + "\nRefining profile parmameters")
 
@@ -616,10 +374,7 @@ def refine_crystal(
     fix_orientation=False,
     wavelength_spread_model="delta",
 ):
-    """
-    Do the crystal refinement
-
-    """
+    """Do the crystal refinement"""
     if (fix_unit_cell is True) and (fix_orientation is True):
         return
 
@@ -640,41 +395,6 @@ def refine_crystal(
     refiner.refine()
 
     return refiner
-
-
-def plot_distance_from_ewald_sphere(experiment, reflection_table, prefix):
-    """Plot distance from Ewald sphere"""
-
-    s0 = matrix.col(experiment.beam.get_s0())
-    s2 = reflection_table["s2"]
-    D = flex.double(s0.length() - matrix.col(s).length() for s in s2)
-    Dmean = flex.sum(D) / len(D)
-    Dvar = flex.sum(flex.double([(d - Dmean) ** 2 for d in D])) / len(D)
-    hist, bin_edges = np.histogram(
-        D,
-        bins=max(5, min(int(0.2 * len(s2)), 20)),
-    )
-    bin_centers = bin_edges[:-1] + np.diff(bin_edges) / 2
-    plot = {
-        f"{prefix}_epsilon_distribution": {
-            "data": [
-                (
-                    {
-                        "x": bin_centers.tolist(),
-                        "y": hist.tolist(),
-                        "type": "bar",
-                    }
-                )
-            ],
-            "layout": {
-                "title": f"{prefix} epsilon distribution. <br>Mean(epsilon) = {Dmean:.2e}, Variance(epsilon) = {Dvar:.2e}",
-                "xaxis": {"title": "Distance from Ewald sphere (epsilon)"},
-                "yaxis": {"title": "Frequency"},
-                "bargap": 0,
-            },
-        }
-    }
-    return plot
 
 
 def predict_after_potato_refinement(experiment, reflection_table):
@@ -740,10 +460,20 @@ def compute_prediction_probability(experiment, reflection_table):
     )
 
 
-def run_potato_refinement(experiments, reflection_table, sigma_d, params):
+def run_potato_refinement(
+    experiments,
+    reflection_table,
+    sigma_d,
+    profile_model="angular2",
+    wavelength_model="delta",
+    fix_unit_cell=False,
+    fix_orientation=False,
+    html_output=True,
+    n_cycles=3,
+):
     """Runs potato refinement on strong spots.
 
-    Creates the necessarry data needed, then runs cycles of profile and crystal
+    Creates the necessary data needed, then runs cycles of profile and crystal
     refinement,"""
 
     output_data = {
@@ -757,13 +487,13 @@ def run_potato_refinement(experiments, reflection_table, sigma_d, params):
 
     # Set the M params
     if not hasattr(experiments[0].crystal, "mosaicity"):
-        profile = ProfileModelFactory.from_sigma_d(params, sigma_d)
+        profile = ProfileModelFactory.from_sigma_d(profile_model, sigma_d)
     else:
         profile = experiments[0].crystal.mosaicity
 
     # Preprocess the reflections
     # Make some plots
-    if params.output.html:
+    if html_output:
         output_data["plots_data"].update(
             plot_distance_from_ewald_sphere(experiments[0], reflection_table, "Initial")
         )
@@ -772,13 +502,13 @@ def run_potato_refinement(experiments, reflection_table, sigma_d, params):
     refiner_data = RefinerData.from_reflections(experiments[0], reflection_table)
 
     # Do the refinement
-    for _ in range(params.refinement.n_cycles):
+    for _ in range(n_cycles):
         # refine the profile
         refiner = refine_profile(
             experiments[0],
             profile,
             refiner_data,
-            wavelength_spread_model=params.profile.wavelength_spread.model,
+            wavelength_spread_model=wavelength_model,
         )
 
         # Save some data for plotting later.
@@ -791,9 +521,9 @@ def run_potato_refinement(experiments, reflection_table, sigma_d, params):
             experiments[0],
             profile,
             refiner_data,
-            fix_unit_cell=params.profile.unit_cell.fixed,
-            fix_orientation=params.profile.orientation.fixed,
-            wavelength_spread_model=params.profile.wavelength_spread.model,
+            fix_unit_cell=fix_unit_cell,
+            fix_orientation=fix_orientation,
+            wavelength_spread_model=wavelength_model,
         )
 
     # Post process the reflections
@@ -803,12 +533,57 @@ def run_potato_refinement(experiments, reflection_table, sigma_d, params):
     compute_prediction_probability(experiments[0], reflection_table)
 
     # Make some plots
-    if params.output.html:
+    if html_output:
         output_data["plots_data"].update(
             plot_distance_from_ewald_sphere(experiments[0], reflection_table, "Final")
         )
 
     return experiments, reflection_table, output_data
+
+
+def predict(experiments, reference, d_min=None, prediction_probability=0.9973):
+    """Predict the reflections"""
+    logger.info("\n" + "=" * 80 + "\nPredicting reflections")
+
+    # Set a resolution range
+    if d_min is None:
+        s0 = experiments[0].beam.get_s0()
+        d_min = experiments[0].detector.get_max_resolution(s0)
+
+    # Create the index generator
+    index_generator = IndexGenerator(
+        experiments[0].crystal.get_unit_cell(),
+        experiments[0].crystal.get_space_group().type(),
+        d_min,
+    )
+
+    # Get an array of miller indices
+    miller_indices_to_test = index_generator.to_array()
+    logger.info("Generated %d miller indices" % len(miller_indices_to_test))
+
+    # Get the covariance matrix
+    profile = experiments[0].crystal.mosaicity
+
+    reflection_table = profile.predict_reflections(
+        experiments, miller_indices_to_test, prediction_probability
+    )
+
+    # Do the prediction
+    reflection_table.compute_d(experiments)
+    logger.info("Predicted %d reflections" % len(reflection_table))
+
+    _, _, unmatched = reflection_table.match_with_reference(reference)
+
+    # Add unmatched
+    # columns = flex.std_string()
+    # for col in unmatched.keys():
+    #   if col in self.reflections:
+    #     columns.append(col)
+    # unmatched = unmatched.select(columns)
+    # unmatched['id'] = flex.size_t(list(unmatched['id']))
+    # self.reflections.extend(unmatched)
+
+    return reflection_table
 
 
 class Integrator(object):
@@ -850,8 +625,18 @@ class Integrator(object):
         Reindex the strong spot list
 
         """
-        indexer = Indexer(self.params, self.experiments, self.strong)
-        self.reference = indexer.reflections
+        self.reference = reindex(
+            self.strong,
+            self.experiments[0],
+            outlier_probability=self.params.refinement.outlier_probability,
+            max_separation=self.params.refinement.max_separation,
+            fail_on_bad_index=self.params.indexing.fail_on_bad_index,
+        )
+        if self.reference.size() < self.params.refinement.min_n_reflections:
+            raise RuntimeError(
+                "Too few reflections to perform refinement: got %d, expected %d"
+                % (self.reference.size(), self.params.refinement.min_n_reflections)
+            )
 
     def integrate_strong_spots(self):
         """
@@ -880,7 +665,12 @@ class Integrator(object):
             self.experiments,
             self.reference,
             self.sigma_d,
-            self.params,
+            profile_model=self.params.profile.rlp_mosaicity.model,
+            wavelength_model=self.params.profile.wavelength_spread.model,
+            fix_unit_cell=self.params.profile.unit_cell.fixed,
+            fix_orientation=self.params.profile.orientation.fixed,
+            html_output=self.params.output.html,
+            n_cycles=self.params.refinement.n_cycles,
         )
         self.plots_data.update(output_data["plots_data"])
 
@@ -909,58 +699,20 @@ class Integrator(object):
                 json.dump(data, outfile, indent=2)
 
     def predict(self):
-        """
-        Predict the reflections
-
-        """
-        logger.info("\n" + "=" * 80 + "\nPredicting reflections")
-
-        # Set a resolution range
-        if self.params.prediction.d_min is None:
-            s0 = self.experiments[0].beam.get_s0()
-            d_min = self.experiments[0].detector.get_max_resolution(s0)
-        else:
-            d_min = self.params.predictions.d_min
-
-        # Create the index generator
-        index_generator = IndexGenerator(
-            self.experiments[0].crystal.get_unit_cell(),
-            self.experiments[0].crystal.get_space_group().type(),
-            d_min,
-        )
-
-        # Get an array of miller indices
-        miller_indices_to_test = index_generator.to_array()
-        logger.info("Generated %d miller indices" % len(miller_indices_to_test))
-
-        # Get the covariance matrix
-        profile = self.experiments[0].crystal.mosaicity
         id_map = dict(self.strong.experiment_identifiers())
-        self.reflections = profile.predict_reflections(
-            self.experiments, miller_indices_to_test, self.params.prediction.probability
+
+        self.reflections = predict(
+            self.experiments,
+            self.reference,
+            d_min=self.params.prediction.d_min,
+            prediction_probability=self.params.prediction.probability,
         )
-
-        # Do the prediction
-        self.reference = self.reference
-        self.reflections.compute_d(self.experiments)
-        logger.info("Predicted %d reflections" % len(self.reflections))
-
-        _, _, unmatched = self.reflections.match_with_reference(self.reference)
 
         # now set the identifiers
         ids_ = set(self.reflections["id"])
         assert ids_ == set(id_map.keys()), f"{ids_}, {id_map.keys()}"
         for id_ in ids_:
             self.reflections.experiment_identifiers()[id_] = id_map[id_]
-
-        # Add unmatched
-        # columns = flex.std_string()
-        # for col in unmatched.keys():
-        #   if col in self.reflections:
-        #     columns.append(col)
-        # unmatched = unmatched.select(columns)
-        # unmatched['id'] = flex.size_t(list(unmatched['id']))
-        # self.reflections.extend(unmatched)
 
     def integrate(self):
         """
@@ -982,7 +734,7 @@ class Integrator(object):
 
         # Plot the partialities
         if self.params.output.html:
-            self.plots_data.update(_plot_partiality(self.reflections))
+            self.plots_data.update(plot_partiality(self.reflections))
 
         # Delete shoeboxes if necessary
         if not self.params.debug.output.shoeboxes:
