@@ -695,6 +695,53 @@ class SpotFrame(XrayFrame):
 
         ring_data = []
 
+        # Resolution polygon version
+        for tt, d in zip(twotheta, spacings):
+
+            # Generate 1000 rays at 2θ
+            cone_base_centre = beamvec * math.cos(tt)
+            cone_base_radius = (beamvec * math.sin(tt)).length()
+            rad1 = bor1.normalize() * cone_base_radius
+            rad2 = bor2.normalize() * cone_base_radius
+            ticks = (2 * math.pi / 1000) * flex.double_range(1000)
+            offset1 = flex.vec3_double(1000, rad1) * flex.cos(ticks)
+            offset2 = flex.vec3_double(1000, rad2) * flex.sin(ticks)
+            rays = flex.vec3_double(1000, cone_base_centre) + offset1 + offset2
+
+            # Get the ray intersections. Need to set a dummy phi value
+            rt = flex.reflection_table.empty_standard(1000)
+            rt["s1"] = rays
+            rt["phi"] = flex.double(1000, 0)
+            from dials.algorithms.spot_prediction import ray_intersection
+
+            intersect = ray_intersection(detector, rt)
+            intersect.iselection()
+
+            # Pull out a list of intersections as a test
+            panel = detector[10]
+            test = rt.select(rt["panel"] == 10)
+            vertices = []
+            for xyz in test["xyzcal.mm"]:
+                x, y = panel.millimeter_to_pixel(xyz[0:2])
+                vertices.append(self.map_coords(x, y, 10))
+            segments = []
+            for i in range(len(vertices) - 1):
+                segments.append(
+                    (
+                        (vertices[i], vertices[i + 1]),
+                        {"width": 2, "color": "red", "closed": False},
+                    )
+                )
+            self.res_poly_data = tuple(segments)
+            self.res_poly_layer = self.pyslip.AddPolygonLayer(
+                self.res_poly_data,
+                name="<res_poly_layer>",
+                show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
+                update=False,
+            )
+
+        return
+
         # FIXME Currently assuming that all panels are in same plane
         p_id = detector.get_panel_intersection(beam.get_s0())
         if p_id == -1:
