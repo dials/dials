@@ -715,28 +715,98 @@ class SpotFrame(XrayFrame):
             from dials.algorithms.spot_prediction import ray_intersection
 
             intersect = ray_intersection(detector, rt)
-            intersect.iselection()
+            rt = rt.select(intersect)
+            if len(rt) == 0:
+                continue
 
-            # Pull out a list of intersections as a test
-            panel = detector[10]
-            test = rt.select(rt["panel"] == 10)
+            curr_panel_id = rt[0]["panel"]
+            panel = detector[curr_panel_id]
+
+            # Split the intersections into sets of vertices in separate paths
+            paths = []
             vertices = []
-            for xyz in test["xyzcal.mm"]:
-                x, y = panel.millimeter_to_pixel(xyz[0:2])
-                vertices.append(self.map_coords(x, y, 10))
+            for ref in rt.rows():
+                if ref["panel"] != curr_panel_id:
+                    # close off the current path and reset the vertices
+                    paths.append(vertices)
+                    vertices = []
+                    curr_panel_id = ref["panel"]
+                    panel = detector[curr_panel_id]
+                x, y = panel.millimeter_to_pixel(ref["xyzcal.mm"][0:2])
+                vertices.append(self.map_coords(x, y, curr_panel_id))
+            paths.append(vertices)
+
+            # For each path, convert vertices to segments and add to the ring data
             segments = []
-            for i in range(len(vertices) - 1):
-                segments.append(
-                    (
-                        (vertices[i], vertices[i + 1]),
-                        {"width": 2, "color": "red", "closed": False},
+            for vertices in paths:
+                for i in range(len(vertices) - 1):
+                    segments.append(
+                        (
+                            (vertices[i], vertices[i + 1]),
+                            {"width": 2, "color": "red", "closed": False},
+                        )
                     )
-                )
-            self.res_poly_data = tuple(segments)
-            self.res_poly_layer = self.pyslip.AddPolygonLayer(
-                self.res_poly_data,
-                name="<res_poly_layer>",
+            ring_data.extend(segments)
+
+            # Add labels to the iso-resolution lines
+            if unit_cell is None and space_group is None:
+                cb1 = beamvec.rotate_around_origin(axis=bor1, angle=tt)
+                for angle in (45, 135, 225, 315):
+                    txtvec = cb1.rotate_around_origin(
+                        axis=beamvec, angle=math.radians(angle)
+                    )
+                    try:
+                        panel_id, txtpos = detector.get_ray_intersection(txtvec)
+                    except RuntimeError:
+                        continue
+                    txtpos = detector[panel_id].millimeter_to_pixel(txtpos)
+                    txtpos = self.pyslip.tiles.flex_image.tile_readout_to_picture(
+                        panel_id, txtpos[1], txtpos[0]
+                    )[::-1]
+                    x, y = self.pyslip.tiles.picture_fast_slow_to_map_relative(
+                        txtpos[0], txtpos[1]
+                    )
+                    resolution_text_data.append(
+                        (
+                            x,
+                            y,
+                            f"{d:.2f}",
+                            {
+                                "placement": "cc",
+                                "colour": "red",
+                            },
+                        )
+                    )
+
+        # Remove the old ring layer, and draw a new one.
+        if hasattr(self, "_ring_layer") and self._ring_layer is not None:
+            self.pyslip.DeleteLayer(self._ring_layer, update=False)
+            self._ring_layer = None
+
+        self._ring_layer = self.pyslip.AddPolygonLayer(
+            ring_data,
+            name="<ring_layer>",
+            show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
+            update=False,
+        )
+
+        # Remove the old resolution text layer, and draw a new one.
+        if (
+            hasattr(self, "_resolution_text_layer")
+            and self._resolution_text_layer is not None
+        ):
+            self.pyslip.DeleteLayer(self._resolution_text_layer, update=False)
+            self._resolution_text_layer = None
+        if resolution_text_data:
+            self._resolution_text_layer = self.pyslip.AddTextLayer(
+                resolution_text_data,
+                map_rel=True,
+                visible=True,
                 show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
+                selectable=False,
+                name="<resolution_text_layer>",
+                fontsize=self.settings.fontsize,
+                textcolour=self._choose_text_colour(),
                 update=False,
             )
 
