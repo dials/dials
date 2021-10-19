@@ -648,53 +648,11 @@ class SpotFrame(XrayFrame):
         else:
             return "#3b3b3b"  # dark grey
 
-    def draw_resolution_rings(self, unit_cell=None, space_group=None):
-        image = self.image_chooser.GetClientData(
-            self.image_chooser.GetSelection()
-        ).image_set
-        detector = image.get_detector()
-        beam = image.get_beam()
-
-        d_min = detector.get_max_resolution(beam.get_s0())
-        d_star_sq_max = uctbx.d_as_d_star_sq(d_min)
-
-        if unit_cell is not None and space_group is not None:
-            unit_cell = space_group.average_unit_cell(unit_cell)
-            generator = index_generator(unit_cell, space_group.type(), False, d_min)
-            indices = generator.to_array()
-            spacings = flex.sorted(unit_cell.d(indices))
-
-        else:
-            n_rings = 5
-            step = d_star_sq_max / n_rings
-            spacings = flex.double(
-                [uctbx.d_star_sq_as_d((i + 1) * step) for i in range(0, n_rings)]
-            )
+    def _draw_resolution_polygons(
+        self, twotheta, spacings, beamvec, bor1, bor2, detector, unit_cell, space_group
+    ):
         resolution_text_data = []
-
-        wavelength = beam.get_wavelength()
-        distance = detector[0].get_distance()
-        pixel_size = detector[0].get_pixel_size()[
-            0
-        ]  # FIXME assumes square pixels, and that all panels use same pixel size
-
-        twotheta = uctbx.d_star_sq_as_two_theta(
-            uctbx.d_as_d_star_sq(spacings), wavelength
-        )
-        L_mm = []
-        L_pixels = []
-        for tt in twotheta:
-            L_mm.append(distance * math.tan(tt))
-        for lmm in L_mm:
-            L_pixels.append(lmm / pixel_size)
-
-        # Get beam vector and two orthogonal vectors
-        beamvec = matrix.col(beam.get_s0())
-        bor1 = beamvec.ortho()
-        bor2 = beamvec.cross(bor1)
-
         ring_data = []
-
         # Resolution polygon version
         for tt, d in zip(twotheta, spacings):
 
@@ -812,6 +770,56 @@ class SpotFrame(XrayFrame):
 
         return
 
+    def draw_resolution_rings(self, unit_cell=None, space_group=None):
+        image = self.image_chooser.GetClientData(
+            self.image_chooser.GetSelection()
+        ).image_set
+        detector = image.get_detector()
+        beam = image.get_beam()
+
+        d_min = detector.get_max_resolution(beam.get_s0())
+        d_star_sq_max = uctbx.d_as_d_star_sq(d_min)
+
+        if unit_cell is not None and space_group is not None:
+            unit_cell = space_group.average_unit_cell(unit_cell)
+            generator = index_generator(unit_cell, space_group.type(), False, d_min)
+            indices = generator.to_array()
+            spacings = flex.sorted(unit_cell.d(indices))
+
+        else:
+            n_rings = 5
+            step = d_star_sq_max / n_rings
+            spacings = flex.double(
+                [uctbx.d_star_sq_as_d((i + 1) * step) for i in range(0, n_rings)]
+            )
+
+        wavelength = beam.get_wavelength()
+        distance = detector[0].get_distance()
+        pixel_size = detector[0].get_pixel_size()[
+            0
+        ]  # FIXME assumes square pixels, and that all panels use same pixel size
+
+        twotheta = uctbx.d_star_sq_as_two_theta(
+            uctbx.d_as_d_star_sq(spacings), wavelength
+        )
+        L_mm = []
+        L_pixels = []
+        for tt in twotheta:
+            L_mm.append(distance * math.tan(tt))
+        for lmm in L_mm:
+            L_pixels.append(lmm / pixel_size)
+
+        # Get beam vector and two orthogonal vectors
+        beamvec = matrix.col(beam.get_s0())
+        bor1 = beamvec.ortho()
+        bor2 = beamvec.cross(bor1)
+
+        return self._draw_resolution_polygons(
+            twotheta, spacings, beamvec, bor1, bor2, detector, unit_cell, space_group
+        )
+
+        resolution_text_data = []
+        ring_data = []
         # FIXME Currently assuming that all panels are in same plane
         p_id = detector.get_panel_intersection(beam.get_s0())
         if p_id == -1:
