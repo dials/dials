@@ -799,20 +799,9 @@ class SpotFrame(XrayFrame):
             )
 
         wavelength = beam.get_wavelength()
-        distance = detector[0].get_distance()
-        pixel_size = detector[0].get_pixel_size()[
-            0
-        ]  # FIXME assumes square pixels, and that all panels use same pixel size
-
         twotheta = uctbx.d_star_sq_as_two_theta(
             uctbx.d_as_d_star_sq(spacings), wavelength
         )
-        L_mm = []
-        L_pixels = []
-        for tt in twotheta:
-            L_mm.append(distance * math.tan(tt))
-        for lmm in L_mm:
-            L_pixels.append(lmm / pixel_size)
 
         # Get beam vector and two orthogonal vectors
         beamvec = matrix.col(beam.get_s0())
@@ -841,7 +830,7 @@ class SpotFrame(XrayFrame):
             p_id = 0
         pan = detector[p_id]
 
-        for tt, d, pxl in zip(twotheta, spacings, L_pixels):
+        for tt, d in zip(twotheta, spacings):
             try:
                 # Find 4 rays for given d spacing / two theta angle
                 cb1 = beamvec.rotate_around_origin(axis=bor1, angle=tt)
