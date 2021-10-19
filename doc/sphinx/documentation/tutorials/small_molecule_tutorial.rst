@@ -39,9 +39,9 @@ This is identical to the routine usage i.e.
 
 .. code-block:: bash
 
-   dials.find_spots imported.expt nproc=8
+   dials.find_spots imported.expt
 
-Though will of course take a little longer to work through four sequences. Here ``nproc=8`` was assigned (for a core i7 machine.) The spot finding is independent from sequence to sequence but the spots from all sequences may be viewed with
+By default this will use all available cores, and may of course take a little while to work through four sequences. The spot finding is independent from sequence to sequence but the spots from all sequences may be viewed with
 
 .. code-block:: bash
 
@@ -55,47 +55,39 @@ Indexing
 --------
 
 Indexing here will depend on the model for the experiment being reasonably accurate.
-Provided that the lattices overlap in the reciprocal lattice view above, the indexing should be straightforward and will guarantee that all lattices are consistently indexed.
-One detail here is to split the experiments on output.
-This duplicates the models for the individual components rather than sharing them, which allows greater flexibility in refinement (and is critical for scan varying refinement).
+Provided that the lattices overlap in the reciprocal lattice view above, the indexing should be straightforward and will guarantee that all lattices are consistently indexed as a single matrix is used.
 
 .. code-block:: bash
 
    dials.index imported.expt strong.refl
 
-Without any additional input, the indexing will determine the most approproiate primitive lattice parameters and orientation which desctibe the observed reciprocal lattice positions.
+Without any additional input, the indexing will determine the most appropriate primitive (i.e. triclinic) lattice parameters and orientation which desctibe the observed reciprocal lattice positions.
 
 Bravais lattice determination
 -----------------------------
 
-In the single sequence tutorial the determination of the Bravais lattice is performed between indexing and refinement.
-This step however will only work on a single lattice at a time.
-Therefore in this case the analysis will be performed, the results verified then the conclusion fed back into indexing as follows:
+Prior to indexing the choice of Bravais lattice may be made, though this is entirely optional and all processing may be performed with a triclinic lattice:
 
 .. code-block:: bash
 
-   dials.refine_bravais_settings indexed.refl indexed.expt crystal_id=0
-   dials.refine_bravais_settings indexed.refl indexed.expt crystal_id=1
-   dials.refine_bravais_settings indexed.refl indexed.expt crystal_id=2
-   dials.refine_bravais_settings indexed.refl indexed.expt crystal_id=3
+   dials.refine_bravais_settings indexed.refl indexed.expt
 
-Inspect the results, conclude that the oP lattice is appropriate then assign this as a space group for indexing (in this case, P222)
+Once this has run you can manually rerun indexing with:
 
 .. code-block:: bash
 
    dials.index imported.expt strong.refl space_group=P222
 
-This will once again consistently index the data, this time enforcing the lattice constraints.
+to assign the lattice, or manually reindex the data to match setting #5 (though in this case that is a no-op) - or as mentioned above proceed with the lattice unconstrained. 
 
 Refinement
 ----------
 
-Prior to integration we want to refine the experimental geometry and the scan varying crystal orientation and unit cell. This is performed in two steps — the first is to perform static refinement on each indexed sequence, the second to take this refined model and refine the unit cell and orientation allowing for time varying parameters:
+Prior to integration we want to refine the experimental geometry and the scan varying crystal orientation and unit cell: in the refinement however the refinement is done first with a scan static model, then with scan varying (which allows for small variations in the sample orientation etc.)
 
 .. code-block:: bash
 
-   dials.refine indexed.refl indexed.expt output.reflections=static.refl output.experiments=static.expt scan_varying=false
-   dials.refine static.refl static.expt scan_varying=True
+   dials.refine indexed.refl indexed.expt
 
 At this stage the reciprocal lattice view will show a much improved level of agreement between the indexed reflections from the four sequences:
 
@@ -103,6 +95,7 @@ At this stage the reciprocal lattice view will show a much improved level of agr
 
    dials.reciprocal_lattice_viewer refined.expt refined.refl
 
+If the Bravais lattice was assigned, in refinement the lattice constraints (here that all cell angles are 90 degrees) will be applied.
 
 Integration
 -----------
@@ -111,9 +104,9 @@ At this stage the reflections may be integrated.  This is done by running
 
 .. code-block:: bash
 
-   dials.integrate refined.refl refined.expt nproc=8
+   dials.integrate refined.refl refined.expt
 
-which will integrate each sequence in sequence, again using 8 cores.
+which will integrate each sequence in sequence, again using all available cores.
 
 Unit cell refinement
 --------------------
