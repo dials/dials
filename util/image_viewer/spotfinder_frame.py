@@ -651,25 +651,26 @@ class SpotFrame(XrayFrame):
     def _draw_resolution_polygons(
         self, twotheta, spacings, beamvec, bor1, bor2, detector, unit_cell, space_group
     ):
+        """Draw resolution rings for arbitrary detector geometry using a polygon path"""
         resolution_text_data = []
         ring_data = []
-        # Resolution polygon version
+        n_rays = 720
         for tt, d in zip(twotheta, spacings):
 
-            # Generate 1000 rays at 2θ
+            # Generate rays at 2θ
             cone_base_centre = beamvec * math.cos(tt)
             cone_base_radius = (beamvec * math.sin(tt)).length()
             rad1 = bor1.normalize() * cone_base_radius
             rad2 = bor2.normalize() * cone_base_radius
-            ticks = (2 * math.pi / 1000) * flex.double_range(1000)
-            offset1 = flex.vec3_double(1000, rad1) * flex.cos(ticks)
-            offset2 = flex.vec3_double(1000, rad2) * flex.sin(ticks)
-            rays = flex.vec3_double(1000, cone_base_centre) + offset1 + offset2
+            ticks = (2 * math.pi / n_rays) * flex.double_range(n_rays)
+            offset1 = flex.vec3_double(n_rays, rad1) * flex.cos(ticks)
+            offset2 = flex.vec3_double(n_rays, rad2) * flex.sin(ticks)
+            rays = flex.vec3_double(n_rays, cone_base_centre) + offset1 + offset2
 
             # Get the ray intersections. Need to set a dummy phi value
-            rt = flex.reflection_table.empty_standard(1000)
+            rt = flex.reflection_table.empty_standard(n_rays)
             rt["s1"] = rays
-            rt["phi"] = flex.double(1000, 0)
+            rt["phi"] = flex.double(n_rays, 0)
             from dials.algorithms.spot_prediction import ray_intersection
 
             intersect = ray_intersection(detector, rt)
