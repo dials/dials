@@ -701,7 +701,11 @@ class SpotFrame(XrayFrame):
                     segments.append(
                         (
                             (vertices[i], vertices[i + 1]),
-                            {"width": 2, "color": "red", "closed": False},
+                            {
+                                "width": self.pyslip.DefaultPolygonWidth,
+                                "color": "red",
+                                "closed": False,
+                            },
                         )
                     )
             ring_data.extend(segments)
@@ -814,9 +818,18 @@ class SpotFrame(XrayFrame):
         bor1 = beamvec.ortho()
         bor2 = beamvec.cross(bor1)
 
-        return self._draw_resolution_polygons(
-            twotheta, spacings, beamvec, bor1, bor2, detector, unit_cell, space_group
-        )
+        # For non-coplanar detectors use a polygon method rather than ellipses
+        if detector.has_projection_2d():
+            return self._draw_resolution_polygons(
+                twotheta,
+                spacings,
+                beamvec,
+                bor1,
+                bor2,
+                detector,
+                unit_cell,
+                space_group,
+            )
 
         resolution_text_data = []
         ring_data = []
