@@ -31,24 +31,21 @@ dials.damage_analysis scaled.expt scaled.refl shared_crystal=True
 
 """
 
-import functools
 import json
 import logging
 import os
 import sys
-from copy import copy
-from math import ceil, floor
 
 from jinja2 import ChoiceLoader, Environment, PackageLoader
 
 from cctbx import crystal, miller
-from dxtbx.model import ExperimentList
 from iotbx import mtz
 from libtbx import phil
 from scitbx.array_family import flex
 
 from dials.command_line.symmetry import median_unit_cell
 from dials.pychef import Statistics, batches_to_dose, interpret_images_to_doses_options
+from dials.pychef.damage_series import generate_damage_series
 from dials.util import log, resolution_analysis, show_mail_handle_errors
 from dials.util.filter_reflections import filter_reflection_table
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
@@ -83,6 +80,11 @@ dose {
                 "automatically adjusted to account for previously accumulated dose."
     }
 }
+damage_series {
+    dose_group_size = 0.0
+        .type = float(value_min=0.0)
+        .help = "Dose group size to split for damage series analysis and output"
+}
 output {
     log = "dials.damage_analysis.log"
         .type = str
@@ -93,21 +95,14 @@ output {
     json = None
         .type = str
         .help = "Filename for the html report data in json format."
-    damage_series {
-        group_size = 0.0
-          .type = float(value_min=0.0)
-          .help = "Group size to split damage series"
-        template = "{prefix}_{index:0{maxindexlength:d}d}.{extension}"
-          .type = str
-          .expert_level=2
-          .help = "Template python format string for output filenames."
-                  "Replaced variables are prefix (with"
-                  "output.{experiments_prefix, reflections_prefix}),"
-                  "index (number of split experiment), maxindexlength"
-                  "(number of digits of total number of split experiments)"
-                  "and extension (default file extension for model and"
-                  "reflection files)"
-    }
+    damage_series = False
+        .type = bool
+        .help = "If a damage series dose group size is given, this option allows"
+                "the data from each group to be saved."
+    accumulation_series = False
+        .type = bool
+        .help = "If a damage series dose group size is given, this option allows"
+                "the data from each accumulated group to be saved."
 }
 include scope dials.pychef.phil_scope
 """,
@@ -122,6 +117,7 @@ class PychefRunner:
     def __init__(self, intensities, dose, params):
         self.params = params
         self.stats = None
+        self.damage_series_plots = None
         sel = dose >= 0
         self.intensities = intensities.select(sel)
         self.dose = dose.select(sel)
@@ -268,9 +264,23 @@ class PychefRunner:
         logger.debug(self.stats.scp_vs_dose_str())
         logger.debug(self.stats.rd_vs_dose_str())
 
+    def create_damage_series(self, params, experiments, reflection_table):
+        self.damage_series_plots = generate_damage_series(
+            params,
+            experiments,
+            reflection_table,
+        )
+
     def make_html_report(self, html_filename=None, json_filename=None):
         """Generate html report from pychef stats."""
         data = {"dose_plots": self.stats.to_dict()}
+        if self.damage_series_plots:
+            data["dose_plots"].update(self.damage_series_plots.damage_series)
+            if self.damage_series_plots.accumulation_series:
+                accumul_plots = self.damage_series_plots.accumulation_series
+                for k in list(accumul_plots.keys()):
+                    accumul_plots[k + "_accumul"] = accumul_plots.pop(k)
+                data["dose_plots"].update(accumul_plots)
         if html_filename:
             logger.info("Writing html report to: %s", html_filename)
             loader = ChoiceLoader(
@@ -293,114 +303,6 @@ class PychefRunner:
             logger.info("Writing html report data to: %s", json_filename)
             with open(json_filename, "w") as outfile:
                 json.dump(data, outfile)
-
-
-def create_damage_series(params, experiments, reflection_table):
-    group_size = params.output.damage_series.group_size
-    assert group_size > 0.0
-
-    doses = flex.double()
-    start_doses, doses_per_image = interpret_images_to_doses_options(
-        experiments,
-        params.dose.experiments.dose_per_image,
-        params.dose.experiments.starting_doses,
-        params.dose.experiments.shared_crystal,
-    )
-
-    for expt, starting_dose, dose_per_img in zip(
-        experiments, start_doses, doses_per_image
-    ):
-        refls = reflection_table.select(expt)
-        imgno = flex.floor(refls["xyzobs.px.value"].parts()[2])
-        dose = (imgno * dose_per_img) + starting_dose
-        doses.extend(dose)
-
-    # e.g. start dose of 0, images have doses of 0 -> 499 for the purposes
-    # of this calculation
-
-    doses = doses.iround()
-
-    max_dose = flex.max(doses)
-    min_dose = flex.min(doses)
-    dose_range = max_dose - min_dose + 1
-    n_output = ceil(dose_range / group_size)
-
-    experiments_template = functools.partial(
-        params.output.damage_series.template.format,
-        prefix="damage_series",
-        maxindexlength=len(str(n_output - 1)),
-        extension="expt",
-    )
-
-    reflections_template = functools.partial(
-        params.output.damage_series.template.format,
-        prefix="damage_series",
-        maxindexlength=len(str(n_output - 1)),
-        extension="refl",
-    )
-    reflection_table = reflection_table.select(experiments)
-    dose_boundaries = [ceil(n * group_size) for n in range(n_output + 1)]
-
-    for n in range(n_output):
-        lower_dose_boundary = dose_boundaries[n]
-        upper_dose_boundary = dose_boundaries[n + 1]
-        reflections_filename = reflections_template(index=n)
-        experiment_filename = experiments_template(index=n)
-        sel = (doses >= lower_dose_boundary) & (doses < upper_dose_boundary)
-        refl = reflection_table.select(sel)
-
-        # now need to get the subsets of the experiments corresponding to that
-        # dose range
-
-        new_expts = ExperimentList()
-        for expt, start_dose, dose_per_image in zip(
-            experiments, start_doses, doses_per_image
-        ):
-            imgrange = expt.scan.get_image_range()
-            n_images = (
-                imgrange[1] - imgrange[0] + 1
-            )  # i.e. 1->500 image range has 500 images
-            end_dose = start_dose + (dose_per_image * (n_images - 1))
-            if end_dose < lower_dose_boundary:
-                continue
-            elif start_dose >= upper_dose_boundary:
-                continue
-            else:
-                first_image_in_dose_range = max(
-                    [
-                        floor((lower_dose_boundary - start_dose) / dose_per_image),
-                        imgrange[0] - 1,
-                    ]
-                )
-                last_image_in_dose_range_plus_one = min(
-                    [
-                        ceil((upper_dose_boundary - start_dose) / dose_per_image),
-                        imgrange[1],
-                    ]
-                )  # use this to slice as upper half-bound
-                new_expt = copy(expt)
-                new_expt.scan = new_expt.scan[
-                    first_image_in_dose_range:last_image_in_dose_range_plus_one
-                ]
-                # if new_expt.crystal.scan_varying_model
-                if new_expt.scaling_model:
-                    new_expt.scaling_model.limit_image_range(
-                        (first_image_in_dose_range, last_image_in_dose_range_plus_one)
-                    )
-                new_expts.append(new_expt)
-
-        assert len(new_expts) == len(
-            refl.experiment_identifiers().keys()
-        ), f"{len(new_expts)} != {list(refl.experiment_identifiers().keys())}"
-        logger.info(
-            f"Saving experimental data for range {lower_dose_boundary} <= dose < {upper_dose_boundary}"
-        )
-        refl.as_file(reflections_filename)
-        logger.info(
-            f"Saved {refl.size()} reflections from {len(new_expts)} experiments to {reflections_filename}"
-        )
-        new_expts.as_json(experiment_filename)
-        logger.info(f"Saved corresponding experiments to {experiment_filename}")
 
 
 @show_mail_handle_errors()
@@ -457,11 +359,10 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
         sys.exit(f"Error: {e}")
     else:
         script.run()
+        if params.damage_series.dose_group_size:
+            if experiments and reflections:
+                script.create_damage_series(params, experiments, reflections[0])
         script.make_html_report(params.output.html, params.output.json)
-
-    if params.output.damage_series.group_size:
-        if experiments and reflections:
-            create_damage_series(params, experiments, reflections[0])
 
 
 if __name__ == "__main__":
