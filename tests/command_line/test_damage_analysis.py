@@ -12,13 +12,13 @@ from dials.command_line.damage_analysis import PychefRunner, phil_scope, run
 
 def test_damage_analysis_dials_data(dials_data, run_in_tmpdir):
     """Test dials.damage_analysis on scaled data."""
-    location = dials_data("l_cysteine_4_sweeps_scaled")
-    refls = location.join("scaled_20_25.refl").strpath
-    expts = location.join("scaled_20_25.expt").strpath
+    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    refls = location / "scaled_20_25.refl"
+    expts = location / "scaled_20_25.expt"
 
     args = [
-        refls,
-        expts,
+        str(refls),
+        str(expts),
         "min_completeness=0.4",
         "-v",
         "json=dials.damage_analysis.json",
@@ -28,11 +28,43 @@ def test_damage_analysis_dials_data(dials_data, run_in_tmpdir):
     assert os.path.isfile("dials.damage_analysis.json")
 
 
+def test_damage_analysis_damage_series(dials_data, run_in_tmpdir):
+    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    refls = location / "scaled_20_25.refl"
+    expts = location / "scaled_20_25.expt"
+
+    args = [
+        str(refls),
+        str(expts),
+        "min_completeness=0.4",
+        "-v",
+        "json=dials.damage_analysis.json",
+        "dose_group_size=500",
+        "output.damage_series=True",
+        "output.accumulation_series=True",
+    ]
+    run(args)
+    assert os.path.isfile("dials.damage_analysis.html")
+    assert os.path.isfile("dials.damage_analysis.json")
+    expected_series = [
+        "0_500",
+        "500_1000",
+        "1000_1500",
+        "1500_2000",
+        "0_1000",
+        "0_1500",
+        "0_2000",
+    ]
+    for e in expected_series:
+        assert os.path.isfile(f"damage_series_{e}.refl")
+        assert os.path.isfile(f"damage_series_{e}.expt")
+
+
 def test_setup_from_dials_data(dials_data, run_in_tmpdir):
     """Test dials.damage_analysis on scaled data."""
-    location = dials_data("l_cysteine_4_sweeps_scaled")
-    refls = location.join("scaled_20_25.refl").strpath
-    expts = location.join("scaled_20_25.expt").strpath
+    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    refls = location / "scaled_20_25.refl"
+    expts = location / "scaled_20_25.expt"
     table = flex.reflection_table.from_file(refls)
     experiments = load.experiment_list(expts, check_format=False)
     params = phil_scope.extract()
@@ -55,18 +87,18 @@ def test_setup_from_dials_data(dials_data, run_in_tmpdir):
 
 def test_damage_analysis_mtz(dials_data, run_in_tmpdir):
     """Test dials.damage_analysis on scaled data."""
-    location = dials_data("l_cysteine_4_sweeps_scaled")
-    refls = location.join("scaled_20_25.refl").strpath
-    expts = location.join("scaled_20_25.expt").strpath
+    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    refls = location / "scaled_20_25.refl"
+    expts = location / "scaled_20_25.expt"
 
     # First export the data
     command = ["dials.export", refls, expts]
-    result = procrunner.run(command)
+    result = procrunner.run(command, working_directory=run_in_tmpdir)
     assert not result.returncode and not result.stderr
     assert os.path.isfile("scaled.mtz")
 
     args = [
-        run_in_tmpdir.join("scaled.mtz").strpath,
+        str(run_in_tmpdir / "scaled.mtz"),
         "anomalous=True",
         "json=dials.damage_analysis.json",
     ]
@@ -78,9 +110,9 @@ def test_damage_analysis_mtz(dials_data, run_in_tmpdir):
 def test_damage_analysis_input_handling(dials_data, run_in_tmpdir):
     """Test that errors are handled if more than one refl file, no refl/expt
     file or unscaled data."""
-    location = dials_data("l_cysteine_4_sweeps_scaled")
-    refls = location.join("scaled_20_25.refl").strpath
-    expts = location.join("scaled_20_25.expt").strpath
+    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    refls = str(location / "scaled_20_25.refl")
+    expts = str(location / "scaled_20_25.expt")
 
     # Too many refl files
     args = [refls, expts, refls]
@@ -98,9 +130,9 @@ def test_damage_analysis_input_handling(dials_data, run_in_tmpdir):
         run(args)
 
     # Unscaled data
-    location = dials_data("l_cysteine_dials_output")
-    refls = location.join("20_integrated.pickle").strpath
-    expts = location.join("20_integrated_experiments.json").strpath
+    location = dials_data("l_cysteine_dials_output", pathlib=True)
+    refls = str(location / "20_integrated.pickle")
+    expts = str(location / "20_integrated_experiments.json")
 
     args = [refls, expts]
     with pytest.raises(SystemExit):
