@@ -94,9 +94,9 @@ phil_scope = parse(
 
   input {
 
-    ignore_unhandled = False
+    ignore_unhandled = True
       .type = bool
-      .help = "Don't throw exception if some args are unhandled"
+      .help = "Ignore unhandled input (e.g. log files)"
 
     template = None
       .type = str

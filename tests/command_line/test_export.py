@@ -396,7 +396,8 @@ def test_json(dials_data, tmp_path):
         [
             "dials.export",
             "format=json",
-            dials_data("centroid_test_data", pathlib=True) / "datablock.json",
+            dials_data("centroid_test_data", pathlib=True)
+            / "imported_experiments.json",
             dials_data("centroid_test_data", pathlib=True) / "strong.pickle",
         ],
         working_directory=tmp_path,
@@ -406,7 +407,7 @@ def test_json(dials_data, tmp_path):
 
     d = json.load((tmp_path / "rlp.json").open("rb"))
     assert set(d) == {"imageset_id", "experiments", "rlp", "experiment_id"}
-    assert d["rlp"][:3] == [0.123454, 0.57687, 0.186465], d["rlp"][:3]
+    assert d["rlp"][:3] == [0.123413, 0.576679, 0.186326], d["rlp"][:3]
     assert d["imageset_id"][0] == 0
     assert d["experiment_id"][0] == 0
     experiments = ExperimentListFactory.from_dict(d["experiments"])

@@ -344,7 +344,13 @@ class ParameterManagerGenerator:
         self.param_lists = [None] * len(data_managers)
         if self.mode == "concurrent":
             for i, data_manager in enumerate(self.data_managers):
-                self.param_lists[i] = list(data_manager.components)
+                components = list(data_manager.components)
+                for f in data_manager.fixed_components:
+                    try:
+                        components.remove(f)
+                    except ValueError:
+                        continue
+                self.param_lists[i] = components
         else:  # mode=consecutive
             # Generate nested list indicating the names of active parameters
             # e.g consecutive_order for class is [["a", "b"], ["c"]],
@@ -356,6 +362,11 @@ class ParameterManagerGenerator:
                     corrlist = [
                         corr for corr in cycle if corr in data_manager.components
                     ]
+                    for f in data_manager.fixed_components:
+                        try:
+                            corrlist.remove(f)
+                        except ValueError:
+                            continue
                     if corrlist:
                         ind_param_list.append(corrlist)
                 self.param_lists[i] = ind_param_list

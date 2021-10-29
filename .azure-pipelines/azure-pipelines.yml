@@ -75,16 +75,15 @@ stages:
       vmImage: ubuntu-20.04
     strategy:
       matrix:
-        python36:
-          PYTHON_VERSION: 3.6
-      # python37:
-      #   PYTHON_VERSION: 3.7
+        python37:
+          PYTHON_VERSION: 3.7
       # python38:
       #   PYTHON_VERSION: 3.8
     timeoutInMinutes: 150
     steps:
     # Dependencies required for building gltbx
     - script: |
+        sudo apt-get update
         sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev
       displayName: Install dependencies
 
@@ -97,10 +96,8 @@ stages:
       vmImage: macOS-latest
     strategy:
       matrix:
-        python36:
-          PYTHON_VERSION: 3.6
-      # python37:
-      #   PYTHON_VERSION: 3.7
+        python37:
+          PYTHON_VERSION: 3.7
       # python38:
       #   PYTHON_VERSION: 3.8
     timeoutInMinutes: 150
