@@ -229,6 +229,39 @@ class installer(install_distribution.installer):
             % (self._cleaned_files, humansize(self._cleaned_size))
         )
 
+    def check_directories(self):
+        # Work out the target to be created by libtbx and check if it exists
+        expected_dir = os.path.abspath(
+            os.path.join(
+                self.options.prefix, "%s-%s" % (self.dest_dir_prefix, self.version)
+            )
+        )
+        regular_exists = os.path.exists(expected_dir)
+
+        super(installer, self).check_directories()
+
+        if self.options.raw_prefix:
+            # Make sure we clean up the extra directory if created
+            assert expected_dir == self.dest_dir
+            if not regular_exists and os.path.exists(self.dest_dir):
+                os.remove(self.dest_dir)
+
+            # Now, update all the target paths
+            self.dest_dir = self.options.prefix
+            self.build_dir = os.path.join(self.dest_dir, "build")
+            self.base_dir = os.path.join(self.options.prefix, "conda_base")
+            self.modules_dir = os.path.join(self.options.prefix, "modules")
+            os.environ[self.product_name + "_LOC"] = self.dest_dir
+            os.environ[self.product_name + "_BUILD"] = self.build_dir
+
+    def add_product_specific_options(self, parser):
+        parser.add_option(
+            "--raw-prefix",
+            action="store_true",
+            default=False,
+            help="Use --prefix as the direct destination, rather than adding a dials-* subdir",
+        )
+
 
 if __name__ == "__main__":
     installer(sys.argv[1:]).install()

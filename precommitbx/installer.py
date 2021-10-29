@@ -30,7 +30,7 @@ YELLOW = "\033[1;33m"
 
 minimum_conda_version = "4.8.0"
 minimum_precommit_version = "2.0"
-minimum_python_version = "3.6.0"
+minimum_python_version = "3.7.0"
 
 repo_prefix = "  {:.<15}:"
 repo_no_precommit = "(no pre-commit hooks)"

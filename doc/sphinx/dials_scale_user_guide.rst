@@ -2,11 +2,13 @@ User guide for scaling data with DIALS
 ======================================
 
 This document aims to provide a guide to using :samp:`dials.scale`, at various levels
-of depth. A new user is encouraged to read the symmetry and scaling section of
-the 'Processing in detail' tutorial for a quick overview of scaling in DIALS.
-For most users, it is likely to be sufficient to read only the 'Byte-sized guide
-to common scaling options' below, and return to the rest of the guide if further
-help is needed.
+of depth. A new user is encouraged to read the Symmetry and Scaling sections of
+the `Processing in detail
+<https://dials.github.io/documentation/tutorials/processing_in_detail_betalactamase.html>`_
+tutorial for a quick overview of scaling in DIALS.
+For most users, it is likely to be sufficient to read only the
+'Guide to common scaling options' below,
+and return to the rest of the guide if further help is needed.
 
 As a reminder, this is how to run routine data processing after integration to
 obtain a merged MTZ file::
@@ -19,60 +21,97 @@ The user is also advised to familiarise themselves with the standard program
 output, which may contain useful information, and the html report generated
 by scaling, which provides numerous plots relating to the merging statistics.
 
-Byte-sized guide to common scaling options
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-To get started with using DIALS to scale data, load these 8 bits of information
-into memory, which cover the most commonly used options (with example values)
+Guide to common scaling options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+These sections cover the most commonly used options (with example values)
 for scaling routine macromolecular crystallography datasets.
 
-**When less is more - cutting back data.** It is often the case that not all
-of the data are suitable for merging, so
-try these options to get the best of your data:
+**Cutting back data**
+After inspecting the statistics in the :samp:`dials.scale.html` file, such as
+the R-merge vs batch plot, it is often the case that not all of the data are
+suitable for merging, perhaps due to radiation damage or nonisomorphism.
+This can be the case within a  single sweep or across multiple sweeps in a
+multi-sweep/multi-crystal experiment. These are example options to use:
 
-- :samp:`d_min=2.0`  Apply a resolution cutoff with this simple command.
-- :samp:`exclude_images="0:100:120"`  Remove a section of images, perhaps due to
-  bad per-image R-merge values as result of radiation damage. Use multiple
-  commands like this to exclude multiple ranges. The syntax is "a:b:c",
-  where a is the experiment number (starting at :samp:`0`), b is the initial image
-  to exclude and c is the final image to exclude.
-- :samp:`exclude_datasets="10 50 79"`  Go all out and remove whole datasets, based on
+- :samp:`d_min=2.0`  Applies a resolution cutoff at the given resolution (in Angstrom).
+- :samp:`exclude_images="100:120"`  Removes a section of images for a single
+  sweep dataset. Multiple commands like this can be used to exclude multiple ranges.
+  In the case of multiple-sweeps, one must also provide the experiment ID that
+  the exclusion should apply to, with the syntax :samp:`exclude_images="a:b:c"`
+  where `a` is the experiment ID (a number starting at :samp:`0`), `b` is the initial
+  image to exclude and `c` is the final image to exclude.
+- :samp:`exclude_datasets="10 50 79"`  Removes whole datasets, based on
   the dataset number; useful for large multi-crystal datasets.
 
-**Eyes on the prize - getting those MTZ files**.
-You're confident that this job is a good one and are already daydreaming about
-refining a high-quality structure. Use these options to get an mtz file from
-your final run of dials.scale without the extra step of using the full
-dials.export/dials.merge programs (which may have more extensive options):
+**Anomalous data**
+During scaling, the option :samp:`anomalous=[True|False]` determines whether
+anomalous pairs (I+/I-) are combined during scaling model minimisation and outlier
+rejection. By default, :samp:`anomalous=False`, which is suitable for data with some anomalous signal, however for strongly anomalous data,
+the anomalous signal strength may be enhanced when scaling with :samp:`anomalous=True`
+
+**Controlling the absorption correction**
+The default physical scaling model applies a relative absorption correction based
+on the incoming and outgoing scattering vectors (this accounts for the relative
+difference in absorption for different scattering paths through the crystal,
+rather than absolute absorption of the beam by the crystal). This correction is
+constrained, and the level of constraint and parameterisation can be changed
+with the option :samp:`absorption_level=[low|medium|high]`. This aims to give
+relative absorption corrections of around 1%, 5% and 25%, but will depend on
+the dataset. To see the extent of the correction, check the 'scaling models'
+section in the :samp:`dials.scale.html` file.
+
+**Generating MTZ files**
+For convenience, :samp:`dials.scale` can invoke the exporting and merging programs to
+generate unmerged and merged MTZ files (you may want to use the individual
+programs to have more extensive control over the program options):
 
 - :samp:`merged_mtz=scaled.mtz`  Create a merged MTZ file, using the merging routines
   available in cctbx.
-- :samp:`unmerged_mtz=unmerged.mtz`  Output the scaled data in unmerged MTZ format (but
-  please try to be more creative in the filename choice).
+- :samp:`unmerged_mtz=unmerged.mtz`  Output the scaled data in unmerged MTZ format.
 
-**Life is about choices**
-Philosophy aside, one choice that is made automatically during scaling is
-whether summation or profile intensities seem to give the best estimate of the
-integrated intensity (or a combination of the two). Take back control, or just
-explore the options, with this command:
+**Choosing which integrated intensity to use**
+One choice that is made automatically during scaling is whether summation or
+profile intensities seem give the best estimate of the integrated intensity
+(or a combination of the two). To see the result of this combination, inspect the
+table in the scaling log, which scores a set of Imid values on Rpim \& CC1/2.
+To specify which intensity choice to use, there are a couple of options:
 
-- :samp:`intensity_choice=profile`  Choose from profile, sum or combine (default is combine)
+- :samp:`intensity_choice=[profile|sum|combine]`  Choose from profile, sum or combine (default is combine)
+- :samp:`combine.Imid=700.0`  Specify the crossover value for profile-summation
+  intensity combination.
 
-**Impartial about partials**
+**Adjusting the uncertainties/errors**
+All scaling programs adjust the uncertainties (sigmas) of the integrated data, to
+account for additional systematic errors not suffiently modelled during integration.
+:samp:`dials.scale` adjusts the intensity errors by refining a two-component error model
+(see the output log or :samp:`dials.scale.html` for the values). While this is
+an important correction and should improve the data quality for typical
+macromolecular crystallographic data, for poorer quality data the model parameters
+may become overinflated.
+If so, then this correction can be controlled with the parameters:
+
+- :samp:`error_model=None`  Don't apply an error model.
+- :samp:`error_model.basic.minimisation=None`  Don't refine the error model in this
+  scaling run. Will keep the pre-existing error model parameters, or the default
+  error model (:samp:`a=1.0, b=0.02`) on a first scaling run.
+
+For the multi-sweep case, a single error model is applied to the combined dataset,
+on the assumption that a similar systematic error is affecting all sweeps. This
+approach may not be optimal for some datasets. As an alternative, a separate error
+model can be refined on sweeps individually or as groups.
+
+- :samp:`error_model.grouping=[individual|grouped|combined]`  If grouped is chosen,
+  then the groups must be specified as below.
+- :samp:`error_model_group='0 1' error_model_group='2 3'` e.g. groups the sweeps
+  in pairs for error model refinement.
+
+**Controlling partials**
 By default, reflections with a partiality above 0.4 are included in the output
-datafiles and merging statistics from dials.scale. If you feel like being more
-discriminatory, or are concerned about the accuracy of the partial intensities,
-just change the threshold with this command:
+data files and merging statistics from dials.scale. This threshold can be changed
+with the parameters:
 
-- :samp:`partiality_threshold=0.99`  Disregard all partialities below this value.
-
-**Errors in errors**
-dials.scale adjusts the intensity errors by refining an error model (see the
-output log for the values). While this is an important correction and should
-improve the data quality for typical macromolecular crystallographic data,
-perhaps you have an edge case where the model refined is unrealistic.
-If so, then this correction can be disabled with this command:
-
-- :samp:`error_model=None`  Don't adjust error estimates.
+- :samp:`partiality_threshold=0.95`  Disregard all measurements with partialities
+  below this value.
 
 
 Practicalities for large datasets
@@ -108,7 +147,7 @@ be output in a single .refl/.expt file.
 **Scaling against a dials reference dataset.**
 In this example, reference.refl and reference.expt are from a dataset that has
 already been scaled with dials.scale. To scale another dataset (datafiles
-integrated.refl, integrated.expt) against this reference, one should use the
+:samp:`integrated.refl integrated.expt`) against this reference, one should use the
 following command::
 
   dials.scale only_target=True integrated.refl integrated.expt reference.refl reference.expt

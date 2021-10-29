@@ -1,4 +1,5 @@
 import logging
+import sys
 
 from libtbx.phil import parse
 
@@ -111,7 +112,10 @@ def run(args=None, phil=phil_scope):
             parser.print_help()
             return
         else:
-            script = CCHalfFromMTZ(params, params.input.mtzfile)
+            try:
+                script = CCHalfFromMTZ(params, params.input.mtzfile)
+            except ValueError as e:
+                sys.exit(f"Error: {e}")
     else:
         if not experiments or not reflections:
             parser.print_help()
@@ -129,7 +133,10 @@ of datasets in the reflection table (%s)
                     len(experiments),
                     n_datasets,
                 )
-            script = CCHalfFromDials(params, experiments, reflections[0])
+            try:
+                script = CCHalfFromDials(params, experiments, reflections[0])
+            except ValueError as e:
+                sys.exit(f"Error: {e}")
 
     script.run()
     script.output()
