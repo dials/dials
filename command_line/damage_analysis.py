@@ -45,7 +45,10 @@ from scitbx.array_family import flex
 
 from dials.command_line.symmetry import median_unit_cell
 from dials.pychef import Statistics, batches_to_dose, interpret_images_to_doses_options
-from dials.pychef.damage_series import generate_damage_series
+from dials.pychef.damage_series import (
+    generate_damage_series,
+    generate_damage_series_mtz,
+)
 from dials.util import log, resolution_analysis, show_mail_handle_errors
 from dials.util.filter_reflections import filter_reflection_table
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
@@ -120,6 +123,7 @@ class PychefRunner:
         self.damage_series_plots = None
         sel = dose >= 0
         self.intensities = intensities.select(sel)
+        self.intensities.set_info(intensities.info())
         self.dose = dose.select(sel)
         self.resolution_filter()
 
@@ -144,6 +148,7 @@ class PychefRunner:
             if self.params.d_max:
                 sel &= d_spacings <= self.params.d_max
             self.intensities = self.intensities.select(sel)
+            self.intensities.set_info(self.intensities.info())
             self.dose = self.dose.select(sel)
 
     @classmethod
@@ -177,11 +182,15 @@ class PychefRunner:
             raise KeyError("Batch array not found in mtz file")
 
         indices = mtz_object.extract_original_index_miller_indices()
-        intensities = intensities.customized_copy(indices=indices)
+        intensities = intensities.customized_copy(
+            indices=indices, info=intensities.info()
+        )
         batches = batches.customized_copy(indices=indices)
 
         if params.anomalous:
+            info = intensities.info()
             intensities = intensities.as_anomalous_array()
+            intensities.set_info(info)
             batches = batches.as_anomalous_array()
 
         if dose is None:
@@ -269,6 +278,11 @@ class PychefRunner:
             params,
             experiments,
             reflection_table,
+        )
+
+    def create_damage_series_mtz(self):
+        self.damage_series_plots = generate_damage_series_mtz(
+            self.params, self.dose, self.intensities
         )
 
     def make_html_report(self, html_filename=None, json_filename=None):
@@ -366,6 +380,8 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
         if params.damage_series.dose_group_size:
             if experiments and reflections:
                 script.create_damage_series(params, experiments, reflections[0])
+            else:
+                script.create_damage_series_mtz()
         script.make_html_report(params.output.html, params.output.json)
 
 

@@ -10,6 +10,7 @@ from scitbx.array_family import flex
 from dials.command_line.symmetry import median_unit_cell
 from dials.pychef import interpret_images_to_doses_options
 from dials.report.plots import d_star_sq_to_d_ticks
+from dials.util.export_mtz import MTZWriterBase
 from dials.util.filter_reflections import filter_reflection_table
 
 logger = logging.getLogger("dials.command_line.damage_analysis")
@@ -195,6 +196,78 @@ def _refl_to_miller_array(reflection_table, new_experiments):
     return intensities
 
 
+def _write_mtz(sel_intensities, sel_doses, fname):
+    writer = MTZWriterBase(sel_intensities.space_group())
+    writer.add_crystal(unit_cell=sel_intensities.unit_cell())
+    writer.add_empty_dataset(wavelength=sel_intensities.info().wavelength)
+
+    nref = sel_intensities.size()
+    writer.mtz_file.adjust_column_array_sizes(nref)
+    writer.mtz_file.set_n_reflections(nref)
+    type_table = {"H": "H", "K": "H", "L": "H", "M_ISYM": "Y"}
+    # assign H, K, L, M_ISYM space
+    for column in "H", "K", "L", "M_ISYM":
+        writer.current_dataset.add_column(column, type_table[column]).set_values(
+            flex.double(nref, 0.0).as_float()
+        )
+    writer.mtz_file.replace_original_index_miller_indices(sel_intensities.indices())
+    writer.current_dataset.add_column("I", "J").set_values(
+        sel_intensities.data().as_float()
+    )
+    writer.current_dataset.add_column("SIGI", "Q").set_values(
+        sel_intensities.sigmas().as_float()
+    )
+    writer.current_dataset.add_column("DOSE", "R").set_values(
+        sel_doses.as_double().as_float()
+    )
+    writer.mtz_file.write(fname)
+    logger.info(f"Saved {nref} reflections to {fname}")
+
+
+def generate_damage_series_mtz(params, doses, intensities):
+
+    plots = DamageSeriesPlots(d_max=params.d_max, d_min=params.d_min)
+    group_size = params.damage_series.dose_group_size
+    assert group_size > 0.0
+
+    max_dose = flex.max(doses)
+    min_dose = flex.min(doses)
+    dose_range = max_dose - min_dose + 1
+    n_output = ceil(dose_range / group_size)
+
+    dose_boundaries = [ceil(n * group_size) for n in range(n_output + 1)]
+
+    for n in range(n_output):
+        lower_dose_boundary = dose_boundaries[n]
+        upper_dose_boundary = dose_boundaries[n + 1]
+        fname = f"damage_series_{lower_dose_boundary}_{upper_dose_boundary}.mtz"
+
+        sel = (doses >= lower_dose_boundary) & (doses < upper_dose_boundary)
+        sel_intensities = intensities.select(sel)
+        sel_intensities.set_info(intensities.info())
+        plots.add_to_damage_series(
+            sel_intensities, lower_dose_boundary, upper_dose_boundary
+        )
+        if params.output.damage_series:
+            _write_mtz(sel_intensities, doses.select(sel), fname)
+
+    lower_dose_boundary = 0
+    for n in range(n_output):
+        upper_dose_boundary = dose_boundaries[n + 1]
+        fname = f"damage_series_{lower_dose_boundary}_{upper_dose_boundary}.mtz"
+        sel = (doses >= lower_dose_boundary) & (doses < upper_dose_boundary)
+        sel_intensities = intensities.select(sel)
+        sel_intensities.set_info(intensities.info())
+        plots.add_to_accumulation_series(
+            sel_intensities, lower_dose_boundary, upper_dose_boundary
+        )
+        if params.output.accumulation_series:
+            if n == 0 and params.output.damage_series:
+                continue
+            _write_mtz(sel_intensities, doses.select(sel), fname)
+    return plots
+
+
 def generate_damage_series(params, experiments, reflection_table):
 
     # first set up plotting stuff
@@ -314,13 +387,9 @@ def generate_damage_series(params, experiments, reflection_table):
         plots.add_to_damage_series(
             intensities, lower_dose_boundary, upper_dose_boundary
         )
-        if n == 0:
-            plots.add_to_accumulation_series(
-                intensities, lower_dose_boundary, upper_dose_boundary
-            )
 
     lower_dose_boundary = 0
-    for n in range(1, n_output):
+    for n in range(n_output):
         upper_dose_boundary = dose_boundaries[n + 1]
         name = f"damage_series_{lower_dose_boundary}_{upper_dose_boundary}"
         reflections_filename = name + ".refl"
@@ -335,6 +404,8 @@ def generate_damage_series(params, experiments, reflection_table):
             refl.experiment_identifiers().keys()
         ), f"{len(new_expts)} != {list(refl.experiment_identifiers().keys())}"
         if params.output.accumulation_series:
+            if n == 0 and params.output.damage_series:
+                continue
             logger.info(
                 f"Saving experimental data for range {lower_dose_boundary} <= dose < {upper_dose_boundary}"
             )

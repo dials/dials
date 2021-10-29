@@ -107,6 +107,42 @@ def test_damage_analysis_mtz(dials_data, run_in_tmpdir):
     assert os.path.isfile("dials.damage_analysis.json")
 
 
+def test_damage_analysis_mtz_damage_series(dials_data, run_in_tmpdir):
+    """Test dials.damage_analysis on scaled data."""
+    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    refls = location / "scaled_20_25.refl"
+    expts = location / "scaled_20_25.expt"
+
+    # First export the data
+    command = ["dials.export", refls, expts]
+    result = procrunner.run(command, working_directory=run_in_tmpdir)
+    assert not result.returncode and not result.stderr
+    assert os.path.isfile("scaled.mtz")
+
+    args = [
+        str(run_in_tmpdir / "scaled.mtz"),
+        "anomalous=True",
+        "json=dials.damage_analysis.json",
+        "dose_group_size=500",
+        "output.damage_series=True",
+        "output.accumulation_series=True",
+    ]
+    run(args)
+    assert os.path.isfile("dials.damage_analysis.html")
+    assert os.path.isfile("dials.damage_analysis.json")
+    expected_series = [
+        "0_500",
+        "500_1000",
+        "1000_1500",
+        "1500_2000",
+        "0_1000",
+        "0_1500",
+        "0_2000",
+    ]
+    for e in expected_series:
+        assert os.path.isfile(f"damage_series_{e}.mtz")
+
+
 def test_damage_analysis_input_handling(dials_data, run_in_tmpdir):
     """Test that errors are handled if more than one refl file, no refl/expt
     file or unscaled data."""
