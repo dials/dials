@@ -200,9 +200,9 @@ class XrayFrame(XFBaseClass):
                 lon, lat
             )
 
-            posn_str = "Picture:  slow={:.3f} / fast={:.3f} pixels.".format(
-                slow_picture,
+            posn_str = "Picture:  fast={:.3f} / slow={:.3f} pixels.".format(
                 fast_picture,
+                slow_picture,
             )
             coords = self.pyslip.tiles.get_flex_pixel_coordinates(lon, lat)
             if len(coords) >= 2:
@@ -211,7 +211,7 @@ class XrayFrame(XFBaseClass):
                 else:
                     readout = -1
 
-                coords_str = f"slow={coords[0]:.3f} / fast={coords[1]:.3f} pixels"
+                coords_str = f"fast={coords[1]:.3f} / slow={coords[0]:.3f} pixels"
                 if len(coords) == 2:
                     posn_str += " Readout: " + coords_str + "."
                 elif readout >= 0:
