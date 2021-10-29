@@ -1,0 +1,1 @@
+``dials.compute_delta_cchalf``: Fix crash when only using passing dataset/group

@@ -480,6 +480,17 @@ class DeltaCCHalf:
                 "stdcutoff": self.params.stdcutoff,
             }
         }
+        if len(set(reflection_table["group"])) == 1:
+            if self.params.mode == "dataset":
+                raise ValueError(
+                    """Cannot perform delta-cc-half analysis in dataset mode with only one dataset.
+For image group based delta-cc-half analysis, use the option mode=image_group"""
+                )
+            else:
+                raise ValueError(
+                    """Cannot perform delta-cc-half analysis on a single image group.
+Choose a suitable option for group_size to divide the dataset into multiple groups"""
+                )
 
     def run(self):
         """Run the delta_cc_half algorithm."""
