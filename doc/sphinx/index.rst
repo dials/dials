@@ -18,6 +18,7 @@ DIALS: Diffraction Integration for Advanced Light Sources
    Knowledge Base <https://dials.github.io/kb>
    workshops/index
    publications
+   projects
    License <license>
 
 X-ray crystallography for structural biology has benefited greatly

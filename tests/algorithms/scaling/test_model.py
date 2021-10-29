@@ -241,6 +241,16 @@ def test_physical_model_from_data(mock_physical_params, mock_exp, test_reflectio
     assert len(physicalmodel.components["absorption"].parameters) == 24
     assert physicalmodel.configdict["abs_surface_weight"] == 1e5
 
+    # try fixing a parameter
+    mock_physical_params.physical.correction.fix = ["decay"]
+    physicalmodel = PhysicalScalingModel.from_data(
+        mock_physical_params, mock_exp, test_reflections
+    )
+    assert physicalmodel.configdict["lmax"] == (mock_physical_params.physical.lmax)
+    assert physicalmodel.components["absorption"].n_params == 24
+    assert list(physicalmodel.components["absorption"].parameters) == [0.0] * 24
+    assert physicalmodel.fixed_components == ["decay"]
+
 
 def test_PhysicalScalingModel(test_reflections, mock_exp):
     """Test the PhysicalScalingModel class."""

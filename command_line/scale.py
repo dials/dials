@@ -31,6 +31,9 @@ Incremental scaling (with different options per dataset)::
   dials.scale integrated.refl integrated.expt physical.scale_interval=10.0
 
   dials.scale integrated_2.refl integrated_2.expt scaled.refl scaled.expt physical.scale_interval=15.0
+
+More detailed documentation on usage of dials.scale can be found in the
+`dials scale user guide <https://dials.github.io/dials_scale_user_guide.html>`_
 """
 
 import logging
