@@ -1,1 +1,0 @@
-Fix help string for ``best_monoclinic_beta=`` parameter (for ``dials.cosym``, ``dials.refine_bravais_settings`` and ``dials.symmetry``)

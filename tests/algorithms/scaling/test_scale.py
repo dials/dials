@@ -2,8 +2,9 @@
 Test the command line script dials.scale, for successful completion.
 """
 
-
 import json
+import platform
+import sys
 
 import procrunner
 import pytest
@@ -498,10 +499,28 @@ def test_scale_set_absorption_level(dials_data, tmp_path):
     expts = load.experiment_list(tmp_path / "scaled.expt", check_format=False)
     assert expts[0].scaling_model.configdict["lmax"] == 6
     assert expts[0].scaling_model.configdict["abs_surface_weight"] == 5e4
+    abs_params = expts[0].scaling_model.components["absorption"].parameters
     result = get_merging_stats(tmp_path / "unmerged.mtz")
     assert result.overall.r_pim < 0.024
     assert result.overall.cc_one_half > 0.995
     assert result.overall.n_obs > 2300
+
+    ## now scale again with different options, but fix the absorption surface to
+    # test the correction.fix option.
+    command = [
+        "dials.scale",
+        tmp_path / "scaled.refl",
+        tmp_path / "scaled.expt",
+        "error_model=None",
+        "physical.correction.fix=absorption",
+    ]
+    result = procrunner.run(command, working_directory=tmp_path)
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "scaled.refl").is_file()
+    assert (tmp_path / "scaled.expt").is_file()
+    expts = load.experiment_list(tmp_path / "scaled.expt", check_format=False)
+    new_abs_params = expts[0].scaling_model.components["absorption"].parameters
+    assert abs_params == new_abs_params
 
 
 def test_scale_normal_equations_failure(dials_data, tmp_path):
@@ -519,6 +538,10 @@ def test_scale_normal_equations_failure(dials_data, tmp_path):
     assert (tmp_path / "scaled.expt").is_file()
 
 
+@pytest.mark.xfail(
+    sys.platform == "darwin" and platform.machine() == "arm64",
+    reason="CC1/2 somewhat differs for unknown reasons",
+)
 def test_scale_and_filter_image_group_mode(dials_data, tmp_path):
     """Test the scale and filter command line program."""
     location = dials_data("multi_crystal_proteinase_k", pathlib=True)

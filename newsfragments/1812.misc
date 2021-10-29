@@ -1,1 +1,0 @@
-Add f-string missing placeholders check to pre-commit and fix a few failing checks

@@ -10,6 +10,7 @@ DIALS Journal Articles
 * .. pubmed:: 30950396 How best to use photons
 * .. pubmed:: 30198898 Serial crystallography
 * .. pubmed:: 29872002 Electron diffraction
+  Data and processing instructions associated with this paper can be found :doc:`here <documentation/tutorials/3DED/lysozyme_nanocrystals>`.
 * .. pubmed:: 29717711 Cosym
 * .. pubmed:: 29533234 DIALS
 * .. pubmed:: 28989718 Background

@@ -9,12 +9,13 @@ from io import StringIO
 
 import numpy as np
 from scipy.optimize import least_squares
+from scipy.stats import norm
 
 from cctbx import uctbx
+from dxtbx import flumpy
 from mmtbx.scaling.absolute_scaling import expected_intensity, scattering_information
 from mmtbx.scaling.matthews import matthews_rupp
 from scitbx.array_family import flex
-from scitbx.math import distributions
 
 logger = logging.getLogger("dials")
 
@@ -1059,29 +1060,22 @@ https://doi.org/10.1107/S0907444905036693
             return {}
         delta = diff_array.data() / diff_array.sigmas()
 
-        norm = distributions.normal_distribution()
+        n = delta.size()
+        y = np.sort(flumpy.to_numpy(delta))
+        d = 0.5 / n
+        v = np.linspace(start=d, stop=1.0 - d, endpoint=True, num=n)
+        x = norm.ppf(v)
 
-        n = len(delta)
-        if n <= 10:
-            a = 3 / 8
-        else:
-            a = 0.5
-
-        y = flex.sorted(delta)
-        x = [norm.quantile((i + 1 - a) / (n + 1 - (2 * a))) for i in range(n)]
-
-        H, xedges, yedges = np.histogram2d(
-            np.array(x), y.as_numpy_array(), bins=(200, 200)
-        )
+        H, xedges, yedges = np.histogram2d(x, y, bins=(200, 200))
         nonzeros = np.nonzero(H)
         z = np.empty(H.shape)
         z[:] = np.NAN
         z[nonzeros] = H[nonzeros]
 
         # also make a histogram
-        histy = flex.histogram(y, n_slots=100)
+        histy = flex.histogram(flumpy.from_numpy(y), n_slots=100)
         # make a gaussian for reference also
-        n = y.size()
+        n = y.size
         width = histy.slot_centers()[1] - histy.slot_centers()[0]
         gaussian = []
         from math import exp, pi

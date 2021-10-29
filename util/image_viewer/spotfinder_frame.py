@@ -8,7 +8,7 @@ from wx.lib.intctrl import IntCtrl
 from cctbx import crystal, uctbx
 from cctbx.miller import index_generator
 from dxtbx.imageset import ImageSet
-from dxtbx.model.detector_helpers import project_2d
+from dxtbx.model.detector_helpers import get_detector_projection_2d_axes
 from dxtbx.model.experiment_list import ExperimentList, ExperimentListFactory
 from libtbx.utils import flat_list
 from scitbx import matrix
@@ -96,22 +96,20 @@ class SpotFrame(XrayFrame):
 
         super().__init__(*args, **kwds)
 
-        # Precalculate best-fit frame for image display, except for P12M
+        # Precalculate best-fit frame for image display if required
         for experiment_list in self.experiments:
             for experiment in experiment_list:
                 detector = experiment.detector
                 if not detector:
                     self.params.projection = None
                     continue
-                if len(detector) == 24 and detector[0].get_image_size() == (2463, 195):
+                if detector.has_projection_2d():
                     self.params.projection = None
-                elif len(detector) == 120 and detector[0].get_image_size() == (
-                    487,
-                    195,
-                ):
-                    self.params.projection = None
+                    continue
                 else:
-                    detector.projected_2d = project_2d(detector)
+                    detector.projection_2d_axes = get_detector_projection_2d_axes(
+                        detector
+                    )
                 detector.projection = self.params.projection
 
         self.viewing_stills = True
@@ -1360,26 +1358,86 @@ class SpotFrame(XrayFrame):
 
         return selection
 
-    def get_spotfinder_data(self):
+    def map_coords(self, x, y, p):
+        """Convert coordinates in pixel, pixel, panel to picture coordinates
+        required for correct positioning of overlays"""
+        y, x = self.pyslip.tiles.flex_image.tile_readout_to_picture(p, y - 0.5, x - 0.5)
+        return self.pyslip.tiles.picture_fast_slow_to_map_relative(x, y)
+
+    def _rotation_axis_overlay_data(self):
+        imageset = self.images.selected.image_set
+        detector = self.pyslip.tiles.raw_image.get_detector()
+        scan = imageset.get_scan()
+        beam = imageset.get_beam()
+        gonio = imageset.get_goniometer()
+        still = scan is None or gonio is None
+        if still:
+            return
+        axis = gonio.get_rotation_axis()
+        try:
+            panel, beam_centre = detector.get_ray_intersection(beam.get_s0())
+        except RuntimeError as e:
+            if "DXTBX_ASSERT(w_max > 0)" in str(e):
+                # direct beam didn't hit a panel
+                panel = 0
+                beam_centre = detector[panel].get_ray_intersection(beam.get_s0())
+            else:
+                raise
+
+        beam_x, beam_y = detector[panel].millimeter_to_pixel(beam_centre)
+        beam_x, beam_y = self.map_coords(beam_x, beam_y, panel)
+
+        # Find the plane containing the rotation axis and s0
+        normal = matrix.col(beam.get_unit_s0()).cross(matrix.col(axis))
+
+        # Find scattering angle at max inscribed resolution
+        d_min = detector.get_max_inscribed_resolution(beam.get_s0())
+        theta = math.asin(beam.get_wavelength() / (2.0 * d_min))
+
+        # Rotate s0 in the plane so as to point to the inscribed circle
+        # along the rotation axis
+        a = matrix.col(beam.get_s0()).rotate(normal, 2.0 * theta)
+        b = matrix.col(beam.get_s0()).rotate(normal, -2.0 * theta)
+
+        panel_a = detector.get_panel_intersection(a)
+        if panel_a < 0:
+            return
+        panel_b = detector.get_panel_intersection(b)
+        if panel_b < 0:
+            return
+        x_a, y_a = detector[panel_a].get_ray_intersection_px(a)
+        x_a, y_a = self.map_coords(x_a, y_a, panel_a)
+        x_b, y_b = detector[panel_b].get_ray_intersection_px(b)
+        x_b, y_b = self.map_coords(x_b, y_b, panel_b)
+
+        result = []
+        result.append(
+            (
+                ((x_b, y_b), (x_a, y_a)),
+                {"width": 4, "color": "#1776f6", "closed": False},
+            )
+        )
+        result.append(
+            (
+                x_a,
+                y_a,
+                "axis",
+                {
+                    "placement": "ne",
+                    "fontsize": self.settings.fontsize,
+                    "textcolor": "#1776f6",
+                },
+            )
+        )
+        return result
+
+    def _reflection_overlay_data(self, i_frame):
+
         fg_code = MaskCode.Valid | MaskCode.Foreground
         strong_code = MaskCode.Valid | MaskCode.Strong
-
-        def map_coords(x, y, p):
-            y, x = self.pyslip.tiles.flex_image.tile_readout_to_picture(
-                p, y - 0.5, x - 0.5
-            )
-            return self.pyslip.tiles.picture_fast_slow_to_map_relative(x, y)
-
         shoebox_dict = {"width": 2, "color": "#0000FFA0", "closed": False}
         ctr_mass_dict = {"width": 2, "color": "#FF0000", "closed": False}
-        vector_dict = {"width": 4, "color": "#F62817", "closed": False}
-        if self.viewing_stills:
-            i_frame = self.images.selected_index  # NOTE, the underbar is intentional
-        else:
-            i_frame = self.images.selected.index
-        imageset = self.images.selected.image_set
-        if imageset.get_scan() is not None:
-            i_frame += imageset.get_scan().get_array_range()[0]
+
         shoebox_data = []
         all_pix_data = {}
         all_foreground_circles = {}
@@ -1388,26 +1446,6 @@ class SpotFrame(XrayFrame):
         max_pix_data = []
         predictions_data = []
         miller_indices_data = []
-        vector_data = []
-        vector_text_data = []
-        detector = self.pyslip.tiles.raw_image.get_detector()
-        scan = self.pyslip.tiles.raw_image.get_scan()
-        to_degrees = 180 / math.pi
-        # self.prediction_colours = ["#a6cee3", "#1f78b4", "#b2df8a", "#33a02c",
-        # "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00",
-        # "#cab2d6"] * 10
-        # alternative colour scheme
-        self.prediction_colours = [
-            "#e41a1c",
-            "#377eb8",
-            "#4daf4a",
-            "#984ea3",
-            "#ff7f00",
-            "#ffff33",
-            "#a65628",
-            "#f781bf",
-            "#999999",
-        ] * 10
 
         for ref_list_id, ref_list in enumerate(self.reflections):
             if self.viewing_stills and ref_list_id != i_frame:
@@ -1415,7 +1453,9 @@ class SpotFrame(XrayFrame):
 
             # If we have more than one imageset, then we could be on the wrong one
             if not self.have_one_imageset:
-                exp_filter = self.__get_imageset_filter(ref_list, imageset)
+                exp_filter = self.__get_imageset_filter(
+                    ref_list, self.images.selected.image_set
+                )
                 if exp_filter is None:
                     continue
                 ref_list = ref_list.select(exp_filter)
@@ -1470,7 +1510,7 @@ class SpotFrame(XrayFrame):
                                 if (mask_value == strong_code) or (
                                     mask_value == fg_code
                                 ):
-                                    x_, y_ = map_coords(
+                                    x_, y_ = self.map_coords(
                                         ix + x0 + 0.5, iy + y0 + 0.5, panel
                                     )
                                     this_spot_foreground_pixels.append(
@@ -1512,10 +1552,10 @@ class SpotFrame(XrayFrame):
                             )
 
                     if self.settings.show_shoebox:
-                        x0y0 = map_coords(x0, y0, panel)
-                        x0y1 = map_coords(x0, y1, panel)
-                        x1y0 = map_coords(x1, y0, panel)
-                        x1y1 = map_coords(x1, y1, panel)
+                        x0y0 = self.map_coords(x0, y0, panel)
+                        x0y1 = self.map_coords(x0, y1, panel)
+                        x1y0 = self.map_coords(x1, y0, panel)
+                        x1y1 = self.map_coords(x1, y1, panel)
                         # Change shoebox colour depending on index id
                         my_attrs = dict(shoebox_dict)
                         # Reflections with *only* strong set should get default
@@ -1543,7 +1583,7 @@ class SpotFrame(XrayFrame):
                         offset, i = divmod(offset, shoebox.all()[0])
                         max_index = (i, j, k)
                         if z0 + max_index[0] == i_frame or self.viewing_stills:
-                            x, y = map_coords(
+                            x, y = self.map_coords(
                                 x0 + max_index[2] + 0.5,
                                 y0 + max_index[1] + 0.5,
                                 reflection["panel"],
@@ -1558,13 +1598,13 @@ class SpotFrame(XrayFrame):
                             <= centroid[2]
                             <= (i_frame + self.params.stack_images)
                         ):
-                            x, y = map_coords(
+                            x, y = self.map_coords(
                                 centroid[0], centroid[1], reflection["panel"]
                             )
-                            xm1, ym1 = map_coords(
+                            xm1, ym1 = self.map_coords(
                                 centroid[0] - 1, centroid[1] - 1, reflection["panel"]
                             )
-                            xp1, yp1 = map_coords(
+                            xp1, yp1 = self.map_coords(
                                 centroid[0] + 1, centroid[1] + 1, reflection["panel"]
                             )
                             lines = [
@@ -1581,7 +1621,8 @@ class SpotFrame(XrayFrame):
                     frame_numbers = ref_list["xyzcal.px"].parts()[2]
                 else:
                     phi = ref_list["xyzcal.mm"].parts()[2]
-                    frame_numbers = scan.get_array_index_from_angle(phi * to_degrees)
+                    scan = self.pyslip.tiles.raw_image.get_scan()
+                    frame_numbers = scan.get_array_index_from_angle(math.degrees(phi))
                 n = self.params.stack_images
                 for i_expt in range(flex.max(ref_list["id"]) + 1):
                     expt_sel = ref_list["id"] == i_expt
@@ -1600,16 +1641,17 @@ class SpotFrame(XrayFrame):
                         ):
                             x = None
                             if "xyzcal.px" in reflection:
-                                x, y = map_coords(
+                                x, y = self.map_coords(
                                     reflection["xyzcal.px"][0],
                                     reflection["xyzcal.px"][1],
                                     reflection["panel"],
                                 )
                             elif "xyzcal.mm" in reflection:
+                                detector = self.pyslip.tiles.raw_image.get_detector()
                                 x, y = detector[
                                     reflection["panel"]
                                 ].millimeter_to_pixel(reflection["xyzcal.mm"][:2])
-                                x, y = map_coords(x, y, reflection["panel"])
+                                x, y = self.map_coords(x, y, reflection["panel"])
                             if x is None:
                                 next
 
@@ -1639,83 +1681,145 @@ class SpotFrame(XrayFrame):
             # show overlapped pixels in a different color
             all_pix_data[max(all_pix_data.keys()) + 1] = overlapped_data
 
+        return {
+            "shoebox_data": shoebox_data,
+            "all_pix_data": all_pix_data,
+            "all_foreground_circles": all_foreground_circles,
+            "overlapped_data": overlapped_data,
+            "ctr_mass_data": ctr_mass_data,
+            "max_pix_data": max_pix_data,
+            "predictions_data": predictions_data,
+            "miller_indices_data": miller_indices_data,
+        }
+
+    def _basis_vector_overlay_data(self, i_expt, i_frame, experiment):
+        imageset = self.images.selected.image_set
+        detector = self.pyslip.tiles.raw_image.get_detector()
+        crystal_model = experiment.crystal
+        cs = crystal.symmetry(
+            unit_cell=crystal_model.get_unit_cell(),
+            space_group=crystal_model.get_space_group(),
+        )
+        cb_op = cs.change_of_basis_op_to_reference_setting()
+        crystal_model = crystal_model.change_basis(cb_op)
+        A = matrix.sqr(crystal_model.get_A())
+        scan = imageset.get_scan()
+        beam = imageset.get_beam()
+        gonio = imageset.get_goniometer()
+        still = scan is None or gonio is None
+        if not still:
+            phi = scan.get_angle_from_array_index(
+                i_frame - imageset.get_array_range()[0], deg=True
+            )
+            axis = matrix.col(imageset.get_goniometer().get_rotation_axis())
+        try:
+            panel, beam_centre = detector.get_ray_intersection(beam.get_s0())
+        except RuntimeError as e:
+            if "DXTBX_ASSERT(w_max > 0)" in str(e):
+                # direct beam didn't hit a panel
+                panel = 0
+                beam_centre = detector[panel].get_ray_intersection(beam.get_s0())
+            else:
+                raise
+        beam_x, beam_y = detector[panel].millimeter_to_pixel(beam_centre)
+        beam_x, beam_y = self.map_coords(beam_x, beam_y, panel)
+
+        vector_data = []
+        label_data = []
+        for i, h in enumerate(((1, 0, 0), (0, 1, 0), (0, 0, 1))):
+            r = A * matrix.col(h) * self.settings.basis_vector_scale
+
+            if still:
+                s1 = matrix.col(beam.get_s0()) + r
+            else:
+                r_phi = r.rotate_around_origin(axis, phi, deg=True)
+                s1 = matrix.col(beam.get_s0()) + r_phi
+            panel = detector.get_panel_intersection(s1)
+            if panel < 0:
+                continue
+            x, y = detector[panel].get_ray_intersection_px(s1)
+            x, y = self.map_coords(x, y, panel)
+
+            vector_data.append(
+                (
+                    ((beam_x, beam_y), (x, y)),
+                    {
+                        "width": 4,
+                        "color": self.prediction_colours[i_expt],
+                        "closed": False,
+                    },
+                ),
+            )
+
+            label_data.append(
+                (
+                    x,
+                    y,
+                    ("a*", "b*", "c*")[i],
+                    {
+                        "placement": "ne",
+                        "fontsize": self.settings.fontsize,
+                        "textcolor": self.prediction_colours[i_expt],
+                    },
+                )
+            )
+        return vector_data, label_data
+
+    def get_spotfinder_data(self):
+
+        self.prediction_colours = [
+            "#e41a1c",
+            "#377eb8",
+            "#4daf4a",
+            "#984ea3",
+            "#ff7f00",
+            "#ffff33",
+            "#a65628",
+            "#f781bf",
+            "#999999",
+        ] * 10
+
+        if self.viewing_stills:
+            i_frame = self.images.selected_index  # NOTE, the underbar is intentional
+        else:
+            i_frame = self.images.selected.index
+        imageset = self.images.selected.image_set
+        if imageset.get_scan() is not None:
+            i_frame += imageset.get_scan().get_array_range()[0]
+
+        refl_data = self._reflection_overlay_data(i_frame)
+
+        vector_data = []
+        vector_text_data = []
+        if self.settings.show_rotation_axis:
+            axis_data = self._rotation_axis_overlay_data()
+            if axis_data:
+                vector_data.append(axis_data[0])
+                vector_text_data.append(axis_data[1])
+
         if (
             self.settings.show_basis_vectors
             and self.crystals is not None
             and self.crystals[0] is not None
         ):
             for experiments in self.experiments:
-                for experiment in experiments:
+                for i_expt, experiment in enumerate(experiments):
                     if experiment.imageset != imageset:
                         continue
-                    crystal_model = experiment.crystal
-                    cs = crystal.symmetry(
-                        unit_cell=crystal_model.get_unit_cell(),
-                        space_group=crystal_model.get_space_group(),
+                    basis_vector_data = self._basis_vector_overlay_data(
+                        i_expt, i_frame, experiment
                     )
-                    cb_op = cs.change_of_basis_op_to_reference_setting()
-                    crystal_model = crystal_model.change_basis(cb_op)
-                    A = matrix.sqr(crystal_model.get_A())
-                    scan = imageset.get_scan()
-                    beam = imageset.get_beam()
-                    gonio = imageset.get_goniometer()
-                    still = scan is None or gonio is None
-                    if not still:
-                        phi = scan.get_angle_from_array_index(
-                            i_frame - imageset.get_array_range()[0], deg=True
-                        )
-                        axis = matrix.col(imageset.get_goniometer().get_rotation_axis())
-                    try:
-                        panel, beam_centre = detector.get_ray_intersection(
-                            beam.get_s0()
-                        )
-                    except RuntimeError as e:
-                        if "DXTBX_ASSERT(w_max > 0)" in str(e):
-                            # direct beam didn't hit a panel
-                            panel = 0
-                            beam_centre = detector[panel].get_ray_intersection(
-                                beam.get_s0()
-                            )
-                        else:
-                            raise
-                    beam_x, beam_y = detector[panel].millimeter_to_pixel(beam_centre)
-                    beam_x, beam_y = map_coords(beam_x, beam_y, panel)
-                    for i, h in enumerate(((1, 0, 0), (0, 1, 0), (0, 0, 1))):
-                        r = A * matrix.col(h) * self.settings.basis_vector_scale
-
-                        if still:
-                            s1 = matrix.col(beam.get_s0()) + r
-                        else:
-                            r_phi = r.rotate_around_origin(axis, phi, deg=True)
-                            s1 = matrix.col(beam.get_s0()) + r_phi
-                        panel = detector.get_panel_intersection(s1)
-                        if panel < 0:
-                            continue
-                        x, y = detector[panel].get_ray_intersection_px(s1)
-                        x, y = map_coords(x, y, panel)
-                        vector_data.append((((beam_x, beam_y), (x, y)), vector_dict))
-
-                        vector_text_data.append(
-                            (
-                                x,
-                                y,
-                                ("a*", "b*", "c*")[i],
-                                {
-                                    "placement": "ne",
-                                    "fontsize": self.settings.fontsize,
-                                    "color": "#F62817",
-                                },
-                            )
-                        )
+                    vector_data.extend(basis_vector_data[0])
+                    vector_text_data.extend(basis_vector_data[1])
 
         return SpotfinderData(
-            all_pix_data=all_pix_data,
-            all_foreground_circles=all_foreground_circles,
-            shoebox_data=shoebox_data,
-            ctr_mass_data=ctr_mass_data,
-            max_pix_data=max_pix_data,
-            predictions_data=predictions_data,
-            miller_indices_data=miller_indices_data,
+            all_pix_data=refl_data["all_pix_data"],
+            all_foreground_circles=refl_data["all_foreground_circles"],
+            shoebox_data=refl_data["shoebox_data"],
+            ctr_mass_data=refl_data["ctr_mass_data"],
+            max_pix_data=refl_data["max_pix_data"],
+            predictions_data=refl_data["predictions_data"],
+            miller_indices_data=refl_data["miller_indices_data"],
             vector_data=vector_data,
             vector_text_data=vector_text_data,
         )
@@ -1812,6 +1916,7 @@ class SpotSettingsPanel(wx.Panel):
         self.settings.basis_vector_scale = self.params.basis_vector_scale
         self.settings.show_mask = self.params.show_mask
         self.settings.show_basis_vectors = self.params.show_basis_vectors
+        self.settings.show_rotation_axis = self.params.show_rotation_axis
         self.settings.display = self.params.display
         if self.settings.display == "global_threshold":
             self.settings.display = "global"
@@ -1850,7 +1955,7 @@ class SpotSettingsPanel(wx.Panel):
         txt12 = wx.StaticText(self, -1, "Projection:")
         projection_choices = ["lab", "image"]
         self.projection_ctrl = wx.Choice(self, -1, choices=projection_choices)
-        if self.params.projection is None:  # I23 special case
+        if self.params.projection is None:
             self.projection_ctrl.SetSelection(1)
             self.projection_ctrl.Enable(False)
             txt12.Enable(False)
@@ -1917,7 +2022,7 @@ class SpotSettingsPanel(wx.Panel):
         )
         grid.Add(self.basis_vector_scale_ctrl, 0, wx.ALL, 5)
 
-        grid = wx.FlexGridSizer(cols=2, rows=8, vgap=0, hgap=0)
+        grid = wx.FlexGridSizer(cols=2, rows=9, vgap=0, hgap=0)
         s.Add(grid)
 
         # Resolution rings control
@@ -1989,6 +2094,11 @@ class SpotSettingsPanel(wx.Panel):
         self.integrated = wx.CheckBox(self, -1, "Integrated only")
         self.integrated.SetValue(self.settings.show_integrated)
         grid.Add(self.integrated, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+
+        # Toggle rotation axis display
+        self.show_rotation_axis = wx.CheckBox(self, -1, "Rotation axis")
+        self.show_rotation_axis.SetValue(self.settings.show_rotation_axis)
+        grid.Add(self.show_rotation_axis, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
 
         grid = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
         self.clear_all_button = wx.Button(self, -1, "Clear all")
@@ -2189,6 +2299,7 @@ class SpotSettingsPanel(wx.Panel):
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.indexed)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.integrated)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.show_basis_vectors)
+        self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.show_rotation_axis)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdateShowMask, self.show_mask)
 
         self.Bind(wx.EVT_UPDATE_UI, self.UpdateZoomCtrl)
@@ -2234,6 +2345,7 @@ class SpotSettingsPanel(wx.Panel):
             self.settings.basis_vector_scale = self.basis_vector_scale_ctrl.GetValue()
             self.settings.show_mask = self.show_mask.GetValue()
             self.settings.show_basis_vectors = self.show_basis_vectors.GetValue()
+            self.settings.show_rotation_axis = self.show_rotation_axis.GetValue()
             self.settings.dispersion_extended = self.threshold_algorithm.GetValue()
             self.settings.color_scheme = self.color_ctrl.GetSelection()
             self.settings.projection = self.projection_ctrl.GetSelection()
@@ -2296,6 +2408,7 @@ class SpotSettingsPanel(wx.Panel):
             self.miller_indices,
             self.show_mask,
             self.show_basis_vectors,
+            self.show_rotation_axis,
             self.ice_rings_ctrl,
             self.resolution_rings_ctrl,
         ):

@@ -260,8 +260,7 @@ class XrayFrame(wx.Frame):
     def update_statusbar(self, info=None):
         if info is None:
             self.statusbar.SetStatusText(
-                "Click and drag to pan; "
-                + "middle-click and drag to plot intensity profile, right-click to zoom"
+                "Click and drag to pan, mouse wheel or double click to zoom"
             )
         else:
             self.statusbar.SetStatusText(info.format())
