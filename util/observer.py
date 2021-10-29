@@ -5,7 +5,6 @@ A singleton decorator is also defined.
 """
 
 import functools
-from collections import OrderedDict
 
 
 def singleton(cls):
@@ -32,7 +31,7 @@ class Subject:
     def __init__(self, events):
         self.observers = {}
         for event in events:
-            self.observers[event] = OrderedDict()
+            self.observers[event] = {}
 
     @staticmethod
     def notify_event(event):

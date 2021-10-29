@@ -1,8 +1,6 @@
-from collections import OrderedDict
-
 import wx
 
-_scores = OrderedDict()
+_scores = {}
 
 
 class ScoreSettingsFrame(wx.MiniFrame):

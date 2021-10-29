@@ -4,7 +4,6 @@ Helper functions/classes for making HTML report and scaling summary output.
 
 import json
 import logging
-from collections import OrderedDict
 
 from jinja2 import ChoiceLoader, Environment, PackageLoader
 from orderedset import OrderedSet
@@ -244,7 +243,7 @@ def _make_scaling_html(scaling_script):
 def make_scaling_model_plots(experiments, reflection_tables):
     """Collect scaling model plots for html report."""
     data = {i: e.scaling_model for i, e in enumerate(experiments)}
-    d = OrderedDict()
+    d = {}
     combined_plots = make_combined_plots(data)
     if combined_plots:
         d.update(combined_plots)
@@ -311,7 +310,7 @@ def make_outlier_plots(reflection_tables, experiments):
             "image_size": expt.detector[0].get_image_size(),
             "z_range": zrange,
         }
-    d = OrderedDict()
+    d = {}
     for key in sorted(data):
         outlier_plots = plot_outliers(data[key])
         for plot in outlier_plots.values():
@@ -394,10 +393,10 @@ def make_merging_stats_plots(script):
     """Make merging stats plots for HTML report"""
     d = {
         "scaling_tables": ([], []),
-        "resolution_plots": OrderedDict(),
-        "batch_plots": OrderedDict(),
-        "misc_plots": OrderedDict(),
-        "anom_plots": OrderedDict(),
+        "resolution_plots": {},
+        "batch_plots": {},
+        "misc_plots": {},
+        "anom_plots": {},
         "image_range_tables": [],
     }
     (

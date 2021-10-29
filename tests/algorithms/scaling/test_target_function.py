@@ -3,7 +3,6 @@ Test for the target function module.
 """
 
 import copy
-from collections import OrderedDict
 from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
@@ -181,15 +180,13 @@ def mock_unrestrained_component():
 
 def _component_to_apm(component):
     mock_single_apm = Mock()
-    mock_single_apm.components = OrderedDict(
-        {
-            "restrained": {
-                "object": component,
-                "n_params": component.n_params,
-                "start_idx": 0,
-            }
+    mock_single_apm.components = {
+        "restrained": {
+            "object": component,
+            "n_params": component.n_params,
+            "start_idx": 0,
         }
-    )
+    }
     mock_single_apm.n_active_params = component.n_params
     return mock_single_apm
 

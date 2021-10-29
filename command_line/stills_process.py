@@ -1,3 +1,4 @@
+import collections
 import copy
 import glob
 import logging
@@ -6,7 +7,6 @@ import pickle
 import sys
 import tarfile
 import time
-from collections import OrderedDict
 from io import BytesIO
 
 from dxtbx.model.experiment_list import (
@@ -583,14 +583,11 @@ class Script:
             iterable = list(zip(tags, range(len(split_experiments))))
 
         else:
-            basenames = OrderedDict()
+            basenames = collections.defaultdict(int)
             sorted_paths = sorted(all_paths)
             for filename in sorted_paths:
                 basename = os.path.splitext(os.path.basename(filename))[0]
-                if basename in basenames:
-                    basenames[basename] += 1
-                else:
-                    basenames[basename] = 1
+                basenames[basename] += 1
             tags = []
             all_paths2 = []
             for i, (basename, count) in enumerate(basenames.items()):

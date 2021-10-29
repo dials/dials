@@ -14,7 +14,6 @@ defined for targeted scaling.
 import copy
 import logging
 import time
-from collections import OrderedDict
 from io import StringIO
 from math import ceil
 
@@ -522,13 +521,11 @@ class SingleScaler(ScalerBase):
             if use_Imid is not None:
                 logger.info(
                     "Using previously determined optimal intensity choice: %s\n",
-                    OrderedDict(
-                        [
-                            (use_Imid, str(round(use_Imid, 4))),
-                            (0, "profile intensities"),
-                            (1, "summation intensities"),
-                        ]
-                    )[use_Imid],
+                    {
+                        use_Imid: str(round(use_Imid, 4)),
+                        0: "profile intensities",
+                        1: "summation intensities",
+                    }[use_Imid],
                 )
             else:
                 logger.info("Performing profile/summation intensity optimisation.")

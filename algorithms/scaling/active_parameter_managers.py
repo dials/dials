@@ -4,7 +4,6 @@ refiner which components of the model are to be refined.
 """
 
 import logging
-from collections import OrderedDict
 
 from scitbx import sparse
 
@@ -29,7 +28,7 @@ class active_parameter_manager:
     def __init__(self, components, selection_list):
         # self.target = target
         self.x = flex.double([])
-        self.components = OrderedDict()
+        self.components = {}
         self.derivatives = None
         self.var_cov_matrix = None
         self.components_list = []  # just a list of the component names
@@ -131,7 +130,7 @@ class multi_active_parameter_manager(TargetInterface):
         self.derivatives = None
         self.components_list = []  # A list of the component names.
         self.apm_list = []
-        self.apm_data = OrderedDict()
+        self.apm_data = {}
         all_same_components = False
         if all(i == selection_lists[0] for i in selection_lists[1:]):
             logger.info(

@@ -156,11 +156,10 @@ class align_crystal:
         )
 
         for (v1_, v2_) in self.vectors:
-            result_dictionary = collections.OrderedDict()
+            result_dictionary = collections.defaultdict(list)
             results.append((v1_, v2_, result_dictionary))
             space_group = self.experiment.crystal.get_space_group()
             for smx in list(space_group.smx())[:]:
-                result_dictionary[smx] = []
                 crystal = copy.deepcopy(self.experiment.crystal)
                 cb_op = sgtbx.change_of_basis_op(smx)
                 crystal = crystal.change_basis(cb_op)
@@ -216,7 +215,7 @@ class align_crystal:
 
         self.all_solutions = results
 
-        self.unique_solutions = collections.OrderedDict()
+        self.unique_solutions = collections.defaultdict(list)
         for v1, v2, result in results:
             for solutions in result.values():
                 for solution in solutions:

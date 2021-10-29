@@ -1,5 +1,3 @@
-import collections
-
 from dials.array_family import flex
 from dials.array_family.flex import Binner
 from dials.util.report import Array, Report, Table
@@ -31,22 +29,22 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
     )
 
     def overall_report(data):
-
         # Start by adding some overall numbers
-        report = collections.OrderedDict()
-        report["n"] = len(reflections)
-        report["n_full"] = data["full"].count(True)
-        report["n_partial"] = data["full"].count(False)
-        report["n_overload"] = data["over"].count(True)
-        report["n_ice"] = data["ice"].count(True)
-        report["n_summed"] = data["sum"].count(True)
-        report["n_fitted"] = data["prf"].count(True)
-        report["n_integated"] = data["int"].count(True)
-        report["n_invalid_bg"] = data["ninvbg"].count(True)
-        report["n_invalid_fg"] = data["ninvfg"].count(True)
-        report["n_failed_background"] = data["fbgd"].count(True)
-        report["n_failed_summation"] = data["fsum"].count(True)
-        report["n_failed_fitting"] = data["fprf"].count(True)
+        report = {
+            "n": len(reflections),
+            "n_full": data["full"].count(True),
+            "n_partial": data["full"].count(False),
+            "n_overload": data["over"].count(True),
+            "n_ice": data["ice"].count(True),
+            "n_summed": data["sum"].count(True),
+            "n_fitted": data["prf"].count(True),
+            "n_integated": data["int"].count(True),
+            "n_invalid_bg": data["ninvbg"].count(True),
+            "n_invalid_fg": data["ninvfg"].count(True),
+            "n_failed_background": data["fbgd"].count(True),
+            "n_failed_summation": data["fsum"].count(True),
+            "n_failed_fitting": data["fprf"].count(True),
+        }
 
         # Compute mean background
         try:
@@ -99,20 +97,21 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
         indexer_int = binner.indexer(index.select(data["int"]))
 
         # Add some stats by resolution
-        report = collections.OrderedDict()
-        report["bins"] = list(binner.bins())
-        report["n_full"] = list(indexer_all.sum(data["full"]))
-        report["n_partial"] = list(indexer_all.sum(~data["full"]))
-        report["n_overload"] = list(indexer_all.sum(data["over"]))
-        report["n_ice"] = list(indexer_all.sum(data["ice"]))
-        report["n_summed"] = list(indexer_all.sum(data["sum"]))
-        report["n_fitted"] = list(indexer_all.sum(data["prf"]))
-        report["n_integrated"] = list(indexer_all.sum(data["int"]))
-        report["n_invalid_bg"] = list(indexer_all.sum(data["ninvbg"]))
-        report["n_invalid_fg"] = list(indexer_all.sum(data["ninvfg"]))
-        report["n_failed_background"] = list(indexer_all.sum(data["fbgd"]))
-        report["n_failed_summation"] = list(indexer_all.sum(data["fsum"]))
-        report["n_failed_fitting"] = list(indexer_all.sum(data["fprf"]))
+        report = {
+            "bins": list(binner.bins()),
+            "n_full": list(indexer_all.sum(data["full"])),
+            "n_partial": list(indexer_all.sum(~data["full"])),
+            "n_overload": list(indexer_all.sum(data["over"])),
+            "n_ice": list(indexer_all.sum(data["ice"])),
+            "n_summed": list(indexer_all.sum(data["sum"])),
+            "n_fitted": list(indexer_all.sum(data["prf"])),
+            "n_integrated": list(indexer_all.sum(data["int"])),
+            "n_invalid_bg": list(indexer_all.sum(data["ninvbg"])),
+            "n_invalid_fg": list(indexer_all.sum(data["ninvfg"])),
+            "n_failed_background": list(indexer_all.sum(data["fbgd"])),
+            "n_failed_summation": list(indexer_all.sum(data["fsum"])),
+            "n_failed_fitting": list(indexer_all.sum(data["fprf"])),
+        }
 
         # Compute mean background
         try:
@@ -274,9 +273,11 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
     overall["dmax"] = low_summary["dmax"]
 
     # Create the overall report
-    summary = collections.OrderedDict(
-        [("overall", overall), ("low", low_summary), ("high", high_summary)]
-    )
+    summary = {
+        "overall": overall,
+        "low": low_summary,
+        "high": high_summary,
+    }
 
     # Create a report binned by resolution
     resolution = binned_report(resolution_binner, data["d"], data)
@@ -285,9 +286,7 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
     image = binned_report(frame_binner, data["xyzcal.px"].parts()[2], data)
 
     # Return the report
-    return collections.OrderedDict(
-        [("summary", summary), ("resolution", resolution), ("image", image)]
-    )
+    return {"summary": summary, "resolution": resolution, "image": image}
 
 
 class IntegrationReport(Report):

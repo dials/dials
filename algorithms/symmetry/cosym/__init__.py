@@ -9,7 +9,6 @@ the presence of an indexing ambiguity.
 import json
 import logging
 import math
-from collections import OrderedDict
 from typing import List
 
 import numpy as np
@@ -458,7 +457,7 @@ class SymmetryAnalysis:
         dist_mat = ssd.pdist(coords, metric="cosine")
         cos_angle = 1 - ssd.squareform(dist_mat)
 
-        self._sym_ops_cos_angle = OrderedDict()
+        self._sym_ops_cos_angle = {}
         for dataset_id in range(n_datasets):
             for ref_sym_op_id in range(len(sym_ops)):
                 ref_idx = n_datasets * ref_sym_op_id + dataset_id
@@ -473,7 +472,7 @@ class SymmetryAnalysis:
         self._score_laue_groups()
 
     def _score_symmetry_elements(self):
-        self.sym_op_scores = OrderedDict()
+        self.sym_op_scores = {}
         for op, cos_angle in self._sym_ops_cos_angle.items():
             cc_true = 1
             cc = np.mean(cos_angle)

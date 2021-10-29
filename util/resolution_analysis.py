@@ -6,7 +6,6 @@ import enum
 import logging
 import math
 import typing
-from collections import OrderedDict
 
 import iotbx.merging_statistics
 import iotbx.mtz
@@ -635,7 +634,7 @@ class Resolutionizer:
             metrics.I_MEAN_OVER_SIGMA_MEAN: "Mn(I)/Mn(sig)",
         }
 
-        plot_d = OrderedDict()
+        plot_d = {}
 
         for metric in metrics:
             name = metric.name.lower()
