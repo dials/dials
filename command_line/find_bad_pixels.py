@@ -12,6 +12,16 @@ from dials.util.options import OptionParser, flatten_experiments
 
 help_message = """
 
+Identify unreliable pixels in a sequence of images: defined to be those pixels
+which read as signal in spot finding in 50% or over of images. Outputs data in
+the order slow, fast (i.e. row-major order) as ::
+
+  mask[slow, fast] = 16
+
+Assuming that these will be used to assign values to e.g. a numpy array. 16 in
+this case indicates "noisy" (e.g. bit 4 set to high:
+https://manual.nexusformat.org/classes/applications/NXmx.html)
+
 Examples::
 
   dials.find_bad_pixels data_master.h5 [nproc=8]
@@ -107,7 +117,7 @@ def find_constant_signal_pixels(imageset, images):
 
 @dials.util.show_mail_handle_errors()
 def run(args=None):
-    usage = "dials.find_bad_pixels [options] (data_master.h5|data_00*.cbf)"
+    usage = "dials.find_bad_pixels [options] (data_master.h5|data_*.cbf)"
 
     parser = OptionParser(
         usage=usage,
@@ -183,7 +193,7 @@ def run(args=None):
     hot_pixels = hot_mask.iselection()
 
     for h in hot_pixels:
-        print("    mask[%d, %d] = 8" % (h % nfast, h // nfast))
+        print(f"mask: {h // nfast} {h % nfast} 16")
 
 
 if __name__ == "__main__":
