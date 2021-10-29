@@ -286,10 +286,9 @@ class Importer:
         except FileNotFoundError as e:
             logger.error(f"File {e.filename} not found")
         else:
-            if experiments:
-                self.experiments.append(
-                    FilenameDataWrapper(filename="<image files>", data=experiments)
-                )
+            self.experiments.append(
+                FilenameDataWrapper(filename="<image files>", data=experiments)
+            )
 
         return unhandled
 
