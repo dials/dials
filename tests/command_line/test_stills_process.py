@@ -59,7 +59,8 @@ output.composite_output = True
 """
 
 
-def test_cspad_cbf_in_memory(dials_regression, run_in_tmpdir):
+@pytest.mark.parametrize("composite_output", [True, False])
+def test_cspad_cbf_in_memory(dials_regression, run_in_tmpdir, composite_output):
     # Check the data files for this test exist
     image_path = os.path.join(
         dials_regression,
@@ -74,7 +75,11 @@ def test_cspad_cbf_in_memory(dials_regression, run_in_tmpdir):
 
     params = phil_scope.fetch(parse(file_name="process_lcls.phil")).extract()
     params.output.experiments_filename = None
-    processor = Processor(params)
+    params.output.composite_output = composite_output
+    if composite_output:
+        processor = Processor(params, composite_tag="memtest")
+    else:
+        processor = Processor(params)
     mem_img = dxtbx.load(image_path)
     raw_data = mem_img.get_raw_data()  # cache the raw data to prevent swig errors
     mem_img = FormatCBFCspadInMemory(mem_img._cbf_handle)
@@ -87,8 +92,11 @@ def test_cspad_cbf_in_memory(dials_regression, run_in_tmpdir):
     processor.process_experiments(
         "20130301060858801", experiments
     )  # index/integrate the image
-
-    result = "idx-20130301060858801_integrated.refl"
+    if composite_output:
+        processor.finalize()
+        result = "idx-memtest_integrated.refl"
+    else:
+        result = "idx-20130301060858801_integrated.refl"
     n_refls = list(
         range(140, 152)
     )  # large ranges to handle platform-specific differences

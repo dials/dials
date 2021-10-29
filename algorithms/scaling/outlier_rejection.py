@@ -11,6 +11,9 @@ Ih_table and returns flex.size_t index arrays of the outlier positions.
 import copy
 import logging
 
+import numpy as np
+
+from dxtbx import flumpy
 from scitbx.array_family import flex
 
 from dials.algorithms.scaling.Ih_table import IhTable
@@ -66,7 +69,7 @@ def reject_outliers(reflection_table, experiment, method="standard", zmax=6.0):
         reflection_table.flags.outlier_in_scaling,
     )
     reflection_table.set_flags(
-        outlier_indices, reflection_table.flags.outlier_in_scaling
+        flumpy.from_numpy(outlier_indices), reflection_table.flags.outlier_in_scaling
     )
 
     return reflection_table
@@ -83,13 +86,23 @@ def determine_Esq_outlier_index_arrays(Ih_table, experiment, emax=10.0):
         logger.info(
             f"{n_e2_outliers} outliers identified from normalised intensity analysis (E\xb2 > {(emax ** 2)})"
         )
-    outlier_indices = Ih_table.Ih_table_blocks[0].Ih_table["loc_indices"].select(sel)
+    outlier_indices = (
+        Ih_table.Ih_table_blocks[0]
+        .Ih_table["loc_indices"]
+        .iloc[flumpy.to_numpy(sel)]
+        .to_numpy()
+    )
     if Ih_table.n_datasets == 1:
         return [outlier_indices]
-    datasets = Ih_table.Ih_table_blocks[0].Ih_table["dataset_id"].select(sel)
+    datasets = (
+        Ih_table.Ih_table_blocks[0]
+        .Ih_table["dataset_id"]
+        .iloc[flumpy.to_numpy(sel)]
+        .to_numpy()
+    )
     final_outlier_arrays = []
     for i in range(Ih_table.n_datasets):
-        final_outlier_arrays.append(outlier_indices.select(datasets == i))
+        final_outlier_arrays.append(outlier_indices[datasets == i])
     return final_outlier_arrays
 
 
@@ -167,9 +180,11 @@ Outlier rejection algorithms require an Ih_table with nblocks = 1"""
         self._Ih_table_block = Ih_table.blocked_data_list[0]
         self._n_datasets = Ih_table.n_datasets
         self._block_selections = Ih_table.blocked_selection_list[0]
-        self._datasets = flex.int([])
+        self._datasets = np.array([], dtype=np.uint64).reshape((0,))  # flex.int([])
         self._zmax = zmax
-        self._outlier_indices = flex.size_t([])
+        self._outlier_indices = np.array([], dtype=np.uint64).reshape(
+            (0,)
+        )  # flex.size_t([])
         self.final_outlier_arrays = None
 
     def run(self):
@@ -194,9 +209,7 @@ Outlier rejection algorithms require an Ih_table with nblocks = 1"""
             return [self._outlier_indices]
         final_outlier_arrays = []
         for i in range(self._n_datasets):
-            final_outlier_arrays.append(
-                self._outlier_indices.select(self._datasets == i)
-            )
+            final_outlier_arrays.append(self._outlier_indices[self._datasets == i])
         return final_outlier_arrays
 
     def _do_outlier_rejection(self):
@@ -229,42 +242,51 @@ Targeted outlier rejection requires a target Ih_table with nblocks = 1"""
         target_asu_Ih_dict = dict(
             zip(target.asu_miller_index, zip(target.Ih_values, target.variances))
         )
-        Ih_table.Ih_table["target_Ih_value"] = flex.double(Ih_table.size, 0.0)
-        Ih_table.Ih_table["target_Ih_sigmasq"] = flex.double(Ih_table.size, 0.0)
+        Ih_table.Ih_table["target_Ih_value"] = np.zeros(Ih_table.size)
+        Ih_table.Ih_table["target_Ih_sigmasq"] = np.zeros(Ih_table.size)
         for j, miller_idx in enumerate(Ih_table.asu_miller_index):
             if miller_idx in target_asu_Ih_dict:
-                Ih_table.Ih_table["target_Ih_value"][j] = target_asu_Ih_dict[
+                Ih_table.Ih_table.loc[j, "target_Ih_value"] = target_asu_Ih_dict[
                     miller_idx
                 ][0]
-                Ih_table.Ih_table["target_Ih_sigmasq"][j] = target_asu_Ih_dict[
+                Ih_table.Ih_table.loc[j, "target_Ih_sigmasq"] = target_asu_Ih_dict[
                     miller_idx
                 ][1]
 
-        nz_sel = Ih_table.Ih_table["target_Ih_value"] != 0.0
+        nz_sel = Ih_table.Ih_table["target_Ih_value"].to_numpy() != 0.0
         Ih_table = Ih_table.select(nz_sel)
         norm_dev = (
             Ih_table.intensities
-            - (Ih_table.inverse_scale_factors * Ih_table.Ih_table["target_Ih_value"])
+            - (
+                Ih_table.inverse_scale_factors
+                * Ih_table.Ih_table["target_Ih_value"].to_numpy()
+            )
         ) / (
-            flex.sqrt(
+            np.sqrt(
                 Ih_table.variances
                 + (
-                    flex.pow2(Ih_table.inverse_scale_factors)
-                    * Ih_table.Ih_table["target_Ih_sigmasq"]
+                    np.square(Ih_table.inverse_scale_factors)
+                    * Ih_table.Ih_table["target_Ih_sigmasq"].to_numpy()
                 )
             )
         )
-        outliers_sel = flex.abs(norm_dev) > self._zmax
-        outliers_isel = nz_sel.iselection().select(outliers_sel)
+        outliers_sel = np.abs(norm_dev) > self._zmax
+        outliers_isel = np.nonzero(nz_sel)[0][outliers_sel]
 
-        outliers = flex.bool(self._Ih_table_block.size, False)
-        outliers.set_selected(outliers_isel, True)
+        outliers = np.full(self._Ih_table_block.size, False)
+        outliers[outliers_isel] = True
 
-        self._outlier_indices.extend(
-            self._Ih_table_block.Ih_table["loc_indices"].select(outliers)
+        self._outlier_indices = np.concatenate(
+            [
+                self._outlier_indices,
+                self._Ih_table_block.Ih_table["loc_indices"].iloc[outliers],
+            ]
         )
-        self._datasets.extend(
-            self._Ih_table_block.Ih_table["dataset_id"].select(outliers)
+        self._datasets = np.concatenate(
+            [
+                self._datasets,
+                self._Ih_table_block.Ih_table["dataset_id"].iloc[outliers],
+            ]
         )
 
 
@@ -277,9 +299,11 @@ class SimpleNormDevOutlierRejection(OutlierRejectionBase):
 
     def __init__(self, Ih_table, zmax):
         super().__init__(Ih_table, zmax)
-        self.weights = limit_outlier_weights(
-            copy.deepcopy(self._Ih_table_block.weights),
-            self._Ih_table_block.h_index_matrix,
+        self.weights = flumpy.to_numpy(
+            limit_outlier_weights(
+                copy.deepcopy(self._Ih_table_block.weights),
+                self._Ih_table_block.h_index_matrix,
+            )
         )
 
     def _do_outlier_rejection(self):
@@ -288,28 +312,34 @@ class SimpleNormDevOutlierRejection(OutlierRejectionBase):
         intensity = Ih_table.intensities
         g = Ih_table.inverse_scale_factors
         w = self.weights
-        wgIsum = (
-            (w * g * intensity) * Ih_table.h_index_matrix
-        ) * Ih_table.h_expand_matrix
-        wg2sum = ((w * g * g) * Ih_table.h_index_matrix) * Ih_table.h_expand_matrix
+        wgIsum = Ih_table.sum_in_groups(w * g * intensity, output="per_refl")
+        wg2sum = Ih_table.sum_in_groups(w * g * g, output="per_refl")
 
         # guard against zero division errors - can happen due to rounding errors
         # or bad data giving g values are very small
         zero_sel = wg2sum == 0.0
         # set as one for now, then mark as outlier below. This will only affect if
         # g is near zero, if w is zero then throw an assertionerror.
-        wg2sum.set_selected(zero_sel, 1.0)
+        wg2sum[zero_sel] = 1.0
 
-        assert w.all_gt(0)  # guard against division by zero
+        assert np.all(w > 0)  # guard against division by zero
         norm_dev = (intensity - (g * wgIsum / wg2sum)) / (
-            flex.sqrt((1.0 / w) + flex.pow2(g / wg2sum))
+            np.sqrt((1.0 / w) + np.square(g / wg2sum))
         )
-        norm_dev.set_selected(zero_sel, 1000)  # to trigger rejection
-        outliers = flex.abs(norm_dev) > self._zmax
+        norm_dev[zero_sel] = 1000  # to trigger rejection
+        outliers = np.abs(norm_dev) > self._zmax
 
-        self._outlier_indices.extend(Ih_table.Ih_table["loc_indices"].select(outliers))
-        self._datasets.extend(
-            self._Ih_table_block.Ih_table["dataset_id"].select(outliers)
+        self._outlier_indices = np.concatenate(
+            [
+                self._outlier_indices,
+                self._Ih_table_block.Ih_table["loc_indices"].iloc[outliers].to_numpy(),
+            ]
+        )
+        self._datasets = np.concatenate(
+            [
+                self._datasets,
+                self._Ih_table_block.Ih_table["dataset_id"].iloc[outliers].to_numpy(),
+            ]
         )
 
 
@@ -322,20 +352,22 @@ class NormDevOutlierRejection(OutlierRejectionBase):
 
     def __init__(self, Ih_table, zmax):
         super().__init__(Ih_table, zmax)
-        self.weights = limit_outlier_weights(
-            copy.deepcopy(self._Ih_table_block.weights),
-            self._Ih_table_block.h_index_matrix,
+        self.weights = flumpy.to_numpy(
+            limit_outlier_weights(
+                copy.deepcopy(self._Ih_table_block.weights),
+                self._Ih_table_block.h_index_matrix,
+            )
         )
 
     def _do_outlier_rejection(self):
         """Add indices (w.r.t. the Ih_table data) to self._outlier_indices."""
         self._round_of_outlier_rejection()
-        n_outliers = len(self._outlier_indices)
+        n_outliers = self._outlier_indices.size
         n_new_outliers = n_outliers
         while n_new_outliers:
             self._round_of_outlier_rejection()
-            n_new_outliers = len(self._outlier_indices) - n_outliers
-            n_outliers = len(self._outlier_indices)
+            n_new_outliers = self._outlier_indices.size - n_outliers
+            n_outliers = self._outlier_indices.size
 
     def _round_of_outlier_rejection(self):
         """
@@ -345,47 +377,58 @@ class NormDevOutlierRejection(OutlierRejectionBase):
         intensity = Ih_table.intensities
         g = Ih_table.inverse_scale_factors
         w = self.weights
-        wgIsum = (
-            (w * g * intensity) * Ih_table.h_index_matrix
-        ) * Ih_table.h_expand_matrix
-        wg2sum = ((w * g * g) * Ih_table.h_index_matrix) * Ih_table.h_expand_matrix
+        wgIsum = Ih_table.sum_in_groups(w * g * intensity, output="per_refl")
+        wg2sum = Ih_table.sum_in_groups(w * g * g, output="per_refl")
         wgIsum_others = wgIsum - (w * g * intensity)
         wg2sum_others = wg2sum - (w * g * g)
         # Now do the rejection analysis if n_in_group > 2
         nh = Ih_table.calc_nh()
         sel = nh > 2
-        wg2sum_others_sel = wg2sum_others.select(sel)
-        wgIsum_others_sel = wgIsum_others.select(sel)
+        wg2sum_others_sel = wg2sum_others[sel]
+        wgIsum_others_sel = wgIsum_others[sel]
 
         # guard against zero division errors - can happen due to rounding errors
         # or bad data giving g values are very small
         zero_sel = wg2sum_others_sel == 0.0
         # set as one for now, then mark as outlier below. This will only affect if
         # g is near zero, if w is zero then throw an assertionerror.
-        wg2sum_others_sel.set_selected(zero_sel, 1.0)
-        g_sel = g.select(sel)
-        I_sel = intensity.select(sel)
-        w_sel = w.select(sel)
+        wg2sum_others_sel[zero_sel] = 1.0
+        g_sel = g[sel]
+        I_sel = intensity[sel]
+        w_sel = w[sel]
 
-        assert w_sel.all_gt(0)  # guard against division by zero
+        assert np.all(w_sel > 0)  # guard against division by zero
         norm_dev = (I_sel - (g_sel * wgIsum_others_sel / wg2sum_others_sel)) / (
-            flex.sqrt((1.0 / w_sel) + (flex.pow2(g_sel) / wg2sum_others_sel))
+            np.sqrt((1.0 / w_sel) + (np.square(g_sel) / wg2sum_others_sel))
         )
-        norm_dev.set_selected(zero_sel, 1000)  # to trigger rejection
-        z_score = flex.abs(norm_dev)
+        norm_dev[zero_sel] = 1000  # to trigger rejection
+        z_score = np.abs(norm_dev)
         # Want an array same size as Ih table.
-        all_z_scores = flex.double(Ih_table.size, 0.0)
-        all_z_scores.set_selected(sel.iselection(), z_score)
+        all_z_scores = np.zeros(Ih_table.size)
+        # all_z_scores.set_selected(sel.iselection(), z_score)
+        all_z_scores[sel] = z_score
         outlier_indices, other_potential_outliers = determine_outlier_indices(
-            Ih_table.h_index_matrix, all_z_scores, self._zmax
+            Ih_table.h_index_matrix, flumpy.from_numpy(all_z_scores), self._zmax
         )
-        self._outlier_indices.extend(
-            self._Ih_table_block.Ih_table["loc_indices"].select(outlier_indices)
+        sel = np.full(Ih_table.size, False, dtype=bool)
+        outlier_indices = flumpy.to_numpy(outlier_indices)
+        sel[outlier_indices] = True
+        lsel = self._Ih_table_block.Ih_table["loc_indices"].iloc[sel].to_numpy()
+        dsel = self._Ih_table_block.Ih_table["dataset_id"].iloc[sel].to_numpy()
+        self._outlier_indices = np.concatenate(
+            [
+                self._outlier_indices,
+                lsel,
+            ]
         )
-        self._datasets.extend(
-            self._Ih_table_block.Ih_table["dataset_id"].select(outlier_indices)
+        self._datasets = np.concatenate(
+            [
+                self._datasets,
+                dsel,
+            ]
         )
-        sel = flex.bool(Ih_table.size, False)
-        sel.set_selected(other_potential_outliers, True)
+
+        sel = np.full(Ih_table.size, False, dtype=bool)
+        sel[flumpy.to_numpy(other_potential_outliers)] = True
         self._Ih_table_block = self._Ih_table_block.select(sel)
-        self.weights = self.weights.select(sel)
+        self.weights = self.weights[sel]

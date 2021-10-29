@@ -46,15 +46,25 @@ logger = logging.getLogger("dials")
 
 import pkg_resources
 
-kb_model_phil_str = """\
+base_model_phil_str = """\
+correction.fix = None
+    .type = strings
+    .help = "If specified, this correction will not be refined in this scaling run"
+"""
+
+kb_model_phil_str = (
+    """\
 decay_correction = True
     .type = bool
     .help = "Option to turn off decay correction (for physical/array/KB
             default models)."
     .expert_level = 1
 """
+    + base_model_phil_str
+)
 
-dose_decay_model_phil_str = """\
+dose_decay_model_phil_str = (
+    """\
 scale_interval = 2.0
     .type = float(value_min=1.0)
     .help = "Rotation (phi) interval between model parameters for the scale"
@@ -97,9 +107,12 @@ fix_initial = True
             "scale factor error estimates."
     .expert_level = 2
 """
+    + base_model_phil_str
+)
 
 
-physical_model_phil_str = """\
+physical_model_phil_str = (
+    """\
 scale_interval = auto
     .type = float(value_min=1.0)
     .help = "Rotation (phi) interval between model parameters for the scale"
@@ -163,8 +176,11 @@ fix_initial = True
             "scale factor error estimates."
     .expert_level = 2
 """
+    + base_model_phil_str
+)
 
-array_model_phil_str = """\
+array_model_phil_str = (
+    """\
 decay_correction = True
     .type = bool
     .help = "Option to turn off decay correction (a 2D grid of parameters as"
@@ -202,6 +218,8 @@ n_modulation_bins = 20
             "binning the detector position for the modulation correction."
     .expert_level = 2
 """
+    + base_model_phil_str
+)
 
 autos = [Auto, "auto", "Auto"]
 
@@ -219,6 +237,7 @@ class ScalingModelBase:
         self._configdict = configdict
         self._is_scaled = is_scaled
         self._error_model = None
+        self._fixed_components = []
 
     @property
     def is_scaled(self):
@@ -228,6 +247,14 @@ class ScalingModelBase:
     def fix_initial_parameter(self, params):
         """Fix a parameter of the scaling model."""
         return False
+
+    @property
+    def fixed_components(self):
+        return self._fixed_components
+
+    @fixed_components.setter
+    def fixed_components(self, components):
+        self._fixed_components = components
 
     def limit_image_range(self, new_image_range):
         """Modify the model if necessary due to reducing the image range.
@@ -475,9 +502,16 @@ class DoseDecay(ScalingModelBase):
 
     def get_shared_components(self):
         if "shared" in self.configdict:
-            if "decay" in self.configdict["shared"]:
+            if (
+                "decay" in self.configdict["shared"]
+                and "decay" not in self.fixed_components
+            ):
                 return "decay"
         return None
+
+    def update(self, params):
+        if params.dose_decay.correction.fix:
+            self.fixed_components = params.dose_decay.correction.fix
 
     def configure_components(self, reflection_table, experiment, params):
         """Add the required reflection table data to the model components."""
@@ -594,7 +628,10 @@ class DoseDecay(ScalingModelBase):
                 "parameter_esds": None,
             }
 
-        return cls(parameters_dict, configdict)
+        model = cls(parameters_dict, configdict)
+        if params.correction.fix:
+            model.fixed_components = params.correction.fix
+        return model
 
     @classmethod
     def from_dict(cls, obj):
@@ -858,7 +895,10 @@ class PhysicalScalingModel(ScalingModelBase):
                 "parameter_esds": None,
             }
 
-        return cls(parameters_dict, configdict)
+        model = cls(parameters_dict, configdict)
+        if params.correction.fix:
+            model.fixed_components = params.correction.fix
+        return model
 
     @classmethod
     def from_dict(cls, obj):
@@ -890,6 +930,8 @@ class PhysicalScalingModel(ScalingModelBase):
 
     def update(self, params):
         """Update the model if new options chosen in the phil scope."""
+        if params.physical.correction.fix:
+            self.fixed_components = params.physical.correction.fix
         if "absorption" in self.components:
             new_lmax = None
             if params.physical.absorption_level:
@@ -933,7 +975,10 @@ class PhysicalScalingModel(ScalingModelBase):
 
     def get_shared_components(self):
         if "shared" in self.configdict:
-            if "absorption" in self.configdict["shared"]:
+            if (
+                "absorption" in self.configdict["shared"]
+                and "absorption" not in self.fixed_components
+            ):
                 return "absorption"
         return None
 
@@ -982,6 +1027,10 @@ class ArrayScalingModel(ScalingModelBase):
     def consecutive_refinement_order(self):
         """:obj:`list`: a nested list of component names to indicate scaling order."""
         return [["decay"], ["absorption"], ["modulation"]]
+
+    def update(self, params):
+        if params.array.correction.fix:
+            self.fixed_components = params.array.correction.fix
 
     def configure_components(self, reflection_table, experiment, params):
         """Add the required reflection table data to the model components."""
@@ -1180,7 +1229,10 @@ class ArrayScalingModel(ScalingModelBase):
                 "parameter_esds": None,
             }
 
-        return cls(parameters_dict, configdict)
+        model = cls(parameters_dict, configdict)
+        if params.correction.fix:
+            model.fixed_components = params.correction.fix
+        return model
 
     @classmethod
     def from_dict(cls, obj):
@@ -1257,6 +1309,10 @@ class KBScalingModel(ScalingModelBase):
         """:obj:`list`: a nested list of component names to indicate scaling order."""
         return [["scale", "decay"]]
 
+    def update(self, params):
+        if params.KB.correction.fix:
+            self.fixed_components = params.KB.correction.fix
+
     @classmethod
     def from_dict(cls, obj):
         """Create an :obj:`KBScalingModel` from a dictionary."""
@@ -1299,7 +1355,10 @@ class KBScalingModel(ScalingModelBase):
             "parameter_esds": None,
         }
 
-        return cls(parameters_dict, configdict)
+        model = cls(parameters_dict, configdict)
+        if params.KB.correction.fix:
+            model.fixed_components = params.KB.correction.fix
+        return model
 
 
 def calculate_new_offset(
