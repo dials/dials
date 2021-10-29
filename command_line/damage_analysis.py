@@ -327,6 +327,10 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     log.config(logfile=params.output.log)
     logger.info(dials_version())
 
+    diff_phil = parser.diff_phil.as_str()
+    if diff_phil:
+        logger.info("The following parameters have been modified:\n%s", diff_phil)
+
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
