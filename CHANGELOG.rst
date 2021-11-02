@@ -1,3 +1,53 @@
+DIALS 3.7.0 (2021-11-01)
+========================
+
+Features
+--------
+
+- Bootstrap support for MacOS M1 platforms. (`#1841 <https://github.com/dials/dials/issues/1841>`_)
+- New ``dials.find_rotation_axis`` program optimises the rotation axis from strong spot positions prior to indexing. (`#1884 <https://github.com/dials/dials/issues/1884>`_)
+- ``dials.import``: Allow importing templates with no template characters. (`#1840 <https://github.com/dials/dials/issues/1840>`_)
+- ``dials.stills_process``: Performance improvements in Kapton absorption correction and in rare cases of highly mosaic crystals. (`#1846 <https://github.com/dials/dials/issues/1846>`_)
+- ``dials.image_viewer`` Coordinates are now given in fast, slow order. (`#1849 <https://github.com/dials/dials/issues/1849>`_)
+- ``dials.image_viewer``: Crystal basis vectors are now shown in the same colour as their predictions. (`#1855 <https://github.com/dials/dials/issues/1855>`_)
+- ``dials.image_viewer``: Add the option to display the rotation axis (`#1856 <https://github.com/dials/dials/issues/1856>`_)
+- ``dials.image_viewer``: Draw resolution rings for curved detectors. (`#1899 <https://github.com/dials/dials/issues/1899>`_)
+- ``dials.import``: Unhandled files are now by default ignored. This means that e.g. ``*.log`` files alongside images will no longer prevent a successful import. Set ``ignore_unhandled=False`` to restore the previous behaviour. (`#1881 <https://github.com/dials/dials/issues/1881>`_)
+- ``dials.scale``: Allow fixing of a particular correction with e.g. ``physical.correction.fix=absorption``. (`#1883 <https://github.com/dials/dials/issues/1883>`_)
+- Installer now accepts a ``--raw-prefix`` option to use the target destination directly, instead of in a ``dials-X.Y`` subdirectory. (`#1896 <https://github.com/dials/dials/issues/1896>`_)
+
+
+Bugfixes
+--------
+
+- ``dials.compute_delta_cchalf``: Fix crash when only using passing dataset/group. (`#1892 <https://github.com/dials/dials/issues/1892>`_)
+- ``dials.find_bad_pixels``: Pixel coordinates are now reported in row-major order, and mask value is now set to 16, which corresponds internally to "noisy pixel". (`#1876 <https://github.com/dials/dials/issues/1876>`_)
+- ``dials.find_rotation_axis``: removed unused parameter ``optimise={True|False}``. (`#1898 <https://github.com/dials/dials/issues/1898>`_)
+- ``dials.report``: Don't show otherwise empty sections. (`#1875 <https://github.com/dials/dials/issues/1875>`_)
+
+
+Improved Documentation
+----------------------
+
+- Improvements to 3DED tutorials. (`#1850 <https://github.com/dials/dials/issues/1850>`_)
+- SARS-CoV-2 main protease tutorial: process in C2 rather than I2 setting for consistency with published structures. (`#1854 <https://github.com/dials/dials/issues/1854>`_)
+- Removed outdated lysozyme nanocrystals tutorial. (`#1877 <https://github.com/dials/dials/issues/1877>`_)
+- Add an associated projects page to the website. (`#1893 <https://github.com/dials/dials/issues/1893>`_)
+
+
+Deprecations and Removals
+-------------------------
+
+- Bootstrap no longer allows creating Python 3.6 environments. (`#1852 <https://github.com/dials/dials/issues/1852>`_)
+- ``dials.util.mp``: deprecate ``parallel_map()`` function and remove previously deprecated ``preserve_exception_message=`` parameters. (`#1860 <https://github.com/dials/dials/issues/1860>`_)
+
+
+Misc
+----
+
+- `#1851 <https://github.com/dials/dials/issues/1851>`_, `#1853 <https://github.com/dials/dials/issues/1853>`_, `#1862 <https://github.com/dials/dials/issues/1862>`_, `#1865 <https://github.com/dials/dials/issues/1865>`_, `#1867 <https://github.com/dials/dials/issues/1867>`_, `#1869 <https://github.com/dials/dials/issues/1869>`_, `#1882 <https://github.com/dials/dials/issues/1882>`_, `#1887 <https://github.com/dials/dials/issues/1887>`_, `#1888 <https://github.com/dials/dials/issues/1888>`_, `#1889 <https://github.com/dials/dials/issues/1889>`_, `#1891 <https://github.com/dials/dials/issues/1891>`_, `#1894 <https://github.com/dials/dials/issues/1894>`_, `#1902 <https://github.com/dials/dials/issues/1902>`_
+
+
 DIALS 3.6.2 (2021-09-21)
 ========================
 

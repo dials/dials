@@ -1,1 +1,0 @@
-``dials.find_rotation_axis``: removed unused parameter ``optimise={True|False}``.
