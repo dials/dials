@@ -100,13 +100,14 @@ def goniometer_rotation(
     denoted R, here denoted R' to avoid confusion with the notation of
     dxtbx/model/goniometer.h) can be calculated as R' = S ∘ R ∘ F.
     Here:
-        * S is the 'setting rotation', the operator denoting the position of all parent
-        axes of the scan axis, which hence defines the orientation of the scan axis;
+        * S is the static 'setting rotation', the operator denoting the position of all
+        parent axes of the scan axis, which hence defines the orientation of the scan
+        axis;
         * R is the the operator denoting the scan rotation as if it were performed with
         all parent axes at zero datum, it has a different value for each reflection,
-        recording the scan position corresponding to the reflection centroid.
-        * F is the 'fixed rotation', denoting the orientation of all child axes of the
-        scan axis as if they were performed with all parent axes at zero datum.
+        recording the scan position corresponding to each reflection centroid;
+        * F is the static 'fixed rotation', denoting the orientation of all child axes
+        of the scan axis as if they were performed with all other axes at zero datum.
 
     Args:
         experiment:  The DXTBX experiment object corresponding to the scan.
