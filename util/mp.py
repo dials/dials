@@ -65,7 +65,7 @@ def parallel_map(
 
     warnings.warn(
         "The dials.util.parallel_map function is deprecated",
-        DeprecationWarning,
+        UserWarning,
         stacklevel=2,
     )
 
