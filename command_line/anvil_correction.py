@@ -104,7 +104,7 @@ def goniometer_rotation(
         axes of the scan axis, which hence defines the orientation of the scan axis;
         * R is the the operator denoting the scan rotation as if it were performed with
         all parent axes at zero datum, it has a different value for each reflection,
-        according to the reflection centroid positions.
+        recording the scan position corresponding to the reflection centroid.
         * F is the 'fixed rotation', denoting the orientation of all child axes of the
         scan axis as if they were performed with all parent axes at zero datum.
 
