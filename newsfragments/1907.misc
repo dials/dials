@@ -1,0 +1,1 @@
+Reword the docstring of ``dials.command_line.anvil_correction.goniometer_rotation`` to make its meaning slightly clearer.
