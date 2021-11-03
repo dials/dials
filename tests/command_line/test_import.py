@@ -472,7 +472,7 @@ def test_import_still_sequence_as_experiments_subset(dials_data, tmpdir):
 
     out = "experiments_as_still.expt"
 
-    _ = procrunner.run(
+    procrunner.run(
         ["dials.import", "scan.oscillation=10,0", f"output.experiments={out}"]
         + image_files,
         working_directory=tmpdir.strpath,
@@ -535,7 +535,7 @@ def test_import_still_sequence_as_experiments_split_subset(dials_data, tmpdir):
 
     out = "experiments_as_still.expt"
 
-    _ = procrunner.run(
+    procrunner.run(
         ["dials.import", "scan.oscillation=10,0", f"output.experiments={out}"]
         + image_files,
         working_directory=tmpdir.strpath,
