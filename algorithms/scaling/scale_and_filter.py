@@ -148,6 +148,7 @@ class AnalysisResults:
             "termination_reason": self.termination_reason,
             "initial_n_reflections": self.initial_n_reflections,
             "initial_expids_and_image_ranges": self.initial_expids_and_image_ranges,
+            "expids_and_image_ranges": self.expids_and_image_ranges,
             "cycle_results": {i + 1: val for i, val in enumerate(self.cycle_results)},
             "final_stats": self.final_stats,
         }
