@@ -161,6 +161,7 @@ class AnalysisResults:
         results.initial_expids_and_image_ranges = dictionary[
             "initial_expids_and_image_ranges"
         ]
+        results.expids_and_image_ranges = dictionary["expids_and_image_ranges"]
         results.cycle_results = [
             dictionary["cycle_results"][str(key)]
             for key in sorted(int(k) for k in dictionary["cycle_results"].keys())
