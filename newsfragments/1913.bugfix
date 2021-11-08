@@ -1,1 +1,1 @@
-dials.scale: Add missing ``"expids_and_image_ranges"`` item to the ``scale_and_filter_results`` json output
+``dials.scale``: Add missing "expids_and_image_ranges" information to the json output. This is required for some of the plots in ``dials.report`` output.
