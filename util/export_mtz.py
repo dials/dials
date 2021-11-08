@@ -438,6 +438,10 @@ def export_mtz(
                 "Experiment crystals differ. Using first experiment crystal for file-level data."
             )
 
+        # At least, all experiments must have the same space group
+        if len({x.crystal.get_space_group().make_tidy() for x in experiment_list}) != 1:
+            raise ValueError("Experiments do not have a unique space group")
+
         wavelengths = match_wavelengths(experiment_list)
         if len(wavelengths) > 1:
             logger.info(
