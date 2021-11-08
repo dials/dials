@@ -1,5 +1,5 @@
 """Test that compute_delta_cchalf returns required values"""
-
+import json
 from unittest import mock
 
 from dxtbx.model import Crystal, Experiment, Scan
@@ -186,3 +186,19 @@ def test_compute_delta_cchalf_returned_results():
     assert [(6, 10), 0] in results_summary["dataset_removal"]["image_ranges_removed"]
     assert [(1, 5), 0] in results_summary["dataset_removal"]["image_ranges_removed"]
     assert len(results_summary["dataset_removal"]["image_ranges_removed"]) == 2
+
+
+def test_analysis_results_to_from_dict():
+    d = {
+        "termination_reason": "made up",
+        "initial_expids_and_image_ranges": [["foo", [1, 42]], ["bar", [1, 10]]],
+        "expids_and_image_ranges": [["foo", [1, 42]]],
+        "cycle_results": {"1": {"some stat": -424242}},
+        "initial_n_reflections": 424242,
+        "final_stats": "some final stats",
+    }
+    results = AnalysisResults.from_dict(d)
+    # The cycle_results dict output by AnalysisResults has integer keys but after
+    # conversion to json has str keys. AnalysisResults.from_dict expects str keys,
+    # hence do the comparison after converting to/from json
+    assert json.loads(json.dumps(results.to_dict())) == d

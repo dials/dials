@@ -1,1 +1,1 @@
-Utility bug fixes for corner cases: if no partiality column make sum_partial_reflections a no-op; if bin critical values come back as None in resolution estimation replace this with 0.0
+Utility fixes: Better handle cases of missing partiality data in reflection files. Treat missing resolution values as ``0.0`` instead of being empty.
