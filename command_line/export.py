@@ -545,7 +545,8 @@ def run(args=None):
     try:
         exporter(params, experiments, reflections)
     except Exception as e:
-        sys.exit(e)
+        logger.error("Error: " + str(e))
+        sys.exit(1)
 
 
 if __name__ == "__main__":
