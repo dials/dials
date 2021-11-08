@@ -722,6 +722,7 @@ def test_scale_and_filter_dataset_mode(dials_data, tmp_path):
     assert analysis_results["cycle_results"]["1"]["removed_datasets"] == [
         analysis_results["initial_expids_and_image_ranges"][4][0]
     ]
+    assert "expids_and_image_ranges" in analysis_results
 
 
 def test_scale_array(dials_data, tmp_path):
