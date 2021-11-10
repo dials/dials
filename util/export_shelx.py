@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def export_shelx(scaled_data, experiment_list, params):
-    """Export scaled data corresponding to experiment_list yo
+    """Export scaled data corresponding to experiment_list to
     a SHELX HKL formatted text file."""
 
     # Handle requesting profile intensities (default via auto) but no column
@@ -20,7 +20,7 @@ def export_shelx(scaled_data, experiment_list, params):
             "Requested profile intensity data but only summed present. Use intensity=sum."
         )
 
-    # get best unit cell from experimement list and use to define d in reflection table.
+    # get best unit cell from experiment list and use to define d in reflection table.
     best_unit_cell = determine_best_unit_cell(experiment_list)
     scaled_data["d"] = best_unit_cell.d(scaled_data["miller_index"])
 
