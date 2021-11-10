@@ -44,8 +44,8 @@ input is an models.expt file.
 XDS format exports a models.expt file as XDS.INP and XPARM.XDS files. If a
 reflection file is given it will be exported as a SPOT.XDS file.
 
-PETS format exports intensity data and diffraction data in the CIF format
-used by PETS 2.0. This is primarily intended to produce files suitable for
+PETS2 format exports intensity data and diffraction data in the CIF format
+used by PETS2. This is primarily intended to produce files suitable for
 dynamic diffraction refinement using Jana2020, which requires this format.
 
 Examples::
