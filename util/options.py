@@ -626,7 +626,7 @@ class ArgumentParserBase(argparse.ArgumentParser):
         """
 
         # Initialise the option parser
-        super().__init__(**kwargs)
+        super().__init__(add_help=False, **kwargs)
 
         # Add an option to show configuration parameters
         if config_options:
@@ -672,6 +672,16 @@ class ArgumentParserBase(argparse.ArgumentParser):
                 default=False,
                 help="Sort the arguments",
             )
+
+        # Set a help parameter
+        self.add_argument(
+            "-h",
+            "--help",
+            action="count",
+            default=0,
+            dest="help",
+            help="Show this help message and exit. Can be specified multiple times to increase verbosity.",
+        )
 
         # Set a verbosity parameter
         self.add_argument(
@@ -802,16 +812,26 @@ class ArgumentParser(ArgumentParserBase):
 
         # Show config
         if hasattr(options, "show_config") and options.show_config:
+            show_config = True
+            attributes_level = options.attributes_level
+            expert_level = options.expert_level
+        elif options.help:
+            show_config = True
+            attributes_level = 1 if options.help > 1 else 0
+            expert_level = options.help - attributes_level
+        else:
+            show_config = False
+
+        if show_config:
             print(
                 "Showing configuration parameters with:\n"
-                "  attributes_level = %d\n"
-                "  expert_level = %d\n"
-                % (options.attributes_level, options.expert_level)
+                f"  attributes_level = {attributes_level}\n"
+                f"  expert_level = {expert_level}\n"
             )
             print(
                 self.phil.as_str(
-                    expert_level=options.expert_level,
-                    attributes_level=options.attributes_level,
+                    expert_level=expert_level,
+                    attributes_level=attributes_level,
                 )
             )
             exit(0)
