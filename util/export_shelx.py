@@ -20,8 +20,12 @@ def export_shelx(scaled_data, experiment_list, params):
             "Requested profile intensity data but only summed present. Use intensity=sum."
         )
 
-    # get best unit cell from experiment list and use to define d in reflection table.
-    best_unit_cell = determine_best_unit_cell(experiment_list)
+    # use supplied best unit cell or that determined from experiment list to define d in reflection table.
+    best_unit_cell = params.mtz.best_unit_cell
+    if best_unit_cell is None:
+        best_unit_cell = determine_best_unit_cell(experiment_list)
+    else:
+        logger.info("Using supplied unit cell across experiments : %s", best_unit_cell)
     scaled_data["d"] = best_unit_cell.d(scaled_data["miller_index"])
 
     # Clean up reflection table with mtz defaults (as in export_xds_ascii)
@@ -35,6 +39,10 @@ def export_shelx(scaled_data, experiment_list, params):
         d_min=params.mtz.d_min,
     )
 
+    # Check that all experiments have the same space group
+    if len({x.crystal.get_space_group().make_tidy() for x in experiment_list}) != 1:
+        raise ValueError("Experiments do not have a unique space group")
+
     # Create miller set with space group from 1st crystal in experiment list and best unit cell
     miller_set = miller.set(
         crystal_symmetry=crystal.symmetry(
@@ -45,9 +53,12 @@ def export_shelx(scaled_data, experiment_list, params):
         anomalous_flag=False,
     )
 
+    intensity_choice = (
+        params.intensity[0] if params.intensity[0] != "profile" else "prf"
+    )
     intensities, variances = (
-        scaled_data["intensity." + params.intensity[0] + ".value"],
-        scaled_data["intensity." + params.intensity[0] + ".variance"],
+        scaled_data["intensity." + intensity_choice + ".value"],
+        scaled_data["intensity." + intensity_choice + ".variance"],
     )
     assert variances.all_gt(0)
     i_obs = miller.array(miller_set, data=intensities)
