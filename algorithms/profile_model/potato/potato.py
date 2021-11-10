@@ -16,8 +16,6 @@ import logging
 from collections import OrderedDict
 from math import pi
 
-from jinja2 import ChoiceLoader, Environment, PackageLoader
-
 from libtbx.phil import parse
 from scitbx import matrix
 
@@ -93,7 +91,7 @@ phil_scope = parse(
     outlier_probability = 0.975
       .type = float
 
-    n_macro_cycles = 3
+    n_macro_cycles = 1
       .type = int
 
     n_cycles = 3
@@ -468,7 +466,7 @@ def run_potato_refinement(
     wavelength_model="delta",
     fix_unit_cell=False,
     fix_orientation=False,
-    html_output=True,
+    capture_progress=False,
     n_cycles=3,
 ):
     """Runs potato refinement on strong spots.
@@ -477,7 +475,6 @@ def run_potato_refinement(
     refinement,"""
 
     output_data = {
-        "plots_data": OrderedDict(),
         "refiner_output": {
             "history": [],
             "correlation": None,
@@ -491,13 +488,6 @@ def run_potato_refinement(
     else:
         profile = experiments[0].crystal.mosaicity
 
-    # Preprocess the reflections
-    # Make some plots
-    if html_output:
-        output_data["plots_data"].update(
-            plot_distance_from_ewald_sphere(experiments[0], reflection_table, "Initial")
-        )
-
     # Construct the profile refiner data
     refiner_data = RefinerData.from_reflections(experiments[0], reflection_table)
 
@@ -510,11 +500,11 @@ def run_potato_refinement(
             refiner_data,
             wavelength_spread_model=wavelength_model,
         )
-
-        # Save some data for plotting later.
-        output_data["refiner_output"]["history"].append(refiner.history)
-        output_data["refiner_output"]["correlation"] = refiner.correlation()
-        output_data["refiner_output"]["labels"] = refiner.labels()
+        if capture_progress:
+            # Save some data for plotting later.
+            output_data["refiner_output"]["history"].append(refiner.history)
+            output_data["refiner_output"]["correlation"] = refiner.correlation()
+            output_data["refiner_output"]["labels"] = refiner.labels()
 
         # refine the crystal
         _ = refine_crystal(
@@ -531,12 +521,6 @@ def run_potato_refinement(
     reflection_table = predict_after_potato_refinement(experiments[0], reflection_table)
     # Compute prob
     compute_prediction_probability(experiments[0], reflection_table)
-
-    # Make some plots
-    if html_output:
-        output_data["plots_data"].update(
-            plot_distance_from_ewald_sphere(experiments[0], reflection_table, "Final")
-        )
 
     return experiments, reflection_table, output_data
 
@@ -661,7 +645,18 @@ class Integrator(object):
 
         """
 
-        self.experiments, self.reference, output_data = run_potato_refinement(
+        output_data = {"plots_data": OrderedDict()}
+
+        if self.params.output.html:
+            output_data["plots_data"].update(
+                plot_distance_from_ewald_sphere(
+                    self.experiments[0],
+                    self.reference,
+                    "Initial",
+                )
+            )
+
+        self.experiments, self.reference, ref_output_data = run_potato_refinement(
             self.experiments,
             self.reference,
             self.sigma_d,
@@ -669,24 +664,39 @@ class Integrator(object):
             wavelength_model=self.params.profile.wavelength_spread.model,
             fix_unit_cell=self.params.profile.unit_cell.fixed,
             fix_orientation=self.params.profile.orientation.fixed,
-            html_output=self.params.output.html,
+            capture_progress=self.params.output.html,
             n_cycles=self.params.refinement.n_cycles,
         )
+
+        # Make some plots
+        if self.params.output.html:
+            output_data["plots_data"].update(
+                plot_distance_from_ewald_sphere(
+                    self.experiments[0],
+                    self.reference,
+                    "Final",
+                )
+            )
+
         self.plots_data.update(output_data["plots_data"])
 
         # Plot the corrgram
         if self.params.debug.output.plots:
-            plt = corrgram(
-                output_data["refiner_output"]["correlation"],
-                output_data["refiner_output"]["labels"],
-            )
-            plt.savefig("corrgram.png", dpi=300)
-            plt.clf()
+            if ref_output_data["refiner_output"]["history"]:
+                plt = corrgram(
+                    ref_output_data["refiner_output"]["correlation"],
+                    ref_output_data["refiner_output"]["labels"],
+                )
+                plt.savefig("corrgram.png", dpi=300)
+                plt.clf()
         # Save the history
-        if self.params.debug.output.history:
+        if (
+            self.params.debug.output.history
+            and ref_output_data["refiner_output"]["history"]
+        ):
             with open("history.json", "w") as outfile:
                 json.dump(
-                    output_data["refiner_output"]["history"][-1], outfile, indent=2
+                    ref_output_data["refiner_output"]["history"][-1], outfile, indent=2
                 )
         # Save the profile model
         if self.params.debug.output.profile_model:
@@ -748,23 +758,3 @@ class Integrator(object):
         if not self.params.integration.corrections.partiality:
             del self.reflections["partiality"]
             del self.reflections["partiality.inv.variance"]
-
-
-def generate_html_report(plots_data, filename):
-    loader = ChoiceLoader(
-        [
-            PackageLoader("dials", "templates"),
-            PackageLoader("dials", "static", encoding="utf-8"),
-        ]
-    )
-    env = Environment(loader=loader)
-    template = env.get_template("simple_report.html")
-    html = template.render(
-        page_title="DIALS SSX integration report",
-        panel_title="Integration plots",
-        panel_id="ewald",
-        graphs=plots_data,
-    )
-    logger.info(f"Writing html report to {filename}")
-    with open(filename, "wb") as f:
-        f.write(html.encode("utf-8", "xmlcharrefreplace"))

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# dials.potato.py
+# dials.ssx_integrate.py
 #
 #  Copyright (C) 2018 Diamond Light Source
 #
@@ -9,10 +9,11 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-# LIBTBX_SET_DISPATCHER_NAME dials.potato
 
 from __future__ import absolute_import, division
 
+import concurrent.futures
+import functools
 import logging
 
 from dxtbx.model import ExperimentList
@@ -20,8 +21,9 @@ from libtbx import phil
 from libtbx.phil import parse
 from libtbx.utils import Sorry
 
-from dials.algorithms.profile_model.potato.potato import (
-    Integrator,
+from dials.algorithms.integration.potato_integrate import PotatoIntegrator
+from dials.algorithms.integration.ssx_integrate import (
+    OutputAggregator,
     generate_html_report,
 )
 from dials.array_family import flex
@@ -38,7 +40,7 @@ logger = logging.getLogger("dials")
 
 help_message = """
 
-This script does profile modelling for stills
+This program does profile modelling and integration for stills
 
 """
 
@@ -47,17 +49,12 @@ phil_scope = parse(
     """
 
   output {
-    experiments = "integrated.expt"
+    batch_size = 50
+      .type = int
+      .help = "Number of images to save in each output file"
+    log = "dials.ssx_integrate.log"
       .type = str
-      .help = "The output experiments"
-
-    reflections = "integrated.refl"
-      .type = str
-      .help = "The output reflections"
-
-    log = "dials.potato.log"
-      .type = str
-    html = "dials.potato.html"
+    html = "dials.ssx_integrate.html"
       .type = str
   }
 
@@ -68,36 +65,21 @@ phil_scope = parse(
 )
 
 
-def process_one_still(experiment, table, params):
-    single_elist = ExperimentList([experiment])
-    ids_map = dict(table.experiment_identifiers())
-    table["id"] = flex.int(table.size(), 0)  # set to zero so can integrate (
-    # this is how integration finds the image in the imageset)
-    del table.experiment_identifiers()[list(ids_map.keys())[0]]
-    table.experiment_identifiers()[0] = list(ids_map.values())[0]
+def process_one_image(experiment, table, params):
+    # disable the loggers within each process
+    logger2 = logging.getLogger("dials")
+    logger2.disabled = True
+    logger3 = logging.getLogger("dials.array_family.flex_ext")
+    logger3.disabled = True
 
-    integrator = Integrator(single_elist, table, params)
-    # Do cycles of indexing and refinement
-    for i in range(params.refinement.n_macro_cycles):
-        try:
-            integrator.reindex_strong_spots()
-        except RuntimeError as e:
-            logger.info(f"Processing failed due to error: {e}")
-            return (None, None, None)
-        else:
-            integrator.integrate_strong_spots()
-            try:
-                integrator.refine()
-            except RuntimeError as e:
-                logger.info(f"Processing failed due to error: {e}")
-                return (None, None, None)
-
-    # Do the integration
-    integrator.predict()
-    integrator.integrate()
-
-    # Get the reflections
-    return integrator.experiments, integrator.reflections, integrator.plots_data
+    integrator = PotatoIntegrator(params, collect_data=params.output.html)
+    try:
+        experiment, table, collector = integrator.run(experiment, table)
+    except RuntimeError as e:
+        logger.info(f"Processing failed due to error: {e}")
+        return (None, None, None)
+    else:
+        return experiment, table, collector
 
 
 @show_mail_handle_errors()
@@ -148,39 +130,92 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
                 "Unequal number of reflection tables and experiments after splitting"
             )
 
-    integrated_experiments = ExperimentList()
-    integrated_reflections = flex.reflection_table()
-
-    n_integrated = 0
-    for n, (table, expt) in enumerate(zip(reflections, experiments)):
-        experiments, reflections, plots_data = process_one_still(expt, table, params)
-        if not (experiments and reflections):
-            continue
-        # renumber actual id before extending
-        ids_map = dict(reflections.experiment_identifiers())
-        assert len(ids_map) == 1
-        del reflections.experiment_identifiers()[list(ids_map.keys())[0]]
-        reflections["id"] = flex.int(reflections.size(), n_integrated)
-        reflections.experiment_identifiers()[n_integrated] = list(ids_map.values())[0]
-        n_integrated += 1
-        integrated_experiments.extend(experiments)
-        integrated_reflections.extend(reflections)
-
-    integrated_reflections.assert_experiment_identifiers_are_consistent(
-        integrated_experiments
+    # aggregate some output for json, html etc
+    aggregator = OutputAggregator()
+    # calculate the batches for processing
+    batches = list(range(0, len(reflections), params.output.batch_size))
+    batches.append(len(reflections))
+    # determine suitable output filenames
+    template = "{prefix}_{index:0{maxindexlength:d}d}.{extension}"
+    experiments_template = functools.partial(
+        template.format,
+        prefix="integrated",
+        maxindexlength=len(str(len(batches) - 1)),
+        extension="expt",
+    )
+    reflections_template = functools.partial(
+        template.format,
+        prefix="integrated",
+        maxindexlength=len(str(len(batches) - 1)),
+        extension="refl",
     )
 
-    # Save the reflections
-    logger.info(
-        f"Saving {integrated_reflections.size()} reflections to {params.output.reflections}"
-    )
-    integrated_reflections.as_file(params.output.reflections)
-    logger.info(f"Saving the experiments to {params.output.experiments}")
-    integrated_experiments.as_file(params.output.experiments)
+    # now process each batch, and do parallel processing within a batch
+    for i, b in enumerate(batches[:-1]):
+        end_ = batches[i + 1]
+        logger.info(f"Processing images {b+1} to {end_}")
 
-    if params.output.html and plots_data:
-        # FIXME currently only plots for last image processed
-        generate_html_report(plots_data, params.output.html)
+        integrated_reflections = flex.reflection_table()
+        with concurrent.futures.ProcessPoolExecutor(max_workers=4) as pool:
+            futures = {
+                pool.submit(process_one_image, expt, table, params): i
+                for i, (table, expt) in enumerate(
+                    zip(reflections[b:end_], experiments[b:end_])
+                )
+            }
+            tables_list = [0] * (end_ - b)
+            expts_list = [0] * (end_ - b)
+
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    expt, refls, collector = future.result()
+                    j = futures[future]
+                except Exception as e:
+                    logger.info(e)
+                else:
+                    if refls and expt:
+                        logger.info(f"Processed image {j+b+1}")
+                        tables_list[j] = refls
+                        expts_list[j] = expt
+                        aggregator.add_dataset(collector, j + b + 1)
+
+        expts_list = list(filter(lambda a: a != 0, expts_list))
+        integrated_experiments = ExperimentList(expts_list)
+        n_integrated = 0
+
+        for _ in range(len(tables_list)):
+            table = tables_list.pop(0)
+            if not table:
+                continue
+            # renumber actual id before extending
+            ids_map = dict(table.experiment_identifiers())
+            assert len(ids_map) == 1, ids_map
+            del table.experiment_identifiers()[list(ids_map.keys())[0]]
+            table["id"] = flex.int(table.size(), n_integrated)
+            table.experiment_identifiers()[n_integrated] = list(ids_map.values())[0]
+            n_integrated += 1
+            integrated_reflections.extend(table)
+            del table
+
+        integrated_reflections.assert_experiment_identifiers_are_consistent(
+            integrated_experiments
+        )
+        experiments_filename = experiments_template(index=i)
+        reflections_filename = reflections_template(index=i)
+        # Save the reflections
+        logger.info(
+            f"Saving {integrated_reflections.size()} reflections to {reflections_filename}"
+        )
+        integrated_reflections.as_file(reflections_filename)
+        logger.info(f"Saving the experiments to {experiments_filename}")
+        integrated_experiments.as_file(experiments_filename)
+
+    # now generate a html report using the aggregated data.
+    plots = aggregator.make_plots()
+
+    if params.output.html and plots:
+        logger.info(f"Writing html report to {params.output.html}")
+        generate_html_report(plots, params.output.html)
 
 
 if __name__ == "__main__":

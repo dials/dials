@@ -1,0 +1,115 @@
+from dxtbx.model import ExperimentList
+from scitbx.array_family import flex
+
+from dials.algorithms.integration.ssx_integrate import (
+    NullCollector,
+    OutputCollector,
+    SimpleIntegrator,
+)
+from dials.algorithms.profile_model.potato.potato import (
+    final_integrator,
+    initial_integrator,
+    predict,
+    reindex,
+    run_potato_refinement,
+)
+
+
+class ToFewReflections(Exception):
+    pass
+
+
+class PotatoIntegrator(SimpleIntegrator):
+    def __init__(self, params, collect_data=False):
+        super().__init__(params)
+        self.collect_data = collect_data
+        if collect_data:
+            self.collector = OutputCollector()
+        else:
+            self.collector = NullCollector()
+
+    def run(self, experiment, table):
+
+        # first set ids to zero so can integrate (this is how integration
+        # finds the image in the imageset)
+        ids_map = dict(table.experiment_identifiers())
+        table["id"] = flex.int(table.size(), 0)
+        del table.experiment_identifiers()[list(ids_map.keys())[0]]
+        table.experiment_identifiers()[0] = list(ids_map.values())[0]
+
+        self.collector.initial_collect(experiment, table)
+
+        for _ in range(self.params.refinement.n_macro_cycles):
+            try:
+                table, sigma_d = self.preprocess(experiment, table, self.params)
+                self.collector.collect_after_preprocess(experiment, table)
+            except ToFewReflections as e:
+                raise RuntimeError(e)
+            else:
+                experiment, table, refiner_output = self.refine(
+                    experiment,
+                    table,
+                    sigma_d,
+                    n_cycles=self.params.refinement.n_cycles,
+                    capture_progress=self.collect_data,
+                )
+                self.collector.collect_after_refinement(
+                    experiment, table, refiner_output["refiner_output"]["history"]
+                )
+
+        table = self.predict(experiment, table)
+        table = self.integrate(experiment, table, sigma_d)
+        self.collector.collect_after_integration(experiment, table)
+
+        return experiment, table, self.collector
+
+    # methods below are staticmethods, so that one can build different
+    # workflows from the run method above using individual algorithm components
+
+    @staticmethod
+    def preprocess(experiment, reflection_table, params):
+        reference = reindex(
+            reflection_table,
+            experiment,
+            outlier_probability=params.refinement.outlier_probability,
+            max_separation=params.refinement.max_separation,
+            fail_on_bad_index=params.indexing.fail_on_bad_index,
+        )
+        if reference.size() < params.refinement.min_n_reflections:
+            raise ToFewReflections(
+                "Too few reflections to perform refinement: got %d, expected %d"
+                % (reference.size(), params.refinement.min_n_reflections)
+            )
+        reference, sigma_d = initial_integrator(ExperimentList([experiment]), reference)
+
+        return reference, sigma_d
+
+    @staticmethod
+    def refine(
+        experiment, reflection_table, sigma_d, n_cycles=1, capture_progress=False
+    ):
+        expts, refls, output_data = run_potato_refinement(
+            ExperimentList([experiment]),
+            reflection_table,
+            sigma_d,
+            n_cycles=n_cycles,
+            capture_progress=capture_progress,
+        )
+        return expts[0], refls, output_data
+
+    @staticmethod
+    def predict(experiment, reference, d_min=None):
+        id_map = dict(reference.experiment_identifiers())
+        reflection_table = predict(ExperimentList([experiment]), reference, d_min=d_min)
+        ids_ = set(reflection_table["id"])
+        assert ids_ == set(id_map.keys()), f"{ids_}, {id_map.keys()}"
+        for id_ in ids_:
+            reflection_table.experiment_identifiers()[id_] = id_map[id_]
+        return reflection_table
+
+    @staticmethod
+    def integrate(experiment, reflection_table, sigma_d):
+        reflection_table = final_integrator(
+            ExperimentList([experiment]), reflection_table, sigma_d
+        )
+        return reflection_table
