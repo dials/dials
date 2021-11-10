@@ -44,6 +44,10 @@ input is an models.expt file.
 XDS format exports a models.expt file as XDS.INP and XPARM.XDS files. If a
 reflection file is given it will be exported as a SPOT.XDS file.
 
+PETS2 format exports intensity data and diffraction data in the CIF format
+used by PETS2. This is primarily intended to produce files suitable for
+dynamic diffraction refinement using Jana2020, which requires this format.
+
 Examples::
 
   # Export to mtz
@@ -72,7 +76,7 @@ Examples::
 phil_scope = parse(
     """
 
-  format = *mtz sadabs nxs mmcif mosflm xds xds_ascii json
+  format = *mtz sadabs nxs mmcif mosflm xds xds_ascii json pets2
     .type = choice
     .help = "The output file format"
 
@@ -228,6 +232,24 @@ phil_scope = parse(
       .type = int(value_min=1)
       .help = "Number of decimal places to be used for representing the"
               "reciprocal lattice points."
+  }
+
+  pets2 {
+    filename = dials_dyn.cif_pets
+      .type = path
+    virtual_frame {
+      excitation_error_cutoff = 0.04
+        .type = float
+        .help = "Excitation error cutoff determining which reflections are"
+                "included in virtual frames"
+      n_merged = 1
+        .type = int
+        .help = "Number of frames to merge in a virtual frame"
+      step = 1
+        .type = int
+        .help = "Step between frames"
+    }
+
   }
 
   output {
@@ -466,6 +488,23 @@ def export_json(params, experiments, reflections):
     )
 
 
+def export_pets2(params, experiments, reflections):
+    """
+    Export reflections in PETS2 CIF format
+
+    :param params: The phil parameters
+    :param experiments: The experiment list
+    :param reflections: The reflection tables
+    """
+
+    # Check the input
+    _check_input(experiments, reflections)
+
+    # Extra checks: static crystal
+
+    return
+
+
 @show_mail_handle_errors()
 def run(args=None):
     from dials.util.options import (
@@ -540,6 +579,7 @@ def run(args=None):
         "mosflm": export_mosflm,
         "xds": export_xds,
         "json": export_json,
+        "pets2": export_pets2,
     }.get(params.format)
     if not exporter:
         sys.exit(f"Unknown format: {params.format}")
