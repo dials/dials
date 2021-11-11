@@ -17,7 +17,8 @@ import functools
 import logging
 
 from dxtbx.model import ExperimentList
-from libtbx import phil
+from libtbx import Auto, phil
+from libtbx.introspection import number_of_processors
 from libtbx.phil import parse
 from libtbx.utils import Sorry
 
@@ -47,7 +48,8 @@ This program does profile modelling and integration for stills
 # Create the phil scope
 phil_scope = parse(
     """
-
+  nproc=Auto
+    .type = int
   output {
     batch_size = 50
       .type = int
@@ -150,13 +152,18 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
         extension="refl",
     )
 
+    if params.nproc is Auto:
+        params.nproc = number_of_processors(return_value_if_unknown=1)
+
+    logger.info(f"Using {params.nproc} processes for integration")
+
     # now process each batch, and do parallel processing within a batch
     for i, b in enumerate(batches[:-1]):
         end_ = batches[i + 1]
         logger.info(f"Processing images {b+1} to {end_}")
 
         integrated_reflections = flex.reflection_table()
-        with concurrent.futures.ProcessPoolExecutor(max_workers=4) as pool:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=params.nproc) as pool:
             futures = {
                 pool.submit(process_one_image, expt, table, params): i
                 for i, (table, expt) in enumerate(
