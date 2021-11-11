@@ -817,8 +817,8 @@ class ArgumentParser(ArgumentParserBase):
             expert_level = options.expert_level
         elif options.help:
             show_config = True
-            attributes_level = 1 if options.help > 1 else 0
-            expert_level = options.help - attributes_level
+            attributes_level = options.verbose
+            expert_level = options.help - 1
         else:
             show_config = False
 
