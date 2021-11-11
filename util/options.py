@@ -810,6 +810,9 @@ class ArgumentParser(ArgumentParserBase):
         # which phil options will be included.
         options, args = super().parse_known_args(args=args, quick_parse=quick_parse)
 
+        if options.help:
+            self.print_help()
+
         # Show config
         if hasattr(options, "show_config") and options.show_config:
             show_config = True
