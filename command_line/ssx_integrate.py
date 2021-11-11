@@ -201,6 +201,8 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
             table["id"] = flex.int(table.size(), n_integrated)
             table.experiment_identifiers()[n_integrated] = list(ids_map.values())[0]
             n_integrated += 1
+            if not params.debug.output.shoeboxes:
+                del table["shoebox"]
             integrated_reflections.extend(table)
             del table
 

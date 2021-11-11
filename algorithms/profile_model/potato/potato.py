@@ -139,7 +139,7 @@ phil_scope = parse(
       strong_spots = False
         .type = bool
 
-      shoeboxes = True
+      shoeboxes = False
         .type = bool
 
       profile_model = True
