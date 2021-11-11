@@ -7,7 +7,7 @@ from scitbx import matrix
 from dials.algorithms.profile_model.potato import chisq_quantile
 from dials.algorithms.statistics.fast_mcd import FastMCD, maha_dist_sq
 
-logger = logging.getLogger("dials." + __name__)
+logger = logging.getLogger("dials")
 
 
 def _index(reflection_table, experiment, fail_on_bad_index=False):
@@ -179,7 +179,7 @@ def _filter_reflections_based_on_centroid_distance(
         """ MCD scatter estimate:
     %.7f, %.7f,
     %.7f, %.7f"""
-        % tuple(list(S))
+        % tuple(S)
     )
     logger.info(" Number of outliers: %d" % selection1.count(False))
     logger.info(

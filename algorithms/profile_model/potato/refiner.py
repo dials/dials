@@ -14,7 +14,7 @@ from dials.algorithms.profile_model.potato.util.simplex import SimpleSimplex
 from dials.array_family import flex
 from dials.util import tabulate
 
-logger = logging.getLogger("dials." + __name__)
+logger = logging.getLogger("dials")
 
 
 class ConditionalDistribution(object):

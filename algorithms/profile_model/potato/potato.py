@@ -39,7 +39,7 @@ from dials.algorithms.refinement.corrgram import corrgram
 from dials.algorithms.spot_prediction import IndexGenerator
 from dials.array_family import flex
 
-logger = logging.getLogger("dials." + __name__)
+logger = logging.getLogger("dials")
 
 # Parameters
 phil_scope = parse(
