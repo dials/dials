@@ -11,7 +11,7 @@ class Script:
         """Initialise the script."""
         from libtbx.phil import parse
 
-        from dials.util.options import OptionParser
+        from dials.util.options import ArgumentParser
 
         # Create the phil parameters
         phil_scope = parse(
@@ -24,7 +24,7 @@ class Script:
 
         # Create the option parser
         usage = "dev.dials.show_extensions [options] /path/to/image/files"
-        self.parser = OptionParser(usage=usage, phil=phil_scope)
+        self.parser = ArgumentParser(usage=usage, phil=phil_scope)
 
     def run(self, args=None):
         """Run the script."""

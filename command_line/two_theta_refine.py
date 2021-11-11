@@ -31,7 +31,7 @@ from dials.array_family import flex
 from dials.util import log, tabulate
 from dials.util.filter_reflections import filter_reflection_table
 from dials.util.multi_dataset_handling import parse_multiple_datasets
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.two_theta_refine")
@@ -125,7 +125,7 @@ class Script:
         )
 
         # Create the parser
-        self.parser = OptionParser(
+        self.parser = ArgumentParser(
             usage=usage,
             phil=working_phil,
             read_reflections=True,

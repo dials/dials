@@ -20,7 +20,7 @@ from dials.command_line.find_spots import phil_scope as find_spots_phil_scope
 from dials.command_line.index import phil_scope as index_phil_scope
 from dials.command_line.integrate import phil_scope as integrate_phil_scope
 from dials.util import Sorry, show_mail_handle_errors
-from dials.util.options import OptionParser
+from dials.util.options import ArgumentParser
 
 logger = logging.getLogger("dials.command_line.find_spots_server")
 
@@ -366,7 +366,7 @@ def run(args=None):
     if sys.hexversion >= 0x3080000 and sys.platform == "darwin":
         multiprocessing.set_start_method("fork")
 
-    parser = OptionParser(usage=usage, phil=phil_scope, epilog=help_message)
+    parser = ArgumentParser(usage=usage, phil=phil_scope, epilog=help_message)
     params, options = parser.parse_args(args, show_diff_phil=True)
     if params.nproc is libtbx.Auto:
         params.nproc = number_of_processors(return_value_if_unknown=-1)

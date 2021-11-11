@@ -11,7 +11,7 @@ from scitbx import matrix
 from dials.array_family import flex
 from dials.util import show_mail_handle_errors
 from dials.util.command_line import Command
-from dials.util.options import OptionParser
+from dials.util.options import ArgumentParser
 
 
 class SpotXDSImporter:
@@ -414,7 +414,7 @@ class Script:
 
         # The option parser
         usage = "usage: dials.import_xds [options] (SPOT.XDS|INTEGRATE.HKL)"
-        self.parser = OptionParser(usage=usage, phil=phil_scope)
+        self.parser = ArgumentParser(usage=usage, phil=phil_scope)
 
     def run(self, args=None):
         """Run the script."""

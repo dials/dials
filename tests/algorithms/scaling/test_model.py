@@ -19,7 +19,7 @@ from dials.algorithms.scaling.model.model import (
     initialise_smooth_input,
 )
 from dials.array_family import flex
-from dials.util.options import OptionParser
+from dials.util.options import ArgumentParser
 
 
 @pytest.fixture(scope="module")
@@ -90,10 +90,8 @@ def generated_param():
         process_includes=True,
     )
 
-    optionparser = OptionParser(phil=phil_scope, check_format=False)
-    parameters, _ = optionparser.parse_args(
-        args=[], quick_parse=True, show_diff_phil=False
-    )
+    parser = ArgumentParser(phil=phil_scope, check_format=False)
+    parameters, _ = parser.parse_args(args=[], quick_parse=True, show_diff_phil=False)
     parameters.array.modulation_correction = True
     return parameters
 

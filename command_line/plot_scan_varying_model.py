@@ -77,10 +77,10 @@ class Script:
 
     def __init__(self):
         """Setup the script."""
-        from dials.util.options import OptionParser
+        from dials.util.options import ArgumentParser
 
         usage = "usage: dials.plot_scan_varying_model [options] refined.expt"
-        self.parser = OptionParser(
+        self.parser = ArgumentParser(
             usage=usage,
             phil=phil_scope,
             read_experiments=True,

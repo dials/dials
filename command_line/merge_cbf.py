@@ -214,11 +214,11 @@ def merge_cbf(imageset, n_images, out_prefix="sum_", get_raw_data_from_imageset=
 
 @dials.util.show_mail_handle_errors()
 def run(args=None):
-    from dials.util.options import OptionParser, flatten_experiments
+    from dials.util.options import ArgumentParser, flatten_experiments
 
     usage = "dials.merge_cbf [options] image_*.cbf"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_experiments=True,

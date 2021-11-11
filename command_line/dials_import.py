@@ -742,11 +742,11 @@ class ImageImporter:
 
     def __init__(self, phil=phil_scope):
         """Set the expected options."""
-        from dials.util.options import OptionParser
+        from dials.util.options import ArgumentParser
 
         # Create the option parser
         usage = "dials.import [options] /path/to/image/files"
-        self.parser = OptionParser(
+        self.parser = ArgumentParser(
             usage=usage,
             sort_options=True,
             phil=phil,

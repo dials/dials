@@ -45,11 +45,11 @@ class Script:
 
     def __init__(self):
         """Initialise the script."""
-        from dials.util.options import OptionParser
+        from dials.util.options import ArgumentParser
 
         # Create the parser
         usage = "dials.apply_mask models.expt input.mask=pixels.mask"
-        self.parser = OptionParser(
+        self.parser = ArgumentParser(
             usage=usage, epilog=help_message, phil=phil_scope, read_experiments=True
         )
 

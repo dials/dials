@@ -21,7 +21,7 @@ from dials.algorithms.merging.merge import (
 from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
 from dials.util import Sorry, log, show_mail_handle_errors
 from dials.util.export_mtz import match_wavelengths
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
 help_message = """
@@ -231,7 +231,7 @@ def run(args=None):
     """Run the merging from the command-line."""
     usage = """Usage: dials.merge scaled.refl scaled.expt [options]"""
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         read_experiments=True,
         read_reflections=True,

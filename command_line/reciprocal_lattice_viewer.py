@@ -8,7 +8,7 @@ import wxtbx.app
 from scitbx.array_family import flex
 
 import dials.util.log
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.reciprocal_lattice.viewer import ReciprocalLatticeViewer, phil_scope
 
 help_message = """
@@ -27,7 +27,7 @@ def run(args=None):
     dials.util.log.print_banner()
     usage = "dials.reciprocal_lattice_viewer [options] models.expt observations.refl"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_experiments=True,

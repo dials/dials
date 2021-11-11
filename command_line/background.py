@@ -13,7 +13,7 @@ from dials.algorithms.spot_finding.factory import SpotFinderFactory
 from dials.algorithms.spot_finding.factory import phil_scope as spot_phil
 from dials.array_family import flex
 from dials.util import Sorry, show_mail_handle_errors
-from dials.util.options import OptionParser, flatten_experiments
+from dials.util.options import ArgumentParser, flatten_experiments
 
 help_message = """
 
@@ -56,7 +56,7 @@ output {
 def run(args=None):
     usage = "dials.background [options] image_*.cbf"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_experiments=True,

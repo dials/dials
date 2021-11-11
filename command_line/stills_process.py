@@ -341,7 +341,7 @@ class Script:
 
     def __init__(self):
         """Initialise the script."""
-        from dials.util.options import OptionParser
+        from dials.util.options import ArgumentParser
 
         # The script usage
         usage = "usage: dials.stills_process [options] [param.phil] filenames"
@@ -350,7 +350,7 @@ class Script:
         self.reference_detector = None
 
         # Create the parser
-        self.parser = OptionParser(usage=usage, phil=phil_scope, epilog=help_message)
+        self.parser = ArgumentParser(usage=usage, phil=phil_scope, epilog=help_message)
 
     def load_reference_geometry(self):
         if self.params.input.reference_geometry is None:
