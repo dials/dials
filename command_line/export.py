@@ -235,8 +235,13 @@ phil_scope = parse(
   }
 
   pets2 {
-    filename = dials_dyn.cif_pets
-      .type = path
+    filename_prefix = dials
+      .type = str
+      .help = "The prefix for output files, where the default will produce"
+              "dials.cif_pets and dials_dyn.cif_pets"
+    id = None
+      .type = int
+      .help = "The experiment ID to export from a multi-experiment list"
     virtual_frame {
       excitation_error_cutoff = 0.04
         .type = float
@@ -498,9 +503,13 @@ def export_pets2(params, experiments, reflections):
     """
 
     # Check the input
-    _check_input(experiments, reflections)
+    _check_input(experiments, reflections, check_intensities=False)
 
-    # Extra checks: static crystal
+    from dials.util.export_pets2 import PETS2Output
+
+    pets2output = PETS2Output(experiments, reflections, params.pets2)
+    pets2output.write_cif_pets()
+    pets2output.write_dyn_cif_pets()
 
     return
 
