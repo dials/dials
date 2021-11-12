@@ -1,6 +1,8 @@
 import logging
+from math import isclose
 
 from cctbx import crystal, miller
+from iotbx.shelx.write_ins import LATT_SYMM
 
 from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
 from dials.array_family import flex
@@ -87,3 +89,66 @@ def export_shelx(scaled_data, experiment_list, params):
             normalise_if_format_overflow=True,
         )
     logger.info(f"Written {i_obs.size()} relflections to {hkl_file}")
+
+    # and a stub of an .ins file with information from the .expt file
+    _write_ins(experiment_list, ins_file=params.shelx.ins)
+    logger.info(f"Written {params.shelx.ins}")
+
+
+def _write_ins(experiment_list, ins_file):
+    sg = experiment_list[0].crystal.get_space_group()
+    unit_cells = []
+    wavelengths = []
+    for exp in experiment_list:
+        unit_cells.append(
+            exp.crystal.get_recalculated_unit_cell() or exp.crystal.get_unit_cell()
+        )
+        wl = exp.beam.get_wavelength()
+        if not any([isclose(wl, w, abs_tol=1e-4) for w in wavelengths]):
+            wavelengths.append(wl)
+    if len(wavelengths) > 1:
+        raise ValueError("Experiments have more than one wavelength")
+    else:
+        wl = wavelengths[0]
+
+    if len(unit_cells) > 1:
+        if (
+            len({uc.parameters() for uc in unit_cells}) > 1
+        ):  # have different cells so no esds
+            uc = determine_best_unit_cell(experiment_list)
+            uc_sd = None
+        else:  # identical (recalculated?) unit cell with esds
+            uc = (
+                experiment_list[0].crystal.get_recalculated_unit_cell()
+                or experiment_list[0].crystal.get_unit_cell()
+            )
+            uc_sd = (
+                experiment_list[0].crystal.get_recalculated_cell_parameter_sd()
+                or experiment_list[0].crystal.get_cell_parameter_sd()
+            )
+    else:  # single unit cell
+        uc = (
+            experiment_list[0].crystal.get_recalculated_unit_cell()
+            or experiment_list[0].crystal.get_unit_cell()
+        )
+        uc_sd = uc = (
+            experiment_list[0].crystal.get_recalculated_cell_parameter_sd()
+            or experiment_list[0].crystal.get_cell_parameter_sd()
+        )
+
+    with open(ins_file, "w") as f:
+        f.write(
+            f"TITL {sg.type().number()} in {sg.type().lookup_symbol().replace(' ','')}\n"
+        )
+        f.write(
+            "CELL {:8.5f} {:8.4f} {:8.4f} {:8.4f} {:8.3f} {:8.3f} {:8.3f}\n".format(
+                wl, *uc.parameters()
+            )
+        )
+        if uc_sd is not None:
+            f.write(
+                "ZERR {:8.3f} {:8.4f} {:8.4f} {:8.4f} {:8.3f} {:8.3f} {:8.3f}\n".format(
+                    sg.order_z(), *uc_sd
+                )
+            )
+        LATT_SYMM(f, sg)
