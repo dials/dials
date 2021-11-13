@@ -91,18 +91,21 @@ def export_shelx(scaled_data, experiment_list, params):
     logger.info(f"Written {i_obs.size()} relflections to {hkl_file}")
 
     # and a stub of an .ins file with information from the .expt file
-    _write_ins(experiment_list, ins_file=params.shelx.ins)
+    _write_ins(
+        experiment_list,
+        best_unit_cell=params.mtz.best_unit_cell,
+        ins_file=params.shelx.ins,
+    )
     logger.info(f"Written {params.shelx.ins}")
 
 
-def _write_ins(experiment_list, ins_file):
+def _write_ins(experiment_list, best_unit_cell, ins_file):
     sg = experiment_list[0].crystal.get_space_group()
     unit_cells = []
     wavelengths = []
+
+    # Check for single wavelength
     for exp in experiment_list:
-        unit_cells.append(
-            exp.crystal.get_recalculated_unit_cell() or exp.crystal.get_unit_cell()
-        )
         wl = exp.beam.get_wavelength()
         if not any([isclose(wl, w, abs_tol=1e-4) for w in wavelengths]):
             wavelengths.append(wl)
@@ -111,13 +114,32 @@ def _write_ins(experiment_list, ins_file):
     else:
         wl = wavelengths[0]
 
-    if len(unit_cells) > 1:
-        if (
-            len({uc.parameters() for uc in unit_cells}) > 1
-        ):  # have different cells so no esds
-            uc = determine_best_unit_cell(experiment_list)
-            uc_sd = None
-        else:  # identical (recalculated?) unit cell with esds
+    # if user has supplied best_unit_cell use it
+    if best_unit_cell is not None:
+        uc = best_unit_cell
+        uc_sd = None
+    else:
+        for exp in experiment_list:
+            unit_cells.append(
+                exp.crystal.get_recalculated_unit_cell() or exp.crystal.get_unit_cell()
+            )
+
+        if len(unit_cells) > 1:
+            if (
+                len({uc.parameters() for uc in unit_cells}) > 1
+            ):  # have different cells so no esds
+                uc = determine_best_unit_cell(experiment_list)
+                uc_sd = None
+            else:  # identical (recalculated?) unit cell with esds
+                uc = (
+                    experiment_list[0].crystal.get_recalculated_unit_cell()
+                    or experiment_list[0].crystal.get_unit_cell()
+                )
+                uc_sd = (
+                    experiment_list[0].crystal.get_recalculated_cell_parameter_sd()
+                    or experiment_list[0].crystal.get_cell_parameter_sd()
+                )
+        else:  # single unit cell
             uc = (
                 experiment_list[0].crystal.get_recalculated_unit_cell()
                 or experiment_list[0].crystal.get_unit_cell()
@@ -126,15 +148,6 @@ def _write_ins(experiment_list, ins_file):
                 experiment_list[0].crystal.get_recalculated_cell_parameter_sd()
                 or experiment_list[0].crystal.get_cell_parameter_sd()
             )
-    else:  # single unit cell
-        uc = (
-            experiment_list[0].crystal.get_recalculated_unit_cell()
-            or experiment_list[0].crystal.get_unit_cell()
-        )
-        uc_sd = uc = (
-            experiment_list[0].crystal.get_recalculated_cell_parameter_sd()
-            or experiment_list[0].crystal.get_cell_parameter_sd()
-        )
 
     with open(ins_file, "w") as f:
         f.write(
