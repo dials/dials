@@ -44,8 +44,8 @@ input is an models.expt file.
 XDS format exports a models.expt file as XDS.INP and XPARM.XDS files. If a
 reflection file is given it will be exported as a SPOT.XDS file.
 
-PETS2 format exports intensity data and diffraction data in the CIF format
-used by PETS2. This is primarily intended to produce files suitable for
+PETS format exports intensity data and diffraction data in the CIF format
+used by PETS 2.0. This is primarily intended to produce files suitable for
 dynamic diffraction refinement using Jana2020, which requires this format.
 
 Examples::
@@ -76,7 +76,7 @@ Examples::
 phil_scope = parse(
     """
 
-  format = *mtz sadabs nxs mmcif mosflm xds xds_ascii json pets2
+  format = *mtz sadabs nxs mmcif mosflm xds xds_ascii json pets
     .type = choice
     .help = "The output file format"
 
@@ -234,7 +234,7 @@ phil_scope = parse(
               "reciprocal lattice points."
   }
 
-  pets2 {
+  pets {
     filename_prefix = dials
       .type = str
       .help = "The prefix for output files, where the default will produce"
@@ -493,9 +493,9 @@ def export_json(params, experiments, reflections):
     )
 
 
-def export_pets2(params, experiments, reflections):
+def export_pets(params, experiments, reflections):
     """
-    Export reflections in PETS2 CIF format
+    Export reflections in PETS CIF format
 
     :param params: The phil parameters
     :param experiments: The experiment list
@@ -505,11 +505,11 @@ def export_pets2(params, experiments, reflections):
     # Check the input
     _check_input(experiments, reflections, check_intensities=False)
 
-    from dials.util.export_pets2 import PETS2Output
+    from dials.util.export_pets import PETSOutput
 
-    pets2output = PETS2Output(experiments, reflections, params.pets2)
-    pets2output.write_cif_pets()
-    pets2output.write_dyn_cif_pets()
+    pets_output = PETSOutput(experiments, reflections, params.pets)
+    pets_output.write_cif_pets()
+    pets_output.write_dyn_cif_pets()
 
     return
 
@@ -588,7 +588,7 @@ def run(args=None):
         "mosflm": export_mosflm,
         "xds": export_xds,
         "json": export_json,
-        "pets2": export_pets2,
+        "pets": export_pets,
     }.get(params.format)
     if not exporter:
         sys.exit(f"Unknown format: {params.format}")

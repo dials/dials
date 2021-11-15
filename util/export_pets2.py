@@ -5,8 +5,8 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 
-class PETS2Output:
-    """Class to export integrated data in PETS2 CIF format"""
+class PETSOutput:
+    """Class to export integrated data in PETS CIF format"""
 
     def __init__(self, experiments, reflections, params):
         """Init with the parameters, experiments and reflections"""
@@ -25,7 +25,7 @@ class PETS2Output:
 
     def _check_experiments(self):
         """Check a DIALS experiment list is suitable and convert geometry to the
-        PETS2 coordinate system"""
+        PETS coordinate system"""
 
         if len(self.experiments) != 1 and self.exp_id is None:
             raise ValueError("Please select a single experiment for export")
