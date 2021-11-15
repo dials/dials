@@ -1,1 +1,1 @@
-``dials.export``: bugfix for XDS_ASCII and SADABS export when intensity=auto is on command line
+``dials.export``: No longer fails for XDS_ASCII and SADABS export with ``intensity=auto``.
