@@ -242,6 +242,12 @@ phil_scope = parse(
     id = None
       .type = int
       .help = "The experiment ID to export from a multi-experiment list"
+
+    partiality_cutoff = 0.99
+      .type = float
+      .help = "Cutoff for determining which reflections are deemed to be fully"
+              "recorded"
+
     virtual_frame {
       excitation_error_cutoff = 0.04
         .type = float
