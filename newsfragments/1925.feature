@@ -1,1 +1,1 @@
-``dials.export``: add SHELX hkl file output
+``dials.export``: Add SHELX ``.hkl`` file output.
