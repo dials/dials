@@ -2,20 +2,22 @@
 LevenbergMarquardtIterations, GaussNewtonIterations, SimpleLBFGS and LBFGScurvs
 are the current concrete implementations"""
 
-
 import copy
 import json
 import logging
 from io import StringIO
+from typing import List, Union
 
 import libtbx
 from libtbx import easy_mp
 from libtbx.phil import parse
-from scitbx import lbfgs
+from scitbx import lbfgs, sparse
 from scitbx.array_family import flex
 from scitbx.lstbx import normal_eqns, normal_eqns_solving
 
 from dials.algorithms.refinement import DialsRefineRuntimeError
+
+from .target import Target
 
 logger = logging.getLogger(__name__)
 
@@ -168,7 +170,7 @@ class Refinery:
 
     def __init__(
         self,
-        target,
+        target: Target,
         prediction_parameterisation,
         constraints_manager=None,
         log=None,
@@ -191,7 +193,7 @@ class Refinery:
         # undefined initial functional and gradients values
         self._f = None
         self._g = None
-        self._jacobian = None
+        self._jacobian: Union[flex.double, sparse.matrix, None] = None
 
         # filename for an optional log file
         self._log = log
@@ -275,7 +277,7 @@ class Refinery:
                 "out_of_sample_rmsd", self._target.rmsds_for_reflection_table(preds)
             )
 
-    def split_jacobian_into_blocks(self):
+    def split_jacobian_into_blocks(self) -> List[flex.double]:
         """Split the Jacobian into blocks each corresponding to a separate
         residual"""
 
@@ -283,7 +285,7 @@ class Refinery:
 
         try:
             # The Jacobian might be a sparse matrix
-            j = self._jacobian.as_dense_matrix()
+            j: flex.double = self._jacobian.as_dense_matrix()
         except AttributeError:
             j = self._jacobian
 
@@ -295,20 +297,20 @@ class Refinery:
         return blocks
 
     @staticmethod
-    def _packed_corr_mat(m):
+    def _packed_corr_mat(m: Union[sparse.matrix, flex.double]) -> List[float]:
         """Return a list containing the upper diagonal values of the
         correlation matrix calculated between columns of 2D matrix m"""
 
         nr, nc = m.all()
 
         try:  # convert a flex.double matrix to sparse
-            from scitbx import sparse
-
             m2 = sparse.matrix(nr, nc)
             m2.assign_block(m, 0, 0)
             m = m2
         except AttributeError:
             pass  # assume m is already scitbx_sparse_ext.matrix
+
+        assert isinstance(m, sparse.matrix)
 
         tmp = []
         for col1 in range(m.n_cols):
