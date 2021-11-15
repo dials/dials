@@ -55,18 +55,20 @@ Indexing
 --------
 
 Indexing here will depend on the model for the experiment being reasonably accurate.
-Provided that the lattices overlap in the reciprocal lattice view above, the indexing should be straightforward and will guarantee that all lattices are consistently indexed as a single matrix is used.
+Here the lattices overlap in the reciprocal lattice view above, the indexing should be straightforward and will guarantee that all lattices are consistently indexed as a single matrix is used.
+
+.. note:: if the lattices _do not_ align in reciprocal space for your data then processing sweeps independently is likely to be needed
 
 .. code-block:: bash
 
    dials.index imported.expt strong.refl
 
-Without any additional input, the indexing will determine the most appropriate primitive (i.e. triclinic) lattice parameters and orientation which desctibe the observed reciprocal lattice positions.
+Without any additional input, the indexing will determine the most appropriate primitive (i.e. triclinic) lattice parameters and orientation which describe the observed reciprocal lattice positions.
 
 Bravais lattice determination
 -----------------------------
 
-Prior to indexing the choice of Bravais lattice may be made, though this is entirely optional and all processing may be performed with a triclinic lattice:
+Prior to refinement the choice of Bravais lattice may be made, though this is entirely optional and all processing may be performed with a triclinic lattice:
 
 .. code-block:: bash
 
@@ -80,10 +82,15 @@ Once this has run you can manually rerun indexing with:
 
 to assign the lattice, or manually reindex the data to match setting #5 (though in this case that is a no-op) - or as mentioned above proceed with the lattice unconstrained. 
 
+.. note:: if you are certain that the lattice symmetry is correct then the refinement _should_ be more stable, and yield more reliable unit cell constants
+
+.. note:: if you select an _incorrect_ lattice then the subsequent processing may fail
+
+
 Refinement
 ----------
 
-Prior to integration we want to refine the experimental geometry and the scan varying crystal orientation and unit cell: in the refinement however the refinement is done first with a scan static model, then with scan varying (which allows for small variations in the sample orientation etc.)
+Prior to integration we want to refine the experimental geometry and the scan varying crystal orientation and unit cell: the calculations are performed first with a scan static model, then with scan varying (which allows for small variations in the sample orientation etc.) to account for impact of reindexing data prior to refinement. 
 
 .. code-block:: bash
 
@@ -106,7 +113,7 @@ At this stage the reflections may be integrated.  This is done by running
 
    dials.integrate refined.refl refined.expt
 
-which will integrate each sequence in sequence, again using all available cores. After integration you can look at the integration shoeboxes with the image viewer, as 
+which will integrate each sweep in sequence, again using all available cores. After integration you can look at the integration shoeboxes with the image viewer, as 
 
 .. code-block:: bash
   
@@ -130,7 +137,7 @@ Scaling
 -------
 
 
-In general there is very little which needs to be adjusted in the scaling, as the process is largely automatic. The default model to use for the scaling corrections is "physical" which defines smoothly varying scale factors for the overall intensity and sample decay, with a smoothly varying surface expressed with four or six orders of spherical harmonics for the absorption correction. For organic small molecule crystals the absorption is unlikely to be substantial, but if metals are present or the data are taken with a long wavelength it may be helpful to reduce the strength of the restraints on the absorption surface by setting the absorption level
+In general there is very little which needs to be adjusted in the scaling, as the process is largely automatic. The default model to use for the scaling corrections is "physical" which defines smoothly varying scale factors for the overall intensity and sample decay, with a smoothly varying surface expressed with four or six orders of spherical harmonics for the absorption correction. For organic small molecule crystals the absorption is unlikely to be substantial, so the default is to set ``low`` absorption. If metals are present or the data are taken with a long wavelength it may be helpful to reduce the strength of the restraints on the absorption surface by setting the absorption level
 
 .. code-block:: bash
   dials.scale symmetrized.refl symmetrized.expt
