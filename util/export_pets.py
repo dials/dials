@@ -27,10 +27,11 @@ class PETSOutput:
         """Check a DIALS experiment list is suitable and convert geometry to the
         PETS coordinate system"""
 
-        if len(self.experiments) != 1 and self.exp_id is None:
-            raise ValueError("Please select a single experiment for export")
-        else:
-            self.exp_id = 0
+        if self.exp_id is None:
+            if len(self.experiments) != 1:
+                raise ValueError("Please select a single experiment for export")
+            else:
+                self.exp_id = 0
 
         try:
             experiment = self.experiments[self.exp_id]
@@ -54,6 +55,13 @@ class PETSOutput:
                 raise ValueError(
                     "The crystal must not have a scan-varying unit cell for export"
                 )
+
+        # Check no other models are scan-varying
+        if (
+            experiment.goniometer.num_scan_points > 0
+            or experiment.beam.num_scan_points > 0
+        ):
+            raise ValueError("Only scan-varying crystal orientation is supported")
 
     def write_cif_pets(self):
         pass
