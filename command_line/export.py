@@ -510,7 +510,7 @@ def run(args=None):
     # do auto interpreting of intensity choice:
     # note that this may still fail certain checks further down the processing,
     # but these are the defaults to try
-    if params.intensity in ([None], [Auto], ["auto"]) and reflections:
+    if params.intensity in ([None], [Auto], ["auto"], Auto) and reflections:
         if ("intensity.scale.value" in reflections[0]) and (
             "intensity.scale.variance" in reflections[0]
         ):
