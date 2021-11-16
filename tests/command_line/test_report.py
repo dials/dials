@@ -1,4 +1,5 @@
 """Tests for dials.report"""
+import json
 
 import procrunner
 
@@ -33,3 +34,18 @@ def test_report_scaled_data(dials_data, tmpdir):
     assert tmpdir.join("dials.report.html").check()
     report_json = tmpdir.join("report.json")
     assert report_json.check()
+    expected_keys = {
+        "strong",
+        "centroid",
+        "intensity",
+        "reference",
+        "scan_varying",
+        "scaling_model",
+        "resolution_graphs",
+        "batch_graphs",
+        "misc_graphs",
+        "scaled_intensity_graphs",
+    }
+    with report_json.open() as fh:
+        d = json.load(fh)
+        assert not expected_keys - set(d.keys())
