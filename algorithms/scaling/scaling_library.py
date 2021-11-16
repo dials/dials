@@ -101,6 +101,7 @@ def choose_initial_scaling_intensities(reflection_table, intensity_choice="profi
             if "partiality.inv.variance" in reflection_table:
                 reflection_table["variance"] += (
                     reflection_table["intensity.sum.value"]
+                    * conv
                     * reflection_table["partiality.inv.variance"]
                 )
         else:

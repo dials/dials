@@ -2,9 +2,9 @@
 #
 # dials.ssx_integrate.py
 #
-#  Copyright (C) 2018 Diamond Light Source
+#  Copyright (C) 2021 Diamond Light Source
 #
-#  Author: James Parkhurst
+#  Author: James Beilsten-Edmands
 #
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.

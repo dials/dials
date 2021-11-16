@@ -1,3 +1,6 @@
+import numpy as np
+
+from dxtbx import flumpy
 from dxtbx.model import ExperimentList
 from scitbx.array_family import flex
 
@@ -40,6 +43,13 @@ class PotatoOutputCollector(OutputCollector):
             self.data["strong_rmsd_preprocessed"] = rmsd
         else:
             self.data["strong_rmsd_preprocessed"] = 0.0
+
+    def collect_after_integration(self, experiment, reflection_table):
+        super().collect_after_integration(experiment, reflection_table)
+        p = flumpy.to_numpy(reflection_table["partiality"])
+        bins = np.linspace(0, 1, 11)
+        hist = np.histogram(p, bins)
+        self.data["partiality"] = hist[0]
 
 
 class PotatoIntegrator(SimpleIntegrator):
@@ -149,6 +159,10 @@ class PotatoOutputAggregator(OutputAggregator):
         initial_rmsds_y = [d["initial_rmsd_y"] for d in self.data.values()]
         final_rmsds_y = [d["final_rmsd_y"] for d in self.data.values()]
         n = list(self.data.keys())
+        hist = np.zeros((10,))
+        for d in self.data.values():
+            hist += d["partiality"]
+        bins = np.linspace(0.05, 0.95, 10)
         rmsd_plots = {
             "refinement_rmsds": {
                 "data": [
@@ -185,6 +199,23 @@ class PotatoOutputAggregator(OutputAggregator):
                     "title": "Rmsds of integrated reflections per image",
                     "xaxis": {"title": "image number"},
                     "yaxis": {"title": "RMSD (px)"},
+                },
+            },
+            "partiality": {
+                "data": [
+                    (
+                        {
+                            "x": list(bins),
+                            "y": list(hist),
+                            "type": "scatter",
+                            "mode": "markers",
+                        }
+                    )
+                ],
+                "layout": {
+                    "title": "Partiality distribution",
+                    "xaxis": {"title": "Partiality bin centre"},
+                    "yaxis": {"title": "Number of reflections"},
                 },
             },
         }
