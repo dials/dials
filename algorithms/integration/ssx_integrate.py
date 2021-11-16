@@ -110,8 +110,10 @@ class OutputCollector(object):
         rmsd = flex.mean((xobs - xcal) ** 2 + (yobs - ycal) ** 2) ** 0.5
         self.data["strong_rmsd_preprocessed"] = rmsd
 
-    def collect_after_prediction(self, experiment, reflection_table):
-        pass
+    def collect_after_prediction(self, predicted, reference):
+        matched, _, unmatched = predicted.match_with_reference(reference)
+        self.data["n_strong_predicted"] = matched.count(True)
+        self.data["n_strong_unpredicted"] = unmatched.size()
 
     def collect_after_integration(self, experiment, reflection_table):
         sel = reflection_table.get_flags(reflection_table.flags.integrated_sum)
@@ -148,7 +150,11 @@ class OutputAggregator:
         I_over_sigma = [d["i_over_sigma_overall"] for d in self.data.values()]
         n = list(self.data.keys())
         n_integrated = [d["n_integrated"] for d in self.data.values()]
-
+        n_predicted = [d["n_strong_predicted"] for d in self.data.values()]
+        n_strong = [
+            (d["n_strong_predicted"] + d["n_strong_unpredicted"])
+            for d in self.data.values()
+        ]
         overall_rmsd = [d["strong_rmsd"] for d in self.data.values()]
         overall_rmsd_preprocessed = [
             d["strong_rmsd_preprocessed"] for d in self.data.values()
@@ -170,6 +176,29 @@ class OutputAggregator:
                     "title": "Overall I/sigma per image",
                     "xaxis": {"title": "image number"},
                     "yaxis": {"title": "I/sigma"},
+                },
+            },
+            "n_predicted": {
+                "data": [
+                    {
+                        "x": n,
+                        "y": n_predicted,
+                        "type": "scatter",
+                        "mode": "markers",
+                        "name": "Number of indexed spots predicted",
+                    },
+                    {
+                        "x": n,
+                        "y": n_strong,
+                        "type": "scatter",
+                        "mode": "markers",
+                        "name": "Total number of indexed spots",
+                    },
+                ],
+                "layout": {
+                    "title": "Number of predicted reflections per image",
+                    "xaxis": {"title": "image number"},
+                    "yaxis": {"title": "N. reflections"},
                 },
             },
             "n_integrated": {

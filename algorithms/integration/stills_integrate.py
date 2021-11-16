@@ -45,6 +45,7 @@ class StillsIntegrator(SimpleIntegrator):
         # refine - null
 
         predicted, elist = self.predict(experiment, table, self.params)
+        self.collector.collect_after_prediction(predicted, table)
         integrated, elist = self.integrate(elist, predicted, self.params)
         # NB what about things like kapton correction?
         self.collector.collect_after_integration(experiment, integrated)
@@ -71,11 +72,7 @@ class StillsIntegrator(SimpleIntegrator):
             force_static=params.prediction.force_static,
             padding=params.prediction.padding,
         )
-        # need to set imageset id? next bit necessary?
-        matched, table, _ = predicted.match_with_reference(table)
-        assert len(matched) == len(predicted)
-        assert matched.count(True) <= len(table)
-
+        # need to set imageset id?
         elist = ProfileModelFactory.create(params, elist, table)
         predicted.compute_bbox(elist)
         return predicted, elist

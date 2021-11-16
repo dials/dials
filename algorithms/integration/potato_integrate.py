@@ -80,11 +80,14 @@ class PotatoIntegrator(SimpleIntegrator):
                     experiment, table, refiner_output["refiner_output"]["history"]
                 )
 
-        table = self.predict(experiment, table)
-        table = self.integrate(experiment, table, sigma_d)
-        self.collector.collect_after_integration(experiment, table)
+        predicted = self.predict(experiment, table)
+        # do we want to add unmatched i.e. strong spots which weren't predicted?
+        self.collector.collect_after_prediction(predicted, table)
 
-        return experiment, table, self.collector
+        predicted = self.integrate(experiment, predicted, sigma_d)
+        self.collector.collect_after_integration(experiment, predicted)
+
+        return experiment, predicted, self.collector
 
     # methods below are staticmethods, so that one can build different
     # workflows from the run method above using individual algorithm components
@@ -123,7 +126,7 @@ class PotatoIntegrator(SimpleIntegrator):
     @staticmethod
     def predict(experiment, reference, d_min=None):
         id_map = dict(reference.experiment_identifiers())
-        reflection_table = predict(ExperimentList([experiment]), reference, d_min=d_min)
+        reflection_table = predict(ExperimentList([experiment]), d_min=d_min)
         ids_ = set(reflection_table["id"])
         assert ids_ == set(id_map.keys()), f"{ids_}, {id_map.keys()}"
         for id_ in ids_:

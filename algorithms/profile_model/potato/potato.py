@@ -525,7 +525,7 @@ def run_potato_refinement(
     return experiments, reflection_table, output_data
 
 
-def predict(experiments, reference, d_min=None, prediction_probability=0.9973):
+def predict(experiments, d_min=None, prediction_probability=0.9973):
     """Predict the reflections"""
     logger.info("\n" + "=" * 80 + "\nPredicting reflections")
 
@@ -556,7 +556,8 @@ def predict(experiments, reference, d_min=None, prediction_probability=0.9973):
     reflection_table.compute_d(experiments)
     logger.info("Predicted %d reflections" % len(reflection_table))
 
-    _, _, unmatched = reflection_table.match_with_reference(reference)
+    # matched, reference, unmatched = reflection_table.match_with_reference(reference)
+    # matched is a bool mask, same length as reference stating number matched
 
     # Add unmatched
     # columns = flex.std_string()
@@ -713,7 +714,6 @@ class Integrator(object):
 
         self.reflections = predict(
             self.experiments,
-            self.reference,
             d_min=self.params.prediction.d_min,
             prediction_probability=self.params.prediction.probability,
         )

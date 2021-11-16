@@ -97,6 +97,9 @@ integration {
         }
     }
 }
+refinement {
+    n_cycles = 1
+}
 """
     )
 )
