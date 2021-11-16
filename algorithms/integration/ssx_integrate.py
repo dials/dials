@@ -99,18 +99,16 @@ class OutputCollector(object):
 
     def initial_collect(self, experiment, reflection_table):
         self.data["initial_n_refl"] = reflection_table.size()
+        xobs, yobs, _ = reflection_table["xyzobs.px.value"].parts()
+        xcal, ycal, _ = reflection_table["xyzcal.px"].parts()
+        rmsd = flex.mean((xobs - xcal) ** 2 + (yobs - ycal) ** 2) ** 0.5
+        self.data["strong_rmsd"] = rmsd
 
     def collect_after_preprocess(self, experiment, reflection_table):
-        self.data["n_strong_after_preprocess"] = reflection_table.size()
-        n_sum = reflection_table.get_flags(reflection_table.flags.integrated_sum).count(
-            True
-        )
-        self.data["n_strong_sum_integrated"] = n_sum
-
-    def collect_after_refinement(self, experiment, reflection_table, refiner_output):
-        if "initial_rmsd" not in self.data:
-            self.data["initial_rmsd"] = refiner_output[-1][0]["rmsd"][0]
-        self.data["final_rmsd"] = refiner_output[-1][0]["rmsd"][-1]
+        xobs, yobs, _ = reflection_table["xyzobs.px.value"].parts()
+        xcal, ycal, _ = reflection_table["xyzcal.px"].parts()
+        rmsd = flex.mean((xobs - xcal) ** 2 + (yobs - ycal) ** 2) ** 0.5
+        self.data["strong_rmsd_preprocessed"] = rmsd
 
     def collect_after_prediction(self, experiment, reflection_table):
         pass
@@ -150,8 +148,11 @@ class OutputAggregator:
         I_over_sigma = [d["i_over_sigma_overall"] for d in self.data.values()]
         n = list(self.data.keys())
         n_integrated = [d["n_integrated"] for d in self.data.values()]
-        initial_rmsds = [d["initial_rmsd"] for d in self.data.values()]
-        final_rmsds = [d["final_rmsd"] for d in self.data.values()]
+
+        overall_rmsd = [d["strong_rmsd"] for d in self.data.values()]
+        overall_rmsd_preprocessed = [
+            d["strong_rmsd_preprocessed"] for d in self.data.values()
+        ]
 
         plots_dict = {
             "I_over_sigma_overall": {
@@ -188,27 +189,27 @@ class OutputAggregator:
                     "yaxis": {"title": "N. reflections"},
                 },
             },
-            "rmsds": {
+            "overall_rmsds": {
                 "data": [
                     {
                         "x": n,
-                        "y": initial_rmsds,
+                        "y": overall_rmsd,
                         "type": "scatter",
                         "mode": "markers",
-                        "name": "Initial rmsds",
+                        "name": "Initial 2D rmsd of strong spots",
                     },
                     {
                         "x": n,
-                        "y": final_rmsds,
+                        "y": overall_rmsd_preprocessed,
                         "type": "scatter",
                         "mode": "markers",
-                        "name": "Final rmsds",
+                        "name": "2D rmsd after preprocess",
                     },
                 ],
                 "layout": {
-                    "title": "Rmsds of integrated reflections per image",
+                    "title": "Rmsds of strong (indexed) reflections per image",
                     "xaxis": {"title": "image number"},
-                    "yaxis": {"title": "N. reflections"},
+                    "yaxis": {"title": "RMSD (px)"},
                 },
             },
         }

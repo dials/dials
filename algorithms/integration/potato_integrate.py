@@ -3,6 +3,7 @@ from scitbx.array_family import flex
 
 from dials.algorithms.integration.ssx_integrate import (
     NullCollector,
+    OutputAggregator,
     OutputCollector,
     SimpleIntegrator,
 )
@@ -19,12 +20,34 @@ class ToFewReflections(Exception):
     pass
 
 
+class PotatoOutputCollector(OutputCollector):
+    def collect_after_refinement(self, experiment, reflection_table, refiner_output):
+        if "initial_rmsd_x" not in self.data:
+            self.data["initial_rmsd_x"] = refiner_output[0][0]["rmsd"][0]
+            self.data["initial_rmsd_y"] = refiner_output[0][0]["rmsd"][1]
+        self.data["final_rmsd_x"] = refiner_output[0][-1]["rmsd"][0]
+        self.data["final_rmsd_y"] = refiner_output[0][-1]["rmsd"][1]
+
+    def collect_after_preprocess(self, experiment, reflection_table):
+        self.data["n_strong_after_preprocess"] = reflection_table.size()
+        sel = reflection_table.get_flags(reflection_table.flags.integrated_sum)
+        n_sum = sel.count(True)
+        self.data["n_strong_sum_integrated"] = n_sum
+        if n_sum:
+            xobs, yobs, _ = reflection_table["xyzobs.px.value"].select(sel).parts()
+            xcal, ycal, _ = reflection_table["xyzcal.px"].select(sel).parts()
+            rmsd = flex.mean((xobs - xcal) ** 2 + (yobs - ycal) ** 2) ** 0.5
+            self.data["strong_rmsd_preprocessed"] = rmsd
+        else:
+            self.data["strong_rmsd_preprocessed"] = 0.0
+
+
 class PotatoIntegrator(SimpleIntegrator):
     def __init__(self, params, collect_data=False):
         super().__init__(params)
         self.collect_data = collect_data
         if collect_data:
-            self.collector = OutputCollector()
+            self.collector = PotatoOutputCollector()
         else:
             self.collector = NullCollector()
 
@@ -113,3 +136,54 @@ class PotatoIntegrator(SimpleIntegrator):
             ExperimentList([experiment]), reflection_table, sigma_d
         )
         return reflection_table
+
+
+class PotatoOutputAggregator(OutputAggregator):
+    def make_plots(self):
+        plots = super().make_plots()
+        initial_rmsds_x = [d["initial_rmsd_x"] for d in self.data.values()]
+        final_rmsds_x = [d["final_rmsd_x"] for d in self.data.values()]
+        initial_rmsds_y = [d["initial_rmsd_y"] for d in self.data.values()]
+        final_rmsds_y = [d["final_rmsd_y"] for d in self.data.values()]
+        n = list(self.data.keys())
+        rmsd_plots = {
+            "refinement_rmsds": {
+                "data": [
+                    {
+                        "x": n,
+                        "y": initial_rmsds_x,
+                        "type": "scatter",
+                        "mode": "markers",
+                        "name": "Initial rmsd_x",
+                    },
+                    {
+                        "x": n,
+                        "y": final_rmsds_x,
+                        "type": "scatter",
+                        "mode": "markers",
+                        "name": "Final rmsd_x",
+                    },
+                    {
+                        "x": n,
+                        "y": initial_rmsds_y,
+                        "type": "scatter",
+                        "mode": "markers",
+                        "name": "Initial rmsd_y",
+                    },
+                    {
+                        "x": n,
+                        "y": final_rmsds_y,
+                        "type": "scatter",
+                        "mode": "markers",
+                        "name": "Final rmsd_y",
+                    },
+                ],
+                "layout": {
+                    "title": "Rmsds of integrated reflections per image",
+                    "xaxis": {"title": "image number"},
+                    "yaxis": {"title": "RMSD (px)"},
+                },
+            },
+        }
+        plots.update(rmsd_plots)
+        return plots

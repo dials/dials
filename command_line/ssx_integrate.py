@@ -16,17 +16,21 @@ import concurrent.futures
 import functools
 import logging
 
+import iotbx.phil
 from dxtbx.model import ExperimentList
-from libtbx import Auto, phil
+from libtbx import Auto
 from libtbx.introspection import number_of_processors
-from libtbx.phil import parse
 from libtbx.utils import Sorry
 
-from dials.algorithms.integration.potato_integrate import PotatoIntegrator
+from dials.algorithms.integration.potato_integrate import (
+    PotatoIntegrator,
+    PotatoOutputAggregator,
+)
 from dials.algorithms.integration.ssx_integrate import (
     OutputAggregator,
     generate_html_report,
 )
+from dials.algorithms.integration.stills_integrate import StillsIntegrator
 from dials.array_family import flex
 from dials.util import log, show_mail_handle_errors
 from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
@@ -46,8 +50,10 @@ This program does profile modelling and integration for stills
 """
 
 # Create the phil scope
-phil_scope = parse(
+phil_scope = iotbx.phil.parse(
     """
+  algorithm = *potato stills
+    .type = choice
   nproc=Auto
     .type = int
   output {
@@ -61,13 +67,43 @@ phil_scope = parse(
   }
 
   include scope dials.algorithms.profile_model.potato.potato.phil_scope
+  include scope dials.algorithms.integration.integrator.phil_scope
+  include scope dials.algorithms.profile_model.factory.phil_scope
+  include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
+  include scope dials.algorithms.integration.stills_significance_filter.phil_scope
+  include scope dials.algorithms.integration.kapton_correction.absorption_phil_scope
 
 """,
     process_includes=True,
 )
 
+phil_overrides = phil_scope.fetch(
+    source=iotbx.phil.parse(
+        """\
+profile {
+    gaussian_rs {
+        min_spots {
+            overall=0
+        }
+    }
+    fitting = False
+}
+integration {
+    background {
+        simple {
+            outlier {
+                algorithm = Null
+            }
+        }
+    }
+}
+"""
+    )
+)
+working_phil = phil_scope.fetch(sources=[phil_overrides])
 
-def process_one_image(experiment, table, params):
+
+def process_one_image_potato_integrator(experiment, table, params):
     # disable the loggers within each process
     logger2 = logging.getLogger("dials")
     logger2.disabled = True
@@ -84,14 +120,39 @@ def process_one_image(experiment, table, params):
         return experiment, table, collector
 
 
+def process_one_image_stills_integrator(experiment, table, params):
+    # disable the loggers within each process
+    logger2 = logging.getLogger("dials")
+    logger2.disabled = True
+    logger3 = logging.getLogger("dials.array_family.flex_ext")
+    logger3.disabled = True
+    logger4 = logging.getLogger("dials.algorithms.integration.integrator")
+    logger4.disabled = True
+    logger5 = logging.getLogger("dials.algorithms.profile_model.gaussian_rs.calculator")
+    logger5.disabled = True
+    logger6 = logging.getLogger("dials.command_line.integrate")
+    logger6.disabled = True
+    logger7 = logging.getLogger("dials.algorithms.spot_prediction.reflection_predictor")
+    logger7.disabled = True
+
+    integrator = StillsIntegrator(params, collect_data=params.output.html)
+    try:
+        experiment, table, collector = integrator.run(experiment, table)
+    except RuntimeError as e:
+        logger.info(f"Processing failed due to error: {e}")
+        return (None, None, None)
+    else:
+        return experiment, table, collector
+
+
 @show_mail_handle_errors()
-def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
+def run(args: List[str] = None, phil=working_phil) -> None:
     """Run from the command-line."""
     usage = ""
 
     parser = OptionParser(
         usage=usage,
-        phil=phil_scope,
+        phil=phil,
         epilog=help_message,
         read_experiments=True,
         read_reflections=True,
@@ -132,8 +193,6 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
                 "Unequal number of reflection tables and experiments after splitting"
             )
 
-    # aggregate some output for json, html etc
-    aggregator = OutputAggregator()
     # calculate the batches for processing
     batches = list(range(0, len(reflections), params.output.batch_size))
     batches.append(len(reflections))
@@ -152,10 +211,20 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
         extension="refl",
     )
 
+    # Note, memory processing logic can go here
     if params.nproc is Auto:
         params.nproc = number_of_processors(return_value_if_unknown=1)
-
     logger.info(f"Using {params.nproc} processes for integration")
+
+    # aggregate some output for json, html etc
+    if params.algorithm == "potato":
+        process = process_one_image_potato_integrator
+        aggregator = PotatoOutputAggregator()
+    elif params.algorithm == "stills":
+        process = process_one_image_stills_integrator
+        aggregator = OutputAggregator()
+    else:
+        raise ValueError("Invalid algorithm choice")
 
     # now process each batch, and do parallel processing within a batch
     for i, b in enumerate(batches[:-1]):
@@ -165,7 +234,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
         integrated_reflections = flex.reflection_table()
         with concurrent.futures.ProcessPoolExecutor(max_workers=params.nproc) as pool:
             futures = {
-                pool.submit(process_one_image, expt, table, params): i
+                pool.submit(process, expt, table, params): i
                 for i, (table, expt) in enumerate(
                     zip(reflections[b:end_], experiments[b:end_])
                 )
