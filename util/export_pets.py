@@ -1,8 +1,21 @@
 import logging
+import math
+from itertools import tee
 
 import numpy as np
 
+from scitbx import matrix
+
+from dials.array_family import flex
+
 logger = logging.getLogger(__name__)
+
+# An itertools recipe in Python 3.7, but a module function in 3.10
+def pairwise(iterable):
+    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+    a, b = tee(iterable)
+    next(b, None)
+    return zip(a, b)
 
 
 class PETSOutput:
@@ -24,7 +37,6 @@ class PETSOutput:
 
         self._check_experiments()
         self._check_reflections()
-        self._set_virtual_frames()
 
     def _check_experiments(self):
         """Check a DIALS experiment list is suitable and convert geometry to the
@@ -37,7 +49,7 @@ class PETSOutput:
                 self.exp_id = 0
 
         try:
-            experiment = self.experiments[self.exp_id]
+            self.experiment = self.experiments[self.exp_id]
         except IndexError as e:
             raise IndexError(
                 f"Unable to select experiment {self.exp_id} for export"
@@ -48,7 +60,7 @@ class PETSOutput:
         )
 
         # Check the unit cell is static
-        crystal = experiment.crystal
+        crystal = self.experiment.crystal
         if crystal.num_scan_points > 0:
             Bmat = crystal.get_B()
             if not all(
@@ -61,8 +73,8 @@ class PETSOutput:
 
         # Check no other models are scan-varying
         if (
-            experiment.goniometer.num_scan_points > 0
-            or experiment.beam.num_scan_points > 0
+            self.experiment.goniometer.num_scan_points > 0
+            or self.experiment.beam.num_scan_points > 0
         ):
             raise ValueError("Only scan-varying crystal orientation is supported")
 
@@ -82,13 +94,90 @@ class PETSOutput:
         self.reflections = self.reflections.select(fulls)
 
     def _set_virtual_frames(self):
-        """Assign each reflection to a virtual frame for dyn_cif output and
-        record that in the reflection table"""
+        """Create a list of virtual frames for the experiment, each containing
+        a table of reflections assigned to that virtual frame"""
 
-        pass
+        # Get reciprocal lattice points from s1 vectors
+        s0 = self.experiment.beam.get_s0()
+        self.reflections["rlp"] = self.reflections["s1"] - s0
+
+        # Get experimental models
+        crystal = self.experiment.crystal
+        scan = self.experiment.scan
+        goniometer = self.experiment.goniometer
+        m2 = matrix.col(goniometer.get_rotation_axis_datum())
+        S = matrix.sqr(goniometer.get_setting_rotation())
+        F = matrix.sqr(goniometer.get_fixed_rotation())
+
+        # Calculate the orientation matrix in the lab frame for each scan point
+        # and set it in the reflections. This is not exactly the U matrix used
+        # to integrate the reflections but is close. The individual U matrices
+        # for each reflection will be updated afterwards.
+        _, _, frames = self.reflections["xyzcal.px"].parts()
+        self.reflections["U"] = flex.mat3_double(len(self.reflections))
+        Umats = [
+            matrix.sqr(crystal.get_U_at_scan_point(i))
+            for i in range(crystal.num_scan_points)
+        ]
+        start, stop = scan.get_array_range()
+        SRFUmats = []
+        # Loop over the array range frame numbers at the scan-points
+        for i, Umat in zip(range(start, stop + 1), Umats):
+            phi = scan.get_angle_from_array_index(i, deg=False)
+            R = m2.axis_and_angle_as_r3_rotation_matrix(phi, deg=False)
+            SRFU = S * R * F * Umat
+            SRFUmats.append(SRFU)
+            sel = (frames > i) & (frames <= stop)
+            self.reflections["U"].set_selected(sel, SRFU)
+
+        # Calculate axis and angle for the transformation at each frame from a
+        # comparison of the orientations at the beginning and end of that frame
+        ang_ax = []
+        for U1, U2 in pairwise(SRFUmats):
+            M = U2 * U1.transpose()
+            ang_ax.append(
+                M.r3_rotation_matrix_as_unit_quaternion().unit_quaternion_as_axis_and_angle(
+                    deg=False
+                )
+            )
+
+        # Calculate the U matrix for each reflection individually - slow
+        for i in range(self.reflections.nrows()):
+            ref = self.reflections[i]
+            _, _, frame = ref["xyzcal.px"]
+            frame_start = math.floor(frame)
+            frame_fraction = frame - frame_start
+            # Look up the relevant axis and angle for this frame
+            lookup = int(frame_start) - start
+            angle, axis = ang_ax[lookup]
+            # This reflection's position is given by a fractional application of
+            # this frame's transformation
+            frac_angle = frame_fraction * angle
+            Uoffset = axis.axis_and_angle_as_r3_rotation_matrix(frac_angle, deg=False)
+
+            # Update ref["U"] by premultiplying by Uoffset
+            self.reflections[i]["U"] = Uoffset * matrix.sqr(ref["U"])
+
+        # Loop over the virtual frames
+        starts = list(range(*scan.get_array_range(), self.step))
+        for start in starts:
+            stop = start + self.n_merged
+            centre = (start + stop) / 2.0
+            print(centre)
+
+            # Take only reflections whose centroids are inside this virtual frame
+            sel = (frames > start) & (frames <= stop)
+            refs = self.reflections.select(sel)
+            refs["U"] = flex.mat3_double(len(refs))
+
+            pass
+        # For each reflection, calculate r from s1 and s0. Rotate r according
+        # the angle from the centre of the virtual frame. calculate the extinction
+        # distance from distance from the centre of the Ewald sphere - |s0|.
 
     def write_cif_pets(self):
         pass
 
     def write_dyn_cif_pets(self):
-        pass
+
+        self._set_virtual_frames()
