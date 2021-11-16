@@ -1,5 +1,6 @@
 import copy
 import itertools
+import json
 import math
 
 import numpy as np
@@ -2272,10 +2273,8 @@ class Analyser:
                 f.write(html.encode("utf-8", "xmlcharrefreplace"))
 
         if self.params.output.json is not None:
-            import json
-
             print(f"Writing json data to: {self.params.output.json}")
-            with open(self.params.output.json, "wb") as f:
+            with open(self.params.output.json, "w") as f:
                 json.dump(json_data, f)
 
     def experiments_table(self, experiments):

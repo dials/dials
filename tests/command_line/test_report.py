@@ -25,8 +25,11 @@ def test_report_scaled_data(dials_data, tmpdir):
             "dials.report",
             dials_data("l_cysteine_4_sweeps_scaled") / "scaled_30.refl",
             dials_data("l_cysteine_4_sweeps_scaled") / "scaled_30.expt",
+            f"json={tmpdir}/report.json",
         ],
         working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
     assert tmpdir.join("dials.report.html").check()
+    report_json = tmpdir.join("report.json")
+    assert report_json.check()
