@@ -1,21 +1,12 @@
 import logging
-import math
-from itertools import tee
 
 import numpy as np
 
 from scitbx import matrix
 
-from dials.array_family import flex
+from dials.command_line.frame_orientations import extract_experiment_data
 
 logger = logging.getLogger(__name__)
-
-# An itertools recipe in Python 3.7, but a module function in 3.10
-def pairwise(iterable):
-    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
-    a, b = tee(iterable)
-    next(b, None)
-    return zip(a, b)
 
 
 class PETSOutput:
@@ -38,9 +29,12 @@ class PETSOutput:
         self._check_experiments()
         self._check_reflections()
 
+        # Calculate the frame orientation data (in the DIALS coordinate frame)
+        self.frame_orientations = extract_experiment_data(self.experiment, scale=1)
+
     def _check_experiments(self):
-        """Check a DIALS experiment list is suitable and convert geometry to the
-        PETS coordinate system"""
+        """Extract a single experiment from an experiment list and check that
+        it is suitable for cif_pets output"""
 
         if self.exp_id is None:
             if len(self.experiments) != 1:
@@ -95,85 +89,50 @@ class PETSOutput:
 
     def _set_virtual_frames(self):
         """Create a list of virtual frames for the experiment, each containing
-        a table of reflections assigned to that virtual frame"""
+        a table of reflections and the orientation information for the virtual
+        frame"""
 
-        # Get reciprocal lattice points from s1 vectors
-        s0 = self.experiment.beam.get_s0()
-        self.reflections["rlp"] = self.reflections["s1"] - s0
+        # Get the frame orientation data
+        directions = self.frame_orientations["directions"]
+        zone_axes = self.frame_orientations["zone_axes"]
+        real_space_axes = self.frame_orientations["real_space_axes"]
+        orientations = self.frame_orientations["orientations"]
 
-        # Get experimental models
-        crystal = self.experiment.crystal
-        scan = self.experiment.scan
-        goniometer = self.experiment.goniometer
-        m2 = matrix.col(goniometer.get_rotation_axis_datum())
-        S = matrix.sqr(goniometer.get_setting_rotation())
-        F = matrix.sqr(goniometer.get_fixed_rotation())
-
-        # Calculate the orientation matrix in the lab frame for each scan point
-        # and set it in the reflections. This is not exactly the U matrix used
-        # to integrate the reflections but is close. The individual U matrices
-        # for each reflection will be updated afterwards.
         _, _, frames = self.reflections["xyzcal.px"].parts()
-        self.reflections["U"] = flex.mat3_double(len(self.reflections))
-        Umats = [
-            matrix.sqr(crystal.get_U_at_scan_point(i))
-            for i in range(crystal.num_scan_points)
-        ]
-        start, stop = scan.get_array_range()
-        SRFUmats = []
-        # Loop over the array range frame numbers at the scan-points
-        for i, Umat in zip(range(start, stop + 1), Umats):
-            phi = scan.get_angle_from_array_index(i, deg=False)
-            R = m2.axis_and_angle_as_r3_rotation_matrix(phi, deg=False)
-            SRFU = S * R * F * Umat
-            SRFUmats.append(SRFU)
-            sel = (frames > i) & (frames <= stop)
-            self.reflections["U"].set_selected(sel, SRFU)
-
-        # Calculate axis and angle for the transformation at each frame from a
-        # comparison of the orientations at the beginning and end of that frame
-        ang_ax = []
-        for U1, U2 in pairwise(SRFUmats):
-            M = U2 * U1.transpose()
-            ang_ax.append(
-                M.r3_rotation_matrix_as_unit_quaternion().unit_quaternion_as_axis_and_angle(
-                    deg=False
-                )
-            )
-
-        # Calculate the U matrix for each reflection individually - slow
-        for i in range(self.reflections.nrows()):
-            ref = self.reflections[i]
-            _, _, frame = ref["xyzcal.px"]
-            frame_start = math.floor(frame)
-            frame_fraction = frame - frame_start
-            # Look up the relevant axis and angle for this frame
-            lookup = int(frame_start) - start
-            angle, axis = ang_ax[lookup]
-            # This reflection's position is given by a fractional application of
-            # this frame's transformation
-            frac_angle = frame_fraction * angle
-            Uoffset = axis.axis_and_angle_as_r3_rotation_matrix(frac_angle, deg=False)
-
-            # Update ref["U"] by premultiplying by Uoffset
-            self.reflections[i]["U"] = Uoffset * matrix.sqr(ref["U"])
-
-        # Loop over the virtual frames
-        starts = list(range(*scan.get_array_range(), self.step))
+        scan = self.experiment.scan
+        self.virtual_frames = []
+        arr_start, arr_end = scan.get_array_range()
+        # Loop over the virtual frames.
+        starts = list(range(arr_start, arr_end, self.step))
         for start in starts:
             stop = start + self.n_merged
-            centre = (start + stop) / 2.0
-            print(centre)
+            if stop > arr_end:
+                stop = arr_end
 
             # Take only reflections whose centroids are inside this virtual frame
             sel = (frames > start) & (frames <= stop)
             refs = self.reflections.select(sel)
-            refs["U"] = flex.mat3_double(len(refs))
 
-            pass
-        # For each reflection, calculate r from s1 and s0. Rotate r according
-        # the angle from the centre of the virtual frame. calculate the extinction
-        # distance from distance from the centre of the Ewald sphere - |s0|.
+            # TODO For each reflection, calculate r from s1 and s0. Rotate r according
+            # the angle from the centre of the virtual frame. calculate the extinction
+            # distance from distance from the centre of the Ewald sphere - |s0|.
+            # Actually, according to the Klar et al. paper there are two parameters
+            # to consider: Dsg, the distance from the virtual frame edge and Rsg,
+            # defined according to the excitation error from the centre of the
+            # virtual frame
+
+            # Look up the orientation data using an index, which is the centre
+            # of the virtual frame offset so that the scan starts from 0
+            centre = int((start + stop) / 2.0)
+            index = centre - arr_start
+
+            self.virtual_frames.append(
+                {
+                    "reflections": refs,
+                    "orientation": orientations[index],
+                    "zone_axis": zone_axes[index],
+                }
+            )
 
     def write_cif_pets(self):
         pass
