@@ -545,7 +545,7 @@ def run(args=None):
     try:
         exporter(params, experiments, reflections)
     except Exception as e:
-        logger.error("Error: " + str(e))
+        logger.error(f"Error: {e}")
         sys.exit(1)
 
 
