@@ -510,6 +510,38 @@ def test_shelx_ins(dials_data, tmp_path):
                 assert result == pytest.approx(cell_esds[instruction], abs=0.001)
 
 
+def test_shelx_ins_best_unit_cell(dials_data, tmp_path):
+    # Call dials.export
+    result = procrunner.run(
+        [
+            "dials.export",
+            "intensity=scale",
+            "format=shelx",
+            "best_unit_cell=5,8,12,90,90,90",
+            dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+            / "scaled_20_25.expt",
+            dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+            / "scaled_20_25.refl",
+        ],
+        working_directory=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "dials.ins").is_file()
+
+    cell_esds = {
+        "CELL": (5.0, 8.0, 12.0, 90.0, 90.0, 90.0),
+    }
+
+    with (tmp_path / "dials.ins").open() as fh:
+        for line in fh:
+            tokens = line.split()
+            instruction = tokens[0]
+            assert instruction != "ZERR"
+            if instruction in cell_esds:
+                result = tuple(map(float, tokens[2:8]))
+                assert result == pytest.approx(cell_esds[instruction], abs=0.001)
+
+
 def test_export_sum_or_profile_only(dials_data, tmp_path):
     expt = dials_data("insulin_processed", pathlib=True) / "integrated.expt"
     refl = dials_data("insulin_processed", pathlib=True) / "integrated.refl"
