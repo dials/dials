@@ -1,5 +1,6 @@
 import copy
 import itertools
+import json
 import math
 
 import numpy as np
@@ -2223,6 +2224,10 @@ class Analyser:
                 rlist, experiments
             )
             resolution_plots.update(rplots)
+            json_data["resolution_graphs"] = resolution_plots
+            json_data["batch_graphs"] = batch_plots
+            json_data["misc_graphs"] = misc_plots
+            json_data["scaled_intensity_graphs"] = scaled_intensity_plots
 
         if self.params.output.html is not None:
 
@@ -2272,10 +2277,8 @@ class Analyser:
                 f.write(html.encode("utf-8", "xmlcharrefreplace"))
 
         if self.params.output.json is not None:
-            import json
-
             print(f"Writing json data to: {self.params.output.json}")
-            with open(self.params.output.json, "wb") as f:
+            with open(self.params.output.json, "w") as f:
                 json.dump(json_data, f)
 
     def experiments_table(self, experiments):
