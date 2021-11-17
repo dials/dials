@@ -103,9 +103,13 @@ def sequence_to_stills(experiments, reflections, params):
         # between images, including the scan extrema. This code assumes that
         # the crystal model at the start of each image applies to the whole
         # image and ignores the final scan-point.
-        for i_scan_point in range(*experiment.scan.get_array_range()):
-            if params.max_scan_points and i_scan_point >= params.max_scan_points:
+        start, stop = experiment.scan.get_array_range()
+        for i_array in range(start, stop):
+            if params.max_scan_points and i_array >= params.max_scan_points:
                 break
+            # Shift array position to scan-point index
+            i_scan_point = i_array - start
+
             # The A matrix is the goniometer setting matrix for this scan point
             # times the scan varying A matrix at this scan point. Note, the
             # goniometer setting matrix for scan point zero will be the identity
@@ -115,12 +119,12 @@ def sequence_to_stills(experiments, reflections, params):
             # by a further half oscillation step.
             A = (
                 goniometer_axis.axis_and_angle_as_r3_rotation_matrix(
-                    angle=experiment.scan.get_angle_from_array_index(i_scan_point)
+                    angle=experiment.scan.get_angle_from_array_index(i_array)
                     + (step / 2),
                     deg=True,
                 )
                 * goniometer_setting_matrix
-                * matrix.sqr(experiment.crystal.get_A_at_scan_point(i_scan_point))
+                * matrix.sqr(experiment.crystal.get_A_at_scan_point(i_array))
             )
             crystal = MosaicCrystalSauter2014(experiment.crystal)
             crystal.set_A(A)
