@@ -1,1 +1,1 @@
-``dials.export``: ensure a unique space group when exporting a multi-experiment MTZ.
+``dials.export``: No longer allow (erroneous) MTZ export for multiple experiments with multiple space groups.
