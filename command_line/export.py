@@ -494,7 +494,9 @@ def export_shelx(params, experiments, reflections):
 
     # check for a single intensity choice
     if len(params.intensity) > 1:
-        raise ValueError("Only 1 intensity option can be exported in this format")
+        raise ValueError(
+            "Only 1 intensity option can be exported in this format, please choose a single intensity option e.g. intensity=profile"
+        )
 
     from dials.util.export_shelx import export_shelx
 
