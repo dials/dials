@@ -117,7 +117,6 @@ def _write_ins(experiment_list, best_unit_cell, ins_file):
     # if user has supplied best_unit_cell use it
     if best_unit_cell is not None:
         uc = best_unit_cell
-        uc_sd = None
     else:
         for exp in experiment_list:
             unit_cells.append(
@@ -129,7 +128,6 @@ def _write_ins(experiment_list, best_unit_cell, ins_file):
                 len({uc.parameters() for uc in unit_cells}) > 1
             ):  # have different cells so no esds
                 uc = determine_best_unit_cell(experiment_list)
-                uc_sd = None
             else:  # identical (recalculated?) unit cell with esds
                 uc = (
                     experiment_list[0].crystal.get_recalculated_unit_cell()
@@ -158,7 +156,7 @@ def _write_ins(experiment_list, best_unit_cell, ins_file):
                 wl, *uc.parameters()
             )
         )
-        if uc_sd is not None:
+        if uc_sd:
             f.write(
                 "ZERR {:8.3f} {:8.4f} {:8.4f} {:8.4f} {:8.3f} {:8.3f} {:8.3f}\n".format(
                     sg.order_z(), *uc_sd
