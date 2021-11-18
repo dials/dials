@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import procrunner
 import pytest
@@ -6,13 +8,9 @@ from dxtbx.serialize import load
 
 from dials.array_family import flex
 
-base_path = "/dls/mx-scratch/jbe/test_import_mtz/"
+base_path = os.environ.get("TEST_IMPORT_MTZ", "/dls/mx-scratch/jbe/test_import_mtz/")
 dials_expt = base_path + "dials_integrated.expt"
 dials_refl = base_path + "dials_integrated.refl"
-
-image_template = (
-    "/dls/science/groups/scisoft/DIALS/dials_data/x4wide/X4_wide_M1S4_2_####.cbf"
-)
 
 
 def check_dials_refls(integrated_refls, imported_refls):
@@ -37,8 +35,11 @@ def check_dials_refls(integrated_refls, imported_refls):
         )
 
 
-def test_import_dials_integrated_mtz_with_template(tmp_path):
+def test_import_dials_integrated_mtz_with_template(dials_data, tmp_path):
     integrated_mtz = base_path + "dials_INTEGRATE.mtz"
+    image_template = os.path.join(
+        dials_data("x4wide").strpath, "X4_wide_M1S4_2_####.cbf"
+    )
 
     result = procrunner.run(
         [
@@ -139,8 +140,11 @@ def test_import_dials_integrated_mtz_without_template(tmp_path):
     check_dials_refls(integrated_refls, imported_refls)
 
 
-def test_import_3dii_integrated_mtz_with_template(tmp_path):
+def test_import_3dii_integrated_mtz_with_template(dials_data, tmp_path):
     integrated_mtz = base_path + "3dii_INTEGRATE.mtz"
+    image_template = os.path.join(
+        dials_data("x4wide").strpath, "X4_wide_M1S4_2_####.cbf"
+    )
 
     result = procrunner.run(
         [
