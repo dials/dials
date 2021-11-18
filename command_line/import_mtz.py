@@ -347,7 +347,7 @@ addition to the existing correction (SCALEUSED)."""
     # now see whether two or one sets of intensities were found
     elif data.profile_intensities and data.intensities:
         logger.info(
-            f"""\nThe intensity data with labels I,SIGI are interpeted as being
+            """\nThe intensity data with labels I,SIGI are interpreted as being
 summation integrated intensities.
 The data with labels IPR,SIGIPR are interpreted as being
 profile-fitted integrated intensities."""
@@ -566,6 +566,8 @@ only single wavelength MTZ files supported."""
         d = Detector()
         p = d.add_panel()
         p.set_image_size(panel_size)
+        origin = p.get_origin()
+        p.set_frame((1, 0, 0), (0, -1, 0), (origin[0], origin[1], panel_distance))
         experiments.append(
             Experiment(
                 beam=beam,
