@@ -23,16 +23,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Prepare build-args
-        id: prep
-        run: |
-          BRANCH=
-          if [[ $GITHUB_REF == refs/tags/* ]]; then
-            VERSION=${GITHUB_REF#refs/tags/v}
-            BRANCH=dials-${VERSION%.*}
-          fi
-          echo ::set-output name=branch::${BRANCH}
-
       - name: Log in to the Container registry
         uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
         with:
@@ -57,5 +47,3 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            BRANCH=${{ steps.prep.outputs.branch }}
