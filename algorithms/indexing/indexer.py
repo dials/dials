@@ -472,6 +472,7 @@ class Indexer:
             target_space_group = target_space_group.group()
         else:
             target_space_group = sgtbx.space_group()
+            self.params.known_symmetry.space_group = target_space_group.info()
         self._symmetry_handler = SymmetryHandler(
             unit_cell=target_unit_cell,
             space_group=target_space_group,
