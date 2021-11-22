@@ -31,7 +31,7 @@ from scitbx.array_family import flex
 import dials.util
 import dials.util.log
 import dials.util.masking
-from dials.util.options import OptionParser, flatten_experiments
+from dials.util.options import ArgumentParser, flatten_experiments
 
 Masks = List[Tuple[flex.bool, ...]]
 
@@ -142,7 +142,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     """
     # Create the parser
     usage = "usage: dials.generate_mask [options] models.expt"
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil,
         epilog=__doc__,

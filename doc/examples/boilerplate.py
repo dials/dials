@@ -30,7 +30,7 @@ from dials.array_family import flex
 # but contains customisations such as the parsing of PHIL parameters.
 # flatten_experiments & flatten_reflections are useful for combining multiple input
 # experiment lists and reflection tables into a single instance of each.
-from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
+from dials.util.options import ArgumentParser, flatten_experiments, flatten_reflections
 
 # Useful to know what version of DIALS we are running
 from dials.util.version import dials_version
@@ -121,7 +121,7 @@ def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     """
     usage = "dials.command_name [options] imported.expt strong.refl"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil,
         read_reflections=True,

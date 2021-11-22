@@ -4,7 +4,7 @@ import iotbx.phil
 from scitbx.array_family import flex
 
 from dials.util import Sorry, show_mail_handle_errors
-from dials.util.options import OptionParser, flatten_experiments
+from dials.util.options import ArgumentParser, flatten_experiments
 
 help_message = """
 
@@ -128,7 +128,7 @@ def estimate_gain(imageset, kernel_size=(10, 10), output_gain_map=None, max_imag
 def run(args=None):
     usage = "dials.estimate_gain [options] models.expt"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_experiments=True,

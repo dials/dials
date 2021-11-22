@@ -6,7 +6,7 @@ import iotbx.phil
 import dials.util
 from dials.algorithms.spot_finding import per_image_analysis
 from dials.util import tabulate
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 
 help_message = """
 
@@ -43,7 +43,7 @@ id = None
 def run(args=None):
     usage = "dials.spot_counts_per_image [options] imported.expt strong.refl"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         read_reflections=True,
         read_experiments=True,

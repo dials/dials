@@ -44,7 +44,7 @@ from dials.algorithms.indexing.bravais_settings import (
 )
 from dials.array_family import flex
 from dials.util import log
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.refine_bravais_settings")
@@ -149,7 +149,7 @@ def select_datasets_on_crystal_id(experiments, reflections, crystal_id):
 def run(args=None):
     usage = "dials.refine_bravais_settings indexed.expt indexed.refl [options]"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_experiments=True,

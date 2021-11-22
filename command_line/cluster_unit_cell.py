@@ -10,7 +10,7 @@ from xfel.clustering.cluster import Cluster
 from xfel.clustering.cluster_groups import unit_cell_info
 
 import dials.util
-from dials.util.options import OptionParser, flatten_experiments
+from dials.util.options import ArgumentParser, flatten_experiments
 
 help_message = """
 """
@@ -37,7 +37,7 @@ plot {
 def run(args=None):
     usage = "dials.cluster_unit_cell [options] models.expt"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_experiments=True,

@@ -15,7 +15,7 @@ from scitbx import matrix
 import dials.util
 from dials.algorithms.refinement import rotation_decomposition
 from dials.util import tabulate
-from dials.util.options import OptionParser, flatten_experiments
+from dials.util.options import ArgumentParser, flatten_experiments
 
 help_message = """
 Calculation of possible goniometer settings for re-alignment of crystal axes.
@@ -353,7 +353,7 @@ class align_crystal:
 @dials.util.show_mail_handle_errors()
 def run(args=None):
     usage = "dials.align_crystal [options] models.expt"
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_experiments=True,
