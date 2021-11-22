@@ -90,7 +90,9 @@ class PotatoIntegrator(SimpleIntegrator):
                     experiment, table, refiner_output["refiner_output"]["history"]
                 )
 
-        predicted = self.predict(experiment, table)
+        predicted = self.predict(
+            experiment, table, prediction_probability=self.params.prediction.probability
+        )
         # do we want to add unmatched i.e. strong spots which weren't predicted?
         self.collector.collect_after_prediction(predicted, table)
 
@@ -134,9 +136,13 @@ class PotatoIntegrator(SimpleIntegrator):
         return expts[0], refls, output_data
 
     @staticmethod
-    def predict(experiment, reference, d_min=None):
+    def predict(experiment, reference, d_min=None, prediction_probability=0.9973):
         id_map = dict(reference.experiment_identifiers())
-        reflection_table = predict(ExperimentList([experiment]), d_min=d_min)
+        reflection_table = predict(
+            ExperimentList([experiment]),
+            d_min=d_min,
+            prediction_probability=prediction_probability,
+        )
         ids_ = set(reflection_table["id"])
         assert ids_ == set(id_map.keys()), f"{ids_}, {id_map.keys()}"
         for id_ in ids_:
@@ -146,7 +152,9 @@ class PotatoIntegrator(SimpleIntegrator):
     @staticmethod
     def integrate(experiment, reflection_table, sigma_d):
         reflection_table = final_integrator(
-            ExperimentList([experiment]), reflection_table, sigma_d
+            ExperimentList([experiment]),
+            reflection_table,
+            sigma_d,
         )
         return reflection_table
 
