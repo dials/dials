@@ -1,0 +1,1 @@
+Utility fixes: Better handle cases of missing partiality data in reflection files. Treat missing resolution values as ``0.0`` instead of being empty.

@@ -1,3 +1,4 @@
+import collections
 import copy
 import glob
 import logging
@@ -6,7 +7,6 @@ import pickle
 import sys
 import tarfile
 import time
-from collections import OrderedDict
 from io import BytesIO
 
 from dxtbx.model.experiment_list import (
@@ -111,7 +111,7 @@ control_phil_str = """
     output_dir = .
       .type = str
       .help = Directory output files will be placed
-    composite_output = False
+    composite_output = True
       .type = bool
       .help = If True, save one set of experiment/reflection files per process, where each is a \
               concatenated list of all the successful events examined by that process. \
@@ -120,12 +120,13 @@ control_phil_str = """
     logging_dir = None
       .type = str
       .help = Directory output log files will be placed
-    experiments_filename = %s_imported.expt
+    experiments_filename = None
       .type = str
-      .help = The filename for output experiments
-    strong_filename = %s_strong.refl
+      .help = The filename for output experiments. For example, %s_imported.expt
+    strong_filename = None
       .type = str
-      .help = The filename for strong reflections from spot finder output.
+      .help = The filename for strong reflections from spot finder output. For example: \
+              %s_strong.refl
     indexed_filename = %s_indexed.refl
       .type = str
       .help = The filename for indexed reflections.
@@ -190,6 +191,9 @@ dials_phil_str = """
       .type = str
       .help = Provide an models.expt file with exactly one detector model. Data processing will use \
               that geometry instead of the geometry found in the image headers.
+    sync_reference_geom = True
+      .type = bool
+      .help = ensures the reference hierarchy agrees with the image format
   }
 
   output {
@@ -560,12 +564,15 @@ class Script:
 
                     if self.reference_detector is not None:
                         experiment = experiments[0]
-                        imageset = experiment.imageset
-                        sync_geometry(
-                            self.reference_detector.hierarchy(),
-                            imageset.get_detector().hierarchy(),
-                        )
-                        experiment.detector = imageset.get_detector()
+                        if self.params.input.sync_reference_geom:
+                            imageset = experiment.imageset
+                            sync_geometry(
+                                self.reference_detector.hierarchy(),
+                                imageset.get_detector().hierarchy(),
+                            )
+                            experiment.detector = imageset.get_detector()
+                        else:
+                            experiment.detector = copy.deepcopy(self.reference_detector)
 
                     processor.process_experiments(tag, experiments)
                     imageset.clear_cache()
@@ -576,14 +583,11 @@ class Script:
             iterable = list(zip(tags, range(len(split_experiments))))
 
         else:
-            basenames = OrderedDict()
+            basenames = collections.defaultdict(int)
             sorted_paths = sorted(all_paths)
             for filename in sorted_paths:
                 basename = os.path.splitext(os.path.basename(filename))[0]
-                if basename in basenames:
-                    basenames[basename] += 1
-                else:
-                    basenames[basename] = 1
+                basenames[basename] += 1
             tags = []
             all_paths2 = []
             for i, (basename, count) in enumerate(basenames.items()):
@@ -630,12 +634,17 @@ class Script:
                         continue
 
                     if self.reference_detector is not None:
-                        imageset = experiments[0].imageset
-                        sync_geometry(
-                            self.reference_detector.hierarchy(),
-                            imageset.get_detector().hierarchy(),
-                        )
-                        experiments[0].detector = imageset.get_detector()
+                        if self.params.input.sync_reference_geom:
+                            imageset = experiments[0].imageset
+                            sync_geometry(
+                                self.reference_detector.hierarchy(),
+                                imageset.get_detector().hierarchy(),
+                            )
+                            experiments[0].detector = imageset.get_detector()
+                        else:
+                            experiments[0].detector = copy.deepcopy(
+                                self.reference_detector
+                            )
 
                     processor.process_experiments(tag, experiments)
                 if finalize:

@@ -38,6 +38,7 @@ conda-forge::pytest>=4.5
 conda-forge::pytest-forked
 conda-forge::pytest-mock
 conda-forge::pytest-xdist
+conda-forge::python-dateutil>=2.7.0
 conda-forge::python.app
 conda-forge::reportlab
 conda-forge::requests
@@ -46,7 +47,7 @@ conda-forge::scipy
 conda-forge::scons
 conda-forge::setuptools
 conda-forge::six
-conda-forge::sphinx>=3.2,<4
+conda-forge::sphinx>=4
 conda-forge::sqlite
 conda-forge::tabulate
 conda-forge::tqdm

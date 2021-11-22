@@ -58,7 +58,7 @@ class Target:
           nproc (int): Deprecated
         """
         if nproc is not None:
-            warnings.warn("nproc is deprecated", DeprecationWarning)
+            warnings.warn("nproc is deprecated", UserWarning)
 
         if weights is not None:
             assert weights in ("count", "standard_error")
@@ -378,6 +378,6 @@ class Target:
         """
         warnings.warn(
             "get_sym_ops() is deprecated, use sym_ops property instead",
-            DeprecationWarning,
+            UserWarning,
         )
         return self.sym_ops

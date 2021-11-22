@@ -1,7 +1,7 @@
 import copy
 import itertools
+import json
 import math
-from collections import OrderedDict
 
 import numpy as np
 
@@ -166,7 +166,7 @@ class ScanVaryingCrystalAnalyser:
         # Check we have the required fields
         print("Analysing scan-varying crystal model")
 
-        d = OrderedDict()
+        d = {}
 
         if experiments is not None and len(experiments):
             d.update(self.plot_cell(experiments))
@@ -485,9 +485,8 @@ class StrongSpotsAnalyser:
             )
         )
 
-        d = OrderedDict()
         # Look at distribution of spot counts
-        d.update(self.spot_count_per_image(rlist))
+        d = self.spot_count_per_image(rlist)
         # Look at distribution of unindexed spots with detector position
         d.update(self.unindexed_count_xy(rlist))
         # Look at distribution of indexed spots with detector position
@@ -729,11 +728,9 @@ class CentroidAnalyser:
             rlist = rlist.select(mask)
             Command.end(f" Selected {len(rlist)} refined reflections")
 
-        d = OrderedDict()
-
         # Look at differences in calculated/observed position
         print(f" Analysing centroid differences with I/Sigma > {threshold}")
-        d.update(self.centroid_diff_hist(rlist, threshold))
+        d = self.centroid_diff_hist(rlist, threshold)
         print(f" Analysing centroid differences in x/y with I/Sigma > {threshold}")
         d.update(self.centroid_diff_xy(rlist, threshold))
         d.update(self.centroid_xy_xz_zy_residuals(rlist, threshold))
@@ -797,8 +794,6 @@ class CentroidAnalyser:
         xd = xo - xc
         yd = yo - yc
 
-        d = OrderedDict()
-
         nbinsx, nbinsy = tuple(
             int(math.ceil(i))
             for i in (
@@ -824,54 +819,54 @@ class CentroidAnalyser:
         z2[:] = np.NAN
         z2[nonzeros] = H2[nonzeros] / H[nonzeros]
 
-        d["centroid_differences_x"] = {
-            "data": [
-                {
-                    "name": "centroid_differences_x",
-                    "x": xedges.tolist(),
-                    "y": yedges.tolist(),
-                    "z": z1.transpose().tolist(),
-                    "type": "heatmap",
-                    "colorbar": {
-                        "title": "Difference in X position (pixels)",
-                        "titleside": "right",
-                    },
-                    "colorscale": "Jet",
-                }
-            ],
-            "layout": {
-                "title": "Difference between observed and calculated centroids in X",
-                "xaxis": {"domain": [0, 0.85], "title": "X", "showgrid": False},
-                "yaxis": {"title": "Y", "autorange": "reversed", "showgrid": False},
-                "width": 500,
-                "height": 450,
+        return {
+            "centroid_differences_x": {
+                "data": [
+                    {
+                        "name": "centroid_differences_x",
+                        "x": xedges.tolist(),
+                        "y": yedges.tolist(),
+                        "z": z1.transpose().tolist(),
+                        "type": "heatmap",
+                        "colorbar": {
+                            "title": "Difference in X position (pixels)",
+                            "titleside": "right",
+                        },
+                        "colorscale": "Jet",
+                    }
+                ],
+                "layout": {
+                    "title": "Difference between observed and calculated centroids in X",
+                    "xaxis": {"domain": [0, 0.85], "title": "X", "showgrid": False},
+                    "yaxis": {"title": "Y", "autorange": "reversed", "showgrid": False},
+                    "width": 500,
+                    "height": 450,
+                },
+            },
+            "centroid_differences_y": {
+                "data": [
+                    {
+                        "name": "centroid_differences_y",
+                        "x": xedges.tolist(),
+                        "y": yedges.tolist(),
+                        "z": z2.transpose().tolist(),
+                        "type": "heatmap",
+                        "colorbar": {
+                            "title": "Difference in Y position (pixels)",
+                            "titleside": "right",
+                        },
+                        "colorscale": "Jet",
+                    }
+                ],
+                "layout": {
+                    "title": "Difference between observed and calculated centroids in Y",
+                    "xaxis": {"domain": [0, 0.85], "title": "X", "showgrid": False},
+                    "yaxis": {"title": "Y", "autorange": "reversed", "showgrid": False},
+                    "width": 500,
+                    "height": 450,
+                },
             },
         }
-
-        d["centroid_differences_y"] = {
-            "data": [
-                {
-                    "name": "centroid_differences_y",
-                    "x": xedges.tolist(),
-                    "y": yedges.tolist(),
-                    "z": z2.transpose().tolist(),
-                    "type": "heatmap",
-                    "colorbar": {
-                        "title": "Difference in Y position (pixels)",
-                        "titleside": "right",
-                    },
-                    "colorscale": "Jet",
-                }
-            ],
-            "layout": {
-                "title": "Difference between observed and calculated centroids in Y",
-                "xaxis": {"domain": [0, 0.85], "title": "X", "showgrid": False},
-                "yaxis": {"title": "Y", "autorange": "reversed", "showgrid": False},
-                "width": 500,
-                "height": 450,
-            },
-        }
-        return d
 
     def centroid_diff_z(self, rlist, threshold):
         """Look at the centroid difference in z"""
@@ -1057,8 +1052,6 @@ class CentroidAnalyser:
 
         is_stills = dz.all_approx_equal(dz[0])
 
-        d = OrderedDict()
-
         histx = flex.histogram(dx, n_slots=100)
         histy = flex.histogram(dy, n_slots=100)
         Hxy, xedges, yedges = np.histogram2d(dx, dy, bins=(50, 50))
@@ -1106,51 +1099,40 @@ class CentroidAnalyser:
             },
         }
 
-        d["residuals_xy"] = {
-            "data": [
-                # {
-                # 'x': list(dx),
-                # 'y': list(dy),
-                # 'mode': 'markers',
-                # 'name': 'points',
-                # 'marker': {
-                # 'color': 'rgb(102,0,0)',
-                # 'size': 2,
-                # 'opacity': 0.4
-                # },
-                # 'type': 'scatter',
-                # },
-                {
-                    "x": xedges.tolist(),
-                    "y": yedges.tolist(),
-                    "z": Hxy.transpose().tolist(),
-                    "name": "density",
-                    # 'ncontours': 20,
-                    "colorscale": "Hot",
-                    "reversescale": True,
-                    "showscale": False,
-                    "type": "contour",
-                    "zsmooth": "best",
-                },
-                {
-                    "x": list(histx.slot_centers()),
-                    "y": list(histx.slots()),
-                    "name": "dx histogram",
-                    "marker": {"color": "rgb(102,0,0)"},
-                    "yaxis": "y2",
-                    "type": "bar",
-                },
-                {
-                    "y": list(histy.slot_centers()),
-                    "x": list(histy.slots()),
-                    "name": "dy histogram",
-                    "marker": {"color": "rgb(102,0,0)"},
-                    "xaxis": "x2",
-                    "type": "bar",
-                    "orientation": "h",
-                },
-            ],
-            "layout": copy.deepcopy(density_hist_layout),
+        d = {
+            "residuals_xy": {
+                "data": [
+                    {
+                        "x": xedges.tolist(),
+                        "y": yedges.tolist(),
+                        "z": Hxy.transpose().tolist(),
+                        "name": "density",
+                        "colorscale": "Hot",
+                        "reversescale": True,
+                        "showscale": False,
+                        "type": "contour",
+                        "zsmooth": "best",
+                    },
+                    {
+                        "x": list(histx.slot_centers()),
+                        "y": list(histx.slots()),
+                        "name": "dx histogram",
+                        "marker": {"color": "rgb(102,0,0)"},
+                        "yaxis": "y2",
+                        "type": "bar",
+                    },
+                    {
+                        "y": list(histy.slot_centers()),
+                        "x": list(histy.slots()),
+                        "name": "dy histogram",
+                        "marker": {"color": "rgb(102,0,0)"},
+                        "xaxis": "x2",
+                        "type": "bar",
+                        "orientation": "h",
+                    },
+                ],
+                "layout": copy.deepcopy(density_hist_layout),
+            }
         }
         d["residuals_xy"]["layout"]["title"] = "Centroid residuals in X and Y"
 
@@ -1158,24 +1140,11 @@ class CentroidAnalyser:
 
             d["residuals_zy"] = {
                 "data": [
-                    # {
-                    # 'x': list(dz),
-                    # 'y': list(dy),
-                    # 'mode': 'markers',
-                    # 'name': 'points',
-                    # 'marker': {
-                    # 'color': 'rgb(102,0,0)',
-                    # 'size': 2,
-                    # 'opacity': 0.4
-                    # },
-                    # 'type': 'scatter',
-                    # },
                     {
                         "x": zedges.tolist(),
                         "y": yedges.tolist(),
                         "z": Hzy.transpose().tolist(),
                         "name": "density",
-                        # 'ncontours': 20,
                         "colorscale": "Hot",
                         "reversescale": True,
                         "showscale": False,
@@ -1207,24 +1176,11 @@ class CentroidAnalyser:
 
             d["residuals_xz"] = {
                 "data": [
-                    # {
-                    # 'x': list(dx),
-                    # 'y': list(dz),
-                    # 'mode': 'markers',
-                    # 'name': 'points',
-                    # 'marker': {
-                    # 'color': 'rgb(102,0,0)',
-                    # 'size': 2,
-                    # 'opacity': 0.4
-                    # },
-                    # 'type': 'scatter',
-                    # },
                     {
                         "x": xedges.tolist(),
                         "y": zedges.tolist(),
                         "z": Hxz.transpose().tolist(),
                         "name": "density",
-                        # 'ncontours': 20,
                         "colorscale": "Hot",
                         "reversescale": True,
                         "showscale": False,
@@ -1307,10 +1263,8 @@ class IntensityAnalyser:
             )
         )
 
-        d = OrderedDict()
-
         print(" Analysing distribution of I/Sigma")
-        d.update(self.i_over_s_hist(rlist))
+        d = self.i_over_s_hist(rlist)
         print(" Analysing distribution of I/Sigma vs xy")
         d.update(self.i_over_s_vs_xy(rlist, "sum"))
         if "intensity.prf.value" in rlist:
@@ -1474,8 +1428,6 @@ class IntensityAnalyser:
 
         xc, yc, zc = rlist["xyzcal.px"].parts()
 
-        d = OrderedDict()
-
         nbinsx, nbinsy = tuple(
             int(math.ceil(i))
             for i in (
@@ -1496,28 +1448,28 @@ class IntensityAnalyser:
         z1[:] = np.NAN
         z1[nonzeros] = H1[nonzeros] / H[nonzeros]
 
-        d["qe_map"] = {
-            "data": [
-                {
-                    "name": "qe_map",
-                    "x": xedges.tolist(),
-                    "y": yedges.tolist(),
-                    "z": z1.transpose().tolist(),
-                    "type": "heatmap",
-                    "colorbar": {"title": "QE", "titleside": "right"},
-                    "colorscale": "Jet",
-                }
-            ],
-            "layout": {
-                "title": "Calculated Quantum Efficiency",
-                "xaxis": {"domain": [0, 0.85], "title": "X", "showgrid": False},
-                "yaxis": {"title": "Y", "autorange": "reversed", "showgrid": False},
-                "width": 500,
-                "height": 450,
-            },
+        return {
+            "qe_map": {
+                "data": [
+                    {
+                        "name": "qe_map",
+                        "x": xedges.tolist(),
+                        "y": yedges.tolist(),
+                        "z": z1.transpose().tolist(),
+                        "type": "heatmap",
+                        "colorbar": {"title": "QE", "titleside": "right"},
+                        "colorscale": "Jet",
+                    }
+                ],
+                "layout": {
+                    "title": "Calculated Quantum Efficiency",
+                    "xaxis": {"domain": [0, 0.85], "title": "X", "showgrid": False},
+                    "yaxis": {"title": "Y", "autorange": "reversed", "showgrid": False},
+                    "width": 500,
+                    "height": 450,
+                },
+            }
         }
-
-        return d
 
 
 class ZScoreAnalyser:
@@ -1572,11 +1524,10 @@ class ZScoreAnalyser:
                 " Removing %d reflections with intensity <= 0" % selection.count(True)
             )
 
-        d = OrderedDict()
         self.z_score_data = IntensityDist(rlist, experiments).rtable
 
         print(" Analysing distribution of intensity z-scores")
-        d.update(self.z_score_hist())
+        d = self.z_score_hist()
         print(" Constructing normal probability plot of intensity z-scores")
         d.update(self.normal_probability_plot())
         print(" Plotting intensity z-scores against multiplicity")
@@ -1825,11 +1776,9 @@ class ReferenceProfileAnalyser:
             )
         )
 
-        d = OrderedDict()
-
         # Analyse distribution of reference spots
         print(" Analysing reference profile distribution vs x/y")
-        d.update(self.reference_xy(rlist))
+        d = self.reference_xy(rlist)
         print(" Analysing reference profile distribution vs z")
         d.update(self.reference_z(rlist))
 
@@ -1837,9 +1786,8 @@ class ReferenceProfileAnalyser:
         def correlations(filename, rlist):
             """Call for reference spots and all reflections."""
 
-            d = OrderedDict()
             print(" Analysing reflection profile correlations")
-            d.update(self.reflection_corr_hist(rlist, filename))
+            d = self.reflection_corr_hist(rlist, filename)
 
             print(" Analysing reflection profile correlations vs x/y")
             d.update(self.reflection_corr_vs_xy(rlist, filename))
@@ -2146,7 +2094,7 @@ class ScalingModelAnalyser:
 
         print("Analysing scaling model")
 
-        d = OrderedDict()
+        d = {}
 
         if experiments is not None and len(experiments):
             for i, exp in enumerate(experiments):
@@ -2174,9 +2122,8 @@ def merging_stats_results(reflections, experiments):
 
     is_centric = experiments[0].crystal.get_space_group().is_centric()
 
-    resolution_plots = OrderedDict()
     plotter = ResolutionPlotsAndStats(result, anom_result, is_centric)
-    resolution_plots.update(plotter.make_all_plots())
+    resolution_plots = plotter.make_all_plots()
     summary_table, results_table = plotter.statistics_tables()
 
     (
@@ -2189,8 +2136,7 @@ def merging_stats_results(reflections, experiments):
 
     bm = batch_manager(batches, batch_data)
 
-    batch_plots = OrderedDict()
-    batch_plots.update(scale_rmerge_vs_batch_plot(bm, rvb, svb))
+    batch_plots = scale_rmerge_vs_batch_plot(bm, rvb, svb)
     batch_plots.update(i_over_sig_i_vs_batch_plot(bm, isigivb))
     image_range_table = make_image_range_table(experiments, bm)
 
@@ -2246,7 +2192,7 @@ class Analyser:
 
     def __call__(self, rlist=None, experiments=None):
         """Do all the analysis."""
-        json_data = OrderedDict()
+        json_data = {}
 
         if rlist is not None:
             for analyse in self.analysers:
@@ -2278,6 +2224,10 @@ class Analyser:
                 rlist, experiments
             )
             resolution_plots.update(rplots)
+            json_data["resolution_graphs"] = resolution_plots
+            json_data["batch_graphs"] = batch_plots
+            json_data["misc_graphs"] = misc_plots
+            json_data["scaled_intensity_graphs"] = scaled_intensity_plots
 
         if self.params.output.html is not None:
 
@@ -2327,10 +2277,8 @@ class Analyser:
                 f.write(html.encode("utf-8", "xmlcharrefreplace"))
 
         if self.params.output.json is not None:
-            import json
-
             print(f"Writing json data to: {self.params.output.json}")
-            with open(self.params.output.json, "wb") as f:
+            with open(self.params.output.json, "w") as f:
                 json.dump(json_data, f)
 
     def experiments_table(self, experiments):
