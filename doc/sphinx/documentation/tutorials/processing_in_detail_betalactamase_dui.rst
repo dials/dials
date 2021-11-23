@@ -137,7 +137,7 @@ able to see the crystal's reciprocal lattice by eye in the strong spot
 positions. Some practice may be needed in rotating the lattice to an
 orientation that shows off the periodicity in reciprocal lattice positions.
 
-.. image:: /figures/process_detail_betalactamase/reciprocal_lattice_strong.png
+.. image:: https://dials.github.io/images/process_detail_betalactamase_dui/reciprocal_lattice_strong.png
 
 Although the reciprocal spacing is visible, in this data, there are clearly
 some systematic distortions. These will be solved during indexing.
@@ -253,7 +253,7 @@ In this case, we can see that the refinement has clearly resolved whatever
 systematic error was causing distortions in the reciprocal space view, and the
 determined reciprocal unit cell fits the data well:
 
-.. image:: /figures/process_detail_betalactamase/reciprocal_lattice_indexed.png
+.. image:: https://dials.github.io/images/process_detail_betalactamase_dui/reciprocal_lattice_indexed.png
 
 Bravais Lattice Refinement
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -565,3 +565,5 @@ statistics as well as basic information about the MTZ that was created.
 
 These files can then be imported into CCP4 Cloud or ccp4i2 to continue to
 structure solution and refinement.
+
+.. _aimless: http://www.ccp4.ac.uk/html/aimless.html
