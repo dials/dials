@@ -13,9 +13,10 @@ class AssignIndicesStrategy:
 
 
 class AssignIndicesGlobal(AssignIndicesStrategy):
-    def __init__(self, tolerance=0.3):
+    def __init__(self, tolerance=0.3, tol_unit="rlu"):
         super().__init__()
         self._tolerance = tolerance
+        self._tol_unit = tol_unit
 
     def __call__(self, reflections, experiments, d_min=None):
         reciprocal_lattice_points = reflections["rlp"]
@@ -42,6 +43,7 @@ class AssignIndicesGlobal(AssignIndicesStrategy):
                 phi.select(sel_imgset),
                 UB_matrices,
                 tolerance=self._tolerance,
+                tol_unit=self._tol_unit,
             )
 
             miller_indices = result.miller_indices()

@@ -27,6 +27,7 @@
 #include <boost/property_map/property_map.hpp>
 #include <boost/graph/connected_components.hpp>
 #include <annlib_adaptbx/ann_adaptor.h>
+#include <dxtbx/model/crystal.h>
 
 namespace dials { namespace algorithms {
 
@@ -35,7 +36,8 @@ namespace dials { namespace algorithms {
     AssignIndices(af::const_ref<scitbx::vec3<double> > const& reciprocal_space_points,
                   af::const_ref<double> const& phi,
                   af::const_ref<scitbx::mat3<double> > const& UB_matrices,
-                  double tolerance = 0.3)
+                  double tolerance = 0.3,
+                  std::string tol_unit = "rlu")
         : miller_indices_(reciprocal_space_points.size(),
                           cctbx::miller::index<>(0, 0, 0)),
           crystal_ids_(reciprocal_space_points.size(), -1) {
@@ -50,6 +52,7 @@ namespace dials { namespace algorithms {
       std::vector<af::shared<double> > lengths_sq;
 
       const double pi_4 = scitbx::constants::pi / 4;
+      const cctbx::sgtbx::space_group sg_p1 = cctbx::sgtbx::space_group("P1");
 
       // loop over crystals and assign one hkl per crystal per reflection
       for (int i_lattice = 0; i_lattice < UB_matrices.size(); i_lattice++) {
@@ -67,7 +70,26 @@ namespace dials { namespace algorithms {
           }
           scitbx::vec3<double> diff = hkl_f - scitbx::vec3<double>(hkl_i);
           hkl_ints_.push_back(hkl_i);
-          lengths_sq_.push_back(diff.length_sq());
+          if (tol_unit=="rlu") {
+            lengths_sq_.push_back(diff.length_sq());
+          }
+          if (1) { //(tol_unit=="inv_ang") {
+            auto crystal = dxtbx::model::Crystal(A, sg_p1, false);
+            cctbx::uctbx::unit_cell uc = crystal.get_unit_cell();
+            scitbx::sym_mat3<double> g_mat = uc.metrical_matrix();
+            scitbx::sym_mat3<double> g_inv_mat = g_mat.inverse();
+            double dq = diff * (g_mat * diff);
+            //lengths_sq_.push_back(dq);
+            std::cout<<std::endl;
+            std::cout<<std::endl;
+            std::cout<<g_mat<<std::endl;
+            std::cout<<diff<<std::endl;
+            std::cout<<g_inv_mat<<std::endl;
+            std::cout<<"diff.length_sq(): " << diff.length_sq()<<std::endl;
+            std::cout<<"dq: "<<dq<<std::endl;
+
+          }
+
         }
         hkl_ints.push_back(hkl_ints_);
         lengths_sq.push_back(lengths_sq_);

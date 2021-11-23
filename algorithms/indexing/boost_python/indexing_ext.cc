@@ -25,10 +25,12 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def(init<af::const_ref<scitbx::vec3<double> > const &,
                 af::const_ref<double> const &,
                 af::const_ref<scitbx::mat3<double> > const &,
-                double>((arg("reciprocal_space_points"),
+                double,
+                std::string>((arg("reciprocal_space_points"),
                          arg("phi"),
                          arg("UB_matrices"),
-                         arg("tolerance") = 0.3)))
+                         arg("tolerance") = 0.3,
+                         arg("tol_unit") = "rlu")))
       .def("miller_indices", &w_t::miller_indices)
       .def("crystal_ids", &w_t::crystal_ids);
   }
