@@ -8,7 +8,7 @@ RUN python bootstrap.py
 
 # Copy to final image
 FROM centos:7
-COPY ./docker-entrypoint.sh .
+COPY --chmod=0755 ./docker-entrypoint.sh .
 COPY --from=builder /dials /dials
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
