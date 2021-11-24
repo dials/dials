@@ -42,6 +42,7 @@ namespace dials { namespace algorithms {
                           cctbx::miller::index<>(0, 0, 0)),
           crystal_ids_(reciprocal_space_points.size(), -1) {
       DIALS_ASSERT(reciprocal_space_points.size() == phi.size());
+      DIALS_ASSERT(tol_unit == "rlu" || tol_unit == "inv_ang");
 
       typedef std::pair<const cctbx::miller::index<>, const std::size_t> pair_t;
       typedef std::multimap<cctbx::miller::index<>, std::size_t> map_t;
@@ -73,21 +74,21 @@ namespace dials { namespace algorithms {
           if (tol_unit=="rlu") {
             lengths_sq_.push_back(diff.length_sq());
           }
-          if (1) { //(tol_unit=="inv_ang") {
-            auto crystal = dxtbx::model::Crystal(A, sg_p1, false);
+          else if (tol_unit=="inv_ang") {
+            auto crystal = dxtbx::model::Crystal(A.transpose(), sg_p1, false);
             cctbx::uctbx::unit_cell uc = crystal.get_unit_cell();
             scitbx::sym_mat3<double> g_mat = uc.metrical_matrix();
-            scitbx::sym_mat3<double> g_inv_mat = g_mat.inverse();
-            double dq = diff * (g_mat * diff);
-            //lengths_sq_.push_back(dq);
-            std::cout<<std::endl;
-            std::cout<<std::endl;
-            std::cout<<g_mat<<std::endl;
-            std::cout<<diff<<std::endl;
-            std::cout<<g_inv_mat<<std::endl;
-            std::cout<<"diff.length_sq(): " << diff.length_sq()<<std::endl;
-            std::cout<<"dq: "<<dq<<std::endl;
-
+            double dq_sq = diff * (g_mat * diff);
+            lengths_sq_.push_back(dq_sq);
+            if (diff.length_sq()<0.01 || dq_sq<0.00004) {
+              std::cout<<std::endl;
+              std::cout<<std::endl;
+              if (diff.length_sq()<0.01) std::cout<<"RLU"<<std::endl;
+              if (dq_sq<0.00004) std::cout<<"inv_ang"<<std::endl;
+              std::cout<<diff<<std::endl;
+              std::cout<<"diff.length_sq(): " << diff.length_sq()<<std::endl;
+              std::cout<<"dq: "<<dq_sq<<std::endl;
+            }
           }
 
         }
