@@ -2,11 +2,32 @@ import logging
 
 import numpy as np
 
+from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
 from scitbx import matrix
+from scitbx.math import r3_rotation_axis_and_angle_from_matrix
 
 from dials.command_line.frame_orientations import extract_experiment_data
 
 logger = logging.getLogger(__name__)
+
+
+def rotate_crystal(crystal, Rmat, axis, angle):
+
+    Amats = []
+    if crystal.num_scan_points > 0:
+        scan_pts = list(range(crystal.num_scan_points))
+        Amats = [
+            Rmat
+            * matrix.sqr(crystal.get_U_at_scan_point(t))
+            * matrix.sqr(crystal.get_B_at_scan_point(t))
+            for t in scan_pts
+        ]
+
+    crystal.rotate_around_origin(axis, angle, deg=False)
+    if Amats:
+        crystal.set_A_at_scan_points(Amats)
+
+    return crystal
 
 
 class PETSOutput:
@@ -28,8 +49,9 @@ class PETSOutput:
 
         self._check_experiments()
         self._check_reflections()
+        self._reorient_coordinate_frame()
 
-        # Calculate the frame orientation data (in the DIALS coordinate frame)
+        # Calculate the frame orientation data
         self.frame_orientations = extract_experiment_data(self.experiment, scale=1)
 
     def _check_experiments(self):
@@ -87,15 +109,70 @@ class PETSOutput:
         logger.info(f"Removing {fulls.count(False)} partial reflections")
         self.reflections = self.reflections.select(fulls)
 
+    def _reorient_coordinate_frame(self):
+        """Align a DIALS experiment and data in a reflection table to the
+        PETS coordinate system. In that system, the s0 vector is aligned with
+        -Z, while the rotation axis is in the X-Z plane, close to +X"""
+
+        axis = matrix.col(self.experiment.goniometer.get_rotation_axis())
+        us0 = matrix.col(self.experiment.beam.get_unit_s0())
+
+        normal = us0.cross(-axis).normalize()
+        orthogonalised_axis = us0.cross(normal).normalize()
+
+        R = align_reference_frame(us0, (0, 0, -1), orthogonalised_axis, (1, 0, 0))
+
+        axis_angle = r3_rotation_axis_and_angle_from_matrix(R)
+        axis = axis_angle.axis
+        angle = axis_angle.angle()
+        logger.info(f"Rotating experiment about axis {axis} by {np.degrees(angle)}°")
+
+        self.experiment.detector.rotate_around_origin(axis, angle, deg=False)
+        self.experiment.crystal = rotate_crystal(
+            self.experiment.crystal, R, axis, angle
+        )
+
+        # Following does not work (https://github.com/cctbx/dxtbx/issues/454)
+        # self.experiment.beam.rotate_around_origin(axis, angle, deg=False)
+        # Set unit s0 and polarization normal directly instead (preserving inconsistent
+        # beam, if that's what we have).
+        new_us0 = (R * matrix.col(self.experiment.beam.get_unit_s0())).normalize()
+        new_p_norm = (
+            R * matrix.col(self.experiment.beam.get_polarization_normal())
+        ).normalize()
+        self.experiment.beam.set_unit_s0(new_us0)
+        self.experiment.beam.set_polarization_normal(new_p_norm)
+
+        # Rotating the goniometer is also complicated. See https://github.com/cctbx/dxtbx/pull/451
+        new_datum = (
+            R * matrix.col(self.experiment.goniometer.get_rotation_axis_datum())
+        ).normalize()
+        new_F = (
+            R
+            * matrix.sqr(self.experiment.goniometer.get_fixed_rotation())
+            * R.transpose()
+        )
+        new_S = (
+            R
+            * matrix.sqr(self.experiment.goniometer.get_setting_rotation())
+            * R.transpose()
+        )
+        self.experiment.goniometer.set_rotation_axis_datum(new_datum)
+        self.experiment.goniometer.set_setting_rotation(new_S)
+        self.experiment.goniometer.set_fixed_rotation(new_F)
+
+        # Reorient s1 vectors
+        self.reflections["s1"] = self.reflections["s1"] * R.transpose()
+
     def _set_virtual_frames(self):
         """Create a list of virtual frames for the experiment, each containing
         a table of reflections and the orientation information for the virtual
         frame"""
 
         # Get the frame orientation data
-        directions = self.frame_orientations["directions"]
+        # directions = self.frame_orientations["directions"]
         zone_axes = self.frame_orientations["zone_axes"]
-        real_space_axes = self.frame_orientations["real_space_axes"]
+        # real_space_axes = self.frame_orientations["real_space_axes"]
         orientations = self.frame_orientations["orientations"]
 
         _, _, frames = self.reflections["xyzcal.px"].parts()
