@@ -97,7 +97,7 @@ class BeamParameterisation(ModelParameterisation, BeamMixin):
         """
         # The state of the beam model consists of the s0 vector that it is
         # modelling. The initial state is the direction of this vector at the point
-        # of initialisation, plus the direction of the orthogonal polarisation
+        # of initialisation, plus the direction of the orthogonal polarization
         # normal vector. Future states are composed by rotations around axes
         # perpendicular to that direction and normalisation specified by the
         # wavenumber (inverse wavelength).
@@ -144,7 +144,7 @@ class BeamParameterisation(ModelParameterisation, BeamMixin):
             mu2_axis=mu2.axis,
         )
 
-        # now update the model with its new s0 and polarisation vector
+        # now update the model with its new s0 and polarization vector
         self._model.set_s0(s0)
         self._model.set_polarization_normal(pn)
 
