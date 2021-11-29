@@ -279,7 +279,7 @@ class Refinery:
 
     def split_jacobian_into_blocks(self) -> List[flex.double]:
         """Split the Jacobian into blocks each corresponding to a separate
-        residual"""
+        residual, converting sparse to flex.double if appropriate"""
 
         nblocks = len(self._target.rmsd_names)
 
@@ -297,24 +297,16 @@ class Refinery:
         return blocks
 
     @staticmethod
-    def _packed_corr_mat(m: Union[sparse.matrix, flex.double]) -> List[float]:
+    def _packed_corr_mat(m: flex.double) -> List[float]:
         """Return a list containing the upper diagonal values of the
-        correlation matrix calculated between columns of 2D matrix m"""
+        correlation matrix calculated between columns of 2D matrix flex.double
+        matrix m"""
 
-        nr, nc = m.all()
-
-        try:  # convert a flex.double matrix to sparse
-            m2 = sparse.matrix(nr, nc)
-            m2.assign_block(m, 0, 0)
-            m = m2
-        except AttributeError:
-            pass  # assume m is already scitbx_sparse_ext.matrix
-
-        assert isinstance(m, sparse.matrix)
+        _, nc = m.all()
 
         tmp = []
-        for col1 in range(m.n_cols):
-            for col2 in range(col1, m.n_cols):
+        for col1 in range(nc):
+            for col2 in range(col1, nc):
                 if col1 == col2:
                     tmp.append(1.0)
                 else:
@@ -324,8 +316,8 @@ class Refinery:
                     # Dist parameter) by rounding values to 15 places. It seems that such
                     # spurious correlations may occur in cases where gradients are
                     # calculated to be zero by matrix operations, rather than set to zero.
-                    v1 = m.col(col1).as_dense_vector().round(15)
-                    v2 = m.col(col2).as_dense_vector().round(15)
+                    v1 = m.matrix_copy_column(col1).round(15)
+                    v2 = m.matrix_copy_column(col2).round(15)
                     tmp.append(flex.linear_correlation(v1, v2).coefficient())
 
         return tmp
