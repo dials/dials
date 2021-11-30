@@ -2,6 +2,7 @@ import logging
 
 import numpy as np
 
+from dxtbx.model.experiment_list import ExperimentList
 from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
 from scitbx import matrix
 from scitbx.math import r3_rotation_axis_and_angle_from_matrix
@@ -71,10 +72,6 @@ class PETSOutput:
                 f"Unable to select experiment {self.exp_id} for export"
             ) from e
 
-        self.reflections = self.reflections.select(
-            self.reflections["id"] == self.exp_id
-        )
-
         # Check the unit cell is static
         crystal = self.experiment.crystal
         if crystal.num_scan_points > 0:
@@ -97,6 +94,11 @@ class PETSOutput:
     def _check_reflections(self):
         """Check and filter the reflection table to include only the reflections
         for output"""
+
+        self.reflections = self.reflections.select(
+            self.reflections["id"] == self.exp_id
+        )
+        self.reflections["id"] *= 0
 
         required_keys = ("intensity.sum.value", "intensity.sum.variance")
         if any(x not in self.reflections for x in required_keys):
@@ -161,8 +163,10 @@ class PETSOutput:
         self.experiment.goniometer.set_setting_rotation(new_S)
         self.experiment.goniometer.set_fixed_rotation(new_F)
 
-        # Reorient s1 vectors
-        self.reflections["s1"] = self.reflections["s1"] * R.transpose()
+        # Re-calculate s1 vectors and reciprocal lattice points with new geometry
+        el = ExperimentList()
+        el.append(self.experiment)
+        self.reflections.map_centroids_to_reciprocal_space(el, calculated=True)
 
     def _set_virtual_frames(self):
         """Create a list of virtual frames for the experiment, each containing
@@ -174,6 +178,12 @@ class PETSOutput:
         zone_axes = self.frame_orientations["zone_axes"]
         # real_space_axes = self.frame_orientations["real_space_axes"]
         orientations = self.frame_orientations["orientations"]
+
+        # Get experiment geometry
+        scan = self.experiment.scan
+        axis = matrix.col(self.experiment.goniometer.get_rotation_axis())
+        s0 = matrix.col(self.experiment.beam.get_s0())
+        inv_wl = s0.length()
 
         _, _, frames = self.reflections["xyzcal.px"].parts()
         scan = self.experiment.scan
@@ -190,18 +200,28 @@ class PETSOutput:
             sel = (frames > start) & (frames <= stop)
             refs = self.reflections.select(sel)
 
-            # TODO For each reflection, calculate r from s1 and s0. Rotate r according
-            # the angle from the centre of the virtual frame. calculate the extinction
-            # distance from distance from the centre of the Ewald sphere - |s0|.
-            # Actually, according to the Klar et al. paper there are two parameters
-            # to consider: Dsg, the distance from the virtual frame edge and Rsg,
-            # defined according to the excitation error from the centre of the
-            # virtual frame
+            centre = (start + stop) / 2.0
+            # alpha_start = scan.get_angle_from_array_index(start, deg=False)
+            # alpha_stop = scan.get_angle_from_array_index(stop, deg=False)
+            alpha_centre = scan.get_angle_from_array_index(centre, deg=False)
+
+            # The relps are given at zero rotation angle. In order to calculate
+            # extinction distance, it's quickest to rotate the Ewald sphere
+            s0_centre = s0.rotate_around_origin(axis, -alpha_centre, deg=False)
+            rotated_s1 = refs["rlp"] + s0_centre
+            extinction = rotated_s1.norms() - inv_wl
+
+            # Now select only the reflections within the extinction distance
+            # cutoff. Actually, according to the Klar et al. paper there are two
+            # parameters to consider: Dsg, the distance from the virtual frame
+            # edge and Rsg, defined according to the excitation error from the
+            # centre of the virtual frame.
+            # TODO do we consider Dsg and Rsg here, or is that in Jana2020?
+            refs.select(abs(extinction) <= self.excitation_error_cutoff)
 
             # Look up the orientation data using an index, which is the centre
-            # of the virtual frame offset so that the scan starts from 0
-            centre = int((start + stop) / 2.0)
-            index = centre - arr_start
+            # of the virtual frame, offset so that the scan starts from 0
+            index = int(centre) - arr_start
 
             self.virtual_frames.append(
                 {
