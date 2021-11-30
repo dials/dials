@@ -1,6 +1,8 @@
 import itertools
 import logging
 import math
+import os
+import pathlib
 from time import time
 
 import psutil
@@ -67,6 +69,24 @@ def assess_available_memory(params):
     # Obtain information about system memory
     available_memory = psutil.virtual_memory().available
     available_swap = psutil.swap_memory().free
+
+    # https://htcondor.readthedocs.io/en/latest/users-manual/services-for-jobs.html#extra-environment-variables-htcondor-sets-for-jobs
+    condor_machine_ad = os.environ.get("_CONDOR_MACHINE_AD")
+    if condor_machine_ad:
+        try:
+            classad = dials.util.parse_htcondor_classad(pathlib.Path(condor_machine_ad))
+        except Exception as e:
+            logger.error(
+                f"Error parsing _CONDOR_MACHINE_AD {condor_machine_ad}: {e}",
+                exc_info=True,
+            )
+        else:
+            if classad.memory_provisioned:
+                # Convert MB to bytes
+                available_memory = min(
+                    available_memory, classad.memory_provisioned * 1024 ** 2
+                )
+
     available_incl_swap = available_memory + available_swap
     available_limit = available_incl_swap * params.block.max_memory_usage
     available_immediate_limit = available_memory * params.block.max_memory_usage
