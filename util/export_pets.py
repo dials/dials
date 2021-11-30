@@ -7,6 +7,10 @@ from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
 from scitbx import matrix
 from scitbx.math import r3_rotation_axis_and_angle_from_matrix
 
+from dials.algorithms.refinement.rotation_decomposition import (
+    solve_r3_rotation_for_angles_given_axes,
+)
+from dials.array_family import flex
 from dials.command_line.frame_orientations import extract_experiment_data
 
 logger = logging.getLogger(__name__)
@@ -110,6 +114,11 @@ class PETSOutput:
         fulls = self.reflections["partiality"] >= self.partiality_cutoff
         logger.info(f"Removing {fulls.count(False)} partial reflections")
         self.reflections = self.reflections.select(fulls)
+
+        # Select only integrated reflections
+        self.reflections = self.reflections.select(
+            self.reflections.get_flags(self.reflections.flags.integrated)
+        )
 
     def _reorient_coordinate_frame(self):
         """Align a DIALS experiment and data in a reflection table to the
@@ -237,3 +246,65 @@ class PETSOutput:
     def write_dyn_cif_pets(self):
 
         self._set_virtual_frames()
+
+        # TODO output to CIF file
+
+        cif_filename = self.filename_prefix + "_dyn.cif_pets"
+        (
+            a,
+            b,
+            c,
+            alpha,
+            beta,
+            gamma,
+        ) = self.experiment.crystal.get_unit_cell().parameters()
+        volume = self.experiment.crystal.get_unit_cell().volume()
+        wavelength = self.experiment.beam.get_wavelength()
+        (
+            UB11,
+            UB12,
+            UB13,
+            UB21,
+            UB22,
+            UB23,
+            UB31,
+            UB32,
+            UB33,
+        ) = self.experiment.crystal.get_A()
+
+        # Some of these values are left as dummy zeroes for DIALS
+        comment = f""";
+data collection geometry: continuous rotation
+dstarmax:  0.000
+RC width:  0.00000
+mosaicity:  0.000
+rotation axis position:  000.000
+reflection size:    0.000
+Virtual frame settings: number of merged frames:  {self.n_merged}
+                        step between frames:      {self.step}
+                        sum all intensities:      1
+;"""
+
+        for frame_id, virtual_frame in enumerate(self.virtual_frames):
+            u, v, w = virtual_frame["zone_axis"]
+            precession_angle = 0.0  # dummy value
+            U = virtual_frame["orientation"]
+            # Decompose U = Rω * Rβ * Rα, where:
+            # α is around 1,0,0
+            # β is around 0,1,0
+            # ω is around 0,0,1
+            # FIXME this is not confirmed as matching PETS2 yet
+            alpha, beta, omega = solve_r3_rotation_for_angles_given_axes(
+                U, (0, 0, 1), (0, 1, 0), (1, 0, 0), deg=True
+            )
+            scale = 1  # dummy value
+            print(frame_id + 1, u, v, w, precession_angle, alpha, beta, omega, scale)
+
+        for frame_id, virtual_frame in enumerate(self.virtual_frames):
+            refs = virtual_frame["reflections"]
+            refs["intensity.sum.sigma"] = flex.sqrt(refs["intensity.sum.variance"])
+            for r in refs.rows():
+                h, k, l = r["miller_index"]
+                i_sum = r["intensity.sum.value"]
+                sig_i_sum = r["intensity.sum.sigma"]
+                print(h, k, l, i_sum, sig_i_sum, frame_id + 1)
