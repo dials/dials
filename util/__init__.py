@@ -1,10 +1,13 @@
 import contextlib
+import dataclasses
 import faulthandler
 import functools
 import io
 import os
+import pathlib
 import signal
 import sys
+from typing import Optional
 
 import tabulate as _tabulate
 import tqdm
@@ -208,3 +211,25 @@ def show_mail_handle_errors():
         dxtbx.util.encode_output_as_utf8()
     with enable_faulthandler(), make_sys_exit_red(), show_mail_on_error():
         yield
+
+
+@dataclasses.dataclass
+class HTCondorClassAd:
+    cpus_provisioned: Optional[int] = None
+    memory_provisioned: Optional[float] = None
+
+
+def parse_htcondor_classad(filepath: pathlib.Path) -> HTCondorClassAd:
+    with filepath.open() as fh:
+        memory_provisioned = None
+        cpus_provisioned = None
+        for line in fh.readlines():
+            line = line.lower().strip()
+            if line.startswith("memoryprovisioned") and "=" in line:
+                memory_provisioned = float(line.split("=")[1])
+            elif line.startswith("cpusprovisioned") and "=" in line:
+                cpus_provisioned = int(line.split("=")[1])
+        return HTCondorClassAd(
+            cpus_provisioned=cpus_provisioned,
+            memory_provisioned=memory_provisioned,
+        )
