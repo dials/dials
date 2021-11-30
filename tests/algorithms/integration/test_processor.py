@@ -88,7 +88,7 @@ MemoryProvisioned = 123
 """
     )
     available_memory, _, _ = assess_available_memory(params)
-    assert available_memory == 123
+    assert available_memory == params.block.max_memory_usage * 123 * 1024 ** 2
 
     # Now check it is robust against parsing failures
     machine_ad.write_text(

@@ -69,9 +69,6 @@ def assess_available_memory(params):
     # Obtain information about system memory
     available_memory = psutil.virtual_memory().available
     available_swap = psutil.swap_memory().free
-    available_incl_swap = available_memory + available_swap
-    available_limit = available_incl_swap * params.block.max_memory_usage
-    available_immediate_limit = available_memory * params.block.max_memory_usage
 
     # https://htcondor.readthedocs.io/en/latest/users-manual/services-for-jobs.html#extra-environment-variables-htcondor-sets-for-jobs
     condor_machine_ad = os.environ.get("_CONDOR_MACHINE_AD")
@@ -89,6 +86,10 @@ def assess_available_memory(params):
                 available_memory = min(
                     available_memory, classad.memory_provisioned * 1024 ** 2
                 )
+
+    available_incl_swap = available_memory + available_swap
+    available_limit = available_incl_swap * params.block.max_memory_usage
+    available_immediate_limit = available_memory * params.block.max_memory_usage
 
     # Compile a memory report
     report = [
