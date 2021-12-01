@@ -71,9 +71,9 @@ def test_runtime_error_raised_when_not_enough_memory(
     mock_flex_max.assert_called_with(manager.jobs.shoebox_memory.return_value)
 
 
-def test_assess_available_memory_condor_machine_ad(mocker, monkeypatch, tmp_path):
-    machine_ad = tmp_path / "condor_machine_ad"
-    monkeypatch.setenv("_CONDOR_MACHINE_AD", os.fspath(machine_ad))
+def test_assess_available_memory_condor_job_ad(mocker, monkeypatch, tmp_path):
+    job_ad = tmp_path / ".job.ad"
+    monkeypatch.setenv("_CONDOR_JOB_AD", os.fspath(job_ad))
 
     # Test that we handle gracefully absence of file
     params = mocker.Mock()
@@ -82,7 +82,7 @@ def test_assess_available_memory_condor_machine_ad(mocker, monkeypatch, tmp_path
     assert available_memory and available_memory != 123
 
     # Now write something sensible to the file
-    machine_ad.write_text(
+    job_ad.write_text(
         """\
 MemoryProvisioned = 123
 """
@@ -91,7 +91,7 @@ MemoryProvisioned = 123
     assert available_memory == params.block.max_memory_usage * 123 * 1024 ** 2
 
     # Now check it is robust against parsing failures
-    machine_ad.write_text(
+    job_ad.write_text(
         """\
 MemoryProvisioned =
 """
