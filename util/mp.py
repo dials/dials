@@ -23,13 +23,13 @@ def available_cores() -> int:
     """
 
     # https://htcondor.readthedocs.io/en/latest/users-manual/services-for-jobs.html#extra-environment-variables-htcondor-sets-for-jobs
-    condor_machine_ad = os.environ.get("_CONDOR_MACHINE_AD")
-    if condor_machine_ad:
+    condor_job_ad = os.environ.get("_CONDOR_JOB_AD")
+    if condor_job_ad:
         try:
-            classad = dials.util.parse_htcondor_classad(pathlib.Path(condor_machine_ad))
+            classad = dials.util.parse_htcondor_job_classad(pathlib.Path(condor_job_ad))
         except Exception as e:
             logger.error(
-                f"Error parsing _CONDOR_MACHINE_AD {condor_machine_ad}: {e}",
+                f"Error parsing _CONDOR_JOB_AD {condor_job_ad}: {e}",
                 exc_info=True,
             )
         else:

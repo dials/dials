@@ -214,12 +214,12 @@ def show_mail_handle_errors():
 
 
 @dataclasses.dataclass
-class HTCondorClassAd:
+class HTCondorJobClassAd:
     cpus_provisioned: Optional[int] = None
     memory_provisioned: Optional[float] = None
 
 
-def parse_htcondor_classad(filepath: pathlib.Path) -> HTCondorClassAd:
+def parse_htcondor_job_classad(filepath: pathlib.Path) -> HTCondorJobClassAd:
     with filepath.open() as fh:
         memory_provisioned = None
         cpus_provisioned = None
@@ -229,7 +229,7 @@ def parse_htcondor_classad(filepath: pathlib.Path) -> HTCondorClassAd:
                 memory_provisioned = float(line.split("=")[1])
             elif line.startswith("cpusprovisioned") and "=" in line:
                 cpus_provisioned = int(line.split("=")[1])
-        return HTCondorClassAd(
+        return HTCondorJobClassAd(
             cpus_provisioned=cpus_provisioned,
             memory_provisioned=memory_provisioned,
         )

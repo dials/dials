@@ -18,16 +18,16 @@ def test_available_cores_nslots(monkeypatch):
     assert dials.util.mp.available_cores() == true_cores + 1
 
 
-def test_available_cores_condor_machine_ad(monkeypatch, tmp_path):
+def test_available_cores_condor_job_ad(monkeypatch, tmp_path):
     true_cores = dials.util.mp.available_cores()
-    machine_ad = tmp_path / "condor_machine_ad"
-    monkeypatch.setenv("_CONDOR_MACHINE_AD", os.fspath(machine_ad))
+    job_ad = tmp_path / ".job.ad"
+    monkeypatch.setenv("_CONDOR_JOB_AD", os.fspath(job_ad))
 
     # Test that we handle gracefully absence of file
     assert dials.util.mp.available_cores() == true_cores
 
     # Now write something sensible to the file
-    machine_ad.write_text(
+    job_ad.write_text(
         f"""\
 CpusProvisioned = {true_cores + 1}
 """
@@ -35,7 +35,7 @@ CpusProvisioned = {true_cores + 1}
     assert dials.util.mp.available_cores() == true_cores + 1
 
     # Now check it is robust against parsing failures
-    machine_ad.write_text(
+    job_ad.write_text(
         """\
 CpusProvisioned =
 """
