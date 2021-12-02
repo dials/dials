@@ -2,12 +2,6 @@
 Calibrate geometry using powder tools.
     `pyFAI` is a well established X-ray powder diffraction tool.
 https://doi.org/10.1107/S1600576715004306
-    `circle-fit` is a nifty module that fits an ellipse to a set of points,
-even if the points are covering a section as small as a quarter of the conic.
-https://doi.org/10.1016/j.csda.2010.12.012
-NOTE: The algorithms assumes that find_spots worked well at separating
-signal from noise especially close to the beam, assumption which might be hard
-to achieve for electron data.
 """
 
 from sys import exit
@@ -42,6 +36,7 @@ if module_exists("pyFAI"):
     from pyFAI.calibrant import get_calibrant as pfCalibrant
     from pyFAI.detectors import Detector as pfDetector
     from pyFAI.geometry import Geometry as pfGeometry
+    from pyFAI.goniometer import SingleGeometry as pfSingleGeometry
     from pyFAI.gui import jupyter as pfjupyter
 
 
@@ -50,6 +45,7 @@ if module_exists("pyFAI"):
 from dxtbx.model.experiment_list import ExperimentList as experiment_list
 
 from dials.array_family import flex
+from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
 
 phil_scope = parse(
     """
@@ -145,9 +141,6 @@ def parse_command_line():
     """
     Parse command line arguments and read experiments
     """
-
-    from dials.util.options import OptionParser
-
     usage = "$ dials.powder_calibrate EXPERIMENTS REFLECTIONS [options]"
 
     parser = OptionParser(
@@ -162,48 +155,11 @@ def parse_command_line():
     return params, options
 
 
-def show_fit(geometry):
-    pfjupyter.display(sg=geometry)
-    plt.show()
-
-
-def radial_distance(spots_coords: np.array, beam_coords: np.array) -> np.array:
-    """
-    The radial distance to spot from beam position.
-    Parameters
-    ----------
-    spots_coords: array, shape=(n, 2)
-        position (x,y) of spots in px
-    beam_coords : array, shape=(2,)
-        beam (x, y) position on detector in px
-    Returns
-    -------
-        rad_distances: array, shape=(n,2)
-    """
-    # rad_distances = np.sqrt(np.sum((spots_coords - beam_coords) ** 2, axis=1))
-    x0, y0 = beam_coords
-    x, y = spots_coords.T
-    rad_distances = np.hypot(x - x0, y - y0)
-    return rad_distances
-
-
-def peaks_to_spectrum(dials_data, beam):
-    coords = flumpy.to_numpy(dials_data.refls["xyzobs.px.value"])
-
-    # bin by integer pixels
-    coords_xy = coords[:, :2]
-    rad_dis = radial_distance(coords_xy, beam).astype(int)
-
-    intensities = flumpy.to_numpy(dials_data.refls["intensity.sum.value"])
-    weighted_hist = np.bincount(rad_dis, weights=intensities)
-    unweighted_histogram = np.bincount(rad_dis)
-    spectrum = np.divide(
-        weighted_hist,
-        unweighted_histogram,
-        out=np.zeros_like(weighted_hist),
-        where=unweighted_histogram != 0,
+def show_fit(geometry, title=None):
+    pfjupyter.display(
+        sg=geometry,
     )
-    return spectrum
+    plt.show()
 
 
 class DialsData:
@@ -221,7 +177,8 @@ class DialsData:
         self.beam = self.expts[0].beam
         self.wavelength = self.beam.get_wavelength()
 
-        self.shoeboxes = self._shoeboxes_coords()
+        if self.refls:
+            self.shoeboxes = self._shoeboxes_coords()
 
         self.img_size = self.detector.get_image_size()
         self.image = np.array(self.expts[0].imageset.get_corrected_data(0)[0]).reshape(
@@ -231,8 +188,6 @@ class DialsData:
 
     def _expt(self):
         if self.params:
-            from dials.util.options import flatten_experiments
-
             experiments_list = flatten_experiments(self.params.input.experiments)
         elif self.expt_file:
             experiments_list = experiment_list.from_file(self.expt_file)
@@ -241,14 +196,12 @@ class DialsData:
         return experiments_list
 
     def _refl(self):
+        reflections_table = None
         if self.params:
-            from dials.util.options import flatten_reflections
-
             reflections_table = flatten_reflections(self.params.input.reflections)
         elif self.refl_file:
             reflections_table = flex.reflection_table.from_file(self.refl_file)
-        else:
-            exit("No reflection file was given")
+
         return reflections_table
 
     def stack_images_sum_max(self):
@@ -268,7 +221,6 @@ class DialsData:
         return stacked_images
 
     def _shoeboxes_coords(self):
-
         sbpixels = []
         for i in range(len(self.refls)):
             shoeboxes = self.refls[i]["shoebox"]
@@ -339,7 +291,7 @@ class PowderCalibrator:
         beamx_slider.on_changed(update)
         beamy_slider.on_changed(update)
 
-        reset_ax = plt.axes([0.8, 0.025, 0.1, 0.04])
+        reset_ax = plt.axes([0.8, 0.026, 0.1, 0.04])
         button_res = Button(reset_ax, "Reset", hovercolor="0.975")
 
         def reset(event):
@@ -348,7 +300,7 @@ class PowderCalibrator:
 
         button_res.on_clicked(reset)
 
-        save_ax = plt.axes([0.5, 0.025, 0.23, 0.04])
+        save_ax = plt.axes([0.5, 0.026, 0.23, 0.04])
         button_save = Button(save_ax, "Save beam and exit", hovercolor="0.975")
 
         def save_and_exit(event):
@@ -397,16 +349,52 @@ class PowderCalibrator:
         cal_img_masked = np.ma.masked_where(cal_img <= 1e-4, cal_img)
         return cal_img_masked
 
+    def calibrate_with_calibrant(
+        self,
+        num_rings=4,
+        fix=("rot1", "rot2", "rot3", "wavelength"),
+        ref=False,
+        verbose=False,
+    ):
+
+        # first use user eyes for rough fit
+        self.rough_fit_widget()
+
+        # then use pyFAI for fine calibration
+        sg = pfSingleGeometry(
+            label=self.standard_name + " calibrant",
+            image=self.data.image,
+            calibrant=self.calibrant,
+            geometry=self.geometry,
+        )
+
+        sg.extract_cp(max_rings=num_rings)
+        if verbose:
+            show_fit(
+                sg,
+            )
+            print(sg.get_ai())
+        if ref:
+            sg.geometry_refinement.refine2(fix=fix)
+            if verbose:
+                show_fit(
+                    sg,
+                )
+                print(sg.get_ai())
+            ai = sg.get_ai()
+            int2 = ai.integrate2d_ng(
+                self.data.image, 500, 360, unit="q_nm^-1", filename="integrated.edf"
+            )
+            if verbose:
+                pfjupyter.plot2d(int2, calibrant=self.calibrant)
+                plt.show()
+
 
 if __name__ == "__main__":
 
     Al_data = DialsData(
-        expt_file="/home/fyi77748/Data/Al_standard/imported.expt",
-        refl_file="/home/fyi77748/Data/Al_standard/strong.refl",
+        expt_file="imported.expt",
     )
 
-    # params, opt = parse_command_line()
-    # Al_data = DialsData(params=params)
-
     calibrator = PowderCalibrator(Al_data, "Al")
-    calibrator.rough_fit_widget()
+    calibrator.calibrate_with_calibrant(ref=True, verbose=True)
