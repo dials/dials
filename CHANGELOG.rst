@@ -1,3 +1,19 @@
+DIALS 3.7.2 (2021-12-02)
+========================
+
+Features
+--------
+
+- ``dials.integrate``: When determining available memory, take into account ``MemoryProvisioned`` from HTCondor machine ad if the ``_CONDOR_JOB_AD`` environment variable is set.
+  ``nproc=auto``: Take into account ``CpusProvisioned`` from HTCondor machine ad. (`#1943 <https://github.com/dials/dials/issues/1943>`_)
+
+
+Bugfixes
+--------
+
+- Read ``_CONDOR_JOB_AD`` not ``_CONDOR_MACHINE_AD`` (`#1945 <https://github.com/dials/dials/issues/1945>`_)
+
+
 DIALS 3.7.1 (2021-11-17)
 ========================
 
