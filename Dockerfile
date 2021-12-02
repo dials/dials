@@ -10,6 +10,7 @@ RUN python bootstrap.py
 FROM centos:7
 COPY ./docker-entrypoint.sh .
 COPY --from=builder /dials /dials
+RUN chmod 0755 /docker-entrypoint.sh
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["dials.version"]
