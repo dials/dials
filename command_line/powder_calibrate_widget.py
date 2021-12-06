@@ -43,8 +43,7 @@ if module_exists("pyFAI"):
 # the alternative causes pyfai to segv
 from dxtbx.model.experiment_list import ExperimentList as experiment_list
 
-from dials.array_family import flex
-from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
+from dials.util.options import OptionParser, flatten_experiments
 
 phil_scope = parse(
     """
@@ -144,13 +143,12 @@ def parse_command_line():
     """
     Parse command line arguments and read experiments
     """
-    usage = "$ dials.powder_calibrate EXPERIMENTS REFLECTIONS [options]"
+    usage = "$ dials.powder_calibrate EXPERIMENTS [options]"
 
     parser = OptionParser(
         usage=usage,
         phil=phil_scope,
         check_format=True,
-        read_reflections=True,
         read_experiments=True,
     )
 
@@ -164,15 +162,15 @@ def show_fit(geometry, label=None):
 
 
 class DialsData:
-    def __init__(self, params=None, expt_file=None, refl_file=None, num_images=1):
+    def __init__(
+        self,
+        params=None,
+        expt_file=None,
+    ):
         self.params = params
 
         self.expt_file = expt_file
-        self.refl_file = refl_file
-        self.num_image = num_images
-
         self.expts = self._expt()
-        self.refls = self._refl()
 
         self.detector = self.expts[0].detector[0]
         self.beam = self.expts[0].beam
@@ -192,14 +190,6 @@ class DialsData:
         else:
             exit("No experiments file was given")
         return experiments
-
-    def _refl(self):
-        reflections_table = None
-        if self.params:
-            reflections_table = flatten_reflections(self.params.input.reflections)
-        elif self.refl_file:
-            reflections_table = flex.reflection_table.from_file(self.refl_file)
-        return reflections_table
 
 
 class PowderCalibrator:
