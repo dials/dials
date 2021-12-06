@@ -10,7 +10,6 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.widgets import Button, Slider
 
-import dxtbx.flumpy as flumpy
 from iotbx.phil import parse
 
 
@@ -60,23 +59,21 @@ phil_scope = parse(
 
 
 def _convert_units(val, unit_in, unit_out):
-    """Keep units sanity for pyFAI <--> DIALS conversions.
-    :param val: the value to be converted.
-    :param unit_in: Units of input value.
-    :param unit_out: Units wanted for the input value.
-    :return: value in new units.
+    """Keep units sanity for pyFAI <--> DIALS conversions
+    :param val: the value to be converted
+    :param unit_in: Units of input value
+    :param unit_out: Units wanted for the input value
+    :return: value in new units
     """
     SI = {"A": 1e-10, "nm": 1e-9, "micron": 1e-6, "mm": 1e-3, "cm": 1e-2, "m": 1}
     return val * SI[unit_in] / SI[unit_out]
 
 
-class Dials_pfDetector(pfDetector):
-    def __init__(self, dials_detector, name="detector"):
+class Detector(pfDetector):
+    def __init__(self, dials_detector):
         px, py = dials_detector.get_pixel_size()
         size_x, size_y = dials_detector.get_image_size()
 
-        # horrible hack, should use the factory correctly instead
-        Dials_pfDetector.__name__ = name
         super().__init__(
             pixel1=_convert_units(px, "mm", "m"),
             pixel2=_convert_units(py, "mm", "m"),
@@ -84,7 +81,7 @@ class Dials_pfDetector(pfDetector):
         )
 
 
-class Dials_pfGeometry(pfGeometry):
+class Geometry(pfGeometry):
     """
     pyFAI uses the normal from the sample to the detector
     as a geometry parameter, labelled as poni instead of the beam center.
@@ -97,9 +94,11 @@ class Dials_pfGeometry(pfGeometry):
     """
 
     def __init__(self, dials_data, poni_file=None):
+        self.dials_data = dials_data
+
         detector = dials_data.detector
         super().__init__(
-            detector=Dials_pfDetector(detector),
+            detector=Detector(detector),
             wavelength=_convert_units(dials_data.wavelength, "A", "m"),
         )
 
@@ -136,6 +135,10 @@ class Dials_pfGeometry(pfGeometry):
         f2d = self.getFit2D()
         self.setFit2D(directDist=f2d["directDist"], centerX=center_x, centerY=center_y)
 
+    def __deepcopy__(self, memo=None):
+        new = self.__class__(self.dials_data)
+        return new
+
 
 def parse_command_line():
     """
@@ -155,10 +158,8 @@ def parse_command_line():
     return params, options
 
 
-def show_fit(geometry, title=None):
-    pfjupyter.display(
-        sg=geometry,
-    )
+def show_fit(geometry, label=None):
+    pfjupyter.display(sg=geometry, label=label)
     plt.show()
 
 
@@ -177,23 +178,20 @@ class DialsData:
         self.beam = self.expts[0].beam
         self.wavelength = self.beam.get_wavelength()
 
-        if self.refls:
-            self.shoeboxes = self._shoeboxes_coords()
-
         self.img_size = self.detector.get_image_size()
         self.image = np.array(self.expts[0].imageset.get_corrected_data(0)[0]).reshape(
             self.img_size
         )
-        self.sum_max_images = self.stack_images_sum_max()
 
     def _expt(self):
+        experiments = None
         if self.params:
-            experiments_list = flatten_experiments(self.params.input.experiments)
+            experiments = flatten_experiments(self.params.input.experiments)
         elif self.expt_file:
-            experiments_list = experiment_list.from_file(self.expt_file)
+            experiments = experiment_list.from_file(self.expt_file)
         else:
             exit("No experiments file was given")
-        return experiments_list
+        return experiments
 
     def _refl(self):
         reflections_table = None
@@ -201,31 +199,7 @@ class DialsData:
             reflections_table = flatten_reflections(self.params.input.reflections)
         elif self.refl_file:
             reflections_table = flex.reflection_table.from_file(self.refl_file)
-
         return reflections_table
-
-    def stack_images_sum_max(self):
-        """
-        Aggregate all images in the dataset by only keeping the max for each pixel
-        Returns
-        -------
-        stacked_images
-        """
-        stacked_images = np.zeros_like(self.image)
-        for i in range(self.num_image):
-            image = np.array(self.expts[0].imageset.get_corrected_data(0)[i]).reshape(
-                self.image.shape
-            )
-            # stacked_images = pyFAI.average.average_images(data_list, filter_='max', fformat=None)
-            stacked_images = np.maximum(stacked_images, image)
-        return stacked_images
-
-    def _shoeboxes_coords(self):
-        sbpixels = []
-        for i in range(len(self.refls)):
-            shoeboxes = self.refls[i]["shoebox"]
-            sbpixels.append(flumpy.to_numpy(shoeboxes.coords()))
-        return np.vstack(sbpixels)[:, :2]
 
 
 class PowderCalibrator:
@@ -233,15 +207,15 @@ class PowderCalibrator:
         self.data = dials_data
         self.poni_file = poni_file
 
-        self.geometry = Dials_pfGeometry(dials_data, poni_file)
-        print("Initial geometry:\n -----\n", self.geometry, "\n")
-
-        self.detector = Dials_pfDetector(dials_data.detector)
+        self.geometry = Geometry(dials_data, poni_file)
+        self.detector = Detector(dials_data.detector)
 
         self.standard_name = standard
         self.calibrant = pfCalibrant(standard)
         self.calibrant.wavelength = _convert_units(self.data.wavelength, "A", "m")
-        print("\n Start calibration using:\n----- \n", self.calibrant, "\n")
+
+        print("Initial geometry:\n -----\n", self.geometry, "\n")
+        print("Start calibration using:\n----- \n", self.calibrant, "\n")
 
     def rough_fit_widget(self):
         """
@@ -253,7 +227,7 @@ class PowderCalibrator:
             self.data.image, label="Calibrant overlay on experimental image", ax=ax
         )
 
-        rings = self.rings_image(self.geometry, ax)
+        rings_img = self.rings_beam_image(self.geometry, ax)
 
         ax.set_xlabel("x position [pixels]")
         ax.set_ylabel("y position [pixels]")
@@ -261,18 +235,18 @@ class PowderCalibrator:
         plt.subplots_adjust(left=0.25, bottom=0.25)
 
         # Make a horizontal slider to control the beam x position.
-        ax_beamx = plt.axes([0.25, 0.1, 0.65, 0.03])
-        beamx_slider = Slider(
-            ax=ax_beamx,
+        ax_beam_x = plt.axes([0.25, 0.1, 0.65, 0.03])
+        beam_x_slider = Slider(
+            ax=ax_beam_x,
             label="Beam center x [px]",
             valmin=self.detector.max_shape[0] * 0.25,
             valmax=self.detector.max_shape[0] * 0.75,
             valinit=self.geometry.beam_x_px,
         )
         # Make a vertically oriented slider to the beam y position
-        ax_beamy = plt.axes([0.1, 0.25, 0.0225, 0.63])
-        beamy_slider = Slider(
-            ax=ax_beamy,
+        ax_beam_y = plt.axes([0.1, 0.25, 0.0225, 0.63])
+        beam_y_slider = Slider(
+            ax=ax_beam_y,
             label="Beam center y [px]",
             valmin=self.detector.max_shape[1] * 0.25,
             valmax=self.detector.max_shape[1] * 0.75,
@@ -281,22 +255,24 @@ class PowderCalibrator:
         )
 
         def update(val):
-            self.geometry.update_beam_center(
-                beam_coords_px=[beamx_slider.val, beamy_slider.val]
+            new_geometry = self.geometry.__deepcopy__()
+
+            new_geometry.update_beam_center(
+                beam_coords_px=[beam_x_slider.val, beam_y_slider.val]
             )
-            rings.set_array(self.cal_rings(self.geometry))
+            rings_img.set_array(self.cal_rings(new_geometry))
             fig.canvas.draw_idle()
 
         # register the update function with each slider
-        beamx_slider.on_changed(update)
-        beamy_slider.on_changed(update)
+        beam_x_slider.on_changed(update)
+        beam_y_slider.on_changed(update)
 
         reset_ax = plt.axes([0.8, 0.026, 0.1, 0.04])
         button_res = Button(reset_ax, "Reset", hovercolor="0.975")
 
         def reset(event):
-            beamx_slider.reset()
-            beamy_slider.reset()
+            beam_x_slider.reset()
+            beam_y_slider.reset()
 
         button_res.on_clicked(reset)
 
@@ -304,48 +280,48 @@ class PowderCalibrator:
         button_save = Button(save_ax, "Save beam and exit", hovercolor="0.975")
 
         def save_and_exit(event):
-            print("Saved geometry:\n ----\n", self.geometry, "\n")
+            self.geometry.update_beam_center(
+                beam_coords_px=[beam_x_slider.val, beam_y_slider.val]
+            )
+            print("Rough estimate geometry:\n ----\n", self.geometry, "\n")
             plt.close()
 
         button_save.on_clicked(save_and_exit)
 
         plt.show()
 
-    def update_geometry(self, beam_px=None):
-        # update geometry using the Fit2D route
-        f2d = self.geometry.getFit2D()
-        self.geometry.setFit2D(
-            directDist=f2d["directDist"], centerX=beam_px[0], centerY=beam_px[1]
-        )
-        print("Updated model geometry to", self.geometry)
+    def rings_beam_image(self, geometry, ax):
+        cal_img_masked = self.cal_rings(geometry)
 
-    def rings_image(self, geometry, ax):
+        rings_img = ax.imshow(cal_img_masked, alpha=0.3, cmap="inferno", origin="lower")
+        ax.plot(*self.beam_position(geometry), "rx")
+
+        return rings_img
+
+    def beam_position(self, geometry=None):
+        if geometry:
+            beam = [
+                geometry.poni2 / self.detector.pixel2,
+                geometry.poni1 / self.detector.pixel1,
+            ]
+        else:
+            beam = [
+                self.geometry.poni2 / self.detector.pixel2,
+                self.geometry.poni1 / self.detector.pixel1,
+            ]
+        return beam
+
+    def cal_rings(self, geometry=None):
+        # for smaller wavelengths reduce the rings blurring
         if self.data.wavelength < 1e-1:
             w = 1e-7
         else:
             w = 1e-3
 
-        cal_img = self.calibrant.fake_calibration_image(geometry, W=w)
-        cal_img_masked = np.ma.masked_where(cal_img <= 1e-4, cal_img)
-
-        rings = ax.imshow(cal_img_masked, alpha=0.3, cmap="inferno", origin="lower")
-
-        beam = [
-            self.geometry.poni2 / self.detector.pixel2,
-            self.geometry.poni1 / self.detector.pixel1,
-        ]
-        ax.plot(*beam, "rx")
-
-        return rings
-
-    def cal_rings(self, geometry):
-        # for smaller wavelengths reduce the blurring of the rings
-        if self.data.wavelength < 1e-1:
-            w = 1e-7
+        if geometry:
+            cal_img = self.calibrant.fake_calibration_image(geometry, W=w)
         else:
-            w = 1e-3
-
-        cal_img = self.calibrant.fake_calibration_image(geometry, W=w)
+            cal_img = self.calibrant.fake_calibration_image(self.geometry, W=w)
         cal_img_masked = np.ma.masked_where(cal_img <= 1e-4, cal_img)
         return cal_img_masked
 
@@ -370,17 +346,14 @@ class PowderCalibrator:
 
         sg.extract_cp(max_rings=num_rings)
         if verbose:
-            show_fit(
-                sg,
-            )
-            print(sg.get_ai())
+            show_fit(sg, label="Before pyFAI fit")
+
         if ref:
             sg.geometry_refinement.refine2(fix=fix)
             if verbose:
-                show_fit(
-                    sg,
-                )
-                print(sg.get_ai())
+                show_fit(sg, label="After pyFAI fit")
+                print("Geometry fitted by pyFAI:\n----- \n", sg.get_ai(), "\n")
+
             ai = sg.get_ai()
             int2 = ai.integrate2d_ng(
                 self.data.image, 500, 360, unit="q_nm^-1", filename="integrated.edf"
