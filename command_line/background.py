@@ -112,6 +112,7 @@ def run(args=None):
                 n_bins=params.n_bins,
                 corrected=params.corrected,
                 mask_params=params.masking,
+                show_summary=True,
             )
 
             msg = [f"{'d':>8} {'I':>8} {'sig':>8}"]
@@ -159,7 +160,9 @@ def run(args=None):
             raise Sorry(f"Unable to save plot to {params.output.plot}")
 
 
-def background(imageset, indx, n_bins, corrected=False, mask_params=None):
+def background(
+    imageset, indx, n_bins, corrected=False, mask_params=None, show_summary=False
+):
     if mask_params is None:
         # Default mask params for trusted range
         mask_params = phil_scope.fetch(parse("")).extract().masking
@@ -200,17 +203,18 @@ def background(imageset, indx, n_bins, corrected=False, mask_params=None):
     background = data.select(background_pixels.iselection())
 
     # print some summary information
-    logger.info(f"Mean background: {flex.sum(background) / background.size():.3f}")
-    if len(signal) > 0:
+    if show_summary:
+        logger.info(f"Mean background: {flex.sum(background) / background.size():.3f}")
+        if len(signal) > 0:
+            logger.info(
+                f"Max/total signal pixels: {flex.max(signal):.0f} / {flex.sum(signal):.0f}"
+            )
+        else:
+            logger.info("No signal pixels on this image")
         logger.info(
-            f"Max/total signal pixels: {flex.max(signal):.0f} / {flex.sum(signal):.0f}"
+            "Peak/background/masked pixels: %d / %d / %d"
+            % (peak_pixels.count(True), background.size(), mask.count(False))
         )
-    else:
-        logger.info("No signal pixels on this image")
-    logger.info(
-        "Peak/background/masked pixels: %d / %d / %d"
-        % (peak_pixels.count(True), background.size(), mask.count(False))
-    )
 
     # compute histogram of two-theta values, then same weighted
     # by pixel values, finally divide latter by former to get
