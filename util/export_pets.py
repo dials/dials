@@ -13,6 +13,9 @@ from dials.algorithms.refinement.rotation_decomposition import (
 from dials.array_family import flex
 from dials.command_line.frame_orientations import extract_experiment_data
 
+import pandas as pd
+import gemmi
+
 logger = logging.getLogger(__name__)
 
 
@@ -284,7 +287,7 @@ Virtual frame settings: number of merged frames:  {self.n_merged}
                         step between frames:      {self.step}
                         sum all intensities:      1
 ;"""
-
+        uvw = []
         for frame_id, virtual_frame in enumerate(self.virtual_frames):
             u, v, w = virtual_frame["zone_axis"]
             precession_angle = 0.0  # dummy value
@@ -299,7 +302,9 @@ Virtual frame settings: number of merged frames:  {self.n_merged}
             )
             scale = 1  # dummy value
             print(frame_id + 1, u, v, w, precession_angle, alpha, beta, omega, scale)
+            uvw+=[frame_id + 1, u, v, w, precession_angle, alpha, beta, omega, scale]
 
+        dfI = pd.DataFrame(,columns=['index_h','index_k','index_l','intensity_meas','intensity_sigma','F'])
         for frame_id, virtual_frame in enumerate(self.virtual_frames):
             refs = virtual_frame["reflections"]
             refs["intensity.sum.sigma"] = flex.sqrt(refs["intensity.sum.variance"])
@@ -308,3 +313,81 @@ Virtual frame settings: number of merged frames:  {self.n_merged}
                 i_sum = r["intensity.sum.value"]
                 sig_i_sum = r["intensity.sum.sigma"]
                 print(h, k, l, i_sum, sig_i_sum, frame_id + 1)
+                dfI.loc[frame_id]=[h, k, l, i_sum, sig_i_sum, frame_id + 1]
+
+        lat_param s = (a,b,c,alpha,beta,gamma)
+        UBmatrix = np.array([[UB11,UB12,UB13],[UB21,UB22,UB23],[UB31,UB32,UB33]])
+        uvws = np.array()
+        _write_dyn_cif_pets(cif_filename,lat_params,volume,wavelength,UBmatrix,uvws,dfI,comment)
+
+    def _write_dyn_cif_pets(self,name,lat_params,vol,lam,UBmatrix,uvws,dfI, comment=''):
+        '''
+        - name : name of dataset
+        - lat_params : (a,b,c,alpha,beta,gamma)
+        - vol : volume
+        - lam : wavelength
+        - UBmatrix : 3x3 matrix orientation
+        - uvws : array with columns [u,v,w,scale] (can also contain precession_angle,alpha,beta,omega)
+        - dfI : DataFrame intensities ['index_h','index_k','index_l','intensity_meas','intensity_sigma','zone_axis_id']
+        '''
+        doc = gemmi.cif.Document()
+        b = doc.add_new_block('pets')
+
+        pair = [
+        '_cell_length_a',
+        '_cell_length_b',
+        '_cell_length_c',
+        '_cell_angle_alpha',
+        '_cell_angle_beta',
+        '_cell_angle_gamma',
+        '_cell_volume',
+        '_diffrn_radiation_wavelength',
+        '_diffrn_orient_matrix_UB_11',
+        '_diffrn_orient_matrix_UB_12',
+        '_diffrn_orient_matrix_UB_13',
+        '_diffrn_orient_matrix_UB_21',
+        '_diffrn_orient_matrix_UB_22',
+        '_diffrn_orient_matrix_UB_23',
+        '_diffrn_orient_matrix_UB_31',
+        '_diffrn_orient_matrix_UB_32',
+        '_diffrn_orient_matrix_UB_33',
+        '_diffrn_pets_omega',
+        ]
+        values = np.hstack([lat_params,[vol,lam], UBmatrix.flatten(), [0]])
+        for k,v in zip(pair,values): b.set_pair(k,'%.5f' %v)
+        if not comment:
+            comment = ''';
+        data collection geometry: continuous rotation
+        dstarmax:  1.800
+        RC width:  0.00120
+        mosaicity:  0.210
+        rotation axis position:  230.391
+        reflection size:    8.000
+        Virtual frame settings: number of merged frames:  7
+                                step between frames:      5
+                                sum all intensities:      1
+        ;'''
+        b.set_pair('_diffrn_measurement_details',comment)
+
+        #### orientation info
+        cols = ['id','u','v','w','precession_angle','alpha','beta','omega','scale',]
+        lo = b.init_loop('_diffrn_zone_axis_', cols)
+        n_uvws = uvws.shape[0]
+        vals = np.hstack([uvws[:,:3], np.zeros((n_uvws,4)), uvws[:,-1][:,None] ])
+        for i,v in enumerate(vals):
+            lo.add_row([('%d'%(i+1)).rjust(4)]+[('%.5f'%u).rjust(8) for u in v[:3]]+['%.3f' %u for u in v[3:]] )
+
+        #### Intensities
+        colsI = ['index_h','index_k','index_l','intensity_meas','intensity_sigma','zone_axis_id',]
+        li = b.init_loop('_refln_', colsI)
+        for i,c in dfI.iterrows():
+            li.add_row(
+                [('%d'  %h).rjust(4 ) for h in c[['index_h','index_k','index_l'     ]].values ]+
+                [('%.2f'%v).rjust(11) for v in c[['intensity_meas','intensity_sigma']].values ]+
+                [('%d'  %c['zone_axis_id']).rjust(5)  ])
+
+        out=name
+        # out = '%s_dyn.cif_files' %name
+        doc.write_file(out)
+        print('file %s written ' %out)
+        return out
