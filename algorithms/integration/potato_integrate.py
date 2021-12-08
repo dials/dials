@@ -91,7 +91,10 @@ class PotatoIntegrator(SimpleIntegrator):
                 )
 
         predicted = self.predict(
-            experiment, table, prediction_probability=self.params.prediction.probability
+            experiment,
+            table,
+            d_min=self.params.prediction.d_min,
+            prediction_probability=self.params.prediction.probability,
         )
         # do we want to add unmatched i.e. strong spots which weren't predicted?
         self.collector.collect_after_prediction(predicted, table)

@@ -66,12 +66,24 @@ phil_scope = iotbx.phil.parse(
       .type = str
   }
 
-  include scope dials.algorithms.profile_model.potato.potato.phil_scope
-  include scope dials.algorithms.integration.integrator.phil_scope
-  include scope dials.algorithms.profile_model.factory.phil_scope
-  include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
-  include scope dials.algorithms.integration.stills_significance_filter.phil_scope
-  include scope dials.algorithms.integration.kapton_correction.absorption_phil_scope
+  potato {
+    include scope dials.algorithms.profile_model.potato.potato.phil_scope
+  }
+
+  stills {
+    include scope dials.algorithms.integration.integrator.phil_scope
+    include scope dials.algorithms.profile_model.factory.phil_scope
+    include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
+    include scope dials.algorithms.integration.stills_significance_filter.phil_scope
+    include scope dials.algorithms.integration.kapton_correction.absorption_phil_scope
+  }
+
+  debug {
+    output {
+      shoeboxes = False
+        .type = bool
+    }
+  }
 
 """,
     process_includes=True,
@@ -80,25 +92,29 @@ phil_scope = iotbx.phil.parse(
 phil_overrides = phil_scope.fetch(
     source=iotbx.phil.parse(
         """\
-profile {
-    gaussian_rs {
-        min_spots {
-            overall=0
+stills {
+    profile {
+        gaussian_rs {
+            min_spots {
+                overall=0
+            }
         }
+        fitting = False
     }
-    fitting = False
-}
-integration {
-    background {
-        simple {
-            outlier {
-                algorithm = Null
+    integration {
+        background {
+            simple {
+                outlier {
+                    algorithm = Null
+                }
             }
         }
     }
 }
-refinement {
-    n_cycles = 1
+potato {
+    refinement {
+        n_cycles = 1
+    }
 }
 """
     )
@@ -113,7 +129,7 @@ def process_one_image_potato_integrator(experiment, table, params):
     logger3 = logging.getLogger("dials.array_family.flex_ext")
     logger3.disabled = True
 
-    integrator = PotatoIntegrator(params, collect_data=params.output.html)
+    integrator = PotatoIntegrator(params.potato, collect_data=params.output.html)
     try:
         experiment, table, collector = integrator.run(experiment, table)
     except RuntimeError as e:
@@ -138,7 +154,7 @@ def process_one_image_stills_integrator(experiment, table, params):
     logger7 = logging.getLogger("dials.algorithms.spot_prediction.reflection_predictor")
     logger7.disabled = True
 
-    integrator = StillsIntegrator(params, collect_data=params.output.html)
+    integrator = StillsIntegrator(params.stills, collect_data=params.output.html)
     try:
         experiment, table, collector = integrator.run(experiment, table)
     except RuntimeError as e:
