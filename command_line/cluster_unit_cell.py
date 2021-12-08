@@ -12,6 +12,7 @@ from xfel.clustering.cluster import Cluster
 from xfel.clustering.cluster_groups import unit_cell_info
 
 import dials.util
+from dials.util.multi_dataset_handling import assign_unique_identifiers
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 
 help_message = """
@@ -86,6 +87,10 @@ def run(args=None):
             len(reflections) == 1
         ), "To output split data, input must be a single reflection file"
         reflections = reflections[0]
+        if not experiments.identifiers():
+            experiments, reflections = assign_unique_identifiers(
+                experiments, reflections
+            )
         template = "{prefix}_{index:0{maxindexlength:d}d}.{extension}"
         experiments_template = functools.partial(
             template.format,
