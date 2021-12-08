@@ -6,6 +6,7 @@ import pytest
 
 from cctbx import crystal
 from dxtbx.model.experiment_list import ExperimentList, ExperimentListFactory
+from dxtbx.serialize import load
 
 from dials.command_line import cluster_unit_cell
 
@@ -27,9 +28,7 @@ def test_dials_cluster_unit_cell_command_line(dials_regression, run_in_tmpdir):
     assert os.path.exists("cluster_unit_cell.png")
 
 
-def test_dials_cluster_unit_cell_command_line_output_files(
-    dials_regression, run_in_tmpdir
-):
+def test_dials_cluster_unit_cell_command_line_output_files(dials_regression, tmp_path):
     pytest.importorskip("scipy")
     pytest.importorskip("xfel")
 
@@ -42,25 +41,62 @@ def test_dials_cluster_unit_cell_command_line_output_files(
     # first combine experiments
     result = procrunner.run(
         command=["dials.combine_experiments"] + experiments + reflections,
+        working_directory=tmp_path,
     )
     assert not result.returncode
-    assert os.path.exists("combined.refl")
-    assert os.path.exists("combined.expt")
+    assert (tmp_path / "combined.refl").is_file()
+    assert (tmp_path / "combined.expt").is_file()
 
     result = procrunner.run(
         command=[
             "dials.cluster_unit_cell",
             "plot.show=False",
-            "combined.refl",
-            "combined.expt",
+            tmp_path / "combined.refl",
+            tmp_path / "combined.expt",
             "output.clusters=True",
+            "threshold=40",
         ],
-        print_stdout=False,
+        working_directory=tmp_path,
     )
     assert not result.returncode
-    assert os.path.exists("cluster_unit_cell.png")
-    assert os.path.exists("cluster_0.refl")
-    assert os.path.exists("cluster_0.expt")
+    assert (tmp_path / "cluster_unit_cell.png").is_file()
+    assert (tmp_path / "cluster_0.refl").is_file()
+    assert (tmp_path / "cluster_0.expt").is_file()
+    expts = load.experiment_list(tmp_path / "cluster_0.expt", check_format=False)
+    assert len(expts) == 101
+    assert (tmp_path / "cluster_1.refl").is_file()
+    assert (tmp_path / "cluster_1.expt").is_file()
+    expts = load.experiment_list(tmp_path / "cluster_1.expt", check_format=False)
+    assert len(expts) == 1
+    assert (tmp_path / "cluster_2.refl").is_file()
+    assert (tmp_path / "cluster_2.expt").is_file()
+    expts = load.experiment_list(tmp_path / "cluster_2.expt", check_format=False)
+    assert len(expts) == 1
+
+    result = procrunner.run(
+        command=[
+            "dials.split_experiments",
+            tmp_path / "combined.refl",
+            tmp_path / "combined.expt",
+        ],
+        working_directory=tmp_path,
+    )
+    assert not result.returncode
+    experiments = glob.glob(os.path.join(tmp_path, "split_*.expt"))
+    reflections = glob.glob(os.path.join(tmp_path, "split_*.refl"))
+
+    result = procrunner.run(
+        command=[
+            "dials.cluster_unit_cell",
+            "output.clusters=True",
+            "threshold=40",
+            "plot.show=False",
+        ]
+        + experiments
+        + reflections,
+        working_directory=tmp_path,
+    )
+    assert not result.returncode
 
 
 def test_cluster_unit_cell_api(dials_regression):
