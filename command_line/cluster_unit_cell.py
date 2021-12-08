@@ -93,6 +93,17 @@ def run(args=None):
         # Possibilities: either same number of experiments and reflection files,
         # or just one reflection file containing multiple sequences, or no
         # reflections given
+        # Want a combined table to work on with experiment identifiers set.
+
+        def _assign_and_return_joint(experiments, reflections):
+            experiments, reflections = assign_unique_identifiers(
+                experiments, reflections
+            )
+            joint_table = flex.reflection_table()
+            for refls in reflections:
+                joint_table.extend(refls)
+            return joint_table
+
         if len(reflections) == 1:
             reflections = reflections[0]
             if len(set(reflections["id"])) != len(experiments):
@@ -101,13 +112,8 @@ def run(args=None):
                 )
             if not dict(reflections.experiment_identifiers()):
                 reflections = reflections.split_by_experiment_id()
-                experiments, reflections = assign_unique_identifiers(
-                    experiments, reflections
-                )
-                joint_table = flex.reflection_table()
-                for refls in reflections:
-                    joint_table.extend(refls)
-                reflections = joint_table
+                reflections = _assign_and_return_joint(experiments, reflections)
+
         elif len(reflections) > 1:
             if not len(reflections) == len(experiments):
                 reflections = parse_multiple_datasets(reflections)
@@ -115,14 +121,9 @@ def run(args=None):
                     raise ValueError(
                         f"Mismatched number of reflection tables (f{len(reflections)}) and experiments (f{len(experiments)})"
                     )
-            experiments, reflections = assign_unique_identifiers(
-                experiments, reflections
-            )
-            joint_table = flex.reflection_table()
-            for refls in reflections:
-                joint_table.extend(refls)
-            reflections = joint_table
+            reflections = _assign_and_return_joint(experiments, reflections)
         # else: no reflections given, continue and just split experiments
+
         template = "{prefix}_{index:0{maxindexlength:d}d}.{extension}"
         experiments_template = functools.partial(
             template.format,
@@ -136,6 +137,7 @@ def run(args=None):
             maxindexlength=len(str(len(clusters) - 1)),
             extension="refl",
         )
+
         clusters.sort(key=lambda x: len(x.members), reverse=True)
         for j, cluster in enumerate(clusters):
             ids = [m.lattice_id for m in cluster.members]
