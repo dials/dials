@@ -87,11 +87,12 @@ def run(args=None):
     clusters = do_cluster_analysis(crystal_symmetries, params)
 
     if params.output.clusters:
-        if not reflections:
-            print("Input reflections must be given to produce output clusters")
+        if len(experiments) == 0:
+            print("Clustering output can only be generated for input .expt files")
             return
-        # Two possibilities: either same number of experiments and reflection files,
-        # or just one reflection file containing multiple sequences
+        # Possibilities: either same number of experiments and reflection files,
+        # or just one reflection file containing multiple sequences, or no
+        # reflections given
         if len(reflections) == 1:
             reflections = reflections[0]
             if len(set(reflections["id"])) != len(experiments):
@@ -107,7 +108,7 @@ def run(args=None):
                 for refls in reflections:
                     joint_table.extend(refls)
                 reflections = joint_table
-        else:
+        elif len(reflections) > 1:
             if not len(reflections) == len(experiments):
                 reflections = parse_multiple_datasets(reflections)
                 if len(reflections) != len(experiments):
@@ -121,6 +122,7 @@ def run(args=None):
             for refls in reflections:
                 joint_table.extend(refls)
             reflections = joint_table
+        # else: no reflections given, continue and just split experiments
         template = "{prefix}_{index:0{maxindexlength:d}d}.{extension}"
         experiments_template = functools.partial(
             template.format,
@@ -138,17 +140,18 @@ def run(args=None):
         for j, cluster in enumerate(clusters):
             ids = [m.lattice_id for m in cluster.members]
             sub_expt = ExperimentList([experiments[i] for i in ids])
-            identifiers = sub_expt.identifiers()
-            sub_refl = reflections.select_on_experiment_identifiers(identifiers)
-            # renumber the ids to go from 0->n-1
-            sub_refl.reset_ids()
             expt_filename = experiments_template(index=j)
-            refl_filename = reflections_template(index=j)
             n = len(ids)
             print(f"Saving {n} lattices from cluster {j+1} to {expt_filename}")
             sub_expt.as_file(expt_filename)
-            print(f"Saving reflections from cluster {j+1} to {refl_filename}")
-            sub_refl.as_file(refl_filename)
+            if reflections:
+                identifiers = sub_expt.identifiers()
+                sub_refl = reflections.select_on_experiment_identifiers(identifiers)
+                # renumber the ids to go from 0->n-1
+                sub_refl.reset_ids()
+                refl_filename = reflections_template(index=j)
+                print(f"Saving reflections from cluster {j+1} to {refl_filename}")
+                sub_refl.as_file(refl_filename)
 
 
 def do_cluster_analysis(crystal_symmetries, params):
