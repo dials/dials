@@ -187,8 +187,18 @@ def run(args=None):
         reference_experiments = load.experiment_list(
             params.reference.experiments, check_format=False
         )
-        assert len(reference_experiments.crystals()) == 1
-        reference_crystal = reference_experiments.crystals()[0]
+        # assert len(reference_experiments.crystals()) == 1
+        if len(reference_experiments.crystals()) == 1:
+            reference_crystal = reference_experiments.crystals()[0]
+        else:
+            from dials.algorithms.scaling.scaling_library import (
+                determine_best_unit_cell,
+            )
+
+            reference_crystal = reference_experiments.crystals()[0]
+            reference_crystal.unit_cell = determine_best_unit_cell(
+                reference_experiments
+            )
 
     if params.reference.reflections is not None:
         # First check that we have everything as expected for the reference reindexing
@@ -200,8 +210,8 @@ experiments file must also be specified with the option: reference= """
             )
         if not os.path.exists(params.reference.reflections):
             raise Sorry("Could not locate reference dataset reflection file")
-        if len(experiments) != 1 or len(reflections) != 1:
-            raise Sorry("Only one dataset can be reindexed to a reference at a time")
+        # if len(experiments) != 1 or len(reflections) != 1:
+        #    raise Sorry("Only one dataset can be reindexed to a reference at a time")
 
         reference_reflections = flex.reflection_table().from_file(
             params.reference.reflections
