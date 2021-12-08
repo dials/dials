@@ -134,18 +134,15 @@ class Geometry(pfGeometry):
         f2d = self.getFit2D()
         self.setFit2D(directDist=f2d["directDist"], centerX=center_x, centerY=center_y)
 
-    def update_with_ai(self, ai):
+    def update_from_ai(self, ai):
         """
-
+        Update geometry with geometry from refined ai
+        Is there a more pyFAI friendly of doing this?
         Parameters
         ----------
         ai: ai object
-
-        Returns
-        -------
-
         """
-        pass
+        self.set_param(ai.param)
 
     def __deepcopy__(self, memo=None):
         new = self.__class__(self.dials_data)
@@ -350,12 +347,13 @@ class PowderCalibrator:
         )
 
         gonio_geom.extract_cp(max_rings=num_rings)
+
         if verbose:
             show_fit(gonio_geom, label="Before pyFAI fit")
 
         gonio_geom.geometry_refinement.refine2(fix=fix)
-        ai = gonio_geom.geometry
-        self.geometry.update_with_ai(ai)
+        ai = gonio_geom.get_ai()
+        self.geometry.update_from_ai(ai)
 
         if verbose:
             show_fit(gonio_geom, label="After pyFAI fit")
