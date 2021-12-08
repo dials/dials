@@ -27,6 +27,42 @@ def test_dials_cluster_unit_cell_command_line(dials_regression, run_in_tmpdir):
     assert os.path.exists("cluster_unit_cell.png")
 
 
+def test_dials_cluster_unit_cell_command_line_output_files(
+    dials_regression, run_in_tmpdir
+):
+    pytest.importorskip("scipy")
+    pytest.importorskip("xfel")
+
+    data_dir = os.path.join(
+        dials_regression, "refinement_test_data", "multi_narrow_wedges"
+    )
+    experiments = glob.glob(os.path.join(data_dir, "data/sweep_*/experiments.json"))
+    reflections = glob.glob(os.path.join(data_dir, "data/sweep_*/indexed.pickle"))
+
+    # first combine experiments
+    result = procrunner.run(
+        command=["dials.combine_experiments"] + experiments + reflections,
+    )
+    assert not result.returncode
+    assert os.path.exists("combined.refl")
+    assert os.path.exists("combined.expt")
+
+    result = procrunner.run(
+        command=[
+            "dials.cluster_unit_cell",
+            "plot.show=False",
+            "combined.refl",
+            "combined.expt",
+            "output.clusters=True",
+        ],
+        print_stdout=False,
+    )
+    assert not result.returncode
+    assert os.path.exists("cluster_unit_cell.png")
+    assert os.path.exists("cluster_0.refl")
+    assert os.path.exists("cluster_0.expt")
+
+
 def test_cluster_unit_cell_api(dials_regression):
     pytest.importorskip("scipy")
     pytest.importorskip("xfel")
