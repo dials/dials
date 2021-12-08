@@ -134,6 +134,19 @@ class Geometry(pfGeometry):
         f2d = self.getFit2D()
         self.setFit2D(directDist=f2d["directDist"], centerX=center_x, centerY=center_y)
 
+    def update_with_ai(self, ai):
+        """
+
+        Parameters
+        ----------
+        ai: ai object
+
+        Returns
+        -------
+
+        """
+        pass
+
     def __deepcopy__(self, memo=None):
         new = self.__class__(self.dials_data)
         return new
@@ -204,8 +217,11 @@ class PowderCalibrator:
         self.calibrant = pfCalibrant(standard)
         self.calibrant.wavelength = _convert_units(self.data.wavelength, "A", "m")
 
-        print("Initial geometry:\n -----\n", self.geometry, "\n")
-        print("Start calibration using:\n----- \n", self.calibrant, "\n")
+        print(f"Initial geometry:\n -----\n {self.geometry} \n")
+        print(
+            f"Start calibration using:\n----- \n {self.calibrant} \n\n "
+            f"Drag sliders to roughly overlap rings and then save for further fitting. \n"
+        )
 
     def rough_fit_widget(self):
         """
@@ -273,7 +289,7 @@ class PowderCalibrator:
             self.geometry.update_beam_center(
                 beam_coords_px=[beam_x_slider.val, beam_y_slider.val]
             )
-            print("Rough estimate geometry:\n ----\n", self.geometry, "\n")
+            print(f"Rough estimate geometry:\n ----\n {self.geometry} \n")
             plt.close()
 
         button_save.on_clicked(save_and_exit)
@@ -319,7 +335,6 @@ class PowderCalibrator:
         self,
         num_rings=4,
         fix=("rot1", "rot2", "rot3", "wavelength"),
-        ref=False,
         verbose=False,
     ):
 
@@ -327,30 +342,31 @@ class PowderCalibrator:
         self.rough_fit_widget()
 
         # then use pyFAI for fine calibration
-        sg = pfSingleGeometry(
+        gonio_geom = pfSingleGeometry(
             label=self.standard_name + " calibrant",
             image=self.data.image,
             calibrant=self.calibrant,
             geometry=self.geometry,
         )
 
-        sg.extract_cp(max_rings=num_rings)
+        gonio_geom.extract_cp(max_rings=num_rings)
         if verbose:
-            show_fit(sg, label="Before pyFAI fit")
+            show_fit(gonio_geom, label="Before pyFAI fit")
 
-        if ref:
-            sg.geometry_refinement.refine2(fix=fix)
-            if verbose:
-                show_fit(sg, label="After pyFAI fit")
-                print("Geometry fitted by pyFAI:\n----- \n", sg.get_ai(), "\n")
+        gonio_geom.geometry_refinement.refine2(fix=fix)
+        ai = gonio_geom.geometry
+        self.geometry.update_with_ai(ai)
 
-            ai = sg.get_ai()
+        if verbose:
+            show_fit(gonio_geom, label="After pyFAI fit")
+            print("Geometry fitted by pyFAI:\n----- \n", ai, "\n")
+
+            # show the cake plot as well
             int2 = ai.integrate2d_ng(
                 self.data.image, 500, 360, unit="q_nm^-1", filename="integrated.edf"
             )
-            if verbose:
-                pfjupyter.plot2d(int2, calibrant=self.calibrant)
-                plt.show()
+            pfjupyter.plot2d(int2, calibrant=self.calibrant)
+            plt.show()
 
 
 if __name__ == "__main__":
@@ -360,4 +376,4 @@ if __name__ == "__main__":
     )
 
     calibrator = PowderCalibrator(Al_data, "Al")
-    calibrator.calibrate_with_calibrant(ref=True, verbose=True)
+    calibrator.calibrate_with_calibrant(verbose=True)
