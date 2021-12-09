@@ -287,7 +287,7 @@ Virtual frame settings: number of merged frames:  {self.n_merged}
                         step between frames:      {self.step}
                         sum all intensities:      1
 ;"""
-        uvw = []
+        uvws = []
         for frame_id, virtual_frame in enumerate(self.virtual_frames):
             u, v, w = virtual_frame["zone_axis"]
             precession_angle = 0.0  # dummy value
@@ -302,9 +302,9 @@ Virtual frame settings: number of merged frames:  {self.n_merged}
             )
             scale = 1  # dummy value
             print(frame_id + 1, u, v, w, precession_angle, alpha, beta, omega, scale)
-            uvw+=[frame_id + 1, u, v, w, precession_angle, alpha, beta, omega, scale]
+            uvws+=[[frame_id + 1, u, v, w, precession_angle, alpha, beta, omega, scale]]
 
-        dfI = pd.DataFrame(,columns=['index_h','index_k','index_l','intensity_meas','intensity_sigma','F'])
+        dfI = pd.DataFrame(columns=['index_h','index_k','index_l','intensity_meas','intensity_sigma','F'])
         for frame_id, virtual_frame in enumerate(self.virtual_frames):
             refs = virtual_frame["reflections"]
             refs["intensity.sum.sigma"] = flex.sqrt(refs["intensity.sum.variance"])
@@ -314,11 +314,11 @@ Virtual frame settings: number of merged frames:  {self.n_merged}
                 sig_i_sum = r["intensity.sum.sigma"]
                 print(h, k, l, i_sum, sig_i_sum, frame_id + 1)
                 dfI.loc[frame_id]=[h, k, l, i_sum, sig_i_sum, frame_id + 1]
-
-        lat_param s = (a,b,c,alpha,beta,gamma)
+        dfI['zone_axis_id']=0
+        lat_params = (a,b,c,alpha,beta,gamma)
         UBmatrix = np.array([[UB11,UB12,UB13],[UB21,UB22,UB23],[UB31,UB32,UB33]])
-        uvws = np.array()
-        _write_dyn_cif_pets(cif_filename,lat_params,volume,wavelength,UBmatrix,uvws,dfI,comment)
+        uvws = np.array(uvws)
+        self._write_dyn_cif_pets(cif_filename,lat_params,volume,wavelength,UBmatrix,uvws,dfI,comment)
 
     def _write_dyn_cif_pets(self,name,lat_params,vol,lam,UBmatrix,uvws,dfI, comment=''):
         '''
