@@ -47,12 +47,17 @@ from dials.util.options import OptionParser, flatten_experiments
 
 phil_scope = parse(
     """
-  calibrant = None
+  standard_name = None
     .type = str
     .help = calibrant name
   poni = None
      .type = str
      .help = poni file containing geometry
+  output {
+    experiments = calibrated.expt
+        .type = path
+       .help = file name for calibrated expt
+       }
     """
 )
 
@@ -153,7 +158,9 @@ def parse_command_line():
     """
     Parse command line arguments and read experiments
     """
-    usage = "$ dials.powder_calibrate EXPERIMENTS [options]"
+    usage = (
+        "$ dials.powder_calibrate EXPERIMENTS standard_name=standard_short [options]"
+    )
 
     parser = OptionParser(
         usage=usage,
@@ -171,13 +178,20 @@ def show_fit(geometry, label=None):
     plt.show()
 
 
-class DialsData:
+class DialsParams:
     def __init__(
         self,
-        params=None,
+        phil_params=None,
         expt_file=None,
     ):
-        self.params = params
+        if phil_params:
+            self.phil_params = phil_params
+        else:
+            from dials.util.options import OptionParser
+
+            dummy_parser = OptionParser()
+            params, _ = dummy_parser.parse_args(args=[expt_file], show_diff_phil=False)
+            self.phil_params = params
 
         self.expt_file = expt_file
         self.expts = self._expt()
@@ -193,13 +207,36 @@ class DialsData:
 
     def _expt(self):
         experiments = None
-        if self.params:
-            experiments = flatten_experiments(self.params.input.experiments)
+        if self.phil_params:
+            experiments = flatten_experiments(self.phil_params.input.experiments)
         elif self.expt_file:
             experiments = experiment_list.from_file(self.expt_file)
         else:
             exit("No experiments file was given")
         return experiments
+
+    def update_geometry_to_file(self, new_geometry_parameters, output=None):
+        """
+        Update the geometry part of the model in the .expt file
+        """
+        from dials.command_line.dials_import import ManualGeometryUpdater
+
+        geom_updater = ManualGeometryUpdater(new_geometry_parameters)
+
+        imagesets = self.expts.imagesets()
+
+        for imageset in imagesets:
+            imageset_new = geom_updater(imageset)
+            imageset.set_detector(imageset_new.get_detector())
+            imageset.set_beam(imageset_new.get_beam())
+            imageset.set_goniometer(imageset_new.get_goniometer())
+            imageset.set_scan(imageset_new.get_scan())
+
+        if len(self.expts):
+            print(
+                f"Saving modified experiments to {self.phil_params.output.experiments}"
+            )
+            self.expts.as_file(self.phil_params.output.experiments)
 
 
 class PowderCalibrator:
@@ -353,7 +390,6 @@ class PowderCalibrator:
 
         gonio_geom.geometry_refinement.refine2(fix=fix)
         ai = gonio_geom.get_ai()
-        self.geometry.update_from_ai(ai)
 
         if verbose:
             show_fit(gonio_geom, label="After pyFAI fit")
@@ -369,9 +405,12 @@ class PowderCalibrator:
 
 if __name__ == "__main__":
 
-    Al_data = DialsData(
-        expt_file="imported.expt",
-    )
+    # Al_data = DialsParams(
+    #     expt_file="imported.expt",
+    # )
 
-    calibrator = PowderCalibrator(Al_data, "Al")
+    params, opt = parse_command_line()
+    standard_params = DialsParams(phil_params=params)
+
+    calibrator = PowderCalibrator(standard_params, params.standard_name)
     calibrator.calibrate_with_calibrant(verbose=True)
