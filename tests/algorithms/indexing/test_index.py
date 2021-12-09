@@ -719,7 +719,7 @@ def test_index_ED_still_low_res_spot_match(dials_data, tmpdir, indexer_type, fix
         extra_args += ["crystal.fix=cell"]
 
     expected_unit_cell = uctbx.unit_cell((78.84, 78.84, 38.29, 90, 90, 90))
-    expected_rmsds = (0.007, 0.006, 0.000)
+    expected_rmsds = (0.0065, 0.0065, 0.000)
     expected_hall_symbol = " P 4nw 2abw"
 
     run_indexing(
