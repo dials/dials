@@ -62,6 +62,9 @@ class PETSOutput:
         # Calculate the frame orientation data
         self.frame_orientations = extract_experiment_data(self.experiment, scale=1)
 
+        # Calculate the frame orientation data (in the DIALS coordinate frame)
+        self.frame_orientations = extract_experiment_data(self.experiment, scale=1)
+
     def _check_experiments(self):
         """Extract a single experiment from an experiment list and check that
         it is suitable for cif_pets output"""
