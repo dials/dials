@@ -301,6 +301,7 @@ Virtual frame settings: number of merged frames:  {self.n_merged}
                 "F",
             ]
         )
+        i_r=0
         for frame_id, virtual_frame in enumerate(self.virtual_frames):
             refs = virtual_frame["reflections"]
             refs["intensity.sum.sigma"] = flex.sqrt(refs["intensity.sum.variance"])
@@ -308,7 +309,8 @@ Virtual frame settings: number of merged frames:  {self.n_merged}
                 h, k, l = r["miller_index"]
                 i_sum = r["intensity.sum.value"]
                 sig_i_sum = r["intensity.sum.sigma"]
-                dfI.loc[frame_id] = [h, k, l, i_sum, sig_i_sum, frame_id + 1]
+                dfI.loc[i_r] = [h, k, l, i_sum, sig_i_sum, frame_id + 1]
+                i_r+=1
         dfI["zone_axis_id"] = 0
         lat_params = (a, b, c, alpha, beta, gamma)
         uvws = np.array(uvws)
@@ -391,6 +393,7 @@ Virtual frame settings: number of merged frames:  {self.n_merged}
             )
 
         #### Intensities
+        print('...writing intensities to cif...')
         colsI = [
             "index_h",
             "index_k",
