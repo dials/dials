@@ -13,6 +13,8 @@ import os
 import pickle
 from typing import Tuple
 
+import numpy as np
+import pandas as pd
 from annlib_ext import AnnAdaptorSelfInclude
 
 import boost_adaptbx.boost.python
@@ -468,6 +470,48 @@ class _:
             ref_tmp = copy.deepcopy(self[min(val) : (max(val) + 1)])
             ref_tmp.sort(key1, reverse)
             self[min(val) : (max(val) + 1)] = ref_tmp
+
+    def match_by_hkle(
+        self, other: dials_array_family_flex_ext.reflection_table
+    ) -> Tuple[cctbx.array_family.flex.size_t, cctbx.array_family.flex.size_t,]:
+        """
+        Match reflections with another set of reflections by the h, k, l
+        and entering values. Uses pandas dataframe merge method to match
+        the columns: assumes the key h, k, l, e is unique which is false
+        if > 360 degree rotation.
+
+        :param other: reflection table to match against
+        :return: indices in self, indices in other for matches
+        """
+
+        hkl = self["miller_index"].as_vec3_double().parts()
+        h0 = hkl[0].iround().as_numpy_array()
+        k0 = hkl[1].iround().as_numpy_array()
+        l0 = hkl[2].iround().as_numpy_array()
+        e0 = self["entering"].as_numpy_array()
+        n0 = np.array(range(len(e0)))
+
+        x0 = {"h": h0, "k": k0, "l": l0, "e": e0, "n0": n0}
+
+        p0 = pd.DataFrame(data=x0, columns=["h", "k", "l", "e", "n0"])
+
+        hkl = other["miller_index"].as_vec3_double().parts()
+        h1 = hkl[0].iround().as_numpy_array()
+        k1 = hkl[1].iround().as_numpy_array()
+        l1 = hkl[2].iround().as_numpy_array()
+        e1 = other["entering"].as_numpy_array()
+        n1 = np.array(range(len(e1)))
+
+        x1 = {"h": h1, "k": k1, "l": l1, "e": e1, "n1": n1}
+
+        p1 = pd.DataFrame(data=x1, columns=["h", "k", "l", "e", "n1"])
+
+        merged = pd.merge(p0, p1, on=["h", "k", "l", "e"], how="inner")
+
+        n0 = cctbx.array_family.flex.size_t(merged["n0"].to_numpy())
+        n1 = cctbx.array_family.flex.size_t(merged["n1"].to_numpy())
+
+        return n0, n1
 
     def match_with_reference(self, other):
         """
