@@ -2,7 +2,6 @@ import logging
 
 import gemmi
 import numpy as np
-import pandas as pd
 
 from dxtbx.model.experiment_list import ExperimentList
 from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
@@ -140,8 +139,12 @@ class PETSOutput:
 
         axis_angle = r3_rotation_axis_and_angle_from_matrix(R)
         axis = axis_angle.axis
-        angle = axis_angle.angle()
-        logger.info(f"Rotating experiment about axis {axis} by {np.degrees(angle)}°")
+        angle = axis_angle.angle(deg=True)
+        logger.info(
+            "Rotating experiment about axis ({:.4f}, {:.4f}, {:.4f}) by {:.3f}°".format(
+                *axis, angle
+            )
+        )
 
         self.experiment.detector.rotate_around_origin(axis, angle, deg=False)
         self.experiment.crystal = rotate_crystal(
@@ -225,9 +228,10 @@ class PETSOutput:
             rotated_s1 = refs["rlp"] + s0_centre
             extinction = rotated_s1.norms() - inv_wl
 
-            # Now select only the reflections within the extinction distance
-            # cutoff.
+            # Select only the reflections within the extinction distance cutoff
+            # and sort
             refs.select(abs(extinction) <= self.excitation_error_cutoff)
+            refs.sort("miller_index")
 
             # Look up the orientation data using an index, which is the centre
             # of the virtual frame, offset so that the scan starts from 0
@@ -291,17 +295,7 @@ Virtual frame settings: number of merged frames:  {self.n_merged}
                 [frame_id + 1, u, v, w, precession_angle, alpha, beta, omega, scale]
             ]
 
-        dfI = pd.DataFrame(
-            columns=[
-                "index_h",
-                "index_k",
-                "index_l",
-                "intensity_meas",
-                "intensity_sigma",
-                "F",
-            ]
-        )
-        i_r=0
+        ref_list = []
         for frame_id, virtual_frame in enumerate(self.virtual_frames):
             refs = virtual_frame["reflections"]
             refs["intensity.sum.sigma"] = flex.sqrt(refs["intensity.sum.variance"])
@@ -309,17 +303,21 @@ Virtual frame settings: number of merged frames:  {self.n_merged}
                 h, k, l = r["miller_index"]
                 i_sum = r["intensity.sum.value"]
                 sig_i_sum = r["intensity.sum.sigma"]
-                dfI.loc[i_r] = [h, k, l, i_sum, sig_i_sum, frame_id + 1]
-                i_r+=1
-        dfI["zone_axis_id"] = 0
+                ref_list.append([h, k, l, i_sum, sig_i_sum, frame_id + 1])
         lat_params = (a, b, c, alpha, beta, gamma)
-        uvws = np.array(uvws)
         self._write_dyn_cif_pets(
-            cif_filename, lat_params, volume, wavelength, UBmatrix, uvws, dfI, comment
+            cif_filename,
+            lat_params,
+            volume,
+            wavelength,
+            UBmatrix,
+            uvws,
+            ref_list,
+            comment,
         )
 
     def _write_dyn_cif_pets(
-        self, name, lat_params, vol, lam, UBmatrix, uvws, dfI, comment=""
+        self, name, lat_params, vol, lam, UBmatrix, uvws, ref_list, comment=""
     ):
         """
         - name : name of dataset
@@ -327,8 +325,8 @@ Virtual frame settings: number of merged frames:  {self.n_merged}
         - vol : volume
         - lam : wavelength
         - UBmatrix : 3x3 matrix orientation
-        - uvws : array with columns [u,v,w,scale] (can also contain precession_angle,alpha,beta,omega)
-        - dfI : DataFrame intensities ['index_h','index_k','index_l','intensity_meas','intensity_sigma','zone_axis_id']
+        - uvws : list of lists with elements corresponding to the diffrn_zone_axis loop
+        - ref_list : list of lists with elements corresponding to the refln_ loop
         """
         doc = gemmi.cif.Document()
         b = doc.add_new_block("pets")
@@ -383,17 +381,12 @@ Virtual frame settings: number of merged frames:  {self.n_merged}
             "scale",
         ]
         lo = b.init_loop("_diffrn_zone_axis_", cols)
-        n_uvws = uvws.shape[0]
-        vals = np.hstack([uvws[:, :3], np.zeros((n_uvws, 4)), uvws[:, -1][:, None]])
-        for i, v in enumerate(vals):
-            lo.add_row(
-                [("%d" % (i + 1)).rjust(4)]
-                + [("%.5f" % u).rjust(8) for u in v[:3]]
-                + ["%.3f" % u for u in v[3:]]
-            )
+        row_fmt = "{:4}," + "{:8.5f}," * 3 + "{:12.3f}," + "{:9.3f}," * 3 + "{:9.3f}"
+        for uvw in uvws:
+            lo.add_row(row_fmt.format(*uvw).split(","))
 
         #### Intensities
-        print('...writing intensities to cif...')
+        logger.info("Writing intensities to cif")
         colsI = [
             "index_h",
             "index_k",
@@ -403,21 +396,10 @@ Virtual frame settings: number of merged frames:  {self.n_merged}
             "zone_axis_id",
         ]
         li = b.init_loop("_refln_", colsI)
-        for i, c in dfI.iterrows():
-            li.add_row(
-                [
-                    ("%d" % h).rjust(4)
-                    for h in c[["index_h", "index_k", "index_l"]].values
-                ]
-                + [
-                    ("%.2f" % v).rjust(11)
-                    for v in c[["intensity_meas", "intensity_sigma"]].values
-                ]
-                + [("%d" % c["zone_axis_id"]).rjust(5)]
-            )
+        row_fmt = "{:4}," * 3 + "{:11.2f}," * 2 + "{:5}"
+        for row in ref_list:
+            li.add_row(row_fmt.format(*row).split(","))
 
-        out = name
-        # out = '%s_dyn.cif_files' %name
-        doc.write_file(out)
-        print("file %s written " % out)
-        return out
+        doc.write_file(name)
+        logger.info(f"File {name} written")
+        return
