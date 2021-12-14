@@ -190,6 +190,11 @@ def preprocess(
 ) -> Tuple[List[flex.reflection_table], phil.scope_extract, List[str]]:
     reflections = observed.split_by_experiment_id()
 
+    if len(reflections) != len(experiments):
+        raise ValueError(
+            f"Unequal number of reflection tables {len(reflections)} and experiments {len(experiments)}"
+        )
+
     # Calculate necessary quantities
     for refl, experiment in zip(reflections, experiments):
         elist = ExperimentList([experiment])

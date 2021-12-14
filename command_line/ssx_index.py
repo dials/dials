@@ -31,7 +31,7 @@ from dials.algorithms.indexing.ssx.analysis import (
 )
 from dials.algorithms.indexing.ssx.processing import index
 from dials.util import log, show_mail_handle_errors
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
 try:
@@ -91,8 +91,18 @@ phil_scope.adopt_scope(
 
 @show_mail_handle_errors()
 def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
+    """
+    Run dev.dials.ssx_index as from the command line.
 
-    parser = OptionParser(
+    This program takes an imported experiment list and a reflection table
+    of strong spots and performs parallelised indexing for synchrotron
+    serial crystallography experiments. This is done by calling the regular
+    dials indexing code and capturing output to provide a html report, and
+    outputs a multi-image indexed.expt and indexed.refl file containing the
+    indexed data.
+    """
+
+    parser = ArgumentParser(
         usage="dev.dials.ssx_index imported.expt strong.refl [options]",
         read_experiments=True,
         read_reflections=True,
