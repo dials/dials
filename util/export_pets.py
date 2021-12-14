@@ -317,7 +317,7 @@ Virtual frame settings: number of merged frames:  {self.n_merged}
         )
 
     def _write_dyn_cif_pets(
-        self, name, lat_params, vol, lam, UBmatrix, uvws, ref_list, comment=""
+        self, name, lat_params, vol, lam, UBmatrix, uvws, ref_list, comment
     ):
         """
         - name : name of dataset
@@ -354,18 +354,6 @@ Virtual frame settings: number of merged frames:  {self.n_merged}
         values = np.hstack([lat_params, [vol, lam], UBmatrix.flatten(), [0]])
         for k, v in zip(pair, values):
             b.set_pair(k, "%.5f" % v)
-        if not comment:
-            comment = """;
-        data collection geometry: continuous rotation
-        dstarmax:  1.800
-        RC width:  0.00120
-        mosaicity:  0.210
-        rotation axis position:  230.391
-        reflection size:    8.000
-        Virtual frame settings: number of merged frames:  7
-                                step between frames:      5
-                                sum all intensities:      1
-        ;"""
         b.set_pair("_diffrn_measurement_details", comment)
 
         #### orientation info
