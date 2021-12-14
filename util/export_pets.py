@@ -253,14 +253,7 @@ class PETSOutput:
         self._set_virtual_frames()
 
         cif_filename = self.filename_prefix + "_dyn.cif_pets"
-        (
-            a,
-            b,
-            c,
-            alpha,
-            beta,
-            gamma,
-        ) = self.experiment.crystal.get_unit_cell().parameters()
+        cell_params = self.experiment.crystal.get_unit_cell().parameters()
         volume = self.experiment.crystal.get_unit_cell().volume()
         wavelength = self.experiment.beam.get_wavelength()
         UBmatrix = matrix.sqr(self.experiment.crystal.get_A()).as_numpy_array()
@@ -304,10 +297,10 @@ Virtual frame settings: number of merged frames:  {self.n_merged}
                 i_sum = r["intensity.sum.value"]
                 sig_i_sum = r["intensity.sum.sigma"]
                 ref_list.append([h, k, l, i_sum, sig_i_sum, frame_id + 1])
-        lat_params = (a, b, c, alpha, beta, gamma)
+
         self._write_dyn_cif_pets(
             cif_filename,
-            lat_params,
+            cell_params,
             volume,
             wavelength,
             UBmatrix,
