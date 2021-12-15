@@ -499,7 +499,7 @@ class _:
         n = np.arange(e.size)
         p1 = pd.DataFrame(dict(zip("hklen", (*hkl, e, n))), copy=False)
 
-        merged = pd.merge(p0, p1, on=["h", "k", "l", "e"], how="inner")
+        merged = pd.merge(p0, p1, on=["h", "k", "l", "e"], suffixes=[0, 1])
 
         n0 = cctbx.array_family.flex.size_t(merged.n0.values)
         n1 = cctbx.array_family.flex.size_t(merged.n1.values)
