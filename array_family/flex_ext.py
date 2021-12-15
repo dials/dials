@@ -503,8 +503,8 @@ class _:
 
         merged = pd.merge(p0, p1, on=["h", "k", "l", "e"], how="inner")
 
-        n0 = cctbx.array_family.flex.size_t(merged["n0"].to_numpy())
-        n1 = cctbx.array_family.flex.size_t(merged["n1"].to_numpy())
+        n0 = cctbx.array_family.flex.size_t(merged.n0.values)
+        n1 = cctbx.array_family.flex.size_t(merged.n1.values)
 
         return n0, n1
 
