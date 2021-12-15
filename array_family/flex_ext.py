@@ -473,7 +473,7 @@ class _:
 
     def match_by_hkle(
         self, other: dials_array_family_flex_ext.reflection_table
-    ) -> Tuple[cctbx.array_family.flex.size_t, cctbx.array_family.flex.size_t,]:
+    ) -> Tuple[2 * (cctbx.array_family.flex.size_t,)]:
         """
         Match reflections with another set of reflections by the h, k, l
         and entering values. Uses pandas dataframe merge method to match
