@@ -485,15 +485,10 @@ class _:
         """
 
         hkl = self["miller_index"].as_vec3_double().parts()
-        h0 = hkl[0].iround().as_numpy_array()
-        k0 = hkl[1].iround().as_numpy_array()
-        l0 = hkl[2].iround().as_numpy_array()
-        e0 = self["entering"].as_numpy_array()
-        n0 = np.array(range(len(e0)))
-
-        x0 = {"h": h0, "k": k0, "l": l0, "e": e0, "n0": n0}
-
-        p0 = pd.DataFrame(data=x0, columns=["h", "k", "l", "e", "n0"])
+        hkl = (part.as_numpy_array().astype(int) for part in hkl)
+        e = self["entering"].as_numpy_array()
+        n = np.arange(e.size)
+        p0 = pd.DataFrame(dict(zip("hklen", (*hkl, e, n))), copy=False)
 
         hkl = other["miller_index"].as_vec3_double().parts()
         h1 = hkl[0].iround().as_numpy_array()
