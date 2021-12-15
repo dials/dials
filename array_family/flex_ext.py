@@ -480,8 +480,11 @@ class _:
         the columns: assumes the key h, k, l, e is unique which is false
         if > 360 degree rotation.
 
-        :param other: reflection table to match against
-        :return: indices in self, indices in other for matches
+        Args:
+            other: reflection table to match against
+
+        Returns:
+            Indices in self, indices in other for matches
         """
 
         hkl = self["miller_index"].as_vec3_double().parts()
