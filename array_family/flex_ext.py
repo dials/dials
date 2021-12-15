@@ -491,15 +491,10 @@ class _:
         p0 = pd.DataFrame(dict(zip("hklen", (*hkl, e, n))), copy=False)
 
         hkl = other["miller_index"].as_vec3_double().parts()
-        h1 = hkl[0].iround().as_numpy_array()
-        k1 = hkl[1].iround().as_numpy_array()
-        l1 = hkl[2].iround().as_numpy_array()
-        e1 = other["entering"].as_numpy_array()
-        n1 = np.array(range(len(e1)))
-
-        x1 = {"h": h1, "k": k1, "l": l1, "e": e1, "n1": n1}
-
-        p1 = pd.DataFrame(data=x1, columns=["h", "k", "l", "e", "n1"])
+        hkl = (part.as_numpy_array().astype(int) for part in hkl)
+        e = other["entering"].as_numpy_array()
+        n = np.arange(e.size)
+        p1 = pd.DataFrame(dict(zip("hklen", (*hkl, e, n))), copy=False)
 
         merged = pd.merge(p0, p1, on=["h", "k", "l", "e"], how="inner")
 
