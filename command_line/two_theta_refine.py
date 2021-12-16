@@ -176,7 +176,7 @@ class Script:
     def filter_integrated_centroids(reflections):
         """Filter reflections to include only those with the integrated and the
         strong flag set, but only if there are apparently some integrated
-        reflections"""
+        and strong reflections"""
 
         orig_len = len(reflections)
         mask = reflections.get_flags(reflections.flags.integrated)
@@ -184,6 +184,8 @@ class Script:
             return reflections
         reflections = reflections.select(mask)
         mask = reflections.get_flags(reflections.flags.strong)
+        if mask.count(True) == 0:
+            return reflections
         reflections = reflections.select(mask)
 
         logger.info(
