@@ -14,6 +14,7 @@ from typing import List, Tuple
 
 import numpy as np
 from scipy.spatial.transform import Rotation
+from scipy.stats import linregress
 
 import cctbx
 import iotbx.mtz
@@ -24,6 +25,7 @@ from dxtbx.model import Beam, Crystal, Detector, Experiment, ExperimentList, Sca
 from dxtbx.model.goniometer import GoniometerFactory
 from scitbx import matrix
 
+from dials.algorithms.spot_prediction import ray_intersection
 from dials.array_family import flex
 from dials.util import log, show_mail_handle_errors, tabulate
 from dials.util.options import OptionParser
@@ -670,6 +672,96 @@ def create_experiments_from_mtz(
     return experiments
 
 
+def update_experiments_and_reflection_table(
+    experiments: ExperimentList, reflections: flex.reflection_table
+):
+    """Once both an experiment list and a reflection table are available,
+    the detector model can be updated by fitting from reflections, and the
+    mm position data can be set in reflections. This allows
+    dials.two_theta_refine to run on the imported data even if an image
+    template is not provided. The accuracy of the resulting geometry cannot
+    be guaranteed."""
+
+    # Set pixel size and panel origins
+    for i_expt, expt in enumerate(experiments):
+
+        sel = reflections["id"] == i_expt
+        ref = reflections.select(reflections["id"] == i_expt)
+
+        for i_panel, panel in enumerate(expt.detector):
+            if panel.get_pixel_size() != (0, 0):
+                continue
+
+            dn = matrix.col(panel.get_normal())
+            df = matrix.col(panel.get_fast_axis())
+            ds = matrix.col(panel.get_slow_axis())
+
+            # Calculate cosine of angles between s1 and detector normal
+            us0 = matrix.col(expt.beam.get_unit_s0())
+            if dn.dot(us0) < 0:
+                dn *= -1
+            s1 = ref["s1"].select(ref["panel"] == i_panel)
+            us1 = s1 / s1.norms()
+            cos_tilt = us1.dot(dn)
+
+            # Calculate the scale factor to project s1 onto the detector plane
+            scale = panel.get_distance() / cos_tilt
+            s1_projected = us1 * scale
+
+            # Get x, y positions in mm from the point of intersection with detector normal
+            x_mm = s1_projected.dot(df)
+            y_mm = s1_projected.dot(ds)
+
+            # Get x, y positions in pixels
+            x_px, y_px, _ = ref["xyzcal.px"].parts()
+
+            # Perform fit to get the origin and pixel size
+            x_fit = linregress(x_px, x_mm)
+            y_fit = linregress(y_px, y_mm)
+
+            pixel_size = round(x_fit.slope, 3), round(y_fit.slope, 3)
+            origin = (
+                panel.get_distance() * dn
+                + float(x_fit.intercept) * df
+                + float(y_fit.intercept) * ds
+            )
+
+            panel.set_frame(df, ds, origin)
+            panel.set_pixel_size(pixel_size)
+
+    # Update the mm positions
+    if "xyzobs.mm.value" not in reflections:
+        reflections["xyzcal.mm"] = flex.vec3_double(len(reflections))
+
+        for i_expt, expt in enumerate(experiments):
+            sel = reflections["id"] == i_expt
+            ref = reflections.select(reflections["id"] == i_expt)
+            x, y, z = ref["xyzcal.px"].parts()
+            ref["phi"] = expt.scan.get_angle_from_array_index(z)
+            ray_intersection(expt.detector, ref)
+
+            reflections["xyzcal.mm"].set_selected(sel, ref["xyzcal.mm"])
+
+        reflections["xyzobs.mm.value"] = reflections["xyzcal.mm"]
+
+    # Set dummy variances to allow refinement
+    if "xyzobs.mm.variance" not in reflections:
+        reflections["xyzobs.mm.variance"] = flex.vec3_double(len(reflections))
+
+        for i_expt, expt in enumerate(experiments):
+            sel = reflections["id"] == i_expt
+            ref = reflections.select(reflections["id"] == i_expt)
+            px_size = expt.detector[0].get_pixel_size()
+            im_width = expt.scan.get_oscillation()[1]
+            var_x = flex.double(len(ref), (px_size[0] / 2.0) ** 2)
+            var_y = flex.double(len(ref), (px_size[1] / 2.0) ** 2)
+            var_phi = flex.double(len(ref), (im_width / 2.0) ** 2)
+
+        reflections["xyzobs.mm.variance"].set_selected(
+            sel, flex.vec3_double(var_x, var_y, var_phi)
+        )
+
+
 @show_mail_handle_errors()
 def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     """Run the command-line script."""
@@ -713,6 +805,8 @@ def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
         table = create_reflection_table_from_mtz(unmerged_mtz, params, experiments)
     except ValueError as e:
         sys.exit(str(e))
+
+    update_experiments_and_reflection_table(experiments, table)
 
     logger.info(f"Saving extracted data to {params.output.reflections}")
     table.as_file(params.output.reflections)
