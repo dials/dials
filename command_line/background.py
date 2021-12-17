@@ -75,8 +75,9 @@ def run(args=None):
 
         matplotlib.use("agg")
 
-        import matplotlib.ticker as mticker
         from matplotlib import pyplot
+
+        from dials.util.matplotlib_utils import resolution_formatter
 
         fig = pyplot.figure(figsize=params.output.size_inches)
         ax = fig.add_subplot(111)
@@ -127,12 +128,7 @@ def run(args=None):
                     label = f"image {indx}" if len(images) > 1 else ""
                 ds2 = 1 / flex.pow2(d)
                 ax.plot(ds2, I, label=label)
-            xticks = ax.get_xticks().tolist()
-            ax.xaxis.set_major_locator(mticker.FixedLocator(xticks))
-            x_tick_labs = [
-                "" if e <= 0.0 else f"{math.sqrt(1.0 / e):.2f}" for e in xticks
-            ]
-            ax.set_xticklabels(x_tick_labs)
+                ax.xaxis.set_major_formatter(resolution_formatter)
 
     if params.output.plot:
         try:
