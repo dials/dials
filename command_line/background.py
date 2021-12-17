@@ -128,7 +128,7 @@ def run(args=None):
                     label = f"image {indx}" if len(images) > 1 else ""
                 ds2 = 1 / flex.pow2(d)
                 ax.plot(ds2, I, label=label)
-                ax.xaxis.set_major_formatter(resolution_formatter)
+            ax.xaxis.set_major_formatter(resolution_formatter)
 
     if params.output.plot:
         try:
