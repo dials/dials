@@ -45,7 +45,7 @@ conda-forge::requests
 conda-forge::scikit-learn
 conda-forge::scipy
 conda-forge::scons
-conda-forge::setuptools
+conda-forge::setuptools<60
 conda-forge::six
 conda-forge::sphinx>=4
 conda-forge::sqlite
