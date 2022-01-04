@@ -265,6 +265,12 @@ def combine_intensities(reflections, Imid):
 
 
 def _calculate_suitable_combined_intensities(scaler, max_key):
+    if max_key == 1:
+        if "intensity.sum.value" not in scaler.reflection_table:
+            if "intensity.prf.value" in scaler.reflection_table:
+                max_key = 0
+            else:
+                raise ValueError("No suitable intensities found")
     reflections = scaler.reflection_table.select(scaler.suitable_refl_for_scaling_sel)
     return combine_intensities(reflections, max_key)
 
