@@ -2,7 +2,7 @@ import iotbx.phil
 
 import dials.util
 from dials.array_family import flex
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 
 help_message = """
 Small modifications to an indexed spot list to allow it to be treated as if
@@ -46,7 +46,8 @@ def indexed_as_integrated(reflections, params, experiments):
 def run(args=None):
     usage = "dials.indexed_as_integrated [options] indexed.refl indexed.expt"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
+        args=args,
         usage=usage,
         phil=phil_scope,
         read_reflections=True,
@@ -65,8 +66,8 @@ def run(args=None):
         parser.print_help()
         return
 
-    stronger = indexed_as_integrated(reflections[0], params, experiments)
-    stronger.as_file(params.output.reflections)
+    pseudo_integrated = indexed_as_integrated(reflections[0], params, experiments)
+    pseudo_integrated.as_file(params.output.reflections)
 
 
 if __name__ == "__main__":
