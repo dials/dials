@@ -1,22 +1,32 @@
+import logging
+
 import iotbx.phil
 
 import dials.util
 from dials.array_family import flex
+from dials.util import log
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
+from dials.util.version import dials_version
 
 help_message = """
 Small modifications to an indexed spot list to allow it to be treated as if
-it were integrated, for rapid feedback analysis.
+it were integrated, for rapid feedback analysis. Do not use output data for
+structure solution or refinement.
 """
 
 phil_scope = iotbx.phil.parse(
     """
 output {
-  reflections = indexed_plus.refl
+  reflections = pseudo_integrated.refl
+    .type = path
+  log = "dials.indexed_as_integrated.log"
     .type = path
 }
 """
 )
+
+
+logger = logging.getLogger("dials.command_line.indexed_as_integrated")
 
 
 def indexed_as_integrated(reflections, params, experiments):
@@ -29,6 +39,10 @@ def indexed_as_integrated(reflections, params, experiments):
     reflections = reflections.select(sel)
     all = flex.bool(reflections.size(), True)
     reflections.set_flags(all, reflections.flags.integrated_sum)
+
+    logger.info("")
+    logger.info(f"Saved {sel.count(True)} of {sel.size()} reflections")
+    logger.info("")
 
     # add resolution to reflections
 
@@ -57,6 +71,14 @@ def run(args=None):
 
     params, options = parser.parse_args(args, show_diff_phil=True)
 
+    log.config(logfile=params.output.log)
+    logger.info(dials_version())
+    logger.info("")
+
+    logger.info("----------------------------------------------------------")
+    logger.info("Do not use the output for structure solution or refinement")
+    logger.info("----------------------------------------------------------")
+
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
@@ -65,8 +87,14 @@ def run(args=None):
         parser.print_help()
         return
 
-    pseudo_integrated = indexed_as_integrated(reflections[0], params, experiments)
+    reflections = reflections[0]
+
+    pseudo_integrated = indexed_as_integrated(reflections, params, experiments)
     pseudo_integrated.as_file(params.output.reflections)
+
+    logger.info("")
+    logger.info(f"Saved pseudo-integrated data to: {params.output.reflections}")
+    logger.info("")
 
 
 if __name__ == "__main__":
