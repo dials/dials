@@ -40,9 +40,7 @@ def indexed_as_integrated(reflections, params, experiments):
     all = flex.bool(reflections.size(), True)
     reflections.set_flags(all, reflections.flags.integrated_sum)
 
-    logger.info("")
-    logger.info(f"Saved {sel.count(True)} of {sel.size()} reflections")
-    logger.info("")
+    logger.info(f"\nSaved {sel.count(True)} of {sel.size()} reflections\n")
 
     # add resolution to reflections
 
@@ -69,15 +67,15 @@ def run(args=None):
         epilog=help_message,
     )
 
-    params, options = parser.parse_args(args, show_diff_phil=True)
+    params, _ = parser.parse_args(args, show_diff_phil=True)
 
     log.config(logfile=params.output.log)
-    logger.info(dials_version())
-    logger.info("")
-
-    logger.info("----------------------------------------------------------")
-    logger.info("Do not use the output for structure solution or refinement")
-    logger.info("----------------------------------------------------------")
+    logger.info(
+        dials_version()
+        + "\n\n----------------------------------------------------------\n"
+        "Do not use the output for structure solution or refinement"
+        "\n----------------------------------------------------------"
+    )
 
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
@@ -92,9 +90,7 @@ def run(args=None):
     pseudo_integrated = indexed_as_integrated(reflections, params, experiments)
     pseudo_integrated.as_file(params.output.reflections)
 
-    logger.info("")
-    logger.info(f"Saved pseudo-integrated data to: {params.output.reflections}")
-    logger.info("")
+    logger.info(f"\nSaved pseudo-integrated data to: {params.output.reflections}\n")
 
 
 if __name__ == "__main__":
