@@ -1,10 +1,11 @@
+import argparse
 import copy
 import itertools
-import optparse
 import os
 import pickle
 import sys
 import traceback
+import warnings
 from collections import defaultdict, namedtuple
 from glob import glob
 
@@ -613,7 +614,7 @@ class PhilCommandParser:
         return input_phil_scope
 
 
-class OptionParserBase(optparse.OptionParser):
+class ArgumentParserBase(argparse.ArgumentParser):
     """The base class for the option parser."""
 
     def __init__(self, config_options=False, sort_options=False, **kwargs):
@@ -625,11 +626,11 @@ class OptionParserBase(optparse.OptionParser):
         """
 
         # Initialise the option parser
-        super().__init__(**kwargs)
+        super().__init__(add_help=False, **kwargs)
 
         # Add an option to show configuration parameters
         if config_options:
-            self.add_option(
+            self.add_argument(
                 "-c",
                 "--show-config",
                 action="store_true",
@@ -637,33 +638,33 @@ class OptionParserBase(optparse.OptionParser):
                 dest="show_config",
                 help="Show the configuration parameters.",
             )
-            self.add_option(
+            self.add_argument(
                 "-a",
                 "--attributes-level",
                 default=0,
-                type="int",
+                type=int,
                 dest="attributes_level",
                 help="Set the attributes level for showing configuration parameters",
             )
-            self.add_option(
+            self.add_argument(
                 "-e",
                 "--expert-level",
-                type="int",
+                type=int,
                 default=0,
                 dest="expert_level",
                 help="Set the expert level for showing configuration parameters",
             )
-            self.add_option(
+            self.add_argument(
                 "--export-autocomplete-hints",
                 action="store_true",
                 default=False,
                 dest="export_autocomplete_hints",
-                help=optparse.SUPPRESS_HELP,
+                help=argparse.SUPPRESS,
             )
 
         # Add an option to sort
         if sort_options:
-            self.add_option(
+            self.add_argument(
                 "-s",
                 "--sort",
                 action="store_true",
@@ -672,8 +673,18 @@ class OptionParserBase(optparse.OptionParser):
                 help="Sort the arguments",
             )
 
+        # Set a help parameter
+        self.add_argument(
+            "-h",
+            "--help",
+            action="count",
+            default=0,
+            dest="help",
+            help="Show this help message and exit. Can be specified multiple times to increase verbosity.",
+        )
+
         # Set a verbosity parameter
-        self.add_option(
+        self.add_argument(
             "-v",
             action="count",
             default=0,
@@ -684,14 +695,14 @@ class OptionParserBase(optparse.OptionParser):
         # Add an option for PHIL file to parse - PHIL files passed as
         # positional arguments are also read but this allows the user to
         # explicitly specify STDIN
-        self.add_option(
+        self.add_argument(
             "--phil",
             action="append",
             metavar="FILE",
             help="PHIL files to read. Pass '-' for STDIN. Can be specified multiple times, but duplicates ignored.",
         )
 
-    def parse_args(self, args=None, quick_parse=False):
+    def parse_known_args(self, args=None, quick_parse=False):
         """
         Parse the command line arguments and get system configuration.
 
@@ -702,7 +713,7 @@ class OptionParserBase(optparse.OptionParser):
         # Parse the command line arguments, this will separate out
         # options (e.g. -o, --option) and positional arguments, in
         # which phil options will be included.
-        options, args = super().parse_args(args=args)
+        options, args = super().parse_known_args(args=args)
 
         # Read any argument-specified PHIL file. Ignore duplicates.
         if options.phil:
@@ -731,9 +742,9 @@ class OptionParserBase(optparse.OptionParser):
         return self.epilog
 
 
-class OptionParser(OptionParserBase):
+class ArgumentParser(ArgumentParserBase):
     """A class to parse command line options and get the system configuration.
-    The class extends optparse.OptionParser to include the reading of phil
+    The class extends argparse.ArgumentParser to include the reading of phil
     parameters."""
 
     def __init__(
@@ -797,20 +808,33 @@ class OptionParser(OptionParserBase):
         # Parse the command line arguments, this will separate out
         # options (e.g. -o, --option) and positional arguments, in
         # which phil options will be included.
-        options, args = super().parse_args(args=args, quick_parse=quick_parse)
+        options, args = super().parse_known_args(args=args, quick_parse=quick_parse)
+
+        if options.help:
+            self.print_help()
 
         # Show config
         if hasattr(options, "show_config") and options.show_config:
+            show_config = True
+            attributes_level = options.attributes_level
+            expert_level = options.expert_level
+        elif options.help:
+            show_config = True
+            attributes_level = options.verbose
+            expert_level = options.help - 1
+        else:
+            show_config = False
+
+        if show_config:
             print(
                 "Showing configuration parameters with:\n"
-                "  attributes_level = %d\n"
-                "  expert_level = %d\n"
-                % (options.attributes_level, options.expert_level)
+                f"  attributes_level = {attributes_level}\n"
+                f"  expert_level = {expert_level}\n"
             )
             print(
                 self.phil.as_str(
-                    expert_level=options.expert_level,
-                    attributes_level=options.attributes_level,
+                    expert_level=expert_level,
+                    attributes_level=attributes_level,
                 )
             )
             exit(0)
@@ -952,14 +976,14 @@ class OptionParser(OptionParserBase):
         """
         return text.replace("::", ":")
 
-    def format_help(self, formatter=None):
+    def format_help(self):
         """
         Format the help string
 
         :param formatter: The formatter to use
         :return: The formatted help text
         """
-        result = super().format_help(formatter=formatter)
+        result = super().format_help()
         return self._strip_rst_markup(result)
 
     def _export_autocomplete_hints(self):
@@ -1080,6 +1104,17 @@ class OptionParser(OptionParserBase):
         print('    _dials_autocomplete_values="%s";;' % " ".join(sorted(toplevelset)))
         print(" esac")
         print("}")
+
+
+class OptionParser(ArgumentParser):
+    def __init__(self, *args, **kwargs):
+        # Backwards compatibility 2021-11-10
+        warnings.warn(
+            "OptionParser will be deprecated in future, use ArgumentParser instead",
+            PendingDeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)
 
 
 def flatten_reflections(filename_object_list):

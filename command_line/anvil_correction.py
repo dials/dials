@@ -38,7 +38,7 @@ from dials.util.multi_dataset_handling import (
     parse_multiple_datasets,
     sort_tables_to_experiments_order,
 )
-from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
+from dials.util.options import ArgumentParser, flatten_experiments, flatten_reflections
 
 Vector = Sequence[SupportsFloat]
 
@@ -96,18 +96,18 @@ def goniometer_rotation(
     the lab frame that the sample was in when the reflection was measured.
 
     Following the DXTBX model of a goniometer, whereby a scan is only possible
-    around one physical axis at a time, the rotation operator (conventionally
-    denoted R, here denoted R' to avoid confusion with the notation of
-    dxtbx/model/goniometer.h) can be calculated as R' = S ∘ R ∘ F.
+    around one physical axis at a time, the goniostat rotation operator can be
+    represented as
+      R = S ∘ R' ∘ F.
     Here:
         * S is the static 'setting rotation', the operator denoting the position of all
         parent axes of the scan axis, which hence defines the orientation of the scan
         axis;
-        * R is the the operator denoting the scan rotation as if it were performed with
-        all parent axes at zero datum, it has a different value for each reflection,
-        recording the scan position corresponding to each reflection centroid;
+        * R' is the the operator denoting the scan rotation.  It has a different
+        value for each reflection, recording the scan position corresponding to each
+        reflection centroid;
         * F is the static 'fixed rotation', denoting the orientation of all child axes
-        of the scan axis as if they were performed with all other axes at zero datum.
+        of the scan axis.
 
     Args:
         experiment:  The DXTBX experiment object corresponding to the scan.
@@ -277,7 +277,7 @@ def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     """
     usage = "dials.anvil_correction [options] integrated.expt integrated.refl"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil,
         read_reflections=True,

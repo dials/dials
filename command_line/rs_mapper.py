@@ -7,7 +7,7 @@ from scitbx.array_family import flex
 import dials.algorithms.rs_mapper as recviewer
 import dials.util
 from dials.util import Sorry
-from dials.util.options import OptionParser, flatten_experiments
+from dials.util.options import ArgumentParser, flatten_experiments
 
 help_message = """
 This program reconstructs reciprocal space from diffraction images. The orientation matrix is not necessary; only diffraction geometry is required.
@@ -65,7 +65,7 @@ class Script:
         )
 
         # Initialise the base class
-        self.parser = OptionParser(
+        self.parser = ArgumentParser(
             usage=usage, phil=phil_scope, epilog=help_message, read_experiments=True
         )
 

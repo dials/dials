@@ -1,0 +1,1 @@
+tests/util/test_nexus.py: mark known failing test as xfail

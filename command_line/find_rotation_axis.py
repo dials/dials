@@ -28,7 +28,7 @@ import dials.util.log
 from dials.array_family import flex
 
 # from dials.array_family import flex
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
 # Define a logger
@@ -330,7 +330,7 @@ def run(args=None, phil=phil_scope):
 
     usage = "dials.find_rotation_axis [options] imported.expt strong.refl"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil,
         read_reflections=True,

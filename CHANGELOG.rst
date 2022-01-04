@@ -1,3 +1,30 @@
+DIALS 3.7.2 (2021-12-02)
+========================
+
+Features
+--------
+
+- ``dials.integrate``: When determining available memory, take into account ``MemoryProvisioned`` from HTCondor machine ad if the ``_CONDOR_JOB_AD`` environment variable is set.
+  ``nproc=auto``: Take into account ``CpusProvisioned`` from HTCondor machine ad. (`#1943 <https://github.com/dials/dials/issues/1943>`_)
+
+
+Bugfixes
+--------
+
+- Read ``_CONDOR_JOB_AD`` not ``_CONDOR_MACHINE_AD`` (`#1945 <https://github.com/dials/dials/issues/1945>`_)
+
+
+DIALS 3.7.1 (2021-11-17)
+========================
+
+Bugfixes
+--------
+
+- ``dials.export``: No longer allow (erroneous) MTZ export for multiple experiments with multiple space groups. (`#1915 <https://github.com/dials/dials/issues/1915>`_)
+- ``dials.export``: No longer fails for XDS_ASCII and SADABS export with ``intensity=auto``. (`#1926 <https://github.com/dials/dials/issues/1926>`_)
+- ``dials.report``: Fix broken json output option. Include more graphs in json output. (`#1932 <https://github.com/dials/dials/issues/1932>`_)
+
+
 DIALS 3.7.0 (2021-11-01)
 ========================
 

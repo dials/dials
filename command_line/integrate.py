@@ -35,7 +35,7 @@ from dials.algorithms.profile_model.factory import ProfileModelFactory
 from dials.array_family import flex
 from dials.util import show_mail_handle_errors
 from dials.util.command_line import heading
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.slice import slice_crystal
 from dials.util.version import dials_version
 
@@ -664,7 +664,7 @@ def run(args=None, phil=working_phil):
     usage = "usage: dials.integrate [options] models.expt"
 
     # Create the parser
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil,
         epilog=__doc__,

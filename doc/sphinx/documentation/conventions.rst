@@ -235,11 +235,83 @@ Summary of coordinate frames
    image in number of pixels (starting 0,0 at the origin).
 
 
+The DXTBX goniometer model
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The following information is likely only to be of interest to developers of
+DIALS, since it is concerned with internal conventions for the
+representation of the goniostat rotation operator.
+
+When one performs a rotation diffraction experiment, the goniostat rotation
+operator :math:`\mathbf{R}`, which was introduced in :eq:`diffractometer`,
+represents the rotation of the sample in the real-space laboratory frame.
+Equivalently, it relates the laboratory frame to the rotated real-space
+coordinate system of the sample.  By numbering the physical motors of a
+goniometer such that motor 1 is mounted to the laboratory floor, motor 2
+is mounted on motor 1, motor 3 is mounted on motor 2, etc.,
+:math:`\mathbf{R}` can be expressed as a composition of rotation operators,
+one for each motor,
+
+.. math::
+
+   \mathbf{R} = \mathbf{R}_1 \circ \mathbf{R}_2 \circ \mathbf{R}_3 \circ \cdots \,\text{.}
+
+It is useful to represent :math:`\mathbf{R}` this way because, in practice,
+the position of a gonimometer is usually recorded as an angular displacement
+for each motor :math:`i`, which gives the magnitude of the rotation
+:math:`\mathbf{R}_i`, combined with prior knowledge of the orientation of
+each motor's axis in the laboratory frame when the goniometer is at its zero
+datum, which gives the axis vector of :math:`\mathbf{R}_i`.
+
+DIALS uses the DXTBX package to handle the geometry of diffraction
+experiments.  In DXTBX, it is assumed that only one goniometer motor will
+turn during a measurement scan.  Numbering that motor :math:`n`, the various
+operators :math:`\mathbf{R}_i` are grouped into three,
+
+.. math::
+   :label: dxtbx_operators
+
+   \mathbf{R} = \mathbf{S} \circ \mathbf{R}' \circ \mathbf{F} \,\text{,}
+
+where :math:`\mathbf{R}' = \mathbf{R}_n` is the scanning axis rotation and
+:math:`\mathbf{S}` and :math:`\mathbf{F}` are combined rotation operators,
+
+.. math::
+
+   \begin{eqnarray}
+      \mathbf{S} &= \cdots \circ \mathbf{R}_{n - 1} \,\text{;} \\
+      \mathbf{F} &= \mathbf{R}_{n + 1} \circ \cdots \,\text{.}
+   \end{eqnarray}
+
+:math:`\mathbf{S}` is referred to as the 'setting rotation' (not to be
+confused with the crystal setting operator :math:`\mathbf{A}`) and
+represents the combined rotation of all motors between the laboratory floor
+and the scanning motor :math:`n`.  The setting rotation is so-named because
+it sets the orientation of the axis of :math:`n`.  :math:`\mathbf{F}` is
+referred to as the 'fixed rotation' and represents the combined rotation of
+all axes between :math:`n` and the sample.  Both :math:`\mathbf{S}` and
+:math:`\mathbf{F}` are constant throughout a scan, since they represent
+motors whose positions are set before starting the scan and remain fixed
+throughout the scan.
+
+For example, a common diffractometer apparatus is the three-circle :math:`κ`
+geometry.  In this arrangement, the :math:`ω` motor is fixed to the
+laboratory floor, the :math:`κ` motor is mounted on :math:`ω`, and the
+:math:`φ` motor is mounted on :math:`κ` and holds the sample mount.  During
+a typical rotation scan, either :math:`φ` or :math:`ω` will rotate, while
+the other two axes are held in a fixed orientation, chosen so as to explore
+a particular region of reciprocal space.  In the case of a :math:`φ` scan,
+:math:`\mathbf{S} = \mathbf{R}_ω \circ \mathbf{R}_κ`,
+:math:`\mathbf{R}' = \mathbf{R}_φ` and :math:`\mathbf{F} = 𝟙`.  In the case
+of an :math:`ω` scan, :math:`\mathbf{S} = 𝟙`,
+:math:`\mathbf{R}' = \mathbf{R}_ω` and
+:math:`\mathbf{F} = \mathbf{R}_κ \circ \mathbf{R}_φ`.
+
 .. rubric:: References
 
 .. [#Bernstein2006] `Bernstein, H. J. in Int. Tables Crystallogr. 199–205 (IUCr, 2006). <http://it.iucr.org/Ga/ch3o7v0001/>`_
 .. [#Busing1967] Busing, W. R. & Levy, H. A. Angle calculations for 3- and 4-circle X-ray and neutron diffractometers. Acta Crystallogr. 22, 457–464 (1967).
-.. [#Giacovazzo2002] Giacovazzo, C. Fundamentals of Crystallography. (Oxofrd University Press, USA, 2002).
+.. [#Giacovazzo2002] Giacovazzo, C. Fundamentals of Crystallography. (Oxford University Press, USA, 2002).
 .. [#GrosseKunstleve2002] Grosse-Kunstleve, R. W., Sauter, N. K., Moriarty, N. W. & Adams, P. D. The Computational Crystallography Toolbox: crystallographic algorithms in a reusable software framework. J. Appl. Crystallogr. 35, 126–136 (2002).
 .. [#Hammersley2006] `Hammersley, A. P., Bernstein, H. J. & Westbrook, D. in Int. Tables Crystallogr. 444–458 (IUCr, 2006). <http://it.iucr.org/Ga/ch4o6v0001/>`_
 .. [#Paciorek1999] Paciorek, W. A., Meyer, M. & Chapuis, G. On the geometry of a modern imaging diffractometer. Acta Crystallogr. Sect. A Found. Crystallogr. 55, 543–557 (1999).

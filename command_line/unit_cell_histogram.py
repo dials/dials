@@ -10,7 +10,7 @@ from scitbx.math import five_number_summary
 import dials.util
 from dials.algorithms.clustering.observers import uc_params_from_experiments
 from dials.util import log
-from dials.util.options import OptionParser, flatten_experiments
+from dials.util.options import ArgumentParser, flatten_experiments
 from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.unit_cell_histogram")
@@ -63,7 +63,7 @@ def outlier_selection(uc_params, iqr_ratio=1.5):
 def run(args=None):
     usage = "dials.unit_cell_histogram [options] models.expt"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_experiments=True,

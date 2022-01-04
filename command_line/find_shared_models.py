@@ -6,7 +6,7 @@ from dxtbx.imageset import ImageSequence
 from libtbx.phil import parse
 
 from dials.util import log, show_mail_handle_errors, tabulate
-from dials.util.options import OptionParser, flatten_experiments
+from dials.util.options import ArgumentParser, flatten_experiments
 from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.find_shared_models")
@@ -44,7 +44,7 @@ class Script:
         usage = "dials.find_shared_models [options] [param.phil] models.expt"
 
         # Initialise the base class
-        self.parser = OptionParser(
+        self.parser = ArgumentParser(
             usage=usage,
             phil=phil_scope,
             epilog=help_message,

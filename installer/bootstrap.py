@@ -994,7 +994,7 @@ def update_sources(options):
         for source, branch in (
             ("cctbx/annlib_adaptbx", "master"),
             ("cctbx/cctbx_project", "master"),
-            ("cctbx/dxtbx", "main"),
+            ("dials/dxtbx", "main"),
             ("dials/annlib", "master"),
             ("dials/cbflib", "master"),
             ("dials/ccp4io", "master"),

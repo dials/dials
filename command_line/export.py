@@ -468,13 +468,16 @@ def export_json(params, experiments, reflections):
 
 @show_mail_handle_errors()
 def run(args=None):
-    from dials.util.options import OptionParser, reflections_and_experiments_from_files
+    from dials.util.options import (
+        ArgumentParser,
+        reflections_and_experiments_from_files,
+    )
     from dials.util.version import dials_version
 
     usage = "dials.export models.expt reflections.refl [options]"
 
     # Create the option parser
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         read_experiments=True,
         read_reflections=True,
@@ -510,7 +513,7 @@ def run(args=None):
     # do auto interpreting of intensity choice:
     # note that this may still fail certain checks further down the processing,
     # but these are the defaults to try
-    if params.intensity in ([None], [Auto], ["auto"]) and reflections:
+    if params.intensity in ([None], [Auto], ["auto"], Auto) and reflections:
         if ("intensity.scale.value" in reflections[0]) and (
             "intensity.scale.variance" in reflections[0]
         ):
@@ -545,7 +548,8 @@ def run(args=None):
     try:
         exporter(params, experiments, reflections)
     except Exception as e:
-        sys.exit(e)
+        logger.error(f"Error: {e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

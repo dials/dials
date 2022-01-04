@@ -8,7 +8,7 @@ import iotbx.phil
 from dxtbx.model import ExperimentList
 
 import dials.util
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 
 phil_scope = iotbx.phil.parse(
     """
@@ -31,7 +31,7 @@ output {
 def run(args=None):
     usage = "dev.dials.csv [options] imported.expt strong.refl output.csv=rl.csv"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_experiments=True,

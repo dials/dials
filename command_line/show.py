@@ -186,11 +186,14 @@ def run(args=None):
 
     dials.util.log.print_banner()
 
-    from dials.util.options import OptionParser, reflections_and_experiments_from_files
+    from dials.util.options import (
+        ArgumentParser,
+        reflections_and_experiments_from_files,
+    )
 
     usage = "dials.show [options] models.expt | image_*.cbf"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_experiments=True,

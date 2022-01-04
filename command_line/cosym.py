@@ -27,7 +27,7 @@ from dials.util.multi_dataset_handling import (
     update_imageset_ids,
 )
 from dials.util.observer import Subject
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.cosym")
@@ -304,7 +304,7 @@ Examples::
 def run(args=None):
     usage = "dials.cosym [options] models.expt observations.refl"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_reflections=True,

@@ -13,7 +13,7 @@ import dials.util
 from dials.algorithms.indexing.assign_indices import AssignIndicesGlobal
 from dials.array_family import flex
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 
 help_message = """
 
@@ -160,7 +160,7 @@ def run(args=None):
 
     usage = "dials.reindex [options] indexed.expt indexed.refl"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_reflections=True,
