@@ -47,7 +47,6 @@ def run(args=None):
     usage = "dials.indexed_as_integrated [options] indexed.refl indexed.expt"
 
     parser = ArgumentParser(
-        args=args,
         usage=usage,
         phil=phil_scope,
         read_reflections=True,
