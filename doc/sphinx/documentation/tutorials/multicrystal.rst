@@ -8,13 +8,13 @@ The actual *processing* of multi-crystal data is essentially no
 different to processing regular rotation data in the first instance -
 though there are some potential differences in how you handle the data,
 by and large the process for an individual sweep is straightforward. The
-work comes in identifying which subsets of data (e.g. which crystals, or
+work comes in identifying which subsets of data (e.g. which crystals, or
 subsets of data from crystals) to merge into the final data set. This
 tutorial covers the basics of how to use DIALS tools to make these
 choices.
 
 One particular issue with multi-crystal data processing is the
-“bookkeeping” i.e. keeping track of individual data sets, which can
+“bookkeeping” i.e. keeping track of individual data sets, which can
 become cumbersome when the numbers are large. This tutorial is aimed at
 helping you to use the tools at your disposal to process such data with
 the minimum of 🤯.
@@ -33,7 +33,7 @@ recorded using the ``zoo`` system with an Eiger 9M detector, and appear
 in the data *files* as 3,100 images which we have to interpret as 31 x
 100 image @ 0.1° / frame data sets. The data are from small samples of
 tetragonal lysozyme (unit cell ~ 78, 78, 38, 90, 90, 90, space group
-P43212), though we won’t use that information from the outset.
+P43212), though we won't use that information from the outset.
 
 The mode of data collection makes these data a little “special” so when
 importing care must be taken to treat the 31 x 100 image data sets as
@@ -42,7 +42,7 @@ etc. is necessary. The data were taken from a single loop, which was
 raster scanned to identify the sample positions then collected using the
 ZOO system:
 
-.. figure:: ./images/loop.jpg
+.. figure:: https://dials.github.io/images/br-lyso-multi/loop.jpg
    :alt: Loop image
 
    Loop image
@@ -55,8 +55,8 @@ hundreds of files and will involve running similar looking scaling tasks
 on several occasions so care will need to be taken on how you organise
 yourself.
 
-I’ve chosen to present the processing as directories ``sweep00`` to
-``sweep30`` (i.e. 31 directories, using computer counting) and then
+I've chosen to present the processing as directories ``sweep00`` to
+``sweep30`` (i.e. 31 directories, using computer counting) and then
 ``combine0-9`` for combining first 10, ``combine0-19`` for first 20 etc.
 Any other organisation will do, but these need to be consistent.
 
@@ -68,11 +68,11 @@ assumptions. For this the following “spell” is appropriate:
 
 ::
 
-   for ((j=0;j<31;j++)); 
-   do 
+   for ((j=0;j<31;j++));
+   do
      mkdir sweep-$(printf %02d $j)
      cd sweep-$(printf %02d $j)
-     dials.import ../../*master* image_range=$((100 * j + 1)),$((100 * j + 100)) 
+     dials.import ../../*master* image_range=$((100 * j + 1)),$((100 * j + 100))
      dials.find_spots imported.expt
      dials.index imported.expt strong.refl
      dials.refine indexed.expt indexed.refl
@@ -131,12 +131,12 @@ and: - maps all back to P1 - checks them for consistency in unit cell -
 determines the maximum possible lattice symmetry, list of possible
 operations - tests all operations against all pairs of data sets -
 decides those that apply which are space group operations - those which
-do not apply are “twinning operations” i.e. indexing ambiguity - resolve
+do not apply are “twinning operations” i.e. indexing ambiguity - resolve
 ambiguity and output data consistently indexed in the correct space
 group
 
 In this case the correct space group is the same as the lattice symmetry
-i.e. P4/mmm so there is no residual ambiguity. The output gives an
+i.e. P4/mmm so there is no residual ambiguity. The output gives an
 indication of this:
 
 ::
@@ -197,7 +197,7 @@ the files they are *still* 10 sweeps. The first scaling output has:
 
    Resolution limit suggested from CC½ fit (limit CC½=0.3): 1.42
 
-               -------------Summary of merging statistics--------------           
+               -------------Summary of merging statistics--------------
 
                                                Suggested   Low    High  Overall
    High resolution limit                           1.42    3.87    1.42    1.09
@@ -215,15 +215,15 @@ the files they are *still* 10 sweeps. The first scaling output has:
    Anomalous completeness                         95.4    93.6    96.3    70.9
    Anomalous multiplicity                          4.0     4.4     4.1     3.4
    Anomalous correlation                         0.165   0.278  -0.039   0.125
-   Anomalous slope                               0.275                        
-   dF/F                                          0.095                        
-   dI/s(dI)                                      0.421                        
+   Anomalous slope                               0.275
+   dF/F                                          0.095
+   dI/s(dI)                                      0.421
    Total observations                           167233    9155    8507  247651
    Total unique                                  22555    1278    1104   42048
 
 indicating that we have an almost complete data set already, though the
 high resolution limit is a little enthusiastic. Setting it for this
-analysis with e.g. ``d_min=1.45`` will allow focus on the key point of
+analysis with e.g. ``d_min=1.45`` will allow focus on the key point of
 isomorphism etc. - to this limit we have:
 
 ::
@@ -308,7 +308,7 @@ see:
 
    Resolution limit suggested from CC½ fit (limit CC½=0.3): 1.48
 
-               -------------Summary of merging statistics--------------           
+               -------------Summary of merging statistics--------------
 
                                                Suggested   Low    High  Overall
    High resolution limit                           1.48    4.02    1.48    1.45
@@ -326,13 +326,13 @@ see:
    Anomalous completeness                         99.9    99.9    99.9    99.9
    Anomalous multiplicity                          8.0     8.7     8.0     8.0
    Anomalous correlation                         0.213   0.371   0.080   0.240
-   Anomalous slope                               0.338                        
-   dF/F                                          0.086                        
-   dI/s(dI)                                      0.549                        
+   Anomalous slope                               0.338
+   dF/F                                          0.086
+   dI/s(dI)                                      0.549
    Total observations                           301412   16640   15140  321968
    Total unique                                  20324    1149     995   21649
 
-i.e. somehow adding more data has *reduced* the overall resolution
+i.e. somehow adding more data has *reduced* the overall resolution
 limit. Looking at the plots in ``dials.scale.html`` we see that the
 R-merge value is rather high for some of the sweeps indicating that they
 do not agree well with the overall data. R-merge is however not a good
@@ -396,9 +396,9 @@ excluded from scaling with ``exclude_datasets=15`` giving:
    Anomalous completeness                         99.9    99.9    99.8    99.9
    Anomalous multiplicity                          7.6     8.3     7.7     7.6
    Anomalous correlation                         0.196   0.153  -0.067   0.222
-   Anomalous slope                               0.316                        
-   dF/F                                          0.088                        
-   dI/s(dI)                                      0.522                        
+   Anomalous slope                               0.316
+   dF/F                                          0.088
+   dI/s(dI)                                      0.522
    Total observations                           300879   16563   15320  304888
    Total unique                                  21363    1203    1040   21637
 
@@ -433,7 +433,7 @@ giving:
 It is *critical* to note that once a data set has been excluded it stays
 excluded if you work from the output of ``dials.scale``. In the process
 we are working through here this is good as you have a realistic idea of
-how the data look, but once you’re done collecting data it may be worth
+how the data look, but once you're done collecting data it may be worth
 revisiting this.
 
 Sets 20-29
@@ -510,7 +510,7 @@ giving:
    Dataset: 20, ΔCC½: 1.321
    Dataset: 10, ΔCC½: 1.422
 
-This is probably a good indicator that set 18 is *not good* so let’s
+This is probably a good indicator that set 18 is *not good* so let's
 remove it:
 
 ::
@@ -547,7 +547,7 @@ By this point there is a good chance you are becoming “snow blind” from
 all the numbers in the output and they cease to have meaning - and you
 could not be blamed for this. Once you have complete data which appears
 to be internally isomorphous, actually attempting structure solution on
-the processed data will be key, e.g. trying to find the heavy atom
+the processed data will be key, e.g. trying to find the heavy atom
 substructure or similar, as a more robust measure.
 
 Explorations of Reciprocal Space
@@ -563,7 +563,7 @@ the data sets are adding:
 
    dials.reciprocal_lattice_viewer scaled.*
 
-.. figure:: ./images/rlv-all.png
+.. figure:: https://dials.github.io/images/br-lyso-multi/rlv-all.png
    :alt: reciprocal space all data
 
    reciprocal space all data
@@ -573,7 +573,7 @@ resolution limit has been set and the integrated data are being
 projected. You can also “switch on” individual data sets to really see
 what bits of reciprocal space we are adding.
 
-.. figure:: ./images/rlv-subset.png
+.. figure:: https://dials.github.io/images/br-lyso-multi/rlv-subset.png
    :alt: reciprocal space all data
 
    reciprocal space all data
@@ -582,7 +582,7 @@ This also, if you zoom in and switch on the reciprocal cells, allows you
 to actually *see* the Miller indices 🙂 by counting from the origin
 outwards in multiples of the reciprocal cell:
 
-.. figure:: ./images/rlv-index.png
+.. figure:: https://dials.github.io/images/br-lyso-multi/rlv-index.png
    :alt: reciprocal space all data
 
    reciprocal space all data
@@ -596,7 +596,7 @@ assess how well the data sets agree in a pairwise manner:
 
 ::
 
-   xia2.multiplex ../sweep-*/integrated.* min_completeness=0.9 
+   xia2.multiplex ../sweep-*/integrated.* min_completeness=0.9
 
 Now we can start asking some tricky questions about the *best* subsets
 of data to use for the next steps in your data analysis. This command
@@ -608,14 +608,14 @@ of information in there so worth paying attention to.
 Preferential Orientation
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-One risk with e.g. *in situ* data collection is that the samples grow
+One risk with e.g. *in situ* data collection is that the samples grow
 with a particular crystallographic axis perpendicular to the plate. This
 in turn means that small rotations with the plate perpendicular to the
 beam will repeatedly record the same small volumes of reciprocal space.
 This may be assessed by considering the distributions of the unit cell
 axes in reciprocal space - via a stereographic projection:
 
-.. figure:: ./images/stereo.png
+.. figure:: https://dials.github.io/images/br-lyso-multi/stereo.png
    :alt: Stereographic projection of unit cell axes
 
    Stereographic projection of unit cell axes
@@ -633,7 +633,7 @@ The crystallographic unit cell can be used to give some hints of
 isomorphism before intensity data are compared. If you have two distinct
 crystal forms they will be visible in these histograms:
 
-.. figure:: ./images/cells.png
+.. figure:: https://dials.github.io/images/br-lyso-multi/cells.png
    :alt: Unit cell comparisons
 
    Unit cell comparisons
@@ -652,7 +652,7 @@ discussion above. The data may be excluded by taking the data from the
 scaled full cluster and passing this *in* to ``dials.scale`` with the
 ``exclude_datasets=`` option.
 
-.. figure:: ./images/delta-cchalf.png
+.. figure:: https://dials.github.io/images/br-lyso-multi/delta-cchalf.png
    :alt: Delta CC half
 
    Delta CC half
@@ -668,7 +668,7 @@ strength of the individual data sets, and there are (depending on your
 criteria) maybe three or four distinct clusters. It is these clusters
 which are then considered in the next section.
 
-.. figure:: ./images/cos-cluster.png
+.. figure:: https://dials.github.io/images/br-lyso-multi/cos-cluster.png
    :alt: Data set comparisons
 
    Data set comparisons
@@ -681,7 +681,7 @@ that have been identified by ``multiplex`` with completeness >= 90% can
 be compared by their overall and per-resolution-shell merging
 statistics:
 
-.. figure:: ./images/clusters.png
+.. figure:: https://dials.github.io/images/br-lyso-multi/clusters.png
    :alt: Merging statistic graphs
 
    Merging statistic graphs
