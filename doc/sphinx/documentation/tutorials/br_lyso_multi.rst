@@ -1,5 +1,5 @@
-Multicrystal with xia2 / multiplex
-==================================
+Multi-crystal analysis with DIALS and xia2.multiplex
+====================================================
 
 Introduction
 ------------
