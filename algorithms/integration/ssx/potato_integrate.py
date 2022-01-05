@@ -5,7 +5,6 @@ from dxtbx.model import ExperimentList
 from scitbx.array_family import flex
 
 from dials.algorithms.integration.ssx.ssx_integrate import (
-    NullCollector,
     OutputAggregator,
     OutputCollector,
     SimpleIntegrator,
@@ -55,11 +54,8 @@ class PotatoOutputCollector(OutputCollector):
 class PotatoIntegrator(SimpleIntegrator):
     def __init__(self, params, collect_data=False):
         super().__init__(params)
-        self.collect_data = collect_data
         if collect_data:
             self.collector = PotatoOutputCollector()
-        else:
-            self.collector = NullCollector()
 
     def run(self, experiment, table):
 
@@ -84,7 +80,7 @@ class PotatoIntegrator(SimpleIntegrator):
                     table,
                     sigma_d,
                     n_cycles=self.params.refinement.n_cycles,
-                    capture_progress=self.collect_data,
+                    capture_progress=isinstance(self.collector, PotatoOutputCollector),
                 )
                 self.collector.collect_after_refinement(
                     experiment, table, refiner_output["refiner_output"]["history"]

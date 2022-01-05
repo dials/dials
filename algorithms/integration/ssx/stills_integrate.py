@@ -9,7 +9,6 @@ from dials.algorithms.integration.integrator import (
     _initialize_stills,
 )
 from dials.algorithms.integration.ssx.ssx_integrate import (
-    NullCollector,
     OutputCollector,
     SimpleIntegrator,
 )
@@ -22,11 +21,8 @@ from dials.command_line.integrate import process_reference
 class StillsIntegrator(SimpleIntegrator):
     def __init__(self, params, collect_data=False):
         super().__init__(params)
-        self.collect_data = collect_data
         if collect_data:
             self.collector = OutputCollector()
-        else:
-            self.collector = NullCollector()
 
     def run(self, experiment, table):
 

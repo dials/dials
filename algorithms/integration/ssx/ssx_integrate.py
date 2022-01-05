@@ -29,6 +29,7 @@ class SimpleIntegrator(ABC):
 
     def __init__(self, params):
         self.params = params
+        self.collector = NullCollector()
 
     @abstractmethod
     def run(self, experiment, table):

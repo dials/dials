@@ -41,7 +41,7 @@ try:
 except ImportError:
     pass
 
-logger = logging.getLogger("dials")
+logger = logging.getLogger("dials.ssx_integrate")
 
 help_message = """
 
@@ -121,13 +121,24 @@ potato {
 )
 working_phil = phil_scope.fetch(sources=[phil_overrides])
 
+loggers_to_disable = ["dials", "dials.array_family.flex_ext"]
+
+loggers_to_disable_for_stills = loggers_to_disable + [
+    "dials.algorithms.integration.integrator",
+    "dials.algorithms.profile_model.gaussian_rs.calculator",
+    "dials.command_line.integrate",
+    "dials.algorithms.spot_prediction.reflection_predictor",
+]
+
+
+def disable_loggers(lognames: List[str]) -> None:
+    for logname in lognames:
+        logging.getLogger(logname).disabled = True
+
 
 def process_one_image_potato_integrator(experiment, table, params):
-    # disable the loggers within each process
-    logger2 = logging.getLogger("dials")
-    logger2.disabled = True
-    logger3 = logging.getLogger("dials.array_family.flex_ext")
-    logger3.disabled = True
+
+    disable_loggers(loggers_to_disable)  # disable the loggers within each process
 
     integrator = PotatoIntegrator(params.potato, collect_data=params.output.html)
     try:
@@ -140,19 +151,10 @@ def process_one_image_potato_integrator(experiment, table, params):
 
 
 def process_one_image_stills_integrator(experiment, table, params):
-    # disable the loggers within each process
-    logger2 = logging.getLogger("dials")
-    logger2.disabled = True
-    logger3 = logging.getLogger("dials.array_family.flex_ext")
-    logger3.disabled = True
-    logger4 = logging.getLogger("dials.algorithms.integration.integrator")
-    logger4.disabled = True
-    logger5 = logging.getLogger("dials.algorithms.profile_model.gaussian_rs.calculator")
-    logger5.disabled = True
-    logger6 = logging.getLogger("dials.command_line.integrate")
-    logger6.disabled = True
-    logger7 = logging.getLogger("dials.algorithms.spot_prediction.reflection_predictor")
-    logger7.disabled = True
+
+    disable_loggers(
+        loggers_to_disable_for_stills
+    )  # disable the loggers within each process
 
     integrator = StillsIntegrator(params.stills, collect_data=params.output.html)
     try:
@@ -162,6 +164,89 @@ def process_one_image_stills_integrator(experiment, table, params):
         return (None, None, None)
     else:
         return experiment, table, collector
+
+
+def setup(reflections, params):
+    # calculate the batches for processing
+    batches = list(range(0, len(reflections), params.output.batch_size))
+    batches.append(len(reflections))
+
+    # Note, memory processing logic can go here
+    if params.nproc is Auto:
+        params.nproc = number_of_processors(return_value_if_unknown=1)
+    logger.info(f"Using {params.nproc} processes for integration")
+
+    # aggregate some output for json, html etc
+    if params.algorithm == "potato":
+        process = process_one_image_potato_integrator
+        aggregator = PotatoOutputAggregator()
+    elif params.algorithm == "stills":
+        process = process_one_image_stills_integrator
+        aggregator = OutputAggregator()
+    else:
+        raise ValueError("Invalid algorithm choice")
+
+    configuration = {
+        "process": process,
+        "aggregator": aggregator,
+        "params": params,
+    }
+
+    return batches, configuration
+
+
+def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
+    integrated_reflections = flex.reflection_table()
+    with concurrent.futures.ProcessPoolExecutor(
+        max_workers=configuration["params"].nproc
+    ) as pool:
+        futures = {
+            pool.submit(
+                configuration["process"], expt, table, configuration["params"]
+            ): i
+            for i, (table, expt) in enumerate(zip(sub_tables, sub_expts))
+        }
+        tables_list = [0] * len(sub_expts)
+        expts_list = [0] * len(sub_expts)
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                expt, refls, collector = future.result()
+                j = futures[future]
+            except Exception as e:
+                logger.info(e)
+            else:
+                if refls and expt:
+                    logger.info(f"Processed image {j+batch_offset+1}")
+                    tables_list[j] = refls
+                    expts_list[j] = expt
+                    configuration["aggregator"].add_dataset(
+                        collector, j + batch_offset + 1
+                    )
+
+        expts_list = list(filter(lambda a: a != 0, expts_list))
+        integrated_experiments = ExperimentList(expts_list)
+
+        n_integrated = 0
+        for _ in range(len(tables_list)):
+            table = tables_list.pop(0)
+            if not table:
+                continue
+            # renumber actual id before extending
+            ids_map = dict(table.experiment_identifiers())
+            assert len(ids_map) == 1, ids_map
+            del table.experiment_identifiers()[list(ids_map.keys())[0]]
+            table["id"] = flex.int(table.size(), n_integrated)
+            table.experiment_identifiers()[n_integrated] = list(ids_map.values())[0]
+            n_integrated += 1
+            if not configuration["params"].debug.output.shoeboxes:
+                del table["shoebox"]
+            integrated_reflections.extend(table)
+            del table
+
+        integrated_reflections.assert_experiment_identifiers_are_consistent(
+            integrated_experiments
+        )
+    return integrated_experiments, integrated_reflections
 
 
 @show_mail_handle_errors()
@@ -212,9 +297,8 @@ def run(args: List[str] = None, phil=working_phil) -> None:
                 "Unequal number of reflection tables and experiments after splitting"
             )
 
-    # calculate the batches for processing
-    batches = list(range(0, len(reflections), params.output.batch_size))
-    batches.append(len(reflections))
+    batches, configuration = setup(reflections, params)
+
     # determine suitable output filenames
     template = "{prefix}_{index:0{maxindexlength:d}d}.{extension}"
     experiments_template = functools.partial(
@@ -230,73 +314,17 @@ def run(args: List[str] = None, phil=working_phil) -> None:
         extension="refl",
     )
 
-    # Note, memory processing logic can go here
-    if params.nproc is Auto:
-        params.nproc = number_of_processors(return_value_if_unknown=1)
-    logger.info(f"Using {params.nproc} processes for integration")
-
-    # aggregate some output for json, html etc
-    if params.algorithm == "potato":
-        process = process_one_image_potato_integrator
-        aggregator = PotatoOutputAggregator()
-    elif params.algorithm == "stills":
-        process = process_one_image_stills_integrator
-        aggregator = OutputAggregator()
-    else:
-        raise ValueError("Invalid algorithm choice")
-
     # now process each batch, and do parallel processing within a batch
     for i, b in enumerate(batches[:-1]):
         end_ = batches[i + 1]
         logger.info(f"Processing images {b+1} to {end_}")
+        sub_tables = reflections[b:end_]
+        sub_expts = experiments[b:end_]
 
-        integrated_reflections = flex.reflection_table()
-        with concurrent.futures.ProcessPoolExecutor(max_workers=params.nproc) as pool:
-            futures = {
-                pool.submit(process, expt, table, params): i
-                for i, (table, expt) in enumerate(
-                    zip(reflections[b:end_], experiments[b:end_])
-                )
-            }
-            tables_list = [0] * (end_ - b)
-            expts_list = [0] * (end_ - b)
-
-            for future in concurrent.futures.as_completed(futures):
-                try:
-                    expt, refls, collector = future.result()
-                    j = futures[future]
-                except Exception as e:
-                    logger.info(e)
-                else:
-                    if refls and expt:
-                        logger.info(f"Processed image {j+b+1}")
-                        tables_list[j] = refls
-                        expts_list[j] = expt
-                        aggregator.add_dataset(collector, j + b + 1)
-
-        expts_list = list(filter(lambda a: a != 0, expts_list))
-        integrated_experiments = ExperimentList(expts_list)
-        n_integrated = 0
-
-        for _ in range(len(tables_list)):
-            table = tables_list.pop(0)
-            if not table:
-                continue
-            # renumber actual id before extending
-            ids_map = dict(table.experiment_identifiers())
-            assert len(ids_map) == 1, ids_map
-            del table.experiment_identifiers()[list(ids_map.keys())[0]]
-            table["id"] = flex.int(table.size(), n_integrated)
-            table.experiment_identifiers()[n_integrated] = list(ids_map.values())[0]
-            n_integrated += 1
-            if not params.debug.output.shoeboxes:
-                del table["shoebox"]
-            integrated_reflections.extend(table)
-            del table
-
-        integrated_reflections.assert_experiment_identifiers_are_consistent(
-            integrated_experiments
+        integrated_experiments, integrated_reflections = process_batch(
+            sub_tables, sub_expts, configuration, batch_offset=b
         )
+
         experiments_filename = experiments_template(index=i)
         reflections_filename = reflections_template(index=i)
         # Save the reflections
@@ -308,7 +336,7 @@ def run(args: List[str] = None, phil=working_phil) -> None:
         integrated_experiments.as_file(experiments_filename)
 
     # now generate a html report using the aggregated data.
-    plots = aggregator.make_plots()
+    plots = configuration["aggregator"].make_plots()
 
     if params.output.html and plots:
         logger.info(f"Writing html report to {params.output.html}")
