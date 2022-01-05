@@ -70,6 +70,19 @@ def make_summary_table(results_summary: dict) -> tabulate:
     return summary_table
 
 
+def combine_results_dicts(results_summaries: List[dict]) -> dict:
+    """For a list of dictionaries, each with keys 0..n-1,
+    combine into a single dictionary with keys 0..ntot-1"""
+    combined_summary = {}
+    n_overall = 0
+    for d in results_summaries:
+        n_this = len(d)
+        for i in range(n_this):
+            combined_summary[i + n_overall] = d.pop(i)
+        n_overall += n_this
+    return combined_summary
+
+
 def make_cluster_plots(large_clusters: List[Cluster]) -> dict:
     cluster_plots = {}
     for n, cluster in enumerate(large_clusters):

@@ -156,7 +156,7 @@ def index_all_concurrent(
         indexed_reflections.extend(table)
 
         # record some things for printing to output log/html
-        for id_ in table.experiment_identifiers().keys():
+        for id_, identifier in table.experiment_identifiers():
             selr = table.select(table["id"] == id_)
             calx, caly, _ = selr["xyzcal.px"].parts()
             obsx, obsy, _ = selr["xyzobs.px.value"].parts()
@@ -168,6 +168,7 @@ def index_all_concurrent(
             results_summary[idx].append(
                 {
                     "Image": img,
+                    "identifier": identifier,
                     "n_indexed": n_id_,
                     "n_strong": n_strong,
                     "RMSD_X": rmsd_x,
@@ -179,7 +180,6 @@ def index_all_concurrent(
     indexed_reflections.assert_experiment_identifiers_are_consistent(
         indexed_experiments
     )
-
     return indexed_experiments, indexed_reflections, results_summary
 
 

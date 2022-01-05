@@ -1,6 +1,7 @@
 import pytest
 
 from dials.algorithms.indexing.ssx.analysis import (
+    combine_results_dicts,
     generate_html_report,
     generate_plots,
     make_cluster_plots,
@@ -68,6 +69,18 @@ def test_make_summary_table(n_lattices):
         assert "lattice" not in headerline
         expected_last = "| test_image_003.cbf |         1 | 30/50 (60.0%)  |      0.2 |      0.4 |         0.6 |"
     assert expected_last == last_lattice_line
+
+
+def test_combine_multiple_results_summary_dicts():
+    s1 = generate_test_results_dict()
+    s2 = generate_test_results_dict(n_lattices=2)
+    combined = combine_results_dicts([s1, s2])
+    assert list(combined.keys()) == [0, 1, 2, 3, 4, 5]
+    for k, res in combined.items():
+        if k == 5:
+            assert len(res) == 2
+        else:
+            assert len(res) == 1
 
 
 @pytest.mark.parametrize("n_lattices", [1, 2])
