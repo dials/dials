@@ -4,7 +4,7 @@ from dxtbx import flumpy
 from dxtbx.model import ExperimentList
 from scitbx.array_family import flex
 
-from dials.algorithms.integration.ssx_integrate import (
+from dials.algorithms.integration.ssx.ssx_integrate import (
     NullCollector,
     OutputAggregator,
     OutputCollector,

@@ -22,15 +22,15 @@ from libtbx import Auto
 from libtbx.introspection import number_of_processors
 from libtbx.utils import Sorry
 
-from dials.algorithms.integration.potato_integrate import (
+from dials.algorithms.integration.ssx.potato_integrate import (
     PotatoIntegrator,
     PotatoOutputAggregator,
 )
-from dials.algorithms.integration.ssx_integrate import (
+from dials.algorithms.integration.ssx.ssx_integrate import (
     OutputAggregator,
     generate_html_report,
 )
-from dials.algorithms.integration.stills_integrate import StillsIntegrator
+from dials.algorithms.integration.ssx.stills_integrate import StillsIntegrator
 from dials.array_family import flex
 from dials.util import log, show_mail_handle_errors
 from dials.util.options import OptionParser, flatten_experiments, flatten_reflections

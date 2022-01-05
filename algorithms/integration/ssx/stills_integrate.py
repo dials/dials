@@ -8,7 +8,7 @@ from dials.algorithms.integration.integrator import (
     _finalize_stills,
     _initialize_stills,
 )
-from dials.algorithms.integration.ssx_integrate import (
+from dials.algorithms.integration.ssx.ssx_integrate import (
     NullCollector,
     OutputCollector,
     SimpleIntegrator,
