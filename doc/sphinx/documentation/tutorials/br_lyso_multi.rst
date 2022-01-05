@@ -90,9 +90,6 @@ are the real input to this process. For this tutorial we will work on
 the first 10, then *add* the next ten etc. demonstrating the incremental
 approach to combining the data.
 
-`If this is all Greek to you then this tutorial is here to
-help! <../scripting/basic_scripting.md>`__
-
 Sets 0-9
 --------
 
