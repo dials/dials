@@ -55,7 +55,7 @@ phil_scope = parse(
 
     wavelength_spread {
 
-      model = *delta gaussian
+      model = *delta
         .type = choice
 
     }

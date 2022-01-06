@@ -3,6 +3,7 @@ from __future__ import division, print_function
 from math import log, sqrt
 
 import numpy.random
+from numpy.random import multivariate_normal, normal, uniform
 from scipy.optimize import minimize
 
 from scitbx import matrix
@@ -10,10 +11,155 @@ from scitbx import matrix
 from dials.algorithms.profile_model.potato.model import (
     compute_change_of_basis_operation,
 )
-from dials.algorithms.profile_model.potato.util.generate_simple import (
-    generate_with_wavelength_spread2,
-)
 from dials.array_family import flex
+
+
+def generate_with_wavelength_spread2(
+    D, s0, spot_covariance, wavelength_variance, N=100
+):
+    """
+    Generate a list of normally distributed observations
+
+    """
+    s2_list = []
+    ctot_list = []
+    xbar_list = []
+    Sobs_list = []
+
+    D_inv = D.inverse()
+
+    # Loop through the list
+    for k in range(N):
+
+        # Compute position in reciprocal space of the centre of the rlp
+        s2_direction = matrix.col(
+            (uniform(0, 1), uniform(0, 1), uniform(1, 1))
+        ).normalize()
+
+        # Compute the local spread in energy
+        q0 = s2_direction.normalize() * s0.length() - s0
+        wavelength_variance_local = wavelength_variance * (q0.dot(q0) / 2) ** 2
+
+        # Rotate the covariance matrix
+        R = compute_change_of_basis_operation(s0, s2_direction)
+        sigmap = R * spot_covariance * R.transpose()
+        sigma_spread = sigmap[8] + wavelength_variance_local
+        s2_magnitude = normal(s0.length(), sqrt(sigma_spread))
+        # s2_magnitude = normal(s0.length(), sqrt(sigmap[8]))
+        s2 = s2_direction * s2_magnitude
+
+        # resolution = 1.0 / (2.0 * s0.length() * sin(0.5 * s0.angle(s2)))
+
+        # print resolution
+
+        # Rotate to get mu
+        mu = R * s2
+        assert abs(mu.normalize().dot(matrix.col((0, 0, 1))) - 1) < 1e-7
+
+        # Partition matrix
+        S11 = matrix.sqr((sigmap[0], sigmap[1], sigmap[3], sigmap[4]))
+        S12 = matrix.col((sigmap[2], sigmap[5]))
+        S21 = matrix.col((sigmap[6], sigmap[7])).transpose()
+        S22 = sigmap[8]
+
+        # Apply the wavelength spread to the sigma
+        Sp_22 = S22 * wavelength_variance_local / (S22 + wavelength_variance_local)
+        Sp_12 = S12 * Sp_22 / S22
+        Sp_11 = S11 - (S12 * (1 / S22) * S21) * (1 - Sp_22 / S22)
+
+        Sigma3 = matrix.sqr(
+            (
+                Sp_11[0],
+                Sp_11[1],
+                Sp_12[0],
+                Sp_11[2],
+                Sp_11[3],
+                Sp_12[1],
+                Sp_12[0],
+                Sp_12[1],
+                Sp_22,
+            )
+        )
+
+        # Apply the wavelength spread to the mean
+        mu1 = mu
+        mu2 = matrix.col((0, 0, s0.length()))
+        z0 = (mu1[2] * wavelength_variance_local + mu2[2] * S22) / (
+            S22 + wavelength_variance_local
+        )
+        x0 = matrix.col((mu1[0], mu1[1])) + S12 * (1 / S22) * (z0 - mu1[2])
+        mu3 = matrix.col((x0[0], x0[1], z0))
+
+        # Rotate the sigma and mean vector back
+        Sigma3 = R.transpose() * Sigma3 * R
+        s3 = R.transpose() * mu3
+        q3 = s3 - s0
+
+        # Compute the scale factor and intensity
+        I = uniform(50, 1000)
+        if I <= 1:
+            continue
+
+        # Simulate some observations
+        points = multivariate_normal(q3, Sigma3.as_list_of_lists(), int(I))
+
+        X = []
+        Y = []
+
+        # Generate points
+        for p in points:
+
+            p = matrix.col(p)
+
+            # Compute wavelength and diffracting vector for point
+            wavelength = -2.0 * s0.normalize().dot(p) / (p.dot(p))
+            s0w = s0.normalize() / wavelength
+            s1w = s0w + p
+            assert abs(s1w.length() - s0w.length()) < 1e-10
+
+            # Do the ray projection onto the detector
+            v = D * s1w
+            assert v[2] > 0
+            x = v[0] / v[2]
+            y = v[1] / v[2]
+            X.append(x)
+            Y.append(y)
+
+        # Compute observed mean on detector
+        # xmean = sum(X) / len(X)
+        # ymean = sum(Y) / len(Y)
+
+        # Map onto coordinate system and compute mean
+        ctot = len(X)
+        xbar = matrix.col((0, 0))
+        # cs = CoordinateSystem2d(s0, s2)
+        for x, y in zip(X, Y):
+            s = (D_inv * matrix.col((x, y, 1))).normalize() * s0.length()
+            e = R * (s - s2.normalize() * s0.length())
+            e1, e2 = e[0], e[1]
+            # e1, e2 = cs.from_beam_vector(s)
+            xbar += matrix.col((e1, e2))
+        xbar /= ctot
+
+        # Compute variance
+        Sobs = matrix.sqr((0, 0, 0, 0))
+        for x, y in zip(X, Y):
+            s = (D_inv * matrix.col((x, y, 1))).normalize() * s0.length()
+            e = R * (s - s2.normalize() * s0.length())
+            e1, e2 = e[0], e[1]
+            # e1, e2 = cs.from_beam_vector(s)
+            x = matrix.col((e1, e2))
+            Sobs += (x - xbar) * (x - xbar).transpose()
+        Sobs /= ctot
+
+        # print tuple(xbar), tuple(Sobs)
+
+        s2_list.append(s2)
+        ctot_list.append(ctot)
+        xbar_list.append(xbar)
+        Sobs_list.append(list(Sobs))
+
+    return s2_list, ctot_list, xbar_list, Sobs_list
 
 
 def compute_beam_vector_rotation(s0):
@@ -290,56 +436,7 @@ class Target(object):
         return score
 
 
-def plot_function(func):
-
-    X = []
-    Y = []
-    params = (
-        -0.0018922555580294159,
-        -0.003960342417917075,
-        0.000802512703902016,
-        -0.011212605823672782,
-        0.0015804959560581232,
-        0.0011843711796837466,
-        8.205550283434665e-08,
-    )
-    # params = (0.9912606131407175,
-    #           0.8721521410328605, -0.0005427636101740637,
-    #           -0.4755941521897193, 6.978595033167225e-05, -0.0005654927049233458,
-    #           0.3446544460324457)
-    # params = (0.0004,
-    #           1e-7, -0.0005427636101740637,
-    #           1e-5, 6.978595033167225e-05, -0.0005654927049233458,
-    #           0.3446544460324457)
-    # wavelength_param = tan(sqrt(0.000111616168007) *pi / (2*0.05))
-
-    minx = -0.00001
-    maxx = 0.00001
-    for i in range(200):
-        param = minx + i * (maxx - minx) / 200.0
-        values = flex.double(params)
-        values[0] = param
-        # values = flex.double((
-        #   paramssqrt(1e-7),
-        #   0, sqrt(2e-7),
-        #   0, 0, sqrt(param),
-        #   wavelength_param ))
-
-        x = param  # (0.05*atan(param) / (pi / 2))**2
-        y = func(values)
-        print(i, x, y)
-
-        X.append(x)
-        Y.append(y)
-
-    from matplotlib import pylab
-
-    pylab.plot(X, Y)
-    pylab.show()
-    exit(0)
-
-
-def tst_ideal():
+def test_ideal():
 
     numpy.random.seed(100)
 
@@ -393,8 +490,6 @@ def tst_ideal():
     )
 
     wavelength_param = sqrt(1e-3)  # 0#sqrt(0.05**2)#tan(sqrt(1e-12) *pi / (2*0.05))
-
-    # plot_function(Target(s0, s2_list, xbar_list, ctot_list, Sobs_list))
 
     # Starting values for simplex
     # values = flex.double((
@@ -456,7 +551,3 @@ def tst_ideal():
     print(tuple(params))
 
     print("OK")
-
-
-if __name__ == "__main__":
-    tst_ideal()

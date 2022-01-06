@@ -10,7 +10,6 @@ from dials.algorithms.profile_model.potato.model import (
     compute_change_of_basis_operation,
 )
 from dials.algorithms.profile_model.potato.parameterisation import ReflectionModelState
-from dials.algorithms.profile_model.potato.util.simplex import SimpleSimplex
 from dials.array_family import flex
 from dials.util import tabulate
 
@@ -1192,69 +1191,3 @@ def print_matrix(A, fmt="%.3g", indent=0):
             line += fmt % t[i + j * A.n[1]]
         lines.append("%s|%s|" % (prefix, line))
     logger.info("\n".join(lines))
-
-
-## simplex method not implemented/tested.
-def refine_simplex(state, s0, sp_list, h_list, ctot_list, mobs_list, sobs_list):
-    """
-    Perform the profile refinement
-
-    """
-
-    class Target(object):
-        def __init__(self, state, s0, sp_list, h_list, ctot_list, xbar_list, sobs_list):
-            self.state = state
-            self.s0 = s0
-            self.sp_list = sp_list
-            self.h_list = h_list
-            self.ctot_list = ctot_list
-            self.xbar_list = xbar_list
-            self.sobs_list = sobs_list
-
-        def target(self, params):
-            self.state.set_active_parameters(params)
-            ml = MaximumLikelihoodTarget(
-                self.state,
-                self.s0,
-                self.sp_list,
-                self.ctot_list,
-                self.xbar_list,
-                self.sobs_list,
-            )
-            lnL = ml.log_likelihood()
-            sigma = self.state.get_M()
-            format_string = (
-                "( %.3g, %.3g, %.3g, %.3g, %.3g, %.3g, %.3g, %.3g, %.3g ): L = %f"
-            )
-            logger.info(format_string % (tuple(sigma) + (lnL,)))
-            return -lnL
-
-    # Starting values for simplex
-    values = flex.double(state.get_active_parameters())
-    offset = flex.double([sqrt(1e-7) for v in values])
-
-    # Do the simplex optimization
-    optimizer = SimpleSimplex(
-        values,
-        offset,
-        Target(
-            state,
-            s0,
-            sp_list,
-            ctot_list,
-            mobs_list,
-            sobs_list,
-        ),
-        2000,
-    )
-
-    # Get the parameters
-    parameters = optimizer.get_solution()
-
-    # set the parameters
-    state.set_active_parameters(parameters)
-
-    # Print the eigen values and vectors
-    print_eigen_values_and_vectors(state.get_M())
-
-    return state
