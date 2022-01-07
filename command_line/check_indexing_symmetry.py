@@ -172,7 +172,9 @@ def test_crystal_pointgroup_symmetry(reflections, experiment, params):
 
     if params.d_min or params.d_max:
         d_spacings = ms.d_spacings().data()
-        sel = (d_spacings >= params.d_min) & (d_spacings <= params.d_max)
+        sel = d_spacings >= params.d_min
+        if params.d_max > 0:
+            sel = sel & (d_spacings <= params.d_max)
         ms = ms.select(sel)
 
     if params.normalise:
