@@ -1,7 +1,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.save_signal_map
 
-import bitshuffle.h5
 import h5py
+import hdf5plugin
 import numpy
 
 import iotbx.phil
@@ -82,8 +82,7 @@ def run(args=None):
             "data",
             (frames, slow, fast),
             chunks=(1, slow, fast),
-            compression=bitshuffle.h5.H5FILTER,
-            compression_opts=(0, bitshuffle.h5.H5_COMPRESS_LZ4),
+            **hdf5plugin.Bitshuffle(),
             dtype=numpy.uint8,
         )
 
