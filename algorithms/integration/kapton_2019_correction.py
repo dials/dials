@@ -1,5 +1,6 @@
 import logging
 import math
+import sys
 
 from scitbx.matrix import col
 
@@ -218,6 +219,24 @@ class KaptonTape_2019:
 
     def abs_bounding_lines_in_mm(self, detector):
         """Return bounding lines of kapton"""
+
+        def _check_int_edge_pts(int_edge_pts):
+            """Function to ensure that the combination of int_edge_pts will not result
+               in a kapton edge to be defined by 2 identical int_edge_pts.
+            """
+            new_int_edge_pts = int_edge_pts.copy()
+            if len(set(int_edge_pts)) == 4:
+                return int_edge_pts
+            elif len(set(int_edge_pts)) == 2:
+                sys.exit("Insuffient number of intersection points to define both Kapton edges")    
+            else:
+                # Find different permuations of intersecting kapton edge points that won't 
+                # result in kapton_edges defined by identical points
+                if (int_edge_pts[0] == int_edge_pts[1] or int_edge_pts[2] == int_edge_pts[3]):
+                    new_int_edge_pts[1] = int_edge_pts[3]
+                    new_int_edge_pts[3] = int_edge_pts[1]
+                return new_int_edge_pts
+
         # first get bounding directions from detector:
         detz = flex.mean(flex.double([panel.get_origin()[2] for panel in detector]))
         edges = []
@@ -294,6 +313,7 @@ class KaptonTape_2019:
             all_ints[dlist_idx[sorted_idx[0]][1]],
             all_ints[dlist_idx[sorted_idx[1]][1]],
         ]
+        int_edge_pts = _check_int_edge_pts(int_edge_pts)
 
         # Sort out the edge points and the int_edge_points which are on the same side
         kapton_edge_1 = (col(int_edge_pts[0]) - col(int_edge_pts[1])).normalize()
