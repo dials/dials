@@ -69,6 +69,12 @@ class PotatoIntegrator(SimpleIntegrator):
         del table.experiment_identifiers()[list(ids_map.keys())[0]]
         table.experiment_identifiers()[0] = list(ids_map.values())[0]
 
+        fix_list = []
+        if self.params.profile.unit_cell.fixed:
+            fix_list.append("unit_cell")
+        if self.params.profile.orientation.fixed:
+            fix_list.append("orientation")
+
         self.collector.initial_collect(experiment, table)
 
         for _ in range(self.params.refinement.n_macro_cycles):
@@ -83,6 +89,7 @@ class PotatoIntegrator(SimpleIntegrator):
                     table,
                     sigma_d,
                     profile_model=self.params.profile.rlp_mosaicity.model,
+                    fix_list=fix_list,
                     n_cycles=self.params.refinement.n_cycles,
                     capture_progress=isinstance(self.collector, PotatoOutputCollector),
                 )
@@ -131,14 +138,25 @@ class PotatoIntegrator(SimpleIntegrator):
         reflection_table,
         sigma_d,
         profile_model,
+        fix_list=None,
         n_cycles=1,
         capture_progress=False,
     ):
+        fix_unit_cell = False
+        fix_orientation = False
+        if fix_list:
+            if "unit_cell" in fix_list:
+                fix_unit_cell = True
+            if "orientation" in fix_list:
+                fix_orientation = True
+
         expts, refls, output_data = run_potato_refinement(
             ExperimentList([experiment]),
             reflection_table,
             sigma_d,
             profile_model=profile_model,
+            fix_unit_cell=fix_unit_cell,
+            fix_orientation=fix_orientation,
             n_cycles=n_cycles,
             capture_progress=capture_progress,
         )
