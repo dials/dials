@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+import numpy as np
 from jinja2 import ChoiceLoader, Environment, PackageLoader
 
 from scitbx.array_family import flex
@@ -243,4 +244,36 @@ class OutputAggregator:
                 },
             },
         }
+
+        value = self.data[1]
+        mosaicities = {}
+        for k in value["profile_model_mosaicity"].keys():
+            mosaicities["M_" + k] = np.zeros(shape=(len(self.data),))
+        for i, value in enumerate(self.data.values()):
+            sigma = value["profile_model_mosaicity"]
+            for k, v in sigma.items():
+                mosaicities["M_" + k][i] = v
+        data = []
+        for k, v in mosaicities.items():
+            data.append(
+                {
+                    "x": n,
+                    "y": list(v),
+                    "type": "scatter",
+                    "mode": "markers",
+                    "name": k,
+                }
+            )
+        mosaic_plots = {
+            "mosaicities": {
+                "data": data,
+                "layout": {
+                    "title": "Profile model mosaicities per image",
+                    "xaxis": {"title": "image number"},
+                    "yaxis": {"title": "Mosaicity (degrees)"},
+                },
+            },
+        }
+        plots_dict.update(mosaic_plots)
+
         return plots_dict

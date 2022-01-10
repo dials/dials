@@ -18,11 +18,20 @@ from dials.array_family import flex
 from dials.command_line.integrate import process_reference
 
 
+class StillsOutputCollector(OutputCollector):
+    def collect_after_integration(self, experiment, reflection_table):
+        super().collect_after_integration(experiment, reflection_table)
+        self.data["profile_model"] = experiment.profile.to_dict()
+        self.data["profile_model_mosaicity"] = {
+            "b": experiment.profile.sigma_b(deg=True)
+        }
+
+
 class StillsIntegrator(SimpleIntegrator):
     def __init__(self, params, collect_data=False):
         super().__init__(params)
         if collect_data:
-            self.collector = OutputCollector()
+            self.collector = StillsOutputCollector()
 
     def run(self, experiment, table):
 
@@ -44,9 +53,9 @@ class StillsIntegrator(SimpleIntegrator):
         self.collector.collect_after_prediction(predicted, table)
         integrated, elist = self.integrate(elist, predicted, self.params)
         # NB what about things like kapton correction?
-        self.collector.collect_after_integration(experiment, integrated)
+        self.collector.collect_after_integration(elist[0], integrated)
 
-        return experiment, integrated, self.collector
+        return elist[0], integrated, self.collector
 
     @staticmethod
     def preprocess(table):

@@ -237,36 +237,4 @@ class PotatoOutputAggregator(OutputAggregator):
             },
         }
         plots.update(rmsd_plots)
-        # up to six sigmas
-        value = self.data[1]
-        sigmas = {}
-        for k in value["profile_model_mosaicity"].keys():
-            sigmas["M_" + k] = np.zeros(shape=(len(self.data),))
-        for i, value in enumerate(self.data.values()):
-            sigma = value["profile_model_mosaicity"]
-            for k, v in sigma.items():
-                sigmas["M_" + k][i] = v
-        data = []
-        for k, v in sigmas.items():
-            data.append(
-                {
-                    "x": n,
-                    "y": list(v),
-                    "type": "scatter",
-                    "mode": "markers",
-                    "name": k,
-                }
-            )
-        sigma_plots = {
-            "sigmas": {
-                "data": data,
-                "layout": {
-                    "title": "Profile model mosaicities per image",
-                    "xaxis": {"title": "image number"},
-                    "yaxis": {"title": "Mosaicity"},
-                },
-            },
-        }
-        plots.update(sigma_plots)
-
         return plots

@@ -14,15 +14,20 @@
 from __future__ import absolute_import, division
 
 import concurrent.futures
+import copy
 import functools
 import json
 import logging
+import math
 
 import iotbx.phil
+from cctbx import crystal
 from dxtbx.model import ExperimentList
 from libtbx import Auto
 from libtbx.introspection import number_of_processors
 from libtbx.utils import Sorry
+from xfel.clustering.cluster import Cluster
+from xfel.clustering.cluster_groups import unit_cell_info
 
 from dials.algorithms.integration.ssx.potato_integrate import (
     PotatoIntegrator,
@@ -339,6 +344,7 @@ def run(args: List[str] = None, phil=working_phil) -> None:
     )
 
     # now process each batch, and do parallel processing within a batch
+    integrated_crystal_symmetries = []
     for i, b in enumerate(batches[:-1]):
         end_ = batches[i + 1]
         logger.info(f"Processing images {b+1} to {end_}")
@@ -358,10 +364,45 @@ def run(args: List[str] = None, phil=working_phil) -> None:
         integrated_reflections.as_file(reflections_filename)
         logger.info(f"Saving the experiments to {experiments_filename}")
         integrated_experiments.as_file(experiments_filename)
+        integrated_crystal_symmetries.extend(
+            [
+                crystal.symmetry(
+                    unit_cell=copy.deepcopy(cryst.get_unit_cell()),
+                    space_group=copy.deepcopy(cryst.get_space_group()),
+                )
+                for cryst in integrated_experiments.crystals()
+            ]
+        )
+
+    # print some clustering information
+    ucs = Cluster.from_crystal_symmetries(integrated_crystal_symmetries)
+    clusters, _ = ucs.ab_cluster(5000, log=None, write_file_lists=False, doplot=False)
+    cluster_plots = {}
+    min_cluster_pc = 5
+    threshold = math.floor((min_cluster_pc / 100) * len(integrated_crystal_symmetries))
+    large_clusters = [c for c in clusters if len(c.members) > threshold]
+    large_clusters.sort(key=lambda x: len(x.members), reverse=True)
+    from dials.algorithms.indexing.ssx.analysis import make_cluster_plots
+
+    if large_clusters:
+        logger.info(
+            f"""
+Unit cell clustering analysis, clusters with >{min_cluster_pc}% of the number of crystals indexed
+"""
+            + unit_cell_info(large_clusters)
+        )
+        if params.output.html or params.output.json:
+            cluster_plots = make_cluster_plots(large_clusters)
+    else:
+        logger.info(
+            f"No clusters found with >{min_cluster_pc}% of the number of crystals."
+        )
 
     if params.output.html or params.output.json:
         # now generate plots using the aggregated data.
         plots = configuration["aggregator"].make_plots()
+        if cluster_plots:
+            plots.update(cluster_plots)
         if params.output.html:
             logger.info(f"Writing html report to {params.output.html}")
             generate_html_report(plots, params.output.html)
