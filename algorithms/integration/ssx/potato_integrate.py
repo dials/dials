@@ -29,6 +29,9 @@ class PotatoOutputCollector(OutputCollector):
             self.data["initial_rmsd_y"] = refiner_output[0][0]["rmsd"][1]
         self.data["final_rmsd_x"] = refiner_output[0][-1]["rmsd"][0]
         self.data["final_rmsd_y"] = refiner_output[0][-1]["rmsd"][1]
+        # also record some model info:
+        self.data["profile_model"] = experiment.profile.to_dict()
+        self.data["profile_model_mosaicity"] = experiment.profile.mosaicity()
 
     def collect_after_preprocess(self, experiment, reflection_table):
         self.data["n_strong_after_preprocess"] = reflection_table.size()
@@ -79,6 +82,7 @@ class PotatoIntegrator(SimpleIntegrator):
                     experiment,
                     table,
                     sigma_d,
+                    profile_model=self.params.profile.rlp_mosaicity.model,
                     n_cycles=self.params.refinement.n_cycles,
                     capture_progress=isinstance(self.collector, PotatoOutputCollector),
                 )
@@ -123,12 +127,18 @@ class PotatoIntegrator(SimpleIntegrator):
 
     @staticmethod
     def refine(
-        experiment, reflection_table, sigma_d, n_cycles=1, capture_progress=False
+        experiment,
+        reflection_table,
+        sigma_d,
+        profile_model,
+        n_cycles=1,
+        capture_progress=False,
     ):
         expts, refls, output_data = run_potato_refinement(
             ExperimentList([experiment]),
             reflection_table,
             sigma_d,
+            profile_model=profile_model,
             n_cycles=n_cycles,
             capture_progress=capture_progress,
         )
@@ -227,4 +237,36 @@ class PotatoOutputAggregator(OutputAggregator):
             },
         }
         plots.update(rmsd_plots)
+        # up to six sigmas
+        value = self.data[1]
+        sigmas = {}
+        for k in value["profile_model_mosaicity"].keys():
+            sigmas["M_" + k] = np.zeros(shape=(len(self.data),))
+        for i, value in enumerate(self.data.values()):
+            sigma = value["profile_model_mosaicity"]
+            for k, v in sigma.items():
+                sigmas["M_" + k][i] = v
+        data = []
+        for k, v in sigmas.items():
+            data.append(
+                {
+                    "x": n,
+                    "y": list(v),
+                    "type": "scatter",
+                    "mode": "markers",
+                    "name": k,
+                }
+            )
+        sigma_plots = {
+            "sigmas": {
+                "data": data,
+                "layout": {
+                    "title": "Profile model mosaicities per image",
+                    "xaxis": {"title": "image number"},
+                    "yaxis": {"title": "Mosaicity"},
+                },
+            },
+        }
+        plots.update(sigma_plots)
+
         return plots

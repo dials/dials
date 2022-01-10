@@ -4,8 +4,9 @@ from typing import Optional
 
 import numpy as np
 
-from scitbx import matrix
+from scitbx import linalg, matrix
 
+from dials.algorithms.profile_model.potato import mosaicity_from_eigen_decomposition
 from dials.algorithms.refinement.parameterisation.crystal_parameters import (
     CrystalOrientationParameterisation,
     CrystalUnitCellParameterisation,
@@ -90,6 +91,15 @@ class Simple1MosaicityParameterisation(BaseParameterisation):
 
         return flex.mat3_double([dSdb1])
 
+    def mosaicity(self):
+        """One value for mosaicity"""
+        m = mosaicity_from_eigen_decomposition(
+            linalg.eigensystem.real_symmetric(
+                self.sigma().as_flex_double_matrix()
+            ).values()
+        )
+        return {"spherical": m[0]}
+
 
 class Simple6MosaicityParameterisation(BaseParameterisation):
     """
@@ -140,6 +150,16 @@ class Simple6MosaicityParameterisation(BaseParameterisation):
             )
         )
         return M * M.transpose()
+
+    def mosaicity(self):
+        """One value for mosaicity"""
+        decomp = linalg.eigensystem.real_symmetric(self.sigma().as_flex_double_matrix())
+        vals = list(mosaicity_from_eigen_decomposition(decomp.values()))
+        min_m = min(vals)
+        max_m = max(vals)
+        vals.remove(min_m)
+        vals.remove(max_m)
+        return {"min": min_m, "mid": vals[0], "max": max_m}
 
     def first_derivatives(self):
         """
@@ -330,6 +350,26 @@ class Angular2MosaicityParameterisation(BaseParameterisation):
         )
         return M * M.transpose()
 
+    def mosaicity(self):
+        """Two unique components of mosaicity"""
+        decomp = linalg.eigensystem.real_symmetric(self.sigma().as_flex_double_matrix())
+        m = mosaicity_from_eigen_decomposition(decomp.values())
+        v = decomp.vectors()
+        mosaicities = {"radial": 0, "angular": 0}
+        # two values must be same, could have accidental degeneracy where all 3 same:
+        unique_ = list(set(m))
+        if len(unique_) == 1:
+            return {"angular": unique_[0], "radial": unique_[0]}
+        else:
+            assert len(unique_) == 2
+            for i in range(3):
+                vec = (v[i * 3], v[(i * 3) + 1], v[(i * 3) + 2])
+                if vec == (0, 0, 1):
+                    mosaicities["radial"] = m[i]
+                else:
+                    mosaicities["angular"] = m[i]
+        return mosaicities
+
     def first_derivatives(self):
         """
         Compute the first derivatives of Sigma w.r.t the parameters
@@ -387,6 +427,22 @@ class Angular4MosaicityParameterisation(BaseParameterisation):
             )
         )
         return M * M.transpose()
+
+    def mosaicity(self):
+        """Three components of mosaicity"""
+        decomp = linalg.eigensystem.real_symmetric(self.sigma().as_flex_double_matrix())
+        m = mosaicity_from_eigen_decomposition(decomp.values())
+        v = decomp.vectors()
+        mosaicities = {"radial": 0, "angular_0": 0, "angular_1": 0}
+        n_angular = 0
+        for i in range(3):
+            vec = (v[i * 3], v[(i * 3) + 1], v[(i * 3) + 2])
+            if vec == (0, 0, 1):
+                mosaicities["radial"] = m[i]
+            else:
+                mosaicities["angular_" + str(n_angular)] = m[i]
+                n_angular += 1
+        return mosaicities
 
     def first_derivatives(self):
         """

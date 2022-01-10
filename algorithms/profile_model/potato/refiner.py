@@ -6,6 +6,7 @@ from math import log, pi, sqrt
 
 from scitbx import linalg, matrix
 
+from dials.algorithms.profile_model.potato import mosaicity_from_eigen_decomposition
 from dials.algorithms.profile_model.potato.model import (
     compute_change_of_basis_operation,
 )
@@ -1153,25 +1154,29 @@ def print_eigen_values_and_vectors(A):
 
     # Compute the eigen decomposition of the covariance matrix
     eigen_decomposition = linalg.eigensystem.real_symmetric(A.as_flex_double_matrix())
-    Q = matrix.sqr(eigen_decomposition.vectors())
-    L = matrix.diag(eigen_decomposition.values())
+    eigen_values = eigen_decomposition.values()
 
     # Print the matrix eigen values
     logger.info(" ")
     logger.info(" Eigen Values:")
     logger.info(" ")
-    print_matrix(L, indent=2)
+    print_matrix(matrix.diag(eigen_values), indent=2)
     logger.info(" ")
 
     logger.info(" Eigen Vectors:")
     logger.info(" ")
-    print_matrix(Q, indent=2)
+    print_matrix(matrix.sqr(eigen_decomposition.vectors()), indent=2)
     logger.info(" ")
 
-    logger.info(" Mosaicity in degrees equivalent units")
-    logger.info(" M1: %.5f degrees" % (sqrt(L[0]) * 180.0 / pi))
-    logger.info(" M2: %.5f degrees" % (sqrt(L[4]) * 180.0 / pi))
-    logger.info(" M3: %.5f degrees" % (sqrt(L[8]) * 180.0 / pi))
+    mosaicity = mosaicity_from_eigen_decomposition(eigen_values)
+    logger.info(
+        f"""
+ Mosaicity in degrees equivalent units:
+ M1 : {mosaicity[0]:.5f} degrees
+ M2 : {mosaicity[1]:.5f} degrees
+ M3 : {mosaicity[2]:.5f} degrees
+"""
+    )
 
 
 def print_matrix(A, fmt="%.3g", indent=0):

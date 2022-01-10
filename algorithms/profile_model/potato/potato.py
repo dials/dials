@@ -48,7 +48,7 @@ phil_scope = parse(
 
     rlp_mosaicity {
 
-      model = simple1 simple6 *angular2 angular4 angular6
+      model = simple1 simple6 *angular2 angular4
         .type = choice
 
     }
@@ -515,6 +515,8 @@ def run_potato_refinement(
             fix_orientation=fix_orientation,
             wavelength_spread_model=wavelength_model,
         )
+
+    experiments[0].profile = profile
 
     # Post process the reflections
     # Update predictions

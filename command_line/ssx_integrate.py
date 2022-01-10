@@ -1,3 +1,4 @@
+# LIBTBX_SET_DISPATCHER_NAME dev.dials.ssx_integrate
 #!/usr/bin/env python
 #
 # dials.ssx_integrate.py
@@ -14,6 +15,7 @@ from __future__ import absolute_import, division
 
 import concurrent.futures
 import functools
+import json
 import logging
 
 import iotbx.phil
@@ -33,7 +35,7 @@ from dials.algorithms.integration.ssx.ssx_integrate import (
 from dials.algorithms.integration.ssx.stills_integrate import StillsIntegrator
 from dials.array_family import flex
 from dials.util import log, show_mail_handle_errors
-from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
+from dials.util.options import ArgumentParser, flatten_experiments, flatten_reflections
 from dials.util.version import dials_version
 
 try:
@@ -63,6 +65,8 @@ phil_scope = iotbx.phil.parse(
     log = "dials.ssx_integrate.log"
       .type = str
     html = "dials.ssx_integrate.html"
+      .type = str
+    json = None
       .type = str
   }
 
@@ -121,6 +125,15 @@ potato {
 )
 working_phil = phil_scope.fetch(sources=[phil_overrides])
 
+working_phil.adopt_scope(
+    iotbx.phil.parse(
+        """
+    individual_log_verbosity = 1
+    .type =int
+"""
+    )
+)
+
 loggers_to_disable = ["dials", "dials.array_family.flex_ext"]
 
 loggers_to_disable_for_stills = loggers_to_disable + [
@@ -138,9 +151,14 @@ def disable_loggers(lognames: List[str]) -> None:
 
 def process_one_image_potato_integrator(experiment, table, params):
 
-    disable_loggers(loggers_to_disable)  # disable the loggers within each process
+    if params.individual_log_verbosity < 2:
+        disable_loggers(loggers_to_disable)  # disable the loggers within each process
+    elif params.individual_log_verbosity == 2:
+        for name in loggers_to_disable:
+            logging.getLogger(name).setLevel(logging.INFO)
 
-    integrator = PotatoIntegrator(params.potato, collect_data=params.output.html)
+    collect_data = params.output.html or params.output.json
+    integrator = PotatoIntegrator(params.potato, collect_data)
     try:
         experiment, table, collector = integrator.run(experiment, table)
     except RuntimeError as e:
@@ -152,11 +170,16 @@ def process_one_image_potato_integrator(experiment, table, params):
 
 def process_one_image_stills_integrator(experiment, table, params):
 
-    disable_loggers(
-        loggers_to_disable_for_stills
-    )  # disable the loggers within each process
+    if params.individual_log_verbosity < 2:
+        disable_loggers(
+            loggers_to_disable_for_stills
+        )  # disable the loggers within each process
+    elif params.individual_log_verbosity == 2:
+        for name in loggers_to_disable_for_stills:
+            logging.getLogger(name).setLevel(logging.INFO)
 
-    integrator = StillsIntegrator(params.stills, collect_data=params.output.html)
+    collect_data = params.output.html or params.output.json
+    integrator = StillsIntegrator(params.stills, collect_data)
     try:
         experiment, table, collector = integrator.run(experiment, table)
     except RuntimeError as e:
@@ -254,7 +277,7 @@ def run(args: List[str] = None, phil=working_phil) -> None:
     """Run from the command-line."""
     usage = ""
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil,
         epilog=help_message,
@@ -264,7 +287,7 @@ def run(args: List[str] = None, phil=working_phil) -> None:
     # Check the number of arguments is correct
 
     # Parse the command line
-    params, options = parser.parse_args(show_diff_phil=False)
+    params, options = parser.parse_args(args=args, show_diff_phil=False)
     reflections = flatten_reflections(params.input.reflections)
     experiments = flatten_experiments(params.input.experiments)
 
@@ -279,6 +302,7 @@ def run(args: List[str] = None, phil=working_phil) -> None:
 
     # Configure logging
     log.config(verbosity=options.verbose, logfile=params.output.log)
+    params.individual_log_verbosity = options.verbose
     logger.info(dials_version())
 
     # Log the diff phil
@@ -335,12 +359,16 @@ def run(args: List[str] = None, phil=working_phil) -> None:
         logger.info(f"Saving the experiments to {experiments_filename}")
         integrated_experiments.as_file(experiments_filename)
 
-    # now generate a html report using the aggregated data.
-    plots = configuration["aggregator"].make_plots()
-
-    if params.output.html and plots:
-        logger.info(f"Writing html report to {params.output.html}")
-        generate_html_report(plots, params.output.html)
+    if params.output.html or params.output.json:
+        # now generate plots using the aggregated data.
+        plots = configuration["aggregator"].make_plots()
+        if params.output.html:
+            logger.info(f"Writing html report to {params.output.html}")
+            generate_html_report(plots, params.output.html)
+        if params.output.json:
+            logger.info(f"Saving plot data in json format to {params.output.json}")
+            with open(params.output.json, "w") as outfile:
+                json.dump(plots, outfile, indent=2)
 
 
 if __name__ == "__main__":

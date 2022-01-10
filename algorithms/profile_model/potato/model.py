@@ -66,6 +66,25 @@ class ProfileModelBase(object):
 
         self.params = state.get_M_params()
 
+    def to_dict(self):
+        """Convert the model to a dictionary."""
+        params = list(self.parameterisation().parameters)
+        sigma = self.sigma()
+        return {
+            "__id__": self.__class__.__name__,
+            "parameters": params,
+            "sigma": sigma.as_numpy_array().tolist(),
+        }
+
+    @classmethod
+    def from_dict(cls, d):
+        """Convert the model to a dictionary."""
+        model = cls(d["parameters"])
+        return model
+
+    def mosaicity(self):
+        return self.parameterisation().mosaicity()
+
 
 class SimpleProfileModelBase(ProfileModelBase):
     """
@@ -163,6 +182,8 @@ class Simple1ProfileModel(SimpleProfileModelBase):
 
     """
 
+    name = "Simple1ProfileModel"
+
     def parameterisation(self):
         """
         Get the parameterisation
@@ -209,6 +230,8 @@ class Simple6ProfileModel(SimpleProfileModelBase):
     Class to store profile model
 
     """
+
+    name = "Simple6ProfileModel"
 
     def parameterisation(self):
         """
@@ -342,6 +365,8 @@ class Angular2ProfileModel(AngularProfileModelBase):
 
     """
 
+    name = "Angular2ProfileModel"
+
     def parameterisation(self):
         """
         Get the parameterisation
@@ -389,6 +414,8 @@ class Angular4ProfileModel(AngularProfileModelBase):
     Class to store profile model
 
     """
+
+    name = "Angular4ProfileModel"
 
     def parameterisation(self):
         """
