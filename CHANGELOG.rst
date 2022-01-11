@@ -1,3 +1,49 @@
+DIALS 3.8.0 (2022-01-11)
+========================
+
+Features
+--------
+
+- dials.indexed_as_integrated: manipulate an indexed reflection file to look as if it were summation integrated. This simply takes the spot intensities that have been indexed, assigns a resolution and sets the summation integrated flag. Allows symmetry analysis using intensities and scaling on indexed data for very rapid feedback data processing. (`#1912 <https://github.com/dials/dials/issues/1912>`_)
+- All command line programs: allow passing -h argument multiple times to increase verbosity (`#1920 <https://github.com/dials/dials/issues/1920>`_)
+- Add ``Dockerfile`` and Build and Push Docker images GitHub action (`#1936 <https://github.com/dials/dials/issues/1936>`_)
+- Add experimental ``dev.dials.ssx_index`` script to index a block of ssx data. (`#1955 <https://github.com/dials/dials/issues/1955>`_)
+- Add alias ``dials.rlv`` for ``dials.reciprocal_lattice_viewer``, and ``dials.rbs`` for ``dials.refine_bravais_settings``. (`#1959 <https://github.com/dials/dials/issues/1959>`_)
+
+
+Bugfixes
+--------
+
+- ``dials.import``: Support arbitrary P1 known unit cells (`#1880 <https://github.com/dials/dials/issues/1880>`_)
+- Utility fixes: Better handle cases of missing partiality data in reflection files. Treat missing resolution values as ``0.0`` instead of being empty. (`#1911 <https://github.com/dials/dials/issues/1911>`_)
+- ``dials.scale``: Add missing "expids_and_image_ranges" information to the json output. This is required for some of the plots in ``dials.report`` output. (`#1913 <https://github.com/dials/dials/issues/1913>`_)
+- Copy docker entrypoint script with exec permissions (`#1940 <https://github.com/dials/dials/issues/1940>`_)
+- Don't line-wrap command-line help messages (`#1954 <https://github.com/dials/dials/issues/1954>`_)
+- `dials.check_indexing_symmetry`: correctly handle d_max parameter if left at default value when d_min set (`#1957 <https://github.com/dials/dials/issues/1957>`_)
+- Fixed bug that prevented the ability to plot absorption end of max
+  and min due to Kapton (`#1962 <https://github.com/dials/dials/issues/1962>`_)
+
+
+Improved Documentation
+----------------------
+
+- Updated MyD88 tutorial to make use of the new ``dials.find_rotation_axis`` command (`#1885 <https://github.com/dials/dials/issues/1885>`_)
+- Document the DXTBX convention for representing the goniostat rotation operator :math:`\mathbf{R}` on `the conventions page <https://dials.github.io/documentation/conventions.html#the-dxtbx-goniometer-model>`_ of the online documentation. (`#1917 <https://github.com/dials/dials/issues/1917>`_)
+- Update tutorial for DUI 2021.11.1. (`#1938 <https://github.com/dials/dials/issues/1938>`_)
+
+
+Deprecations and Removals
+-------------------------
+
+- The `cosym nproc=` and ``dials.util.parallel_map`` warnings have been made more visible. (`#1909 <https://github.com/dials/dials/issues/1909>`_)
+
+
+Misc
+----
+
+- `#1907 <https://github.com/dials/dials/issues/1907>`_, `#1908 <https://github.com/dials/dials/issues/1908>`_, `#1910 <https://github.com/dials/dials/issues/1910>`_, `#1928 <https://github.com/dials/dials/issues/1928>`_, `#1947 <https://github.com/dials/dials/issues/1947>`_
+
+
 DIALS 3.7.2 (2021-12-02)
 ========================
 
