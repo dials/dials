@@ -38,7 +38,7 @@ plot {
 }
 output.clusters = False
     .type = bool
-    .help = "If True, the data will be split at the threshold value and a pair"
+    .help = "If True, clusters will be split at the threshold value and a pair"
             "of output files will be created for each cluster"
 """
 )
