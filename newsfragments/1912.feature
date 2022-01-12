@@ -1,1 +1,0 @@
-dials.indexed_as_integrated: manipulate an indexed reflection file to look as if it were summation integrated. This simply takes the spot intensities that have been indexed, assigns a resolution and sets the summation integrated flag. Allows symmetry analysis using intensities and scaling on indexed data for very rapid feedback data processing. 
