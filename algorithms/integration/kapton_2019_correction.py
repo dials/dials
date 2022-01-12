@@ -325,6 +325,7 @@ class KaptonTape_2019:
         kapton_edge_2 = (col(int_edge_pts[2]) - col(int_edge_pts[3])).normalize()
         # Make sure the edges of the detector and the kapton are in the same orientation
         # first for kapton edge 1
+        edge_idx = [0, 1, 2, 3]
         side_1 = (col(edge_pts[edge_idx[0]]) - col(edge_pts[edge_idx[1]])).normalize()
         side_2 = (col(edge_pts[edge_idx[2]]) - col(edge_pts[edge_idx[3]])).normalize()
         v1 = kapton_edge_1.dot(side_1)
@@ -337,19 +338,12 @@ class KaptonTape_2019:
         # Now make sure the edges and the kapton lines are on the right side (i.e not swapped).
         # Let's look at edge_idx[0:2] i,e the first edge of detector parallel to the kapton
         pt1 = edge_pts[edge_idx[0]]
-        pt2 = edge_pts[edge_idx[1]]
         # Now find the distance between each of these points and the kapton lines.
         d1_kapton_1 = self.distance_of_point_from_line(
             pt1, int_edge_pts[0], int_edge_pts[1]
         )
         d1_kapton_2 = self.distance_of_point_from_line(
             pt1, int_edge_pts[2], int_edge_pts[3]
-        )
-        d2_kapton_1 = self.distance_of_point_from_line(
-            pt2, int_edge_pts[0], int_edge_pts[1]
-        )
-        d2_kapton_2 = self.distance_of_point_from_line(
-            pt2, int_edge_pts[2], int_edge_pts[3]
         )
         if d1_kapton_1 < d1_kapton_2:  # closer to max than edge
             pair_values = [
