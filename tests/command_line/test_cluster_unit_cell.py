@@ -19,7 +19,7 @@ def test_dials_cluster_unit_cell_command_line(dials_regression, run_in_tmpdir):
     data_dir = (
         pathlib.Path(dials_regression) / "refinement_test_data" / "multi_narrow_wedges"
     )
-    experiments = data_dir.glob("data/sweep_*/experiments.json")
+    experiments = list(data_dir.glob("data/sweep_*/experiments.json"))
 
     result = procrunner.run(
         command=["dials.cluster_unit_cell", "plot.show=False"] + experiments,
@@ -36,8 +36,8 @@ def test_dials_cluster_unit_cell_command_line_output_files(dials_regression, tmp
     data_dir = (
         pathlib.Path(dials_regression) / "refinement_test_data" / "multi_narrow_wedges"
     )
-    experiments = data_dir.glob("data/sweep_*/experiments.json")
-    reflections = data_dir.glob("data/sweep_*/indexed.pickle")
+    experiments = list(data_dir.glob("data/sweep_*/experiments.json"))
+    reflections = list(data_dir.glob("data/sweep_*/indexed.pickle"))
 
     # first combine experiments
     result = procrunner.run(
@@ -83,8 +83,8 @@ def test_dials_cluster_unit_cell_command_line_output_files(dials_regression, tmp
         working_directory=tmp_path,
     )
     assert not result.returncode
-    experiments = tmp_path.glob("split_*.expt")
-    reflections = tmp_path.glob("split_*.refl")
+    experiments = list(tmp_path.glob("split_*.expt"))
+    reflections = list(tmp_path.glob("split_*.refl"))
 
     result = procrunner.run(
         command=[
