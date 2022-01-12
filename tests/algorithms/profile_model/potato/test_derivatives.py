@@ -114,8 +114,6 @@ def test_derivative_of_epsilon(sigma, s0, b1, b2, b3):
     assert abs(depdb2_num - depdb2_cal) < 1e-7
     assert abs(depdb3_num - depdb3_cal) < 1e-7
 
-    # print 'OK'
-
 
 @pytest.mark.parametrize("sigma,s0,b1,b2,b3", generate_testdata())
 def test_derivative_of_mubar(sigma, s0, b1, b2, b3):
@@ -163,8 +161,6 @@ def test_derivative_of_mubar(sigma, s0, b1, b2, b3):
     assert abs(dmubar_db2_num - dmubar_db2_cal) < 1e-7
     assert abs(dmubar_db3_num - dmubar_db3_cal) < 1e-7
 
-    # print 'OK'
-
 
 @pytest.mark.parametrize("sigma,s0,b1,b2,b3", generate_testdata())
 def test_derivative_of_e1(sigma, s0, b1, b2, b3):
@@ -207,8 +203,6 @@ def test_derivative_of_e1(sigma, s0, b1, b2, b3):
     assert abs(de1db1_num - de1db1_cal) < 1e-7
     assert abs(de1db2_num - de1db2_cal) < 1e-7
     assert abs(de1db3_num - de1db3_cal) < 1e-7
-
-    # print 'OK'
 
 
 @pytest.mark.parametrize("sigma,s0,b1,b2,b3", generate_testdata())
@@ -255,8 +249,6 @@ def test_derivative_of_e2(sigma, s0, b1, b2, b3):
     assert abs(de2db2_num - de2db2_cal) < 1e-7
     assert abs(de2db3_num - de2db3_cal) < 1e-7
 
-    # print 'OK'
-
 
 @pytest.mark.parametrize("sigma,s0,b1,b2,b3", generate_testdata())
 def test_derivative_of_e3(sigma, s0, b1, b2, b3):
@@ -299,8 +291,6 @@ def test_derivative_of_e3(sigma, s0, b1, b2, b3):
     assert abs(de3db1_num - de3db1_cal) < 1e-7
     assert abs(de3db2_num - de3db2_cal) < 1e-7
     assert abs(de3db3_num - de3db3_cal) < 1e-7
-
-    # print 'OK'
 
 
 @pytest.mark.parametrize("sigma,s0,b1,b2,b3", generate_testdata())
@@ -403,8 +393,6 @@ def test_derivative_of_s1(sigma, s0, b1, b2, b3):
     assert abs(db1_num - db1_cal) < 1e-7
     assert abs(db2_num - db2_cal) < 1e-7
     assert abs(db3_num - db3_cal) < 1e-7
-
-    # print 'OK'
 
 
 @pytest.mark.parametrize("sigma,s0,b1,b2,b3", generate_testdata())

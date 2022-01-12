@@ -185,7 +185,7 @@ class ReflectionLikelihood(object):
         self.mu = self.R * self.s2
 
         # Rotate the covariance matrix
-        self.S = self.R * self.model.get_sigma() * self.R.transpose()
+        self.S = self.R * self.model.mosaicity_covariance_matrix * self.R.transpose()
 
         # Rotate the first derivative matrices
         self.dS = rotate_mat3_double(self.R, self.model.get_dS_dp())
@@ -206,7 +206,6 @@ class ReflectionLikelihood(object):
 
         # Get data
         s0 = self.s0
-        # s2 = self.s2
         ctot = self.ctot
         mobs = self.mobs
         Sobs = self.sobs
@@ -306,12 +305,7 @@ class ReflectionLikelihood(object):
         Compute the fisher information
 
         """
-        # Get data
-        # s0 = self.s0
-        # s2 = self.s2
         ctot = self.ctot
-        # mobs = self.mobs
-        # Sobs = self.sobs
 
         # Get info about marginal distribution
         S22 = self.S[8]
@@ -320,7 +314,6 @@ class ReflectionLikelihood(object):
 
         # Get info about conditional distribution
         Sbar = self.conditional.sigma()
-        # mbar = self.conditional.mean()
         dSbar = self.conditional.first_derivatives_of_sigma()
         dmbar = self.conditional.first_derivatives_of_mean()
         Sbar_inv = Sbar.inverse()
@@ -409,20 +402,14 @@ class MaximumLikelihoodTarget(object):
         The joint log likelihood
 
         """
-        lnL = 0
-        for i in range(len(self.data)):
-            lnL += self.data[i].log_likelihood()
-        return lnL
+        return sum(d.log_likelihood() for d in self.data)
 
     def jacobian(self):
         """
         Return the Jacobean
 
         """
-        J = []
-        for i in range(len(self.data)):
-            J.append(list(self.data[i].first_derivatives()))
-        return flex.double(J)
+        return flex.double([list(d.first_derivatives()) for d in self.data])
 
     def first_derivatives(self):
         """
@@ -430,8 +417,8 @@ class MaximumLikelihoodTarget(object):
 
         """
         dL = 0
-        for i in range(len(self.data)):
-            dL += self.data[i].first_derivatives()
+        for d in self.data:
+            dL += d.first_derivatives()
         return dL
 
     def fisher_information(self):
@@ -439,10 +426,7 @@ class MaximumLikelihoodTarget(object):
         The joint fisher information
 
         """
-        I = 0
-        for i in range(len(self.data)):
-            I += self.data[i].fisher_information()
-        return I
+        return sum(d.fisher_information() for d in self.data)
 
 
 def line_search(func, x, p, tau=0.5, delta=1.0, tolerance=1e-7):
@@ -632,7 +616,7 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
 
         # Initialise the super class
         super(FisherScoringMaximumLikelihood, self).__init__(
-            model.get_active_parameters(), max_iter=max_iter, tolerance=tolerance
+            model.active_parameters, max_iter=max_iter, tolerance=tolerance
         )
 
         # Save the parameterisation
@@ -650,7 +634,7 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
         self.history = []
 
         # Print initial
-        self.callback(self.model.get_active_parameters())
+        self.callback(self.model.active_parameters)
 
     def log_likelihood(self, x):
         """
@@ -709,7 +693,7 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
         :return: The model
 
         """
-        self.model.set_active_parameters(x)
+        self.model.active_parameters = x
         target = MaximumLikelihoodTarget(
             self.model,
             self.s0,
@@ -750,18 +734,18 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
         Handle and update in parameter values
 
         """
-        self.model.set_active_parameters(x)
+        self.model.active_parameters = x
         target = self.target(x)
         lnL = target.log_likelihood()
         mse = target.mse()
         rmsd = target.rmsd()
 
         # Get the unit cell
-        unit_cell = self.model.get_unit_cell().parameters()
+        unit_cell = self.model.unit_cell.parameters()
 
         # Get some matrices
-        U = self.model.get_U()
-        M = self.model.get_M()
+        U = self.model.U_matrix
+        M = self.model.mosaicity_covariance_matrix
 
         # Print some information
         format_string1 = "  Unit cell: (%.3f, %.3f, %.3f, %.3f, %.3f, %.3f)"
@@ -769,9 +753,9 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
         format_string3 = "  | % .2e % .2e % .2e |"
 
         logger.info(f"\nIteration: {len(self.history)}")
-        if not self.model.is_unit_cell_fixed():
+        if not self.model.is_unit_cell_fixed:
             logger.info("\n" + format_string1 % unit_cell)
-        if not self.model.is_orientation_fixed():
+        if not self.model.is_orientation_fixed:
             logger.info(
                 "\n".join(
                     [
@@ -783,7 +767,7 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
                     ]
                 )
             )
-        if not self.model.is_mosaic_spread_fixed():
+        if not self.model.is_mosaic_spread_fixed:
             logger.info(
                 "\n".join(
                     [
@@ -857,13 +841,11 @@ class Refiner(object):
 
         # Print information
         logger.info("\nComponents to refine:")
-        logger.info(" Orientation:       %s" % (not self.state.is_orientation_fixed()))
-        logger.info(" Unit cell:         %s" % (not self.state.is_unit_cell_fixed()))
+        logger.info(" Orientation:       %s" % (not self.state.is_orientation_fixed))
+        logger.info(" Unit cell:         %s" % (not self.state.is_unit_cell_fixed))
+        logger.info(" RLP mosaicity:     %s" % (not self.state.is_mosaic_spread_fixed))
         logger.info(
-            " RLP mosaicity:     %s" % (not self.state.is_mosaic_spread_fixed())
-        )
-        logger.info(
-            " Wavelength spread: %s\n" % (not self.state.is_wavelength_spread_fixed())
+            " Wavelength spread: %s\n" % (not self.state.is_wavelength_spread_fixed)
         )
 
         # Initialise the algorithm
@@ -884,7 +866,7 @@ class Refiner(object):
         self.parameters = flex.double(ml.parameters)
 
         # set the parameters
-        self.state.set_active_parameters(self.parameters)
+        self.state.active_parameters = self.parameters
 
         # Print summary table of refinement.
         rows = []
@@ -898,9 +880,9 @@ class Refiner(object):
         )
 
         # Print the eigen values and vectors of sigma_m
-        if not self.state.is_mosaic_spread_fixed():
+        if not self.state.is_mosaic_spread_fixed:
             logger.info("\nDecomposition of Sigma_M:")
-            print_eigen_values_and_vectors(self.state.get_M())
+            print_eigen_values_and_vectors(self.state.mosaicity_covariance_matrix)
 
         # Save the history
         self.history = ml.history
@@ -923,14 +905,14 @@ class Refiner(object):
             self.mobs_list,
             self.sobs_list,
         )
-        return ml.correlation(self.state.get_active_parameters())
+        return ml.correlation(self.state.active_parameters)
 
     def labels(self):
         """
         Return parameter labels
 
         """
-        return self.state.get_labels()
+        return self.state.parameter_labels
 
 
 class RefinerData(object):
@@ -1040,13 +1022,6 @@ class RefinerData(object):
             assert Sobs[0] > 0, "BUG: variance must be > 0"
             assert Sobs[3] > 0, "BUG: variance must be > 0"
 
-            # Compute the bias
-            # zero = matrix.col((0, 0))
-            # Bias_sq = (xbar - zero)*(xbar - zero).transpose()
-            # Bmean += Bias_sq
-
-            # ctot += 10000
-
             # Add to the lists
             sp_list[r] = sp
             ctot_list[r] = ctot
@@ -1096,11 +1071,8 @@ class RefinerData(object):
 
         logger.info("")
         logger.info("Mean observed covariance:")
-        print_matrix(Smean)
+        logger.info(print_matrix(Smean))
         print_eigen_values_and_vectors_of_observed_covariance(Smean, s0)
-        # logger.info("")
-        # logger.info("Mean observed bias^2:")
-        # print_matrix(Bmean)
 
         # Compute the distance from the Ewald sphere
         epsilon = flex.double(
@@ -1130,16 +1102,8 @@ def print_eigen_values_and_vectors_of_observed_covariance(A, s0):
     L = matrix.diag(eigen_decomposition.values())
 
     # Print the matrix eigen values
-    logger.info("")
-    logger.info("Eigen Values:")
-    logger.info("")
-    print_matrix(L, indent=2)
-    logger.info("")
-
-    logger.info("Eigen Vectors:")
-    logger.info("")
-    print_matrix(Q, indent=2)
-    logger.info("")
+    logger.info(f"\nEigen Values:\n{print_matrix(L, indent=2)}\n")
+    logger.info(f"\nEigen Vectors:\n{print_matrix(Q, indent=2)}\n")
 
     logger.info("Observed covariance in degrees equivalent units")
     logger.info("C1: %.5f degrees" % (sqrt(L[0]) * (180.0 / pi) / s0.length()))
@@ -1157,16 +1121,12 @@ def print_eigen_values_and_vectors(A):
     eigen_values = eigen_decomposition.values()
 
     # Print the matrix eigen values
-    logger.info(" ")
-    logger.info(" Eigen Values:")
-    logger.info(" ")
-    print_matrix(matrix.diag(eigen_values), indent=2)
-    logger.info(" ")
-
-    logger.info(" Eigen Vectors:")
-    logger.info(" ")
-    print_matrix(matrix.sqr(eigen_decomposition.vectors()), indent=2)
-    logger.info(" ")
+    logger.info(
+        f"\n Eigen Values:\n{print_matrix(matrix.diag(eigen_values), indent=2)}\n"
+    )
+    logger.info(
+        f"\n Eigen Vectors:\n{print_matrix(matrix.sqr(eigen_decomposition.vectors()), indent=2)}\n"
+    )
 
     mosaicity = mosaicity_from_eigen_decomposition(eigen_values)
     logger.info(
@@ -1195,4 +1155,4 @@ def print_matrix(A, fmt="%.3g", indent=0):
         for i in range(A.n[1]):
             line += fmt % t[i + j * A.n[1]]
         lines.append("%s|%s|" % (prefix, line))
-    logger.info("\n".join(lines))
+    return "\n".join(lines)

@@ -33,26 +33,12 @@ def test_Simple1MosaicityParameterisation():
     assert p.parameters == (1e-3,)
     p.parameters = np.array([2e-3])
     assert p.parameters == (2e-3,)
-    assert p.sigma()[0] == pytest.approx(p.parameters[0] ** 2)
-    assert p.sigma()[1] == 0
-    assert p.sigma()[2] == 0
-    assert p.sigma()[3] == 0
-    assert p.sigma()[4] == pytest.approx(p.parameters[0] ** 2)
-    assert p.sigma()[5] == 0
-    assert p.sigma()[6] == 0
-    assert p.sigma()[7] == 0
-    assert p.sigma()[8] == pytest.approx(p.parameters[0] ** 2)
+    psq = p.parameters[0] ** 2
+    assert list(p.sigma()) == pytest.approx([psq, 0, 0, 0, psq, 0, 0, 0, psq])
     d = p.first_derivatives()
     assert len(d) == 1
-    assert d[0][0] == pytest.approx(2 * p.parameters[0])
-    assert d[0][1] == 0
-    assert d[0][2] == 0
-    assert d[0][3] == 0
-    assert d[0][4] == pytest.approx(2 * p.parameters[0])
-    assert d[0][5] == 0
-    assert d[0][6] == 0
-    assert d[0][7] == 0
-    assert d[0][8] == pytest.approx(2 * p.parameters[0])
+    d1 = 2 * p.parameters[0]
+    assert list(d[0]) == pytest.approx([d1, 0, 0, 0, d1, 0, 0, 0, d1])
 
 
 def test_Simple6MosaicityParameterisation():
@@ -63,21 +49,11 @@ def test_Simple6MosaicityParameterisation():
 
     assert p.is_angular() is False
     assert p.num_parameters() == 6
-    assert p.parameters[0] == pytest.approx(params[0])
-    assert p.parameters[1] == pytest.approx(params[1])
-    assert p.parameters[2] == pytest.approx(params[2])
-    assert p.parameters[3] == pytest.approx(params[3])
-    assert p.parameters[4] == pytest.approx(params[4])
-    assert p.parameters[5] == pytest.approx(params[5])
+    assert list(p.parameters) == pytest.approx(list(params))
 
     params = np.array([2e-3, 3e-3, 4e-3, 5e-3, 6e-3, 7e-3])
     p.parameters = params
-    assert p.parameters[0] == pytest.approx(params[0])
-    assert p.parameters[1] == pytest.approx(params[1])
-    assert p.parameters[2] == pytest.approx(params[2])
-    assert p.parameters[3] == pytest.approx(params[3])
-    assert p.parameters[4] == pytest.approx(params[4])
-    assert p.parameters[5] == pytest.approx(params[5])
+    assert list(p.parameters) == pytest.approx(list(params))
 
     b1, b2, b3, b4, b5, b6 = params
     assert p.sigma()[0] == pytest.approx(b1 ** 2)
@@ -136,15 +112,9 @@ def test_Angular2MosaicityParameterisation():
     assert p.parameters[1] == pytest.approx(params[1])
 
     b1, b2 = params
-    assert p.sigma()[0] == pytest.approx(b1 ** 2)
-    assert p.sigma()[1] == pytest.approx(0)
-    assert p.sigma()[2] == pytest.approx(0)
-    assert p.sigma()[3] == pytest.approx(0)
-    assert p.sigma()[4] == pytest.approx(b1 ** 2)
-    assert p.sigma()[5] == pytest.approx(0)
-    assert p.sigma()[6] == pytest.approx(0)
-    assert p.sigma()[7] == pytest.approx(0)
-    assert p.sigma()[8] == pytest.approx(b2 ** 2)
+    assert list(p.sigma()) == pytest.approx(
+        [b1 ** 2, 0, 0, 0, b1 ** 2, 0, 0, 0, b2 ** 2]
+    )
 
     dSdb = [(2 * b1, 0, 0, 0, 2 * b1, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0, 0, 0, 2 * b2)]
 
@@ -162,17 +132,11 @@ def test_Angular4MosaicityParameterisation():
 
     assert p.is_angular() is True
     assert p.num_parameters() == 4
-    assert p.parameters[0] == pytest.approx(params[0])
-    assert p.parameters[1] == pytest.approx(params[1])
-    assert p.parameters[2] == pytest.approx(params[2])
-    assert p.parameters[3] == pytest.approx(params[3])
+    assert list(p.parameters) == pytest.approx(list(params))
 
     params = np.array([2e-3, 3e-3, 4e-3, 5e-3])
     p.parameters = params
-    assert p.parameters[0] == pytest.approx(params[0])
-    assert p.parameters[1] == pytest.approx(params[1])
-    assert p.parameters[2] == pytest.approx(params[2])
-    assert p.parameters[3] == pytest.approx(params[3])
+    assert list(p.parameters) == pytest.approx(list(params))
 
     b1, b2, b3, b4 = params
     assert p.sigma()[0] == pytest.approx(b1 ** 2)
@@ -219,16 +183,16 @@ def check_model_state_with_fixed(
         fix_orientation=fix_orientation,
     )
 
-    assert state.is_orientation_fixed() == fix_orientation
-    assert state.is_unit_cell_fixed() == fix_unit_cell
-    assert state.is_mosaic_spread_fixed() == fix_mosaic_spread
-    assert state.is_wavelength_spread_fixed() == fix_wavelength_spread
+    assert state.is_orientation_fixed == fix_orientation
+    assert state.is_unit_cell_fixed == fix_unit_cell
+    assert state.is_mosaic_spread_fixed == fix_mosaic_spread
+    assert state.is_wavelength_spread_fixed == fix_wavelength_spread
 
-    U = state.get_U()
-    B = state.get_B()
-    A = state.get_A()
-    M = state.get_M()
-    L = state.get_L()
+    U = state.U_matrix
+    B = state.B_matrix
+    A = state.A_matrix
+    M = state.mosaicity_covariance_matrix
+    L = state.wavelength_spread
 
     assert len(U) == 9
     assert len(B) == 9
@@ -239,23 +203,18 @@ def check_model_state_with_fixed(
     else:
         assert len(L) == 0
 
-    U_params = state.get_U_params()
-    B_params = state.get_B_params()
-    M_params = state.get_M_params()
-    L_params = state.get_L_params()
-
-    assert len(U_params) == 3
-    assert len(B_params) == 2
-    assert len(M_params) == mosaicity_parameterisation.num_parameters()
+    assert len(state.U_params) == 3
+    assert len(state.B_params) == 2
+    assert len(state.M_params) == mosaicity_parameterisation.num_parameters()
     if wavelength_parameterisation is not None:
-        assert len(L_params) == 1
+        assert len(state.L_params) == 1
     else:
-        assert len(L_params) == 0
+        assert len(state.L_params) == 0
 
-    dU = state.get_dU_dp()
-    dB = state.get_dB_dp()
-    dM = state.get_dM_dp()
-    dL = state.get_dL_dp()
+    dU = state.dU_dp
+    dB = state.dB_dp
+    dM = state.dM_dp
+    dL = state.dL_dp
 
     assert len(dU) == 3
     assert len(dB) == 2
@@ -265,7 +224,7 @@ def check_model_state_with_fixed(
     else:
         assert len(dL) == 0
 
-    params = state.get_active_parameters()
+    params = state.active_parameters
 
     expected_len = 0
     if not fix_mosaic_spread:
@@ -280,7 +239,7 @@ def check_model_state_with_fixed(
 
     assert len(params) == expected_len
     new_params = params
-    state.set_active_parameters(new_params)
+    state.active_parameters = new_params
 
 
 def test_ModelState(test_experiment):
@@ -340,21 +299,21 @@ def check_reflection_model_state_with_fixed(
         state, matrix.col(experiment.beam.get_s0()), matrix.col((1, 1, 1))
     )
 
-    assert model.get_sigma() == mosaicity_parameterisation.sigma()
-    assert model.get_r() == state.get_A() * matrix.col((1, 1, 1))
+    assert model.mosaicity_covariance_matrix == mosaicity_parameterisation.sigma()
+    assert model.get_r() == state.A_matrix * matrix.col((1, 1, 1))
 
     if wavelength_parameterisation is not None:
-        assert model.get_sigma_lambda() == wavelength_parameterisation.sigma()
+        assert model.wavelength_spread == wavelength_parameterisation.sigma()
     else:
-        assert model.get_sigma_lambda() == 0
+        assert model.wavelength_spread == 0
 
     dS_dp = model.get_dS_dp()
     dr_dp = model.get_dr_dp()
     dL_dp = model.get_dL_dp()
 
-    assert len(dS_dp) == len(state.get_labels())
-    assert len(dr_dp) == len(state.get_labels())
-    assert len(dL_dp) == len(state.get_labels())
+    assert len(dS_dp) == len(state.parameter_labels)
+    assert len(dr_dp) == len(state.parameter_labels)
+    assert len(dL_dp) == len(state.parameter_labels)
 
     if not fix_wavelength_spread:
         assert dr_dp[-1] == (0, 0, 0)
@@ -366,13 +325,13 @@ def check_reflection_model_state_with_fixed(
         num_params = mosaicity_parameterisation.num_parameters()
         for i in range(num_params):
             assert dr_dp[-(i + 1)] == (0, 0, 0)
-            assert dS_dp[-(i + 1)] == state.get_dM_dp()[-(i + 1)]
+            assert dS_dp[-(i + 1)] == state.dM_dp[-(i + 1)]
             assert dL_dp[-1] == 0
         dr_dp = dr_dp[:-num_params]
         dS_dp = dS_dp[:-num_params]
         dL_dp = dL_dp[:-num_params]
     if not fix_orientation:
-        num_params = state.num_U_params()
+        num_params = state.U_params.size()
         for i in range(num_params):
             assert dS_dp[-(i + 1)] == (0, 0, 0, 0, 0, 0, 0, 0, 0)
             assert dL_dp[-(i + 1)] == 0
@@ -380,7 +339,7 @@ def check_reflection_model_state_with_fixed(
         dS_dp = dS_dp[:-num_params]
         dL_dp = dL_dp[:-num_params]
     if not fix_unit_cell:
-        num_params = state.num_B_params()
+        num_params = state.B_params.size()
         for i in range(num_params):
             assert dS_dp[-(i + 1)] == (0, 0, 0, 0, 0, 0, 0, 0, 0)
             assert dL_dp[-(i + 1)] == 0
@@ -526,43 +485,42 @@ def test_ReflectionModelState_derivatives(testdata):
             fix_unit_cell=fix_unit_cell,
             fix_orientation=fix_orientation,
         )
-        state.set_U_params(U_params)
-        state.set_B_params(B_params)
-        state.set_M_params(M_params)
-        state.set_L_params(L_params)
+        state.U_params = U_params
+        state.B_params = B_params
+        state.M_params = M_params
+        state.L_params = L_params
 
         model = ReflectionModelState(state, s0, h)
 
-        # r = model.get_r()
-        # sigma = model.get_sigma()
         dr_dp = model.get_dr_dp()
         dS_dp = model.get_dS_dp()
         dL_dp = model.get_dL_dp()
 
         def compute_sigma(parameters):
-            state.set_active_parameters(parameters)
+            state.active_parameters = parameters
             model = ReflectionModelState(state, s0, h)
-            return model.get_sigma()
+            return model.mosaicity_covariance_matrix
 
         def compute_r(parameters):
-            state.set_active_parameters(parameters)
+            state.active_parameters = parameters
             model = ReflectionModelState(state, s0, h)
             return model.get_r()
 
         def compute_sigma_lambda(parameters):
-            state.set_active_parameters(parameters)
+            state.active_parameters = parameters
             model = ReflectionModelState(state, s0, h)
-            return model.get_sigma_lambda()
+            return model.wavelength_spread
 
         step = 1e-6
 
-        parameters = state.get_active_parameters()
+        parameters = state.active_parameters
 
         dr_num = []
         for i in range(len(parameters)):
+            import copy
 
             def f(x):
-                p = [pp for pp in parameters]
+                p = copy.copy(parameters)
                 p[i] = x
                 return compute_r(p)
 
@@ -575,7 +533,7 @@ def test_ReflectionModelState_derivatives(testdata):
         for i in range(len(parameters)):
 
             def f(x):
-                p = [pp for pp in parameters]
+                p = copy.copy(parameters)
                 p[i] = x
                 return compute_sigma(p)
 
@@ -588,9 +546,9 @@ def test_ReflectionModelState_derivatives(testdata):
         for i in range(len(parameters)):
 
             def f(x):
-                p = [pp for pp in parameters]
+                p = copy.copy(parameters)
                 p[i] = x
-                return compute_sigma_lambda(p)
+                return compute_sigma_lambda(p) ** 2
 
             dl_num.append(first_derivative(f, parameters[i], step))
 

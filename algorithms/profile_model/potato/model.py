@@ -58,13 +58,13 @@ class ProfileModelBase(object):
         # Compute the eigen decomposition of the covariance matrix and check
         # largest eigen value
         eigen_decomposition = eigensystem.real_symmetric(
-            state.get_M().as_flex_double_matrix()
+            state.mosaicity_covariance_matrix.as_flex_double_matrix()
         )
         L = eigen_decomposition.values()
         if L[0] > 1e-5:
             raise RuntimeError("Mosaicity matrix is unphysically large")
 
-        self.params = state.get_M_params()
+        self.params = state.M_params
 
     def to_dict(self):
         """Convert the model to a dictionary."""
@@ -138,27 +138,16 @@ class SimpleProfileModelBase(ProfileModelBase):
         partiality = flex.double(len(reflections))
         partiality_variance = flex.double(len(reflections))
         for k in range(len(reflections)):
-            # s1 = matrix.col(reflections[k]["s1"])
             s2 = matrix.col(reflections[k]["s2"])
-            # sbox = reflections[k]["shoebox"]
-
-            # r = s2 - s0
             sigma = experiments[0].crystal.mosaicity.sigma()
             R = compute_change_of_basis_operation(s0, s2)
             S = R * (sigma) * R.transpose()
             mu = R * s2
             assert abs(1 - mu.normalize().dot(matrix.col((0, 0, 1)))) < 1e-7
-
-            # S11 = matrix.sqr((S[0], S[1], S[3], S[4]))
-            # S12 = matrix.col((S[2], S[5]))
-            # S21 = matrix.col((S[6], S[7])).transpose()
             S22 = S[8]
-
-            # mu1 = matrix.col((mu[0], mu[1]))
             mu2 = mu[2]
             eps = s0.length() - mu2
             var_eps = S22 / num  # FIXME Approximation
-
             partiality[k] = exp(-0.5 * eps * (1 / S22) * eps) * sqrt(S00 / S22)
             partiality_variance[k] = (
                 var_eps * (eps ** 2 / (S00 * S22)) * exp(eps ** 2 / S22)
@@ -319,10 +308,7 @@ class AngularProfileModelBase(ProfileModelBase):
         partiality = flex.double(len(reflections))
         partiality_variance = flex.double(len(reflections))
         for k in range(len(reflections)):
-            # s1 = matrix.col(reflections[k]["s1"])
             s2 = matrix.col(reflections[k]["s2"])
-            # sbox = reflections[k]["shoebox"]
-
             r = s2 - s0
             sigma = experiments[0].crystal.mosaicity.sigma()
             R = compute_change_of_basis_operation(s0, s2)
@@ -330,17 +316,10 @@ class AngularProfileModelBase(ProfileModelBase):
             S = R * (Q.transpose() * sigma * Q) * R.transpose()
             mu = R * s2
             assert abs(1 - mu.normalize().dot(matrix.col((0, 0, 1)))) < 1e-7
-
-            # S11 = matrix.sqr((S[0], S[1], S[3], S[4]))
-            # S12 = matrix.col((S[2], S[5]))
-            # S21 = matrix.col((S[6], S[7])).transpose()
             S22 = S[8]
-
-            # mu1 = matrix.col((mu[0], mu[1]))
             mu2 = mu[2]
             eps = s0.length() - mu2
             var_eps = S22 / num  # FIXME Approximation
-
             S00 = S22  # FIXME
             partiality[k] = exp(-0.5 * eps * (1 / S22) * eps) * sqrt(S00 / S22)
             partiality_variance[k] = (

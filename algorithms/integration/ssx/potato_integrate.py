@@ -9,11 +9,11 @@ from dials.algorithms.integration.ssx.ssx_integrate import (
     OutputCollector,
     SimpleIntegrator,
 )
+from dials.algorithms.profile_model.potato.indexer import reindex
 from dials.algorithms.profile_model.potato.potato import (
     final_integrator,
     initial_integrator,
     predict,
-    reindex,
     run_potato_refinement,
 )
 

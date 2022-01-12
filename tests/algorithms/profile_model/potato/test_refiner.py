@@ -1,5 +1,6 @@
 from __future__ import division, print_function
 
+import copy
 from collections import namedtuple
 from math import exp
 from random import randint, uniform
@@ -203,10 +204,10 @@ def test_ConditionalDistribution(testdata):
             fix_unit_cell=fix_unit_cell,
             fix_orientation=fix_orientation,
         )
-        state.set_U_params(U_params)
-        state.set_B_params(B_params)
-        state.set_M_params(M_params)
-        state.set_L_params(L_params)
+        state.U_params = U_params
+        state.B_params = B_params
+        state.M_params = M_params
+        state.L_params = L_params
 
         model = ReflectionModelState(state, s0, h)
 
@@ -222,7 +223,7 @@ def test_ConditionalDistribution(testdata):
             mu = R * s2
 
             # Rotate the covariance matrix
-            S = R * model.get_sigma() * R.transpose()
+            S = R * model.mosaicity_covariance_matrix * R.transpose()
 
             # Rotate the first derivative matrices
             dS = rotate_mat3_double(R, model.get_dS_dp())
@@ -241,16 +242,16 @@ def test_ConditionalDistribution(testdata):
         dm_dp = conditional.first_derivatives_of_mean()
         dS_dp = conditional.first_derivatives_of_sigma()
 
-        parameters = state.get_active_parameters()
+        parameters = state.active_parameters
 
         def compute_sigma(parameters):
-            state.set_active_parameters(parameters)
+            state.active_parameters = parameters
             model = ReflectionModelState(state, s0, h)
             conditional = get_conditional(model)
             return conditional.sigma()
 
         def compute_mean(parameters):
-            state.set_active_parameters(parameters)
+            state.active_parameters = parameters
             model = ReflectionModelState(state, s0, h)
             conditional = get_conditional(model)
             return conditional.mean()
@@ -259,7 +260,7 @@ def test_ConditionalDistribution(testdata):
         for i in range(len(parameters)):
 
             def f(x):
-                p = [pp for pp in parameters]
+                p = copy.copy(parameters)
                 p[i] = x
                 return compute_mean(p)
 
@@ -272,7 +273,7 @@ def test_ConditionalDistribution(testdata):
         for i in range(len(parameters)):
 
             def f(x):
-                p = [pp for pp in parameters]
+                p = copy.copy(parameters)
                 p[i] = x
                 return compute_sigma(p)
 
@@ -352,10 +353,10 @@ def test_ReflectionLikelihood(testdata):
             fix_unit_cell=fix_unit_cell,
             fix_orientation=fix_orientation,
         )
-        state.set_U_params(U_params)
-        state.set_B_params(B_params)
-        state.set_M_params(M_params)
-        state.set_L_params(L_params)
+        state.U_params = U_params
+        state.B_params = B_params
+        state.M_params = M_params
+        state.L_params = L_params
 
         def get_reflection_likelihood(state):
             return ReflectionLikelihood(state, s0, sp, h, ctot, mobs, Sobs)
@@ -366,12 +367,12 @@ def test_ReflectionLikelihood(testdata):
 
         dL_dp = likelihood.first_derivatives()
 
-        parameters = state.get_active_parameters()
+        parameters = state.active_parameters
 
         assert len(dL_dp) == len(parameters)
 
         def compute_likelihood(parameters):
-            state.set_active_parameters(parameters)
+            state.active_parameters = parameters
             likelihood = get_reflection_likelihood(state)
             return likelihood.log_likelihood()
 
@@ -379,7 +380,7 @@ def test_ReflectionLikelihood(testdata):
         for i in range(len(parameters)):
 
             def f(x):
-                p = [pp for pp in parameters]
+                p = copy.copy(parameters)
                 p[i] = x
                 return compute_likelihood(p)
 
@@ -432,8 +433,7 @@ def test_Refiner(testdata, refinerdata_testdata):
         refiner = Refiner(state, data)
         refiner.refine()
 
-        # print(state.get_unit_cell().parameters())
-        print(state.get_M())
+        print(state.mosaicity_covariance_matrix)
 
     check(S1, fix_mosaic_spread=False, fix_orientation=True, fix_unit_cell=True)
     check(S1, fix_mosaic_spread=True, fix_orientation=False, fix_unit_cell=True)

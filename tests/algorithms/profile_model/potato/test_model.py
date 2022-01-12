@@ -18,8 +18,6 @@ from dials.algorithms.profile_model.potato.parameterisation import (
 from dials.algorithms.spot_prediction import IndexGenerator
 from dials.array_family import flex
 
-# from dials.test.algorithms.profile_model.potato import test_experiment
-
 
 @pytest.fixture
 def simple1_profile_model():
@@ -83,7 +81,7 @@ def test_Simple1ProfileModel_sigma(simple1_profile_model):
 
 def test_Simple1ProfileModel_update_model(simple1_profile_model, simple1_model_state):
     params = [5e-4]
-    simple1_model_state.set_M_params(params)
+    simple1_model_state.M_params = params
     simple1_profile_model.update_model(simple1_model_state)
     sigma = simple1_profile_model.sigma()
     check_simple1_sigma(sigma, params)
@@ -107,7 +105,6 @@ def test_Simple1ProfileModel_predict_reflections(
         [test_experiment], miller_indices, probability=0.9973
     )
 
-    # s2 = reflections["s2"]
     s0 = matrix.col(test_experiment.beam.get_s0())
     quantile = chisq_quantile(3, 0.9973)
     sigma_inv = matrix.sqr(simple1_profile_model.sigma()).inverse()
@@ -182,7 +179,7 @@ def test_Simple6ProfileModel_sigma(simple6_profile_model):
 
 def test_Simple6ProfileModel_update_model(simple6_profile_model, simple6_model_state):
     params = [5e-4, 2e-4, 6e-4, 3e-4, 4e-4, 7e-4]
-    simple6_model_state.set_M_params(params)
+    simple6_model_state.M_params = params
     simple6_profile_model.update_model(simple6_model_state)
     sigma = simple6_profile_model.sigma()
     check_simple6_sigma(sigma, params)

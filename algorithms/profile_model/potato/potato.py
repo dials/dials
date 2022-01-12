@@ -11,9 +11,7 @@
 
 from __future__ import absolute_import, division
 
-import json
 import logging
-from collections import OrderedDict
 from math import pi
 
 from libtbx.phil import parse
@@ -24,16 +22,10 @@ from dials.algorithms.profile_model.gaussian_rs.calculator import (
     ComputeEsdBeamDivergence,
 )
 from dials.algorithms.profile_model.potato import chisq_pdf
-from dials.algorithms.profile_model.potato.indexer import reindex
 from dials.algorithms.profile_model.potato.model import ProfileModelFactory
 from dials.algorithms.profile_model.potato.parameterisation import ModelState
-from dials.algorithms.profile_model.potato.plots import (
-    plot_distance_from_ewald_sphere,
-    plot_partiality,
-)
 from dials.algorithms.profile_model.potato.refiner import Refiner as ProfileRefiner
 from dials.algorithms.profile_model.potato.refiner import RefinerData
-from dials.algorithms.refinement.corrgram import corrgram
 from dials.algorithms.spot_prediction import IndexGenerator
 from dials.array_family import flex
 
@@ -558,205 +550,4 @@ def predict(experiments, d_min=None, prediction_probability=0.9973):
     reflection_table.compute_d(experiments)
     logger.info("Predicted %d reflections" % len(reflection_table))
 
-    # matched, reference, unmatched = reflection_table.match_with_reference(reference)
-    # matched is a bool mask, same length as reference stating number matched
-
-    # Add unmatched
-    # columns = flex.std_string()
-    # for col in unmatched.keys():
-    #   if col in self.reflections:
-    #     columns.append(col)
-    # unmatched = unmatched.select(columns)
-    # unmatched['id'] = flex.size_t(list(unmatched['id']))
-    # self.reflections.extend(unmatched)
-
     return reflection_table
-
-
-class Integrator(object):
-    """
-    Class to perform integration of stills in the following way:
-
-    1. Do an initial integration of strong reflections
-    2. Refine profile and crystal parameters
-    3. Do a final integration of all reflections
-
-    """
-
-    def __init__(self, experiments, reflections, params=None):
-        """
-        Initialise the integrator
-
-        """
-
-        # Only use single experiment at the moment
-        if len(experiments) > 1:
-            raise RuntimeError("Only 1 experiment can be processed")
-
-        # Set the parameters
-        if params is not None:
-            self.params = params
-        else:
-            self.params = phil_scope.extract(parse(""))
-
-        # Save some stuff
-        self.experiments = experiments
-        self.strong = reflections
-        self.reference = None
-        self.reflections = None
-        self.sigma_d = None
-        self.plots_data = OrderedDict()
-
-    def reindex_strong_spots(self):
-        """
-        Reindex the strong spot list
-
-        """
-        self.reference = reindex(
-            self.strong,
-            self.experiments[0],
-            outlier_probability=self.params.refinement.outlier_probability,
-            max_separation=self.params.refinement.max_separation,
-            fail_on_bad_index=self.params.indexing.fail_on_bad_index,
-        )
-        if self.reference.size() < self.params.refinement.min_n_reflections:
-            raise RuntimeError(
-                "Too few reflections to perform refinement: got %d, expected %d"
-                % (self.reference.size(), self.params.refinement.min_n_reflections)
-            )
-
-    def integrate_strong_spots(self):
-        """
-        Do an initial integration of the strong spots
-
-        """
-        self.reference, self.sigma_d = initial_integrator(
-            self.experiments, self.reference
-        )
-        # Output some strong spots
-        if self.params.debug.output.strong_spots:
-            self.reference.as_pickle("debug.strong.pickle")
-        # Print shoeboxes
-        if self.params.debug.output.print_shoeboxes:
-            for r in range(len(self.reference)):
-                logger.info(self.reference["shoebox"][r].mask.as_numpy_array())
-                logger.info(self.reference["shoebox"][r].data.as_numpy_array())
-
-    def refine(self):
-        """
-        Do the refinement of profile and crystal parameters
-
-        """
-
-        output_data = {"plots_data": OrderedDict()}
-
-        if self.params.output.html:
-            output_data["plots_data"].update(
-                plot_distance_from_ewald_sphere(
-                    self.experiments[0],
-                    self.reference,
-                    "Initial",
-                )
-            )
-
-        self.experiments, self.reference, ref_output_data = run_potato_refinement(
-            self.experiments,
-            self.reference,
-            self.sigma_d,
-            profile_model=self.params.profile.rlp_mosaicity.model,
-            wavelength_model=self.params.profile.wavelength_spread.model,
-            fix_unit_cell=self.params.profile.unit_cell.fixed,
-            fix_orientation=self.params.profile.orientation.fixed,
-            capture_progress=self.params.output.html,
-            n_cycles=self.params.refinement.n_cycles,
-        )
-
-        # Make some plots
-        if self.params.output.html:
-            output_data["plots_data"].update(
-                plot_distance_from_ewald_sphere(
-                    self.experiments[0],
-                    self.reference,
-                    "Final",
-                )
-            )
-
-        self.plots_data.update(output_data["plots_data"])
-
-        # Plot the corrgram
-        if self.params.debug.output.plots:
-            if ref_output_data["refiner_output"]["history"]:
-                plt = corrgram(
-                    ref_output_data["refiner_output"]["correlation"],
-                    ref_output_data["refiner_output"]["labels"],
-                )
-                plt.savefig("corrgram.png", dpi=300)
-                plt.clf()
-        # Save the history
-        if (
-            self.params.debug.output.history
-            and ref_output_data["refiner_output"]["history"]
-        ):
-            with open("history.json", "w") as outfile:
-                json.dump(
-                    ref_output_data["refiner_output"]["history"][-1], outfile, indent=2
-                )
-        # Save the profile model
-        if self.params.debug.output.profile_model:
-            with open("profile_model.json", "w") as outfile:
-                data = {
-                    "rlp_mosaicity": tuple(
-                        self.experiments[0].crystal.mosaicity.sigma()
-                    )
-                }
-                json.dump(data, outfile, indent=2)
-
-    def predict(self):
-        id_map = dict(self.strong.experiment_identifiers())
-
-        self.reflections = predict(
-            self.experiments,
-            d_min=self.params.prediction.d_min,
-            prediction_probability=self.params.prediction.probability,
-        )
-
-        # now set the identifiers
-        ids_ = set(self.reflections["id"])
-        assert ids_ == set(id_map.keys()), f"{ids_}, {id_map.keys()}"
-        for id_ in ids_:
-            self.reflections.experiment_identifiers()[id_] = id_map[id_]
-
-    def integrate(self):
-        """
-        Do an final integration of the reflections
-
-        """
-        self.reflections = final_integrator(
-            self.experiments,
-            self.reflections,
-            self.sigma_d,
-            self.params.integration.use_crude_shoebox_mask,
-            self.params.integration.shoebox.probability,
-        )
-
-        from dials.algorithms.integration.report import IntegrationReport
-
-        report = IntegrationReport(self.experiments, self.reflections)
-        logger.info(report.tables[2].as_str())
-
-        # Plot the partialities
-        if self.params.output.html:
-            self.plots_data.update(plot_partiality(self.reflections))
-
-        # Delete shoeboxes if necessary
-        if not self.params.debug.output.shoeboxes:
-            del self.reflections["shoebox"]
-
-        # Delete corrections if specified
-        if not self.params.integration.corrections.lp:
-            del self.reflections["lp"]
-        if not self.params.integration.corrections.dqe:
-            del self.reflections["dqe"]
-        if not self.params.integration.corrections.partiality:
-            del self.reflections["partiality"]
-            del self.reflections["partiality.inv.variance"]

@@ -11,7 +11,7 @@ from dials.command_line.ssx_integrate import run as run_integrate
 
 @pytest.fixture
 def indexed_data(dials_data, run_in_tmpdir):
-    ssx = dials_data("SSX_CuNiR_processed", pathlib=True)
+    ssx = dials_data("cunir_serial_processed", pathlib=True)
     expts = str(ssx / "imported_with_ref_5.expt")
     refls = str(ssx / "strong_5.refl")
 

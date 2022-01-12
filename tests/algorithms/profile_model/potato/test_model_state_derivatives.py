@@ -1,5 +1,6 @@
 from __future__ import division, print_function
 
+import copy
 from collections import namedtuple
 from random import randint, uniform
 
@@ -112,31 +113,31 @@ def test_first_derivatives(testdata):
 
     parameterisation = Simple6MosaicityParameterisation()
     state = ModelState(experiment, parameterisation)
-    state.set_U_params(U_params)
-    state.set_B_params(B_params)
-    state.set_M_params(M_params)
-    state.set_L_params(L_params)
+    state.U_params = U_params
+    state.B_params = B_params
+    state.M_params = M_params
+    state.L_params = L_params
 
     def compute_L(parameters):
-        state.set_active_parameters(parameters)
+        state.active_parameters = parameters
         rd = ReflectionLikelihood(state, s0, mobs, h, ctot, matrix.col((0, 0)), Sobs)
         return rd.log_likelihood()
 
     step = 1e-5
 
-    parameters = state.get_active_parameters()
+    parameters = state.active_parameters
 
     dL_num = []
     for i in range(len(parameters)):
 
         def f(x):
-            p = [pp for pp in parameters]
+            p = copy.copy(parameters)
             p[i] = x
             return compute_L(p)
 
         dL_num.append(first_derivative(f, parameters[i], step))
 
-    state.set_active_parameters(parameters)
+    state.active_parameters = parameters
     rd = ReflectionLikelihood(state, s0, mobs, h, ctot, matrix.col((0, 0)), Sobs)
 
     dL_cal = list(rd.first_derivatives())
