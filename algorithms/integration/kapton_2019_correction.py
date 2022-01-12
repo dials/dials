@@ -1,5 +1,6 @@
 import logging
 import math
+import sys
 
 from scitbx.matrix import col
 
@@ -218,6 +219,29 @@ class KaptonTape_2019:
 
     def abs_bounding_lines_in_mm(self, detector):
         """Return bounding lines of kapton"""
+
+        def _check_int_edge_pts(int_edge_pts):
+            """Function to ensure that the combination of int_edge_pts will not result
+            in a kapton edge to be defined by 2 identical int_edge_pts.
+            """
+            new_int_edge_pts = int_edge_pts.copy()
+            if len(set(int_edge_pts)) == 4:
+                return int_edge_pts
+            elif len(set(int_edge_pts)) == 2:
+                sys.exit(
+                    "Insuffient number of intersection points to define both Kapton edges"
+                )
+            else:
+                # Find different permuations of intersecting kapton edge points that won't
+                # result in kapton_edges defined by identical points
+                if (
+                    int_edge_pts[0] == int_edge_pts[1]
+                    or int_edge_pts[2] == int_edge_pts[3]
+                ):
+                    new_int_edge_pts[1] = int_edge_pts[3]
+                    new_int_edge_pts[3] = int_edge_pts[1]
+                return new_int_edge_pts
+
         # first get bounding directions from detector:
         detz = flex.mean(flex.double([panel.get_origin()[2] for panel in detector]))
         edges = []
@@ -294,23 +318,11 @@ class KaptonTape_2019:
             all_ints[dlist_idx[sorted_idx[0]][1]],
             all_ints[dlist_idx[sorted_idx[1]][1]],
         ]
+        int_edge_pts = _check_int_edge_pts(int_edge_pts)
 
         # Sort out the edge points and the int_edge_points which are on the same side
         kapton_edge_1 = (col(int_edge_pts[0]) - col(int_edge_pts[1])).normalize()
         kapton_edge_2 = (col(int_edge_pts[2]) - col(int_edge_pts[3])).normalize()
-        min_loss_func = -999.9
-        edge_idx = None
-        for edge_idx_combo in [(0, 1, 2, 3), (0, 3, 1, 2)]:
-            side_1 = (
-                col(edge_pts[edge_idx_combo[0]]) - col(edge_pts[edge_idx_combo[1]])
-            ).normalize()
-            side_2 = (
-                col(edge_pts[edge_idx_combo[2]]) - col(edge_pts[edge_idx_combo[3]])
-            ).normalize()
-            loss_func = abs(kapton_edge_1.dot(side_1)) + abs(kapton_edge_2.dot(side_2))
-            if loss_func > min_loss_func:
-                edge_idx = edge_idx_combo
-                min_loss_func = loss_func
         # Make sure the edges of the detector and the kapton are in the same orientation
         # first for kapton edge 1
         side_1 = (col(edge_pts[edge_idx[0]]) - col(edge_pts[edge_idx[1]])).normalize()
@@ -340,9 +352,6 @@ class KaptonTape_2019:
             pt2, int_edge_pts[2], int_edge_pts[3]
         )
         if d1_kapton_1 < d1_kapton_2:  # closer to max than edge
-            assert (
-                d2_kapton_1 < d2_kapton_2
-            ), "Distance mismatch. Edge of detector might be on wrong side of kapton tape ... please check"
             pair_values = [
                 (
                     edge_pts[edge_idx[0]],
