@@ -401,7 +401,7 @@ phil_str = """
   emax = 4
     .type = float(value_min = 0)
     .help = "Reject reflections with normalised intensities E^2 > emax^2"
-    .short_caption = "Maximum normalised intensity E"
+    .short_caption = "Maximum normalised intensity"
 """
 
 
