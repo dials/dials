@@ -31,7 +31,7 @@ from dials.algorithms.scaling.scaling_utilities import (
 )
 from dials.array_family import flex
 from dials.util import Sorry
-from dials.util.options import OptionParser
+from dials.util.options import ArgumentParser
 
 logger = logging.getLogger("dials")
 
@@ -101,6 +101,7 @@ def choose_initial_scaling_intensities(reflection_table, intensity_choice="profi
             if "partiality.inv.variance" in reflection_table:
                 reflection_table["variance"] += (
                     reflection_table["intensity.sum.value"]
+                    * conv
                     * reflection_table["partiality.inv.variance"]
                 )
         else:
@@ -153,8 +154,8 @@ def scale_against_target(
     """,
             process_includes=True,
         )
-        optionparser = OptionParser(phil=phil_scope, check_format=False)
-        params, _ = optionparser.parse_args(args=[], quick_parse=True)
+        parser = ArgumentParser(phil=phil_scope, check_format=False)
+        params, _ = parser.parse_args(args=[], quick_parse=True)
         params.model = model
 
     from dials.algorithms.scaling.scaler_factory import TargetScalerFactory
@@ -187,8 +188,8 @@ def scale_single_dataset(reflection_table, experiment, params=None, model="physi
     """,
             process_includes=True,
         )
-        optionparser = OptionParser(phil=phil_scope, check_format=False)
-        params, _ = optionparser.parse_args(args=[], quick_parse=True)
+        parser = ArgumentParser(phil=phil_scope, check_format=False)
+        params, _ = parser.parse_args(args=[], quick_parse=True)
 
     params.model = model
 
@@ -430,7 +431,11 @@ def merging_stats_from_scaled_array(
 
 def intensity_array_from_cif_file(cif_file):
     """Return an intensity miller array from a cif file."""
-    model = cif.reader(file_path=cif_file).build_crystal_structures()["1"]
+    structures = cif.reader(file_path=cif_file).build_crystal_structures()
+    try:
+        model = structures["1"]
+    except KeyError:
+        raise KeyError("Unable to extract structure from cif file")
     ic = (
         model.structure_factors(anomalous_flag=True, d_min=0.4, algorithm="direct")
         .f_calc()
@@ -490,14 +495,15 @@ def create_datastructures_for_target_mtz(experiments, mtz_file):
                 [experiments[0]], [r_tplus], anomalous=True
             ).blocked_data_list[0]
             r_t["intensity"] = Ih_table.Ih_values
-            inv_var = (
-                Ih_table.weights * Ih_table.h_index_matrix
-            ) * Ih_table.h_expand_matrix
+            inv_var = Ih_table.sum_in_groups(Ih_table.weights, output="per_refl")
             r_t["variance"] = 1.0 / inv_var
             r_t["miller_index"] = Ih_table.miller_index
     else:
-        assert 0, """Unrecognised intensities in mtz file."""
+        raise KeyError("Unable to find intensities (tried I, IMEAN, I(+)/I(-))")
+    logger.info(f"Extracted {r_t.size()} intensities from target mtz")
     r_t = r_t.select(r_t["variance"] > 0.0)
+    if r_t.size() == 0:
+        raise ValueError("No reflections with positive sigma remain after filtering")
     r_t["d"] = (
         miller.set(
             crystal_symmetry=crystal.symmetry(
@@ -522,7 +528,6 @@ def create_datastructures_for_target_mtz(experiments, mtz_file):
     params.KB.decay_correction.return_value = False
     exp.scaling_model = KBScalingModel.from_data(params, [], [])
     exp.scaling_model.set_scaling_model_as_scaled()  # Set as scaled to fix scale.
-
     return exp, r_t
 
 

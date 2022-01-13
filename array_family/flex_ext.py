@@ -1169,9 +1169,7 @@ Found %s"""
         Reset the 'id' column such that the experiment identifiers are
         numbered 0 .. n-1.
         """
-        reverse_map = collections.OrderedDict(
-            (v, k) for k, v in self.experiment_identifiers()
-        )
+        reverse_map = {v: k for k, v in self.experiment_identifiers()}
         orig_id = self["id"].deep_copy()
         for k in self.experiment_identifiers().keys():
             del self.experiment_identifiers()[k]
@@ -1238,8 +1236,12 @@ Found %s"""
         self["rlp"] = cctbx.array_family.flex.vec3_double(len(self))
         panel_numbers = cctbx.array_family.flex.size_t(self["panel"])
 
+        # crystal_frame is not used in indexing, but is a feature of the
+        # reciprocal lattice viewer -> but if we are looking at the crystal
+        # coordinate frame we need to look at the experiments independently
+
         for i, expt in enumerate(experiments):
-            if "imageset_id" in self:
+            if not crystal_frame and "imageset_id" in self:
                 sel_expt = self["imageset_id"] == i
             else:
                 sel_expt = self["id"] == i

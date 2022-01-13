@@ -6,9 +6,10 @@ import itertools
 import math
 
 import numpy as np
+from scipy.stats import norm
 
+from dxtbx import flumpy
 from scitbx import math as scitbxmath
-from scitbx.math import distributions
 
 from dials.array_family import flex
 from dials_scaling_ext import calc_lookup_index, calc_theta_phi
@@ -807,27 +808,23 @@ equivalents i.e. sigma_obs^2 = (Sum (I - g<Ih>)^2) / N-1.
 
 def normal_probability_plot(data, label=None):
     """Plot the distribution of normal probabilities of errors."""
-    norm = distributions.normal_distribution()
 
-    n = len(data["delta_hl"])
-    if n <= 10:
-        a = 3 / 8
-    else:
-        a = 0.5
+    n = data["delta_hl"].size
+    y = np.sort(data["delta_hl"])
+    delta = 0.5 / n
+    v = np.linspace(start=delta, stop=1.0 - delta, endpoint=True, num=n)
+    x = norm.ppf(v)
 
-    y = flex.sorted(flex.double(data["delta_hl"]))
-    x = [norm.quantile((i + 1 - a) / (n + 1 - (2 * a))) for i in range(n)]
-
-    H, xedges, yedges = np.histogram2d(np.array(x), y.as_numpy_array(), bins=(200, 200))
+    H, xedges, yedges = np.histogram2d(x, y, bins=(200, 200))
     nonzeros = np.nonzero(H)
     z = np.empty(H.shape)
     z[:] = np.NAN
     z[nonzeros] = H[nonzeros]
 
     # also make a histogram
-    histy = flex.histogram(y, n_slots=100)
+    histy = flex.histogram(flumpy.from_numpy(y), n_slots=100)
     # make a gaussian for reference also
-    n = y.size()
+    n = y.size
     width = histy.slot_centers()[1] - histy.slot_centers()[0]
     gaussian = [
         n * width * math.exp(-(sc ** 2) / 2.0) / ((2.0 * math.pi) ** 0.5)

@@ -2,6 +2,7 @@ from unittest.mock import MagicMock, Mock
 
 import pytest
 
+from dxtbx import flumpy
 from dxtbx.model import Beam, Crystal, Detector, Experiment, Goniometer, Scan
 from dxtbx.model.experiment_list import ExperimentList
 from libtbx import phil
@@ -21,7 +22,7 @@ from dials.algorithms.scaling.scaling_library import create_scaling_model
 from dials.algorithms.scaling.scaling_utilities import calculate_prescaling_correction
 from dials.algorithms.scaling.target_function import ScalingTarget
 from dials.array_family import flex
-from dials.util.options import OptionParser
+from dials.util.options import ArgumentParser
 
 
 def side_effect_update_var(variances, intensities):
@@ -99,10 +100,8 @@ def generated_param():
   """,
         process_includes=True,
     )
-    optionparser = OptionParser(phil=phil_scope, check_format=False)
-    parameters, _ = optionparser.parse_args(
-        args=[], quick_parse=True, show_diff_phil=False
-    )
+    parser = ArgumentParser(phil=phil_scope, check_format=False)
+    parameters, _ = parser.parse_args(args=[], quick_parse=True, show_diff_phil=False)
     parameters.model = "KB"
     return parameters
 
@@ -306,7 +305,9 @@ def test_SingleScaler_initialisation():
     # first check 'data' contains all suitable reflections
     assert list(decay.data["d"]) == list(d_suitable)
     # Now check 'd_values' (which will be used for minim.) matches Ih_table data
-    assert list(decay.d_values[0]) == list(d_suitable.select(block_selection))
+    assert list(decay.d_values[0]) == list(
+        d_suitable.select(flumpy.from_numpy(block_selection))
+    )
 
     # test make ready for scaling method
     # set some new outliers and check for updated datastructures
@@ -323,7 +324,9 @@ def test_SingleScaler_initialisation():
     ]
     block_selection = scaler.Ih_table.blocked_data_list[0].block_selections[0]
     assert list(block_selection) == [2, 0, 5, 6, 1]
-    assert list(decay.d_values[0]) == list(d_suitable.select(block_selection))
+    assert list(decay.d_values[0]) == list(
+        d_suitable.select(flumpy.from_numpy(block_selection))
+    )
 
     # test set outliers
     assert list(r.get_flags(r.flags.outlier_in_scaling)) == [False] * 8
@@ -380,7 +383,9 @@ def test_multiscaler_initialisation():
         # first check 'data' contains all suitable reflections
         assert list(decay.data["d"]) == list(d_suitable)
         # Now check 'd_values' (which will be used for minim.) matches Ih_table data
-        assert list(decay.d_values[0]) == list(d_suitable.select(block_selections[i]))
+        assert list(decay.d_values[0]) == list(
+            d_suitable.select(flumpy.from_numpy(block_selections[i]))
+        )
 
 
 def test_targetscaler_initialisation():
@@ -472,7 +477,9 @@ def test_targetscaler_initialisation():
         # first check 'data' contains all suitable reflections
         assert list(decay.data["d"]) == list(d_suitable)
         # Now check 'd_values' (which will be used for minim.) matches Ih_table data
-        assert list(decay.d_values[0]) == list(d_suitable.select(block_selections[i]))
+        assert list(decay.d_values[0]) == list(
+            d_suitable.select(flumpy.from_numpy(block_selections[i]))
+        )
 
     # but shouldn't have updated other
     assert (
@@ -649,7 +656,7 @@ def test_SingleScaler_combine_intensities():
         r["intensity.prf.variance"]
     )
     block = scaler.global_Ih_table.blocked_data_list[0]
-    block_sel = block.block_selections[0]
+    block_sel = flumpy.from_numpy(block.block_selections[0])
     suitable = scaler.suitable_refl_for_scaling_sel
     assert list(block.intensities) == list(
         scaler.reflection_table["intensity"].select(suitable).select(block_sel)
@@ -765,7 +772,11 @@ def test_multiscaler_update_for_minimisation():
 
     block_list = multiscaler.Ih_table.blocked_data_list
 
-    assert block_list[0].inverse_scale_factors == expected_scales_for_block_1
-    assert block_list[1].inverse_scale_factors == expected_scales_for_block_2
+    assert list(block_list[0].inverse_scale_factors) == list(
+        expected_scales_for_block_1
+    )
+    assert list(block_list[1].inverse_scale_factors) == list(
+        expected_scales_for_block_2
+    )
     assert block_list[1].derivatives == expected_derivatives_for_block_2
     assert block_list[0].derivatives == expected_derivatives_for_block_1

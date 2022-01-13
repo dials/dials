@@ -67,7 +67,7 @@ import libtbx.phil
 
 from dials.util import log, resolution_analysis, show_mail_handle_errors
 from dials.util.multi_dataset_handling import parse_multiple_datasets
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.estimate_resolution")
@@ -94,7 +94,7 @@ output {
 def run(args=None):
     usage = "dials.estimate_resolution [options] (scaled.expt scaled.refl | scaled_unmerged.mtz)"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_reflections=True,

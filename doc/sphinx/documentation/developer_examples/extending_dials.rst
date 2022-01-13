@@ -351,7 +351,7 @@ inherit from
       @classmethod
       def from_data(cls, params, experiment, reflection_table):
           """Create the MycalingModel from data."""
-          configdict = OrderedDict({"corrections": []})
+          configdict = {"corrections": []}
           parameters_dict = {}
 
           if params.modelname.special_correction:

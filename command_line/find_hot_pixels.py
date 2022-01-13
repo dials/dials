@@ -4,7 +4,7 @@ import pickle
 import iotbx.phil
 
 import dials.util
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 
 logger = logging.getLogger("dials.command_line.find_hot_pixels")
 
@@ -45,7 +45,7 @@ def run(args=None):
     usage = "dials.find_hot_pixels [options] models.expt strong.refl"
 
     # Create the option parser
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_reflections=True,

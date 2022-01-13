@@ -21,7 +21,7 @@ from scitbx.simplex import simplex_opt
 import dials.util
 from dials.algorithms.indexing.indexer import find_max_cell
 from dials.util import Sorry, log
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.slice import slice_reflections
 
 logger = logging.getLogger("dials.command_line.search_beam_position")
@@ -462,7 +462,7 @@ def discover_better_experimental_model(
 def run(args=None):
     usage = "dials.search_beam_position [options] imported.expt strong.refl"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_experiments=True,

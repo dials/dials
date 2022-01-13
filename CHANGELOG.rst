@@ -1,3 +1,140 @@
+DIALS 3.8.0 (2022-01-11)
+========================
+
+Features
+--------
+
+- ``dials.indexed_as_integrated``: manipulate an indexed reflection file to look as if it were summation integrated. This simply takes the spot intensities that have been indexed, assigns a resolution and sets the summation integrated flag. Allows symmetry analysis using intensities and scaling on indexed data for very rapid feedback data processing. (`#1912 <https://github.com/dials/dials/issues/1912>`_)
+- All command line programs now allow passing -h argument multiple times to increase verbosity. (`#1920 <https://github.com/dials/dials/issues/1920>`_)
+- Add ``Dockerfile`` to automatically build and push images on new releases. (`#1936 <https://github.com/dials/dials/issues/1936>`_)
+- Add experimental ``dev.dials.ssx_index`` script to index a block of ssx data. (`#1955 <https://github.com/dials/dials/issues/1955>`_)
+- Add alias ``dials.rlv`` for ``dials.reciprocal_lattice_viewer``, and ``dials.rbs`` for ``dials.refine_bravais_settings``. (`#1959 <https://github.com/dials/dials/issues/1959>`_)
+
+
+Bugfixes
+--------
+
+- ``dials.import``: Support arbitrary P1 known unit cells. (`#1880 <https://github.com/dials/dials/issues/1880>`_)
+- Utility fixes: Better handle cases of missing partiality data in reflection files. Treat missing resolution values as ``0.0`` instead of being empty. (`#1911 <https://github.com/dials/dials/issues/1911>`_)
+- ``dials.scale``: Add missing "expids_and_image_ranges" information to the json output. This is required for some of the plots in ``dials.report`` output. (`#1913 <https://github.com/dials/dials/issues/1913>`_)
+- Copy docker entrypoint script with exec permissions. (`#1940 <https://github.com/dials/dials/issues/1940>`_)
+- Don't line-wrap command-line help messages (`#1954 <https://github.com/dials/dials/issues/1954>`_)
+- `dials.check_indexing_symmetry`: correctly handle d_max parameter if left at default value when d_min set. (`#1957 <https://github.com/dials/dials/issues/1957>`_)
+- Fixed bug that prevented the ability to plot absorption end of max and min due to Kapton (`#1962 <https://github.com/dials/dials/issues/1962>`_)
+
+
+Improved Documentation
+----------------------
+
+- Updated MyD88 tutorial to make use of the new ``dials.find_rotation_axis`` command. (`#1885 <https://github.com/dials/dials/issues/1885>`_)
+- Document the dxtbx convention for representing the goniostat rotation operator :math:`\mathbf{R}` on `the conventions page. <https://dials.github.io/documentation/conventions.html#the-dxtbx-goniometer-model>`_ of the online documentation. (`#1917 <https://github.com/dials/dials/issues/1917>`_)
+- Update tutorial for DUI 2021.11.1. (`#1938 <https://github.com/dials/dials/issues/1938>`_)
+
+
+Deprecations and Removals
+-------------------------
+
+- The `cosym nproc=` and ``dials.util.parallel_map`` warnings have been made more visible. (`#1909 <https://github.com/dials/dials/issues/1909>`_)
+
+
+Misc
+----
+
+- `#1907 <https://github.com/dials/dials/issues/1907>`_, `#1908 <https://github.com/dials/dials/issues/1908>`_, `#1910 <https://github.com/dials/dials/issues/1910>`_, `#1928 <https://github.com/dials/dials/issues/1928>`_, `#1947 <https://github.com/dials/dials/issues/1947>`_
+
+
+DIALS 3.7.2 (2021-12-02)
+========================
+
+Features
+--------
+
+- ``dials.integrate``: When determining available memory, take into account ``MemoryProvisioned`` from HTCondor machine ad if the ``_CONDOR_JOB_AD`` environment variable is set.
+  ``nproc=auto``: Take into account ``CpusProvisioned`` from HTCondor machine ad. (`#1943 <https://github.com/dials/dials/issues/1943>`_)
+
+
+Bugfixes
+--------
+
+- Read ``_CONDOR_JOB_AD`` not ``_CONDOR_MACHINE_AD`` (`#1945 <https://github.com/dials/dials/issues/1945>`_)
+
+
+DIALS 3.7.1 (2021-11-17)
+========================
+
+Bugfixes
+--------
+
+- ``dials.export``: No longer allow (erroneous) MTZ export for multiple experiments with multiple space groups. (`#1915 <https://github.com/dials/dials/issues/1915>`_)
+- ``dials.export``: No longer fails for XDS_ASCII and SADABS export with ``intensity=auto``. (`#1926 <https://github.com/dials/dials/issues/1926>`_)
+- ``dials.report``: Fix broken json output option. Include more graphs in json output. (`#1932 <https://github.com/dials/dials/issues/1932>`_)
+
+
+DIALS 3.7.0 (2021-11-01)
+========================
+
+Features
+--------
+
+- Bootstrap support for MacOS M1 platforms. (`#1841 <https://github.com/dials/dials/issues/1841>`_)
+- New ``dials.find_rotation_axis`` program optimises the rotation axis from strong spot positions prior to indexing. (`#1884 <https://github.com/dials/dials/issues/1884>`_)
+- ``dials.import``: Allow importing templates with no template characters. (`#1840 <https://github.com/dials/dials/issues/1840>`_)
+- ``dials.stills_process``: Performance improvements in Kapton absorption correction and in rare cases of highly mosaic crystals. (`#1846 <https://github.com/dials/dials/issues/1846>`_)
+- ``dials.image_viewer`` Coordinates are now given in fast, slow order. (`#1849 <https://github.com/dials/dials/issues/1849>`_)
+- ``dials.image_viewer``: Crystal basis vectors are now shown in the same colour as their predictions. (`#1855 <https://github.com/dials/dials/issues/1855>`_)
+- ``dials.image_viewer``: Add the option to display the rotation axis (`#1856 <https://github.com/dials/dials/issues/1856>`_)
+- ``dials.image_viewer``: Draw resolution rings for curved detectors. (`#1899 <https://github.com/dials/dials/issues/1899>`_)
+- ``dials.import``: Unhandled files are now by default ignored. This means that e.g. ``*.log`` files alongside images will no longer prevent a successful import. Set ``ignore_unhandled=False`` to restore the previous behaviour. (`#1881 <https://github.com/dials/dials/issues/1881>`_)
+- ``dials.scale``: Allow fixing of a particular correction with e.g. ``physical.correction.fix=absorption``. (`#1883 <https://github.com/dials/dials/issues/1883>`_)
+- Installer now accepts a ``--raw-prefix`` option to use the target destination directly, instead of in a ``dials-X.Y`` subdirectory. (`#1896 <https://github.com/dials/dials/issues/1896>`_)
+
+
+Bugfixes
+--------
+
+- ``dials.compute_delta_cchalf``: Fix crash when only using passing dataset/group. (`#1892 <https://github.com/dials/dials/issues/1892>`_)
+- ``dials.find_bad_pixels``: Pixel coordinates are now reported in row-major order, and mask value is now set to 16, which corresponds internally to "noisy pixel". (`#1876 <https://github.com/dials/dials/issues/1876>`_)
+- ``dials.find_rotation_axis``: removed unused parameter ``optimise={True|False}``. (`#1898 <https://github.com/dials/dials/issues/1898>`_)
+- ``dials.report``: Don't show otherwise empty sections. (`#1875 <https://github.com/dials/dials/issues/1875>`_)
+
+
+Improved Documentation
+----------------------
+
+- Improvements to 3DED tutorials. (`#1850 <https://github.com/dials/dials/issues/1850>`_)
+- SARS-CoV-2 main protease tutorial: process in C2 rather than I2 setting for consistency with published structures. (`#1854 <https://github.com/dials/dials/issues/1854>`_)
+- Removed outdated lysozyme nanocrystals tutorial. (`#1877 <https://github.com/dials/dials/issues/1877>`_)
+- Add an associated projects page to the website. (`#1893 <https://github.com/dials/dials/issues/1893>`_)
+
+
+Deprecations and Removals
+-------------------------
+
+- Bootstrap no longer allows creating Python 3.6 environments. (`#1852 <https://github.com/dials/dials/issues/1852>`_)
+- ``dials.util.mp``: deprecate ``parallel_map()`` function and remove previously deprecated ``preserve_exception_message=`` parameters. (`#1860 <https://github.com/dials/dials/issues/1860>`_)
+
+
+Misc
+----
+
+- `#1851 <https://github.com/dials/dials/issues/1851>`_, `#1853 <https://github.com/dials/dials/issues/1853>`_, `#1862 <https://github.com/dials/dials/issues/1862>`_, `#1865 <https://github.com/dials/dials/issues/1865>`_, `#1867 <https://github.com/dials/dials/issues/1867>`_, `#1869 <https://github.com/dials/dials/issues/1869>`_, `#1882 <https://github.com/dials/dials/issues/1882>`_, `#1887 <https://github.com/dials/dials/issues/1887>`_, `#1888 <https://github.com/dials/dials/issues/1888>`_, `#1889 <https://github.com/dials/dials/issues/1889>`_, `#1891 <https://github.com/dials/dials/issues/1891>`_, `#1894 <https://github.com/dials/dials/issues/1894>`_, `#1902 <https://github.com/dials/dials/issues/1902>`_
+
+
+DIALS 3.6.2 (2021-09-21)
+========================
+
+Bugfixes
+--------
+
+- ``dials.reciprocal_lattice_viewer``: In cases with multiple lattices, "Crystal Frame" now aligns all crystal frames, rather than just the first. Unindexed reflections are no longer shown in this mode. (`#1868 <https://github.com/dials/dials/issues/1868>`_)
+
+
+DIALS 3.6.1 (2021-09-06)
+========================
+
+No significant changes.
+
+
 DIALS 3.6.0 (2021-08-16)
 ========================
 

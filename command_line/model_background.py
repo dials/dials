@@ -191,12 +191,12 @@ class Script:
 
     def __init__(self):
         """Initialise the script."""
-        from dials.util.options import OptionParser
+        from dials.util.options import ArgumentParser
 
         usage = "dials.model_background [options] [param.phil] models.expt"
 
         # Initialise the base class
-        self.parser = OptionParser(
+        self.parser = ArgumentParser(
             usage=usage, phil=phil_scope, epilog=help_message, read_experiments=True
         )
 

@@ -8,7 +8,7 @@ import iotbx.phil
 
 import dials.util.log
 from dials.util.image_viewer.spotfinder_wrap import spot_wrapper
-from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
+from dials.util.options import ArgumentParser, flatten_experiments, flatten_reflections
 
 help_message = """
 
@@ -61,6 +61,8 @@ show_integrated = False
 show_mask = False
   .type = bool
 show_basis_vectors = True
+  .type = bool
+show_rotation_axis = False
   .type = bool
 basis_vector_scale = 10
   .type = int(value_min=1, value_max=20)
@@ -175,7 +177,7 @@ def show_image_viewer(params, experiments, reflections):
 def run(args=None):
     dials.util.log.print_banner()
     usage_message = "dials.image_viewer models.expt [observations.refl]"
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage_message,
         phil=phil_scope,
         read_experiments=True,

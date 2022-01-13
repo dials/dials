@@ -6,7 +6,6 @@ methods to define how these are composed into one model.
 """
 
 import logging
-from collections import OrderedDict
 
 from libtbx import Auto, phil
 
@@ -46,15 +45,25 @@ logger = logging.getLogger("dials")
 
 import pkg_resources
 
-kb_model_phil_str = """\
+base_model_phil_str = """\
+correction.fix = None
+    .type = strings
+    .help = "If specified, this correction will not be refined in this scaling run"
+"""
+
+kb_model_phil_str = (
+    """\
 decay_correction = True
     .type = bool
     .help = "Option to turn off decay correction (for physical/array/KB
             default models)."
     .expert_level = 1
 """
+    + base_model_phil_str
+)
 
-dose_decay_model_phil_str = """\
+dose_decay_model_phil_str = (
+    """\
 scale_interval = 2.0
     .type = float(value_min=1.0)
     .help = "Rotation (phi) interval between model parameters for the scale"
@@ -97,9 +106,12 @@ fix_initial = True
             "scale factor error estimates."
     .expert_level = 2
 """
+    + base_model_phil_str
+)
 
 
-physical_model_phil_str = """\
+physical_model_phil_str = (
+    """\
 scale_interval = auto
     .type = float(value_min=1.0)
     .help = "Rotation (phi) interval between model parameters for the scale"
@@ -163,8 +175,11 @@ fix_initial = True
             "scale factor error estimates."
     .expert_level = 2
 """
+    + base_model_phil_str
+)
 
-array_model_phil_str = """\
+array_model_phil_str = (
+    """\
 decay_correction = True
     .type = bool
     .help = "Option to turn off decay correction (a 2D grid of parameters as"
@@ -202,6 +217,8 @@ n_modulation_bins = 20
             "binning the detector position for the modulation correction."
     .expert_level = 2
 """
+    + base_model_phil_str
+)
 
 autos = [Auto, "auto", "Auto"]
 
@@ -215,10 +232,11 @@ class ScalingModelBase:
         """Initialise the model with no components and a :obj:`configdict`."""
         if not configdict["corrections"]:
             raise ValueError("No model components created.")
-        self._components = OrderedDict()
+        self._components = {}
         self._configdict = configdict
         self._is_scaled = is_scaled
         self._error_model = None
+        self._fixed_components = []
 
     @property
     def is_scaled(self):
@@ -228,6 +246,14 @@ class ScalingModelBase:
     def fix_initial_parameter(self, params):
         """Fix a parameter of the scaling model."""
         return False
+
+    @property
+    def fixed_components(self):
+        return self._fixed_components
+
+    @fixed_components.setter
+    def fixed_components(self, components):
+        self._fixed_components = components
 
     def limit_image_range(self, new_image_range):
         """Modify the model if necessary due to reducing the image range.
@@ -298,18 +324,13 @@ class ScalingModelBase:
         Returns:
             dict: A dictionary representation of the model.
         """
-        dictionary = OrderedDict({"__id__": self.id_})
+        dictionary = {"__id__": self.id_}
         for key in self.components:
-            dictionary[key] = OrderedDict(
-                [
-                    ("n_parameters", self._components[key].n_params),
-                    ("parameters", list(self._components[key].parameters)),
-                    (
-                        "null_parameter_value",
-                        self._components[key].null_parameter_value,
-                    ),
-                ]
-            )
+            dictionary[key] = {
+                "n_parameters": self._components[key].n_params,
+                "parameters": list(self._components[key].parameters),
+                "null_parameter_value": self._components[key].null_parameter_value,
+            }
             if self._components[key].parameter_esds:
                 dictionary[key]["est_standard_devs"] = list(
                     self._components[key].parameter_esds
@@ -475,9 +496,16 @@ class DoseDecay(ScalingModelBase):
 
     def get_shared_components(self):
         if "shared" in self.configdict:
-            if "decay" in self.configdict["shared"]:
+            if (
+                "decay" in self.configdict["shared"]
+                and "decay" not in self.fixed_components
+            ):
                 return "decay"
         return None
+
+    def update(self, params):
+        if params.dose_decay.correction.fix:
+            self.fixed_components = params.dose_decay.correction.fix
 
     def configure_components(self, reflection_table, experiment, params):
         """Add the required reflection table data to the model components."""
@@ -546,7 +574,7 @@ class DoseDecay(ScalingModelBase):
         """Create the scaling model defined by the params."""
 
         params = params.dose_decay
-        configdict = OrderedDict({"corrections": []})
+        configdict = {"corrections": []}
         parameters_dict = {}
 
         osc_range = experiment.scan.get_oscillation_range()
@@ -594,7 +622,10 @@ class DoseDecay(ScalingModelBase):
                 "parameter_esds": None,
             }
 
-        return cls(parameters_dict, configdict)
+        model = cls(parameters_dict, configdict)
+        if params.correction.fix:
+            model.fixed_components = params.correction.fix
+        return model
 
     @classmethod
     def from_dict(cls, obj):
@@ -631,8 +662,7 @@ class DoseDecay(ScalingModelBase):
         return cls(parameters_dict, configdict, is_scaled=True)
 
     def plot_model_components(self, reflection_table=None):
-        d = OrderedDict()
-        d.update(plot_dose_decay(self))
+        d = plot_dose_decay(self)
         if "absorption" in self.components:
             d.update(plot_absorption_parameters(self))
             d.update(plot_absorption_plots(self, reflection_table))
@@ -774,7 +804,7 @@ class PhysicalScalingModel(ScalingModelBase):
         """Create the scaling model defined by the params."""
 
         params = params.physical
-        configdict = OrderedDict({"corrections": []})
+        configdict = {"corrections": []}
         parameters_dict = {}
 
         osc_range = experiment.scan.get_oscillation_range()
@@ -858,7 +888,10 @@ class PhysicalScalingModel(ScalingModelBase):
                 "parameter_esds": None,
             }
 
-        return cls(parameters_dict, configdict)
+        model = cls(parameters_dict, configdict)
+        if params.correction.fix:
+            model.fixed_components = params.correction.fix
+        return model
 
     @classmethod
     def from_dict(cls, obj):
@@ -890,6 +923,8 @@ class PhysicalScalingModel(ScalingModelBase):
 
     def update(self, params):
         """Update the model if new options chosen in the phil scope."""
+        if params.physical.correction.fix:
+            self.fixed_components = params.physical.correction.fix
         if "absorption" in self.components:
             new_lmax = None
             if params.physical.absorption_level:
@@ -924,8 +959,7 @@ class PhysicalScalingModel(ScalingModelBase):
                 self._configdict.update({"shared": ["absorption"]})
 
     def plot_model_components(self, reflection_table=None):
-        d = OrderedDict()
-        d.update(plot_smooth_scales(self))
+        d = plot_smooth_scales(self)
         if "absorption" in self.components:
             d.update(plot_absorption_parameters(self))
             d.update(plot_absorption_plots(self, reflection_table))
@@ -933,7 +967,10 @@ class PhysicalScalingModel(ScalingModelBase):
 
     def get_shared_components(self):
         if "shared" in self.configdict:
-            if "absorption" in self.configdict["shared"]:
+            if (
+                "absorption" in self.configdict["shared"]
+                and "absorption" not in self.fixed_components
+            ):
                 return "absorption"
         return None
 
@@ -982,6 +1019,10 @@ class ArrayScalingModel(ScalingModelBase):
     def consecutive_refinement_order(self):
         """:obj:`list`: a nested list of component names to indicate scaling order."""
         return [["decay"], ["absorption"], ["modulation"]]
+
+    def update(self, params):
+        if params.array.correction.fix:
+            self.fixed_components = params.array.correction.fix
 
     def configure_components(self, reflection_table, experiment, params):
         """Add the required reflection table data to the model components."""
@@ -1100,7 +1141,7 @@ class ArrayScalingModel(ScalingModelBase):
         """create an array-based scaling model."""
         params = params.array
         reflections = reflection_table.select(reflection_table["d"] > 0.0)
-        configdict = OrderedDict({"corrections": []})
+        configdict = {"corrections": []}
         # First initialise things common to more than one correction.
         one_osc_width = experiment.scan.get_oscillation()[1]
         osc_range = experiment.scan.get_oscillation_range()
@@ -1180,7 +1221,10 @@ class ArrayScalingModel(ScalingModelBase):
                 "parameter_esds": None,
             }
 
-        return cls(parameters_dict, configdict)
+        model = cls(parameters_dict, configdict)
+        if params.correction.fix:
+            model.fixed_components = params.correction.fix
+        return model
 
     @classmethod
     def from_dict(cls, obj):
@@ -1212,7 +1256,7 @@ class ArrayScalingModel(ScalingModelBase):
         return cls(parameters_dict, configdict, is_scaled=True)
 
     def plot_model_components(self, reflection_table=None):
-        d = OrderedDict()
+        d = {}
         if "absorption" in self.components:
             d.update(plot_array_absorption_plot(self))
         if "decay" in self.components:
@@ -1257,6 +1301,10 @@ class KBScalingModel(ScalingModelBase):
         """:obj:`list`: a nested list of component names to indicate scaling order."""
         return [["scale", "decay"]]
 
+    def update(self, params):
+        if params.KB.correction.fix:
+            self.fixed_components = params.KB.correction.fix
+
     @classmethod
     def from_dict(cls, obj):
         """Create an :obj:`KBScalingModel` from a dictionary."""
@@ -1284,7 +1332,7 @@ class KBScalingModel(ScalingModelBase):
     @classmethod
     def from_data(cls, params, experiment, reflection_table):
         """Create the :obj:`KBScalingModel` from data."""
-        configdict = OrderedDict({"corrections": []})
+        configdict = {"corrections": []}
         parameters_dict = {}
 
         if params.KB.decay_correction:
@@ -1299,7 +1347,10 @@ class KBScalingModel(ScalingModelBase):
             "parameter_esds": None,
         }
 
-        return cls(parameters_dict, configdict)
+        model = cls(parameters_dict, configdict)
+        if params.KB.correction.fix:
+            model.fixed_components = params.KB.correction.fix
+        return model
 
 
 def calculate_new_offset(

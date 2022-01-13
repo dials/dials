@@ -94,9 +94,9 @@ phil_scope = parse(
 
   input {
 
-    ignore_unhandled = False
+    ignore_unhandled = True
       .type = bool
-      .help = "Don't throw exception if some args are unhandled"
+      .help = "Ignore unhandled input (e.g. log files)"
 
     template = None
       .type = str
@@ -217,12 +217,6 @@ def _extract_or_read_imagesets(params):
         # Check if a template has been set and print help if not, otherwise try to
         # import the images based on the template input
         if len(params.input.template) > 0:
-            if not all("#" in t for t in params.input.template):
-                raise Sorry(
-                    "Template requires at least one '#' token to search for available digits.\n"
-                    "Token '#' not found in all elements of template list %s"
-                    % params.input.template
-                )
 
             experiments = ExperimentListFactory.from_templates(
                 params.input.template,
@@ -748,11 +742,11 @@ class ImageImporter:
 
     def __init__(self, phil=phil_scope):
         """Set the expected options."""
-        from dials.util.options import OptionParser
+        from dials.util.options import ArgumentParser
 
         # Create the option parser
         usage = "dials.import [options] /path/to/image/files"
-        self.parser = OptionParser(
+        self.parser = ArgumentParser(
             usage=usage,
             sort_options=True,
             phil=phil,

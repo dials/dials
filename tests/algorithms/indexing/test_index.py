@@ -562,6 +562,7 @@ def test_index_small_molecule_ice_max_cell(dials_regression, tmpdir):
     assert len(result.indexed_reflections) > 1300, len(result.indexed_reflections)
 
 
+@pytest.mark.xfail
 def test_refinement_failure_on_max_lattices_a15(dials_regression, tmpdir):
     """Problem: Sometimes there is enough data to index, but not enough to
     refine. If this happens in the (N>1)th crystal of max_lattices, then
@@ -718,8 +719,45 @@ def test_index_ED_still_low_res_spot_match(dials_data, tmpdir, indexer_type, fix
         extra_args += ["crystal.fix=cell"]
 
     expected_unit_cell = uctbx.unit_cell((78.84, 78.84, 38.29, 90, 90, 90))
-    expected_rmsds = (0.007, 0.006, 0.000)
+    expected_rmsds = (0.0065, 0.0065, 0.000)
     expected_hall_symbol = " P 4nw 2abw"
+
+    run_indexing(
+        reflections,
+        experiment,
+        tmpdir,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+    )
+
+
+@pytest.mark.parametrize(
+    "cell_params",
+    [
+        (44.47, 52.85, 62.23, 115.14, 101.72, 90.01),
+        (52.85, 62.23, 44.47, 101.72, 90.01, 115.14),
+    ],
+)
+def test_unconventional_P1_cell(dials_data, tmpdir, cell_params):
+    """
+    Indexing in P1 should succeed even if the cell parameters are provided in
+    a non-conventional setting
+    """
+    data_dir = dials_data("mpro_x0305_processed", pathlib=True)
+    experiment = data_dir / "imported.expt"
+    reflections = data_dir / "strong.refl"
+
+    cell_params_str = ",".join([str(x) for x in cell_params])
+    extra_args = [
+        "indexing.method=fft3d",
+        "known_symmetry.space_group=P1",
+        "known_symmetry.unit_cell=" + cell_params_str,
+    ]
+    expected_unit_cell = uctbx.unit_cell(cell_params)
+    expected_rmsds = (1, 1, 1)
+    expected_hall_symbol = " P 1"
 
     run_indexing(
         reflections,
