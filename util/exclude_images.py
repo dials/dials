@@ -18,6 +18,7 @@ phil_scope = iotbx.phil.parse(
     .help = "Input in the format exp:start:end"
             "Exclude a range of images (start, stop) from the dataset with"
             "experiment identifier exp  (inclusive of frames start, stop)."
+    .short_caption = "Exclude images"
     .expert_level = 1
 """
 )
