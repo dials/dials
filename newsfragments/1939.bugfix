@@ -1,1 +1,1 @@
-Prevent ``dials.refine`` from introducing an unphysical beam polarization vector.
+``dials.refine`` could in some rare cases introducing an unphysical beam polarization vector.
