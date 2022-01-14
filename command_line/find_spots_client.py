@@ -101,7 +101,6 @@ def work_all(
             print(response_to_xml(d))
 
     if json_file is not None:
-        f"Writing results to {json_file}"
         with open(json_file, "wb") as f:
             json.dump(results, f)
 
