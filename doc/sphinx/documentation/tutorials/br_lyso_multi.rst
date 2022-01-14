@@ -64,7 +64,7 @@ Process
 -------
 
 The first step is to integrate the data we have - without making any
-assumptions. For this the following “spell” is appropriate:
+assumptions. For this the following bash “spell” is appropriate:
 
 ::
 
@@ -97,8 +97,8 @@ First,
 
 ::
 
-   mkdir combine0-9
-   cd combine0-9
+   $ mkdir combine0-9
+   $ cd combine0-9
 
 to give us somewhere to work for this - we will first use the
 ``dials.cosym`` tool to bring all the data together, estimate the
@@ -106,13 +106,13 @@ symmetry and then prepare the data for scaling. This is run with:
 
 ::
 
-   dials.cosym ../sweep-0*/integrated.*
+   combine0-9 $ dials.cosym ../sweep-0*/integrated.*
 
 This takes the following files
 
 ::
 
-   Grey-Area combine0-9 :) $ ls ../sweep-0*/integrated.*
+   combine0-9 $ ls ../sweep-0*/integrated.*
    ../sweep-00/integrated.expt ../sweep-05/integrated.expt
    ../sweep-00/integrated.refl ../sweep-05/integrated.refl
    ../sweep-01/integrated.expt ../sweep-06/integrated.expt
@@ -124,16 +124,17 @@ This takes the following files
    ../sweep-04/integrated.expt ../sweep-09/integrated.expt
    ../sweep-04/integrated.refl ../sweep-09/integrated.refl
 
-and: - maps all back to P1 - checks them for consistency in unit cell -
-determines the maximum possible lattice symmetry, list of possible
-operations - tests all operations against all pairs of data sets -
-decides those that apply which are space group operations - those which
-do not apply are “twinning operations” i.e. indexing ambiguity - resolve
-ambiguity and output data consistently indexed in the correct space
-group
+and:
+
+- Maps all crystals back to P1,
+- Checks them for consistency in unit cell,
+- Determines the maximum possible lattice symmetry and lists of possible operations,
+- Tests all operations against all pairs of data sets,
+- Decides those that apply which are space group operations - those which do not apply are “twinning operations” i.e. indexing ambiguity,
+- Resolves ambiguity and output data consistently indexed in the correct space group.
 
 In this case the correct space group is the same as the lattice symmetry
-i.e. P4/mmm so there is no residual ambiguity. The output gives an
+i.e. P4/mmm, so there is no residual ambiguity. The output gives an
 indication of this:
 
 ::
@@ -178,17 +179,20 @@ indication of this:
    Reindexing operators:
    x,y,z: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
-and there is a ``dials.cosym.html`` which graphically illustrates some
-of the analysis. The data are now prepared for scaling, and we can scale
-them with a standard command:
+and a ``dials.cosym.html`` is generated, which can be opened with a browser
+(e.g. ``firefox dials.cosym.html``) and graphically illustrates some of the
+analysis. The data are now prepared for scaling, and we can scale them with a
+standard command:
 
 ::
 
-   dials.scale symmetrized.*
+   $ dials.scale symmetrized.*
 
-It is *critical* to note here that though we have combined the data from
-10 sweeps into two files, the data retain their original identity - in
-the files they are *still* 10 sweeps. The first scaling output has:
+It is *critical* to note here, that though we have combined the data from
+10 sweeps into two files - the data retain their original identity. This means
+that in the files they are *still* 10 sweeps.
+
+The first scaling output has:
 
 ::
 
@@ -259,20 +263,20 @@ First,
 
 ::
 
-   mkdir ../combine0-19
-   cd ../combine0-19
+   combine0-9  $ mkdir ../combine0-19
+   combine0-19 $ cd ../combine0-19
 
 Then:
 
 ::
 
-   dials.cosym ../combine0-9/scaled.* ../sweep-1*/integrated.*
+   combine0-19 $ dials.cosym ../combine0-9/scaled.* ../sweep-1*/integrated.*
 
-Which will list these files:
+Which is using these files:
 
 ::
 
-   Grey-Area combine0-19 :) $ ls ../combine0-9/scaled.* ../sweep-1*/integrated.*
+   combine0-19 $ ls ../combine0-9/scaled.* ../sweep-1*/integrated.*
    ../combine0-9/scaled.expt   ../sweep-14/integrated.refl
    ../combine0-9/scaled.refl   ../sweep-15/integrated.expt
    ../sweep-10/integrated.expt ../sweep-15/integrated.refl
@@ -285,8 +289,8 @@ Which will list these files:
    ../sweep-13/integrated.refl ../sweep-19/integrated.expt
    ../sweep-14/integrated.expt ../sweep-19/integrated.refl
 
-This will take the *scaled* output from the previous step and the next
-10 processed sweeps and combine them as before:
+This will take the *scaled* output from the previous step, and the next
+10 processed sweeps, and combine them as before:
 
 ::
 
@@ -339,7 +343,7 @@ With:
 
 ::
 
-   dials.compute_delta_cchalf scaled.*
+   combine0-19 $ dials.compute_delta_cchalf scaled.*
 
 we may calculate the effect of adding individual data sets to the data
 as a whole - if this effect is *negative* then that data set should
@@ -372,7 +376,7 @@ probably not be included. The tool outputs:
    stddev delta_cc_half 1.1112402970091422
    cutoff value: -4.0775510135829585
 
-Suggesting that dataset ``15`` looks to agree rather poorly. This may be
+Suggesting that dataset 15 looks to agree rather poorly. This may be
 excluded from scaling with ``exclude_datasets=15`` giving:
 
 ::
@@ -399,8 +403,8 @@ excluded from scaling with ``exclude_datasets=15`` giving:
    Total observations                           300879   16563   15320  304888
    Total unique                                  21363    1203    1040   21637
 
-This gives a small overall improvement in R-pim - we may exclude all
-negative contribution data sets with ``exclude_dataset=15,12,14,9``
+This gives a small overall improvement in :math:`R_\textrm{pim}` - we may
+exclude all negative contribution data sets with ``exclude_dataset=15,12,14,9``
 giving:
 
 ::
@@ -429,7 +433,7 @@ giving:
 
 It is *critical* to note that once a data set has been excluded it stays
 excluded if you work from the output of ``dials.scale``. In the process
-we are working through here this is good as you have a realistic idea of
+we are working through here, this is good, as you have a realistic idea of
 how the data look, but once you're done collecting data it may be worth
 revisiting this.
 
@@ -441,8 +445,11 @@ before:
 
 ::
 
-   dials.cosym ../combine0-19/scaled.* ../sweep-2*/integrated.*
-   dials.scale symmetrized.* d_min=1.45
+   combine0-19 $ mkdir ../combine0-29
+   combine0-29 $ cd ../combine0-29
+
+   combine0-29 $ dials.cosym ../combine0-19/scaled.* ../sweep-2*/integrated.*
+   combine0-29 $ dials.scale symmetrized.* d_min=1.45
 
 giving
 
@@ -474,7 +481,7 @@ Then
 
 ::
 
-   dials.compute_delta_cchalf scaled.*
+   combine0-29 $ dials.compute_delta_cchalf scaled.*
 
 giving:
 
@@ -512,9 +519,9 @@ remove it:
 
 ::
 
-   dials.scale symmetrized.* d_min=1.45 exclude_dataset=18
+   combine0-29 $ dials.scale symmetrized.* d_min=1.45 exclude_dataset=18
 
-===>
+Giving:
 
 ::
 
@@ -558,55 +565,51 @@ the data sets are adding:
 
 ::
 
-   dials.reciprocal_lattice_viewer scaled.*
+   combine0-29 $ dials.reciprocal_lattice_viewer scaled.*
 
 .. figure:: https://dials.github.io/images/br-lyso-multi/rlv-all.png
    :alt: reciprocal space all data
 
-   reciprocal space all data
 
-Note here we are looking in the crystal frame (see toggle), a sensible
-resolution limit has been set and the integrated data are being
-projected. You can also “switch on” individual data sets to really see
-what bits of reciprocal space we are adding.
+Note here we are looking in the crystal frame (see toggle in the tool panel), a
+sensible resolution limit has been set, and the integrated data are being
+projected. You can also “switch on” individual data sets to really see what
+bits of reciprocal space we are adding.
 
 .. figure:: https://dials.github.io/images/br-lyso-multi/rlv-subset.png
    :alt: reciprocal space all data
 
-   reciprocal space all data
-
-This also, if you zoom in and switch on the reciprocal cells, allows you
-to actually *see* the Miller indices 🙂 by counting from the origin
+If you zoom in and switch on the reciprocal cells, this also allows you
+to actually *see* the Miller indices by counting from the origin
 outwards in multiples of the reciprocal cell:
 
 .. figure:: https://dials.github.io/images/br-lyso-multi/rlv-index.png
    :alt: reciprocal space all data
 
-   reciprocal space all data
-
 Post Experiment Processing
 --------------------------
 
 Once all the data are processed you can use a tool from ``xia2`` called
-``multiplex`` - this will do many of the steps listed above and more, to
+``xia.multiplex`` - this will do many of the steps listed above and more, to
 assess how well the data sets agree in a pairwise manner:
 
 ::
 
-   xia2.multiplex ../sweep-*/integrated.* min_completeness=0.9
+   mplex $ xia2.multiplex ../sweep-*/integrated.* min_completeness=0.9
 
 Now we can start asking some tricky questions about the *best* subsets
 of data to use for the next steps in your data analysis. This command
 will keep all the clusters which are >= 90% complete, then scale and
 merge the data for each of those clusters to allow direct comparison -
-here inspection of ``xia2.multiplex.html`` is critical. There is a *lot*
-of information in there so worth paying attention to.
+here inspection of the generated ``xia2.multiplex.html`` is critical. There is
+a *lot* of information in there so worth paying attention to. Here we go over
+some of the commonly useful sections of the report.
 
 Preferential Orientation
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-One risk with e.g. *in situ* data collection is that the samples grow
-with a particular crystallographic axis perpendicular to the plate. This
+One risk with *in situ* data collection is that the samples can grow
+with a particular crystallographic axis, perpendicular to the plate. This
 in turn means that small rotations with the plate perpendicular to the
 beam will repeatedly record the same small volumes of reciprocal space.
 This may be assessed by considering the distributions of the unit cell
@@ -615,27 +618,23 @@ axes in reciprocal space - via a stereographic projection:
 .. figure:: https://dials.github.io/images/br-lyso-multi/stereo.png
    :alt: Stereographic projection of unit cell axes
 
-   Stereographic projection of unit cell axes
-
-If all the dots are widely distributed around the circles then there is
+If all the dots are widely distributed around the circles - then there is
 no evidence of preferred orientation. If you have the dots all in the
 centre or all around the edge, then the axis is preferentially aligned
-with the beam or with the plate respectively and you will need to
+with the beam or with the plate respectively, and you will need to
 consider carefully how to proceed with data collection.
 
 Unit Cell Comparisons
 ~~~~~~~~~~~~~~~~~~~~~
 
 The crystallographic unit cell can be used to give some hints of
-isomorphism before intensity data are compared. If you have two distinct
+isomorphism, before intensity data are compared. If you have two distinct
 crystal forms they will be visible in these histograms:
 
 .. figure:: https://dials.github.io/images/br-lyso-multi/cells.png
    :alt: Unit cell comparisons
 
-   Unit cell comparisons
-
-In this case we have a reasonable spread of unit cells with two apparent
+In this case, we have a reasonable spread of unit cells with two apparent
 outliers - with these data they are most likely to be better identified
 by intensity comparisons, but in some cases the unit cell information
 could provide more useful insight.
@@ -643,58 +642,52 @@ could provide more useful insight.
 Delta CC-half
 ~~~~~~~~~~~~~
 
-This is possibly more useful - showing the data which add or detract
-from the data set as a whole - this was already touched apon in the
-discussion above. The data may be excluded by taking the data from the
-scaled full cluster and passing this *in* to ``dials.scale`` with the
-``exclude_datasets=`` option.
+This is possibly more useful than specific unit cell outliers - showing the
+data which add or detract from the data set as a whole - this was already
+touched upon in the discussion above. The data may be excluded by taking the
+data from the scaled full cluster, and passing this *in* to ``dials.scale`` with
+the ``exclude_datasets=`` option.
 
 .. figure:: https://dials.github.io/images/br-lyso-multi/delta-cchalf.png
    :alt: Delta CC half
 
-   Delta CC half
-
 Intensity Clustering
 ~~~~~~~~~~~~~~~~~~~~
 
-Here we are assessing the correlation between pairs of data sets - if
-these are relatively complete this can very rapidly give you an idea of
-which data should be merged. Here we see the so-called “cos angle”
-clustering which is an assessment of the similarity independent of the
-strength of the individual data sets, and there are (depending on your
-criteria) maybe three or four distinct clusters. It is these clusters
-which are then considered in the next section.
+Here we are assessing the correlation between pairs of data sets - if these are
+relatively complete this can very rapidly give you an idea of which data should
+be merged. Here we see the so-called `“cos angle” <https://doi.org/10.1107/S2059798317000699>`_
+clustering which is an assessment of the similarity independent of the strength
+of the individual data sets, and there are (depending on your criteria) maybe
+three or four distinct clusters. It is these clusters which are then considered
+in the next section.
 
 .. figure:: https://dials.github.io/images/br-lyso-multi/cos-cluster.png
    :alt: Data set comparisons
 
-   Data set comparisons
-
 Cluster Comparisons
 ~~~~~~~~~~~~~~~~~~~
 
-This is where we really get down to brass tacks: the possible clusters
-that have been identified by ``multiplex`` with completeness >= 90% can
-be compared by their overall and per-resolution-shell merging
-statistics:
+This is where we can really start to inspect the details of relations between
+data sets: the possible clusters that have been identified by
+``xia2.multiplex``, with completeness >= 90%, can be compared by their overall
+and per-resolution-shell merging statistics:
 
 .. figure:: https://dials.github.io/images/br-lyso-multi/clusters.png
    :alt: Merging statistic graphs
 
-   Merging statistic graphs
-
 These allow you to select the best cluster according to your own
-criteria before proceeding.
+criteria, before proceeding.
 
-For each cluster you will find a subdirectory inside the folder you ran
-``multiplex``: this contains all of the analysis output and most
-usefully the final scaled data for that cluster, scaled independently of
-the other clusters. For example:
+For each cluster here, you will find a subdirectory inside the folder you ran
+``xia2.multiplex``. This subdirectory containing all of the analysis output and
+the final scaled data for that cluster, scaled independently of the other
+clusters. For example:
 
 ::
 
-   Grey-Area mplex :) $ cd cluster_20
-   Grey-Area cluster_20 :) $ ls
+   mplex $ cd cluster_20
+   cluster_20 $ ls
    27_dials.two_theta_refine.cif       dials.estimate_resolution.log
    27_dials.two_theta_refine.json      dials.scale.log
    27_dials.two_theta_refine.log       dials.two_theta_refine.log
