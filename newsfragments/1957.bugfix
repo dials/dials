@@ -1,1 +1,0 @@
-`dials.check_indexing_symmetry`: correctly handle d_max parameter if left at default value when d_min set

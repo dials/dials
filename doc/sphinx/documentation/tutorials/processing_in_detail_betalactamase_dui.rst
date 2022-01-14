@@ -314,7 +314,7 @@ and a second for scan-varying refinement of the crystal orientation and unit
 cell. The log output shows a decrease in each dimension, but
 especially in Y.
 
-.. dials_tutorial_include:: betalactamase/dials.sv_refine.log
+.. dials_tutorial_include:: betalactamase/dials.refine.log
    :start-after: Refinement steps
    :end-before: RMSD no longer decreasing
 
