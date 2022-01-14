@@ -9,7 +9,18 @@
 #
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
+"""
+This program is a script to perform profile modelling and integration on
+indexed results from a still sequence i.e. SSX data. This scripts wraps a call
+to the integration code, using either the potato or stills integrator algorithms.
 
+The integrated data are saved in batches for memory management. A html output
+report is generated, showing integration statistics.
+
+Usage:
+    dev.dials.ssx_integrate indexed.expt indexed.refl
+    dev.dials.ssx_integrate refined.expt refined.refl
+"""
 
 from __future__ import absolute_import, division
 
@@ -49,12 +60,6 @@ except ImportError:
     pass
 
 logger = logging.getLogger("dials.ssx_integrate")
-
-help_message = """
-
-This program does profile modelling and integration for stills
-
-"""
 
 # Create the phil scope
 phil_scope = iotbx.phil.parse(
@@ -279,13 +284,22 @@ def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
 
 @show_mail_handle_errors()
 def run(args: List[str] = None, phil=working_phil) -> None:
-    """Run from the command-line."""
-    usage = ""
+    """
+    Run dev.dials.ssx_integrate from the command-line.
+
+    This program takes an indexed experiment list and reflection table and
+    performs parallelised integration for synchrotron serial crystallography
+    experiments. The programs acts as a wrapper to run one of two algorithms,
+    the stills integrator or the 'potato' integrator (which uses a generalised
+    ellipsoidal profile model). Analysis statistics are captured and output as
+    a html report, while the output data are saved in batches for memory
+    management.
+    """
 
     parser = ArgumentParser(
-        usage=usage,
+        usage="dev.dials.ssx_integrate indexed.expt indexed.refl [options]",
         phil=phil,
-        epilog=help_message,
+        epilog=__doc__,
         read_experiments=True,
         read_reflections=True,
     )
