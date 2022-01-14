@@ -2,6 +2,7 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
 
 
+import logging
 import math
 
 import iotbx.phil
@@ -12,8 +13,11 @@ import dials.util.masking
 from dials.algorithms.spot_finding.factory import SpotFinderFactory
 from dials.algorithms.spot_finding.factory import phil_scope as spot_phil
 from dials.array_family import flex
-from dials.util import Sorry, show_mail_handle_errors
+from dials.util import Sorry, log, show_mail_handle_errors
 from dials.util.options import ArgumentParser, flatten_experiments
+from dials.util.version import dials_version
+
+logger = logging.getLogger("dials.command_line.background")
 
 help_message = """
 
@@ -45,6 +49,8 @@ output {
       .help = "Save background plot to file"
     size_inches = None
       .type = floats(value_min=0, size=2)
+    log = dials.background.log
+      .type = str
 }
 
 """,
@@ -69,6 +75,10 @@ def run(args=None):
     # Ensure we have either a data block or an experiment list
     experiments = flatten_experiments(params.input.experiments)
     imagesets = experiments.imagesets()
+
+    # Configure the logging
+    log.config(logfile=params.output.log)
+    logger.info(dials_version())
 
     if params.output.plot:
         import matplotlib
@@ -96,18 +106,20 @@ def run(args=None):
         sigmas = []
 
         for indx in images:
-            print(f"For imageset {i_imgset} image {indx}:")
+            logger.info(f"For imageset {i_imgset} image {indx}:")
             d, I, sig = background(
                 imageset,
                 indx - first,  # indices passed to imageset.get_raw_data start from zero
                 n_bins=params.n_bins,
                 corrected=params.corrected,
                 mask_params=params.masking,
+                show_summary=True,
             )
 
-            print(f"{'d':>8} {'I':>8} {'sig':>8}")
+            msg = [f"{'d':>8} {'I':>8} {'sig':>8}"]
             for j in range(len(I)):
-                print(f"{d[j]:8.3f} {I[j]:8.3f} {sig[j]:8.3f}")
+                msg.append(f"{d[j]:8.3f} {I[j]:8.3f} {sig[j]:8.3f}")
+            logger.info("\n".join(msg))
 
             d_spacings.append(d)
             intensities.append(I)
@@ -144,7 +156,9 @@ def run(args=None):
             raise Sorry(f"Unable to save plot to {params.output.plot}")
 
 
-def background(imageset, indx, n_bins, corrected=False, mask_params=None):
+def background(
+    imageset, indx, n_bins, corrected=False, mask_params=None, show_summary=False
+):
     if mask_params is None:
         # Default mask params for trusted range
         mask_params = phil_scope.fetch(parse("")).extract().masking
@@ -185,17 +199,18 @@ def background(imageset, indx, n_bins, corrected=False, mask_params=None):
     background = data.select(background_pixels.iselection())
 
     # print some summary information
-    print(f"Mean background: {flex.sum(background) / background.size():.3f}")
-    if len(signal) > 0:
-        print(
-            f"Max/total signal pixels: {flex.max(signal):.0f} / {flex.sum(signal):.0f}"
+    if show_summary:
+        logger.info(f"Mean background: {flex.sum(background) / background.size():.3f}")
+        if len(signal) > 0:
+            logger.info(
+                f"Max/total signal pixels: {flex.max(signal):.0f} / {flex.sum(signal):.0f}"
+            )
+        else:
+            logger.info("No signal pixels on this image")
+        logger.info(
+            "Peak/background/masked pixels: %d / %d / %d"
+            % (peak_pixels.count(True), background.size(), mask.count(False))
         )
-    else:
-        print("No signal pixels on this image")
-    print(
-        "Peak/background/masked pixels: %d / %d / %d"
-        % (peak_pixels.count(True), background.size(), mask.count(False))
-    )
 
     # compute histogram of two-theta values, then same weighted
     # by pixel values, finally divide latter by former to get
