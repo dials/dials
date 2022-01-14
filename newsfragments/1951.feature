@@ -1,1 +1,1 @@
-`flex.reflection_table`: add method to match another by h, k, l, e
+Add ``reflection_table.match_by_hkle`` method, to match reflections between tables.
