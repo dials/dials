@@ -14,7 +14,7 @@ from dials.tests.util import (
 )
 from dials.util import Sorry
 from dials.util.options import (
-    OptionParser,
+    ArgumentParser,
     flatten_reflections,
     reflections_and_experiments_from_files,
 )
@@ -22,7 +22,7 @@ from dials.util.options import (
 
 def test_cannot_read_headerless_h5(dials_data):
     data_h5 = dials_data("vmxi_thaumatin").join("image_15799_data_000001.h5").strpath
-    parser = OptionParser(read_experiments_from_images=True)
+    parser = ArgumentParser(read_experiments_from_images=True)
     with pytest.raises(Sorry):
         parser.parse_args([data_h5])
 

@@ -17,7 +17,7 @@ from scitbx.array_family import flex
 from scitbx.lstbx import normal_eqns, normal_eqns_solving
 
 from dials.util import Sorry, show_mail_handle_errors
-from dials.util.options import OptionParser
+from dials.util.options import ArgumentParser
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -134,7 +134,7 @@ class Script:
         usage = "usage: dials.plot_Fo_vs_Fc hklin=refined.mtz"
 
         # Create the parser
-        self.parser = OptionParser(usage=usage, phil=phil_scope, epilog=__doc__)
+        self.parser = ArgumentParser(usage=usage, phil=phil_scope, epilog=__doc__)
 
         self.model_fit = None
 

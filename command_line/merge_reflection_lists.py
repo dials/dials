@@ -7,7 +7,7 @@ from libtbx.phil import parse
 
 from dials.util import show_mail_handle_errors
 from dials.util.command_line import Command
-from dials.util.options import OptionParser
+from dials.util.options import ArgumentParser
 
 # Create the help message
 help_message = """
@@ -43,7 +43,7 @@ class Script:
         """Initialise the script."""
         # The script usage
         usage = "usage: dials.merge_reflection_lists [options] /path/to/image/reflection/files"
-        self.parser = OptionParser(
+        self.parser = ArgumentParser(
             epilog=help_message, usage=usage, phil=phil_scope, read_reflections=True
         )
 

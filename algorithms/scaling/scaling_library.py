@@ -31,7 +31,7 @@ from dials.algorithms.scaling.scaling_utilities import (
 )
 from dials.array_family import flex
 from dials.util import Sorry
-from dials.util.options import OptionParser
+from dials.util.options import ArgumentParser
 
 logger = logging.getLogger("dials")
 
@@ -101,6 +101,7 @@ def choose_initial_scaling_intensities(reflection_table, intensity_choice="profi
             if "partiality.inv.variance" in reflection_table:
                 reflection_table["variance"] += (
                     reflection_table["intensity.sum.value"]
+                    * conv
                     * reflection_table["partiality.inv.variance"]
                 )
         else:
@@ -153,8 +154,8 @@ def scale_against_target(
     """,
             process_includes=True,
         )
-        optionparser = OptionParser(phil=phil_scope, check_format=False)
-        params, _ = optionparser.parse_args(args=[], quick_parse=True)
+        parser = ArgumentParser(phil=phil_scope, check_format=False)
+        params, _ = parser.parse_args(args=[], quick_parse=True)
         params.model = model
 
     from dials.algorithms.scaling.scaler_factory import TargetScalerFactory
@@ -187,8 +188,8 @@ def scale_single_dataset(reflection_table, experiment, params=None, model="physi
     """,
             process_includes=True,
         )
-        optionparser = OptionParser(phil=phil_scope, check_format=False)
-        params, _ = optionparser.parse_args(args=[], quick_parse=True)
+        parser = ArgumentParser(phil=phil_scope, check_format=False)
+        params, _ = parser.parse_args(args=[], quick_parse=True)
 
     params.model = model
 

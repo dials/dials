@@ -4,7 +4,7 @@ from dials.algorithms.shadowing.filter import filter_shadowed_reflections
 from dials.array_family import flex
 from dials.util import show_mail_handle_errors
 from dials.util.command_line import Command
-from dials.util.options import OptionParser, flatten_experiments
+from dials.util.options import ArgumentParser, flatten_experiments
 
 help_message = """
 
@@ -61,7 +61,7 @@ class Script:
         )
 
         # Create the parser
-        self.parser = OptionParser(
+        self.parser = ArgumentParser(
             usage=usage,
             phil=phil_scope,
             epilog=help_message,

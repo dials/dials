@@ -21,7 +21,7 @@ import dials.util
 from dials.algorithms.integration.stills_significance_filter import SignificanceFilter
 from dials.array_family import flex
 from dials.util import tabulate
-from dials.util.options import OptionParser, flatten_experiments
+from dials.util.options import ArgumentParser, flatten_experiments
 
 logger = logging.getLogger(__name__)
 
@@ -384,7 +384,7 @@ class Script:
         )
 
         # Create the parser
-        self.parser = OptionParser(
+        self.parser = ArgumentParser(
             usage=usage,
             phil=phil_scope,
             read_reflections=True,

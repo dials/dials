@@ -223,9 +223,13 @@ def _get_cc_half_critical_values(merging_stats, cc_half_method):
             b.cc_one_half_sigma_tau_critical_value for b in merging_stats.bins
         ).reversed()
     elif merging_stats.overall.cc_one_half_critical_value is not None:
-        return flex.double(
-            b.cc_one_half_critical_value for b in merging_stats.bins
-        ).reversed()
+        critical = [
+            b.cc_one_half_critical_value
+            if b.cc_one_half_critical_value is not None
+            else 0.0
+            for b in merging_stats.bins
+        ]
+        return flex.double(critical).reversed()
 
 
 def resolution_cc_half(

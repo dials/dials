@@ -18,12 +18,12 @@ class Script:
 
     def __init__(self):
         """Initialise the script."""
-        from dials.util.options import OptionParser
+        from dials.util.options import ArgumentParser
 
         usage = "dials.reflection_viewer [options] experiment.expt"
 
         # Create the parser
-        self.parser = OptionParser(
+        self.parser = ArgumentParser(
             usage=usage, epilog=help_message, read_reflections=True
         )
 

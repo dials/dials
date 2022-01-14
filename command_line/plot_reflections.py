@@ -38,9 +38,12 @@ def run(args=None):
     from scitbx import matrix
     from scitbx.array_family import flex
 
-    from dials.util.options import OptionParser, reflections_and_experiments_from_files
+    from dials.util.options import (
+        ArgumentParser,
+        reflections_and_experiments_from_files,
+    )
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=master_phil_scope,
         read_experiments=True,

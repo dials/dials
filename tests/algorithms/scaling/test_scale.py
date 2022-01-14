@@ -20,7 +20,7 @@ from libtbx import phil
 from dials.algorithms.scaling.algorithm import ScalingAlgorithm, prepare_input
 from dials.array_family import flex
 from dials.command_line import merge, report, scale
-from dials.util.options import OptionParser
+from dials.util.options import ArgumentParser
 
 
 def run_one_scaling(working_directory, argument_list):
@@ -111,10 +111,8 @@ def generated_param():
         process_includes=True,
     )
 
-    optionparser = OptionParser(phil=phil_scope, check_format=False)
-    parameters, _ = optionparser.parse_args(
-        args=[], quick_parse=True, show_diff_phil=False
-    )
+    parser = ArgumentParser(phil=phil_scope, check_format=False)
+    parameters, _ = parser.parse_args(args=[], quick_parse=True, show_diff_phil=False)
     return parameters
 
 
@@ -722,6 +720,7 @@ def test_scale_and_filter_dataset_mode(dials_data, tmp_path):
     assert analysis_results["cycle_results"]["1"]["removed_datasets"] == [
         analysis_results["initial_expids_and_image_ranges"][4][0]
     ]
+    assert "expids_and_image_ranges" in analysis_results
 
 
 def test_scale_array(dials_data, tmp_path):

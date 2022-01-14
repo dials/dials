@@ -148,6 +148,7 @@ class AnalysisResults:
             "termination_reason": self.termination_reason,
             "initial_n_reflections": self.initial_n_reflections,
             "initial_expids_and_image_ranges": self.initial_expids_and_image_ranges,
+            "expids_and_image_ranges": self.expids_and_image_ranges,
             "cycle_results": {i + 1: val for i, val in enumerate(self.cycle_results)},
             "final_stats": self.final_stats,
         }
@@ -160,6 +161,7 @@ class AnalysisResults:
         results.initial_expids_and_image_ranges = dictionary[
             "initial_expids_and_image_ranges"
         ]
+        results.expids_and_image_ranges = dictionary["expids_and_image_ranges"]
         results.cycle_results = [
             dictionary["cycle_results"][str(key)]
             for key in sorted(int(k) for k in dictionary["cycle_results"].keys())
