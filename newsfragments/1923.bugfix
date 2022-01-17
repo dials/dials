@@ -1,1 +1,1 @@
-``dials.refine``: fix recording of parameter correlations in ``history.json``
+``dials.refine``: Fix crash from recording of parameter correlations in ``history.json``.
