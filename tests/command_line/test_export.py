@@ -441,6 +441,107 @@ def test_json_shortened(dials_data, tmp_path):
     assert d["experiment_id"][0] == 0
 
 
+def test_shelx(dials_data, tmp_path):
+    # Call dials.export
+    result = procrunner.run(
+        [
+            "dials.export",
+            "intensity=scale",
+            "format=shelx",
+            dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+            / "scaled_20_25.expt",
+            dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+            / "scaled_20_25.refl",
+        ],
+        working_directory=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "dials.hkl").is_file()
+
+    intensities_sigmas = {
+        (4, 2, 4): (173.14, 15.39),
+        (3, -3, -3): (324.13, 25.92),
+        (4, 0, 2): (876.02, 69.34),
+        (3, -2, -1): (463.11, 36.76),
+    }
+
+    with (tmp_path / "dials.hkl").open() as fh:
+        max_intensity = -9999.0
+        for record in fh:
+            tokens = record.split()
+            hkl = tuple(map(int, tokens[:3]))
+            i_sigi = tuple(map(float, tokens[3:5]))
+            if hkl not in intensities_sigmas:
+                if i_sigi[0] > max_intensity:
+                    max_intensity = i_sigi[0]
+                continue
+            assert i_sigi == pytest.approx(intensities_sigmas[hkl], abs=0.001)
+        assert max_intensity == pytest.approx(9999.00, abs=0.001)
+
+
+def test_shelx_ins(dials_data, tmp_path):
+    # Call dials.export
+    result = procrunner.run(
+        [
+            "dials.export",
+            "intensity=scale",
+            "format=shelx",
+            dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+            / "scaled_20_25.expt",
+            dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+            / "scaled_20_25.refl",
+        ],
+        working_directory=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "dials.ins").is_file()
+
+    cell_esds = {
+        "CELL": (5.4815, 8.2158, 12.1457, 90.000, 90.000, 90.000),
+        "ZERR": (0.0005, 0.0007, 0.0011, 0.003, 0.004, 0.004),
+    }
+
+    with (tmp_path / "dials.ins").open() as fh:
+        for line in fh:
+            tokens = line.split()
+            instruction = tokens[0]
+            if instruction in cell_esds:
+                result = tuple(map(float, tokens[2:8]))
+                assert result == pytest.approx(cell_esds[instruction], abs=0.001)
+
+
+def test_shelx_ins_best_unit_cell(dials_data, tmp_path):
+    # Call dials.export
+    result = procrunner.run(
+        [
+            "dials.export",
+            "intensity=scale",
+            "format=shelx",
+            "best_unit_cell=5,8,12,90,90,90",
+            dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+            / "scaled_20_25.expt",
+            dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+            / "scaled_20_25.refl",
+        ],
+        working_directory=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "dials.ins").is_file()
+
+    cell_esds = {
+        "CELL": (5.0, 8.0, 12.0, 90.0, 90.0, 90.0),
+    }
+
+    with (tmp_path / "dials.ins").open() as fh:
+        for line in fh:
+            tokens = line.split()
+            instruction = tokens[0]
+            assert instruction != "ZERR"
+            if instruction in cell_esds:
+                result = tuple(map(float, tokens[2:8]))
+                assert result == pytest.approx(cell_esds[instruction], abs=0.001)
+
+
 def test_export_sum_or_profile_only(dials_data, tmp_path):
     expt = dials_data("insulin_processed", pathlib=True) / "integrated.expt"
     refl = dials_data("insulin_processed", pathlib=True) / "integrated.refl"
