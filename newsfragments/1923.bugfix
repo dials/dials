@@ -1,0 +1,1 @@
+``dials.refine``: Fix crash from recording of parameter correlations in ``history.json``.
