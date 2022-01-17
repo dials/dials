@@ -203,13 +203,7 @@ def generate_processing_detail_text_betalactamase(options):
             "dials.refine",
             "bravais_setting_2.expt",
             "reindexed.refl",
-            "scan_varying=false",
         ]
-    )
-    runcmd(
-        ["dials.refine", "refined.expt", "refined.refl", "scan_varying=true"],
-        store_command=outdir / "dials.sv_refine.cmd",
-        store_output=outdir / "dials.sv_refine.log",
     )
     runcmd(["dials.integrate", "refined.expt", "refined.refl", "nproc=4"])
     runcmd(["dials.symmetry", "integrated.expt", "integrated.refl"])
