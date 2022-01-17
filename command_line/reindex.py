@@ -11,6 +11,7 @@ from rstbx.symmetry.constraints import parameter_reduction
 
 import dials.util
 from dials.algorithms.indexing.assign_indices import AssignIndicesGlobal
+from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
 from dials.array_family import flex
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
@@ -187,14 +188,9 @@ def run(args=None):
         reference_experiments = load.experiment_list(
             params.reference.experiments, check_format=False
         )
-        # assert len(reference_experiments.crystals()) == 1
         if len(reference_experiments.crystals()) == 1:
             reference_crystal = reference_experiments.crystals()[0]
         else:
-            from dials.algorithms.scaling.scaling_library import (
-                determine_best_unit_cell,
-            )
-
             # first check sg all same
             sgs = [
                 expt.crystal.get_space_group().type().number() for expt in experiments
