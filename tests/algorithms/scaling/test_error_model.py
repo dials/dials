@@ -20,7 +20,7 @@ from dials.algorithms.scaling.error_model.error_model import (
 from dials.algorithms.scaling.error_model.error_model_target import ErrorModelTargetB
 from dials.algorithms.scaling.Ih_table import IhTable
 from dials.array_family import flex
-from dials.util.options import OptionParser
+from dials.util.options import ArgumentParser
 
 
 @pytest.fixture()
@@ -43,10 +43,8 @@ def generated_param():
   """,
         process_includes=True,
     )
-    optionparser = OptionParser(phil=phil_scope, check_format=False)
-    parameters, _ = optionparser.parse_args(
-        args=[], quick_parse=True, show_diff_phil=False
-    )
+    parser = ArgumentParser(phil=phil_scope, check_format=False)
+    parameters, _ = parser.parse_args(args=[], quick_parse=True, show_diff_phil=False)
     return parameters
 
 

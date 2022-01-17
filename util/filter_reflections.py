@@ -804,7 +804,7 @@ def sum_partial_reflections(reflection_table):
     the summed reflection.
     """
 
-    if "partiality" not in reflection_table:
+    if ("partiality" not in reflection_table) or ("partial_id" not in reflection_table):
         return reflection_table
 
     nrefl = reflection_table.size()

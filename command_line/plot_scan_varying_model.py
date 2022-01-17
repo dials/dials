@@ -77,10 +77,10 @@ class Script:
 
     def __init__(self):
         """Setup the script."""
-        from dials.util.options import OptionParser
+        from dials.util.options import ArgumentParser
 
         usage = "usage: dials.plot_scan_varying_model [options] refined.expt"
-        self.parser = OptionParser(
+        self.parser = ArgumentParser(
             usage=usage,
             phil=phil_scope,
             read_experiments=True,
@@ -128,7 +128,8 @@ class Script:
             cells = [crystal.get_unit_cell_at_scan_point(t) for t in scan_pts]
             cell_params = [e.parameters() for e in cells]
             a, b, c, aa, bb, cc = zip(*cell_params)
-            phi = [scan.get_angle_from_array_index(t) for t in scan_pts]
+            start, stop = scan.get_array_range()
+            phi = [scan.get_angle_from_array_index(t) for t in range(start, stop + 1)]
             vol = [e.volume() for e in cells]
             cell_dat = {
                 "phi": phi,
@@ -177,7 +178,8 @@ class Script:
                 continue
 
             scan_pts = list(range(crystal.num_scan_points))
-            phi = [scan.get_angle_from_array_index(t) for t in scan_pts]
+            start, stop = scan.get_array_range()
+            phi = [scan.get_angle_from_array_index(t) for t in range(start, stop + 1)]
             Umats = [matrix.sqr(crystal.get_U_at_scan_point(t)) for t in scan_pts]
             if params.orientation_decomposition.relative_to_static_orientation:
                 # factor out static U
@@ -218,7 +220,8 @@ class Script:
                 continue
 
             scan_pts = range(beam.num_scan_points)
-            phi = [scan.get_angle_from_array_index(t) for t in scan_pts]
+            start, stop = scan.get_array_range()
+            phi = [scan.get_angle_from_array_index(t) for t in range(start, stop + 1)]
             p = detector.get_panel_intersection(beam.get_s0())
             if p < 0:
                 print("Beam does not intersect a panel")

@@ -139,11 +139,14 @@ class PngScene:
 @dials.util.show_mail_handle_errors()
 def run(args=None):
     from dials.util import log
-    from dials.util.options import OptionParser, reflections_and_experiments_from_files
+    from dials.util.options import (
+        ArgumentParser,
+        reflections_and_experiments_from_files,
+    )
 
     usage = "dials.rl_png [options] experiments.json observations.refl"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_experiments=True,

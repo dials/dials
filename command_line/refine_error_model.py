@@ -40,7 +40,7 @@ from dials.algorithms.scaling.scaling_library import choose_initial_scaling_inte
 from dials.algorithms.scaling.scaling_utilities import calculate_prescaling_correction
 from dials.report.plots import i_over_sig_i_vs_i_plot
 from dials.util import log, show_mail_handle_errors
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
 try:
@@ -171,7 +171,7 @@ def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     """Run the scaling from the command-line."""
     usage = """Usage: dials.refine_error_model scaled.refl scaled.expt [options]"""
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         read_experiments=True,
         read_reflections=True,

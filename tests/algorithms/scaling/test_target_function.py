@@ -22,7 +22,7 @@ from dials.algorithms.scaling.parameter_handler import scaling_active_parameter_
 from dials.algorithms.scaling.scaler import SingleScaler
 from dials.algorithms.scaling.target_function import ScalingTarget, ScalingTargetFixedIH
 from dials.array_family import flex
-from dials.util.options import OptionParser
+from dials.util.options import ArgumentParser
 
 
 @pytest.fixture
@@ -110,10 +110,8 @@ def physical_param():
         process_includes=True,
     )
 
-    optionparser = OptionParser(phil=phil_scope, check_format=False)
-    parameters, _ = optionparser.parse_args(
-        args=[], quick_parse=True, show_diff_phil=False
-    )
+    parser = ArgumentParser(phil=phil_scope, check_format=False)
+    parameters, _ = parser.parse_args(args=[], quick_parse=True, show_diff_phil=False)
     parameters.model = "physical"
     parameters.physical.absorption_correction = False
     return parameters

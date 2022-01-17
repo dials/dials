@@ -13,7 +13,7 @@ from dials.util.image_viewer.slip_viewer.tile_generation import (
     get_flex_image,
     get_flex_image_multipanel,
 )
-from dials.util.options import OptionParser, flatten_experiments
+from dials.util.options import ArgumentParser, flatten_experiments
 
 help_message = """
 
@@ -105,7 +105,7 @@ colour_schemes = {"greyscale": 0, "rainbow": 1, "heatmap": 2, "inverse_greyscale
 def run(args=None):
     usage = "dials.export_bitmaps [options] models.expt | image.cbf"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_experiments=True,

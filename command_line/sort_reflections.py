@@ -21,7 +21,7 @@ class Sort:
         """Initialise the script."""
         from libtbx.phil import parse
 
-        from dials.util.options import OptionParser
+        from dials.util.options import ArgumentParser
 
         phil_scope = parse(
             """
@@ -44,7 +44,7 @@ class Sort:
         usage = "dials.sort_reflections [options] observations.refl"
 
         # Initialise the base class
-        self.parser = OptionParser(
+        self.parser = ArgumentParser(
             usage=usage, phil=phil_scope, read_reflections=True, epilog=help_message
         )
 

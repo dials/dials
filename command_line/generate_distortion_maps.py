@@ -7,7 +7,7 @@ from scitbx import matrix
 
 from dials.array_family import flex
 from dials.util import Sorry, log, show_mail_handle_errors
-from dials.util.options import OptionParser, flatten_experiments
+from dials.util.options import ArgumentParser, flatten_experiments
 from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.generate_distortion_maps")
@@ -169,7 +169,7 @@ def make_dx_dy_ellipse(imageset, phi, l1, l2, centre_xy):
 def run(args=None):
     usage = "dials.generate_distortion_maps [options] image_*.cbf"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=scope,
         read_experiments=True,

@@ -42,11 +42,11 @@ def convert_to_cbf(imageset, template):
 
 @dials.util.show_mail_handle_errors()
 def run(args=None):
-    from dials.util.options import OptionParser, flatten_experiments
+    from dials.util.options import ArgumentParser, flatten_experiments
 
     usage = "dials.convert_to_cbf [options] models.expt"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_experiments=True,

@@ -1,5 +1,6 @@
 import copy
 import itertools
+import json
 import math
 
 import numpy as np
@@ -197,7 +198,8 @@ class ScanVaryingCrystalAnalyser:
             aa = [round(i, ndigits=6) for i in aa]
             bb = [round(i, ndigits=6) for i in bb]
             cc = [round(i, ndigits=6) for i in cc]
-            phi = [scan.get_angle_from_array_index(t) for t in scan_pts]
+            start, stop = scan.get_array_range()
+            phi = [scan.get_angle_from_array_index(t) for t in range(start, stop + 1)]
             vol = [e.volume() for e in cells]
             cell_dat = {
                 "phi": phi,
@@ -347,7 +349,8 @@ the refinement algorithm accounting for unmodelled features in the data.
                 continue
 
             scan_pts = list(range(crystal.num_scan_points))
-            phi = [scan.get_angle_from_array_index(t) for t in scan_pts]
+            start, stop = scan.get_array_range()
+            phi = [scan.get_angle_from_array_index(t) for t in range(start, stop + 1)]
             Umats = [matrix.sqr(crystal.get_U_at_scan_point(t)) for t in scan_pts]
             if self._relative_to_static_orientation:
                 # factor out static U
@@ -2223,6 +2226,10 @@ class Analyser:
                 rlist, experiments
             )
             resolution_plots.update(rplots)
+            json_data["resolution_graphs"] = resolution_plots
+            json_data["batch_graphs"] = batch_plots
+            json_data["misc_graphs"] = misc_plots
+            json_data["scaled_intensity_graphs"] = scaled_intensity_plots
 
         if self.params.output.html is not None:
 
@@ -2272,10 +2279,8 @@ class Analyser:
                 f.write(html.encode("utf-8", "xmlcharrefreplace"))
 
         if self.params.output.json is not None:
-            import json
-
             print(f"Writing json data to: {self.params.output.json}")
-            with open(self.params.output.json, "wb") as f:
+            with open(self.params.output.json, "w") as f:
                 json.dump(json_data, f)
 
     def experiments_table(self, experiments):
@@ -2455,11 +2460,11 @@ class Script:
 
     def __init__(self):
         """Initialise the script."""
-        from dials.util.options import OptionParser
+        from dials.util.options import ArgumentParser
 
         # Create the parser
         usage = "usage: dials.report [options] observations.refl"
-        self.parser = OptionParser(
+        self.parser = ArgumentParser(
             usage=usage,
             phil=phil_scope,
             read_reflections=True,

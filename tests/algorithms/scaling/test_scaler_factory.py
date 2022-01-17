@@ -23,7 +23,7 @@ from dials.algorithms.scaling.scaler_factory import (
     create_scaler,
 )
 from dials.array_family import flex
-from dials.util.options import OptionParser
+from dials.util.options import ArgumentParser
 
 
 def generated_refl(not_integrated=False, idval=0):
@@ -137,10 +137,8 @@ def generated_param():
   """,
         process_includes=True,
     )
-    optionparser = OptionParser(phil=phil_scope, check_format=False)
-    parameters, _ = optionparser.parse_args(
-        args=[], quick_parse=True, show_diff_phil=False
-    )
+    parser = ArgumentParser(phil=phil_scope, check_format=False)
+    parameters, _ = parser.parse_args(args=[], quick_parse=True, show_diff_phil=False)
     parameters.__inject__("model", "KB")
     parameters.scaling_options.free_set_percentage = 50.0
     parameters.scaling_options.emax = 0

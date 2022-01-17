@@ -5,7 +5,7 @@ from libtbx.phil import parse
 
 from dials.algorithms.statistics.cc_half_algorithm import CCHalfFromDials, CCHalfFromMTZ
 from dials.util import log, show_mail_handle_errors
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 
 logger = logging.getLogger("dials.command_line.compute_delta_cchalf")
 
@@ -90,7 +90,7 @@ def run(args=None, phil=phil_scope):
 
     usage = "dials.compute_delta_cchalf [options] scaled.expt scaled.refl"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil,
         epilog=help_message,
