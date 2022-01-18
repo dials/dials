@@ -439,7 +439,7 @@ def test_template_with_missing_image_outside_of_image_range(
         assert expts[0].scan.get_image_range() == image_range
 
 
-def test_import_still_sequence_as_experiments(dials_data, tmpdir):
+def test_import_still_sequence_as_experiments(dials_data, tmp_path):
     image_files = sorted(
         dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
     )
@@ -448,11 +448,11 @@ def test_import_still_sequence_as_experiments(dials_data, tmpdir):
 
     procrunner.run(
         ["dials.import", "scan.oscillation=0,0", f"output.experiments={out}"]
-        + [f.strpath for f in image_files],
-        working_directory=tmpdir,
+        + image_files,
+        working_directory=tmp_path,
     )
 
-    imported_exp = load.experiment_list(tmpdir.join(out).strpath)
+    imported_exp = load.experiment_list(tmp_path / out)
     assert len(imported_exp) == len(image_files)
     for exp in imported_exp:
         assert exp.identifier != ""
