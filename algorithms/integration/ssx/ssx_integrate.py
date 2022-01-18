@@ -245,7 +245,7 @@ class OutputAggregator:
             },
         }
 
-        value = self.data[1]
+        value = list(self.data.values())[0]
         mosaicities = {}
         for k in value["profile_model_mosaicity"].keys():
             mosaicities["M_" + k] = np.zeros(shape=(len(self.data),))
