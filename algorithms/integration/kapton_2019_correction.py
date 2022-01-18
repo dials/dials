@@ -1,5 +1,6 @@
 import logging
 import math
+import numpy as np
 import sys
 
 from scitbx.matrix import col
@@ -217,6 +218,20 @@ class KaptonTape_2019:
         denom = math.sqrt((y2 - y1) * (y2 - y1) + (x2 - x1) * (x2 - x1))
         return abs(num) / denom
 
+    def get_edge_distances(self, edges):
+        dist_list = flex.double()
+        dist_list_idx = []
+        n_edges = len(edges)
+        for edge_1 in range(n_edges - 1):
+            pt1 = col(edges[edge_1])
+            for edge_2 in range(edge_1 + 1, n_edges):
+                pt2 = col(edges[edge_2])
+                distance = (pt1 - pt2).length()
+                dist_list.append(distance)
+                dist_list_idx.append((edge_1, edge_2))
+
+        return dist_list, dist_list_idx
+
     def abs_bounding_lines_in_mm(self, detector):
         """Return bounding lines of kapton"""
 
@@ -242,6 +257,85 @@ class KaptonTape_2019:
                     new_int_edge_pts[3] = int_edge_pts[1]
                 return new_int_edge_pts
 
+        def _orient_det_edge_pts(det_edge_pts):
+            """
+            Function to orient the detector edge points counterclockwise
+            such that the first edge point index is in the upper left quadrant
+            (i.e., -x, +y). This isn't explictly necessary but nevertheless useful
+            b/c the function abs_bounding_lines_on_image always assumes that the
+            detector edges used to help calculate the Kapton absorption max and edge
+            are a parallel to the y-axis. This function enforces that a convention
+            so that this assumption in the later logic will be true.
+            """
+            assert len(det_edge_pts) == 4, "Detectors can only be defined by 4 points"
+            n_edges = float(len(det_edge_pts))
+            # find center of detector
+            x = [p[0] for p in det_edge_pts]
+            y = [p[1] for p in det_edge_pts]
+            z = [p[2] for p in det_edge_pts]
+            center = [sum(x) / n_edges, sum(y) / n_edges, sum(z) / n_edges]
+            # define reference vectors used to determine rel. orientation
+            x_ref = [center[0] + 100, center[1], center[2]]
+            y_ref = [center[0], center[1] + 100, center[2]]
+            x_ref_vec = (col(x_ref) - col(center)).normalize()
+            y_ref_vec = (col(y_ref) - col(center)).normalize()
+            # determine orientation of each edge pt wrt x and y axis
+            x_axis_angles = []
+            y_axis_angles = []
+            for edge in det_edge_pts:
+                vec = (col(edge) - col(center)).normalize()
+                x_axis_angles.append(np.degrees(np.arccos(vec.dot(x_ref_vec))))
+                y_axis_angles.append(np.degrees(np.arccos(vec.dot(y_ref_vec))))
+            x_axis_angles = [
+                (90.0 - xang) if xang > 90.0 else xang for xang in x_axis_angles
+            ]
+            y_axis_angles = [
+                (90.0 - yang) if yang > 90.0 else yang for yang in y_axis_angles
+            ]
+            # assign edge pt indices based on quadrant position starting in 4th quadrant (-x.-y)
+            # proceeding counterclockwise
+            edge_0 = np.where(
+                (np.asarray(x_axis_angles) < 0) & (np.asarray(y_axis_angles) > 0)
+            )[0][0]
+            edge_1 = np.where(
+                (np.asarray(x_axis_angles) < 0) & (np.asarray(y_axis_angles) < 0)
+            )[0][0]
+            edge_2 = np.where(
+                (np.asarray(x_axis_angles) > 0) & (np.asarray(y_axis_angles) < 0)
+            )[0][0]
+            edge_3 = np.where(
+                (np.asarray(x_axis_angles) > 0) & (np.asarray(y_axis_angles) > 0)
+            )[0][0]
+
+            return [
+                det_edge_pts[edge_0],
+                det_edge_pts[edge_1],
+                det_edge_pts[edge_2],
+                det_edge_pts[edge_3],
+            ]
+
+        def _make_kapton_distance_vec(
+            det_edge_pt1, det_edge_pt2, int_edge_pt1, int_edge_pt2
+        ):
+            """
+            Function to create vectors that descibe the distance btw two points where rays from
+            Kapton edges intersect with detector relative to detector edges
+            """
+            dist_det_edge_x = det_edge_pt2[0] - det_edge_pt1[0]
+            dist_det_edge_y = det_edge_pt2[1] - det_edge_pt1[1]
+            mid_pt = [
+                det_edge_pt1[0] + dist_det_edge_x / 2,
+                det_edge_pt1[1] + dist_det_edge_y / 2,
+            ]
+            kapton_int_pt1_vec = (
+                col([int_edge_pt1[0], int_edge_pt1[1]]) - col([mid_pt[0], mid_pt[1]])
+            ).normalize()
+            kapton_int_pt2_vec = (
+                col([int_edge_pt2[0], int_edge_pt2[1]]) - col([mid_pt[0], mid_pt[1]])
+            ).normalize()
+
+            return kapton_int_pt1_vec, kapton_int_pt2_vec
+
         # first get bounding directions from detector:
         detz = flex.mean(flex.double([panel.get_origin()[2] for panel in detector]))
         edges = []
@@ -250,18 +344,9 @@ class KaptonTape_2019:
             for point in [(0, 0), (0, s_size), (f_size, 0), (f_size, s_size)]:
                 x, y = panel.get_pixel_lab_coord(point)[0:2]
                 edges.append((x, y, detz))
-        # Use the idea that the corners of the detector are end points of the diagonal and will be the
-        # top 2 max dimension among all end points
-        dlist = flex.double()
-        dlist_idx = []
-        n_edges = len(edges)
-        for ii in range(n_edges - 1):
-            for jj in range(ii + 1, n_edges):
-                pt_1 = col(edges[ii])
-                pt_2 = col(edges[jj])
-                distance = (pt_1 - pt_2).length()
-                dlist.append(distance)
-                dlist_idx.append((ii, jj))
+        # Use the idea that the corners of the detector are end points of the diagonal and
+        # will be top 2 max dimension among all end points
+        dlist, dlist_idx = self.get_edge_distances(edges)
         sorted_idx = flex.sort_permutation(dlist, reverse=True)
 
         edge_pts = [
@@ -272,6 +357,7 @@ class KaptonTape_2019:
         ]
 
         self.detector_edges = edge_pts
+        edge_pts = _orient_det_edge_pts(edge_pts)
         # Now get the maximum extent of the intersection of the rays with the detector
         all_ints = []
         kapton_path_list = []
@@ -287,7 +373,8 @@ class KaptonTape_2019:
                 except RuntimeError:
                     pass
                 int_point = (x_int, y_int, detz)
-                # Arbitrary tolerance of couple of pixels otherwise these points were getting clustered together
+                # Arbitrary tolerance of couple of pixels otherwise these points
+                # were getting clustered together
                 tolerance = min(panel.get_pixel_size()) * 2.0
                 if (
                     sum(
@@ -298,18 +385,9 @@ class KaptonTape_2019:
                 ):
                     all_ints.append(int_point)
                 kapton_path_list.append(kapton_path_mm)
-        # Use the idea that the extreme edges of the intersection points are end points of the diagonal and will be the
-        # top 2 max dimension among all end points
-        dlist = flex.double()
-        dlist_idx = []
-        n_edges = len(all_ints)
-        for ii in range(n_edges - 1):
-            pt_1 = col(all_ints[ii])
-            for jj in range(ii + 1, n_edges):
-                pt_2 = col(all_ints[jj])
-                distance = (pt_1 - pt_2).length()
-                dlist.append(distance)
-                dlist_idx.append((ii, jj))
+        # Use the idea that the extreme edges of the intersection points are end points
+        # of the diagonal and will be the top 2 max dimension among all end points
+        dlist, dlist_idx = self.get_edge_distances(all_ints)
         sorted_idx = flex.sort_permutation(dlist, reverse=True)
 
         int_edge_pts = [
@@ -325,7 +403,7 @@ class KaptonTape_2019:
         kapton_edge_2 = (col(int_edge_pts[2]) - col(int_edge_pts[3])).normalize()
         # Make sure the edges of the detector and the kapton are in the same orientation
         # first for kapton edge 1
-        edge_idx = [0, 1, 2, 3]
+        edge_idx = (0, 1, 2, 3)
         side_1 = (col(edge_pts[edge_idx[0]]) - col(edge_pts[edge_idx[1]])).normalize()
         side_2 = (col(edge_pts[edge_idx[2]]) - col(edge_pts[edge_idx[3]])).normalize()
         v1 = kapton_edge_1.dot(side_1)
@@ -335,36 +413,63 @@ class KaptonTape_2019:
         if v2 < 0.0:
             edge_idx = (edge_idx[0], edge_idx[1], edge_idx[3], edge_idx[2])
 
-        # Now make sure the edges and the kapton lines are on the right side (i.e not swapped).
-        # Let's look at edge_idx[0:2] i,e the first edge of detector parallel to the kapton
-        pt1 = edge_pts[edge_idx[0]]
-        # Now find the distance between each of these points and the kapton lines.
-        d1_kapton_1 = self.distance_of_point_from_line(
-            pt1, int_edge_pts[0], int_edge_pts[1]
+        # Define two vectors that describe the positions of the top two intersecion edge pts
+        # (intersection of the kapton rays with the detector) relative to the center of the
+        # detector. These vectors will allow us to determine and assign which intersection
+        # edge points are associated with the absorption max or edge (aka min) edge.
+        kapton_int_pt1_vector, kapton_int_pt2_vector = _make_kapton_distance_vec(
+            edge_pts[edge_idx[0]],
+            edge_pts[edge_idx[3]],
+            int_edge_pts[0],
+            int_edge_pts[3],
         )
-        d1_kapton_2 = self.distance_of_point_from_line(
-            pt1, int_edge_pts[2], int_edge_pts[3]
-        )
-        if d1_kapton_1 < d1_kapton_2:  # closer to max than edge
-            pair_values = [
-                (
-                    edge_pts[edge_idx[0]],
-                    edge_pts[edge_idx[1]],
-                    edge_pts[edge_idx[2]],
-                    edge_pts[edge_idx[3]],
-                ),
-                (int_edge_pts[0], int_edge_pts[1], int_edge_pts[2], int_edge_pts[3]),
-            ]
-        else:
-            pair_values = [
-                (
-                    edge_pts[edge_idx[0]],
-                    edge_pts[edge_idx[1]],
-                    edge_pts[edge_idx[2]],
-                    edge_pts[edge_idx[3]],
-                ),
-                (int_edge_pts[2], int_edge_pts[3], int_edge_pts[0], int_edge_pts[1]),
-            ]
+        if kapton_int_pt1_vector[0] == kapton_int_pt2_vector[0]:
+            # the same kapton int_pt was used to define a kapton edge twice
+            # try another one
+            kapton_int_pt1_vector, kapton_int_pt2_vector = _make_kapton_distance_vec(
+                edge_pts[edge_idx[0]],
+                edge_pts[edge_idx[3]],
+                int_edge_pts[1],
+                int_edge_pts[2],
+            )
+        int_edge_idx = None
+        # abs max edge is left of min edge
+        if (kapton_int_pt1_vector[0] < 0) & (kapton_int_pt2_vector[0] > 0):
+            int_edge_idx = [0, 1, 2, 3]
+        # both edges are on the left side of det
+        elif (kapton_int_pt1_vector[0] < 0) & (kapton_int_pt2_vector[0] < 0):
+            # abs max edge to the left of min edge
+            if kapton_int_pt1_vector[0] < kapton_int_pt2_vector[0]:
+                int_edge_idx = [2, 3, 0, 1]
+            # abs max edge to the right of min edge
+            elif kapton_int_pt1_vector[0] > kapton_int_pt2_vector[0]:
+                int_edge_idx = [0, 1, 2, 3]
+        # both edges are on the right side of det
+        elif (kapton_int_pt1_vector[0] > 0) & (kapton_int_pt2_vector[0] > 0):
+            # abs max edge is to right of min edge
+            if kapton_int_pt1_vector[0] > kapton_int_pt2_vector[0]:
+                int_edge_idx = [2, 3, 0, 1]
+            # abs max edge is the the left of min edge
+            elif kapton_int_pt1_vector[0] < kapton_int_pt2_vector[0]:
+                int_edge_idx = [0, 1, 2, 3]
+        # abs max edge is right of min edge
+        elif (kapton_int_pt1_vector[0] > 0) & (kapton_int_pt2_vector[0] < 0):
+            int_edge_idx = [2, 3, 0, 1]
+
+        pair_values = [
+            (
+                edge_pts[edge_idx[0]],
+                edge_pts[edge_idx[1]],
+                edge_pts[edge_idx[2]],
+                edge_pts[edge_idx[3]],
+            ),
+            (
+                int_edge_pts[int_edge_idx[0]],
+                int_edge_pts[int_edge_idx[1]],
+                int_edge_pts[int_edge_idx[2]],
+                int_edge_pts[int_edge_idx[3]],
+            ),
+        ]
 
         return pair_values
 
