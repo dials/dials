@@ -1,16 +1,4 @@
 repos:
-# Give a specific warning for added image files
-- repo: local
-  hooks:
-  - id: no-images
-    name: Check for image files
-    fail_fast: True
-    entry: >
-      Images for documentation should go into the documentation repository
-      https://github.com/dials/dials.github.io
-    language: fail
-    files: '.*\.png$'
-
 # Syntax validation and some basic sanity checks
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v4.0.1
@@ -25,6 +13,17 @@ repos:
     args: ['--allow-multiple-documents']
   - id: no-commit-to-branch
     name: "Don't commit to 'main'"
+
+# Give a specific warning for added image files
+- repo: local
+  hooks:
+  - id: no-images
+    name: Check for image files
+    entry: >
+      Images for documentation should go into the documentation repository
+      https://github.com/dials/dials.github.io
+    language: fail
+    files: '.*\.png$'
 
 # Automatically sort imports
 - repo: https://github.com/PyCQA/isort
@@ -42,6 +41,7 @@ repos:
            '--rm', 'from __future__ import unicode_literals', # -3.0
            '--rm', 'from __future__ import with_statement',   # -2.6
           ]
+    exclude: installer/
 
 # Automatic source code formatting
 - repo: https://github.com/psf/black
@@ -64,6 +64,5 @@ repos:
   rev: v0.910  # keep in sync with .github/workflows/mypy.yml
   hooks:
   - id: mypy
-    files: 'src/.*\.py$'
     args: [--no-strict-optional, --ignore-missing-imports] # --show-traceback to debug
 #   additional_dependencies: [tokenize-rt==3.2.0]
