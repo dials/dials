@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import math
 
 import wx
@@ -7,7 +5,7 @@ import wx
 
 class RingSettingsFrame(wx.MiniFrame):
     def __init__(self, *args, **kwds):
-        super(RingSettingsFrame, self).__init__(*args, **kwds)
+        super().__init__(*args, **kwds)
         szr = wx.BoxSizer(wx.VERTICAL)
         panel = RingSettingsPanel(self)
         self.SetSizer(szr)
@@ -25,7 +23,7 @@ class RingSettingsPanel(wx.Panel):
         # (not here), but maybe distribution along ring.  Drop-down menu
         # for ring center, and button to reset to beam center.
 
-        super(RingSettingsPanel, self).__init__(*args, **kwds)
+        super().__init__(*args, **kwds)
 
         # Needed to draw and delete the rings.  XXX Applies to
         # calibration_frame as well?
@@ -135,6 +133,10 @@ class RingSettingsPanel(wx.Panel):
         )
         self.Bind(EVT_FLOATSPIN, self.OnSpinCenter, self.spinner_slow)
 
+        self.clear_button = wx.Button(self, -1, "Clear")
+        box.Add(self.clear_button, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.Bind(wx.EVT_BUTTON, self.OnClear, self.clear_button)
+
         sizer.Add(box)
 
         self.DrawRing()
@@ -142,6 +144,7 @@ class RingSettingsPanel(wx.Panel):
     def __del__(self):
         if hasattr(self, "_ring_layer") and self._ring_layer is not None:
             self._pyslip.DeleteLayer(self._ring_layer)
+            self._ring_layer = None
 
     def OnSlide(self, event):
         # Keep slider and spinner synchronized.
@@ -220,7 +223,7 @@ class RingSettingsPanel(wx.Panel):
                         best = total
                         bestc = [self._center[0] + i, self._center[1] + j]
                         bestr = self._radius + r
-                    print("r: % 3.1f, i: % 3.1f, j: % 3.1f, best: %f" % (r, i, j, best))
+                    print(f"r: {r: 3.1f}, i: {i: 3.1f}, j: {j: 3.1f}, best: {best:f}")
         print("DONE", bestc, bestr)
         self._radius = bestr
         self._center = bestc
@@ -249,6 +252,9 @@ class RingSettingsPanel(wx.Panel):
             self._center[1] = obj.GetValue()
 
         self.DrawRing()
+
+    def OnClear(self, event):
+        self.__del__()
 
     def _draw_ring_layer(self, dc, data, map_rel):
         """Draw a points layer.

@@ -1,6 +1,5 @@
-# LIBTBX_SET_DISPATCHER_NAME dev.dials.merge_reflection_lists
+# LIBTBX_SET_DISPATCHER_NAME dials.merge_reflection_lists
 
-from __future__ import absolute_import, division, print_function
 
 import sys
 
@@ -8,7 +7,7 @@ from libtbx.phil import parse
 
 from dials.util import show_mail_handle_errors
 from dials.util.command_line import Command
-from dials.util.options import OptionParser
+from dials.util.options import ArgumentParser
 
 # Create the help message
 help_message = """
@@ -37,14 +36,14 @@ phil_scope = parse(
 )
 
 
-class Script(object):
+class Script:
     """A class to encapsulate the script."""
 
     def __init__(self):
         """Initialise the script."""
         # The script usage
-        usage = "usage: dev.dials.merge_reflection_lists [options] /path/to/image/reflection/files"
-        self.parser = OptionParser(
+        usage = "usage: dials.merge_reflection_lists [options] /path/to/image/reflection/files"
+        self.parser = ArgumentParser(
             epilog=help_message, usage=usage, phil=phil_scope, read_reflections=True
         )
 
@@ -75,12 +74,12 @@ class Script(object):
             for t in tables[1:]:
                 table.extend(t)
         else:
-            raise RuntimeError("unknown method, %s" % params.method)
+            raise RuntimeError(f"unknown method, {params.method}")
 
         # Write the reflections to the file
-        Command.start("Writing %d reflections to %s" % (len(table), params.output))
+        Command.start(f"Writing {len(table)} reflections to {params.output}")
         table.as_file(params.output)
-        Command.end("Wrote %d reflections to %s" % (len(table), params.output))
+        Command.end(f"Wrote {len(table)} reflections to {params.output}")
 
 
 @show_mail_handle_errors()

@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import math
 
 from cctbx import sgtbx, uctbx
@@ -9,12 +7,12 @@ from scitbx.array_family import flex
 import dials.algorithms.rs_mapper as recviewer
 import dials.util
 from dials.util import Sorry
-from dials.util.options import OptionParser, flatten_experiments
+from dials.util.options import ArgumentParser, flatten_experiments
 
 help_message = """
 This program reconstructs reciprocal space from diffraction images. The orientation matrix is not necessary; only diffraction geometry is required.
 
-This program is inteded to help detection and visualization of pathologies such as multiple-lattice, twinning, modulation, diffuse scattering and high background. It is also useful for education.
+This program is intended to help detection and visualization of pathologies such as multiple-lattice, twinning, modulation, diffuse scattering and high background. It is also useful for education.
 
 Examples::
 
@@ -55,7 +53,7 @@ rs_mapper
 )
 
 
-class Script(object):
+class Script:
     def __init__(self):
         """Initialise the script."""
 
@@ -67,7 +65,7 @@ class Script(object):
         )
 
         # Initialise the base class
-        self.parser = OptionParser(
+        self.parser = ArgumentParser(
             usage=usage, phil=phil_scope, epilog=help_message, read_experiments=True
         )
 
@@ -143,7 +141,7 @@ class Script(object):
         for i in range(len(imageset)):
             axis = imageset.get_goniometer().get_rotation_axis()
             osc_range = imageset.get_scan(i).get_oscillation_range()
-            print("Oscillation range: %.2f - %.2f" % (osc_range[0], osc_range[1]))
+            print(f"Oscillation range: {osc_range[0]:.2f} - {osc_range[1]:.2f}")
             angle = (osc_range[0] + osc_range[1]) / 2 / 180 * math.pi
             if not self.reverse_phi:
                 # the pixel is in S AFTER rotation. Thus we have to rotate BACK.

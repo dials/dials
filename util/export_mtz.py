@@ -1,10 +1,7 @@
-# coding: utf-8
-
-from __future__ import absolute_import, division, print_function
-
 import logging
 import time
-from collections import Counter, OrderedDict
+from collections import Counter
+from math import isclose
 
 from iotbx import mtz
 from libtbx import env
@@ -25,29 +22,21 @@ from dials.util.multi_dataset_handling import (
 )
 from dials.util.version import dials_version
 
-try:
-    from math import isclose
-except ImportError:
-    # Python 3 backport
-    def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
-        return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
-
-
 logger = logging.getLogger(__name__)
 
 
-class MTZWriterBase(object):
+class MTZWriterBase:
     """Helper for adding metadata, crystals and datasets to an mtz file object."""
 
     def __init__(self, space_group, unit_cell=None):
         """If a unit cell is provided, will be used as default unless specified
         for each crystal."""
         mtz_file = mtz.object()
-        mtz_file.set_title("From %s" % env.dispatcher_name)
+        mtz_file.set_title(f"From {env.dispatcher_name}")
         date_str = time.strftime("%Y-%m-%d at %H:%M:%S %Z")
         if time.strftime("%Z") != "GMT":
             date_str += time.strftime("  (%Y-%m-%d at %H:%M:%S %Z)", time.gmtime())
-        mtz_file.add_history("From %s, run on %s" % (dials_version(), date_str))
+        mtz_file.add_history(f"From {dials_version()}, run on {date_str}")
         mtz_file.set_space_group_info(space_group.info())
         self.mtz_file = mtz_file
         if unit_cell:
@@ -65,7 +54,7 @@ class MTZWriterBase(object):
             else:
                 unit_cell = self.unit_cell
         if not crystal_name:
-            crystal_name = "crystal_%s" % str(self.n_crystals + 1)
+            crystal_name = f"crystal_{self.n_crystals + 1}"
         if not project_name:
             project_name = "DIALS"
         self.current_crystal = self.mtz_file.add_crystal(
@@ -90,6 +79,7 @@ class MergedMTZWriter(MTZWriterBase):
         anom_array=None,
         amplitudes=None,
         anom_amplitudes=None,
+        dano=None,
         multiplicities=None,
         suffix=None,
     ):
@@ -114,6 +104,10 @@ class MergedMTZWriter(MTZWriterBase):
             self.current_dataset.add_miller_array(amplitudes, "F" + suffix)
         if anom_amplitudes:
             self.current_dataset.add_miller_array(anom_amplitudes, "F" + suffix)
+        if dano:
+            self.current_dataset.add_miller_array(
+                dano, "DANO" + suffix, column_types="DQ"
+            )
 
 
 class MADMergedMTZWriter(MergedMTZWriter):
@@ -125,16 +119,18 @@ class MADMergedMTZWriter(MergedMTZWriter):
         anom_array=None,
         amplitudes=None,
         anom_amplitudes=None,
+        dano=None,
         multiplicities=None,
         suffix=None,
     ):
         if not suffix:
-            suffix = "_WAVE%s" % str(self.n_datasets)
-        super(MADMergedMTZWriter, self).add_dataset(
+            suffix = f"_WAVE{self.n_datasets}"
+        super().add_dataset(
             merged_array,
             anom_array,
             amplitudes,
             anom_amplitudes,
+            dano,
             multiplicities,
             suffix,
         )
@@ -442,6 +438,10 @@ def export_mtz(
                 "Experiment crystals differ. Using first experiment crystal for file-level data."
             )
 
+        # At least, all experiments must have the same space group
+        if len({x.crystal.get_space_group().make_tidy() for x in experiment_list}) != 1:
+            raise ValueError("Experiments do not have a unique space group")
+
         wavelengths = match_wavelengths(experiment_list)
         if len(wavelengths) > 1:
             logger.info(
@@ -453,7 +453,7 @@ def export_mtz(
                 ),
             )
     else:
-        wavelengths = OrderedDict({experiment_list[0].beam.get_wavelength(): [0]})
+        wavelengths = {experiment_list[0].beam.get_wavelength(): [0]}
 
     # also only work correctly with one panel (for the moment)
     if any(len(experiment.detector) != 1 for experiment in experiment_list):
@@ -585,9 +585,7 @@ def export_mtz(
     mtz_writer.write_columns(combined_data)
 
     logger.info(
-        "Saving {} integrated reflections to {}".format(
-            len(combined_data["id"]), filename
-        )
+        "Saving %s integrated reflections to %s", len(combined_data["id"]), filename
     )
     mtz_file = mtz_writer.mtz_file
     mtz_file.write(filename)
@@ -595,12 +593,12 @@ def export_mtz(
     return mtz_file
 
 
-def match_wavelengths(experiments):
+def match_wavelengths(experiments, absolute_tolerance=1e-4):
     """Create a dictionary matching wavelength to experiments (index in list)"""
-    wavelengths = OrderedDict()
+    wavelengths = {}
     for i, x in enumerate(experiments):
         w = x.beam.get_wavelength()
-        matches = [isclose(w, k, rel_tol=1e-4) for k in wavelengths]
+        matches = [isclose(w, k, abs_tol=absolute_tolerance) for k in wavelengths]
         if not any(matches):
             wavelengths[w] = [i]
         else:

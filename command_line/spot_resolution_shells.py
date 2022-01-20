@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import libtbx.phil
 
 import dials.util
@@ -41,11 +39,14 @@ def spot_resolution_shells(experiments, reflections, params):
 
 @dials.util.show_mail_handle_errors()
 def run(args=None):
-    from dials.util.options import OptionParser, reflections_and_experiments_from_files
+    from dials.util.options import (
+        ArgumentParser,
+        reflections_and_experiments_from_files,
+    )
 
     usage = "dials.spot_resolution_shells [options] models.expt observations.refl"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_experiments=True,

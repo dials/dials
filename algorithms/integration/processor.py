@@ -1,11 +1,8 @@
-# coding: utf-8
-
-from __future__ import absolute_import, division, print_function
-
 import itertools
 import logging
 import math
-import platform
+import os
+import pathlib
 from time import time
 
 import psutil
@@ -19,6 +16,7 @@ import dials.util.log
 from dials.array_family import flex
 from dials.model.data import make_image
 from dials.util import tabulate
+from dials.util.log import rehandle_cached_records
 from dials.util.mp import available_cores, multi_node_parallel_map
 from dials_algorithms_integration_integrator_ext import (
     Executor,
@@ -66,6 +64,90 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
+def assess_available_memory(params):
+
+    # Obtain information about system memory
+    available_memory = psutil.virtual_memory().available
+    available_swap = psutil.swap_memory().free
+
+    # https://htcondor.readthedocs.io/en/latest/users-manual/services-for-jobs.html#extra-environment-variables-htcondor-sets-for-jobs
+    condor_job_ad = os.environ.get("_CONDOR_JOB_AD")
+    if condor_job_ad:
+        try:
+            job_classad = dials.util.parse_htcondor_job_classad(
+                pathlib.Path(condor_job_ad)
+            )
+        except Exception as e:
+            logger.error(
+                f"Error parsing _CONDOR_JOB_AD {condor_job_ad}: {e}",
+                exc_info=True,
+            )
+        else:
+            if job_classad.memory_provisioned:
+                # Convert MB to bytes
+                available_memory = min(
+                    available_memory, job_classad.memory_provisioned * 1024 ** 2
+                )
+
+    available_incl_swap = available_memory + available_swap
+    available_limit = available_incl_swap * params.block.max_memory_usage
+    available_immediate_limit = available_memory * params.block.max_memory_usage
+
+    # Compile a memory report
+    report = [
+        "Memory situation report:",
+    ]
+
+    def _report(description, numbytes):
+        report.append(f"  {description:<50}:{numbytes/1e9:5.1f} GB")
+
+    _report("Available system memory (excluding swap)", available_memory)
+    _report("Available swap memory", available_swap)
+    _report("Available system memory (including swap)", available_incl_swap)
+    _report("Maximum memory for processing (including swap)", available_limit)
+    _report(
+        "Maximum memory for processing (excluding swap)",
+        available_immediate_limit,
+    )
+
+    # Check if a ulimit applies
+    # Note that resource may be None on non-Linux platforms.
+    # We can't use psutil as platform-independent solution in this instance due to
+    # https://github.com/conda-forge/psutil-feedstock/issues/47
+    rlimit = getattr(resource, "RLIMIT_VMEM", getattr(resource, "RLIMIT_AS", None))
+    if rlimit:
+        try:
+            ulimit = resource.getrlimit(rlimit)[0]
+            if ulimit <= 0 or ulimit > (2 ** 62):
+                report.append("  no memory ulimit set")
+            else:
+                ulimit_used = psutil.Process().memory_info().rss
+                _report("Memory ulimit detected", ulimit)
+                _report("Memory ulimit in use", ulimit_used)
+                available_memory = max(0, min(available_memory, ulimit - ulimit_used))
+                available_incl_swap = max(
+                    0, min(available_incl_swap, ulimit - ulimit_used)
+                )
+                available_immediate_limit = (
+                    available_memory * params.block.max_memory_usage
+                )
+                _report("Available system memory (limited)", available_memory)
+                _report(
+                    "Available system memory (incl. swap; limited)",
+                    available_incl_swap,
+                )
+                _report(
+                    "Maximum memory for processing (exc. swap; limited)",
+                    available_immediate_limit,
+                )
+        except Exception as e:
+            logger.debug(
+                "Could not obtain ulimit values due to %s", str(e), exc_info=True
+            )
+
+    return available_immediate_limit, available_incl_swap, report
+
+
 def _average_bbox_size(reflections):
     """Calculate the average bbox size for debugging"""
 
@@ -80,13 +162,13 @@ def _average_bbox_size(reflections):
 
 
 @boost_adaptbx.boost.python.inject_into(Executor)
-class _(object):
+class _:
     @staticmethod
     def __getinitargs__():
         return ()
 
 
-class _Job(object):
+class _Job:
     def __init__(self):
         self.index = 0
         self.nthreads = 1
@@ -95,7 +177,7 @@ class _Job(object):
 job = _Job()
 
 
-class MultiProcessing(object):
+class MultiProcessing:
     """
     Multi processing parameters
     """
@@ -105,15 +187,17 @@ class MultiProcessing(object):
         self.nproc = 1
         self.njobs = 1
         self.nthreads = 1
+        self.n_subset_split = None
 
     def update(self, other):
         self.method = other.method
         self.nproc = other.nproc
         self.njobs = other.njobs
         self.nthreads = other.nthreads
+        self.n_subset_split = other.n_subset_split
 
 
-class Lookup(object):
+class Lookup:
     """
     Lookup parameters
     """
@@ -125,7 +209,7 @@ class Lookup(object):
         self.mask = other.mask
 
 
-class Block(object):
+class Block:
     """
     Block parameters
     """
@@ -145,7 +229,7 @@ class Block(object):
         self.max_memory_usage = other.max_memory_usage
 
 
-class Shoebox(object):
+class Shoebox:
     """
     Shoebox parameters
     """
@@ -159,7 +243,7 @@ class Shoebox(object):
         self.partials = other.partials
 
 
-class Debug(object):
+class Debug:
     """
     Debug parameters
     """
@@ -177,7 +261,7 @@ class Debug(object):
         self.separate_files = other.separate_files
 
 
-class Parameters(object):
+class Parameters:
     """
     Class to handle parameters for the processor
     """
@@ -212,10 +296,10 @@ def execute_parallel_task(task):
     result = task()
     handlers = logging.getLogger("dials").handlers
     assert len(handlers) == 1, "Invalid number of logging handlers"
-    return result, handlers[0].messages()
+    return result, handlers[0].records
 
 
-class _Processor(object):
+class _Processor:
     """Processor interface class."""
 
     def __init__(self, manager):
@@ -260,14 +344,7 @@ class _Processor(object):
         mp_method = self.manager.params.mp.method
         mp_njobs = self.manager.params.mp.njobs
         mp_nproc = self.manager.params.mp.nproc
-        if (
-            mp_njobs * mp_nproc
-        ) > 1 and platform.system() == "Windows":  # platform.system() forks which is bad for MPI, so don't use it unless nproc > 1
-            logger.warning(
-                "Multiprocessing is not available on windows. Setting nproc = 1\n"
-            )
-            mp_nproc = 1
-            mp_njobs = 1
+
         assert mp_nproc > 0, "Invalid number of processors"
         if mp_nproc * mp_njobs > len(self.manager):
             mp_nproc = min(mp_nproc, len(self.manager))
@@ -276,16 +353,18 @@ class _Processor(object):
         if mp_njobs > 1:
             assert mp_method != "none" and mp_method is not None
             logger.info(
-                " Using %s with %d parallel job(s) and %d processes per node\n"
-                % (mp_method, mp_njobs, mp_nproc)
+                " Using %s with %d parallel job(s) and %d processes per node\n",
+                mp_method,
+                mp_njobs,
+                mp_nproc,
             )
         else:
-            logger.info(" Using multiprocessing with %d parallel job(s)\n" % (mp_nproc))
+            logger.info(" Using multiprocessing with %d parallel job(s)\n", mp_nproc)
+
         if mp_njobs * mp_nproc > 1:
 
             def process_output(result):
-                for message in result[1]:
-                    logger.handle(message)
+                rehandle_cached_records(result[1])
                 self.manager.accumulate(result[0])
 
             multi_node_parallel_map(
@@ -296,7 +375,6 @@ class _Processor(object):
                 callback=process_output,
                 cluster_method=mp_method,
                 preserve_order=True,
-                preserve_exception_message=True,
             )
         else:
             for task in self.manager.tasks():
@@ -331,10 +409,10 @@ class _ProcessorRot(_Processor):
       """
             )
 
-        super(_ProcessorRot, self).__init__(manager)
+        super().__init__(manager)
 
 
-class NullTask(object):
+class NullTask:
     """
     A class to perform a null task.
     """
@@ -367,7 +445,7 @@ class NullTask(object):
         )
 
 
-class Task(object):
+class Task:
     """
     A class to perform a processing task.
     """
@@ -434,9 +512,10 @@ class Task(object):
 
             # I am 99% sure this is implied by all the code above
             assert (frame1 - frame0) <= len(imageset)
-            imageset = imageset[frame0:frame1]
+            if len(imageset) > 1:
+                imageset = imageset[frame0:frame1]
         except Exception as e:
-            raise RuntimeError("Programmer Error: bad array range: %s" % str(e))
+            raise RuntimeError(f"Programmer Error: bad array range: {e}")
 
         try:
             frame0, frame1 = imageset.get_array_range()
@@ -520,7 +599,7 @@ class Task(object):
         )
 
 
-class _Manager(object):
+class _Manager:
     """
     A class to manage processing book-keeping
     """
@@ -565,7 +644,7 @@ class _Manager(object):
 
         if self.params.mp.nproc is libtbx.Auto:
             self.params.mp.nproc = available_cores()
-            logger.info("Setting nproc={}".format(self.params.mp.nproc))
+            logger.info(f"Setting nproc={self.params.mp.nproc}")
 
         # Compute the block size and processors
         self.compute_jobs()
@@ -730,7 +809,7 @@ class _Manager(object):
                 block_overlap = min(block_overlap, int(block_size_frames // 2))
             else:
                 raise RuntimeError(
-                    "Unknown block_size units %r" % self.params.block.units
+                    f"Unknown block_size units {self.params.block.units!r}"
                 )
             self.jobs.add(
                 (i0, i1),
@@ -754,8 +833,9 @@ class _Manager(object):
             assert num_partial >= num_full, "Invalid number of partials"
             if num_partial > num_full:
                 logger.info(
-                    " Split %d reflections into %d partial reflections\n"
-                    % (num_full, num_partial)
+                    " Split %d reflections into %d partial reflections\n",
+                    num_full,
+                    num_partial,
                 )
         else:
             num_full = len(self.reflections)
@@ -765,7 +845,7 @@ class _Manager(object):
             if num_partial > num_full:
                 num_split = num_partial - num_full
                 logger.info(
-                    " Split %d reflections overlapping job boundaries\n" % num_split
+                    " Split %d reflections overlapping job boundaries\n", num_split
                 )
 
         # Compute the partiality
@@ -781,72 +861,15 @@ class _Manager(object):
             self.jobs.shoebox_memory(self.reflections, self.params.shoebox.flatten)
         )
 
-        # Obtain information about system memory
-        available_memory = psutil.virtual_memory().available
-        available_swap = psutil.swap_memory().free
-        available_incl_swap = available_memory + available_swap
-        available_limit = available_incl_swap * self.params.block.max_memory_usage
-        available_immediate_limit = (
-            available_memory * self.params.block.max_memory_usage
+        (
+            available_immediate_limit,
+            available_incl_swap,
+            report,
+        ) = assess_available_memory(self.params)
+
+        report.append(
+            f"  {'Memory required per process':50}:{memory_required_per_process/1e9:5.1f} GB"
         )
-
-        # Compile a memory report
-        report = [
-            "Memory situation report:",
-        ]
-
-        def _report(description, value):
-            report.append("  %-50s:%5.1f GB" % (description, value))
-
-        _report("Available system memory (excluding swap)", available_memory / 1e9)
-        _report("Available swap memory", available_swap / 1e9)
-        _report("Available system memory (including swap)", available_incl_swap / 1e9)
-        _report(
-            "Maximum memory for processing (including swap)",
-            available_limit / 1e9,
-        )
-        _report(
-            "Maximum memory for processing (excluding swap)",
-            available_immediate_limit / 1e9,
-        )
-        _report("Memory required per process", memory_required_per_process / 1e9)
-
-        # Check if a ulimit applies
-        # Note that resource may be None on non-Linux platforms.
-        # We can't use psutil as platform-independent solution in this instance due to
-        # https://github.com/conda-forge/psutil-feedstock/issues/47
-        rlimit = getattr(resource, "RLIMIT_VMEM", getattr(resource, "RLIMIT_AS", None))
-        if rlimit:
-            try:
-                ulimit = resource.getrlimit(rlimit)[0]
-                if ulimit <= 0 or ulimit > (2 ** 62):
-                    report.append("  no memory ulimit set")
-                else:
-                    ulimit_used = psutil.Process().memory_info().rss
-                    _report("Memory ulimit detected", ulimit / 1e9)
-                    _report("Memory ulimit in use", ulimit_used / 1e9)
-                    available_memory = max(
-                        0, min(available_memory, ulimit - ulimit_used)
-                    )
-                    available_incl_swap = max(
-                        0, min(available_incl_swap, ulimit - ulimit_used)
-                    )
-                    available_immediate_limit = (
-                        available_memory * self.params.block.max_memory_usage
-                    )
-                    _report("Available system memory (limited)", available_memory / 1e9)
-                    _report(
-                        "Available system memory (incl. swap; limited)",
-                        available_incl_swap / 1e9,
-                    )
-                    _report(
-                        "Maximum memory for processing (exc. swap; limited)",
-                        available_immediate_limit / 1e9,
-                    )
-            except Exception as e:
-                logger.debug(
-                    "Could not obtain ulimit values due to %s", str(e), exc_info=True
-                )
 
         output_level = logging.INFO
 
@@ -969,7 +992,7 @@ class Processor3D(_ProcessorRot):
         manager = _Manager(experiments, reflections, params)
 
         # Initialise the processor
-        super(Processor3D, self).__init__(experiments, manager)
+        super().__init__(experiments, manager)
 
 
 class ProcessorFlat3D(_ProcessorRot):
@@ -986,7 +1009,7 @@ class ProcessorFlat3D(_ProcessorRot):
         manager = _Manager(experiments, reflections, params)
 
         # Initialise the processor
-        super(ProcessorFlat3D, self).__init__(experiments, manager)
+        super().__init__(experiments, manager)
 
 
 class Processor2D(_ProcessorRot):
@@ -1002,7 +1025,7 @@ class Processor2D(_ProcessorRot):
         manager = _Manager(experiments, reflections, params)
 
         # Initialise the processor
-        super(Processor2D, self).__init__(experiments, manager)
+        super().__init__(experiments, manager)
 
 
 class ProcessorSingle2D(_ProcessorRot):
@@ -1021,7 +1044,7 @@ class ProcessorSingle2D(_ProcessorRot):
         manager = _Manager(experiments, reflections, params)
 
         # Initialise the processor
-        super(ProcessorSingle2D, self).__init__(experiments, manager)
+        super().__init__(experiments, manager)
 
 
 class ProcessorStills(_Processor):
@@ -1050,7 +1073,7 @@ class ProcessorStills(_Processor):
         manager = _Manager(experiments, reflections, params)
 
         # Initialise the processor
-        super(ProcessorStills, self).__init__(manager)
+        super().__init__(manager)
 
 
 def build_processor(Class, experiments, reflections, params=None):

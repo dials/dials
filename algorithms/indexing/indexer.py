@@ -1,7 +1,3 @@
-# coding: utf-8
-
-from __future__ import absolute_import, division, print_function
-
 import logging
 import math
 
@@ -52,7 +48,7 @@ max_cell_estimation
     .expert_level = 2
   step_size = 45
     .type = float(value_min=0)
-    .help = "Step size, in degrees, of the blocks used to peform the max_cell "
+    .help = "Step size, in degrees, of the blocks used to perform the max_cell "
             "estimation."
     .expert_level = 2
   nearest_neighbor_percentile = None
@@ -114,7 +110,7 @@ indexing {
       .help = "Target unit cell for indexing."
     relative_length_tolerance = 0.1
       .type = float
-      .help = "Relative tolerance for unit cell lengths in unit cell comparision."
+      .help = "Relative tolerance for unit cell lengths in unit cell comparison."
       .expert_level = 1
     absolute_angle_tolerance = 5
       .type = float
@@ -249,7 +245,7 @@ indexing {
     candidate_outlier_rejection = True
       .type = bool
       .expert_level = 1
-      .help = If True, while refining candiate basis solutions, also apply Sauter/ \
+      .help = If True, while refining candidate basis solutions, also apply Sauter/ \
               Poon (2010) outlier rejection
     refine_candidates_with_known_symmetry = False
       .type = bool
@@ -300,7 +296,7 @@ indexing {
 phil_scope = iotbx.phil.parse(phil_str, process_includes=True)
 
 
-class Indexer(object):
+class Indexer:
     def __init__(self, reflections, experiments, params):
         self.reflections = reflections
         self.experiments = experiments
@@ -416,9 +412,14 @@ class Indexer(object):
                 from dxtbx.imageset import ImageSet  # , MemImageSet
 
                 for experiment in experiments:
-                    experiment.imageset = ImageSet(
-                        experiment.imageset.data(), experiment.imageset.indices()
-                    )
+                    # Elsewhere, checks are made for ImageSequence when picking between algorithms
+                    # specific to rotations vs. stills, so here reset any ImageSequences to stills.
+                    # Note, dials.stills_process resets ImageSequences to ImageSets already,
+                    # and it's not free (the ImageSet cache is dropped), only do it if needed
+                    if isinstance(experiment.imageset, ImageSequence):
+                        experiment.imageset = ImageSet(
+                            experiment.imageset.data(), experiment.imageset.indices()
+                        )
                     # if isinstance(imageset, MemImageSet):
                     #   imageset = MemImageSet(imagesequence._images, imagesequence.indices())
                     # else:
@@ -471,6 +472,7 @@ class Indexer(object):
             target_space_group = target_space_group.group()
         else:
             target_space_group = sgtbx.space_group()
+            self.params.known_symmetry.space_group = target_space_group.info()
         self._symmetry_handler = SymmetryHandler(
             unit_cell=target_unit_cell,
             space_group=target_space_group,
@@ -528,8 +530,8 @@ class Indexer(object):
                 crystal_ids = self.reflections.select(d_spacings > d_min_indexed)["id"]
                 if (crystal_ids == -1).count(True) < min_reflections_for_indexing:
                     logger.info(
-                        "Finish searching for more lattices: %i unindexed reflections remaining."
-                        % ((crystal_ids == -1).count(True))
+                        "Finish searching for more lattices: %i unindexed reflections remaining.",
+                        (crystal_ids == -1).count(True),
                     )
                     break
 
@@ -561,8 +563,8 @@ class Indexer(object):
                         self.d_min - d_min_all
                     ) / (n_cycles - 1)
                     logger.info(
-                        "Using d_min_step %.1f"
-                        % self.params.refinement_protocol.d_min_step
+                        "Using d_min_step %.1f",
+                        self.params.refinement_protocol.d_min_step,
                     )
 
             if len(experiments) == 0:
@@ -584,7 +586,7 @@ class Indexer(object):
                         d_min = max(d_min, self.params.refinement_protocol.d_min_final)
                     if d_min >= 0:
                         self.d_min = d_min
-                        logger.info("Increasing resolution to %.2f Angstrom" % d_min)
+                        logger.info("Increasing resolution to %.2f Angstrom", d_min)
 
                 # reset reflection lattice flags
                 # the lattice a given reflection belongs to: a value of -1 indicates
@@ -607,7 +609,7 @@ class Indexer(object):
 
                 logger.info("")
                 logger.info("#" * 80)
-                logger.info("Starting refinement (macro-cycle %i)" % (i_cycle + 1))
+                logger.info("Starting refinement (macro-cycle %i)", i_cycle + 1)
                 logger.info("#" * 80)
                 logger.info("")
                 self.indexed_reflections = self.reflections["id"] > -1
@@ -657,8 +659,7 @@ class Indexer(object):
                         last = len(experiments)
                         sel = refined_reflections["id"] == last
                         logger.info(
-                            "Removing %d reflections with id %d"
-                            % (sel.count(True), last)
+                            "Removing %d reflections with id %d", sel.count(True), last
                         )
                         refined_reflections["id"].set_selected(sel, -1)
 
@@ -790,16 +791,17 @@ class Indexer(object):
             min_angle = self.params.multiple_lattice_search.minimum_angular_separation
             if abs(angle) < min_angle:  # degrees
                 logger.info(
-                    "Crystal models too similar, rejecting crystal %i:"
-                    % (len(experiments))
+                    "Crystal models too similar, rejecting crystal %i:",
+                    len(experiments),
                 )
                 logger.info(
-                    "Rotation matrix to transform crystal %i to crystal %i"
-                    % (i_a + 1, len(experiments))
+                    "Rotation matrix to transform crystal %i to crystal %i",
+                    i_a + 1,
+                    len(experiments),
                 )
                 logger.info(R_ab)
                 logger.info(
-                    "Rotation of %.3f degrees" % angle
+                    f"Rotation of {angle:.3f} degrees"
                     + " about axis (%.3f, %.3f, %.3f)" % axis
                 )
                 have_similar_crystal_models = True
@@ -840,8 +842,9 @@ class Indexer(object):
             reflections = reflections.select(d_spacings > d_min)
         for i_expt, expt in enumerate(experiments):
             logger.info(
-                "model %i (%i reflections):"
-                % (i_expt + 1, (reflections["id"] == i_expt).count(True))
+                "model %i (%i reflections):",
+                i_expt + 1,
+                (reflections["id"] == i_expt).count(True),
             )
             logger.info(expt.crystal)
 
@@ -857,7 +860,7 @@ class Indexer(object):
                     str(i),
                     str(indexed_count),
                     str(unindexed_count),
-                    "{:.1%}".format(indexed_count / (indexed_count + unindexed_count)),
+                    f"{indexed_count / (indexed_count + unindexed_count):.1%}",
                 ]
             )
         logger.info(dials.util.tabulate(rows, headers="firstrow"))
@@ -870,7 +873,7 @@ class Indexer(object):
                     self._symmetry_handler.target_symmetry_primitive.unit_cell().parameters()
                 )
                 self.params.max_cell = params.multiplier * max(uc_params[:3])
-                logger.info("Using max_cell: %.1f Angstrom" % (self.params.max_cell))
+                logger.info("Using max_cell: %.1f Angstrom", self.params.max_cell)
             else:
                 self.params.max_cell = find_max_cell(
                     self.reflections,
@@ -884,7 +887,7 @@ class Indexer(object):
                     filter_overlaps=params.filter_overlaps,
                     overlaps_border=params.overlaps_border,
                 ).max_cell
-                logger.info("Found max_cell: %.1f Angstrom" % (self.params.max_cell))
+                logger.info("Found max_cell: %.1f Angstrom", self.params.max_cell)
 
     def index_reflections(self, experiments, reflections):
         self._assign_indices(reflections, experiments, d_min=self.d_min)

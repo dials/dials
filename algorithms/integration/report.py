@@ -1,9 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
-import collections
-
-import six
-
 from dials.array_family import flex
 from dials.array_family.flex import Binner
 from dials.util.report import Array, Report, Table
@@ -35,22 +29,22 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
     )
 
     def overall_report(data):
-
         # Start by adding some overall numbers
-        report = collections.OrderedDict()
-        report["n"] = len(reflections)
-        report["n_full"] = data["full"].count(True)
-        report["n_partial"] = data["full"].count(False)
-        report["n_overload"] = data["over"].count(True)
-        report["n_ice"] = data["ice"].count(True)
-        report["n_summed"] = data["sum"].count(True)
-        report["n_fitted"] = data["prf"].count(True)
-        report["n_integated"] = data["int"].count(True)
-        report["n_invalid_bg"] = data["ninvbg"].count(True)
-        report["n_invalid_fg"] = data["ninvfg"].count(True)
-        report["n_failed_background"] = data["fbgd"].count(True)
-        report["n_failed_summation"] = data["fsum"].count(True)
-        report["n_failed_fitting"] = data["fprf"].count(True)
+        report = {
+            "n": len(reflections),
+            "n_full": data["full"].count(True),
+            "n_partial": data["full"].count(False),
+            "n_overload": data["over"].count(True),
+            "n_ice": data["ice"].count(True),
+            "n_summed": data["sum"].count(True),
+            "n_fitted": data["prf"].count(True),
+            "n_integated": data["int"].count(True),
+            "n_invalid_bg": data["ninvbg"].count(True),
+            "n_invalid_fg": data["ninvfg"].count(True),
+            "n_failed_background": data["fbgd"].count(True),
+            "n_failed_summation": data["fsum"].count(True),
+            "n_failed_fitting": data["fprf"].count(True),
+        }
 
         # Compute mean background
         try:
@@ -103,20 +97,21 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
         indexer_int = binner.indexer(index.select(data["int"]))
 
         # Add some stats by resolution
-        report = collections.OrderedDict()
-        report["bins"] = list(binner.bins())
-        report["n_full"] = list(indexer_all.sum(data["full"]))
-        report["n_partial"] = list(indexer_all.sum(~data["full"]))
-        report["n_overload"] = list(indexer_all.sum(data["over"]))
-        report["n_ice"] = list(indexer_all.sum(data["ice"]))
-        report["n_summed"] = list(indexer_all.sum(data["sum"]))
-        report["n_fitted"] = list(indexer_all.sum(data["prf"]))
-        report["n_integrated"] = list(indexer_all.sum(data["int"]))
-        report["n_invalid_bg"] = list(indexer_all.sum(data["ninvbg"]))
-        report["n_invalid_fg"] = list(indexer_all.sum(data["ninvfg"]))
-        report["n_failed_background"] = list(indexer_all.sum(data["fbgd"]))
-        report["n_failed_summation"] = list(indexer_all.sum(data["fsum"]))
-        report["n_failed_fitting"] = list(indexer_all.sum(data["fprf"]))
+        report = {
+            "bins": list(binner.bins()),
+            "n_full": list(indexer_all.sum(data["full"])),
+            "n_partial": list(indexer_all.sum(~data["full"])),
+            "n_overload": list(indexer_all.sum(data["over"])),
+            "n_ice": list(indexer_all.sum(data["ice"])),
+            "n_summed": list(indexer_all.sum(data["sum"])),
+            "n_fitted": list(indexer_all.sum(data["prf"])),
+            "n_integrated": list(indexer_all.sum(data["int"])),
+            "n_invalid_bg": list(indexer_all.sum(data["ninvbg"])),
+            "n_invalid_fg": list(indexer_all.sum(data["ninvfg"])),
+            "n_failed_background": list(indexer_all.sum(data["fbgd"])),
+            "n_failed_summation": list(indexer_all.sum(data["fsum"])),
+            "n_failed_fitting": list(indexer_all.sum(data["fprf"])),
+        }
 
         # Compute mean background
         try:
@@ -152,7 +147,7 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
 
         try:
             report["rmsd_xy"] = list(
-                indexer_sum.mean(data["xyz.rmsd"].select(data["int"]))
+                indexer_sum.mean(data["xyz.rmsd"].select(data["sum"]))
             )
         except Exception:
             report["rmsd_xy"] = [0.0] * len(binner)
@@ -180,7 +175,7 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
 
     def select(data, indices):
         # Select rows from columns
-        result = {key: value.select(indices) for key, value in six.iteritems(data)}
+        result = {key: value.select(indices) for key, value in data.items()}
         return result
 
     # Check the required columns are there
@@ -278,9 +273,11 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
     overall["dmax"] = low_summary["dmax"]
 
     # Create the overall report
-    summary = collections.OrderedDict(
-        [("overall", overall), ("low", low_summary), ("high", high_summary)]
-    )
+    summary = {
+        "overall": overall,
+        "low": low_summary,
+        "high": high_summary,
+    }
 
     # Create a report binned by resolution
     resolution = binned_report(resolution_binner, data["d"], data)
@@ -289,9 +286,7 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
     image = binned_report(frame_binner, data["xyzcal.px"].parts()[2], data)
 
     # Return the report
-    return collections.OrderedDict(
-        [("summary", summary), ("resolution", resolution), ("image", image)]
-    )
+    return {"summary": summary, "resolution": resolution, "image": image}
 
 
 class IntegrationReport(Report):
@@ -307,7 +302,7 @@ class IntegrationReport(Report):
         :param reflections: The reflection table
         """
         # Initialise the report class
-        super(IntegrationReport, self).__init__()
+        super().__init__()
 
         # Split the tables by experiment id
         tables = reflections.split_by_experiment_id()
@@ -350,11 +345,11 @@ class IntegrationReport(Report):
                         "%d" % report["n_ice"][i],
                         "%d" % report["n_summed"][i],
                         "%d" % report["n_fitted"][i],
-                        "%.2f" % report["mean_background"][i],
-                        "%.2f" % report["ios_sum"][i],
-                        "%.2f" % report["ios_prf"][i],
-                        "%.2f" % report["cc_prf"][i],
-                        "%.2f" % report["rmsd_xy"][i],
+                        f"{report['mean_background'][i]:.2f}",
+                        f"{report['ios_sum'][i]:.2f}",
+                        f"{report['ios_prf'][i]:.2f}",
+                        f"{report['cc_prf'][i]:.2f}",
+                        f"{report['rmsd_xy'][i]:.2f}",
                     ]
                 )
         self.add_table(table)
@@ -382,18 +377,18 @@ class IntegrationReport(Report):
                 table.rows.append(
                     [
                         "%d" % j,
-                        "%.2f" % report["bins"][i],
+                        f"{report['bins'][i]:.2f}",
                         "%d" % report["n_full"][i],
                         "%d" % report["n_partial"][i],
                         "%d" % report["n_overload"][i],
                         "%d" % report["n_ice"][i],
                         "%d" % report["n_summed"][i],
                         "%d" % report["n_fitted"][i],
-                        "%.2f" % report["mean_background"][i],
-                        "%.2f" % report["ios_sum"][i],
-                        "%.2f" % report["ios_prf"][i],
-                        "%.2f" % report["cc_prf"][i],
-                        "%.2f" % report["rmsd_xy"][i],
+                        f"{report['mean_background'][i]:.2f}",
+                        f"{report['ios_sum'][i]:.2f}",
+                        f"{report['ios_prf'][i]:.2f}",
+                        f"{report['cc_prf'][i]:.2f}",
+                        f"{report['rmsd_xy'][i]:.2f}",
                     ]
                 )
         self.add_table(table)
@@ -454,7 +449,7 @@ class ProfileModelReport(Report):
         :param reflections: The reflection table
         """
         # Initialise the report class
-        super(ProfileModelReport, self).__init__()
+        super().__init__()
 
         # Create the table
         table = Table()
@@ -480,10 +475,10 @@ class ProfileModelReport(Report):
                     [
                         "%d" % i,
                         "%d" % j,
-                        "%s" % model.valid(j),
-                        "%.2f" % model.coord(j)[0],
-                        "%.2f" % model.coord(j)[1],
-                        "%.2f" % model.coord(j)[2],
+                        f"{model.valid(j)}",
+                        f"{model.coord(j)[0]:.2f}",
+                        f"{model.coord(j)[1]:.2f}",
+                        f"{model.coord(j)[2]:.2f}",
                         "%d" % model.n_reflections(j),
                     ]
                 )
@@ -517,7 +512,7 @@ class ProfileValidationReport(Report):
         :param reflections: The reflection table
         """
         # Initialise the report class
-        super(ProfileValidationReport, self).__init__()
+        super().__init__()
 
         # Create the table
         table = Table()
@@ -561,8 +556,8 @@ class ProfileValidationReport(Report):
                         "%d" % i,
                         "%d" % j,
                         "%d" % num_validated,
-                        "%.2f" % mean_cc,
-                        "%.2f" % mean_nrmsd,
+                        f"{mean_cc:.2f}",
+                        f"{mean_nrmsd:.2f}",
                     ]
                 )
 

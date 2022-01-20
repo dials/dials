@@ -1,12 +1,10 @@
-from __future__ import absolute_import, division, print_function
-
 from libtbx.phil import parse
 
 from dials.algorithms.shadowing.filter import filter_shadowed_reflections
 from dials.array_family import flex
 from dials.util import show_mail_handle_errors
 from dials.util.command_line import Command
-from dials.util.options import OptionParser, flatten_experiments
+from dials.util.options import ArgumentParser, flatten_experiments
 
 help_message = """
 
@@ -51,7 +49,7 @@ phil_scope = parse(
 )
 
 
-class Script(object):
+class Script:
     """A class for running the script."""
 
     def __init__(self):
@@ -63,7 +61,7 @@ class Script(object):
         )
 
         # Create the parser
-        self.parser = OptionParser(
+        self.parser = ArgumentParser(
             usage=usage,
             phil=phil_scope,
             epilog=help_message,
@@ -126,13 +124,9 @@ class Script(object):
             pass
 
         # Save the reflections to file
-        Command.start(
-            "Saving {0} reflections to {1}".format(len(predicted_all), params.output)
-        )
+        Command.start(f"Saving {len(predicted_all)} reflections to {params.output}")
         predicted_all.as_file(params.output)
-        Command.end(
-            "Saved {0} reflections to {1}".format(len(predicted_all), params.output)
-        )
+        Command.end(f"Saved {len(predicted_all)} reflections to {params.output}")
 
 
 @show_mail_handle_errors()

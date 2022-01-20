@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 import os
 
@@ -18,7 +16,7 @@ def dump(experiments, reflections, directory):
             if len(experiments) > 1:
                 suffix = "_%i" % (i + 1)
 
-            sub_dir = "%s%s" % (directory, suffix)
+            sub_dir = f"{directory}{suffix}"
             if not os.path.isdir(sub_dir):
                 os.makedirs(sub_dir)
             # XXX imageset is getting the experimental geometry from the image files
@@ -53,7 +51,7 @@ def dump(experiments, reflections, directory):
             to_xds = xds.to_xds(imageset)
             xds_inp = os.path.join(sub_dir, "XDS.INP")
             xparm_xds = os.path.join(sub_dir, "XPARM.XDS")
-            logger.info("Exporting experiment to %s" % xds_inp)
+            logger.info("Exporting experiment to %s", xds_inp)
             with open(xds_inp, "w") as f:
                 f.write(
                     to_xds.XDS_INP(
@@ -65,7 +63,7 @@ def dump(experiments, reflections, directory):
                     )
                 )
             if space_group_number:
-                logger.info("Exporting crystal model to %s" % xparm_xds)
+                logger.info("Exporting crystal model to %s", xparm_xds)
                 with open(xparm_xds, "w") as f:
                     f.write(
                         to_xds.xparm_xds(
@@ -100,5 +98,5 @@ def export_spot_xds(reflections, filename):
         xds_writer = spot_xds.writer(
             centroids=centroids, intensities=intensities, miller_indices=miller_indices
         )
-        logger.info("Exporting spot list as %s" % filename)
+        logger.info("Exporting spot list as %s", filename)
         xds_writer.write_file(filename=filename)

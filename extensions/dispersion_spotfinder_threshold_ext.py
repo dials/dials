@@ -1,11 +1,9 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 
 logger = logging.getLogger("dials.extensions.dispersion_spotfinder_threshold_ext")
 
 
-class DispersionSpotFinderThresholdExt(object):
+class DispersionSpotFinderThresholdExt:
     """Extensions to do dispersion threshold."""
 
     name = "dispersion"
@@ -90,8 +88,8 @@ class DispersionSpotFinderThresholdExt(object):
                 estimate_global_threshold(image, mask)
             )
             logger.info(
-                "Setting global_threshold: %i"
-                % (params.spotfinder.threshold.dispersion.global_threshold)
+                "Setting global_threshold: %i",
+                params.spotfinder.threshold.dispersion.global_threshold,
             )
 
         from dials.algorithms.spot_finding.threshold import DispersionThresholdStrategy

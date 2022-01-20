@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import math
 from collections import namedtuple
 
@@ -12,7 +10,7 @@ from dials.algorithms.refinement.parameterisation.prediction_parameters import (
 from dials.array_family import flex
 
 
-class StateDerivativeCache(object):
+class StateDerivativeCache:
     """Keep derivatives of the model states in a memory-efficient format
     by storing each derivative once alongside the indices of reflections affected
     by that derivative"""
@@ -167,7 +165,7 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
         self._derivative_cache = StateDerivativeCache(to_cache)
 
         # set up base class
-        super(ScanVaryingPredictionParameterisation, self).__init__(
+        super().__init__(
             experiments,
             detector_parameterisations=detector_parameterisations,
             beam_parameterisations=beam_parameterisations,
@@ -540,9 +538,7 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
         else:
             ds0_dxluc_p = None
 
-        return super(ScanVaryingPredictionParameterisation, self)._beam_derivatives(
-            isel, parameterisation, ds0_dxluc_p
-        )
+        return super()._beam_derivatives(isel, parameterisation, ds0_dxluc_p)
 
     def _xl_orientation_derivatives(self, isel, parameterisation, reflections):
         """Determine whether dU_dp was precalculated then call the base class
@@ -559,9 +555,7 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
         else:
             dU_dxlo_p = None
 
-        return super(
-            ScanVaryingPredictionParameterisation, self
-        )._xl_orientation_derivatives(isel, parameterisation, dU_dxlo_p)
+        return super()._xl_orientation_derivatives(isel, parameterisation, dU_dxlo_p)
 
     def _xl_unit_cell_derivatives(self, isel, parameterisation, reflections):
         """Determine whether dB_dp was precalculated then call the base class
@@ -578,9 +572,7 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
         else:
             dB_dxluc_p = None
 
-        return super(
-            ScanVaryingPredictionParameterisation, self
-        )._xl_unit_cell_derivatives(isel, parameterisation, dB_dxluc_p)
+        return super()._xl_unit_cell_derivatives(isel, parameterisation, dB_dxluc_p)
 
     def _detector_derivatives(self, isel, panel_id, parameterisation, reflections):
         """Determine whether dd_dp was precalculated then call the base class
@@ -597,7 +589,7 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
         else:
             dd_ddet_p = None
 
-        return super(ScanVaryingPredictionParameterisation, self)._detector_derivatives(
+        return super()._detector_derivatives(
             isel, panel_id, parameterisation, dd_ddet_p
         )
 
@@ -616,9 +608,7 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
         else:
             dS_dgon_p = None
 
-        return super(
-            ScanVaryingPredictionParameterisation, self
-        )._goniometer_derivatives(isel, parameterisation, dS_dgon_p)
+        return super()._goniometer_derivatives(isel, parameterisation, dS_dgon_p)
 
     def calculate_model_state_uncertainties(
         self, var_cov=None, obs_image_number=None, experiment_id=None
@@ -640,9 +630,7 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
         # First call, only a variance-covariance matrix is supplied
         if var_cov is not None:
             assert [obs_image_number, experiment_id].count(None) == 2
-            super(
-                ScanVaryingPredictionParameterisation, self
-            ).calculate_model_state_uncertainties(var_cov)
+            super().calculate_model_state_uncertainties(var_cov)
             return
 
         # Later calls, only an experiment and image number are supplied for

@@ -1,7 +1,5 @@
-from __future__ import absolute_import, division, print_function
-
-import typing
-
+from dials.array_family.flex import reflection_table
+from dials.model.data import MultiPanelImageVolume
 from dials_algorithms_integration_sum_ext import *  # noqa: F403; lgtm
 from dials_algorithms_integration_sum_ext import sum_image_volume
 
@@ -13,13 +11,10 @@ __all__ = (  # noqa: F405
     "sum_integrate_and_update_table",
 )
 
-if typing.TYPE_CHECKING:
-    from dials.array_family.flex import reflection_table
-    from dials.model.data import MultiPanelImageVolume
 
-
-def sum_integrate_and_update_table(reflections, image_volume=None):
-    # type: (reflection_table, MultiPanelImageVolume) -> reflection_table
+def sum_integrate_and_update_table(
+    reflections: reflection_table, image_volume: MultiPanelImageVolume = None
+) -> reflection_table:
     """Perform 3D summation integration and update a reflection table.
 
     Arguments:

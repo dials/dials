@@ -1,7 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
-
-class SimpleCentroidExt(object):
+class SimpleCentroidExt:
     """An extension class implementing a simple centroid algorithm."""
 
     name = "simple"

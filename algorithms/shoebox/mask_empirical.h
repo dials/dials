@@ -99,7 +99,7 @@ namespace dials { namespace algorithms { namespace shoebox {
         int tmid_y = boost::math::iround((tbly2 - tbly1) / 2);
         int tmid_z = boost::math::iround((tblz2 - tblz1) / 2);
 
-        // Iterate over the nearest bright neigbors of this query reflection
+        // Iterate over the nearest bright neighbors of this query reflection
         for (std::size_t nn_iter = query_iter * nn_window;
              nn_iter < (query_iter * nn_window) + nn_window;
              ++nn_iter) {

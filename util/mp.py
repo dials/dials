@@ -1,9 +1,16 @@
 import itertools
+import logging
 import os
+import pathlib
+import warnings
 
 import psutil
 
 import libtbx.easy_mp
+
+import dials.util
+
+logger = logging.getLogger(__name__)
 
 
 def available_cores() -> int:
@@ -14,6 +21,20 @@ def available_cores() -> int:
     which may not be available on a specific OS and/or version of Python. So try
     them in order and return the first successful one.
     """
+
+    # https://htcondor.readthedocs.io/en/latest/users-manual/services-for-jobs.html#extra-environment-variables-htcondor-sets-for-jobs
+    condor_job_ad = os.environ.get("_CONDOR_JOB_AD")
+    if condor_job_ad:
+        try:
+            classad = dials.util.parse_htcondor_job_classad(pathlib.Path(condor_job_ad))
+        except Exception as e:
+            logger.error(
+                f"Error parsing _CONDOR_JOB_AD {condor_job_ad}: {e}",
+                exc_info=True,
+            )
+        else:
+            if classad.cpus_provisioned:
+                return classad.cpus_provisioned
 
     nproc = os.environ.get("NSLOTS", 0)
     try:
@@ -53,7 +74,6 @@ def parallel_map(
     asynchronous=True,
     callback=None,
     preserve_order=True,
-    preserve_exception_message=True,
     job_category="low",
 ):
     """
@@ -62,6 +82,12 @@ def parallel_map(
     the number of cores on a machine
     """
     from dials.util.cluster_map import cluster_map as drmaa_parallel_map
+
+    warnings.warn(
+        "The dials.util.parallel_map function is deprecated",
+        UserWarning,
+        stacklevel=2,
+    )
 
     if method == "drmaa":
         return drmaa_parallel_map(
@@ -83,11 +109,11 @@ def parallel_map(
             qsub_command=qsub_command,
             asynchronous=asynchronous,
             preserve_order=preserve_order,
-            preserve_exception_message=preserve_exception_message,
+            preserve_exception_message=True,
         )
 
 
-class MultiNodeClusterFunction:
+class __cluster_function_wrapper:
     """
     A function called by the multi node parallel map. On each cluster node, a
     nested parallel map using the multi processing method will be used.
@@ -99,21 +125,13 @@ class MultiNodeClusterFunction:
         nproc=1,
         asynchronous=True,
         preserve_order=True,
-        preserve_exception_message=True,
     ):
-        """
-        Init the function
-        """
         self.func = func
         self.nproc = nproc
         self.asynchronous = asynchronous
         self.preserve_order = (preserve_order,)
-        self.preserve_exception_message = preserve_exception_message
 
     def __call__(self, iterable):
-        """
-        Call the function
-        """
         return libtbx.easy_mp.parallel_map(
             func=self.func,
             iterable=iterable,
@@ -121,7 +139,7 @@ class MultiNodeClusterFunction:
             method="multiprocessing",
             asynchronous=self.asynchronous,
             preserve_order=self.preserve_order,
-            preserve_exception_message=self.preserve_exception_message,
+            preserve_exception_message=True,
         )
 
 
@@ -135,16 +153,12 @@ def _iterable_grouper(iterable, chunk_size):
         yield group
 
 
-def _create_iterable_wrapper(function):
-    """
-    Wraps a function so that it takes iterables and when called is applied to
-    each element of the iterable and returns a list of the return values.
-    """
+class _iterable_wrapper:
+    def __init__(self, function):
+        self.__function = function
 
-    def run_function(iterable):
-        return [function(item) for item in iterable]
-
-    return run_function
+    def __call__(self, iterable):
+        return [self.__function(item) for item in iterable]
 
 
 def multi_node_parallel_map(
@@ -156,7 +170,6 @@ def multi_node_parallel_map(
     asynchronous=True,
     callback=None,
     preserve_order=True,
-    preserve_exception_message=True,
 ):
     """
     A wrapper function to call a function using multiple cluster nodes and with
@@ -164,12 +177,11 @@ def multi_node_parallel_map(
     """
 
     # The function to all on the cluster
-    cluster_func = MultiNodeClusterFunction(
+    cluster_func = __cluster_function_wrapper(
         func=func,
         nproc=nproc,
         asynchronous=asynchronous,
         preserve_order=preserve_order,
-        preserve_exception_message=preserve_exception_message,
     )
 
     # Create the cluster iterable
@@ -177,22 +189,37 @@ def multi_node_parallel_map(
 
     # Create the cluster callback
     if callback is not None:
-        cluster_callback = _create_iterable_wrapper(callback)
+        cluster_callback = _iterable_wrapper(callback)
     else:
         cluster_callback = None
 
     # Do the parallel map on the cluster
-    result = parallel_map(
-        func=cluster_func,
-        iterable=cluster_iterable,
-        callback=cluster_callback,
-        method=cluster_method,
-        nslots=nproc,
-        processes=njobs,
-        asynchronous=asynchronous,
-        preserve_order=preserve_order,
-        preserve_exception_message=preserve_exception_message,
-    )
+    # Call either drmaa or easy_mp to do a parallel map calculation.
+    # This function is set up so that in each case we can select
+    # the number of cores on a machine
+    if cluster_method == "drmaa":
+        from dials.util.cluster_map import cluster_map as drmaa_parallel_map
+
+        result = drmaa_parallel_map(
+            func=cluster_func,
+            iterable=cluster_iterable,
+            callback=cluster_callback,
+            nslots=nproc,
+            njobs=njobs,
+            job_category="low",
+        )
+    else:
+        result = libtbx.easy_mp.parallel_map(
+            func=cluster_func,
+            iterable=cluster_iterable,
+            callback=cluster_callback,
+            method=cluster_method,
+            processes=njobs,
+            qsub_command=f"qsub -pe smp {nproc}",
+            asynchronous=asynchronous,
+            preserve_order=preserve_order,
+            preserve_exception_message=True,
+        )
 
     # return result
     return [item for rlist in result for item in rlist]
@@ -212,14 +239,13 @@ def batch_multi_node_parallel_map(
     """
     # Call the batches in parallel
     return multi_node_parallel_map(
-        func=_create_iterable_wrapper(func),
+        func=_iterable_wrapper(func),
         iterable=_iterable_grouper(iterable, chunksize),
         nproc=nproc,
         njobs=njobs,
         cluster_method=cluster_method,
-        callback=_create_iterable_wrapper(callback),
+        callback=_iterable_wrapper(callback),
         preserve_order=True,
-        preserve_exception_message=True,
     )
 
 

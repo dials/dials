@@ -1,7 +1,6 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 import math
+import sys
 
 from scitbx.matrix import col
 
@@ -13,7 +12,7 @@ logging.basicConfig()
 logger = logging.getLogger(__name__)
 
 
-class KaptonTape_2019(object):
+class KaptonTape_2019:
     """Class for defining Kapton tape using dxtbx models and finding the path through the tape traversed by s1 vector"""
 
     def __init__(
@@ -48,7 +47,7 @@ class KaptonTape_2019(object):
             p.set_pixel_size((pixel_size, pixel_size))
             p.set_image_size(image_size)
             p.set_trusted_range((-1, 2e6))
-            p.set_name("KAPTON_%s" % name)
+            p.set_name(f"KAPTON_{name}")
             return d
 
         # Set up the bounding box of the kapton
@@ -196,7 +195,8 @@ class KaptonTape_2019(object):
         from dials.algorithms.integration import get_kapton_path_cpp
 
         # new style, much faster
-        kapton_path_mm = get_kapton_path_cpp(kapton_faces, s1_flex)
+        # Note, the last two faces should never be hit by a photon so don't need to check them
+        kapton_path_mm = get_kapton_path_cpp(kapton_faces[:4], s1_flex)
         # old style, really slow
         # for s1 in s1_flex:
         #  kapton_path_mm.append(self.get_kapton_path_mm(s1))
@@ -219,6 +219,29 @@ class KaptonTape_2019(object):
 
     def abs_bounding_lines_in_mm(self, detector):
         """Return bounding lines of kapton"""
+
+        def _check_int_edge_pts(int_edge_pts):
+            """Function to ensure that the combination of int_edge_pts will not result
+            in a kapton edge to be defined by 2 identical int_edge_pts.
+            """
+            new_int_edge_pts = int_edge_pts.copy()
+            if len(set(int_edge_pts)) == 4:
+                return int_edge_pts
+            elif len(set(int_edge_pts)) == 2:
+                sys.exit(
+                    "Insuffient number of intersection points to define both Kapton edges"
+                )
+            else:
+                # Find different permuations of intersecting kapton edge points that won't
+                # result in kapton_edges defined by identical points
+                if (
+                    int_edge_pts[0] == int_edge_pts[1]
+                    or int_edge_pts[2] == int_edge_pts[3]
+                ):
+                    new_int_edge_pts[1] = int_edge_pts[3]
+                    new_int_edge_pts[3] = int_edge_pts[1]
+                return new_int_edge_pts
+
         # first get bounding directions from detector:
         detz = flex.mean(flex.double([panel.get_origin()[2] for panel in detector]))
         edges = []
@@ -295,6 +318,7 @@ class KaptonTape_2019(object):
             all_ints[dlist_idx[sorted_idx[0]][1]],
             all_ints[dlist_idx[sorted_idx[1]][1]],
         ]
+        int_edge_pts = _check_int_edge_pts(int_edge_pts)
 
         # Sort out the edge points and the int_edge_points which are on the same side
         kapton_edge_1 = (col(int_edge_pts[0]) - col(int_edge_pts[1])).normalize()
@@ -405,7 +429,7 @@ class KaptonTape_2019(object):
         ]
 
 
-class image_kapton_correction(object):
+class image_kapton_correction:
     def __init__(
         self,
         panel_size_px=None,  #
@@ -559,7 +583,7 @@ class image_kapton_correction(object):
         return corrections, sigmas
 
 
-class multi_kapton_correction(object):
+class multi_kapton_correction:
     def __init__(self, experiments, integrated, kapton_params, logger=None):
         self.experiments = experiments
         self.reflections = integrated
@@ -573,7 +597,7 @@ class multi_kapton_correction(object):
         ):
             # extract experiment details
             detector = expt.detector
-            panels = [p for p in detector]
+            panels = list(detector)
             panel_size_px = [p.get_image_size() for p in panels]
             pixel_size_mm = [p.get_pixel_size()[0] for p in panels]
             detector_dist_mm = [p.get_distance() for p in panels]
@@ -629,7 +653,7 @@ class multi_kapton_correction(object):
             if len(refl_zero) > 0 and self.params.smart_sigmas:
                 # process nonzero intensity reflections with smart sigmas as requested
                 # but turn them off for zero intensity reflections to avoid a division by zero
-                # during error propogation. Not at all certain this is the best way.
+                # during error propagation. Not at all certain this is the best way.
                 self.corrected_reflections.extend(
                     correct(refl_nonzero, smart_sigmas=True)
                 )

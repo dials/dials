@@ -2,7 +2,6 @@
 #
 #   from dials.array_family import flex
 #
-from __future__ import absolute_import, division, print_function
 
 import collections
 import copy
@@ -11,10 +10,11 @@ import itertools
 import logging
 import operator
 import os
+import pickle
 from typing import Tuple
 
-import six
-import six.moves.cPickle as pickle
+import numpy as np
+import pandas as pd
 from annlib_ext import AnnAdaptorSelfInclude
 
 import boost_adaptbx.boost.python
@@ -43,7 +43,7 @@ else:
 
 
 @boost_adaptbx.boost.python.inject_into(dials_array_family_flex_ext.reflection_table)
-class _(object):
+class _:
     """
     An injector class to add additional methods to the reflection table.
     """
@@ -187,10 +187,7 @@ class _(object):
         if filename and hasattr(filename, "__fspath__"):
             filename = filename.__fspath__()
         with libtbx.smart_open.for_reading(filename, "rb") as infile:
-            if six.PY3:
-                result = pickle.load(infile, encoding="bytes")
-            else:
-                result = pickle.load(infile)
+            result = pickle.load(infile, encoding="bytes")
             assert isinstance(result, dials_array_family_flex_ext.reflection_table)
             return result
 
@@ -474,6 +471,41 @@ class _(object):
             ref_tmp.sort(key1, reverse)
             self[min(val) : (max(val) + 1)] = ref_tmp
 
+    def match_by_hkle(
+        self, other: dials_array_family_flex_ext.reflection_table
+    ) -> Tuple[cctbx.array_family.flex.size_t, cctbx.array_family.flex.size_t]:
+        """
+        Match reflections with another set of reflections by the h, k, l
+        and entering values. Uses pandas dataframe merge method to match
+        the columns: assumes the key h, k, l, e is unique which is false
+        if > 360 degree rotation.
+
+        Args:
+            other: reflection table to match against
+
+        Returns:
+            Indices in self, indices in other for matches
+        """
+
+        hkl = self["miller_index"].as_vec3_double().parts()
+        hkl = (part.as_numpy_array().astype(int) for part in hkl)
+        e = self["entering"].as_numpy_array()
+        n = np.arange(e.size)
+        p0 = pd.DataFrame(dict(zip("hklen", (*hkl, e, n))), copy=False)
+
+        hkl = other["miller_index"].as_vec3_double().parts()
+        hkl = (part.as_numpy_array().astype(int) for part in hkl)
+        e = other["entering"].as_numpy_array()
+        n = np.arange(e.size)
+        p1 = pd.DataFrame(dict(zip("hklen", (*hkl, e, n))), copy=False)
+
+        merged = pd.merge(p0, p1, on=["h", "k", "l", "e"], suffixes=[0, 1])
+
+        n0 = cctbx.array_family.flex.size_t(merged.n0.values)
+        n1 = cctbx.array_family.flex.size_t(merged.n1.values)
+
+        return n0, n1
+
     def match_with_reference(self, other):
         """
         Match reflections with another set of reflections.
@@ -482,8 +514,8 @@ class _(object):
         :return: The matches
         """
         logger.info("Matching reference spots with predicted reflections")
-        logger.info(" %d observed reflections input" % len(other))
-        logger.info(" %d reflections predicted" % len(self))
+        logger.info(" %d observed reflections input", len(other))
+        logger.info(" %d reflections predicted", len(self))
 
         # Get the miller index, entering flag and turn number for
         # Both sets of reflections
@@ -499,7 +531,7 @@ class _(object):
         x2, y2, z2 = other["xyzcal.px"].parts()
         p2 = other["panel"]
 
-        class Match(object):
+        class Match:
             def __init__(self):
                 self.a = []
                 self.b = []
@@ -570,8 +602,8 @@ class _(object):
             + cctbx.array_family.flex.pow2(z1 - z2)
         )
         mask = distance < 2
-        logger.info(" %d reflections matched" % len(o2))
-        logger.info(" %d reflections accepted" % mask.count(True))
+        logger.info(" %d reflections matched", len(o2))
+        logger.info(" %d reflections accepted", mask.count(True))
         self.set_flags(sind.select(mask), self.flags.reference_spot)
         self.set_flags(sind.select(o2.get_flags(self.flags.strong)), self.flags.strong)
         self.set_flags(
@@ -650,8 +682,8 @@ class _(object):
         ann = AnnAdaptorSelfInclude(r, 3)
         ann.query(x)
 
-        mm = cctbx.array_family.flex.int(range(xyz.size()))
-        nn, distance = ann.nn, cctbx.array_family.flex.sqrt(ann.distances)
+        mm = cctbx.array_family.flex.size_t_range(xyz.size())
+        nn, distance = ann.nn.as_size_t(), cctbx.array_family.flex.sqrt(ann.distances)
 
         sel = distance <= max_separation
 
@@ -793,7 +825,7 @@ class _(object):
 
     def iterate_experiments_and_indices(self, experiments):
         """
-        A helper function to interate through experiments and indices of reflections
+        A helper function to iterate through experiments and indices of reflections
         for each experiment
         """
         assert len(experiments) > 0
@@ -803,8 +835,24 @@ class _(object):
         for l in index_list:
             tot += len(l)
         assert tot == len(self)
-        for experiment, indices in zip(experiments, index_list):
-            yield experiment, indices
+        yield from zip(experiments, index_list)
+
+    def random_split(self, n=2):
+        """Randomly split table into n tables.
+
+        Not all tables will be the same length."""
+        n = int(n)
+        if n <= 1:
+            return [self]
+        list_of_reflection_tables = []
+
+        perm = cctbx.array_family.flex.random_permutation(self.size())
+        divisions = [int(i * self.size() / n) for i in range(0, n + 1)]
+        for i, v in enumerate(divisions[:-1]):
+            isel = perm[v : divisions[i + 1]]
+            if isel:
+                list_of_reflection_tables.append(self.select(isel))
+        return list_of_reflection_tables
 
     def compute_background(self, experiments, image_volume=None):
         """
@@ -827,8 +875,9 @@ class _(object):
             self, image_volume=image_volume
         )
 
-    def compute_summed_intensity(self, image_volume=None):
-        # type: (dials.model.data.MultiPanelImageVolume) -> None
+    def compute_summed_intensity(
+        self, image_volume: dials.model.data.MultiPanelImageVolume = None
+    ) -> None:
         """
         Compute intensity via summation integration.
         """
@@ -1157,9 +1206,7 @@ Found %s"""
         Reset the 'id' column such that the experiment identifiers are
         numbered 0 .. n-1.
         """
-        reverse_map = collections.OrderedDict(
-            (v, k) for k, v in self.experiment_identifiers()
-        )
+        reverse_map = {v: k for k, v in self.experiment_identifiers()}
         orig_id = self["id"].deep_copy()
         for k in self.experiment_identifiers().keys():
             del self.experiment_identifiers()[k]
@@ -1226,8 +1273,12 @@ Found %s"""
         self["rlp"] = cctbx.array_family.flex.vec3_double(len(self))
         panel_numbers = cctbx.array_family.flex.size_t(self["panel"])
 
+        # crystal_frame is not used in indexing, but is a feature of the
+        # reciprocal lattice viewer -> but if we are looking at the crystal
+        # coordinate frame we need to look at the experiments independently
+
         for i, expt in enumerate(experiments):
-            if "imageset_id" in self:
+            if not crystal_frame and "imageset_id" in self:
                 sel_expt = self["imageset_id"] == i
             else:
                 sel_expt = self["id"] == i
@@ -1311,7 +1362,7 @@ Found %s"""
         return default
 
 
-class reflection_table_selector(object):
+class reflection_table_selector:
     """
     A class to select columns from reflection table.
 

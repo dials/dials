@@ -1,9 +1,6 @@
-# coding: utf-8
 """Definitions of functions and classes for scaling and filtering algorithm."""
-from __future__ import absolute_import, division, print_function
 
 import math
-from collections import OrderedDict
 
 from libtbx import phil
 from scitbx.array_family import flex
@@ -81,7 +78,7 @@ def log_cycle_results(results, scaling_script, filter_script):
     return results
 
 
-class AnalysisResults(object):
+class AnalysisResults:
     """Class to store results from scaling and filtering."""
 
     def __init__(self):
@@ -106,16 +103,14 @@ class AnalysisResults(object):
         merging_stats["rmerge"] = [b.r_merge for b in merging_stats_obj.bins]
         merging_stats["rpim"] = [b.r_pim for b in merging_stats_obj.bins]
         merging_stats["d_min"] = [b.d_min for b in merging_stats_obj.bins]
-        merging_stats["overall"] = OrderedDict(
-            [
-                ("cc_one_half", overall.cc_one_half),
-                ("r_merge", overall.r_merge),
-                ("r_pim", overall.r_pim),
-                ("i_over_sigma_mean", overall.i_over_sigma_mean),
-                ("completeness", 100 * overall.completeness),
-                ("n_obs", overall.n_obs),
-            ]
-        )
+        merging_stats["overall"] = {
+            "cc_one_half": overall.cc_one_half,
+            "r_merge": overall.r_merge,
+            "r_pim": overall.r_pim,
+            "i_over_sigma_mean": overall.i_over_sigma_mean,
+            "completeness": 100 * overall.completeness,
+            "n_obs": overall.n_obs,
+        }
         return merging_stats
 
     def get_cycle_results(self):
@@ -153,9 +148,8 @@ class AnalysisResults(object):
             "termination_reason": self.termination_reason,
             "initial_n_reflections": self.initial_n_reflections,
             "initial_expids_and_image_ranges": self.initial_expids_and_image_ranges,
-            "cycle_results": OrderedDict(
-                (i + 1, val) for i, val in enumerate(self.cycle_results)
-            ),
+            "expids_and_image_ranges": self.expids_and_image_ranges,
+            "cycle_results": {i + 1: val for i, val in enumerate(self.cycle_results)},
             "final_stats": self.final_stats,
         }
 
@@ -167,6 +161,7 @@ class AnalysisResults(object):
         results.initial_expids_and_image_ranges = dictionary[
             "initial_expids_and_image_ranges"
         ]
+        results.expids_and_image_ranges = dictionary["expids_and_image_ranges"]
         results.cycle_results = [
             dictionary["cycle_results"][str(key)]
             for key in sorted(int(k) for k in dictionary["cycle_results"].keys())
@@ -179,17 +174,17 @@ class AnalysisResults(object):
         """Make summary of results."""
         msg = "\nSummary of data removed:\n"
         for i, res in enumerate(self.get_cycle_results()):
-            msg += "Cycle number: %s\n" % (i + 1)
+            msg += f"Cycle number: {i + 1}\n"
             if "image_ranges_removed" in res:
                 if res["image_ranges_removed"]:
                     removed = "\n    ".join(
                         str(t[0]) + ", dataset " + str(t[1])
                         for t in res["image_ranges_removed"]
                     )
-                    msg += "  Removed image ranges: \n    %s" % removed
+                    msg += f"  Removed image ranges: \n    {removed}"
             else:
                 if res["removed_ids"]:
-                    msg += "  Removed datasets: %s\n" % res["removed_ids"]
+                    msg += f"  Removed datasets: {res['removed_ids']}\n"
             msg += (
                 "  cumulative %% of reflections removed: %.3f\n"
                 % res["cumul_percent_removed"]
@@ -238,88 +233,73 @@ def make_filtering_merging_stats_plots(merging_stats):
     elif len(merging_stats) == 2:
         legends += ["final rescale"]
 
-    d = OrderedDict()
     overall_ccs = [m["overall"]["cc_one_half"] for m in merging_stats]
     overall_rpim = [m["overall"]["r_pim"] for m in merging_stats]
     overall_ioversigma = [m["overall"]["i_over_sigma_mean"] for m in merging_stats]
     overall_completeness = [m["overall"]["completeness"] for m in merging_stats]
     # first make overall plots
-    d.update(
-        {
-            "cc_one_half_vs_cycle": {
-                "data": [
-                    {
-                        "y": overall_ccs,
-                        "x": list(range(1, n_datasets + 1)),
-                        "type": "scatter",
-                        "mode": "lines",
-                    }
-                ],
-                "layout": {
-                    "title": u"CC<sub>½</sub> vs cycle",
-                    "xaxis": {"title": "Cycle number"},
-                    "yaxis": {"title": u"CC<sub>½</sub>"},
-                },
-            }
-        }
-    )
-    d.update(
-        {
-            "r_pim_vs_cycle": {
-                "data": [
-                    {
-                        "y": overall_rpim,
-                        "x": list(range(1, n_datasets + 1)),
-                        "type": "scatter",
-                        "mode": "lines",
-                    }
-                ],
-                "layout": {
-                    "title": "R-pim vs cycle",
-                    "xaxis": {"title": "Cycle number"},
-                    "yaxis": {"title": "R-pim"},
-                },
-            }
-        }
-    )
-    d.update(
-        {
-            "i_over_sigma_vs_cycle": {
-                "data": [
-                    {
-                        "y": overall_ioversigma,
-                        "x": list(range(1, n_datasets + 1)),
-                        "type": "scatter",
-                        "mode": "lines",
-                    }
-                ],
-                "layout": {
-                    "title": u"<I/σ(I)> vs cycle",
-                    "xaxis": {"title": "Cycle number"},
-                    "yaxis": {"title": u"<I/σ(I)>"},
-                },
-            }
-        }
-    )
-    d.update(
-        {
-            "completeness_vs_cycle": {
-                "data": [
-                    {
-                        "y": overall_completeness,
-                        "x": list(range(1, n_datasets + 1)),
-                        "type": "scatter",
-                        "mode": "lines",
-                    }
-                ],
-                "layout": {
-                    "title": "Completeness vs cycle",
-                    "xaxis": {"title": "Cycle number"},
-                    "yaxis": {"title": "Completeness"},
-                },
-            }
-        }
-    )
+    d = {
+        "cc_one_half_vs_cycle": {
+            "data": [
+                {
+                    "y": overall_ccs,
+                    "x": list(range(1, n_datasets + 1)),
+                    "type": "scatter",
+                    "mode": "lines",
+                }
+            ],
+            "layout": {
+                "title": "CC<sub>½</sub> vs cycle",
+                "xaxis": {"title": "Cycle number"},
+                "yaxis": {"title": "CC<sub>½</sub>"},
+            },
+        },
+        "r_pim_vs_cycle": {
+            "data": [
+                {
+                    "y": overall_rpim,
+                    "x": list(range(1, n_datasets + 1)),
+                    "type": "scatter",
+                    "mode": "lines",
+                }
+            ],
+            "layout": {
+                "title": "R-pim vs cycle",
+                "xaxis": {"title": "Cycle number"},
+                "yaxis": {"title": "R-pim"},
+            },
+        },
+        "i_over_sigma_vs_cycle": {
+            "data": [
+                {
+                    "y": overall_ioversigma,
+                    "x": list(range(1, n_datasets + 1)),
+                    "type": "scatter",
+                    "mode": "lines",
+                }
+            ],
+            "layout": {
+                "title": "<I/σ(I)> vs cycle",
+                "xaxis": {"title": "Cycle number"},
+                "yaxis": {"title": "<I/σ(I)>"},
+            },
+        },
+        "completeness_vs_cycle": {
+            "data": [
+                {
+                    "y": overall_completeness,
+                    "x": list(range(1, n_datasets + 1)),
+                    "type": "scatter",
+                    "mode": "lines",
+                }
+            ],
+            "layout": {
+                "title": "Completeness vs cycle",
+                "xaxis": {"title": "Cycle number"},
+                "yaxis": {"title": "Completeness"},
+            },
+        },
+    }
     cc_one_half_bins = merging_stats[0]["ccs"]
     r_pim_bins = merging_stats[0]["rpim"]
     r_merge_bins = merging_stats[0]["rmerge"]
@@ -339,13 +319,13 @@ def make_filtering_merging_stats_plots(merging_stats):
                     }
                 ],
                 "layout": {
-                    "title": u"CC<sub>½</sub> vs resolution",
+                    "title": "CC<sub>½</sub> vs resolution",
                     "xaxis": {
-                        "title": u"Resolution (Å)",
+                        "title": "Resolution (Å)",
                         "tickvals": vals,
                         "ticktext": txt,
                     },
-                    "yaxis": {"title": u"CC<sub>½</sub>", "range": [0, 1]},
+                    "yaxis": {"title": "CC<sub>½</sub>", "range": [0, 1]},
                 },
             }
         }
@@ -366,7 +346,7 @@ def make_filtering_merging_stats_plots(merging_stats):
                 "layout": {
                     "title": "R-pim vs resolution",
                     "xaxis": {
-                        "title": u"Resolution (Å)",
+                        "title": "Resolution (Å)",
                         "tickvals": vals,
                         "ticktext": txt,
                     },
@@ -394,7 +374,7 @@ def make_filtering_merging_stats_plots(merging_stats):
                 "layout": {
                     "title": "R-merge vs resolution",
                     "xaxis": {
-                        "title": u"Resolution (Å)",
+                        "title": "Resolution (Å)",
                         "tickvals": vals,
                         "ticktext": txt,
                     },
@@ -449,27 +429,24 @@ def make_histogram_plots(cycle_results):
 
     n = len(delta_cc_half_lists)
 
-    d = OrderedDict()
     overall_mean_ccs = [res["mean_cc_half"] for res in cycle_results]
-    d.update(
-        {
-            "mean_cc_one_half_vs_cycle": {
-                "data": [
-                    {
-                        "y": overall_mean_ccs,
-                        "x": list(range(1, n + 1)),
-                        "type": "scatter",
-                        "mode": "lines",
-                    }
-                ],
-                "layout": {
-                    "title": u"Resolution-averaged CC<sub>½</sub> (σ-τ) vs cycle",
-                    "xaxis": {"title": "Cycle number"},
-                    "yaxis": {"title": u"Resolution-averaged CC<sub>½</sub> (σ-τ)"},
-                },
-            }
+    d = {
+        "mean_cc_one_half_vs_cycle": {
+            "data": [
+                {
+                    "y": overall_mean_ccs,
+                    "x": list(range(1, n + 1)),
+                    "type": "scatter",
+                    "mode": "lines",
+                }
+            ],
+            "layout": {
+                "title": "Resolution-averaged CC<sub>½</sub> (σ-τ) vs cycle",
+                "xaxis": {"title": "Cycle number"},
+                "yaxis": {"title": "Resolution-averaged CC<sub>½</sub> (σ-τ)"},
+            },
         }
-    )
+    }
     colors = [(color_list * int(math.ceil(n / len(color_list))))[i] for i in range(n)]
     if n == 1:
         legends = ["ΔCC<sub>½</sub> analysis"]
@@ -495,8 +472,7 @@ def make_histogram_plots(cycle_results):
     def _add_new_histogram(d, hist, index):
         d.update(
             {
-                "scale_filter_histograms_%s"
-                % index: {
+                f"scale_filter_histograms_{index}": {
                     "data": [
                         {
                             "x": list(hist.slot_centers()),
@@ -507,8 +483,8 @@ def make_histogram_plots(cycle_results):
                         }
                     ],
                     "layout": {
-                        "title": "%s" % legends[index],
-                        "xaxis": {"title": u"ΔCC<sub>½</sub>"},
+                        "title": f"{legends[index]}",
+                        "xaxis": {"title": "ΔCC<sub>½</sub>"},
                         "yaxis": {
                             "title": "Number of datasets/groups",
                             "range": [0, min(max(hist.slots()), 50)],
@@ -530,28 +506,23 @@ def make_histogram_plots(cycle_results):
 def make_per_dataset_plot(delta_cchalf_i):
     """Make a line plot of ΔCC½ per group."""
 
-    d = OrderedDict()
-    d.update(
-        {
-            "per_dataset_plot": {
-                "data": [
-                    {
-                        "y": [i * 100 for i in list(delta_cchalf_i.values())],
-                        "x": list(delta_cchalf_i.keys()),
-                        "type": "scatter",
-                        "mode": "lines",
-                    }
-                ],
-                "layout": {
-                    "title": "ΔCC<sub>½</sub> vs group",
-                    "xaxis": {"title": "Group number"},
-                    "yaxis": {"title": "ΔCC<sub>½</sub>"},
-                },
-            }
+    return {
+        "per_dataset_plot": {
+            "data": [
+                {
+                    "y": [i * 100 for i in list(delta_cchalf_i.values())],
+                    "x": list(delta_cchalf_i.keys()),
+                    "type": "scatter",
+                    "mode": "lines",
+                }
+            ],
+            "layout": {
+                "title": "ΔCC<sub>½</sub> vs group",
+                "xaxis": {"title": "Group number"},
+                "yaxis": {"title": "ΔCC<sub>½</sub>"},
+            },
         }
-    )
-
-    return d
+    }
 
 
 def make_reduction_plots(initial_expids_and_image_ranges, expids_and_image_ranges):

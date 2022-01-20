@@ -1,3 +1,4 @@
+import functools
 import logging
 import pickle
 import time
@@ -8,10 +9,10 @@ from dxtbx.imageset import ImageSequence
 from iotbx.phil import parse
 
 import dials.extensions
+import dials.util.masking
 from dials.algorithms.background.simple import Linear2dModeller
 from dials.algorithms.spot_finding.finder import SpotFinder
 from dials.array_family import flex
-from dials.util.masking import MaskGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -439,8 +440,9 @@ class SpotFinderFactory:
         # Create the threshold strategy
         threshold_function = SpotFinderFactory.configure_threshold(params)
 
-        # Configure the mask generator
-        mask_generator = MaskGenerator(params.spotfinder.filter)
+        mask_generator = functools.partial(
+            dials.util.masking.generate_mask, params=params.spotfinder.filter
+        )
 
         # Make sure 'none' is interpreted as None
         if params.spotfinder.mp.method == "none":

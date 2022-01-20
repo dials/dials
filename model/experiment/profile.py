@@ -1,7 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
-
-class ProfileModelExt(object):
+class ProfileModelExt:
     """
     The definition for a profile model.
     """

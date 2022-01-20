@@ -41,13 +41,13 @@ def run_systematic_absences_checks(
             [
                 [
                     a.name,
-                    "%.3f" % score,
+                    f"{score:.3f}",
                     str(a.n_refl_used[0]),
                     str(a.n_refl_used[1]),
-                    "%.3f" % a.mean_I,
-                    "%.3f" % a.mean_I_abs,
-                    "%.3f" % a.mean_I_sigma,
-                    "%.3f" % a.mean_I_sigma_abs,
+                    f"{a.mean_I:.3f}",
+                    f"{a.mean_I_abs:.3f}",
+                    f"{a.mean_I_sigma:.3f}",
+                    f"{a.mean_I_sigma_abs:.3f}",
                 ]
                 for a, score in zip(screw_axes, screw_axis_scores)
             ],
@@ -72,7 +72,7 @@ def run_systematic_absences_checks(
     logger.info(
         "%s",
         tabulate(
-            [[sg, "%.4f" % score] for sg, score in zip(space_groups, scores)],
+            [[sg, f"{score:.4f}"] for sg, score in zip(space_groups, scores)],
             ["Space group", "score"],
         ),
     )

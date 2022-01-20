@@ -1,7 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
-
-class html_report(object):
+class html_report:
     def __init__(self, external_dependencies="remote"):
         self._content = []
         self.external_dependencies = external_dependencies
@@ -31,21 +28,20 @@ class html_report(object):
             js_dir = libtbx.env.find_in_repositories("dials/static/js")
             katex_dir = libtbx.env.find_in_repositories("dials/static/katex")
 
-            plotly_js = '<script src="%s/plotly-latest.min.js"></script>' % js_dir
-            bootstrap_js = '<script src="%s/bootstrap.min.js"></script>' % js_dir
-            jquery_js = '<script src="%s/jquery-1.12.0.min.js"></script>' % js_dir
+            plotly_js = f'<script src="{js_dir}/plotly-latest.min.js"></script>'
+            bootstrap_js = f'<script src="{js_dir}/bootstrap.min.js"></script>'
+            jquery_js = f'<script src="{js_dir}/jquery-1.12.0.min.js"></script>'
             bootstrap_css = (
-                '<link rel="stylesheet" href="%s/bootstrap.min.css">' % css_dir
+                f'<link rel="stylesheet" href="{css_dir}/bootstrap.min.css">'
             )
             katex_js = (
-                '<script type="text/javascript" src=%s/katex.min.js></script>'
-                % katex_dir
+                f'<script type="text/javascript" src={katex_dir}/katex.min.js></script>'
             )
             katex_auto_render_js = (
                 '<script type="text/javascript" src=%s/contrib/auto-render.min.js></script>'
                 % katex_dir
             )
-            katex_css = '<link rel="stylesheet" href="%s/katex.min.css">' % katex_dir
+            katex_css = f'<link rel="stylesheet" href="{katex_dir}/katex.min.css">'
 
         elif self.external_dependencies == "embed":
             import os
@@ -91,62 +87,62 @@ class html_report(object):
 
 <!-- Definitions for compatibility with the ccp4i2 browser -->
 <script>
-    if (!Function.prototype.bind) {
-        Function.prototype.bind = function(oThis) {
-            if (typeof this !== 'function') {
+    if (!Function.prototype.bind) {{
+        Function.prototype.bind = function(oThis) {{
+            if (typeof this !== 'function') {{
                 // closest thing possible to the ECMAScript 5
                 // internal IsCallable function
                 throw new TypeError('Function.prototype.bind - what is trying to be bound is not callable');
-            }
+            }}
 
             var aArgs   = Array.prototype.slice.call(arguments, 1),
             fToBind = this,
-            fNOP    = function() {},
-            fBound  = function() {
+            fNOP    = function() {{}},
+            fBound  = function() {{
                 return fToBind.apply(this instanceof fNOP
                                      ? this
                                      : oThis,
                                      aArgs.concat(Array.prototype.slice.call(arguments)));
-            };
+            }};
 
-            if (this.prototype) {
+            if (this.prototype) {{
                 // Function.prototype doesn't have a prototype property
                 fNOP.prototype = this.prototype;
-            }
+            }}
             fBound.prototype = new fNOP();
 
             return fBound;
-        };
-    }
+        }};
+    }}
     if (typeof Float64Array === 'undefined') Float64Array = Float32Array;
 </script>
 
 <!-- Plotly.js -->
-%(plotly_js)s
+{plotly_js}
 
 <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
 
-%(jquery_js)s
-%(bootstrap_js)s
-%(katex_js)s
-%(katex_auto_render_js)s
-%(katex_css)s
-%(bootstrap_css)s
+{jquery_js}
+{bootstrap_js}
+{katex_js}
+{katex_auto_render_js}
+{katex_css}
+{bootstrap_css}
 <style type="text/css">
-%(css)s
+{css}
 </style>
 
 </head>
-""" % {
-            "plotly_js": plotly_js,
-            "bootstrap_js": bootstrap_js,
-            "bootstrap_css": bootstrap_css,
-            "jquery_js": jquery_js,
-            "katex_js": katex_js,
-            "katex_auto_render_js": katex_auto_render_js,
-            "katex_css": katex_css,
-            "css": self.css(),
-        }
+""".format(
+            plotly_js=plotly_js,
+            bootstrap_js=bootstrap_js,
+            bootstrap_css=bootstrap_css,
+            jquery_js=jquery_js,
+            katex_js=katex_js,
+            katex_auto_render_js=katex_auto_render_js,
+            katex_css=katex_css,
+            css=self.css(),
+        )
 
         return html_header
 
@@ -197,22 +193,18 @@ body {
         self._content.append(content)
 
 
-class page_header(object):
+class page_header:
     def __init__(self, title):
         self._title = title
 
     def html(self):
-        html = (
-            """\
-<div class="page-header">
-  <h1>%s</h1>
+        html = f"""<div class="page-header">
+  <h1>{self._title}</h1>
 </div>"""
-            % self._title
-        )
         return html
 
 
-class panel_group(object):
+class panel_group:
     def __init__(self, panels):
         self._panels = panels
 
@@ -227,7 +219,7 @@ class panel_group(object):
         return html
 
 
-class panel(object):
+class panel:
     def __init__(self, title, panel_id, show=False):
         self._title = title
         self._panel_id = panel_id
@@ -260,7 +252,7 @@ class panel(object):
         return html
 
 
-class table_responsive(object):
+class table_responsive:
     def __init__(self, table_html, width=None):
         self._table_html = table_html
         self._width = width
@@ -270,18 +262,15 @@ class table_responsive(object):
             style = ' style="width: %ipx"' % self._width
         else:
             style = ""
-        html = """
-<div class="table-responsive"%s>
-  %s
+        html = f"""
+<div class="table-responsive"{style}>
+  {self._table_html}
 </div>
-""" % (
-            style,
-            self._table_html,
-        )
+"""
         return html
 
 
-class plotly_graph(object):
+class plotly_graph:
     def __init__(self, json_data, div_id):
         self._json_data = json_data
         self._div_id = div_id
@@ -292,13 +281,13 @@ class plotly_graph(object):
         json_str = json.dumps(self._json_data)
         javascript = """
   <script>
-    var graphs_%(div_id)s = %(json)s;
-    Plotly.newPlot(%(div_id)s, graphs_%(div_id)s.data, graphs_%(div_id)s.layout);
+    var graphs_{div_id} = {json};
+    Plotly.newPlot({div_id}, graphs_{div_id}.data, graphs_{div_id}.layout);
   </script>
-  """ % {
-            "div_id": self._div_id,
-            "json": json_str,
-        }
+  """.format(
+            div_id=self._div_id,
+            json=json_str,
+        )
         return javascript
 
     def html(self):
@@ -312,7 +301,7 @@ class plotly_graph(object):
         )
 
 
-class container_fluid(object):
+class container_fluid:
     def __init__(self):
         self._content = []
 
@@ -330,7 +319,7 @@ class container_fluid(object):
         return html
 
 
-class div(object):
+class div:
     def __init__(self):
         self._content = []
 
@@ -348,7 +337,7 @@ class div(object):
         return html
 
 
-class raw_html(object):
+class raw_html:
     def __init__(self, raw_html):
         self._raw_html = raw_html
 

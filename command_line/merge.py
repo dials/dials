@@ -1,13 +1,10 @@
-# coding: utf-8
 """
 Command line script to allow merging and truncating of a dials dataset.
 """
-from __future__ import absolute_import, division, print_function
 
 import logging
 import sys
-
-from six.moves import cStringIO as StringIO
+from io import StringIO
 
 from dxtbx.model import ExperimentList
 from iotbx import phil
@@ -24,7 +21,7 @@ from dials.algorithms.merging.merge import (
 from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
 from dials.util import Sorry, log, show_mail_handle_errors
 from dials.util.export_mtz import match_wavelengths
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
 help_message = """
@@ -55,6 +52,9 @@ d_min = None
 d_max = None
     .type = float
     .help = "Low resolution limit to apply to the data."
+wavelength_tolerance = 1e-4
+    .type = float(value_min=0.0)
+    .help = "Absolute tolerance for determining wavelength grouping for merging."
 combine_partials = True
     .type = bool
     .help = "Combine partials that have the same partial id into one
@@ -110,7 +110,10 @@ output {
 
 def merge_data_to_mtz(params, experiments, reflections):
     """Merge data (at each wavelength) and write to an mtz file object."""
-    wavelengths = match_wavelengths(experiments)  # wavelengths is an ordered dict
+    wavelengths = match_wavelengths(
+        experiments,
+        absolute_tolerance=params.wavelength_tolerance,
+    )  # wavelengths is an ordered dict
     mtz_datasets = [
         MTZDataClass(wavelength=w, project_name=params.output.project_name)
         for w in wavelengths.keys()
@@ -204,11 +207,13 @@ def merge_data_to_mtz(params, experiments, reflections):
 
         anom_amplitudes = None
         if params.truncate:
-            amplitudes, anom_amplitudes = truncate(merged_intensities)
+            amplitudes, anom_amplitudes, dano = truncate(merged_intensities)
             # This will add the data for F, SIGF
             mtz_dataset.amplitudes = amplitudes
             # This will add the data for F(+), F(-), SIGF(+), SIGF(-)
             mtz_dataset.anomalous_amplitudes = anom_amplitudes
+            # This will add the data for DANO, SIGDANO
+            mtz_dataset.dano = dano
 
         # print out analysis statistics
         show_wilson_scaling_analysis(merged_intensities)
@@ -226,7 +231,7 @@ def run(args=None):
     """Run the merging from the command-line."""
     usage = """Usage: dials.merge scaled.refl scaled.expt [options]"""
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         read_experiments=True,
         read_reflections=True,
@@ -269,9 +274,8 @@ can be processed with dials.merge"""
     ]:
         if k not in reflections[0]:
             raise Sorry(
-                """%s not found in the reflection table.
+                f"""{k} not found in the reflection table.
 Only scaled data can be processed with dials.merge"""
-                % k
             )
 
     try:

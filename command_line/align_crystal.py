@@ -1,6 +1,5 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
 
-from __future__ import absolute_import, division, print_function
 
 import collections
 import copy
@@ -16,7 +15,7 @@ from scitbx import matrix
 import dials.util
 from dials.algorithms.refinement import rotation_decomposition
 from dials.util import tabulate
-from dials.util.options import OptionParser, flatten_experiments
+from dials.util.options import ArgumentParser, flatten_experiments
 
 help_message = """
 Calculation of possible goniometer settings for re-alignment of crystal axes.
@@ -108,7 +107,7 @@ def axis_type(vector, space_group):
     return axis_t
 
 
-class align_crystal(object):
+class align_crystal:
 
     vector_names = {a.elems: "a", b.elems: "b", c.elems: "c"}
 
@@ -157,11 +156,10 @@ class align_crystal(object):
         )
 
         for (v1_, v2_) in self.vectors:
-            result_dictionary = collections.OrderedDict()
+            result_dictionary = collections.defaultdict(list)
             results.append((v1_, v2_, result_dictionary))
             space_group = self.experiment.crystal.get_space_group()
             for smx in list(space_group.smx())[:]:
-                result_dictionary[smx] = []
                 crystal = copy.deepcopy(self.experiment.crystal)
                 cb_op = sgtbx.change_of_basis_op(smx)
                 crystal = crystal.change_basis(cb_op)
@@ -217,7 +215,7 @@ class align_crystal(object):
 
         self.all_solutions = results
 
-        self.unique_solutions = collections.OrderedDict()
+        self.unique_solutions = collections.defaultdict(list)
         for v1, v2, result in results:
             for solutions in result.values():
                 for solution in solutions:
@@ -278,21 +276,21 @@ class align_crystal(object):
         rows.append(
             [names[0]]
             + [
-                "%.3f" % smallest_angle(axis.angle(matrix.col(axes[0]), deg=True))
+                f"{smallest_angle(axis.angle(matrix.col(axes[0]), deg=True)):.3f}"
                 for axis in (a_star_, b_star_, c_star_)
             ]
         )
         rows.append(
             ["Beam"]
             + [
-                "%.3f" % smallest_angle(axis.angle(self.s0, deg=True))
+                f"{smallest_angle(axis.angle(self.s0, deg=True)):.3f}"
                 for axis in (a_star_, b_star_, c_star_)
             ]
         )
         rows.append(
             [names[2]]
             + [
-                "%.3f" % smallest_angle(axis.angle(matrix.col(axes[2]), deg=True))
+                f"{smallest_angle(axis.angle(matrix.col(axes[2]), deg=True)):.3f}"
                 for axis in (a_star_, b_star_, c_star_)
             ]
         )
@@ -308,21 +306,21 @@ class align_crystal(object):
         rows.append(
             [names[0]]
             + [
-                "%.3f" % smallest_angle(axis.angle(matrix.col(axes[0]), deg=True))
+                f"{smallest_angle(axis.angle(matrix.col(axes[0]), deg=True)):.3f}"
                 for axis in (a_, b_, c_)
             ]
         )
         rows.append(
             ["Beam"]
             + [
-                "%.3f" % smallest_angle(axis.angle(self.s0, deg=True))
+                f"{smallest_angle(axis.angle(self.s0, deg=True)):.3f}"
                 for axis in (a_, b_, c_)
             ]
         )
         rows.append(
             [names[2]]
             + [
-                "%.3f" % smallest_angle(axis.angle(matrix.col(axes[2]), deg=True))
+                f"{smallest_angle(axis.angle(matrix.col(axes[2]), deg=True)):.3f}"
                 for axis in (a_, b_, c_)
             ]
         )
@@ -341,8 +339,8 @@ class align_crystal(object):
                 (
                     describe(v1, space_group, reciprocal=reciprocal),
                     describe(v2, space_group, reciprocal=reciprocal),
-                    "% 7.3f" % angles[0],
-                    "% 7.3f" % angles[1],
+                    f"{angles[0]: 7.3f}",
+                    f"{angles[1]: 7.3f}",
                 )
             )
         rows = [("Primary axis", "Secondary axis", names[1], names[0])] + sorted(rows)
@@ -355,7 +353,7 @@ class align_crystal(object):
 @dials.util.show_mail_handle_errors()
 def run(args=None):
     usage = "dials.align_crystal [options] models.expt"
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_experiments=True,

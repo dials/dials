@@ -76,7 +76,7 @@ To run :samp:`xia2.multiplex`, we must provide the path to the input integrated 
 
 This runs :samp:`dials.cosym` to analyse the Laue symmetry and reindex all datasets
 consistently, scales the data with :samp:`dials.scale`,
-calculates a resolution limit with :samp:`dials.resolutionizer` and reruns
+calculates a resolution limit with :samp:`dials.estimate_resolution` and reruns
 :samp:`dials.scale` with the determined resolution cutoff. The
 final dataset is exported to an unmerged mtz and a
 `HTML report <https://dials.github.io/tutorial_data/master/multi_crystal/xia2.multiplex.html>`_
@@ -126,9 +126,9 @@ Next, the data can be scaled:
 From the merging statistics it is clear that the data quality is good out to the
 furthest resolution (:math:`CC_{1/2} > 0.3`), which can be confirmed by a resolution analysis:
 
-.. dials_tutorial_include:: multi_crystal/dials.resolutionizer.cmd
+.. dials_tutorial_include:: multi_crystal/dials.estimate_resolution.cmd
 
-.. dials_tutorial_include:: multi_crystal/dials.resolutionizer.log
+.. dials_tutorial_include:: multi_crystal/dials.estimate_resolution.log
    :start-at: Resolution cc_half
    :end-at: Resolution cc_half
 
@@ -138,7 +138,7 @@ furthest resolution (:math:`CC_{1/2} > 0.3`), which can be confirmed by a resolu
 
         **Show/Hide Log**
 
-    .. dials_tutorial_include:: multi_crystal/dials.resolutionizer.log
+    .. dials_tutorial_include:: multi_crystal/dials.estimate_resolution.log
 
 
 If the resolution limit was lower than the extent of the data, scaling would

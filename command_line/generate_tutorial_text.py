@@ -1,16 +1,18 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.generate_tutorial_text
 
-from __future__ import absolute_import, division, print_function
-
+import argparse
 import functools
+import json
 import os
+import pathlib
+import shutil
 import sys
 import tempfile
-from optparse import SUPPRESS_HELP, OptionParser
+import time
 
 import procrunner
-import py
 
+import dials.util
 import dials_data.download
 
 
@@ -20,32 +22,36 @@ def _command_runner(
     """Run a command and write its output to a defined location"""
     print(" ".join(str(e) for e in command))
     if output_directory and store_command is None:
-        store_command = output_directory.join(command[0] + ".cmd")
+        store_command = output_directory / f"{command[0]}.cmd"
     if output_directory and store_output is None:
-        store_output = output_directory.join(command[0] + ".log")
+        store_output = output_directory / f"{command[0]}.log"
     if store_command:
-        store_command.write(" ".join(str(e) for e in command), ensure=True)
+        store_command.parent.mkdir(parents=True, exist_ok=True)
+        store_command.write_text(" ".join(str(e) for e in command))
+    start = time.perf_counter()
     result = procrunner.run(
         command, environment_override={"DIALS_NOBANNER": "1"}, **kwargs
     )
-    print("running command took {:.1f} seconds\n".format(result["runtime"]))
+    print(f"running command took {time.perf_counter() - start:.1f} seconds\n")
     assert not result.returncode, "Command execution failed"
     if store_output:
-        store_output.write_binary(result.stdout, ensure=True)
+        store_output.parent.mkdir(parents=True, exist_ok=True)
+        store_output.write_bytes(result.stdout)
 
 
 def generate_processing_detail_text_thaumatin(options):
     print("Generating thaumatin processing tutorial output")
 
-    tmpdir = py.path.local("./tmp-thaumatin")
-    tmpdir.ensure(dir=1)
-    outdir = py.path.local(options.output).join("thaumatin")
+    tmpdir = pathlib.Path("tmp-thaumatin")
+    tmpdir.mkdir(exist_ok=True)
+    outdir = options.output / "thaumatin"
+    outdir.mkdir(parents=True, exist_ok=True)
     runcmd = functools.partial(
         _command_runner, output_directory=outdir, working_directory=tmpdir
     )
 
     df = dials_data.download.DataFetcher()
-    runcmd(["dials.import", df("thaumatin_i04").join("th_8_2_0*cbf")])
+    runcmd(["dials.import", df("thaumatin_i04", pathlib=True) / "th_8_2_0*cbf"])
     runcmd(["dials.find_spots", "imported.expt", "nproc=4"])
     runcmd(["dials.index", "imported.expt", "strong.refl"])
     runcmd(["dials.refine_bravais_settings", "indexed.expt", "indexed.refl"])
@@ -65,12 +71,12 @@ def generate_processing_detail_text_thaumatin(options):
     )
     runcmd(["dials.integrate", "refined.expt", "refined.refl", "nproc=4"])
     runcmd(["dials.report", "integrated.expt", "integrated.refl"])
-    tmpdir.join("dials.report.html").copy(outdir.join("dials.report.html"))
+    shutil.copy(tmpdir / "dials.report.html", outdir)
     runcmd(["dials.export", "integrated.refl", "integrated.expt"])
 
-    print("Updated result files written to {}".format(outdir.strpath))
+    print(f"Updated result files written to {outdir}")
     if not options.keep:
-        tmpdir.remove(rec=1)
+        shutil.rmtree(tmpdir)
 
 
 def generate_processing_detail_text_mpro_x0692(options):
@@ -78,9 +84,10 @@ def generate_processing_detail_text_mpro_x0692(options):
     # See: https://www.ebi.ac.uk/pdbe/entry/pdb/5REL
     #      https://doi.org/10.5281/zenodo.3730940
 
-    tmpdir = py.path.local("./tmp-mpro_x0692")
-    tmpdir.ensure(dir=1)
-    outdir = py.path.local(options.output).join("mpro_x0692")
+    tmpdir = pathlib.Path("tmp-mpro_x0692")
+    tmpdir.mkdir(exist_ok=True)
+    outdir = options.output / "mpro_x0692"
+    outdir.mkdir(parents=True, exist_ok=True)
     runcmd = functools.partial(
         _command_runner, output_directory=outdir, working_directory=tmpdir
     )
@@ -88,18 +95,8 @@ def generate_processing_detail_text_mpro_x0692(options):
     # Find/validate the data input - until we've decided to integrate this
     # into the main release, have a DLS default or otherwise let it be
     # specified via an environment variable.
-    datadir = py.path.local(
-        os.getenv("MPRO_X0692_DATA", "/dls/i04/data/2020/mx27124-1/Mpro-x0692")
-    )
-    if not datadir.check(dir=1) or not datadir.listdir("Mpro-x0692_1_0*.cbf"):
-        sys.exit(
-            """Error:  Could not find Mpro-x0692 data: skipping text generation.
-        Please download data from https://zenodo.org/record/3730940 and extract,
-        then set environment variable MPRO_X0692_DATA to the folder with Mpro-x0692_1_0*.cbf"""
-        )
-    print("Using data: {}".format(datadir.strpath))
-
-    runcmd(["dials.import", datadir / "Mpro-x0692_1_0*.cbf"])
+    df = dials_data.download.DataFetcher()
+    runcmd(["dials.import", df("mpro_x0692", pathlib=True) / "Mpro-x0692_1_0*.cbf"])
     runcmd(["dials.find_spots", "imported.expt", "nproc=4"])
     runcmd(["dials.index", "imported.expt", "strong.refl"])
     # Because it's hard to robustly extract the *final* unindexed count
@@ -107,8 +104,20 @@ def generate_processing_detail_text_mpro_x0692(options):
     extract_last_indexed_spot_count(
         outdir / "dials.index.log", outdir / "dials.index.log.extract_unindexed"
     )
-    runcmd(["dials.refine_bravais_settings", "indexed.expt", "indexed.refl"])
-    runcmd(["dials.reindex", "indexed.refl", "change_of_basis_op=a,-b,-a-b-2*c"])
+    runcmd(
+        [
+            "dials.refine_bravais_settings",
+            "indexed.expt",
+            "indexed.refl",
+            "best_monoclinic_beta=False",
+        ]
+    )
+    cb_op = extract_rbs_cb_op(
+        tmpdir / "bravais_summary.json",
+        outdir / "dials.refine_bravais_settings.log.cb_op",
+        2,
+    )
+    runcmd(["dials.reindex", "indexed.refl", f"change_of_basis_op={cb_op}"])
     runcmd(
         [
             "dials.refine",
@@ -123,29 +132,37 @@ def generate_processing_detail_text_mpro_x0692(options):
         store_output=outdir / "dials.sv_refine.log",
     )
     runcmd(["dials.integrate", "refined.expt", "refined.refl", "nproc=4"])
-    runcmd(["dials.symmetry", "integrated.expt", "integrated.refl"])
+    runcmd(
+        [
+            "dials.symmetry",
+            "integrated.expt",
+            "integrated.refl",
+            "best_monoclinic_beta=False",
+        ]
+    )
     runcmd(["dials.scale", "symmetrized.expt", "symmetrized.refl"])
     runcmd(["dials.estimate_resolution", "scaled.expt", "scaled.refl"])
     d_min = extract_resolution(outdir / "dials.estimate_resolution.log", "cc_half")
     runcmd(
-        ["dials.scale", "scaled.expt", "scaled.refl", "d_min=%.2f" % d_min],
+        ["dials.scale", "scaled.expt", "scaled.refl", f"d_min={d_min:.2f}"],
         store_command=outdir / "dials.scale_cut.cmd",
         store_output=outdir / "dials.scale_cut.log",
     )
     runcmd(["dials.report", "scaled.expt", "scaled.refl"])
-    tmpdir.join("dials.report.html").copy(outdir.join("dials.report.html"))
+    shutil.copy(tmpdir / "dials.report.html", outdir)
 
-    print("Updated result files written to {}".format(outdir.strpath))
+    print(f"Updated result files written to {outdir}")
     if not options.keep:
-        tmpdir.remove(rec=1)
+        shutil.rmtree(tmpdir)
 
 
 def generate_processing_detail_text_betalactamase(options):
     print("Generating Beta-lactamase processing tutorial output")
 
-    tmpdir = py.path.local("./tmp-betalactamase")
-    tmpdir.ensure(dir=1)
-    outdir = py.path.local(options.output).join("betalactamase")
+    tmpdir = pathlib.Path("tmp-betalactamase")
+    tmpdir.mkdir(exist_ok=True)
+    outdir = options.output / "betalactamase"
+    outdir.mkdir(parents=True, exist_ok=True)
     runcmd = functools.partial(
         _command_runner, output_directory=outdir, working_directory=tmpdir
     )
@@ -155,21 +172,21 @@ def generate_processing_detail_text_betalactamase(options):
     # specified via an environment variable.
     datadir = os.getenv("BETALACTAMASE_TUTORIAL_DATA")
     if datadir:
-        datadir = py.path.local(datadir)
+        datadir = pathlib.Path(datadir)
     else:
-        datadir = py.path.local(
+        datadir = pathlib.Path(
             os.getenv(
                 "CCP4_TUTORIAL_DATA",
                 "/dls/i03/data/2017/mx19576-1/tutorial_data/summed/summed/C2sum_1*.cbf.gz",
             )
-        ).dirpath()
-    if not datadir.check(dir=1) or not datadir.listdir("C2sum_1*.cbf.gz"):
+        ).parent
+    if not datadir.is_dir() or not datadir.glob("C2sum_1*.cbf.gz"):
         sys.exit(
             """Error:  Could not find Betalactamase data: skipping text generation.
         Please download C2sum_1 from https://zenodo.org/record/1014387 and extract,
         then set environment variable BETALACTAMASE_TUTORIAL_DATA to the folder with C2sum_1_*.cbf.gz"""
         )
-    print("Using data: {}".format(datadir.strpath))
+    print(f"Using data: {datadir}")
 
     runcmd(["dials.import", datadir / "C2sum_1*.cbf.gz"])
     runcmd(["dials.find_spots", "imported.expt", "nproc=4"])
@@ -186,13 +203,7 @@ def generate_processing_detail_text_betalactamase(options):
             "dials.refine",
             "bravais_setting_2.expt",
             "reindexed.refl",
-            "scan_varying=false",
         ]
-    )
-    runcmd(
-        ["dials.refine", "refined.expt", "refined.refl", "scan_varying=true"],
-        store_command=outdir / "dials.sv_refine.cmd",
-        store_output=outdir / "dials.sv_refine.log",
     )
     runcmd(["dials.integrate", "refined.expt", "refined.refl", "nproc=4"])
     runcmd(["dials.symmetry", "integrated.expt", "integrated.refl"])
@@ -203,61 +214,62 @@ def generate_processing_detail_text_betalactamase(options):
         store_output=outdir / "dials.scale_cut.log",
     )
     runcmd(["dials.report", "scaled.expt", "scaled.refl"])
-    tmpdir.join("dials.report.html").copy(outdir.join("dials.report.html"))
+    shutil.copy(tmpdir / "dials.report.html", outdir)
 
-    print("Updated result files written to {}".format(outdir.strpath))
+    print(f"Updated result files written to {outdir}")
     if not options.keep:
-        tmpdir.remove(rec=1)
+        shutil.rmtree(tmpdir)
 
 
 def generate_multi_crystal_symmetry_and_scaling(options):
     print("Generating multi-crystal symmetry analysis and scaling output")
 
-    tmpdir = py.path.local(tempfile.mkdtemp("_multi_crystal", dir="."))
-    tmpdir.ensure(dir=1)
-    outdir = py.path.local(options.output).join("multi_crystal")
+    tmpdir = pathlib.Path(tempfile.mkdtemp("_multi_crystal", dir="."))
+    tmpdir.mkdir(exist_ok=True)
+    outdir = options.output / "multi_crystal"
+    outdir.mkdir(parents=True, exist_ok=True)
     runcmd = functools.partial(
         _command_runner, output_directory=outdir, working_directory=tmpdir
     )
 
     df = dials_data.download.DataFetcher()
     experiment_files = sorted(
-        df("vmxi_proteinase_k_sweeps").visit("experiments_*.expt")
+        df("vmxi_proteinase_k_sweeps", pathlib=True).glob("experiments_*.expt")
     )
     reflection_files = sorted(
-        df("vmxi_proteinase_k_sweeps").visit("reflections_*.refl")
+        df("vmxi_proteinase_k_sweeps", pathlib=True).glob("reflections_*.refl")
     )
     input_files = []
     for src in experiment_files + reflection_files:
-        dst = tmpdir.join(src.basename)
-        os.symlink(src.strpath, dst.strpath)
-        input_files.append(dst.basename)
+        dst = tmpdir / src.name
+        os.symlink(src, dst)
+        input_files.append(dst.name)
     runcmd(["xia2.multiplex"] + input_files)
-    tmpdir.join("xia2.multiplex.html").copy(outdir.join("xia2.multiplex.html"))
+    shutil.copy(tmpdir / "xia2.multiplex.html", outdir)
     runcmd(["dials.cosym"] + input_files)
-    tmpdir.join("dials.cosym.html").copy(outdir.join("dials.cosym.html"))
+    shutil.copy(tmpdir / "dials.cosym.html", outdir)
     runcmd(["dials.scale", "symmetrized.expt", "symmetrized.refl"])
     runcmd(["dials.estimate_resolution", "scaled.expt", "scaled.refl"])
     d_min = extract_resolution(outdir / "dials.estimate_resolution.log", "cc_half")
     runcmd(
-        ["dials.scale", "scaled.expt", "scaled.refl", "d_min=%.2f" % d_min],
+        ["dials.scale", "scaled.expt", "scaled.refl", f"d_min={d_min:.2f}"],
         store_command=outdir / "dials.scale_cut.cmd",
         store_output=outdir / "dials.scale_cut.log",
     )
     runcmd(["dials.compute_delta_cchalf", "scaled.refl", "scaled.expt"])
     runcmd(
-        ["dials.scale", "scaled.expt", "scaled.refl", "d_min=%.2f" % d_min],
+        ["dials.scale", "scaled.expt", "scaled.refl", f"d_min={d_min:.2f}"],
         store_command=outdir / "dials.scale_exclude.cmd",
         store_output=outdir / "dials.scale_exclude.log",
     )
-    tmpdir.join("dials.scale.html").copy(outdir.join("dials.scale.html"))
+    shutil.copy(tmpdir / "dials.scale.html", outdir)
     runcmd(["dials.symmetry", "scaled.expt", "scaled.refl", "laue_group=None"])
-    tmpdir.join("dials.symmetry.html").copy(outdir.join("dials.symmetry.html"))
+    shutil.copy(tmpdir / "dials.symmetry.html", outdir)
     runcmd(["dials.merge", "symmetrized.expt", "symmetrized.refl"])
 
-    print("Updated result files written to {}".format(outdir.strpath))
+    print(f"Updated result files written to {outdir}")
     if not options.keep:
-        tmpdir.remove(rec=1)
+        shutil.rmtree(tmpdir)
 
 
 def find_in_line(string, lines, start=0):
@@ -265,7 +277,7 @@ def find_in_line(string, lines, start=0):
     for n, line in enumerate(lines[start:], start):
         if string in line:
             return n
-    raise RuntimeError("Could not find line '{}' in lines".format(string))
+    raise RuntimeError(f"Could not find line '{string}' in lines")
 
 
 def write_extract(destination, start, end, lines):
@@ -286,7 +298,7 @@ def write_extract(destination, start, end, lines):
         else:
             out_lines.append("")
 
-    destination.write_text(u"\n".join(out_lines), "latin-1")
+    destination.write_text("\n".join(out_lines), "latin-1")
 
 
 def extract_last_indexed_spot_count(source, destination):
@@ -308,60 +320,56 @@ def extract_resolution(source, method):
     lines = source.read_text("latin-1").split("\n")
 
     # Find the Resolution line
-    resolution_line = lines[find_in_line("Resolution %s" % method, lines)]
+    resolution_line = lines[find_in_line(f"Resolution {method}", lines)]
     # Parse and return the suggested resolution value
     return float(resolution_line.split(":")[-1].strip())
 
 
+def extract_rbs_cb_op(source, destination, solution):
+    cb_op = json.loads(source.read_text())[f"{solution}"]["cb_op"]
+    write_extract(destination, 1, 3, [cb_op])
+    return cb_op
+
+
+@dials.util.show_mail_handle_errors()
 def run(args=None):
-    parser = OptionParser(
+    parser = argparse.ArgumentParser(
         description="Generate tutorial logs for DIALS documentation website"
     )
-    parser.add_option("-?", action="help", help=SUPPRESS_HELP)
-    parser.add_option(
+    parser.add_argument("-?", action="help", help=argparse.SUPPRESS)
+    parser.add_argument(
         "--beta",
-        dest="beta",
         action="store_true",
-        default=False,
         help="Generate betalactamase tutorial logs",
     )
-    parser.add_option(
+    parser.add_argument(
         "--mpro_x0692",
-        dest="mpro_x0692",
         action="store_true",
-        default=False,
         help="Generate Mpro x0692 tutorial logs",
     )
-    parser.add_option(
+    parser.add_argument(
         "--thaum",
-        dest="thaum",
         action="store_true",
-        default=False,
         help="Generate thaumatin tutorial logs",
     )
-    parser.add_option(
+    parser.add_argument(
         "--multi_crystal",
-        dest="multi_crystal",
         action="store_true",
-        default=False,
         help="Generate multi-crystal tutorial logs",
     )
-    parser.add_option(
+    parser.add_argument(
         "--keep",
-        dest="keep",
         action="store_true",
-        default=False,
         help="Keep temporary directories on successful generation",
     )
-    parser.add_option(
+    parser.add_argument(
         "--output",
-        dest="output",
         action="store",
-        type="string",
+        type=pathlib.Path,
         default=".",
         help="Write output to this location",
     )
-    options, _ = parser.parse_args(args)
+    options = parser.parse_args(args)
 
     targets = []
     if options.beta:

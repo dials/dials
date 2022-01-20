@@ -1,17 +1,16 @@
 """
 Error model classes for scaling.
 """
-from __future__ import absolute_import, division, print_function
 
 import logging
-from collections import OrderedDict
-from math import exp, log
+from math import ceil, exp, log
 
-import six
+import numpy as np
+from scipy.stats import norm
 
+from dxtbx import flumpy
 from iotbx import phil
 from scitbx import sparse
-from scitbx.math.distributions import normal_distribution
 
 from dials.array_family import flex
 from dials.util import tabulate
@@ -33,9 +32,13 @@ phil_scope = phil.parse(
           .type = float
           .help = "Used this fixed value for the error model 'b' parameter"
           .expert_level = 2
-        minimisation = *individual regression
+        minimisation = *individual regression None
           .type = choice
-          .help = "The algorithm to use for basic error model minimisation"
+          .help = "The algorithm to use for basic error model minimisation."
+                  "For individual, the a and b parameters are optimised"
+                  "sequentially. For regression, a linear fit is made to"
+                  "determine both parameters concurrently. If minimisation=None,"
+                  "the model parameters are fixed to their initial or given values."
           .expert_level = 3
         min_Ih = 25.0
             .type = float
@@ -51,29 +54,44 @@ phil_scope = phil.parse(
         .type = bool
         .help = "If True, the error model is reset to the default at the start"
                 "of scaling, as opposed to loading the current error model."
+    grouping = individual grouped *combined
+        .type = choice
+        .help = "This options selects whether one error model is determined"
+                "for all sweeps (combined), whether one error model is"
+                "determined per-sweep (individual), or whether a custom"
+                "grouping should be used. If grouping=grouped, each group"
+                "should be specified with the error_model_group=parameter."
+        .expert_level = 2
+    error_model_group = None
+        .type = ints
+        .multiple = True
+        .help = "Specify a subset of sweeps which should share an error model."
+                "If no groups are specified here, this is interpreted to mean"
+                "that all sweeps should share a common error model."
+
     """
 )
 
 
-def calc_sigmaprime(x, Ih_table):
+def calc_sigmaprime(x, Ih_table) -> np.array:
     """Calculate the error from the model."""
     sigmaprime = (
-        x[0] * flex.sqrt(Ih_table.variances + flex.pow2(x[1] * Ih_table.intensities))
+        x[0] * np.sqrt(Ih_table.variances + np.square(x[1] * Ih_table.intensities))
     ) / Ih_table.inverse_scale_factors
     return sigmaprime
 
 
-def calc_deltahl(Ih_table, n_h, sigmaprime):
+def calc_deltahl(Ih_table, n_h, sigmaprime) -> np.array:
     """Calculate the normalised deviations from the model."""
     I_hl = Ih_table.intensities
     g_hl = Ih_table.inverse_scale_factors
     I_h = Ih_table.Ih_values
-    prefactor = flex.sqrt((n_h - flex.double(n_h.size(), 1.0)) / n_h)
+    prefactor = np.sqrt((n_h - np.full(n_h.size, 1.0)) / n_h)
     delta_hl = prefactor * ((I_hl / g_hl) - I_h) / sigmaprime
     return delta_hl
 
 
-class ErrorModelRegressionAPM(object):
+class ErrorModelRegressionAPM:
 
     """Parameter manager for error model minimisation using the linear
     regression method.
@@ -82,7 +100,7 @@ class ErrorModelRegressionAPM(object):
 
     def __init__(self, model, active_parameters):
         self.model = model
-        self.components = OrderedDict()
+        self.components = {}
         self.active_parameters = active_parameters  # e.g. ["a", "b"]
         self.x = flex.double([])
         n_cumul_params = 0
@@ -141,7 +159,7 @@ class ErrorModelRegressionAPM(object):
         self.model.update([a, b])
 
 
-class ErrorModelA_APM(object):
+class ErrorModelA_APM:
 
     """Parameter manager for minimising A component with individual minimizer"""
 
@@ -162,7 +180,7 @@ class ErrorModelA_APM(object):
         self.model.components["a"].parameters *= self.x[1]
 
 
-class ErrorModelB_APM(object):
+class ErrorModelB_APM:
 
     """Parameter manager for minimising Bcomponent with individual minimizer"""
 
@@ -185,7 +203,7 @@ class ErrorModelB_APM(object):
         self.model.components["b"].parameters = flex.double([self.x[0]])
 
 
-class ErrorModelBinner(object):
+class ErrorModelBinner:
 
     """A binner for the error model data.
 
@@ -196,7 +214,7 @@ class ErrorModelBinner(object):
         self.binning_info = {
             "initial_variances": [],
             "bin_boundaries": [],
-            "mean_intensities": [],
+            "mean_intensities": np.array([], dtype=float).reshape((0,)),
             "bin_variances": [],
             "refl_per_bin": [],
             "n_reflections": None,
@@ -207,7 +225,7 @@ class ErrorModelBinner(object):
         self.n_h = self.Ih_table.calc_nh()
         self.sigmaprime = calc_sigmaprime([1.0, 0.0], self.Ih_table)
         self.summation_matrix = self._create_summation_matrix()
-        self.weights = flex.double(self.binning_info["mean_intensities"])
+        self.weights = np.array(self.binning_info["mean_intensities"])
         self.delta_hl = calc_deltahl(self.Ih_table, self.n_h, self.sigmaprime)
         self.bin_variances = self.calculate_bin_variances()
         self.binning_info["initial_variances"] = self.binning_info["bin_variances"]
@@ -229,42 +247,45 @@ class ErrorModelBinner(object):
         self.binning_info["n_reflections"] = n
         summation_matrix = sparse.matrix(n, self.n_bins)
         Ih = self.Ih_table.Ih_values * self.Ih_table.inverse_scale_factors
-        size_order = flex.sort_permutation(Ih, reverse=True)
-        Imax = max(Ih)
-        Imin = max(1.0, min(Ih))  # avoid log issues
+        size_order = flex.sort_permutation(flumpy.from_numpy(Ih), reverse=True)
+        Imax = Ih.max()
+        min_Ih = Ih.min()
+        Imin = max(1.0, min_Ih)  # avoid log issues
         spacing = (log(Imax) - log(Imin)) / float(self.n_bins)
         boundaries = [Imax] + [
             exp(log(Imax) - (i * spacing)) for i in range(1, self.n_bins + 1)
         ]
-        boundaries[-1] = min(Ih) - 0.01
-        self.binning_info["bin_boundaries"] = boundaries
-        self.binning_info["refl_per_bin"] = flex.double()
+        boundaries[-1] = min_Ih - 0.01
+        self.binning_info["bin_boundaries"] = np.array(boundaries)
+        self.binning_info["refl_per_bin"] = np.array([], dtype=float).reshape((0,))
 
         n_cumul = 0
-        if Ih.size() > 100 * self.min_reflections_required:
-            self.min_reflections_required = int(Ih.size() / 100.0)
+        if Ih.size > 100 * self.min_reflections_required:
+            self.min_reflections_required = int(Ih.size / 100.0)
         min_per_bin = min(self.min_reflections_required, int(n / (3.0 * self.n_bins)))
-        for i in range(len(boundaries) - 1):
-            maximum = boundaries[i]
-            minimum = boundaries[i + 1]
+        for i in range(len(self.binning_info["bin_boundaries"]) - 1):
+            maximum = self.binning_info["bin_boundaries"][i]
+            minimum = self.binning_info["bin_boundaries"][i + 1]
             sel1 = Ih <= maximum
             sel2 = Ih > minimum
             sel = sel1 & sel2
-            isel = sel.iselection()
-            n_in_bin = isel.size()
+            # isel = sel.iselection()
+            n_in_bin = np.count_nonzero(sel)  # isel.size()
             if n_in_bin < min_per_bin:  # need more in this bin
                 m = n_cumul + min_per_bin
                 if m < n:  # still some refl left to use
                     idx = size_order[m]
                     intensity = Ih[idx]
-                    boundaries[i + 1] = intensity
-                    minimum = boundaries[i + 1]
+                    self.binning_info["bin_boundaries"][i + 1] = intensity
+                    minimum = self.binning_info["bin_boundaries"][i + 1]
                     sel = sel1 & (Ih > minimum)
-                    isel = sel.iselection()
-                    n_in_bin = isel.size()
-            self.binning_info["refl_per_bin"].append(n_in_bin)
-            for j in isel:
-                summation_matrix[j, i] = 1
+                    # isel = sel.iselection()
+                    n_in_bin = np.count_nonzero(sel)  # isel.size()
+            self.binning_info["refl_per_bin"] = np.append(
+                self.binning_info["refl_per_bin"], [n_in_bin]
+            )
+            for j in np.nonzero(sel)[0]:  # isel:
+                summation_matrix[int(j), i] = 1
             n_cumul += n_in_bin
         cols_to_del = []
         for i, col in enumerate(summation_matrix.cols()):
@@ -272,27 +293,32 @@ class ErrorModelBinner(object):
                 cols_to_del.append(i)
         n_new_cols = summation_matrix.n_cols - len(cols_to_del)
         if n_new_cols == self.n_bins:
-            for i in range(len(boundaries) - 1):
-                maximum = boundaries[i]
-                minimum = boundaries[i + 1]
+            for i in range(len(self.binning_info["bin_boundaries"]) - 1):
+                maximum = self.binning_info["bin_boundaries"][i]
+                minimum = self.binning_info["bin_boundaries"][i + 1]
                 sel1 = Ih <= maximum
                 sel2 = Ih > minimum
                 sel = sel1 & sel2
-                m = flex.mean(Ih.select(sel))
-                self.binning_info["mean_intensities"].append(m)
+                self.binning_info["mean_intensities"] = np.append(
+                    self.binning_info["mean_intensities"], [np.mean(Ih[sel])]
+                )
             return summation_matrix
         new_sum_matrix = sparse.matrix(summation_matrix.n_rows, n_new_cols)
         next_col = 0
-        refl_per_bin = flex.double()
-        new_bounds = []
+        refl_per_bin = np.array([], dtype=float).reshape((0,))
+        new_bounds = np.array([], dtype=float).reshape((0,))
         for i, col in enumerate(summation_matrix.cols()):
             if i not in cols_to_del:
                 new_sum_matrix[:, next_col] = col
                 next_col += 1
-                new_bounds.append(boundaries[i])
-                refl_per_bin.append(self.binning_info["refl_per_bin"][i])
+                new_bounds = np.append(
+                    new_bounds, [self.binning_info["bin_boundaries"][i]]
+                )
+                refl_per_bin = np.append(
+                    refl_per_bin, [self.binning_info["refl_per_bin"][i]]
+                )
         self.binning_info["refl_per_bin"] = refl_per_bin
-        new_bounds.append(boundaries[-1])
+        new_bounds = np.append(new_bounds, [self.binning_info["bin_boundaries"][-1]])
         self.binning_info["bin_boundaries"] = new_bounds
         for i in range(len(new_bounds) - 1):
             maximum = new_bounds[i]
@@ -300,22 +326,27 @@ class ErrorModelBinner(object):
             sel1 = Ih <= maximum
             sel2 = Ih > minimum
             sel = sel1 & sel2
-            m = flex.mean(Ih.select(sel))
-            self.binning_info["mean_intensities"].append(m)
+            self.binning_info["mean_intensities"] = np.append(
+                self.binning_info["mean_intensities"], [np.mean(Ih[sel])]
+            )
         return new_sum_matrix
 
-    def calculate_bin_variances(self):
+    def calculate_bin_variances(self) -> np.array:
         """Calculate the variance of each bin."""
-        sum_deltasq = flex.pow2(self.delta_hl) * self.summation_matrix
-        sum_delta_sq = flex.pow2(self.delta_hl * self.summation_matrix)
+        sum_deltasq = flumpy.to_numpy(
+            flumpy.from_numpy(np.square(self.delta_hl)) * self.summation_matrix
+        )
+        sum_delta_sq = np.square(
+            flumpy.to_numpy(flumpy.from_numpy(self.delta_hl) * self.summation_matrix)
+        )
         bin_vars = (sum_deltasq / self.binning_info["refl_per_bin"]) - (
-            sum_delta_sq / flex.pow2(self.binning_info["refl_per_bin"])
+            sum_delta_sq / np.square(self.binning_info["refl_per_bin"])
         )
         self.binning_info["bin_variances"] = bin_vars
         return bin_vars
 
 
-class BComponent(object):
+class BComponent:
 
     """The basic error model B parameter component"""
 
@@ -324,7 +355,7 @@ class BComponent(object):
         self._n_params = 1
 
 
-class AComponent(object):
+class AComponent:
 
     """The basic error model A parameter component"""
 
@@ -333,7 +364,7 @@ class AComponent(object):
         self._n_params = 1
 
 
-class BasicErrorModel(object):
+class BasicErrorModel:
 
     """Definition of a basic two-parameter error model."""
 
@@ -388,7 +419,6 @@ class BasicErrorModel(object):
         self.binner = ErrorModelBinner(
             self.filtered_Ih_table, self.min_reflections_required, self.params.n_bins
         )
-
         # need to calculate sorted deltahl for norm dev plotting (and used by
         # individual a-parameter minimiser)
         self.calculate_sorted_deviations(self.parameters)
@@ -438,19 +468,27 @@ class BasicErrorModel(object):
         delta_hl = calc_deltahl(
             self.filtered_Ih_table, self.filtered_Ih_table.calc_nh(), sigmaprime
         )
-        norm = normal_distribution()
-        n = len(delta_hl)
-        if n <= 10:
-            a = 3 / 8
-        else:
-            a = 0.5
-        self.sortedy = flex.sorted(flex.double(delta_hl))
-        self.sortedx = flex.double(
-            [norm.quantile((i + 1 - a) / (n + 1 - (2 * a))) for i in range(n)]
+        central_cutoff = 1.5
+        n = delta_hl.size
+        self.sortedy = np.sort(delta_hl)
+        v1 = norm.cdf(-central_cutoff)
+        v2 = norm.cdf(central_cutoff)
+        idx_cutoff_min = ceil(
+            (v1 * n) - 0.5
+        )  # first one within the central cutoff range
+        idx_cutoff_max = ceil(
+            (v2 * n) - 0.5
+        )  # first one above the central cutoff range
+        central_n = idx_cutoff_max - idx_cutoff_min
+        v = np.linspace(
+            start=(idx_cutoff_min + 0.5) / n,
+            stop=(idx_cutoff_max + 0.5) / n,
+            endpoint=False,
+            num=central_n,
         )
-        central_sel = (self.sortedx < 1.5) & (self.sortedx > -1.5)
-        self.sortedx = self.sortedx.select(central_sel)
-        self.sortedy = self.sortedy.select(central_sel)
+
+        self.sortedx = flumpy.from_numpy(norm.ppf(v))
+        self.sortedy = flumpy.from_numpy(self.sortedy[idx_cutoff_min:idx_cutoff_max])
 
     def update(self, parameters):
         """Update the model with new parameters."""
@@ -461,7 +499,7 @@ class BasicErrorModel(object):
     def update_variances(self, variances, intensities):
         """Use the error model parameter to calculate new values for the variances."""
         new_variance = (self.parameters[0] ** 2) * (
-            variances + flex.pow2(self.parameters[1] * intensities)
+            variances + np.square(self.parameters[1] * intensities)
         )
         return new_variance
 
@@ -473,33 +511,22 @@ class BasicErrorModel(object):
     def __str__(self):
         a = abs(self.parameters[0])
         b = abs(self.parameters[1])
-        ISa = "%.3f" % (1.0 / (b * a)) if (b * a) > 0 else "Unable to estimate"
-        if six.PY2:
-            return "\n".join(
-                (
-                    "",
-                    "Error model details:",
-                    "  Type: basic",
-                    "  Parameters: a = %.5f, b = %.5f" % (a, b),
-                    "  estimated I/sigma asymptotic limit: %s" % ISa,
-                    "",
-                )
-            )
+        ISa = f"{1.0 / (b * a):.3f}" if (b * a) > 0 else "Unable to estimate"
         return "\n".join(
             (
                 "",
                 "Error model details:",
                 "  Type: basic",
-                "  Parameters: a = %.5f, b = %.5f" % (a, b),
+                f"  Parameters: a = {a:.5f}, b = {b:.5f}",
                 "  Error model formula: "
-                + u"\u03C3"
+                + "\u03C3"
                 + "'"
-                + u"\xb2"
+                + "\xb2"
                 + " = a"
-                + u"\xb2"
+                + "\xb2"
                 + "("
-                + u"\u03C3\xb2"
-                " + (bI)" + u"\xb2" + ")",
+                + "\u03C3\xb2"
+                " + (bI)" + "\xb2" + ")",
                 "  estimated I/sigma asymptotic limit: %s" % ISa,
                 "",
             )
@@ -514,7 +541,7 @@ class BasicErrorModel(object):
             "Corrected variance",
         ]
         rows = []
-        bin_bounds = ["%.2f" % i for i in self.binner.binning_info["bin_boundaries"]]
+        bin_bounds = [f"{i:.2f}" for i in self.binner.binning_info["bin_boundaries"]]
         for i, (initial_var, bin_var, n_refl) in enumerate(
             zip(
                 self.binner.binning_info["initial_variances"],
@@ -551,14 +578,12 @@ def filter_unsuitable_reflections(
     not hold for low <Ih>."""
 
     if "partiality" in Ih_table.Ih_table:
-        sel = Ih_table.Ih_table["partiality"] > min_partiality
+        sel = Ih_table.Ih_table["partiality"].to_numpy() > min_partiality
         Ih_table = Ih_table.select(sel)
 
     n = Ih_table.size
-    sum_I_over_var = (
-        Ih_table.intensities / Ih_table.variances
-    ) * Ih_table.h_index_matrix
-    n_per_group = flex.double(n, 1) * Ih_table.h_index_matrix
+    sum_I_over_var = Ih_table.sum_in_groups(Ih_table.intensities / Ih_table.variances)
+    n_per_group = Ih_table.sum_in_groups(np.full(n, 1))
     avg_I_over_var = sum_I_over_var / n_per_group
     sel = avg_I_over_var > 0.85
     Ih_table = Ih_table.select_on_groups(sel)
@@ -584,4 +609,33 @@ def filter_unsuitable_reflections(
     # now make sure any left also have n > 1
     sel = n_h > 1.0
     Ih_table = Ih_table.select(sel)
+
+    #  Filter groups with abnormally high internal variances.
+    # For a reasonable quality dataset, if b=0.04, a=1.25, then for large Imax,
+    # the ratio of the corrected per-reflection variance to the original is
+    # (var'/var)^2 ~= (ab)^2 Imax ~= Imax / 400. So filter any groups where the
+    # internal variance is more than 10x what would reasonably be expected after
+    # error model correction.
+    I = Ih_table.intensities
+    mu = Ih_table.Ih_values
+    g = Ih_table.inverse_scale_factors
+    n_h = Ih_table.sum_in_groups(np.full(Ih_table.size, 1.0))
+
+    group_variances = Ih_table.sum_in_groups(((I / g) - mu) ** 2) / (
+        n_h - np.full(n_h.size, 1.0)
+    )
+    avg_variances = Ih_table.sum_in_groups(Ih_table.variances / (g ** 2)) / n_h
+    ratio = group_variances / avg_variances
+    sel = ratio < max(50, (np.max(mu) / 40.0))
+    logger.debug(
+        f"{sel.size - np.count_nonzero(sel)}/{sel.size} symmetry groups excluded "
+        "from error model analysis due to high internal variance"
+    )
+    Ih_table = Ih_table.select_on_groups(sel)
+    n = Ih_table.size
+    if n < min_reflections_required:
+        raise ValueError(
+            "Insufficient reflections (%s < %s) to perform error modelling."
+            % (n, min_reflections_required)
+        )
     return Ih_table

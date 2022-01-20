@@ -1,9 +1,7 @@
-from __future__ import absolute_import, division, print_function
-
 from dials.util import tabulate
 
 
-class Array(object):
+class Array:
     """
     A class to represent an array
     """
@@ -22,13 +20,12 @@ class Array(object):
 
         :return: The dictionary
         """
-        from collections import OrderedDict
 
-        result = OrderedDict()
-        result["title"] = self.title
-        result["shape"] = self.data.all()
-        result["data"] = list(self.data)
-        return result
+        return {
+            "title": self.title,
+            "shape": self.data.all(),
+            "data": list(self.data),
+        }
 
     def as_str(self, prefix=""):
         """
@@ -39,7 +36,7 @@ class Array(object):
         return ""
 
 
-class Table(object):
+class Table:
     """
     A class to represent a table
     """
@@ -59,25 +56,15 @@ class Table(object):
 
         :return: The dictionary
         """
-        from collections import OrderedDict
-
-        cols = OrderedDict()
-        for col in self.cols:
-            assert len(col) == 2
-            cols[col[0]] = col[1]
-        rows = []
-        for row in self.rows:
-            row_out = OrderedDict()
-            for j, r in enumerate(row):
-                row_out[self.cols[j][0]] = r
-            rows.append(row_out)
+        cols = {col[0]: col[1] for col in self.cols}
+        rows = [{self.cols[j][0]: r for j, r in enumerate(row)} for row in self.rows]
 
         # Create the output
-        result = OrderedDict()
-        result["title"] = self.title
-        result["cols"] = cols
-        result["rows"] = rows
-        return result
+        return {
+            "title": self.title,
+            "cols": cols,
+            "rows": rows,
+        }
 
     def as_str(self, prefix=""):
         """
@@ -92,7 +79,7 @@ class Table(object):
         return "\n".join(text)
 
 
-class Report(object):
+class Report:
     """
     A class to represent the report
     """
@@ -135,12 +122,10 @@ class Report(object):
 
         :return: The dictionary
         """
-        from collections import OrderedDict
-
-        result = OrderedDict()
-        result["tables"] = {table.name: table.as_dict() for table in self.tables}
-        result["arrays"] = {array.name: array.as_dict() for array in self.arrays}
-        return result
+        return {
+            "tables": {table.name: table.as_dict() for table in self.tables},
+            "arrays": {array.name: array.as_dict() for array in self.arrays},
+        }
 
     def as_str(self, prefix=""):
         """

@@ -6,7 +6,6 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 #
-from __future__ import absolute_import, division, print_function
 
 import logging
 
@@ -116,8 +115,10 @@ class SparseLevenbergMarquardtIterations(
         of the refinement"""
 
         logger.debug(
-            "Iteration: %5d Objective: %18.4f Mu: %12.7f"
-            % (self.n_iterations, objective, self.mu)
+            "Iteration: %5d Objective: %18.4f Mu: %12.7f",
+            self.n_iterations,
+            objective,
+            self.mu,
         )
 
     def run(self):

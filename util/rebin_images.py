@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import binascii
 import os
 import random
@@ -68,14 +66,14 @@ def write_image(out_image, pixel_values, header, nn=1):
     header = header.decode()
     for record in header.split("\n")[:-1]:
         if "X-Binary-Size:" in record:
-            fixed_header += "X-Binary-Size: %d\r\n" % len(compressed)
+            fixed_header += f"X-Binary-Size: {len(compressed)}\r\n"
         elif "Content-MD5" in record:
             pass
         elif "Count_cutoff" in record:
             cutoff = int(record.split()[2]) * nn
             fixed_header += "# Count_cutoff %d counts\n" % cutoff
         else:
-            fixed_header += "%s\n" % record
+            fixed_header += f"{record}\n"
 
     tailer = "\r\n--CIF-BINARY-FORMAT-SECTION----\r\n;\r\n"
 
@@ -97,7 +95,7 @@ def main(in_images, out_images):
     in_image_headers = []
 
     for i in in_images:
-        print("Reading %s" % i)
+        print(f"Reading {i}")
         pixel, header = read_image(i)
         in_image_data.append(pixel)
         in_image_headers.append(header)
@@ -106,7 +104,7 @@ def main(in_images, out_images):
     rebin_images = split_counts(sum_image, n)
 
     for o, pixel, header in zip(out_images, rebin_images, in_image_headers):
-        print("Writing %s" % o)
+        print(f"Writing {o}")
         write_image(o, pixel, header)
 
 
@@ -119,12 +117,12 @@ def main_sum(in_images, out_image):
     in_image_headers = []
 
     for i in in_images:
-        print("Reading %s" % i)
+        print(f"Reading {i}")
         pixel, header = read_image(i)
         in_image_data.append(pixel)
         in_image_headers.append(header)
 
     sum_image = merge_counts(in_image_data)
 
-    print("Writing %s" % out_image)
+    print(f"Writing {out_image}")
     write_image(out_image, sum_image, in_image_headers[0], nn=len(in_images))

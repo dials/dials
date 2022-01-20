@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 import sys
 
@@ -41,7 +39,7 @@ phil_scope = parse(
 )
 
 
-class BestExporter(object):
+class BestExporter:
     def __init__(self, params, experiments, reflections):
         """
         Initialise the exporter
@@ -88,21 +86,22 @@ class BestExporter(object):
         imageset = experiment.imageset
         prefix = self.params.output.prefix
 
-        best.write_background_file(
-            "%s.dat" % prefix, imageset, n_bins=self.params.n_bins
-        )
+        best.write_background_file(f"{prefix}.dat", imageset, n_bins=self.params.n_bins)
         best.write_integrated_hkl(prefix, reflections)
-        best.write_par_file("%s.par" % prefix, experiment)
+        best.write_par_file(f"{prefix}.par", experiment)
 
 
 @show_mail_handle_errors()
 def run(args=None):
-    from dials.util.options import OptionParser, reflections_and_experiments_from_files
+    from dials.util.options import (
+        ArgumentParser,
+        reflections_and_experiments_from_files,
+    )
     from dials.util.version import dials_version
 
-    usage = "dials.export models.expt reflections.pickle [options]"
+    usage = "dials.export models.expt reflections.refl [options]"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         read_experiments=True,
         read_reflections=True,

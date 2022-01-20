@@ -1,7 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
-
-class BackgroundAlgorithm(object):
+class BackgroundAlgorithm:
     """Class to do background subtraction."""
 
     def __init__(
@@ -35,7 +32,7 @@ class BackgroundAlgorithm(object):
 
     def compute_background(self, reflections, image_volume=None):
         """
-        Compute the backgrond.
+        Compute the background.
 
         :param reflections: The list of reflections
         """
@@ -51,7 +48,7 @@ class BackgroundAlgorithm(object):
         return success
 
 
-class GLMBackgroundCalculatorFactory(object):
+class GLMBackgroundCalculatorFactory:
     """Class to do background subtraction."""
 
     @staticmethod

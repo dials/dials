@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 from libtbx import phil
 from scitbx import matrix
 from scitbx.array_family import flex
@@ -54,7 +52,7 @@ class FFT1D(Strategy):
                 If None, determine a grid sampling automatically using the input
                 reflections, using at most 0.029 radians.
         """
-        super(FFT1D, self).__init__(max_cell, params=params, *args, **kwargs)
+        super().__init__(max_cell, params=params, *args, **kwargs)
 
     def find_basis_vectors(self, reciprocal_lattice_vectors):
         """Find a list of likely basis vectors.

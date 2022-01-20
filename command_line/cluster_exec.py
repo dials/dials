@@ -1,6 +1,6 @@
 # LIBTBX_SET_DISPATCHER_NAME cluster.dials.exec
 
-from __future__ import absolute_import, division, print_function
+import pickle
 
 import dials.util
 
@@ -36,15 +36,13 @@ def run(_=None):
     from os.path import exists, join
     from time import sleep
 
-    import six.moves.cPickle as pickle
-
     # Get the task id and the current working directory
     tid = get_tid()
     cwd = get_cwd()
 
     # Set the paths
-    input_fn = join(cwd, "%s.input" % tid)
-    output_fn = join(cwd, "%s.output" % tid)
+    input_fn = join(cwd, f"{tid}.input")
+    output_fn = join(cwd, f"{tid}.output")
 
     # Wait until it exists
     while not exists(input_fn):

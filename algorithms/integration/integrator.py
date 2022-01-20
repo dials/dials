@@ -1,16 +1,12 @@
-from __future__ import absolute_import, division, print_function
-
 import collections
 import functools
 import logging
 import math
+import pickle
 import random
 
-import six
-import six.moves.cPickle as pickle
-
 import dials.extensions
-from dials.algorithms.integration import processor
+from dials.algorithms.integration import TimingInfo, processor
 from dials.algorithms.integration.filtering import IceRingFilter
 from dials.algorithms.integration.parallel_integrator import (
     IntegratorProcessor,
@@ -22,6 +18,7 @@ from dials.algorithms.integration.processor import (
     ProcessorFlat3D,
     ProcessorSingle2D,
     ProcessorStills,
+    assess_available_memory,
     build_processor,
     job,
 )
@@ -41,6 +38,7 @@ from dials_algorithms_integration_integrator_ext import (
     Executor,
     JobList,
     ReflectionManager,
+    max_memory_needed,
 )
 
 logger = logging.getLogger(__name__)
@@ -102,7 +100,7 @@ def generate_phil_scope():
           .help = "For block size auto the block size is calculated by sorting"
                   "reflections by the number of frames they cover and then"
                   "selecting the block size to be 2*nframes[threshold] such"
-                  "that 100*threshold % of reflections are guarenteed to be"
+                  "that 100*threshold % of reflections are guaranteed to be"
                   "fully contained in 1 block"
 
         force = False
@@ -186,6 +184,12 @@ def generate_phil_scope():
           .type = bool
           .help = "Use profile fitting if available"
 
+        valid_foreground_threshold = 0.75
+          .type = float(value_min=0, value_max=1)
+          .help = "The minimum fraction of foreground pixels that must be valid"
+                  "in order for a reflection to be integrated by profile fitting."
+          .expert_level = 2
+
         sigma_b_multiplier = 2.0
           .type = float(value_min=1.0)
           .help = "Background box expansion factor"
@@ -211,7 +215,7 @@ def generate_phil_scope():
         min_zeta = 0.05
           .help = "Filter the reflections by the value of zeta. A value of less"
                   "than or equal to zero indicates that this will not be used. A"
-                  "positive value is used as the minimum permissable value."
+                  "positive value is used as the minimum permissible value."
           .type = float(value_min=0.0, value_max=1.0)
 
         ice_rings = False
@@ -233,6 +237,10 @@ def generate_phil_scope():
         nproc = 1
           .type = int(value_min=1)
           .help = "The number of processes to use per cluster job"
+
+        multiprocessing.n_subset_split = None
+            .type = int(value_min=1)
+            .help = "Number of subsets to split the reflection table for integration."
       }
 
       summation {
@@ -327,12 +335,12 @@ def nframes_hist(bbox, width=80, symbol="#", prefix=""):
     return hist([b[5] - b[4] for b in bbox], width=width, symbol=symbol, prefix=prefix)
 
 
-class Parameters(object):
+class Parameters:
     """
     A stack of classes to represent the integration parameters
     """
 
-    class Filter(object):
+    class Filter:
         """
         Filter parameters
         """
@@ -341,12 +349,12 @@ class Parameters(object):
             self.min_zeta = 0.05
             self.powder_filter = None
 
-    class Profile(object):
+    class Profile:
         """
         Profile parameters
         """
 
-        class Validation(object):
+        class Validation:
             def __init__(self):
                 self.number_of_partitions = 2
                 self.min_partition_size = 100
@@ -354,6 +362,7 @@ class Parameters(object):
         def __init__(self):
             self.fitting = True
             self.sigma_b_multiplier = 2.0
+            self.valid_foreground_threshold = 0.75
             self.validation = Parameters.Profile.Validation()
 
     def __init__(self):
@@ -364,7 +373,7 @@ class Parameters(object):
         self.integration = processor.Parameters()
         self.filter = Parameters.Filter()
         self.profile = Parameters.Profile()
-        self.debug_reference_filename = "reference_profiles.refl"
+        self.debug_reference_filename = "reference_profiles.pickle"
         self.debug_reference_output = False
 
     @staticmethod
@@ -380,6 +389,7 @@ class Parameters(object):
         mp.method = params.mp.method
         mp.nproc = params.mp.nproc
         mp.njobs = params.mp.njobs
+        mp.n_subset_split = params.mp.multiprocessing.n_subset_split
 
         # Set the lookup parameters
         lookup = processor.Lookup()
@@ -411,12 +421,16 @@ class Parameters(object):
         result.integration.debug.select = params.debug.select
         result.integration.debug.separate_files = params.debug.separate_files
         result.integration.summation = params.summation
+        result.integration.integrator = params.integrator
 
         result.debug_reference_filename = params.debug.reference.filename
         result.debug_reference_output = params.debug.reference.output
 
         # Profile parameters
         result.profile.sigma_b_multiplier = params.profile.sigma_b_multiplier
+        result.profile.valid_foreground_threshold = (
+            params.profile.valid_foreground_threshold
+        )
 
         # Get the min zeta filter
         result.filter.min_zeta = params.filter.min_zeta
@@ -534,8 +548,9 @@ def _finalize_stills(reflections, experiments, params):
         ~integrated.get_flags(integrated.flags.foreground_includes_bad_pixels)
     )
     logger.info(
-        "Filtering %d reflections with at least one bad foreground pixel out of %d"
-        % (len_all - len(integrated), len_all)
+        "Filtering %d reflections with at least one bad foreground pixel out of %d",
+        len_all - len(integrated),
+        len_all,
     )
 
     # verify sigmas are sensible
@@ -556,8 +571,9 @@ def _finalize_stills(reflections, experiments, params):
             )
             if n == sel.count(True):
                 logger.info(
-                    "Filtering %d reflections with no integrated signal (sum and variance = 0) out of %d"
-                    % (n, len(integrated))
+                    "Filtering %d reflections with no integrated signal (sum and variance = 0) out of %d",
+                    n,
+                    len(integrated),
                 )
                 integrated = integrated.select(integrated["intensity.sum.variance"] > 0)
             else:
@@ -576,8 +592,8 @@ def _finalize_stills(reflections, experiments, params):
             )
         if (integrated["background.sum.variance"] == 0).count(True) > 0:
             logger.info(
-                "Filtering %d reflections with zero background variance"
-                % ((integrated["background.sum.variance"] == 0).count(True))
+                "Filtering %d reflections with zero background variance",
+                (integrated["background.sum.variance"] == 0).count(True),
             )
             integrated = integrated.select(integrated["background.sum.variance"] > 0)
         # apply detector gain to background summation variances
@@ -603,7 +619,7 @@ class ProfileModellerExecutor(Executor):
         """
         self.experiments = experiments
         self.profile_fitter = profile_fitter
-        super(ProfileModellerExecutor, self).__init__()
+        super().__init__()
 
     def initialize(self, frame0, frame1, reflections):
         """
@@ -625,15 +641,15 @@ class ProfileModellerExecutor(Executor):
 
         # Write some output
         logger.debug("")
-        logger.debug(" Beginning modelling job %d" % job.index)
+        logger.debug(" Beginning modelling job %d", job.index)
         logger.info("")
-        logger.info(" Frames: %d -> %d" % (frame0 + 1, frame1))
+        logger.info(" Frames: %d -> %d", frame0 + 1, frame1)
         logger.info("")
         logger.info(" Number of reflections")
-        logger.info("  Partial:     %d" % npart)
-        logger.info("  Full:        %d" % nfull)
-        logger.info("  In ice ring: %d" % nice)
-        logger.info("  Total:       %d" % ntot)
+        logger.info("  Partial:     %d", npart)
+        logger.info("  Full:        %d", nfull)
+        logger.info("  In ice ring: %d", nice)
+        logger.info("  Total:       %d", ntot)
         logger.info("")
 
         # Print a histogram of reflections on frames
@@ -671,7 +687,7 @@ class ProfileModellerExecutor(Executor):
         fmt = " Modelled % 5d / % 5d reflection profiles on image %d"
         nmod = reflections.get_flags(reflections.flags.used_in_modelling).count(True)
         ntot = len(reflections)
-        logger.debug(fmt % (nmod, ntot, frame + 1))
+        logger.debug(fmt, nmod, ntot, frame + 1)
 
     def finalize(self):
         """
@@ -705,7 +721,7 @@ class ProfileValidatorExecutor(Executor):
         """
         self.experiments = experiments
         self.profile_fitter = profile_fitter
-        super(ProfileValidatorExecutor, self).__init__()
+        super().__init__()
 
     def initialize(self, frame0, frame1, reflections):
         """
@@ -727,15 +743,15 @@ class ProfileValidatorExecutor(Executor):
 
         # Write some output
         logger.debug("")
-        logger.debug(" Beginning modelling job %d" % job.index)
+        logger.debug(" Beginning modelling job %d", job.index)
         logger.info("")
-        logger.info(" Frames: %d -> %d" % (frame0, frame1))
+        logger.info(" Frames: %d -> %d", frame0, frame1)
         logger.info("")
         logger.info(" Number of reflections")
-        logger.info("  Partial:     %d" % npart)
-        logger.info("  Full:        %d" % nfull)
-        logger.info("  In ice ring: %d" % nice)
-        logger.info("  Total:       %d" % ntot)
+        logger.info("  Partial:     %d", npart)
+        logger.info("  Full:        %d", nfull)
+        logger.info("  In ice ring: %d", nice)
+        logger.info("  Total:       %d", ntot)
         logger.info("")
 
         # Print a histogram of reflections on frames
@@ -775,7 +791,7 @@ class ProfileValidatorExecutor(Executor):
         fmt = " Validated % 5d / % 5d reflection profiles on image %d"
         nmod = reflections.get_flags(reflections.flags.used_in_modelling).count(True)
         ntot = len(reflections)
-        logger.debug(fmt % (nmod, ntot, frame + 1))
+        logger.debug(fmt, nmod, ntot, frame + 1)
 
     def finalize(self):
         """
@@ -801,7 +817,9 @@ class IntegratorExecutor(Executor):
     The class to process the integration data
     """
 
-    def __init__(self, experiments, profile_fitter=None):
+    def __init__(
+        self, experiments, profile_fitter=None, valid_foreground_threshold=0.75
+    ):
         """
         Initialize the executor
 
@@ -810,7 +828,8 @@ class IntegratorExecutor(Executor):
         self.experiments = experiments
         self.overlaps = None
         self.profile_fitter = profile_fitter
-        super(IntegratorExecutor, self).__init__()
+        self.valid_foreground_threshold = valid_foreground_threshold
+        super().__init__()
 
     def initialize(self, frame0, frame1, reflections):
         """
@@ -833,16 +852,16 @@ class IntegratorExecutor(Executor):
 
         # Write some output
         logger.debug("")
-        logger.debug(" Beginning integration job %d" % job.index)
+        logger.debug(" Beginning integration job %d", job.index)
         logger.info("")
-        logger.info(" Frames: %d -> %d" % (frame0, frame1))
+        logger.info(" Frames: %d -> %d", frame0, frame1)
         logger.info("")
         logger.info(" Number of reflections")
-        logger.info("  Partial:     %d" % npart)
-        logger.info("  Full:        %d" % nfull)
-        logger.info("  In ice ring: %d" % nice)
-        logger.info("  Integrate:   %d" % nint)
-        logger.info("  Total:       %d" % ntot)
+        logger.info("  Partial:     %d", npart)
+        logger.info("  Full:        %d", nfull)
+        logger.info("  In ice ring: %d", nice)
+        logger.info("  Integrate:   %d", nint)
+        logger.info("  Total:       %d", ntot)
         logger.info("")
 
         # Print a histogram of reflections on frames
@@ -874,30 +893,43 @@ class IntegratorExecutor(Executor):
         # Check for invalid pixels in foreground/background
         reflections.contains_invalid_pixels()
 
+        # Exclude reflections where a high fraction of the foreground is masked
+        # e.g. due to a panel edge, as this will make the fitting unreliable.
+        sbox = reflections["shoebox"]
+        nvalfg = sbox.count_mask_values(MaskCode.Valid | MaskCode.Foreground)
+        nforeg = sbox.count_mask_values(MaskCode.Foreground)
+        fraction_valid = nvalfg.as_double() / nforeg.as_double()
+        selection = fraction_valid < self.valid_foreground_threshold
+        reflections.set_flags(selection, reflections.flags.dont_integrate)
+        logger.debug(
+            f"{selection.count(True)} reflections have"
+            " a fraction of valid pixels below the valid foreground threshold"
+        )
+
         # Process the data
         reflections.compute_background(self.experiments)
         reflections.compute_centroid(self.experiments)
+
         reflections.compute_summed_intensity()
         if self.profile_fitter:
             reflections.compute_fitted_intensity(self.profile_fitter)
 
         # Compute the number of background/foreground pixels
-        sbox = reflections["shoebox"]
-        code1 = MaskCode.Valid
-        code2 = MaskCode.Background | code1
-        code3 = MaskCode.BackgroundUsed | code2
-        code4 = MaskCode.Foreground | code1
-        reflections["num_pixels.valid"] = sbox.count_mask_values(code1)
-        reflections["num_pixels.background"] = sbox.count_mask_values(code2)
-        reflections["num_pixels.background_used"] = sbox.count_mask_values(code3)
-        reflections["num_pixels.foreground"] = sbox.count_mask_values(code4)
+        reflections["num_pixels.valid"] = sbox.count_mask_values(MaskCode.Valid)
+        reflections["num_pixels.background"] = sbox.count_mask_values(
+            MaskCode.Valid | MaskCode.Background
+        )
+        reflections["num_pixels.background_used"] = sbox.count_mask_values(
+            MaskCode.Valid | MaskCode.Background | MaskCode.BackgroundUsed
+        )
+        reflections["num_pixels.foreground"] = nvalfg
 
         # Print some info
         fmt = " Integrated % 5d (sum) + % 5d (prf) / %5d reflections on image %d"
         nsum = reflections.get_flags(reflections.flags.integrated_sum).count(True)
         nprf = reflections.get_flags(reflections.flags.integrated_prf).count(True)
         ntot = len(reflections)
-        logger.debug(fmt % (nsum, nprf, ntot, frame + 1))
+        logger.debug(fmt, nsum, nprf, ntot, frame + 1)
 
     def finalize(self):
         """
@@ -918,7 +950,7 @@ class IntegratorExecutor(Executor):
         return (self.experiments, self.profile_fitter)
 
 
-class Integrator(object):
+class Integrator:
     """
     The integrator class
     """
@@ -939,54 +971,13 @@ class Integrator(object):
         self.profile_model_report = None
         self.integration_report = None
 
-    def integrate(self):
+    def fit_profiles(self):
+        """Do profile fitting if appropriate.
+
+        Sets self.profile_validation_report and self.profile_model_report.
+
+        Returns profile_fitter (may be none)
         """
-        Integrate the data
-        """
-        # Ensure we get the same random sample each time
-        random.seed(0)
-
-        # Init the report
-        self.profile_model_report = None
-        self.integration_report = None
-
-        # Heading
-        logger.info("=" * 80)
-        logger.info("")
-        logger.info(heading("Processing reflections"))
-        logger.info("")
-
-        # Create summary format
-        fmt = (
-            " Processing the following experiments:\n"
-            "\n"
-            " Experiments: %d\n"
-            " Beams:       %d\n"
-            " Detectors:   %d\n"
-            " Goniometers: %d\n"
-            " Scans:       %d\n"
-            " Crystals:    %d\n"
-            " Imagesets:   %d\n"
-        )
-
-        # Print the summary
-        logger.info(
-            fmt
-            % (
-                len(self.experiments),
-                len(self.experiments.beams()),
-                len(self.experiments.detectors()),
-                len(self.experiments.goniometers()),
-                len(self.experiments.scans()),
-                len(self.experiments.crystals()),
-                len(self.experiments.imagesets()),
-            )
-        )
-
-        # Initialize the reflections
-        self.initialize_reflections(self.experiments, self.params, self.reflections)
-
-        # Check if we want to do some profile fitting
         fitting_class = [e.profile.fitting_class() for e in self.experiments]
         fitting_avail = all(c is not None for c in fitting_class)
         if self.params.profile.fitting and fitting_avail:
@@ -1084,7 +1075,7 @@ class Integrator(object):
                 # Get the finalized modeller
                 finalized_profile_fitter = profile_fitter.finalized_model()
 
-                # Print profiles
+                # Dump reference profiles
                 if self.params.debug_reference_output:
                     reference_debug = []
                     for i in range(len(finalized_profile_fitter)):
@@ -1092,19 +1083,27 @@ class Integrator(object):
                         p = []
                         for j in range(len(m)):
                             try:
-                                p.append((m.data(j), m.mask(j)))
+                                p.append(
+                                    {
+                                        "data": m.data(j),
+                                        "mask": m.mask(j),
+                                        "coord": m.coord(j),
+                                        "n_reflections": m.n_reflections(j),
+                                    }
+                                )
                             except Exception:
                                 p.append(None)
-                    reference_debug.append(p)
+                        reference_debug.append(p)
                     with open(self.params.debug_reference_filename, "wb") as outfile:
                         pickle.dump(reference_debug, outfile)
 
+                # Print profiles
                 for i in range(len(finalized_profile_fitter)):
                     m = finalized_profile_fitter[i]
                     logger.debug("")
-                    logger.debug("Profiles for experiment %d" % i)
+                    logger.debug("Profiles for experiment %d", i)
                     for j in range(len(m)):
-                        logger.debug("Profile %d" % j)
+                        logger.debug("Profile %d", j)
                         try:
                             logger.debug(pprint.profile3d(m.data(j)))
                         except Exception:
@@ -1156,6 +1155,50 @@ class Integrator(object):
 
                 # Set to the finalized fitter
                 profile_fitter = finalized_profile_fitter
+        return profile_fitter
+
+    def integrate(self):
+        """
+        Integrate the data
+        """
+        # Ensure we get the same random sample each time
+        random.seed(0)
+
+        # Init the report
+        self.profile_model_report = None
+        self.integration_report = None
+
+        # Heading
+        logger.info("=" * 80)
+        logger.info("")
+        logger.info(heading("Processing reflections"))
+        logger.info("")
+
+        # Print the summary
+        logger.info(
+            " Processing the following experiments:\n"
+            "\n"
+            " Experiments: %d\n"
+            " Beams:       %d\n"
+            " Detectors:   %d\n"
+            " Goniometers: %d\n"
+            " Scans:       %d\n"
+            " Crystals:    %d\n"
+            " Imagesets:   %d\n",
+            len(self.experiments),
+            len(self.experiments.beams()),
+            len(self.experiments.detectors()),
+            len(self.experiments.goniometers()),
+            len(self.experiments.scans()),
+            len(self.experiments.crystals()),
+            len(self.experiments.imagesets()),
+        )
+
+        # Initialize the reflections
+        self.initialize_reflections(self.experiments, self.params, self.reflections)
+
+        # Check if we want to do some profile fitting
+        profile_fitter = self.fit_profiles()
 
         logger.info("=" * 80)
         logger.info("")
@@ -1163,17 +1206,117 @@ class Integrator(object):
         logger.info("")
 
         # Create the data processor
-        executor = IntegratorExecutor(self.experiments, profile_fitter)
-        processor = build_processor(
-            self.ProcessorClass,
+        executor = IntegratorExecutor(
             self.experiments,
-            self.reflections,
-            self.params.integration,
+            profile_fitter,
+            self.params.profile.valid_foreground_threshold,
         )
-        processor.executor = executor
 
-        # Process the reflections
-        self.reflections, _, time_info = processor.process()
+        # determine the max memory needed during integration
+        def _determine_max_memory_needed(experiments, reflections):
+            max_needed = 0
+            for imageset in experiments.imagesets():
+                # find all experiments belonging to that imageset, as each
+                # imageset is processed as a whole for integration.
+                if all(experiments.identifiers()):
+                    expt_ids = [
+                        experiment.identifier
+                        for experiment in experiments
+                        if experiment.imageset == imageset
+                    ]
+                    subset = reflections.select_on_experiment_identifiers(expt_ids)
+                else:
+                    subset = flex.reflection_table()
+                    for j, experiment in enumerate(experiments):
+                        if experiment.imageset == imageset:
+                            subset.extend(reflections.select(reflections["id"] == j))
+                try:
+                    if imageset.get_scan():
+                        frame0, frame1 = imageset.get_scan().get_array_range()
+                    else:
+                        raise RuntimeError
+                except RuntimeError:  # catch DXTBX_ASSERT if no scan in imageset
+                    frame0, frame1 = (0, len(imageset))
+                flatten = self.params.integration.integrator == "flat3d"
+                max_needed = max(
+                    max_memory_needed(subset, frame0, frame1, flatten),
+                    max_needed,
+                )
+            assert max_needed > 0, "Could not determine memory requirements"
+            return max_needed
+
+        def _iterative_table_split(tables, experiments, available_memory):
+            split_tables = []
+            for table in tables:
+                mem_needed = _determine_max_memory_needed(experiments, table)
+                if mem_needed > available_memory:
+                    n_to_split = int(math.ceil(mem_needed / available_memory))
+                    flex.set_random_seed(0)
+                    split_tables.extend(table.random_split(n_to_split))
+                else:
+                    split_tables.append(table)
+            if len(split_tables) == len(tables):
+                # nothing was split, all passed memory check
+                return split_tables
+            # some tables were split - so need to check again that all are ok
+            return _iterative_table_split(split_tables, experiments, available_memory)
+
+        def _run_processor(reflections):
+            processor = build_processor(
+                self.ProcessorClass,
+                self.experiments,
+                reflections,
+                self.params.integration,
+            )
+            processor.executor = executor
+            # Process the reflections
+            reflections, _, time_info = processor.process()
+            return reflections, time_info
+
+        if self.params.integration.mp.method != "multiprocessing":
+            self.reflections, time_info = _run_processor(self.reflections)
+        else:
+            # need to do a memory check and decide whether to split table
+            available_immediate, _, __ = assess_available_memory(
+                self.params.integration
+            )
+
+            #  here don't consider nproc as the processor will reduce nproc to 1
+            # if necessary, only want to split if we can't even process with
+            # nproc = 1
+
+            if self.params.integration.mp.n_subset_split:
+                tables = self.reflections.random_split(
+                    self.params.integration.mp.n_subset_split
+                )
+            else:
+                tables = _iterative_table_split(
+                    [self.reflections],
+                    self.experiments,
+                    available_immediate,
+                )
+
+            if len(tables) == 1:
+                # will not fail a memory check in the processor, so proceed
+                self.reflections, time_info = _run_processor(self.reflections)
+            else:
+                # Split the reflections and process by performing multiple
+                # passes over each imageset
+                time_info = TimingInfo()
+                reflections = flex.reflection_table()
+
+                logger.info(
+                    """Predicted maximum memory needed exceeds available memory.
+Splitting reflection table into %s subsets for processing
+""",
+                    len(tables),
+                )
+                for i, table in enumerate(tables):
+                    logger.info("Processing subset %s of reflection table", i + 1)
+                    processed, this_time_info = _run_processor(table)
+                    reflections.extend(processed)
+                    time_info += this_time_info
+                self.reflections = reflections
 
         # Finalize the reflections
         self.reflections, self.experiments = self.finalize_reflections(
@@ -1281,7 +1424,7 @@ class IntegratorStills(Integrator):
     finalize_reflections = staticmethod(_finalize_stills)
 
 
-class Integrator3DThreaded(object):
+class Integrator3DThreaded:
     """
     Integrator for 3D algorithms
     """
@@ -1362,16 +1505,14 @@ class Integrator3DThreaded(object):
 
         # Print the summary
         logger.info(
-            fmt
-            % (
-                len(self.experiments),
-                len(self.experiments.beams()),
-                len(self.experiments.detectors()),
-                len(self.experiments.goniometers()),
-                len(self.experiments.scans()),
-                len(self.experiments.crystals()),
-                len(self.experiments.imagesets()),
-            )
+            fmt,
+            len(self.experiments),
+            len(self.experiments.beams()),
+            len(self.experiments.detectors()),
+            len(self.experiments.goniometers()),
+            len(self.experiments.scans()),
+            len(self.experiments.crystals()),
+            len(self.experiments.imagesets()),
         )
 
         # Do the initialisation
@@ -1490,10 +1631,7 @@ def create_integrator(params, experiments, reflections):
         params.integration.lookup.mask, str
     ):
         with open(params.integration.lookup.mask, "rb") as infile:
-            if six.PY3:
-                params.integration.lookup.mask = pickle.load(infile, encoding="bytes")
-            else:
-                params.integration.lookup.mask = pickle.load(infile)
+            params.integration.lookup.mask = pickle.load(infile, encoding="bytes")
 
     # Set algorithms as reflection table defaults
     BackgroundAlgorithm = dials.extensions.Background.load(
@@ -1524,7 +1662,7 @@ def create_integrator(params, experiments, reflections):
         "3d_threaded": Integrator3DThreaded,
     }.get(params.integration.integrator)
     if not IntegratorClass:
-        raise ValueError("Unknown integration type %s" % params.integration.integrator)
+        raise ValueError(f"Unknown integration type {params.integration.integrator}")
 
     # Remove scan if stills
     if experiments.all_stills():

@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 import math
 
@@ -90,7 +88,7 @@ def filter_known_symmetry(
         crystal_models (list): A list of :class:`dxtbx.model.Crystal` objects.
         target_symmetry (cctbx.crystal.symmetry): The target symmetry for filtering.
         relative_length_tolerance (float): Relative tolerance for unit cell lengths in
-            unit cell comparision (default value is 0.1).
+            unit cell comparison (default value is 0.1).
         absolute_angle_tolerance (float): Angular tolerance (in degrees) in unit cell
             comparison (default value is 5).
         max_delta (float): Maximum allowed Le Page delta used in searching for basis

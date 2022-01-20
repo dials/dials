@@ -1,6 +1,5 @@
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
-from __future__ import absolute_import, division, print_function
 
 import concurrent.futures
 import copy
@@ -14,7 +13,7 @@ from dials.algorithms.indexing import DialsIndexError, indexer
 from dials.array_family import flex
 from dials.util import log, show_mail_handle_errors
 from dials.util.multi_dataset_handling import renumber_table_id_columns
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.slice import slice_reflections
 from dials.util.version import dials_version
 
@@ -211,7 +210,7 @@ def index(experiments, reflections, params):
 def run(args=None, phil=working_phil):
     usage = "dials.index [options] models.expt strong.refl"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil,
         read_reflections=True,
@@ -248,13 +247,13 @@ def run(args=None, phil=working_phil):
         sys.exit(str(e))
 
     # Save experiments
-    logger.info("Saving refined experiments to %s" % params.output.experiments)
+    logger.info("Saving refined experiments to %s", params.output.experiments)
     assert indexed_experiments.is_consistent()
     indexed_experiments.as_file(params.output.experiments)
 
     # Save reflections
-    logger.info("Saving refined reflections to %s" % params.output.reflections)
-    indexed_reflections.as_msgpack_file(filename=params.output.reflections)
+    logger.info("Saving refined reflections to %s", params.output.reflections)
+    indexed_reflections.as_file(filename=params.output.reflections)
 
 
 if __name__ == "__main__":

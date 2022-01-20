@@ -1,5 +1,4 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
-from __future__ import absolute_import, division, print_function
 
 import json
 import math
@@ -18,7 +17,7 @@ import dials.util
 help_message = """
 
 Calculates a stereographic projection image for the given crystal models and
-the given miller indices (either specified invidually, or for all miller indices
+the given miller indices (either specified individually, or for all miller indices
 up to a given hkl_limit). By default the projection is in the plane
 perpendicular to 0,0,1 reflection for the first crystal, however the projection
 can optionally be performed in the laboratory frame (frame=laboratory) in the
@@ -161,12 +160,12 @@ def gcd_list(l):
 
 @dials.util.show_mail_handle_errors()
 def run(args=None):
-    from dials.util.options import OptionParser, flatten_experiments
+    from dials.util.options import ArgumentParser, flatten_experiments
 
     # The script usage
     usage = "dials.stereographic_projection [options] [param.phil] indexed.expt"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_experiments=True,

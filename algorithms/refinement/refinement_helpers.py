@@ -1,6 +1,5 @@
 """Auxiliary functions for the refinement package"""
 
-from __future__ import absolute_import, division, print_function
 
 import logging
 import math
@@ -39,18 +38,16 @@ class PanelGroupCompose(pgc_cpp):
     return scitbx matrix values."""
 
     def d1(self):
-        return scitbx.matrix.col(super(PanelGroupCompose, self).d1())
+        return scitbx.matrix.col(super().d1())
 
     def d2(self):
-        return scitbx.matrix.col(super(PanelGroupCompose, self).d2())
+        return scitbx.matrix.col(super().d2())
 
     def origin(self):
-        return scitbx.matrix.col(super(PanelGroupCompose, self).origin())
+        return scitbx.matrix.col(super().origin())
 
     def derivatives_for_panel(self, offset, dir1_new_basis, dir2_new_basis):
-        d = super(PanelGroupCompose, self).derivatives_for_panel(
-            offset, dir1_new_basis, dir2_new_basis
-        )
+        d = super().derivatives_for_panel(offset, dir1_new_basis, dir2_new_basis)
         return [scitbx.matrix.sqr(e) for e in d]
 
 
@@ -59,16 +56,16 @@ class CrystalOrientationCompose(xloc_cpp):
     return matrix.sqr values."""
 
     def U(self):
-        return scitbx.matrix.sqr(super(CrystalOrientationCompose, self).U())
+        return scitbx.matrix.sqr(super().U())
 
     def dU_dphi1(self):
-        return scitbx.matrix.sqr(super(CrystalOrientationCompose, self).dU_dphi1())
+        return scitbx.matrix.sqr(super().dU_dphi1())
 
     def dU_dphi2(self):
-        return scitbx.matrix.sqr(super(CrystalOrientationCompose, self).dU_dphi2())
+        return scitbx.matrix.sqr(super().dU_dphi2())
 
     def dU_dphi3(self):
-        return scitbx.matrix.sqr(super(CrystalOrientationCompose, self).dU_dphi3())
+        return scitbx.matrix.sqr(super().dU_dphi3())
 
 
 def dR_from_axis_and_angle(axis, angle, deg=False):

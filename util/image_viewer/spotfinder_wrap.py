@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import sys
 import threading
 
@@ -49,7 +47,7 @@ class chooser_wrapper(_chooser_wrapper):
         return hash((id(self.image_set), self.index))
 
 
-class spot_wrapper(object):
+class spot_wrapper:
     def __init__(self, params):
         self.params = params
         self.frame = None
@@ -99,8 +97,7 @@ class spot_wrapper(object):
         if self.frame is not None:
             create_load_image_event(self.frame, filename)
 
-    def _setup_zmq_endpoint(self, endpoint):
-        # type: (str) -> None
+    def _setup_zmq_endpoint(self, endpoint: str) -> None:
         """Create and bind a ZMQ endpoint"""
         try:
             import zmq
@@ -133,7 +130,7 @@ class ZMQEventListener(threading.Thread):
     """
 
     def __init__(self, socket, target, *args, **kwargs):
-        super(ZMQEventListener, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.stop = False
         self.socket = socket
         self.target = target
@@ -143,7 +140,7 @@ class ZMQEventListener(threading.Thread):
             event_count = self.socket.poll(timeout=0.1)
             for _ in range(event_count):
                 message = self.socket.recv_json()
-                print("Recieved ZMQ Message: ", message)
+                print("Received ZMQ Message: ", message)
                 self._handle_message(message)
 
     def _handle_message(self, message):

@@ -1,7 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
-
-class GLMBackgroundExt(object):
+class GLMBackgroundExt:
     """An extension class implementing a robust GLM background algorithm."""
 
     name = "glm"

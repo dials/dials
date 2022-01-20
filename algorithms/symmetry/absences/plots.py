@@ -1,8 +1,4 @@
-# coding: utf-8
 """Definitions of plots for systematic absences."""
-from __future__ import absolute_import, division, print_function
-
-from collections import OrderedDict
 
 
 def color_axis_data(name, miller_axis_vals):
@@ -20,7 +16,7 @@ def color_axis_data(name, miller_axis_vals):
 
 def plot_screw_axes(screw_axes_data):
     """Generate scatter plot data for screw axes."""
-    d = OrderedDict()
+    d = {}
     for name, data in screw_axes_data.items():
         d.update(
             {
@@ -44,13 +40,13 @@ def plot_screw_axes(screw_axes_data):
                         }
                     ],
                     "layout": {
-                        "title": u"I (merged) / σ (merged) along axis %s" % name,
+                        "title": f"I (merged) / σ (merged) along axis {name}",
                         "xaxis": {
                             "domain": [0, 1],
                             "anchor": "y",
                             "title": "index along axis",
                         },
-                        "yaxis": {"domain": [0, 1], "anchor": "x", "title": u"I/σ(I)"},
+                        "yaxis": {"domain": [0, 1], "anchor": "x", "title": "I/σ(I)"},
                     },
                 }
             }
@@ -86,13 +82,13 @@ def plot_screw_axes(screw_axes_data):
                         },
                     ],
                     "layout": {
-                        "title": u"I, σ (merged) along axis %s" % name,
+                        "title": f"I, σ (merged) along axis {name}",
                         "xaxis": {
                             "domain": [0, 1],
                             "anchor": "y",
                             "title": "index along axis",
                         },
-                        "yaxis": {"domain": [0, 1], "anchor": "x", "title": u"I, σ"},
+                        "yaxis": {"domain": [0, 1], "anchor": "x", "title": "I, σ"},
                     },
                 }
             }

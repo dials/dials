@@ -1,7 +1,6 @@
 """
 Optimise the combination of profile and summation intensity values.
 """
-from __future__ import absolute_import, division, print_function
 
 import logging
 
@@ -81,9 +80,20 @@ def _make_reflection_table_from_scaler(scaler):
     return reflections
 
 
-class SingleDatasetIntensityCombiner(object):
+def _determine_Imids(combiner, raw_intensities):
+    if not combiner.Imids:
+        avg = max(10, flex.mean(raw_intensities))
+        Imid = flex.max(raw_intensities) / 10.0
+        Imid_list = [0, 1, avg, Imid]
+        while Imid > avg:
+            Imid /= 10.0
+            Imid_list.append(Imid)
+        combiner.Imids = Imid_list
+
+
+class SingleDatasetIntensityCombiner:
     """
-    Class to combine profile and summation intensities for a single datset.
+    Class to combine profile and summation intensities for a single dataset.
     """
 
     def __init__(self, scaler, use_Imid=None):
@@ -108,7 +118,7 @@ class SingleDatasetIntensityCombiner(object):
             else:
                 raw_intensities = self.dataset["intensity.sum.value"].as_double()
             logger.debug("length of raw intensity array: %s", raw_intensities.size())
-            self._determine_Imids(raw_intensities)
+            _determine_Imids(self, raw_intensities)
             header = ["Combination", "CC1/2", "Rmeas"]
             rows, results = self._test_Imid_combinations()
             logger.info(tabulate(rows, header))
@@ -139,16 +149,6 @@ class SingleDatasetIntensityCombiner(object):
     def calculate_suitable_combined_intensities(self):
         """Combine the 'suitable for scaling' intensities in the scaler."""
         return _calculate_suitable_combined_intensities(self.scaler, self.max_key)
-
-    def _determine_Imids(self, raw_intensities):
-        if not self.Imids:
-            avg = flex.mean(raw_intensities)
-            Imid = flex.max(raw_intensities) / 10.0
-            Imid_list = [0, 1, avg, Imid]
-            while Imid > avg:
-                Imid /= 10.0
-                Imid_list.append(Imid)
-            self.Imids = Imid_list
 
     def _test_Imid_combinations(self):
         """Test the different combinations, returning the rows and results dict."""
@@ -259,7 +259,7 @@ def _calculate_suitable_combined_intensities(scaler, max_key):
     return combine_intensities(reflections, max_key)
 
 
-class MultiDatasetIntensityCombiner(object):
+class MultiDatasetIntensityCombiner:
     """
     Class to combine profile and summation intensities for multiple datasets.
     """
@@ -284,7 +284,7 @@ class MultiDatasetIntensityCombiner(object):
         ]
         raw_intensities = self._get_raw_intensity_array()
         logger.debug("length of raw intensity array: %s", raw_intensities.size())
-        self._determine_Imids(raw_intensities)
+        _determine_Imids(self, raw_intensities)
 
         header = ["Combination", "CC1/2", "Rmeas"]
         rows, results = self._test_Imid_combinations()
@@ -331,16 +331,6 @@ class MultiDatasetIntensityCombiner(object):
             else:
                 intensities.extend(dataset["intensity.sum.value"].as_double())
         return intensities
-
-    def _determine_Imids(self, raw_intensities):
-        if not self.Imids:
-            avg = flex.mean(raw_intensities)
-            Imid = flex.max(raw_intensities) / 10.0
-            Imid_list = [0, 1, avg, Imid]
-            while Imid > avg:
-                Imid /= 10.0
-                Imid_list.append(Imid)
-            self.Imids = Imid_list
 
     def _test_Imid_combinations(self):
         rows = []
@@ -392,7 +382,7 @@ class MultiDatasetIntensityCombiner(object):
 
 
 def _get_Is_from_Imidval(reflections, Imid):
-    """Intepret the Imid value to extract and return the Icomb and Vcomb values."""
+    """Interpret the Imid value to extract and return the Icomb and Vcomb values."""
     if Imid == 0:  # special value to trigger prf
         Int = reflections["intensity.prf.value"]
         Var = reflections["intensity.prf.variance"]

@@ -17,6 +17,7 @@ import sys
 from jinja2 import ChoiceLoader, Environment, PackageLoader
 
 import libtbx.phil
+from dxtbx import flumpy
 from iotbx import phil
 
 from dials.algorithms.scaling.combine_intensities import combine_intensities
@@ -39,7 +40,7 @@ from dials.algorithms.scaling.scaling_library import choose_initial_scaling_inte
 from dials.algorithms.scaling.scaling_utilities import calculate_prescaling_correction
 from dials.report.plots import i_over_sig_i_vs_i_plot
 from dials.util import log, show_mail_handle_errors
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
 try:
@@ -119,11 +120,11 @@ def make_output(model, params):
 
     data = {}
     table = model.filtered_Ih_table
-    data["intensity"] = table.intensities
+    data["intensity"] = flumpy.from_numpy(table.intensities)
     sigmaprime = calc_sigmaprime(model.parameters, table)
     data["delta_hl"] = calc_deltahl(table, table.calc_nh(), sigmaprime)
     data["inv_scale"] = table.inverse_scale_factors
-    data["sigma"] = sigmaprime * data["inv_scale"]
+    data["sigma"] = flumpy.from_numpy(sigmaprime * table.inverse_scale_factors)
     data["binning_info"] = model.binner.binning_info
     d = {"error_model_plots": {}}
     d["error_model_plots"].update(normal_probability_plot(data))
@@ -170,7 +171,7 @@ def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     """Run the scaling from the command-line."""
     usage = """Usage: dials.refine_error_model scaled.refl scaled.expt [options]"""
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         read_experiments=True,
         read_reflections=True,

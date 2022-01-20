@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 
 from scitbx.array_family import flex
@@ -23,14 +21,14 @@ def find_max_cell(
     filter_overlaps=True,
     overlaps_border=0,
 ):
-    logger.debug("Finding suitable max_cell based on %i reflections" % len(reflections))
+    logger.debug("Finding suitable max_cell based on %i reflections", len(reflections))
     # Exclude potential ice-ring spots from nearest neighbour analysis if needed
     if filter_ice:
 
         ice_sel = ice_rings_selection(reflections)
         reflections = reflections.select(~ice_sel)
         logger.debug(
-            "Rejecting %i reflections at ice ring resolution" % ice_sel.count(True)
+            "Rejecting %i reflections at ice ring resolution", ice_sel.count(True)
         )
 
     # need bounding box in reflections to find overlaps; this is not there if
@@ -44,11 +42,9 @@ def find_max_cell(
             i1 = overlaps.target(item)
             overlap_sel[i0] = True
             overlap_sel[i1] = True
-        logger.debug(
-            "Rejecting %i overlapping bounding boxes" % overlap_sel.count(True)
-        )
+        logger.debug("Rejecting %i overlapping bounding boxes", overlap_sel.count(True))
         reflections = reflections.select(~overlap_sel)
-    logger.debug("%i reflections remain for max_cell identification" % len(reflections))
+    logger.debug("%i reflections remain for max_cell identification", len(reflections))
 
     if not len(reflections):
         raise DialsIndexError(

@@ -8,11 +8,11 @@ Setting up a Development Environment on Linux or Mac
 Prerequisites:  make and change to a working directory to contain the new source code
 and build. Then download the bootstrap script::
 
-  wget https://raw.githubusercontent.com/dials/dials/master/installer/bootstrap.py
+  wget https://raw.githubusercontent.com/dials/dials/main/installer/bootstrap.py
 
 or if wget is not available::
 
-  curl https://raw.githubusercontent.com/dials/dials/master/installer/bootstrap.py > bootstrap.py
+  curl https://raw.githubusercontent.com/dials/dials/main/installer/bootstrap.py > bootstrap.py
 
 Then::
 
@@ -31,6 +31,11 @@ Explanation:  Several steps are performed: update, base, build.  If desired, the
 For subsequent login sessions, be sure to set the environment in order to use the command-line dispatchers::
 
   source dials
+
+ModuleNotFoundError: No module named 'gltbx_gl_ext'
+---------------------------------------------------
+If you are seeing this error then you need to add libgl/glu/khr headers to your installation.
+`Please follow these instructions <https://github.com/dials/dials/issues/1465#issuecomment-715457232>`_.
 
 Downloading the DIALS regression test data
 ==========================================

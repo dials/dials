@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import json
 import sys
 
@@ -8,7 +6,7 @@ import iotbx.phil
 import dials.util
 from dials.algorithms.spot_finding import per_image_analysis
 from dials.util import tabulate
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 
 help_message = """
 
@@ -45,7 +43,7 @@ id = None
 def run(args=None):
     usage = "dials.spot_counts_per_image [options] imported.expt strong.refl"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         read_reflections=True,
         read_experiments=True,
@@ -68,6 +66,12 @@ def run(args=None):
     if len(reflections) != 1:
         sys.exit("Only one reflection list may be passed")
     reflections = reflections[0]
+
+    if "miller_index" in reflections:
+        sys.exit("Only unindexed reflections are currently supported")
+
+    if any(experiments.crystals()):
+        sys.exit("Only unindexed experiments are currently supported")
 
     reflections.centroid_px_to_mm(experiments)
     reflections.map_centroids_to_reciprocal_space(experiments)
@@ -99,7 +103,7 @@ def run(args=None):
         ("Overall statistics", ""),
         ("#spots", "%i" % overall_stats.n_spots_total),
         ("#spots_no_ice", "%i" % overall_stats.n_spots_no_ice),
-        ("d_min", "%.2f" % overall_stats.estimated_d_min),
+        ("d_min", f"{overall_stats.estimated_d_min:.2f}"),
         (
             "d_min (distl method 1)",
             "%.2f (%.2f)"
@@ -117,7 +121,7 @@ def run(args=None):
         if params.split_json:
             for k, v in stats._asdict().items():
                 start, end = params.json.split(".")
-                with open("%s_%s.%s" % (start, k, end), "w") as fp:
+                with open(f"{start}_{k}.{end}", "w") as fp:
                     json.dump(v, fp)
         if params.joint_json:
             with open(params.json, "w") as fp:

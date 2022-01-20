@@ -1,4 +1,3 @@
-# coding: utf-8
 """
 This program performs scaling on integrated datasets, which attempts to improve
 the internal consistency of the reflection intensities by correcting for
@@ -32,19 +31,20 @@ Incremental scaling (with different options per dataset)::
   dials.scale integrated.refl integrated.expt physical.scale_interval=10.0
 
   dials.scale integrated_2.refl integrated_2.expt scaled.refl scaled.expt physical.scale_interval=15.0
+
+More detailed documentation on usage of dials.scale can be found in the
+`dials scale user guide <https://dials.github.io/dials_scale_user_guide.html>`_
 """
-from __future__ import absolute_import, division, print_function
 
 import logging
 import sys
-
-from six.moves import cStringIO as StringIO
+from io import StringIO
 
 from libtbx import phil
 
 from dials.algorithms.scaling.algorithm import ScaleAndFilterAlgorithm, ScalingAlgorithm
 from dials.util import Sorry, log, show_mail_handle_errors
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
 try:
@@ -205,7 +205,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     usage = """Usage: dials.scale integrated.refl integrated.expt
 [integrated.refl(2) integrated.expt(2) ....] [options]"""
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         read_experiments=True,
         read_reflections=True,

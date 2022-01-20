@@ -1,7 +1,3 @@
-# coding: utf-8
-
-from __future__ import absolute_import, division, print_function
-
 import logging
 import math
 
@@ -16,7 +12,7 @@ Class to determine mosaicity and effective domain size for a crystal given a set
 """
 
 
-class NaveParameters(object):
+class NaveParameters:
     def __init__(self, params, experiments, reflections, refinery, graph_verbose=True):
         self.params = params
         self.experiments = experiments
@@ -211,9 +207,9 @@ class NaveParameters(object):
         R_prime = R_L + 1.0 / self._ML_domain_size_ang
         domain_size_volume = part_vol * math.pow(
             R_prime, 3.0
-        )  # expanded volume accomodating spot size
+        )  # expanded volume accommodating spot size
 
-        # compicated integral for mosaic spread volume, must be calculated numerically
+        # complicated integral for mosaic spread volume, must be calculated numerically
         summation = 0.0
         N_terms = 100
         for x in range(N_terms):

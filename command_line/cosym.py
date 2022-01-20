@@ -1,9 +1,8 @@
-from __future__ import absolute_import, division, print_function
-
-import collections
 import logging
 import random
 import sys
+
+import numpy as np
 
 import iotbx.phil
 from cctbx import sgtbx
@@ -25,9 +24,10 @@ from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
     parse_multiple_datasets,
     select_datasets_on_identifiers,
+    update_imageset_ids,
 )
 from dials.util.observer import Subject
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.cosym")
@@ -83,9 +83,7 @@ output {
 
 class cosym(Subject):
     def __init__(self, experiments, reflections, params=None):
-        super(cosym, self).__init__(
-            events=["run_cosym", "performed_unit_cell_clustering"]
-        )
+        super().__init__(events=["run_cosym", "performed_unit_cell_clustering"])
         if params is None:
             params = phil_scope.extract()
         self.params = params
@@ -159,7 +157,7 @@ class cosym(Subject):
         )
 
         datasets = [
-            ma.as_anomalous_array().merge_equivalents().array() for ma in datasets
+            ma.as_non_anomalous_array().merge_equivalents().array() for ma in datasets
         ]
         self.cosym_analysis = CosymAnalysis(datasets, self.params)
 
@@ -176,26 +174,13 @@ class cosym(Subject):
     @Subject.notify_event(event="run_cosym")
     def run(self):
         self.cosym_analysis.run()
+        reindexing_ops = self.cosym_analysis.reindexing_ops
 
-        reindexing_ops = {}
-        sym_op_counts = {
-            cluster_id: collections.Counter(
-                ops[cluster_id] for ops in self.cosym_analysis.reindexing_ops.values()
-            )
-            for cluster_id in range(self.params.cluster.n_clusters)
-        }
-        identity_counts = [counts["x,y,z"] for counts in sym_op_counts.values()]
-        cluster_id = identity_counts.index(max(identity_counts))
-        for dataset_id in self.cosym_analysis.reindexing_ops:
-            if cluster_id in self.cosym_analysis.reindexing_ops[dataset_id]:
-                cb_op = self.cosym_analysis.reindexing_ops[dataset_id][cluster_id]
-                reindexing_ops.setdefault(cb_op, [])
-                reindexing_ops[cb_op].append(dataset_id)
-
+        # Log reindexing operators
         logger.info("Reindexing operators:")
-        for cb_op, datasets in reindexing_ops.items():
-            logger.info(cb_op)
-            logger.info(datasets)
+        for cb_op in set(reindexing_ops):
+            datasets = [i for i, o in enumerate(reindexing_ops) if o == cb_op]
+            logger.info(f"{cb_op}: {datasets}")
 
         self._apply_reindexing_operators(
             reindexing_ops, subgroup=self.cosym_analysis.best_subgroup
@@ -207,6 +192,7 @@ class cosym(Subject):
         This includes the cosym.json, reflections and experiments files."""
 
         reindexed_reflections = flex.reflection_table()
+        self._reflections = update_imageset_ids(self._experiments, self._reflections)
         for refl in self._reflections:
             reindexed_reflections.extend(refl)
         reindexed_reflections.reset_ids()
@@ -222,26 +208,28 @@ class cosym(Subject):
 
     def _apply_reindexing_operators(self, reindexing_ops, subgroup=None):
         """Apply the reindexing operators to the reflections and experiments."""
-        for cb_op, dataset_ids in reindexing_ops.items():
+        for dataset_id, cb_op in enumerate(reindexing_ops):
             cb_op = sgtbx.change_of_basis_op(cb_op)
+            logger.debug(
+                "Applying reindexing op %s to dataset %i", cb_op.as_xyz(), dataset_id
+            )
+            expt = self._experiments[dataset_id]
+            refl = self._reflections[dataset_id]
+            expt.crystal = expt.crystal.change_basis(cb_op)
             if subgroup is not None:
                 cb_op = subgroup["cb_op_inp_best"] * cb_op
-            for dataset_id in dataset_ids:
-                expt = self._experiments[dataset_id]
-                refl = self._reflections[dataset_id]
                 expt.crystal = expt.crystal.change_basis(cb_op)
-                if subgroup is not None:
-                    expt.crystal.set_space_group(
-                        subgroup["best_subsym"]
-                        .space_group()
-                        .build_derived_acentric_group()
-                    )
-                expt.crystal.set_unit_cell(
-                    expt.crystal.get_space_group().average_unit_cell(
-                        expt.crystal.get_unit_cell()
-                    )
+                expt.crystal.set_space_group(
+                    subgroup["best_subsym"].space_group().build_derived_acentric_group()
                 )
-                refl["miller_index"] = cb_op.apply(refl["miller_index"])
+            else:
+                expt.crystal = expt.crystal.change_basis(cb_op)
+            expt.crystal.set_unit_cell(
+                expt.crystal.get_space_group().average_unit_cell(
+                    expt.crystal.get_unit_cell()
+                )
+            )
+            refl["miller_index"] = cb_op.apply(refl["miller_index"])
 
     def _filter_min_reflections(self, experiments, reflections):
         identifiers = []
@@ -316,7 +304,7 @@ Examples::
 def run(args=None):
     usage = "dials.cosym [options] models.expt observations.refl"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_reflections=True,
@@ -342,6 +330,7 @@ def run(args=None):
 
     if params.seed is not None:
         flex.set_random_seed(params.seed)
+        np.random.seed(params.seed)
         random.seed(params.seed)
 
     if not params.input.experiments or not params.input.reflections:

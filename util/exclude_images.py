@@ -3,7 +3,6 @@ Functions for handling exclusion of images ranges from scans based on a
 command line option, as well as obtaining a selection to use for selecting
 the corresponding reflections.
 """
-from __future__ import absolute_import, division, print_function
 
 from orderedset import OrderedSet
 
@@ -19,6 +18,7 @@ phil_scope = iotbx.phil.parse(
     .help = "Input in the format exp:start:end"
             "Exclude a range of images (start, stop) from the dataset with"
             "experiment identifier exp  (inclusive of frames start, stop)."
+    .short_caption = "Exclude images"
     .expert_level = 1
 """
 )

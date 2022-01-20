@@ -1,7 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
-
-class NullBackgroundExt(object):
+class NullBackgroundExt:
     """An extension class implementing Null background subtraction."""
 
     name = "null"

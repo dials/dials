@@ -1,12 +1,14 @@
-from __future__ import absolute_import, division, print_function
+from math import pi
 
 import wx
+from annlib_ext import AnnAdaptorSelfInclude
 from wx.lib.agw import floatspin
 
 import gltbx
 import gltbx.gl as gl
 import libtbx.phil
 import wxtbx.utils
+from libtbx import Auto
 from scitbx.array_family import flex
 from scitbx.math import minimum_covering_sphere
 from wxtbx.segmentedctrl import (
@@ -28,7 +30,9 @@ show_beam_vector = False
   .type = bool
 show_reciprocal_cell = False
   .type = bool
-marker_size = 5
+label_nearest_point = False
+  .type = bool
+marker_size = Auto
   .type = int(value_min=1)
 autospin = False
   .type = bool
@@ -84,6 +88,16 @@ class ReciprocalLatticeViewer(wx.Frame, Render3d):
         if self.settings.beam_centre is not None:
             self.settings_panel.beam_fast_ctrl.SetValue(self.settings.beam_centre[0])
             self.settings_panel.beam_slow_ctrl.SetValue(self.settings.beam_centre[1])
+        if self.settings.marker_size is Auto:
+            max_radius = max(self.reflections["rlp"].norms())
+            volume = 4 / 3 * pi * max_radius ** 3
+            density = len(self.reflections) / volume
+            # Set marker size to between 5 and 50 depending on density, where
+            # 1000 < density < 20000 ==> 50 < marker_size < 5
+            marker_size = (-45 / 19000) * density + (5 + 900 / 19)
+            marker_size = max(marker_size, 5)
+            marker_size = min(marker_size, 50)
+            self.settings.marker_size = marker_size
         self.settings_panel.marker_size_ctrl.SetValue(self.settings.marker_size)
         self.settings_panel.add_experiments_buttons()
 
@@ -158,18 +172,7 @@ class ReciprocalLatticeViewer(wx.Frame, Render3d):
             )
 
     def update_settings(self, *args, **kwds):
-        detector = self.experiments[0].detector
-        beam = self.experiments[0].beam
-
-        try:
-            panel_id, beam_centre = detector.get_ray_intersection(beam.get_s0())
-        except RuntimeError:
-            # beam centre calculation fails if the beam falls between panels
-            pass
-        else:
-            if self.settings.beam_centre != beam_centre:
-                self.set_beam_centre(beam_centre)
-
+        self.set_beam_centre(self.settings.beam_centre_panel, self.settings.beam_centre)
         self.map_points_to_reciprocal_space()
         self.set_points()
         self.viewer.update_settings(*args, **kwds)
@@ -196,7 +199,9 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
     def add_controls(self):
         # d_min control
 
-        self.d_min_ctrl = floatspin.FloatSpin(parent=self, increment=0.05, digits=2)
+        self.d_min_ctrl = floatspin.FloatSpin(
+            parent=self, increment=0.05, min_val=0, digits=2
+        )
         self.d_min_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
         if wx.VERSION >= (2, 9):  # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
             self.d_min_ctrl.SetBackgroundColour(self.GetBackgroundColour())
@@ -207,7 +212,9 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
         box.Add(self.d_min_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.d_min_ctrl)
 
-        self.z_min_ctrl = floatspin.FloatSpin(parent=self, increment=1, digits=0)
+        self.z_min_ctrl = floatspin.FloatSpin(
+            parent=self, increment=1, min_val=0, digits=0
+        )
         self.z_min_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
         if wx.VERSION >= (2, 9):  # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
             self.z_min_ctrl.SetBackgroundColour(self.GetBackgroundColour())
@@ -218,7 +225,9 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
         box.Add(self.z_min_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.z_min_ctrl)
 
-        self.z_max_ctrl = floatspin.FloatSpin(parent=self, increment=1, digits=0)
+        self.z_max_ctrl = floatspin.FloatSpin(
+            parent=self, increment=1, min_val=0, digits=0
+        )
         self.z_max_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
         if wx.VERSION >= (2, 9):  # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
             self.z_max_ctrl.SetBackgroundColour(self.GetBackgroundColour())
@@ -232,7 +241,9 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
         # Control for spot size (utility depends on n_signal column in reflection
         # file - will be ignored if not in file
 
-        self.n_min_ctrl = floatspin.FloatSpin(parent=self, increment=1, digits=0)
+        self.n_min_ctrl = floatspin.FloatSpin(
+            parent=self, increment=1, min_val=0, digits=0
+        )
         self.n_min_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
         if wx.VERSION >= (2, 9):  # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
             self.n_min_ctrl.SetBackgroundColour(self.GetBackgroundColour())
@@ -243,7 +254,9 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
         box.Add(self.n_min_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.n_min_ctrl)
 
-        self.n_max_ctrl = floatspin.FloatSpin(parent=self, increment=1, digits=0)
+        self.n_max_ctrl = floatspin.FloatSpin(
+            parent=self, increment=1, min_val=0, digits=0
+        )
         self.n_max_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
         if wx.VERSION >= (2, 9):  # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
             self.n_max_ctrl.SetBackgroundColour(self.GetBackgroundColour())
@@ -298,7 +311,10 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
             setting="show_reciprocal_cell", label="Show reciprocal cell"
         )
         self.panel_sizer.Add(ctrls[0], 0, wx.ALL, 5)
-
+        ctrls = self.create_controls(
+            setting="label_nearest_point", label="Label nearest point"
+        )
+        self.panel_sizer.Add(ctrls[0], 0, wx.ALL, 5)
         self.reverse_phi_ctrl = self.create_controls(
             setting="reverse_phi", label="Invert rotation axis"
         )[0]
@@ -316,6 +332,19 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
         self.panel_sizer.Add(self.crystal_frame_ctrl, 0, wx.ALL, 5)
 
         self.Bind(wx.EVT_CHECKBOX, self.OnChangeSettings, self.crystal_frame_ctrl)
+
+        self.beam_panel_ctrl = floatspin.FloatSpin(
+            parent=self, min_val=0, increment=1, digits=0
+        )
+        self.beam_panel_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
+        if wx.VERSION >= (2, 9):  # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
+            self.beam_panel_ctrl.SetBackgroundColour(self.GetBackgroundColour())
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        self.panel_sizer.Add(box)
+        label = wx.StaticText(self, -1, "Beam centre panel")
+        box.Add(label, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        box.Add(self.beam_panel_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.beam_panel_ctrl)
 
         self.beam_fast_ctrl = floatspin.FloatSpin(parent=self, increment=0.01, digits=2)
         self.beam_fast_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
@@ -413,6 +442,10 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
         self.settings.n_max = int(self.n_max_ctrl.GetValue())
         self.settings.partiality_min = self.partiality_min_ctrl.GetValue()
         self.settings.partiality_max = self.partiality_max_ctrl.GetValue()
+
+        old_beam_panel = self.settings.beam_centre_panel
+        old_beam_centre = self.settings.beam_centre
+        self.settings.beam_centre_panel = self.beam_panel_ctrl.GetValue()
         self.settings.beam_centre = (
             self.beam_fast_ctrl.GetValue(),
             self.beam_slow_ctrl.GetValue(),
@@ -437,12 +470,19 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
                     expt_ids.append(i - 1)
             self.settings.experiment_ids = expt_ids
 
-        self.parent.update_settings()
+        try:
+            self.parent.update_settings()
+        except ValueError:  # Handle beam centre changes, which could fail
+            self.settings.beam_centre_panel = old_beam_panel
+            self.settings.beam_centre = old_beam_centre
+            self.beam_panel_ctrl.SetValue(old_beam_panel)
+            self.beam_fast_ctrl.SetValue(old_beam_centre[0])
+            self.beam_slow_ctrl.SetValue(old_beam_centre[1])
 
 
 class RLVWindow(wx_viewer.show_points_and_lines_mixin):
     def __init__(self, settings, *args, **kwds):
-        super(RLVWindow, self).__init__(*args, **kwds)
+        super().__init__(*args, **kwds)
         self.settings = settings
         self.points = flex.vec3_double()
         self.colors = None
@@ -465,6 +505,18 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
         self.points_display_list = None
         if self.minimum_covering_sphere is None:
             self.update_minimum_covering_sphere()
+
+    def set_points_data(self, reflections):
+        dstar = reflections["rlp"].norms()
+        dstar.set_selected(dstar == 0, 1e-8)
+        self.points_data = {
+            "panel": reflections["panel"],
+            "id": reflections["id"],
+            "xyz": reflections["xyzobs.px.value"],
+            "d_spacing": 1 / dstar,
+        }
+        if "miller_index" in reflections:
+            self.points_data["miller_index"] = reflections["miller_index"]
 
     def set_colors(self, colors):
         assert len(colors) == len(self.points)
@@ -537,6 +589,9 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
                     color = self.palette[j]
                     self.draw_cell(axes, color)
 
+        if self.settings.label_nearest_point:
+            self.label_nearest_point()
+
         self.GetParent().update_statusbar()
 
     def draw_axis(self, axis, label):
@@ -546,7 +601,10 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
         scale = max(max(s.box_max()), abs(min(s.box_min())))
         gltbx.fonts.ucs_bitmap_8x13.setup_call_lists()
         gl.glDisable(gl.GL_LIGHTING)
-        gl.glColor3f(1.0, 1.0, 1.0)
+        if self.settings.black_background:
+            gl.glColor3f(1.0, 1.0, 1.0)
+        else:
+            gl.glColor3f(0.0, 0.0, 0.0)
         gl.glLineWidth(1.0)
         gl.glBegin(gl.GL_LINES)
         gl.glVertex3f(0.0, 0.0, 0.0)
@@ -610,17 +668,41 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
         gl.glEnd()
         gl.glDisable(gl.GL_LINE_STIPPLE)
 
-    def rotate_view(self, x1, y1, x2, y2, shift_down=False, scale=0.1):
-        super(RLVWindow, self).rotate_view(
-            x1, y1, x2, y2, shift_down=shift_down, scale=scale
+    def label_nearest_point(self):
+        ann = AnnAdaptorSelfInclude(self.points.as_double(), 3)
+        ann.query(self.rotation_center)
+        i = ann.nn[0]
+        gltbx.fonts.ucs_bitmap_8x13.setup_call_lists()
+        gl.glDisable(gl.GL_LIGHTING)
+        gl.glColor3f(1.0, 1.0, 1.0)
+        gl.glLineWidth(1.0)
+        xyz = self.points_data["xyz"][i]
+        exp_id = self.points_data["id"][i]
+        panel = self.points_data["panel"][i]
+        d_spacing = self.points_data["d_spacing"][i]
+        label = (
+            f"id: {exp_id}; panel: {panel}\n"
+            f"xyz: {xyz[0]:.1f} {xyz[1]:.1f} {xyz[2]:.1f}\n"
+            f"res: {d_spacing:.2f} Angstrom"
         )
+        if "miller_index" in self.points_data and exp_id != -1:
+            hkl = self.points_data["miller_index"][i]
+            label += f"\nhkl: {hkl}"
+        line_spacing = round(gltbx.fonts.ucs_bitmap_8x13.height())
+        for j, string in enumerate(label.splitlines()):
+            gl.glRasterPos3f(*self.points[i])
+            gl.glBitmap(0, 0, 0.0, 0.0, line_spacing, -j * line_spacing, b" ")
+            gltbx.fonts.ucs_bitmap_8x13.render_string(string)
+
+    def rotate_view(self, x1, y1, x2, y2, shift_down=False, scale=0.1):
+        super().rotate_view(x1, y1, x2, y2, shift_down=shift_down, scale=scale)
 
     def OnLeftUp(self, event):
         self.was_dragged = True
-        super(RLVWindow, self).OnLeftUp(event)
+        super().OnLeftUp(event)
 
     def initialize_modelview(self, eye_vector=None, angle=None):
-        super(RLVWindow, self).initialize_modelview(eye_vector=eye_vector, angle=angle)
+        super().initialize_modelview(eye_vector=eye_vector, angle=angle)
         self.rotation_center = (0, 0, 0)
         self.move_to_center_of_viewport(self.rotation_center)
         if self.settings.model_view_matrix is not None:

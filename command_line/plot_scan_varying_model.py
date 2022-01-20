@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import errno
 import os
 
@@ -74,15 +72,15 @@ def ensure_directory(path):
             raise
 
 
-class Script(object):
+class Script:
     """Class to run script."""
 
     def __init__(self):
         """Setup the script."""
-        from dials.util.options import OptionParser
+        from dials.util.options import ArgumentParser
 
         usage = "usage: dials.plot_scan_varying_model [options] refined.expt"
-        self.parser = OptionParser(
+        self.parser = ArgumentParser(
             usage=usage,
             phil=phil_scope,
             read_experiments=True,
@@ -130,7 +128,8 @@ class Script(object):
             cells = [crystal.get_unit_cell_at_scan_point(t) for t in scan_pts]
             cell_params = [e.parameters() for e in cells]
             a, b, c, aa, bb, cc = zip(*cell_params)
-            phi = [scan.get_angle_from_array_index(t) for t in scan_pts]
+            start, stop = scan.get_array_range()
+            phi = [scan.get_angle_from_array_index(t) for t in range(start, stop + 1)]
             vol = [e.volume() for e in cells]
             cell_dat = {
                 "phi": phi,
@@ -157,7 +156,7 @@ class Script(object):
                 pass
 
             if self._debug:
-                print("Crystal in Experiment {}".format(iexp))
+                print(f"Crystal in Experiment {iexp}")
                 print("Phi\ta\tb\tc\talpha\tbeta\tgamma\tVolume")
                 msg = "{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}"
                 line_dat = zip(phi, a, b, c, aa, bb, cc, vol)
@@ -179,7 +178,8 @@ class Script(object):
                 continue
 
             scan_pts = list(range(crystal.num_scan_points))
-            phi = [scan.get_angle_from_array_index(t) for t in scan_pts]
+            start, stop = scan.get_array_range()
+            phi = [scan.get_angle_from_array_index(t) for t in range(start, stop + 1)]
             Umats = [matrix.sqr(crystal.get_U_at_scan_point(t)) for t in scan_pts]
             if params.orientation_decomposition.relative_to_static_orientation:
                 # factor out static U
@@ -197,7 +197,7 @@ class Script(object):
             phi3, phi2, phi1 = zip(*angles)
             angle_dat = {"phi": phi, "phi3": phi3, "phi2": phi2, "phi1": phi1}
             if self._debug:
-                print("Crystal in Experiment {}".format(iexp))
+                print(f"Crystal in Experiment {iexp}")
                 print("Image\tphi3\tphi2\tphi1")
                 msg = "{0}\t{1}\t{2}\t{3}"
                 line_dat = zip(phi, phi3, phi2, phi1)
@@ -220,7 +220,8 @@ class Script(object):
                 continue
 
             scan_pts = range(beam.num_scan_points)
-            phi = [scan.get_angle_from_array_index(t) for t in scan_pts]
+            start, stop = scan.get_array_range()
+            phi = [scan.get_angle_from_array_index(t) for t in range(start, stop + 1)]
             p = detector.get_panel_intersection(beam.get_s0())
             if p < 0:
                 print("Beam does not intersect a panel")
@@ -336,7 +337,7 @@ class Script(object):
 
         basename = os.path.join(self._directory, "unit_cell")
         fullname = basename + self._format
-        print("Saving unit cell plot to {}".format(fullname))
+        print(f"Saving unit cell plot to {fullname}")
         plt.savefig(fullname)
 
     def plot_orientation(self, dat):
@@ -369,7 +370,7 @@ class Script(object):
 
         basename = os.path.join(self._directory, "orientation")
         fullname = basename + self._format
-        print("Saving orientation plot to {}".format(fullname))
+        print(f"Saving orientation plot to {fullname}")
         plt.savefig(fullname)
 
     def plot_beam_centre(self, dat):
@@ -402,7 +403,7 @@ class Script(object):
 
         basename = os.path.join(self._directory, "beam_centre")
         fullname = basename + self._format
-        print("Saving beam centre plot to {}".format(fullname))
+        print(f"Saving beam centre plot to {fullname}")
         plt.savefig(fullname)
 
 

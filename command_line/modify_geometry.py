@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import libtbx.phil
 
 import dials.util
@@ -21,11 +19,11 @@ output {
 
 @dials.util.show_mail_handle_errors()
 def run(args=None):
-    from dials.util.options import OptionParser, flatten_experiments
+    from dials.util.options import ArgumentParser, flatten_experiments
 
     usage = "dials.modify_geometry [options] models.expt"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_experiments=True,
@@ -55,7 +53,7 @@ def run(args=None):
         imageset.set_scan(imageset_new.get_scan())
 
     if len(experiments):
-        print("Saving modified experiments to %s" % params.output.experiments)
+        print(f"Saving modified experiments to {params.output.experiments}")
         experiments.as_file(params.output.experiments)
 
 

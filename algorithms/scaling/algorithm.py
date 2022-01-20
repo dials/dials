@@ -1,7 +1,6 @@
 """
 Definitions of the scaling algorithm.
 """
-from __future__ import absolute_import, division, print_function
 
 import gc
 import itertools
@@ -43,6 +42,7 @@ from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
     parse_multiple_datasets,
     select_datasets_on_ids,
+    update_imageset_ids,
 )
 
 logger = logging.getLogger("dials")
@@ -177,7 +177,7 @@ def prepare_input(params, experiments, reflections):
     return params, experiments, reflections
 
 
-class ScalingAlgorithm(object):
+class ScalingAlgorithm:
     def __init__(self, params, experiments, reflections):
         self.scaler = None
         self.scaled_miller_array = None
@@ -227,7 +227,7 @@ class ScalingAlgorithm(object):
                 logger.info(e)
 
             # All done!
-            logger.info("\nTotal time taken: {:.4f}s ".format(time.time() - start_time))
+            logger.info("\nTotal time taken: %.4fs ", time.time() - start_time)
             logger.info("%s%s%s", "\n", "=" * 80, "\n")
 
     def scale(self):
@@ -262,9 +262,10 @@ class ScalingAlgorithm(object):
             or self.params.scaling_options.target_mtz
             or self.params.scaling_options.only_target
         ):
-            self.experiments = self.experiments[:-1]
-            self.reflections = self.reflections[:-1]
-
+            # now remove things that were used as the target:
+            n_target = len(self.experiments) - len(self.scaler.active_scalers)
+            self.experiments = self.experiments[:-n_target]
+            self.reflections = self.reflections[:-n_target]
         # remove any bad datasets:
         removed_ids = self.scaler.removed_datasets
         if removed_ids:
@@ -303,11 +304,9 @@ class ScalingAlgorithm(object):
         # joining reflection tables - just need experiments for mtz export
         # and a reflection table.
         del self.scaler
-        for experiment in self.experiments:
-            for component in experiment.scaling_model.components.keys():
-                del experiment.scaling_model.components[component].data
         gc.collect()
-
+        # update imageset ids before combining reflection tables.
+        self.reflections = update_imageset_ids(self.experiments, self.reflections)
         joint_table = flex.reflection_table()
         for i in range(len(self.reflections)):
             joint_table.extend(self.reflections[i])
@@ -348,7 +347,7 @@ scaling from this point for an improved model.""",
 
 class ScaleAndFilterAlgorithm(ScalingAlgorithm):
     def __init__(self, params, experiments, reflections):
-        super(ScaleAndFilterAlgorithm, self).__init__(params, experiments, reflections)
+        super().__init__(params, experiments, reflections)
         if (
             params.filtering.deltacchalf.mode == "dataset"
             and self.scaler.id_ != "multi"
@@ -417,13 +416,11 @@ multi-dataset scaling mode (not single dataset or scaling against a reference)""
                     logger.info(
                         "Finishing scaling and filtering as no data removed in this cycle."
                     )
+                    self.reflections = parse_multiple_datasets(
+                        [script.filtered_reflection_table]
+                    )
                     if self.params.scaling_options.full_matrix:
-                        self.reflections = parse_multiple_datasets(
-                            [script.filtered_reflection_table]
-                        )
                         results = self._run_final_scale_cycle(results)
-                    else:
-                        self.reflections = [script.filtered_reflection_table]
                     results.finish(termination_reason="no_more_removed")
                     break
 
@@ -469,7 +466,7 @@ multi-dataset scaling mode (not single dataset or scaling against a reference)""
             with open(self.params.filtering.output.scale_and_filter_results, "w") as f:
                 json.dump(self.filtering_results.to_dict(), f, indent=2)
             # All done!
-            logger.info("\nTotal time taken: {:.4f}s ".format(time.time() - start_time))
+            logger.info("\nTotal time taken: %.4fs ", time.time() - start_time)
             logger.info("%s%s%s", "\n", "=" * 80, "\n")
 
     def run_scaling_cycle(self):
@@ -499,7 +496,7 @@ multi-dataset scaling mode (not single dataset or scaling against a reference)""
 
     def _run_final_scale_cycle(self, results):
         self._create_model_and_scaler()
-        super(ScaleAndFilterAlgorithm, self).run()
+        super().run()
         results.add_final_stats(self.merging_statistics_result)
         for table in self.reflections:
             bad = table.get_flags(table.flags.bad_for_scaling, all=False)

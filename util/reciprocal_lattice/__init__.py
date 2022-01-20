@@ -1,12 +1,9 @@
-from __future__ import absolute_import, division, print_function
-
 import copy
 
 import libtbx.phil
 from scitbx import matrix
 
 from dials.array_family import flex
-from dials.util import Sorry
 
 phil_scope = libtbx.phil.parse(
     """
@@ -16,6 +13,9 @@ reverse_phi = False
 crystal_frame = False
   .type = bool
   .optional = True
+beam_centre_panel = None
+  .type = int
+  .help = "Panel number for the beam centre"
 beam_centre = None
   .type = floats(size=2)
   .help = "Fast, slow beam centre coordinates (mm)."
@@ -48,7 +48,7 @@ black_background = True
 )
 
 
-class Render3d(object):
+class Render3d:
     def __init__(self, settings=None):
         self.reflections = None
         if settings is None:
@@ -68,13 +68,18 @@ class Render3d(object):
         self.viewer.set_beam_vector(self.experiments[0].beam.get_s0())
         if self.settings.beam_centre is None:
             try:
-                _, self.settings.beam_centre = self.experiments[
-                    0
-                ].detector.get_ray_intersection(self.experiments[0].beam.get_s0())
+                (
+                    self.settings.beam_centre_panel,
+                    self.settings.beam_centre,
+                ) = self.experiments[0].detector.get_ray_intersection(
+                    self.experiments[0].beam.get_s0()
+                )
             except RuntimeError:
                 pass
         else:
-            self.set_beam_centre(self.settings.beam_centre)
+            self.set_beam_centre(
+                self.settings.beam_centre_panel, self.settings.beam_centre
+            )
         crystals = [
             expt.crystal for expt in self.experiments if expt.crystal is not None
         ]
@@ -224,6 +229,7 @@ class Render3d(object):
                 self.settings.partiality_max = flex.max(p)
         points = reflections["rlp"] * 100
         self.viewer.set_points(points)
+        self.viewer.set_points_data(reflections)
         colors = flex.vec3_double(len(points), (1, 1, 1))
 
         if len(points):
@@ -265,23 +271,27 @@ class Render3d(object):
                     colors.set_selected(reflections["id"] == i, palette[(i % n) + 1])
         self.viewer.set_colors(colors)
 
-    def set_beam_centre(self, beam_centre):
+    def set_beam_centre(self, panel, beam_centre):
         detector = self.experiments[0].detector
         beam = self.experiments[0].beam
+        panel = int(panel)
 
         try:
-            panel_id, beam_centre = detector.get_ray_intersection(beam.get_s0())
+            p = detector[panel]
+        except RuntimeError:
+            raise ValueError(f"Detector does not have panel index {panel}")
+
+        # Check if the new beam centre can be set
+        beam_f, beam_s = beam_centre
+        trial_s0_direction = p.get_lab_coord((beam_f, beam_s))
+        try:
+            panel_id, beam_centre = detector.get_ray_intersection(trial_s0_direction)
         except RuntimeError:
             # beam centre calculation fails if the beam falls between panels
-            pass
-        else:
-            # code copied from: dials.command_line.dials_import.PixelBeamCenterUpdater
-            beam_f, beam_s = self.settings.beam_centre
+            raise ValueError("No detector intersection")
 
-            try:
-                p = detector[panel_id]
-            except RuntimeError:
-                raise Sorry("Detector does not have panel index {}".format(panel_id))
+        if panel_id != panel:
+            raise ValueError(f"Beam centre cannot be set with panel {panel}")
 
-            beam_f, beam_s = p.millimeter_to_pixel((beam_f, beam_s))
-            beam.set_unit_s0(p.get_pixel_lab_coord((beam_f, beam_s)))
+        # If we get this far, then the beam centre is valid for this panel
+        beam.set_unit_s0(trial_s0_direction)

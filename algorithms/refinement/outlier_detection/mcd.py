@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 from dials.algorithms.refinement.outlier_detection.outlier_base import CentroidOutlier
 from dials.algorithms.statistics.fast_mcd import FastMCD, maha_dist_sq
 from dials_refinement_helpers_ext import qchisq

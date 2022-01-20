@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import collections
 import os
 import re
@@ -13,7 +11,7 @@ from dials.array_family import flex
 FilenameDataWrapper = collections.namedtuple("FilenameDataWrapper", "filename, data")
 
 
-class ExperimentListConverters(object):
+class ExperimentListConverters:
     """A phil converter for the experiment list class."""
 
     phil_type = "experiment_list"
@@ -31,7 +29,7 @@ class ExperimentListConverters(object):
         if s == "<image files>":
             return FilenameDataWrapper(filename=s, data=None)
         if not os.path.exists(s):
-            raise Sorry("File %s does not exist" % s)
+            raise Sorry(f"File {s} does not exist")
         return FilenameDataWrapper(
             filename=s,
             data=ExperimentListFactory.from_json_file(
@@ -47,7 +45,7 @@ class ExperimentListConverters(object):
         return [libtbx.phil.tokenizer.word(value=value)]
 
 
-class ReflectionTableConverters(object):
+class ReflectionTableConverters:
     """A phil converter for the reflection table class."""
 
     phil_type = "reflection_table"
@@ -60,7 +58,7 @@ class ReflectionTableConverters(object):
         if s is None:
             return None
         if not os.path.exists(s):
-            raise Sorry("File %s does not exist" % s)
+            raise Sorry(f"File {s} does not exist")
         return FilenameDataWrapper(filename=s, data=flex.reflection_table.from_file(s))
 
     def as_words(self, python_object, master):
@@ -71,7 +69,7 @@ class ReflectionTableConverters(object):
         return [libtbx.phil.tokenizer.word(value=value)]
 
 
-class ReflectionTableSelectorConverters(object):
+class ReflectionTableSelectorConverters:
     """A phil converter for the reflection table selector class."""
 
     phil_type = "reflection_table_selector"
@@ -86,9 +84,9 @@ class ReflectionTableSelectorConverters(object):
         regex = r"^\s*([\w\.]+)\s*(<=|!=|==|>=|<|>|&)\s*(.+)\s*$"
         matches = re.findall(regex, s)
         if len(matches) == 0:
-            raise RuntimeError("%s is not a valid selection" % s)
+            raise RuntimeError(f"{s} is not a valid selection")
         elif len(matches) > 1:
-            raise RuntimeError("%s is not a single selection" % s)
+            raise RuntimeError(f"{s} is not a single selection")
         else:
             match = matches[0]
         assert len(match) == 3
@@ -99,7 +97,7 @@ class ReflectionTableSelectorConverters(object):
         if python_object is None:
             value = "None"
         else:
-            value = "%s%s%s" % (
+            value = "{}{}{}".format(
                 python_object.column,
                 python_object.op_string,
                 python_object.value,

@@ -5,6 +5,10 @@ import shutil
 import sys
 import traceback
 
+# This file needs to remain Python 2.7 compatible
+# due to the underlying cctbx installer logic
+
+
 installer_path = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 libtbx_path = os.path.join(installer_path, "lib")
 if libtbx_path not in sys.path:
@@ -24,17 +28,13 @@ class installer(install_distribution.installer):
     modules = [
         # hot
         "annlib",
-        "boost",
-        "scons",
         "ccp4io",
-        "msgpack-3.1.1",
         # base
         "cbflib",
         "cctbx_project",
         "gui_resources",
         "ccp4io_adaptbx",
         "annlib_adaptbx",
-        "clipper",
         # dials
         "dxtbx",
         "dials",
@@ -67,7 +67,7 @@ class installer(install_distribution.installer):
         except Exception:
             if not self.options.verbose:
                 print("\n" + " -=-" * 20)
-                print("\nAn error occured during installation\n")
+                print("\nAn error occurred during installation\n")
                 print("Excerpt from installation log:")
                 with open(log.name, "r") as fh:
                     for line in fh.readlines()[-30:]:
@@ -118,6 +118,27 @@ class installer(install_distribution.installer):
             shutil.rmtree(fullpath)
             self._cleaned_size = self._cleaned_size + total_size
             self._cleaned_files = self._cleaned_files + num_files
+
+        def rmext(subdir, extension):
+            fullpath = os.path.join(directory, subdir)
+            if not os.path.exists(fullpath):
+                print("Skipping *%s" % extension, " " * 26, subdir)
+                return
+            filelist, total_size = [], 0
+            for dirpath, dirnames, filenames in os.walk(fullpath):
+                for f in filenames:
+                    if f.endswith(extension):
+                        fp = os.path.join(dirpath, f)
+                        filelist.append(fp)
+                        total_size += os.path.getsize(fp)
+            print(
+                "Removing %9s, %4d %s files from %s"
+                % (humansize(total_size), len(filelist), extension, subdir)
+            )
+            for f in filelist:
+                os.remove(f)
+            self._cleaned_size = self._cleaned_size + total_size
+            self._cleaned_files = self._cleaned_files + len(filelist)
 
         def rmfile(filename):
             fullpath = os.path.join(directory, filename)
@@ -175,6 +196,7 @@ class installer(install_distribution.installer):
         rmdir("build/precommitbx")
         rmdir("build/regression_data")
         rmdir("build/xia2_regression")
+        rmext("build", ".o")
         for f in ("setpaths", "setpaths_debug", "setpaths_all", "unsetpaths"):
             for ext in (".sh", ".csh"):
                 rmfile(os.path.join("build", f + ext))
@@ -199,12 +221,45 @@ class installer(install_distribution.installer):
         rmdir("modules/cbflib/ply-3.2/doc")
         rmdir("modules/cbflib/ply-3.2/example")
         rmdir("modules/cbflib/ply-3.2/test")
-        rmfile("modules/cbflib/idx-s00-20131106040304531.cbf")
+        rmext("modules/cbflib", ".cbf")
         rmdir("modules/clipper/examples")
         print("-" * 60)
         print(
             "Deleted %d files, decrufting installation by %s\n"
             % (self._cleaned_files, humansize(self._cleaned_size))
+        )
+
+    def check_directories(self):
+        # Work out the target to be created by libtbx and check if it exists
+        expected_dir = os.path.abspath(
+            os.path.join(
+                self.options.prefix, "%s-%s" % (self.dest_dir_prefix, self.version)
+            )
+        )
+        regular_exists = os.path.exists(expected_dir)
+
+        super(installer, self).check_directories()
+
+        if self.options.raw_prefix:
+            # Make sure we clean up the extra directory if created
+            assert expected_dir == self.dest_dir
+            if not regular_exists and os.path.exists(self.dest_dir):
+                os.remove(self.dest_dir)
+
+            # Now, update all the target paths
+            self.dest_dir = self.options.prefix
+            self.build_dir = os.path.join(self.dest_dir, "build")
+            self.base_dir = os.path.join(self.options.prefix, "conda_base")
+            self.modules_dir = os.path.join(self.options.prefix, "modules")
+            os.environ[self.product_name + "_LOC"] = self.dest_dir
+            os.environ[self.product_name + "_BUILD"] = self.build_dir
+
+    def add_product_specific_options(self, parser):
+        parser.add_option(
+            "--raw-prefix",
+            action="store_true",
+            default=False,
+            help="Use --prefix as the direct destination, rather than adding a dials-* subdir",
         )
 
 

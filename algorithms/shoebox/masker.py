@@ -1,11 +1,9 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-class MaskerBase(object):
+class MaskerBase:
     """A root class to that does overlap masking"""
 
     def __init__(self, experiment):
@@ -36,7 +34,7 @@ class MaskerBase(object):
             self.mask_overlapping(
                 reflections["shoebox"], reflections["xyzcal.px"], adjacency_list
             )
-            logger.info("Masked {} overlapping reflections".format(len(adjacency_list)))
+            logger.info("Masked %s overlapping reflections", len(adjacency_list))
 
         # Return the reflections
         return reflections
@@ -53,7 +51,7 @@ class Masker3DProfile(MaskerBase):
             delta_d The extent of the reflection in reciprocal space
             delta_m The extent of the reflection in reciprocal space
         """
-        super(Masker3DProfile, self).__init__(experiments[0])
+        super().__init__(experiments[0])
         self._experiments = experiments
 
     def __call__(self, reflections, adjacency_list=None):
@@ -66,7 +64,7 @@ class Masker3DProfile(MaskerBase):
         Returns:
             The masked reflection list
         """
-        reflections = super(Masker3DProfile, self).__call__(reflections, adjacency_list)
+        reflections = super().__call__(reflections, adjacency_list)
 
         # Mask the foreground region
         self._experiment.profile.compute_mask(
@@ -91,7 +89,7 @@ class MaskerEmpirical(MaskerBase):
         Params:
             experiment The experiment data
         """
-        super(MaskerEmpirical, self).__init__(experiment)
+        super().__init__(experiment)
 
         from dials.algorithms.shoebox import MaskEmpirical
 
@@ -109,7 +107,7 @@ class MaskerEmpirical(MaskerBase):
         Returns:
             The masked reflection list
         """
-        reflections = super(MaskerEmpirical, self).__call__(reflections, adjacency_list)
+        reflections = super().__call__(reflections, adjacency_list)
 
         if self.mask_empirical:
             # Mask the foreground region

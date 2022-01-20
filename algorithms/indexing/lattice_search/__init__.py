@@ -1,11 +1,9 @@
-from __future__ import absolute_import, division, print_function
-
 import itertools
 import logging
 import math
+from io import StringIO
 
 import pkg_resources
-from six.moves import cStringIO as StringIO
 
 import libtbx.phil
 import scitbx.matrix
@@ -109,7 +107,7 @@ basis_vector_search_phil_scope.adopt_scope(
 
 class LatticeSearch(indexer.Indexer):
     def __init__(self, reflections, experiments, params):
-        super(LatticeSearch, self).__init__(reflections, experiments, params)
+        super().__init__(reflections, experiments, params)
 
         self._lattice_search_strategy = None
         for entry_point in pkg_resources.iter_entry_points(
@@ -234,15 +232,15 @@ class LatticeSearch(indexer.Indexer):
                         continue
                 except SmallUnitCellVolume:
                     logger.debug(
-                        "correct_non_primitive_basis SmallUnitCellVolume error for unit cell %s:"
-                        % experiments[0].crystal.get_unit_cell()
+                        "correct_non_primitive_basis SmallUnitCellVolume error for unit cell %s:",
+                        experiments[0].crystal.get_unit_cell(),
                     )
                     continue
                 except RuntimeError as e:
                     if "Krivy-Gruber iteration limit exceeded" in str(e):
                         logger.debug(
-                            "correct_non_primitive_basis Krivy-Gruber iteration limit exceeded error for unit cell %s:"
-                            % experiments[0].crystal.get_unit_cell()
+                            "correct_non_primitive_basis Krivy-Gruber iteration limit exceeded error for unit cell %s:",
+                            experiments[0].crystal.get_unit_cell(),
                         )
                         continue
                     raise
@@ -284,8 +282,8 @@ class LatticeSearch(indexer.Indexer):
             logger.info("Candidate solutions:")
             logger.info(str(solutions))
             best_model = solutions.best_model()
-            logger.debug("best model_likelihood: %.2f" % best_model.model_likelihood)
-            logger.debug("best n_indexed: %i" % best_model.n_indexed)
+            logger.debug("best model_likelihood: %.2f", best_model.model_likelihood)
+            logger.debug("best n_indexed: %i", best_model.n_indexed)
             self.hkl_offset = best_model.hkl_offset
             return best_model.crystal, best_model.n_indexed
         else:
@@ -294,7 +292,7 @@ class LatticeSearch(indexer.Indexer):
 
 class BasisVectorSearch(LatticeSearch):
     def __init__(self, reflections, experiments, params):
-        super(BasisVectorSearch, self).__init__(reflections, experiments, params)
+        super().__init__(reflections, experiments, params)
 
         strategy_class = None
         for entry_point in pkg_resources.iter_entry_points(
@@ -305,7 +303,7 @@ class BasisVectorSearch(LatticeSearch):
                 break
         if not strategy_class:
             raise RuntimeError(
-                "Unknown basis vector search strategy: %s" % params.indexing.method
+                f"Unknown basis vector search strategy: {params.indexing.method}"
             )
 
         target_unit_cell = None
@@ -397,7 +395,7 @@ class BasisVectorSearch(LatticeSearch):
 
         logger.debug("Candidate basis vectors:")
         for i, v in enumerate(vectors):
-            logger.debug("%s %s" % (i, v.length()))  # , vector_heights[i]
+            logger.debug(f"{i} {v.length()}")  # , vector_heights[i]
 
         if self.params.debug:
             # print a table of the angles between each pair of vectors
@@ -414,15 +412,15 @@ class BasisVectorSearch(LatticeSearch):
 
             print((" " * 7), end=" ", file=s)
             for i in range(len(vectors)):
-                print("%7.3f" % vectors[i].length(), end=" ", file=s)
+                print(f"{vectors[i].length():7.3f}", end=" ", file=s)
             print(file=s)
             for i in range(len(vectors)):
-                print("%7.3f" % vectors[i].length(), end=" ", file=s)
+                print(f"{vectors[i].length():7.3f}", end=" ", file=s)
                 for j in range(len(vectors)):
                     if j <= i:
                         print((" " * 7), end=" ", file=s)
                     else:
-                        print("%5.1f  " % angles[i, j], end=" ", file=s)
+                        print(f"{angles[i, j]:5.1f}  ", end=" ", file=s)
                 print(file=s)
 
             logger.debug(s.getvalue())

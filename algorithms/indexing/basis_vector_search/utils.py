@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 from scitbx import matrix
 
 
@@ -20,7 +18,7 @@ def is_approximate_integer_multiple(
     return False
 
 
-class vector_group(object):
+class vector_group:
     def __init__(self):
         self.vectors = []
         self.weights = []

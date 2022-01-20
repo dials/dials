@@ -1,14 +1,13 @@
 """
 Restraints manager classes for scaling.
 """
-from __future__ import absolute_import, division, print_function
 
 from scitbx import sparse
 
 from dials.array_family import flex
 
 
-class ScalingRestraintsCalculator(object):
+class ScalingRestraintsCalculator:
     """A class to calculate restraints for scaling for one or more datasets,
     by composition of the restraints of the individual datasets. The methods
     require a multi active_parameter_manager."""
@@ -69,7 +68,7 @@ class ScalingRestraintsCalculator(object):
         return None
 
 
-class SingleScalingRestraintsCalculator(object):
+class SingleScalingRestraintsCalculator:
     """A class to calculate restraints for scaling for an individual dataset, by
     using a single active_parameter_manager."""
 

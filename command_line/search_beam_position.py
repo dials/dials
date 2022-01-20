@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import cmath
 import concurrent.futures
 import copy
@@ -23,7 +21,7 @@ from scitbx.simplex import simplex_opt
 import dials.util
 from dials.algorithms.indexing.indexer import find_max_cell
 from dials.util import Sorry, log
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.slice import slice_reflections
 
 logger = logging.getLogger("dials.command_line.search_beam_position")
@@ -157,7 +155,7 @@ def optimize_origin_offset_local_scope(
         wide_search_offset = None
 
     # Do a simplex minimization
-    class simplex_minimizer(object):
+    class simplex_minimizer:
         def __init__(self, wide_search_offset):
             self.n = 2
             self.wide_search_offset = wide_search_offset
@@ -259,7 +257,7 @@ def _get_origin_offset_score(
     trial_detector = dps_extended.get_new_detector(
         experiment.detector, trial_origin_offset
     )
-    experiment = copy.deepcopy(experiment)
+    experiment = copy.copy(experiment)
     experiment.detector = trial_detector
 
     # Key point for this is that the spots must correspond to detector
@@ -335,7 +333,7 @@ def run_dps(experiment, spots_mm, max_cell):
             )
         )
 
-    logger.info("Running DPS using %i reflections" % len(data))
+    logger.info("Running DPS using %i reflections", len(data))
 
     DPS.index(
         raw_spot_input=data,
@@ -344,14 +342,16 @@ def run_dps(experiment, spots_mm, max_cell):
     solutions = DPS.getSolutions()
 
     logger.info(
-        "Found %i solution%s with max unit cell %.2f Angstroms."
-        % (len(solutions), plural_s(len(solutions))[1], DPS.amax)
+        "Found %i solution%s with max unit cell %.2f Angstroms.",
+        len(solutions),
+        plural_s(len(solutions))[1],
+        DPS.amax,
     )
 
     # There must be at least 3 solutions to make a set, otherwise return empty result
     if len(solutions) < 3:
         return {}
-    return dict(solutions=flex.vec3_double(s.dvec for s in solutions), amax=DPS.amax)
+    return {"solutions": flex.vec3_double(s.dvec for s in solutions), "amax": DPS.amax}
 
 
 def discover_better_experimental_model(
@@ -398,8 +398,8 @@ def discover_better_experimental_model(
 
         if params.max_reflections is not None and refl.size() > params.max_reflections:
             logger.info(
-                "Selecting subset of %i reflections for analysis"
-                % params.max_reflections
+                "Selecting subset of %i reflections for analysis",
+                params.max_reflections,
             )
             perm = flex.random_permutation(refl.size())
             sel = perm[: params.max_reflections]
@@ -462,7 +462,7 @@ def discover_better_experimental_model(
 def run(args=None):
     usage = "dials.search_beam_position [options] imported.expt strong.refl"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_experiments=True,
@@ -514,7 +514,7 @@ def run(args=None):
 
     for i in range(params.n_macro_cycles):
         if params.n_macro_cycles > 1:
-            logger.info("Starting macro cycle %i" % (i + 1))
+            logger.info("Starting macro cycle %i", i + 1)
         experiments = discover_better_experimental_model(
             experiments,
             reflections,
@@ -527,7 +527,7 @@ def run(args=None):
         )
         logger.info("")
 
-    logger.info("Saving optimised experiments to %s" % params.output.experiments)
+    logger.info("Saving optimised experiments to %s", params.output.experiments)
     experiments.as_file(params.output.experiments)
 
 

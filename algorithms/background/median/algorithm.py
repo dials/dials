@@ -1,7 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
-
-class BackgroundAlgorithm(object):
+class BackgroundAlgorithm:
     """Class to do background subtraction."""
 
     def __init__(self, experiments):
@@ -14,7 +11,7 @@ class BackgroundAlgorithm(object):
 
     def compute_background(self, reflections, image_volume=None):
         """
-        Compute the backgrond.
+        Compute the background.
 
         :param reflections: The list of reflections
         """

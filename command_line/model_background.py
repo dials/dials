@@ -1,9 +1,6 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
+import pickle
 import sys
-
-import six.moves.cPickle as pickle
 
 from libtbx.phil import parse
 
@@ -92,7 +89,7 @@ phil_scope = parse(
 )
 
 
-class ImageGenerator(object):
+class ImageGenerator:
     """
     Generate diagnostic images
     """
@@ -120,7 +117,7 @@ class ImageGenerator(object):
             if bounded and vmax is None:
                 boundaries = {
                     "vmin": 0,
-                    "vmax": sorted(list(image))[int(0.99 * len(image))],
+                    "vmax": sorted(image)[int(0.99 * len(image))],
                 }
             elif bounded:
                 boundaries = {"vmin": 0, "vmax": vmax}
@@ -134,7 +131,7 @@ class ImageGenerator(object):
                 cb = pylab.colorbar()
                 cb.ax.tick_params(labelsize=8)
             logger.info(
-                "Saving %s image for panel %d to %s_%d.png" % (name, i, filename, i)
+                "Saving %s image for panel %d to %s_%d.png", name, i, filename, i
             )
             pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches="tight")
 
@@ -189,17 +186,17 @@ class ImageGenerator(object):
         self._save_plot("polar model", filename, lambda m: m.polar_model, bounded=False)
 
 
-class Script(object):
+class Script:
     """A class for running the script."""
 
     def __init__(self):
         """Initialise the script."""
-        from dials.util.options import OptionParser
+        from dials.util.options import ArgumentParser
 
         usage = "dials.model_background [options] [param.phil] models.expt"
 
         # Initialise the base class
-        self.parser = OptionParser(
+        self.parser = ArgumentParser(
             usage=usage, phil=phil_scope, epilog=help_message, read_experiments=True
         )
 
@@ -264,7 +261,7 @@ class Script(object):
         model = modeller.compute()
 
         # Save the background model
-        logger.info("Saving background model to %s" % params.output.model)
+        logger.info("Saving background model to %s", params.output.model)
         from dials.algorithms.background.gmodel import StaticBackgroundModel
 
         static_model = StaticBackgroundModel()

@@ -1,5 +1,4 @@
 """This module defines some useful header functions for CBF files."""
-from __future__ import absolute_import, division, print_function
 
 import numpy as np
 import pycbf
@@ -54,9 +53,7 @@ def get_image(cbf_handle, category="array_data", column="data", row=0, element=0
         image.shape = image_size
 
     else:
-        raise TypeError(
-            "{0}:{1}:{2}:{3} is not an image".format(category, column, row, element)
-        )
+        raise TypeError(f"{category}:{column}:{row}:{element} is not an image")
 
     # Return the image
     return image

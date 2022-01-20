@@ -1,10 +1,7 @@
-# coding: utf-8
 #
 # Known issues: Recentering on resize and when switching between
 # different image types.  Ring centre on image switch.
 
-
-from __future__ import absolute_import, division, print_function
 
 import imp
 import math
@@ -29,7 +26,7 @@ int_bits = c_sizeof("int") * 8
 MASK_VAL = -(2 ** (int_bits - 1))
 
 
-class chooser_wrapper(object):
+class chooser_wrapper:
     def __init__(self, image_set, index):
         self.image_set = image_set
         self.path = os.path.basename(image_set.get_path(index))
@@ -161,7 +158,7 @@ class XrayFrame(XFBaseClass):
         # does not guarantee window creation. The frame calls Raise() so that it
         # will be shown. This addresses an error with PySlip requiring the
         # window to exist before instantiation.
-        super(XrayFrame, self).Show()
+        super().Show()
         self.Raise()
 
     def setup_toolbar(self):
@@ -203,9 +200,9 @@ class XrayFrame(XFBaseClass):
                 lon, lat
             )
 
-            posn_str = "Picture:  slow=%.3f / fast=%.3f pixels." % (
-                slow_picture,
+            posn_str = "Picture:  fast={:.3f} / slow={:.3f} pixels.".format(
                 fast_picture,
+                slow_picture,
             )
             coords = self.pyslip.tiles.get_flex_pixel_coordinates(lon, lat)
             if len(coords) >= 2:
@@ -214,7 +211,7 @@ class XrayFrame(XFBaseClass):
                 else:
                     readout = -1
 
-                coords_str = "slow=%.3f / fast=%.3f pixels" % (coords[0], coords[1])
+                coords_str = f"fast={coords[1]:.3f} / slow={coords[0]:.3f} pixels"
                 if len(coords) == 2:
                     posn_str += " Readout: " + coords_str + "."
                 elif readout >= 0:
@@ -253,13 +250,12 @@ class XrayFrame(XFBaseClass):
                     reso = self.pyslip.tiles.get_resolution(coords[1], coords[0])
 
                 if reso is not None:
-                    posn_str += " Resolution: %.3f" % (reso)
+                    posn_str += f" Resolution: {reso:.3f}"
 
             self.statusbar.SetStatusText(posn_str)
         else:
             self.statusbar.SetStatusText(
-                "Click and drag to pan; "
-                + "middle-click and drag to plot intensity profile, right-click to zoom"
+                "Click and drag to pan, mouse wheel or double click to zoom"
             )
             # print "event with no position",event
         return
@@ -524,73 +520,10 @@ class XrayFrame(XFBaseClass):
         elif isinstance(file_name_or_data, chooser_wrapper):
             return str(file_name_or_data)
         else:
-            return super(XrayFrame, self).get_key(file_name_or_data)
+            return super().get_key(file_name_or_data)
 
     def update_settings(self, layout=True):
-        # XXX The zoom level from the settings panel are not taken into
-        # account here.
-
-        new_brightness = self.settings.brightness
-        new_color_scheme = self.settings.color_scheme
-        if (
-            new_brightness is not self.pyslip.tiles.current_brightness
-            or new_color_scheme is not self.pyslip.tiles.current_color_scheme
-        ):
-            self.pyslip.tiles.update_brightness(new_brightness, new_color_scheme)
-
-        if self.settings.show_beam_center:
-            if self.beam_layer is None and hasattr(self, "beam_center_cross_data"):
-                self.beam_layer = self.pyslip.AddPolygonLayer(
-                    self.beam_center_cross_data,
-                    name="<beam_layer>",
-                    show_levels=[-2, -1, 0, 1, 2, 3, 4, 5],
-                    update=False,
-                )
-        elif self.beam_layer is not None:
-            self.pyslip.DeleteLayer(self.beam_layer, update=False)
-            self.beam_layer = None
-
-        if self.settings.show_spotfinder_spots:
-            if self.spotfinder_layer is None:
-                tdata = self.pyslip.tiles.get_spotfinder_data(self.params)
-                self.spotfinder_layer = self.pyslip.AddPointLayer(
-                    tdata,
-                    color="green",
-                    name="<spotfinder_layer>",
-                    radius=2,
-                    renderer=self.pyslip.LightweightDrawPointLayer,
-                    show_levels=[-2, -1, 0, 1, 2, 3, 4, 5],
-                )
-        elif self.spotfinder_layer is not None:
-            self.pyslip.DeleteLayer(self.spotfinder_layer)
-            self.spotfinder_layer = None
-
-        if self.settings.show_effective_tiling:
-            if self.tile_layer is None:
-                tdata, ttdata = self.pyslip.tiles.get_effective_tiling_data(self.params)
-                self.tile_layer = self.pyslip.AddPolygonLayer(
-                    tdata, name="<tiling_layer>", show_levels=[-2, -1, 0, 1, 2, 3, 4, 5]
-                )
-            if self.tile_text_layer is None:
-                self.tile_text_layer = self.pyslip.AddTextLayer(
-                    ttdata,
-                    name="<tiling_text_layer>",
-                    show_levels=[-2, -1, 0, 1, 2, 3, 4, 5],
-                    colour="#0000FFA0",
-                    textcolour="#0000FFA0",
-                    fontsize=30,
-                    placement="cc",
-                    radius=0,
-                )
-        elif (self.tile_layer is not None) and (self.tile_text_layer is not None):
-            self.pyslip.DeleteLayer(self.tile_layer)
-            self.tile_layer = None
-            self.pyslip.DeleteLayer(self.tile_text_layer)
-            self.tile_text_layer = None
-
-        if hasattr(self, "user_callback"):
-            self.user_callback(self)
-        self.pyslip.Update()  # triggers redraw
+        raise NotImplementedError()
 
     def OnCalibration(self, event):
         if not self._calibration_frame:
@@ -722,7 +655,7 @@ class XrayFrame(XFBaseClass):
 
     def OnSaveAs(self, event):
         ### XXX TODO: Save overlays
-        ### XXX TODO: Fix bug where multi-asic images are slightly cropped due to tranformation error'
+        ### XXX TODO: Fix bug where multi-asic images are slightly cropped due to transformation error'
 
         import PIL.Image as Image
 
@@ -753,7 +686,7 @@ class XrayFrame(XFBaseClass):
 
             flex_img = get_flex_image_multipanel(
                 brightness=self.settings.brightness / 100,
-                panels=detector,
+                detector=detector,
                 image_data=data,
                 beam=raw_img.get_beam(),
             )
@@ -893,7 +826,7 @@ class XrayFrame(XFBaseClass):
 
             flex_img = get_flex_image_multipanel(
                 brightness=self.settings.brightness / 100,
-                panels=detector,
+                detector=detector,
                 image_data=data,
                 beam=raw_img.get_beam(),
             )

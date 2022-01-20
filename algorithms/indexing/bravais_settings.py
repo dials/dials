@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import concurrent.futures
 import copy
 import logging
@@ -40,7 +38,7 @@ cc_n_bins = None
 best_monoclinic_beta = True
   .type = bool
   .help = "If True, then for monoclinic centered cells, I2 will be preferred over C2 if"
-          "it gives a more oblique cell (i.e. smaller beta angle)."
+          "it gives a less oblique cell (i.e. smaller beta angle)."
 
 include scope dials.algorithms.refinement.refiner.phil_scope
 """,
@@ -135,7 +133,7 @@ class RefinedSettingsList(list):
             P = uc.parameters()
             min_max_cc_str = "-/-"
             if item.min_cc is not None and item.max_cc is not None:
-                min_max_cc_str = "%.3f/%.3f" % (item.min_cc, item.max_cc)
+                min_max_cc_str = f"{item.min_cc:.3f}/{item.max_cc:.3f}"
             if item.recommended:
                 status = "*"
             else:
@@ -143,14 +141,14 @@ class RefinedSettingsList(list):
             table_data.append(
                 [
                     "%1s%7d" % (status, item.setting_number),
-                    "%(max_angular_difference)6.4f" % item,
-                    "%5.3f" % item.rmsd,
+                    f"{item['max_angular_difference']:6.4f}",
+                    f"{item.rmsd:5.3f}",
                     min_max_cc_str,
                     "%d" % item.Nmatches,
-                    "%(bravais)s" % item,
+                    f"{item['bravais']}",
                     "%6.2f %6.2f %6.2f %6.2f %6.2f %6.2f" % P,
-                    "%.0f" % uc.volume(),
-                    "%s" % item["cb_op_inp_best"].as_abc(),
+                    f"{uc.volume():.0f}",
+                    f"{item['cb_op_inp_best'].as_abc()}",
                 ]
             )
 
@@ -178,6 +176,16 @@ bravais_lattice_to_lowest_symmetry_spacegroup_number = {
     "cF": 196,
     "cI": 197,
 }
+
+
+def lowest_symmetry_space_group_for_bravais_lattice(
+    bravais_lattice: str,
+) -> sgtbx.space_group:
+    if bravais_lattice == "mI":
+        return sgtbx.space_group_info("I2").group()
+    return sgtbx.space_group_info(
+        number=bravais_lattice_to_lowest_symmetry_spacegroup_number[bravais_lattice]
+    ).group()
 
 
 def refined_settings_from_refined_triclinic(experiments, reflections, params):
@@ -226,18 +234,17 @@ def refined_settings_from_refined_triclinic(experiments, reflections, params):
         refined_settings[j].setting_number = Nset - j
 
     for subgroup in refined_settings:
-        space_group = sgtbx.space_group_info(
-            number=bravais_lattice_to_lowest_symmetry_spacegroup_number[
-                subgroup["bravais"]
-            ]
-        ).group()
+        bravais_lattice = str(
+            bravais_types.bravais_lattice(group=subgroup["best_subsym"].space_group())
+        )
+        space_group = lowest_symmetry_space_group_for_bravais_lattice(bravais_lattice)
         orient = crystal_orientation(crystal.get_A(), True).change_basis(
             scitbx.matrix.sqr(
                 subgroup["cb_op_inp_best"].c().as_double_array()[0:9]
             ).transpose()
         )
         constrain_orient = orient.constrain(subgroup["system"])
-        subgroup["bravais"] = str(bravais_types.bravais_lattice(group=space_group))
+        subgroup["bravais"] = bravais_lattice
         subgroup.unrefined_crystal = dxtbx_crystal_from_orientation(
             constrain_orient, space_group
         )

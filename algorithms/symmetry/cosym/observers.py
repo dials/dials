@@ -1,10 +1,8 @@
 """
 Observers for the cosym procedure.
 """
-from __future__ import absolute_import, division, print_function
 
 import json
-from collections import OrderedDict
 
 from jinja2 import ChoiceLoader, Environment, PackageLoader
 
@@ -20,7 +18,7 @@ def register_default_cosym_observers(script):
         event="analysed_symmetry", observer=SymmetryAnalysisObserver()
     )
     script.cosym_analysis.register_observer(
-        event="analysed_clusters", observer=CosymClusterAnalysisObserver()
+        event="optimised", observer=CosymClusterAnalysisObserver()
     )
     script.register_observer(event="run_cosym", observer=UnitCellAnalysisObserver())
     script.register_observer(
@@ -45,7 +43,7 @@ class CosymHTMLGenerator(Observer):
         self.data.update(CosymClusterAnalysisObserver().make_plots())
         self.data.update(UnitCellAnalysisObserver().make_plots())
         self.data.update(SymmetryAnalysisObserver().make_tables())
-        print("Writing html report to: %s" % filename)
+        print(f"Writing html report to: {filename}")
         loader = ChoiceLoader(
             [
                 PackageLoader("dials", "templates"),
@@ -78,7 +76,7 @@ class CosymJSONGenerator(Observer):
         self.data.update(CosymClusterAnalysisObserver().make_plots())
         self.data.update(UnitCellAnalysisObserver().make_plots())
         self.data.update(SymmetryAnalysisObserver().get_data())
-        print("Writing json to: %s" % filename)
+        print(f"Writing json to: {filename}")
         with open(filename, "w") as f:
             json.dump(self.data, f)
 
@@ -92,14 +90,12 @@ class CosymClusterAnalysisObserver(Observer):
     def update(self, cosym):
         """Update the data in the observer."""
         self.data["coordinates"] = cosym.coords
-        self.data["labels"] = cosym.cluster_labels
         self.data["rij_matrix"] = cosym.target.rij_matrix
 
     def make_plots(self):
         """Generate cosym cluster analysis plot data."""
-        d = OrderedDict()
-        d.update(plot_rij_histogram(self.data["rij_matrix"]))
-        d.update(plot_coords(self.data["coordinates"], self.data["labels"]))
+        d = plot_rij_histogram(self.data["rij_matrix"])
+        d.update(plot_coords(self.data["coordinates"]))
         graphs = {"cosym_graphs": d}
         return graphs
 

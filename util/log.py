@@ -2,6 +2,7 @@ import logging.config
 import os
 import sys
 import time
+from typing import List
 
 try:
     from colorlog import ColoredFormatter
@@ -21,7 +22,7 @@ class DialsLogfileFormatter:
     def format(self, record):
         if self.timed:
             elapsed_seconds = record.created - self.start_time
-            prefix = "{:6.1f}: ".format(elapsed_seconds)
+            prefix = f"{elapsed_seconds:6.1f}: "
         else:
             prefix = ""
         indent = len(prefix)
@@ -80,7 +81,7 @@ def config(verbosity=0, logfile=None):
         loglevel = logging.INFO
 
     if logfile:
-        fh = logging.FileHandler(filename=logfile, mode="w")
+        fh = logging.FileHandler(filename=logfile, mode="w", encoding="utf-8")
         fh.setLevel(loglevel)
         fh.setFormatter(DialsLogfileFormatter(timed=verbosity))
         dials_logger.addHandler(fh)
@@ -100,8 +101,8 @@ class CacheHandler(logging.Handler):
         """
         Initialise the handler
         """
-        super(CacheHandler, self).__init__()
-        self._messages = []
+        super().__init__()
+        self.records = []
 
     def emit(self, record):
         """
@@ -109,10 +110,7 @@ class CacheHandler(logging.Handler):
 
         :param record: The log record
         """
-        self._messages.append(record)
-
-    def messages(self):
-        return self._messages
+        self.records.append(record)
 
 
 def config_simple_cached():
@@ -135,6 +133,23 @@ def config_simple_cached():
     )
 
 
+def rehandle_cached_records(records: List[logging.LogRecord]) -> None:
+    """
+    Submit cached log records to the relevant loggers for handling.
+
+    Because the relevant logger's threshold log level may be higher than when the
+    original log message was created and cached, the record will only be re-handled
+    if its level meets the new threshold.
+
+    Args:
+        records:  Cached log records.
+    """
+    for record in records:
+        record_logger = logging.getLogger(record.name)
+        if record_logger.isEnabledFor(record.levelno):
+            record_logger.handle(record)
+
+
 _banner = (
     "DIALS (2018) Acta Cryst. D74, 85-97. https://doi.org/10.1107/S2059798317017235"
 )
@@ -155,7 +170,7 @@ def print_banner(force=False, use_logging=False):
         print(_banner)
 
 
-class LoggingContext(object):
+class LoggingContext:
     # https://docs.python.org/3/howto/logging-cookbook.html#using-a-context-manager-for-selective-logging
     def __init__(self, logger, level=None):
         self.logger = logging.getLogger(logger) if isinstance(logger, str) else logger

@@ -1,12 +1,10 @@
-from __future__ import absolute_import, division, print_function
-
 import jinja2
 from docutils import nodes
 from docutils.parsers.rst import Directive
 from docutils.parsers.rst.directives import unchanged
 
 BUTTON_TEMPLATE = jinja2.Template(
-    u'<a href="{{ link }}" class="button"><span>{{ text }}</span></a>'
+    '<a href="{{ link }}" class="button"><span>{{ text }}</span></a>'
 )
 
 # placeholder node for document graph

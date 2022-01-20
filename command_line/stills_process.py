@@ -1,17 +1,13 @@
-from __future__ import absolute_import, division, print_function
-
+import collections
 import copy
 import glob
 import logging
 import os
+import pickle
 import sys
 import tarfile
 import time
-from collections import OrderedDict
-
-import six
-import six.moves.cPickle as pickle
-from six import BytesIO
+from io import BytesIO
 
 from dxtbx.model.experiment_list import (
     Experiment,
@@ -27,10 +23,9 @@ from dials.util import log
 
 logger = logging.getLogger("dials.command_line.stills_process")
 
-
 help_message = """
 DIALS script for processing still images. Import, index, refine, and integrate are all done for each image
-seperately.
+separately.
 """
 
 control_phil_str = """
@@ -116,7 +111,7 @@ control_phil_str = """
     output_dir = .
       .type = str
       .help = Directory output files will be placed
-    composite_output = False
+    composite_output = True
       .type = bool
       .help = If True, save one set of experiment/reflection files per process, where each is a \
               concatenated list of all the successful events examined by that process. \
@@ -125,12 +120,13 @@ control_phil_str = """
     logging_dir = None
       .type = str
       .help = Directory output log files will be placed
-    experiments_filename = %s_imported.expt
+    experiments_filename = None
       .type = str
-      .help = The filename for output experiments
-    strong_filename = %s_strong.refl
+      .help = The filename for output experiments. For example, %s_imported.expt
+    strong_filename = None
       .type = str
-      .help = The filename for strong reflections from spot finder output.
+      .help = The filename for strong reflections from spot finder output. For example: \
+              %s_strong.refl
     indexed_filename = %s_indexed.refl
       .type = str
       .help = The filename for indexed reflections.
@@ -181,6 +177,10 @@ control_phil_str = """
         .help = Enable code profiling. Profiling file will be available in  \
                 the debug folder. Use (for example) runsnake to visualize   \
                 processing performance
+      output_debug_logs = True
+        .type = bool
+        .help = Whether to write debugging information for every image      \
+                processed
     }
   }
 """
@@ -191,6 +191,9 @@ dials_phil_str = """
       .type = str
       .help = Provide an models.expt file with exactly one detector model. Data processing will use \
               that geometry instead of the geometry found in the image headers.
+    sync_reference_geom = True
+      .type = bool
+      .help = ensures the reference hierarchy agrees with the image format
   }
 
   output {
@@ -238,6 +241,16 @@ dials_phil_str = """
         .short_caption = "Panel trusted range"
     }
   }
+
+  profile {
+    gaussian_rs {
+      parameters {
+        sigma_b_cutoff = 0.1
+          .type = float
+          .help = Maximum sigma_b before the image is rejected
+      }
+    }
+  }
 """
 
 program_defaults_phil_str = """
@@ -278,16 +291,16 @@ phil_scope = parse(control_phil_str + dials_phil_str, process_includes=True).fet
 
 
 def do_import(filename, load_models=True):
-    logger.info("Loading %s" % os.path.basename(filename))
+    logger.info("Loading %s", os.path.basename(filename))
     experiments = ExperimentListFactory.from_filenames([filename], load_models=False)
     if len(experiments) == 0:
         try:
             experiments = ExperimentListFactory.from_json_file(filename)
         except ValueError:
-            raise Abort("Could not load %s" % filename)
+            raise Abort(f"Could not load {filename}")
 
     if len(experiments) == 0:
-        raise Abort("Could not load %s" % filename)
+        raise Abort(f"Could not load {filename}")
 
     from dxtbx.imageset import ImageSetFactory
 
@@ -323,12 +336,12 @@ def sync_geometry(src, dest):
             sync_geometry(src_child, dest_child)
 
 
-class Script(object):
+class Script:
     """A class for running the script."""
 
     def __init__(self):
         """Initialise the script."""
-        from dials.util.options import OptionParser
+        from dials.util.options import ArgumentParser
 
         # The script usage
         usage = "usage: dials.stills_process [options] [param.phil] filenames"
@@ -337,13 +350,11 @@ class Script(object):
         self.reference_detector = None
 
         # Create the parser
-        self.parser = OptionParser(usage=usage, phil=phil_scope, epilog=help_message)
+        self.parser = ArgumentParser(usage=usage, phil=phil_scope, epilog=help_message)
 
     def load_reference_geometry(self):
         if self.params.input.reference_geometry is None:
             return
-
-        from dxtbx.model.experiment_list import ExperimentListFactory
 
         try:
             ref_experiments = ExperimentListFactory.from_json_file(
@@ -414,12 +425,12 @@ class Script(object):
             self.pr = cProfile.Profile()
             self.pr.enable()
 
-        print("Have %d files" % len(all_paths))
+        print(f"Have {len(all_paths)} files")
 
         # Mask validation
         for mask_path in params.spotfinder.lookup.mask, params.integration.lookup.mask:
             if mask_path is not None and not os.path.isfile(mask_path):
-                raise Sorry("Mask %s not found" % mask_path)
+                raise Sorry(f"Mask {mask_path} not found")
 
         # Save the options
         self.options = options
@@ -438,8 +449,8 @@ class Script(object):
                 error_path = os.path.join(
                     params.output.logging_dir, "error_rank%04d.out" % rank
                 )
-                print("Redirecting stdout to %s" % log_path)
-                print("Redirecting stderr to %s" % error_path)
+                print(f"Redirecting stdout to {log_path}")
+                print(f"Redirecting stderr to {error_path}")
                 sys.stdout = open(log_path, "a")
                 sys.stderr = open(error_path, "a")
                 print("Should be redirected now")
@@ -459,8 +470,8 @@ class Script(object):
         if len(bad_phils) > 0:
             self.parser.print_help()
             logger.error(
-                "Error: the following phil files were not understood: %s"
-                % (", ".join(bad_phils))
+                "Error: the following phil files were not understood: %s",
+                ", ".join(bad_phils),
             )
             return
 
@@ -548,20 +559,20 @@ class Script(object):
                         experiment.beam = imageset.get_beam()
                         experiment.detector = imageset.get_detector()
                     except RuntimeError as e:
-                        logger.warning(
-                            "Error updating geometry on item %s, %s"
-                            % (str(tag), str(e))
-                        )
+                        logger.warning("Error updating geometry on item %s, %s", tag, e)
                         continue
 
                     if self.reference_detector is not None:
                         experiment = experiments[0]
-                        imageset = experiment.imageset
-                        sync_geometry(
-                            self.reference_detector.hierarchy(),
-                            imageset.get_detector().hierarchy(),
-                        )
-                        experiment.detector = imageset.get_detector()
+                        if self.params.input.sync_reference_geom:
+                            imageset = experiment.imageset
+                            sync_geometry(
+                                self.reference_detector.hierarchy(),
+                                imageset.get_detector().hierarchy(),
+                            )
+                            experiment.detector = imageset.get_detector()
+                        else:
+                            experiment.detector = copy.deepcopy(self.reference_detector)
 
                     processor.process_experiments(tag, experiments)
                     imageset.clear_cache()
@@ -572,13 +583,11 @@ class Script(object):
             iterable = list(zip(tags, range(len(split_experiments))))
 
         else:
-            basenames = OrderedDict()
-            for filename in sorted(all_paths):
+            basenames = collections.defaultdict(int)
+            sorted_paths = sorted(all_paths)
+            for filename in sorted_paths:
                 basename = os.path.splitext(os.path.basename(filename))[0]
-                if basename in basenames:
-                    basenames[basename] += 1
-                else:
-                    basenames[basename] = 1
+                basenames[basename] += 1
             tags = []
             all_paths2 = []
             for i, (basename, count) in enumerate(basenames.items()):
@@ -591,7 +600,7 @@ class Script(object):
                     or tag in self.params.input.image_tag
                 ):
                     tags.append(tag)
-                    all_paths2.append(all_paths[i])
+                    all_paths2.append(sorted_paths[i])
             all_paths = all_paths2
 
             # Wrapper function
@@ -606,12 +615,10 @@ class Script(object):
                     experiments = do_import(filename, load_models=True)
                     imagesets = experiments.imagesets()
                     if len(imagesets) == 0 or len(imagesets[0]) == 0:
-                        logger.info("Zero length imageset in file: %s" % filename)
+                        logger.info("Zero length imageset in file: %s", filename)
                         return
                     if len(imagesets) > 1:
-                        raise Abort(
-                            "Found more than one imageset in file: %s" % filename
-                        )
+                        raise Abort(f"Found more than one imageset in file: {filename}")
                     if len(imagesets[0]) > 1:
                         raise Abort(
                             "Found a multi-image file. Run again with pre_import=True"
@@ -623,18 +630,21 @@ class Script(object):
                         experiment.beam = imagesets[0].get_beam()
                         experiment.detector = imagesets[0].get_detector()
                     except RuntimeError as e:
-                        logger.warning(
-                            "Error updating geometry on item %s, %s" % (tag, str(e))
-                        )
+                        logger.warning("Error updating geometry on item %s, %s", tag, e)
                         continue
 
                     if self.reference_detector is not None:
-                        imageset = experiments[0].imageset
-                        sync_geometry(
-                            self.reference_detector.hierarchy(),
-                            imageset.get_detector().hierarchy(),
-                        )
-                        experiments[0].detector = imageset.get_detector()
+                        if self.params.input.sync_reference_geom:
+                            imageset = experiments[0].imageset
+                            sync_geometry(
+                                self.reference_detector.hierarchy(),
+                                imageset.get_detector().hierarchy(),
+                            )
+                            experiments[0].detector = imageset.get_detector()
+                        else:
+                            experiments[0].detector = copy.deepcopy(
+                                self.reference_detector
+                            )
 
                     processor.process_experiments(tag, experiments)
                 if finalize:
@@ -675,6 +685,10 @@ class Script(object):
                 ]
                 do_work(rank, subset)
             else:
+                processor = Processor(
+                    copy.deepcopy(params), composite_tag="%04d" % rank, rank=rank
+                )
+
                 if rank == 0:
                     # server process
                     for item_num, item in enumerate(iterable):
@@ -683,7 +697,7 @@ class Script(object):
 
                         print("Getting next available process")
                         rankreq = comm.recv(source=MPI.ANY_SOURCE)
-                        print("Process %s is ready, sending %s\n" % (rankreq, item[0]))
+                        print(f"Process {rankreq} is ready, sending {item[0]}\n")
                         comm.send(item, dest=rankreq)
                     # send a stop command to each process
                     print("MPI DONE, sending stops\n")
@@ -693,15 +707,8 @@ class Script(object):
                         comm.send("endrun", dest=rankreq)
                     print("All stops sent.")
 
-                    # create an empty processor to handle any MPI finalize steps
-                    processor = Processor(
-                        copy.deepcopy(params), composite_tag="%04d" % rank, rank=rank
-                    )
-                    processor.finalize()
-
                 else:
                     # client process
-                    processor = None
                     while True:
                         # inform the server this process is ready for an event
                         print("Rank %d getting next task" % rank)
@@ -720,8 +727,7 @@ class Script(object):
                                 str(e),
                             )
                         print("Rank %d event processed" % rank)
-                    if processor:
-                        processor.finalize()
+                processor.finalize()
         else:
             from dxtbx.command_line.image_average import splitit
 
@@ -738,7 +744,7 @@ class Script(object):
                 error_list = [r[2] for r in result]
                 if error_list.count(None) != len(error_list):
                     print(
-                        "Some processes failed excecution. Not all images may have processed. Error messages:"
+                        "Some processes failed execution. Not all images may have processed. Error messages:"
                     )
                     for error in error_list:
                         if error is None:
@@ -747,7 +753,7 @@ class Script(object):
 
         # Total Time
         logger.info("")
-        logger.info("Total Time Taken = %f seconds" % (time.time() - st))
+        logger.info("Total Time Taken = %f seconds", time.time() - st)
 
         if params.mp.debug.cProfile:
             self.pr.disable()
@@ -758,7 +764,7 @@ class Script(object):
             )
 
 
-class Processor(object):
+class Processor:
     def __init__(self, params, composite_tag=None, rank=0):
         self.params = params
         self.composite_tag = composite_tag
@@ -795,7 +801,6 @@ class Processor(object):
 
         if params.output.composite_output:
             assert composite_tag is not None
-            from dxtbx.model.experiment_list import ExperimentList
 
             self.all_imported_experiments = ExperimentList()
             self.all_strong_reflections = flex.reflection_table()
@@ -882,13 +887,19 @@ class Processor(object):
             )
 
     def debug_start(self, tag):
+        if not self.params.mp.debug.output_debug_logs:
+            return
+
         import socket
 
-        self.debug_str = "%s,%s" % (socket.gethostname(), tag)
+        self.debug_str = f"{socket.gethostname()},{tag}"
         self.debug_str += ",%s,%s,%s\n"
         self.debug_write("start")
 
     def debug_write(self, string, state=None):
+        if not self.params.mp.debug.output_debug_logs:
+            return
+
         from xfel.cxi.cspad_ana import cspad_tbx  # XXX move to common timestamp format
 
         ts = cspad_tbx.evt_timestamp()  # Now
@@ -945,7 +956,7 @@ class Processor(object):
                     < self.params.dispatch.hit_finder.minimum_number_of_reflections
                 ):
                     print("Not enough spots to index", tag)
-                    self.debug_write("not_enough_spots_%d" % len(observed), "stop")
+                    self.debug_write(f"not_enough_spots_{len(observed)}", "stop")
                     return
                 if (
                     self.params.dispatch.hit_finder.maximum_number_of_reflections
@@ -957,26 +968,26 @@ class Processor(object):
                         > self.params.dispatch.hit_finder.maximum_number_of_reflections
                     ):
                         print("Too many spots to index - Possibly junk", tag)
-                        self.debug_write("too_many_spots_%d" % len(observed), "stop")
+                        self.debug_write(f"too_many_spots_{len(observed)}", "stop")
                         return
                 self.debug_write("index_start")
                 experiments, indexed = self.index(experiments, observed)
             else:
                 print("Indexing turned off. Exiting")
-                self.debug_write("spotfinding_ok_%d" % len(observed), "done")
+                self.debug_write(f"spotfinding_ok_{len(observed)}", "done")
                 return
         except Exception as e:
             print("Couldn't index", tag, str(e))
             if not self.params.dispatch.squash_errors:
                 raise
-            self.debug_write("indexing_failed_%d" % len(observed), "stop")
+            self.debug_write(f"indexing_failed_{len(observed)}", "stop")
             return
         self.debug_write("refine_start")
         try:
             experiments, indexed = self.refine(experiments, indexed)
         except Exception as e:
             print("Error refining", tag, str(e))
-            self.debug_write("refine_failed_%d" % len(indexed), "fail")
+            self.debug_write(f"refine_failed_{len(indexed)}", "fail")
             if not self.params.dispatch.squash_errors:
                 raise
             return
@@ -986,15 +997,15 @@ class Processor(object):
                 integrated = self.integrate(experiments, indexed)
             else:
                 print("Integration turned off. Exiting")
-                self.debug_write("index_ok_%d" % len(indexed), "done")
+                self.debug_write(f"index_ok_{len(indexed)}", "done")
                 return
         except Exception as e:
             print("Error integrating", tag, str(e))
-            self.debug_write("integrate_failed_%d" % len(indexed), "fail")
+            self.debug_write(f"integrate_failed_{len(indexed)}", "fail")
             if not self.params.dispatch.squash_errors:
                 raise
             return
-        self.debug_write("integrate_ok_%d" % len(integrated), "done")
+        self.debug_write(f"integrate_ok_{len(integrated)}", "done")
 
     def pre_process(self, experiments):
         """Add any pre-processing steps here"""
@@ -1049,7 +1060,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 self.save_reflections(observed, self.params.output.strong_filename)
 
         logger.info("")
-        logger.info("Time Taken = %f seconds" % (time.time() - st))
+        logger.info("Time Taken = %f seconds", time.time() - st)
         return observed
 
     def index(self, experiments, reflections):
@@ -1088,10 +1099,10 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                     )
                     idxr.index()
                 except Exception as e:
-                    logger.info("Couldn't index using method %s" % method)
+                    logger.info("Couldn't index using method %s", method)
                     if indexing_error is None:
                         if e is None:
-                            e = Exception("Couldn't index using method %s" % method)
+                            e = Exception(f"Couldn't index using method {method}")
                         indexing_error = e
                 else:
                     indexing_error = None
@@ -1110,8 +1121,9 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 if sel.count(True) == 1:
                     filtered.extend(indexed.select(sel))
             logger.info(
-                "Filtered duplicate reflections, %d out of %d remaining"
-                % (len(filtered), len(indexed))
+                "Filtered duplicate reflections, %d out of %d remaining",
+                len(filtered),
+                len(indexed),
             )
             print(
                 "Filtered duplicate reflections, %d out of %d remaining"
@@ -1120,7 +1132,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
             indexed = filtered
 
         logger.info("")
-        logger.info("Time Taken = %f seconds" % (time.time() - st))
+        logger.info("Time Taken = %f seconds", time.time() - st)
         return experiments, indexed
 
     def refine(self, experiments, centroids):
@@ -1188,7 +1200,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
 
         if self.params.dispatch.refine:
             logger.info("")
-            logger.info("Time Taken = %f seconds" % (time.time() - st))
+            logger.info("Time Taken = %f seconds", time.time() - st)
 
         return experiments, centroids
 
@@ -1223,6 +1235,30 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
         # Match the predictions with the reference
         # Create the integrator
         experiments = ProfileModelFactory.create(self.params, experiments, indexed)
+        new_experiments = ExperimentList()
+        new_reflections = flex.reflection_table()
+        for expt_id, expt in enumerate(experiments):
+            if (
+                self.params.profile.gaussian_rs.parameters.sigma_b_cutoff is None
+                or expt.profile.sigma_b()
+                < self.params.profile.gaussian_rs.parameters.sigma_b_cutoff
+            ):
+                refls = indexed.select(indexed["id"] == expt_id)
+                refls["id"] = flex.int(len(refls), len(new_experiments))
+                # refls.reset_ids()
+                del refls.experiment_identifiers()[expt_id]
+                refls.experiment_identifiers()[len(new_experiments)] = expt.identifier
+                new_reflections.extend(refls)
+                new_experiments.append(expt)
+            else:
+                logger.info(
+                    "Rejected expt %d with sigma_b %f"
+                    % (expt_id, expt.profile.sigma_b())
+                )
+        experiments = new_experiments
+        indexed = new_reflections
+        if len(experiments) == 0:
+            raise RuntimeError("No experiments after filtering by sigma_b")
         logger.info("")
         logger.info("=" * 80)
         logger.info("")
@@ -1259,8 +1295,6 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 )()
 
         if self.params.significance_filter.enable:
-            from dxtbx.model.experiment_list import ExperimentList
-
             from dials.algorithms.integration.stills_significance_filter import (
                 SignificanceFilter,
             )
@@ -1270,8 +1304,9 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
             accepted_expts = ExperimentList()
             accepted_refls = flex.reflection_table()
             logger.info(
-                "Removed %d reflections out of %d when applying significance filter"
-                % (len(integrated) - len(filtered_refls), len(integrated))
+                "Removed %d reflections out of %d when applying significance filter",
+                len(integrated) - len(filtered_refls),
+                len(integrated),
             )
             for expt_id, expt in enumerate(experiments):
                 refls = filtered_refls.select(filtered_refls["id"] == expt_id)
@@ -1281,8 +1316,8 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                     accepted_refls.extend(refls)
                 else:
                     logger.info(
-                        "Removed experiment %d which has no reflections left after applying significance filter"
-                        % expt_id
+                        "Removed experiment %d which has no reflections left after applying significance filter",
+                        expt_id,
                     )
 
             if len(accepted_refls) == 0:
@@ -1331,7 +1366,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
         )
 
         rmsd_indexed, _ = calc_2D_rmsd_and_displacements(indexed)
-        log_str = "RMSD indexed (px): %f\n" % (rmsd_indexed)
+        log_str = f"RMSD indexed (px): {rmsd_indexed:f}\n"
         for i in range(6):
             bright_integrated = integrated.select(
                 (
@@ -1351,7 +1386,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
 
         for crystal_model in experiments.crystals():
             if hasattr(crystal_model, "get_domain_size_ang"):
-                log_str += ". Final ML model: domain size angstroms: %f, half mosaicity degrees: %f" % (
+                log_str += ". Final ML model: domain size angstroms: {:f}, half mosaicity degrees: {:f}".format(
                     crystal_model.get_domain_size_ang(),
                     crystal_model.get_half_mosaicity_deg(),
                 )
@@ -1359,7 +1394,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
         logger.info(log_str)
 
         logger.info("")
-        logger.info("Time Taken = %f seconds" % (time.time() - st))
+        logger.info("Time Taken = %f seconds", time.time() - st)
         return integrated
 
     def write_integration_pickles(self, integrated, experiments, callback=None):
@@ -1436,12 +1471,12 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
         assert "miller_index" in reference
         assert "id" in reference
         logger.info("Processing reference reflections")
-        logger.info(" read %d strong spots" % len(reference))
+        logger.info(" read %d strong spots", len(reference))
         mask = reference.get_flags(reference.flags.indexed)
         rubbish = reference.select(~mask)
         if mask.count(False) > 0:
             reference.del_selected(~mask)
-            logger.info(" removing %d unindexed reflections" % mask.count(True))
+            logger.info(" removing %d unindexed reflections", mask.count(True))
         if len(reference) == 0:
             raise Sorry(
                 """
@@ -1454,7 +1489,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
         if mask.count(True) > 0:
             rubbish.extend(reference.select(mask))
             reference.del_selected(mask)
-            logger.info(" removing %d reflections with hkl (0,0,0)" % mask.count(True))
+            logger.info(" removing %d reflections with hkl (0,0,0)", mask.count(True))
         mask = reference["id"] < 0
         if mask.count(True) > 0:
             raise Sorry(
@@ -1464,17 +1499,17 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
       """
                 % mask.count(True)
             )
-        logger.info(" using %d indexed reflections" % len(reference))
-        logger.info(" found %d junk reflections" % len(rubbish))
-        logger.info(" time taken: %g" % (time.time() - st))
+        logger.info(" using %d indexed reflections", len(reference))
+        logger.info(" found %d junk reflections", len(rubbish))
+        logger.info(" time taken: %g", time.time() - st)
         return reference, rubbish
 
     def save_reflections(self, reflections, filename):
         """Save the reflections to file."""
         st = time.time()
-        logger.info("Saving %d reflections to %s" % (len(reflections), filename))
+        logger.info("Saving %d reflections to %s", len(reflections), filename)
         reflections.as_file(filename)
-        logger.info(" time taken: %g" % (time.time() - st))
+        logger.info(" time taken: %g", time.time() - st)
 
     def finalize(self):
         """Perform any final operations"""
@@ -1493,7 +1528,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 if rank % stride == 0:
                     subranks = [rank + i for i in range(1, stride) if rank + i < size]
                     for i in range(len(subranks)):
-                        logger.info("Rank %d waiting for sender" % rank)
+                        logger.info("Rank %d waiting for sender", rank)
                         (
                             sender,
                             imported_experiments,
@@ -1507,9 +1542,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                             int_pickles,
                             int_pickle_filenames,
                         ) = comm.recv(source=MPI.ANY_SOURCE)
-                        logger.info(
-                            "Rank %d recieved data from rank %d" % (rank, sender)
-                        )
+                        logger.info("Rank %d received data from rank %d", rank, sender)
 
                         def extend_with_bookkeeping(
                             src_expts, src_refls, dest_expts, dest_refls
@@ -1564,8 +1597,9 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 else:
                     destrank = (rank // stride) * stride
                     logger.info(
-                        "Rank %d sending results to rank %d"
-                        % (rank, (rank // stride) * stride)
+                        "Rank %d sending results to rank %d",
+                        rank,
+                        (rank // stride) * stride,
                     )
                     comm.send(
                         (
@@ -1689,10 +1723,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 ):
                     string = BytesIO(pickle.dumps(d, protocol=2))
                     info = tarfile.TarInfo(name=fname)
-                    if six.PY3:
-                        info.size = string.getbuffer().nbytes
-                    else:
-                        info.size = len(string.buf)
+                    info.size = string.getbuffer().nbytes
                     info.mtime = time.time()
                     tar.addfile(tarinfo=info, fileobj=string)
                 tar.close()

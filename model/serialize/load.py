@@ -1,6 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
-import six.moves.cPickle as pickle
+import pickle
 
 __all__ = ["reference", "reflections"]
 

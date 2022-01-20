@@ -1,14 +1,16 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
-from __future__ import absolute_import, division, print_function
+# LIBTBX_SET_DISPATCHER_NAME dials.reciprocal_lattice_viewer
+# LIBTBX_SET_DISPATCHER_NAME dials.rlv
 
 import copy
+import os
 
 import wxtbx.app
 from scitbx.array_family import flex
 
 import dials.util.log
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.reciprocal_lattice.viewer import ReciprocalLatticeViewer, phil_scope
 
 help_message = """
@@ -27,7 +29,7 @@ def run(args=None):
     dials.util.log.print_banner()
     usage = "dials.reciprocal_lattice_viewer [options] models.expt observations.refl"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_experiments=True,
@@ -61,7 +63,7 @@ def run(args=None):
     f = ReciprocalLatticeViewer(
         None,
         -1,
-        "Reflection data viewer",
+        os.path.realpath(params.input.reflections[0].filename),
         size=(1024, 768),
         settings=copy.deepcopy(params),
     )

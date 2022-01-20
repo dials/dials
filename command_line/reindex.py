@@ -1,13 +1,9 @@
-# coding: utf-8
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
-from __future__ import absolute_import, division, print_function
 
 import copy
 import os
 import sys
-
-import six.moves.cPickle as pickle
 
 import iotbx.phil
 from cctbx import sgtbx
@@ -15,9 +11,10 @@ from rstbx.symmetry.constraints import parameter_reduction
 
 import dials.util
 from dials.algorithms.indexing.assign_indices import AssignIndicesGlobal
+from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
 from dials.array_family import flex
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 
 help_message = """
 
@@ -27,7 +24,7 @@ provided in h,k,l, or a,b,c or x,y,z conventions. By default the change of
 basis operator will also be applied to the space group in the indexed.expt
 file, however, optionally, a space group (including setting) to be applied
 AFTER applying the change of basis operator can be provided.
-Alternatively, to reindex an integated dataset in the case of indexing abiguity,
+Alternatively, to reindex an integated dataset in the case of indexing ambiguity,
 a reference dataset (models.expt and reflection.refl) in the same space
 group can be specified. In this case, any potential twin operators are tested,
 and the dataset is reindexed to the setting that gives the highest correlation
@@ -116,7 +113,7 @@ def derive_change_of_basis_op(from_hkl, to_hkl):
     change_of_basis_op = sgtbx.change_of_basis_op(
         sgtbx.rt_mx(sgtbx.rot_mx(r, denominator=denom))
     ).inverse()
-    print("discovered change_of_basis_op=%s" % (str(change_of_basis_op)))
+    print(f"discovered change_of_basis_op={change_of_basis_op}")
 
     # sanity check that this is the right cb_op
     assert (change_of_basis_op.apply(from_hkl) == to_hkl).count(False) == 0
@@ -164,7 +161,7 @@ def run(args=None):
 
     usage = "dials.reindex [options] indexed.expt indexed.refl"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_reflections=True,
@@ -191,21 +188,36 @@ def run(args=None):
         reference_experiments = load.experiment_list(
             params.reference.experiments, check_format=False
         )
-        assert len(reference_experiments.crystals()) == 1
-        reference_crystal = reference_experiments.crystals()[0]
+        if len(reference_experiments.crystals()) == 1:
+            reference_crystal = reference_experiments.crystals()[0]
+        else:
+            # first check sg all same
+            sgs = [
+                expt.crystal.get_space_group().type().number() for expt in experiments
+            ]
+            if len(set(sgs)) > 1:
+                raise Sorry(
+                    """The reference experiments have different space groups:
+                    space group numbers found: %s
+                    Please reanalyse the data so that space groups are consistent,
+                    (consider using dials.reindex, dials.symmetry or dials.cosym)"""
+                    % ", ".join(map(str, set(sgs)))
+                )
+
+            reference_crystal = reference_experiments.crystals()[0]
+            reference_crystal.unit_cell = determine_best_unit_cell(
+                reference_experiments
+            )
 
     if params.reference.reflections is not None:
         # First check that we have everything as expected for the reference reindexing
-        # Currently only supports reindexing one dataset at a time
         if params.reference.experiments is None:
             raise Sorry(
                 """For reindexing against a reference dataset, a reference
-experiments file must also be specified with the option: reference= """
+experiments file must also be specified with the option: reference.experiments= """
             )
         if not os.path.exists(params.reference.reflections):
             raise Sorry("Could not locate reference dataset reflection file")
-        if len(experiments) != 1 or len(reflections) != 1:
-            raise Sorry("Only one dataset can be reindexed to a reference at a time")
 
         reference_reflections = flex.reflection_table().from_file(
             params.reference.reflections
@@ -282,11 +294,11 @@ experiments file must also be specified with the option: reference= """
             R, axis, angle, change_of_basis_op = difference_rotation_matrix_axis_angle(
                 cryst, reference_crystal
             )
-            print("Change of basis op: %s" % change_of_basis_op)
+            print(f"Change of basis op: {change_of_basis_op}")
             print("Rotation matrix to transform input crystal to reference::")
             print(R.mathematica_form(format="%.3f", one_row_per_line=True))
             print(
-                "Rotation of %.3f degrees" % angle,
+                f"Rotation of {angle:.3f} degrees",
                 "about axis (%.3f, %.3f, %.3f)" % axis,
             )
 
@@ -328,7 +340,7 @@ experiments file must also be specified with the option: reference= """
                 sys.exit(f"Error: {original_message} Is your change_of_basis_op valid?")
             raise
 
-        print("Saving reindexed experimental models to %s" % params.output.experiments)
+        print(f"Saving reindexed experimental models to {params.output.experiments}")
         experiments.as_file(params.output.experiments)
 
     if len(reflections):
@@ -357,9 +369,8 @@ experiments file must also be specified with the option: reference= """
         reflections["miller_index"].set_selected(sel, miller_indices_reindexed)
         reflections["miller_index"].set_selected(~sel, (0, 0, 0))
 
-        print("Saving reindexed reflections to %s" % params.output.reflections)
-        with open(params.output.reflections, "wb") as fh:
-            pickle.dump(reflections, fh, protocol=pickle.HIGHEST_PROTOCOL)
+        print(f"Saving reindexed reflections to {params.output.reflections}")
+        reflections.as_file(params.output.reflections)
 
 
 if __name__ == "__main__":

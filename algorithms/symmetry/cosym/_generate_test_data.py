@@ -1,4 +1,6 @@
-from __future__ import absolute_import, division, print_function
+import random
+
+import numpy as np
 
 import scitbx.matrix
 import scitbx.random
@@ -73,12 +75,10 @@ def generate_test_data(
     twin_fractions=None,
     map_to_minimum=True,
 ):
-
-    import random
-
     if seed is not None:
         flex.set_random_seed(seed)
         random.seed(seed)
+        np.random.seed(seed)
 
     assert [unit_cell, lattice_group].count(None) > 0
 
@@ -124,16 +124,14 @@ def generate_test_data(
     cb_ops = twin_ops
     cb_ops.insert(0, sgtbx.change_of_basis_op())
 
-    reindexing_ops = {}
+    reindexing_ops = []
 
     datasets = []
     rand_norm = scitbx.random.normal_distribution(mean=0, sigma=sigma)
     g = scitbx.random.variate(rand_norm)
     for i in range(sample_size):
         cb_op = random.choice(cb_ops)
-        if cb_op.as_xyz() not in reindexing_ops:
-            reindexing_ops[cb_op.as_xyz()] = set()
-        reindexing_ops[cb_op.as_xyz()].add(i)
+        reindexing_ops.append(cb_op.as_xyz())
         d = intensities.change_basis(cb_op).customized_copy(
             crystal_symmetry=intensities.crystal_symmetry()
         )

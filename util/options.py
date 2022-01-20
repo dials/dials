@@ -1,21 +1,20 @@
-from __future__ import absolute_import, division, print_function
-
+import argparse
 import copy
 import itertools
-import optparse
 import os
 import pickle
 import sys
 import traceback
+import warnings
 from collections import defaultdict, namedtuple
 from glob import glob
 
 from orderedset import OrderedSet
-from six.moves.urllib.parse import urlparse
 
 import libtbx.phil
 from dxtbx.model import ExperimentList
 from dxtbx.model.experiment_list import ExperimentListFactory
+from dxtbx.util import get_url_scheme
 
 from dials.array_family import flex
 from dials.util import Sorry
@@ -24,14 +23,6 @@ from dials.util.multi_dataset_handling import (
     sort_tables_to_experiments_order,
 )
 from dials.util.phil import FilenameDataWrapper
-
-try:
-    import cPickle  # deliberately not using six.moves
-
-    pickle_errors = pickle.UnpicklingError, cPickle.UnpicklingError
-except ImportError:
-    pickle_errors = (pickle.UnpicklingError,)
-
 
 tolerance_phil_scope = libtbx.phil.parse(
     """
@@ -155,7 +146,7 @@ ArgumentHandlingErrorInfo = namedtuple(
 )
 
 
-class Importer(object):
+class Importer:
     """A class to import the command line arguments."""
 
     def __init__(
@@ -225,7 +216,7 @@ class Importer(object):
             self.unhandled = self.try_read_reflections(self.unhandled, verbose)
 
     def _handle_converter_error(self, argument, exception, type, validation=False):
-        "Record information about errors that occured processing an argument"
+        "Record information about errors that occurred processing an argument"
         self.handling_errors[argument].append(
             ArgumentHandlingErrorInfo(
                 name=argument,
@@ -267,7 +258,7 @@ class Importer(object):
         args_new = []
         for arg in args:
             # Don't expand wildcards if URI-style filename
-            if "*" in arg and not urlparse(arg).scheme:
+            if "*" in arg and not get_url_scheme(arg):
                 args_new.extend(glob(arg))
             else:
                 args_new.append(arg)
@@ -276,7 +267,6 @@ class Importer(object):
         unhandled = []
         experiments = ExperimentListFactory.from_filenames(
             args,
-            verbose=verbose,
             unhandled=unhandled,
             compare_beam=compare_beam,
             compare_detector=compare_detector,
@@ -335,14 +325,14 @@ class Importer(object):
         for argument in args:
             try:
                 if not os.path.exists(argument):
-                    raise Sorry("File %s does not exist" % argument)
+                    raise Sorry(f"File {argument} does not exist")
                 self.reflections.append(
                     FilenameDataWrapper(
                         filename=argument,
                         data=flex.reflection_table.from_file(argument),
                     )
                 )
-            except pickle_errors:
+            except pickle.UnpicklingError:
                 self._handle_converter_error(
                     argument,
                     pickle.UnpicklingError("Appears to be an invalid pickle file"),
@@ -356,7 +346,7 @@ class Importer(object):
         return unhandled
 
 
-class PhilCommandParser(object):
+class PhilCommandParser:
     """A class to parse phil parameters from positional arguments"""
 
     def __init__(
@@ -471,7 +461,7 @@ class PhilCommandParser(object):
                     else:
                         raise
             # Treat "has a schema" as "looks like a URL (not phil)
-            elif "=" in arg and not urlparse(arg).scheme:
+            elif "=" in arg and not get_url_scheme(arg):
                 try:
                     user_phils.append(interpretor.process_arg(arg=arg))
                 except Exception:
@@ -491,9 +481,7 @@ class PhilCommandParser(object):
         if len(unused) > 0:
             msg = [item.object.as_str().strip() for item in unused]
             msg = "\n".join(["  %s" % line for line in msg])
-            raise RuntimeError(
-                "The following definitions were not recognised\n%s" % msg
-            )
+            raise RuntimeError(f"The following definitions were not recognised\n{msg}")
 
         # Extract the parameters
         params = self._phil.extract()
@@ -559,7 +547,7 @@ class PhilCommandParser(object):
             load_models=load_models,
         )
 
-        # Grab a copy of the errors that occured in case the caller wants them
+        # Grab a copy of the errors that occurred in case the caller wants them
         self.handling_errors = importer.handling_errors
 
         # Add the cached arguments
@@ -597,13 +585,12 @@ class PhilCommandParser(object):
         # Add the experiments phil scope
         if self._read_experiments or self._read_experiments_from_images:
             phil_scope = parse(
-                """
+                f"""
         experiments = None
-          .type = experiment_list(check_format=%r)
+          .type = experiment_list(check_format={self._check_format!r})
           .multiple = True
           .help = "The experiment list file path"
       """
-                % self._check_format
             )
             main_scope.adopt_scope(phil_scope)
 
@@ -627,7 +614,7 @@ class PhilCommandParser(object):
         return input_phil_scope
 
 
-class OptionParserBase(optparse.OptionParser, object):
+class ArgumentParserBase(argparse.ArgumentParser):
     """The base class for the option parser."""
 
     def __init__(self, config_options=False, sort_options=False, **kwargs):
@@ -639,11 +626,11 @@ class OptionParserBase(optparse.OptionParser, object):
         """
 
         # Initialise the option parser
-        super(OptionParserBase, self).__init__(**kwargs)
+        super().__init__(add_help=False, **kwargs)
 
         # Add an option to show configuration parameters
         if config_options:
-            self.add_option(
+            self.add_argument(
                 "-c",
                 "--show-config",
                 action="store_true",
@@ -651,33 +638,33 @@ class OptionParserBase(optparse.OptionParser, object):
                 dest="show_config",
                 help="Show the configuration parameters.",
             )
-            self.add_option(
+            self.add_argument(
                 "-a",
                 "--attributes-level",
                 default=0,
-                type="int",
+                type=int,
                 dest="attributes_level",
                 help="Set the attributes level for showing configuration parameters",
             )
-            self.add_option(
+            self.add_argument(
                 "-e",
                 "--expert-level",
-                type="int",
+                type=int,
                 default=0,
                 dest="expert_level",
                 help="Set the expert level for showing configuration parameters",
             )
-            self.add_option(
+            self.add_argument(
                 "--export-autocomplete-hints",
                 action="store_true",
                 default=False,
                 dest="export_autocomplete_hints",
-                help=optparse.SUPPRESS_HELP,
+                help=argparse.SUPPRESS,
             )
 
         # Add an option to sort
         if sort_options:
-            self.add_option(
+            self.add_argument(
                 "-s",
                 "--sort",
                 action="store_true",
@@ -686,8 +673,18 @@ class OptionParserBase(optparse.OptionParser, object):
                 help="Sort the arguments",
             )
 
+        # Set a help parameter
+        self.add_argument(
+            "-h",
+            "--help",
+            action="count",
+            default=0,
+            dest="help",
+            help="Show this help message and exit. Can be specified multiple times to increase verbosity.",
+        )
+
         # Set a verbosity parameter
-        self.add_option(
+        self.add_argument(
             "-v",
             action="count",
             default=0,
@@ -698,14 +695,14 @@ class OptionParserBase(optparse.OptionParser, object):
         # Add an option for PHIL file to parse - PHIL files passed as
         # positional arguments are also read but this allows the user to
         # explicitly specify STDIN
-        self.add_option(
+        self.add_argument(
             "--phil",
             action="append",
             metavar="FILE",
             help="PHIL files to read. Pass '-' for STDIN. Can be specified multiple times, but duplicates ignored.",
         )
 
-    def parse_args(self, args=None, quick_parse=False):
+    def parse_known_args(self, args=None, quick_parse=False):
         """
         Parse the command line arguments and get system configuration.
 
@@ -716,7 +713,7 @@ class OptionParserBase(optparse.OptionParser, object):
         # Parse the command line arguments, this will separate out
         # options (e.g. -o, --option) and positional arguments, in
         # which phil options will be included.
-        options, args = super(OptionParserBase, self).parse_args(args=args)
+        options, args = super().parse_known_args(args=args)
 
         # Read any argument-specified PHIL file. Ignore duplicates.
         if options.phil:
@@ -745,9 +742,9 @@ class OptionParserBase(optparse.OptionParser, object):
         return self.epilog
 
 
-class OptionParser(OptionParserBase):
+class ArgumentParser(ArgumentParserBase):
     """A class to parse command line options and get the system configuration.
-    The class extends optparse.OptionParser to include the reading of phil
+    The class extends argparse.ArgumentParser to include the reading of phil
     parameters."""
 
     def __init__(
@@ -758,7 +755,8 @@ class OptionParser(OptionParserBase):
         read_experiments_from_images=False,
         check_format=True,
         sort_options=False,
-        **kwargs
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        **kwargs,
     ):
         """
         Initialise the class.
@@ -781,10 +779,11 @@ class OptionParser(OptionParserBase):
         )
 
         # Initialise the option parser
-        super(OptionParser, self).__init__(
+        super().__init__(
             sort_options=sort_options,
             config_options=self.system_phil.as_str() != "",
-            **kwargs
+            formatter_class=formatter_class,
+            **kwargs,
         )
 
     def parse_args(
@@ -811,22 +810,33 @@ class OptionParser(OptionParserBase):
         # Parse the command line arguments, this will separate out
         # options (e.g. -o, --option) and positional arguments, in
         # which phil options will be included.
-        options, args = super(OptionParser, self).parse_args(
-            args=args, quick_parse=quick_parse
-        )
+        options, args = super().parse_known_args(args=args, quick_parse=quick_parse)
+
+        if options.help:
+            self.print_help()
 
         # Show config
         if hasattr(options, "show_config") and options.show_config:
+            show_config = True
+            attributes_level = options.attributes_level
+            expert_level = options.expert_level
+        elif options.help:
+            show_config = True
+            attributes_level = options.verbose
+            expert_level = options.help - 1
+        else:
+            show_config = False
+
+        if show_config:
             print(
                 "Showing configuration parameters with:\n"
-                "  attributes_level = %d\n"
-                "  expert_level = %d\n"
-                % (options.attributes_level, options.expert_level)
+                f"  attributes_level = {attributes_level}\n"
+                f"  expert_level = {expert_level}\n"
             )
             print(
                 self.phil.as_str(
-                    expert_level=options.expert_level,
-                    attributes_level=options.attributes_level,
+                    expert_level=expert_level,
+                    attributes_level=attributes_level,
                 )
             )
             exit(0)
@@ -926,11 +936,7 @@ class OptionParser(OptionParserBase):
                 )
                 slen = max(len(x.type) for x in valid)
                 for err in valid:
-                    msg.append(
-                        "    - {} {}".format(
-                            "{}:".format(err.type).ljust(slen + 1), err.message
-                        )
-                    )
+                    msg.append(f"    - {f'{err.type}:'.ljust(slen + 1)} {err.message}")
         # The others
         for arg in [x for x in unhandled if x not in self._phil_parser.handling_errors]:
             msg.append("  " + str(arg))
@@ -972,14 +978,14 @@ class OptionParser(OptionParserBase):
         """
         return text.replace("::", ":")
 
-    def format_help(self, formatter=None):
+    def format_help(self):
         """
         Format the help string
 
         :param formatter: The formatter to use
         :return: The formatted help text
         """
-        result = super(OptionParser, self).format_help(formatter=formatter)
+        result = super().format_help()
         return self._strip_rst_markup(result)
 
     def _export_autocomplete_hints(self):
@@ -1021,7 +1027,7 @@ class OptionParser(OptionParserBase):
 
             # Identify all names that are directly on this level
             # or represent parameter groups with a common prefix
-            top_elements = {"%s%s" % (x[0], "=" if len(x) == 1 else ".") for x in paths}
+            top_elements = {f"{x[0]}{'=' if len(x) == 1 else '.'}" for x in paths}
 
             # Partition all names that are further down the tree by their prefix
             subpaths = {}
@@ -1034,8 +1040,8 @@ class OptionParser(OptionParserBase):
             # If there are prefixes with only one name beneath them, put them on the top level
             for s in list(subpaths.keys()):
                 if len(subpaths[s]) == 1:
-                    top_elements.remove("%s." % s)
-                    top_elements.add("%s.%s=" % (s, subpaths[s][0]))
+                    top_elements.remove(f"{s}.")
+                    top_elements.add(f"{s}.{subpaths[s][0]}=")
                     del subpaths[s]
 
             result = {"": top_elements}
@@ -1049,7 +1055,7 @@ class OptionParser(OptionParserBase):
         print("{")
         print(' case "$1" in')
         for p in parameter_choice_list:
-            print("\n  %s)" % p)
+            print(f"\n  {p})")
             print(
                 '   _dials_autocomplete_values="%s";;'
                 % " ".join(parameter_choice_list[p])
@@ -1064,8 +1070,8 @@ class OptionParser(OptionParserBase):
         print(' case "$1" in')
         for p, exp in parameter_expansion_list.items():
             if exp is not None:
-                print("\n  %s=)" % p)
-                print('   _dials_autocomplete_values="%s=";;' % exp)
+                print(f"\n  {p}=)")
+                print(f'   _dials_autocomplete_values="{exp}=";;')
         print("\n  *)")
         print('    _dials_autocomplete_values="";;')
         print(" esac")
@@ -1077,7 +1083,7 @@ class OptionParser(OptionParserBase):
             for subkey in tree:
                 if subkey != "":
                     _tree_to_bash(prefix + subkey + ".", tree[subkey])
-                    print("\n  %s*)" % (prefix + subkey + "."))
+                    print(f"\n  {prefix + subkey + '.'}*)")
                     print(
                         '    _dials_autocomplete_values="%s";;'
                         % " ".join(
@@ -1100,6 +1106,17 @@ class OptionParser(OptionParserBase):
         print('    _dials_autocomplete_values="%s";;' % " ".join(sorted(toplevelset)))
         print(" esac")
         print("}")
+
+
+class OptionParser(ArgumentParser):
+    def __init__(self, *args, **kwargs):
+        # Backwards compatibility 2021-11-10
+        warnings.warn(
+            "OptionParser will be deprecated in future, use ArgumentParser instead",
+            PendingDeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)
 
 
 def flatten_reflections(filename_object_list):

@@ -1,9 +1,6 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 import sys
-
-from six.moves import cStringIO as StringIO
+from io import StringIO
 
 from iotbx.phil import parse
 from libtbx import Auto
@@ -23,7 +20,7 @@ MTZ format exports the files as an unmerged mtz file, ready for input to
 downstream programs such as Pointless and Aimless. For exporting integrated,
 but unscaled data, the required input is a models.expt file and an
 integrated.refl file. For exporting scaled data, the required input is a
-models.expt file and a scaled.pickle file, also passing the option
+models.expt file and a scaled.refl file, also passing the option
 intensity=scale.
 
 NXS format exports the files as an NXmx file. The required input is a
@@ -45,14 +42,14 @@ mosflm.in file containing basic instructions for input to mosflm. The required
 input is an models.expt file.
 
 XDS format exports a models.expt file as XDS.INP and XPARM.XDS files. If a
-reflection pickle is given it will be exported as a SPOT.XDS file.
+reflection file is given it will be exported as a SPOT.XDS file.
 
 Examples::
 
   # Export to mtz
   dials.export models.expt integrated.refl
   dials.export models.expt integrated.refl mtz.hklout=integrated.mtz
-  dials.export models.expt scaled.pickle intensity=scale mtz.hklout=scaled.mtz
+  dials.export models.expt scaled.refl intensity=scale mtz.hklout=scaled.mtz
 
   # Export to nexus
   dials.export models.expt integrated.refl format=nxs
@@ -66,16 +63,16 @@ Examples::
   dials.export models.expt integrated.refl format=mosflm
 
   # Export to xds
-  dials.export strong.pickle format=xds
-  dials.export indexed.pickle format=xds
+  dials.export strong.refl format=xds
+  dials.export indexed.refl format=xds
   dials.export models.expt format=xds
-  dials.export models.expt indexed.pickle format=xds
+  dials.export models.expt indexed.refl format=xds
 """
 
 phil_scope = parse(
     """
 
-  format = *mtz sadabs nxs mmcif mosflm xds xds_ascii json
+  format = *mtz sadabs nxs mmcif mosflm xds xds_ascii json shelx
     .type = choice
     .help = "The output file format"
 
@@ -233,6 +230,21 @@ phil_scope = parse(
               "reciprocal lattice points."
   }
 
+  shelx {
+    hklout = dials.hkl
+      .type = path
+      .help = "The output hkl file"
+    ins = dials.ins
+      .type = path
+      .help = "The output ins file"
+    scale = True
+      .type = bool
+      .help = "Scale reflections to maximise output precision in SHELX 8.2f format"
+    scale_range = -9999.0, 9999.0
+      .type = floats(size=2, value_min=-999999., value_max=9999999.)
+      .help = "minimum or maximum intensity value after scaling."
+  }
+
   output {
     log = dials.export.log
       .type = path
@@ -279,7 +291,7 @@ def export_mtz(params, experiments, reflections):
     # Handle case where user has passed data before integration
     if (
         "intensity.sum.value" not in reflections[0]
-        or "intensity.prf.value" not in reflections[0]
+        and "intensity.prf.value" not in reflections[0]
     ):
         raise ValueError(
             "Error: No intensity data in reflections; cannot export un-integrated data to MTZ"
@@ -469,15 +481,40 @@ def export_json(params, experiments, reflections):
     )
 
 
+def export_shelx(params, experiments, reflections):
+    """
+    Export data in SHELX HKL format
+
+    :param params: The phil parameters
+    :param experiments: The experiment list
+    :param reflections: The reflection tables
+    """
+
+    _check_input(experiments, reflections, params=params)
+
+    # check for a single intensity choice
+    if len(params.intensity) > 1:
+        raise ValueError(
+            "Only 1 intensity option can be exported in this format, please choose a single intensity option e.g. intensity=profile"
+        )
+
+    from dials.util.export_shelx import export_shelx
+
+    export_shelx(reflections[0], experiments, params)
+
+
 @show_mail_handle_errors()
 def run(args=None):
-    from dials.util.options import OptionParser, reflections_and_experiments_from_files
+    from dials.util.options import (
+        ArgumentParser,
+        reflections_and_experiments_from_files,
+    )
     from dials.util.version import dials_version
 
-    usage = "dials.export models.expt reflections.pickle [options]"
+    usage = "dials.export models.expt reflections.refl [options]"
 
     # Create the option parser
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         read_experiments=True,
         read_reflections=True,
@@ -510,18 +547,25 @@ def run(args=None):
         params.input.reflections, params.input.experiments
     )
 
-    # do auto intepreting of intensity choice:
+    # do auto interpreting of intensity choice:
     # note that this may still fail certain checks further down the processing,
     # but these are the defaults to try
-    if params.intensity in ([None], [Auto], ["auto"]) and reflections:
+    if params.intensity in ([None], [Auto], ["auto"], Auto) and reflections:
         if ("intensity.scale.value" in reflections[0]) and (
             "intensity.scale.variance" in reflections[0]
         ):
             params.intensity = ["scale"]
             logger.info("Data appears to be scaled, setting intensity = scale")
         else:
-            params.intensity = ["profile", "sum"]
-            logger.info("Data appears to be unscaled, setting intensity = profile+sum")
+            params.intensity = []
+            if "intensity.sum.value" in reflections[0]:
+                params.intensity.append("sum")
+            if "intensity.prf.value" in reflections[0]:
+                params.intensity.append("profile")
+            logger.info(
+                "Data appears to be unscaled, setting intensity = "
+                + "+".join(params.intensity)
+            )
 
     # Choose the exporter
     exporter = {
@@ -533,15 +577,17 @@ def run(args=None):
         "mosflm": export_mosflm,
         "xds": export_xds,
         "json": export_json,
+        "shelx": export_shelx,
     }.get(params.format)
     if not exporter:
-        sys.exit("Unknown format: %s" % params.format)
+        sys.exit(f"Unknown format: {params.format}")
 
     # Export the data
     try:
         exporter(params, experiments, reflections)
     except Exception as e:
-        sys.exit(e)
+        logger.error(f"Error: {e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

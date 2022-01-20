@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 from cctbx.array_family import flex
 from iotbx.data_plots import table_data
 from libtbx import phil
@@ -106,7 +104,7 @@ The number of starting_doses must equal the number of experiments (%s)"""
     return start_doses, doses_per_image
 
 
-class Statistics(object):
+class Statistics:
     def __init__(
         self, intensities, dose, n_bins=8, range_min=None, range_max=None, range_width=1
     ):

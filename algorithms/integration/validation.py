@@ -1,9 +1,7 @@
-from __future__ import absolute_import, division, print_function
-
 from dials.array_family import flex
 
 
-class ValidatedMultiExpProfileModeller(object):
+class ValidatedMultiExpProfileModeller:
     """
     A class to wrap profile modeller for validation
     """
@@ -96,8 +94,7 @@ class ValidatedMultiExpProfileModeller(object):
         """
         Iterate through the modellers
         """
-        for m in self.modellers:
-            yield m
+        yield from self.modellers
 
     def __len__(self):
         """

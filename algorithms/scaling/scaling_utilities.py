@@ -2,15 +2,18 @@
 Module of utility functions for scaling.
 """
 
-from __future__ import absolute_import, division, print_function
 
-import copy
 import logging
-from math import acos, pi
+from math import acos
 
-from cctbx import miller, uctbx
+import numpy as np
+from scipy.spatial.transform import Rotation
+
+import dxtbx.flumpy as flumpy
+from cctbx import miller
 
 from dials.array_family import flex
+from dials.util.normalisation import quasi_normalisation as _quasi_normalisation
 from dials_scaling_ext import (
     calc_theta_phi,
     create_sph_harm_table,
@@ -52,7 +55,7 @@ class BadDatasetForScalingException(Exception):
     pass
 
 
-class Reasons(object):
+class Reasons:
     def __init__(self):
         self.reasons = {}
 
@@ -61,40 +64,54 @@ class Reasons(object):
 
     def __repr__(self):
         reasonlist = [
-            "criterion: %s, reflections: %s\n" % (k, v)
+            f"criterion: {k}, reflections: {v}\n"
             for (k, v) in self.reasons.items()
             if v > 0
         ]
         return "Reflections passing individual criteria:\n" + "".join(reasonlist)
 
 
-def calc_crystal_frame_vectors(reflection_table, experiments):
+def calc_crystal_frame_vectors(reflection_table, experiment):
     """Calculate the diffraction vectors in the crystal frame."""
-    reflection_table["s0"] = flex.vec3_double(
-        [experiments.beam.get_sample_to_source_direction()] * len(reflection_table)
+
+    gonio = experiment.goniometer
+    fixed_rotation = np.array(gonio.get_fixed_rotation()).reshape(3, 3)
+    setting_rotation = np.array(gonio.get_setting_rotation()).reshape(3, 3)
+    rotation_axis = np.array(gonio.get_rotation_axis_datum())
+
+    s0c = np.zeros((len(reflection_table), 3))
+    s1c = np.zeros((len(reflection_table), 3))
+    s0 = np.array(experiment.beam.get_sample_to_source_direction())
+    s1 = flumpy.to_numpy(reflection_table["s1"])
+    phi = flumpy.to_numpy(
+        experiment.scan.get_angle_from_array_index(
+            reflection_table["xyzobs.px.value"].parts()[2], deg=False
+        )
     )
-    rot_axis = flex.vec3_double([experiments.goniometer.get_rotation_axis()])
-    angles = reflection_table["phi"] * -1.0 * pi / 180  # want to do an inverse rot.
-    reflection_table["s1c"] = rotate_vectors_about_axis(
-        rot_axis, reflection_table["s1"], angles
-    )
-    reflection_table["s0c"] = rotate_vectors_about_axis(
-        rot_axis, reflection_table["s0"], angles
-    )
-    reflection_table["s1c"] = align_rotation_axis_along_z(
-        rot_axis, reflection_table["s1c"]
-    )
-    reflection_table["s0c"] = align_rotation_axis_along_z(
-        rot_axis, reflection_table["s0c"]
-    )
+    # exclude any data that has a bad s1.
+    lengths = np.linalg.norm(s1, axis=1)
+    non_zero = np.where(lengths > 0.0)
+    sel_s1 = s1[non_zero]
+    s1n = sel_s1 / lengths[non_zero][:, np.newaxis]
+    rotation_matrix = Rotation.from_rotvec(
+        phi[non_zero][:, np.newaxis] * rotation_axis
+    ).as_matrix()
+    R = setting_rotation @ rotation_matrix @ fixed_rotation
+    R_inv = np.transpose(R, axes=(0, 2, 1))
+    s0c[non_zero] = R_inv @ s0
+    # Pairwise matrix multiplication of the arrays of R_inv matrices and s1n vectors
+    s1c[non_zero] = np.einsum("ijk,ik->ij", R_inv, s1n)
+
+    reflection_table["s0c"] = flumpy.vec_from_numpy(s0c)
+    reflection_table["s1c"] = flumpy.vec_from_numpy(s1c)
     return reflection_table
 
 
-def align_rotation_axis_along_z(exp_rot_axis, vectors):
+def align_axis_along_z(alignment_axis, vectors):
     """Rotate the coordinate system such that the exp_rot_axis is along z."""
-    if list(exp_rot_axis) == [(0.0, 0.0, 1.0)]:
+    if alignment_axis == (0.0, 0.0, 1.0):
         return vectors
-    (ux, uy, uz) = exp_rot_axis[0][0], exp_rot_axis[0][1], exp_rot_axis[0][2]
+    (ux, uy, uz) = alignment_axis
     cross_prod_uz = flex.vec3_double([(uy, -1.0 * ux, 0.0)])
     angle_between_u_z = +1.0 * acos(uz / ((ux ** 2 + uy ** 2 + uz ** 2) ** 0.5))
     phi = flex.double(vectors.size(), angle_between_u_z)
@@ -140,49 +157,23 @@ def quasi_normalisation(reflection_table, experiment):
     )
 
     # handle negative reflections to minimise effect on mean I values.
-    rt_subset["intensity_for_norm"] = copy.deepcopy(rt_subset["intensity"])
-    rt_subset["intensity_for_norm"].set_selected(rt_subset["intensity"] < 0.0, 0.0)
-    miller_array = miller.array(miller_set, data=rt_subset["intensity_for_norm"])
-    n_refl = rt_subset.size()
-
-    # set up binning objects
-    if n_refl > 20000:
-        n_refl_shells = 20
-    elif n_refl > 15000:
-        n_refl_shells = 15
-    elif n_refl > 10000:
-        n_refl_shells = 10
-    else:
+    miller_array = miller.array(
+        miller_set, data=rt_subset["intensity"], sigmas=rt_subset["variance"] ** 0.5
+    )
+    if rt_subset.size() <= 10000:
         logger.info(
-            "No normalised intensity values were calculated, as an insufficient\n"
-            "number of reflections were detected. All normalised intensity \n"
-            "values will be set to 1 to allow use in scaling model determination. \n"
+            """
+Insufficient number of reflections (<10000) to calculate normalised intensities.
+All reflections will be considered for scaling model determination.
+"""
         )
         reflection_table["Esq"] = flex.double(reflection_table.size(), 1.0)
-        return reflection_table
-
-    d_star_sq = miller_array.d_star_sq().data()
-    d_star_sq_min = flex.min(d_star_sq)
-    d_star_sq_max = flex.max(d_star_sq)
-    span = d_star_sq_max - d_star_sq_min
-
-    relative_tolerance = 1e-6
-    d_star_sq_max += span * relative_tolerance
-    d_star_sq_min -= span * relative_tolerance
-    step = (d_star_sq_max - d_star_sq_min) / n_refl_shells
-    miller_array.setup_binner_d_star_sq_step(
-        auto_binning=False,
-        d_max=uctbx.d_star_sq_as_d(d_star_sq_max),
-        d_min=uctbx.d_star_sq_as_d(d_star_sq_min),
-        d_star_sq_step=step,
-    )
-
-    normalisations = miller_array.intensity_quasi_normalisations()
-    normalised_intensities = miller_array.customized_copy(
-        data=(miller_array.data() / normalisations.data())
-    )
-    reflection_table["Esq"] = flex.double(reflection_table.size(), 0.0)
-    reflection_table["Esq"].set_selected(good_refl_sel, normalised_intensities.data())
+    else:
+        normalised_intensities = _quasi_normalisation(miller_array)
+        reflection_table["Esq"] = flex.double(reflection_table.size(), 0.0)
+        reflection_table["Esq"].set_selected(
+            good_refl_sel, normalised_intensities.data()
+        )
     return reflection_table
 
 

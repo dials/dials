@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 import math
 
@@ -12,7 +10,7 @@ from scitbx.math import five_number_summary
 import dials.util
 from dials.algorithms.clustering.observers import uc_params_from_experiments
 from dials.util import log
-from dials.util.options import OptionParser, flatten_experiments
+from dials.util.options import ArgumentParser, flatten_experiments
 from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.unit_cell_histogram")
@@ -44,8 +42,12 @@ def outlier_selection(uc_params, iqr_ratio=1.5):
     for p in uc_params:
         min_x, q1_x, med_x, q3_x, max_x = five_number_summary(p)
         logger.info(
-            "Five number summary: min %.2f, q1 %.2f, med %.2f, q3 %.2f, max %.2f"
-            % (min_x, q1_x, med_x, q3_x, max_x)
+            "Five number summary: min %.2f, q1 %.2f, med %.2f, q3 %.2f, max %.2f",
+            min_x,
+            q1_x,
+            med_x,
+            q3_x,
+            max_x,
         )
         iqr_x = q3_x - q1_x
         if iqr_x < 1e-6:
@@ -53,7 +55,7 @@ def outlier_selection(uc_params, iqr_ratio=1.5):
         cut_x = iqr_ratio * iqr_x
         outliers.set_selected(p > q3_x + cut_x, True)
         outliers.set_selected(p < q1_x - cut_x, True)
-    logger.info("Identified %i unit cell outliers" % outliers.count(True))
+    logger.info("Identified %i unit cell outliers", outliers.count(True))
     return outliers
 
 
@@ -61,7 +63,7 @@ def outlier_selection(uc_params, iqr_ratio=1.5):
 def run(args=None):
     usage = "dials.unit_cell_histogram [options] models.expt"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_experiments=True,

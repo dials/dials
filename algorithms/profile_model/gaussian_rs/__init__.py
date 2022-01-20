@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import dials.algorithms.profile_model.modeller  # noqa: F401; lgtm; true import dependency
 from dials.algorithms.profile_model.gaussian_rs.model import Model, phil_scope
 from dials_algorithms_profile_model_gaussian_rs_ext import (

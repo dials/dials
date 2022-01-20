@@ -1,8 +1,5 @@
-# -*- coding: utf8 -*-
-
 """ΔCC½ algorithm definitions"""
 
-from __future__ import absolute_import, division, print_function
 
 import logging
 from collections import defaultdict
@@ -26,7 +23,7 @@ from dials.util.multi_dataset_handling import select_datasets_on_identifiers
 logger = logging.getLogger("dials.command_line.compute_delta_cchalf")
 
 
-class CCHalfFromMTZ(object):
+class CCHalfFromMTZ:
 
     """
     Run a cc-half algorithm using an MTZ file.
@@ -153,7 +150,7 @@ Batch offset can be specified with mtz.batch_offset=
         return table, unit_cell, space_group
 
 
-class CCHalfFromDials(object):
+class CCHalfFromDials:
 
     """
     Run a cc-half algorithm using dials datafiles.
@@ -345,7 +342,7 @@ class CCHalfFromDials(object):
                         table_id,
                     )
                     exclude_images.append(
-                        ["%s:%s:%s" % (table_id, image_range[0], image_range[1])]
+                        [f"{table_id}:{image_range[0]}:{image_range[1]}"]
                     )
                     if expid_to_image_groups[exp_id][-1] == id_:
                         del expid_to_image_groups[exp_id][-1]
@@ -386,9 +383,7 @@ class CCHalfFromDials(object):
             for imgrange in exp.scan.get_valid_image_ranges(exp.identifier):
                 if all([j not in tested for j in range(imgrange[0], imgrange[1] + 1)]):
                     table_id = expid_to_tableid[exp.identifier]
-                    exclude_images.append(
-                        ["%s:%s:%s" % (table_id, imgrange[0], imgrange[1])]
-                    )
+                    exclude_images.append([f"{table_id}:{imgrange[0]}:{imgrange[1]}"])
                     logger.info(
                         "Removing %s due to scaling outlier group.", exclude_images[-1]
                     )
@@ -467,7 +462,7 @@ class CCHalfFromDials(object):
         return filtered_table, mean_unit_cell, space_group
 
 
-class DeltaCCHalf(object):
+class DeltaCCHalf:
 
     """
     Implementation of a ΔCC½ algorithm.
@@ -485,6 +480,17 @@ class DeltaCCHalf(object):
                 "stdcutoff": self.params.stdcutoff,
             }
         }
+        if len(set(reflection_table["group"])) == 1:
+            if self.params.mode == "dataset":
+                raise ValueError(
+                    """Cannot perform delta-cc-half analysis in dataset mode with only one dataset.
+For image group based delta-cc-half analysis, use the option mode=image_group"""
+                )
+            else:
+                raise ValueError(
+                    """Cannot perform delta-cc-half analysis on a single image group.
+Choose a suitable option for group_size to divide the dataset into multiple groups"""
+                )
 
     def run(self):
         """Run the delta_cc_half algorithm."""
@@ -557,10 +563,10 @@ class DeltaCCHalf(object):
         Y = list(delta_cchalf_i.values())
         mean = sum(Y) / len(Y)
         sdev = sqrt(sum((yy - mean) ** 2 for yy in Y) / len(Y))
-        logger.info("\nmean delta_cc_half %s", (mean * 100))
-        logger.info("stddev delta_cc_half %s", (sdev * 100))
+        logger.info(f"\nmean delta_cc_half: {(mean * 100):.3f}")
+        logger.info(f"stddev delta_cc_half: {(sdev * 100):.3f}")
         cutoff_value = mean - stdcutoff * sdev
-        logger.info("cutoff value: %s \n", (cutoff_value * 100))
+        logger.info(f"cutoff value: {(cutoff_value * 100):.3f} \n")
         return cutoff_value
 
     def output_html_report(self):

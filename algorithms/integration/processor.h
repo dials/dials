@@ -173,20 +173,20 @@ namespace dials { namespace algorithms {
           DIALS_ASSERT(yb + y0 >= 0 && ye + y0 <= yi);
           DIALS_ASSERT(xb + x0 >= 0 && xe + x0 <= xi);
           DIALS_ASSERT(sbox.is_consistent());
-          if (flatten_ == false) {
-            for (std::size_t y = yb; y < ye; ++y) {
-              for (std::size_t x = xb; x < xe; ++x) {
-                sdata(z, y, x) = data(y + y0, x + x0);
-                smask(z, y, x) = mask(y + y0, x + x0) ? Valid : 0;
-              }
-            }
-          } else {
+          if (flatten_) {
             for (std::size_t y = yb; y < ye; ++y) {
               for (std::size_t x = xb; x < xe; ++x) {
                 sdata(0, y, x) += data(y + y0, x + x0);
                 bool sv = smask(0, y, x) & Valid;
                 bool mv = mask(y + y0, x + x0);
                 smask(0, y, x) = (mv && (z == 0 ? true : sv) ? Valid : 0);
+              }
+            }
+          } else {
+            for (std::size_t y = yb; y < ye; ++y) {
+              for (std::size_t x = xb; x < xe; ++x) {
+                sdata(z, y, x) = data(y + y0, x + x0);
+                smask(z, y, x) = mask(y + y0, x + x0) ? Valid : 0;
               }
             }
           }

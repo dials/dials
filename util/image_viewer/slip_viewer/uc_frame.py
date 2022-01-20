@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import math
 
 import wx
@@ -12,7 +10,7 @@ from scitbx.matrix import col
 
 class UCSettingsFrame(wx.MiniFrame):
     def __init__(self, *args, **kwds):
-        super(UCSettingsFrame, self).__init__(*args, **kwds)
+        super().__init__(*args, **kwds)
         szr = wx.BoxSizer(wx.VERTICAL)
         self.phil_params = args[0].params
         panel = UCSettingsPanel(self)
@@ -27,7 +25,7 @@ class UCSettingsFrame(wx.MiniFrame):
 
 class UCSettingsPanel(wx.Panel):
     def __init__(self, *args, **kwds):
-        super(UCSettingsPanel, self).__init__(*args, **kwds)
+        super().__init__(*args, **kwds)
 
         self.phil_params = args[0].phil_params
 
@@ -285,12 +283,19 @@ class UCSettingsPanel(wx.Panel):
             wx.ALL | wx.ALIGN_CENTER_VERTICAL,
             5,
         )
+        sizer.Add(box)
+
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        self.clear_button = wx.Button(self, -1, "Clear")
+        box.Add(self.clear_button, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.Bind(wx.EVT_BUTTON, self.OnClear, self.clear_button)
+        sizer.Add(box)
+
         origin_box = wx.BoxSizer(wx.HORIZONTAL)
         self.origin = wx.StaticText(self, label="")
         origin_box.Add(self.origin, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.Bind(EVT_FLOATSPIN, self.OnSpinCenter, self.spinner_slow)
 
-        sizer.Add(box)
         sizer.Add(origin_box)
 
         self.DrawRings()
@@ -298,6 +303,7 @@ class UCSettingsPanel(wx.Panel):
     def __del__(self):
         if hasattr(self, "_ring_layer") and self._ring_layer is not None:
             self._pyslip.DeleteLayer(self._ring_layer)
+            self._ring_layer = None
 
     def OnSpinCenter(self, event):
         obj = event.EventObject
@@ -326,6 +332,9 @@ class UCSettingsPanel(wx.Panel):
         self._spacegroup = obj.GetValue()
 
         self.DrawRings()
+
+    def OnClear(self, event):
+        self.__del__()
 
     def _draw_rings_layer(self, dc, data, map_rel):
         """Draw a points layer.
@@ -378,11 +387,11 @@ class UCSettingsPanel(wx.Panel):
 
         frame.update_statusbar(
             "%d %d %d %d %d %d, " % tuple(self._cell)
-            + "number of indices: %d" % len(hkl_list.indices())
+            + f"number of indices: {len(hkl_list.indices())}"
         )
 
         spacings = sorted(hkl_list.d_spacings(), key=lambda s: s[1], reverse=True)
-        print("Printing spacings, len: %s" % len(spacings))
+        print(f"Printing spacings, len: {len(spacings)}")
 
         for d in spacings:
             print(d)

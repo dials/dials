@@ -1,7 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
-
-class MedianBackgroundExt(object):
+class MedianBackgroundExt:
     """An extension class implementing a median background algorithm."""
 
     name = "median"

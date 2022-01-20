@@ -1,5 +1,4 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
-from __future__ import absolute_import, division, print_function
 
 import dials.util
 
@@ -14,17 +13,17 @@ dials.reflection_viewer observations.refl
 """
 
 
-class Script(object):
+class Script:
     """The debugging visualization program."""
 
     def __init__(self):
         """Initialise the script."""
-        from dials.util.options import OptionParser
+        from dials.util.options import ArgumentParser
 
         usage = "dials.reflection_viewer [options] experiment.expt"
 
         # Create the parser
-        self.parser = OptionParser(
+        self.parser = ArgumentParser(
             usage=usage, epilog=help_message, read_reflections=True
         )
 

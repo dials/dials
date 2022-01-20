@@ -1,12 +1,11 @@
-from __future__ import absolute_import, division, print_function
-
+import logging
 import os
 import random
 import sys
 
+import dxtbx.model.compare as compare
 import xfel.clustering.cluster
 from dxtbx.command_line.image_average import splitit
-from dxtbx.datablock import BeamDiff, DetectorDiff, GoniometerDiff
 from dxtbx.model.experiment_list import (
     BeamComparison,
     DetectorComparison,
@@ -22,7 +21,9 @@ import dials.util
 from dials.algorithms.integration.stills_significance_filter import SignificanceFilter
 from dials.array_family import flex
 from dials.util import tabulate
-from dials.util.options import OptionParser, flatten_experiments
+from dials.util.options import ArgumentParser, flatten_experiments
+
+logger = logging.getLogger(__name__)
 
 help_message = """
 
@@ -32,7 +33,7 @@ matched to reflections in the order they are provided as input.
 
 Reference models can be chosen from any of the input experiments files. These
 will replace all other models of that type in the output experiments file.
-This is useful, for example, for combining mutiple experiments that should
+This is useful, for example, for combining multiple experiments that should
 differ only in their crystal models. No checks are made to ensure that a
 reference model is a good replacement model.
 
@@ -159,7 +160,7 @@ phil_scope = parse(
       .type = int
       .expert_level = 2
       .help = "If not None, split the resultant combined set of experiments"
-              "into seperate files, each at most max_batch_size number of"
+              "into separate files, each at most max_batch_size number of"
               "experiments. Example, if there were 5500 experiments and"
               "max_batch_size is 1000, 6 experiment lists will be created,"
               "of sizes 917, 917, 917, 917, 916, 916"
@@ -214,7 +215,7 @@ class ComparisonError(Exception):
     pass
 
 
-class CombineWithReference(object):
+class CombineWithReference:
     def __init__(
         self,
         beam=None,
@@ -266,14 +267,15 @@ class CombineWithReference(object):
         if self.ref_beam:
             if compare_beam:
                 if not compare_beam(self.ref_beam, experiment.beam):
-                    diff = BeamDiff(
-                        wavelength_tolerance=self.tolerance.beam.wavelength,
-                        direction_tolerance=self.tolerance.beam.direction,
-                        polarization_normal_tolerance=self.tolerance.beam.polarization_normal,
-                        polarization_fraction_tolerance=self.tolerance.beam.polarization_fraction,
-                    )
                     raise ComparisonError(
-                        "\n".join(diff(self.ref_beam, experiment.beam))
+                        compare.beam_diff(
+                            self.ref_beam,
+                            experiment.beam,
+                            wavelength_tolerance=self.tolerance.beam.wavelength,
+                            direction_tolerance=self.tolerance.beam.direction,
+                            polarization_normal_tolerance=self.tolerance.beam.polarization_normal,
+                            polarization_fraction_tolerance=self.tolerance.beam.polarization_fraction,
+                        )
                     )
             beam = self.ref_beam
         else:
@@ -284,13 +286,14 @@ class CombineWithReference(object):
         elif self.ref_detector and not self.average_detector:
             if compare_detector:
                 if not compare_detector(self.ref_detector, experiment.detector):
-                    diff = DetectorDiff(
-                        fast_axis_tolerance=self.tolerance.detector.fast_axis,
-                        slow_axis_tolerance=self.tolerance.detector.slow_axis,
-                        origin_tolerance=self.tolerance.detector.origin,
-                    )
                     raise ComparisonError(
-                        "\n".join(diff(self.ref_detector, experiment.detector))
+                        compare.detector_diff(
+                            self.ref_detector,
+                            experiment.detector,
+                            fast_axis_tolerance=self.tolerance.detector.fast_axis,
+                            slow_axis_tolerance=self.tolerance.detector.slow_axis,
+                            origin_tolerance=self.tolerance.detector.origin,
+                        )
                     )
             detector = self.ref_detector
         else:
@@ -299,13 +302,14 @@ class CombineWithReference(object):
         if self.ref_goniometer:
             if compare_goniometer:
                 if not compare_goniometer(self.ref_goniometer, experiment.goniometer):
-                    diff = GoniometerDiff(
-                        rotation_axis_tolerance=self.tolerance.goniometer.rotation_axis,
-                        fixed_rotation_tolerance=self.tolerance.goniometer.fixed_rotation,
-                        setting_rotation_tolerance=self.tolerance.goniometer.setting_rotation,
-                    )
                     raise ComparisonError(
-                        "\n".join(diff(self.ref_goniometer, experiment.goniometer))
+                        compare.goniometer_diff(
+                            self.ref_goniometer,
+                            experiment.goniometer,
+                            rotation_axis_tolerance=self.tolerance.goniometer.rotation_axis,
+                            fixed_rotation_tolerance=self.tolerance.goniometer.fixed_rotation,
+                            setting_rotation_tolerance=self.tolerance.goniometer.setting_rotation,
+                        )
                     )
             goniometer = self.ref_goniometer
         else:
@@ -338,7 +342,7 @@ class CombineWithReference(object):
         )
 
 
-class Cluster(object):
+class Cluster:
     def __init__(
         self, experiments, reflections, dendrogram=False, threshold=1000, n_max=None
     ):
@@ -369,7 +373,7 @@ class Cluster(object):
             plt.show()
 
 
-class Script(object):
+class Script:
     def __init__(self):
         """Initialise the script."""
         # The script usage
@@ -380,7 +384,7 @@ class Script(object):
         )
 
         # Create the parser
-        self.parser = OptionParser(
+        self.parser = ArgumentParser(
             usage=usage,
             phil=phil_scope,
             read_reflections=True,
@@ -423,32 +427,32 @@ class Script(object):
             try:
                 ref_beam = flat_exps[ref_beam].beam
             except IndexError:
-                sys.exit("{} is not a valid experiment ID".format(ref_beam))
+                sys.exit(f"{ref_beam} is not a valid experiment ID")
 
         if ref_goniometer is not None:
             try:
                 ref_goniometer = flat_exps[ref_goniometer].goniometer
             except IndexError:
-                sys.exit("{} is not a valid experiment ID".format(ref_goniometer))
+                sys.exit(f"{ref_goniometer} is not a valid experiment ID")
 
         if ref_scan is not None:
             try:
                 ref_scan = flat_exps[ref_scan].scan
             except IndexError:
-                sys.exit("{} is not a valid experiment ID".format(ref_scan))
+                sys.exit(f"{ref_scan} is not a valid experiment ID")
 
         if ref_crystal is not None:
             try:
                 ref_crystal = flat_exps[ref_crystal].crystal
             except IndexError:
-                sys.exit("{} is not a valid experiment ID".format(ref_crystal))
+                sys.exit(f"{ref_crystal} is not a valid experiment ID")
 
         if ref_detector is not None:
             assert not params.reference_from_experiment.average_detector
             try:
                 ref_detector = flat_exps[ref_detector].detector
             except IndexError:
-                sys.exit("{} is not a valid experiment ID".format(ref_detector))
+                sys.exit(f"{ref_detector} is not a valid experiment ID")
         elif params.reference_from_experiment.average_detector:
             # Average all of the detectors together
 
@@ -516,8 +520,13 @@ class Script(object):
         ):
             refs = ref_wrapper.data
             exps = exp_wrapper.data
+
             # Record initial mapping of ids for updating later.
             ids_map = dict(refs.experiment_identifiers())
+
+            # Keep track of mapping of imageset_ids old->new within this experimentlist
+            imageset_result_map = {}
+
             for k in refs.experiment_identifiers().keys():
                 del refs.experiment_identifiers()[k]
             for i, exp in enumerate(exps):
@@ -539,12 +548,13 @@ class Script(object):
 
                 nrefs_per_exp.append(n_sub_ref)
                 sub_ref["id"] = flex.int(len(sub_ref), global_id)
+
                 # now update identifiers if set.
                 if i in ids_map:
                     sub_ref.experiment_identifiers()[global_id] = ids_map[i]
                 if params.output.delete_shoeboxes and "shoebox" in sub_ref:
                     del sub_ref["shoebox"]
-                reflections.extend(sub_ref)
+
                 try:
                     experiments.append(combine(exp))
                 except ComparisonError as e:
@@ -557,14 +567,46 @@ class Script(object):
                         )
                     )
 
+                # Rewrite imageset_id, if the experiment has and imageset
+                if exp.imageset and "imageset_id" in sub_ref:
+                    # Get the index of the imageset for this experiment and record how it changed
+                    new_imageset_id = experiments.imagesets().index(
+                        experiments[-1].imageset
+                    )
+                    old_imageset_id = exps.imagesets().index(exp.imageset)
+                    imageset_result_map[old_imageset_id] = new_imageset_id
+
+                    # Check for invalid(?) imageset_id indices... and leave if they are wrong
+                    if len(set(sub_ref["imageset_id"])) != 1:
+                        logger.warning(
+                            "Warning: Experiment %d reflections appear to have come from multiple imagesets - output may be incorrect",
+                            i,
+                        )
+                    else:
+                        sub_ref["imageset_id"] = flex.int(len(sub_ref), new_imageset_id)
+
+                reflections.extend(sub_ref)
+
                 global_id += 1
+
+            # Include unindexed reflections, if we can safely remap their imagesets
+            if "imageset_id" in reflections:
+                unindexed_refs = refs.select(refs["id"] == -1)
+                for old_id in set(unindexed_refs["imageset_id"]):
+                    subs = unindexed_refs.select(
+                        unindexed_refs["imageset_id"] == old_id
+                    )
+                    subs["imageset_id"] = flex.int(
+                        len(subs), imageset_result_map[old_id]
+                    )
+                    reflections.extend(subs)
 
         if (
             params.output.min_reflections_per_experiment is not None
             and skipped_expts_min_refl > 0
         ):
             print(
-                "Removed {0} experiments with fewer than {1} reflections".format(
+                "Removed {} experiments with fewer than {} reflections".format(
                     skipped_expts_min_refl, params.output.min_reflections_per_experiment
                 )
             )
@@ -573,7 +615,7 @@ class Script(object):
             and skipped_expts_max_refl > 0
         ):
             print(
-                "Removed {0} experiments with more than {1} reflections".format(
+                "Removed {} experiments with more than {} reflections".format(
                     skipped_expts_max_refl, params.output.max_reflections_per_experiment
                 )
             )
@@ -614,7 +656,7 @@ class Script(object):
                         subset_refls.extend(refls)
                         n_picked += 1
                 print(
-                    "Selecting a random subset of {0} experiments out of {1} total.".format(
+                    "Selecting a random subset of {} experiments out of {} total.".format(
                         params.output.n_subset, len(experiments)
                     )
                 )
@@ -642,7 +684,7 @@ class Script(object):
                         refls["id"] = flex.int(len(refls), expt_id)
                         subset_refls.extend(refls)
                 print(
-                    "Selecting a subset of {0} experiments with highest number of reflections out of {1} total.".format(
+                    "Selecting a subset of {} experiments with highest number of reflections out of {} total.".format(
                         params.output.n_subset, len(experiments)
                     )
                 )
@@ -792,9 +834,9 @@ class Script(object):
     def _save_output(self, experiments, reflections, exp_name, refl_name):
         # save output
 
-        print("Saving combined experiments to {}".format(exp_name))
+        print(f"Saving combined experiments to {exp_name}")
         experiments.as_file(exp_name)
-        print("Saving combined reflections to {}".format(refl_name))
+        print(f"Saving combined reflections to {refl_name}")
         reflections.as_file(refl_name)
 
 

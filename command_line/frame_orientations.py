@@ -7,7 +7,6 @@ Take into account any scan-varying models.
 Usage: dials.frame_orientations refined.expt
 """
 
-from __future__ import absolute_import, division, print_function
 
 import sys
 
@@ -17,13 +16,13 @@ from scitbx import matrix
 
 import dials.util
 from dials.util import tabulate
-from dials.util.options import OptionParser, flatten_experiments
+from dials.util.options import ArgumentParser, flatten_experiments
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 
-class Script(object):
+class Script:
     """A class for running the script."""
 
     def __init__(self):
@@ -50,7 +49,7 @@ plot_filename = None
         usage = "dials.frame_orientations refined.expt refined.refl"
 
         # Create the parser
-        self.parser = OptionParser(
+        self.parser = ArgumentParser(
             usage=usage,
             phil=phil_scope,
             read_experiments=True,
@@ -87,7 +86,7 @@ plot_filename = None
             "Angle from\nprevious image (deg)",
         ]
         for iexp, exp in enumerate(experiments):
-            print("For Experiment id = {}".format(iexp))
+            print(f"For Experiment id = {iexp}")
             print(exp.beam)
             print(exp.crystal)
             print(exp.scan)
@@ -100,7 +99,7 @@ plot_filename = None
             else:
                 scale = 1.0
             print(
-                "Beam direction scaled by {0} = {1:.3f} to "
+                "Beam direction scaled by {} = {:.3f} to "
                 "calculate zone axis\n".format(self.params.scale, scale)
             )
 
@@ -120,7 +119,7 @@ plot_filename = None
             offset = [
                 e1.angle(e2, deg=True) for e1, e2 in zip(zone_axes[:-1], zone_axes[1:])
             ]
-            str_off = ["---"] + ["{:.8f}".format(e) for e in offset]
+            str_off = ["---"] + [f"{e:.8f}" for e in offset]
 
             rows = []
             for i, d, z, a, o in zip(
@@ -151,7 +150,7 @@ plot_filename = None
             plt.xlabel("Image number")
             plt.ylabel(r"Angle from previous image $\left(^\circ\right)$")
             plt.title(r"Angle between neighbouring images")
-            print("Saving plot to {}".format(self.params.plot_filename))
+            print(f"Saving plot to {self.params.plot_filename}")
             plt.savefig(self.params.plot_filename)
 
         print()

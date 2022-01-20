@@ -36,7 +36,7 @@ that has a reflection in the least populated class so far i.e. class 2.
 In this case, the first unused group is group 5:
 number of chosen reflections per class: [4, 4, 5]
 symmetry groups used:                   [1, 5]
-In this way, we build up the dataset by chosing the highest-connected groups
+In this way, we build up the dataset by choosing the highest-connected groups
 that have a reflection in the most-deficient class.
 
 Next we need to add a group with a reflection in class 0 (first we find is group 0):
@@ -61,11 +61,13 @@ connected reflections between datasets. The reflections used for minimisation
 are those which are selected by either method - inter-dataset connectedness or
 intra-dataset connectedness.
 """
-from __future__ import absolute_import, division, print_function
 
 import logging
 from math import floor
 
+import numpy as np
+
+from dxtbx import flumpy
 from scitbx import sparse
 
 from dials.algorithms.scaling.scaling_utilities import (
@@ -78,28 +80,29 @@ from dials.util import tabulate
 logger = logging.getLogger("dials")
 
 
-def _build_class_matrix(reflections, class_matrix, offset=0):
-    for (i, val) in enumerate(reflections["class_index"], start=offset):
+def _build_class_matrix(class_index, class_matrix, offset=0):
+    for (i, val) in enumerate(class_index, start=offset):
         class_matrix[val, i] = 1.0
     return class_matrix
 
 
 def _select_groups_on_Isigma_cutoff(Ih_table, cutoff=2.0):
     """Select groups with multiplicity>1, Isigma>cutoff"""
-    I_over_sigma = Ih_table.intensities / flex.sqrt(Ih_table.variances)
-    sumIsigm = I_over_sigma * Ih_table.h_index_matrix
+    sumIsigm = Ih_table.sum_in_groups(
+        Ih_table.intensities / np.sqrt(Ih_table.variances)
+    )
     n = Ih_table.group_multiplicities()
     avg_Isigma = sumIsigm / n
     sel = avg_Isigma > cutoff
     sel2 = n > 1
-    if sel2.count(True) == 0:
+    if not sel2.any():
         raise SystemExit(
             """
 Could not find any cross-dataset connected reflections with multiplicity > 1,
 scaling not possible."""
         )
     sel &= sel2
-    if sel.count(True) == 0:
+    if not sel.any():
         logger.warning(
             """
 Warning: Could not select any reflections for <I/sI> > %s.
@@ -107,7 +110,7 @@ Reducing Isigma_cutoff to zero to attempt continuation.""",
             cutoff,
         )
         sel = avg_Isigma > 0.0 & sel2
-        if sel.count(True) == 0:
+        if not sel.any():
             raise SystemExit(
                 """
 Could not find any cross-dataset connected groups with <I/sI> > 0,
@@ -122,9 +125,9 @@ def _perform_quasi_random_selection(
 ):
 
     class_matrix = sparse.matrix(n_datasets, Ih_table.size)
-    Ih_table.Ih_table["class_index"] = Ih_table.Ih_table["dataset_id"]
-
-    class_matrix = _build_class_matrix(Ih_table.Ih_table, class_matrix)
+    class_matrix = _build_class_matrix(
+        flumpy.from_numpy(Ih_table.Ih_table["dataset_id"].to_numpy()), class_matrix
+    )
     segments_in_groups = class_matrix * Ih_table.h_index_matrix
     total = flex.double(segments_in_groups.n_cols, 0)
     for i, col in enumerate(segments_in_groups.cols()):
@@ -143,13 +146,18 @@ def _perform_quasi_random_selection(
     actual_cols_used = perm.select(cols_used)
 
     # now need to get reflection selection
-    reduced_Ih = Ih_table.select_on_groups_isel(actual_cols_used)
+    reduced_Ih = Ih_table.select_on_groups(actual_cols_used)
     indices_this_res = reduced_Ih.Ih_table["loc_indices"]
     dataset_ids_this_res = reduced_Ih.Ih_table["dataset_id"]
 
     n_groups_used = len(actual_cols_used)
 
-    return indices_this_res, dataset_ids_this_res, n_groups_used, total_in_classes
+    return (
+        flumpy.from_numpy(indices_this_res.to_numpy()),
+        flumpy.from_numpy(dataset_ids_this_res.to_numpy()),
+        n_groups_used,
+        total_in_classes,
+    )
 
 
 def select_connected_reflections_across_datasets(
@@ -169,7 +177,7 @@ def select_connected_reflections_across_datasets(
     binner = sel_Ih_table.binner
 
     # prepare parameters for selection algorithm.
-    n_datasets = len(set(sel_Ih_table.Ih_table["dataset_id"]))
+    n_datasets = len(set(sel_Ih_table.Ih_table["dataset_id"].to_numpy()))
     min_per_class = min_total / (n_datasets * 4.0)
     max_total = min_total * 1.2
     logger.info(
@@ -197,14 +205,14 @@ from each dataset, with a total number between %.2f and %.2f.
         summary_header = ["d-range", "n_groups", "n_refl"]
 
     indices = flex.size_t()
-    dataset_ids = flex.int()
+    dataset_ids = flex.size_t()
     total_groups_used = 0
     n_cols_used = 0
 
     for ibin in binner.range_all():
         sel = binner.selection(ibin)
-        res_Ih_table = sel_Ih_table.select(sel)
-        if not res_Ih_table.Ih_table.size():
+        res_Ih_table = sel_Ih_table.select(flumpy.to_numpy(sel))
+        if not res_Ih_table.Ih_table.size:
             continue
 
         (
@@ -325,16 +333,16 @@ def _determine_Isigma_selection(reflection_table, params):
     selection = Ioversigma > Isiglow
     if Isighigh != 0.0:
         selection &= Ioversigma < Isighigh
-        reason = "in I/sigma range (%s > I/sig > %s)" % (Isighigh, Isiglow)
+        reason = f"in I/sigma range ({Isighigh} > I/sig > {Isiglow})"
     else:
-        reason = "in I/sigma range (I/sig > %s)" % Isiglow
+        reason = f"in I/sigma range (I/sig > {Isiglow})"
     return selection, reason
 
 
 def _determine_partiality_selection(reflection_table, params):
     min_partiality = params.reflection_selection.min_partiality
     selection = reflection_table["partiality"] > min_partiality
-    reason = "above min partiality ( > %s)" % min_partiality
+    reason = f"above min partiality ( > {min_partiality})"
     return selection, reason
 
 
@@ -342,7 +350,7 @@ def _determine_d_range_selection(reflection_table, params):
     d_min, d_max = params.reflection_selection.d_range
     d_sel = reflection_table["d"] > d_min
     d_sel &= reflection_table["d"] < d_max
-    reason = "in d range (%s > d > %s)" % (d_max, d_min)
+    reason = f"in d range ({d_max} > d > {d_min})"
     return d_sel, reason
 
 
@@ -351,7 +359,7 @@ def _determine_E2_range_selection(reflection_table, params):
     sel1 = reflection_table["Esq"] > Elow
     sel2 = reflection_table["Esq"] < Ehigh
     Esq_sel = sel1 & sel2
-    reason = "in E^2 range (%s > E^2 > %s)" % (Ehigh, Elow)
+    reason = f"in E^2 range ({Ehigh} > E^2 > {Elow})"
     return Esq_sel, reason
 
 

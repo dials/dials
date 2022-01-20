@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 from math import pi
 
@@ -14,7 +12,7 @@ DEG2RAD = pi / 180.0
 RAD2DEG = 180.0 / pi
 
 
-class DerivedParameterTie(object):
+class DerivedParameterTie:
     """Calculate the restraint and gradients for a single derived parameter
     of the model"""
 
@@ -40,7 +38,7 @@ class DerivedParameterTie(object):
         return self._w
 
 
-class SingleUnitCellTie(object):
+class SingleUnitCellTie:
     """Tie the parameters of a single unit cell model parameterisation to
     target values via least-squares restraints. The restraints will be expressed
     in terms of real space unit cell constants, whilst the underlying parameters
@@ -204,7 +202,7 @@ class SingleUnitCellTie(object):
         return self._weights
 
 
-class MeanUnitCellTie(object):
+class MeanUnitCellTie:
     """Tie the parameters of multiple unit cell model parameterisations to
     central values via least-squares restraints. The restraints will be expressed
     in terms of real space unit cell constants, whilst the underlying parameters

@@ -473,7 +473,7 @@ namespace dials { namespace algorithms {
       // Compute the background
       try {
         compute_background_(reflection);
-      } catch (dials::error) {
+      } catch (dials::error const &) {
         finalize_shoebox(reflection, adjacent_reflections, underload_, overload_);
         return;
       }
@@ -487,7 +487,7 @@ namespace dials { namespace algorithms {
       // Compute the profile fitted intensity
       try {
         compute_intensity_(reflection, adjacent_reflections);
-      } catch (dials::error) {
+      } catch (dials::error const &) {
         std::size_t flags = reflection.get<std::size_t>("flags");
         flags |= af::FailedDuringProfileFitting;
         reflection["flags"] = flags;
@@ -549,7 +549,7 @@ namespace dials { namespace algorithms {
     /**
      * Before exiting do some stuff on the shoebox
      * @param reflection The reflection
-     * @param adjacent_reflections The adjancent reflections
+     * @param adjacent_reflections The adjacent reflections
      */
     void finalize_shoebox(af::Reflection &reflection,
                           std::vector<af::Reflection> &adjacent_reflections,
@@ -641,7 +641,7 @@ namespace dials { namespace algorithms {
     /**
      * Delete the shoebox
      * @param reflection The reflection
-     * @param adjacent_reflections The adjancent reflections
+     * @param adjacent_reflections The adjacent reflections
      */
     void delete_shoebox(af::Reflection &reflection,
                         std::vector<af::Reflection> &adjacent_reflections) const {
@@ -774,7 +774,7 @@ namespace dials { namespace algorithms {
   class Lookup {
   public:
     /**
-     * @param bbox the bounding boxs
+     * @param bbox the bounding box
      * @param zstart the first frame number
      * @param n the number of frames
      */
@@ -986,7 +986,7 @@ namespace dials { namespace algorithms {
       }
 
       /**
-       * Check whether all reflections needing this image are finsihed
+       * Check whether all reflections needing this image are finished
        * Check the atomic counter for the image
        * @param index The image index
        * @returns True/False complete
@@ -1746,7 +1746,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(nblocks > 0);
       DIALS_ASSERT(nblocks >= njobs_);
 
-      // Compute blocks per job and remaning blocks
+      // Compute blocks per job and remaining blocks
       int blocks_per_job = (int)std::floor((double)nblocks / (double)njobs_);
       int remaining_blocks = nblocks % njobs_;
       DIALS_ASSERT(blocks_per_job >= 0);

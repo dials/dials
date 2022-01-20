@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import bz2
 import datetime
 import gzip
@@ -23,7 +21,7 @@ logger = logging.getLogger(__name__)
 RAD2DEG = 180.0 / math.pi
 
 
-class MMCIFOutputFile(object):
+class MMCIFOutputFile:
     """
     Class to output experiments and reflections as MMCIF file
     """
@@ -80,7 +78,7 @@ class MMCIFOutputFile(object):
             self._cif.show(out=fh, loop_format_strings=loop_format_strings)
 
         # Log
-        logger.info("Wrote reflections to %s" % filename)
+        logger.info("Wrote reflections to %s", filename)
 
     def make_cif_block(self, experiments, reflections):
         """Write the data to a cif block"""
@@ -323,6 +321,7 @@ class MMCIFOutputFile(object):
                 crystal_symmetry=crystal_symmetry,
                 use_internal_variance=False,
                 eliminate_sys_absent=False,
+                assert_is_not_unique_set_under_symmetry=False,
             )
             merged_block = iotbx.cif.model.block()
             merged_block["_reflns.pdbx_ordinal"] = 1
@@ -333,7 +332,7 @@ class MMCIFOutputFile(object):
             cif_block.update(merged_block)
 
         # Write the crystal information
-        # if v5, thats all so return
+        # if v5, that's all so return
         if self.params.mmcif.pdb_version == "v5":
             return cif_block
         # continue if v5_next

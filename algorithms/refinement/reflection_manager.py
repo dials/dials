@@ -1,11 +1,9 @@
 """Contains classes used to manage the reflections used during refinement,
 principally ReflectionManager."""
-from __future__ import absolute_import, division, print_function
 
 import logging
 import math
 import random
-import warnings
 
 import libtbx
 from libtbx.phil import parse
@@ -83,10 +81,6 @@ phil_str = (
       .type = float(value_min=0,value_max=5)
       .expert_level = 1
 
-    trim_scan_edges = None
-      .type = float(value_min=0,value_max=5)
-      .help = Deprecated. Use scan_margin instead
-
     weighting_strategy
       .help = "Parameters to configure weighting strategy overrides"
       .expert_level = 1
@@ -115,7 +109,7 @@ phil_str = (
 phil_scope = parse(phil_str)
 
 
-class BlockCalculator(object):
+class BlockCalculator:
     """Utility class to calculate and set columns in the provided reflection
     table, which will be used during scan-varying refinement. The columns are a
     'block' number and an associated 'block_centre', giving the image number in
@@ -211,7 +205,7 @@ class BlockCalculator(object):
         return self._reflections
 
 
-class ReflectionManagerFactory(object):
+class ReflectionManagerFactory:
     @staticmethod
     def from_parameters_reflections_experiments(
         params, reflections, experiments, do_stills=False
@@ -246,7 +240,7 @@ class ReflectionManagerFactory(object):
             # check incompatible weighting strategy
             if params.weighting_strategy.override in ["stills", "external_deltapsi"]:
                 msg = (
-                    'The "{0}" weighting strategy is not compatible with '
+                    'The "{}" weighting strategy is not compatible with '
                     "scan refinement"
                 ).format(params.weighting_strategy.override)
                 raise DialsRefineConfigError(msg)
@@ -313,14 +307,6 @@ class ReflectionManagerFactory(object):
                 *params.weighting_strategy.constants, stills=do_stills
             )
 
-        # Check for deprecated parameter
-        if params.trim_scan_edges is not None:
-            warnings.warn(
-                "The parameter trim_scan_edges is deprecated and will be removed shortly",
-                FutureWarning,
-            )
-            params.scan_margin = params.trim_scan_edges
-
         return refman(
             reflections=reflections,
             experiments=experiments,
@@ -334,7 +320,7 @@ class ReflectionManagerFactory(object):
         )
 
 
-class ReflectionManager(object):
+class ReflectionManager:
     """A class to maintain information about observed and predicted
     reflections for refinement.
 
@@ -695,23 +681,22 @@ class ReflectionManager(object):
             return
 
         msg = (
-            "\nSummary statistics for {} observations".format(nref)
-            + " matched to predictions:"
+            f"\nSummary statistics for {nref} observations" + " matched to predictions:"
         )
         header = ["", "Min", "Q1", "Med", "Q3", "Max"]
         rows = []
         row_data = five_number_summary(x_resid)
-        rows.append(["Xc - Xo (mm)"] + ["%.4g" % e for e in row_data])
+        rows.append(["Xc - Xo (mm)"] + [f"{e:.4g}" for e in row_data])
         row_data = five_number_summary(y_resid)
-        rows.append(["Yc - Yo (mm)"] + ["%.4g" % e for e in row_data])
+        rows.append(["Yc - Yo (mm)"] + [f"{e:.4g}" for e in row_data])
         row_data = five_number_summary(phi_resid)
-        rows.append(["Phic - Phio (deg)"] + ["%.4g" % (e * RAD2DEG) for e in row_data])
+        rows.append(["Phic - Phio (deg)"] + [f"{e * RAD2DEG:.4g}" for e in row_data])
         row_data = five_number_summary(w_x)
-        rows.append(["X weights"] + ["%.4g" % e for e in row_data])
+        rows.append(["X weights"] + [f"{e:.4g}" for e in row_data])
         row_data = five_number_summary(w_y)
-        rows.append(["Y weights"] + ["%.4g" % e for e in row_data])
+        rows.append(["Y weights"] + [f"{e:.4g}" for e in row_data])
         row_data = five_number_summary(w_phi)
-        rows.append(["Phi weights"] + ["%.4g" % (e * DEG2RAD ** 2) for e in row_data])
+        rows.append(["Phi weights"] + [f"{e * DEG2RAD ** 2:.4g}" for e in row_data])
 
         logger.info(msg)
         logger.info(dials.util.tabulate(rows, header, numalign="right") + "\n")
@@ -791,23 +776,22 @@ class StillsReflectionManager(ReflectionManager):
         header = ["", "Min", "Q1", "Med", "Q3", "Max"]
         rows = []
         row_data = five_number_summary(x_resid)
-        rows.append(["Xc - Xo (mm)"] + ["%.4g" % e for e in row_data])
+        rows.append(["Xc - Xo (mm)"] + [f"{e:.4g}" for e in row_data])
         row_data = five_number_summary(y_resid)
-        rows.append(["Yc - Yo (mm)"] + ["%.4g" % e for e in row_data])
+        rows.append(["Yc - Yo (mm)"] + [f"{e:.4g}" for e in row_data])
         row_data = five_number_summary(delpsi)
-        rows.append(["DeltaPsi (deg)"] + ["%.4g" % (e * RAD2DEG) for e in row_data])
+        rows.append(["DeltaPsi (deg)"] + [f"{e * RAD2DEG:.4g}" for e in row_data])
         row_data = five_number_summary(w_x)
-        rows.append(["X weights"] + ["%.4g" % e for e in row_data])
+        rows.append(["X weights"] + [f"{e:.4g}" for e in row_data])
         row_data = five_number_summary(w_y)
-        rows.append(["Y weights"] + ["%.4g" % e for e in row_data])
+        rows.append(["Y weights"] + [f"{e:.4g}" for e in row_data])
         row_data = five_number_summary(w_delpsi)
         rows.append(
-            ["DeltaPsi weights"] + ["%.4g" % (e * DEG2RAD ** 2) for e in row_data]
+            ["DeltaPsi weights"] + [f"{e * DEG2RAD ** 2:.4g}" for e in row_data]
         )
 
         msg = (
-            "\nSummary statistics for {} observations".format(nref)
-            + " matched to predictions:"
+            f"\nSummary statistics for {nref} observations" + " matched to predictions:"
         )
         logger.info(msg)
         logger.info(dials.util.tabulate(rows, header) + "\n")

@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 from dials.algorithms.refinement.parameterisation.prediction_parameters import (
     PredictionParameterisation,
     SparseGradientVectorMixin,
@@ -18,7 +16,7 @@ class StillsPredictionParameterisation(PredictionParameterisation):
     _grad_names = ("dX_dp", "dY_dp", "dDeltaPsi_dp")
 
     def __init__(self, *args, **kwargs):
-        super(StillsPredictionParameterisation, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         # check that a goniometer parameterisation is not passed in
         assert not self._goniometer_parameterisations
         return

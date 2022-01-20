@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 from scitbx import matrix
 
 from dials.algorithms.refinement.parameterisation.model_parameters import (
@@ -9,7 +7,7 @@ from dials.algorithms.refinement.parameterisation.model_parameters import (
 from dials.algorithms.refinement.refinement_helpers import dR_from_axis_and_angle
 
 
-class BeamMixin(object):
+class BeamMixin:
     """Mix-in class defining some functionality unique to beam parameterisations
     that can be shared by static and scan-varying versions"""
 
@@ -42,7 +40,7 @@ class BeamMixin(object):
         return p_list
 
     @staticmethod
-    def _compose_core(is0, mu1, mu2, nu, mu1_axis, mu2_axis):
+    def _compose_core(is0, ipn, mu1, mu2, nu, mu1_axis, mu2_axis):
 
         # convert angles to radians
         mu1rad, mu2rad = mu1 / 1000.0, mu2 / 1000.0
@@ -57,6 +55,7 @@ class BeamMixin(object):
         # compose new state
         Mu21 = Mu2 * Mu1
         s0_new_dir = (Mu21 * is0).normalize()
+        pn_new_dir = (Mu21 * ipn).normalize()
         s0 = nu * s0_new_dir
 
         # calculate derivatives of the beam direction wrt angles:
@@ -76,7 +75,7 @@ class BeamMixin(object):
             s0_new_dir,
         ]
 
-        return s0, ds0_dval
+        return (s0, pn_new_dir), ds0_dval
 
 
 class BeamParameterisation(ModelParameterisation, BeamMixin):
@@ -98,7 +97,8 @@ class BeamParameterisation(ModelParameterisation, BeamMixin):
         """
         # The state of the beam model consists of the s0 vector that it is
         # modelling. The initial state is the direction of this vector at the point
-        # of initialisation. Future states are composed by rotations around axes
+        # of initialisation, plus the direction of the orthogonal polarization
+        # normal vector. Future states are composed by rotations around axes
         # perpendicular to that direction and normalisation specified by the
         # wavenumber (inverse wavelength).
 
@@ -106,8 +106,10 @@ class BeamParameterisation(ModelParameterisation, BeamMixin):
         if experiment_ids is None:
             experiment_ids = [0]
         s0 = matrix.col(beam.get_s0())
-        s0dir = matrix.col(beam.get_unit_s0())
-        istate = s0dir
+        istate = {
+            "unit_s0": matrix.col(beam.get_unit_s0()),
+            "polarization_normal": matrix.col(beam.get_polarization_normal()),
+        }
 
         # build the parameter list
         p_list = self._build_p_list(s0, goniometer)
@@ -125,18 +127,26 @@ class BeamParameterisation(ModelParameterisation, BeamMixin):
     def compose(self):
 
         # extract direction from the initial state
-        is0 = self._initial_state
+        ius0 = self._initial_state["unit_s0"]
+        ipn = self._initial_state["polarization_normal"]
 
         # extract parameters from the internal list
         mu1, mu2, nu = self._param
 
         # calculate new s0 and derivatives
-        s0, self._dstate_dp = self._compose_core(
-            is0, mu1.value, mu2.value, nu.value, mu1_axis=mu1.axis, mu2_axis=mu2.axis
+        (s0, pn), self._dstate_dp = self._compose_core(
+            ius0,
+            ipn,
+            mu1.value,
+            mu2.value,
+            nu.value,
+            mu1_axis=mu1.axis,
+            mu2_axis=mu2.axis,
         )
 
-        # now update the model with its new s0
+        # now update the model with its new s0 and polarization vector
         self._model.set_s0(s0)
+        self._model.set_polarization_normal(pn)
 
         return
 

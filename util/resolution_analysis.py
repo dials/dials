@@ -1,14 +1,11 @@
-# coding: utf-8
 """
 Algorithms for analysis of resolution limits.
 """
-from __future__ import absolute_import, division, print_function
 
 import enum
 import logging
 import math
 import typing
-from collections import OrderedDict
 
 import iotbx.merging_statistics
 import iotbx.mtz
@@ -26,6 +23,7 @@ from dials.util.batch_handling import (
     calculate_batch_offsets,
 )
 from dials.util.filter_reflections import filter_reflection_table
+from dials.util.normalisation import quasi_normalisation
 
 logger = logging.getLogger(__name__)
 
@@ -225,9 +223,13 @@ def _get_cc_half_critical_values(merging_stats, cc_half_method):
             b.cc_one_half_sigma_tau_critical_value for b in merging_stats.bins
         ).reversed()
     elif merging_stats.overall.cc_one_half_critical_value is not None:
-        return flex.double(
-            b.cc_one_half_critical_value for b in merging_stats.bins
-        ).reversed()
+        critical = [
+            b.cc_one_half_critical_value
+            if b.cc_one_half_critical_value is not None
+            else 0.0
+            for b in merging_stats.bins
+        ]
+        return flex.double(critical).reversed()
 
 
 def resolution_cc_half(
@@ -266,7 +268,7 @@ def interpolate_value(x, y, t):
     """Find the value of x: y(x) = t."""
 
     if t > max(y) or t < min(y):
-        raise RuntimeError("t outside of [%f, %f]" % (min(y), max(y)))
+        raise RuntimeError(f"t outside of [{min(y):f}, {max(y):f}]")
 
     for j in range(1, len(x)):
         x0 = x[j - 1]
@@ -343,12 +345,15 @@ phil_str = """
     .expert_level = 1
   cc_half_method = *half_dataset sigma_tau
     .type = choice
+    .short_caption = "CC½ method"
   cc_half_significance_level = 0.1
     .type = float(value_min=0, value_max=1)
     .expert_level = 1
+    .short_caption = "CC½ significance level"
   cc_half_fit = polynomial *tanh
     .type = choice
     .expert_level = 1
+    .short_caption = "CC½ fit"
   isigma = None
     .type = float(value_min=0)
     .help = "Minimum value of the unmerged <I/sigI> in the outer resolution shell"
@@ -372,6 +377,7 @@ phil_str = """
   reflections_per_bin = 10
     .type = int
     .help = "Minimum number of reflections per bin."
+    .short_caption = "Minimum number of reflections per bin"
   binning_method = *counting_sorted volume
     .type = choice
     .help = "Use equal-volume bins or bins with approximately equal numbers of reflections per bin."
@@ -379,15 +385,23 @@ phil_str = """
     .expert_level = 1
   anomalous = False
     .type = bool
-    .short_caption = "Keep anomalous pairs separate in merging statistics"
+    .help = "Keep anomalous pairs separate in merging statistics"
+    .short_caption = "Anomalous"
     .expert_level = 1
   labels = None
     .type = strings
+    .short_caption = "Labels"
   space_group = None
     .type = space_group
     .expert_level = 1
+    .short_caption = "Space group"
   reference = None
     .type = path
+    .short_caption = "Reference"
+  emax = 4
+    .type = float(value_min = 0)
+    .help = "Reject reflections with normalised intensities E^2 > emax^2"
+    .short_caption = "Maximum normalised intensity"
 """
 
 
@@ -454,7 +468,7 @@ def plot_result(metric, result):
                             ),
                         ],
                         "type": "scatter",
-                        "name": "d_min = %.2f Å" % result.d_min,
+                        "name": f"d_min = {result.d_min:.2f} Å",
                         "mode": "lines",
                         "line": {"color": "rgb(169, 169, 169)", "dash": "dot"},
                     }
@@ -482,7 +496,7 @@ class ResolutionResult(typing.NamedTuple):
     critical_values: flex.double = None
 
 
-class Resolutionizer(object):
+class Resolutionizer:
     """A class to calculate things from merging reflections."""
 
     def __init__(self, i_obs, params, batches=None, reference=None):
@@ -509,6 +523,15 @@ class Resolutionizer(object):
             i_obs = i_obs.customized_copy(
                 space_group_info=self._params.space_group, info=i_obs.info()
             )
+
+        if self._params.emax:
+            normalised = quasi_normalisation(i_obs)
+            e2_cutoff = self._params.emax ** 2
+            sel = normalised.data() < e2_cutoff
+            logger.info(
+                f"Removing {sel.count(False)} Wilson outliers with E^2 >= {e2_cutoff}"
+            )
+            i_obs = i_obs.select(sel)
 
         self._intensities = i_obs
 
@@ -624,7 +647,7 @@ class Resolutionizer(object):
             metrics.I_MEAN_OVER_SIGMA_MEAN: "Mn(I)/Mn(sig)",
         }
 
-        plot_d = OrderedDict()
+        plot_d = {}
 
         for metric in metrics:
             name = metric.name.lower()

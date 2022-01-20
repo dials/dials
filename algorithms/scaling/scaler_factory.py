@@ -1,7 +1,6 @@
 """
 Collection of factories for creating the scalers.
 """
-from __future__ import absolute_import, division, print_function
 
 import logging
 
@@ -17,6 +16,7 @@ from dials.algorithms.scaling.scaling_library import choose_initial_scaling_inte
 from dials.algorithms.scaling.scaling_utilities import (
     BadDatasetForScalingException,
     Reasons,
+    align_axis_along_z,
     calc_crystal_frame_vectors,
     quasi_normalisation,
 )
@@ -54,7 +54,7 @@ def create_scaler(params, experiments, reflections):
     return scaler
 
 
-class ScalerFactory(object):
+class ScalerFactory:
     """Base class for Scaler Factories"""
 
     @staticmethod
@@ -181,16 +181,22 @@ class SingleScalerFactory(ScalerFactory):
             and "absorption" in experiment.scaling_model.components
         ):
             if experiment.scan:
-                # calc theta and phi cryst
-                reflection_table["phi"] = (
-                    reflection_table["xyzobs.px.value"].parts()[2]
-                    * experiment.scan.get_oscillation()[1]
-                )
                 reflection_table = calc_crystal_frame_vectors(
                     reflection_table, experiment
                 )
-
-        return SingleScaler(params, experiment, reflection_table, for_multi)
+                alignment_axis = (1.0, 0.0, 0.0)
+                reflection_table["s0c"] = align_axis_along_z(
+                    alignment_axis, reflection_table["s0c"]
+                )
+                reflection_table["s1c"] = align_axis_along_z(
+                    alignment_axis, reflection_table["s1c"]
+                )
+        try:
+            scaler = SingleScaler(params, experiment, reflection_table, for_multi)
+        except BadDatasetForScalingException as e:
+            raise ValueError(e)
+        else:
+            return scaler
 
 
 class NullScalerFactory(ScalerFactory):
@@ -216,7 +222,7 @@ class NullScalerFactory(ScalerFactory):
         return NullScaler(params, experiment, reflection_table)
 
 
-class MultiScalerFactory(object):
+class MultiScalerFactory:
     "Factory for creating a scaler for multiple datasets"
 
     @staticmethod
@@ -257,7 +263,7 @@ class MultiScalerFactory(object):
         return multiscaler
 
 
-class TargetScalerFactory(object):
+class TargetScalerFactory:
     "Factory for creating a targeted scaler for multiple datasets"
 
     @staticmethod

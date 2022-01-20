@@ -4,9 +4,7 @@ Contains implementation interface for finding spots on one or many images
 
 import logging
 import math
-import os
 import pickle
-import warnings
 from typing import Iterable, Tuple
 
 import libtbx
@@ -17,30 +15,10 @@ from dxtbx.model import ExperimentList
 from dials.array_family import flex
 from dials.model.data import PixelList, PixelListLabeller
 from dials.util import Sorry, log
+from dials.util.log import rehandle_cached_records
 from dials.util.mp import available_cores, batch_multi_node_parallel_map
 
 logger = logging.getLogger(__name__)
-
-_no_multiprocessing_on_windows = (
-    "Multiprocessing is not available on windows. Setting nproc = 1, njobs = 1"
-)
-
-
-class Result:
-    """
-    A class to hold the result from spot finding on an image.
-
-    When doing multi processing, we can process the result of
-    each thread as it comes in instead of waiting for all results.
-    The purpose of this class is to allow us to set the pixel list
-    to None after each image to lower memory usage.
-    """
-
-    def __init__(self, pixel_list):
-        """
-        Set the pixel list
-        """
-        self.pixel_list = pixel_list
 
 
 class ExtractPixelsFromImage:
@@ -104,8 +82,9 @@ class ExtractPixelsFromImage:
             mask = tuple(m1 & m2 for m1, m2 in zip(mask, self.mask))
 
         logger.debug(
-            "Number of masked pixels for image %i: %i"
-            % (index, sum(m.count(False) for m in mask))
+            "Number of masked pixels for image %i: %i",
+            index,
+            sum(m.count(False) for m in mask),
         )
 
         # Add the images to the pixel lists
@@ -170,7 +149,7 @@ class ExtractPixelsFromImage:
             logger.info("Found %d strong pixels on image %d", num_strong, frame + 1)
 
         # Return the result
-        return Result(pixel_list)
+        return pixel_list
 
 
 class ExtractPixelsFromImage2DNoShoeboxes(ExtractPixelsFromImage):
@@ -227,8 +206,8 @@ class ExtractPixelsFromImage2DNoShoeboxes(ExtractPixelsFromImage):
         result = super().__call__(index)
 
         # Add pixel lists to the labeller
-        assert len(pixel_labeller) == len(result.pixel_list), "Inconsistent size"
-        for plabeller, plist in zip(pixel_labeller, result.pixel_list):
+        assert len(pixel_labeller) == len(result), "Inconsistent size"
+        for plabeller, plist in zip(pixel_labeller, result):
             plabeller.add(plist)
 
         # Create shoeboxes from pixel list
@@ -269,7 +248,7 @@ class ExtractSpotsParallelTask:
         result = self.function(task)
         handlers = logging.getLogger("dials").handlers
         assert len(handlers) == 1, "Invalid number of logging handlers"
-        return result, handlers[0].messages()
+        return result, handlers[0].records
 
 
 def pixel_list_to_shoeboxes(
@@ -454,11 +433,7 @@ class ExtractSpots:
         mp_njobs = self.mp_njobs
         if mp_nproc is libtbx.Auto:
             mp_nproc = available_cores()
-            logger.info("Setting nproc={}".format(mp_nproc))
-        if os.name == "nt" and (mp_nproc > 1 or mp_njobs > 1):
-            logger.warning(_no_multiprocessing_on_windows)
-            mp_nproc = 1
-            mp_njobs = 1
+            logger.info(f"Setting nproc={mp_nproc}")
         if mp_nproc * mp_njobs > len(imageset):
             mp_nproc = min(mp_nproc, len(imageset))
             mp_njobs = int(math.ceil(len(imageset) / mp_nproc))
@@ -513,14 +488,10 @@ class ExtractSpots:
         if mp_nproc > 1 or mp_njobs > 1:
 
             def process_output(result):
-                for message in result[1]:
-                    logger.handle(message)
-                assert len(pixel_labeller) == len(
-                    result[0].pixel_list
-                ), "Inconsistent size"
-                for plabeller, plist in zip(pixel_labeller, result[0].pixel_list):
+                rehandle_cached_records(result[1])
+                assert len(pixel_labeller) == len(result[0]), "Inconsistent size"
+                for plabeller, plist in zip(pixel_labeller, result[0]):
                     plabeller.add(plist)
-                result[0].pixel_list = None
 
             batch_multi_node_parallel_map(
                 func=ExtractSpotsParallelTask(function),
@@ -534,12 +505,10 @@ class ExtractSpots:
         else:
             for task in indices:
                 result = function(task)
-                assert len(pixel_labeller) == len(
-                    result.pixel_list
-                ), "Inconsistent size"
-                for plabeller, plist in zip(pixel_labeller, result.pixel_list):
+                assert len(pixel_labeller) == len(result), "Inconsistent size"
+                for plabeller, plist in zip(pixel_labeller, result):
                     plabeller.add(plist)
-                    result.pixel_list = None
+                result.clear()
 
         # Create shoeboxes from pixel list
         return pixel_list_to_reflection_table(
@@ -561,10 +530,6 @@ class ExtractSpots:
         # Change the number of processors if necessary
         mp_nproc = self.mp_nproc
         mp_njobs = self.mp_njobs
-        if os.name == "nt" and (mp_nproc > 1 or mp_njobs > 1):
-            logger.warning(_no_multiprocessing_on_windows)
-            mp_nproc = 1
-            mp_njobs = 1
         if mp_nproc * mp_njobs > len(imageset):
             mp_nproc = min(mp_nproc, len(imageset))
             mp_njobs = int(math.ceil(len(imageset) / mp_nproc))
@@ -699,14 +664,6 @@ class SpotFinder:
         self.min_chunksize = min_chunksize
         self.is_stills = is_stills
 
-    def __call__(self, experiments):
-        warnings.warn(
-            "Please use Spotfinder.find_spots to run spotfinding.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self.find_spots(experiments)
-
     def find_spots(self, experiments: ExperimentList) -> flex.reflection_table:
         """
         Do spotfinding for a set of experiments.
@@ -791,7 +748,7 @@ class SpotFinder:
         :return: The observed spots
         """
         # The input mask
-        mask = self.mask_generator.generate(imageset)
+        mask = self.mask_generator(imageset)
         if self.mask is not None:
             mask = tuple(m1 & m2 for m1, m2 in zip(mask, self.mask))
 
@@ -842,7 +799,10 @@ class SpotFinder:
 
             logger.info("\nFinding spots in image %s to %s...", j0, j1)
             j0 -= 1
-            r, h = extract_spots(imageset[j0:j1])
+            if len(imageset) == 1:
+                r, h = extract_spots(imageset)
+            else:
+                r, h = extract_spots(imageset[j0:j1])
             reflections.extend(r)
             if h is not None:
                 for h1, h2 in zip(hot_pixels, h):

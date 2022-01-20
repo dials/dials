@@ -2,9 +2,6 @@
 Extension to general active parameter manager for scaling and function
 to use a scaler to determine the correct call to the apm factories.
 """
-from __future__ import absolute_import, division, print_function
-
-import six
 
 from dials.algorithms.scaling.active_parameter_managers import (
     ParameterManagerGenerator,
@@ -20,7 +17,7 @@ class scaling_active_parameter_manager(active_parameter_manager):
 
     def __init__(self, components, selection_list):
         self.constant_g_values = None
-        for component, obj in six.iteritems(components):
+        for component, obj in components.items():
             if component not in selection_list:
                 n_blocks = len(obj.n_refl)
                 if self.constant_g_values is None:
@@ -30,9 +27,7 @@ class scaling_active_parameter_manager(active_parameter_manager):
                 else:
                     for n in range(n_blocks):
                         self.constant_g_values[n] *= obj.calculate_scales(n)
-        super(scaling_active_parameter_manager, self).__init__(
-            components, selection_list
-        )
+        super().__init__(components, selection_list)
         n_obs = []
         for component in components:
             obs_in_component = []
@@ -51,6 +46,6 @@ class ScalingParameterManagerGenerator(ParameterManagerGenerator):
     """Class to generate parameter manager for scaling."""
 
     def __init__(self, data_managers, target, mode, shared=None):
-        super(ScalingParameterManagerGenerator, self).__init__(
+        super().__init__(
             data_managers, scaling_active_parameter_manager, target, mode, shared
         )

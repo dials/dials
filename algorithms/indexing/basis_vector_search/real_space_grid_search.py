@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 import math
 
@@ -66,9 +64,7 @@ class RealSpaceGridSearch(Strategy):
                 cell.
             target_unit_cell (cctbx.uctbx.unit_cell): The target unit cell.
         """
-        super(RealSpaceGridSearch, self).__init__(
-            max_cell, params=params, *args, **kwargs
-        )
+        super().__init__(max_cell, params=params, *args, **kwargs)
         if target_unit_cell is None:
             raise DialsIndexError(
                 "Target unit cell must be provided for real_space_grid_search"
@@ -135,7 +131,7 @@ class RealSpaceGridSearch(Strategy):
                 The list of reciprocal lattice vectors to search for periodicity.
         """
         used_in_indexing = flex.bool(reciprocal_lattice_vectors.size(), True)
-        logger.info("Indexing from %i reflections" % used_in_indexing.count(True))
+        logger.info("Indexing from %i reflections", used_in_indexing.count(True))
 
         vectors, weights = self.score_vectors(reciprocal_lattice_vectors)
 
@@ -151,9 +147,9 @@ class RealSpaceGridSearch(Strategy):
             unique_vectors.append(g.vectors[idx])
             unique_weights.append(g.weights[idx])
 
-        logger.info("Number of unique vectors: %i" % len(unique_vectors))
+        logger.info("Number of unique vectors: %i", len(unique_vectors))
 
         for v, w in zip(unique_vectors, unique_weights):
-            logger.debug("%s %s %s" % (w, v.length(), str(v.elems)))
+            logger.debug("%s %s %s", w, v.length(), str(v.elems))
 
         return unique_vectors, used_in_indexing

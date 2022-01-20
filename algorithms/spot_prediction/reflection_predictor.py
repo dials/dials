@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 
 logger = logging.getLogger(__name__)
@@ -38,7 +36,7 @@ phil_scope = parse(
 )
 
 
-class ReflectionPredictor(object):
+class ReflectionPredictor:
     """
     A reflection predictor that takes a number of experiments and does the proper
     prediction for each type of experiment.
@@ -65,7 +63,7 @@ class ReflectionPredictor(object):
         )
         from dials.array_family import flex
 
-        class Predictor(object):
+        class Predictor:
             def __init__(self, name, func):
                 self.name = name
                 self.func = func
@@ -83,8 +81,7 @@ class ReflectionPredictor(object):
         wl = experiment.beam.get_wavelength()
         if dmin is not None and dmin < 0.5 * wl:
             raise Sorry(
-                "Prediction at d_min of {0} is not possible "
-                "with wavelength {1}".format(dmin, wl)
+                f"Prediction at d_min of {dmin} is not possible with wavelength {wl}"
             )
 
         # Select the predictor class
@@ -178,9 +175,9 @@ class ReflectionPredictor(object):
 
         :return: A reflection table
         """
-        logger.info("Prediction type: %s" % self._predict.name)
+        logger.info("Prediction type: %s", self._predict.name)
         table = self._predict()
-        logger.info("Predicted %d reflections" % len(table))
+        logger.info("Predicted %d reflections", len(table))
         return table
 
     def predictor(self, index):

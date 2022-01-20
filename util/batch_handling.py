@@ -1,7 +1,6 @@
 """
 Functions to help with calculating batch properties for experiments objects.
 """
-from __future__ import absolute_import, division, print_function
 
 import logging
 
@@ -10,7 +9,7 @@ from dials.array_family import flex
 logger = logging.getLogger("dials")
 
 
-class batch_manager(object):
+class batch_manager:
     def __init__(self, batches, batch_params):
         # batch params is a list of dicts with "id" and "range" - used to be
         # a 'scope extract' object
@@ -69,7 +68,7 @@ class batch_manager(object):
                     "x": self._batch_increments[i]
                     + (batch["range"][1] - batch["range"][0]) / 2,
                     "y": 1,
-                    "text": "%s" % batch["id"],
+                    "text": f"{batch['id']}",
                     "showarrow": False,
                     "yshift": 20,
                     # 'arrowhead': 7,
@@ -82,7 +81,7 @@ class batch_manager(object):
                 sel,
                 flex.std_string(
                     [
-                        "%s: %s" % (batch["id"], j - batch["range"][0] + 1)
+                        f"{batch['id']}: {j - batch['range'][0] + 1}"
                         for j in batches.select(sel)
                     ]
                 ),

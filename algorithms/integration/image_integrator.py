@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import logging
 import platform
 from time import time
@@ -8,13 +6,14 @@ import dials.algorithms.integration
 from dials.algorithms.integration.processor import job
 from dials.model.data import ImageVolume, MultiPanelImageVolume, make_image
 from dials.util import log
+from dials.util.log import rehandle_cached_records
 from dials.util.mp import multi_node_parallel_map
 from dials_algorithms_integration_integrator_ext import ReflectionManagerPerImage
 
 logger = logging.getLogger(__name__)
 
 
-class ProcessorImage(object):
+class ProcessorImage:
     """Top level processor for per image processing."""
 
     def __init__(self, experiments, reflections, params):
@@ -69,12 +68,11 @@ class ProcessorImage(object):
             mp_nproc = 1
         assert mp_nproc > 0, "Invalid number of processors"
         logger.info(self.manager.summary())
-        logger.info(" Using %s with %d parallel job(s)\n" % (mp_method, mp_nproc))
+        logger.info(" Using %s with %d parallel job(s)\n", mp_method, mp_nproc)
         if mp_nproc > 1:
 
             def process_output(result):
-                for message in result[1]:
-                    logger.handle(message)
+                rehandle_cached_records(result[1])
                 self.manager.accumulate(result[0])
                 result[0].reflections = None
                 result[0].data = None
@@ -84,7 +82,7 @@ class ProcessorImage(object):
                 result = task()
                 handlers = logging.getLogger("dials").handlers
                 assert len(handlers) == 1, "Invalid number of logging handlers"
-                return result, handlers[0].messages()
+                return result, handlers[0].records
 
             multi_node_parallel_map(
                 func=execute_task,
@@ -94,7 +92,6 @@ class ProcessorImage(object):
                 callback=process_output,
                 cluster_method=mp_method,
                 preserve_order=True,
-                preserve_exception_message=True,
             )
         else:
             for task in self.manager.tasks():
@@ -106,7 +103,7 @@ class ProcessorImage(object):
         return result, self.manager.time
 
 
-class Task(object):
+class Task:
     """
     A class to perform a null task.
     """
@@ -220,7 +217,7 @@ class Task(object):
         )
 
 
-class ManagerImage(object):
+class ManagerImage:
     """
     A class to manage processing book-keeping
     """
@@ -355,6 +352,7 @@ class ManagerImage(object):
         assert num_partial >= num_full, "Invalid number of partials"
         if num_partial > num_full:
             logger.info(
-                " Split %d reflections into %d partial reflections\n"
-                % (num_full, num_partial)
+                " Split %d reflections into %d partial reflections\n",
+                num_full,
+                num_partial,
             )

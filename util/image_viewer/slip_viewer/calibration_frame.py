@@ -1,7 +1,3 @@
-# coding: utf-8
-
-from __future__ import absolute_import, division, print_function
-
 import os
 
 import wx
@@ -11,7 +7,7 @@ from scitbx.matrix import col
 
 class SBSettingsFrame(wx.MiniFrame):
     def __init__(self, *args, **kwds):
-        super(SBSettingsFrame, self).__init__(*args, **kwds)
+        super().__init__(*args, **kwds)
         szr = wx.BoxSizer(wx.VERTICAL)
         panel = SBSettingsPanel(self)
         self.SetSizer(szr)
@@ -32,7 +28,7 @@ class SBSettingsPanel(wx.Panel):
     # detector, panel, sensor and ASIC.
 
     def __init__(self, *args, **kwds):
-        super(SBSettingsPanel, self).__init__(*args, **kwds)
+        super().__init__(*args, **kwds)
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(sizer)
 
@@ -133,7 +129,7 @@ class SBSettingsPanel(wx.Panel):
             path = str(dialog.GetPath())
             if path != "":
                 # The detector object of the format instance is adjusted when the quadrant calibration
-                # arrows are clicked.  Sync those adjustments to a new cbf handle, drop uneeded categories
+                # arrows are clicked.  Sync those adjustments to a new cbf handle, drop unneeded categories
                 # (categories frame specific but not metrology specific) and write the file.
                 frame = self.GetParent().GetParent()
                 img = frame.pyslip.tiles.raw_image

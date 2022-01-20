@@ -1,4 +1,3 @@
-# coding: utf-8
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 """
 This program is used to integrate the reflections on the diffraction images. It
@@ -20,11 +19,12 @@ Examples::
   dials.integrate models.expt refined.refl background.algorithm=glm
 """
 
-from __future__ import absolute_import, division, print_function
 
 import logging
 import math
 import sys
+
+from orderedset import OrderedSet
 
 from dxtbx.model.experiment_list import Experiment, ExperimentList
 from libtbx.phil import parse
@@ -35,7 +35,7 @@ from dials.algorithms.profile_model.factory import ProfileModelFactory
 from dials.array_family import flex
 from dials.util import show_mail_handle_errors
 from dials.util.command_line import heading
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.slice import slice_crystal
 from dials.util.version import dials_version
 
@@ -51,7 +51,7 @@ phil_scope = parse(
       .type = str
       .help = "The experiments output filename"
 
-    output_unintegrated_reflections = True
+    output_unintegrated_reflections = False
       .type = bool
       .expert_level = 2
       .help = "Include unintegrated reflections in output file"
@@ -114,6 +114,10 @@ phil_scope = parse(
       .help = "Override reflections_per_degree and integrate all predicted"
               "reflections."
       .type = bool
+
+    random_seed = 0
+      .help = "Random seed for sampling"
+      .type = int
 
   }
 
@@ -251,6 +255,9 @@ def sample_predictions(experiments, predicted, params):
     Returns:
         A subset of the original predicted table.
     """
+
+    if params.sampling.random_seed:
+        flex.set_random_seed(params.sampling.random_seed)
 
     nref_per_degree = params.sampling.reflections_per_degree
     min_sample_size = params.sampling.minimum_sample_size
@@ -484,6 +491,17 @@ def run_integration(params, experiments, reference=None):
         force_static=params.prediction.force_static,
         padding=params.prediction.padding,
     )
+    isets = OrderedSet(e.imageset for e in experiments)
+    predicted["imageset_id"] = flex.int(predicted.size(), 0)
+    if len(isets) > 1:
+        for e in experiments:
+            iset_id = isets.index(e.imageset)
+            for id_ in predicted.experiment_identifiers().keys():
+                identifier = predicted.experiment_identifiers()[id_]
+                if identifier == e.identifier:
+                    sel = predicted["id"] == id_
+                    predicted["imageset_id"].set_selected(sel, iset_id)
+                    break
 
     # Match reference with predicted
     if reference:
@@ -570,8 +588,9 @@ def run_integration(params, experiments, reference=None):
     if not params.output.output_unintegrated_reflections:
         keep = reflections.get_flags(reflections.flags.integrated, all=False)
         logger.info(
-            "Removing %d unintegrated reflections of %d total"
-            % (keep.count(False), keep.size())
+            "Removing %d unintegrated reflections of %d total",
+            keep.count(False),
+            keep.size(),
         )
 
         reflections = reflections.select(keep)
@@ -645,7 +664,7 @@ def run(args=None, phil=working_phil):
     usage = "usage: dials.integrate [options] models.expt"
 
     # Create the parser
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil,
         epilog=__doc__,

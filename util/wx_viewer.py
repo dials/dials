@@ -1,7 +1,6 @@
 # This code is based on:
 #   http://lists.wxwidgets.org/archive/wxPython-users/msg11078.html
 
-from __future__ import absolute_import, division, print_function
 
 import math
 import os
@@ -75,7 +74,7 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
         orthographic=False,
         animation_time=1,  # seconds
         background_rgb=(0, 0, 0),
-        **kw
+        **kw,
     ):
         self.autospin_allowed = auto_spin_allowed
         self.orthographic = orthographic
@@ -740,17 +739,17 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
 
         for ext in extensions:
             if file_name.endswith("." + ext):
-                print("Writing file: %s" % show_string(os.path.abspath(file_name)))
+                print(f"Writing file: {show_string(os.path.abspath(file_name))}")
                 if not try_save(file_name_ext=file_name):
-                    print("Failure saving screen shot as %s file." % ext.upper())
+                    print(f"Failure saving screen shot as {ext.upper()} file.")
                 return 1
         n_written = 0
         for ext in extensions:
             file_name_ext = file_name + "." + ext
             if not try_save(file_name_ext=file_name_ext):
-                print("Image output format not available: %s" % ext.upper())
+                print(f"Image output format not available: {ext.upper()}")
             else:
-                print("Wrote file: %s" % show_string(os.path.abspath(file_name_ext)))
+                print(f"Wrote file: {show_string(os.path.abspath(file_name_ext))}")
                 n_written += 1
         return n_written
 
@@ -759,9 +758,7 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
 
         gl2ps = gltbx.util.gl2ps_interface
         if not gl2ps(file_name=None, draw_background=False, callback=None):
-            print(
-                "PDF output via gl2ps not available: cannot write file %s" % file_name
-            )
+            print(f"PDF output via gl2ps not available: cannot write file {file_name}")
             return 0
         try:
             # preempt potential error in C++, for better reporting here
@@ -775,7 +772,7 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
             )
             return 0
         gl2ps(file_name=file_name, draw_background=False, callback=self.OnRedraw)
-        print("Wrote file: %s" % show_string(os.path.abspath(file_name)))
+        print(f"Wrote file: {show_string(os.path.abspath(file_name))}")
         return 1
 
     def save_screen_shot(
@@ -973,7 +970,7 @@ class show_points_and_lines_mixin(wxGLWindow):
                 lbl = self.labels[i_point_closest]
             else:
                 lbl = "index %d" % i_point_closest
-            txt = "pick point: %s" % lbl
+            txt = f"pick point: {lbl}"
             print(txt)
             self.parent.SetStatusText(txt)
 
@@ -1156,5 +1153,5 @@ class App(wx.App):
 
     def update_status_bar(self):
         self.frame.SetStatusText(
-            "Auto Spin %s" % ["Off", "On"][int(self.view_objects.autospin_allowed)]
+            f"Auto Spin {['Off', 'On'][int(self.view_objects.autospin_allowed)]}"
         )

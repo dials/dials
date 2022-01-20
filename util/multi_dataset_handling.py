@@ -3,11 +3,12 @@ Module of functions for handling operations on lists of reflection tables
 and experiment lists.
 """
 
-from __future__ import absolute_import, division, print_function
 
 import copy
 import logging
 import uuid
+
+from orderedset import OrderedSet
 
 from dials.array_family import flex
 
@@ -257,7 +258,7 @@ def select_datasets_on_ids(
         return experiments, reflection_table_list
     if use_datasets and exclude_datasets:
         raise ValueError(
-            "The options use_datasets and exclude_datasets cannot be used in conjuction."
+            "The options use_datasets and exclude_datasets cannot be used in conjunction."
         )
 
     id_map = {}
@@ -321,14 +322,13 @@ def select_datasets_on_identifiers(
         return experiments, reflection_table_list
     if use_datasets and exclude_datasets:
         raise ValueError(
-            "The options use_datasets and exclude_datasets cannot be used in conjuction."
+            "The options use_datasets and exclude_datasets cannot be used in conjunction."
         )
     if experiments.identifiers().count("") > 0:
         raise ValueError(
-            """
+            f"""
             Not all experiment identifiers set in the ExperimentList.
-            Current identifiers set as: %s"""
-            % list(experiments.identifiers())
+            Current identifiers set as: {list(experiments.identifiers())}"""
         )
     list_of_reflections = []
     if use_datasets:
@@ -370,3 +370,28 @@ are not found in the experiment list / reflection tables."""
                 list_of_reflections.append(reflection_table)
         experiments.remove_on_experiment_identifiers(exclude_datasets)
     return experiments, list_of_reflections
+
+
+def update_imageset_ids(experiments, reflections):
+    """For a list of input experiments and reflections (each containing one
+    sweep), update or add the imageset_id column to the data to match the order
+    in the experiment list.
+
+    This means that when the reflection tables are combined, the data is correct.
+    """
+    # input a list of ordered matching experiments and reflection tables.
+
+    next_iset_id = 0
+    imagesets_found = OrderedSet()
+    for expt, table in zip(experiments, reflections):
+        if "imageset_id" in table:
+            assert len(set(table["imageset_id"])) == 1
+        iset = expt.imageset
+        if iset not in imagesets_found:
+            imagesets_found.add(iset)
+            table["imageset_id"] = flex.int(table.size(), next_iset_id)
+            next_iset_id += 1
+        else:
+            iset_id = imagesets_found.index(iset)
+            table["imageset_id"] = flex.int(table.size(), iset_id)
+    return reflections

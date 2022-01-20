@@ -2,20 +2,22 @@
 LevenbergMarquardtIterations, GaussNewtonIterations, SimpleLBFGS and LBFGScurvs
 are the current concrete implementations"""
 
-from __future__ import absolute_import, division, print_function
-
 import copy
 import json
 import logging
+from io import StringIO
+from typing import List, Union
 
 import libtbx
 from libtbx import easy_mp
 from libtbx.phil import parse
-from scitbx import lbfgs
+from scitbx import lbfgs, sparse
 from scitbx.array_family import flex
 from scitbx.lstbx import normal_eqns, normal_eqns_solving
 
 from dials.algorithms.refinement import DialsRefineRuntimeError
+
+from .target import Target
 
 logger = logging.getLogger(__name__)
 
@@ -135,7 +137,7 @@ class Journal(dict):
 
     @classmethod
     def from_json_file(cls, filename):
-        with open(filename, "r") as f:
+        with open(filename) as f:
             d = json.load(f)
         j = cls()
         j.update(d["data"])
@@ -144,7 +146,7 @@ class Journal(dict):
         return j
 
 
-class Refinery(object):
+class Refinery:
     """Interface for Refinery objects. This should be subclassed and the run
     method implemented."""
 
@@ -168,7 +170,7 @@ class Refinery(object):
 
     def __init__(
         self,
-        target,
+        target: Target,
         prediction_parameterisation,
         constraints_manager=None,
         log=None,
@@ -191,7 +193,7 @@ class Refinery(object):
         # undefined initial functional and gradients values
         self._f = None
         self._g = None
-        self._jacobian = None
+        self._jacobian: Union[flex.double, sparse.matrix, None] = None
 
         # filename for an optional log file
         self._log = log
@@ -275,15 +277,15 @@ class Refinery(object):
                 "out_of_sample_rmsd", self._target.rmsds_for_reflection_table(preds)
             )
 
-    def split_jacobian_into_blocks(self):
+    def split_jacobian_into_blocks(self) -> List[flex.double]:
         """Split the Jacobian into blocks each corresponding to a separate
-        residual"""
+        residual, converting sparse to flex.double if appropriate"""
 
         nblocks = len(self._target.rmsd_names)
 
         try:
             # The Jacobian might be a sparse matrix
-            j = self._jacobian.as_dense_matrix()
+            j: flex.double = self._jacobian.as_dense_matrix()
         except AttributeError:
             j = self._jacobian
 
@@ -295,28 +297,18 @@ class Refinery(object):
         return blocks
 
     @staticmethod
-    def _packed_corr_mat(m):
-        """Return a 1D flex array containing the upper diagonal values of the
-        correlation matrix calculated between columns of 2D matrix m"""
+    def _packed_corr_mat(m: flex.double) -> List[float]:
+        """Return a list containing the upper diagonal values of the
+        correlation matrix calculated between columns of 2D matrix flex.double
+        matrix m"""
 
-        nr, nc = m.all()
+        _, nc = m.all()
 
-        try:  # convert a flex.double matrix to sparse
-            from scitbx import sparse
-
-            m2 = sparse.matrix(nr, nc)
-            m2.assign_block(m, 0, 0)
-            m = m2
-        except AttributeError:
-            pass  # assume m is already scitbx_sparse_ext.matrix
-
-        packed_len = (m.n_cols * (m.n_cols + 1)) // 2
-        i = 0
-        tmp = flex.double(packed_len)
-        for col1 in range(m.n_cols):
-            for col2 in range(col1, m.n_cols):
+        tmp = []
+        for col1 in range(nc):
+            for col2 in range(col1, nc):
                 if col1 == col2:
-                    tmp[i] = 1.0
+                    tmp.append(1.0)
                 else:
                     # Avoid spuriously high correlation between a column that should be
                     # zero (such as the gradient of X residuals wrt the Shift2 parameter)
@@ -324,10 +316,9 @@ class Refinery(object):
                     # Dist parameter) by rounding values to 15 places. It seems that such
                     # spurious correlations may occur in cases where gradients are
                     # calculated to be zero by matrix operations, rather than set to zero.
-                    v1 = m.col(col1).as_dense_vector().round(15)
-                    v2 = m.col(col2).as_dense_vector().round(15)
-                    tmp[i] = flex.linear_correlation(v1, v2).coefficient()
-                i += 1
+                    v1 = m.matrix_copy_column(col1).round(15)
+                    v2 = m.matrix_copy_column(col2).round(15)
+                    tmp.append(flex.linear_correlation(v1, v2).coefficient())
 
         return tmp
 
@@ -454,7 +445,7 @@ class Refinery(object):
     def run(self):
         """
         To be implemented by derived class. It is expected that each step of
-        refinement be preceeded by a call to prepare_for_step and followed by
+        refinement be preceded by a call to prepare_for_step and followed by
         calls to update_journal and test_for_termination (in that order).
         """
 
@@ -462,7 +453,7 @@ class Refinery(object):
         raise NotImplementedError()
 
 
-class DisableMPmixin(object):
+class DisableMPmixin:
     """A mixin class that disables setting of nproc for multiprocessing"""
 
     def set_nproc(self, nproc):
@@ -480,8 +471,6 @@ class AdaptLbfgs(Refinery):
         self._termination_params = lbfgs.termination_parameters(
             max_iterations=self._max_iterations
         )
-
-        from six.moves import cStringIO as StringIO
 
         self._log_string = StringIO
 
@@ -689,7 +678,11 @@ class AdaptLstbx(Refinery, normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_
                         jacobian,
                         weights,
                     ) = self._target.compute_residuals_and_gradients(block)
-                    return dict(residuals=residuals, jacobian=jacobian, weights=weights)
+                    return {
+                        "residuals": residuals,
+                        "jacobian": jacobian,
+                        "weights": weights,
+                    }
 
                 def callback_wrapper(result):
                     j = result["jacobian"]
@@ -817,7 +810,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
         log=None,
         tracking=None,
         max_iterations=20,
-        **kwds
+        **kwds,
     ):
 
         AdaptLstbx.__init__(
@@ -956,11 +949,11 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
         # early test for linear independence, require all right hand side elements to be non-zero
         RHS = self.step_equations().right_hand_side()
         if RHS.count(0.0) > 0:
+            p_names = [
+                b for a, b in zip(RHS, self._parameters.get_param_names()) if a == 0.0
+            ]
             raise DialsRefineRuntimeError(
-                r"""There is at least one normal equation with a right hand side of zero,
-meaning that the parameters are not all independent, and there is no unique
-solution.  Mathematically, some kind of row reduction needs to be performed
-before this can be solved."""
+                f"The normal equations have an indeterminate solution. The problematic parameters are {', '.join(p_names)}."
             )
 
         # return early if refinement is not possible
