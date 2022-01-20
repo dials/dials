@@ -250,7 +250,7 @@ def show_experiments(experiments, show_scan_varying=False):
     for i_expt, expt in enumerate(experiments):
         text.append("Experiment %i:" % i_expt)
         format_class = expt.imageset.get_format_class()
-        if not format_class.abstract():
+        if format_class.__name__ not in ["Format", "FormatMultiImage"]:
             text.append(f"Format class: {format_class.__name__}")
         if expt.identifier != "":
             text.append(f"Experiment identifier: {expt.identifier}")
