@@ -1,0 +1,1 @@
+flex.reflection_table: remove support for saving flex.std_string arrays to messagepack (this never worked, but appeared to for certain cases of short strings)
