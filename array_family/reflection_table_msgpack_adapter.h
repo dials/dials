@@ -176,6 +176,22 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
     };
 
     /**
+     * Overload of above to recognise that packing flex arrays of std::string
+     * does not work
+     */
+
+    template <>
+    struct pack<scitbx::af::const_ref<std::string> > {
+      template <typename Stream>
+      msgpack::packer<Stream>& operator()(
+        msgpack::packer<Stream>& o,
+        const scitbx::af::const_ref<std::string>& v) const {
+        throw DIALS_ERROR("packing std::string unsupported");
+        return o;
+      }
+    };
+
+    /**
      * Pack a shared<Shoebox<>> into a msgpack array.
      *
      * Shoebox arrays are treated differently because they are themselves
@@ -662,8 +678,6 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
           v = extract<std::size_t>(o.via.array.ptr[1]);
         } else if (name == "double") {
           v = extract<double>(o.via.array.ptr[1]);
-        } else if (name == "std::string") {
-          v = extract<std::string>(o.via.array.ptr[1]);
         } else if (name == "vec2<double>") {
           v = extract<scitbx::vec2<double> >(o.via.array.ptr[1]);
         } else if (name == "vec3<double>") {
