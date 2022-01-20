@@ -1139,14 +1139,29 @@ def test_to_from_msgpack(tmpdir):
     table["col10"] = flex.miller_index(c10)
     table["col11"] = flex.shoebox(c11)
 
+    with pytest.raises(RuntimeError):
+        obj = table.as_msgpack()
+
+    # Create a table with some elements which are not std::string
+    table = flex.reflection_table()
+    table["col1"] = flex.int(c1)
+    table["col2"] = flex.double(c2)
+    table["col4"] = flex.bool(c4)
+    table["col5"] = flex.size_t(c5)
+    table["col6"] = flex.vec2_double(c6)
+    table["col7"] = flex.vec3_double(c7)
+    table["col8"] = flex.mat3_double(c8)
+    table["col9"] = flex.int6(c9)
+    table["col10"] = flex.miller_index(c10)
+    table["col11"] = flex.shoebox(c11)
+
     obj = table.as_msgpack()
     new_table = flex.reflection_table.from_msgpack(obj)
     assert new_table.is_consistent()
     assert new_table.nrows() == 10
-    assert new_table.ncols() == 11
+    assert new_table.ncols() == 10
     assert all(tuple(a == b for a, b in zip(new_table["col1"], c1)))
     assert all(tuple(a == b for a, b in zip(new_table["col2"], c2)))
-    assert all(tuple(a == b for a, b in zip(new_table["col3"], c3)))
     assert all(tuple(a == b for a, b in zip(new_table["col4"], c4)))
     assert all(tuple(a == b for a, b in zip(new_table["col5"], c5)))
     assert all(tuple(a == b for a, b in zip(new_table["col6"], c6)))
@@ -1162,10 +1177,9 @@ def test_to_from_msgpack(tmpdir):
     )
     assert new_table.is_consistent()
     assert new_table.nrows() == 10
-    assert new_table.ncols() == 11
+    assert new_table.ncols() == 10
     assert all(tuple(a == b for a, b in zip(new_table["col1"], c1)))
     assert all(tuple(a == b for a, b in zip(new_table["col2"], c2)))
-    assert all(tuple(a == b for a, b in zip(new_table["col3"], c3)))
     assert all(tuple(a == b for a, b in zip(new_table["col4"], c4)))
     assert all(tuple(a == b for a, b in zip(new_table["col5"], c5)))
     assert all(tuple(a == b for a, b in zip(new_table["col6"], c6)))
