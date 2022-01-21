@@ -1,6 +1,5 @@
-import os
+from pathlib import Path
 
-import numpy as np
 import procrunner
 import pytest
 
@@ -8,31 +7,171 @@ from dxtbx.serialize import load
 
 from dials.array_family import flex
 
+base_path = Path("/dls/mx-scratch/jbe/test_import_mtz_for_multiplex")
+
+
+@pytest.mark.parametrize(
+    "pipe, section",
+    [
+        ("dials", "first"),
+        ("dials", "last"),
+        ("3dii", "first"),
+        ("3dii", "last"),
+    ],
+)
+def test_import_mtz_on_xia2_processing(tmp_path, pipe, section):
+
+    mtz = base_path / f"{pipe}_{section}30.mtz"
+
+    integrated_expt = base_path / f"dials_{section}30_integrated.expt"
+    integrated_refl = base_path / f"dials_{section}30_integrated.refl"
+
+    cmd = [
+        "dials.import_mtz",
+        str(mtz),
+        f"output.reflections={section}30.refl",
+        f"output.experiments={section}30.expt",
+    ]
+    result = procrunner.run(cmd, working_directory=tmp_path)
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / f"{section}30.refl").is_file()
+    assert (tmp_path / f"{section}30.expt").is_file()
+
+    imported_expt = load.experiment_list(
+        str(tmp_path / f"{section}30.expt"),
+        check_format=False,
+    )[0]
+    imported_refl = flex.reflection_table.from_file(str(tmp_path / f"{section}30.refl"))
+
+    expt_1 = load.experiment_list(str(integrated_expt), check_format=False)[0]
+    refl_1 = flex.reflection_table.from_file(str(integrated_refl))
+
+    # Check goniometer properties
+    assert expt_1.goniometer == imported_expt.goniometer
+    assert (
+        expt_1.goniometer.get_fixed_rotation()
+        == imported_expt.goniometer.get_fixed_rotation()
+    )
+    assert (
+        expt_1.goniometer.get_setting_rotation()
+        == imported_expt.goniometer.get_setting_rotation()
+    )
+    assert (
+        expt_1.goniometer.get_rotation_axis_datum()
+        == imported_expt.goniometer.get_rotation_axis_datum()
+    )
+
+    # Check beam properties
+    assert expt_1.beam.get_wavelength() == pytest.approx(
+        imported_expt.beam.get_wavelength()
+    )
+    assert expt_1.beam.get_unit_s0() == pytest.approx(
+        imported_expt.beam.get_unit_s0(), abs=2e-2
+    )  # beam is refined in dials
+
+    # Check detector properties
+    assert expt_1.detector[0].get_origin() == pytest.approx(
+        imported_expt.detector[0].get_origin(), abs=2.0
+    )
+    assert expt_1.detector[0].get_pixel_size()[0] == pytest.approx(
+        imported_expt.detector[0].get_pixel_size()[0], abs=1e-3
+    )
+    assert expt_1.detector[0].get_pixel_size()[1] == pytest.approx(
+        imported_expt.detector[0].get_pixel_size()[1], abs=1e-3
+    )
+    assert expt_1.detector[0].get_fast_axis() == pytest.approx(
+        imported_expt.detector[0].get_fast_axis(), abs=1e-2
+    )
+    assert expt_1.detector[0].get_slow_axis() == pytest.approx(
+        imported_expt.detector[0].get_slow_axis(), abs=1e-2
+    )
+
+    # Check scan peroperties
+    assert expt_1.scan.get_image_range() == imported_expt.scan.get_image_range()
+    assert expt_1.scan.get_oscillation() == imported_expt.scan.get_oscillation()
+    # now for the crystal, as we are trying to put everything into our DIALS
+    # geometry, both the U and B matrices should be the same
+    assert expt_1.crystal.get_B() == pytest.approx(
+        imported_expt.crystal.get_B(), abs=1e-3
+    )
+    # FIXME
+    # assert expt_1.crystal.get_U() == pytest.approx(
+    #    imported_expt.crystal.get_U(), abs=1e-2
+    # )
+
+    # Now test phi etc
+    phi = imported_refl["xyzobs.px.value"].parts()[2]
+    if section == "first":
+        assert max(phi) < 30 and min(phi) > 0
+    else:
+        assert max(phi) < 90 and min(phi) > 60
+
+    # choose a few random reflections to compare
+    check_last = [(8, -26, -12), (15, -11, -2), (-7, 14, 0)]
+    check_first = [(4, 0, 5), (13, 6, 12), (2, -7, 23)]
+    if pipe == "dials":
+        if section == "last":
+            miller_index_to_check = check_last
+        else:
+            miller_index_to_check = check_first
+        for idx in miller_index_to_check:
+            r1 = refl_1.select(refl_1["miller_index"] == idx)
+            r1 = r1.select(r1.get_flags(r1.flags.integrated_prf))
+            r2 = imported_refl.select(imported_refl["miller_index"] == idx)
+            # for these examples, there is only one reflection
+            assert r1[0]["intensity.prf.value"] == pytest.approx(
+                r2[0]["intensity.prf.value"], abs=1e-2
+            )
+            assert r1[0]["s1"] == pytest.approx(r2[0]["s1"], abs=2e-2)
+            # note in dials, we export the observed x an y, and the calculated z.
+            assert r1[0]["xyzcal.px"][2] == pytest.approx(
+                r2[0]["xyzcal.px"][2], abs=2e-2
+            )
+            assert r1[0]["xyzobs.px.value"][0] == pytest.approx(
+                r2[0]["xyzobs.px.value"][0], abs=2e-2
+            )
+            assert r1[0]["xyzobs.px.value"][1] == pytest.approx(
+                r2[0]["xyzobs.px.value"][1], abs=2e-2
+            )
+
+
+@pytest.mark.parametrize("pipe", ["dials", "3dii"])
+def test_multiplex_on_imported_mtz(tmp_path, pipe):
+
+    for section in ["first", "last"]:
+        cmd = [
+            "dials.import_mtz",
+            str(
+                base_path
+                / f"xia2_{pipe}_{section}30"
+                / "DataFiles"
+                / "AUTOMATIC_DEFAULT_NATIVE_SWEEP1_INTEGRATE.mtz"
+            ),
+            f"output.reflections=imported_{section}.refl",
+            f"output.experiments=imported_{section}.expt",
+        ]
+        result = procrunner.run(cmd, working_directory=tmp_path)
+        assert not result.returncode and not result.stderr
+
+    cmd = ["xia2.multiplex"]
+    for section in ["first", "last"]:
+        cmd.extend(
+            [
+                str(tmp_path / f"imported_{section}.expt"),
+                str(tmp_path / f"imported_{section}.refl"),
+            ]
+        )
+
+    result = procrunner.run(cmd, working_directory=tmp_path)
+    assert not result.returncode and not result.stderr
+
+
+"""
+
+
 base_path = os.environ.get("TEST_IMPORT_MTZ", "/dls/mx-scratch/jbe/test_import_mtz/")
 dials_expt = base_path + "dials_integrated.expt"
 dials_refl = base_path + "dials_integrated.refl"
-
-
-def check_dials_refls(integrated_refls, imported_refls):
-    # now check some random reflections
-    miller_index_to_check = [(9, 7, 3), (21, 13, 4), (8, -26, -12)]
-    for idx in miller_index_to_check:
-        r1 = integrated_refls.select(integrated_refls["miller_index"] == idx)
-        r1 = r1.select(r1.get_flags(r1.flags.integrated_prf))
-        r2 = imported_refls.select(imported_refls["miller_index"] == idx)
-        # for these examples, there is only one reflection
-        assert r1[0]["intensity.prf.value"] == pytest.approx(
-            r2[0]["intensity.prf.value"], abs=1e-2
-        )
-        assert r1[0]["s1"] == pytest.approx(r2[0]["s1"], abs=1e-2)
-        # note in dials, we export the observed x an y, and the calculated z.
-        assert r1[0]["xyzcal.px"][2] == pytest.approx(r2[0]["xyzcal.px"][2], abs=1e-2)
-        assert r1[0]["xyzobs.px.value"][0] == pytest.approx(
-            r2[0]["xyzobs.px.value"][0], abs=1e-2
-        )
-        assert r1[0]["xyzobs.px.value"][1] == pytest.approx(
-            r2[0]["xyzobs.px.value"][1], abs=1e-2
-        )
 
 
 def test_import_dials_integrated_mtz_with_template(dials_data, tmp_path):
@@ -252,4 +391,4 @@ def test_import_3dii_integrated_mtz_without_template(tmp_path):
 
 ### separate test for data processed purely with xds (not 3dii)?
 
-### how about an old mosflm file?
+### how about an old mosflm file?"""

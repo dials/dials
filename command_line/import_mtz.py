@@ -28,6 +28,8 @@ from scitbx import matrix
 from dials.algorithms.spot_prediction import ray_intersection
 from dials.array_family import flex
 from dials.util import log, show_mail_handle_errors, tabulate
+from dials.util.exclude_images import set_initial_valid_image_ranges
+from dials.util.multi_dataset_handling import generate_experiment_identifiers
 from dials.util.options import OptionParser
 
 logger = logging.getLogger("dials.command_line.import_mtz")
@@ -316,6 +318,11 @@ def create_reflection_table_from_mtz(
     data = extract_data_from_mtz(unmerged_mtz, params)
     scans = scan_info_from_batch_headers(unmerged_mtz, verbose=False)
 
+    if len(scans) > 1:
+        raise ValueError(
+            "Only importing MTZ files containing one sweep is currently supported"
+        )
+
     # The reflection data
     table = flex.reflection_table()
     table["miller_index"] = data.indices
@@ -403,7 +410,7 @@ profile-fitted integrated intensities."""
     if data.bgsig:
         table["background.sum.variance"] = data.bgsig ** 2
     table["partial_id"] = flex.double(range(0, table.size()))
-
+    table.set_flags(flex.bool(table.size(), True), table.flags.predicted)
     table["id"] = flex.int(table.size(), 0)
     refls_per_scan = OrderedDict({})
     for i, scan in enumerate(scans.values()):
@@ -434,6 +441,7 @@ profile-fitted integrated intensities."""
 Please provide an input value for oscillation_step"""
                 )
             sel = table["id"] == i
+            table.experiment_identifiers()[i] = expt.identifier
             angles_i = angle.select(sel)
             z_i = angles_i / expt.scan.get_oscillation()[1]
             z.set_selected(sel.iselection(), z_i)
@@ -537,14 +545,14 @@ only single wavelength MTZ files supported."""
                 "Using user-specified oscillation step for constructing the scan"
             )
             dxscan = Scan(
-                image_range=[scan["start_image"], scan["end_image"]],
-                oscillation=[0.0, params.input.oscillation_step],
+                image_range=[scan["batch_begin"], scan["batch_end"]],
+                oscillation=[scan["angle_begin"], params.input.oscillation_step],
             )
         else:
             dxscan = Scan(
-                image_range=[scan["start_image"], scan["end_image"]],
+                image_range=[scan["batch_begin"], scan["batch_end"]],
                 oscillation=[
-                    0.0,
+                    scan["angle_begin"],
                     (scan["angle_end"] - scan["angle_begin"]) / n_images,
                 ],
             )
@@ -580,6 +588,7 @@ only single wavelength MTZ files supported."""
             )
         )
 
+    set_initial_valid_image_ranges(experiments)
     return experiments
 
 
@@ -669,6 +678,8 @@ def create_experiments_from_mtz(
         experiments = create_experiments_from_mtz_without_image_template(
             unmerged_mtz, params
         )
+    # now set identifiers
+    generate_experiment_identifiers(experiments)
     return experiments
 
 
