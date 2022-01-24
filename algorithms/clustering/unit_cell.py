@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 
 # modified version of the ab_cluster function so we can access the scipy dendrogram object

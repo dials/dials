@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import copy
 
 from dxtbx.model import Experiment, ExperimentList, Scan

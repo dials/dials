@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 
 logger = logging.getLogger("dials.extensions.dispersion_spotfinder_threshold_ext")

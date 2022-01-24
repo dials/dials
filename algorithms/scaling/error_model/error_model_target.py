@@ -3,6 +3,8 @@ Definition of the target function for error model minimisation.
 """
 
 
+from __future__ import annotations
+
 import numpy as np
 
 from dxtbx import flumpy

@@ -9,6 +9,8 @@ Examples::
   dials.reference_profile_viewer reference_profiles.pickle
 """
 
+from __future__ import annotations
+
 import copy
 import os
 import pickle

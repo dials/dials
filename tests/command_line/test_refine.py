@@ -8,6 +8,8 @@ have not changed format and so on.
 """
 
 
+from __future__ import annotations
+
 import os
 
 import procrunner

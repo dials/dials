@@ -31,6 +31,8 @@ dials.damage_analysis scaled.expt scaled.refl shared_crystal=True
 
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import os

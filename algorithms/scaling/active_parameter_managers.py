@@ -3,6 +3,8 @@ Classes to initialise a 'parameter manager', to indicate to a
 refiner which components of the model are to be refined.
 """
 
+from __future__ import annotations
+
 import logging
 
 from scitbx import sparse

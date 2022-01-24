@@ -2,6 +2,8 @@
 Definitions of the scaling algorithm.
 """
 
+from __future__ import annotations
+
 import gc
 import itertools
 import json

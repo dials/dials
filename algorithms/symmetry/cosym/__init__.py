@@ -6,6 +6,8 @@ determination of Patterson group symmetry from sparse multi-crystal data sets in
 the presence of an indexing ambiguity.
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import math

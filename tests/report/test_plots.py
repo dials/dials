@@ -2,6 +2,8 @@
 Tests for the dials.report.plots module.
 """
 
+from __future__ import annotations
+
 import itertools
 import random
 from unittest import mock

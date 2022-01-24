@@ -1,5 +1,7 @@
 # LIBTBX_SET_DISPATCHER_NAME cluster.dials.exec
 
+from __future__ import annotations
+
 import pickle
 
 import dials.util

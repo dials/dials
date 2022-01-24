@@ -1,5 +1,7 @@
 """Test components of the dials.space_group program."""
 
+from __future__ import annotations
+
 import pytest
 
 from dials.algorithms.symmetry.absences.laue_groups_info import (

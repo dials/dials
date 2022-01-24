@@ -2,6 +2,8 @@
 Command line script to allow merging and truncating of a dials dataset.
 """
 
+from __future__ import annotations
+
 import logging
 import sys
 from io import StringIO

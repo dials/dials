@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import dials_algorithms_centroid_simple_ext
 
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dials.algorithms.refinement.outlier_detection.mcd import MCD
 from dials.algorithms.refinement.outlier_detection.outlier_base import (
     CentroidOutlier,

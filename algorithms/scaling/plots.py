@@ -2,6 +2,8 @@
 Make plotly plots for html output by dials.scale, dials.report or xia2.report.
 """
 
+from __future__ import annotations
+
 import itertools
 import math
 

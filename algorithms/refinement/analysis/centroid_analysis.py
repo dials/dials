@@ -2,6 +2,8 @@
 outlier rejection parameters automatically"""
 
 
+from __future__ import annotations
+
 import math
 
 from scitbx.math.periodogram import Periodogram

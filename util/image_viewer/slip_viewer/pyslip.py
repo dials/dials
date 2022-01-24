@@ -18,6 +18,8 @@ difficulty for most uses is to generate the map tiles.
 [1] http://wiki.openstreetmap.org/index.php/Slippy_Map
 """
 
+from __future__ import annotations
+
 import glob
 import math
 import os

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dials.algorithms.symmetry import origin
 from dials.array_family import flex
 

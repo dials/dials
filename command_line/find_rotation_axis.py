@@ -13,6 +13,8 @@ Examples::
   dials.find_rotation_axis imported.expt strong.refl
 """
 
+from __future__ import annotations
+
 import logging
 import sys
 

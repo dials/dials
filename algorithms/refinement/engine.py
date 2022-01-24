@@ -2,6 +2,8 @@
 LevenbergMarquardtIterations, GaussNewtonIterations, SimpleLBFGS and LBFGScurvs
 are the current concrete implementations"""
 
+from __future__ import annotations
+
 import copy
 import json
 import logging

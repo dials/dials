@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dials.command_line import missing_reflections
 
 

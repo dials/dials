@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 
 from dials_algorithms_background_modeller_ext import (

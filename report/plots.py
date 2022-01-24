@@ -3,6 +3,8 @@ This module defines a number of general plots, which may be relevant to
 for reports of several programs.
 """
 
+from __future__ import annotations
+
 import logging
 from io import StringIO
 

@@ -4,6 +4,8 @@ data and comparing with expected output.
 """
 
 
+from __future__ import annotations
+
 import procrunner
 import pytest
 

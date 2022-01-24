@@ -8,6 +8,8 @@ and experiment object, and determine_outlier_index_arrays, which takes an
 Ih_table and returns flex.size_t index arrays of the outlier positions.
 """
 
+from __future__ import annotations
+
 import copy
 import logging
 

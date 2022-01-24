@@ -3,6 +3,8 @@ Module of utility functions for scaling.
 """
 
 
+from __future__ import annotations
+
 import logging
 from math import acos
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import math
 
 from dials.algorithms.profile_model.modeller import EmpiricalProfileModeller

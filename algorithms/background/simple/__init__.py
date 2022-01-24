@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dials.algorithms.background.simple.algorithm import BackgroundAlgorithm
 from dials_algorithms_background_simple_ext import *  # noqa: F403; lgtm
 

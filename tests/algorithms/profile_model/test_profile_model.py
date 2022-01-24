@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 def test_load_and_dump():
     from dials.algorithms.profile_model.gaussian_rs import Model
 

@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 def flex_double_as_string(flex_array, n_digits=None):
     if n_digits is not None:
         flex_array = flex_array.round(n_digits)
