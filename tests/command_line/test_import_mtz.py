@@ -141,12 +141,7 @@ def test_multiplex_on_imported_mtz(tmp_path, pipe):
     for section in ["first", "last"]:
         cmd = [
             "dials.import_mtz",
-            str(
-                base_path
-                / f"xia2_{pipe}_{section}30"
-                / "DataFiles"
-                / "AUTOMATIC_DEFAULT_NATIVE_SWEEP1_INTEGRATE.mtz"
-            ),
+            str(base_path / f"{pipe}_{section}30.mtz"),
             f"output.reflections=imported_{section}.refl",
             f"output.experiments=imported_{section}.expt",
         ]
