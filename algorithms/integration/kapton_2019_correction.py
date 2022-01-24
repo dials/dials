@@ -1,7 +1,8 @@
 import logging
 import math
-import numpy as np
 import sys
+
+import numpy as np
 
 from scitbx.matrix import col
 
