@@ -30,6 +30,7 @@ repos:
            '--rm', 'from __future__ import unicode_literals', # -3.0
            '--rm', 'from __future__ import with_statement',   # -2.6
           ]
+    exclude: ^installer/
 
 # Automatic source code formatting
 - repo: https://github.com/psf/black
