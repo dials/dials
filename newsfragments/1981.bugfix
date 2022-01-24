@@ -1,0 +1,1 @@
+`dials.show`: only show format class if meaningful (i.e. not Format or FormatMultiImage)
