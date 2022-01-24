@@ -100,7 +100,7 @@ def install_micromamba(python, include_cctbx):
         "modules",
         "dials",
         ".conda-envs",
-        "{platform}.txt".format(platform=conda_platform),
+        "{platform}_py{pyver}.txt".format(platform=conda_platform, pyver=python),
     )
     if not os.path.isfile(filename):
         raise RuntimeError(
