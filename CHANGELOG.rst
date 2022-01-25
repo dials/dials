@@ -1,3 +1,27 @@
+DIALS 3.8.1 (2022-01-25)
+========================
+
+Features
+--------
+
+- It is now possible to explicitly bootstrap all supported python versions. (`#1988 <https://github.com/dials/dials/issues/1988>`_)
+
+
+Bugfixes
+--------
+
+- ``dials.refine``: Fix crash from recording of parameter correlations in ``history.json``. (`#1923 <https://github.com/dials/dials/issues/1923>`_)
+- Correct reporting of phi angle in scan-varying model plots. (`#1929 <https://github.com/dials/dials/issues/1929>`_)
+- ``dials.sequence_to_stills``: correct error in the crystal model for scans that do not start from image 1. (`#1933 <https://github.com/dials/dials/issues/1933>`_)
+- `dials.show`: only show format class if meaningful (i.e. not Format or FormatMultiImage) (`#1981 <https://github.com/dials/dials/issues/1981>`_)
+
+
+Improved Documentation
+----------------------
+
+- Update some Cosym and resolution-related PHIL descriptions. (`#1969 <https://github.com/dials/dials/issues/1969>`_)
+
+
 DIALS 3.8.0 (2022-01-11)
 ========================
 

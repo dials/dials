@@ -1,1 +1,0 @@
-``dials.sequence_to_stills``: correct error in the crystal model for scans that do not start from image 1.
