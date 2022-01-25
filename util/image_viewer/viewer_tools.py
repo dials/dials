@@ -3,6 +3,8 @@ Various tools/controls used by the image viewer
 """
 
 
+from __future__ import annotations
+
 import wx
 import wx.lib.newevent
 from orderedset import OrderedSet

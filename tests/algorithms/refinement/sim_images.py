@@ -2,6 +2,8 @@
 refinement testing. Script based on tst_nanoBragg_basic.py"""
 
 
+from __future__ import annotations
+
 import math
 
 from cctbx.eltbx import henke

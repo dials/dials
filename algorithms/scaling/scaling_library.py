@@ -9,6 +9,8 @@ necessary), and return common dials objects such as reflection tables and
 ExperimentLists.
 """
 
+from __future__ import annotations
+
 import logging
 import uuid
 from copy import deepcopy

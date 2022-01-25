@@ -1,6 +1,9 @@
 """Definitions of plots for systematic absences."""
 
 
+from __future__ import annotations
+
+
 def color_axis_data(name, miller_axis_vals):
     """Generate a sequence for coloring the datapoints for a screw axis."""
     if name.startswith("41"):

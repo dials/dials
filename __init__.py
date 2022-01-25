@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 
 logging.getLogger("dials").addHandler(logging.NullHandler())

@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class MedianBackgroundExt:
     """An extension class implementing a median background algorithm."""
 

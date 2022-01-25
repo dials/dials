@@ -3,6 +3,8 @@
 #   from dials.array_family import flex
 #
 
+from __future__ import annotations
+
 import collections
 import copy
 import functools

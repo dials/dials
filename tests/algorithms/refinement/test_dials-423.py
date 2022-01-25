@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 
 """ Test the situation that led to https://github.com/dials/dials/issues/423.

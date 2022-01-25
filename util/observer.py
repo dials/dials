@@ -4,6 +4,8 @@ Define an interface for observers and subjects.
 A singleton decorator is also defined.
 """
 
+from __future__ import annotations
+
 import functools
 
 

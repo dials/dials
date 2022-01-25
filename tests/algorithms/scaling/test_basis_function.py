@@ -2,6 +2,8 @@
 Test for the basis function module.
 """
 
+from __future__ import annotations
+
 import pytest
 
 from dials.algorithms.scaling.basis_functions import RefinerCalculator

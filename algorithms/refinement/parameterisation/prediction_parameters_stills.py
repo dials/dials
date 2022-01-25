@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dials.algorithms.refinement.parameterisation.prediction_parameters import (
     PredictionParameterisation,
     SparseGradientVectorMixin,

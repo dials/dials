@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 def test_after_import_extensions():
     import dials.extensions
     from dials.extensions.dispersion_spotfinder_threshold_ext import (

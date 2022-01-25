@@ -1,6 +1,8 @@
 """
 Refinement engine and functions for error model refinement.
 """
+from __future__ import annotations
+
 import logging
 
 from dials.algorithms.refinement.engine import SimpleLBFGS

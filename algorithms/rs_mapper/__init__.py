@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 try:
     import boost_adaptbx.boost.python
 except Exception:

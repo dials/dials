@@ -2,6 +2,8 @@
 Tools to run cluster processing using DRMAA
 """
 
+from __future__ import annotations
+
 import multiprocessing
 import os
 import pickle

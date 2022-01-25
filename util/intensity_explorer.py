@@ -12,6 +12,8 @@ constructing a normal probability plot (See
 https://www.itl.nist.gov/div898/handbook/eda/section3/normprpl.htm).
 """
 
+from __future__ import annotations
+
 import logging
 
 import scipy.stats

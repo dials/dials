@@ -2,6 +2,8 @@
 Tests for scale components module.
 """
 
+from __future__ import annotations
+
 from math import exp
 
 import pytest

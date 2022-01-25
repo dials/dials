@@ -1,5 +1,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dials.import
 
+from __future__ import annotations
+
 import logging
 import pickle
 from collections import namedtuple

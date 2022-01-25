@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from libtbx.phil import command_line
 
 from dials.algorithms.simulation.generate_test_reflections import main, master_phil

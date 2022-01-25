@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 def generate_phil_scope():
     """
     Generate the phil scope for profile model

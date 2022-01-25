@@ -4,6 +4,8 @@ command line option, as well as obtaining a selection to use for selecting
 the corresponding reflections.
 """
 
+from __future__ import annotations
+
 from orderedset import OrderedSet
 
 import iotbx.phil

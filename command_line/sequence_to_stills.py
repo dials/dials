@@ -7,6 +7,8 @@ Example:
 """
 
 
+from __future__ import annotations
+
 import logging
 
 from dxtbx.model import MosaicCrystalSauter2014

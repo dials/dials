@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 def version():
     import os
     import sys

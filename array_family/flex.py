@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from cctbx.array_family.flex import (  # noqa: F401; lgtm
     abs,
     acos,

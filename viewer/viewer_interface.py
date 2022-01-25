@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dials.array_family import flex
 from dials.viewer.slice_viewer import show_reflections
 

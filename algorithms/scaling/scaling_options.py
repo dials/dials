@@ -2,6 +2,8 @@
 Phil scope of options for scaling.
 """
 
+from __future__ import annotations
+
 import iotbx.phil
 
 phil_scope = iotbx.phil.parse(

@@ -3,6 +3,8 @@ Test derivatives typed up in dials_regression/doc/notes/prediction/stills_predic
 """
 
 
+from __future__ import annotations
+
 import pytest
 
 from cctbx.sgtbx import space_group, space_group_symbols

@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 def filter_shadowed_reflections(experiments, reflections, experiment_goniometer=False):
     from dxtbx.masking import is_inside_polygon
     from scitbx.array_family import flex

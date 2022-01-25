@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from cctbx import miller
 from dxtbx.model import ExperimentList
 

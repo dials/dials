@@ -2,6 +2,8 @@
 Test the command line script dials.scale, for successful completion.
 """
 
+from __future__ import annotations
+
 import json
 import platform
 import sys

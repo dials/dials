@@ -1,4 +1,6 @@
 """Definition of systematic absences check algorithm."""
+from __future__ import annotations
+
 import logging
 
 from cctbx import sgtbx

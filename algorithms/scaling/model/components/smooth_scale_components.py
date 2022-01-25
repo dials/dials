@@ -6,6 +6,8 @@ inverse scale factors and derivatives with respect to the component
 parameters.
 """
 
+from __future__ import annotations
+
 from math import ceil, floor
 
 from scitbx import sparse

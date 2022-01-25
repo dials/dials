@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dials.util import parse_htcondor_job_classad
 
 

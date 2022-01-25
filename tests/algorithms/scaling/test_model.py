@@ -2,6 +2,8 @@
 Tests for the scaling model classes.
 """
 
+from __future__ import annotations
+
 import copy
 from unittest.mock import MagicMock, Mock
 

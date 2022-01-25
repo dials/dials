@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class html_report:
     def __init__(self, external_dependencies="remote"):
         self._content = []

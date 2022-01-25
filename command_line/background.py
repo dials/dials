@@ -2,6 +2,8 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
 
 
+from __future__ import annotations
+
 import logging
 import math
 
