@@ -139,7 +139,7 @@ def test_bounding_boxes():
         assert bbox2[i] == bbox[i]
 
 
-def test_extend():
+def test_concat():
     from dials.array_family import flex
 
     table1 = flex.reflection_table()
@@ -156,7 +156,7 @@ def test_extend():
     ids2[0] = "c"
     ids2[1] = "d"
 
-    table1.extend(table2)
+    table1 = flex.reflection_table.concat([table1, table2])
 
     assert list(table1["id"]) == [0, 0, 1, 1, 2, 2, 3, 3]
     assert list(ids1.keys()) == [0, 1, 2, 3]
