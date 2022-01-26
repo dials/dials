@@ -5,6 +5,8 @@ A scaling model is a collection of scaling model components with appropriate
 methods to define how these are composed into one model.
 """
 
+from __future__ import annotations
+
 import logging
 
 from libtbx import Auto, phil

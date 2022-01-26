@@ -1,7 +1,6 @@
-import pytest
+from __future__ import annotations
 
 
-@pytest.mark.xfail(reason="https://github.com/cctbx/cctbx_project/pull/686")
 def test_run(dials_regression, run_in_tmpdir):
     from os.path import join
 

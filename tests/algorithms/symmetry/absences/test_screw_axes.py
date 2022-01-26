@@ -1,5 +1,7 @@
 """Test scoring of screw axes."""
 
+from __future__ import annotations
+
 from dials.algorithms.symmetry.absences.screw_axes import (
     ScrewAxis21c,
     ScrewAxis41c,

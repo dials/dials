@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import http.server as server_base
 import json
 import logging

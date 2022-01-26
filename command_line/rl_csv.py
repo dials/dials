@@ -1,5 +1,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.csv
 
+from __future__ import annotations
+
 import gzip
 import io
 import warnings

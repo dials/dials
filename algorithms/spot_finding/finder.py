@@ -2,6 +2,8 @@
 Contains implementation interface for finding spots on one or many images
 """
 
+from __future__ import annotations
+
 import logging
 import math
 import pickle

@@ -12,6 +12,8 @@ Usage:
     dev.dials.ssx_index imported.expt strong.refl
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import math

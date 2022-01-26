@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class NullBackgroundExt:
     """An extension class implementing Null background subtraction."""
 

@@ -2,6 +2,8 @@
 Error model classes for scaling.
 """
 
+from __future__ import annotations
+
 import logging
 from math import ceil, exp, log
 

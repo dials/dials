@@ -1,5 +1,7 @@
 """Tests for RestraintsParameterisation and associated classes used in refinement"""
 
+from __future__ import annotations
+
 import os
 import random
 

@@ -1,6 +1,8 @@
 # LIBTBX_SET_DISPATCHER_NAME dials.merge_reflection_lists
 
 
+from __future__ import annotations
+
 import sys
 
 from libtbx.phil import parse

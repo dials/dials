@@ -1,6 +1,8 @@
 # LIBTBX_SET_DISPATCHER_NAME dials.filter_reflections
 
 
+from __future__ import annotations
+
 import logging
 import token
 from operator import itemgetter

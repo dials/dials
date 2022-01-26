@@ -4,6 +4,8 @@ Classes are inherited from the dials.refinement engine with a few
 methods overwritten to use them with scaling code."""
 
 
+from __future__ import annotations
+
 import logging
 
 from libtbx.phil import parse

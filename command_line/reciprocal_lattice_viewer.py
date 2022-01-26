@@ -3,6 +3,8 @@
 # LIBTBX_SET_DISPATCHER_NAME dials.reciprocal_lattice_viewer
 # LIBTBX_SET_DISPATCHER_NAME dials.rlv
 
+from __future__ import annotations
+
 import copy
 import os
 

@@ -7,6 +7,8 @@ Usage: dials.plot_Fo_vs_Fc hklin=refined.mtz
 """
 
 
+from __future__ import annotations
+
 import sys
 from math import sqrt
 

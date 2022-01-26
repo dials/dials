@@ -41,6 +41,8 @@ Classes:
       implements filtering methods for using all of prf, sum and scale intensities
 """
 
+from __future__ import annotations
+
 import logging
 from collections import defaultdict
 from typing import Any, List, Type

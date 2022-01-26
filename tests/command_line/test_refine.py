@@ -8,6 +8,8 @@ have not changed format and so on.
 """
 
 
+from __future__ import annotations
+
 import os
 
 import procrunner
@@ -88,6 +90,8 @@ def test2(dials_regression, tmpdir):
         working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
+    # NB Requesting corrgram.pdf and history.json exercises
+    # https://github.com/dials/dials/issues/1923
     result = procrunner.run(
         (
             "dials.refine",
@@ -95,6 +99,7 @@ def test2(dials_regression, tmpdir):
             pickle_path,
             "scan_varying=true",
             "output.history=history.json",
+            "correlation_plot.filename=corrgram.pdf",
             "reflections_per_degree=50",
             "outlier.algorithm=null",
             "close_to_spindle_cutoff=0.05",

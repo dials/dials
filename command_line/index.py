@@ -1,6 +1,8 @@
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
 
+from __future__ import annotations
+
 import concurrent.futures
 import copy
 import logging

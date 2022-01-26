@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import cmath
 import concurrent.futures
 import copy

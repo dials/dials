@@ -4,7 +4,7 @@ A docstring
 This can double as a helpful message which explains how the program is run.
 """
 
-# Always include a __future__ import if backward compatibility with Python 2 is intended
+from __future__ import annotations
 
 import logging
 import sys

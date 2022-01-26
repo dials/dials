@@ -1,5 +1,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.generate_tutorial_text
 
+from __future__ import annotations
+
 import argparse
 import functools
 import json

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from scitbx import matrix
 
 from dials.algorithms.refinement.parameterisation.beam_parameters import BeamMixin

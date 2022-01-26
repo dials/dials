@@ -1,6 +1,9 @@
 """Basis vector search strategies."""
 
 
+from __future__ import annotations
+
+
 class Strategy:
     """A base class for basis vector search strategies."""
 
