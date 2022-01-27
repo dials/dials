@@ -68,8 +68,9 @@ class PETSOutput:
     @staticmethod
     def _rescale_zone_axis(axis):
         """Scale a vector so that the element with largest magnitude has
-        magnitude 1.0"""
-        return axis / max(axis.each_abs().elems)
+        magnitude 1.0, and also invert the vector. This is so the frame
+        orientations zone axes match PETS format"""
+        return -axis / max(axis.each_abs().elems)
 
     def _check_experiments(self):
         """Extract a single experiment from an experiment list and check that
