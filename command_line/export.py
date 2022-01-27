@@ -277,6 +277,7 @@ phil_scope = parse(
         .type = int
         .help = "Step between frames"
     }
+  }
 
   output {
     log = dials.export.log
