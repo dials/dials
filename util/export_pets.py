@@ -143,19 +143,17 @@ class PETSOutput:
         normal = us0.cross(-axis).normalize()
         orthogonalised_axis = us0.cross(normal).normalize()
 
-        # DEBUG
+        # Keep track of s1.us0 values to check reorientation
         s1_dot_us0 = self.reflections["s1"].dot(us0)
-        bc1 = self.experiment.detector[0].get_ray_intersection(us0)
-        # DEBUG
 
         R = align_reference_frame(us0, (0, 0, -1), orthogonalised_axis, (1, 0, 0))
 
         axis_angle = r3_rotation_axis_and_angle_from_matrix(R)
         axis = axis_angle.axis
-        angle = axis_angle.angle(deg=True)
+        angle = axis_angle.angle(deg=False)
         logger.info(
             "Rotating experiment about axis ({:.4f}, {:.4f}, {:.4f}) by {:.3f}°".format(
-                *axis, angle
+                *axis, np.degrees(angle)
             )
         )
 
@@ -198,14 +196,9 @@ class PETSOutput:
         el.append(self.experiment)
         self.reflections.map_centroids_to_reciprocal_space(el, calculated=True)
 
-        # DEBUG
-        new_s1_dot_us0 = self.reflections["s1"].dot(new_us0)
-        bc2 = self.experiment.detector[0].get_ray_intersection(new_us0)
-        print(
-            f"Error in reorientation - beam centre shifted: {bc2[0] - bc1[0]}, {bc2[1] - bc1[1]}"
-        )
-        print(f"Error in s1 vectors: {max(flex.abs(s1_dot_us0 - new_s1_dot_us0))}")
-        # DEBUG
+        error = flex.abs(s1_dot_us0 - self.reflections["s1"].dot(new_us0))
+        if flex.max(error) > 1e-10:
+            raise RuntimeError("Failed to rotate experiment correctly")
 
     def _set_virtual_frames(self):
         """Create a list of virtual frames for the experiment, each containing
