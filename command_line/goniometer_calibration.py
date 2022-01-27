@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import iotbx.phil
 from scitbx import matrix
 

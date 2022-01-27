@@ -1,5 +1,9 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
+# LIBTBX_SET_DISPATCHER_NAME dials.reciprocal_lattice_viewer
+# LIBTBX_SET_DISPATCHER_NAME dials.rlv
+
+from __future__ import annotations
 
 import copy
 import os

@@ -4,6 +4,8 @@
 #
 
 
+from __future__ import annotations
+
 import multiprocessing
 import os
 import sys

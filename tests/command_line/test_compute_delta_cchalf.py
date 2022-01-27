@@ -1,5 +1,7 @@
 """Tests for dials.compute_delta_cchalf."""
 
+from __future__ import annotations
+
 import os
 
 import procrunner

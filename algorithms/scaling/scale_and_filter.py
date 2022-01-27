@@ -1,5 +1,7 @@
 """Definitions of functions and classes for scaling and filtering algorithm."""
 
+from __future__ import annotations
+
 import math
 
 from libtbx import phil

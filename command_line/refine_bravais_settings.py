@@ -1,3 +1,6 @@
+# LIBTBX_SET_DISPATCHER_NAME dials.refine_bravais_settings
+# LIBTBX_SET_DISPATCHER_NAME dials.rbs
+
 """Refinement of Bravais settings consistent with the primitive unit cell.
 
 This program takes as input the output of dials.index, i.e. indexed.expt
@@ -26,6 +29,8 @@ Examples::
   dials.refine_bravais_settings indexed.expt indexed.refl nproc=4
 """
 
+
+from __future__ import annotations
 
 import collections
 import json

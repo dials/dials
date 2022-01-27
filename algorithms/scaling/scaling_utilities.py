@@ -3,6 +3,8 @@ Module of utility functions for scaling.
 """
 
 
+from __future__ import annotations
+
 import logging
 from math import acos
 
@@ -35,7 +37,6 @@ try:
             "Memory usage: %.1f MB",
             int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss) / units_per_mb,
         )
-
 
 except ImportError:
 

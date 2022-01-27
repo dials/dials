@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dials.extensions.glm_background_ext import GLMBackgroundExt
 from dials.extensions.simple_background_ext import SimpleBackgroundExt
 

@@ -2,6 +2,8 @@
 Tools for analysis of missing reflections.
 """
 
+from __future__ import annotations
+
 from annlib_ext import AnnAdaptor
 
 import cctbx.miller

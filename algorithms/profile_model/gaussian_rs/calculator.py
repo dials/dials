@@ -6,6 +6,8 @@
 # FIXME Don't know how XDS calculated the n_sigma
 
 
+from __future__ import annotations
+
 import collections
 import copy
 import logging

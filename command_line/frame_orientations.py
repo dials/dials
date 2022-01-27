@@ -8,6 +8,8 @@ Usage: dials.frame_orientations refined.expt
 """
 
 
+from __future__ import annotations
+
 import sys
 from itertools import tee
 

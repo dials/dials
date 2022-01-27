@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pickle
 
 from dxtbx.format.image import ImageBool

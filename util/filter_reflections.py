@@ -41,6 +41,8 @@ Classes:
       implements filtering methods for using all of prf, sum and scale intensities
 """
 
+from __future__ import annotations
+
 import logging
 from collections import defaultdict
 from typing import Any, List, Type
@@ -804,7 +806,7 @@ def sum_partial_reflections(reflection_table):
     the summed reflection.
     """
 
-    if "partiality" not in reflection_table:
+    if ("partiality" not in reflection_table) or ("partial_id" not in reflection_table):
         return reflection_table
 
     nrefl = reflection_table.size()

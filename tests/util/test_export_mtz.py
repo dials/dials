@@ -3,6 +3,8 @@ Unit testing for the export_mtz.py routines
 """
 
 
+from __future__ import annotations
+
 import itertools
 
 from dials.util.batch_handling import calculate_batch_offsets

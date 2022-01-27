@@ -2,6 +2,8 @@
 Test for the target function module.
 """
 
+from __future__ import annotations
+
 import copy
 from unittest.mock import MagicMock, Mock, patch
 

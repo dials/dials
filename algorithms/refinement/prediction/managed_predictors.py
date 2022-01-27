@@ -7,6 +7,8 @@
 """
 
 
+from __future__ import annotations
+
 from math import pi
 
 from scitbx.array_family import flex

@@ -1,5 +1,7 @@
 """This module defines some useful header functions for CBF files."""
 
+from __future__ import annotations
+
 import numpy as np
 import pycbf
 

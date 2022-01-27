@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import sys
 from io import StringIO
@@ -76,7 +78,7 @@ Examples::
 phil_scope = parse(
     """
 
-  format = *mtz sadabs nxs mmcif mosflm xds xds_ascii json pets
+  format = *mtz sadabs nxs mmcif mosflm xds xds_ascii json shelx pets
     .type = choice
     .help = "The output file format"
 
@@ -234,6 +236,21 @@ phil_scope = parse(
               "reciprocal lattice points."
   }
 
+  shelx {
+    hklout = dials.hkl
+      .type = path
+      .help = "The output hkl file"
+    ins = dials.ins
+      .type = path
+      .help = "The output ins file"
+    scale = True
+      .type = bool
+      .help = "Scale reflections to maximise output precision in SHELX 8.2f format"
+    scale_range = -9999.0, 9999.0
+      .type = floats(size=2, value_min=-999999., value_max=9999999.)
+      .help = "minimum or maximum intensity value after scaling."
+  }
+
   pets {
     filename_prefix = dials
       .type = str
@@ -260,8 +277,6 @@ phil_scope = parse(
         .type = int
         .help = "Step between frames"
     }
-
-  }
 
   output {
     log = dials.export.log
@@ -499,6 +514,28 @@ def export_json(params, experiments, reflections):
     )
 
 
+def export_shelx(params, experiments, reflections):
+    """
+    Export data in SHELX HKL format
+
+    :param params: The phil parameters
+    :param experiments: The experiment list
+    :param reflections: The reflection tables
+    """
+
+    _check_input(experiments, reflections, params=params)
+
+    # check for a single intensity choice
+    if len(params.intensity) > 1:
+        raise ValueError(
+            "Only 1 intensity option can be exported in this format, please choose a single intensity option e.g. intensity=profile"
+        )
+
+    from dials.util.export_shelx import export_shelx
+
+    export_shelx(reflections[0], experiments, params)
+
+
 def export_pets(params, experiments, reflections):
     """
     Export reflections in PETS CIF format
@@ -594,6 +631,7 @@ def run(args=None):
         "mosflm": export_mosflm,
         "xds": export_xds,
         "json": export_json,
+        "shelx": export_shelx,
         "pets": export_pets,
     }.get(params.format)
     if not exporter:

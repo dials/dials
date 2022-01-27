@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import copy
 import itertools
@@ -755,6 +757,7 @@ class ArgumentParser(ArgumentParserBase):
         read_experiments_from_images=False,
         check_format=True,
         sort_options=False,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
         **kwargs,
     ):
         """
@@ -781,6 +784,7 @@ class ArgumentParser(ArgumentParserBase):
         super().__init__(
             sort_options=sort_options,
             config_options=self.system_phil.as_str() != "",
+            formatter_class=formatter_class,
             **kwargs,
         )
 

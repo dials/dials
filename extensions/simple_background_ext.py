@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class SimpleBackgroundExt:
     """An extension class implementing simple background subtraction."""
 

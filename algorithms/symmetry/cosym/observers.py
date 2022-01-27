@@ -2,6 +2,8 @@
 Observers for the cosym procedure.
 """
 
+from __future__ import annotations
+
 import json
 
 from jinja2 import ChoiceLoader, Environment, PackageLoader

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from cctbx import sgtbx, uctbx
 from scitbx.array_family import flex
 

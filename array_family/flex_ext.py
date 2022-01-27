@@ -3,6 +3,8 @@
 #   from dials.array_family import flex
 #
 
+from __future__ import annotations
+
 import collections
 import copy
 import functools
@@ -13,6 +15,8 @@ import os
 import pickle
 from typing import Tuple
 
+import numpy as np
+import pandas as pd
 from annlib_ext import AnnAdaptorSelfInclude
 
 import boost_adaptbx.boost.python
@@ -468,6 +472,41 @@ class _:
             ref_tmp = copy.deepcopy(self[min(val) : (max(val) + 1)])
             ref_tmp.sort(key1, reverse)
             self[min(val) : (max(val) + 1)] = ref_tmp
+
+    def match_by_hkle(
+        self, other: dials_array_family_flex_ext.reflection_table
+    ) -> Tuple[cctbx.array_family.flex.size_t, cctbx.array_family.flex.size_t]:
+        """
+        Match reflections with another set of reflections by the h, k, l
+        and entering values. Uses pandas dataframe merge method to match
+        the columns: assumes the key h, k, l, e is unique which is false
+        if > 360 degree rotation.
+
+        Args:
+            other: reflection table to match against
+
+        Returns:
+            Indices in self, indices in other for matches
+        """
+
+        hkl = self["miller_index"].as_vec3_double().parts()
+        hkl = (part.as_numpy_array().astype(int) for part in hkl)
+        e = self["entering"].as_numpy_array()
+        n = np.arange(e.size)
+        p0 = pd.DataFrame(dict(zip("hklen", (*hkl, e, n))), copy=False)
+
+        hkl = other["miller_index"].as_vec3_double().parts()
+        hkl = (part.as_numpy_array().astype(int) for part in hkl)
+        e = other["entering"].as_numpy_array()
+        n = np.arange(e.size)
+        p1 = pd.DataFrame(dict(zip("hklen", (*hkl, e, n))), copy=False)
+
+        merged = pd.merge(p0, p1, on=["h", "k", "l", "e"], suffixes=[0, 1])
+
+        n0 = cctbx.array_family.flex.size_t(merged.n0.values)
+        n1 = cctbx.array_family.flex.size_t(merged.n1.values)
+
+        return n0, n1
 
     def match_with_reference(self, other):
         """

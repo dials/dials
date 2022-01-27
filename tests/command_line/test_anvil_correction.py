@@ -3,6 +3,8 @@ Tests for dials.command_line.anvil_correction.
 """
 
 
+from __future__ import annotations
+
 import copy
 
 import pytest

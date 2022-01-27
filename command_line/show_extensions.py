@@ -1,6 +1,8 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.show_extensions
 
 
+from __future__ import annotations
+
 import dials.util
 
 

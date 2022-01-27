@@ -10,6 +10,7 @@ on:
 
 jobs:
   build-and-push-image:
+    if: ${{ github.repository == 'dials/dials' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read

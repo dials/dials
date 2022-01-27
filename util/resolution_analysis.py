@@ -2,6 +2,8 @@
 Algorithms for analysis of resolution limits.
 """
 
+from __future__ import annotations
+
 import enum
 import logging
 import math
@@ -345,12 +347,15 @@ phil_str = """
     .expert_level = 1
   cc_half_method = *half_dataset sigma_tau
     .type = choice
+    .short_caption = "CC½ method"
   cc_half_significance_level = 0.1
     .type = float(value_min=0, value_max=1)
     .expert_level = 1
+    .short_caption = "CC½ significance level"
   cc_half_fit = polynomial *tanh
     .type = choice
     .expert_level = 1
+    .short_caption = "CC½ fit"
   isigma = None
     .type = float(value_min=0)
     .help = "Minimum value of the unmerged <I/sigI> in the outer resolution shell"
@@ -374,6 +379,7 @@ phil_str = """
   reflections_per_bin = 10
     .type = int
     .help = "Minimum number of reflections per bin."
+    .short_caption = "Minimum number of reflections per bin"
   binning_method = *counting_sorted volume
     .type = choice
     .help = "Use equal-volume bins or bins with approximately equal numbers of reflections per bin."
@@ -381,18 +387,23 @@ phil_str = """
     .expert_level = 1
   anomalous = False
     .type = bool
-    .short_caption = "Keep anomalous pairs separate in merging statistics"
+    .help = "Keep anomalous pairs separate in merging statistics"
+    .short_caption = "Anomalous"
     .expert_level = 1
   labels = None
     .type = strings
+    .short_caption = "Labels"
   space_group = None
     .type = space_group
     .expert_level = 1
+    .short_caption = "Space group"
   reference = None
     .type = path
+    .short_caption = "Reference"
   emax = 4
     .type = float(value_min = 0)
-    .help = "Reject reflecitons with normalised intensities E^2 > emax^2"
+    .help = "Reject reflections with normalised intensities E^2 > emax^2"
+    .short_caption = "Maximum normalised intensity"
 """
 
 

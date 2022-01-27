@@ -62,6 +62,8 @@ are those which are selected by either method - inter-dataset connectedness or
 intra-dataset connectedness.
 """
 
+from __future__ import annotations
+
 import logging
 from math import floor
 

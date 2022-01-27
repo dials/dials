@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 geometry_phil = """geometry.parameters
     .help = "Set up an experimental model for refinement test case"
 {

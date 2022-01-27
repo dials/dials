@@ -1,6 +1,8 @@
 # LIBTBX_SET_DISPATCHER_NAME dials.sort_reflections
 
 
+from __future__ import annotations
+
 import dials.util
 from dials.array_family import flex
 

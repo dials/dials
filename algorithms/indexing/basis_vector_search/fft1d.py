@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from libtbx import phil
 from scitbx import matrix
 from scitbx.array_family import flex

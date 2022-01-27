@@ -2,6 +2,8 @@
 Tests for scaling utilities module.
 """
 
+from __future__ import annotations
+
 from math import pi, sqrt
 
 import numpy as np

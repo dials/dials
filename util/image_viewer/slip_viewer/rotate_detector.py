@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys
 
 from dxtbx.model.experiment_list import ExperimentList

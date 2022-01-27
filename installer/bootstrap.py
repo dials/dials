@@ -994,7 +994,7 @@ def update_sources(options):
         for source, branch in (
             ("cctbx/annlib_adaptbx", "master"),
             ("cctbx/cctbx_project", "master"),
-            ("dials/dxtbx", "main"),
+            ("cctbx/dxtbx", "main"),
             ("dials/annlib", "master"),
             ("dials/cbflib", "master"),
             ("dials/ccp4io", "master"),
@@ -1264,7 +1264,7 @@ be passed separately with quotes to avoid confusion (e.g
         "--python",
         help="Install this minor version of Python (default: %(default)s)",
         default="3.9",
-        choices=("3.7", "3.8", "3.9"),
+        choices=("3.8", "3.9", "3.10"),
     )
     parser.add_argument(
         "--branch",
