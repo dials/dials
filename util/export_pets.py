@@ -60,6 +60,17 @@ class PETSOutput:
         # Calculate the frame orientation data
         self.frame_orientations = extract_experiment_data(self.experiment, scale=1)
 
+        # Rescale zone axes to match PETS format
+        self.frame_orientations["zone_axes"] = [
+            self._rescale_zone_axis(e) for e in self.frame_orientations["zone_axes"]
+        ]
+
+    @staticmethod
+    def _rescale_zone_axis(axis):
+        """Scale a vector so that the element with largest magnitude has
+        magnitude 1.0"""
+        return axis / max(axis.each_abs().elems)
+
     def _check_experiments(self):
         """Extract a single experiment from an experiment list and check that
         it is suitable for cif_pets output"""
