@@ -65,6 +65,12 @@ class PETSOutput:
             self._rescale_zone_axis(e) for e in self.frame_orientations["zone_axes"]
         ]
 
+        # Calculate the missetting matrices
+        Ut = matrix.sqr(self.experiment.crystal.get_U()).transpose()
+        self.frame_orientations["missets"] = [
+            M * Ut for M in self.frame_orientations["orientations"]
+        ]
+
     @staticmethod
     def _rescale_zone_axis(axis):
         """Scale a vector so that the element with largest magnitude has
@@ -210,7 +216,7 @@ class PETSOutput:
         # directions = self.frame_orientations["directions"]
         zone_axes = self.frame_orientations["zone_axes"]
         # real_space_axes = self.frame_orientations["real_space_axes"]
-        orientations = self.frame_orientations["orientations"]
+        missets = self.frame_orientations["missets"]
 
         # Get experiment geometry
         scan = self.experiment.scan
@@ -256,7 +262,7 @@ class PETSOutput:
             self.virtual_frames.append(
                 {
                     "reflections": refs,
-                    "orientation": orientations[index],
+                    "misset": missets[index],
                     "zone_axis": zone_axes[index],
                 }
             )
@@ -290,14 +296,14 @@ Virtual frame settings: number of merged frames:  {self.n_merged}
         for frame_id, virtual_frame in enumerate(self.virtual_frames):
             u, v, w = virtual_frame["zone_axis"]
             precession_angle = 0.0  # dummy value
-            U = virtual_frame["orientation"]
+            R = virtual_frame["misset"]
             # Decompose U = Rω * Rβ * Rα, where:
             # α is around 1,0,0
             # β is around 0,1,0
             # ω is around 0,0,1
             # FIXME this is not confirmed as matching PETS2 yet
             alpha, beta, omega = solve_r3_rotation_for_angles_given_axes(
-                U, (0, 0, 1), (0, 1, 0), (1, 0, 0), deg=True
+                R, (0, 0, 1), (0, 1, 0), (1, 0, 0), deg=True
             )
             scale = 1  # dummy value
             uvws += [
