@@ -235,8 +235,8 @@ class PETSOutput:
             if stop > arr_end:
                 stop = arr_end
 
-            # Take only reflections whose centroids are inside this virtual frame
-            sel = (frames > start) & (frames <= stop)
+            # Take only reflections whose centroids are inside this or a neighbouring virtual frame
+            sel = (frames > (start - self.n_merged)) & (frames <= stop + self.n_merged)
             refs = self.reflections.select(sel)
 
             centre = (start + stop) / 2.0
@@ -245,14 +245,14 @@ class PETSOutput:
             alpha_centre = scan.get_angle_from_array_index(centre, deg=False)
 
             # The relps are given at zero rotation angle. In order to calculate
-            # extinction distance, it's quickest to rotate the Ewald sphere
+            # excitation error, it's quickest to rotate the Ewald sphere
             s0_centre = s0.rotate_around_origin(axis, -alpha_centre, deg=False)
             rotated_s1 = refs["rlp"] + s0_centre
-            extinction = rotated_s1.norms() - inv_wl
+            excitation_err = inv_wl - rotated_s1.norms()
 
-            # Select only the reflections within the extinction distance cutoff
+            # Select only the reflections within the excitation error cutoff
             # and sort
-            refs.select(abs(extinction) <= self.excitation_error_cutoff)
+            refs = refs.select(abs(excitation_err) <= self.excitation_error_cutoff)
             refs.sort("miller_index")
 
             # Look up the orientation data using an index, which is the centre
