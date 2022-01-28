@@ -304,7 +304,7 @@ Virtual frame settings: number of merged frames:  {self.n_merged}
             # ω is around 0,0,1
             # FIXME this is not confirmed as matching PETS2 yet
             alpha, beta, omega = solve_r3_rotation_for_angles_given_axes(
-                R, (0, 0, 1), (0, 1, 0), (1, 0, 0), deg=True
+                R, (1, 0, 0), (0, 1, 0), (0, 0, 1), deg=True
             )
             scale = 1  # dummy value
             uvws += [
