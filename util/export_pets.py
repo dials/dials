@@ -236,8 +236,9 @@ class PETSOutput:
                 stop = arr_end
 
             # Take only reflections whose centroids are inside this or a neighbouring virtual frame
-            sel = (frames > (start - self.n_merged)) & (frames <= stop + self.n_merged)
-            refs = self.reflections.select(sel)
+            # sel = (frames > (start - self.n_merged)) & (frames <= stop + self.n_merged)
+            # refs = self.reflections.select(sel)
+            refs = self.reflections
 
             centre = (start + stop) / 2.0
             # alpha_start = scan.get_angle_from_array_index(start, deg=False)
