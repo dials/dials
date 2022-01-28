@@ -393,7 +393,7 @@ Virtual frame settings: number of merged frames:  {self.n_merged}
             "zone_axis_id",
         ]
         li = b.init_loop("_refln_", colsI)
-        row_fmt = "{:4}," * 3 + "{:11.2f}," * 2 + "{:5}"
+        row_fmt = " " + "{:3}," * 3 + "{:11.2f}," * 2 + "{:5}"
         for row in ref_list:
             li.add_row(row_fmt.format(*row).split(","))
 
