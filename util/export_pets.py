@@ -298,13 +298,13 @@ Virtual frame settings: number of merged frames:  {self.n_merged}
             u, v, w = virtual_frame["zone_axis"]
             precession_angle = 0.0  # dummy value
             R = virtual_frame["misset"]
-            # Decompose U = Rω * Rβ * Rα, where:
+            # Decompose U = Rω * Rα * Rβ, where:
             # α is around 1,0,0
             # β is around 0,1,0
             # ω is around 0,0,1
             # FIXME this is not confirmed as matching PETS2 yet
-            alpha, beta, omega = solve_r3_rotation_for_angles_given_axes(
-                R, (1, 0, 0), (0, 1, 0), (0, 0, 1), deg=True
+            omega, alpha, beta = solve_r3_rotation_for_angles_given_axes(
+                R, (0, 0, 1), (1, 0, 0), (0, 1, 0), deg=True
             )
             scale = 1  # dummy value
             uvws += [
