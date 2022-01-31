@@ -22,6 +22,7 @@ try:
             % (int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss) / units_per_mb)
         )
 
+
 except ImportError:
 
     def debug_memory_usage():
