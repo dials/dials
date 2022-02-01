@@ -10,18 +10,18 @@ From the initial guess pyFAI geometry calibration can be used in the usual manne
 (ie. just like it used for X-rays).
 
 Usage:
-    from dials.powder_calibrate_widget import DialsParams, PowderCalibrator
+    from dials.command_line.powder_calibrate_widget import DialsParams, PowderCalibrator
 
     Al_data = DialsParams(expt_file="imported.expt")
     calibrator = PowderCalibrator(Al_data, 'Al')
     calibrator.calibrate_with_calibrant(verbose=True)
 
-    Or from command line
-        1. use the widget
-        > dials.powder_calibrate_widget imported.expt standard_name=Al
+Or from command line:
+    1. use the widget to generate a starting geometry
+    > dials.powder_calibrate_widget imported.expt standard_name=Al
 
-        2. load a guess geometry from previous calibration and don't use the widget
-        > dials.powder_calibrate_widget imported.expt geom_file=my_geom eyeball=False
+    2. load a guess geometry from previous calibration
+    > dials.powder_calibrate_widget imported.expt standard_name=Al eyeball=False eyeballed_geom_file=my_saved_geom
 """
 
 from sys import exit
