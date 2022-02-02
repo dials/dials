@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# dials.potato.py
+# dials.ellipsoid.py
 #
 #  Copyright (C) 2018 Diamond Light Source
 #
@@ -17,15 +17,15 @@ from math import pi
 from libtbx.phil import parse
 from scitbx import matrix
 
+from dials.algorithms.profile_model.ellipsoid import chisq_pdf
+from dials.algorithms.profile_model.ellipsoid.model import ProfileModelFactory
+from dials.algorithms.profile_model.ellipsoid.parameterisation import ModelState
+from dials.algorithms.profile_model.ellipsoid.refiner import Refiner as ProfileRefiner
+from dials.algorithms.profile_model.ellipsoid.refiner import RefinerData
 from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator, MaskCalculator
 from dials.algorithms.profile_model.gaussian_rs.calculator import (
     ComputeEsdBeamDivergence,
 )
-from dials.algorithms.profile_model.potato import chisq_pdf
-from dials.algorithms.profile_model.potato.model import ProfileModelFactory
-from dials.algorithms.profile_model.potato.parameterisation import ModelState
-from dials.algorithms.profile_model.potato.refiner import Refiner as ProfileRefiner
-from dials.algorithms.profile_model.potato.refiner import RefinerData
 from dials.algorithms.spot_prediction import IndexGenerator
 from dials.array_family import flex
 
@@ -387,7 +387,7 @@ def refine_crystal(
     return refiner
 
 
-def predict_after_potato_refinement(experiment, reflection_table):
+def predict_after_ellipsoid_refinement(experiment, reflection_table):
     """
     Predict the position of the spots
 
@@ -450,7 +450,7 @@ def compute_prediction_probability(experiment, reflection_table):
     )
 
 
-def run_potato_refinement(
+def run_ellipsoid_refinement(
     experiments,
     reflection_table,
     sigma_d,
@@ -461,7 +461,7 @@ def run_potato_refinement(
     capture_progress=False,
     n_cycles=3,
 ):
-    """Runs potato refinement on strong spots.
+    """Runs ellipsoid refinement on strong spots.
 
     Creates the necessary data needed, then runs cycles of profile and crystal
     refinement,"""
@@ -512,7 +512,9 @@ def run_potato_refinement(
 
     # Post process the reflections
     # Update predictions
-    reflection_table = predict_after_potato_refinement(experiments[0], reflection_table)
+    reflection_table = predict_after_ellipsoid_refinement(
+        experiments[0], reflection_table
+    )
     # Compute prob
     compute_prediction_probability(experiments[0], reflection_table)
 

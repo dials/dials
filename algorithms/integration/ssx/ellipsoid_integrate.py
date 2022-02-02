@@ -9,20 +9,20 @@ from dials.algorithms.integration.ssx.ssx_integrate import (
     OutputCollector,
     SimpleIntegrator,
 )
-from dials.algorithms.profile_model.potato.indexer import reindex
-from dials.algorithms.profile_model.potato.potato import (
+from dials.algorithms.profile_model.ellipsoid.algorithm import (
     final_integrator,
     initial_integrator,
     predict,
-    run_potato_refinement,
+    run_ellipsoid_refinement,
 )
+from dials.algorithms.profile_model.ellipsoid.indexer import reindex
 
 
 class ToFewReflections(Exception):
     pass
 
 
-class PotatoOutputCollector(OutputCollector):
+class EllipsoidOutputCollector(OutputCollector):
     def collect_after_refinement(self, experiment, reflection_table, refiner_output):
         if "initial_rmsd_x" not in self.data:
             self.data["initial_rmsd_x"] = refiner_output[0][0]["rmsd"][0]
@@ -54,11 +54,11 @@ class PotatoOutputCollector(OutputCollector):
         self.data["partiality"] = hist[0]
 
 
-class PotatoIntegrator(SimpleIntegrator):
+class EllipsoidIntegrator(SimpleIntegrator):
     def __init__(self, params, collect_data=False):
         super().__init__(params)
         if collect_data:
-            self.collector = PotatoOutputCollector()
+            self.collector = EllipsoidOutputCollector()
 
     def run(self, experiment, table):
 
@@ -91,7 +91,9 @@ class PotatoIntegrator(SimpleIntegrator):
                     profile_model=self.params.profile.rlp_mosaicity.model,
                     fix_list=fix_list,
                     n_cycles=self.params.refinement.n_cycles,
-                    capture_progress=isinstance(self.collector, PotatoOutputCollector),
+                    capture_progress=isinstance(
+                        self.collector, EllipsoidOutputCollector
+                    ),
                 )
                 self.collector.collect_after_refinement(
                     experiment, table, refiner_output["refiner_output"]["history"]
@@ -150,7 +152,7 @@ class PotatoIntegrator(SimpleIntegrator):
             if "orientation" in fix_list:
                 fix_orientation = True
 
-        expts, refls, output_data = run_potato_refinement(
+        expts, refls, output_data = run_ellipsoid_refinement(
             ExperimentList([experiment]),
             reflection_table,
             sigma_d,
@@ -186,7 +188,7 @@ class PotatoIntegrator(SimpleIntegrator):
         return reflection_table
 
 
-class PotatoOutputAggregator(OutputAggregator):
+class EllipsoidOutputAggregator(OutputAggregator):
     def make_plots(self):
         plots = super().make_plots()
         initial_rmsds_x = [d["initial_rmsd_x"] for d in self.data.values()]

@@ -12,7 +12,7 @@
 """
 This program is a script to perform profile modelling and integration on
 indexed results from a still sequence i.e. SSX data. This scripts wraps a call
-to the integration code, using either the potato or stills integrator algorithms.
+to the integration code, using either the ellipsoid or stills integrator algorithms.
 
 The integrated data are saved in batches for memory management. A html output
 report is generated, showing integration statistics.
@@ -40,9 +40,9 @@ from libtbx.utils import Sorry
 from xfel.clustering.cluster import Cluster
 from xfel.clustering.cluster_groups import unit_cell_info
 
-from dials.algorithms.integration.ssx.potato_integrate import (
-    PotatoIntegrator,
-    PotatoOutputAggregator,
+from dials.algorithms.integration.ssx.ellipsoid_integrate import (
+    EllipsoidIntegrator,
+    EllipsoidOutputAggregator,
 )
 from dials.algorithms.integration.ssx.ssx_integrate import (
     OutputAggregator,
@@ -64,7 +64,7 @@ logger = logging.getLogger("dials.ssx_integrate")
 # Create the phil scope
 phil_scope = iotbx.phil.parse(
     """
-  algorithm = *potato stills
+  algorithm = *ellipsoid stills
     .type = choice
   nproc=Auto
     .type = int
@@ -80,8 +80,8 @@ phil_scope = iotbx.phil.parse(
       .type = str
   }
 
-  potato {
-    include scope dials.algorithms.profile_model.potato.potato.phil_scope
+  ellipsoid {
+    include scope dials.algorithms.profile_model.ellipsoid.algorithm.phil_scope
   }
 
   stills {
@@ -125,7 +125,7 @@ stills {
         }
     }
 }
-potato {
+ellipsoid {
     refinement {
         n_cycles = 1
     }
@@ -159,7 +159,7 @@ def disable_loggers(lognames: List[str]) -> None:
         logging.getLogger(logname).disabled = True
 
 
-def process_one_image_potato_integrator(experiment, table, params):
+def process_one_image_ellipsoid_integrator(experiment, table, params):
 
     if params.individual_log_verbosity < 2:
         disable_loggers(loggers_to_disable)  # disable the loggers within each process
@@ -168,7 +168,7 @@ def process_one_image_potato_integrator(experiment, table, params):
             logging.getLogger(name).setLevel(logging.INFO)
 
     collect_data = params.output.html or params.output.json
-    integrator = PotatoIntegrator(params.potato, collect_data)
+    integrator = EllipsoidIntegrator(params.ellipsoid, collect_data)
     try:
         experiment, table, collector = integrator.run(experiment, table)
     except RuntimeError as e:
@@ -210,9 +210,9 @@ def setup(reflections, params):
     logger.info(f"Using {params.nproc} processes for integration")
 
     # aggregate some output for json, html etc
-    if params.algorithm == "potato":
-        process = process_one_image_potato_integrator
-        aggregator = PotatoOutputAggregator()
+    if params.algorithm == "ellipsoid":
+        process = process_one_image_ellipsoid_integrator
+        aggregator = EllipsoidOutputAggregator()
     elif params.algorithm == "stills":
         process = process_one_image_stills_integrator
         aggregator = OutputAggregator()
@@ -290,7 +290,7 @@ def run(args: List[str] = None, phil=working_phil) -> None:
     This program takes an indexed experiment list and reflection table and
     performs parallelised integration for synchrotron serial crystallography
     experiments. The programs acts as a wrapper to run one of two algorithms,
-    the stills integrator or the 'potato' integrator (which uses a generalised
+    the stills integrator or the 'ellipsoid' integrator (which uses a generalised
     ellipsoidal profile model). Analysis statistics are captured and output as
     a html report, while the output data are saved in batches for memory
     management.

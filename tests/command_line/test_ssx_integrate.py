@@ -31,11 +31,11 @@ def test_ssx_integrate_stills(indexed_data, run_in_tmpdir):
 
 
 @pytest.mark.parametrize("fix_uc_and_orientation", [False, True])
-def test_ssx_integrate_potato(indexed_data, run_in_tmpdir, fix_uc_and_orientation):
+def test_ssx_integrate_ellipsoid(indexed_data, run_in_tmpdir, fix_uc_and_orientation):
     refls, expts = indexed_data
 
     # set batch size to test generation of multiple output files
-    args = [refls, expts, "algorithm=potato", "batch_size=3", "nproc=1"]
+    args = [refls, expts, "algorithm=ellipsoid", "batch_size=3", "nproc=1"]
     if fix_uc_and_orientation:
         args.extend(["unit_cell.fixed=True", "orientation.fixed=True"])
     run_integrate(args)
@@ -63,14 +63,20 @@ def test_ssx_integrate_potato(indexed_data, run_in_tmpdir, fix_uc_and_orientatio
 @pytest.mark.parametrize(
     "rlp_mosaicity", ["simple1", "simple6", "angular2", "angular4"]
 )
-def test_ssx_integrate_potato_profile_models(
+def test_ssx_integrate_ellipsoid_profile_models(
     indexed_data, run_in_tmpdir, rlp_mosaicity
 ):
     refls, expts = indexed_data
 
     # set batch size to test generation of multiple output files
     run_integrate(
-        [refls, expts, "algorithm=potato", "nproc=1", f"rlp_mosaicity={rlp_mosaicity}"]
+        [
+            refls,
+            expts,
+            "algorithm=ellipsoid",
+            "nproc=1",
+            f"rlp_mosaicity={rlp_mosaicity}",
+        ]
     )
 
     assert os.path.exists("integrated_0.refl")

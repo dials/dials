@@ -25,7 +25,7 @@ env.SharedLibrary(
 )
 
 env.SharedLibrary(
-    target="#/lib/dials_algorithms_profile_model_potato_ext",
-    source=["potato/boost_python/ext.cc"],
+    target="#/lib/dials_algorithms_profile_model_ellipsoid_ext",
+    source=["ellipsoid/boost_python/ext.cc"],
     LIBS=env["LIBS"],
 )

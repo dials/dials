@@ -9,18 +9,18 @@ import pytest
 
 from scitbx import matrix
 
-from dials.algorithms.profile_model.potato.model import (
+from dials.algorithms.profile_model.ellipsoid.model import (
     Simple1ProfileModel,
     Simple6ProfileModel,
     compute_change_of_basis_operation,
 )
-from dials.algorithms.profile_model.potato.parameterisation import (  # Angular2MosaicityParameterisation,; Angular4MosaicityParameterisation,; WavelengthSpreadParameterisation,
+from dials.algorithms.profile_model.ellipsoid.parameterisation import (  # Angular2MosaicityParameterisation,; Angular4MosaicityParameterisation,; WavelengthSpreadParameterisation,
     ModelState,
     ReflectionModelState,
     Simple1MosaicityParameterisation,
     Simple6MosaicityParameterisation,
 )
-from dials.algorithms.profile_model.potato.refiner import (
+from dials.algorithms.profile_model.ellipsoid.refiner import (
     ConditionalDistribution,
     Refiner,
     RefinerData,

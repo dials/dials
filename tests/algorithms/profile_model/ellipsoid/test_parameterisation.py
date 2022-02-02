@@ -8,7 +8,7 @@ import pytest
 
 from scitbx import matrix
 
-from dials.algorithms.profile_model.potato.parameterisation import (
+from dials.algorithms.profile_model.ellipsoid.parameterisation import (
     Angular2MosaicityParameterisation,
     Angular4MosaicityParameterisation,
     ModelState,

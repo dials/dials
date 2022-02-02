@@ -6,11 +6,13 @@ from math import log, pi, sqrt
 
 from scitbx import linalg, matrix
 
-from dials.algorithms.profile_model.potato import mosaicity_from_eigen_decomposition
-from dials.algorithms.profile_model.potato.model import (
+from dials.algorithms.profile_model.ellipsoid import mosaicity_from_eigen_decomposition
+from dials.algorithms.profile_model.ellipsoid.model import (
     compute_change_of_basis_operation,
 )
-from dials.algorithms.profile_model.potato.parameterisation import ReflectionModelState
+from dials.algorithms.profile_model.ellipsoid.parameterisation import (
+    ReflectionModelState,
+)
 from dials.array_family import flex
 from dials.util import tabulate
 

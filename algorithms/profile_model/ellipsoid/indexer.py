@@ -4,7 +4,7 @@ from math import floor, sqrt
 from cctbx.array_family import flex
 from scitbx import matrix
 
-from dials.algorithms.profile_model.potato import chisq_quantile
+from dials.algorithms.profile_model.ellipsoid import chisq_quantile
 from dials.algorithms.statistics.fast_mcd import FastMCD, maha_dist_sq
 
 logger = logging.getLogger("dials")

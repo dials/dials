@@ -8,11 +8,11 @@ import pytest
 
 from scitbx import matrix
 
-from dials.algorithms.profile_model.potato.parameterisation import (
+from dials.algorithms.profile_model.ellipsoid.parameterisation import (
     ModelState,
     Simple6MosaicityParameterisation,
 )
-from dials.algorithms.profile_model.potato.refiner import ReflectionLikelihood
+from dials.algorithms.profile_model.ellipsoid.refiner import ReflectionLikelihood
 from dials.algorithms.refinement.parameterisation.crystal_parameters import (
     CrystalOrientationParameterisation,
     CrystalUnitCellParameterisation,

@@ -5,7 +5,7 @@ from math import exp, sqrt
 from scitbx import matrix
 from scitbx.linalg import eigensystem, l_l_transpose_cholesky_decomposition_in_place
 
-from dials.algorithms.profile_model.potato import (
+from dials.algorithms.profile_model.ellipsoid import (
     BBoxCalculatorAngular,
     BBoxCalculatorSimple,
     MaskCalculatorAngular,
@@ -13,7 +13,7 @@ from dials.algorithms.profile_model.potato import (
     PredictorAngular,
     PredictorSimple,
 )
-from dials.algorithms.profile_model.potato.parameterisation import (
+from dials.algorithms.profile_model.ellipsoid.parameterisation import (
     Angular2MosaicityParameterisation,
     Angular4MosaicityParameterisation,
     Simple1MosaicityParameterisation,

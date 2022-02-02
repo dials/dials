@@ -830,7 +830,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   };
 
 
-  BOOST_PYTHON_MODULE(dials_algorithms_profile_model_potato_ext)
+  BOOST_PYTHON_MODULE(dials_algorithms_profile_model_ellipsoid_ext)
   {
     def("chisq_quantile", &chisq_quantile);
     def("chisq_pdf", &chisq_pdf);

@@ -7,7 +7,7 @@ import numpy as np
 
 from scitbx import linalg, matrix
 
-from dials.algorithms.profile_model.potato import mosaicity_from_eigen_decomposition
+from dials.algorithms.profile_model.ellipsoid import mosaicity_from_eigen_decomposition
 from dials.algorithms.refinement.parameterisation.crystal_parameters import (
     CrystalOrientationParameterisation,
     CrystalUnitCellParameterisation,
