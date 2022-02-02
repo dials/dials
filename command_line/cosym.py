@@ -177,11 +177,12 @@ class cosym(Subject):
     def run(self):
         self.cosym_analysis.run()
         reindexing_ops = self.cosym_analysis.reindexing_ops
+        datasets_ = list(set(self.cosym_analysis.dataset_ids))
 
         # Log reindexing operators
         logger.info("Reindexing operators:")
         for cb_op in set(reindexing_ops):
-            datasets = [i for i, o in enumerate(reindexing_ops) if o == cb_op]
+            datasets = [d for d, o in zip(datasets_, reindexing_ops) if o == cb_op]
             logger.info(f"{cb_op}: {datasets}")
 
         self._apply_reindexing_operators(
@@ -210,7 +211,9 @@ class cosym(Subject):
 
     def _apply_reindexing_operators(self, reindexing_ops, subgroup=None):
         """Apply the reindexing operators to the reflections and experiments."""
-        for dataset_id, cb_op in enumerate(reindexing_ops):
+        for cb_op, dataset_id in zip(
+            reindexing_ops, set(self.cosym_analysis.dataset_ids)
+        ):
             cb_op = sgtbx.change_of_basis_op(cb_op)
             logger.debug(
                 "Applying reindexing op %s to dataset %i", cb_op.as_xyz(), dataset_id

@@ -77,12 +77,12 @@ class symmetry_base:
         )
 
         self.intensities = self.input_intensities[0]
-        self.dataset_ids = flex.double(self.intensities.size(), 0)
+        self.dataset_ids = flex.int(self.intensities.size(), 0)
         for i, d in enumerate(self.input_intensities[1:]):
             self.intensities = self.intensities.concatenate(
                 d, assert_is_similar_symmetry=False
             )
-            self.dataset_ids.extend(flex.double(d.size(), i + 1))
+            self.dataset_ids.extend(flex.int(d.size(), i + 1))
         self.intensities = self.intensities.customized_copy(
             unit_cell=self.median_unit_cell
         )
