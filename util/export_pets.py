@@ -45,6 +45,7 @@ class PETSOutput:
         self.filename_prefix = params.filename_prefix
         self.exp_id = params.id
         self.partiality_cutoff = params.partiality_cutoff
+        self.flag_filtering = params.flag_filtering
         self.excitation_error_cutoff = params.virtual_frame.excitation_error_cutoff
         self.n_merged = params.virtual_frame.n_merged
         self.step = params.virtual_frame.step
@@ -134,10 +135,11 @@ class PETSOutput:
         logger.info(f"Removing {fulls.count(False)} partial reflections")
         self.reflections = self.reflections.select(fulls)
 
-        # Select only integrated reflections
-        self.reflections = self.reflections.select(
-            self.reflections.get_flags(self.reflections.flags.integrated)
-        )
+        # Select only integrated_sum reflections, if requested
+        if self.flag_filtering:
+            self.reflections = self.reflections.select(
+                self.reflections.get_flags(self.reflections.flags.integrated)
+            )
 
     def _reorient_coordinate_frame(self):
         """Align a DIALS experiment and data in a reflection table to the

@@ -226,6 +226,7 @@ phil_scope = parse(
   }
 
   json {
+
     filename = rlp.json
       .type = path
     compact = True
@@ -234,9 +235,11 @@ phil_scope = parse(
       .type = int(value_min=1)
       .help = "Number of decimal places to be used for representing the"
               "reciprocal lattice points."
+
   }
 
   shelx {
+
     hklout = dials.hkl
       .type = path
       .help = "The output hkl file"
@@ -249,9 +252,11 @@ phil_scope = parse(
     scale_range = -9999.0, 9999.0
       .type = floats(size=2, value_min=-999999., value_max=9999999.)
       .help = "minimum or maximum intensity value after scaling."
+
   }
 
   pets {
+
     filename_prefix = dials
       .type = str
       .help = "The prefix for output files, where the default will produce"
@@ -265,6 +270,12 @@ phil_scope = parse(
       .help = "Cutoff for determining which reflections are deemed to be fully"
               "recorded"
 
+    flag_filtering = False
+      .type = bool
+      .help = "If true, keep only the reflections where the `integrated_sum`"
+              "flag is set. This seems to be quite restrictive compared to"
+              "PETS, so is not set by default."
+
     virtual_frame {
       excitation_error_cutoff = 0.04
         .type = float
@@ -276,6 +287,7 @@ phil_scope = parse(
       step = 1
         .type = int
         .help = "Step between frames"
+
     }
   }
 
