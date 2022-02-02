@@ -87,9 +87,12 @@ class PETSOutput:
             self._rescale_zone_axis(e) for e in self.frame_orientations["zone_axes"]
         ]
 
-        # Calculate the missetting matrices
+        # Calculate the rotated missetting matrices. The orientations give the
+        # full SRFMU matrix for each frame, where U is the scan-static
+        # orientation matrix and M is the scan-varying misset. We want the
+        # SRFM part, so post-multiply by the transpose of U
         Ut = matrix.sqr(self.experiment.crystal.get_U()).transpose()
-        self.frame_orientations["missets"] = [
+        self.frame_orientations["rotated_missets"] = [
             M * Ut for M in self.frame_orientations["orientations"]
         ]
 
@@ -243,13 +246,13 @@ class PETSOutput:
         # directions = self.frame_orientations["directions"]
         zone_axes = self.frame_orientations["zone_axes"]
         # real_space_axes = self.frame_orientations["real_space_axes"]
-        missets = self.frame_orientations["missets"]
+        rotated_missets = self.frame_orientations["rotated_missets"]
 
         # Get experiment geometry
         scan = self.experiment.scan
-        axis = matrix.col(self.experiment.goniometer.get_rotation_axis())
         s0 = matrix.col(self.experiment.beam.get_s0())
         inv_wl = s0.length()
+        A = matrix.sqr(self.experiment.crystal.get_A())
 
         _, _, frames = self.reflections["xyzcal.px"].parts()
         scan = self.experiment.scan
@@ -262,35 +265,29 @@ class PETSOutput:
             if stop > arr_end:
                 stop = arr_end
 
-            # Take only reflections whose centroids are inside this or a neighbouring virtual frame
-            # sel = (frames > (start - self.n_merged)) & (frames <= stop + self.n_merged)
-            # refs = self.reflections.select(sel)
-            refs = self.reflections
-
+            # Look up the orientation data using an index, which is the centre
+            # of the virtual frame, offset so that the scan starts from 0#
             centre = (start + stop) / 2.0
-            # alpha_start = scan.get_angle_from_array_index(start, deg=False)
-            # alpha_stop = scan.get_angle_from_array_index(stop, deg=False)
-            alpha_centre = scan.get_angle_from_array_index(centre, deg=False)
+            index = int(centre) - arr_start
 
-            # The relps are given at zero rotation angle. In order to calculate
-            # excitation error, it's quickest to rotate the Ewald sphere
-            s0_centre = s0.rotate_around_origin(axis, -alpha_centre, deg=False)
-            rotated_s1 = refs["rlp"] + s0_centre
-            excitation_err = inv_wl - rotated_s1.norms()
+            # Calculate the excitation error at this orientation
+            M = rotated_missets[index]
+            UB = flex.mat3_double(len(self.reflections), M * A)
+            r = UB * self.reflections["miller_index"].as_vec3_double()
+            s1 = r + s0
+            excitation_err = inv_wl - s1.norms()
 
             # Select only the reflections within the excitation error cutoff
             # and sort
-            refs = refs.select(abs(excitation_err) <= self.excitation_error_cutoff)
+            refs = self.reflections.select(
+                abs(excitation_err) <= self.excitation_error_cutoff
+            )
             refs.sort("miller_index")
-
-            # Look up the orientation data using an index, which is the centre
-            # of the virtual frame, offset so that the scan starts from 0
-            index = int(centre) - arr_start
 
             self.virtual_frames.append(
                 {
                     "reflections": refs,
-                    "misset": missets[index],
+                    "rotated_misset": M,
                     "zone_axis": zone_axes[index],
                 }
             )
@@ -324,7 +321,7 @@ Virtual frame settings: number of merged frames:  {self.n_merged}
         for frame_id, virtual_frame in enumerate(self.virtual_frames):
             u, v, w = virtual_frame["zone_axis"]
             precession_angle = 0.0  # dummy value
-            R = virtual_frame["misset"]
+            R = virtual_frame["rotated_misset"]
             # Decompose U = Rω * Rα * Rβ, where:
             # α is around 1,0,0
             # β is around 0,1,0
