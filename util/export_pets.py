@@ -42,13 +42,34 @@ class PETSOutput:
     def __init__(self, experiments, reflections, params):
         """Init with the parameters, experiments and reflections"""
 
-        self.filename_prefix = params.filename_prefix
-        self.exp_id = params.id
-        self.partiality_cutoff = params.partiality_cutoff
-        self.flag_filtering = params.flag_filtering
-        self.excitation_error_cutoff = params.virtual_frame.excitation_error_cutoff
-        self.n_merged = params.virtual_frame.n_merged
-        self.step = params.virtual_frame.step
+        self.filename_prefix = params.pets.filename_prefix
+        self.exp_id = params.pets.id
+        self.partiality_cutoff = params.pets.partiality_cutoff
+        self.flag_filtering = params.pets.flag_filtering
+        self.excitation_error_cutoff = params.pets.virtual_frame.excitation_error_cutoff
+        self.n_merged = params.pets.virtual_frame.n_merged
+        self.step = params.pets.virtual_frame.step
+
+        # Resolve a single intensity choice
+        if "sum" in params.intensity and "profile" in params.intensity:
+            logger.info(
+                "For format=pets, intensity must be either 'sum' or 'profile'. Defaulting to 'sum'"
+            )
+            self.intensity_column = "intensity.sum.value"
+            self.intensity_variance_column = "intensity.sum.variance"
+        elif "sum" in params.intensity:
+            if len(params.intensity) > 1:
+                logger.info("Setting intensity=sum")
+            self.intensity_column = "intensity.sum.value"
+            self.intensity_variance_column = "intensity.sum.variance"
+        elif "profile" in params.intensity:
+            if len(params.intensity) > 1:
+                logger.info("Setting intensity=profile")
+            self.intensity_column = "intensity.prf.value"
+            self.intensity_variance_column = "intensity.prf.variance"
+        else:
+            raise ValueError("The choice intensity= must be either 'sum' or 'profile'")
+
         self.experiments = experiments
         if len(reflections) != 1:
             raise ValueError("Only a single reflection file can be exported")
@@ -124,7 +145,7 @@ class PETSOutput:
         )
         self.reflections["id"] *= 0
 
-        required_keys = ("intensity.sum.value", "intensity.sum.variance")
+        required_keys = (self.intensity_column, self.intensity_variance_column)
         if any(x not in self.reflections for x in required_keys):
             raise ValueError(
                 f"The reflection table requires these keys: {', '.join(required_keys)}"
@@ -135,10 +156,14 @@ class PETSOutput:
         logger.info(f"Removing {fulls.count(False)} partial reflections")
         self.reflections = self.reflections.select(fulls)
 
-        # Select only integrated_sum reflections, if requested
+        # Select only "integrated" reflections, if requested
         if self.flag_filtering:
+            if required_keys[0] == "intensity.sum.value":
+                filter_flag = self.reflections.flags.integrated_sum
+            else:
+                filter_flag = self.reflections.flags.integrated_prf
             self.reflections = self.reflections.select(
-                self.reflections.get_flags(self.reflections.flags.integrated)
+                self.reflections.get_flags(filter_flag)
             )
 
     def _reorient_coordinate_frame(self):
@@ -316,12 +341,12 @@ Virtual frame settings: number of merged frames:  {self.n_merged}
         ref_list = []
         for frame_id, virtual_frame in enumerate(self.virtual_frames):
             refs = virtual_frame["reflections"]
-            refs["intensity.sum.sigma"] = flex.sqrt(refs["intensity.sum.variance"])
+            refs["intensity.sigma"] = flex.sqrt(refs[self.intensity_variance_column])
             for r in refs.rows():
                 h, k, l = r["miller_index"]
-                i_sum = r["intensity.sum.value"]
-                sig_i_sum = r["intensity.sum.sigma"]
-                ref_list.append([h, k, l, i_sum, sig_i_sum, frame_id + 1])
+                i = r[self.intensity_column]
+                sig_i = r["intensity.sigma"]
+                ref_list.append([h, k, l, i, sig_i, frame_id + 1])
 
         self._write_dyn_cif_pets(
             cif_filename,

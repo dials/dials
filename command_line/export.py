@@ -272,8 +272,9 @@ phil_scope = parse(
 
     flag_filtering = False
       .type = bool
-      .help = "If true, keep only the reflections where the `integrated_sum`"
-              "flag is set. This seems to be quite restrictive compared to"
+      .help = "If true, keep only the reflections where the relevant `integrated`"
+              "flag is set (either `integrated_sum` or `integrated_prf`). This"
+              "seems to be quite restrictive compared to"
               "PETS, so is not set by default."
 
     virtual_frame {
@@ -563,7 +564,7 @@ def export_pets(params, experiments, reflections):
 
     from dials.util.export_pets import PETSOutput
 
-    pets_output = PETSOutput(experiments, reflections, params.pets)
+    pets_output = PETSOutput(experiments, reflections, params)
     pets_output.write_cif_pets()
     pets_output.write_dyn_cif_pets()
 
