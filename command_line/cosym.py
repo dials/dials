@@ -211,9 +211,8 @@ class cosym(Subject):
 
     def _apply_reindexing_operators(self, reindexing_ops, subgroup=None):
         """Apply the reindexing operators to the reflections and experiments."""
-        for cb_op, dataset_id in zip(
-            reindexing_ops, set(self.cosym_analysis.dataset_ids)
-        ):
+        unique_ids = set(self.cosym_analysis.dataset_ids)
+        for cb_op, dataset_id in zip(reindexing_ops, unique_ids):
             cb_op = sgtbx.change_of_basis_op(cb_op)
             logger.debug(
                 "Applying reindexing op %s to dataset %i", cb_op.as_xyz(), dataset_id
@@ -235,6 +234,19 @@ class cosym(Subject):
                 )
             )
             refl["miller_index"] = cb_op.apply(refl["miller_index"])
+        # Allow for the case where some datasets are filtered out.
+        if len(reindexing_ops) < len(self._experiments):
+            to_delete = []
+            for i in range(len(self._experiments)):
+                if i not in unique_ids:
+                    to_delete.append(i)
+            to_delete.sort(reverse=True)
+            for idx in to_delete:
+                logger.info(
+                    f"Removing dataset {idx} as unable to determine reindexing operator"
+                )
+                del self._experiments[idx]
+                del self._reflections[idx]
 
     def _filter_min_reflections(self, experiments, reflections):
         identifiers = []

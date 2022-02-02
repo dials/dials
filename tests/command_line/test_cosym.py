@@ -84,9 +84,9 @@ def test_cosym_resolution_filter_excluding_datasets(dials_data, run_in_tmpdir):
     joint_reflections = flex.reflection_table.from_file("symmetrized.refl")
     # check that there are 8 unique id and imageset_ids, and that these
     # correctly correspond to each experiment
-    assert len(set(joint_reflections["id"])) == 8
-    assert len(set(joint_reflections["imageset_id"])) == 8
-    for id_ in range(8):
+    assert set(joint_reflections["id"]) == {0, 1, 2, 3, 4, 5, 6}
+    assert len(set(joint_reflections["imageset_id"])) == 7
+    for id_ in range(7):
         sel = joint_reflections["id"] == id_
         assert set(joint_reflections["imageset_id"].select(sel)) == {id_}
 
