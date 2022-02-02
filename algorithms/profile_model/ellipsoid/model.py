@@ -22,6 +22,58 @@ from dials.algorithms.profile_model.ellipsoid.parameterisation import (
 from dials.array_family import flex
 
 
+class EllipsoidProfileModel(object):
+
+    """
+    An overall model class that conforms to the requirements of a
+    dxtbx.profile_model entry point.
+    """
+
+    name = "ellipsoid"
+
+    def __init__(self, parameterisation):
+        self.parameterisation = parameterisation
+
+    @classmethod
+    def from_sigma_d(cls, model, sigma_d):
+        if model == "simple1":
+            return cls(Simple1ProfileModel.from_sigma_d(sigma_d))
+        elif model == "simple6":
+            return cls(Simple6ProfileModel.from_sigma_d(sigma_d))
+        elif model == "angular2":
+            return cls(Angular2ProfileModel.from_sigma_d(sigma_d))
+        elif model == "angular4":
+            return cls(Angular4ProfileModel.from_sigma_d(sigma_d))
+
+        raise RuntimeError(f"Unknown profile model: {model}")
+
+    @classmethod
+    def from_dict(cls, d):
+        if d["parameterisation"] == "simple1":
+            return cls(Simple1ProfileModel.from_dict(d))
+        if d["parameterisation"] == "simple6":
+            return cls(Simple6ProfileModel.from_dict(d))
+        if d["parameterisation"] == "angular2":
+            return cls(Angular2ProfileModel.from_dict(d))
+        if d["parameterisation"] == "angular4":
+            return cls(Angular4ProfileModel.from_dict(d))
+        raise RuntimeError(
+            f"Unknown profile model parameterisation: {d['parameterisation']}"
+        )
+
+    def mosaicity(self):
+        return self.parameterisation.mosaicity()
+
+    def sigma(self):
+        return self.parameterisation.sigma()
+
+    def to_dict(self):
+        d = self.parameterisation.to_dict()
+        d["parameterisation"] = d.pop("__id__")
+        d["__id__"] = "ellipsoid"
+        return d
+
+
 class ProfileModelBase(object):
     """
     Class to store profile model
@@ -71,7 +123,7 @@ class ProfileModelBase(object):
         params = list(self.parameterisation().parameters)
         sigma = self.sigma()
         return {
-            "__id__": self.__class__.__name__,
+            "__id__": self.__class__.name,
             "parameters": params,
             "sigma": sigma.as_numpy_array().tolist(),
         }
@@ -171,7 +223,7 @@ class Simple1ProfileModel(SimpleProfileModelBase):
 
     """
 
-    name = "Simple1ProfileModel"
+    name = "simple1"
 
     def parameterisation(self):
         """
@@ -220,7 +272,7 @@ class Simple6ProfileModel(SimpleProfileModelBase):
 
     """
 
-    name = "Simple6ProfileModel"
+    name = "simple6"
 
     def parameterisation(self):
         """
@@ -344,7 +396,7 @@ class Angular2ProfileModel(AngularProfileModelBase):
 
     """
 
-    name = "Angular2ProfileModel"
+    name = "angular2"
 
     def parameterisation(self):
         """
@@ -394,7 +446,7 @@ class Angular4ProfileModel(AngularProfileModelBase):
 
     """
 
-    name = "Angular4ProfileModel"
+    name = "angular4"
 
     def parameterisation(self):
         """
@@ -448,16 +500,7 @@ class ProfileModelFactory(object):
         Construct a profile model from an initial sigma estimate
 
         """
-        if model == "simple1":
-            return Simple1ProfileModel.from_sigma_d(sigma_d)
-        elif model == "simple6":
-            return Simple6ProfileModel.from_sigma_d(sigma_d)
-        elif model == "angular2":
-            return Angular2ProfileModel.from_sigma_d(sigma_d)
-        elif model == "angular4":
-            return Angular4ProfileModel.from_sigma_d(sigma_d)
-
-        raise RuntimeError(f"Unknown profile model: {model}")
+        return EllipsoidProfileModel.from_sigma_d(model, sigma_d)
 
 
 def compute_change_of_basis_operation(s0, s2):

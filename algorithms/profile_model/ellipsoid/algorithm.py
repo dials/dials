@@ -297,7 +297,9 @@ def final_integrator(
     else:
         # compute bbox from model
         profile = experiment.crystal.mosaicity
-        profile.compute_bbox(experiments, reflection_table, shoebox_probability)
+        profile.parameterisation.compute_bbox(
+            experiments, reflection_table, shoebox_probability
+        )
 
     # Select reflections within detector
     x0, x1, y0, y1, _, _ = reflection_table["bbox"].parts()
@@ -315,7 +317,9 @@ def final_integrator(
     else:
         # compute the mask from the model.
         profile = experiment.crystal.mosaicity
-        profile.compute_mask(experiments, reflection_table, shoebox_probability)
+        profile.parameterisation.compute_mask(
+            experiments, reflection_table, shoebox_probability
+        )
 
     logger.info(
         f"Computing background, intensity, corrections for {len(reflection_table)} reflections"
@@ -326,7 +330,7 @@ def final_integrator(
     reflection_table.compute_centroid(experiments)
 
     profile = experiment.crystal.mosaicity
-    profile.compute_partiality(experiments, reflection_table)
+    profile.parameterisation.compute_partiality(experiments, reflection_table)
 
     return reflection_table
 
@@ -338,7 +342,7 @@ def refine_profile(experiment, profile, refiner_data, wavelength_spread_model="d
     # Create the parameterisation
     state = ModelState(
         experiment,
-        profile.parameterisation(),
+        profile.parameterisation.parameterisation(),
         fix_orientation=True,
         fix_unit_cell=True,
         fix_wavelength_spread=wavelength_spread_model == "delta",
@@ -349,7 +353,7 @@ def refine_profile(experiment, profile, refiner_data, wavelength_spread_model="d
     refiner.refine()
 
     # Set the profile parameters
-    profile.update_model(state)
+    profile.parameterisation.update_model(state)
     # Set the mosaicity
     experiment.crystal.mosaicity = profile
 
@@ -373,7 +377,7 @@ def refine_crystal(
     # Create the parameterisation
     state = ModelState(
         experiment,
-        profile.parameterisation(),
+        profile.parameterisation.parameterisation(),
         fix_mosaic_spread=True,
         fix_unit_cell=fix_unit_cell,
         fix_orientation=fix_orientation,
@@ -437,7 +441,7 @@ def compute_prediction_probability(experiment, reflection_table):
         s3 = s2.normalize() * s0.length()
         r = s2 - s0
         epsilon = s3 - s2
-        sigma = profile.sigma_for_reflection(s0, r)
+        sigma = profile.parameterisation.sigma_for_reflection(s0, r)
         sigma_inv = sigma.inverse()
         d = (epsilon.transpose() * sigma_inv * epsilon)[0]
         p = chisq_pdf(3, d)
@@ -544,7 +548,7 @@ def predict(experiments, d_min=None, prediction_probability=0.9973):
     # Get the covariance matrix
     profile = experiments[0].crystal.mosaicity
 
-    reflection_table = profile.predict_reflections(
+    reflection_table = profile.parameterisation.predict_reflections(
         experiments, miller_indices_to_test, prediction_probability
     )
 
