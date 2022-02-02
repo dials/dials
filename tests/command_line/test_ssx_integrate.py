@@ -35,7 +35,7 @@ def test_ssx_integrate_ellipsoid(indexed_data, run_in_tmpdir, fix_uc_and_orienta
     refls, expts = indexed_data
 
     # set batch size to test generation of multiple output files
-    args = [refls, expts, "algorithm=ellipsoid", "batch_size=3", "nproc=1"]
+    args = [refls, expts, "algorithm=ellipsoid", "batch_size=3", "nproc=1", "-vv"]
     if fix_uc_and_orientation:
         args.extend(["unit_cell.fixed=True", "orientation.fixed=True"])
     run_integrate(args)
