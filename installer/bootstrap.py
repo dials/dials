@@ -1312,6 +1312,11 @@ be passed separately with quotes to avoid confusion (e.g
     # Add sources
     if "update" in options.actions:
         update_sources(options)
+        # Make sure we have the TBX_INSTALL_PACKAGE_BASE marker
+        marker_file = os.path.join("build", "TBX_INSTALL_PACKAGE_BASE")
+        if os.path.isdir("build") and not os.path.exists(marker_file):
+            with open(marker_file, "w") as _:
+                pass
 
     # Build base packages
     if "base" in options.actions:
