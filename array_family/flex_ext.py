@@ -11,7 +11,7 @@ import logging
 import operator
 import os
 import pickle
-from typing import Tuple
+from typing import List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -507,7 +507,9 @@ class _:
         return n0, n1
 
     @staticmethod
-    def concat(tables):
+    def concat(
+        tables: List[dials_array_family_flex_ext.reflection_table],
+    ) -> dials_array_family_flex_ext.reflection_table:
         """
         Concatenate a list of reflection tables, taking care to correctly handle
         experiment identifiers and ids.
