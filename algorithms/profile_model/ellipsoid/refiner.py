@@ -1,6 +1,7 @@
 from __future__ import division
 
 import logging
+import random
 import textwrap
 from math import log, pi, sqrt
 
@@ -17,6 +18,9 @@ from dials.array_family import flex
 from dials.util import tabulate
 
 logger = logging.getLogger("dials")
+
+flex.set_random_seed(0)
+random.seed(0)
 
 
 class ConditionalDistribution(object):
