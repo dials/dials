@@ -424,7 +424,7 @@ def run_indirect_command(command, args, env=None):
             fh.write("call %s\\conda_base\\condabin\\activate.bat\r\n" % os.getcwd())
             if env:
                 for key, value in env.items():
-                    fh.write('SET %s="%s"' % (key, value))
+                    fh.write('SET %s="%s"\r\n' % (key, value))
             fh.write("shift\r\n")
             fh.write("%*\r\n")
         if not command.endswith((".bat", ".cmd", ".exe")):
@@ -438,7 +438,7 @@ def run_indirect_command(command, args, env=None):
             fh.write("conda activate %s/conda_base\n" % os.getcwd())
             if env:
                 for key, value in env.items():
-                    fh.write("export %s='%s'" % (key, value))
+                    fh.write("export %s='%s'\n" % (key, value))
             fh.write('"$@"\n')
         make_executable(filename)
         indirection = ["./indirection.sh"]
@@ -1179,6 +1179,7 @@ def configure_build(config_flags, prebuilt_cctbx):
     run_indirect_command(
         command=conda_python,
         args=configcmd,
+        env={"TBX_INSTALL_PACKAGE_BASE": "y"},
     )
 
 
