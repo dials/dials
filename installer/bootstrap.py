@@ -412,7 +412,7 @@ def run_command(command, workdir):
         sys.exit("Process failed with return code %s" % p.returncode)
 
 
-def run_indirect_command(command, args):
+def run_indirect_command(command, args, env=None):
     print("(via conda environment) " + command)
     try:
         os.mkdir("build")
@@ -422,6 +422,9 @@ def run_indirect_command(command, args):
         filename = os.path.join("build", "indirection.cmd")
         with open(filename, "w") as fh:
             fh.write("call %s\\conda_base\\condabin\\activate.bat\r\n" % os.getcwd())
+            if env:
+                for key, value in env.items():
+                    fh.write('SET %s="%s"' % (key, value))
             fh.write("shift\r\n")
             fh.write("%*\r\n")
         if not command.endswith((".bat", ".cmd", ".exe")):
@@ -433,6 +436,9 @@ def run_indirect_command(command, args):
             fh.write("#!/bin/bash\n")
             fh.write("source %s/conda_base/etc/profile.d/conda.sh\n" % os.getcwd())
             fh.write("conda activate %s/conda_base\n" % os.getcwd())
+            if env:
+                for key, value in env.items():
+                    fh.write("export %s='%s'" % (key, value))
             fh.write('"$@"\n')
         make_executable(filename)
         indirection = ["./indirection.sh"]
@@ -1148,6 +1154,7 @@ def configure_build(config_flags, prebuilt_cctbx):
         run_indirect_command(
             command="libtbx.configure",
             args=["cbflib", "dials", "dxtbx", "prime", "xia2"],
+            env={"TBX_INSTALL_PACKAGE_BASE": "y"},
         )
         return
 
