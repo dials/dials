@@ -82,11 +82,6 @@ class PETSOutput:
         # Calculate the frame orientation data
         self.frame_orientations = extract_experiment_data(self.experiment, scale=1)
 
-        # Rescale zone axes to match PETS format
-        self.frame_orientations["zone_axes"] = [
-            self._rescale_zone_axis(e) for e in self.frame_orientations["zone_axes"]
-        ]
-
         # Calculate the rotated missetting matrices. The orientations give the
         # full SRFMU matrix for each frame, where U is the scan-static
         # orientation matrix and M is the scan-varying misset. We want the
@@ -258,20 +253,43 @@ class PETSOutput:
         scan = self.experiment.scan
         self.virtual_frames = []
         arr_start, arr_end = scan.get_array_range()
-        # Loop over the virtual frames.
+        # Loop over the virtual frames
         starts = list(range(arr_start, arr_end, self.step))
         for start in starts:
             stop = start + self.n_merged
             if stop > arr_end:
-                stop = arr_end
+                break
 
             # Look up the orientation data using an index, which is the centre
-            # of the virtual frame, offset so that the scan starts from 0#
+            # of the virtual frame, offset so that the scan starts from 0
             centre = (start + stop) / 2.0
             index = int(centre) - arr_start
+            M = rotated_missets[index]
+            za = zone_axes[index]
+
+            # If the number of merged frames is even, then we need to average
+            # this orientation data with that from the previous frame to get the
+            # orientation in the centre of the virtual frame
+            if centre - int(centre) == 0.0:
+                Mprev = rotated_missets[index - 1]
+                RR = M * Mprev.transpose()
+                (
+                    angle,
+                    axis,
+                ) = RR.r3_rotation_matrix_as_unit_quaternion().unit_quaternion_as_axis_and_angle(
+                    deg=False
+                )
+                R = axis.axis_and_angle_as_r3_rotation_matrix(angle / 2, deg=False)
+                M = R * Mprev
+
+                za_prev = zone_axes[index - 1]
+                delta = za - za_prev
+                za = za_prev + delta / 2
+
+            # Rescale zone axis to match PETS format
+            za = self._rescale_zone_axis(za)
 
             # Calculate the excitation error at this orientation
-            M = rotated_missets[index]
             UB = flex.mat3_double(len(self.reflections), M * A)
             r = UB * self.reflections["miller_index"].as_vec3_double()
             s1 = r + s0
@@ -288,7 +306,7 @@ class PETSOutput:
                 {
                     "reflections": refs,
                     "rotated_misset": M,
-                    "zone_axis": zone_axes[index],
+                    "zone_axis": za,
                 }
             )
 
