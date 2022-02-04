@@ -7,3 +7,4 @@ DIALS How-To guides
 
   Sweeps missing images <missing-images>
   Scaling in DIALS <dials_scale_user_guide>
+  Experimental SSX processing tools <ssx_processing_guide>
