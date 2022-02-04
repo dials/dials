@@ -3,7 +3,7 @@ Experimental SSX processing guide
 
 This is a guide on how to process synchrotron serial crystallography (SSX) data
 with DIALS, using tools that are currently under development. These tools should
-be considered experimental and subject to change and improvement as the tools
+be considered experimental and subject to change \& improvement as the tools
 become more widely tested and user feedback is taken on board.
 
 Indexing SSX data with dev.dials.ssx_index
@@ -66,3 +66,37 @@ of useful statistics such as the number of spots indexed on each image, the dist
 of rmsd values and unit cell clustering analysis. This data can also be output to
 json format for further analysis, by providing a filename to the option :samp:`output.json`.
 
+Integrating SSX data with dev.dials.ssx_integrate
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+After indexing, the experimental models can be further refined with dials.refine,
+or the indexing output can also be integrated directly.
+To integrate the data, we can use::
+
+    dev.dials.ssx_integrate indexed.expt indexed.refl
+
+This program wraps a call to parts of the :samp:`dials.integrate` program,
+using either the :samp:`stills` integrator or the :samp:`ellipsoid` integration algorithm.
+The stills integrator is the default algorithm used for integration in
+:samp:`dials.stills_process`. The ellipsoid algorithm refines the unit cell,
+orientation and a 3D ellipsoidal mosaicity parameterisation for each crystal,
+by assessing the pixel-intensity distribution of the strong spots::
+
+    dev.dials.ssx_integrate indexed.refl indexed.expt algorithm=stills
+    dev.dials.ssx_integrate indexed.refl indexed.expt algorithm=ellipsoid
+
+Processing will be split across the available computing cores for performance.
+During processing, data files will be created after each batch of crystals has
+been processed. The size of the batch for saving data can be set with the
+:samp:`batch_size` option. This creates numbered output files such as
+:samp:`integrated_0.refl, integrated_0.expt, integrated_1.refl, integrated_1.expt` etc.
+After all images have been integated, unit cell clustering is performed and
+reported, as this will have changed compared to at the end of indexing if
+using the ellipsoid integration algorithm.
+
+To help with the interpretation of the integration results for a large number of
+crystals, a :samp:`dials.ssx_integrate.html` report is generated which contains plots
+of useful statistics such as the number of spots integrated on each image,
+the modelled mosaicity values and unit cell clustering analysis. This data can
+also be output to json format for further analysis, by providing a filename to
+the option :samp:`output.json`.

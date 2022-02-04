@@ -3,23 +3,29 @@
 #
 # dials.ssx_integrate.py
 #
-#  Copyright (C) 2021 Diamond Light Source
+#  Copyright (C) 2022 Diamond Light Source
 #
 #  Author: James Beilsten-Edmands
 #
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 """
-This program is a script to perform profile modelling and integration on
-indexed results from a still sequence i.e. SSX data. This scripts wraps a call
-to the integration code, using either the ellipsoid or stills integrator algorithms.
+This program rums profile modelling and integration on indexed results from a
+still sequence i.e. SSX data. This scripts uses parts of the regular DIALS
+integration code, using either the ellipsoid or stills integrator algorithms.
 
-The integrated data are saved in batches for memory management. A html output
-report is generated, showing integration statistics.
+The ellipsoid algorithm refines the unit cell, orientation and a 3D ellipsoidal
+mosaicity parameterisation for each crystal, by assessing the pixel-intensity
+distribution of the strong spots. The integrated data are saved in batches to
+hep with memory management. A html output report is generated, showing integration
+and clutering statistics.
+
+Further program documentation can be found at dials.github.io/ssx_processing_guide.html
 
 Usage:
     dev.dials.ssx_integrate indexed.expt indexed.refl
     dev.dials.ssx_integrate refined.expt refined.refl
+    dev.dials.ssx_integrate indexed.expt indexed.refl algorithm=stills
 """
 
 from __future__ import absolute_import, division
@@ -424,6 +430,10 @@ Unit cell clustering analysis, clusters with >{min_cluster_pc}% of the number of
             logger.info(f"Saving plot data in json format to {params.output.json}")
             with open(params.output.json, "w") as outfile:
                 json.dump(plots, outfile, indent=2)
+
+    logger.info(
+        "Further program documentation can be found at dials.github.io/ssx_processing_guide.html"
+    )
 
 
 if __name__ == "__main__":
