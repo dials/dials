@@ -5,6 +5,9 @@ import random
 import textwrap
 from math import log, pi, sqrt
 
+import numpy as np
+
+from dxtbx import flumpy
 from scitbx import linalg, matrix
 
 from dials.algorithms.profile_model.ellipsoid import mosaicity_from_eigen_decomposition
@@ -1011,31 +1014,33 @@ class RefinerData(object):
             assert ctot > 0, "BUG: strong spots should have more than 0 counts!"
 
             # Compute the mean vector
-            xbar = matrix.col((0, 0))
+            xbar = np.array([[0.0, 0.0]], dtype=np.float32)
             for j in range(X.all()[0]):
                 for i in range(X.all()[1]):
-                    x = matrix.col(X[j, i])
+                    x = np.array(X[j, i], dtype=np.float32)
                     xbar += C[j, i] * x
             xbar /= ctot
 
             # Compute the covariance matrix
-            Sobs = matrix.sqr((0, 0, 0, 0))
+            Sobs = np.array([[0.0, 0.0], [0.0, 0.0]], dtype=np.float32)
             for j in range(X.all()[0]):
                 for i in range(X.all()[1]):
-                    x = matrix.col(X[j, i])
-                    Sobs += (x - xbar) * (x - xbar).transpose() * C[j, i]
+                    x = np.array(X[j, i], dtype=np.float32)
+                    Sobs += (x - xbar) * (x - xbar).T * C[j, i]
             Sobs /= ctot
-            assert Sobs[0] > 0, "BUG: variance must be > 0"
-            assert Sobs[3] > 0, "BUG: variance must be > 0"
+            assert Sobs[0, 0] > 0, "BUG: variance must be > 0"
+            assert Sobs[1, 1] > 0, "BUG: variance must be > 0"
 
             # Add to the lists
             sp_list[r] = sp
             ctot_list[r] = ctot
+            xbar = matrix.col(flumpy.from_numpy(xbar[0, :]))
+            Sobs = flumpy.from_numpy(Sobs)
             mobs_list[r] = xbar
-            Sobs_list[r, 0] = Sobs[0]
-            Sobs_list[r, 1] = Sobs[1]
-            Sobs_list[r, 2] = Sobs[2]
-            Sobs_list[r, 3] = Sobs[3]
+            Sobs_list[r, 0] = Sobs[0, 0]
+            Sobs_list[r, 1] = Sobs[0, 1]
+            Sobs_list[r, 2] = Sobs[1, 0]
+            Sobs_list[r, 3] = Sobs[1, 1]
 
         # Print some information
         logger.info("")
