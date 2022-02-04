@@ -980,6 +980,12 @@ class RefinerData(object):
                 matrix.col(panel.get_pixel_lab_coord(xyzobs[r][0:2])).normalize()
                 * s0.length()
             )
+            xyz = panel.get_pixel_lab_coord(xyzobs[r][0:2])
+            xyarr = np.array([[xyz[0], xyz[1], xyz[2]]], dtype=np.float32)
+            sp = (
+                matrix.col(flumpy.from_numpy(xyarr / np.linalg.norm(xyarr)))
+                * s0.length()
+            )
 
             # Compute change of basis
             R = compute_change_of_basis_operation(s0, sp)
@@ -1005,7 +1011,12 @@ class RefinerData(object):
                         ii = i + i0
                         jj = j + j0
                         s = panel.get_pixel_lab_coord((ii + 0.5, jj + 0.5))
-                        s = matrix.col(s).normalize() * s0_length
+                        sarr = np.array([[s[0], s[1], s[2]]], dtype=np.float32)
+                        s = (
+                            matrix.col(flumpy.from_numpy(sarr / np.linalg.norm(sarr)))
+                            * s0_length
+                        )
+
                         e = R * s
                         X[j, i] = (e[0], e[1])
                         C[j, i] = c
