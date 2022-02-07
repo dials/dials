@@ -70,14 +70,14 @@ class EllipsoidIntegrator(SimpleIntegrator):
         table.experiment_identifiers()[0] = list(ids_map.values())[0]
 
         fix_list = []
-        if self.params.profile.unit_cell.fixed:
+        if self.params.profile.ellipsoid.unit_cell.fixed:
             fix_list.append("unit_cell")
-        if self.params.profile.orientation.fixed:
+        if self.params.profile.ellipsoid.orientation.fixed:
             fix_list.append("orientation")
 
         self.collector.initial_collect(experiment, table)
 
-        for _ in range(self.params.refinement.n_macro_cycles):
+        for _ in range(self.params.profile.ellipsoid.refinement.n_macro_cycles):
             try:
                 table, sigma_d = self.preprocess(experiment, table, self.params)
                 self.collector.collect_after_preprocess(experiment, table)
@@ -88,9 +88,9 @@ class EllipsoidIntegrator(SimpleIntegrator):
                     experiment,
                     table,
                     sigma_d,
-                    profile_model=self.params.profile.rlp_mosaicity.model,
+                    profile_model=self.params.profile.ellipsoid.rlp_mosaicity.model,
                     fix_list=fix_list,
-                    n_cycles=self.params.refinement.n_cycles,
+                    n_cycles=self.params.profile.ellipsoid.refinement.n_cycles,
                     capture_progress=isinstance(
                         self.collector, EllipsoidOutputCollector
                     ),
@@ -103,7 +103,7 @@ class EllipsoidIntegrator(SimpleIntegrator):
             experiment,
             table,
             d_min=self.params.prediction.d_min,
-            prediction_probability=self.params.prediction.probability,
+            prediction_probability=self.params.profile.ellipsoid.prediction.probability,
         )
         # do we want to add unmatched i.e. strong spots which weren't predicted?
         self.collector.collect_after_prediction(predicted, table)
@@ -121,14 +121,17 @@ class EllipsoidIntegrator(SimpleIntegrator):
         reference = reindex(
             reflection_table,
             experiment,
-            outlier_probability=params.refinement.outlier_probability,
-            max_separation=params.refinement.max_separation,
-            fail_on_bad_index=params.indexing.fail_on_bad_index,
+            outlier_probability=params.profile.ellipsoid.refinement.outlier_probability,
+            max_separation=params.profile.ellipsoid.refinement.max_separation,
+            fail_on_bad_index=params.profile.ellipsoid.indexing.fail_on_bad_index,
         )
-        if reference.size() < params.refinement.min_n_reflections:
+        if reference.size() < params.profile.ellipsoid.refinement.min_n_reflections:
             raise ToFewReflections(
                 "Too few reflections to perform refinement: got %d, expected %d"
-                % (reference.size(), params.refinement.min_n_reflections)
+                % (
+                    reference.size(),
+                    params.profile.ellipsoid.refinement.min_n_reflections,
+                )
             )
         reference, sigma_d = initial_integrator(ExperimentList([experiment]), reference)
 

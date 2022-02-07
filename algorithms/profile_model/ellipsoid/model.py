@@ -2,6 +2,7 @@ from __future__ import division
 
 from math import exp, sqrt
 
+from libtbx.phil import parse
 from scitbx import matrix
 from scitbx.linalg import eigensystem, l_l_transpose_cholesky_decomposition_in_place
 
@@ -20,9 +21,75 @@ from dials.algorithms.profile_model.ellipsoid.parameterisation import (
     Simple6MosaicityParameterisation,
 )
 from dials.array_family import flex
+from dials.model.experiment.profile import ProfileModelExt
+
+phil_scope = parse(
+    """
+rlp_mosaicity {
+
+    model = simple1 simple6 angular2 *angular4
+    .type = choice
+
+}
+
+wavelength_spread {
+
+    model = *delta
+    .type = choice
+
+}
+
+unit_cell {
+
+    fixed = False
+    .type = bool
+
+}
+
+orientation {
+
+    fixed = False
+    .type = bool
+
+}
+
+indexing {
+
+    fail_on_bad_index = False
+      .type = bool
+
+  }
+
+refinement {
+
+    max_separation = 2
+        .type = float
+
+    outlier_probability = 0.975
+        .type = float
+
+    n_macro_cycles = 1
+        .type = int
+
+    n_cycles = 3
+        .type = int
+
+    min_n_reflections=10
+        .type = int
+
+}
+
+prediction {
+    d_min = None
+        .type = float
+
+    probability = 0.9973
+        .type = float
+}"""
+)
 
 
-class EllipsoidProfileModel(object):
+class EllipsoidProfileModel(ProfileModelExt):
 
     """
     An overall model class that conforms to the requirements of a
@@ -33,6 +100,27 @@ class EllipsoidProfileModel(object):
 
     def __init__(self, parameterisation):
         self.parameterisation = parameterisation
+
+    @classmethod
+    def create(
+        cls, params, reflections, crystal, beam, detector, goniometer=None, scan=None
+    ):
+        # a method to allow model creation for the standard integration program
+        # need to work out the sigma d i.e. do initial integration
+        from dials.algorithms.profile_model.gaussian_rs.calculator import (
+            ComputeEsdBeamDivergence,
+        )
+
+        if not reflections:
+            raise ValueError(
+                "Reflections needed to determine sigma_d for the ellipsoid integrator"
+            )
+
+        sel = reflections.get_flags(reflections.flags.strong)
+        strong_refls = reflections.select(sel)
+        # Compute and initial spot size estimate and beam vector
+        sigma_d = ComputeEsdBeamDivergence(detector, strong_refls).sigma()
+        return cls.from_sigma_d(params.ellipsoid.rlp_mosaicity.model, sigma_d)
 
     @classmethod
     def from_sigma_d(cls, model, sigma_d):

@@ -87,16 +87,15 @@ phil_scope = iotbx.phil.parse(
   }
 
   ellipsoid {
-    include scope dials.algorithms.profile_model.ellipsoid.algorithm.phil_scope
+    include scope dials.algorithms.profile_model.ellipsoid.algorithm.ellipsoid_algorithm_phil_scope
   }
 
-  stills {
-    include scope dials.algorithms.integration.integrator.phil_scope
-    include scope dials.algorithms.profile_model.factory.phil_scope
-    include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
-    include scope dials.algorithms.integration.stills_significance_filter.phil_scope
-    include scope dials.algorithms.integration.kapton_correction.absorption_phil_scope
-  }
+  include scope dials.algorithms.integration.integrator.phil_scope
+  include scope dials.algorithms.profile_model.factory.phil_scope
+  include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
+  include scope dials.algorithms.integration.stills_significance_filter.phil_scope
+  include scope dials.algorithms.integration.kapton_correction.absorption_phil_scope
+
 
   debug {
     output {
@@ -112,28 +111,26 @@ phil_scope = iotbx.phil.parse(
 phil_overrides = phil_scope.fetch(
     source=iotbx.phil.parse(
         """\
-stills {
-    profile {
-        gaussian_rs {
-            min_spots {
-                overall=0
-            }
+profile {
+    gaussian_rs {
+        min_spots {
+            overall=0
         }
-        fitting = False
     }
-    integration {
-        background {
-            simple {
-                outlier {
-                    algorithm = Null
-                }
-            }
+    fitting = False
+    ellipsoid {
+        refinement {
+            n_cycles = 1
         }
     }
 }
-ellipsoid {
-    refinement {
-        n_cycles = 1
+integration {
+    background {
+        simple {
+            outlier {
+                algorithm = Null
+            }
+        }
     }
 }
 """
@@ -174,7 +171,7 @@ def process_one_image_ellipsoid_integrator(experiment, table, params):
             logging.getLogger(name).setLevel(logging.INFO)
 
     collect_data = params.output.html or params.output.json
-    integrator = EllipsoidIntegrator(params.ellipsoid, collect_data)
+    integrator = EllipsoidIntegrator(params, collect_data)
     try:
         experiment, table, collector = integrator.run(experiment, table)
     except RuntimeError as e:
@@ -195,7 +192,7 @@ def process_one_image_stills_integrator(experiment, table, params):
             logging.getLogger(name).setLevel(logging.INFO)
 
     collect_data = params.output.html or params.output.json
-    integrator = StillsIntegrator(params.stills, collect_data)
+    integrator = StillsIntegrator(params, collect_data)
     try:
         experiment, table, collector = integrator.run(experiment, table)
     except RuntimeError as e:

@@ -31,77 +31,8 @@ from dials.array_family import flex
 
 logger = logging.getLogger("dials")
 
-# Parameters
-phil_scope = parse(
+ellipsoid_algorithm_phil_scope = parse(
     """
-
-  profile
-  {
-
-    rlp_mosaicity {
-
-      model = simple1 simple6 angular2 *angular4
-        .type = choice
-
-    }
-
-    wavelength_spread {
-
-      model = *delta
-        .type = choice
-
-    }
-
-    unit_cell {
-
-      fixed = False
-        .type = bool
-
-    }
-
-    orientation {
-
-      fixed = False
-        .type = bool
-
-    }
-
-  }
-
-  indexing {
-
-    fail_on_bad_index = False
-      .type = bool
-
-  }
-
-  refinement {
-
-    max_separation = 2
-      .type = float
-
-    outlier_probability = 0.975
-      .type = float
-
-    n_macro_cycles = 1
-      .type = int
-
-    n_cycles = 3
-      .type = int
-
-    min_n_reflections=10
-      .type = int
-
-  }
-
-  prediction {
-    d_min = None
-      .type = float
-
-    probability = 0.9973
-      .type = float
-  }
-
   integration {
 
     use_crude_shoebox_mask = False
@@ -151,6 +82,14 @@ phil_scope = parse(
 
 """
 )
+
+# Parameters
+phil_scope = parse(
+    """
+include scope dials.algorithms.profile_model.ellipsoid.model.phil_scope
+""",
+    process_includes=True,
+).adopt_scope(ellipsoid_algorithm_phil_scope)
 
 
 def _compute_beam_vector(experiment, reflection_table):
