@@ -322,6 +322,10 @@ class PETSOutput:
         volume = self.experiment.crystal.get_unit_cell().volume()
         wavelength = self.experiment.beam.get_wavelength()
         UBmatrix = matrix.sqr(self.experiment.crystal.get_A()).as_numpy_array()
+        # tilt semi-angle of the virtual frame
+        precession_angle = (
+            self.experiment.scan.get_oscillation()[1] * self.n_merged
+        ) / 2
 
         # Some of these values are left as dummy zeroes for DIALS
         comment = f""";
@@ -338,7 +342,6 @@ Virtual frame settings: number of merged frames:  {self.n_merged}
         uvws = []
         for frame_id, virtual_frame in enumerate(self.virtual_frames):
             u, v, w = virtual_frame["zone_axis"]
-            precession_angle = 0.0  # dummy value
             R = virtual_frame["rotated_misset"]
             # Decompose U = Rω * Rα * Rβ, where:
             # α is around 1,0,0
