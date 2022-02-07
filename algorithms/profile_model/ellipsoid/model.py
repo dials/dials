@@ -122,6 +122,13 @@ class EllipsoidProfileModel(ProfileModelExt):
         sigma_d = ComputeEsdBeamDivergence(detector, strong_refls).sigma()
         return cls.from_sigma_d(params.ellipsoid.rlp_mosaicity.model, sigma_d)
 
+    def compute_bbox(
+        self, reflections, crystal, beam, detector, goniometer=None, scan=None, **kwargs
+    ):
+        raise ValueError(
+            "Ellipsoid profile modelling not implemented outside of dev.dials.ssx_integrate"
+        )
+
     @classmethod
     def from_sigma_d(cls, model, sigma_d):
         if model == "simple1":
