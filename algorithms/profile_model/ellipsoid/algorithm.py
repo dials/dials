@@ -14,6 +14,10 @@ from __future__ import absolute_import, division
 import logging
 from math import pi
 
+import numpy as np
+from numpy.linalg import inv, norm
+
+from dxtbx import flumpy
 from libtbx.phil import parse
 from scitbx import matrix
 
@@ -335,10 +339,10 @@ def predict_after_ellipsoid_refinement(experiment, reflection_table):
     Predict the position of the spots
 
     """
-
     # Get some stuff from experiment
-    A = matrix.sqr(experiment.crystal.get_A())
-    s0 = matrix.col(experiment.beam.get_s0())
+    A = np.array(experiment.crystal.get_A(), dtype=np.float32).reshape((3, 3))
+    s0 = np.array([experiment.beam.get_s0()], dtype=np.float32).reshape(3, 1)
+    s0_length = norm(s0)
 
     # Compute the vector to the reciprocal lattice point
     # since this is not on the ewald sphere, lets call it s2
@@ -346,9 +350,10 @@ def predict_after_ellipsoid_refinement(experiment, reflection_table):
     s1 = flex.vec3_double(len(h))
     s2 = flex.vec3_double(len(h))
     for i in range(len(reflection_table)):
-        r = A * matrix.col(h[i])
-        s2[i] = s0 + r
-        s1[i] = matrix.col(s2[i]).normalize() * s0.length()
+        r = np.matmul(A, np.array([h[i]], dtype=np.float32).reshape(3, 1))
+        s2_i = r + s0
+        s2[i] = matrix.col(flumpy.from_numpy(s2_i))
+        s1[i] = matrix.col(flumpy.from_numpy(s2_i * s0_length / norm(s2_i)))
     reflection_table["s1"] = s1
     reflection_table["s2"] = s2
     reflection_table["entering"] = flex.bool(len(h), False)
@@ -370,20 +375,21 @@ def predict_after_ellipsoid_refinement(experiment, reflection_table):
 def compute_prediction_probability(experiment, reflection_table):
 
     # Get stuff from experiment
-    s0 = matrix.col(experiment.beam.get_s0())
+    s0 = np.array([experiment.beam.get_s0()], dtype=np.float32).reshape(3, 1)
+    s0_length = norm(s0)
     profile = experiment.crystal.mosaicity
 
     # Loop through reflections
     min_p = None
-    for i in range(len(reflection_table)):
-        s2 = matrix.col(reflection_table[i]["s2"])
-        s3 = s2.normalize() * s0.length()
+    for s2 in reflection_table["s2"]:
+        s2 = np.array(list(s2), dtype=np.float32).reshape(3, 1)
+        s3 = s2 * s0_length / norm(s2)
         r = s2 - s0
         epsilon = s3 - s2
         sigma = profile.parameterisation.sigma_for_reflection(s0, r)
-        sigma_inv = sigma.inverse()
-        d = (epsilon.transpose() * sigma_inv * epsilon)[0]
-        p = chisq_pdf(3, d)
+        sigma_inv = inv(sigma)
+        d = np.matmul(np.matmul(epsilon.T, sigma_inv), epsilon)[0, 0]
+        p = chisq_pdf(3, float(d))
         if min_p is None or p < min_p:
             min_p = p
 

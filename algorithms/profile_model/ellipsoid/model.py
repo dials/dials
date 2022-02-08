@@ -2,6 +2,10 @@ from __future__ import division
 
 from math import exp, sqrt
 
+import numpy as np
+from numpy.linalg import norm
+
+from dxtbx import flumpy
 from libtbx.phil import parse
 from scitbx import matrix
 from scitbx.linalg import eigensystem, l_l_transpose_cholesky_decomposition_in_place
@@ -204,8 +208,9 @@ class ProfileModelBase(object):
 
         # Compute the eigen decomposition of the covariance matrix and check
         # largest eigen value
+        sqr_mat = matrix.sqr(flumpy.from_numpy(self.sigma()))
         eigen_decomposition = eigensystem.real_symmetric(
-            state.mosaicity_covariance_matrix.as_flex_double_matrix()
+            sqr_mat.as_flex_double_matrix()
         )
         L = eigen_decomposition.values()
         if L[0] > 1e-5:
@@ -220,7 +225,7 @@ class ProfileModelBase(object):
         return {
             "__id__": self.__class__.name,
             "parameters": params,
-            "sigma": sigma.as_numpy_array().tolist(),
+            "sigma": sigma.tolist(),
         }
 
     @classmethod
@@ -244,7 +249,9 @@ class SimpleProfileModelBase(ProfileModelBase):
         Predict the reflections
 
         """
-        predictor = PredictorSimple(experiments[0], self.sigma(), probability)
+        predictor = PredictorSimple(
+            experiments[0], matrix.sqr(flumpy.from_numpy(self.sigma())), probability
+        )
         return predictor.predict(miller_indices)
 
     def compute_bbox(self, experiments, reflections, probability=0.9973):
@@ -252,7 +259,9 @@ class SimpleProfileModelBase(ProfileModelBase):
         Compute the bounding box
 
         """
-        calculator = BBoxCalculatorSimple(experiments[0], self.sigma(), probability, 4)
+        calculator = BBoxCalculatorSimple(
+            experiments[0], matrix.sqr(flumpy.from_numpy(self.sigma())), probability, 4
+        )
         calculator.compute(reflections)
 
     def compute_mask(self, experiments, reflections, probability=0.9973):
@@ -260,7 +269,9 @@ class SimpleProfileModelBase(ProfileModelBase):
         Compute the mask
 
         """
-        calculator = MaskCalculatorSimple(experiments[0], self.sigma(), probability)
+        calculator = MaskCalculatorSimple(
+            experiments[0], matrix.sqr(flumpy.from_numpy(self.sigma())), probability
+        )
         calculator.compute(reflections)
 
     def sigma_for_reflection(self, s0, r):
@@ -268,32 +279,35 @@ class SimpleProfileModelBase(ProfileModelBase):
         Get sigma for a reflections
 
         """
-        return self.sigma()
+        return np.array(self.sigma()).reshape(3, 3)
 
     def compute_partiality(self, experiments, reflections):
         """
         Compute the partiality
 
         """
-        s0 = matrix.col(experiments[0].beam.get_s0())
-        # num = reflections.get_flags(reflections.flags.indexed).count(True)
+        s0 = np.array([experiments[0].beam.get_s0()], dtype=np.float64).reshape(3, 1)
+        s0_length = norm(s0)
         num = reflections.size()
 
         # Compute the marginal variance for the 000 reflection
-        S00 = experiments[0].crystal.mosaicity.sigma()[8]
-
-        partiality = flex.double(len(reflections))
-        partiality_variance = flex.double(len(reflections))
-        for k in range(len(reflections)):
-            s2 = matrix.col(reflections[k]["s2"])
+        S00 = experiments[0].crystal.mosaicity.sigma()[2, 2]
+        partiality = flex.double(reflections.size())
+        partiality_variance = flex.double(reflections.size())
+        for k, s2_vec in enumerate(reflections["s2"]):
+            s2 = np.array(list(s2_vec), dtype=np.float64).reshape(3, 1)
             sigma = experiments[0].crystal.mosaicity.sigma()
-            R = compute_change_of_basis_operation(s0, s2)
-            S = R * (sigma) * R.transpose()
-            mu = R * s2
-            assert abs(1 - mu.normalize().dot(matrix.col((0, 0, 1)))) < 1e-7
-            S22 = S[8]
-            mu2 = mu[2]
-            eps = s0.length() - mu2
+            R = compute_change_of_basis_operation_np(s0, s2)
+
+            S = np.matmul(R, np.array(sigma).reshape(3, 3))
+            S = np.matmul(S, R.T)
+            mu = np.matmul(R, s2)
+
+            mu_norm = mu / norm(mu)
+            assert abs(1.0 - mu_norm.flatten()[2]) < 1e-7
+            S22 = S[2, 2]
+            mu2 = mu.flatten()[2]
+            eps = s0_length - mu2
             var_eps = S22 / num  # FIXME Approximation
             partiality[k] = exp(-0.5 * eps * (1 / S22) * eps) * sqrt(S00 / S22)
             partiality_variance[k] = (
@@ -333,7 +347,7 @@ class Simple1ProfileModel(SimpleProfileModelBase):
         Create the profile model from sigma_d estimate
 
         """
-        return Class.from_params(flex.double((sigma_d,)))
+        return Class.from_params(np.array([sigma_d], dtype=np.float64))
 
     @classmethod
     def from_sigma(Class, sigma):
@@ -382,7 +396,9 @@ class Simple6ProfileModel(SimpleProfileModelBase):
         Create the profile model from sigma_d estimate
 
         """
-        return Class.from_params(flex.double((sigma_d, 0, sigma_d, 0, 0, sigma_d)))
+        return Class.from_params(
+            np.array([sigma_d, 0, sigma_d, 0, 0, sigma_d], dtype=np.float64)
+        )
 
     @classmethod
     def from_sigma(Class, sigma):
@@ -417,15 +433,18 @@ class AngularProfileModelBase(ProfileModelBase):
         Sigma for a reflection
 
         """
-        Q = compute_change_of_basis_operation(s0, r)
-        return Q.transpose() * self.sigma() * Q
+        Q = compute_change_of_basis_operation_np(s0, r)
+        sigma = np.matmul(np.matmul(Q.T, np.array(self.sigma()).reshape(3, 3)), Q)
+        return sigma
 
     def predict_reflections(self, experiments, miller_indices, probability=0.9973):
         """
         Predict the reflections
 
         """
-        predictor = PredictorAngular(experiments[0], self.sigma(), probability)
+        predictor = PredictorAngular(
+            experiments[0], matrix.sqr(flumpy.from_numpy(self.sigma())), probability
+        )
         return predictor.predict(miller_indices)
 
     def compute_bbox(self, experiments, reflections, probability=0.9973):
@@ -433,7 +452,9 @@ class AngularProfileModelBase(ProfileModelBase):
         Compute the bounding box
 
         """
-        calculator = BBoxCalculatorAngular(experiments[0], self.sigma(), probability, 4)
+        calculator = BBoxCalculatorAngular(
+            experiments[0], matrix.sqr(flumpy.from_numpy(self.sigma())), probability, 4
+        )
         calculator.compute(reflections)
 
     def compute_mask(self, experiments, reflections, probability=0.9973):
@@ -441,7 +462,9 @@ class AngularProfileModelBase(ProfileModelBase):
         Compute the mask
 
         """
-        calculator = MaskCalculatorAngular(experiments[0], self.sigma(), probability)
+        calculator = MaskCalculatorAngular(
+            experiments[0], matrix.sqr(flumpy.from_numpy(self.sigma())), probability
+        )
         calculator.compute(reflections)
 
     def compute_partiality(self, experiments, reflections):
@@ -449,23 +472,28 @@ class AngularProfileModelBase(ProfileModelBase):
         Compute the partiality
 
         """
-        s0 = matrix.col(experiments[0].beam.get_s0())
+        s0 = np.array([experiments[0].beam.get_s0()], dtype=np.float64).reshape(3, 1)
+        s0_length = norm(s0)
         num = reflections.get_flags(reflections.flags.indexed).count(True)
         num = reflections.size()
-        partiality = flex.double(len(reflections))
-        partiality_variance = flex.double(len(reflections))
-        for k in range(len(reflections)):
-            s2 = matrix.col(reflections[k]["s2"])
+        partiality = flex.double(reflections.size())
+        partiality_variance = flex.double(reflections.size())
+        for k, s2_vec in enumerate(reflections["s2"]):
+            s2 = np.array(list(s2_vec), dtype=np.float64).reshape(3, 1)
             r = s2 - s0
             sigma = experiments[0].crystal.mosaicity.sigma()
-            R = compute_change_of_basis_operation(s0, s2)
-            Q = compute_change_of_basis_operation(s0, r)
-            S = R * (Q.transpose() * sigma * Q) * R.transpose()
-            mu = R * s2
-            assert abs(1 - mu.normalize().dot(matrix.col((0, 0, 1)))) < 1e-7
-            S22 = S[8]
-            mu2 = mu[2]
-            eps = s0.length() - mu2
+            R = compute_change_of_basis_operation_np(s0, s2)
+            Q = compute_change_of_basis_operation_np(s0, r)
+
+            sigma = np.matmul(np.matmul(Q.T, np.array(sigma).reshape(3, 3)), Q)
+            S = np.matmul(np.matmul(R, np.array(sigma).reshape(3, 3)), R.T)
+            mu = np.matmul(R, s2)
+
+            mu_norm = mu / norm(mu)
+            assert abs(1.0 - mu_norm.flatten()[2]) < 1e-7
+            S22 = S[2, 2]
+            mu2 = mu.flatten()[2]
+            eps = s0_length - mu2
             var_eps = S22 / num  # FIXME Approximation
             S00 = S22  # FIXME
             partiality[k] = exp(-0.5 * eps * (1 / S22) * eps) * sqrt(S00 / S22)
@@ -506,7 +534,7 @@ class Angular2ProfileModel(AngularProfileModelBase):
         Create the profile model from sigma_d estimate
 
         """
-        return Class.from_params(flex.double((sigma_d, sigma_d)))
+        return Class.from_params(np.array([sigma_d, sigma_d], dtype=np.float64))
 
     @classmethod
     def from_sigma(Class, sigma):
@@ -556,7 +584,9 @@ class Angular4ProfileModel(AngularProfileModelBase):
         Create the profile model from sigma_d estimate
 
         """
-        return Class.from_params(flex.double((sigma_d, 0, sigma_d, sigma_d)))
+        return Class.from_params(
+            np.array([sigma_d, 0, sigma_d, sigma_d], dtype=np.float64)
+        )
 
     @classmethod
     def from_sigma(Class, sigma):
@@ -607,4 +637,16 @@ def compute_change_of_basis_operation(s0, s2):
     e2 = s2.cross(e1).normalize()
     e3 = s2.normalize()
     R = matrix.sqr(e1.elems + e2.elems + e3.elems)
+    return R
+
+
+def compute_change_of_basis_operation_np(s0, s2):
+    s2 = s2.flatten()
+    s0 = s0.flatten()
+    e1 = np.cross(s2, s0)
+    e2 = np.cross(s2, e1)
+    e1 /= norm(e1)
+    e2 /= norm(e2)
+    e3 = s2 / norm(s2)
+    R = np.array([e1, e2, e3], dtype=np.float64)
     return R

@@ -1,6 +1,7 @@
 from __future__ import division, print_function
 
 from collections import namedtuple
+from copy import copy
 from random import randint, uniform
 
 import numpy as np
@@ -34,11 +35,11 @@ def test_Simple1MosaicityParameterisation():
     p.parameters = np.array([2e-3])
     assert p.parameters == (2e-3,)
     psq = p.parameters[0] ** 2
-    assert list(p.sigma()) == pytest.approx([psq, 0, 0, 0, psq, 0, 0, 0, psq])
+    assert list(p.sigma().flatten()) == pytest.approx([psq, 0, 0, 0, psq, 0, 0, 0, psq])
     d = p.first_derivatives()
-    assert len(d) == 1
+    assert d.shape[2] == 1
     d1 = 2 * p.parameters[0]
-    assert list(d[0]) == pytest.approx([d1, 0, 0, 0, d1, 0, 0, 0, d1])
+    assert list(d[:, :, 0].flatten()) == pytest.approx([d1, 0, 0, 0, d1, 0, 0, 0, d1])
 
 
 def test_Simple6MosaicityParameterisation():
@@ -56,15 +57,15 @@ def test_Simple6MosaicityParameterisation():
     assert list(p.parameters) == pytest.approx(list(params))
 
     b1, b2, b3, b4, b5, b6 = params
-    assert p.sigma()[0] == pytest.approx(b1 ** 2)
-    assert p.sigma()[1] == pytest.approx(b1 * b2)
-    assert p.sigma()[2] == pytest.approx(b1 * b4)
-    assert p.sigma()[3] == pytest.approx(b1 * b2)
-    assert p.sigma()[4] == pytest.approx(b2 ** 2 + b3 * b3)
-    assert p.sigma()[5] == pytest.approx(b2 * b4 + b3 * b5)
-    assert p.sigma()[6] == pytest.approx(b1 * b4)
-    assert p.sigma()[7] == pytest.approx(b2 * b4 + b3 * b5)
-    assert p.sigma()[8] == pytest.approx(b4 ** 2 + b5 ** 2 + b6 ** 2)
+    assert p.sigma()[0, 0] == pytest.approx(b1 ** 2)
+    assert p.sigma()[0, 1] == pytest.approx(b1 * b2)
+    assert p.sigma()[0, 2] == pytest.approx(b1 * b4)
+    assert p.sigma()[1, 0] == pytest.approx(b1 * b2)
+    assert p.sigma()[1, 1] == pytest.approx(b2 ** 2 + b3 * b3)
+    assert p.sigma()[1, 2] == pytest.approx(b2 * b4 + b3 * b5)
+    assert p.sigma()[2, 0] == pytest.approx(b1 * b4)
+    assert p.sigma()[2, 1] == pytest.approx(b2 * b4 + b3 * b5)
+    assert p.sigma()[2, 2] == pytest.approx(b4 ** 2 + b5 ** 2 + b6 ** 2)
 
     dSdb = [
         (2 * b1, b2, b4, b2, 0, 0, b4, 0, 0),
@@ -76,10 +77,12 @@ def test_Simple6MosaicityParameterisation():
     ]
 
     d = p.first_derivatives()
-    assert len(d) == 6
-    for a, b in zip(dSdb, p.first_derivatives()):
-        for i in range(9):
-            assert b[i] == pytest.approx(a[i])
+    assert d.shape[2] == 6
+    for i in range(d.shape[2]):
+        a = dSdb[i]
+        b = d[:, :, i]
+        for j in range(9):
+            assert b.flatten()[j] == pytest.approx(a[j], abs=1e-12)
 
 
 def test_WavelengthSpreadParameterisation():
@@ -112,17 +115,19 @@ def test_Angular2MosaicityParameterisation():
     assert p.parameters[1] == pytest.approx(params[1])
 
     b1, b2 = params
-    assert list(p.sigma()) == pytest.approx(
+    assert list(p.sigma().flatten()) == pytest.approx(
         [b1 ** 2, 0, 0, 0, b1 ** 2, 0, 0, 0, b2 ** 2]
     )
 
     dSdb = [(2 * b1, 0, 0, 0, 2 * b1, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0, 0, 0, 2 * b2)]
 
     d = p.first_derivatives()
-    assert len(d) == 2
-    for a, b in zip(dSdb, p.first_derivatives()):
-        for i in range(9):
-            assert b[i] == pytest.approx(a[i])
+    assert d.shape[2] == 2
+    for i in range(d.shape[2]):
+        a = dSdb[i]
+        b = d[:, :, i]
+        for j in range(9):
+            assert b.flatten()[j] == pytest.approx(a[j])
 
 
 def test_Angular4MosaicityParameterisation():
@@ -139,15 +144,15 @@ def test_Angular4MosaicityParameterisation():
     assert list(p.parameters) == pytest.approx(list(params))
 
     b1, b2, b3, b4 = params
-    assert p.sigma()[0] == pytest.approx(b1 ** 2)
-    assert p.sigma()[1] == pytest.approx(b1 * b2)
-    assert p.sigma()[2] == pytest.approx(0)
-    assert p.sigma()[3] == pytest.approx(b1 * b2)
-    assert p.sigma()[4] == pytest.approx(b2 ** 2 + b3 * b3)
-    assert p.sigma()[5] == pytest.approx(0)
-    assert p.sigma()[6] == pytest.approx(0)
-    assert p.sigma()[7] == pytest.approx(0)
-    assert p.sigma()[8] == pytest.approx(b4 ** 2)
+    assert p.sigma()[0, 0] == pytest.approx(b1 ** 2)
+    assert p.sigma()[0, 1] == pytest.approx(b1 * b2)
+    assert p.sigma()[0, 2] == pytest.approx(0)
+    assert p.sigma()[1, 0] == pytest.approx(b1 * b2)
+    assert p.sigma()[1, 1] == pytest.approx(b2 ** 2 + b3 * b3)
+    assert p.sigma()[1, 2] == pytest.approx(0)
+    assert p.sigma()[2, 0] == pytest.approx(0)
+    assert p.sigma()[2, 1] == pytest.approx(0)
+    assert p.sigma()[2, 2] == pytest.approx(b4 ** 2)
 
     dSdb = [
         (2 * b1, b2, 0, b2, 0, 0, 0, 0, 0),
@@ -157,10 +162,12 @@ def test_Angular4MosaicityParameterisation():
     ]
 
     d = p.first_derivatives()
-    assert len(d) == 4
-    for a, b in zip(dSdb, p.first_derivatives()):
-        for i in range(9):
-            assert b[i] == pytest.approx(a[i])
+    assert d.shape[2] == 4
+    for i in range(d.shape[2]):
+        a = dSdb[i]
+        b = d[:, :, i]
+        for j in range(9):
+            assert b.flatten()[j] == pytest.approx(a[j])
 
 
 def check_model_state_with_fixed(
@@ -194,10 +201,10 @@ def check_model_state_with_fixed(
     M = state.mosaicity_covariance_matrix
     L = state.wavelength_spread
 
-    assert len(U) == 9
-    assert len(B) == 9
-    assert len(A) == 9
-    assert len(M) == 9
+    assert U.shape == (3, 3)
+    assert B.shape == (3, 3)
+    assert A.shape == (3, 3)
+    assert M.shape == (3, 3)
     if wavelength_parameterisation is not None:
         assert len(L) == 1
     else:
@@ -215,10 +222,9 @@ def check_model_state_with_fixed(
     dB = state.dB_dp
     dM = state.dM_dp
     dL = state.dL_dp
-
     assert len(dU) == 3
     assert len(dB) == 2
-    assert len(dM) == mosaicity_parameterisation.num_parameters()
+    assert dM.shape[2] == mosaicity_parameterisation.num_parameters()
     if wavelength_parameterisation is not None:
         assert len(dL) == 1
     else:
@@ -299,8 +305,13 @@ def check_reflection_model_state_with_fixed(
         state, matrix.col(experiment.beam.get_s0()), matrix.col((1, 1, 1))
     )
 
-    assert model.mosaicity_covariance_matrix == mosaicity_parameterisation.sigma()
-    assert model.get_r() == state.A_matrix * matrix.col((1, 1, 1))
+    assert list(model.mosaicity_covariance_matrix.flatten()) == list(
+        mosaicity_parameterisation.sigma().flatten()
+    )
+    assert list(model.get_r().flatten()) == pytest.approx(
+        np.matmul(state.A_matrix, np.array([1, 1, 1]).reshape(3, 1))[:, 0].tolist(),
+        abs=1e-6,
+    )
 
     if wavelength_parameterisation is not None:
         assert model.wavelength_spread == wavelength_parameterisation.sigma()
@@ -311,40 +322,50 @@ def check_reflection_model_state_with_fixed(
     dr_dp = model.get_dr_dp()
     dL_dp = model.get_dL_dp()
 
-    assert len(dS_dp) == len(state.parameter_labels)
-    assert len(dr_dp) == len(state.parameter_labels)
+    assert dS_dp.shape[2] == len(state.parameter_labels)
+    assert dr_dp.shape[1] == len(state.parameter_labels)
     assert len(dL_dp) == len(state.parameter_labels)
 
     if not fix_wavelength_spread:
-        assert dr_dp[-1] == (0, 0, 0)
-        assert dS_dp[-1] == (0, 0, 0, 0, 0, 0, 0, 0, 0)
-        dr_dp = dr_dp[:-1]
-        dS_dp = dS_dp[:-1]
+        assert dr_dp[:, -1].flatten() == pytest.approx([0, 0, 0], abs=1e-6)
+        assert dS_dp[:, :, -1].flatten() == pytest.approx(
+            (0, 0, 0, 0, 0, 0, 0, 0, 0), abs=1e-6
+        )
+        dr_dp = dr_dp[:, :-1]
+        dS_dp = dS_dp[:, :, :-1]
         dL_dp = dL_dp[:-1]
     if not fix_mosaic_spread:
         num_params = mosaicity_parameterisation.num_parameters()
         for i in range(num_params):
-            assert dr_dp[-(i + 1)] == (0, 0, 0)
-            assert dS_dp[-(i + 1)] == state.dM_dp[-(i + 1)]
+            assert dr_dp[:, -(i + 1)] == pytest.approx([0, 0, 0], abs=1e-6)
+            assert dS_dp[:, :, -(i + 1)] == pytest.approx(
+                state.dM_dp[:, :, -(i + 1)], abs=1e-6
+            )
             assert dL_dp[-1] == 0
-        dr_dp = dr_dp[:-num_params]
-        dS_dp = dS_dp[:-num_params]
+        dr_dp = dr_dp[:, :-num_params]
+        dS_dp = dS_dp[:, :, :-num_params]
         dL_dp = dL_dp[:-num_params]
-    if not fix_orientation:
-        num_params = state.U_params.size()
-        for i in range(num_params):
-            assert dS_dp[-(i + 1)] == (0, 0, 0, 0, 0, 0, 0, 0, 0)
-            assert dL_dp[-(i + 1)] == 0
-        dr_dp = dr_dp[:-num_params]
-        dS_dp = dS_dp[:-num_params]
-        dL_dp = dL_dp[:-num_params]
+
     if not fix_unit_cell:
-        num_params = state.B_params.size()
+        num_params = state.B_params.size
         for i in range(num_params):
-            assert dS_dp[-(i + 1)] == (0, 0, 0, 0, 0, 0, 0, 0, 0)
+            assert dS_dp[:, :, -(i + 1)].flatten() == pytest.approx(
+                (0, 0, 0, 0, 0, 0, 0, 0, 0), abs=1e-6
+            )
             assert dL_dp[-(i + 1)] == 0
-        dr_dp = dr_dp[:-num_params]
-        dS_dp = dS_dp[:-num_params]
+        dr_dp = dr_dp[:, :-num_params]
+        dS_dp = dS_dp[:, :, :-num_params]
+        dL_dp = dL_dp[:-num_params]
+
+    if not fix_orientation:
+        num_params = state.U_params.size
+        for i in range(num_params):
+            assert dS_dp[:, :, -(i + 1)].flatten() == pytest.approx(
+                (0, 0, 0, 0, 0, 0, 0, 0, 0), abs=1e-6
+            )
+            assert dL_dp[-(i + 1)] == 0
+        dr_dp = dr_dp[:, :-num_params]
+        dS_dp = dS_dp[:, :, :-num_params]
         dL_dp = dL_dp[:-num_params]
 
 
@@ -513,21 +534,24 @@ def test_ReflectionModelState_derivatives(testdata):
 
         step = 1e-6
 
-        parameters = state.active_parameters
+        parameters = copy.copy(state.active_parameters)
 
         dr_num = []
         for i in range(len(parameters)):
-            import copy
 
             def f(x):
                 p = copy.copy(parameters)
                 p[i] = x
                 return compute_r(p)
 
-            dr_num.append(first_derivative(f, parameters[i], step))
+            dr_num.append(first_derivative(f, parameters[i], step).reshape(3, 1))
+        dr_num = np.concatenate(dr_num, axis=1)
 
         for n, c in zip(dr_num, dr_dp):
-            assert all(abs(nn - cc) < 1e-7 for nn, cc in zip(n, c))
+            for nn, cc in zip(n, c):
+                print(nn)
+                print(cc)
+                assert abs(nn - cc) < 1e-7
 
         ds_num = []
         for i in range(len(parameters)):
@@ -537,10 +561,17 @@ def test_ReflectionModelState_derivatives(testdata):
                 p[i] = x
                 return compute_sigma(p)
 
-            ds_num.append(first_derivative(f, parameters[i], step))
+            fd = first_derivative(f, parameters[i], step)
+            print(fd)
+            ds_num.append(fd.reshape(3, 3, 1))
+        ds_num = np.concatenate(ds_num, axis=2)
 
-        for n, c in zip(ds_num, dS_dp):
-            assert all(abs(nn - cc) < 1e-7 for nn, cc in zip(n, c))
+        for i in range(len(parameters)):
+            for n, c in zip(ds_num[:, :, i], dS_dp[:, :, i]):
+                for nn, cc in zip(n.flatten(), c.flatten()):
+                    print(nn)
+                    print(cc)
+                    assert abs(nn - cc) < 1e-5
 
         dl_num = []
         for i in range(len(parameters)):

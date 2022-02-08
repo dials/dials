@@ -5,14 +5,16 @@ from collections import namedtuple
 from math import exp
 from random import randint, uniform
 
+import numpy as np
 import pytest
+from numpy.linalg import norm
 
 from scitbx import matrix
 
 from dials.algorithms.profile_model.ellipsoid.model import (
     Simple1ProfileModel,
     Simple6ProfileModel,
-    compute_change_of_basis_operation,
+    compute_change_of_basis_operation_np,
 )
 from dials.algorithms.profile_model.ellipsoid.parameterisation import (  # Angular2MosaicityParameterisation,; Angular4MosaicityParameterisation,; WavelengthSpreadParameterisation,
     ModelState,
@@ -25,8 +27,8 @@ from dials.algorithms.profile_model.ellipsoid.refiner import (
     Refiner,
     RefinerData,
     ReflectionLikelihood,
-    rotate_mat3_double,
-    rotate_vec3_double,
+    rotate_mat3_double_np,
+    rotate_vec3_double_np,
 )
 from dials.algorithms.refinement.parameterisation.crystal_parameters import (
     CrystalOrientationParameterisation,
@@ -184,7 +186,6 @@ def test_ConditionalDistribution(testdata):
         experiment = testdata.experiment
         models = testdata.models
         s0 = testdata.s0
-        sp = testdata.sp
         h = testdata.h
         # ctot = testdata.ctot
         # mobs = testdata.mobs
@@ -192,8 +193,8 @@ def test_ConditionalDistribution(testdata):
 
         U_params = models[1].get_param_vals()
         B_params = models[2].get_param_vals()
-        M_params = flex.double(models[0][: mosaicity_parameterisation.num_parameters()])
-        L_params = flex.double(models[3])
+        M_params = models[0][: mosaicity_parameterisation.num_parameters()]
+        L_params = models[3]
 
         state = ModelState(
             experiment,
@@ -204,32 +205,34 @@ def test_ConditionalDistribution(testdata):
             fix_unit_cell=fix_unit_cell,
             fix_orientation=fix_orientation,
         )
-        state.U_params = U_params
-        state.B_params = B_params
-        state.M_params = M_params
+        state.U_params = np.array(U_params, dtype=np.float64)
+        state.B_params = np.array(B_params, dtype=np.float64)
+        state.M_params = np.array(M_params, dtype=np.float64)
         state.L_params = L_params
 
         model = ReflectionModelState(state, s0, h)
 
         def get_conditional(model):
             # Compute the change of basis
-            R = compute_change_of_basis_operation(s0, sp)
+            s0 = np.array([testdata.s0], dtype=np.float64).reshape(3, 1)
+            sp = np.array([testdata.sp], dtype=np.float64).reshape(3, 1)
+            R = compute_change_of_basis_operation_np(s0, sp)
 
             # The s2 vector
             r = model.get_r()
             s2 = s0 + r
 
             # Rotate the mean vector
-            mu = R * s2
+            mu = np.matmul(R, s2)
 
             # Rotate the covariance matrix
-            S = R * model.mosaicity_covariance_matrix * R.transpose()
+            S = np.matmul(np.matmul(R, model.mosaicity_covariance_matrix), R.T)
 
             # Rotate the first derivative matrices
-            dS = rotate_mat3_double(R, model.get_dS_dp())
+            dS = rotate_mat3_double_np(R, model.get_dS_dp())
 
             # Rotate the first derivative of s2
-            dmu = rotate_vec3_double(R, model.get_dr_dp())
+            dmu = rotate_vec3_double_np(R, model.get_dr_dp())
 
             # Construct the conditional distribution
             conditional = ConditionalDistribution(s0, mu, dmu, S, dS)
@@ -241,7 +244,6 @@ def test_ConditionalDistribution(testdata):
 
         dm_dp = conditional.first_derivatives_of_mean()
         dS_dp = conditional.first_derivatives_of_sigma()
-
         parameters = state.active_parameters
 
         def compute_sigma(parameters):
@@ -267,7 +269,11 @@ def test_ConditionalDistribution(testdata):
             dm_num.append(first_derivative(f, parameters[i], step))
 
         for n, c in zip(dm_num, dm_dp):
-            assert all(abs(nn - cc) < 1e-7 for nn, cc in zip(n, c))
+            for nn, cc in zip(n, c):
+                print(nn)
+                print(cc)
+                assert abs(nn - cc) < 1e-7
+            # assert all(abs(nn - cc) < 1e-7 for nn, cc in zip(n, c))
 
         ds_num = []
         for i in range(len(parameters)):
@@ -280,7 +286,11 @@ def test_ConditionalDistribution(testdata):
             ds_num.append(first_derivative(f, parameters[i], step))
 
         for n, c in zip(ds_num, dS_dp):
-            assert all(abs(nn - cc) < 1e-7 for nn, cc in zip(n, c))
+            for nn, cc in zip(n.flatten(), c.flatten()):
+                print(nn)
+                print(cc)
+                assert abs(nn - cc) < 1e-7
+            # assert all(abs(nn - cc) < 1e-7 for nn, cc in zip(n, c))
 
     S1 = Simple1MosaicityParameterisation()
     S6 = Simple6MosaicityParameterisation()
@@ -298,27 +308,33 @@ def test_ConditionalDistribution(testdata):
 
 def test_rotate_vec3_double():
 
-    vectors = flex.vec3_double([matrix.col((1, 1, 1)).normalize()])
+    vectors = np.array([[1, 1, 1]], dtype=np.float64).reshape(3, 1) / norm(
+        np.array([1, 1, 1], dtype=np.float64)
+    )
 
-    R = compute_change_of_basis_operation(matrix.col((0, 0, 1)), matrix.col(vectors[0]))
+    v1 = np.array([0, 0, 1.0], dtype=np.float64).reshape(3, 1)
+    R = compute_change_of_basis_operation_np(v1, vectors)
 
-    rotated = rotate_vec3_double(R, vectors)
+    rotated = rotate_vec3_double_np(R, vectors)
 
-    assert rotated[0] == pytest.approx((0, 0, 1))
+    assert rotated == pytest.approx((0, 0, 1))
 
 
 def test_rotate_mat3_double():
 
-    A = matrix.diag((1, 1, 1))
-    R = compute_change_of_basis_operation(matrix.col((0, 0, 1)), matrix.col((1, 1, 1)))
-    A = R.transpose() * A * R
-    matrices = flex.mat3_double([A])
+    A = np.eye(3, dtype=np.float64)
+    v1 = np.array([0, 0, 1.0], dtype=np.float64).reshape(3, 1)
+    v2 = np.array([1, 1, 1.0], dtype=np.float64).reshape(3, 1)
+    R = compute_change_of_basis_operation_np(v1, v2)
+    A = np.matmul(np.matmul(R.T, A), R).reshape(3, 3, 1)
 
-    R = R.transpose()
+    R = R.T
 
-    rotated = rotate_mat3_double(R, matrices)
+    rotated = rotate_mat3_double_np(R, A)
 
-    assert rotated[0] == pytest.approx((1, 0, 0, 0, 1, 0, 0, 0, 1))
+    assert rotated[:, :, 0].flatten() == pytest.approx(
+        (1, 0, 0, 0, 1, 0, 0, 0, 1), abs=1e-12
+    )
 
 
 def test_ReflectionLikelihood(testdata):
@@ -341,7 +357,7 @@ def test_ReflectionLikelihood(testdata):
 
         U_params = models[1].get_param_vals()
         B_params = models[2].get_param_vals()
-        M_params = flex.double(models[0][: mosaicity_parameterisation.num_parameters()])
+        M_params = np.array(models[0][: mosaicity_parameterisation.num_parameters()])
         L_params = flex.double(models[3])
 
         state = ModelState(
@@ -387,8 +403,15 @@ def test_ReflectionLikelihood(testdata):
             dL_num.append(first_derivative(f, parameters[i], step))
 
         assert len(dL_num) == len(parameters)
+        print(dL_num)
+        print(list(dL_dp))
+        print(len(state.U_params))
+        print(len(state.B_params))
+        print(len(state.M_params))
+        print(len(state.L_params))
         for n, c in zip(dL_num, dL_dp):
-            assert n == pytest.approx(c)
+            print(n, c)
+            assert n == pytest.approx(c, rel=1e-5)
 
     S1 = Simple1MosaicityParameterisation()
     S6 = Simple6MosaicityParameterisation()
@@ -398,10 +421,10 @@ def test_ReflectionLikelihood(testdata):
     check(S1, None, fix_wavelength_spread=True, fix_unit_cell=True)
     check(S1, None, fix_wavelength_spread=True, fix_orientation=True)
 
-    check(S6, None, fix_wavelength_spread=True)
     check(S6, None, fix_wavelength_spread=True, fix_mosaic_spread=True)
     check(S6, None, fix_wavelength_spread=True, fix_unit_cell=True)
     check(S6, None, fix_wavelength_spread=True, fix_orientation=True)
+    check(S6, None, fix_wavelength_spread=True)
 
 
 def test_Refiner(testdata, refinerdata_testdata):
