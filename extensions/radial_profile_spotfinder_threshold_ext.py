@@ -19,7 +19,7 @@ class RadialProfileSpotFinderThresholdExt:
         n_bins = 100
         .type = int
 
-        n_sigma = 3
+        n_sigma = 6
         .type = int
         .help = "Sigma multiplier for determining the threshold value"
     """
