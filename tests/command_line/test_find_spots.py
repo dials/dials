@@ -377,3 +377,17 @@ def test_find_spots_with_per_image_statistics(dials_data, tmpdir):
     assert (
         b"|   image |   #spots |   #spots_no_ice |   total_intensity |" in result.stdout
     )
+
+
+def test_find_spots_radial_profile(dials_data, tmpdir):
+    result = procrunner.run(
+        ["dials.find_spots", "nproc=1", "threshold.algorithm=radial_profile"]
+        + [
+            f.strpath for f in dials_data("centroid_test_data").listdir("centroid*.cbf")
+        ],
+        working_directory=tmpdir.strpath,
+    )
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("strong.refl").check(file=1)
+    reflections = flex.reflection_table.from_file(tmpdir / "strong.refl")
+    assert len(reflections) == 554
