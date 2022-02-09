@@ -1,12 +1,34 @@
+# LIBTBX_SET_DISPATCHER_NAME dials.powder_calibrate_widget
+
 """
-Calibrate geometry using powder tools.
+Calibrate electron powder geometry using X-ray powder diffraction tools.
     `pyFAI` is a well established X-ray powder diffraction tool.
 https://doi.org/10.1107/S1600576715004306
+
+The matplotlib widget requires user eyes to give an initial guess of the beam center.
+From the initial guess pyFAI geometry calibration can be used in the usual manner
+(ie. just like it used for X-rays).
+
+Usage:
+    from dials.command_line.powder_calibrate_widget import DialsParams, PowderCalibrator
+
+    Al_data = DialsParams(expt_file="imported.expt")
+    calibrator = PowderCalibrator(Al_data, 'Al')
+    calibrator.calibrate_with_calibrant(verbose=True)
+
+Or from command line:
+    1. use the widget to generate a starting geometry
+    > dials.powder_calibrate_widget imported.expt standard_name=Al
+
+    2. load a guess geometry from previous calibration
+    > dials.powder_calibrate_widget imported.expt standard_name=Al eyeball=False eyeballed_geom_file=my_saved_geom
 """
 
 from sys import exit
+from typing import Optional
 
 import numpy as np
+import numpy.ma as ma
 from matplotlib import pyplot as plt
 from matplotlib.widgets import Button, Slider
 
@@ -17,8 +39,6 @@ def module_exists(module_name):
     try:
         __import__(module_name)
     except ModuleNotFoundError as err:
-        if module_name == "circle_fit":
-            module_name = "circle-fit"
         print(
             err,
             f"""
@@ -50,14 +70,20 @@ phil_scope = parse(
   standard_name = None
     .type = str
     .help = calibrant name
-  poni = None
-     .type = str
-     .help = poni file containing geometry
+  eyeball = True
+    .type = bool
+    .help = use widget to eyeball the starting geometry?
+  eyeballed_geom_file = None
+    .type = str
+    .help = file containing starting geometry
+  calibrated_geom_file = None
+    .type = str
+    .help = file to which the calibrated geometry would be saved
   output {
     experiments = calibrated.expt
         .type = path
-       .help = file name for calibrated expt
-       }
+        .help = file name for calibrated expt
+        }
     """
 )
 
@@ -91,13 +117,13 @@ class Geometry(pfGeometry):
     as a geometry parameter, labelled as poni instead of the beam center.
     These two are coincident only in the case of flat (zero tilt) detector.
 
-    Passing geometry back and from involves passing parameters through
+    Passing geometry back and from DIALS involves passing parameters through
     pyFAI.geometry.getFit2D and PyFAI.geometry.setFit2D which understands
     beam center as a geometry parameter and updates correspondingly the
     pyFAI.geometry and pyFAI.detector objects
     """
 
-    def __init__(self, dials_data, poni_file=None):
+    def __init__(self, dials_data, geom_file=None):
         self.dials_data = dials_data
 
         detector = dials_data.detector
@@ -105,25 +131,37 @@ class Geometry(pfGeometry):
             detector=Detector(detector),
             wavelength=_convert_units(dials_data.wavelength, "A", "m"),
         )
+        if geom_file:
+            # read geometry from file
+            self.set_param(self.read(geom_file).param)
+            beam = self.getFit2D()
 
-        s0 = dials_data.beam.get_s0()
+            self.beam_x_m = beam["centerX"] / beam["pixelX"]
+            self.beam_y_m = beam["centerY"] / beam["pixelY"]
 
-        # beam parameters from dials in mm
-        beam_x, beam_y = detector.get_beam_centre(s0)
+            self.beam_x_px = beam["centerX"]
+            self.beam_y_px = beam["centerY"]
 
-        # convert to m
-        self.beam_x_m = _convert_units(beam_x, "mm", "m")
-        self.beam_y_m = _convert_units(beam_y, "mm", "m")
+        else:
+            # fill in geometry from dials_data
+            s0 = dials_data.beam.get_s0()
 
-        self.beam_x_px = self.beam_x_m / self.detector.pixel1
-        self.beam_y_px = self.beam_y_m / self.detector.pixel2
+            # beam parameters from dials in mm
+            beam_x, beam_y = detector.get_beam_centre(s0)
 
-        beam_distance = detector.get_distance()
+            # convert to m
+            self.beam_x_m = _convert_units(beam_x, "mm", "m")
+            self.beam_y_m = _convert_units(beam_y, "mm", "m")
 
-        # fit2D understands beam parameters
-        self.setFit2D(
-            directDist=beam_distance, centerX=self.beam_x_px, centerY=self.beam_y_px
-        )
+            self.beam_x_px = self.beam_x_m / self.detector.pixel1
+            self.beam_y_px = self.beam_y_m / self.detector.pixel2
+
+            beam_distance = detector.get_distance()
+
+            # fit2D understands beam parameters
+            self.setFit2D(
+                directDist=beam_distance, centerX=self.beam_x_px, centerY=self.beam_y_px
+            )
 
     def update_beam_center(self, beam_coords_px=None, beam_coords_m=None):
         center_x = None
@@ -159,7 +197,8 @@ def parse_command_line():
     Parse command line arguments and read experiments
     """
     usage = (
-        "$ dials.powder_calibrate EXPERIMENTS standard_name=standard_short [options]"
+        "$ dials.powder_calibrate EXPERIMENTS standard_name=standard_name eyeball=True "
+        "                                     start_geom_file=file_name final_geom_file [options]"
     )
 
     parser = OptionParser(
@@ -169,8 +208,8 @@ def parse_command_line():
         read_experiments=True,
     )
 
-    params, options = parser.parse_args(show_diff_phil=False)
-    return params, options
+    parameters, options = parser.parse_args(show_diff_phil=False)
+    return parameters, options
 
 
 def show_fit(geometry, label=None):
@@ -184,17 +223,10 @@ class DialsParams:
         phil_params=None,
         expt_file=None,
     ):
-        if phil_params:
-            self.phil_params = phil_params
-        else:
-            from dials.util.options import OptionParser
-
-            dummy_parser = OptionParser()
-            params, _ = dummy_parser.parse_args(args=[expt_file], show_diff_phil=False)
-            self.phil_params = params
-
+        self.phil_params = phil_params
         self.expt_file = expt_file
-        self.expts = self._expt()
+
+        self.expts = self.set_expt()
 
         self.detector = self.expts[0].detector[0]
         self.beam = self.expts[0].beam
@@ -205,7 +237,7 @@ class DialsParams:
             self.img_size
         )
 
-    def _expt(self):
+    def set_expt(self):
         experiments = None
         if self.phil_params:
             experiments = flatten_experiments(self.phil_params.input.experiments)
@@ -229,8 +261,6 @@ class DialsParams:
             imageset_new = geom_updater(imageset)
             imageset.set_detector(imageset_new.get_detector())
             imageset.set_beam(imageset_new.get_beam())
-            imageset.set_goniometer(imageset_new.get_goniometer())
-            imageset.set_scan(imageset_new.get_scan())
 
         if len(self.expts):
             print(
@@ -240,22 +270,69 @@ class DialsParams:
 
 
 class PowderCalibrator:
-    def __init__(self, dials_data, standard, poni_file=None):
-        self.data = dials_data
-        self.poni_file = poni_file
+    def __init__(
+        self,
+        dials_data: DialsParams,
+        standard: str,
+        eyeball: Optional[bool] = True,
+        start_geom_file: Optional[str] = None,
+        final_geom_file: Optional[str] = None,
+    ):
+        """
+        Perform geometry calibration using an electron powder standard. Because electron powder
+        rings are more dense than X-ray ones, pyFAI struggles to automatically find the correct rings.
+        The current method tries to ensure pyFAI has a good starting guess by asking the user to
+        eyeball the beam position using a matplotlib widget which overlaps the theoretical calibrator rings
+        over the measured ones. The widget part can be turned off setting `eyeball=False`.
 
-        self.geometry = Geometry(dials_data, poni_file)
+        Parameters
+        ----------
+        dials_data: dials data object
+        standard: calibrating standard as str
+        eyeball: optional, default=True, toggles the usage of the eyeballing widget.
+                When set to False the calibration process only wraps pyFAI and if no
+                good starting geometry is given in geom_file then it will probably
+                return poor results.
+        start_geom_file: optional, if given it overrides the starting geometry
+        final_geom_file: optional, if given it saves the calibrated geometry to file
+        """
+
+        self.data = dials_data
+        self.eyeball = eyeball
+        self.start_geom_file = start_geom_file
+        self.final_geom_file = final_geom_file
+
+        self.geometry = Geometry(dials_data, start_geom_file)
+
         self.detector = Detector(dials_data.detector)
 
         self.standard_name = standard
         self.calibrant = pfCalibrant(standard)
+
         self.calibrant.wavelength = _convert_units(self.data.wavelength, "A", "m")
 
-        print(f"Initial geometry:\n -----\n {self.geometry} \n")
-        print(
-            f"Start calibration using:\n----- \n {self.calibrant} \n\n "
-            f"Drag sliders to roughly overlap rings and then save for further fitting. \n"
-        )
+        self.print_hints()
+
+    def print_hints(self):
+        # Tell me which geometry I'm starting from
+        if self.start_geom_file:
+            print(
+                f"Initial geometry read from {self.start_geom_file}:\n -----\n {self.geometry} \n"
+            )
+        else:
+            print(
+                f"Initial geometry from {self.data.expt_file}:\n -----\n {self.geometry} \n"
+            )
+
+        # Tell me what calibrant I am using
+        print(f"Starting calibration using:\n----- \n {self.calibrant} \n\n ")
+
+        # Tell me if I'm using the eyeball widget and how to use
+        if self.eyeball:
+            print(
+                "Using the eyeballing widget.\n"
+                "Drag sliders to roughly overlap rings and then save for further fitting. \n"
+            )
 
     def rough_fit_widget(self):
         """
@@ -276,6 +353,7 @@ class PowderCalibrator:
 
         # Make a horizontal slider to control the beam x position.
         ax_beam_x = plt.axes([0.25, 0.1, 0.65, 0.03])
+
         beam_x_slider = Slider(
             ax=ax_beam_x,
             label="Beam center x [px]",
@@ -323,7 +401,11 @@ class PowderCalibrator:
             self.geometry.update_beam_center(
                 beam_coords_px=[beam_x_slider.val, beam_y_slider.val]
             )
-            print(f"Rough estimate geometry:\n ----\n {self.geometry} \n")
+            self.geometry.save("eyeballed.geom")
+            print(
+                f"Rough estimate geometry saved to 'eyeballed.geom':\n ----\n {self.geometry} \n"
+            )
+
             plt.close()
 
         button_save.on_clicked(save_and_exit)
@@ -352,7 +434,8 @@ class PowderCalibrator:
         return beam
 
     def cal_rings(self, geometry=None):
-        # for smaller wavelengths reduce the rings blurring
+        # for smaller wavelengths (electrons) reduce the rings blurring
+
         if self.data.wavelength < 1e-1:
             w = 1e-7
         else:
@@ -362,7 +445,9 @@ class PowderCalibrator:
             cal_img = self.calibrant.fake_calibration_image(geometry, W=w)
         else:
             cal_img = self.calibrant.fake_calibration_image(self.geometry, W=w)
-        cal_img_masked = np.ma.masked_where(cal_img <= 1e-4, cal_img)
+
+        cal_img_masked = ma.masked_where(cal_img <= 1e-4, cal_img)
+
         return cal_img_masked
 
     def calibrate_with_calibrant(
@@ -372,8 +457,14 @@ class PowderCalibrator:
         verbose=False,
     ):
 
-        # first use user eyes for rough fit
-        self.rough_fit_widget()
+        if self.eyeball:
+            # first use user eyes for rough fit
+            self.rough_fit_widget()
+
+        elif not self.start_geom_file:
+            print(
+                "Warning: A starting geometry was not provided. The fit might return poor results."
+            )
 
         # then use pyFAI for fine calibration
         gonio_geom = pfSingleGeometry(
@@ -386,7 +477,7 @@ class PowderCalibrator:
         gonio_geom.extract_cp(max_rings=num_rings)
 
         if verbose:
-            show_fit(gonio_geom, label="Before pyFAI fit")
+            show_fit(gonio_geom, label="Starting geometry")
 
         gonio_geom.geometry_refinement.refine2(fix=fix)
         ai = gonio_geom.get_ai()
@@ -397,20 +488,31 @@ class PowderCalibrator:
 
             # show the cake plot as well
             int2 = ai.integrate2d_ng(
-                self.data.image, 500, 360, unit="q_nm^-1", filename="integrated.edf"
+                self.data.image,
+                500,
+                360,
+                unit="q_nm^-1",
             )
             pfjupyter.plot2d(int2, calibrant=self.calibrant)
+            plt.title("Are those lines straight?")
             plt.show()
+
+        if self.final_geom_file:
+            ai.save(self.final_geom_file)
+            print(f"Calibrated geometry saved to {self.final_geom_file}")
 
 
 if __name__ == "__main__":
 
-    # Al_data = DialsParams(
-    #     expt_file="imported.expt",
-    # )
-
     params, opt = parse_command_line()
     standard_params = DialsParams(phil_params=params)
 
-    calibrator = PowderCalibrator(standard_params, params.standard_name)
-    calibrator.calibrate_with_calibrant(verbose=True)
+    calibrator = PowderCalibrator(
+        dials_data=standard_params,
+        standard=params.standard_name,
+        eyeball=params.eyeball,
+        start_geom_file=params.eyeballed_geom_file,
+        final_geom_file=params.calibrated_geom_file,
+    )
+
+    calibrator.calibrate_with_calibrant(verbose=False)
