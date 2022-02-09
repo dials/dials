@@ -94,24 +94,24 @@ class RadialProfileSpotFinderThresholdExt:
         n_sigma = self.params.spotfinder.threshold.radial_profile.n_sigma
         threshold = I + n_sigma * sig
 
-        # Get the extrema of the 2θ values for background pixels
+        # Shift the full 2θ array to the lower bound and truncate
         infos = list(h0.slot_infos())
         lower_bound = infos[0].low_cutoff
-        upper_bound = infos[-1].high_cutoff - lower_bound
-
-        # Convert the full_two_theta_array into a lookup into the threshold.
-        # The full array includes all pixels on the panel (or ROI) and needs
-        # trimming to the bounds
         lookup = full_two_theta_array - lower_bound
         lookup.set_selected(lookup < 0, 0)
+
+        # Truncate just under the shifted upper bound and rescale
+        upper_bound = infos[-1].high_cutoff - lower_bound
         lookup.set_selected(lookup >= upper_bound, upper_bound - 1e-10)
         lookup /= upper_bound  # values now in range [0,1)
+
+        # Convert to a size_t lookup into the threshold array
         lookup *= n_bins
         lookup = flex.floor(lookup).iround().as_size_t()
 
         # Now construct a threshold image
         thresh_im = threshold.select(lookup.as_1d())
-        peaks = image > thresh_im
-        peaks.reshape(image.accessor())
 
+        # Peaks are greater than the threshold
+        peaks = image > thresh_im
         return peaks
