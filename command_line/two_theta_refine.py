@@ -149,7 +149,7 @@ class Script:
                 msg = msg.format(key)
                 sys.exit(msg)
 
-        # FIXME add other things to be checked here
+        reflections.reset_ids()
         return
 
     @staticmethod
