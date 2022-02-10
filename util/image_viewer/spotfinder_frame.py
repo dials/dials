@@ -179,7 +179,7 @@ class SpotFrame(XrayFrame):
 
         self.display_foreground_circles_patch = False  # hard code this option, for now
 
-        self._kabsch_debug_list_hash = 0
+        self._dispersion_debug_list_hash = 0
 
         if (
             self.experiments is not None
@@ -360,10 +360,10 @@ class SpotFrame(XrayFrame):
         value = self.stack.GetPhilValue()
 
         if value == 1:
-            for button in self.settings_frame.panel.kabsch_buttons:
+            for button in self.settings_frame.panel.dispersion_buttons:
                 button.Enable()
         else:
-            for button in self.settings_frame.panel.kabsch_buttons:
+            for button in self.settings_frame.panel.dispersion_buttons:
                 button.Disable()
 
         if value != self.params.stack_images:
@@ -1048,41 +1048,64 @@ class SpotFrame(XrayFrame):
                 image_data = (image_data.as_double(),)
 
         else:
-            kabsch_debug_list = self._calculate_dispersion_debug(image)
+            dispersion_debug_list = self._calculate_dispersion_debug(image)
 
             if self.settings.display == "mean":
-                mean = [kabsch.mean() for kabsch in kabsch_debug_list]
+                mean = [dispersion.mean() for dispersion in dispersion_debug_list]
                 image_data = mean
             elif self.settings.display == "variance":
-                variance = [kabsch.variance() for kabsch in kabsch_debug_list]
+                variance = [
+                    dispersion.variance() for dispersion in dispersion_debug_list
+                ]
                 image_data = variance
             elif self.settings.display == "dispersion":
-                cv = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
+                cv = [
+                    dispersion.index_of_dispersion()
+                    for dispersion in dispersion_debug_list
+                ]
                 image_data = cv
             elif self.settings.display == "sigma_b":
-                cv = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
-                cv_mask = [kabsch.cv_mask() for kabsch in kabsch_debug_list]
+                cv = [
+                    dispersion.index_of_dispersion()
+                    for dispersion in dispersion_debug_list
+                ]
+                cv_mask = [dispersion.cv_mask() for dispersion in dispersion_debug_list]
                 cv_mask = [mask.as_1d().as_double() for mask in cv_mask]
                 for i, mask in enumerate(cv_mask):
                     mask.reshape(cv[i].accessor())
                 image_data = cv_mask
             elif self.settings.display == "sigma_s":
-                cv = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
-                value_mask = [kabsch.value_mask() for kabsch in kabsch_debug_list]
+                cv = [
+                    dispersion.index_of_dispersion()
+                    for dispersion in dispersion_debug_list
+                ]
+                value_mask = [
+                    dispersion.value_mask() for dispersion in dispersion_debug_list
+                ]
                 value_mask = [mask.as_1d().as_double() for mask in value_mask]
                 for i, mask in enumerate(value_mask):
                     mask.reshape(cv[i].accessor())
                 image_data = value_mask
             elif self.settings.display == "global":
-                cv = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
-                global_mask = [kabsch.global_mask() for kabsch in kabsch_debug_list]
+                cv = [
+                    dispersion.index_of_dispersion()
+                    for dispersion in dispersion_debug_list
+                ]
+                global_mask = [
+                    dispersion.global_mask() for dispersion in dispersion_debug_list
+                ]
                 global_mask = [mask.as_1d().as_double() for mask in global_mask]
                 for i, mask in enumerate(global_mask):
                     mask.reshape(cv[i].accessor())
                 image_data = global_mask
             elif self.settings.display == "threshold":
-                cv = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
-                final_mask = [kabsch.final_mask() for kabsch in kabsch_debug_list]
+                cv = [
+                    dispersion.index_of_dispersion()
+                    for dispersion in dispersion_debug_list
+                ]
+                final_mask = [
+                    dispersion.final_mask() for dispersion in dispersion_debug_list
+                ]
                 final_mask = [mask.as_1d().as_double() for mask in final_mask]
                 for i, mask in enumerate(final_mask):
                     mask.reshape(cv[i].accessor())
@@ -1099,7 +1122,7 @@ class SpotFrame(XrayFrame):
     def _calculate_dispersion_debug(self, image):
 
         # hash current settings
-        kabsch_debug_list_hash = hash(
+        dispersion_debug_list_hash = hash(
             (
                 image.index,
                 self.images.selected.image_set,
@@ -1113,9 +1136,9 @@ class SpotFrame(XrayFrame):
             )
         )
 
-        # compare current settings to last calculation of "Kabsch debug" list
-        if kabsch_debug_list_hash == self._kabsch_debug_list_hash:
-            return self._kabsch_debug_list
+        # compare current settings to last calculation of "dispersion debug" list
+        if dispersion_debug_list_hash == self._dispersion_debug_list_hash:
+            return self._dispersion_debug_list
 
         detector = image.get_detector()
         image_mask = self.get_mask(image)
@@ -1130,9 +1153,9 @@ class SpotFrame(XrayFrame):
         else:
             algorithm = DispersionThresholdDebug
 
-        kabsch_debug_list = []
+        dispersion_debug_list = []
         for i_panel in range(len(detector)):
-            kabsch_debug_list.append(
+            dispersion_debug_list.append(
                 algorithm(
                     image_data[i_panel].as_double(),
                     image_mask[i_panel],
@@ -1144,9 +1167,9 @@ class SpotFrame(XrayFrame):
                     self.settings.min_local,
                 )
             )
-        self._kabsch_debug_list = kabsch_debug_list
-        self._kabsch_debug_list_hash = kabsch_debug_list_hash
-        return kabsch_debug_list
+        self._dispersion_debug_list = dispersion_debug_list
+        self._dispersion_debug_list_hash = dispersion_debug_list_hash
+        return dispersion_debug_list
 
     def show_filters(self):
         image_data = self.get_image_data(self.pyslip.tiles.raw_image)
@@ -1375,8 +1398,10 @@ class SpotFrame(XrayFrame):
         # self.show_filters()
         if self.settings.show_threshold_pix:
             image = self.pyslip.tiles.raw_image
-            kabsch_debug_list = self._calculate_dispersion_debug(image)
-            final_mask = [kabsch.final_mask() for kabsch in kabsch_debug_list]
+            dispersion_debug_list = self._calculate_dispersion_debug(image)
+            final_mask = [
+                dispersion.final_mask() for dispersion in dispersion_debug_list
+            ]
             value = []
             for pnl, mask in enumerate(final_mask):
                 width = mask.all()[1]
@@ -2372,8 +2397,8 @@ class SpotSettingsPanel(wx.Panel):
         grid2 = wx.FlexGridSizer(cols=4, rows=2, vgap=0, hgap=0)
         s.Add(grid2)
 
-        self.kabsch_buttons = []
-        self.kabsch_labels = [
+        self.dispersion_buttons = []
+        self.dispersion_labels = [
             "image",
             "mean",
             "variance",
@@ -2383,16 +2408,16 @@ class SpotSettingsPanel(wx.Panel):
             "global",
             "threshold",
         ]
-        for label in self.kabsch_labels:
+        for label in self.dispersion_labels:
             btn = wx.ToggleButton(self, -1, label)
-            self.kabsch_buttons.append(btn)
+            self.dispersion_buttons.append(btn)
             grid2.Add(btn, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
             self.Bind(wx.EVT_TOGGLEBUTTON, self.OnDispersionThresholdDebug, btn)
 
-        for label, button in zip(self.kabsch_labels, self.kabsch_buttons):
+        for label, button in zip(self.dispersion_labels, self.dispersion_buttons):
             if self.params.stack_images > 1:
                 button.Disable()
-        for button in self.kabsch_buttons:
+        for button in self.dispersion_buttons:
             if button.GetLabelText() == self.settings.display:
                 button.SetValue(True)
                 break
@@ -2605,7 +2630,7 @@ class SpotSettingsPanel(wx.Panel):
 
         self.settings.display = selected
 
-        # Disable corrected/raw selection when showing Kabsch debug images
+        # Disable corrected/raw selection when showing dispersion debug images
         if self.settings.display != "image":
             self.image_type_ctrl.SetSelection(0)
             self.image_type_ctrl.Disable()
@@ -2613,7 +2638,7 @@ class SpotSettingsPanel(wx.Panel):
             self.image_type_ctrl.Enable()
 
         # reset buttons
-        for btn in self.kabsch_buttons:
+        for btn in self.dispersion_buttons:
             if btn.GetLabelText() == selected:
                 btn.SetValue(True)
             else:
