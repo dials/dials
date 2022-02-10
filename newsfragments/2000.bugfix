@@ -1,1 +1,1 @@
-Use dxtbx method ersatz_uuid4 which gives an implementation of a random 128 bit UUID4
+Avoid using the ``uuid`` module, to avoid mpi errors on Python 3.8.
