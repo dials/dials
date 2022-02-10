@@ -12,7 +12,6 @@ ExperimentLists.
 from __future__ import annotations
 
 import logging
-import uuid
 from copy import deepcopy
 from unittest.mock import Mock
 
@@ -22,6 +21,7 @@ import pkg_resources
 import iotbx.merging_statistics
 from cctbx import crystal, miller, uctbx
 from dxtbx.model import Experiment
+from dxtbx.util import ersatz_uuid4
 from iotbx import cif, mtz
 from libtbx import Auto, phil
 
@@ -520,7 +520,7 @@ def create_datastructures_for_target_mtz(experiments, mtz_file):
 
     exp = Experiment()
     exp.crystal = deepcopy(experiments[0].crystal)
-    exp.identifier = str(uuid.uuid4())
+    exp.identifier = ersatz_uuid4()
     r_t.experiment_identifiers()[len(experiments)] = exp.identifier
     r_t["id"] = flex.int(r_t.size(), len(experiments))
 
@@ -580,7 +580,7 @@ def create_datastructures_for_structural_model(reflections, experiments, cif_fil
     rt["intensity"] = icalc
     rt["miller_index"] = miller_idx
 
-    exp.identifier = str(uuid.uuid4())
+    exp.identifier = ersatz_uuid4()
     rt.experiment_identifiers()[len(experiments)] = exp.identifier
     rt["id"] = flex.int(rt.size(), len(experiments))
 
