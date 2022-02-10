@@ -3,6 +3,7 @@ from __future__ import annotations
 from scitbx.array_family import flex
 
 import dials.extensions
+from dials.algorithms.image.filter import convolve
 
 
 class RadialProfileSpotFinderThresholdExt:
@@ -16,12 +17,20 @@ class RadialProfileSpotFinderThresholdExt:
 
         phil = parse(
             """
+        blur = narrow wide
+          .type = choice
+          .help = "Optional preprocessing of the image by a convolution with"
+                  "a simple Gaussian kernel of size either 3×3 (narrow) or"
+                  "5×5 (wide). This may help to reduce noise peaks and to"
+                  "combine split spots."
+
         n_bins = 100
-        .type = int
+          .type = int
+          .help = "Number of 2θ bins in which to calculate background"
 
         n_sigma = 8
-        .type = int
-        .help = "Sigma multiplier for determining the threshold value"
+          .type = int
+          .help = "Sigma multiplier for determining the threshold value"
     """
         )
         return phil
@@ -34,6 +43,49 @@ class RadialProfileSpotFinderThresholdExt:
         """
         self.params = params
 
+        # Set approximate Gaussian kernel for blurring
+        if self.params.spotfinder.threshold.radial_profile.blur == "narrow":
+            self.kernel = flex.double(
+                (0.0625, 0.125, 0.0625, 0.125, 0.25, 0.125, 0.0625, 0.125, 0.0625)
+            )
+            self.kernel.reshape(flex.grid((3, 3)))
+        elif self.params.spotfinder.threshold.radial_profile.blur == "narrow":
+            self.kernel = (
+                flex.double(
+                    (
+                        1,
+                        4,
+                        7,
+                        4,
+                        1,
+                        4,
+                        16,
+                        26,
+                        16,
+                        4,
+                        7,
+                        26,
+                        41,
+                        26,
+                        7,
+                        4,
+                        16,
+                        26,
+                        16,
+                        4,
+                        1,
+                        4,
+                        7,
+                        4,
+                        1,
+                    )
+                )
+                / 273
+            )
+            self.kernel.reshape(flex.grid((5, 5)))
+        else:
+            self.kernel = None
+
     def compute_threshold(self, image, mask, **kwargs):
         """
         Compute the threshold.
@@ -43,6 +95,9 @@ class RadialProfileSpotFinderThresholdExt:
         :**kwargs: Arbitrary keyword arguments
         :returns: A boolean mask showing foreground/background pixels
         """
+
+        if self.kernel:
+            image = convolve(image, self.kernel)
 
         try:
             imageset = kwargs["imageset"]
