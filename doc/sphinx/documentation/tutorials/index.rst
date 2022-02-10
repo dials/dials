@@ -49,9 +49,3 @@ DIALS for 3DED/MicroED
    3DED/MyD88
    3DED/Biotin
 
-Developer tutorials
-
-.. toctree::
-   :maxdepth: 1
-
-   developer_tutorial
