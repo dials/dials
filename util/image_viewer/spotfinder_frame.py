@@ -2080,6 +2080,9 @@ class SpotSettingsPanel(wx.Panel):
         self.settings.kernel_size = self.params.kernel_size
         self.settings.min_local = self.params.min_local
         self.settings.gain = self.params.gain
+        self.settings.n_sigma = self.params.n_sigma
+        self.settings.blur = self.params.blur
+        self.settings.n_bins = self.params.n_bins
         self.settings.find_spots_phil = "find_spots.phil"
         self._sizer = wx.BoxSizer(wx.VERTICAL)
         s = self._sizer
@@ -2384,6 +2387,53 @@ class SpotSettingsPanel(wx.Panel):
         )
         self.Bind(EVT_PHIL_CONTROL, self.OnUpdateThresholdParameters, self.gain_ctrl)
 
+        # Spotfinding parameters relevant to the radial_profile algorithm
+        self.radial_profile_params_grid = wx.FlexGridSizer(
+            cols=2, rows=3, vgap=0, hgap=0
+        )
+        s.Add(self.radial_profile_params_grid)
+
+        txt1 = wx.StaticText(self, -1, "Sigma multiplier")
+        self.radial_profile_params_grid.Add(
+            txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5
+        )
+        self.n_sigma_ctrl = FloatCtrl(
+            self, value=self.settings.n_sigma, name="sigma_multiplier"
+        )
+        self.n_sigma_ctrl.SetMin(0)
+        self.radial_profile_params_grid.Add(self.n_sigma_ctrl, 0, wx.ALL, 5)
+
+        txt1 = wx.StaticText(self, -1, "Blur")
+        self.radial_profile_params_grid.Add(
+            txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5
+        )
+        self.blur_choices = [
+            "None",
+            "narrow",
+            "wide",
+        ]
+        self.blur_ctrl = wx.Choice(self, -1, choices=self.blur_choices)
+        self.blur_ctrl.SetSelection(self.blur_choices.index(str(self.settings.blur)))
+        self.radial_profile_params_grid.Add(
+            self.blur_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5
+        )
+
+        txt1 = wx.StaticText(self, -1, "N bins")
+        self.radial_profile_params_grid.Add(
+            txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5
+        )
+        self.n_bins_ctrl = PhilIntCtrl(self, value=self.settings.n_bins, name="n_bins")
+        self.n_bins_ctrl.SetMin(10)
+        self.radial_profile_params_grid.Add(self.n_bins_ctrl, 0, wx.ALL, 5)
+
+        self.Bind(EVT_PHIL_CONTROL, self.OnUpdateThresholdParameters, self.n_sigma_ctrl)
+        self.Bind(EVT_PHIL_CONTROL, self.OnUpdateThresholdParameters, self.blur_ctrl)
+        self.Bind(
+            EVT_PHIL_CONTROL,
+            self.OnUpdateThresholdParameters,
+            self.n_bins_ctrl,
+        )
+
         # Save spotfinding PHIL control
         grid1 = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
         s.Add(grid1)
@@ -2428,6 +2478,9 @@ class SpotSettingsPanel(wx.Panel):
                 break
 
         self.collect_values()
+
+        # Hide parameters for deselected threshold algorithm
+        self._toggle_params_grid(self.settings.threshold_algorithm)
 
         # CONTROLS 3:  Bind events to actions
 
@@ -2523,6 +2576,10 @@ class SpotSettingsPanel(wx.Panel):
             self.settings.kernel_size = self.kernel_size_ctrl.GetPhilValue()
             self.settings.min_local = self.min_local_ctrl.GetPhilValue()
             self.settings.gain = self.gain_ctrl.GetPhilValue()
+            self.settings.n_sigma = self.n_sigma_ctrl.GetPhilValue()
+            self.settings.blur = self.blur_choices[self.blur_ctrl.GetSelection()]
+            self.settings.n_bins = self.n_bins_ctrl.GetPhilValue()
+
             self.settings.find_spots_phil = self.save_params_txt_ctrl.GetPhilValue()
 
     def UpdateZoomCtrl(self, event):
@@ -2594,12 +2651,17 @@ class SpotSettingsPanel(wx.Panel):
         pyslip.ZoomIn((x, y), update=False)
         pyslip.GotoPosition(center)
 
-    def OnUpdateThresholdAlgorithm(self, event):
-        if event.GetString() == "radial_profile":
+    def _toggle_params_grid(self, to_show):
+        if to_show == "radial_profile":
             self.dispersion_params_grid.ShowItems(False)
+            self.radial_profile_params_grid.ShowItems(True)
         else:
             self.dispersion_params_grid.ShowItems(True)
+            self.radial_profile_params_grid.ShowItems(False)
         self._sizer.Layout()
+
+    def OnUpdateThresholdAlgorithm(self, event):
+        self._toggle_params_grid(event.GetString())
         self.OnUpdateImage(event)
 
     def OnUpdateProjection(self, event):
@@ -2610,6 +2672,7 @@ class SpotSettingsPanel(wx.Panel):
         params = find_spots_phil_scope.extract()
         threshold = params.spotfinder.threshold
         threshold.algorithm = self.settings.threshold_algorithm
+
         dispersion = threshold.dispersion
         dispersion.gain = self.settings.gain
         dispersion.global_threshold = self.settings.global_threshold
@@ -2617,6 +2680,12 @@ class SpotSettingsPanel(wx.Panel):
         dispersion.min_local = self.settings.min_local
         dispersion.sigma_background = self.settings.nsigma_b
         dispersion.sigma_strong = self.settings.nsigma_s
+
+        radial_profile = threshold.radial_profile
+        radial_profile.n_sigma = self.settings.n_sigma
+        radial_profile.blur = self.settings.blur
+        radial_profile.n_bins = self.settings.n_bins
+
         print(f"Saving parameters to {self.settings.find_spots_phil}")
         with open(self.settings.find_spots_phil, "w") as f:
             find_spots_phil_scope.fetch_diff(find_spots_phil_scope.format(params)).show(
