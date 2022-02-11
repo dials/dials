@@ -91,11 +91,39 @@ def _convert_units(val, unit_in, unit_out):
     return val * SI[unit_in] / SI[unit_out]
 
 
-def parse_args(args=None):
+class ExptParams(NamedTuple):
     """
-    Parse command line arguments and read experiments
+    Store the .expt parameters that will be used in calibration
     """
-    usage = "$ dials.powder_calibrate_widget EXPERIMENT standard=standard_name eyeball=True output_geom=file_name [options]"
+
+    s0: Tuple[float, float, float]
+    beam_on_detector: Tuple[float, float]
+    wavelength: float
+    distance: float
+    img_size: Tuple[float, float]
+    pix_size: Tuple[float, float]
+    image: np.array
+
+
+class UserArgs(NamedTuple):
+    """
+    Store the arguments given
+    """
+
+    input_file: str
+    eyeball: Optional[bool]
+    standard: str
+    calibrated_geom: Optional[str]
+
+
+def parse_args(args=None) -> Tuple[ExptParams, UserArgs]:
+    """
+    Parse arguments from command line or not and return named tuple with the useful parameters
+    """
+    usage = (
+        "$ dials.powder_calibrate_widget EXPERIMENT standard=standard_name eyeball=True "
+        "output_geom=file_name [options]"
+    )
 
     parser = OptionParser(
         usage=usage,
@@ -143,23 +171,6 @@ def parse_args(args=None):
     return expt_params, user_args
 
 
-class ExptParams(NamedTuple):
-    s0: Tuple[float, float, float]
-    beam_on_detector: Tuple[float, float]
-    wavelength: float
-    distance: float
-    img_size: Tuple[float, float]
-    pix_size: Tuple[float, float]
-    image: np.array
-
-
-class UserArgs(NamedTuple):
-    input_file: str
-    eyeball: Optional[bool]
-    standard: str
-    calibrated_geom: Optional[str]
-
-
 class Detector(pfDetector):
     def __init__(self, expt_params: ExptParams):
         px, py = expt_params.pix_size
@@ -204,7 +215,9 @@ class Geometry(pfGeometry):
         self.beam_y_px = self.beam_y_m / self.detector.pixel2
 
         self.beam_distance = expt_params.distance
+        self.set_poni()
 
+    def set_poni(self):
         # fit2D understands beam parameters
         self.setFit2D(
             directDist=self.beam_distance,
@@ -212,23 +225,19 @@ class Geometry(pfGeometry):
             centerY=self.beam_y_px,
         )
 
-    def update_beam_center(
+    def update_beam_pos(
         self,
         beam_coords_px: Optional[Tuple[float, float]] = None,
         beam_coords_m: Optional[Tuple[float, float]] = None,
     ):
-        center_x = None
-        center_y = None
-
         if beam_coords_px:
-            center_x = beam_coords_px[0]
-            center_y = beam_coords_px[1]
+            self.beam_x_px = beam_coords_px[0]
+            self.beam_y_px = beam_coords_px[1]
         elif beam_coords_m:
-            center_x = beam_coords_px[0] / self.detector.pixel1
-            center_y = beam_coords_px[1] / self.detector.pixel2
+            self.beam_x_px = beam_coords_px[0] / self.detector.pixel1
+            self.beam_y_px = beam_coords_px[1] / self.detector.pixel2
 
-        f2d = self.getFit2D()
-        self.setFit2D(directDist=f2d["directDist"], centerX=center_x, centerY=center_y)
+        self.set_poni()
 
     def update_from_ai(self, ai: pfGeometry):
         """
@@ -240,7 +249,7 @@ class Geometry(pfGeometry):
         """
         self.set_param(ai.param)
 
-    def to_parsable(self) -> list[str]:
+    def to_parsable(self, only_beam: bool) -> list[str]:
         """
         Translate parameters to a parsable list to feed to dials.$command_line_program
         """
@@ -248,22 +257,32 @@ class Geometry(pfGeometry):
             "fast_slow_beam_centre="
             + str(int(self.beam_x_px))
             + ","
-            + str(int(self.beam_y_px)),
-            "distance=" + str(self.beam_distance),
-            "wavelength=" + str(self.wavelength),
+            + str(int(self.beam_y_px))
         ]
+
+        if not only_beam:
+            phil += [
+                "distance=" + str(self.beam_distance),
+                "wavelength=" + str(self.wavelength),
+            ]
+
         return phil
 
-    def save_to_expt(self, output: Optional[str] = "modified.expt"):
+    def save_to_expt(
+        self,
+        only_beam: Optional[bool] = False,
+        output: Optional[str] = "calibrated.expt",
+    ):
         """
         Update the geometry from start_geometry.expt and save to new output
         Pretend dials.command_line has python API
         """
         from dials.command_line import modify_geometry
 
-        new_phil = self.to_parsable()
-        args = [self.user_args.input_file] + new_phil + ["output=" + output]
-        modify_geometry.run(args)
+        new_phil = self.to_parsable(only_beam)
+
+        modify_args = [self.user_args.input_file] + new_phil + ["output=" + output]
+        modify_geometry.run(modify_args)
 
     def __deepcopy__(self, memo=None):
         new = self.__class__(self.expt_params, self.user_args)
@@ -307,12 +326,12 @@ class PowderCalibrator:
     def print_hints(self):
         # Tell me which geometry I'm starting from
         print(
-            f"Initial geometry from {self.user_args.input_file}:\n -----\n {self.geometry} \n"
+            f"Initial geometry from {self.user_args.input_file}:\n-----\n {self.geometry} \n"
         )
 
         # Tell me what calibrant I am using
         print(
-            f"Starting calibration using {self.user_args.standard}:\n----- \n {self.calibrant} \n\n "
+            f"Starting calibration using {self.user_args.standard}:\n-----\n {self.calibrant} \n "
         )
 
         # Tell me if I'm using the eyeball widget and how to use
@@ -370,7 +389,7 @@ class PowderCalibrator:
         def update(val):
             new_geometry = self.geometry.__deepcopy__()
 
-            new_geometry.update_beam_center(
+            new_geometry.update_beam_pos(
                 beam_coords_px=(beam_x_slider.val, beam_y_slider.val)
             )
             rings_img.set_array(self.cal_rings(new_geometry))
@@ -393,10 +412,13 @@ class PowderCalibrator:
         button_save = Button(save_ax, "Save beam and exit", hovercolor="0.975")
 
         def save_and_exit(event):
-            self.geometry.update_beam_center(
+            self.geometry.update_beam_pos(
                 beam_coords_px=(beam_x_slider.val, beam_y_slider.val)
             )
-            self.geometry.save_to_expt("eyeballed.expt")
+            self.geometry.save_to_expt(
+                only_beam=True,
+                output=self.user_args.calibrated_geom or "eyeballed.expt",
+            )
 
             plt.close()
 
