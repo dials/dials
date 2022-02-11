@@ -29,6 +29,49 @@ flex.set_random_seed(0)
 random.seed(0)
 
 
+def compute_dSbar(S: np.array, dS: np.array) -> np.array:
+    # dS & S are 3x3 arrays. Returns a 2x2 array
+    S12 = S[0:2, 2].reshape(2, 1)
+    S21 = S[2, 0:2].reshape(1, 2)
+    S22 = S[2, 2]
+
+    dS11 = dS[0:2, 0:2]
+    dS12 = dS[0:2, 2].reshape(2, 1)
+    dS21 = dS[2, 0:2].reshape(1, 2)
+    dS22 = dS[2, 2]
+
+    S22_inv = 1 / S22
+
+    A = dS11
+    B = np.matmul(S12 * S22_inv * dS22 * S22_inv, S21)
+    C = np.matmul(S12 * S22_inv, dS21)
+    D = np.matmul(dS12 * S22_inv, S21)
+    return A + B - (C + D)
+
+
+def compute_dmbar(S: np.array, dS: np.array, dmu: np.array, epsilon: float) -> np.array:
+    # S, dS are is a 3x3 array, dmu is 3x1 array
+    dmu = dmu.reshape(3, 1)  # 3x1 array
+
+    S12 = S[0:2, 2].reshape(2, 1)
+    S22 = S[2, 2]
+
+    dS12 = dS[0:2, 2].reshape(2, 1)
+    dS22 = dS[2, 2]
+
+    S22_inv = 1 / S22
+
+    dmu1 = dmu[0:2, 0].reshape(2, 1)
+    dmu2 = dmu[2, 0]
+    dep = -dmu2
+
+    A = dmu1
+    B = dS12 * S22_inv * epsilon
+    C = -S12 * S22_inv * dS22 * S22_inv * epsilon
+    D = S12 * S22_inv * dep
+    return A + B + C + D
+
+
 class ConditionalDistribution(object):
     """
     A class to compute useful stuff about the conditional distribution
@@ -57,12 +100,12 @@ class ConditionalDistribution(object):
         self.epsilon = a - mu2
 
         # Compute the conditional mean
-        self.mubar = mu1 + S12 * (1 / S22) * self.epsilon
-        assert self.mubar.shape == (2, 1)
+        self._mubar = mu1 + S12 * (1 / S22) * self.epsilon
+        assert self._mubar.shape == (2, 1)
 
         # Compute the conditional covariance matrix
-        self.Sbar = S11 - np.matmul(S12 * (1 / S22), S21)
-        assert self.Sbar.shape == (2, 2)
+        self._Sbar = S11 - np.matmul(S12 * (1 / S22), S21)
+        assert self._Sbar.shape == (2, 2)
 
         # Set to None and compute on demand
         self.dSbar = None
@@ -75,50 +118,20 @@ class ConditionalDistribution(object):
         Return the conditional mean (a 2x1 array)
 
         """
-        return self.mubar
+        return self._mubar
 
     def sigma(self) -> np.array:
         """
         Return the conditional sigma (a 2x2 array)
 
         """
-        return self.Sbar
+        return self._Sbar
 
     def first_derivatives_of_sigma(self) -> List[np.array]:
         """
         Return the marginal first derivatives (as a list of 2x2 arrays)
 
         """
-
-        def compute_dSbar(S, dS):
-
-            # dS is a mat3 double
-            assert dS.shape == (3, 3)
-
-            S12 = S[0:2, 2].reshape(2, 1)  # matrix.col((S[2], S[5]))
-            S21 = S[2, 0:2].reshape(1, 2)  # matrix.col((S[6], S[7])).transpose()
-            S22 = S[2, 2]
-
-            dS11 = dS[
-                0:2, 0:2
-            ]  # np.array([[dS[0], dS[1]], [dS[3], dS[4]]], dtype=np.float64)
-            # dS[0:2, 0:2]#matrix.sqr((dS[0], dS[1], dS[3], dS[4]))
-            dS12 = dS[0:2, 2].reshape(
-                2, 1
-            )  # np.array([[dS[2], dS[5]]], dtype=np.float64).reshape(2,1) #matrix.col((dS[2], dS[5]))
-            dS21 = dS[2, 0:2].reshape(
-                1, 2
-            )  # np.array([[dS[6], dS[7]]], dtype=np.float64).reshape(1,2)#matrix.col((dS[6], dS[7])).transpose()
-            dS22 = dS[2, 2]
-
-            S22_inv = 1 / S22
-
-            A = dS11
-            B = np.matmul(S12 * S22_inv * dS22 * S22_inv, S21)
-            C = np.matmul(S12 * S22_inv, dS21)
-            D = np.matmul(dS12 * S22_inv, S21)
-            return A + B - (C + D)
-
         if self.dSbar is None:
             self.dSbar = [
                 compute_dSbar(self._S, self._dS[:, :, i])
@@ -132,40 +145,11 @@ class ConditionalDistribution(object):
         Return the marginal first derivatives (a list of 2x1 arrays)
 
         """
-
-        def compute_dmbar(i):
-
-            S = self._S  # 3x3 np array
-            dS = self._dS[:, :, i]  # 3X3 np array
-
-            # mu = self._mu
-            dmu = self._dmu[:, i].reshape(3, 1)  # 3x1 array
-
-            S12 = S[0:2, 2].reshape(2, 1)  # matrix.col((S[2], S[5]))
-            # S21 = matrix.col((S[6], S[7])).transpose()
-            S22 = S[2, 2]
-
-            # dS11 = matrix.sqr((dS[0], dS[1], dS[3], dS[4]))
-            dS12 = dS[0:2, 2].reshape(
-                2, 1
-            )  # np.array([[dS[2], dS[5]]]).reshape(2,1)#matrix.col((dS[2], dS[5]))
-            # dS21 = matrix.col((dS[6], dS[7])).transpose()
-            dS22 = dS[2, 2]
-
-            S22_inv = 1 / S22
-
-            dmu1 = dmu[0:2, 0].reshape(2, 1)
-            dmu2 = dmu[2, 0]
-            dep = -dmu2
-
-            A = dmu1
-            B = dS12 * S22_inv * self.epsilon
-            C = -S12 * S22_inv * dS22 * S22_inv * self.epsilon
-            D = S12 * S22_inv * dep
-            return A + B + C + D
-
         if self.dmbar is None:
-            self.dmbar = [compute_dmbar(i) for i in range(self._dS.shape[2])]
+            self.dmbar = [
+                compute_dmbar(self._S, self._dS[:, :, i], self._dmu[:, i], self.epsilon)
+                for i in range(self._dS.shape[2])
+            ]
 
         return self.dmbar
 
@@ -211,7 +195,7 @@ class ReflectionLikelihood(object):
     def __init__(self, model, s0, sp, h, ctot, mobs, sobs):
 
         # Save stuff
-        self.model = ReflectionModelState(model, s0, h)
+        model = ReflectionModelState(model, s0, h)
         self.s0 = np.array([s0], dtype=np.float64).reshape(3, 1)
         self.sp = np.array([sp], dtype=np.float64).reshape(3, 1)
         self.h = np.array([h], dtype=np.float64).reshape(3, 1)
@@ -223,25 +207,20 @@ class ReflectionLikelihood(object):
         self.R = compute_change_of_basis_operation_np(self.s0, self.sp)
 
         # The s2 vector
-        self.r = self.model.get_r()
-        self.s2 = self.s0 + self.r
+        s2 = self.s0 + model.get_r()
         # Rotate the mean vector
-        self.mu = np.matmul(self.R, self.s2)
+        self.mu = np.matmul(self.R, s2)
 
         # Rotate the covariance matrix
         self.S = np.matmul(
-            np.matmul(
-                self.R,
-                self.model.mosaicity_covariance_matrix,
-            ),
-            self.R.T,
+            np.matmul(self.R, model.mosaicity_covariance_matrix), self.R.T
         )
 
         # Rotate the first derivative matrices
-        self.dS = rotate_mat3_double_np(self.R, self.model.get_dS_dp())
+        self.dS = rotate_mat3_double_np(self.R, model.get_dS_dp())
 
         # Rotate the first derivative of s2
-        self.dmu = rotate_vec3_double_np(self.R, self.model.get_dr_dp())
+        self.dmu = rotate_vec3_double_np(self.R, model.get_dr_dp())
 
         # Construct the conditional distribution
         self.conditional = ConditionalDistribution(
@@ -287,7 +266,8 @@ class ReflectionLikelihood(object):
         )
 
         # Return the joint likelihood
-        return -0.5 * (m_lnL + c_lnL)
+        jLL = -0.5 * (m_lnL + c_lnL)
+        return jLL
 
     def first_derivatives(self):
         """
@@ -324,14 +304,15 @@ class ReflectionLikelihood(object):
 
         # Compute the derivative wrt parameter i
         dL = flex.double()
+        I = np.array([[1.0, 0], [0, 1.0]], dtype=np.float64).reshape(2, 2)
+
+        V1 = Sobs + np.matmul(c_d, c_d.T)
+        V2 = I - np.matmul(Sbar_inv, V1)
         for i in range(len(dS22)):
 
             dmu = self.dmu[:, i]  # vec3 double
-            # dmu1 = matrix.col((dmu[0], dmu[1]))
             dmu2 = dmu[2]
             dep = -dmu2
-
-            I = np.array([[1.0, 0], [0, 1.0]], dtype=np.float64).reshape(2, 2)
 
             U = m_w * (
                 S22_inv * dS22[i] * (1.0 - S22_inv * epsilon ** 2)
@@ -339,11 +320,10 @@ class ReflectionLikelihood(object):
             )
 
             # X = c_w * np.trace(Sbar_inv * dSbar[i])
-
             V = c_w * np.trace(
                 np.matmul(
-                    Sbar_inv * dSbar[i],
-                    (I - np.matmul(Sbar_inv, (Sobs + np.matmul(c_d, c_d.T)))),
+                    np.matmul(Sbar_inv, dSbar[i]),
+                    V2,
                 )
             )
 

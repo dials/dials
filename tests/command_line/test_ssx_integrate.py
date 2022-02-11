@@ -52,13 +52,13 @@ def test_ssx_integrate_ellipsoid(indexed_data, run_in_tmpdir, fix_uc_and_orienta
     print(len(refls_0))
     print(len(refls_1))
     assert (
-        len(refls_0) > 3740 - 50 and len(refls_0) < 3740 + 50
+        len(refls_0) > 3740 - 20 and len(refls_0) < 3740 + 20
     )  # 3730/3740 at 18/01/22
     experiments_1 = load.experiment_list("integrated_1.expt")
     assert len(experiments_1) == 2
 
     assert (
-        len(refls_1) > 1470 - 50 and len(refls_1) < 1470 + 50
+        len(refls_1) > 1470 - 20 and len(refls_1) < 1470 + 20
     )  # 1467/1473 at 18/01/22
     indexed = load.experiment_list(expts)
     if fix_uc_and_orientation:
@@ -80,11 +80,11 @@ def test_ssx_integrate_ellipsoid(indexed_data, run_in_tmpdir, fix_uc_and_orienta
         (
             "simple6",
             {
-                "n_refl": 7267,
+                "n_refl": 7245,
                 "mosaicity": {
-                    "min": [0.0096, 0.0075, 0.0221, 0.0080, 0.0107],
-                    "mid": [0.0236, 0.0226, 0.0367, 0.0222, 0.0225],
-                    "max": [0.0332, 0.0287, 0.0408, 0.0279, 0.0276],
+                    "min": [0.0096, 0.0075, 0.0222, 0.0079, 0.0107],
+                    "mid": [0.0240, 0.0227, 0.0357, 0.0227, 0.0228],
+                    "max": [0.0323, 0.0283, 0.0414, 0.0269, 0.0271],
                 },
             },
         ),
@@ -101,11 +101,11 @@ def test_ssx_integrate_ellipsoid(indexed_data, run_in_tmpdir, fix_uc_and_orienta
         (
             "angular4",
             {
-                "n_refl": 5202,
+                "n_refl": 5203,
                 "mosaicity": {
-                    "radial": [0.0286, 0.0242, 0.0348, 0.0246, 0.0247],
-                    "angular_0": [0.0292, 0.0279, 0.0427, 0.0259, 0.0263],
-                    "angular_1": [0.0066, 0.0047, 0.0214, 0.0053, 0.0083],
+                    "radial": [0.0285, 0.0241, 0.0348, 0.0246, 0.0247],
+                    "angular_0": [0.0292, 0.0278, 0.0426, 0.0259, 0.0263],
+                    "angular_1": [0.0066, 0.0047, 0.0215, 0.0053, 0.0083],
                 },
             },
         ),
@@ -134,8 +134,8 @@ def test_ssx_integrate_ellipsoid_profile_models(
 
     refls_0 = flex.reflection_table.from_file("integrated_0.refl")
 
-    assert len(refls_0) > expected_results["n_refl"] - 50
-    assert len(refls_0) < expected_results["n_refl"] + 50
+    assert len(refls_0) > expected_results["n_refl"] - 20
+    assert len(refls_0) < expected_results["n_refl"] + 20
 
     expts = load.experiment_list("integrated_0.expt")
     for i, p in enumerate(expts.profiles()):

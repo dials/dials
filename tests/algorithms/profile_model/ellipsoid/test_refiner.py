@@ -18,12 +18,10 @@ from dials.algorithms.profile_model.ellipsoid.model import (
 )
 from dials.algorithms.profile_model.ellipsoid.parameterisation import (  # Angular2MosaicityParameterisation,; Angular4MosaicityParameterisation,; WavelengthSpreadParameterisation,
     ModelState,
-    ReflectionModelState,
     Simple1MosaicityParameterisation,
     Simple6MosaicityParameterisation,
 )
 from dials.algorithms.profile_model.ellipsoid.refiner import (
-    ConditionalDistribution,
     Refiner,
     RefinerData,
     ReflectionLikelihood,
@@ -185,7 +183,6 @@ def test_ConditionalDistribution(testdata):
     ):
         experiment = testdata.experiment
         models = testdata.models
-        s0 = testdata.s0
         h = testdata.h
         # ctot = testdata.ctot
         # mobs = testdata.mobs
@@ -210,35 +207,13 @@ def test_ConditionalDistribution(testdata):
         state.M_params = np.array(M_params, dtype=np.float64)
         state.L_params = L_params
 
-        model = ReflectionModelState(state, s0, h)
-
-        def get_conditional(model):
-            # Compute the change of basis
-            s0 = np.array([testdata.s0], dtype=np.float64).reshape(3, 1)
-            sp = np.array([testdata.sp], dtype=np.float64).reshape(3, 1)
-            R = compute_change_of_basis_operation_np(s0, sp)
-
-            # The s2 vector
-            r = model.get_r()
-            s2 = s0 + r
-
-            # Rotate the mean vector
-            mu = np.matmul(R, s2)
-
-            # Rotate the covariance matrix
-            S = np.matmul(np.matmul(R, model.mosaicity_covariance_matrix), R.T)
-
-            # Rotate the first derivative matrices
-            dS = rotate_mat3_double_np(R, model.get_dS_dp())
-
-            # Rotate the first derivative of s2
-            dmu = rotate_vec3_double_np(R, model.get_dr_dp())
-
-            # Construct the conditional distribution
-            conditional = ConditionalDistribution(s0, mu, dmu, S, dS)
+        def get_conditional(state):
+            conditional = ReflectionLikelihood(
+                state, testdata.s0, testdata.sp, h, 0, [0.0, 0.0], [0.0, 0.0, 0.0, 0.0]
+            ).conditional
             return conditional
 
-        conditional = get_conditional(model)
+        conditional = get_conditional(state)
 
         step = 1e-6
 
@@ -248,15 +223,11 @@ def test_ConditionalDistribution(testdata):
 
         def compute_sigma(parameters):
             state.active_parameters = parameters
-            model = ReflectionModelState(state, s0, h)
-            conditional = get_conditional(model)
-            return conditional.sigma()
+            return get_conditional(state).sigma()
 
         def compute_mean(parameters):
             state.active_parameters = parameters
-            model = ReflectionModelState(state, s0, h)
-            conditional = get_conditional(model)
-            return conditional.mean()
+            return get_conditional(state).mean()
 
         dm_num = []
         for i in range(len(parameters)):
@@ -405,13 +376,9 @@ def test_ReflectionLikelihood(testdata):
         assert len(dL_num) == len(parameters)
         print(dL_num)
         print(list(dL_dp))
-        print(len(state.U_params))
-        print(len(state.B_params))
-        print(len(state.M_params))
-        print(len(state.L_params))
         for n, c in zip(dL_num, dL_dp):
             print(n, c)
-            assert n == pytest.approx(c, rel=1e-5)
+            assert n == pytest.approx(c, abs=1e-4)
 
     S1 = Simple1MosaicityParameterisation()
     S6 = Simple6MosaicityParameterisation()
