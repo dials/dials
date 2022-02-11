@@ -63,7 +63,7 @@ class RadialProfileSpotFinderThresholdExt:
                 (0.0625, 0.125, 0.0625, 0.125, 0.25, 0.125, 0.0625, 0.125, 0.0625)
             )
             self.kernel.reshape(flex.grid((3, 3)))
-        elif self.params.spotfinder.threshold.radial_profile.blur == "narrow":
+        elif self.params.spotfinder.threshold.radial_profile.blur == "wide":
             self.kernel = (
                 flex.double(
                     (
