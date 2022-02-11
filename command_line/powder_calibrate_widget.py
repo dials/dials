@@ -280,7 +280,6 @@ class Geometry(pfGeometry):
         from dials.command_line import modify_geometry
 
         new_phil = self.to_parsable(only_beam)
-
         modify_args = [self.user_args.input_file] + new_phil + ["output=" + output]
         modify_geometry.run(modify_args)
 
@@ -346,6 +345,7 @@ class PowderCalibrator:
         pfjupyter.display(sg=geometry, label=label)
         plt.show()
 
+    # ToDo: could this be a class instead
     def rough_fit_widget(self):
         """
         Matplotlib widget to eyeball the beam center by comparing the theoretical
@@ -426,7 +426,7 @@ class PowderCalibrator:
 
         plt.show()
 
-    def rings_beam_image(self, geometry, ax):
+    def rings_beam_image(self, geometry: Geometry, ax: plt.axes) -> plt.axes:
         cal_img_masked = self.cal_rings(geometry)
 
         rings_img = ax.imshow(cal_img_masked, alpha=0.3, cmap="inferno", origin="lower")
@@ -434,7 +434,7 @@ class PowderCalibrator:
 
         return rings_img
 
-    def beam_position(self, geometry=None):
+    def beam_position(self, geometry: Optional[Geometry] = None) -> list[float, float]:
         """
         Compute beam position
         """
@@ -450,7 +450,7 @@ class PowderCalibrator:
             ]
         return beam
 
-    def cal_rings(self, geometry: Optional[Geometry] = None):
+    def cal_rings(self, geometry: Optional[Geometry] = None) -> ma:
         # for smaller wavelengths (electrons) reduce the rings blurring
 
         if self.expt_params.wavelength < 1e-1:
@@ -499,6 +499,12 @@ class PowderCalibrator:
         gonio_geom.geometry_refinement.refine2(fix=fix)
         ai = gonio_geom.get_ai()
 
+        # update geometry and save to calibrated.expt
+        self.geometry.update_from_ai(ai)
+        self.geometry.save_to_expt(
+            output=self.user_args.calibrated_geom or "calibrated.expt"
+        )
+
         if verbose:
             self.show_fit(gonio_geom, label="After pyFAI fit")
             print("Geometry fitted by pyFAI:\n----- \n", ai, "\n")
@@ -514,16 +520,8 @@ class PowderCalibrator:
             plt.title("Are those lines straight?")
             plt.show()
 
-        if self.user_args.calibrated_geom:
-            # save calibrated geometry to output file
-            # ai.save(self.user_args.calibrated_geom)
-
-            print(f"Calibrated geometry saved to {self.user_args.calibrated_geom}")
-
 
 if __name__ == "__main__":
     expt_parameters, user_arguments = parse_args()
-
     calibrator = PowderCalibrator(expt_params=expt_parameters, user_args=user_arguments)
-
     calibrator.calibrate_with_calibrant(verbose=False)
