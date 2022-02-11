@@ -534,13 +534,13 @@ def test_ReflectionModelState_derivatives(testdata):
 
         step = 1e-6
 
-        parameters = copy.copy(state.active_parameters)
+        parameters = copy(state.active_parameters)
 
         dr_num = []
         for i in range(len(parameters)):
 
             def f(x):
-                p = copy.copy(parameters)
+                p = copy(parameters)
                 p[i] = x
                 return compute_r(p)
 
@@ -557,7 +557,7 @@ def test_ReflectionModelState_derivatives(testdata):
         for i in range(len(parameters)):
 
             def f(x):
-                p = copy.copy(parameters)
+                p = copy(parameters)
                 p[i] = x
                 return compute_sigma(p)
 
@@ -577,7 +577,7 @@ def test_ReflectionModelState_derivatives(testdata):
         for i in range(len(parameters)):
 
             def f(x):
-                p = copy.copy(parameters)
+                p = copy(parameters)
                 p[i] = x
                 return compute_sigma_lambda(p) ** 2
 

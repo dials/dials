@@ -313,10 +313,6 @@ class ReflectionLikelihood(object):
         dSbar = self.conditional.first_derivatives_of_sigma()  # list of 2x2 arrays
         dmbar = self.conditional.first_derivatives_of_mean()  # list of 2x1 arrays
         Sbar_inv = inv(Sbar)
-        print("dmbar")
-        print(dmbar)
-        print("dSbar")
-        print(dSbar)
 
         # The distance from the ewald sphere
         epsilon = norm(s0) - mu2
@@ -358,7 +354,6 @@ class ReflectionLikelihood(object):
                     np.matmul(c_d, dmbar[i].T),
                 )
             )
-            print(U, V, W)
             dL.append(-0.5 * (U + V + W))
 
         # Return the derivative of the log likelihood
