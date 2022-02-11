@@ -7,7 +7,21 @@ from dials.algorithms.image.filter import convolve
 
 
 class RadialProfileSpotFinderThresholdExt:
-    """Extension to do radial profile thresholding."""
+    """
+    Extension to calculate a radial profile threshold. This method calculates
+    background value and sigma in 2θ shells, then sets a threshold at a level
+    n_sigma above the radial background. As such, it is important to have the
+    beam centre correct and to mask out any significant shadows. The method may
+    be particularly useful for electron diffraction images, where there can be
+    considerable inelastic scatter around low resolution spots. In addition, the
+    algorithm is relatively insensitive to noise properties of the detector.
+    This helps for the case of integrating detectors with poorly known gain
+    and response statistics.
+
+    A similar algorithm is available in other programs. The description of
+    'peakfinder 8' in https://doi.org/10.1107/S1600576714007626 was helpful
+    in the development of this method.
+    """
 
     name = "radial_profile"
 
@@ -17,6 +31,10 @@ class RadialProfileSpotFinderThresholdExt:
 
         phil = parse(
             """
+        n_sigma = 8
+          .type = int
+          .help = "Sigma multiplier for determining the threshold value"
+
         blur = narrow wide
           .type = choice
           .help = "Optional preprocessing of the image by a convolution with"
@@ -27,11 +45,7 @@ class RadialProfileSpotFinderThresholdExt:
         n_bins = 100
           .type = int
           .help = "Number of 2θ bins in which to calculate background"
-
-        n_sigma = 8
-          .type = int
-          .help = "Sigma multiplier for determining the threshold value"
-    """
+        """
         )
         return phil
 
