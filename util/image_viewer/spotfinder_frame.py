@@ -3,6 +3,7 @@ from __future__ import annotations
 import collections
 import itertools
 import math
+import types
 
 import wx
 from wx.lib.intctrl import IntCtrl
@@ -28,6 +29,7 @@ from dials.algorithms.image.threshold import (
 from dials.algorithms.shoebox import MaskCode
 from dials.array_family import flex
 from dials.command_line.find_spots import phil_scope as find_spots_phil_scope
+from dials.extensions import SpotFinderThreshold
 from dials.util import masking
 from dials.util.image_viewer.mask_frame import MaskSettingsFrame
 from dials.util.image_viewer.spotfinder_wrap import chooser_wrapper
@@ -79,6 +81,33 @@ class LoadImageEvent(wx.PyCommandEvent):
 
 def create_load_image_event(destination, filename):
     wx.PostEvent(destination, LoadImageEvent(myEVT_LOADIMG, -1, filename))
+
+
+class RadialProfileThresholdDebug:
+    # The radial_profile threshold algorithm does not have an associated
+    # 'Debug' class. It does not create the same set of intermediate images
+    # as the dispersion algorithms, so we can delegate to a
+    # DispersionThresholdDebug object for those, while overriding the final_mask
+    # method. This wrapper class handles that.
+    def __init__(self, imageset, n_sigma, blur, n_bins):
+
+        self.imageset = imageset
+        params = find_spots_phil_scope.extract()
+        params.spotfinder.threshold.radial_profile.blur = blur
+        params.spotfinder.threshold.radial_profile.n_bins = n_bins
+        self.radial_profile = SpotFinderThreshold.load("radial_profile")(params)
+        self._i_panel = 0
+
+    def __call__(self, *args):
+        dispersion = DispersionThresholdDebug(*args)
+        image = args[0]
+        mask = args[1]
+        dispersion._final_mask = self.radial_profile.compute_threshold(
+            image, mask, imageset=self.imageset, i_panel=self._i_panel
+        )
+        dispersion.final_mask = types.MethodType(lambda x: x._final_mask, dispersion)
+        self._i_panel += 1
+        return dispersion
 
 
 class SpotFrame(XrayFrame):
@@ -1133,6 +1162,9 @@ class SpotFrame(XrayFrame):
                 self.settings.min_local,
                 tuple(self.settings.kernel_size),
                 self.settings.threshold_algorithm,
+                self.settings.n_sigma,
+                self.settings.blur,
+                self.settings.n_bins,
             )
         )
 
@@ -1150,8 +1182,12 @@ class SpotFrame(XrayFrame):
         ]
         if self.settings.threshold_algorithm == "dispersion_extended":
             algorithm = DispersionExtendedThresholdDebug
-        else:
+        elif self.settings.threshold_algorithm == "dispersion":
             algorithm = DispersionThresholdDebug
+        else:
+            algorithm = RadialProfileThresholdDebug(
+                image, self.settings.n_sigma, self.settings.blur, self.settings.n_bins
+            )
 
         dispersion_debug_list = []
         for i_panel in range(len(detector)):
@@ -1167,6 +1203,7 @@ class SpotFrame(XrayFrame):
                     self.settings.min_local,
                 )
             )
+
         self._dispersion_debug_list = dispersion_debug_list
         self._dispersion_debug_list_hash = dispersion_debug_list_hash
         return dispersion_debug_list
@@ -2662,7 +2699,7 @@ class SpotSettingsPanel(wx.Panel):
 
     def OnUpdateThresholdAlgorithm(self, event):
         self._toggle_params_grid(event.GetString())
-        self.OnUpdateImage(event)
+        self.OnUpdateThresholdParameters(event)
 
     def OnUpdateProjection(self, event):
         self.params.projection = event.GetString()
@@ -2683,7 +2720,10 @@ class SpotSettingsPanel(wx.Panel):
 
         radial_profile = threshold.radial_profile
         radial_profile.n_sigma = self.settings.n_sigma
-        radial_profile.blur = self.settings.blur
+        if self.settings.blur == "None":
+            radial_profile.blur = None
+        else:
+            radial_profile.blur = self.settings.blur
         radial_profile.n_bins = self.settings.n_bins
 
         print(f"Saving parameters to {self.settings.find_spots_phil}")
