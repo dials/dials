@@ -2294,7 +2294,7 @@ class SpotSettingsPanel(wx.Panel):
         grid.Add(self.image_type_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         s.Add(grid)
 
-        # DispersionThreshold thresholding parameters
+        # Choice of thresholding algorithm
         grid = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
         txt1 = wx.StaticText(self, -1, "Threshold algorithm:")
         grid.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
@@ -2312,81 +2312,86 @@ class SpotSettingsPanel(wx.Panel):
         grid.Add(self.threshold_algorithm_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         s.Add(grid)
 
-        grid1 = wx.FlexGridSizer(cols=2, rows=8, vgap=0, hgap=0)
-        s.Add(grid1)
+        # Spotfinding parameters relevant to dispersion algorithms
+        self.dispersion_params_grid = wx.FlexGridSizer(cols=2, rows=6, vgap=0, hgap=0)
+        s.Add(self.dispersion_params_grid)
 
         txt1 = wx.StaticText(self, -1, "Sigma background")
-        grid1.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.dispersion_params_grid.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.nsigma_b_ctrl = FloatCtrl(
             self, value=self.settings.nsigma_b, name="sigma_background"
         )
         self.nsigma_b_ctrl.SetMin(0)
-        grid1.Add(self.nsigma_b_ctrl, 0, wx.ALL, 5)
+        self.dispersion_params_grid.Add(self.nsigma_b_ctrl, 0, wx.ALL, 5)
 
         txt2 = wx.StaticText(self, -1, "Sigma strong")
-        grid1.Add(txt2, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.dispersion_params_grid.Add(txt2, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.nsigma_s_ctrl = FloatCtrl(
             self, value=self.settings.nsigma_s, name="sigma_strong"
         )
         self.nsigma_s_ctrl.SetMin(0)
-        grid1.Add(self.nsigma_s_ctrl, 0, wx.ALL, 5)
+        self.dispersion_params_grid.Add(self.nsigma_s_ctrl, 0, wx.ALL, 5)
 
         txt1 = wx.StaticText(self, -1, "Global Threshold")
-        grid1.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.dispersion_params_grid.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.global_threshold_ctrl = FloatCtrl(
             self, value=self.settings.global_threshold, name="global_threshold"
         )
         self.global_threshold_ctrl.SetMin(0)
-        grid1.Add(self.global_threshold_ctrl, 0, wx.ALL, 5)
+        self.dispersion_params_grid.Add(self.global_threshold_ctrl, 0, wx.ALL, 5)
 
         txt4 = wx.StaticText(self, -1, "Min. local")
-        grid1.Add(txt4, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.dispersion_params_grid.Add(txt4, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.min_local_ctrl = PhilIntCtrl(
             self, value=self.settings.min_local, name="min_local"
         )
         self.min_local_ctrl.SetMin(0)
-        grid1.Add(self.min_local_ctrl, 0, wx.ALL, 5)
+        self.dispersion_params_grid.Add(self.min_local_ctrl, 0, wx.ALL, 5)
 
         txt4 = wx.StaticText(self, -1, "Gain")
-        grid1.Add(txt4, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.dispersion_params_grid.Add(txt4, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.gain_ctrl = FloatCtrl(self, value=self.settings.gain, name="gain")
         self.gain_ctrl.SetMin(1e-6)
-        grid1.Add(self.gain_ctrl, 0, wx.ALL, 5)
+        self.dispersion_params_grid.Add(self.gain_ctrl, 0, wx.ALL, 5)
 
         txt3 = wx.StaticText(self, -1, "Kernel size")
-        grid1.Add(txt3, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.dispersion_params_grid.Add(txt3, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.kernel_size_ctrl = IntsCtrl(
             self, value=self.settings.kernel_size, name="kernel_size"
         )
         self.kernel_size_ctrl.SetSize(2)
         self.kernel_size_ctrl.SetMin(1)
-        grid1.Add(self.kernel_size_ctrl, 0, wx.ALL, 5)
+        self.dispersion_params_grid.Add(self.kernel_size_ctrl, 0, wx.ALL, 5)
 
         self.Bind(
-            wx.EVT_CHECKBOX,
-            self.OnUpdateThresholdAlgorithm,
-            self.threshold_algorithm_ctrl,
+            EVT_PHIL_CONTROL, self.OnUpdateThresholdParameters, self.nsigma_b_ctrl
         )
-        self.Bind(EVT_PHIL_CONTROL, self.OnUpdateThresholdAlgorithm, self.nsigma_b_ctrl)
-        self.Bind(EVT_PHIL_CONTROL, self.OnUpdateThresholdAlgorithm, self.nsigma_s_ctrl)
+        self.Bind(
+            EVT_PHIL_CONTROL, self.OnUpdateThresholdParameters, self.nsigma_s_ctrl
+        )
         self.Bind(
             EVT_PHIL_CONTROL,
-            self.OnUpdateThresholdAlgorithm,
+            self.OnUpdateThresholdParameters,
             self.global_threshold_ctrl,
         )
         self.Bind(
             EVT_PHIL_CONTROL,
-            self.OnUpdateThresholdAlgorithm,
+            self.OnUpdateThresholdParameters,
             self.kernel_size_ctrl,
         )
         self.Bind(
-            EVT_PHIL_CONTROL, self.OnUpdateThresholdAlgorithm, self.min_local_ctrl
+            EVT_PHIL_CONTROL, self.OnUpdateThresholdParameters, self.min_local_ctrl
         )
-        self.Bind(EVT_PHIL_CONTROL, self.OnUpdateThresholdAlgorithm, self.gain_ctrl)
+        self.Bind(EVT_PHIL_CONTROL, self.OnUpdateThresholdParameters, self.gain_ctrl)
+
+        # Save spotfinding PHIL control
+        grid1 = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
+        s.Add(grid1)
 
         self.save_params_txt_ctrl = StrCtrl(
             self, value=self.settings.find_spots_phil, name="find_spots_phil"
         )
+
         grid1.Add(self.save_params_txt_ctrl, 0, wx.ALL, 5)
         self.Bind(EVT_PHIL_CONTROL, self.OnUpdate, self.save_params_txt_ctrl)
 
@@ -2439,7 +2444,11 @@ class SpotSettingsPanel(wx.Panel):
 
         self.Bind(wx.EVT_CHOICE, self.OnUpdateZoomLevel, self.zoom_ctrl)
         self.Bind(wx.EVT_CHOICE, self.OnUpdateImage, self.image_type_ctrl)
-        self.Bind(wx.EVT_CHOICE, self.OnUpdateImage, self.threshold_algorithm_ctrl)
+        self.Bind(
+            wx.EVT_CHOICE,
+            self.OnUpdateThresholdAlgorithm,
+            self.threshold_algorithm_ctrl,
+        )
         self.Bind(wx.EVT_CHOICE, self.OnUpdateImage, self.stack_mode_ctrl)
         self.Bind(wx.EVT_CHOICE, self.OnUpdate, self.color_ctrl)
         self.Bind(wx.EVT_CHOICE, self.OnUpdateProjection, self.projection_ctrl)
@@ -2585,6 +2594,14 @@ class SpotSettingsPanel(wx.Panel):
         pyslip.ZoomIn((x, y), update=False)
         pyslip.GotoPosition(center)
 
+    def OnUpdateThresholdAlgorithm(self, event):
+        if event.GetString() == "radial_profile":
+            self.dispersion_params_grid.ShowItems(False)
+        else:
+            self.dispersion_params_grid.ShowItems(True)
+        self._sizer.Layout()
+        self.OnUpdateImage(event)
+
     def OnUpdateProjection(self, event):
         self.params.projection = event.GetString()
         self.OnUpdateImage(event)
@@ -2606,22 +2623,9 @@ class SpotSettingsPanel(wx.Panel):
                 f
             )
 
-    def OnUpdateThresholdAlgorithm(self, event):
-        if (
-            self.settings.threshold_algorithm
-            != self.threshold_algorithm_types[
-                self.threshold_algorithm_ctrl.GetSelection()
-            ]
-            or self.settings.nsigma_b != self.nsigma_b_ctrl.GetPhilValue()
-            or self.settings.nsigma_s != self.nsigma_s_ctrl.GetPhilValue()
-            or self.settings.global_threshold
-            != self.global_threshold_ctrl.GetPhilValue()
-            or self.settings.kernel_size != self.kernel_size_ctrl.GetPhilValue()
-            or self.settings.min_local != self.min_local_ctrl.GetPhilValue()
-            or self.settings.gain != self.gain_ctrl.GetPhilValue()
-        ):
-            self.GetParent().GetParent().show_filters()
-            self.OnUpdateImage(event)
+    def OnUpdateThresholdParameters(self, event):
+        self.GetParent().GetParent().show_filters()
+        self.OnUpdateImage(event)
 
     def OnDispersionThresholdDebug(self, event):
 
