@@ -85,7 +85,7 @@ class RadialProfileSpotFinderThresholdExt:
         else:
             self.kernel = None
 
-    def compute_threshold(self, image, mask, **kwargs):
+    def compute_threshold(self, image, mask, *, imageset, i_panel, region_of_interest=None, **kwargs):
         """
         Compute the threshold.
 
@@ -97,13 +97,6 @@ class RadialProfileSpotFinderThresholdExt:
 
         if self.kernel:
             image = convolve(image, self.kernel)
-
-        try:
-            imageset = kwargs["imageset"]
-            i_panel = kwargs["i_panel"]
-        except KeyError:
-            raise ValueError("Missing required arguments")
-        region_of_interest = kwargs.get("region_of_interest")
 
         # Initial dispersion threshold to determine likely background pixels
         Dispersion = dials.extensions.SpotFinderThreshold.load("dispersion")
