@@ -2464,7 +2464,7 @@ class SpotSettingsPanel(wx.Panel):
         self.radial_profile_params_grid.Add(self.n_bins_ctrl, 0, wx.ALL, 5)
 
         self.Bind(EVT_PHIL_CONTROL, self.OnUpdateThresholdParameters, self.n_sigma_ctrl)
-        self.Bind(EVT_PHIL_CONTROL, self.OnUpdateThresholdParameters, self.blur_ctrl)
+        self.Bind(wx.EVT_CHOICE, self.OnUpdateThresholdParameters, self.blur_ctrl)
         self.Bind(
             EVT_PHIL_CONTROL,
             self.OnUpdateThresholdParameters,
