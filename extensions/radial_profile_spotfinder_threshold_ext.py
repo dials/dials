@@ -59,43 +59,28 @@ class RadialProfileSpotFinderThresholdExt:
 
         # Set approximate Gaussian kernel for blurring
         if self.params.spotfinder.threshold.radial_profile.blur == "narrow":
+            # fmt: off
             self.kernel = flex.double(
-                (0.0625, 0.125, 0.0625, 0.125, 0.25, 0.125, 0.0625, 0.125, 0.0625)
+                (0.0625, 0.125, 0.0625,
+                 0.125,  0.25,  0.125,
+                 0.0625, 0.125, 0.0625)
             )
+            # fmt: on
             self.kernel.reshape(flex.grid((3, 3)))
         elif self.params.spotfinder.threshold.radial_profile.blur == "wide":
+            # fmt: off
             self.kernel = (
                 flex.double(
                     (
-                        1,
-                        4,
-                        7,
-                        4,
-                        1,
-                        4,
-                        16,
-                        26,
-                        16,
-                        4,
-                        7,
-                        26,
-                        41,
-                        26,
-                        7,
-                        4,
-                        16,
-                        26,
-                        16,
-                        4,
-                        1,
-                        4,
-                        7,
-                        4,
-                        1,
+                        1,  4,  7,  4,  1,
+                        4, 16, 26, 16,  4,
+                        7, 26, 41, 26,  7,
+                        4, 16, 26, 16,  4,
+                        1,  4,  7,  4,  1,
                     )
-                )
-                / 273
+                ) / 273
             )
+            # fmt: on
             self.kernel.reshape(flex.grid((5, 5)))
         else:
             self.kernel = None
