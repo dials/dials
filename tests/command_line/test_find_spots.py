@@ -381,7 +381,7 @@ def test_find_spots_with_per_image_statistics(dials_data, tmpdir):
 
 
 @pytest.mark.parametrize(
-    "blur,expected_nref", [("None", 554), ("narrow", 687), ("wide", 657)]
+    "blur,expected_nref", [("None", 559), ("narrow", 721), ("wide", 739)]
 )
 def test_find_spots_radial_profile(dials_data, tmpdir, blur, expected_nref):
     reflections = dials.command_line.find_spots.run(

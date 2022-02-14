@@ -89,7 +89,7 @@ class RadialProfileThresholdDebug:
     # as the dispersion algorithms, so we can delegate to a
     # DispersionThresholdDebug object for those, while overriding the final_mask
     # method. This wrapper class handles that.
-    def __init__(self, imageset, n_sigma, blur, n_bins):
+    def __init__(self, imageset, n_iqr, blur, n_bins):
 
         self.imageset = imageset
         params = find_spots_phil_scope.extract()
@@ -1162,7 +1162,7 @@ class SpotFrame(XrayFrame):
                 self.settings.min_local,
                 tuple(self.settings.kernel_size),
                 self.settings.threshold_algorithm,
-                self.settings.n_sigma,
+                self.settings.n_iqr,
                 self.settings.blur,
                 self.settings.n_bins,
             )
@@ -1186,7 +1186,7 @@ class SpotFrame(XrayFrame):
             algorithm = DispersionThresholdDebug
         else:
             algorithm = RadialProfileThresholdDebug(
-                image, self.settings.n_sigma, self.settings.blur, self.settings.n_bins
+                image, self.settings.n_iqr, self.settings.blur, self.settings.n_bins
             )
 
         dispersion_debug_list = []
@@ -2117,7 +2117,7 @@ class SpotSettingsPanel(wx.Panel):
         self.settings.kernel_size = self.params.kernel_size
         self.settings.min_local = self.params.min_local
         self.settings.gain = self.params.gain
-        self.settings.n_sigma = self.params.n_sigma
+        self.settings.n_iqr = self.params.n_iqr
         self.settings.blur = self.params.blur
         self.settings.n_bins = self.params.n_bins
         self.settings.find_spots_phil = "find_spots.phil"
@@ -2430,15 +2430,15 @@ class SpotSettingsPanel(wx.Panel):
         )
         s.Add(self.radial_profile_params_grid)
 
-        txt1 = wx.StaticText(self, -1, "Sigma multiplier")
+        txt1 = wx.StaticText(self, -1, "IQR multiplier")
         self.radial_profile_params_grid.Add(
             txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5
         )
-        self.n_sigma_ctrl = FloatCtrl(
-            self, value=self.settings.n_sigma, name="sigma_multiplier"
+        self.n_iqr_ctrl = FloatCtrl(
+            self, value=self.settings.n_iqr, name="iqr_multiplier"
         )
-        self.n_sigma_ctrl.SetMin(0)
-        self.radial_profile_params_grid.Add(self.n_sigma_ctrl, 0, wx.ALL, 5)
+        self.n_iqr_ctrl.SetMin(0)
+        self.radial_profile_params_grid.Add(self.n_iqr_ctrl, 0, wx.ALL, 5)
 
         txt1 = wx.StaticText(self, -1, "Blur")
         self.radial_profile_params_grid.Add(
@@ -2463,7 +2463,7 @@ class SpotSettingsPanel(wx.Panel):
         self.n_bins_ctrl.SetMin(10)
         self.radial_profile_params_grid.Add(self.n_bins_ctrl, 0, wx.ALL, 5)
 
-        self.Bind(EVT_PHIL_CONTROL, self.OnUpdateThresholdParameters, self.n_sigma_ctrl)
+        self.Bind(EVT_PHIL_CONTROL, self.OnUpdateThresholdParameters, self.n_iqr_ctrl)
         self.Bind(wx.EVT_CHOICE, self.OnUpdateThresholdParameters, self.blur_ctrl)
         self.Bind(
             EVT_PHIL_CONTROL,
@@ -2613,7 +2613,7 @@ class SpotSettingsPanel(wx.Panel):
             self.settings.kernel_size = self.kernel_size_ctrl.GetPhilValue()
             self.settings.min_local = self.min_local_ctrl.GetPhilValue()
             self.settings.gain = self.gain_ctrl.GetPhilValue()
-            self.settings.n_sigma = self.n_sigma_ctrl.GetPhilValue()
+            self.settings.n_iqr = self.n_iqr_ctrl.GetPhilValue()
             self.settings.blur = self.blur_choices[self.blur_ctrl.GetSelection()]
             self.settings.n_bins = self.n_bins_ctrl.GetPhilValue()
 
@@ -2719,7 +2719,7 @@ class SpotSettingsPanel(wx.Panel):
         dispersion.sigma_strong = self.settings.nsigma_s
 
         radial_profile = threshold.radial_profile
-        radial_profile.n_sigma = self.settings.n_sigma
+        radial_profile.n_iqr = self.settings.n_iqr
         if self.settings.blur == "None":
             radial_profile.blur = None
         else:

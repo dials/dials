@@ -1,15 +1,15 @@
 from __future__ import annotations
 
 from scitbx.array_family import flex
+from scitbx.math import five_number_summary
 
-import dials.extensions
 from dials.algorithms.image.filter import convolve
 
 # Module-level definition imported by the image viewer
 phil_str = """
-n_sigma = 8
+n_iqr = 6
     .type = int
-    .help = "Sigma multiplier for determining the threshold value"
+    .help = "IQR multiplier for determining the threshold value"
 
 blur = narrow wide
     .type = choice
@@ -27,8 +27,8 @@ n_bins = 100
 class RadialProfileSpotFinderThresholdExt:
     """
     Extension to calculate a radial profile threshold. This method calculates
-    background value and sigma in 2θ shells, then sets a threshold at a level
-    n_sigma above the radial background. As such, it is important to have the
+    background value and iqr in 2θ shells, then sets a threshold at a level
+    n_iqr above the radial background. As such, it is important to have the
     beam centre correct and to mask out any significant shadows. The method may
     be particularly useful for electron diffraction images, where there can be
     considerable inelastic scatter around low resolution spots. In addition, the
@@ -101,63 +101,48 @@ class RadialProfileSpotFinderThresholdExt:
         if self.kernel:
             image = convolve(image, self.kernel)
 
-        # Initial dispersion threshold to determine likely background pixels
-        Dispersion = dials.extensions.SpotFinderThreshold.load("dispersion")
-        threshold_function = Dispersion(self.params)
-        peak_pixels = threshold_function.compute_threshold(image, mask)
-        background_pixels = mask & ~peak_pixels
-        background = image.select(background_pixels.iselection())
-
-        # compute histogram of two-theta values, then same weighted
-        # by pixel values, finally divide latter by former to get
-        # the radial profile out, need to set the number of bins
-        # sensibly; inspired by method in PyFAI
         panel = imageset.get_detector()[i_panel]
         beam = imageset.get_beam()
 
-        # Get 2θ array for the background pixels
-        full_two_theta_array = panel.get_two_theta_array(beam.get_s0())
+        # Get 2θ array for the panel or ROI
+        two_theta_array = panel.get_two_theta_array(beam.get_s0())
         if region_of_interest:
             x0, x1, y0, y1 = region_of_interest
-            full_two_theta_array = full_two_theta_array[y0:y1, x0:x1]
-        two_theta_array = full_two_theta_array.as_1d().select(
-            background_pixels.iselection()
-        )
+            two_theta_array = two_theta_array[y0:y1, x0:x1]
 
-        # Use flex.weighted_histogram
+        # Convert to 2θ bin selections
+        lookup = two_theta_array - flex.min(two_theta_array)
         n_bins = self.params.spotfinder.threshold.radial_profile.n_bins
-        h0 = flex.weighted_histogram(two_theta_array, n_slots=n_bins)
-        h1 = flex.weighted_histogram(two_theta_array, background, n_slots=n_bins)
-        h2 = flex.weighted_histogram(
-            two_theta_array, background * background, n_slots=n_bins
-        )
+        multiplier = n_bins / flex.max(lookup + 1e-10)
+        lookup *= multiplier  # values now in range [0,n_bins+1)
+        lookup = (
+            flex.floor(lookup).iround().as_size_t()
+        )  # values now in range [0,n_bins-1]
 
-        d0 = h0.slots()
-        d1 = h1.slots()
-        d2 = h2.slots()
+        # Calculate median intensity and IQR within each bin of masked values
+        masked_lookup = lookup.select(mask.as_1d())
+        masked_image = image.select(mask.as_1d())
+        med_I = flex.double()
+        iqr = flex.double()
+        for bin in range(n_bins):
+            sel = masked_lookup == bin
+            vals = masked_image.select(sel)
+            if len(vals) < 3:
+                med_I.append(0)
+                iqr.append(0)
+            else:
+                _, q1, med, q3, _ = five_number_summary(vals)
+                med_I.append(med)
+                iqr.append(q3 - q1)
 
-        I = d1 / d0
-        I2 = d2 / d0
-        sig = flex.sqrt(I2 - flex.pow2(I))
-
-        # Determine the threshold value for each bin
-        n_sigma = self.params.spotfinder.threshold.radial_profile.n_sigma
-        threshold = I + n_sigma * sig
-
-        # Shift the full 2θ array to the lower bound and truncate
-        slot_info = list(h0.slot_infos())
-        lower_bound = slot_info[0].low_cutoff
-        lookup = full_two_theta_array - lower_bound
-        lookup.set_selected(lookup < 0, 0)
-
-        # Truncate just under the shifted upper bound and rescale
-        upper_bound = slot_info[-1].high_cutoff - lower_bound
-        lookup.set_selected(lookup >= upper_bound, upper_bound - 1e-10)
-        lookup /= upper_bound  # values now in range [0,1)
-
-        # Convert to a size_t lookup into the threshold array
-        lookup *= n_bins
-        lookup = flex.floor(lookup).iround().as_size_t()
+        # Determine the threshold value for each bin. This should be at least
+        # 1 quantum greater value than the median to avoid selecting everything
+        # in low background cases
+        n_iqr = self.params.spotfinder.threshold.radial_profile.n_iqr
+        add_level = n_iqr * iqr
+        adu = 1 / panel.get_gain()
+        add_level.set_selected(add_level <= adu, 2.0 * adu)
+        threshold = med_I + add_level
 
         # Now construct a threshold image
         thresh_im = threshold.select(lookup.as_1d())
