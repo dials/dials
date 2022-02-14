@@ -85,12 +85,9 @@ gain = 1
   .type = float(value_min=0)
   .help = "Set gain for the dispersion algorithm. This does not override the"
           "detector's panel gain, but acts as a multiplier for it."
-n_sigma = 8
-  .type = float(value_min=0)
-blur = narrow wide
-  .type = choice
-n_bins = 100
-  .type = int
+
+include scope dials.extensions.radial_profile_spotfinder_threshold_ext.phil_str
+
 stack_images = 1
   .type = int(value_min=1)
   .expert_level = 2

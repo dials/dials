@@ -5,6 +5,24 @@ from scitbx.array_family import flex
 import dials.extensions
 from dials.algorithms.image.filter import convolve
 
+# Module-level definition imported by the image viewer
+phil_str = """
+n_sigma = 8
+    .type = int
+    .help = "Sigma multiplier for determining the threshold value"
+
+blur = narrow wide
+    .type = choice
+    .help = "Optional preprocessing of the image by a convolution with"
+            "a simple Gaussian kernel of size either 3×3 (narrow) or"
+            "5×5 (wide). This may help to reduce noise peaks and to"
+            "combine split spots."
+
+n_bins = 100
+    .type = int
+    .help = "Number of 2θ bins in which to calculate background"
+"""
+
 
 class RadialProfileSpotFinderThresholdExt:
     """
@@ -29,24 +47,7 @@ class RadialProfileSpotFinderThresholdExt:
     def phil():
         from libtbx.phil import parse
 
-        phil = parse(
-            """
-        n_sigma = 8
-          .type = int
-          .help = "Sigma multiplier for determining the threshold value"
-
-        blur = narrow wide
-          .type = choice
-          .help = "Optional preprocessing of the image by a convolution with"
-                  "a simple Gaussian kernel of size either 3×3 (narrow) or"
-                  "5×5 (wide). This may help to reduce noise peaks and to"
-                  "combine split spots."
-
-        n_bins = 100
-          .type = int
-          .help = "Number of 2θ bins in which to calculate background"
-        """
-        )
+        phil = parse(phil_str)
         return phil
 
     def __init__(self, params):
