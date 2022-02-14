@@ -6,6 +6,7 @@ import pickle
 import procrunner
 import pytest
 
+import dials.command_line.find_spots
 from dials.array_family import flex
 
 
@@ -383,9 +384,8 @@ def test_find_spots_with_per_image_statistics(dials_data, tmpdir):
     "blur,expected_nref", [("None", 554), ("narrow", 687), ("wide", 657)]
 )
 def test_find_spots_radial_profile(dials_data, tmpdir, blur, expected_nref):
-    result = procrunner.run(
+    reflections = dials.command_line.find_spots.run(
         [
-            "dials.find_spots",
             "nproc=1",
             "threshold.algorithm=radial_profile",
             f"blur={blur}",
@@ -393,9 +393,5 @@ def test_find_spots_radial_profile(dials_data, tmpdir, blur, expected_nref):
         + [
             f.strpath for f in dials_data("centroid_test_data").listdir("centroid*.cbf")
         ],
-        working_directory=tmpdir.strpath,
     )
-    assert not result.returncode and not result.stderr
-    assert tmpdir.join("strong.refl").check(file=1)
-    reflections = flex.reflection_table.from_file(tmpdir / "strong.refl")
     assert len(reflections) == expected_nref
