@@ -181,6 +181,6 @@ class RadialProfileSpotFinderThresholdExt:
         # Now construct a threshold image
         thresh_im = threshold.select(lookup.as_1d())
 
-        # Peaks are greater than the threshold
+        # Peaks are unmasked pixels greater than the threshold
         peaks = image > thresh_im
-        return peaks
+        return peaks & mask
