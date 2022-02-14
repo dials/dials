@@ -10,19 +10,20 @@ From the initial guess pyFAI geometry calibration can be used in the usual manne
 (ie. just like it used for X-rays).
 
 Usage:
-    from dials.command_line.powder_calibrate_widget import InputParams, PowderCalibrator
+    from dials.command_line.powder_calibrate_widget import parse_args, PowderCalibrator
 
-    Al_data = InputParams(expt_file="imported.expt")
-    calibrator = PowderCalibrator(Al_data, 'Al')
+    args = ["eyeballed.expt" + "standard=Al" + "eyeball=False"]
+    expt_parameters, user_arguments = parse_args(args=args)
+    calibrator = PowderCalibrator(expt_params=expt_parameters, user_args=user_arguments)
     calibrator.calibrate_with_calibrant(verbose=True)
 
 Or from command line:
     1. use the widget to generate a starting geometry. This step can be skipped if
     the starting geometry is pretty close.
-    > dials.powder_calibrate_widget data=poor_geom.expt standard="Al" calibrated_geom="eyeballed.expt"
+    > dials.powder_calibrate_widget poor_geom.expt standard="Al" calibrated_geom="eyeballed.expt"
 
     2. start fine calibration from a saved eyeballed geometry
-    > dials.powder_calibrate_widget data=eyeballed.expt standard="Al" eyeball=False calibrated_geom="calibrated.expt"
+    > dials.powder_calibrate_widget eyeballed.expt standard="Al" eyeball=False calibrated_geom="calibrated.expt"
 """
 
 from sys import exit
@@ -96,6 +97,7 @@ class ExptParams(NamedTuple):
     Store the .expt parameters that will be used in calibration
     """
 
+    input_file: str
     s0: Tuple[float, float, float]
     beam_on_detector: Tuple[float, float]
     wavelength: float
@@ -110,7 +112,6 @@ class UserArgs(NamedTuple):
     Store the arguments given
     """
 
-    input_file: str
     eyeball: Optional[bool]
     standard: str
     calibrated_geom: Optional[str]
@@ -151,6 +152,7 @@ def parse_args(args=None) -> Tuple[ExptParams, UserArgs]:
     image = np.array(expt.imageset.get_corrected_data(0)[0]).reshape(img_size)
 
     expt_params = ExptParams(
+        input_file=params.input.experiments[0].filename,
         s0=s0,
         beam_on_detector=beam_on_detector,
         wavelength=wavelength,
@@ -162,7 +164,6 @@ def parse_args(args=None) -> Tuple[ExptParams, UserArgs]:
 
     # populate user arguments
     user_args = UserArgs(
-        input_file=params.input.experiments[0].filename,
         standard=params.standard,
         eyeball=params.eyeball,
         calibrated_geom=params.calibrated_geom,
@@ -197,9 +198,9 @@ class Geometry(pfGeometry):
     pyFAI.geometry and pyFAI.detector objects
     """
 
-    def __init__(self, expt_params: ExptParams, user_args: UserArgs):
+    def __init__(self, expt_params: ExptParams):
         self.expt_params = expt_params
-        self.user_args = user_args
+
         super().__init__(
             detector=Detector(expt_params),
             wavelength=_convert_units(expt_params.wavelength, "A", "m"),
@@ -233,21 +234,39 @@ class Geometry(pfGeometry):
         if beam_coords_px:
             self.beam_x_px = beam_coords_px[0]
             self.beam_y_px = beam_coords_px[1]
+
+            self.beam_x_m = beam_coords_px[0] / self.detector.pixel1
+            self.beam_y_m = beam_coords_px[1] / self.detector.pixel2
+
         elif beam_coords_m:
-            self.beam_x_px = beam_coords_px[0] / self.detector.pixel1
-            self.beam_y_px = beam_coords_px[1] / self.detector.pixel2
+            self.beam_x_px = beam_coords_m[0] / self.detector.pixel1
+            self.beam_y_px = beam_coords_m[1] / self.detector.pixel2
+
+            self.beam_x_m = beam_coords_m[0]
+            self.beam_y_m = beam_coords_m[1]
 
         self.set_poni()
 
-    def update_from_ai(self, ai: pfGeometry):
+    def update_from_ai(self, geom: pfGeometry):
         """
-        Update geometry with geometry from refined ai
-        Is there a more pyFAI friendly of doing this?
+        Update geometry parameters from refined ai
+
         Parameters
         ----------
-        ai: ai object
+        geom: pfGeometry object
         """
-        self.set_param(ai.param)
+        self.set_param(geom.param)
+        beam_params = self.getFit2D()
+
+        self.beam_x_m = beam_params["centerX"]
+        self.beam_y_m = beam_params["centerY"]
+        self.beam_x_px = (
+            _convert_units(beam_params["centerX"], "mm", "m") / beam_params["pixelX"]
+        )
+        self.beam_y_px = (
+            _convert_units(beam_params["centerY"], "mm", "m") / beam_params["pixelY"]
+        )
+        self.beam_distance = beam_params["directDist"]
 
     def to_parsable(self, only_beam: bool) -> list[str]:
         """
@@ -280,12 +299,20 @@ class Geometry(pfGeometry):
         from dials.command_line import modify_geometry
 
         new_phil = self.to_parsable(only_beam)
-        modify_args = [self.user_args.input_file] + new_phil + ["output=" + output]
+        modify_args = [self.expt_params.input_file] + new_phil + ["output=" + output]
         modify_geometry.run(modify_args)
 
     def __deepcopy__(self, memo=None):
-        new = self.__class__(self.expt_params, self.user_args)
+        new = self.__class__(self.expt_params)
         return new
+
+    def __repr__(self):
+        return (
+            f"Detector {self.detector.name}: PixelSize= {self.pixel1}, {self.pixel2} m  "
+            f"Distance={self.beam_distance:.2f} mm\n"
+            f"Beam position on detector: m= {self.beam_x_m:.4f}m, {self.beam_y_m:.4f}m  "
+            f"px= {self.beam_x_px:.2f}, {self.beam_y_px:.2f}"
+        )
 
 
 class PowderCalibrator:
@@ -305,13 +332,13 @@ class PowderCalibrator:
                 When set to False the calibration process only wraps pyFAI and if no
                 good starting geometry is given in geom_file then it will probably
                 return poor results.
-        user.output_geom: optional, if given it saves the calibrated geometry to file
+        user.calibrated_geom: optional, if given it saves the calibrated geometry to file
         """
 
         self.expt_params = expt_params
         self.user_args = user_args
 
-        self.geometry = Geometry(expt_params, user_args)
+        self.geometry = Geometry(expt_params)
         self.detector = self.geometry.detector
 
         # ToDo: calibrant class?
@@ -325,7 +352,7 @@ class PowderCalibrator:
     def print_hints(self):
         # Tell me which geometry I'm starting from
         print(
-            f"Initial geometry from {self.user_args.input_file}:\n-----\n {self.geometry} \n"
+            f"Initial geometry from {self.expt_params.input_file}:\n-----\n {self.geometry} \n"
         )
 
         # Tell me what calibrant I am using
@@ -501,6 +528,7 @@ class PowderCalibrator:
 
         # update geometry and save to calibrated.expt
         self.geometry.update_from_ai(ai)
+
         self.geometry.save_to_expt(
             output=self.user_args.calibrated_geom or "calibrated.expt"
         )
@@ -522,6 +550,13 @@ class PowderCalibrator:
 
 
 if __name__ == "__main__":
-    expt_parameters, user_arguments = parse_args()
+    # expt_parameters, user_arguments = parse_args()
+    # calibrator = PowderCalibrator(expt_params=expt_parameters, user_args=user_arguments)
+    # calibrator.calibrate_with_calibrant(verbose=True)
+
+    starting_file = "/home/fyi77748/Data/Al_standard/eyeballed.expt"
+    test_args = [starting_file, "standard=Al", "eyeball=False"]
+    expt_parameters, user_arguments = parse_args(args=test_args)
+    print(user_arguments)
     calibrator = PowderCalibrator(expt_params=expt_parameters, user_args=user_arguments)
-    calibrator.calibrate_with_calibrant(verbose=False)
+    calibrator.calibrate_with_calibrant(verbose=True)
