@@ -85,7 +85,9 @@ class RadialProfileSpotFinderThresholdExt:
         else:
             self.kernel = None
 
-    def compute_threshold(self, image, mask, *, imageset, i_panel, region_of_interest=None, **kwargs):
+    def compute_threshold(
+        self, image, mask, *, imageset, i_panel, region_of_interest=None, **kwargs
+    ):
         """
         Compute the threshold.
 
@@ -142,13 +144,13 @@ class RadialProfileSpotFinderThresholdExt:
         threshold = I + n_sigma * sig
 
         # Shift the full 2θ array to the lower bound and truncate
-        infos = list(h0.slot_infos())
-        lower_bound = infos[0].low_cutoff
+        slot_info = list(h0.slot_infos())
+        lower_bound = slot_info[0].low_cutoff
         lookup = full_two_theta_array - lower_bound
         lookup.set_selected(lookup < 0, 0)
 
         # Truncate just under the shifted upper bound and rescale
-        upper_bound = infos[-1].high_cutoff - lower_bound
+        upper_bound = slot_info[-1].high_cutoff - lower_bound
         lookup.set_selected(lookup >= upper_bound, upper_bound - 1e-10)
         lookup /= upper_bound  # values now in range [0,1)
 
