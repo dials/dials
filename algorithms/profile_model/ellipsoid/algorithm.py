@@ -192,7 +192,7 @@ def initial_integrator(experiments, reflection_table):
     sigma_degrees = sigma_d * 180 / pi
     logger.info(
         f"Initial sigma d estimate for {len(strong_refls)} reflections\n"
-        + f"Sigma D: {sigma_degrees:.5f} degrees\n",
+        + f"Sigma D: {sigma_degrees:.9f} degrees\n",
     )
     strong_refls["s1_obs"] = _compute_beam_vector(experiment, strong_refls)
     strong_refls["bbox"] = _compute_bbox(experiment, strong_refls, sigma_d, "s1_obs")
@@ -213,6 +213,13 @@ def initial_integrator(experiments, reflection_table):
 
     n_sum = strong_refls.get_flags(strong_refls.flags.integrated_sum).count(True)
     logger.info(f"{n_sum} reflections integrated")
+    logger.info("Strong intensities & background & bbox:")
+    for I, bg, bbox in zip(
+        strong_refls["intensity.sum.value"],
+        strong_refls["background.sum.value"],
+        strong_refls["bbox"],
+    ):
+        logger.info(f"   {I:.6f}   {bg:.6f}   {bbox}")
 
     strong_refls.compute_centroid(experiments)
     strong_refls.compute_d(experiments)
