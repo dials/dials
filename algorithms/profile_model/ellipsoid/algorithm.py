@@ -213,13 +213,6 @@ def initial_integrator(experiments, reflection_table):
 
     n_sum = strong_refls.get_flags(strong_refls.flags.integrated_sum).count(True)
     logger.info(f"{n_sum} reflections integrated")
-    logger.info("Strong intensities & background & bbox:")
-    for I, bg, bbox in zip(
-        strong_refls["intensity.sum.value"],
-        strong_refls["background.sum.value"],
-        strong_refls["bbox"],
-    ):
-        logger.info(f"   {I:.6f}   {bg:.6f}   {bbox}")
 
     strong_refls.compute_centroid(experiments)
     strong_refls.compute_d(experiments)
