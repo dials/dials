@@ -18,8 +18,8 @@ def _index(reflection_table, experiment, fail_on_bad_index=False):
     """Index the strong spots"""
 
     # Get some stuff from experiment
-    A = np.array(experiment.crystal.get_A(), dtype=np.float32).reshape((3, 3))
-    s0 = np.array([experiment.beam.get_s0()], dtype=np.float32).reshape(3, 1)
+    A = np.array(experiment.crystal.get_A(), dtype=np.float64).reshape(3, 3)
+    s0 = np.array([experiment.beam.get_s0()], dtype=np.float64).reshape(3, 1)
     s0_length = norm(s0)
     detector = experiment.detector
 
@@ -37,7 +37,7 @@ def _index(reflection_table, experiment, fail_on_bad_index=False):
 
         # Get the lab coord
         s1 = np.array(
-            detector[0].get_pixel_lab_coord((x, y)), dtype=np.float32
+            detector[0].get_pixel_lab_coord((x, y)), dtype=np.float64
         ).reshape(3, 1)
         s1_norm = norm(s1)
         s1 *= s0_length / s1_norm
@@ -87,8 +87,8 @@ def _predict(reflection_table, experiment):
     """
 
     # Get some stuff from experiment
-    A = np.array(experiment.crystal.get_A(), dtype=np.float32).reshape((3, 3))
-    s0 = np.array([experiment.beam.get_s0()], dtype=np.float32).reshape(3, 1)
+    A = np.array(experiment.crystal.get_A(), dtype=np.float64).reshape((3, 3))
+    s0 = np.array([experiment.beam.get_s0()], dtype=np.float64).reshape(3, 1)
     s0_length = norm(s0)
 
     # Compute the vector to the reciprocal lattice point
@@ -96,7 +96,7 @@ def _predict(reflection_table, experiment):
     s1 = flex.vec3_double(reflection_table.size())
     s2 = flex.vec3_double(reflection_table.size())
     for i, h in enumerate(reflection_table["miller_index"]):
-        r = np.matmul(A, np.array([h], dtype=np.float32).reshape(3, 1))
+        r = np.matmul(A, np.array([h], dtype=np.float64).reshape(3, 1))
         s2_i = r + s0
         s2[i] = matrix.col(flumpy.from_numpy(s2_i))
         s1[i] = matrix.col(flumpy.from_numpy(s2_i * s0_length / norm(s2_i)))

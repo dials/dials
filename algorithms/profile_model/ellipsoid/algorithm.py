@@ -347,8 +347,8 @@ def predict_after_ellipsoid_refinement(experiment, reflection_table):
 
     """
     # Get some stuff from experiment
-    A = np.array(experiment.crystal.get_A(), dtype=np.float32).reshape((3, 3))
-    s0 = np.array([experiment.beam.get_s0()], dtype=np.float32).reshape(3, 1)
+    A = np.array(experiment.crystal.get_A(), dtype=np.float64).reshape((3, 3))
+    s0 = np.array([experiment.beam.get_s0()], dtype=np.float64).reshape(3, 1)
     s0_length = norm(s0)
 
     # Compute the vector to the reciprocal lattice point
@@ -357,7 +357,7 @@ def predict_after_ellipsoid_refinement(experiment, reflection_table):
     s1 = flex.vec3_double(len(h))
     s2 = flex.vec3_double(len(h))
     for i in range(len(reflection_table)):
-        r = np.matmul(A, np.array([h[i]], dtype=np.float32).reshape(3, 1))
+        r = np.matmul(A, np.array([h[i]], dtype=np.float64).reshape(3, 1))
         s2_i = r + s0
         s2[i] = matrix.col(flumpy.from_numpy(s2_i))
         s1[i] = matrix.col(flumpy.from_numpy(s2_i * s0_length / norm(s2_i)))
@@ -382,14 +382,14 @@ def predict_after_ellipsoid_refinement(experiment, reflection_table):
 def compute_prediction_probability(experiment, reflection_table):
 
     # Get stuff from experiment
-    s0 = np.array([experiment.beam.get_s0()], dtype=np.float32).reshape(3, 1)
+    s0 = np.array([experiment.beam.get_s0()], dtype=np.float64).reshape(3, 1)
     s0_length = norm(s0)
     profile = experiment.crystal.mosaicity
 
     # Loop through reflections
     min_p = None
     for s2 in reflection_table["s2"]:
-        s2 = np.array(list(s2), dtype=np.float32).reshape(3, 1)
+        s2 = np.array(list(s2), dtype=np.float64).reshape(3, 1)
         s3 = s2 * s0_length / norm(s2)
         r = s2 - s0
         epsilon = s3 - s2
