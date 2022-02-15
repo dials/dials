@@ -12,6 +12,7 @@ import sys
 import warnings
 
 import pytest
+from filelock import FileLock
 
 # https://stackoverflow.com/a/40846742
 warnings.filterwarnings("ignore", message="numpy.dtype size changed")
@@ -70,3 +71,12 @@ def run_in_tmpdir(tmpdir):
     tmpdir.chdir()
     yield tmpdir
     os.chdir(cwd)
+
+
+@pytest.fixture(autouse=True)
+def run_in_serial(request):
+    if request.node.get_closest_marker("serial"):
+        with FileLock("tests.lock"):
+            yield
+    else:
+        yield

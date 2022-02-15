@@ -7,6 +7,10 @@ from dxtbx.serialize import load
 from dials.array_family import flex
 from dials.command_line.ssx_integrate import run as run_integrate
 
+# Note that tests are grouped and run serially, to stop many processes trying to
+# extract data from images at same time, which appears to lead to race
+# conditions in CI jobs.
+
 
 @pytest.fixture
 def indexed_data(dials_data):
@@ -15,6 +19,8 @@ def indexed_data(dials_data):
     return (str(ssx / "indexed.refl"), str(ssx / "indexed.expt"))
 
 
+@pytest.mark.xdist_group(name="group1")
+@pytest.mark.serial
 def test_ssx_integrate_stills(indexed_data, run_in_tmpdir):
     refls, expts = indexed_data
 
@@ -31,6 +37,8 @@ def test_ssx_integrate_stills(indexed_data, run_in_tmpdir):
 
 
 @pytest.mark.parametrize("fix_uc_and_orientation", [False, True])
+@pytest.mark.xdist_group(name="group1")
+@pytest.mark.serial
 def test_ssx_integrate_ellipsoid(indexed_data, run_in_tmpdir, fix_uc_and_orientation):
     refls, expts = indexed_data
 
@@ -111,6 +119,8 @@ def test_ssx_integrate_ellipsoid(indexed_data, run_in_tmpdir, fix_uc_and_orienta
         ),
     ],
 )
+@pytest.mark.xdist_group(name="group1")
+@pytest.mark.serial
 def test_ssx_integrate_ellipsoid_profile_models(
     indexed_data, run_in_tmpdir, rlp_mosaicity, expected_results
 ):

@@ -75,7 +75,7 @@ steps:
     set PYTHONUNBUFFERED=TRUE
     call dials.bat
     cd modules/dials
-    libtbx.python -m pytest -v -ra -n auto --basetemp="$(Pipeline.Workspace)\tests" --durations=10 --timeout=5400 || echo "##vso[task.complete result=Failed;]Some tests failed"
+    libtbx.python -m pytest -v -ra -n auto --basetemp="$(Pipeline.Workspace)\tests" --durations=10 --dist loadgroup --timeout=5400 || echo "##vso[task.complete result=Failed;]Some tests failed"
   displayName: Run some tests (temporary)
   workingDirectory: $(Pipeline.Workspace)
 
