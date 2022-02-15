@@ -297,7 +297,7 @@ class SimpleProfileModelBase(ProfileModelBase):
         for k, s2_vec in enumerate(reflections["s2"]):
             s2 = np.array(list(s2_vec), dtype=np.float64).reshape(3, 1)
             sigma = experiments[0].crystal.mosaicity.sigma()
-            R = compute_change_of_basis_operation_np(s0, s2)
+            R = compute_change_of_basis_operation(s0, s2)
 
             S = np.matmul(R, np.array(sigma).reshape(3, 3))
             S = np.matmul(S, R.T)
@@ -433,7 +433,7 @@ class AngularProfileModelBase(ProfileModelBase):
         Sigma for a reflection
 
         """
-        Q = compute_change_of_basis_operation_np(s0, r)
+        Q = compute_change_of_basis_operation(s0, r)
         sigma = np.matmul(np.matmul(Q.T, np.array(self.sigma()).reshape(3, 3)), Q)
         return sigma
 
@@ -482,8 +482,8 @@ class AngularProfileModelBase(ProfileModelBase):
             s2 = np.array(list(s2_vec), dtype=np.float64).reshape(3, 1)
             r = s2 - s0
             sigma = experiments[0].crystal.mosaicity.sigma()
-            R = compute_change_of_basis_operation_np(s0, s2)
-            Q = compute_change_of_basis_operation_np(s0, r)
+            R = compute_change_of_basis_operation(s0, s2)
+            Q = compute_change_of_basis_operation(s0, r)
 
             sigma = np.matmul(np.matmul(Q.T, np.array(sigma).reshape(3, 3)), Q)
             S = np.matmul(np.matmul(R, np.array(sigma).reshape(3, 3)), R.T)
@@ -629,18 +629,6 @@ class ProfileModelFactory(object):
 
 
 def compute_change_of_basis_operation(s0, s2):
-    """
-    Compute the change of basis operation that puts the s2 vector along the z axis
-
-    """
-    e1 = s2.cross(s0).normalize()
-    e2 = s2.cross(e1).normalize()
-    e3 = s2.normalize()
-    R = matrix.sqr(e1.elems + e2.elems + e3.elems)
-    return R
-
-
-def compute_change_of_basis_operation_np(s0, s2):
     s2 = s2.flatten()
     s0 = s0.flatten()
     e1 = np.cross(s2, s0)

@@ -740,18 +740,14 @@ class ReflectionModelState(object):
             self._sigma_lambda = L[0]
 
         # The array of derivatives
-        # self._dr_dp = flex.vec3_double()
         self._dr_dp = np.array([], dtype=np.float64).reshape(3, 0)
         self._ds_dp = np.array([], dtype=np.float64).reshape(3, 3, 0)
-        # self._ds_dp = flex.mat3_double()
         self._dl_dp = flex.double()
 
         # Compute derivatives w.r.t U parameters
         if not state.is_orientation_fixed:
             n_U_params = len(state.U_params)
-            # dr_dp_u = flex.vec3_double(n_U_params)
             dr_dp_u = np.zeros(shape=(3, n_U_params), dtype=np.float64)
-            # ds_dp_u = flex.mat3_double(n_U_params)
             ds_dp_u = np.zeros(shape=(3, 3, n_U_params), dtype=np.float64)
             dl_dp_u = flex.double(n_U_params)
             for i in range(n_U_params):

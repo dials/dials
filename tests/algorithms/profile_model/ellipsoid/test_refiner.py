@@ -14,7 +14,7 @@ from scitbx import matrix
 from dials.algorithms.profile_model.ellipsoid.model import (
     Simple1ProfileModel,
     Simple6ProfileModel,
-    compute_change_of_basis_operation_np,
+    compute_change_of_basis_operation,
 )
 from dials.algorithms.profile_model.ellipsoid.parameterisation import (  # Angular2MosaicityParameterisation,; Angular4MosaicityParameterisation,; WavelengthSpreadParameterisation,
     ModelState,
@@ -25,8 +25,8 @@ from dials.algorithms.profile_model.ellipsoid.refiner import (
     Refiner,
     RefinerData,
     ReflectionLikelihood,
-    rotate_mat3_double_np,
-    rotate_vec3_double_np,
+    rotate_mat3_double,
+    rotate_vec3_double,
 )
 from dials.algorithms.refinement.parameterisation.crystal_parameters import (
     CrystalOrientationParameterisation,
@@ -63,7 +63,7 @@ def generate_data(experiments, reflections):
     mobs = (
         s2 + matrix.col((uniform(0, 1e-3), uniform(0, 1e-3), uniform(0, 1e-3)))
     ).normalize() * s0.length()
-    mobs = matrix.col((uniform(0, 1e-3), uniform(0, 1e-3)))
+    mobs = np.array([uniform(0, 1e-3), uniform(0, 1e-3)])
     sp = s2.normalize() * s0.length()
 
     b1, b2, b3, b4, b5, b6 = (
@@ -79,8 +79,10 @@ def generate_data(experiments, reflections):
     L_param = (uniform(1e-3, 2e-3),)
     ctot = randint(100, 1000)
 
-    T = matrix.sqr((uniform(1e-3, 2e-3), 0, uniform(1e-6, 2e-6), uniform(1e-3, 2e-3)))
-    Sobs = T * T.transpose()
+    T = np.array(
+        (uniform(1e-3, 2e-3), 0, uniform(1e-6, 2e-6), uniform(1e-3, 2e-3))
+    ).reshape(2, 2)
+    Sobs = np.matmul(T, T.T)
 
     params = [S_param, U_param, B_param, L_param]
 
@@ -184,6 +186,8 @@ def test_ConditionalDistribution(testdata):
         experiment = testdata.experiment
         models = testdata.models
         h = testdata.h
+        s0 = np.array(testdata.s0).reshape(3, 1)
+        sp = np.array(testdata.sp).reshape(3, 1)
         # ctot = testdata.ctot
         # mobs = testdata.mobs
         # Sobs = testdata.Sobs
@@ -209,7 +213,13 @@ def test_ConditionalDistribution(testdata):
 
         def get_conditional(state):
             conditional = ReflectionLikelihood(
-                state, testdata.s0, testdata.sp, h, 0, [0.0, 0.0], [0.0, 0.0, 0.0, 0.0]
+                state,
+                s0,
+                sp,
+                h,
+                0,
+                np.array([0.0, 0.0]),
+                np.array([0.0, 0.0, 0.0, 0.0]).reshape(2, 2),
             ).conditional
             return conditional
 
@@ -284,9 +294,9 @@ def test_rotate_vec3_double():
     )
 
     v1 = np.array([0, 0, 1.0], dtype=np.float64).reshape(3, 1)
-    R = compute_change_of_basis_operation_np(v1, vectors)
+    R = compute_change_of_basis_operation(v1, vectors)
 
-    rotated = rotate_vec3_double_np(R, vectors)
+    rotated = rotate_vec3_double(R, vectors)
 
     assert rotated == pytest.approx((0, 0, 1))
 
@@ -296,12 +306,12 @@ def test_rotate_mat3_double():
     A = np.eye(3, dtype=np.float64)
     v1 = np.array([0, 0, 1.0], dtype=np.float64).reshape(3, 1)
     v2 = np.array([1, 1, 1.0], dtype=np.float64).reshape(3, 1)
-    R = compute_change_of_basis_operation_np(v1, v2)
+    R = compute_change_of_basis_operation(v1, v2)
     A = np.matmul(np.matmul(R.T, A), R).reshape(3, 3, 1)
 
     R = R.T
 
-    rotated = rotate_mat3_double_np(R, A)
+    rotated = rotate_mat3_double(R, A)
 
     assert rotated[:, :, 0].flatten() == pytest.approx(
         (1, 0, 0, 0, 1, 0, 0, 0, 1), abs=1e-12
@@ -319,8 +329,8 @@ def test_ReflectionLikelihood(testdata):
     ):
         experiment = testdata.experiment
         models = testdata.models
-        s0 = testdata.s0
-        sp = testdata.sp
+        s0 = np.array(testdata.s0)
+        sp = np.array(testdata.sp)
         h = testdata.h
         ctot = testdata.ctot
         mobs = testdata.mobs
@@ -489,11 +499,11 @@ def test_RefinerData(testdata):
 
     assert tuple(data.s0) == pytest.approx(experiment.beam.get_s0())
     assert data.h_list == reflections["miller_index"]
-    for a, b in zip(data.sp_list, reflections["sp"]):
-        assert a == pytest.approx(b)
-    assert data.ctot_list == sum(shoebox_data)
-    mobs1, mobs2 = data.mobs_list.parts()
-    mobs1 = flex.abs(mobs1)
-    mobs2 = flex.abs(mobs2)
-    assert max(mobs1) < 1e-6
-    assert max(mobs2) < 1e-6
+    for i, sp in enumerate(reflections["sp"]):
+        assert data.sp_list[:, i] == pytest.approx(sp)
+    assert data.ctot_list[0] == sum(shoebox_data)
+
+    mobs1 = np.abs(data.mobs_list[0, :])
+    mobs2 = np.abs(data.mobs_list[1, :])
+    assert np.max(mobs1) < 1e-6
+    assert np.max(mobs2) < 1e-6

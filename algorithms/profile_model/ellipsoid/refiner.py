@@ -15,7 +15,6 @@ from scitbx import linalg, matrix
 from dials.algorithms.profile_model.ellipsoid import mosaicity_from_eigen_decomposition
 from dials.algorithms.profile_model.ellipsoid.model import (
     compute_change_of_basis_operation,
-    compute_change_of_basis_operation_np,
 )
 from dials.algorithms.profile_model.ellipsoid.parameterisation import (
     ReflectionModelState,
@@ -86,13 +85,13 @@ class ConditionalDistribution(object):
         self._dS = dS  # 3 x 3 x n array
 
         # Partition the covariance matrix
-        S11 = S[0:2, 0:2]  # matrix.sqr((S[0], S[1], S[3], S[4]))
-        S12 = S[0:2, 2].reshape(2, 1)  # matrix.col((S[2], S[5]))
-        S21 = S[2, 0:2].reshape(1, 2)  # matrix.col((S[6], S[7])).transpose()
+        S11 = S[0:2, 0:2]
+        S12 = S[0:2, 2].reshape(2, 1)
+        S21 = S[2, 0:2].reshape(1, 2)
         S22 = S[2, 2]
 
         # The partitioned mean vector
-        mu1 = mu[0:2, 0].reshape(2, 1)  # matrix.col((mu[0], mu[1]))
+        mu1 = mu[0:2, 0].reshape(2, 1)
         mu2 = mu[2, 0]
         a = norm(s0)
 
@@ -159,24 +158,13 @@ def rotate_vec3_double(R, A):
     Helper function to rotate a flex.mat3_double array of matrices
 
     """
-    accessor = A.accessor()
-    RA = flex.vec3_double([R * matrix.col(a) for a in A])
-    RA.reshape(accessor)
-    return RA
-
-
-def rotate_vec3_double_np(R, A):
-    """
-    Helper function to rotate a flex.mat3_double array of matrices
-
-    """
     RA = np.concatenate(
         [np.matmul(R, A[:, i]).reshape(3, 1) for i in range(A.shape[1])], axis=1
     )
     return RA
 
 
-def rotate_mat3_double_np(R, A):
+def rotate_mat3_double(R, A):
     """
     Helper function to rotate a flex.mat3_double array of matrices
 
@@ -196,15 +184,17 @@ class ReflectionLikelihood(object):
 
         # Save stuff
         model = ReflectionModelState(model, s0, h)
-        self.s0 = np.array([s0], dtype=np.float64).reshape(3, 1)
-        self.sp = np.array([sp], dtype=np.float64).reshape(3, 1)
+        self.s0 = s0.reshape(3, 1)  # np.array([s0], dtype=np.float64).reshape(3, 1)
+        self.sp = sp.reshape(3, 1)  # np.array([sp], dtype=np.float64).reshape(3, 1)
         self.h = np.array([h], dtype=np.float64).reshape(3, 1)
         self.ctot = ctot
-        self.mobs = np.array([mobs], dtype=np.float64).reshape(2, 1)
-        self.sobs = np.array([sobs], dtype=np.float64).reshape(2, 2)
+        self.mobs = mobs.reshape(
+            2, 1
+        )  # np.array([mobs], dtype=np.float64).reshape(2, 1)
+        self.sobs = sobs  # np.array([sobs], dtype=np.float64).reshape(2, 2)
 
         # Compute the change of basis
-        self.R = compute_change_of_basis_operation_np(self.s0, self.sp)
+        self.R = compute_change_of_basis_operation(self.s0, self.sp)
 
         # The s2 vector
         s2 = self.s0 + model.get_r()
@@ -217,10 +207,10 @@ class ReflectionLikelihood(object):
         )
 
         # Rotate the first derivative matrices
-        self.dS = rotate_mat3_double_np(self.R, model.get_dS_dp())
+        self.dS = rotate_mat3_double(self.R, model.get_dS_dp())
 
         # Rotate the first derivative of s2
-        self.dmu = rotate_vec3_double_np(self.R, model.get_dr_dp())
+        self.dmu = rotate_vec3_double(self.R, model.get_dr_dp())
 
         # Construct the conditional distribution
         self.conditional = ConditionalDistribution(
@@ -398,10 +388,10 @@ class MaximumLikelihoodTarget(object):
     def __init__(self, model, s0, sp_list, h_list, ctot_list, mobs_list, sobs_list):
 
         # Check input
-        assert len(h_list) == len(sp_list)
-        assert len(h_list) == len(ctot_list)
-        assert len(h_list) == len(mobs_list)
-        assert len(h_list) == sobs_list.all()[0]
+        assert len(h_list) == sp_list.shape[-1]
+        assert len(h_list) == ctot_list.shape[-1]
+        assert len(h_list) == mobs_list.shape[-1]
+        assert len(h_list) == sobs_list.shape[-1]
 
         # Save the model
         self.model = model
@@ -413,11 +403,11 @@ class MaximumLikelihoodTarget(object):
                 ReflectionLikelihood(
                     model,
                     s0,
-                    matrix.col(sp_list[i]),
+                    sp_list[:, i],
                     matrix.col(h_list[i]),
                     ctot_list[i],
-                    mobs_list[i],
-                    matrix.sqr(sobs_list[i : i + 1, :]),
+                    mobs_list[:, i],
+                    sobs_list[:, :, i],
                 )
             )
 
@@ -439,38 +429,34 @@ class MaximumLikelihoodTarget(object):
         The RMSD in pixels
 
         """
-        mse = np.array([0.0, 0.0], dtype=np.float64).reshape(2, 1)
+        mse = np.array([0.0, 0.0], dtype=np.float64)
         for i in range(len(self.data)):
             R = self.data[i].R
             mbar = self.data[i].conditional.mean()
             xobs = self.data[i].mobs
-            s0 = self.data[i].s0
+            norm_s0 = norm(self.data[i].s0)
 
             s1 = np.matmul(
                 R.T,
-                np.array([mbar[0, 0], mbar[1, 0], norm(s0)], dtype=np.float64).reshape(
+                np.array([mbar[0, 0], mbar[1, 0], norm_s0], dtype=np.float64).reshape(
                     3, 1
                 ),
             )
             s3 = np.matmul(
                 R.T,
-                np.array([xobs[0, 0], xobs[1, 0], norm(s0)], dtype=np.float64).reshape(
+                np.array([xobs[0, 0], xobs[1, 0], norm_s0], dtype=np.float64).reshape(
                     3, 1
                 ),
             )
-            s1 = flumpy.from_numpy(s1.flatten()).as_double()
-            s3 = flumpy.from_numpy(s3.flatten()).as_double()
-            s1 = matrix.col(s1)
-            s3 = matrix.col(s3)
-            # s1 = R.transpose() * matrix.col((mbar[0], mbar[1], s0.length()))
-            # s3 = R.transpose() * matrix.col((xobs[0], xobs[1], s0.length()))
+            s1 = matrix.col(flumpy.from_numpy(s1[:, 0]))
+            s3 = matrix.col(flumpy.from_numpy(s3[:, 0]))
             xyzcal = self.model.experiment.detector[0].get_ray_intersection_px(s1)
             xyzobs = self.model.experiment.detector[0].get_ray_intersection_px(s3)
             r_x = xyzcal[0] - xyzobs[0]
             r_y = xyzcal[1] - xyzobs[1]
-            mse += np.array([r_x ** 2, r_y ** 2]).reshape(2, 1)
+            mse += np.array([r_x ** 2, r_y ** 2])
         mse /= len(self.data)
-        return matrix.col((sqrt(mse[0]), sqrt(mse[1])))
+        return np.sqrt(mse)
 
     def log_likelihood(self):
         """
@@ -481,7 +467,7 @@ class MaximumLikelihoodTarget(object):
 
     def jacobian(self):
         """
-        Return the Jacobean
+        Return the Jacobian
 
         """
         return flex.double([list(d.first_derivatives()) for d in self.data])
@@ -1020,23 +1006,21 @@ class RefinerData(object):
         """
 
         # Get the beam vector
-        s0 = matrix.col(experiment.beam.get_s0())
+        s0 = np.array([experiment.beam.get_s0()], dtype=np.float64).reshape(3, 1)
 
         # Get the reciprocal lattice vector
         h_list = reflections["miller_index"]
 
         # Initialise the list of observed intensities and covariances
-        sp_list = flex.vec3_double(len(h_list))
-        ctot_list = flex.double(len(h_list))
-        mobs_list = flex.vec2_double(len(h_list))
-        Sobs_list = flex.double(flex.grid(len(h_list), 4))
-        # Bmean = matrix.sqr((0, 0, 0, 0))
+        sp_list = np.zeros(shape=(3, len(h_list)))
+        ctot_list = np.zeros(shape=(len(h_list)))
+        mobs_list = np.zeros(shape=(2, len(h_list)))
+        Sobs_list = np.zeros(shape=(2, 2, len(h_list)))
 
-        # SSS = 0
         logger.info(
             "Computing observed covariance for %d reflections" % len(reflections)
         )
-        s0_length = s0.length()
+        s0_length = norm(s0)
         assert len(experiment.detector) == 1
         panel = experiment.detector[0]
         sbox = reflections["shoebox"]
@@ -1044,16 +1028,10 @@ class RefinerData(object):
         for r in range(len(reflections)):
 
             # The vector to the pixel centroid
-            sp = (
-                matrix.col(panel.get_pixel_lab_coord(xyzobs[r][0:2])).normalize()
-                * s0.length()
-            )
-            xyz = panel.get_pixel_lab_coord(xyzobs[r][0:2])
-            xyarr = np.array([[xyz[0], xyz[1], xyz[2]]], dtype=np.float64)
-            sp = (
-                matrix.col(flumpy.from_numpy(xyarr / np.linalg.norm(xyarr)))
-                * s0.length()
-            )
+            sp = np.array(
+                panel.get_pixel_lab_coord(xyzobs[r][0:2]), dtype=np.float64
+            ).reshape(3, 1)
+            sp *= s0_length / norm(sp)
 
             # Compute change of basis
             R = compute_change_of_basis_operation(s0, sp)
@@ -1067,64 +1045,57 @@ class RefinerData(object):
             i0 = sbox[r].bbox[0]
             j0 = sbox[r].bbox[2]
             assert data.all()[0] == 1
-            X = flex.vec2_double(flex.grid(data.all()[1], data.all()[2]))
+            X = np.zeros(shape=(data.all()[1:]) + (2,), dtype=np.float64)
+            C = np.zeros(shape=data.all()[1:], dtype=np.float64)
             ctot = 0
-            C = flex.double(X.accessor())
             for j in range(data.all()[1]):
                 for i in range(data.all()[2]):
                     c = data[0, j, i] - bgrd[0, j, i]
-                    # if mask[0,j,i] & (1 | 4 | 8) == (1 | 4 | 8) and c > 0:
                     if mask[0, j, i] & (1 | 4) == (1 | 4) and c > 0:
                         ctot += c
                         ii = i + i0
                         jj = j + j0
-                        s = panel.get_pixel_lab_coord((ii + 0.5, jj + 0.5))
-                        sarr = np.array([[s[0], s[1], s[2]]], dtype=np.float64)
-                        s = (
-                            matrix.col(flumpy.from_numpy(sarr / np.linalg.norm(sarr)))
-                            * s0_length
-                        )
-
-                        e = R * s
-                        X[j, i] = (e[0], e[1])
+                        s = np.array(
+                            panel.get_pixel_lab_coord((ii + 0.5, jj + 0.5)),
+                            dtype=np.float64,
+                        ).reshape(3, 1)
+                        s *= s0_length / norm(s)
+                        e = np.matmul(R, s)
+                        X[j, i, :] = e[0:2, 0]
                         C[j, i] = c
 
             # Check we have a sensible number of counts
             assert ctot > 0, "BUG: strong spots should have more than 0 counts!"
 
             # Compute the mean vector
-            xbar = np.array([[0.0, 0.0]], dtype=np.float64)
-            for j in range(X.all()[0]):
-                for i in range(X.all()[1]):
-                    x = np.array(X[j, i], dtype=np.float64)
-                    xbar += C[j, i] * x
+            C = np.expand_dims(C, axis=2)
+            xbar = C * X
+            xbar = xbar.reshape(-1, xbar.shape[-1]).sum(axis=0)
             xbar /= ctot
+
+            xbar = xbar.reshape(2, 1)
 
             # Compute the covariance matrix
             Sobs = np.array([[0.0, 0.0], [0.0, 0.0]], dtype=np.float64)
-            for j in range(X.all()[0]):
-                for i in range(X.all()[1]):
-                    x = np.array(X[j, i], dtype=np.float64)
-                    Sobs += (x - xbar) * (x - xbar).T * C[j, i]
+            for j in range(X.shape[0]):
+                for i in range(X.shape[1]):
+                    x = np.array(X[j, i], dtype=np.float64).reshape(2, 1)
+                    Sobs += np.matmul(x - xbar, (x - xbar).T) * C[j, i, 0]
+
             Sobs /= ctot
             assert Sobs[0, 0] > 0, "BUG: variance must be > 0"
             assert Sobs[1, 1] > 0, "BUG: variance must be > 0"
 
             # Add to the lists
-            sp_list[r] = sp
+            sp_list[:, r] = sp[:, 0]
             ctot_list[r] = ctot
-            xbar = matrix.col(flumpy.from_numpy(xbar[0, :]))
-            Sobs = flumpy.from_numpy(Sobs)
-            mobs_list[r] = xbar
-            Sobs_list[r, 0] = Sobs[0, 0]
-            Sobs_list[r, 1] = Sobs[0, 1]
-            Sobs_list[r, 2] = Sobs[1, 0]
-            Sobs_list[r, 3] = Sobs[1, 1]
+            mobs_list[:, r] = xbar[:, 0]
+            Sobs_list[:, :, r] = Sobs
 
         # Print some information
         logger.info("")
         logger.info(
-            "I_min = %.2f, I_max = %.2f" % (flex.min(ctot_list), flex.max(ctot_list))
+            "I_min = %.2f, I_max = %.2f" % (np.min(ctot_list), np.max(ctot_list))
         )
 
         # Sometimes a single reflection might have an enormouse intensity for
@@ -1132,8 +1103,8 @@ class RefinerData(object):
         # refinement to be dominated by these reflections. Therefore, if the
         # intensity is greater than some value, damp the weighting accordingly
         def damp_outlier_intensity_weights(ctot_list):
-            n = ctot_list.size()
-            sorted_ctot = sorted(ctot_list)
+            n = ctot_list.size
+            sorted_ctot = np.sort(ctot_list)
             Q1 = sorted_ctot[n // 4]
             Q2 = sorted_ctot[n // 2]
             Q3 = sorted_ctot[3 * n // 4]
@@ -1153,20 +1124,15 @@ class RefinerData(object):
         ctot_list = damp_outlier_intensity_weights(ctot_list)
 
         # Print the mean covariance
-        Smean = matrix.sqr((0, 0, 0, 0))
-        for r in range(Sobs_list.all()[0]):
-            Smean += matrix.sqr(tuple(Sobs_list[r : r + 1, :]))
-        Smean /= Sobs_list.all()[0]
-        # Bmean /= len(reflections)
-
+        Smean = np.mean(Sobs_list, axis=2)
         logger.info("")
         logger.info("Mean observed covariance:")
-        logger.info(print_matrix(Smean))
+        logger.info(print_matrix_np(Smean))
         print_eigen_values_and_vectors_of_observed_covariance(Smean, s0)
 
         # Compute the distance from the Ewald sphere
         epsilon = flex.double(
-            s0.length() - matrix.col(s).length() for s in reflections["s2"]
+            s0_length - matrix.col(s).length() for s in reflections["s2"]
         )
         mv = flex.mean_and_variance(epsilon)
         logger.info("")
@@ -1187,6 +1153,8 @@ def print_eigen_values_and_vectors_of_observed_covariance(A, s0):
     """
 
     # Compute the eigen decomposition of the covariance matrix
+    A = matrix.sqr(flumpy.from_numpy(A))
+    s0 = matrix.col(flumpy.from_numpy(s0))
     eigen_decomposition = linalg.eigensystem.real_symmetric(A.as_flex_double_matrix())
     Q = matrix.sqr(eigen_decomposition.vectors())
     L = matrix.diag(eigen_decomposition.values())
@@ -1227,6 +1195,25 @@ def print_eigen_values_and_vectors(A):
  M3 : {mosaicity[2]:.5f} degrees
 """
     )
+
+
+def print_matrix_np(A, fmt="%.3g", indent=0):
+    """
+    Pretty print matrix
+
+    """
+    t = [fmt % a for a in A.flatten()]
+    l = [len(tt) for tt in t]
+    max_l = max(l)
+    fmt = "%" + ("%d" % (max_l + 1)) + "s"
+    prefix = " " * indent
+    lines = []
+    for j in range(A.shape[0]):
+        line = ""
+        for i in range(A.shape[1]):
+            line += fmt % t[i + j * A.shape[1]]
+        lines.append("%s|%s|" % (prefix, line))
+    return "\n".join(lines)
 
 
 def print_matrix(A, fmt="%.3g", indent=0):

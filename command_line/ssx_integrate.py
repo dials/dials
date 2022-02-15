@@ -245,19 +245,19 @@ def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
         tables_list = [0] * len(sub_expts)
         expts_list = [0] * len(sub_expts)
         for future in concurrent.futures.as_completed(futures):
-            #try:
-            expt, refls, collector = future.result()
-            j = futures[future]
-            #except Exception as e:
-            #    logger.info(e)
-            #else:
-            if refls and expt:
-                logger.info(f"Processed image {j+batch_offset+1}")
-                tables_list[j] = refls
-                expts_list[j] = expt
-                configuration["aggregator"].add_dataset(
-                    collector, j + batch_offset + 1
-                )
+            try:
+                expt, refls, collector = future.result()
+                j = futures[future]
+            except Exception as e:
+                logger.info(e)
+            else:
+                if refls and expt:
+                    logger.info(f"Processed image {j+batch_offset+1}")
+                    tables_list[j] = refls
+                    expts_list[j] = expt
+                    configuration["aggregator"].add_dataset(
+                        collector, j + batch_offset + 1
+                    )
 
         expts_list = list(filter(lambda a: a != 0, expts_list))
         integrated_experiments = ExperimentList(expts_list)

@@ -1,10 +1,11 @@
 from math import sqrt
 
-import pytest
-
-from scitbx import matrix
 import numpy as np
+import pytest
+from numpy.linalg import norm
+
 from dxtbx import flumpy
+from scitbx import matrix
 
 from dials.algorithms.profile_model.ellipsoid import chisq_quantile
 from dials.algorithms.profile_model.ellipsoid.model import (
@@ -56,15 +57,15 @@ def simple6_model_state(test_experiment):
 def check_simple1_sigma(sigma, params):
     b1 = params[0]
 
-    assert sigma[0,0] == pytest.approx(b1 ** 2)
-    assert sigma[0,1] == 0
-    assert sigma[0,2] == 0
-    assert sigma[1,0] == 0
-    assert sigma[1,1] == pytest.approx(b1 ** 2)
-    assert sigma[1,2] == 0
-    assert sigma[2,0] == 0
-    assert sigma[2,1] == 0
-    assert sigma[2,2] == pytest.approx(b1 ** 2)
+    assert sigma[0, 0] == pytest.approx(b1 ** 2)
+    assert sigma[0, 1] == 0
+    assert sigma[0, 2] == 0
+    assert sigma[1, 0] == 0
+    assert sigma[1, 1] == pytest.approx(b1 ** 2)
+    assert sigma[1, 2] == 0
+    assert sigma[2, 0] == 0
+    assert sigma[2, 1] == 0
+    assert sigma[2, 2] == pytest.approx(b1 ** 2)
 
 
 def check_simple6_sigma(sigma, params):
@@ -74,7 +75,7 @@ def check_simple6_sigma(sigma, params):
     M = np.matmul(L, L.T)
     for i in range(3):
         for j in range(3):
-            assert sigma[i,j] == pytest.approx(M[i,j])
+            assert sigma[i, j] == pytest.approx(M[i, j])
 
 
 def test_Simple1ProfileModel_sigma(simple1_profile_model):
@@ -110,8 +111,7 @@ def test_Simple1ProfileModel_predict_reflections(
 
     s0 = matrix.col(test_experiment.beam.get_s0())
     quantile = chisq_quantile(3, 0.9973)
-    sigma_inv = matrix.sqr(
-            flumpy.from_numpy(simple1_profile_model.sigma())).inverse()
+    sigma_inv = matrix.sqr(flumpy.from_numpy(simple1_profile_model.sigma())).inverse()
 
     for s2 in reflections["s2"]:
         s2_ = matrix.col(s2)
@@ -210,8 +210,7 @@ def test_Simple6ProfileModel_predict_reflections(
     s2 = reflections["s2"]
     s0 = matrix.col(experiments[0].beam.get_s0())
     quantile = chisq_quantile(3, 0.9973)
-    sigma_inv = matrix.sqr(
-            flumpy.from_numpy(simple6_profile_model.sigma())).inverse()
+    sigma_inv = matrix.sqr(flumpy.from_numpy(simple6_profile_model.sigma())).inverse()
 
     for s2 in map(matrix.col, reflections["s2"]):
         x = s2.normalize() * s0.length() - s2
@@ -238,8 +237,7 @@ def test_Simple6ProfileModel_compute_bbox(simple6_profile_model, test_experiment
     s2 = reflections["s2"]
     s0 = matrix.col(experiments[0].beam.get_s0())
     quantile = chisq_quantile(3, 0.9973)
-    sigma_inv = matrix.sqr(
-            flumpy.from_numpy(simple6_profile_model.sigma())).inverse()
+    sigma_inv = matrix.sqr(flumpy.from_numpy(simple6_profile_model.sigma())).inverse()
 
     for s2 in map(matrix.col, reflections["s2"]):
         x = s2.normalize() * s0.length() - s2
@@ -268,8 +266,7 @@ def test_Simple6ProfileModel_compute_mask(simple6_profile_model, test_experiment
     s2 = reflections["s2"]
     s0 = matrix.col(experiments[0].beam.get_s0())
     quantile = chisq_quantile(3, 0.9973)
-    sigma_inv = matrix.sqr(
-            flumpy.from_numpy(simple6_profile_model.sigma())).inverse()
+    sigma_inv = matrix.sqr(flumpy.from_numpy(simple6_profile_model.sigma())).inverse()
 
     for s2 in map(matrix.col, reflections["s2"]):
         x = s2.normalize() * s0.length() - s2
@@ -298,12 +295,12 @@ def test_Simple6ProfileModel_parameterisation(simple6_profile_model):
 
 def test_compute_change_of_basis_operation():
 
-    r = matrix.col((0, 0.5, -(1 - sqrt(0.75))))
-    s0 = matrix.col((0, 0, 1))
+    r = np.array((0, 0.5, -(1 - sqrt(0.75))))
+    s0 = np.array((0, 0, 1))
     s2 = s0 + r
 
     R = compute_change_of_basis_operation(s0, s2)
 
-    z = R * s2
+    z = np.matmul(R, s2)
 
-    assert z.length() == pytest.approx(1)
+    assert norm(z) == pytest.approx(1)
