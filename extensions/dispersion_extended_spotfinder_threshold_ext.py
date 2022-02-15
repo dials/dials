@@ -33,7 +33,7 @@ class DispersionExtendedSpotFinderThresholdExt:
         self.params = params
 
     def compute_threshold(self, image, mask, **kwargs):
-        """
+        r"""
         Compute the threshold.
 
         :param image: The image to process
