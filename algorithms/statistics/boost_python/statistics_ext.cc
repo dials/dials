@@ -18,6 +18,7 @@
 #include <dials/algorithms/statistics/poisson_test.h>
 #include <dials/algorithms/statistics/correlation.h>
 #include <dials/algorithms/statistics/binned_gmm.h>
+#include <dials/algorithms/statistics/binned_statistics.h>
 
 namespace dials { namespace algorithms { namespace boost_python {
 
@@ -103,6 +104,14 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("epsilon", &BinnedGMMSingle1D::epsilon)
       .def("mu", &BinnedGMMSingle1D::mu)
       .def("sigma", &BinnedGMMSingle1D::sigma);
+
+    class_<BinnedStatistics>("BinnedStatistics", no_init)
+      .def(init<const af::const_ref<double> &,
+                const af::const_ref<std::size_t> &,
+                std::size_t>())
+      .def("bin_is_empty", &BinnedStatistics::bin_is_empty)
+      .def("get_values_in_bin", &BinnedStatistics::get_values_in_bin, (arg("i")));
+
   }
 
 }}}  // namespace dials::algorithms::boost_python
