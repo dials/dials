@@ -89,10 +89,6 @@ class Point(NamedTuple):
     slow: float
     fast: float
 
-    # def convert_units(self, unit_in, unit_out):
-    #     return Point(slow=_convert_units(self.slow, unit_in, unit_out),
-    #                  fast=_convert_units(self.fast, unit_in, unit_out))
-
 
 class ExptParams(NamedTuple):
     """
@@ -124,7 +120,7 @@ def _convert_units(
 ) -> Union[float, Point]:
     """Keep units sanity for pyFAI <--> DIALS conversions
     Most parameters will be kept in SI units internally
-    :param val: the value to be converted
+    :param val: the value/values to be converted
     :param unit_in: Units of input value
     :param unit_out: Units wanted for the input value
     :return: value in new units
@@ -204,6 +200,18 @@ class Detector(pfDetector):
         )
 
 
+# class Calibrant:
+#     def __init__(self, standard, wavelength):
+#         px, py = expt_params.pix_size
+#         size_x, size_y = expt_params.img_size
+#
+#         super().__init__(
+#             pixel1=_convert_units(px, "mm", "m"),
+#             pixel2=_convert_units(py, "mm", "m"),
+#             max_shape=(size_x, size_y),
+#         )
+
+
 class Geometry(pfGeometry):
     """
     pyFAI uses the normal from the sample to the detector as the direction
@@ -213,9 +221,9 @@ class Geometry(pfGeometry):
     These two are coincident only in the case of flat (zero tilt) detector.
 
     Passing geometry back and from DIALS involves passing parameters through
-    pyFAI.geometry.getFit2D and PyFAI.geometry.setFit2D which understands
-    beam center as a geometry parameter and updates correspondingly the
-    pyFAI.geometry and pyFAI.detector objects
+    pyFAI.geometry.setFit2D which understands beam center as a geometry parameter
+    and updates correspondingly the pyFAI.geometry and pyFAI.detector objects.
+    Similarly PyFAI.geometry.setFit2D does the reverse.
     """
 
     def __init__(self, expt_params: ExptParams):
@@ -229,7 +237,6 @@ class Geometry(pfGeometry):
         beam_slow, beam_fast = _convert_units(expt_params.beam_on_detector, "mm", "m")
 
         self.beam_m = Point(slow=beam_slow, fast=beam_fast)
-
         self.beam_px = self._beam_to_px()
 
         self.beam_distance = expt_params.distance
@@ -347,6 +354,159 @@ class Geometry(pfGeometry):
     #     )
 
 
+class EyeballWidget:
+    """
+    Matplotlib widget to eyeball the beam center by comparing the theoretical
+    and experimental standard.
+    """
+
+    def __init__(
+        self, image: np.array, start_geometry: Geometry, calibrant: pfCalibrant
+    ):
+        self.image = image
+        self.geometry = start_geometry
+        self.detector = start_geometry.detector
+        self.calibrant = calibrant
+
+        self.fig, self.ax = self.set_up_figure()
+
+    def calibrate(self):
+        beam_x_slider = self.make_slider("x")
+        beam_y_slider = self.make_slider("y")
+
+        calibrant_image = self.calibrant_rings_image(self.ax)
+
+        # register the update function with each slider
+        def update(val):
+            new_geometry = self.geometry.__deepcopy__()
+            new_geometry.update_beam_pos(
+                beam_coords_px=Point(beam_x_slider.val, beam_y_slider.val)
+            )
+
+            calibrant_image.set_array(self.calibrant_rings(new_geometry))
+            self.fig.canvas.draw_idle()
+
+        beam_x_slider.on_changed(update)
+        beam_y_slider.on_changed(update)
+
+        # register the reset function with reset button
+        def reset(event):
+            beam_x_slider.reset()
+            beam_y_slider.reset()
+
+        reset_ax = plt.axes([0.8, 0.026, 0.1, 0.04])
+        button_res = Button(reset_ax, "Reset", hovercolor="0.975")
+        button_res.on_clicked(reset)
+
+        # register the save and exit function with save button
+        def save_and_exit(event):
+            self.geometry.update_beam_pos(
+                beam_coords_px=Point(beam_x_slider.val, beam_y_slider.val)
+            )
+            self.geometry.save_to_expt(
+                only_beam=True,
+                output="eyeballed.expt",
+            )
+            plt.close()
+
+        save_ax = plt.axes([0.5, 0.026, 0.23, 0.04])
+        button_save = Button(save_ax, "Save beam and exit", hovercolor="0.975")
+        button_save.on_clicked(save_and_exit)
+
+        # finally show plot
+        plt.show()
+
+    def set_up_figure(self):
+        """
+        Add title and label axes
+        """
+        fig, ax = plt.subplots()
+        ax = pfjupyter.display(
+            self.image,
+            label="Calibrant overlay on experimental image",
+            ax=ax,
+        )
+        ax.set_xlabel("x position [pixels]")
+        ax.set_ylabel("y position [pixels]")
+        return fig, ax
+
+    def make_slider(self, label):
+        slider = None
+        if label == "x":
+            plt.subplots_adjust(bottom=0.25)
+            # Make a horizontal slider to control the beam x position.
+            ax_beam_x = plt.axes([0.25, 0.1, 0.65, 0.03])
+
+            slider = Slider(
+                ax=ax_beam_x,
+                label="Beam center x [px]",
+                valmin=self.detector.max_shape[0] * 0.25,
+                valmax=self.detector.max_shape[0] * 0.75,
+                valinit=self.geometry.beam_px.slow,
+            )
+
+        elif label == "y":
+            plt.subplots_adjust(left=0.25)
+            # Make a vertically oriented slider to the beam y position
+            ax_beam_y = plt.axes([0.1, 0.25, 0.0225, 0.63])
+            slider = Slider(
+                ax=ax_beam_y,
+                label="Beam center y [px]",
+                valmin=self.detector.max_shape[1] * 0.25,
+                valmax=self.detector.max_shape[1] * 0.75,
+                valinit=self.geometry.beam_px.fast,
+                orientation="vertical",
+            )
+        return slider
+
+    def calibrant_rings_image(self, ax: plt.axes) -> plt.axes:
+        cal_img_masked = self.calibrant_rings()
+
+        rings_img = ax.imshow(cal_img_masked, alpha=0.3, cmap="inferno", origin="lower")
+        # add the beam position
+        ax.plot(*self.beam_position(self.geometry), "rx")
+
+        return rings_img
+
+    def beam_position(self, geometry: Optional[Geometry] = None) -> list[float, float]:
+        """
+        Compute beam position
+        """
+        if geometry:
+            beam = [
+                geometry.poni2 / self.detector.pixel2,
+                geometry.poni1 / self.detector.pixel1,
+            ]
+        else:
+            beam = [
+                self.geometry.poni2 / self.detector.pixel2,
+                self.geometry.poni1 / self.detector.pixel1,
+            ]
+        return beam
+
+    def calibrant_rings(self, geometry: Optional[Geometry] = None) -> ma:
+        """
+        Make a masked array for the calibration rings. If a geometry parameters
+        is given then use that geometry for the calibrant, otherwise use the
+        class geometry.
+        For smaller wavelengths (electrons) reduce the rings blurring
+        """
+
+        if self.calibrant.wavelength < 1e-1:
+            w = 1e-7
+        else:
+            w = 1e-3
+
+        if geometry:
+            cal_img = self.calibrant.fake_calibration_image(geometry, W=w)
+        else:
+            cal_img = self.calibrant.fake_calibration_image(self.geometry, W=w)
+
+        cal_img_masked = ma.masked_where(cal_img <= 1e-4, cal_img)
+
+        return cal_img_masked
+
+
 class PowderCalibrator:
     def __init__(self, expt_params: ExptParams, user_args: UserArgs):
         """
@@ -410,128 +570,6 @@ class PowderCalibrator:
         pfjupyter.display(sg=geometry, label=label)
         plt.show()
 
-    # ToDo: could this be a class instead
-    def rough_fit_widget(self):
-        """
-        Matplotlib widget to eyeball the beam center by comparing the theoretical
-        and experimental standard.
-        """
-        fig, ax = plt.subplots()
-        ax = pfjupyter.display(
-            self.expt_params.image,
-            label="Calibrant overlay on experimental image",
-            ax=ax,
-        )
-
-        rings_img = self.rings_beam_image(self.geometry, ax)
-
-        ax.set_xlabel("x position [pixels]")
-        ax.set_ylabel("y position [pixels]")
-
-        plt.subplots_adjust(left=0.25, bottom=0.25)
-
-        # Make a horizontal slider to control the beam x position.
-        ax_beam_x = plt.axes([0.25, 0.1, 0.65, 0.03])
-
-        beam_x_slider = Slider(
-            ax=ax_beam_x,
-            label="Beam center x [px]",
-            valmin=self.detector.max_shape[0] * 0.25,
-            valmax=self.detector.max_shape[0] * 0.75,
-            valinit=self.geometry.beam_px.slow,
-        )
-        # Make a vertically oriented slider to the beam y position
-        ax_beam_y = plt.axes([0.1, 0.25, 0.0225, 0.63])
-        beam_y_slider = Slider(
-            ax=ax_beam_y,
-            label="Beam center y [px]",
-            valmin=self.detector.max_shape[1] * 0.25,
-            valmax=self.detector.max_shape[1] * 0.75,
-            valinit=self.geometry.beam_px.fast,
-            orientation="vertical",
-        )
-
-        def update(val):
-            new_geometry = self.geometry.__deepcopy__()
-
-            new_geometry.update_beam_pos(
-                beam_coords_px=Point(beam_x_slider.val, beam_y_slider.val)
-            )
-            rings_img.set_array(self.cal_rings(new_geometry))
-            fig.canvas.draw_idle()
-
-        # register the update function with each slider
-        beam_x_slider.on_changed(update)
-        beam_y_slider.on_changed(update)
-
-        reset_ax = plt.axes([0.8, 0.026, 0.1, 0.04])
-        button_res = Button(reset_ax, "Reset", hovercolor="0.975")
-
-        def reset(event):
-            beam_x_slider.reset()
-            beam_y_slider.reset()
-
-        button_res.on_clicked(reset)
-
-        save_ax = plt.axes([0.5, 0.026, 0.23, 0.04])
-        button_save = Button(save_ax, "Save beam and exit", hovercolor="0.975")
-
-        def save_and_exit(event):
-            self.geometry.update_beam_pos(
-                beam_coords_px=Point(beam_x_slider.val, beam_y_slider.val)
-            )
-            self.geometry.save_to_expt(
-                only_beam=True,
-                output=self.user_args.calibrated_geom or "eyeballed.expt",
-            )
-
-            plt.close()
-
-        button_save.on_clicked(save_and_exit)
-
-        plt.show()
-
-    def rings_beam_image(self, geometry: Geometry, ax: plt.axes) -> plt.axes:
-        cal_img_masked = self.cal_rings(geometry)
-
-        rings_img = ax.imshow(cal_img_masked, alpha=0.3, cmap="inferno", origin="lower")
-        ax.plot(*self.beam_position(geometry), "rx")
-
-        return rings_img
-
-    def beam_position(self, geometry: Optional[Geometry] = None) -> list[float, float]:
-        """
-        Compute beam position
-        """
-        if geometry:
-            beam = [
-                geometry.poni2 / self.detector.pixel2,
-                geometry.poni1 / self.detector.pixel1,
-            ]
-        else:
-            beam = [
-                self.geometry.poni2 / self.detector.pixel2,
-                self.geometry.poni1 / self.detector.pixel1,
-            ]
-        return beam
-
-    def cal_rings(self, geometry: Optional[Geometry] = None) -> ma:
-        # for smaller wavelengths (electrons) reduce the rings blurring
-
-        if self.expt_params.wavelength < 1e-1:
-            w = 1e-7
-        else:
-            w = 1e-3
-
-        if geometry:
-            cal_img = self.calibrant.fake_calibration_image(geometry, W=w)
-        else:
-            cal_img = self.calibrant.fake_calibration_image(self.geometry, W=w)
-
-        cal_img_masked = ma.masked_where(cal_img <= 1e-4, cal_img)
-
-        return cal_img_masked
-
     def calibrate_with_calibrant(
         self,
         num_rings: Optional[int] = 4,
@@ -541,7 +579,12 @@ class PowderCalibrator:
 
         if self.user_args.eyeball:
             # first use user eyes for rough fit
-            self.rough_fit_widget()
+            eyeballing_widget = EyeballWidget(
+                image=self.expt_params.image,
+                start_geometry=self.geometry,
+                calibrant=self.calibrant,
+            )
+            eyeballing_widget.calibrate()
         else:
             print(
                 "Warning: If the starting geometry is significantly off the fit might return poor results."
@@ -576,9 +619,9 @@ class PowderCalibrator:
 
             # show the cake plot as well
             int2 = ai.integrate2d_ng(
-                self.expt_params.image,
-                500,
-                360,
+                data=self.expt_params.image,
+                npt_rad=500,
+                npt_azim=360,
                 unit="q_nm^-1",
             )
             pfjupyter.plot2d(int2, calibrant=self.calibrant)
@@ -592,7 +635,7 @@ if __name__ == "__main__":
     # calibrator.calibrate_with_calibrant(verbose=True)
 
     starting_file = "/home/fyi77748/Data/Al_standard/eyeballed.expt"
-    test_args = [starting_file, "standard=Al", "eyeball=False"]
+    test_args = [starting_file, "standard=Al", "eyeball=True"]
     expt_parameters, user_arguments = parse_args(args=test_args)
 
     calibrator = PowderCalibrator(expt_params=expt_parameters, user_args=user_arguments)
