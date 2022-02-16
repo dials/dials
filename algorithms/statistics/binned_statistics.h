@@ -55,7 +55,7 @@ namespace dials { namespace algorithms {
       scitbx::af::shared<double> median;
       for (std::size_t i = 0; i < n_bins_; i++)
       {
-        if (not is_sorted[i])
+        if (!is_sorted[i])
         {
           std::sort(binned_values[i].begin(), binned_values[i].end());
           is_sorted[i] = true;
