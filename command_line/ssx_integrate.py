@@ -74,6 +74,10 @@ phil_scope = iotbx.phil.parse(
     .type = choice
   nproc=Auto
     .type = int
+  image_range = None
+    .type = str
+    .help = "Only process this image range. Input in the format start:end."
+            "This range is an inclusive range."
   output {
     batch_size = 50
       .type = int
@@ -204,8 +208,25 @@ def process_one_image_stills_integrator(experiment, table, params):
 
 def setup(reflections, params):
     # calculate the batches for processing
-    batches = list(range(0, len(reflections), params.output.batch_size))
-    batches.append(len(reflections))
+    if params.image_range:
+        if not len(params.image_range.split(":")) == 2:
+            raise ValueError("Image range must be given in the form first:last")
+        first, last = params.image_range.split(":")
+        try:
+            first = int(first)
+        except ValueError:
+            raise ValueError(f"Issue interpreting {first} as an integer")
+        try:
+            last = int(last)
+        except ValueError:
+            raise ValueError(f"Issue interpreting {last} as an integer")
+        lowest_index = max(0, first - 1)
+        highest_image = min(last, len(reflections))
+        batches = list(range(lowest_index, highest_image, params.output.batch_size))
+        batches.append(highest_image)
+    else:
+        batches = list(range(0, len(reflections), params.output.batch_size))
+        batches.append(len(reflections))
 
     # Note, memory processing logic can go here
     if params.nproc is Auto:
