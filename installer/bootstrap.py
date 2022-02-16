@@ -502,7 +502,7 @@ def download_to_file(url, file, quiet=False):
         # if url fails to open, try using curl
         # temporary fix for old OpenSSL in system Python on macOS
         # https://github.com/cctbx/cctbx_project/issues/33
-        command = ["/usr/bin/curl", "--http1.0", "-fLo", file, "--retry", "5", url]
+        command = ["/usr/bin/curl", "-fLo", file, "--retry", "5", url]
         subprocess.call(command)
         socket = None  # prevent later socket code from being run
         try:
