@@ -110,6 +110,8 @@ namespace dials { namespace algorithms { namespace boost_python {
                 const af::const_ref<std::size_t> &,
                 std::size_t>())
       .def("bin_is_empty", &BinnedStatistics::bin_is_empty)
+      .def("bin_is_sorted", &BinnedStatistics::bin_is_sorted)
+      .def("get_medians", &BinnedStatistics::get_medians)
       .def("get_values_in_bin", &BinnedStatistics::get_values_in_bin, (arg("i")));
 
   }

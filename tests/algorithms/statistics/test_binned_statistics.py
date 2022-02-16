@@ -18,3 +18,37 @@ def test_partitions():
     assert binned_statistics.bin_is_empty().all_eq(
         flex.bool((False, False, True, False))
     )
+    assert binned_statistics.bin_is_sorted().all_eq(
+        flex.bool((False, False, False, False))
+    )
+
+
+def test_median_and_iqr():
+
+    # Even number of values, one bin
+    vals1 = flex.double((1, 2, 3, 4))
+    bins = flex.size_t([0] * len(vals1))
+    binned_statistics = BinnedStatistics(vals1, bins, 1)
+    assert binned_statistics.get_medians().all_eq(flex.double((2.5,)))
+
+    # Odd number of values, one bin, and robustness test
+    vals2 = flex.double((1, 2, 3, 100, 1000))
+    bins = flex.size_t([0] * len(vals2))
+    binned_statistics = BinnedStatistics(vals2, bins, 1)
+    assert binned_statistics.get_medians().all_eq(flex.double((3.0,)))
+
+    # Now combine the data and randomise order
+    vals3 = vals1.concatenate(vals2)
+    bins = flex.size_t([0] * len(vals1) + [1] * len(vals2))
+    perm = flex.random_permutation(len(bins))
+    vals3 = vals3.select(perm)
+    bins = bins.select(perm)
+    binned_statistics = BinnedStatistics(vals3, bins, 2)
+    assert binned_statistics.get_medians().all_eq(
+        flex.double(
+            (
+                2.5,
+                3.0,
+            )
+        )
+    )
