@@ -27,7 +27,7 @@ Or from command line:
 """
 
 from sys import exit
-from typing import NamedTuple, Optional, Tuple
+from typing import NamedTuple, Optional, Tuple, Union
 
 import numpy as np
 import numpy.ma as ma
@@ -81,15 +81,17 @@ phil_scope = parse(
 )
 
 
-def _convert_units(val, unit_in, unit_out):
-    """Keep units sanity for pyFAI <--> DIALS conversions
-    :param val: the value to be converted
-    :param unit_in: Units of input value
-    :param unit_out: Units wanted for the input value
-    :return: value in new units
+class Point(NamedTuple):
     """
-    SI = {"A": 1e-10, "nm": 1e-9, "micron": 1e-6, "mm": 1e-3, "cm": 1e-2, "m": 1}
-    return val * SI[unit_in] / SI[unit_out]
+    Use the blessing of namedtuple for x y coordinates
+    """
+
+    slow: float
+    fast: float
+
+    # def convert_units(self, unit_in, unit_out):
+    #     return Point(slow=_convert_units(self.slow, unit_in, unit_out),
+    #                  fast=_convert_units(self.fast, unit_in, unit_out))
 
 
 class ExptParams(NamedTuple):
@@ -99,10 +101,10 @@ class ExptParams(NamedTuple):
 
     input_file: str
     s0: Tuple[float, float, float]
-    beam_on_detector: Tuple[float, float]
+    beam_on_detector: Point
     wavelength: float
     distance: float
-    img_size: Tuple[float, float]
+    img_size: Tuple[int, int]
     pix_size: Tuple[float, float]
     image: np.array
 
@@ -115,6 +117,24 @@ class UserArgs(NamedTuple):
     eyeball: Optional[bool]
     standard: str
     calibrated_geom: Optional[str]
+
+
+def _convert_units(
+    val: Union[float, Point], unit_in: str, unit_out: str
+) -> Union[float, Point]:
+    """Keep units sanity for pyFAI <--> DIALS conversions
+    Most parameters will be kept in SI units internally
+    :param val: the value to be converted
+    :param unit_in: Units of input value
+    :param unit_out: Units wanted for the input value
+    :return: value in new units
+    """
+    si = {"A": 1e-10, "nm": 1e-9, "micron": 1e-6, "mm": 1e-3, "cm": 1e-2, "m": 1}
+    if isinstance(val, Point):
+        converted = Point(*np.array(val) * si[unit_in] / si[unit_out])
+    else:
+        converted = val * si[unit_in] / si[unit_out]
+    return converted
 
 
 def parse_args(args=None) -> Tuple[ExptParams, UserArgs]:
@@ -154,7 +174,7 @@ def parse_args(args=None) -> Tuple[ExptParams, UserArgs]:
     expt_params = ExptParams(
         input_file=params.input.experiments[0].filename,
         s0=s0,
-        beam_on_detector=beam_on_detector,
+        beam_on_detector=Point(*beam_on_detector),
         wavelength=wavelength,
         distance=distance,
         img_size=img_size,
@@ -205,47 +225,64 @@ class Geometry(pfGeometry):
             detector=Detector(expt_params),
             wavelength=_convert_units(expt_params.wavelength, "A", "m"),
         )
-        # beam parameters from expt in mm
-        beam_x, beam_y = expt_params.beam_on_detector
+        # convert beam parameters from mm to m
+        beam_slow, beam_fast = _convert_units(expt_params.beam_on_detector, "mm", "m")
 
-        # convert to m
-        self.beam_x_m = _convert_units(beam_x, "mm", "m")
-        self.beam_y_m = _convert_units(beam_y, "mm", "m")
+        self.beam_m = Point(slow=beam_slow, fast=beam_fast)
 
-        self.beam_x_px = self.beam_x_m / self.detector.pixel1
-        self.beam_y_px = self.beam_y_m / self.detector.pixel2
+        self.beam_px = self._beam_to_px()
 
         self.beam_distance = expt_params.distance
-        self.set_poni()
 
-    def set_poni(self):
-        # fit2D understands beam parameters
+        # pyFAI calibration will need its poni parameters
+        self._set_poni()
+
+    def _set_poni(self):
+        """
+        Call fit2D to translate beam parameters to poni parameters
+        """
         self.setFit2D(
             directDist=self.beam_distance,
-            centerX=self.beam_x_px,
-            centerY=self.beam_y_px,
+            centerX=self.beam_px.slow,
+            centerY=self.beam_px.fast,
+        )
+
+    def _beam_to_px(self):
+        """
+        Transform beam coordinates from meters to pixels
+        """
+        if not self.beam_m:
+            exit("No beam information provided")
+        return Point(
+            slow=self.beam_m.slow / self.detector.pixel1,
+            fast=self.beam_m.fast / self.detector.pixel2,
+        )
+
+    def _beam_to_m(self):
+        """
+        Transforms beam coordinates from pixels to meters
+        """
+        if not self.beam_px:
+            exit("No beam information provided")
+        return Point(
+            slow=self.beam_px.slow * self.detector.pixel1,
+            fast=self.beam_px.fast * self.detector.pixel2,
         )
 
     def update_beam_pos(
         self,
-        beam_coords_px: Optional[Tuple[float, float]] = None,
-        beam_coords_m: Optional[Tuple[float, float]] = None,
+        beam_coords_px: Optional[Point] = None,
+        beam_coords_m: Optional[Point] = None,
     ):
         if beam_coords_px:
-            self.beam_x_px = beam_coords_px[0]
-            self.beam_y_px = beam_coords_px[1]
-
-            self.beam_x_m = beam_coords_px[0] / self.detector.pixel1
-            self.beam_y_m = beam_coords_px[1] / self.detector.pixel2
+            self.beam_px = beam_coords_px
+            self.beam_m = self._beam_to_m()
 
         elif beam_coords_m:
-            self.beam_x_px = beam_coords_m[0] / self.detector.pixel1
-            self.beam_y_px = beam_coords_m[1] / self.detector.pixel2
+            self.beam_m = beam_coords_m
+            self.beam_px = self._beam_to_px()
 
-            self.beam_x_m = beam_coords_m[0]
-            self.beam_y_m = beam_coords_m[1]
-
-        self.set_poni()
+        self._set_poni()
 
     def update_from_ai(self, geom: pfGeometry):
         """
@@ -258,14 +295,9 @@ class Geometry(pfGeometry):
         self.set_param(geom.param)
         beam_params = self.getFit2D()
 
-        self.beam_x_m = beam_params["centerX"]
-        self.beam_y_m = beam_params["centerY"]
-        self.beam_x_px = (
-            _convert_units(beam_params["centerX"], "mm", "m") / beam_params["pixelX"]
-        )
-        self.beam_y_px = (
-            _convert_units(beam_params["centerY"], "mm", "m") / beam_params["pixelY"]
-        )
+        self.beam_px = Point(slow=beam_params["centerX"], fast=beam_params["centerY"])
+
+        self.beam_m = self._beam_to_m()
         self.beam_distance = beam_params["directDist"]
 
     def to_parsable(self, only_beam: bool) -> list[str]:
@@ -274,9 +306,9 @@ class Geometry(pfGeometry):
         """
         phil = [
             "fast_slow_beam_centre="
-            + str(int(self.beam_x_px))
+            + str(self.beam_px.slow)
             + ","
-            + str(int(self.beam_y_px))
+            + str(self.beam_px.fast)
         ]
 
         if not only_beam:
@@ -306,13 +338,13 @@ class Geometry(pfGeometry):
         new = self.__class__(self.expt_params)
         return new
 
-    def __repr__(self):
-        return (
-            f"Detector {self.detector.name}: PixelSize= {self.pixel1}, {self.pixel2} m  "
-            f"Distance={self.beam_distance:.2f} mm\n"
-            f"Beam position on detector: m= {self.beam_x_m:.4f}m, {self.beam_y_m:.4f}m  "
-            f"px= {self.beam_x_px:.2f}, {self.beam_y_px:.2f}"
-        )
+    # def __repr__(self):
+    #     return (
+    #         f"Detector {self.detector.name}: PixelSize= {self.pixel1}, {self.pixel2} m  "
+    #         f"Distance={self.beam_distance:.2f} mm\n"
+    #         f"Beam position on detector: m= {self.beam_m.slow:.4f}m, {self.beam_m.fast:.4f}m  "
+    #         f"px= {self.beam_px.slow:.2f}, {self.beam_px.fast:.2f}"
+    #     )
 
 
 class PowderCalibrator:
@@ -348,6 +380,12 @@ class PowderCalibrator:
         )
 
         self.print_hints()
+
+    def __repr__(self):
+        return (
+            f"{self.user_args.standard} Calibrator for {self.expt_params.input_file}"
+            f"Geometry: {self.geometry:.2f}\n"
+        )
 
     def print_hints(self):
         # Tell me which geometry I'm starting from
@@ -400,7 +438,7 @@ class PowderCalibrator:
             label="Beam center x [px]",
             valmin=self.detector.max_shape[0] * 0.25,
             valmax=self.detector.max_shape[0] * 0.75,
-            valinit=self.geometry.beam_x_px,
+            valinit=self.geometry.beam_px.slow,
         )
         # Make a vertically oriented slider to the beam y position
         ax_beam_y = plt.axes([0.1, 0.25, 0.0225, 0.63])
@@ -409,7 +447,7 @@ class PowderCalibrator:
             label="Beam center y [px]",
             valmin=self.detector.max_shape[1] * 0.25,
             valmax=self.detector.max_shape[1] * 0.75,
-            valinit=self.geometry.beam_y_px,
+            valinit=self.geometry.beam_px.fast,
             orientation="vertical",
         )
 
@@ -417,7 +455,7 @@ class PowderCalibrator:
             new_geometry = self.geometry.__deepcopy__()
 
             new_geometry.update_beam_pos(
-                beam_coords_px=(beam_x_slider.val, beam_y_slider.val)
+                beam_coords_px=Point(beam_x_slider.val, beam_y_slider.val)
             )
             rings_img.set_array(self.cal_rings(new_geometry))
             fig.canvas.draw_idle()
@@ -440,7 +478,7 @@ class PowderCalibrator:
 
         def save_and_exit(event):
             self.geometry.update_beam_pos(
-                beam_coords_px=(beam_x_slider.val, beam_y_slider.val)
+                beam_coords_px=Point(beam_x_slider.val, beam_y_slider.val)
             )
             self.geometry.save_to_expt(
                 only_beam=True,
@@ -504,7 +542,6 @@ class PowderCalibrator:
         if self.user_args.eyeball:
             # first use user eyes for rough fit
             self.rough_fit_widget()
-
         else:
             print(
                 "Warning: If the starting geometry is significantly off the fit might return poor results."
@@ -557,6 +594,6 @@ if __name__ == "__main__":
     starting_file = "/home/fyi77748/Data/Al_standard/eyeballed.expt"
     test_args = [starting_file, "standard=Al", "eyeball=False"]
     expt_parameters, user_arguments = parse_args(args=test_args)
-    print(user_arguments)
+
     calibrator = PowderCalibrator(expt_params=expt_parameters, user_args=user_arguments)
     calibrator.calibrate_with_calibrant(verbose=True)

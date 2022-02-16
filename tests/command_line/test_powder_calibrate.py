@@ -35,7 +35,6 @@ def test_pyFAI_from_eyeballed(dials_data):
             for a, b in zip(calibrated_geom.param, saved_geom.param)
         ]
     )
-    # assert pytest.approx(calibrated_geom.param, 1e-1) == saved_geom.param, 0.1
 
 
 def test_save_geom_to_expt(dials_data):
@@ -45,7 +44,7 @@ def test_save_geom_to_expt(dials_data):
     imported_geom = Geometry(expt_params=imported_expt)
 
     imported_geom.save_to_expt(output="/home/fyi77748/Data/Al_standard/test_save.expt")
-    assert path.exists("/home/fyi77748/Data/Al_standard/test_save.expt") == 1
+    assert path.exists("/home/fyi77748/Data/Al_standard/test_save.expt")
 
     test_save_file = "/home/fyi77748/Data/Al_standard/test_save.expt"
     test_save_args = [test_save_file, "standard=Al", "eyeball=False"]
