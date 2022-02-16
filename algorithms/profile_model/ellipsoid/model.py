@@ -474,7 +474,6 @@ class AngularProfileModelBase(ProfileModelBase):
         """
         s0 = np.array([experiments[0].beam.get_s0()], dtype=np.float64).reshape(3, 1)
         s0_length = norm(s0)
-        num = reflections.get_flags(reflections.flags.indexed).count(True)
         num = reflections.size()
         partiality = flex.double(reflections.size())
         partiality_variance = flex.double(reflections.size())
