@@ -26,6 +26,7 @@ Or from command line:
     > dials.powder_calibrate_widget eyeballed.expt standard="Al" eyeball=False calibrated_geom="calibrated.expt"
 """
 
+import os
 from sys import exit
 from typing import NamedTuple, Optional, Tuple, Union
 
@@ -200,18 +201,6 @@ class Detector(pfDetector):
         )
 
 
-# class Calibrant:
-#     def __init__(self, standard, wavelength):
-#         px, py = expt_params.pix_size
-#         size_x, size_y = expt_params.img_size
-#
-#         super().__init__(
-#             pixel1=_convert_units(px, "mm", "m"),
-#             pixel2=_convert_units(py, "mm", "m"),
-#             max_shape=(size_x, size_y),
-#         )
-
-
 class Geometry(pfGeometry):
     """
     pyFAI uses the normal from the sample to the detector as the direction
@@ -345,13 +334,13 @@ class Geometry(pfGeometry):
         new = self.__class__(self.expt_params)
         return new
 
-    # def __repr__(self):
-    #     return (
-    #         f"Detector {self.detector.name}: PixelSize= {self.pixel1}, {self.pixel2} m  "
-    #         f"Distance={self.beam_distance:.2f} mm\n"
-    #         f"Beam position on detector: m= {self.beam_m.slow:.4f}m, {self.beam_m.fast:.4f}m  "
-    #         f"px= {self.beam_px.slow:.2f}, {self.beam_px.fast:.2f}"
-    #     )
+    def __repr__(self):
+        return (
+            f"Detector {self.detector.name}: PixelSize= {self.pixel1}, {self.pixel2} m  "
+            f"Distance={self.beam_distance:.2f} mm\n"
+            f"Beam position on detector: m= {self.beam_m.slow:.4f}m, {self.beam_m.fast:.4f}m  "
+            f"px= {self.beam_px.slow:.2f}, {self.beam_px.fast:.2f}"
+        )
 
 
 class EyeballWidget:
@@ -369,6 +358,10 @@ class EyeballWidget:
         self.calibrant = calibrant
 
         self.fig, self.ax = self.set_up_figure()
+
+    def __repr__(self):
+        calibrant = os.path.splitext(os.path.basename(self.calibrant.filename))[0]
+        return f"Eyeballing Widget using {calibrant} Calibrant starting from Geometry: \n {self.geometry}"
 
     def calibrate(self):
         beam_x_slider = self.make_slider("x")
@@ -543,8 +536,8 @@ class PowderCalibrator:
 
     def __repr__(self):
         return (
-            f"{self.user_args.standard} Calibrator for {self.expt_params.input_file}"
-            f"Geometry: {self.geometry:.2f}\n"
+            f"{self.user_args.standard} Calibrator for {self.expt_params.input_file} \n"
+            f"Current geometry: \n {self.geometry}"
         )
 
     def print_hints(self):
@@ -639,4 +632,5 @@ if __name__ == "__main__":
     expt_parameters, user_arguments = parse_args(args=test_args)
 
     calibrator = PowderCalibrator(expt_params=expt_parameters, user_args=user_arguments)
+
     calibrator.calibrate_with_calibrant(verbose=True)
