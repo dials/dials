@@ -30,12 +30,19 @@ def test_median_and_iqr():
     bins = flex.size_t([0] * len(vals1))
     binned_statistics = BinnedStatistics(vals1, bins, 1)
     assert binned_statistics.get_medians().all_eq(flex.double((2.5,)))
+    assert binned_statistics.get_iqrs().all_eq(flex.double((1.5,)))
+    # NB this differs from the calculation performed via
+    # _,q1,_,q3,_=five_number_summary(vals1);q3-q1
+    # which gives 2.0. However, it matches the result of R's IQR function
 
     # Odd number of values, one bin, and robustness test
     vals2 = flex.double((1, 2, 3, 100, 1000))
     bins = flex.size_t([0] * len(vals2))
     binned_statistics = BinnedStatistics(vals2, bins, 1)
     assert binned_statistics.get_medians().all_eq(flex.double((3.0,)))
+    assert binned_statistics.get_iqrs().all_eq(flex.double((98,)))
+    # NB this is the same as the calculation performed via
+    # _,q1,_,q3,_=five_number_summary(vals2);q3-q1, and matches R's IQR function
 
     # Now combine the data and randomise order
     vals3 = vals1.concatenate(vals2)
@@ -49,6 +56,14 @@ def test_median_and_iqr():
             (
                 2.5,
                 3.0,
+            )
+        )
+    )
+    assert binned_statistics.get_iqrs().all_eq(
+        flex.double(
+            (
+                1.5,
+                98,
             )
         )
     )

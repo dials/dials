@@ -4,14 +4,7 @@
 #include <scitbx/array_family/shared.h>
 #include <dials/error.h>
 
-
 namespace dials { namespace algorithms {
-
-  template<typename T>
-  static inline double Lerp(T v0, T v1, T t)
-  {
-    return (1 - t)*v0 + t*v1;
-  }
 
   class BinnedStatistics
   {
@@ -104,20 +97,20 @@ namespace dials { namespace algorithms {
         else
         {
           // q1
-          double poi = Lerp<double>(-0.5, n -0.5, 0.25);
-          size_t left = std::max(int64_t(std::floor(poi)), int64_t(0));
-          size_t right = std::min(int64_t(std::ceil(poi)), int64_t(n - 1));
-          double dat_left = binned_values[i].at(left);
-          double dat_right = binned_values[i].at(right);
-          double q1 = Lerp<double>(dat_left, dat_right, poi - left);
+          double id = (n - 1) * 0.25;
+          std::size_t lo = floor(id);
+          std::size_t hi = ceil(id);
+          double qs = binned_values[i][lo];
+          double h  = (id - lo);
+          double q1 = (1.0 - h) * qs + h * binned_values[i][hi];
 
           // q3
-          poi = Lerp<double>(-0.5, n -0.5, 0.75);
-          left = std::max(int64_t(std::floor(poi)), int64_t(0));
-          right = std::min(int64_t(std::ceil(poi)), int64_t(n - 1));
-          dat_left = binned_values[i].at(left);
-          dat_right = binned_values[i].at(right);
-          double q3 = Lerp<double>(dat_left, dat_right, poi - left);
+          id = (n - 1) * 0.75;
+          lo = floor(id);
+          hi = ceil(id);
+          qs = binned_values[i][lo];
+          h  = (id - lo);
+          double q3 = (1.0 - h) * qs + h * binned_values[i][hi];
 
           iqr.push_back(q3 - q1);
         }
