@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from scitbx.array_family import flex
-from scitbx.math import five_number_summary
 
 from dials.algorithms.image.filter import convolve
+from dials.algorithms.statistics import BinnedStatistics
 
 # Module-level definition imported by the image viewer
 phil_str = """
@@ -122,18 +122,9 @@ class RadialProfileSpotFinderThresholdExt:
         # Calculate median intensity and IQR within each bin of masked values
         masked_lookup = lookup.select(mask.as_1d())
         masked_image = image.select(mask.as_1d())
-        med_I = flex.double()
-        iqr = flex.double()
-        for bin in range(n_bins):
-            sel = masked_lookup == bin
-            vals = masked_image.select(sel)
-            if len(vals) < 3:
-                med_I.append(0)
-                iqr.append(0)
-            else:
-                _, q1, med, q3, _ = five_number_summary(vals)
-                med_I.append(med)
-                iqr.append(q3 - q1)
+        binned_statistics = BinnedStatistics(masked_image, masked_lookup, n_bins)
+        med_I = binned_statistics.get_medians()
+        iqr = binned_statistics.get_iqrs()
 
         # Determine the threshold value for each bin. This should be at least
         # 1 quantum greater value than the median to avoid selecting everything
