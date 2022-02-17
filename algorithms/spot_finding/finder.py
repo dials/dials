@@ -92,7 +92,7 @@ class ExtractPixelsFromImage:
         # Add the images to the pixel lists
         num_strong = 0
         average_background = 0
-        for im, mk in zip(image, mask):
+        for i_panel, (im, mk) in enumerate(zip(image, mask)):
             if self.region_of_interest is not None:
                 x0, x1, y0, y1 = self.region_of_interest
                 height, width = im.all()
@@ -104,11 +104,19 @@ class ExtractPixelsFromImage:
                 assert y1 <= height, "y1 <= height"
                 im_roi = im[y0:y1, x0:x1]
                 mk_roi = mk[y0:y1, x0:x1]
-                tm_roi = self.threshold_function.compute_threshold(im_roi, mk_roi)
+                tm_roi = self.threshold_function.compute_threshold(
+                    im_roi,
+                    mk_roi,
+                    imageset=self.imageset,
+                    i_panel=i_panel,
+                    region_of_interest=self.region_of_interest,
+                )
                 threshold_mask = flex.bool(im.accessor(), False)
                 threshold_mask[y0:y1, x0:x1] = tm_roi
             else:
-                threshold_mask = self.threshold_function.compute_threshold(im, mk)
+                threshold_mask = self.threshold_function.compute_threshold(
+                    im, mk, imageset=self.imageset, i_panel=i_panel
+                )
 
             # Add the pixel list
             plist = PixelList(frame, im, threshold_mask)

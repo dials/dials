@@ -6,12 +6,6 @@ Author: Jessica Bruhn, `NanoImaging Services <https://www.nanoimagingservices.co
 
 .. highlight:: none
 
-.. warning::
-
-  This tutorial was prepared using DIALS version 3.5.4, downloaded
-  from :doc:`this site <../../../installation>`. Results may differ with other
-  versions of the software.
-
 General Notes
 =============
 
