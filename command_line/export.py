@@ -46,8 +46,8 @@ input is an models.expt file.
 XDS format exports a models.expt file as XDS.INP and XPARM.XDS files. If a
 reflection file is given it will be exported as a SPOT.XDS file.
 
-PETS2 format exports intensity data and diffraction data in the CIF format
-used by PETS2. This is primarily intended to produce files suitable for
+PETS format exports intensity data and diffraction data in the CIF format
+used by PETS. This is primarily intended to produce files suitable for
 dynamic diffraction refinement using Jana2020, which requires this format.
 
 Examples::
@@ -257,10 +257,10 @@ phil_scope = parse(
 
   pets {
 
-    filename_prefix = dials
+    filename_prefix = dials_dyn
       .type = str
       .help = "The prefix for output files, where the default will produce"
-              "dials.cif_pets and dials_dyn.cif_pets"
+              "dials_dyn.cif_pets"
     id = None
       .type = int
       .help = "The experiment ID to export from a multi-experiment list"
@@ -565,7 +565,6 @@ def export_pets(params, experiments, reflections):
     from dials.util.export_pets import PETSOutput
 
     pets_output = PETSOutput(experiments, reflections, params)
-    pets_output.write_cif_pets()
     pets_output.write_dyn_cif_pets()
 
     return

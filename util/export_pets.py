@@ -310,14 +310,11 @@ class PETSOutput:
                 }
             )
 
-    def write_cif_pets(self):
-        pass
-
     def write_dyn_cif_pets(self):
 
         self._set_virtual_frames()
 
-        cif_filename = self.filename_prefix + "_dyn.cif_pets"
+        cif_filename = self.filename_prefix + ".cif_pets"
         cell_params = self.experiment.crystal.get_unit_cell().parameters()
         volume = self.experiment.crystal.get_unit_cell().volume()
         wavelength = self.experiment.beam.get_wavelength()
@@ -347,7 +344,6 @@ Virtual frame settings: number of merged frames:  {self.n_merged}
             # α is around 1,0,0
             # β is around 0,1,0
             # ω is around 0,0,1
-            # FIXME this is not confirmed as matching PETS2 yet
             omega, alpha, beta = solve_r3_rotation_for_angles_given_axes(
                 R, (0, 0, 1), (1, 0, 0), (0, 1, 0), deg=True
             )
