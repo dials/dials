@@ -6,26 +6,11 @@ Calibrate electron powder geometry using X-ray powder diffraction tools.
 https://doi.org/10.1107/S1600576715004306
 
 The matplotlib widget requires user eyes to give an initial guess of the beam center.
-From the initial guess pyFAI geometry calibration can be used in the usual manner
+Starting from this eyeballed geometry pyFAI geometry calibration can be used in the usual manner
 (ie. just like it used for X-rays).
-
-Usage:
-    from dials.command_line.powder_calibrate_widget import parse_args, PowderCalibrator
-
-    args = ["eyeballed.expt" + "standard=Al" + "eyeball=False"]
-    expt_parameters, user_arguments = parse_args(args=args)
-    calibrator = PowderCalibrator(expt_params=expt_parameters, user_args=user_arguments)
-    calibrator.calibrate_with_calibrant(verbose=True)
-
-Or from command line:
-    1. use the widget to generate a starting geometry. This step can be skipped if
-    the starting geometry is pretty close.
-    > dials.powder_calibrate_widget poor_geom.expt standard="Al" calibrated_geom="eyeballed.expt"
-
-    2. start fine calibration from a saved eyeballed geometry
-    > dials.powder_calibrate_widget eyeballed.expt standard="Al" eyeball=False calibrated_geom="calibrated.expt"
 """
 
+import logging
 import os
 from sys import exit
 from typing import NamedTuple, Optional, Tuple, Union
@@ -64,6 +49,8 @@ if module_exists("pyFAI"):
 # the alternative causes pyfai to segv
 from dials.util.options import OptionParser, flatten_experiments
 
+logger = logging.getLogger("dials.command_line.powder_calibrate_widget")
+
 phil_scope = parse(
     """
   starting_geom = None
@@ -75,7 +62,10 @@ phil_scope = parse(
   eyeball = True
     .type = bool
     .help = use widget to eyeball a better starting geometry?
-  calibrated_geom = None
+  eyeballed_geom = eyeballed.expt
+    .type = str
+    .help = file to which the eyeballed geometry would be saved
+  calibrated_geom = calibrated.expt
     .type = str
     .help = file to which the calibrated geometry would be saved
     """
@@ -111,9 +101,10 @@ class UserArgs(NamedTuple):
     Store the arguments given
     """
 
-    eyeball: Optional[bool]
+    eyeball: bool
     standard: str
-    calibrated_geom: Optional[str]
+    eyeballed_geom: str
+    calibrated_geom: str
 
 
 def _convert_units(
@@ -139,8 +130,8 @@ def parse_args(args=None) -> Tuple[ExptParams, UserArgs]:
     Parse arguments from command line or not and return named tuple with the useful parameters
     """
     usage = (
-        "$ dials.powder_calibrate_widget EXPERIMENT standard=standard_name eyeball=True "
-        "output_geom=file_name [options]"
+        "$ dials.powder_calibrate_widget EXPERIMENT standard=standard_name "
+        "calibrated_geom=file_name [options]"
     )
 
     parser = OptionParser(
@@ -183,6 +174,7 @@ def parse_args(args=None) -> Tuple[ExptParams, UserArgs]:
     user_args = UserArgs(
         standard=params.standard,
         eyeball=params.eyeball,
+        eyeballed_geom=params.eyeballed_geom,
         calibrated_geom=params.calibrated_geom,
     )
 
@@ -212,7 +204,7 @@ class Geometry(pfGeometry):
     Passing geometry back and from DIALS involves passing parameters through
     pyFAI.geometry.setFit2D which understands beam center as a geometry parameter
     and updates correspondingly the pyFAI.geometry and pyFAI.detector objects.
-    Similarly PyFAI.geometry.setFit2D does the reverse.
+    Similarly, PyFAI.geometry.setFit2D does the reverse.
     """
 
     def __init__(self, expt_params: ExptParams):
@@ -315,11 +307,7 @@ class Geometry(pfGeometry):
 
         return phil
 
-    def save_to_expt(
-        self,
-        only_beam: Optional[bool] = False,
-        output: Optional[str] = "calibrated.expt",
-    ):
+    def save_to_expt(self, output: str, only_beam: Optional[bool] = False):
         """
         Update the geometry from start_geometry.expt and save to new output
         Pretend dials.command_line has python API
@@ -350,13 +338,17 @@ class EyeballWidget:
     """
 
     def __init__(
-        self, image: np.array, start_geometry: Geometry, calibrant: pfCalibrant
+        self,
+        image: np.array,
+        start_geometry: Geometry,
+        calibrant: pfCalibrant,
+        eyeballed_geom: str,
     ):
         self.image = image
         self.geometry = start_geometry
         self.detector = start_geometry.detector
         self.calibrant = calibrant
-
+        self.eyeballed_geom = eyeballed_geom
         self.fig, self.ax = self.set_up_figure()
 
     def __repr__(self):
@@ -398,7 +390,7 @@ class EyeballWidget:
             )
             self.geometry.save_to_expt(
                 only_beam=True,
-                output="eyeballed.expt",
+                output=self.eyeballed_geom,
             )
             plt.close()
 
@@ -406,7 +398,7 @@ class EyeballWidget:
         button_save = Button(save_ax, "Save beam and exit", hovercolor="0.975")
         button_save.on_clicked(save_and_exit)
 
-        # finally show plot
+        # finally, show plot
         plt.show()
 
     def set_up_figure(self):
@@ -501,7 +493,14 @@ class EyeballWidget:
 
 
 class PowderCalibrator:
-    def __init__(self, expt_params: ExptParams, user_args: UserArgs):
+    def __init__(
+        self,
+        starting_geom: Optional[str] = None,
+        standard: Optional[str] = None,
+        eyeball: Optional[bool] = True,
+        eyeballed_geom: Optional[str] = "eyeballed.expt",
+        calibrated_geom: Optional[str] = "calibrated.expt",
+    ):
         """
         Perform geometry calibration using an electron powder standard. Because electron powder
         rings are more dense than X-ray ones, pyFAI struggles to automatically find the correct rings.
@@ -511,23 +510,59 @@ class PowderCalibrator:
 
         Parameters
         ----------
-        expt_params: parameters from read.expt
-        user_args.standard: calibrating standard as str
-        user_args.eyeball: optional, default=True, toggles the usage of the eyeballing widget.
+        starting_geom: str
+                expt file containing starting geometry
+        standard: str
+                calibrating standard
+        eyeball: bool
+                optional, default=True, toggles the usage of the eyeballing widget.
                 When set to False the calibration process only wraps pyFAI and if no
                 good starting geometry is given in geom_file then it will probably
                 return poor results.
-        user.calibrated_geom: optional, if given it saves the calibrated geometry to file
+        eyeballed_geom: str
+                optional, if given saves the eyeballed geometry to this file
+        calibrated_geom: str
+                optional, if given saves the calibrated geometry to this file
+
+        Examples
+        --------
+        1. Starting from a saved geometry file, perform fine calibration with pyFAI bypassing the
+        widget tool. Do this using python API
+            >>> from dials.command_line.powder_calibrate_widget import PowderCalibrator
+            >>> al_calibrator = PowderCalibrator("eyeballed.expt", standard="Al", eyeball=False)
+            >>> al_calibrator.calibrate_with_calibrant(plots=True)
+
+        2. Do the same from command line
+            $ dials.powder_calibrate_widget eyeballed.expt standard="Al" eyeball=False
+
+        3. Use the widget to generate a starting geometry. Overwrite the default name of the
+         eyeballed.geom. Do this from command line
+            $ dials.powder_calibrate_widget poor_geom.expt standard="Al" eyeballed_geom="an_example.expt"
+
         """
+        if starting_geom and standard:
+            # API usage
+            args = [
+                str(starting_geom),
+                "standard=" + standard,
+                "eyeball=" + str(eyeball),
+                "eyeballed_geom=" + eyeballed_geom,
+                "calibrated_geom=" + calibrated_geom,
+            ]
+            self.expt_params, self.user_args = parse_args(args=args)
+        elif not starting_geom and not standard:
+            # command line usage
+            self.expt_params, self.user_args = parse_args()
+        elif not standard:
+            exit("Standard missing")
+        elif not starting_geom:
+            exit("Starting geometry missing")
 
-        self.expt_params = expt_params
-        self.user_args = user_args
-
-        self.geometry = Geometry(expt_params)
+        self.geometry = Geometry(self.expt_params)
         self.detector = self.geometry.detector
 
         # ToDo: calibrant class?
-        self.calibrant = pfCalibrant(user_args.standard)
+        self.calibrant = pfCalibrant(self.user_args.standard)
         self.calibrant.wavelength = _convert_units(
             self.expt_params.wavelength, "A", "m"
         )
@@ -540,20 +575,21 @@ class PowderCalibrator:
             f"Current geometry: \n {self.geometry}"
         )
 
+    # TODO: these should go in log
     def print_hints(self):
         # Tell me which geometry I'm starting from
-        print(
+        logger.info(
             f"Initial geometry from {self.expt_params.input_file}:\n-----\n {self.geometry} \n"
         )
 
         # Tell me what calibrant I am using
-        print(
+        logger.info(
             f"Starting calibration using {self.user_args.standard}:\n-----\n {self.calibrant} \n "
         )
 
         # Tell me if I'm using the eyeball widget and how to use
         if self.user_args.eyeball:
-            print(
+            logger.info(
                 "Using the eyeballing widget.\n"
                 "Drag sliders to roughly overlap rings and then save for further fitting. \n"
             )
@@ -567,7 +603,7 @@ class PowderCalibrator:
         self,
         num_rings: Optional[int] = 4,
         fix: Optional[Tuple] = ("rot1", "rot2", "rot3", "wavelength"),
-        verbose: Optional[bool] = False,
+        plots: Optional[bool] = False,
     ):
 
         if self.user_args.eyeball:
@@ -576,11 +612,12 @@ class PowderCalibrator:
                 image=self.expt_params.image,
                 start_geometry=self.geometry,
                 calibrant=self.calibrant,
+                eyeballed_geom=self.user_args.eyeballed_geom,
             )
             eyeballing_widget.calibrate()
         else:
-            print(
-                "Warning: If the starting geometry is significantly off the fit might return poor results."
+            logger.warning(
+                "If the starting geometry is significantly off the fit might return poor results."
             )
 
         # then use pyFAI for fine calibration
@@ -593,22 +630,19 @@ class PowderCalibrator:
 
         gonio_geom.extract_cp(max_rings=num_rings)
 
-        if verbose:
+        if plots:
             self.show_fit(gonio_geom, label="Starting geometry")
 
         gonio_geom.geometry_refinement.refine2(fix=fix)
         ai = gonio_geom.get_ai()
 
-        # update geometry and save to calibrated.expt
+        # update geometry and save to .expt
         self.geometry.update_from_ai(ai)
+        self.geometry.save_to_expt(output=self.user_args.calibrated_geom)
 
-        self.geometry.save_to_expt(
-            output=self.user_args.calibrated_geom or "calibrated.expt"
-        )
-
-        if verbose:
+        if plots:
             self.show_fit(gonio_geom, label="After pyFAI fit")
-            print("Geometry fitted by pyFAI:\n----- \n", ai, "\n")
+            logger.info("Geometry fitted by pyFAI:\n----- \n", ai, "\n")
 
             # show the cake plot as well
             int2 = ai.integrate2d_ng(
@@ -623,14 +657,5 @@ class PowderCalibrator:
 
 
 if __name__ == "__main__":
-    # expt_parameters, user_arguments = parse_args()
-    # calibrator = PowderCalibrator(expt_params=expt_parameters, user_args=user_arguments)
-    # calibrator.calibrate_with_calibrant(verbose=True)
-
-    starting_file = "/home/fyi77748/Data/Al_standard/eyeballed.expt"
-    test_args = [starting_file, "standard=Al", "eyeball=True"]
-    expt_parameters, user_arguments = parse_args(args=test_args)
-
-    calibrator = PowderCalibrator(expt_params=expt_parameters, user_args=user_arguments)
-
-    calibrator.calibrate_with_calibrant(verbose=True)
+    calibrator = PowderCalibrator()
+    calibrator.calibrate_with_calibrant(plots=True)
