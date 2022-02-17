@@ -10,45 +10,46 @@ from dials.command_line.powder_calibrate_widget import (
 
 
 # @pytest.mark.parametrize("eyeball, eyeballed_geom", [(False, "eyeballed.geom")])
-def test_pyFAI_from_eyeballed(dials_data):
-    test_starting_file = "/home/fyi77748/Data/Al_standard/eyeballed.expt"
-    test_args = [
-        test_starting_file,
-        "standard=Al",
-        "eyeball=False",
-        "calibrated_geom=/home/fyi77748/Data/Al_standard/test_calibrated.expt",
-    ]
-    test_expt, test_user = parse_args(args=test_args)
+def test_calibrate_from_eyeballed(dials_data, tmpdir):
+    aluminium_powder = dials_data("aluminium_standard", pathlib=True)
+    eyeballed = aluminium_powder / "eyeballed.expt"
+
+    test_expt, test_user = parse_args(
+        args=[
+            str(eyeballed),
+            "standard=Al",
+            "eyeball=False",
+            "calibrated_geom=" + str(tmpdir) + "/test_calibrated.expt",
+        ]
+    )
     test_calibrator = PowderCalibrator(expt_params=test_expt, user_args=test_user)
     test_calibrator.calibrate_with_calibrant(verbose=False)
     calibrated_geom = test_calibrator.geometry
 
-    saved_calibration_file = "/home/fyi77748/Data/Al_standard/calibrated.expt"
-    saved_args = [saved_calibration_file, "standard=Al", "eyeball=False"]
-    saved_expt, _ = parse_args(args=saved_args)
-    saved_geom = Geometry(expt_params=saved_expt)
+    expected_calibration_file = aluminium_powder / "calibrated.expt"
+    expected_expt, _ = parse_args(
+        args=[str(expected_calibration_file), "standard=Al", "eyeball=False"]
+    )
+    expected_geom = Geometry(expt_params=expected_expt)
 
-    print((calibrated_geom.param, saved_geom.param))
     assert all(
         [
             pytest.approx(a, 1e-1) == b
-            for a, b in zip(calibrated_geom.param, saved_geom.param)
+            for a, b in zip(calibrated_geom.param, expected_geom.param)
         ]
     )
 
 
-def test_save_geom_to_expt(dials_data):
-    imported_file = "/home/fyi77748/Data/Al_standard/imported.expt"
-    imported_args = [imported_file, "standard=Al", "eyeball=False"]
-    imported_expt, _ = parse_args(args=imported_args)
+def test_save_geom_to_expt(dials_data, tmpdir):
+    aluminium_powder = dials_data("aluminium_standard", pathlib=True)
+    imported = aluminium_powder / "imported.expt"
+    imported_expt, _ = parse_args(args=[str(imported), "standard=Al", "eyeball=False"])
     imported_geom = Geometry(expt_params=imported_expt)
+    outfile = str(tmpdir) + "/test_save.expt"
+    imported_geom.save_to_expt(output=outfile)
+    assert path.exists(outfile)
 
-    imported_geom.save_to_expt(output="/home/fyi77748/Data/Al_standard/test_save.expt")
-    assert path.exists("/home/fyi77748/Data/Al_standard/test_save.expt")
-
-    test_save_file = "/home/fyi77748/Data/Al_standard/test_save.expt"
-    test_save_args = [test_save_file, "standard=Al", "eyeball=False"]
-    test_save_expt, _ = parse_args(args=test_save_args)
+    test_save_expt, _ = parse_args(args=[outfile, "standard=Al", "eyeball=False"])
     read_from_saved_geom = Geometry(expt_params=test_save_expt)
 
     assert imported_geom.param == pytest.approx(read_from_saved_geom.param)
