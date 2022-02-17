@@ -47,9 +47,7 @@ def _index(reflection_table, experiment, fail_on_bad_index=False):
         # Compute the fractional miller index
         hf = np.matmul(inv(A), r)
         # Compute the integer miller index
-        h = np.array([int(floor(j + 0.5)) for j in hf[:, 0]], dtype=np.int).reshape(
-            3, 1
-        )
+        h = np.array([int(floor(j + 0.5)) for j in hf[:, 0]], dtype=int).reshape(3, 1)
 
         # Print warning if reindexing
         if tuple(h) != miller_index[i]:
