@@ -14,8 +14,10 @@ from dials.command_line.ssx_integrate import run as run_integrate
 
 @pytest.mark.xdist_group(name="group1")
 def test_ssx_integrate_stills(dials_data, run_in_tmpdir):
+    # Download data set and the internally referenced images
     ssx = dials_data("cunir_serial_processed", pathlib=True)
-    _ = dials_data("cunir_serial", pathlib=True)
+    dials_data("cunir_serial", pathlib=True)
+
     indexed_refl = str(ssx / "indexed.refl")
     indexed_expts = str(ssx / "indexed.expt")
 
@@ -38,7 +40,7 @@ def test_ssx_integrate_stills(dials_data, run_in_tmpdir):
     assert len(experiments) == 2
     refls = flex.reflection_table.from_file("integrated_0.refl")
     expected_n_refls = 614
-    assert len(refls) > expected_n_refls - 10 and len(refls) < expected_n_refls + 10
+    assert len(refls) == pytest.approx(expected_n_refls, abs=9)
 
     run_integrate(
         [
@@ -55,7 +57,7 @@ def test_ssx_integrate_stills(dials_data, run_in_tmpdir):
     assert experiments.profiles()[0].name == "ellipsoid"
     refls = flex.reflection_table.from_file("integrated_0.refl")
     expected_n_refls = 1258
-    assert len(refls) > expected_n_refls - 10 and len(refls) < expected_n_refls + 10
+    assert len(refls) == pytest.approx(expected_n_refls, abs=9)
     indexed = load.experiment_list(indexed_expts)
     assert indexed[0].crystal != experiments[0].crystal
 
@@ -77,5 +79,5 @@ def test_ssx_integrate_stills(dials_data, run_in_tmpdir):
     assert experiments.profiles()[0].name == "ellipsoid"
     refls = flex.reflection_table.from_file("integrated_0.refl")
     expected_n_refls = 1266
-    assert len(refls) > expected_n_refls - 10 and len(refls) < expected_n_refls + 10
+    assert len(refls) == pytest.approx(expected_n_refls, abs=9)
     assert indexed[0].crystal == experiments[0].crystal

@@ -13,10 +13,12 @@ from dials.array_family import flex
 
 @pytest.mark.xdist_group(name="group1")
 def test_initial_integrator(dials_data):
+    # Download data set and the internally referenced images
     ssx = dials_data("cunir_serial_processed", pathlib=True)
-    _ = dials_data("cunir_serial", pathlib=True)
-    refls = flex.reflection_table.from_file(str(ssx / "indexed.refl"))
-    expts = load.experiment_list(str(ssx / "indexed.expt"))[0:1]
+    dials_data("cunir_serial", pathlib=True)
+
+    refls = flex.reflection_table.from_file(ssx / "indexed.refl")
+    expts = load.experiment_list(ssx / "indexed.expt")[0:1]
     refls = refls.select_on_experiment_identifiers([expts[0].identifier])
 
     refls = reindex(refls, expts[0])
@@ -43,10 +45,12 @@ def test_initial_integrator(dials_data):
 
 @pytest.mark.xdist_group(name="group1")
 def test_run_ellipsoid_refinement(dials_data):
+    # Download data set and the internally referenced images
     ssx = dials_data("cunir_serial_processed", pathlib=True)
-    _ = dials_data("cunir_serial", pathlib=True)
-    refls = flex.reflection_table.from_file(str(ssx / "indexed.refl"))
-    expts = load.experiment_list(str(ssx / "indexed.expt"))[0:1]
+    dials_data("cunir_serial", pathlib=True)
+
+    refls = flex.reflection_table.from_file(ssx / "indexed.refl")
+    expts = load.experiment_list(ssx / "indexed.expt")[0:1]
     refls = refls.select_on_experiment_identifiers([expts[0].identifier])
     refls = reindex(refls, expts[0])
 
