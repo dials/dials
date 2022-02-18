@@ -623,14 +623,14 @@ class PowderCalibrator:
 
 
 if __name__ == "__main__":
-    # expt_parameters, user_arguments = parse_args()
-    # calibrator = PowderCalibrator(expt_params=expt_parameters, user_args=user_arguments)
-    # calibrator.calibrate_with_calibrant(verbose=True)
-
-    starting_file = "/home/fyi77748/Data/Al_standard/eyeballed.expt"
-    test_args = [starting_file, "standard=Al", "eyeball=True"]
-    expt_parameters, user_arguments = parse_args(args=test_args)
-
+    expt_parameters, user_arguments = parse_args()
     calibrator = PowderCalibrator(expt_params=expt_parameters, user_args=user_arguments)
-
     calibrator.calibrate_with_calibrant(verbose=True)
+
+    # starting_file = "/home/elena/Work/diamond/data/data-files/aluminium_standard/eyeballed.expt"
+    # test_args = [starting_file, "standard=Al", "eyeball=False"]
+    # expt_parameters, user_arguments = parse_args(args=test_args)
+    #
+    # calibrator = PowderCalibrator(expt_params=expt_parameters, user_args=user_arguments)
+    #
+    # calibrator.calibrate_with_calibrant(verbose=True)
