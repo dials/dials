@@ -14,7 +14,7 @@ from xfel.clustering.cluster_groups import unit_cell_info
 from dials.algorithms.clustering import plots as cluster_plotter
 from dials.util import tabulate
 
-logger = logging.getLogger("dials")
+logger = logging.getLogger("dials.algorithms.indexing.ssx.analysis")
 
 
 def generate_html_report(plots: dict, filename: str) -> None:

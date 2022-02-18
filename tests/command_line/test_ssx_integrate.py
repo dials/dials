@@ -20,8 +20,8 @@ def test_ssx_integrate_fullprocess(dials_data, tmp_path):
     result = procrunner.run(
         [
             "dev.dials.ssx_integrate",
-            str(ssx / "indexed.refl"),
-            str(ssx / "indexed.expt"),
+            ssx / "indexed.refl",
+            ssx / "indexed.expt",
             "nproc=1",
             "batch_size=3",
             "output.json=data.json",
@@ -30,12 +30,12 @@ def test_ssx_integrate_fullprocess(dials_data, tmp_path):
         working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert (tmp_path / "integrated_1.refl").is_file()
-    assert (tmp_path / "integrated_1.expt").is_file()
-    assert (tmp_path / "integrated_2.refl").is_file()
-    assert (tmp_path / "integrated_2.expt").is_file()
-    assert (tmp_path / "dials.ssx_integrate.html").is_file()
-    assert (tmp_path / "data.json").is_file()
+    assert tmp_path.joinpath("integrated_1.refl").is_file()
+    assert tmp_path.joinpath("integrated_1.expt").is_file()
+    assert tmp_path.joinpath("integrated_2.refl").is_file()
+    assert tmp_path.joinpath("integrated_2.expt").is_file()
+    assert tmp_path.joinpath("dials.ssx_integrate.html").is_file()
+    assert tmp_path.joinpath("data.json").is_file()
 
 
 @pytest.mark.xdist_group(name="group1")
