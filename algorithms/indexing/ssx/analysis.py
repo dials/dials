@@ -119,8 +119,8 @@ def report_on_crystal_clusters(crystal_symmetries, make_plots=True):
         logger.info(
             f"""
 Unit cell clustering analysis, clusters with >{min_cluster_pc}% of the number of crystals indexed
+{unit_cell_info(large_clusters)}
 """
-            + unit_cell_info(large_clusters)
         )
         if make_plots:
             cluster_plots = make_cluster_plots(large_clusters)
