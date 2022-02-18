@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import math
 from typing import List
 
@@ -8,9 +9,12 @@ from jinja2 import ChoiceLoader, Environment, PackageLoader
 
 from scitbx.array_family import flex
 from xfel.clustering.cluster import Cluster
+from xfel.clustering.cluster_groups import unit_cell_info
 
 from dials.algorithms.clustering import plots as cluster_plotter
 from dials.util import tabulate
+
+logger = logging.getLogger("dials.algorithms.indexing.ssx.analysis")
 
 
 def generate_html_report(plots: dict, filename: str) -> None:
@@ -99,6 +103,31 @@ def make_cluster_plots(large_clusters: List[Cluster]) -> dict:
         d_this[f"uc_scatter_{n}"] = d_this.pop("uc_scatter")
         d_this[f"uc_hist_{n}"] = d_this.pop("uc_hist")
         cluster_plots.update(d_this)
+    return cluster_plots
+
+
+def report_on_crystal_clusters(crystal_symmetries, make_plots=True):
+    ucs = Cluster.from_crystal_symmetries(crystal_symmetries)
+    clusters, _ = ucs.ab_cluster(5000, log=None, write_file_lists=False, doplot=False)
+    cluster_plots = {}
+    min_cluster_pc = 5
+    threshold = math.floor((min_cluster_pc / 100) * len(crystal_symmetries))
+    large_clusters = [c for c in clusters if len(c.members) > threshold]
+    large_clusters.sort(key=lambda x: len(x.members), reverse=True)
+
+    if large_clusters:
+        logger.info(
+            f"""
+Unit cell clustering analysis, clusters with >{min_cluster_pc}% of the number of crystals indexed
+{unit_cell_info(large_clusters)}
+"""
+        )
+        if make_plots:
+            cluster_plots = make_cluster_plots(large_clusters)
+    else:
+        logger.info(
+            f"No clusters found with >{min_cluster_pc}% of the number of crystals."
+        )
     return cluster_plots
 
 

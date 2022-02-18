@@ -26,21 +26,18 @@ from __future__ import annotations
 
 import json
 import logging
-import math
 import sys
 import time
 
 from cctbx import crystal
 from libtbx import Auto, phil
 from libtbx.introspection import number_of_processors
-from xfel.clustering.cluster import Cluster
-from xfel.clustering.cluster_groups import unit_cell_info
 
 from dials.algorithms.indexing.ssx.analysis import (
     generate_html_report,
     generate_plots,
-    make_cluster_plots,
     make_summary_table,
+    report_on_crystal_clusters,
 )
 from dials.algorithms.indexing.ssx.processing import index
 from dials.util import log, show_mail_handle_errors
@@ -163,36 +160,17 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     n_images = len({e.imageset.get_path(0) for e in indexed_experiments})
     logger.info(f"{indexed_reflections.size()} spots indexed on {n_images} images\n")
 
-    # print some clustering information
-    ucs = Cluster.from_crystal_symmetries(
-        [
-            crystal.symmetry(
-                unit_cell=expt.crystal.get_unit_cell(),
-                space_group=expt.crystal.get_space_group(),
-            )
-            for expt in indexed_experiments
-        ]
+    crystal_symmetries = [
+        crystal.symmetry(
+            unit_cell=expt.crystal.get_unit_cell(),
+            space_group=expt.crystal.get_space_group(),
+        )
+        for expt in indexed_experiments
+    ]
+    cluster_plots = report_on_crystal_clusters(
+        crystal_symmetries,
+        make_plots=(params.output.html or params.output.json),
     )
-    clusters, _ = ucs.ab_cluster(5000, log=None, write_file_lists=False, doplot=False)
-    cluster_plots = {}
-    min_cluster_pc = 5
-    threshold = math.floor((min_cluster_pc / 100) * len(indexed_experiments))
-    large_clusters = [c for c in clusters if len(c.members) > threshold]
-    large_clusters.sort(key=lambda x: len(x.members), reverse=True)
-
-    if large_clusters:
-        logger.info(
-            f"""
-Unit cell clustering analysis, clusters with >{min_cluster_pc}% of the number of crystals indexed
-"""
-            + unit_cell_info(large_clusters)
-        )
-        if params.output.html or params.output.json:
-            cluster_plots = make_cluster_plots(large_clusters)
-    else:
-        logger.info(
-            f"No clusters found with >{min_cluster_pc}% of the number of crystals."
-        )
 
     logger.info(f"Saving indexed experiments to {params.output.experiments}")
     indexed_experiments.as_file(params.output.experiments)
