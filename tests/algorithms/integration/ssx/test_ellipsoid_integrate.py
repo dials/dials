@@ -50,7 +50,7 @@ def test_run_ellipsoid_refinement(dials_data):
     dials_data("cunir_serial", pathlib=True)
 
     refls = flex.reflection_table.from_file(ssx / "indexed.refl")
-    expts = load.experiment_list(ssx / "indexed.expt")[0:1]
+    expts = load.experiment_list(ssx / "indexed.expt", check_format=False)[0:1]
     refls = refls.select_on_experiment_identifiers([expts[0].identifier])
     refls = reindex(refls, expts[0])
 
