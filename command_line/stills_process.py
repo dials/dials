@@ -222,6 +222,8 @@ dials_phil_str = """
         .type = strings
         .help = List of indexing methods. If indexing fails with first method, indexing will be \
                 attempted with the next, and so forth
+      ransac = False
+        .type = bool
     }
   }
 
@@ -1085,7 +1087,11 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
 
         all_reflections = reflections
         indexing_error = None
-        for i in list(reversed(range(50, 101, 2))):
+        if self.params.indexing.stills.ransac:
+            subsets = list(reversed(range(50, 101, 2)))
+        else:
+            subsets = [100]
+        for i in subsets:
             if i != 100:
                 reflections = all_reflections.select(
                     flex.random_permutation(len(all_reflections))
@@ -1123,7 +1129,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
             except Exception as e:
                 indexing_error = e
             else:
-                logger.info("Indexed using %d%% of the reflections"%i)
+                logger.info("Indexed using %d%% of the reflections" % i)
                 indexing_error = None
                 break
         if indexing_error:
