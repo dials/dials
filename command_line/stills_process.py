@@ -383,7 +383,7 @@ class Script:
         from libtbx import easy_mp
 
         try:
-            from mpi4py import MPI
+            from libtbx.mpi4py import MPI
         except ImportError:
             rank = 0
             size = 1
@@ -1083,34 +1083,51 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
         else:
             known_crystal_models = None
 
-        if params.indexing.stills.method_list is None:
-            idxr = Indexer.from_parameters(
-                reflections,
-                experiments,
-                known_crystal_models=known_crystal_models,
-                params=params,
-            )
-            idxr.index()
-        else:
-            indexing_error = None
-            for method in params.indexing.stills.method_list:
-                params.indexing.method = method
-                try:
+        all_reflections = reflections
+        indexing_error = None
+        for i in list(reversed(range(50, 101, 2))):
+            if i != 100:
+                reflections = all_reflections.select(
+                    flex.random_permutation(len(all_reflections))
+                )[: int(len(all_reflections) * i / 100)]
+            try:
+                if params.indexing.stills.method_list is None:
                     idxr = Indexer.from_parameters(
-                        reflections, experiments, params=params
+                        reflections,
+                        experiments,
+                        known_crystal_models=known_crystal_models,
+                        params=params,
                     )
                     idxr.index()
-                except Exception as e:
-                    logger.info("Couldn't index using method %s", method)
-                    if indexing_error is None:
-                        if e is None:
-                            e = Exception(f"Couldn't index using method {method}")
-                        indexing_error = e
                 else:
-                    indexing_error = None
-                    break
-            if indexing_error is not None:
-                raise indexing_error
+                    for method in params.indexing.stills.method_list:
+                        params.indexing.method = method
+                        try:
+                            idxr = Indexer.from_parameters(
+                                reflections, experiments, params=params
+                            )
+                            idxr.index()
+                        except Exception as e:
+                            logger.info("Couldn't index using method %s", method)
+                            if indexing_error is None:
+                                if e is None:
+                                    e = Exception(
+                                        f"Couldn't index using method {method}"
+                                    )
+                                indexing_error = e
+                        else:
+                            indexing_error = None
+                            break
+                    if indexing_error is not None:
+                        raise indexing_error
+            except Exception as e:
+                indexing_error = e
+            else:
+                logger.info("Indexed using %d%% of the reflections"%i)
+                indexing_error = None
+                break
+        if indexing_error:
+            raise indexing_error
 
         indexed = idxr.refined_reflections
         experiments = idxr.refined_experiments
@@ -1520,7 +1537,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 assert self.params.mp.method == "mpi"
                 stride = self.params.mp.composite_stride
 
-                from mpi4py import MPI
+                from libtbx.mpi4py import MPI
 
                 comm = MPI.COMM_WORLD
                 rank = comm.Get_rank()  # each process in MPI has a unique id, 0-indexed
