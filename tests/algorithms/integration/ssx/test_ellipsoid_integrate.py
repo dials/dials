@@ -1,3 +1,5 @@
+import copy
+
 import pytest
 
 from dxtbx.serialize import load
@@ -22,14 +24,41 @@ def test_run_ellipsoid_refinement(dials_data):
     e_angular4 = {"radial": 0.0179, "angular_0": 0.0207, "angular_1": 0.0029}
     e_simple1 = {"spherical": 0.0159}
     e_simple6 = {"min": 0.0034, "mid": 0.0113, "max": 0.02520}
-    elist = expts[0:1]
+
+    initial_crystal = copy.deepcopy(expts[0].crystal)
     for model, expected in zip(
         ["angular2", "angular4", "simple1", "simple6"],
         [e_angular2, e_angular4, e_simple1, e_simple6],
     ):
-        out_expt, out_refl, out_data = run_ellipsoid_refinement(
+        elist = copy.deepcopy(expts[0:1])
+        out_expt, _, __ = run_ellipsoid_refinement(
             elist, refls, 0.00062, profile_model=model
         )
         for k, v in out_expt.profiles()[0].mosaicity().items():
             assert expected[k] == pytest.approx(v, abs=1e-4)
+        assert (
+            out_expt[0].crystal.get_unit_cell().parameters()
+            != initial_crystal.get_unit_cell().parameters()
+        )
+        assert list(out_expt[0].crystal.get_A()) != list(initial_crystal.get_A())
         del elist[0].crystal.mosaicity
+
+    # now try fix uc
+    elist = copy.deepcopy(expts[0:1])
+    out_expt, _, __ = run_ellipsoid_refinement(
+        elist,
+        refls,
+        0.00062,
+        profile_model="angular4",
+        fix_orientation=True,
+        fix_unit_cell=True,
+    )
+    e_angular4 = {"radial": 0.0182, "angular_0": 0.0207, "angular_1": 0.0052}
+    for k, v in out_expt.profiles()[0].mosaicity().items():
+        assert e_angular4[k] == pytest.approx(v, abs=1e-4)
+    assert out_expt[0].crystal.get_unit_cell().parameters() == pytest.approx(
+        initial_crystal.get_unit_cell().parameters(), abs=1e-12
+    )
+    assert list(out_expt[0].crystal.get_A()) == pytest.approx(
+        list(initial_crystal.get_A()), abs=1e-12
+    )
