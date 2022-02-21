@@ -10,6 +10,7 @@ Starting from this eyeballed geometry pyFAI geometry calibration can be used in 
 (ie. just like it used for X-rays).
 """
 
+import logging
 import os
 from sys import exit
 from typing import NamedTuple, Optional, Tuple, Union
@@ -47,6 +48,8 @@ if module_exists("pyFAI"):
 # dxtbx and dials must be imported after pyfai,
 # the alternative causes pyfai to segv
 from dials.util.options import OptionParser, flatten_experiments
+
+logger = logging.getLogger("dials.command_line.powder_calibrate_widget")
 
 phil_scope = parse(
     """
@@ -527,7 +530,7 @@ class PowderCalibrator:
         widget tool. Do this using python API
             >>> from dials.command_line.powder_calibrate_widget import PowderCalibrator
             >>> al_calibrator = PowderCalibrator("eyeballed.expt", standard="Al", eyeball=False)
-            >>> al_calibrator.calibrate_with_calibrant(verbose=True)
+            >>> al_calibrator.calibrate_with_calibrant(plots=True)
 
         2. Do the same from command line
             $ dials.powder_calibrate_widget eyeballed.expt standard="Al" eyeball=False
@@ -572,20 +575,21 @@ class PowderCalibrator:
             f"Current geometry: \n {self.geometry}"
         )
 
+    # TODO: these should go in log
     def print_hints(self):
         # Tell me which geometry I'm starting from
-        print(
+        logger.info(
             f"Initial geometry from {self.expt_params.input_file}:\n-----\n {self.geometry} \n"
         )
 
         # Tell me what calibrant I am using
-        print(
+        logger.info(
             f"Starting calibration using {self.user_args.standard}:\n-----\n {self.calibrant} \n "
         )
 
         # Tell me if I'm using the eyeball widget and how to use
         if self.user_args.eyeball:
-            print(
+            logger.info(
                 "Using the eyeballing widget.\n"
                 "Drag sliders to roughly overlap rings and then save for further fitting. \n"
             )
@@ -599,7 +603,7 @@ class PowderCalibrator:
         self,
         num_rings: Optional[int] = 4,
         fix: Optional[Tuple] = ("rot1", "rot2", "rot3", "wavelength"),
-        verbose: Optional[bool] = False,
+        plots: Optional[bool] = False,
     ):
 
         if self.user_args.eyeball:
@@ -612,8 +616,8 @@ class PowderCalibrator:
             )
             eyeballing_widget.calibrate()
         else:
-            print(
-                "Warning: If the starting geometry is significantly off the fit might return poor results."
+            logger.warning(
+                "If the starting geometry is significantly off the fit might return poor results."
             )
 
         # then use pyFAI for fine calibration
@@ -626,20 +630,19 @@ class PowderCalibrator:
 
         gonio_geom.extract_cp(max_rings=num_rings)
 
-        if verbose:
+        if plots:
             self.show_fit(gonio_geom, label="Starting geometry")
 
         gonio_geom.geometry_refinement.refine2(fix=fix)
         ai = gonio_geom.get_ai()
 
-        # update geometry and save to calibrated.expt
+        # update geometry and save to .expt
         self.geometry.update_from_ai(ai)
-
         self.geometry.save_to_expt(output=self.user_args.calibrated_geom)
 
-        if verbose:
+        if plots:
             self.show_fit(gonio_geom, label="After pyFAI fit")
-            print("Geometry fitted by pyFAI:\n----- \n", ai, "\n")
+            logger.info("Geometry fitted by pyFAI:\n----- \n", ai, "\n")
 
             # show the cake plot as well
             int2 = ai.integrate2d_ng(
@@ -655,4 +658,4 @@ class PowderCalibrator:
 
 if __name__ == "__main__":
     calibrator = PowderCalibrator()
-    calibrator.calibrate_with_calibrant(verbose=True)
+    calibrator.calibrate_with_calibrant(plots=True)
