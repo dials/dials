@@ -12,7 +12,8 @@ if sys.version_info.major == 2:
 libtbx.pkg_utils.define_entry_points(
     {
         "dxtbx.profile_model": [
-            "gaussian_rs = dials.extensions.gaussian_rs_profile_model_ext:GaussianRSProfileModelExt"
+            "gaussian_rs = dials.extensions.gaussian_rs_profile_model_ext:GaussianRSProfileModelExt",
+            "ellipsoid = dials.extensions.ellipsoid_profile_model_ext:EllipsoidProfileModelExt",
         ],
         "dxtbx.scaling_model_ext": [
             "physical = dials.algorithms.scaling.model.model:PhysicalScalingModel",
