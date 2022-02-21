@@ -236,12 +236,10 @@ class cosym(Subject):
             refl["miller_index"] = cb_op.apply(refl["miller_index"])
         # Allow for the case where some datasets are filtered out.
         if len(reindexing_ops) < len(self._experiments):
-            to_delete = []
-            for i in range(len(self._experiments)):
-                if i not in unique_ids:
-                    to_delete.append(i)
-            to_delete.sort(reverse=True)
-            for idx in to_delete:
+            to_delete = [
+                i for i in range(len(self._experiments)) if i not in unique_ids
+            ]
+            for idx in sorted(to_delete, reverse=True):
                 logger.info(
                     f"Removing dataset {idx} as unable to determine reindexing operator"
                 )
