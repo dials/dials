@@ -45,6 +45,7 @@ repos:
   rev: v13.0.1
   hooks:
   - id: clang-format
+    files: \.c(c|pp|xx)?$|\.h(pp)?$
 
 # Linting
 - repo: https://github.com/PyCQA/flake8
