@@ -169,8 +169,9 @@ namespace dials {
             if (av3j >= bv3j) {
               fraction[i] = 0.0;
             } else {
-              fraction[i] = (FloatType)(
-                (erf((bv3j - phi) * sigr2) - erf((av3j - phi) * sigr2)) * integral_j_r);
+              fraction[i] =
+                (FloatType)((erf((bv3j - phi) * sigr2) - erf((av3j - phi) * sigr2))
+                            * integral_j_r);
             }
 
             // Increment array index

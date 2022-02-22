@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import functools
 
 from dxtbx.model import ExperimentList

@@ -92,7 +92,7 @@ class ReciprocalLatticeViewer(wx.Frame, Render3d):
             self.settings_panel.beam_slow_ctrl.SetValue(self.settings.beam_centre[1])
         if self.settings.marker_size is Auto:
             max_radius = max(self.reflections["rlp"].norms())
-            volume = 4 / 3 * pi * max_radius ** 3
+            volume = 4 / 3 * pi * max_radius**3
             density = len(self.reflections) / volume
             # Set marker size to between 5 and 50 depending on density, where
             # 1000 < density < 20000 ==> 50 < marker_size < 5

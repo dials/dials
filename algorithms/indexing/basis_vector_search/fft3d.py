@@ -240,7 +240,7 @@ class FFT3D(Strategy):
         grid = flex.double(flex.grid(self._gridding), 0)
 
         if self._params.b_iso is libtbx.Auto:
-            self._params.b_iso = -4 * d_min ** 2 * math.log(0.05)
+            self._params.b_iso = -4 * d_min**2 * math.log(0.05)
             logger.debug("Setting b_iso = %.1f", self._params.b_iso)
         used_in_indexing = flex.bool(reciprocal_lattice_vectors.size(), True)
         dials_algorithms_indexing_ext.map_centroids_to_reciprocal_space_grid(

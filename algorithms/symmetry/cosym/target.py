@@ -369,7 +369,7 @@ class Target:
             x[i] -= 2 * eps  # x - eps
             fm = self.compute_functional(x)
             x[i] += eps  # reset to original values
-            curvs[i] += (fm - 2 * f + fp) / (eps ** 2)
+            curvs[i] += (fm - 2 * f + fp) / (eps**2)
         return curvs
 
     def get_sym_ops(self):

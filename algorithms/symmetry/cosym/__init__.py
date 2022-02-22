@@ -752,11 +752,11 @@ class ScoreSubGroup:
         power = 2
         for score in sym_op_scores:
             if score.sym_op in patterson_group:
-                self.z_cc_for += score.z_cc ** power
+                self.z_cc_for += score.z_cc**power
                 n_for += 1
                 PL_for += math.log(score.p_cc_given_s)
             else:
-                self.z_cc_against += score.z_cc ** power
+                self.z_cc_against += score.z_cc**power
                 n_against += 1
                 PL_against += math.log(score.p_cc_given_not_s)
 

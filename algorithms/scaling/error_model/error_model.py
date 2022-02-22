@@ -626,7 +626,7 @@ def filter_unsuitable_reflections(
     group_variances = Ih_table.sum_in_groups(((I / g) - mu) ** 2) / (
         n_h - np.full(n_h.size, 1.0)
     )
-    avg_variances = Ih_table.sum_in_groups(Ih_table.variances / (g ** 2)) / n_h
+    avg_variances = Ih_table.sum_in_groups(Ih_table.variances / (g**2)) / n_h
     ratio = group_variances / avg_variances
     sel = ratio < max(50, (np.max(mu) / 40.0))
     logger.debug(

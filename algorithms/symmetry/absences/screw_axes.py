@@ -136,8 +136,8 @@ class ScrewAxis(Subject):
         z_score_present = self.mean_I_sigma / S_E_pres
 
         # get a p-value for z > z_score
-        P_absent = 0.5 * (1.0 + math.erf(z_score_absent / (2 ** 0.5)))
-        P_present = 0.5 * (1.0 + math.erf(z_score_present / (2 ** 0.5)))
+        P_absent = 0.5 * (1.0 + math.erf(z_score_absent / (2**0.5)))
+        P_present = 0.5 * (1.0 + math.erf(z_score_present / (2**0.5)))
 
         # sanity check - is most of intensity in 'expected' channel?
         intensity_test = self.mean_I_sigma > (20.0 * self.mean_I_sigma_abs)

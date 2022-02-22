@@ -165,8 +165,8 @@ def test_radius(setup):
             e11, e21, e31 = xcs.from_beam_vector_and_rotation_angle(sdash1, phi)
             e12, e22, e31 = xcs.from_beam_vector_and_rotation_angle(sdash2, phi)
             if bbox[0] > 0 and bbox[1] < width:
-                assert math.sqrt(e11 ** 2 + e21 ** 2) >= radius12
-                assert math.sqrt(e12 ** 2 + e22 ** 2) >= radius12
+                assert math.sqrt(e11**2 + e21**2) >= radius12
+                assert math.sqrt(e12**2 + e22**2) >= radius12
 
         # Check horizontal edges
         for i in range(bbox[0], bbox[1] + 1):
@@ -177,5 +177,5 @@ def test_radius(setup):
             e11, e21, e32 = xcs.from_beam_vector_and_rotation_angle(sdash1, phi)
             e12, e22, e32 = xcs.from_beam_vector_and_rotation_angle(sdash2, phi)
             if bbox[2] > 0 and bbox[3] < height:
-                assert math.sqrt(e11 ** 2 + e21 ** 2) >= radius12
-                assert math.sqrt(e12 ** 2 + e22 ** 2) >= radius12
+                assert math.sqrt(e11**2 + e21**2) >= radius12
+                assert math.sqrt(e12**2 + e22**2) >= radius12

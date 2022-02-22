@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from math import sqrt
 
 import numpy as np
@@ -57,15 +59,15 @@ def simple6_model_state(test_experiment):
 def check_simple1_sigma(sigma, params):
     b1 = params[0]
 
-    assert sigma[0, 0] == pytest.approx(b1 ** 2)
+    assert sigma[0, 0] == pytest.approx(b1**2)
     assert sigma[0, 1] == 0
     assert sigma[0, 2] == 0
     assert sigma[1, 0] == 0
-    assert sigma[1, 1] == pytest.approx(b1 ** 2)
+    assert sigma[1, 1] == pytest.approx(b1**2)
     assert sigma[1, 2] == 0
     assert sigma[2, 0] == 0
     assert sigma[2, 1] == 0
-    assert sigma[2, 2] == pytest.approx(b1 ** 2)
+    assert sigma[2, 2] == pytest.approx(b1**2)
 
 
 def check_simple6_sigma(sigma, params):

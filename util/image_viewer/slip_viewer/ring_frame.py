@@ -273,7 +273,7 @@ class RingSettingsPanel(wx.Panel):
             return
         (lon, lat, place, radius, colour, x_off, y_off, pdata) = data[0]
 
-        scale = 2 ** self._pyslip.tiles.zoom_level
+        scale = 2**self._pyslip.tiles.zoom_level
 
         # Draw points on map/view, using transparency if implemented.
         try:

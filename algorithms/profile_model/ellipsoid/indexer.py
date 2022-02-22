@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from math import floor, sqrt
 
@@ -136,7 +138,7 @@ def _filter_reflections_based_on_centroid_distance(
     # Compute the epsilon residual
     s0_length = 1.0 / experiment.beam.get_wavelength()
     s1x, s1y, s1z = reflection_table["s2"].parts()
-    s1_length = flex.sqrt(s1x ** 2 + s1y ** 2 + s1z ** 2)
+    s1_length = flex.sqrt(s1x**2 + s1y**2 + s1z**2)
     Eres = s1_length - s0_length
 
     # Initialise the fast_mcd outlier algorithm
@@ -155,7 +157,7 @@ def _filter_reflections_based_on_centroid_distance(
 
     # compare to the threshold and select reflections
     selection1 = d2s < mahasq_cutoff
-    selection2 = flex.sqrt(Xres ** 2 + Yres ** 2) < max_separation
+    selection2 = flex.sqrt(Xres**2 + Yres**2) < max_separation
     selection = selection1 & selection2
     reflection_table = reflection_table.select(selection)
     n_refl = reflection_table.size()
@@ -167,9 +169,9 @@ def _filter_reflections_based_on_centroid_distance(
     logger.info(" Max X residual: %f" % flex.max(flex.abs(Xres)))
     logger.info(" Max Y residual: %f" % flex.max(flex.abs(Yres)))
     logger.info(" Max E residual: %f" % flex.max(flex.abs(Eres)))
-    logger.info(" Mean X RMSD: %f" % (sqrt(flex.sum(Xres ** 2) / len(Xres))))
-    logger.info(" Mean Y RMSD: %f" % (sqrt(flex.sum(Yres ** 2) / len(Yres))))
-    logger.info(" Mean E RMSD: %f" % (sqrt(flex.sum(Eres ** 2) / len(Eres))))
+    logger.info(" Mean X RMSD: %f" % (sqrt(flex.sum(Xres**2) / len(Xres))))
+    logger.info(" Mean Y RMSD: %f" % (sqrt(flex.sum(Yres**2) / len(Yres))))
+    logger.info(" Mean E RMSD: %f" % (sqrt(flex.sum(Eres**2) / len(Eres))))
     logger.info(" MCD location estimate: %.4f, %.4f" % tuple(T))
     logger.info(
         """ MCD scatter estimate:

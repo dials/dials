@@ -72,7 +72,7 @@ class GaussNewtonIterations(AdaptLstbxSparse, GaussNewtonIterationsBase):
         log=None,
         tracking=None,
         max_iterations=20,
-        **kwds
+        **kwds,
     ):
 
         AdaptLstbxSparse.__init__(

@@ -882,7 +882,7 @@ class PhysicalScalingModel(ScalingModelBase):
                     lmax = 4
                 if params.surface_weight in autos:
                     surface_weight = 5e5
-            n_abs_param = (2 * lmax) + (lmax ** 2)  # arithmetic sum formula (a1=3, d=2)
+            n_abs_param = (2 * lmax) + (lmax**2)  # arithmetic sum formula (a1=3, d=2)
             configdict.update({"lmax": lmax})
             configdict.update({"abs_surface_weight": surface_weight})
             parameters_dict["absorption"] = {

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 
 def enhash(e, h, k, l):
-    return e * (2 ** 30) + (h + 512) * (2 ** 20) + (k + 512) * (2 ** 10) + (l + 512)
+    return e * (2**30) + (h + 512) * (2**20) + (k + 512) * (2**10) + (l + 512)
 
 
 def add_hash(integrated_data):

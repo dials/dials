@@ -28,7 +28,7 @@ Usage:
     dev.dials.ssx_integrate indexed.expt indexed.refl algorithm=stills
 """
 
-from __future__ import absolute_import, division
+from __future__ import annotations
 
 import concurrent.futures
 import copy
