@@ -1,1 +1,0 @@
-``dials.cosym``: Fix crash for edge case of a full dataset being excluded by the resolution filter
