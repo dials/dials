@@ -100,3 +100,29 @@ of useful statistics such as the number of spots integrated on each image,
 the modelled mosaicity values and unit cell clustering analysis. This data can
 also be output to json format for further analysis, by providing a filename to
 the option :samp:`output.json`.
+
+Automated processing of SSX data with dev.xia2.ssx
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+An experimental processing pipeline is being developed to provide automated
+processing of SSX data. To process SSX data, it is important to have an accurate
+reference geometry for the experiment. Also, processing with the correct space
+group and unit cell will increase the success rates in indexing and generally
+improve the data integration. If no unit cell or no space group is provided, this
+is the first thing that will be assessed.
+
+To run the program, the path to images must be provided::
+
+    dev.xia2.ssx images=~/data/myimages_*cbf
+
+This will import the images, creating an `imported.expt` file in the `initial_import` folder.
+Then, an assessment of the space group and unit cell will be performed on the first
+1000 images. This is done by running spotfinding and indexing, and inspecting
+the indexing clustering results. The clustering results after indexing indicate
+which is the highest-symmetry possible, based on the unit cell dimensions. The
+program can then be rerun with a unit cell and space group of choice to continue
+with the data processing::
+
+    dev.xia2.ssx images=~/data/myimages_*cbf space_group=P1 unit_cell=95,95,97,90,90,90
+
+For the reference geometry, this can be provided initially, or determined from the
+data.

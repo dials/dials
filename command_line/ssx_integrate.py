@@ -404,7 +404,7 @@ def run(args: List[str] = None, phil=working_phil) -> None:
         )
 
     plots = {}
-    cluster_plots = report_on_crystal_clusters(
+    cluster_plots, _ = report_on_crystal_clusters(
         integrated_crystal_symmetries,
         make_plots=(params.output.html or params.output.json),
     )
