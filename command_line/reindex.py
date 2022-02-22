@@ -1,6 +1,8 @@
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
 
+from __future__ import annotations
+
 import copy
 import os
 import sys

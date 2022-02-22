@@ -2,6 +2,8 @@
 what should usually be used to construct a Refiner."""
 
 
+from __future__ import annotations
+
 import copy
 import logging
 import math

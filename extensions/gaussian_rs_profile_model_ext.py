@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class GaussianRSProfileModelExt:
     """An extension class implementing a reciprocal space gaussian profile model."""
 

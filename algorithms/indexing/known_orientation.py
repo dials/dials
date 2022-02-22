@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dxtbx.model.experiment_list import Experiment, ExperimentList
 
 from dials.algorithms.indexing.indexer import Indexer

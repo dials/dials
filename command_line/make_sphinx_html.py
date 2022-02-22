@@ -1,5 +1,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.make_sphinx_html
 
+from __future__ import annotations
+
 import os
 import sys
 from optparse import SUPPRESS_HELP, OptionParser

@@ -1,6 +1,8 @@
 """Contains classes used to provide weighting schemes as strategies for
 ReflectionManagers."""
 
+from __future__ import annotations
+
 from dials.algorithms.refinement import DialsRefineConfigError
 from dials.array_family import flex
 

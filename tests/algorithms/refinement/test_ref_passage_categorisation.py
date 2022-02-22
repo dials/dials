@@ -2,6 +2,8 @@
 entering the Ewald sphere is done the right way round"""
 
 
+from __future__ import annotations
+
 import math
 
 import pytest

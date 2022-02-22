@@ -3,6 +3,8 @@
 #   from dials.array_family import flex
 #
 
+from __future__ import annotations
+
 import collections
 import copy
 import functools
@@ -11,7 +13,7 @@ import logging
 import operator
 import os
 import pickle
-from typing import Tuple
+from typing import List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -505,6 +507,24 @@ class _:
         n1 = cctbx.array_family.flex.size_t(merged.n1.values)
 
         return n0, n1
+
+    @staticmethod
+    def concat(
+        tables: List[dials_array_family_flex_ext.reflection_table],
+    ) -> dials_array_family_flex_ext.reflection_table:
+        """
+        Concatenate a list of reflection tables, taking care to correctly handle
+        experiment identifiers and ids.
+        :param tables: A list of reflection tables
+        :return: A single combined reflection table
+        """
+        from dials.util.multi_dataset_handling import renumber_table_id_columns
+
+        tables = renumber_table_id_columns(tables)
+        first = tables[0]
+        for table in tables[1:]:
+            first.extend(table)
+        return first
 
     def match_with_reference(self, other):
         """

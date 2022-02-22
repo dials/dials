@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 def get_inverse_ub_matrix_from_xparm(handle):
     """Get the inverse_ub_matrix from an xparm file handle
 

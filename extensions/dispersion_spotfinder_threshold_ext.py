@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 
 logger = logging.getLogger("dials.extensions.dispersion_spotfinder_threshold_ext")
@@ -71,12 +73,13 @@ class DispersionSpotFinderThresholdExt:
         """
         self.params = params
 
-    def compute_threshold(self, image, mask):
-        """
+    def compute_threshold(self, image, mask, **kwargs):
+        r"""
         Compute the threshold.
 
         :param image: The image to process
         :param mask: The pixel mask on the image
+        :\*\*kwargs: Arbitrary keyword arguments
         :returns: A boolean mask showing foreground/background pixels
         """
 

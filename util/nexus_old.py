@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class H5PYEncoder:
     """Encoder base class."""
 

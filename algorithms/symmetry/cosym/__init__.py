@@ -6,6 +6,8 @@ determination of Patterson group symmetry from sparse multi-crystal data sets in
 the presence of an indexing ambiguity.
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import math
@@ -286,7 +288,7 @@ class CosymAnalysis(symmetry_base, Subject):
 
     @Subject.notify_event(event="optimised")
     def _optimise(self, engine, max_iterations=None, max_calls=None):
-        NN = len(self.input_intensities)
+        NN = len(set(self.dataset_ids))
         n_sym_ops = len(self.target.sym_ops)
 
         coords = np.random.rand(NN * n_sym_ops * self.target.dim)
@@ -375,7 +377,7 @@ class CosymAnalysis(symmetry_base, Subject):
             to each dataset.
         """
         reindexing_ops = []
-        n_datasets = len(self.input_intensities)
+        n_datasets = len(set(self.dataset_ids))
         n_sym_ops = len(sym_ops)
         coord_ids = np.arange(n_datasets * n_sym_ops)
         dataset_ids = coord_ids % n_datasets

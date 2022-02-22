@@ -4,6 +4,9 @@ parameters using generated reflection positions from ideal geometry.
 """
 
 
+from __future__ import annotations
+
+
 def test():
     # Python and cctbx imports
     from math import pi

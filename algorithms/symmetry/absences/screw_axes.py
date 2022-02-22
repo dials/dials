@@ -1,5 +1,7 @@
 """Definitions of screw axes with methods for scoring against data."""
 
+from __future__ import annotations
+
 import logging
 import math
 

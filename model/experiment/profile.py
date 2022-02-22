@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class ProfileModelExt:
     """
     The definition for a profile model.

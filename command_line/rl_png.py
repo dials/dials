@@ -1,6 +1,8 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
+from __future__ import annotations
+
 import logging
 import math
 

@@ -6,6 +6,8 @@ include both sequence experiments and single image datasets, which do not
 have a scan object.
 """
 
+from __future__ import annotations
+
 from dxtbx.model import Experiment, Scan
 
 from dials.array_family import flex

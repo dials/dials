@@ -2,6 +2,8 @@
 #   http://lists.wxwidgets.org/archive/wxPython-users/msg11078.html
 
 
+from __future__ import annotations
+
 import math
 import os
 import time

@@ -1,6 +1,8 @@
 # LIBTBX_SET_DISPATCHER_NAME dials.complete_full_sphere
 
 
+from __future__ import annotations
+
 import logging
 import math
 import sys

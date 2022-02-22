@@ -2,6 +2,8 @@
 Tests for the reindex_to_reference module.
 """
 
+from __future__ import annotations
+
 import pytest
 
 from cctbx import sgtbx

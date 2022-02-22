@@ -6,6 +6,8 @@ ensuring the results are the same.
 """
 
 
+from __future__ import annotations
+
 from collections import namedtuple
 from math import pi
 

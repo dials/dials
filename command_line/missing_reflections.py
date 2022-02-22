@@ -12,6 +12,8 @@ Examples::
   dials.missing_reflections scaled.expt scaled.refl min_component_size=10
 """
 
+from __future__ import annotations
+
 import io
 import logging
 import sys

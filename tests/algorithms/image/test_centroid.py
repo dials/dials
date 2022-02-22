@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class Test_Centroid:
     EPS = 1e-7
 
