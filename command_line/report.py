@@ -1825,8 +1825,8 @@ class ReferenceProfileAnalyser:
         for d_bin in binner.bins:
             d_min = d_bin.d_min
             d_max = d_bin.d_max
-            ds3_min = 1 / d_min ** 3
-            ds3_max = 1 / d_max ** 3
+            ds3_min = 1 / d_min**3
+            ds3_max = 1 / d_max**3
             ds3_centre = (ds3_max - ds3_min) / 2 + ds3_min
             d_centre = 1 / ds3_centre ** (1 / 3)
             sel = (d_spacings < d_max) & (d_spacings >= d_min)

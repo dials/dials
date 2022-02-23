@@ -28,8 +28,8 @@ class ResolutionBinner:
         if output:
             logger.info("Resolution bins")
         assert dmin < dmax
-        dmin_inv_sq = 1.0 / dmin ** 2
-        dmax_inv_sq = 1.0 / dmax ** 2
+        dmin_inv_sq = 1.0 / dmin**2
+        dmax_inv_sq = 1.0 / dmax**2
         self._unit_cell = unit_cell
         self._nbins = nbins
         self._xmin = dmax_inv_sq
@@ -61,7 +61,7 @@ class ResolutionBinner:
         :returns: The bin index
         """
         d = self._unit_cell.d(h)
-        d2 = 1 / d ** 2
+        d2 = 1 / d**2
         bin_index = int(floor((d2 - self._xmin) / self._bin_size))
         if bin_index >= self._nbins:
             bin_index = self._nbins - 1

@@ -205,7 +205,7 @@ def make(arr, azimuth: float, wavelength: float):
     y, x = refs_.T
 
     R = 1 / wavelength
-    C = R - np.sqrt(R ** 2 - x ** 2 - y ** 2).reshape(-1, 1)
+    C = R - np.sqrt(R**2 - x**2 - y**2).reshape(-1, 1)
     xyz = (
         np.c_[x * np.cos(angle), y, -x * np.sin(angle)]
         + C * np.c_[-np.sin(angle), np.zeros_like(angle), -np.cos(angle)]

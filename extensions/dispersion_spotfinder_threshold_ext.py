@@ -118,7 +118,7 @@ def estimate_global_threshold(image, mask=None, plot=False):
     n_above_threshold = flex.size_t()
     threshold = flex.double()
     for i in range(1, 20):
-        g = 1.5 ** i
+        g = 1.5**i
         g = int(g)
         n_above_threshold.append((image > g).count(True))
         threshold.append(g)

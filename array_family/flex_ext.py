@@ -585,7 +585,7 @@ class _:
                         dx = x1[i] - x2[j]
                         dy = y1[i] - y2[j]
                         dz = z1[i] - z2[j]
-                        d.append((i, j, dx ** 2 + dy ** 2 + dz ** 2))
+                        d.append((i, j, dx**2 + dy**2 + dz**2))
                     i, j, d = min(d, key=lambda x: x[2])
                     if j not in matched:
                         matched[j] = (i, d)

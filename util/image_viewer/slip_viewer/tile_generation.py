@@ -312,7 +312,7 @@ class _Tiles:
             return wx_image.ConvertToBitmap()
         elif self.raw_image is not None:
             self.flex_image.setZoom(self.zoom_level)
-            fraction = 256.0 / self.flex_image.size1() / (2 ** self.zoom_level)
+            fraction = 256.0 / self.flex_image.size1() / (2**self.zoom_level)
             self.flex_image.setWindowCart(y, x, fraction)
             self.flex_image.prep_string()
             w, h = self.flex_image.ex_size2(), self.flex_image.ex_size1()
@@ -328,7 +328,7 @@ class _Tiles:
     def get_binning(self):
         if self.zoom_level >= 0:
             return 1.0
-        return 2.0 ** -self.zoom_level
+        return 2.0**-self.zoom_level
 
     def UseLevel(self, n):
         """Prepare to serve tiles from the required level.
@@ -351,23 +351,23 @@ class _Tiles:
             self.center_x_lon = self.center_y_lat = 500.0
             return (1024, 1024, 1.0, 1.0)
         self.num_tiles_x = int(
-            math.ceil((self.flex_image.size1() * (2 ** self.zoom_level)) / 256.0)
+            math.ceil((self.flex_image.size1() * (2**self.zoom_level)) / 256.0)
         )
         self.num_tiles_y = int(
-            math.ceil((self.flex_image.size2() * (2 ** self.zoom_level)) / 256.0)
+            math.ceil((self.flex_image.size2() * (2**self.zoom_level)) / 256.0)
         )
-        self.ppd_x = 2.0 ** self.zoom_level
-        self.ppd_y = 2.0 ** self.zoom_level
+        self.ppd_x = 2.0**self.zoom_level
+        self.ppd_y = 2.0**self.zoom_level
         # print "USELEVEL %d # tiles: %d %d"%(n,self.num_tiles_x,self.num_tiles_y)
         # print "USELEVEL %d returning"%n,(self.tile_size_x * self.num_tiles_x,
         #        self.tile_size_y * self.num_tiles_y,
         #        self.ppd_x, self.ppd_y)
         # The longitude & latitude coordinates at the image center:
         self.center_x_lon = self.extent[0] + (1.0 / self.ppd_x) * (
-            0 + self.flex_image.size2() * (2 ** self.zoom_level) / 2.0
+            0 + self.flex_image.size2() * (2**self.zoom_level) / 2.0
         )
         self.center_y_lat = self.extent[3] - (1.0 / self.ppd_y) * (
-            0 + self.flex_image.size1() * (2 ** self.zoom_level) / 2.0
+            0 + self.flex_image.size1() * (2**self.zoom_level) / 2.0
         )
         # The 2+num_tiles is just a trick to get PySlip to think the map is
         # slightly larger, allowing zoom level -3 to be properly framed:

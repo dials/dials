@@ -1,4 +1,4 @@
-from __future__ import division, print_function
+from __future__ import annotations
 
 import copy
 from collections import namedtuple
@@ -163,8 +163,8 @@ def refinerdata_testdata(testdata):
         for i in range(11):
             shoebox_data[0, j, i] = (
                 100
-                * exp(-0.5 * (j - 5) ** 2 / 1 ** 2)
-                * exp(-0.5 * (i - 5) ** 2 / 1 ** 2)
+                * exp(-0.5 * (j - 5) ** 2 / 1**2)
+                * exp(-0.5 * (i - 5) ** 2 / 1**2)
             )
             shoebox_mask[0, j, i] = 5
     for sbox in reflections["shoebox"]:
@@ -409,7 +409,7 @@ def test_Refiner(testdata, refinerdata_testdata):
     experiment = testdata.experiment
     data = refinerdata_testdata
 
-    sigma_d = 0.02 ** 2
+    sigma_d = 0.02**2
     S1 = Simple1ProfileModel.from_sigma_d(sigma_d).parameterisation()
     S6 = Simple6ProfileModel.from_sigma_d(sigma_d).parameterisation()
 
@@ -487,8 +487,8 @@ def test_RefinerData(testdata):
         for i in range(11):
             shoebox_data[0, j, i] = (
                 100
-                * exp(-0.5 * (j - 5) ** 2 / 1 ** 2)
-                * exp(-0.5 * (i - 5) ** 2 / 1 ** 2)
+                * exp(-0.5 * (j - 5) ** 2 / 1**2)
+                * exp(-0.5 * (i - 5) ** 2 / 1**2)
             )
             shoebox_mask[0, j, i] = 5
     for sbox in reflections["shoebox"]:

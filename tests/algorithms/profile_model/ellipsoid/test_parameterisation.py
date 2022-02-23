@@ -1,4 +1,4 @@
-from __future__ import division, print_function
+from __future__ import annotations
 
 from collections import namedtuple
 from copy import copy
@@ -57,15 +57,15 @@ def test_Simple6MosaicityParameterisation():
     assert list(p.parameters) == pytest.approx(list(params))
 
     b1, b2, b3, b4, b5, b6 = params
-    assert p.sigma()[0, 0] == pytest.approx(b1 ** 2)
+    assert p.sigma()[0, 0] == pytest.approx(b1**2)
     assert p.sigma()[0, 1] == pytest.approx(b1 * b2)
     assert p.sigma()[0, 2] == pytest.approx(b1 * b4)
     assert p.sigma()[1, 0] == pytest.approx(b1 * b2)
-    assert p.sigma()[1, 1] == pytest.approx(b2 ** 2 + b3 * b3)
+    assert p.sigma()[1, 1] == pytest.approx(b2**2 + b3 * b3)
     assert p.sigma()[1, 2] == pytest.approx(b2 * b4 + b3 * b5)
     assert p.sigma()[2, 0] == pytest.approx(b1 * b4)
     assert p.sigma()[2, 1] == pytest.approx(b2 * b4 + b3 * b5)
-    assert p.sigma()[2, 2] == pytest.approx(b4 ** 2 + b5 ** 2 + b6 ** 2)
+    assert p.sigma()[2, 2] == pytest.approx(b4**2 + b5**2 + b6**2)
 
     dSdb = [
         (2 * b1, b2, b4, b2, 0, 0, b4, 0, 0),
@@ -116,7 +116,7 @@ def test_Angular2MosaicityParameterisation():
 
     b1, b2 = params
     assert list(p.sigma().flatten()) == pytest.approx(
-        [b1 ** 2, 0, 0, 0, b1 ** 2, 0, 0, 0, b2 ** 2]
+        [b1**2, 0, 0, 0, b1**2, 0, 0, 0, b2**2]
     )
 
     dSdb = [(2 * b1, 0, 0, 0, 2 * b1, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0, 0, 0, 2 * b2)]
@@ -144,15 +144,15 @@ def test_Angular4MosaicityParameterisation():
     assert list(p.parameters) == pytest.approx(list(params))
 
     b1, b2, b3, b4 = params
-    assert p.sigma()[0, 0] == pytest.approx(b1 ** 2)
+    assert p.sigma()[0, 0] == pytest.approx(b1**2)
     assert p.sigma()[0, 1] == pytest.approx(b1 * b2)
     assert p.sigma()[0, 2] == pytest.approx(0)
     assert p.sigma()[1, 0] == pytest.approx(b1 * b2)
-    assert p.sigma()[1, 1] == pytest.approx(b2 ** 2 + b3 * b3)
+    assert p.sigma()[1, 1] == pytest.approx(b2**2 + b3 * b3)
     assert p.sigma()[1, 2] == pytest.approx(0)
     assert p.sigma()[2, 0] == pytest.approx(0)
     assert p.sigma()[2, 1] == pytest.approx(0)
-    assert p.sigma()[2, 2] == pytest.approx(b4 ** 2)
+    assert p.sigma()[2, 2] == pytest.approx(b4**2)
 
     dSdb = [
         (2 * b1, b2, 0, b2, 0, 0, 0, 0, 0),

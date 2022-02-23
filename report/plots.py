@@ -1079,7 +1079,7 @@ https://doi.org/10.1107/S0907444905036693
         from math import exp, pi
 
         for x in histy.slot_centers():
-            gaussian.append(n * width * exp(-(x ** 2) / 2.0) / ((2.0 * pi) ** 0.5))
+            gaussian.append(n * width * exp(-(x**2) / 2.0) / ((2.0 * pi) ** 0.5))
 
         title = "Normal probability plot of anomalous differences"
         plotname = "normal_distribution_plot"
