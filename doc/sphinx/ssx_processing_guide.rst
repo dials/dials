@@ -7,7 +7,7 @@ be considered experimental and subject to change \& improvement as the tools
 become more widely tested and user feedback is taken on board.
 
 Indexing SSX data with dev.dials.ssx_index
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------------------------
 
 A sequence of SSX images can be imported and spotfinding can be run in the same
 way as for rotation data::
@@ -67,7 +67,7 @@ of rmsd values and unit cell clustering analysis. This data can also be output t
 json format for further analysis, by providing a filename to the option :samp:`output.json`.
 
 Integrating SSX data with dev.dials.ssx_integrate
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-------------------------------------------------
 
 After indexing, the experimental models can be further refined with dials.refine,
 or the indexing output can also be integrated directly.
@@ -102,27 +102,61 @@ also be output to json format for further analysis, by providing a filename to
 the option :samp:`output.json`.
 
 Automated processing of SSX data with dev.xia2.ssx
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+--------------------------------------------------
 An experimental processing pipeline is being developed to provide automated
 processing of SSX data. To process SSX data, it is important to have an accurate
 reference geometry for the experiment. Also, processing with the correct space
 group and unit cell will increase the success rates in indexing and generally
-improve the data integration. If no unit cell or no space group is provided, this
-is the first thing that will be assessed.
+improve the data integration.
 
-To run the program, the path to images must be provided::
+Assessing the unit cell and space group
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+If no unit cell or no space group is provided, this is the first thing that will be assessed.
+To run the program, at a minimum, the path to images must be provided::
 
     dev.xia2.ssx images=~/data/myimages_*cbf
 
-This will import the images, creating an `imported.expt` file in the `initial_import` folder.
+This will import the images, creating an :samp:`imported.expt` file in the :samp:`initial_import` folder.
 Then, an assessment of the space group and unit cell will be performed on the first
 1000 images. This is done by running spotfinding and indexing, and inspecting
 the indexing clustering results. The clustering results after indexing indicate
-which is the highest-symmetry possible, based on the unit cell dimensions. The
-program can then be rerun with a unit cell and space group of choice to continue
-with the data processing::
+which is the highest-symmetry possible, based on the unit cell dimensions. To control
+which images are used for crystal assessment, there are the additional options
+:samp:`assess_crystal.n_images` and :samp:`assess_crystals.images_to_use`.
+Once a decision has been made on the unit cell and space group, the program can
+then be rerun with a unit cell and space group of choice to continue with the data
+processing::
 
     dev.xia2.ssx images=~/data/myimages_*cbf space_group=P1 unit_cell=95,95,97,90,90,90
 
-For the reference geometry, this can be provided initially, or determined from the
-data.
+Using a reference geometry
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For the reference geometry, this can be provided initially as a separate :samp:`refined.expt`
+file, or determined as part of the data processing.::
+
+    dev.xia2.ssx images=~/data/myimages_*cbf reference_geometry=~/data/refined.expt
+
+If a reference geometry is supplied, the images will be imported with this as a
+reference, and processing will proceed from that point. If no reference geometry
+is supplied, a reference geometry will first be determined by performing a joint
+refinement on the first 1000 images, with the results saved to the
+:samp:`geometry_refinement` folder. There are additional options of
+:samp:`geometry_refinement.n_images` and :samp:`geometry_refinement.images_to_use` to control
+which images are used for the geometry refinement. Once this has been determined,
+the images will be reimported with this as a reference geometry, and processing
+will proceed. For subsequent processing, this can then be explicity provided as the
+reference::
+
+    dev.xia2.ssx images=~/data/myimages_*cbf
+    dev.xia2.ssx images=~/data/myimages_*cbf reference_geometry=geometry_refinement/refined.expt
+
+Main processing
+^^^^^^^^^^^^^^^
+With a given unit cell, space group and reference geometry, the whole of the
+dataset is then integrated in batches of 1000 images, although this can be adjusted
+with the :samp:`batch_size` option. A subfolder is created for each batch, where
+spotfinding, indexing and integration are performed. This creates a set of
+integrated reflection and experiment files which can be used for data reduction.
+
+
