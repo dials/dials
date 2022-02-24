@@ -385,7 +385,7 @@ class Script:
         from libtbx import easy_mp
 
         try:
-            from libtbx.mpi4py import MPI
+            from mpi4py import MPI
         except ImportError:
             rank = 0
             size = 1
@@ -1543,7 +1543,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 assert self.params.mp.method == "mpi"
                 stride = self.params.mp.composite_stride
 
-                from libtbx.mpi4py import MPI
+                from mpi4py import MPI
 
                 comm = MPI.COMM_WORLD
                 rank = comm.Get_rank()  # each process in MPI has a unique id, 0-indexed
