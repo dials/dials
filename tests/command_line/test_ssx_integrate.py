@@ -40,9 +40,7 @@ def test_ssx_integrate_fullprocess(dials_data, tmp_path):
     assert tmp_path.joinpath("data.json").is_file()
 
 
-@pytest.mark.parametrize(
-    "algorithm,expected_n_refls", [("stills", 614), ("ellipsoid", 1258)]
-)
+@pytest.mark.parametrize("algorithm,expected_n_refls", [("stills", 614)])
 @pytest.mark.xdist_group(name="group1")
 def test_ssx_integrate_algorithms(dials_data, algorithm, expected_n_refls):
     # Download data set and the internally referenced images
