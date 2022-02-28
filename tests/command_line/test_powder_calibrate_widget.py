@@ -13,22 +13,18 @@ from dials.command_line.powder_calibrate_widget import (
 def test_calibrate_from_eyeballed(dials_data, tmpdir):
     aluminium_powder = dials_data("aluminium_standard", pathlib=True)
     eyeballed = aluminium_powder / "eyeballed.expt"
-
-    test_expt, test_user = parse_args(
-        args=[
-            str(eyeballed),
-            "standard=Al",
-            "eyeball=False",
-            "calibrated_geom=" + str(tmpdir) + "/test_calibrated.expt",
-        ]
+    test_calibrator = PowderCalibrator(
+        eyeballed,
+        standard="Al",
+        eyeball=False,
+        calibrated_geom=str(tmpdir / "test_calibrated.expt"),
     )
-    test_calibrator = PowderCalibrator(expt_params=test_expt, user_args=test_user)
-    test_calibrator.calibrate_with_calibrant(verbose=False)
+    test_calibrator.calibrate_with_calibrant(plots=False)
     calibrated_geom = test_calibrator.geometry
 
-    expected_calibration_file = aluminium_powder / "calibrated.expt"
+    expected_calibrated_file = aluminium_powder / "calibrated.expt"
     expected_expt, _ = parse_args(
-        args=[str(expected_calibration_file), "standard=Al", "eyeball=False"]
+        args=[str(expected_calibrated_file), "standard=Al", "eyeball=False"]
     )
     expected_geom = Geometry(expt_params=expected_expt)
 
