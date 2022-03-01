@@ -155,7 +155,7 @@ class ConditionalDistribution(object):
 
 def rotate_vec3_double(R, A):
     """
-    Helper function to rotate a flex.mat3_double array of matrices
+    Helper function to rotate an array of matrices
 
     """
     return np.einsum("ij,jk->ik", R, A)
@@ -163,7 +163,7 @@ def rotate_vec3_double(R, A):
 
 def rotate_mat3_double(R, A):
     """
-    Helper function to rotate a flex.mat3_double array of matrices
+    Helper function to rotate an array of matrices
 
     """
     return np.einsum("ij,jkv,kl->ilv", R, A, R.T)

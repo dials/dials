@@ -86,14 +86,9 @@ class Simple1MosaicityParameterisation(BaseParameterisation):
 
         """
         b1 = self.params[0]
-
-        # dSdb1 = (2 * b1, 0, 0, 0, 2 * b1, 0, 0, 0, 2 * b1)
-
         return np.array(
             [[[2.0 * b1, 0, 0], [0, 2.0 * b1, 0], [0, 0, 2.0 * b1]]], dtype=np.float64
-        ).reshape(
-            1, 3, 3
-        )  # flex.mat3_double([dSdb1])
+        ).reshape(1, 3, 3)
 
     def mosaicity(self) -> Dict:
         """One value for mosaicity for Simple1"""
@@ -274,7 +269,7 @@ class Angular2MosaicityParameterisation(BaseParameterisation):
                     mosaicities["angular"] = m[i]
         return mosaicities
 
-    def first_derivatives(self) -> flex.mat3_double:
+    def first_derivatives(self) -> np.array:
         """
         Compute the first derivatives of Sigma w.r.t the parameters
         """
@@ -314,16 +309,8 @@ class Angular4MosaicityParameterisation(BaseParameterisation):
         """
         Compute the covariance matrix of the MVN from the parameters
         """
-        """M = np.array(
-            [
-                [self.params[0], 0, 0],
-                [self.params[1], self.params[2], 0],
-                [0, 0, self.params[3]],
-            ],
-            dtype=np.float64,
-        )
-        #return np.matmul(M, M.T)
-        M * M.T"""
+        # M = [[p[0], 0, 0], [p[1], p[2], 0], [0, 0, p[3]]]
+        # return np.matmul(M, M.T)
         ab = self.params[0] * self.params[1]
         aa = self.params[0] ** 2
         bcsq = self.params[1] ** 2 + self.params[2] ** 2
@@ -499,12 +486,11 @@ class ModelState(object):
             self._L_parameterisation.parameters = params
 
     @property
-    def dU_dp(self) -> flex.mat3_double:
+    def dU_dp(self) -> np.array:
         """
         Get the first derivatives of U w.r.t its parameters
 
         """
-        # return flex.mat3_double(self._U_parameterisation.get_ds_dp())
         ds_dp = self._U_parameterisation.get_ds_dp()
         n = len(ds_dp)
         s = np.array([ds_dp[i] for i in range(n)], dtype=np.float64).reshape(n, 3, 3)
