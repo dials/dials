@@ -80,8 +80,7 @@ namespace dials { namespace refinement { namespace boost_python {
 
     def("intersection_i_seqs_unsorted",
         &intersection_i_seqs_unsorted,
-        (arg("left"),
-         arg("right")));
+        (arg("left"), arg("right")));
   }
 
 }}}  // namespace dials::refinement::boost_python

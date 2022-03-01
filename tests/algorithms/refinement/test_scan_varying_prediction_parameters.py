@@ -433,9 +433,12 @@ def test_SparseFlex_select_intersection(random_order):
     """SparseFlex.select requires the intersection of two size_t arrays, A and
     B. We view this as the selection of elements in A according to their
     presence in B. We have three approaches for this: a pure Python method,
-    a C++ equivalent and a Numpy method. The Numpy method is fastest, but fails
+    a C++ equivalent and a Numpy method. The Numpy method is fast, but fails
     when the input arrays are not sorted. We cannot assume this to be the case
-    in practice, so have to reject that method for use in SparseFlex.select"""
+    in practice, so have to reject that method for use in SparseFlex.select.
+
+    With changes to the C++ version, this is now about 8 times faster than the
+    pure Python version and 4 times faster than the NumPy version."""
 
     # Two random selections
     size = 1000
@@ -507,6 +510,59 @@ def test_SparseFlex_select_intersection(random_order):
         b,
     ) in zip(index_b_np, index_b):
         assert a == b
+
+
+def test_intersection_i_seqs_speed():
+
+    exec_times = []
+    for i in range(100):
+
+        size = 10000
+
+        sel1 = flex.random_selection(size, int(size / 2))
+        sel2 = flex.random_selection(size, int(size / 2))
+
+        # C++ version
+        start = time.perf_counter_ns()
+        index_a_cpp, index_b_cpp = intersection_i_seqs_unsorted(sel1, sel2)
+        end = time.perf_counter_ns()
+        wc_time_cpp = end - start
+
+        # Python version
+        start = time.perf_counter_ns()
+        index_a = flex.size_t(0)
+        index_b = flex.size_t(0)
+        lookup = {}
+        for i_a, val in enumerate(sel1):
+            lookup[val] = i_a
+        for i_b, val in enumerate(sel2):
+            i_a = lookup.get(val)
+            if i_a is not None:
+                index_a.append(i_a)
+                index_b.append(i_b)
+        end = time.perf_counter_ns()
+        wc_time_py = end - start
+
+        for (
+            a,
+            b,
+        ) in zip(index_a_cpp, index_a):
+            assert a == b
+        for (
+            a,
+            b,
+        ) in zip(index_b_cpp, index_b):
+            assert a == b
+
+        exec_times.append((wc_time_cpp, wc_time_py))
+
+    tot_cpp, tot_py = zip(*exec_times)
+    print(f"Total time in C++ function: {sum(tot_cpp)}")
+    print(f"Total time in Python version: {sum(tot_py)}")
+
+    # We use the C++ version because it is faster than the Python version.
+    # Let's ensure that's the case across platforms
+    assert sum(tot_cpp) / sum(tot_py) < 1.0
 
 
 if __name__ == "__main__":
