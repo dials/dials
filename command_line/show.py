@@ -1,4 +1,5 @@
-import collections
+from __future__ import annotations
+
 import os
 import sys
 
@@ -187,11 +188,14 @@ def run(args=None):
 
     dials.util.log.print_banner()
 
-    from dials.util.options import OptionParser, reflections_and_experiments_from_files
+    from dials.util.options import (
+        ArgumentParser,
+        reflections_and_experiments_from_files,
+    )
 
     usage = "dials.show [options] models.expt | image_*.cbf"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_experiments=True,
@@ -248,7 +252,7 @@ def show_experiments(experiments, show_scan_varying=False):
     for i_expt, expt in enumerate(experiments):
         text.append("Experiment %i:" % i_expt)
         format_class = expt.imageset.get_format_class()
-        if format_class.__name__ != "Format":
+        if not format_class.is_abstract():
             text.append(f"Format class: {format_class.__name__}")
         if expt.identifier != "":
             text.append(f"Experiment identifier: {expt.identifier}")
@@ -431,63 +435,61 @@ def show_reflections(
 
     from orderedset import OrderedSet
 
-    formats = collections.OrderedDict(
-        (
-            ("miller_index", "%i, %i, %i"),
-            ("d", "%.2f"),
-            ("qe", "%.3f"),
-            ("dqe", "%.3f"),
-            ("id", "%i"),
-            ("imageset_id", "%i"),
-            ("panel", "%i"),
-            ("flags", "%i"),
-            ("background.mean", "%.1f"),
-            ("background.dispersion", "%.1f"),
-            ("background.mse", "%.1f"),
-            ("background.sum.value", "%.1f"),
-            ("background.sum.variance", "%.1f"),
-            ("intensity.prf.value", "%.1f"),
-            ("intensity.prf.variance", "%.1f"),
-            ("intensity.sum.value", "%.1f"),
-            ("intensity.sum.variance", "%.1f"),
-            ("intensity.cor.value", "%.1f"),
-            ("intensity.cor.variance", "%.1f"),
-            ("intensity.scale.value", "%.1f"),
-            ("intensity.scale.variance", "%.1f"),
-            ("Ih_values", "%.1f"),
-            ("lp", "%.3f"),
-            ("num_pixels.background", "%i"),
-            ("num_pixels.background_used", "%i"),
-            ("num_pixels.foreground", "%i"),
-            ("num_pixels.valid", "%i"),
-            ("partial_id", "%i"),
-            ("partiality", "%.4f"),
-            ("profile.correlation", "%.3f"),
-            ("profile.rmsd", "%.3f"),
-            ("xyzcal.mm", "%.2f, %.2f, %.2f"),
-            ("xyzcal.px", "%.2f, %.2f, %.2f"),
-            ("delpsical.rad", "%.3f"),
-            ("delpsical2", "%.3f"),
-            ("delpsical.weights", "%.3f"),
-            ("xyzobs.mm.value", "%.2f, %.2f, %.2f"),
-            ("xyzobs.mm.variance", "%.4e, %.4e, %.4e"),
-            ("xyzobs.px.value", "%.2f, %.2f, %.2f"),
-            ("xyzobs.px.variance", "%.4f, %.4f, %.4f"),
-            ("s1", "%.4f, %.4f, %.4f"),
-            ("s2", "%.4f, %.4f, %.4f"),
-            ("shoebox", "%.1f"),
-            ("rlp", "%.4f, %.4f, %.4f"),
-            ("zeta", "%.3f"),
-            ("x_resid", "%.3f"),
-            ("x_resid2", "%.3f"),
-            ("y_resid", "%.3f"),
-            ("y_resid2", "%.3f"),
-            ("kapton_absorption_correction", "%.3f"),
-            ("kapton_absorption_correction_sigmas", "%.3f"),
-            ("inverse_scale_factor", "%.3f"),
-            ("inverse_scale_factor_variance", "%.3f"),
-        )
-    )
+    formats = {
+        "miller_index": "%i, %i, %i",
+        "d": "%.2f",
+        "qe": "%.3f",
+        "dqe": "%.3f",
+        "id": "%i",
+        "imageset_id": "%i",
+        "panel": "%i",
+        "flags": "%i",
+        "background.mean": "%.1f",
+        "background.dispersion": "%.1f",
+        "background.mse": "%.1f",
+        "background.sum.value": "%.1f",
+        "background.sum.variance": "%.1f",
+        "intensity.prf.value": "%.1f",
+        "intensity.prf.variance": "%.1f",
+        "intensity.sum.value": "%.1f",
+        "intensity.sum.variance": "%.1f",
+        "intensity.cor.value": "%.1f",
+        "intensity.cor.variance": "%.1f",
+        "intensity.scale.value": "%.1f",
+        "intensity.scale.variance": "%.1f",
+        "Ih_values": "%.1f",
+        "lp": "%.3f",
+        "num_pixels.background": "%i",
+        "num_pixels.background_used": "%i",
+        "num_pixels.foreground": "%i",
+        "num_pixels.valid": "%i",
+        "partial_id": "%i",
+        "partiality": "%.4f",
+        "profile.correlation": "%.3f",
+        "profile.rmsd": "%.3f",
+        "xyzcal.mm": "%.2f, %.2f, %.2f",
+        "xyzcal.px": "%.2f, %.2f, %.2f",
+        "delpsical.rad": "%.3f",
+        "delpsical2": "%.3f",
+        "delpsical.weights": "%.3f",
+        "xyzobs.mm.value": "%.2f, %.2f, %.2f",
+        "xyzobs.mm.variance": "%.4e, %.4e, %.4e",
+        "xyzobs.px.value": "%.2f, %.2f, %.2f",
+        "xyzobs.px.variance": "%.4f, %.4f, %.4f",
+        "s1": "%.4f, %.4f, %.4f",
+        "s2": "%.4f, %.4f, %.4f",
+        "shoebox": "%.1f",
+        "rlp": "%.4f, %.4f, %.4f",
+        "zeta": "%.3f",
+        "x_resid": "%.3f",
+        "x_resid2": "%.3f",
+        "y_resid": "%.3f",
+        "y_resid2": "%.3f",
+        "kapton_absorption_correction": "%.3f",
+        "kapton_absorption_correction_sigmas": "%.3f",
+        "inverse_scale_factor": "%.3f",
+        "inverse_scale_factor_variance": "%.3f",
+    }
 
     for rlist in reflections:
         from dials.algorithms.shoebox import MaskCode

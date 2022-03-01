@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import iotbx.detectors
 
 # store default ImageFactory function

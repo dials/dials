@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dials.algorithms.refinement.outlier_detection.outlier_base import CentroidOutlier
 from dials.algorithms.statistics.fast_mcd import FastMCD, maha_dist_sq
 from dials_refinement_helpers_ext import qchisq

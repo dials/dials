@@ -2,7 +2,8 @@
 Tests for the scaling restraints module.
 """
 
-from collections import OrderedDict
+from __future__ import annotations
+
 from unittest.mock import Mock
 
 import pytest
@@ -50,24 +51,18 @@ def mock_parameter_manager(mock_restrained_component, mock_unrestrained_componen
     """Mock a parameter manager to handle the components required for the
     ScalingRestraints class."""
     apm = Mock()
-    apm.components = OrderedDict(
-        {
-            "restrained": {
-                "object": mock_restrained_component,
-                "n_params": mock_restrained_component.n_params,
-                "start_idx": 0,
-            }
-        }
-    )
-    apm.components.update(
-        {
-            "unrestrained": {
-                "object": mock_unrestrained_component,
-                "n_params": mock_unrestrained_component.n_params,
-                "start_idx": mock_restrained_component.n_params,
-            }
-        }
-    )
+    apm.components = {
+        "restrained": {
+            "object": mock_restrained_component,
+            "n_params": mock_restrained_component.n_params,
+            "start_idx": 0,
+        },
+        "unrestrained": {
+            "object": mock_unrestrained_component,
+            "n_params": mock_unrestrained_component.n_params,
+            "start_idx": mock_restrained_component.n_params,
+        },
+    }
     apm.n_active_params = (
         mock_restrained_component.n_params + mock_unrestrained_component.n_params
     )
@@ -78,15 +73,13 @@ def mock_parameter_manager(mock_restrained_component, mock_unrestrained_componen
 def mock_unrestrained_apm(mock_unrestrained_component):
     """Mock a parameter manager to handle no restrained components."""
     apm = Mock()
-    apm.components = OrderedDict(
-        {
-            "unrestrained": {
-                "object": mock_unrestrained_component,
-                "n_params": mock_unrestrained_component.n_params,
-                "start_idx": 0,
-            }
+    apm.components = {
+        "unrestrained": {
+            "object": mock_unrestrained_component,
+            "n_params": mock_unrestrained_component.n_params,
+            "start_idx": 0,
         }
-    )
+    }
     apm.n_active_params = mock_unrestrained_component.n_params
     return apm
 

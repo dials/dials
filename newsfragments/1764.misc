@@ -1,1 +1,0 @@
-Pre-commits now advise developers on better use of dict/list/set comprehensions. Flake8 linter runs with correct settings outside of pre-commit.

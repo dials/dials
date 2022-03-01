@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from cctbx.array_family import flex
 from iotbx.data_plots import table_data
 from libtbx import phil

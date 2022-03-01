@@ -3,6 +3,8 @@
 #   from dials.array_family import flex
 #
 
+from __future__ import annotations
+
 import collections
 import copy
 import functools
@@ -11,8 +13,10 @@ import logging
 import operator
 import os
 import pickle
-from typing import Tuple
+from typing import List, Tuple
 
+import numpy as np
+import pandas as pd
 from annlib_ext import AnnAdaptorSelfInclude
 
 import boost_adaptbx.boost.python
@@ -469,6 +473,59 @@ class _:
             ref_tmp.sort(key1, reverse)
             self[min(val) : (max(val) + 1)] = ref_tmp
 
+    def match_by_hkle(
+        self, other: dials_array_family_flex_ext.reflection_table
+    ) -> Tuple[cctbx.array_family.flex.size_t, cctbx.array_family.flex.size_t]:
+        """
+        Match reflections with another set of reflections by the h, k, l
+        and entering values. Uses pandas dataframe merge method to match
+        the columns: assumes the key h, k, l, e is unique which is false
+        if > 360 degree rotation.
+
+        Args:
+            other: reflection table to match against
+
+        Returns:
+            Indices in self, indices in other for matches
+        """
+
+        hkl = self["miller_index"].as_vec3_double().parts()
+        hkl = (part.as_numpy_array().astype(int) for part in hkl)
+        e = self["entering"].as_numpy_array()
+        n = np.arange(e.size)
+        p0 = pd.DataFrame(dict(zip("hklen", (*hkl, e, n))), copy=False)
+
+        hkl = other["miller_index"].as_vec3_double().parts()
+        hkl = (part.as_numpy_array().astype(int) for part in hkl)
+        e = other["entering"].as_numpy_array()
+        n = np.arange(e.size)
+        p1 = pd.DataFrame(dict(zip("hklen", (*hkl, e, n))), copy=False)
+
+        merged = pd.merge(p0, p1, on=["h", "k", "l", "e"], suffixes=[0, 1])
+
+        n0 = cctbx.array_family.flex.size_t(merged.n0.values)
+        n1 = cctbx.array_family.flex.size_t(merged.n1.values)
+
+        return n0, n1
+
+    @staticmethod
+    def concat(
+        tables: List[dials_array_family_flex_ext.reflection_table],
+    ) -> dials_array_family_flex_ext.reflection_table:
+        """
+        Concatenate a list of reflection tables, taking care to correctly handle
+        experiment identifiers and ids.
+        :param tables: A list of reflection tables
+        :return: A single combined reflection table
+        """
+        from dials.util.multi_dataset_handling import renumber_table_id_columns
+
+        tables = renumber_table_id_columns(tables)
+        first = tables[0]
+        for table in tables[1:]:
+            first.extend(table)
+        return first
+
     def match_with_reference(self, other):
         """
         Match reflections with another set of reflections.
@@ -528,7 +585,7 @@ class _:
                         dx = x1[i] - x2[j]
                         dy = y1[i] - y2[j]
                         dz = z1[i] - z2[j]
-                        d.append((i, j, dx ** 2 + dy ** 2 + dz ** 2))
+                        d.append((i, j, dx**2 + dy**2 + dz**2))
                     i, j, d = min(d, key=lambda x: x[2])
                     if j not in matched:
                         matched[j] = (i, d)
@@ -1169,9 +1226,7 @@ Found %s"""
         Reset the 'id' column such that the experiment identifiers are
         numbered 0 .. n-1.
         """
-        reverse_map = collections.OrderedDict(
-            (v, k) for k, v in self.experiment_identifiers()
-        )
+        reverse_map = {v: k for k, v in self.experiment_identifiers()}
         orig_id = self["id"].deep_copy()
         for k in self.experiment_identifiers().keys():
             del self.experiment_identifiers()[k]
@@ -1238,8 +1293,12 @@ Found %s"""
         self["rlp"] = cctbx.array_family.flex.vec3_double(len(self))
         panel_numbers = cctbx.array_family.flex.size_t(self["panel"])
 
+        # crystal_frame is not used in indexing, but is a feature of the
+        # reciprocal lattice viewer -> but if we are looking at the crystal
+        # coordinate frame we need to look at the experiments independently
+
         for i, expt in enumerate(experiments):
-            if "imageset_id" in self:
+            if not crystal_frame and "imageset_id" in self:
                 sel_expt = self["imageset_id"] == i
             else:
                 sel_expt = self["id"] == i

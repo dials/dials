@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import copy
 import os
 import pickle
@@ -1547,3 +1549,51 @@ def test_match_mismatched_sizes():
 
     for _a, _b in zip(a_["xyz"], b_["xyz"]):
         assert _a == pytest.approx(_b)
+
+
+def test_match_by_hkle():
+    nn = 10
+
+    h = flex.int([n % nn for n in range(nn)])
+    k = flex.int([(n + 2) % nn for n in range(nn)])
+    l = flex.int([(n + 4) % nn for n in range(nn)])
+    e = flex.int([n % 2 for n in range(nn)])
+
+    hkl = flex.miller_index(h, k, l)
+
+    t0 = flex.reflection_table()
+    t0["miller_index"] = hkl
+    t0["entering"] = e
+
+    i = list(range(nn))
+    random.shuffle(i)
+    t1 = t0.select(flex.size_t(i))
+
+    # because t0.match_by_hkle(t1) will give the _inverse_ to i
+    n0, n1 = t1.match_by_hkle(t0)
+
+    assert list(n0) == list(range(nn))
+    assert list(n1) == i
+
+
+def test_concat():
+
+    table1 = flex.reflection_table()
+    table2 = flex.reflection_table()
+
+    table1["id"] = flex.size_t([0, 0, 1, 1])
+    table2["id"] = flex.size_t([0, 0, 1, 1])
+
+    ids1 = table1.experiment_identifiers()
+    ids2 = table2.experiment_identifiers()
+
+    ids1[0] = "a"
+    ids1[1] = "b"
+    ids2[0] = "c"
+    ids2[1] = "d"
+
+    table1 = flex.reflection_table.concat([table1, table2])
+
+    assert list(table1["id"]) == [0, 0, 1, 1, 2, 2, 3, 3]
+    assert list(ids1.keys()) == [0, 1, 2, 3]
+    assert list(ids1.values()) == ["a", "b", "c", "d"]

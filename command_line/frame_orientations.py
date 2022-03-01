@@ -8,6 +8,8 @@ Usage: dials.frame_orientations refined.expt
 """
 
 
+from __future__ import annotations
+
 import sys
 
 import matplotlib
@@ -16,7 +18,7 @@ from scitbx import matrix
 
 import dials.util
 from dials.util import tabulate
-from dials.util.options import OptionParser, flatten_experiments
+from dials.util.options import ArgumentParser, flatten_experiments
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -49,7 +51,7 @@ plot_filename = None
         usage = "dials.frame_orientations refined.expt refined.refl"
 
         # Create the parser
-        self.parser = OptionParser(
+        self.parser = ArgumentParser(
             usage=usage,
             phil=phil_scope,
             read_experiments=True,

@@ -1,8 +1,13 @@
+from __future__ import annotations
+
 from unittest.mock import Mock
 
+import numpy as np
+import pandas as pd
 import pytest
 
 from cctbx.sgtbx import space_group, uctbx
+from dxtbx import flumpy
 from scitbx import sparse
 
 from dials.algorithms.scaling.Ih_table import IhTable, IhTableBlock, map_indices_to_asu
@@ -30,8 +35,16 @@ def test_sg():
 def mock_error_model():
     """Mock error model."""
     em = Mock()
-    em.update_variances.return_value = flex.double([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0])
+    em.update_variances.return_value = np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0])
     return em
+
+
+def refl_table_to_df(table):
+    df = pd.DataFrame()
+    for col in table.keys():
+        if col != "asu_miller_index" and col != "miller_index":
+            df[col] = flumpy.to_numpy(table[col])
+    return df
 
 
 def generate_refl_1():
@@ -139,18 +152,20 @@ def test_IhTableblock_onedataset(large_reflection_table, test_sg):
     n_groups = len(set(asu_indices))
     n_refl = large_reflection_table.size()
     block = IhTableBlock(n_groups=n_groups, n_refl=n_refl)
-    group_ids = flex.int([0, 1, 0, 2, 3, 4, 4])
+    group_ids = np.array([0, 1, 0, 2, 3, 4, 4], dtype=np.uint64)
 
-    block.add_data(0, group_ids, large_reflection_table)
+    df = refl_table_to_df(large_reflection_table)
+
+    block.add_data(0, group_ids, df, large_reflection_table["miller_index"])
 
     # test properties
-    assert block.inverse_scale_factors
-    assert block.variances
-    assert block.intensities
-    assert block.weights
-    assert block.asu_miller_index
+    assert block.inverse_scale_factors.size
+    assert block.variances.size
+    assert block.intensities.size
+    assert block.weights.size
+    assert block.asu_miller_index.size
 
-    assert list(block.block_selections[0]) == [0, 1, 2, 3, 4, 5, 6]
+    # assert list(block.block_selections[0]) == [0, 1, 2, 3, 4, 5, 6]
     assert len(block.block_selections) == 1
 
     assert block.h_index_matrix.n_rows == n_refl
@@ -184,7 +199,9 @@ def test_IhTableblock_onedataset(large_reflection_table, test_sg):
     )
 
     with pytest.raises(AssertionError):
-        block.add_data(0, group_ids, large_reflection_table)
+        block.add_data(
+            0, group_ids, large_reflection_table, large_reflection_table["miller_index"]
+        )
 
     assert list(block.calc_nh()) == [2, 1, 2, 1, 1, 2, 2]
 
@@ -195,7 +212,7 @@ def test_IhTableblock_onedataset(large_reflection_table, test_sg):
     )
 
     # Test select method
-    new_block = block.select(flex.bool([True, False, True, False, True, False, False]))
+    new_block = block.select(np.array([True, False, True, False, True, False, False]))
 
     assert list(new_block.block_selections[0]) == [0, 2, 4]
 
@@ -216,38 +233,37 @@ def test_IhTableblock_onedataset(large_reflection_table, test_sg):
     assert list(new_block.Ih_values) == pytest.approx(
         [x / 2.0 for x in [90.0, 90.0, 30.0]]
     )
+    with pd.option_context("mode.chained_assignment", None):
+        # test setter methods
+        new_block.inverse_scale_factors = np.array([1.0, 2.0, 3.0])
+        assert list(new_block.inverse_scale_factors) == [1.0, 2.0, 3.0]
+        with pytest.raises(AssertionError):
+            new_block.inverse_scale_factors = np.array([1.0, 2.0, 3.0, 4.0])
+        new_block.weights = np.array([0.1, 0.2, 0.3])
+        assert list(new_block.weights) == [0.1, 0.2, 0.3]
+        with pytest.raises(AssertionError):
+            new_block.weights = np.array([1.0, 2.0, 3.0, 4.0])
+        # test selecting initial table on groups, expecting same result as before
+        new_block = block.select_on_groups(np.array([True, False, False, True, False]))
+        assert list(new_block.block_selections[0]) == [0, 2, 4]
 
-    # test setter methods
-    new_block.inverse_scale_factors = flex.double([1.0, 2.0, 3.0])
-    assert list(new_block.inverse_scale_factors) == [1.0, 2.0, 3.0]
-    with pytest.raises(AssertionError):
-        new_block.inverse_scale_factors = flex.double([1.0, 2.0, 3.0, 4.0])
-    new_block.weights = flex.double([0.1, 0.2, 0.3])
-    assert list(new_block.weights) == [0.1, 0.2, 0.3]
-    with pytest.raises(AssertionError):
-        new_block.weights = flex.double([1.0, 2.0, 3.0, 4.0])
+        assert new_block.h_index_matrix.n_rows == 3
+        assert new_block.h_index_matrix.n_cols == 2
+        assert new_block.h_index_matrix.non_zeroes == 3
+        assert new_block.h_index_matrix[0, 0] == 1
+        assert new_block.h_index_matrix[1, 0] == 1
+        assert new_block.h_index_matrix[2, 1] == 1
 
-    # test selecting initial table on groups, expecting same result as before
-    new_block = block.select_on_groups(flex.bool([True, False, False, True, False]))
-    assert list(new_block.block_selections[0]) == [0, 2, 4]
+        assert new_block.h_expand_matrix.n_cols == 3
+        assert new_block.h_expand_matrix.n_rows == 2
+        assert new_block.h_expand_matrix.non_zeroes == 3
+        assert new_block.h_expand_matrix[0, 0] == 1
+        assert new_block.h_expand_matrix[0, 1] == 1
+        assert new_block.h_expand_matrix[1, 2] == 1
 
-    assert new_block.h_index_matrix.n_rows == 3
-    assert new_block.h_index_matrix.n_cols == 2
-    assert new_block.h_index_matrix.non_zeroes == 3
-    assert new_block.h_index_matrix[0, 0] == 1
-    assert new_block.h_index_matrix[1, 0] == 1
-    assert new_block.h_index_matrix[2, 1] == 1
-
-    assert new_block.h_expand_matrix.n_cols == 3
-    assert new_block.h_expand_matrix.n_rows == 2
-    assert new_block.h_expand_matrix.non_zeroes == 3
-    assert new_block.h_expand_matrix[0, 0] == 1
-    assert new_block.h_expand_matrix[0, 1] == 1
-    assert new_block.h_expand_matrix[1, 2] == 1
-
-    assert list(new_block.Ih_values) == pytest.approx(
-        [x / 2.0 for x in [90.0, 90.0, 30.0]]
-    )
+        assert list(new_block.Ih_values) == pytest.approx(
+            [x / 2.0 for x in [90.0, 90.0, 30.0]]
+        )
 
 
 def test_IhTableblock_twodatasets(large_reflection_table, test_sg):
@@ -264,8 +280,18 @@ def test_IhTableblock_twodatasets(large_reflection_table, test_sg):
 
     block = IhTableBlock(n_groups=n_groups, n_refl=n_refl, n_datasets=2)
 
-    block.add_data(0, group_ids=flex.int([0, 1, 3, 4, 4]), reflections=dataset_1)
-    block.add_data(1, group_ids=flex.int([0, 2]), reflections=dataset_2)
+    block.add_data(
+        0,
+        np.array([0, 1, 3, 4, 4], dtype=np.uint64),
+        refl_table_to_df(dataset_1),
+        dataset_1["miller_index"],
+    )
+    block.add_data(
+        1,
+        np.array([0, 2], dtype=np.uint64),
+        refl_table_to_df(dataset_2),
+        dataset_2["miller_index"],
+    )
 
     assert list(block.block_selections[0]) == [0, 1, 2, 3, 4]
     assert list(block.block_selections[1]) == [0, 1]
@@ -296,7 +322,7 @@ def test_IhTableblock_twodatasets(large_reflection_table, test_sg):
     assert block.h_expand_matrix[2, 6] == 1
 
     # Test select method
-    new_block = block.select(flex.bool([True, False, True, False, False, True, False]))
+    new_block = block.select(np.array([True, False, True, False, False, True, False]))
 
     assert list(new_block.block_selections[0]) == [0, 2]
     assert list(new_block.block_selections[1]) == [0]
@@ -340,12 +366,12 @@ def test_IhTable_split_into_blocks(
     assert Ih_table.n_datasets == 2
     assert Ih_table.n_work_blocks == 2
     block_list = Ih_table.Ih_table_blocks
-    assert list(block_list[0].Ih_table["asu_miller_index"]) == [
+    assert list(block_list[0].asu_miller_index) == [
         (0, 0, 1),
         (0, 0, 2),
         (0, 2, 0),
     ]
-    assert list(block_list[1].Ih_table["asu_miller_index"]) == [
+    assert list(block_list[1].asu_miller_index) == [
         (0, 4, 0),
         (1, 0, 0),
         (1, 0, 0),
@@ -385,9 +411,24 @@ def test_IhTable_split_into_blocks(
     expected_h_idx_matrix[5, 2] = 1
     assert block_list[1].h_index_matrix == expected_h_idx_matrix
 
+    s = flex.double([1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
+    assert list(block_list[1].sum_in_groups(s, "per_group")) == [5.0, 10.0, 6.0]
+    assert list(block_list[1].sum_in_groups(s, "per_refl")) == [
+        5.0,
+        10.0,
+        10.0,
+        5.0,
+        10.0,
+        6.0,
+    ]
+    with pytest.raises(ValueError):
+        block_list[1].sum_in_groups(s, "invalid")
+
     # check that only dataset 1 intensities are updated
-    new_intensities = flex.double([60.0, 50.0, 40.0, 30.0, 20.0, 10.0])
-    Ih_table.update_data_in_blocks(data=new_intensities, dataset_id=0)
+    new_intensities = np.array([60.0, 50.0, 40.0, 30.0, 20.0, 10.0])
+    Ih_table.update_data_in_blocks(
+        data=new_intensities, dataset_id=0, column="intensity"
+    )
     assert list(Ih_table.blocked_data_list[0].intensities) == [50.0, 10.0, 30.0]
     assert list(Ih_table.blocked_data_list[1].intensities) == [
         20.0,
@@ -398,7 +439,7 @@ def test_IhTable_split_into_blocks(
         10.0,
     ]
     # try updating variances
-    new_vars = flex.double([100.0, 200.0, 300.0, 400.0])
+    new_vars = np.array([100.0, 200.0, 300.0, 400.0])
     Ih_table.update_data_in_blocks(data=new_vars, dataset_id=1, column="variance")
     assert list(Ih_table.blocked_data_list[0].variances) == [100.0, 50.0, 60.0]
     assert list(Ih_table.blocked_data_list[1].variances) == [
@@ -438,34 +479,34 @@ def test_IhTable_freework(large_reflection_table, small_reflection_table, test_s
     assert block_list[0].h_index_matrix.non_zeroes == 1
     assert block_list[1].h_index_matrix[0, 0] == 1
     assert block_list[1].h_index_matrix[1, 0] == 1
-    assert block_list[1].h_index_matrix[2, 0] == 1
+    assert block_list[1].h_index_matrix[2, 1] == 1
     assert block_list[1].h_index_matrix.non_zeroes == 3
     # free set block
     assert block_list[2].h_index_matrix[0, 0] == 1
     assert block_list[2].h_index_matrix[1, 1] == 1
     assert block_list[2].h_index_matrix[2, 2] == 1
     assert block_list[2].h_index_matrix[3, 2] == 1
-    assert block_list[2].h_index_matrix[4, 3] == 1
+    assert block_list[2].h_index_matrix[4, 2] == 1
     assert block_list[2].h_index_matrix.non_zeroes == 5
 
     assert list(block_list[0].block_selections[0]) == [5]
     assert list(block_list[0].block_selections[1]) == []
-    assert list(block_list[1].block_selections[0]) == [0, 2]
-    assert list(block_list[1].block_selections[1]) == [0]
-    assert list(block_list[2].block_selections[0]) == [1, 3, 4]
-    assert list(block_list[2].block_selections[1]) == [3, 2]
+    assert list(block_list[1].block_selections[0]) == [4]
+    assert list(block_list[1].block_selections[1]) == [3, 2]
+    assert list(block_list[2].block_selections[0]) == [1, 3, 0, 2]
+    assert list(block_list[2].block_selections[1]) == [0]
 
     # test get_block_selections_for_dataset
     block_sels_0 = Ih_table.get_block_selections_for_dataset(0)
     assert len(block_sels_0) == 3
     assert list(block_sels_0[0]) == [5]
-    assert list(block_sels_0[1]) == [0, 2]
-    assert list(block_sels_0[2]) == [1, 3, 4]
+    assert list(block_sels_0[1]) == [4]
+    assert list(block_sels_0[2]) == [1, 3, 0, 2]
     block_sels_1 = Ih_table.get_block_selections_for_dataset(1)
     assert len(block_sels_1) == 3
     assert list(block_sels_1[0]) == []
-    assert list(block_sels_1[1]) == [0]
-    assert list(block_sels_1[2]) == [3, 2]
+    assert list(block_sels_1[1]) == [3, 2]
+    assert list(block_sels_1[2]) == [0]
     with pytest.raises(AssertionError):
         _ = Ih_table.get_block_selections_for_dataset(2)
 
@@ -473,7 +514,7 @@ def test_IhTable_freework(large_reflection_table, small_reflection_table, test_s
 
     # test setting data
     # set scale factors
-    new_s_block_2 = flex.double(range(1, 6))
+    new_s_block_2 = np.arange(start=1, stop=6)
     Ih_table.set_inverse_scale_factors(new_s_block_2, 2)
     assert list(Ih_table.Ih_table_blocks[2].inverse_scale_factors) == list(
         new_s_block_2
@@ -484,7 +525,7 @@ def test_IhTable_freework(large_reflection_table, small_reflection_table, test_s
     assert Ih_table.Ih_table_blocks[0].derivatives is derivs
 
     def update_vars_side_effect(*args):
-        return flex.double([0.5] * len(args[0]))
+        return np.array([0.5] * len(args[0]))
 
     # test setting an error model
     em = Mock()
@@ -519,21 +560,21 @@ def test_IhTable_freework(large_reflection_table, small_reflection_table, test_s
     assert block_list[0].h_index_matrix.non_zeroes == 2
     assert block_list[1].h_index_matrix[0, 0] == 1
     assert block_list[1].h_index_matrix[1, 0] == 1
-    assert block_list[1].h_index_matrix[2, 1] == 1
+    assert block_list[1].h_index_matrix[2, 0] == 1
     assert block_list[1].h_index_matrix.non_zeroes == 3
     # free set block
     assert block_list[2].h_index_matrix[0, 0] == 1
     assert block_list[2].h_index_matrix[1, 1] == 1
     assert block_list[2].h_index_matrix[2, 1] == 1
-    assert block_list[2].h_index_matrix[3, 1] == 1
+    assert block_list[2].h_index_matrix[3, 2] == 1
     assert block_list[2].h_index_matrix.non_zeroes == 4
 
     assert list(block_list[0].block_selections[0]) == [1, 3]
     assert list(block_list[0].block_selections[1]) == []
-    assert list(block_list[1].block_selections[0]) == [4]
-    assert list(block_list[1].block_selections[1]) == [3, 2]
-    assert list(block_list[2].block_selections[0]) == [5, 0, 2]
-    assert list(block_list[2].block_selections[1]) == [0]
+    assert list(block_list[1].block_selections[0]) == [0, 2]
+    assert list(block_list[1].block_selections[1]) == [0]
+    assert list(block_list[2].block_selections[0]) == [5, 4]
+    assert list(block_list[2].block_selections[1]) == [3, 2]
 
     Ih_table.calc_Ih()
 
@@ -545,26 +586,14 @@ def test_IhTable_freework(large_reflection_table, small_reflection_table, test_s
     assert list(arr.indices()) == [
         (0, 0, 1),
         (0, 2, 0),
-        (0, 4, 0),
-        (0, 4, 0),
-        (10, 0, 0),
+        (1, 0, 0),
+        (1, 0, 0),
+        (1, 0, 0),
     ]
-    assert list(arr.data()) == pytest.approx(
-        [x / 2.0 for x in [100.0, 60.0, 30.0, 30.0, 10.0]]
-    )
-    assert list(arr.sigmas()) == pytest.approx(
-        [(x / 4.0) ** 0.5 for x in [100.0, 60.0, 30.0, 30.0, 10.0]]
-    )
 
     arr = Ih_table.as_miller_array(unit_cell, return_free_set_data=True)
     assert arr.size() == 4
-    assert list(arr.indices()) == [(0, 0, 2), (1, 0, 0), (1, 0, 0), (1, 0, 0)]
-    assert list(arr.data()) == pytest.approx(
-        [x / 2.0 for x in [40.0, 100.0, 80.0, 60.0]]
-    )
-    assert list(arr.sigmas()) == pytest.approx(
-        [(x / 4.0) ** 0.5 for x in [50.0, 90.0, 90.0, 60.0]]
-    )
+    assert list(arr.indices()) == [(0, 0, 2), (0, 4, 0), (0, 4, 0), (10, 0, 0)]
 
 
 def test_set_Ih_values_to_target(test_sg):
@@ -585,20 +614,16 @@ def test_set_Ih_values_to_target(test_sg):
         [16.0 / 3.0, 16.0 / 3.0, 7.0, 16.0 / 3.0, 7.0, 7.0]
     )
 
-    target = IhTable(
-        [generated_refl_for_splitting_1(), generated_refl_for_splitting_2()],
-        test_sg,
-        nblocks=1,
-    )
     # set some values in the target
     # change the (2, 0, 0) reflections to (4, 0, 0) to test if they are removed
     # from the blocks
-    vals = target.blocked_data_list[0].asu_miller_index
-    vals[3] = (4, 0, 0)
-    vals[4] = (4, 0, 0)
-    vals[8] = (4, 0, 0)
-
-    target.blocked_data_list[0].Ih_table["Ih_values"] = flex.double(
+    t1 = generated_refl_for_splitting_1()
+    t2 = generated_refl_for_splitting_2()
+    t1["miller_index"][1] = (4, 0, 0)
+    t1["miller_index"][5] = (4, 0, 0)
+    t2["miller_index"][1] = (4, 0, 0)
+    target = IhTable([t1, t2], test_sg, nblocks=1)
+    target.blocked_data_list[0].Ih_table["Ih_values"] = np.array(
         [0.1, 0.2, 0.2, 0.3, 0.3, 0.4, 0.1, 0.2, 0.3, 0.4, 0.4]
     )
 

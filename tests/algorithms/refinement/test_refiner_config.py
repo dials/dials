@@ -1,6 +1,8 @@
 """Test Refiners can be constructed with various configurations"""
 
 
+from __future__ import annotations
+
 import os
 from copy import deepcopy
 

@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 import iotbx.phil
 from cctbx.array_family import flex
 
 import dials.algorithms.indexing.compare_orientation_matrices
 import dials.util
-from dials.util.options import OptionParser, flatten_experiments
+from dials.util.options import ArgumentParser, flatten_experiments
 
 help_message = """
 
@@ -40,7 +42,7 @@ space_group = None
 def run(args=None):
     usage = "dials.compare_orientation_matrices [options] models.expt"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_experiments=True,

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import math
 import os
@@ -462,18 +464,19 @@ def test_multi_lattice(dials_regression, tmpdir):
     assert len(exp_id) == 2
 
 
-def test_output_rubbish(dials_data, tmpdir):
+def test_output_rubbish(dials_data, tmp_path):
     result = procrunner.run(
         [
             "dials.index",
-            dials_data("centroid_test_data").join("datablock.json"),
-            dials_data("centroid_test_data").join("strong.pickle"),
+            dials_data("centroid_test_data", pathlib=True)
+            / "imported_experiments.json",
+            dials_data("centroid_test_data", pathlib=True) / "strong.pickle",
         ],
-        working_directory=tmpdir,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("indexed.expt").check(file=1)
-    assert tmpdir.join("indexed.refl").check(file=1)
+    assert (tmp_path / "indexed.expt").is_file()
+    assert (tmp_path / "indexed.refl").is_file()
 
     # Call dials.integrate
     result = procrunner.run(
@@ -485,12 +488,12 @@ def test_output_rubbish(dials_data, tmpdir):
             "profile.fitting=False",
             "prediction.padding=0",
         ],
-        working_directory=tmpdir,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("integrated.refl").check(file=1)
+    assert (tmp_path / "integrated.refl").is_file()
 
-    table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
+    table = flex.reflection_table.from_file(tmp_path / "integrated.refl")
     assert "id" in table
     for row in table.rows():
         assert row["id"] == 0

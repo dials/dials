@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import iotbx.phil
 
 import dials.util
 from dials.array_family import flex
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 
 help_message = """
 Augment spot list with additional information - for example number of pixels
@@ -90,7 +92,7 @@ def run(args=None):
 
     usage = "dials.augment_spots [options] [models.expt] strong.refl"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_reflections=True,

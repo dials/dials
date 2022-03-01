@@ -2,8 +2,11 @@
 Tests for the error model.
 """
 
+from __future__ import annotations
+
 import math
 
+import numpy as np
 import pytest
 
 from cctbx.sgtbx import space_group
@@ -19,7 +22,7 @@ from dials.algorithms.scaling.error_model.error_model import (
 from dials.algorithms.scaling.error_model.error_model_target import ErrorModelTargetB
 from dials.algorithms.scaling.Ih_table import IhTable
 from dials.array_family import flex
-from dials.util.options import OptionParser
+from dials.util.options import ArgumentParser
 
 
 @pytest.fixture()
@@ -42,10 +45,8 @@ def generated_param():
   """,
         process_includes=True,
     )
-    optionparser = OptionParser(phil=phil_scope, check_format=False)
-    parameters, _ = optionparser.parse_args(
-        args=[], quick_parse=True, show_diff_phil=False
-    )
+    parser = ArgumentParser(phil=phil_scope, check_format=False)
+    parameters, _ = parser.parse_args(args=[], quick_parse=True, show_diff_phil=False)
     return parameters
 
 
@@ -108,11 +109,11 @@ def data_for_error_model_test(background_variance=1, multiplicity=100, b=0.05, a
         for _ in range(multiplicity):
             intensity = next(g)
             if b > 0.0:
-                alpha = (1.0 + (b ** 2 * intensity)) ** 0.5
+                alpha = (1.0 + (b**2 * intensity)) ** 0.5
                 intensities.append(int((alpha * intensity) + ((1.0 - alpha) * i)))
             else:
                 intensities.append(intensity)
-            variances.append((intensity + background_variance) / (a ** 2))
+            variances.append((intensity + background_variance) / (a**2))
             miller_index.append(idx)
 
     reflections = flex.reflection_table()
@@ -209,7 +210,7 @@ def test_errormodel(large_reflection_table, test_sg):
     sigmaprime = calc_sigmaprime([x0, x1], error_model.filtered_Ih_table)
     cal_sigpr = list(
         x0
-        * flex.sqrt(block.variances + flex.pow2(x1 * block.intensities))
+        * np.sqrt(block.variances + np.square(x1 * block.intensities))
         / block.inverse_scale_factors
     )
     assert list(sigmaprime) == pytest.approx(cal_sigpr[4:7] + cal_sigpr[-2:])
@@ -249,12 +250,6 @@ def test_error_model_target(large_reflection_table, test_sg):
     parameterisation = ErrorModelB_APM(error_model)
     target = ErrorModelTargetB(error_model)
     target.predict(parameterisation)
-    # Test residual calculation
-    residuals = target.calculate_residuals(parameterisation)
-    assert residuals == (
-        flex.double(2, 1.0)
-        - flex.pow2(error_model.binner.binning_info["bin_variances"])
-    )
 
     # Test gradient calculation against finite differences.
     gradients = target.calculate_gradients(parameterisation)
@@ -262,11 +257,7 @@ def test_error_model_target(large_reflection_table, test_sg):
     assert list(gradients) == pytest.approx(list(gradient_fd))
 
     # Test the method calls
-    r, g = target.compute_functional_gradients(parameterisation)
-    assert r == residuals
-    assert list(gradients) == pytest.approx(list(g))
-    r, g = target.compute_functional_gradients(parameterisation)
-    assert r == residuals
+    _, g = target.compute_functional_gradients(parameterisation)
     assert list(gradients) == pytest.approx(list(g))
 
 

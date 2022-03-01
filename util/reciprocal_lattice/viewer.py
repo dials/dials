@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from math import pi
 
 import wx
@@ -90,7 +92,7 @@ class ReciprocalLatticeViewer(wx.Frame, Render3d):
             self.settings_panel.beam_slow_ctrl.SetValue(self.settings.beam_centre[1])
         if self.settings.marker_size is Auto:
             max_radius = max(self.reflections["rlp"].norms())
-            volume = 4 / 3 * pi * max_radius ** 3
+            volume = 4 / 3 * pi * max_radius**3
             density = len(self.reflections) / volume
             # Set marker size to between 5 and 50 depending on density, where
             # 1000 < density < 20000 ==> 50 < marker_size < 5
@@ -172,18 +174,7 @@ class ReciprocalLatticeViewer(wx.Frame, Render3d):
             )
 
     def update_settings(self, *args, **kwds):
-        detector = self.experiments[0].detector
-        beam = self.experiments[0].beam
-
-        try:
-            panel_id, beam_centre = detector.get_ray_intersection(beam.get_s0())
-        except RuntimeError:
-            # beam centre calculation fails if the beam falls between panels
-            pass
-        else:
-            if self.settings.beam_centre != beam_centre:
-                self.set_beam_centre(beam_centre)
-
+        self.set_beam_centre(self.settings.beam_centre_panel, self.settings.beam_centre)
         self.map_points_to_reciprocal_space()
         self.set_points()
         self.viewer.update_settings(*args, **kwds)
@@ -210,7 +201,9 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
     def add_controls(self):
         # d_min control
 
-        self.d_min_ctrl = floatspin.FloatSpin(parent=self, increment=0.05, digits=2)
+        self.d_min_ctrl = floatspin.FloatSpin(
+            parent=self, increment=0.05, min_val=0, digits=2
+        )
         self.d_min_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
         if wx.VERSION >= (2, 9):  # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
             self.d_min_ctrl.SetBackgroundColour(self.GetBackgroundColour())
@@ -221,7 +214,9 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
         box.Add(self.d_min_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.d_min_ctrl)
 
-        self.z_min_ctrl = floatspin.FloatSpin(parent=self, increment=1, digits=0)
+        self.z_min_ctrl = floatspin.FloatSpin(
+            parent=self, increment=1, min_val=0, digits=0
+        )
         self.z_min_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
         if wx.VERSION >= (2, 9):  # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
             self.z_min_ctrl.SetBackgroundColour(self.GetBackgroundColour())
@@ -232,7 +227,9 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
         box.Add(self.z_min_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.z_min_ctrl)
 
-        self.z_max_ctrl = floatspin.FloatSpin(parent=self, increment=1, digits=0)
+        self.z_max_ctrl = floatspin.FloatSpin(
+            parent=self, increment=1, min_val=0, digits=0
+        )
         self.z_max_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
         if wx.VERSION >= (2, 9):  # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
             self.z_max_ctrl.SetBackgroundColour(self.GetBackgroundColour())
@@ -246,7 +243,9 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
         # Control for spot size (utility depends on n_signal column in reflection
         # file - will be ignored if not in file
 
-        self.n_min_ctrl = floatspin.FloatSpin(parent=self, increment=1, digits=0)
+        self.n_min_ctrl = floatspin.FloatSpin(
+            parent=self, increment=1, min_val=0, digits=0
+        )
         self.n_min_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
         if wx.VERSION >= (2, 9):  # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
             self.n_min_ctrl.SetBackgroundColour(self.GetBackgroundColour())
@@ -257,7 +256,9 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
         box.Add(self.n_min_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.n_min_ctrl)
 
-        self.n_max_ctrl = floatspin.FloatSpin(parent=self, increment=1, digits=0)
+        self.n_max_ctrl = floatspin.FloatSpin(
+            parent=self, increment=1, min_val=0, digits=0
+        )
         self.n_max_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
         if wx.VERSION >= (2, 9):  # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
             self.n_max_ctrl.SetBackgroundColour(self.GetBackgroundColour())
@@ -333,6 +334,19 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
         self.panel_sizer.Add(self.crystal_frame_ctrl, 0, wx.ALL, 5)
 
         self.Bind(wx.EVT_CHECKBOX, self.OnChangeSettings, self.crystal_frame_ctrl)
+
+        self.beam_panel_ctrl = floatspin.FloatSpin(
+            parent=self, min_val=0, increment=1, digits=0
+        )
+        self.beam_panel_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
+        if wx.VERSION >= (2, 9):  # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
+            self.beam_panel_ctrl.SetBackgroundColour(self.GetBackgroundColour())
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        self.panel_sizer.Add(box)
+        label = wx.StaticText(self, -1, "Beam centre panel")
+        box.Add(label, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        box.Add(self.beam_panel_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.beam_panel_ctrl)
 
         self.beam_fast_ctrl = floatspin.FloatSpin(parent=self, increment=0.01, digits=2)
         self.beam_fast_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
@@ -430,6 +444,10 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
         self.settings.n_max = int(self.n_max_ctrl.GetValue())
         self.settings.partiality_min = self.partiality_min_ctrl.GetValue()
         self.settings.partiality_max = self.partiality_max_ctrl.GetValue()
+
+        old_beam_panel = self.settings.beam_centre_panel
+        old_beam_centre = self.settings.beam_centre
+        self.settings.beam_centre_panel = self.beam_panel_ctrl.GetValue()
         self.settings.beam_centre = (
             self.beam_fast_ctrl.GetValue(),
             self.beam_slow_ctrl.GetValue(),
@@ -454,7 +472,14 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
                     expt_ids.append(i - 1)
             self.settings.experiment_ids = expt_ids
 
-        self.parent.update_settings()
+        try:
+            self.parent.update_settings()
+        except ValueError:  # Handle beam centre changes, which could fail
+            self.settings.beam_centre_panel = old_beam_panel
+            self.settings.beam_centre = old_beam_centre
+            self.beam_panel_ctrl.SetValue(old_beam_panel)
+            self.beam_fast_ctrl.SetValue(old_beam_centre[0])
+            self.beam_slow_ctrl.SetValue(old_beam_centre[1])
 
 
 class RLVWindow(wx_viewer.show_points_and_lines_mixin):

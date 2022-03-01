@@ -1,4 +1,4 @@
-from collections import OrderedDict
+from __future__ import annotations
 
 from scitbx.array_family import flex
 
@@ -32,10 +32,8 @@ class UnitCellAnalysisObserver(Observer):
     def make_plots(self):
         """Generate plots of the unit cell clustering."""
 
-        d = OrderedDict()
-
         uc_params = uc_params_from_experiments(self.data["experiments"])
-        d.update(plots.plot_uc_histograms(uc_params))
+        d = plots.plot_uc_histograms(uc_params)
 
         if "dendrogram" in self.data:
             d["uc_clustering"] = plots.scipy_dendrogram_to_plotly_json(

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from libtbx.phil import parse
 
 phil_scope = parse(

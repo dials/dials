@@ -2,8 +2,9 @@
 Observers for the cosym procedure.
 """
 
+from __future__ import annotations
+
 import json
-from collections import OrderedDict
 
 from jinja2 import ChoiceLoader, Environment, PackageLoader
 
@@ -95,8 +96,7 @@ class CosymClusterAnalysisObserver(Observer):
 
     def make_plots(self):
         """Generate cosym cluster analysis plot data."""
-        d = OrderedDict()
-        d.update(plot_rij_histogram(self.data["rij_matrix"]))
+        d = plot_rij_histogram(self.data["rij_matrix"])
         d.update(plot_coords(self.data["coordinates"]))
         graphs = {"cosym_graphs": d}
         return graphs

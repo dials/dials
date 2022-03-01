@@ -1,6 +1,8 @@
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
 
+from __future__ import annotations
+
 import concurrent.futures
 import copy
 import logging
@@ -12,8 +14,7 @@ from dxtbx.model.experiment_list import ExperimentList
 from dials.algorithms.indexing import DialsIndexError, indexer
 from dials.array_family import flex
 from dials.util import log, show_mail_handle_errors
-from dials.util.multi_dataset_handling import renumber_table_id_columns
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.slice import slice_reflections
 from dials.util.version import dials_version
 
@@ -166,7 +167,6 @@ def index(experiments, reflections, params):
         )
     else:
         indexed_experiments = ExperimentList()
-        indexed_reflections = flex.reflection_table()
 
         with concurrent.futures.ProcessPoolExecutor(
             max_workers=params.indexing.nproc
@@ -200,9 +200,7 @@ def index(experiments, reflections, params):
                     idx_refl["imageset_id"] = flex.size_t(idx_refl.size(), i_expt)
                     tables_list.append(idx_refl)
                     indexed_experiments.extend(idx_expts)
-            tables_list = renumber_table_id_columns(tables_list)
-            for table in tables_list:
-                indexed_reflections.extend(table)
+        indexed_reflections = flex.reflection_table.concat(tables_list)
     return indexed_experiments, indexed_reflections
 
 
@@ -210,7 +208,7 @@ def index(experiments, reflections, params):
 def run(args=None, phil=working_phil):
     usage = "dials.index [options] models.expt strong.refl"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil,
         read_reflections=True,

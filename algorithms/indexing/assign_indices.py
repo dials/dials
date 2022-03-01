@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from cctbx.array_family import flex
 
 import dials_algorithms_indexing_ext as ext

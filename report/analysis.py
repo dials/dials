@@ -1,6 +1,6 @@
 """Calculations relevant to reporting."""
 
-import collections
+from __future__ import annotations
 
 from cctbx import miller
 from scitbx.array_family import flex
@@ -182,32 +182,30 @@ def _batch_bins_and_data(batches, values, function_to_apply):
     return batch_bins, data
 
 
-formats = collections.OrderedDict(
-    [
-        ("High resolution limit", " %7.2f"),
-        ("Low resolution limit", " %7.2f"),
-        ("Completeness", "%7.1f"),
-        ("Multiplicity", "%7.1f"),
-        ("I/sigma", "%7.1f"),
-        ("Rmerge(I)", "%7.3f"),
-        ("Rmerge(I+/-)", "%7.3f"),
-        ("Rmeas(I)", "%7.3f"),
-        ("Rmeas(I+/-)", "%7.3f"),
-        ("Rpim(I)", "%7.3f"),
-        ("Rpim(I+/-)", "%7.3f"),
-        ("CC half", "%7.3f"),
-        ("Wilson B factor", "%7.3f"),
-        ("Partial bias", "%7.3f"),
-        ("Anomalous completeness", "%7.1f"),
-        ("Anomalous multiplicity", "%7.1f"),
-        ("Anomalous correlation", "%7.3f"),
-        ("Anomalous slope", "%7.3f"),
-        ("dF/F", "%7.3f"),
-        ("dI/s(dI)", "%7.3f"),
-        ("Total observations", "%7d"),
-        ("Total unique", "%7d"),
-    ]
-)
+formats = {
+    "High resolution limit": " %7.2f",
+    "Low resolution limit": " %7.2f",
+    "Completeness": "%7.1f",
+    "Multiplicity": "%7.1f",
+    "I/sigma": "%7.1f",
+    "Rmerge(I)": "%7.3f",
+    "Rmerge(I+/-)": "%7.3f",
+    "Rmeas(I)": "%7.3f",
+    "Rmeas(I+/-)": "%7.3f",
+    "Rpim(I)": "%7.3f",
+    "Rpim(I+/-)": "%7.3f",
+    "CC half": "%7.3f",
+    "Wilson B factor": "%7.3f",
+    "Partial bias": "%7.3f",
+    "Anomalous completeness": "%7.1f",
+    "Anomalous multiplicity": "%7.1f",
+    "Anomalous correlation": "%7.3f",
+    "Anomalous slope": "%7.3f",
+    "dF/F": "%7.3f",
+    "dI/s(dI)": "%7.3f",
+    "Total observations": "%7d",
+    "Total unique": "%7d",
+}
 
 
 def format_statistics(statistics, caption=None):

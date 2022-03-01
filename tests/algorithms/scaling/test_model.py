@@ -2,6 +2,8 @@
 Tests for the scaling model classes.
 """
 
+from __future__ import annotations
+
 import copy
 from unittest.mock import MagicMock, Mock
 
@@ -19,7 +21,7 @@ from dials.algorithms.scaling.model.model import (
     initialise_smooth_input,
 )
 from dials.array_family import flex
-from dials.util.options import OptionParser
+from dials.util.options import ArgumentParser
 
 
 @pytest.fixture(scope="module")
@@ -90,10 +92,8 @@ def generated_param():
         process_includes=True,
     )
 
-    optionparser = OptionParser(phil=phil_scope, check_format=False)
-    parameters, _ = optionparser.parse_args(
-        args=[], quick_parse=True, show_diff_phil=False
-    )
+    parser = ArgumentParser(phil=phil_scope, check_format=False)
+    parameters, _ = parser.parse_args(args=[], quick_parse=True, show_diff_phil=False)
     parameters.array.modulation_correction = True
     return parameters
 
@@ -240,6 +240,16 @@ def test_physical_model_from_data(mock_physical_params, mock_exp, test_reflectio
     physicalmodel.update(mock_physical_params)
     assert len(physicalmodel.components["absorption"].parameters) == 24
     assert physicalmodel.configdict["abs_surface_weight"] == 1e5
+
+    # try fixing a parameter
+    mock_physical_params.physical.correction.fix = ["decay"]
+    physicalmodel = PhysicalScalingModel.from_data(
+        mock_physical_params, mock_exp, test_reflections
+    )
+    assert physicalmodel.configdict["lmax"] == (mock_physical_params.physical.lmax)
+    assert physicalmodel.components["absorption"].n_params == 24
+    assert list(physicalmodel.components["absorption"].parameters) == [0.0] * 24
+    assert physicalmodel.fixed_components == ["decay"]
 
 
 def test_PhysicalScalingModel(test_reflections, mock_exp):

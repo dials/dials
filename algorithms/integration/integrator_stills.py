@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class ReflectionBlockIntegratorStills:
     """A class to perform the integration."""
 

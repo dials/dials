@@ -1,5 +1,7 @@
 """Tests for dials.split_experiments when experiment ids are set"""
 
+from __future__ import annotations
+
 import procrunner
 import pytest
 

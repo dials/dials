@@ -1,6 +1,7 @@
 """Definitions of plots for systematic absences."""
 
-from collections import OrderedDict
+
+from __future__ import annotations
 
 
 def color_axis_data(name, miller_axis_vals):
@@ -18,7 +19,7 @@ def color_axis_data(name, miller_axis_vals):
 
 def plot_screw_axes(screw_axes_data):
     """Generate scatter plot data for screw axes."""
-    d = OrderedDict()
+    d = {}
     for name, data in screw_axes_data.items():
         d.update(
             {

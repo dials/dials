@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 def profile2d(p, vmin=None, vmax=None):
     import string
 

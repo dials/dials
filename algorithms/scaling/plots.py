@@ -2,15 +2,19 @@
 Make plotly plots for html output by dials.scale, dials.report or xia2.report.
 """
 
+from __future__ import annotations
+
 import itertools
 import math
 
 import numpy as np
+from scipy.stats import norm
 
+from dxtbx import flumpy
 from scitbx import math as scitbxmath
-from scitbx.math import distributions
 
 from dials.array_family import flex
+from dials_scaling_ext import calc_lookup_index, calc_theta_phi
 
 
 def _get_smooth_plotting_data_from_model(model, component="scale"):
@@ -312,6 +316,14 @@ def plot_smooth_scales(physical_model):
 
 
 absorption_help_msg = """
+This plot shows the smoothly-varying absorption surface used to correct the
+data for the effects of absorption. It is important to note that this plot does
+not show the correction applied; the applied correction for a given reflection
+with scattering vectors s0, s1 is given by the average of the two values on this
+surface where the surface intersects those scattering vectors. The plot is in the
+crystal reference frame, and the pole (polar angle 0) corresponds to the laboratory
+x-axis.
+
 The absorption correction uses a set of spherical harmonic functions as the
 basis of a smoothly varying absorption correction as a function of phi and
 theta (relative to the crystal reference frame). The correction is given by:
@@ -396,16 +408,26 @@ def plot_absorption_parameters(physical_model):
     return d
 
 
-def plot_absorption_surface(physical_model):
-    """Plot an absorption surface for a physical scaling model."""
+def plot_absorption_plots(physical_model, reflection_table=None):
+    """Make a number of plots to help with the interpretation of the
+    absorption correction."""
+    # First plot the absorption surface
 
     d = {
         "absorption_surface": {
             "data": [],
             "layout": {
                 "title": "Absorption correction surface",
-                "xaxis": {"domain": [0, 1], "anchor": "y", "title": "theta (degrees)"},
-                "yaxis": {"domain": [0, 1], "anchor": "x", "title": "phi (degrees)"},
+                "xaxis": {
+                    "domain": [0, 1],
+                    "anchor": "y",
+                    "title": "azimuthal angle (degrees)",
+                },
+                "yaxis": {
+                    "domain": [0, 1],
+                    "anchor": "x",
+                    "title": "polar angle (degrees)",
+                },
             },
             "help": absorption_help_msg,
         }
@@ -416,18 +438,19 @@ def plot_absorption_surface(physical_model):
     order = int(-1.0 + ((1.0 + len(params)) ** 0.5))
     lfg = scitbxmath.log_factorial_generator(2 * order + 1)
     STEPS = 50
-    phi = np.linspace(0, 2 * np.pi, 2 * STEPS)
-    theta = np.linspace(0, np.pi, STEPS)
-    THETA, _ = np.meshgrid(theta, phi)
+    azimuth_ = np.linspace(0, 2 * np.pi, 2 * STEPS)
+    polar_ = np.linspace(0, np.pi, STEPS)
+    THETA, _ = np.meshgrid(azimuth_, polar_, indexing="ij")
     lmax = int(-1.0 + ((1.0 + len(params)) ** 0.5))
     Intensity = np.ones(THETA.shape)
+    undiffracted_intensity = np.ones(THETA.shape)
     counter = 0
     sqrt2 = math.sqrt(2)
     nsssphe = scitbxmath.nss_spherical_harmonics(order, 50000, lfg)
     for l in range(1, lmax + 1):
         for m in range(-l, l + 1):
-            for it, t in enumerate(theta):
-                for ip, p in enumerate(phi):
+            for it, t in enumerate(polar_):
+                for ip, p in enumerate(azimuth_):
                     Ylm = nsssphe.spherical_harmonic(l, abs(m), t, p)
                     if m < 0:
                         r = sqrt2 * ((-1) ** m) * Ylm.imag
@@ -437,11 +460,17 @@ def plot_absorption_surface(physical_model):
                     else:
                         r = sqrt2 * ((-1) ** m) * Ylm.real
                     Intensity[ip, it] += params[counter] * r
+                    # for the undiffracted intensity, we want to add the correction
+                    # at each point to the parity conjugate. We can use the fact
+                    # that the odd l terms are parity odd, and even are even, to
+                    # just calculate the even terms as follows
+                    if l % 2 == 0:
+                        undiffracted_intensity[ip, it] += params[counter] * r
             counter += 1
     d["absorption_surface"]["data"].append(
         {
-            "x": list(theta * 180.0 / np.pi),
-            "y": list(phi * 180.0 / np.pi),
+            "x": list(azimuth_ * 180.0 / np.pi),
+            "y": list(polar_ * 180.0 / np.pi),
             "z": list(Intensity.T.tolist()),
             "type": "heatmap",
             "colorscale": "Viridis",
@@ -451,6 +480,166 @@ def plot_absorption_surface(physical_model):
             "yaxis": "y",
         }
     )
+
+    d["undiffracted_absorption_surface"] = {
+        "data": [],
+        "layout": {
+            "title": "Undiffracted absorption correction",
+            "xaxis": {
+                "domain": [0, 1],
+                "anchor": "y",
+                "title": "azimuthal angle (degrees)",
+            },
+            "yaxis": {
+                "domain": [0, 1],
+                "anchor": "x",
+                "title": "polar angle (degrees)",
+            },
+        },
+        "help": """
+This plot shows the calculated relative absorption for a paths travelling
+straight through the crystal at a given direction in a crystal-fixed frame of
+reference (in spherical coordinates). This gives an indication of the effective
+shape of the crystal for absorbing x-rays. In this plot, the pole (polar angle 0)
+corresponds to the laboratory x-axis.
+""",
+    }
+
+    d["undiffracted_absorption_surface"]["data"].append(
+        {
+            "x": list(azimuth_ * 180.0 / np.pi),
+            "y": list(polar_ * 180.0 / np.pi),
+            "z": list(undiffracted_intensity.T.tolist()),
+            "type": "heatmap",
+            "colorscale": "Viridis",
+            "colorbar": {"title": "inverse <br>scale factor"},
+            "name": "Undiffracted absorption correction",
+            "xaxis": "x",
+            "yaxis": "y",
+        }
+    )
+
+    if not reflection_table:
+        return d
+
+    # now plot the directions of the scattering vectors
+
+    d["vector_directions"] = {
+        "data": [],
+        "layout": {
+            "title": "Scattering vectors in crystal frame",
+            "xaxis": {
+                "domain": [0, 1],
+                "anchor": "y",
+                "title": "azimuthal angle (degrees)",
+                "range": [0, 360],
+            },
+            "yaxis": {
+                "domain": [0, 1],
+                "anchor": "x",
+                "title": "polar angle (degrees)",
+                "range": [0, 180],
+            },
+            "coloraxis": {
+                "showscale": False,
+            },
+        },
+        "help": """
+This plot shows the scattering vector directions in the crystal reference frame
+used to determine the absorption correction. The s0 vectors are plotted in yellow,
+the s1 vectors are plotted in teal. This gives an indication of which parts of
+the absorption correction surface are sampled when determining the absorption
+correction. In this plot, the pole (polar angle 0) corresponds to the laboratory
+x-axis.""",
+    }
+
+    STEPS = 180  # do one point per degree
+    azimuth_ = np.linspace(0, 2 * np.pi, 2 * STEPS)
+    polar_ = np.linspace(0, np.pi, STEPS)
+    THETA, _ = np.meshgrid(azimuth_, polar_, indexing="ij")
+    Intensity = np.full(THETA.shape, np.NAN)
+
+    # note, the s1_lookup, s0_lookup is only calculated for large datasets, so
+    # for small datasets we need to calculate again.
+    if "s1_lookup" not in physical_model.components["absorption"].data:
+        s1_lookup = calc_lookup_index(
+            calc_theta_phi(reflection_table["s1c"]), points_per_degree=1
+        )
+        idx_polar, idx_azimuth = np.divmod(np.unique(s1_lookup), 360)
+        Intensity[idx_azimuth, idx_polar] = 1
+    else:
+        s1_lookup = np.unique(physical_model.components["absorption"].data["s1_lookup"])
+        # x is phi, y is theta
+        idx_polar, idx_azimuth = np.divmod(s1_lookup, 720)
+        idx_polar = idx_polar // 2  # convert from two points per degree to one
+        idx_azimuth = idx_azimuth // 2
+        Intensity[idx_azimuth, idx_polar] = 1
+
+    d["vector_directions"]["data"].append(
+        {
+            "x": list(azimuth_ * 180.0 / np.pi),
+            "y": list(polar_ * 180.0 / np.pi),
+            "z": list(Intensity.T.tolist()),
+            "type": "heatmap",
+            "colorscale": "Viridis",
+            "showscale": False,
+            "xaxis": "x",
+            "yaxis": "y",
+            "zmin": 0,
+            "zmax": 2,
+        }
+    )
+
+    Intensity = np.full(THETA.shape, np.NAN)
+
+    if "s0_lookup" not in physical_model.components["absorption"].data:
+        s0_lookup = calc_lookup_index(
+            calc_theta_phi(reflection_table["s0c"]), points_per_degree=1
+        )
+        idx_polar, idx_azimuth = np.divmod(np.unique(s0_lookup), 360)
+        Intensity[idx_azimuth, idx_polar] = 2
+    else:
+        s0_lookup = np.unique(physical_model.components["absorption"].data["s0_lookup"])
+        # x is phi, y is theta
+        idx_polar, idx_azimuth = np.divmod(s0_lookup, 720)
+        idx_polar = idx_polar // 2  # convert from two points per degree to one
+        idx_azimuth = idx_azimuth // 2
+        Intensity[idx_azimuth, idx_polar] = 2
+
+    d["vector_directions"]["data"].append(
+        {
+            "x": list(azimuth_ * 180.0 / np.pi),
+            "y": list(polar_ * 180.0 / np.pi),
+            "z": list(Intensity.T.tolist()),
+            "type": "heatmap",
+            "colorscale": "Viridis",
+            "showscale": False,
+            "xaxis": "x",
+            "yaxis": "y",
+            "zmin": 0,
+            "zmax": 2,
+        }
+    )
+
+    scales = physical_model.components["absorption"].calculate_scales()
+    hist = flex.histogram(scales, n_slots=min(100, int(scales.size() * 10)))
+
+    d["absorption_corrections"] = {
+        "data": [
+            {
+                "x": list(hist.slot_centers()),
+                "y": list(hist.slots()),
+                "type": "bar",
+                "name": "Applied absorption corrections",
+            },
+        ],
+        "layout": {
+            "title": "Applied absorption corrections",
+            "xaxis": {"anchor": "y", "title": "Inverse scale factor"},
+            "yaxis": {"anchor": "x", "title": "Number of reflections"},
+        },
+    }
+
     return d
 
 
@@ -621,30 +810,26 @@ equivalents i.e. sigma_obs^2 = (Sum (I - g<Ih>)^2) / N-1.
 
 def normal_probability_plot(data, label=None):
     """Plot the distribution of normal probabilities of errors."""
-    norm = distributions.normal_distribution()
 
-    n = len(data["delta_hl"])
-    if n <= 10:
-        a = 3 / 8
-    else:
-        a = 0.5
+    n = data["delta_hl"].size
+    y = np.sort(data["delta_hl"])
+    delta = 0.5 / n
+    v = np.linspace(start=delta, stop=1.0 - delta, endpoint=True, num=n)
+    x = norm.ppf(v)
 
-    y = flex.sorted(flex.double(data["delta_hl"]))
-    x = [norm.quantile((i + 1 - a) / (n + 1 - (2 * a))) for i in range(n)]
-
-    H, xedges, yedges = np.histogram2d(np.array(x), y.as_numpy_array(), bins=(200, 200))
+    H, xedges, yedges = np.histogram2d(x, y, bins=(200, 200))
     nonzeros = np.nonzero(H)
     z = np.empty(H.shape)
     z[:] = np.NAN
     z[nonzeros] = H[nonzeros]
 
     # also make a histogram
-    histy = flex.histogram(y, n_slots=100)
+    histy = flex.histogram(flumpy.from_numpy(y), n_slots=100)
     # make a gaussian for reference also
-    n = y.size()
+    n = y.size
     width = histy.slot_centers()[1] - histy.slot_centers()[0]
     gaussian = [
-        n * width * math.exp(-(sc ** 2) / 2.0) / ((2.0 * math.pi) ** 0.5)
+        n * width * math.exp(-(sc**2) / 2.0) / ((2.0 * math.pi) ** 0.5)
         for sc in histy.slot_centers()
     ]
     key = (

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from typing import Any, List
 
@@ -39,32 +41,33 @@ def test_LoggingContext():
     assert dials_logger.getEffectiveLevel() == logging.DEBUG
 
 
+def log_something(_: Any) -> List[logging.LogRecord]:
+    """
+    Create a dummy info log record.
+
+    A little dummy function to pass to the dials.util.mp parallel map functions,
+    which simply logs a single info message.
+
+    Args:
+        _:  Absorb the expected argument and do nothing with it.
+
+    Returns:
+        The log records created during the calling of this function.
+    """
+    test_log_message = "Here's a test log message."
+    dials.util.log.config_simple_cached()
+    logger = logging.getLogger("dials")
+    logger.info(test_log_message)
+    (handler,) = logger.handlers
+    return handler.records
+
+
 @pytest.mark.xfail(
     "os.name == 'nt'",
     reason="https://github.com/dials/dials/issues/1650",
     raises=AttributeError,
 )
 def test_cached_log_records(caplog):
-    test_log_message = "Here's a test log message."
-
-    def log_something(_: Any) -> List[logging.LogRecord]:
-        """
-        Create a dummy info log record.
-
-        A little dummy function to pass to the dials.util.mp parallel map functions,
-        which simply logs a single info message.
-
-        Args:
-            _:  Absorb the expected argument and do nothing with it.
-
-        Returns:
-            The log records created during the calling of this function.
-        """
-        dials.util.log.config_simple_cached()
-        logger = logging.getLogger("dials")
-        logger.info(test_log_message)
-        (handler,) = logger.handlers
-        return handler.records
 
     # Generate some cached log messages in easy_mp child processes.
     results = multi_node_parallel_map(

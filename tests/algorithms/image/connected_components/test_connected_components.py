@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class Test2d:
     def setup_class(self):
         from dials.algorithms.image.connected_components import LabelImageStack2d

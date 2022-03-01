@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class ParameterReporter:
     """
     Keeps a record of all the ModelParameterisations and

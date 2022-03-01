@@ -2,11 +2,14 @@
 Test for the target function module.
 """
 
+from __future__ import annotations
+
 import copy
-from collections import OrderedDict
 from unittest.mock import MagicMock, Mock, patch
 
+import numpy as np
 import pytest
+from scipy.sparse import csc_matrix
 
 from dxtbx.model import Crystal, Experiment, Scan
 from libtbx import phil
@@ -21,7 +24,7 @@ from dials.algorithms.scaling.parameter_handler import scaling_active_parameter_
 from dials.algorithms.scaling.scaler import SingleScaler
 from dials.algorithms.scaling.target_function import ScalingTarget, ScalingTargetFixedIH
 from dials.array_family import flex
-from dials.util.options import OptionParser
+from dials.util.options import ArgumentParser
 
 
 @pytest.fixture
@@ -109,10 +112,8 @@ def physical_param():
         process_includes=True,
     )
 
-    optionparser = OptionParser(phil=phil_scope, check_format=False)
-    parameters, _ = optionparser.parse_args(
-        args=[], quick_parse=True, show_diff_phil=False
-    )
+    parser = ArgumentParser(phil=phil_scope, check_format=False)
+    parameters, _ = parser.parse_args(args=[], quick_parse=True, show_diff_phil=False)
     parameters.model = "physical"
     parameters.physical.absorption_correction = False
     return parameters
@@ -121,15 +122,23 @@ def physical_param():
 def mock_single_Ih_table():
     """Mock Ih table to use for testing the target function."""
     Ih_table = Mock()
-    Ih_table.inverse_scale_factors = flex.double([1.0, 1.0 / 1.1, 1.0])
-    Ih_table.intensities = flex.double([10.0, 10.0, 12.0])
-    Ih_table.Ih_values = flex.double([11.0, 11.0, 11.0])
+    Ih_table.inverse_scale_factors = np.array([1.0, 1.0 / 1.1, 1.0])
+    Ih_table.intensities = np.array([10.0, 10.0, 12.0])
+    Ih_table.Ih_values = np.array([11.0, 11.0, 11.0])
     # These values should give residuals of [-1.0, 0.0, 1.0]
-    Ih_table.weights = flex.double([1.0, 1.0, 1.0])
+    Ih_table.weights = np.array([1.0, 1.0, 1.0])
     Ih_table.size = 3
     Ih_table.derivatives = sparse.matrix(3, 1, [{0: 1.0, 1: 2.0, 2: 3.0}])
     Ih_table.h_index_matrix = sparse.matrix(3, 2, [{0: 1, 1: 1}, {2: 1}])
     Ih_table.h_expand_matrix = Ih_table.h_index_matrix.transpose()
+    Ih_table._csc_h_index_matrix = csc_matrix(
+        (np.array([1, 1, 1]), (np.array([0, 1, 2]), np.array([0, 0, 1])))
+    )
+
+    def sum_in_groups_side_effect(*args):
+        return args[0] * Ih_table._csc_h_index_matrix
+
+    Ih_table.sum_in_groups = sum_in_groups_side_effect
     return Ih_table
 
 
@@ -171,15 +180,13 @@ def mock_unrestrained_component():
 
 def _component_to_apm(component):
     mock_single_apm = Mock()
-    mock_single_apm.components = OrderedDict(
-        {
-            "restrained": {
-                "object": component,
-                "n_params": component.n_params,
-                "start_idx": 0,
-            }
+    mock_single_apm.components = {
+        "restrained": {
+            "object": component,
+            "n_params": component.n_params,
+            "start_idx": 0,
         }
-    )
+    }
     mock_single_apm.n_active_params = component.n_params
     return mock_single_apm
 
@@ -207,7 +214,6 @@ def mock_apm_unrestrained(mock_unrestrained_component):
 def test_target_function_methods():
     """Test for the target methods required for the refinement engine."""
     target = ScalingTarget()
-
     r, w = target.compute_residuals(mock_single_Ih_table())
     assert r.size() == w.size()
     assert r == pytest.approx([-1.0, 0.0, 1.0])
@@ -343,7 +349,7 @@ def test_target_gradient_calculation_finite_difference(
 
         scaler.update_for_minimisation(apm, 0)
         grad = target.calculate_gradients(scaler.Ih_table.blocked_data_list[0])
-        res = target.calculate_residuals(scaler.Ih_table.blocked_data_list[0])
+        res, _ = target.compute_residuals(scaler.Ih_table.blocked_data_list[0])
 
         assert (
             res > 1e-8
@@ -422,15 +428,15 @@ def calculate_gradient_fd(target, scaler, apm):
         new_x[i] -= 0.5 * delta
         apm.set_param_vals(new_x)
         scaler.update_for_minimisation(apm, 0)
-        R_low = flex.pow2(target.calculate_residuals(Ih_table)) * Ih_table.weights
+        R_low = np.square(target.calculate_residuals(Ih_table)) * Ih_table.weights
         new_x[i] += delta
         apm.set_param_vals(new_x)
         scaler.update_for_minimisation(apm, 0)
-        R_upper = flex.pow2(target.calculate_residuals(Ih_table)) * Ih_table.weights
+        R_upper = np.square(target.calculate_residuals(Ih_table)) * Ih_table.weights
         new_x[i] -= 0.5 * delta
         apm.set_param_vals(new_x)
         scaler.update_for_minimisation(apm, 0)
-        gradients[i] = (flex.sum(R_upper) - flex.sum(R_low)) / delta
+        gradients[i] = (np.sum(R_upper) - np.sum(R_low)) / delta
     return gradients
 
 
@@ -456,6 +462,6 @@ def calculate_jacobian_fd(target, scaler, apm, block_id=0):
         apm.set_param_vals(new_x)
         scaler.update_for_minimisation(apm, 0)
         fin_difference = (R_upper - R_low) / delta
-        for j in range(fin_difference.size()):
+        for j in range(fin_difference.size):
             jacobian[j, i] = fin_difference[j]
     return jacobian

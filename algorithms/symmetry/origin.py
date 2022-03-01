@@ -4,6 +4,9 @@ measured intensities.
 """
 
 
+from __future__ import annotations
+
+
 def cctbx_crystal_from_dials(crystal):
     space_group = crystal.get_space_group()
     unit_cell = crystal.get_unit_cell()

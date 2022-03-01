@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import sys
 
@@ -93,12 +95,15 @@ class BestExporter:
 
 @show_mail_handle_errors()
 def run(args=None):
-    from dials.util.options import OptionParser, reflections_and_experiments_from_files
+    from dials.util.options import (
+        ArgumentParser,
+        reflections_and_experiments_from_files,
+    )
     from dials.util.version import dials_version
 
     usage = "dials.export models.expt reflections.refl [options]"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         read_experiments=True,
         read_reflections=True,

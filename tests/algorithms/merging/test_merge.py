@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 
 from cctbx import crystal, miller
@@ -19,4 +21,4 @@ def test_dano_over_sigdano():
         ms, data=flex.double([1, 2, 1, 3, 1, 4]), sigmas=flex.double(6, 1)
     )
     # differences are (1, 2, 3) i.e. mean 2, sigmas (sqrt2, sqrt2, sqrt2)
-    assert dano_over_sigdano(ma) == pytest.approx(2 ** 0.5)
+    assert dano_over_sigdano(ma) == pytest.approx(2**0.5)

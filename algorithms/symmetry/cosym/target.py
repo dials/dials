@@ -1,5 +1,7 @@
 """Target function for cosym analysis."""
 
+from __future__ import annotations
+
 import copy
 import itertools
 import logging
@@ -58,7 +60,7 @@ class Target:
           nproc (int): Deprecated
         """
         if nproc is not None:
-            warnings.warn("nproc is deprecated", DeprecationWarning)
+            warnings.warn("nproc is deprecated", UserWarning)
 
         if weights is not None:
             assert weights in ("count", "standard_error")
@@ -367,7 +369,7 @@ class Target:
             x[i] -= 2 * eps  # x - eps
             fm = self.compute_functional(x)
             x[i] += eps  # reset to original values
-            curvs[i] += (fm - 2 * f + fp) / (eps ** 2)
+            curvs[i] += (fm - 2 * f + fp) / (eps**2)
         return curvs
 
     def get_sym_ops(self):
@@ -378,6 +380,6 @@ class Target:
         """
         warnings.warn(
             "get_sym_ops() is deprecated, use sym_ops property instead",
-            DeprecationWarning,
+            UserWarning,
         )
         return self.sym_ops

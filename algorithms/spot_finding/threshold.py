@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class ThresholdStrategy:
     """
     Base class for spot finder threshold strategies.

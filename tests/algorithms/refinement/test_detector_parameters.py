@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import random
 import textwrap
 from math import cos, pi, sin, sqrt

@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 import os
 import sys
 
 from PIL import Image
 
 import iotbx.phil
-from dxtbx.model.detector_helpers import project_2d
+from dxtbx.model.detector_helpers import get_detector_projection_2d_axes
 
 from dials.algorithms.image.threshold import DispersionThresholdDebug
 from dials.array_family import flex
@@ -13,7 +15,7 @@ from dials.util.image_viewer.slip_viewer.tile_generation import (
     get_flex_image,
     get_flex_image_multipanel,
 )
-from dials.util.options import OptionParser, flatten_experiments
+from dials.util.options import ArgumentParser, flatten_experiments
 
 help_message = """
 
@@ -105,7 +107,7 @@ colour_schemes = {"greyscale": 0, "rainbow": 1, "heatmap": 2, "inverse_greyscale
 def run(args=None):
     usage = "dials.export_bitmaps [options] models.expt | image.cbf"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_experiments=True,
@@ -144,7 +146,7 @@ def imageset_as_bitmaps(imageset, params):
     detector = imageset.get_detector()
 
     # Furnish detector with 2D projection axes
-    detector.projected_2d = project_2d(detector)
+    detector.projected_2d = get_detector_projection_2d_axes(detector)
     detector.projection = params.projection
 
     panel = detector[0]
