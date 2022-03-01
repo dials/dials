@@ -547,10 +547,6 @@ def test_ReflectionModelState_derivatives(testdata):
             dr_num.append(first_derivative(f, parameters[i], step).reshape(3, 1))
         dr_num = np.concatenate(dr_num, axis=1)
 
-        print(dr_num)
-
-        print(dr_dp)
-
         for n, c in zip(dr_num, dr_dp):
             for nn, cc in zip(n, c):
                 print(nn)
