@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import time
 from math import pi
 
 import numpy as np
@@ -31,6 +32,7 @@ from dials.algorithms.refinement.prediction.managed_predictors import (
     ScansExperimentsPredictor,
     ScansRayPredictor,
 )
+from dials_refinement_helpers_ext import intersection_i_seqs_unsorted
 
 
 class _Test:
@@ -424,22 +426,30 @@ def test_SparseFlex_select():
         assert a == b
 
 
-def test_SparseFlex_select_intersection():
-    """SparseFlex.select requires the intersection of two size_t arrays, which
-    contain unique indices but are not sorted. The original Python solution is
-    slow, but there is a fast alternative using NumPy. Check these give the
-    same results."""
+@pytest.mark.parametrize(
+    "random_order", [False, pytest.param(True, marks=pytest.mark.xfail)]
+)
+def test_SparseFlex_select_intersection(random_order):
+    """SparseFlex.select requires the intersection of two size_t arrays, A and
+    B. We view this as the selection of elements in A according to their
+    presence in B. We have three approaches for this: a pure Python method,
+    a C++ equivalent and a Numpy method. The Numpy method is fastest, but fails
+    when the input arrays are not sorted. We cannot assume this to be the case
+    in practice, so have to reject that method for use in SparseFlex.select"""
 
-    # Two random selections, randomly ordered
+    # Two random selections
     size = 1000
     sel1 = flex.random_selection(size, int(size / 2))
-    perm = flex.random_permutation(int(size / 2))
-    sel1 = sel1.select(perm)
+    if random_order:
+        perm = flex.random_permutation(int(size / 2))
+        sel1 = sel1.select(perm)
     sel2 = flex.random_selection(size, int(size / 2))
-    perm = flex.random_permutation(int(size / 2))
-    sel2 = sel2.select(perm)
+    if random_order:
+        perm = flex.random_permutation(int(size / 2))
+        sel2 = sel2.select(perm)
 
-    # Python version
+    # Pure Python version
+    start = time.perf_counter_ns()
     index_a = flex.size_t(0)
     index_b = flex.size_t(0)
     lookup = {}
@@ -450,8 +460,17 @@ def test_SparseFlex_select_intersection():
         if i_a is not None:
             index_a.append(i_a)
             index_b.append(i_b)
+    end = time.perf_counter_ns()
+    wc_time_py = end - start
 
-    # NumPy version, with conversions using flumpy
+    # C++ version
+    start = time.perf_counter_ns()
+    index_a_cpp, index_b_cpp = intersection_i_seqs_unsorted(sel1, sel2)
+    end = time.perf_counter_ns()
+    wc_time_cpp = end - start
+
+    # Numpy version
+    start = time.perf_counter_ns()
     _, index_a_np, index_b_np = np.intersect1d(
         flumpy.to_numpy(sel1),
         flumpy.to_numpy(sel2),
@@ -460,7 +479,24 @@ def test_SparseFlex_select_intersection():
     )
     index_a_np = flumpy.from_numpy(index_a_np)
     index_b_np = flumpy.from_numpy(index_b_np)
+    end = time.perf_counter_ns()
+    wc_time_numpy = end - start
 
+    print(f"Timing info Python: {wc_time_py} C++ {wc_time_cpp} Numpy: {wc_time_numpy}")
+
+    # Check results are equal: Python to C++
+    for (
+        a,
+        b,
+    ) in zip(index_a_cpp, index_a):
+        assert a == b
+    for (
+        a,
+        b,
+    ) in zip(index_b_cpp, index_b):
+        assert a == b
+
+    # Check results are equal: Python to Numpy
     for (
         a,
         b,
