@@ -236,7 +236,7 @@ Panel:
     )
 
     assert (
-        "\n".join(output[-42:])
+        "\n".join(output[-44:])
         == """
 Panel:
   name: row-23
