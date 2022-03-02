@@ -167,7 +167,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
         )
         for expt in indexed_experiments
     ]
-    cluster_plots = report_on_crystal_clusters(
+    cluster_plots, _ = report_on_crystal_clusters(
         crystal_symmetries,
         make_plots=(params.output.html or params.output.json),
     )

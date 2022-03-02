@@ -128,7 +128,7 @@ Unit cell clustering analysis, clusters with >{min_cluster_pc}% of the number of
         logger.info(
             f"No clusters found with >{min_cluster_pc}% of the number of crystals."
         )
-    return cluster_plots
+    return cluster_plots, large_clusters
 
 
 def generate_plots(summary_data: dict) -> dict:
