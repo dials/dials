@@ -1,0 +1,1 @@
+``dials.refine``: avoid spike in memory usage when saving reflections.
