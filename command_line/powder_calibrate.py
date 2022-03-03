@@ -1,4 +1,4 @@
-# LIBTBX_SET_DISPATCHER_NAME dials.powder_calibrate_widget
+# LIBTBX_SET_DISPATCHER_NAME dials.powder_calibrate
 
 """
 Calibrate electron powder geometry using X-ray powder diffraction tools.
@@ -49,7 +49,7 @@ if module_exists("pyFAI"):
 # the alternative causes pyfai to segv
 from dials.util.options import OptionParser, flatten_experiments
 
-logger = logging.getLogger("dials.command_line.powder_calibrate_widget")
+logger = logging.getLogger("dials.command_line.powder_calibrate")
 
 phil_scope = parse(
     """
@@ -130,7 +130,7 @@ def parse_args(args=None) -> Tuple[ExptParams, UserArgs]:
     Parse arguments from command line or not and return named tuple with the useful parameters
     """
     usage = (
-        "$ dials.powder_calibrate_widget EXPERIMENT standard=standard_name "
+        "$ dials.powder_calibrate EXPERIMENT standard=standard_name "
         "calibrated_geom=file_name [options]"
     )
 
@@ -356,8 +356,11 @@ class EyeballWidget:
         return f"Eyeballing Widget using {calibrant} Calibrant starting from Geometry: \n {self.geometry}"
 
     def calibrate(self):
-        beam_x_slider = self.make_slider("x")
-        beam_y_slider = self.make_slider("y")
+        """
+        Update geometry such that beam position is now the center of the moved calibrant rings
+        """
+        beam_slow_slider = self.make_slider("slow")
+        beam_fast_slider = self.make_slider("fast")
 
         calibrant_image = self.calibrant_rings_image(self.ax)
 
@@ -365,19 +368,19 @@ class EyeballWidget:
         def update(val):
             new_geometry = self.geometry.__deepcopy__()
             new_geometry.update_beam_pos(
-                beam_coords_px=Point(beam_x_slider.val, beam_y_slider.val)
+                beam_coords_px=Point(beam_slow_slider.val, beam_fast_slider.val)
             )
 
             calibrant_image.set_array(self.calibrant_rings(new_geometry))
             self.fig.canvas.draw_idle()
 
-        beam_x_slider.on_changed(update)
-        beam_y_slider.on_changed(update)
+        beam_slow_slider.on_changed(update)
+        beam_fast_slider.on_changed(update)
 
         # register the reset function with reset button
         def reset(event):
-            beam_x_slider.reset()
-            beam_y_slider.reset()
+            beam_slow_slider.reset()
+            beam_fast_slider.reset()
 
         reset_ax = plt.axes([0.8, 0.026, 0.1, 0.04])
         button_res = Button(reset_ax, "Reset", hovercolor="0.975")
@@ -386,7 +389,7 @@ class EyeballWidget:
         # register the save and exit function with save button
         def save_and_exit(event):
             self.geometry.update_beam_pos(
-                beam_coords_px=Point(beam_x_slider.val, beam_y_slider.val)
+                beam_coords_px=Point(beam_slow_slider.val, beam_fast_slider.val)
             )
             self.geometry.save_to_expt(
                 only_beam=True,
@@ -411,32 +414,32 @@ class EyeballWidget:
             label="Calibrant overlay on experimental image",
             ax=ax,
         )
-        ax.set_xlabel("x position [pixels]")
-        ax.set_ylabel("y position [pixels]")
+        ax.set_xlabel("slow position [pixels]")
+        ax.set_ylabel("fast position [pixels]")
         return fig, ax
 
     def make_slider(self, label):
         slider = None
-        if label == "x":
+        if label == "slow":
             plt.subplots_adjust(bottom=0.25)
-            # Make a horizontal slider to control the beam x position.
-            ax_beam_x = plt.axes([0.25, 0.1, 0.65, 0.03])
+            # Make a horizontal slider to control the beam slow position.
+            ax_beam_slow = plt.axes([0.25, 0.1, 0.65, 0.03])
 
             slider = Slider(
-                ax=ax_beam_x,
-                label="Beam center x [px]",
+                ax=ax_beam_slow,
+                label="Beam center slow [px]",
                 valmin=self.detector.max_shape[0] * 0.25,
                 valmax=self.detector.max_shape[0] * 0.75,
                 valinit=self.geometry.beam_px.slow,
             )
 
-        elif label == "y":
+        elif label == "fast":
             plt.subplots_adjust(left=0.25)
-            # Make a vertically oriented slider to the beam y position
-            ax_beam_y = plt.axes([0.1, 0.25, 0.0225, 0.63])
+            # Make a vertically oriented slider to the beam fast position
+            ax_beam_fast = plt.axes([0.1, 0.25, 0.0225, 0.63])
             slider = Slider(
-                ax=ax_beam_y,
-                label="Beam center y [px]",
+                ax=ax_beam_fast,
+                label="Beam center fast [px]",
                 valmin=self.detector.max_shape[1] * 0.25,
                 valmax=self.detector.max_shape[1] * 0.75,
                 valinit=self.geometry.beam_px.fast,
@@ -453,20 +456,20 @@ class EyeballWidget:
 
         return rings_img
 
-    def beam_position(self, geometry: Optional[Geometry] = None) -> list[float, float]:
+    def beam_position(self, geometry: Optional[Geometry] = None) -> Point:
         """
-        Compute beam position
+        Compute the beam position either from a new geometry or from self.geometry
         """
         if geometry:
-            beam = [
-                geometry.poni2 / self.detector.pixel2,
-                geometry.poni1 / self.detector.pixel1,
-            ]
+            beam = Point(
+                slow=geometry.poni2 / self.detector.pixel2,
+                fast=geometry.poni1 / self.detector.pixel1,
+            )
         else:
-            beam = [
-                self.geometry.poni2 / self.detector.pixel2,
-                self.geometry.poni1 / self.detector.pixel1,
-            ]
+            beam = Point(
+                slow=self.geometry.poni2 / self.detector.pixel2,
+                fast=self.geometry.poni1 / self.detector.pixel1,
+            )
         return beam
 
     def calibrant_rings(self, geometry: Optional[Geometry] = None) -> ma:
@@ -528,16 +531,16 @@ class PowderCalibrator:
         --------
         1. Starting from a saved geometry file, perform fine calibration with pyFAI bypassing the
         widget tool. Do this using python API
-            >>> from dials.command_line.powder_calibrate_widget import PowderCalibrator
+            >>> from dials.command_line.powder_calibrate import PowderCalibrator
             >>> al_calibrator = PowderCalibrator("eyeballed.expt", standard="Al", eyeball=False)
             >>> al_calibrator.calibrate_with_calibrant(plots=True)
 
         2. Do the same from command line
-            $ dials.powder_calibrate_widget eyeballed.expt standard="Al" eyeball=False
+            $ dials.powder_calibrate eyeballed.expt standard="Al" eyeball=False
 
         3. Use the widget to generate a starting geometry. Overwrite the default name of the
          eyeballed.geom. Do this from command line
-            $ dials.powder_calibrate_widget poor_geom.expt standard="Al" eyeballed_geom="an_example.expt"
+            $ dials.powder_calibrate poor_geom.expt standard="Al" eyeballed_geom="an_example.expt"
 
         """
         if starting_geom and standard:
@@ -575,7 +578,6 @@ class PowderCalibrator:
             f"Current geometry: \n {self.geometry}"
         )
 
-    # TODO: these should go in log
     def print_hints(self):
         # Tell me which geometry I'm starting from
         logger.info(
@@ -603,7 +605,7 @@ class PowderCalibrator:
         self,
         num_rings: Optional[int] = 4,
         fix: Optional[Tuple] = ("rot1", "rot2", "rot3", "wavelength"),
-        plots: Optional[bool] = False,
+        plots: Optional[bool] = True,
     ):
 
         if self.user_args.eyeball:
@@ -658,4 +660,4 @@ class PowderCalibrator:
 
 if __name__ == "__main__":
     calibrator = PowderCalibrator()
-    calibrator.calibrate_with_calibrant(plots=True)
+    calibrator.calibrate_with_calibrant()

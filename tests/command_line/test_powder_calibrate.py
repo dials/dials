@@ -1,4 +1,5 @@
 from os import path
+from unittest.mock import patch
 
 import pytest
 
@@ -8,21 +9,25 @@ from dials.command_line.powder_calibrate_widget import (
     parse_args,
 )
 
-# from unittest.mock import Mock
 
-
-# @pytest.mark.parametrize("eyeball, eyeballed", [(False, "eyeballed.geom"), (True, 'imported.geom')])
-def test_calibrate(dials_data, tmpdir):
+@patch("matplotlib.pyplot.show")
+@patch("matplolib.widget.Slider.on_changed")
+def test_calibrate_coarse(dials_data, tmpdir, eyeball, starting_geometry):
     aluminium_powder = dials_data("aluminium_standard", pathlib=True)
-    eyeballed = aluminium_powder / "eyeballed.expt"
+    starting_geom = aluminium_powder / starting_geometry
 
     test_calibrator = PowderCalibrator(
-        eyeballed,
+        starting_geom,
         standard="Al",
-        eyeball=False,
+        eyeball=eyeball,
         calibrated_geom=str(tmpdir / "test_calibrated.expt"),
     )
-    test_calibrator.calibrate_with_calibrant(plots=False)
+
+    with patch.object(
+        test_calibrator,
+        "val",
+    ):
+        test_calibrator.calibrate_with_calibrant(plots=False)
     calibrated_geom = test_calibrator.geometry
 
     expected_calibrated_file = aluminium_powder / "calibrated.expt"
