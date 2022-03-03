@@ -475,33 +475,32 @@ class AngularProfileModelBase(ProfileModelBase):
         s0 = np.array([experiments[0].beam.get_s0()], dtype=np.float64).reshape(3, 1)
         s0_length = norm(s0)
         num = reflections.size()
-        partiality = flex.double(reflections.size())
-        partiality_variance = flex.double(reflections.size())
-        for k, s2_vec in enumerate(reflections["s2"]):
-            s2 = np.array(list(s2_vec), dtype=np.float64).reshape(3, 1)
-            r = s2 - s0
-            sigma = experiments[0].crystal.mosaicity.sigma()
-            R = compute_change_of_basis_operation(s0, s2)
-            Q = compute_change_of_basis_operation(s0, r)
+        sigma = experiments[0].crystal.mosaicity.sigma()
+        sigma = np.array(sigma).reshape(3, 3)
+        x, y, z = reflections["s2"].parts()
+        s2 = np.array([x, y, z])
 
-            sigma = np.matmul(np.matmul(Q.T, np.array(sigma).reshape(3, 3)), Q)
-            S = np.matmul(np.matmul(R, np.array(sigma).reshape(3, 3)), R.T)
-            mu = np.matmul(R, s2)
+        r = s2 - s0
+        Rs = compute_change_of_basis_operations(s0, s2)
+        Qs = compute_change_of_basis_operations(s0, r)
+        sigma_qs = np.einsum("mda,db,mbc->mac", Qs, sigma, Qs)  # Q.T * sigma * Q
+        Ss = np.einsum("mil,mlj,mkj->mik", Rs, sigma_qs, Rs)  # R * sigma_q * R.T
+        mus = np.einsum("mij,jm->mi", Rs, s2)
+        eps = mus[:, 2] - s0_length
+        eps2 = np.square(eps)
+        S22 = Ss[:, 2, 2]
+        partiality = np.exp(-0.5 * eps2 / S22)
+        partiality_variance = eps2 * np.exp(eps2 / S22) / (num * S22)
+        # shortened versions of the original calculations below:
+        # var_eps = S22 / num  # FIXME Approximation
+        # S00 = S22  # FIXME
+        # partiality[k] = exp(-0.5 * eps * (1 / S22) * eps) * sqrt(S00 / S22)
+        # partiality_variance[k] = (
+        #    var_eps * (eps**2 / (S00 * S22)) * exp(eps**2 / S22)
+        # )
 
-            mu_norm = mu / norm(mu)
-            assert abs(1.0 - mu_norm.flatten()[2]) < 1e-7
-            S22 = S[2, 2]
-            mu2 = mu.flatten()[2]
-            eps = s0_length - mu2
-            var_eps = S22 / num  # FIXME Approximation
-            S00 = S22  # FIXME
-            partiality[k] = exp(-0.5 * eps * (1 / S22) * eps) * sqrt(S00 / S22)
-            partiality_variance[k] = (
-                var_eps * (eps**2 / (S00 * S22)) * exp(eps**2 / S22)
-            )
-
-        reflections["partiality"] = partiality
-        reflections["partiality.inv.variance"] = partiality_variance
+        reflections["partiality"] = flumpy.from_numpy(partiality)
+        reflections["partiality.inv.variance"] = flumpy.from_numpy(partiality_variance)
 
     @classmethod
     def from_params(Class, params):
@@ -625,6 +624,23 @@ class ProfileModelFactory(object):
 
         """
         return EllipsoidProfileModel.from_sigma_d(model, sigma_d)
+
+
+def compute_change_of_basis_operations(s0, s2_array):
+    s0 = s0.reshape(1, 3)
+    s2 = s2_array.T
+    assert s2.shape[1] == 3
+    e1 = np.cross(s2, s0)
+    e2 = np.cross(s2, e1)
+    norm_e1 = norm(e1, axis=1).reshape(-1, 1)
+    norm_e2 = norm(e2, axis=1).reshape(-1, 1)
+    e1 /= norm_e1
+    e2 /= norm_e2
+    norm_s2 = norm(s2, axis=1).reshape(-1, 1)
+    e3 = s2 / norm_s2
+    n = e1.shape[0]
+    R = np.hstack([e1, e2, e3]).reshape(n, 3, 3)
+    return R
 
 
 def compute_change_of_basis_operation(s0, s2):

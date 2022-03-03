@@ -37,9 +37,9 @@ def test_Simple1MosaicityParameterisation():
     psq = p.parameters[0] ** 2
     assert list(p.sigma().flatten()) == pytest.approx([psq, 0, 0, 0, psq, 0, 0, 0, psq])
     d = p.first_derivatives()
-    assert d.shape[2] == 1
+    assert d.shape[0] == 1
     d1 = 2 * p.parameters[0]
-    assert list(d[:, :, 0].flatten()) == pytest.approx([d1, 0, 0, 0, d1, 0, 0, 0, d1])
+    assert list(d[0, :, :].flatten()) == pytest.approx([d1, 0, 0, 0, d1, 0, 0, 0, d1])
 
 
 def test_Simple6MosaicityParameterisation():
@@ -77,10 +77,10 @@ def test_Simple6MosaicityParameterisation():
     ]
 
     d = p.first_derivatives()
-    assert d.shape[2] == 6
-    for i in range(d.shape[2]):
+    assert d.shape[0] == 6
+    for i in range(d.shape[0]):
         a = dSdb[i]
-        b = d[:, :, i]
+        b = d[i, :, :]
         for j in range(9):
             assert b.flatten()[j] == pytest.approx(a[j], abs=1e-12)
 
@@ -122,10 +122,10 @@ def test_Angular2MosaicityParameterisation():
     dSdb = [(2 * b1, 0, 0, 0, 2 * b1, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0, 0, 0, 2 * b2)]
 
     d = p.first_derivatives()
-    assert d.shape[2] == 2
-    for i in range(d.shape[2]):
+    assert d.shape[0] == 2
+    for i in range(d.shape[0]):
         a = dSdb[i]
-        b = d[:, :, i]
+        b = d[i, :, :]
         for j in range(9):
             assert b.flatten()[j] == pytest.approx(a[j])
 
@@ -162,10 +162,10 @@ def test_Angular4MosaicityParameterisation():
     ]
 
     d = p.first_derivatives()
-    assert d.shape[2] == 4
-    for i in range(d.shape[2]):
+    assert d.shape[0] == 4
+    for i in range(d.shape[0]):
         a = dSdb[i]
-        b = d[:, :, i]
+        b = d[i, ::, :]
         for j in range(9):
             assert b.flatten()[j] == pytest.approx(a[j])
 
@@ -222,9 +222,9 @@ def check_model_state_with_fixed(
     dB = state.dB_dp
     dM = state.dM_dp
     dL = state.dL_dp
-    assert len(dU) == 3
-    assert len(dB) == 2
-    assert dM.shape[2] == mosaicity_parameterisation.num_parameters()
+    assert dU.shape[0] == 3
+    assert dB.shape[0] == 2
+    assert dM.shape[0] == mosaicity_parameterisation.num_parameters()
     if wavelength_parameterisation is not None:
         assert len(dL) == 1
     else:
@@ -339,7 +339,7 @@ def check_reflection_model_state_with_fixed(
         for i in range(num_params):
             assert dr_dp[:, -(i + 1)] == pytest.approx([0, 0, 0], abs=1e-6)
             assert dS_dp[:, :, -(i + 1)] == pytest.approx(
-                state.dM_dp[:, :, -(i + 1)], abs=1e-6
+                state.dM_dp[-(i + 1), :, :], abs=1e-6
             )
             assert dL_dp[-1] == 0
         dr_dp = dr_dp[:, :-num_params]
