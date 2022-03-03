@@ -952,7 +952,48 @@ namespace dials { namespace refinement {
     }
 
     return boost::python::make_tuple(index_a, index_b);
-  }
+  };
+
+  template <typename ElementType>
+  class ReconstituteDerivatives {
+  public:
+    ReconstituteDerivatives(std::size_t nelem)
+        : nelem_(nelem), data_(nelem), indices_(nelem), index(0) {}
+
+    void add_data(ElementType elt, scitbx::af::shared<std::size_t> indices) {
+      std::size_t n = indices.size();
+      DIALS_ASSERT(index + n <= nelem_);
+      for (std::size_t i = 0; i < n; ++i) {
+        data_[index] = elt;
+        indices_[index] = indices[i];
+        ++index;
+      }
+    }
+
+    scitbx::af::shared<ElementType> get_data() const {
+      return scitbx::af::shared<ElementType>(data_.begin(), data_.end());
+    };
+
+    scitbx::af::shared<std::size_t> get_indices() const {
+      return scitbx::af::shared<std::size_t>(indices_.begin(), indices_.end());
+    };
+
+  private:
+    std::size_t nelem_;
+    scitbx::af::shared<ElementType> data_;
+    scitbx::af::shared<std::size_t> indices_;
+    std::size_t index;
+  };
+
+  ReconstituteDerivatives<mat3<double> > build_reconstitute_derivatives_mat3(
+    std::size_t nelem) {
+    return ReconstituteDerivatives<mat3<double> >(nelem);
+  };
+
+  ReconstituteDerivatives<vec3<double> > build_reconstitute_derivatives_vec3(
+    std::size_t nelem) {
+    return ReconstituteDerivatives<vec3<double> >(nelem);
+  };
 
 }}  // namespace dials::refinement
 

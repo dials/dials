@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import random
 import sys
 import time
 from math import pi
@@ -32,7 +33,11 @@ from dials.algorithms.refinement.prediction.managed_predictors import (
     ScansExperimentsPredictor,
     ScansRayPredictor,
 )
-from dials_refinement_helpers_ext import intersection_i_seqs_unsorted
+from dials_refinement_helpers_ext import (
+    build_reconstitute_derivatives_mat3,
+    build_reconstitute_derivatives_vec3,
+    intersection_i_seqs_unsorted,
+)
 
 
 class _Test:
@@ -563,6 +568,48 @@ def test_intersection_i_seqs_speed():
     # We use the C++ version because it is faster than the Python version.
     # Let's ensure that's the case across platforms
     assert sum(tot_cpp) / sum(tot_py) < 1.0
+
+
+@pytest.mark.parametrize("element_type", ["vec3", "mat3"])
+def test_ReconstituteDerivatives(element_type):
+
+    if element_type == "vec3":
+        n = 3
+        build = build_reconstitute_derivatives_vec3
+        flex_type = flex.vec3_double
+    else:
+        n = 9
+        build = build_reconstitute_derivatives_mat3
+        flex_type = flex.mat3_double
+
+    # Create 100 random (element, indices) pairs, with up to 100 elements in
+    # the indices
+    pair_data = []
+    total_size = 0
+    for i in range(100):
+        element = [random.random() for j in range(n)]
+        indices = flex.random_size_t(random.randint(0, 100))
+        pair_data.append((element, indices))
+        total_size += indices.size()
+
+    rec_der = build(total_size)
+
+    reference_data = flex_type(0)
+    reference_indices = flex.size_t(0)
+    for element, indices in pair_data:
+        rec_der.add_data(element, indices)
+        n = indices.size()
+        values = flex_type(n, element)
+        reference_data.extend(values)
+        reference_indices.extend(indices)
+
+    # Compare the reference values from extending flex arrays with the
+    # reconstituted values
+    test_data = rec_der.get_data()
+    test_indices = rec_der.get_indices()
+
+    assert test_data.as_double().all_eq(reference_data.as_double())
+    assert test_indices.all_eq(reference_indices)
 
 
 if __name__ == "__main__":
