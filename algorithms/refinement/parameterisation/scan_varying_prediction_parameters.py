@@ -3,7 +3,6 @@ from __future__ import annotations
 import math
 from collections import namedtuple
 
-# import dxtbx.flumpy as flumpy
 from scitbx import matrix
 
 from dials.algorithms.refinement.parameterisation.prediction_parameters import (
@@ -11,7 +10,11 @@ from dials.algorithms.refinement.parameterisation.prediction_parameters import (
     XYPhiPredictionParameterisation,
 )
 from dials.array_family import flex
-from dials_refinement_helpers_ext import intersection_i_seqs_unsorted
+from dials_refinement_helpers_ext import (
+    build_reconstitute_derivatives_mat3,
+    build_reconstitute_derivatives_vec3,
+    intersection_i_seqs_unsorted,
+)
 
 
 class SparseFlex:
@@ -26,47 +29,15 @@ class SparseFlex:
     where it is assumed (not tested) that these have the same pattern of
     structural zeroes."""
 
-    def __init__(self, dimension, elements=None, indices=None):
-
-        self._size = dimension
-        self._indices = flex.size_t(0)
-        self._data = None
-
-        if elements is not None:
-            self.extend(elements, indices)
-
-    def extend(self, elements, indices):
+    def __init__(self, dimension, elements, indices):
 
         if len(elements) != len(indices):
             raise ValueError(
                 "The arrays of elements and indices must be of equal length"
             )
-        if len(elements) == 0:
-            # Set the data type if this is the first call.
-            if self._data is None:
-                self._data = elements
-            return
-        if flex.max(indices) > self._size - 1:
-            raise ValueError("The indices extend beyond the size of the store")
-
-        # Extend the data store. If this is the first time this is called
-        # this also sets the data type
-        if self._data is None:
-            self._data = elements
-        else:
-            self._data.extend(elements)
-        try:
-            self._indices.extend(indices)
-        except Exception as e:
-            if "Boost.Python.ArgumentError" in str(type(e)):
-                raise TypeError("indices must be a flex.size_t array")
-
-        # Basic checks of consistency.
-        if self._size < len(self._data):
-            raise ValueError("data exceeds the size of the store")
-        unique_indices = set(self._indices)
-        if len(unique_indices) != len(self._indices):
-            raise ValueError("indices are not unique")
+        self._size = dimension
+        self._data = elements
+        self._indices = indices
 
     def select(self, indices):
 
@@ -221,22 +192,21 @@ class StateDerivativeCache:
         if shape is None:
             raise TypeError("No model state derivatives found")
         if shape == (3, 1):
-            arr_type = flex.vec3_double
+            build = build_reconstitute_derivatives_vec3
         elif shape == (3, 3):
-            arr_type = flex.mat3_double
+            build = build_reconstitute_derivatives_mat3
         else:
             raise TypeError("Unrecognised model state derivative type")
 
         # Loop over the data for each parameter
         for p_data in entry:
 
-            ds_dp = SparseFlex(self._nref)
-
-            # Reconstitute full array from the cache
+            # Reconstitute full array from the cache and pack into a SparseFlex
+            total_nelem = sum(pair.iselection.size() for pair in p_data)
+            recon = build(total_nelem)
             for pair in p_data:
-
-                elements = arr_type(len(pair.iselection), pair.derivative)
-                ds_dp.extend(elements, pair.iselection)
+                recon.add_data(pair.derivative, pair.iselection)
+            ds_dp = SparseFlex(self._nref, recon.get_data(), recon.get_indices())
 
             # First select only elements relevant to the current gradient calculation
             # block (i.e. if nproc > 1 or gradient_calculation_blocksize was set)
