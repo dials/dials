@@ -74,11 +74,11 @@ class Simple1MosaicityParameterisation(BaseParameterisation):
         Compute the covariance matrix of the MVN from the parameters
 
         """
-        M = np.array(
-            [[self.params[0], 0, 0], [0, self.params[0], 0], [0, 0, self.params[0]]],
+        psq = self.params[0] ** 2
+        return np.array(
+            [[psq, 0, 0], [0, psq, 0], [0, 0, psq]],
             dtype=np.float64,
         )
-        return np.matmul(M, M.T)
 
     def first_derivatives(self) -> np.array:
         """
@@ -86,14 +86,9 @@ class Simple1MosaicityParameterisation(BaseParameterisation):
 
         """
         b1 = self.params[0]
-
-        # dSdb1 = (2 * b1, 0, 0, 0, 2 * b1, 0, 0, 0, 2 * b1)
-
         return np.array(
             [[[2.0 * b1, 0, 0], [0, 2.0 * b1, 0], [0, 0, 2.0 * b1]]], dtype=np.float64
-        ).reshape(
-            3, 3, 1
-        )  # flex.mat3_double([dSdb1])
+        ).reshape(1, 3, 3)
 
     def mosaicity(self) -> Dict:
         """One value for mosaicity for Simple1"""
@@ -162,29 +157,29 @@ class Simple6MosaicityParameterisation(BaseParameterisation):
 
         d1 = np.array(
             [[2 * b1, b2, b4], [b2, 0, 0], [b4, 0, 0]], dtype=np.float64
-        ).reshape(3, 3, 1)
+        ).reshape(1, 3, 3)
 
         d2 = np.array(
             [[0, b1, 0], [b1, 2 * b2, b4], [0, b4, 0]], dtype=np.float64
-        ).reshape(3, 3, 1)
+        ).reshape(1, 3, 3)
 
         d3 = np.array(
             [[0, 0, 0], [0, 2 * b3, b5], [0, b5, 0]], dtype=np.float64
-        ).reshape(3, 3, 1)
+        ).reshape(1, 3, 3)
 
         d4 = np.array(
             [[0, 0, b1], [0, 0, b2], [b1, b2, 2 * b4]], dtype=np.float64
-        ).reshape(3, 3, 1)
+        ).reshape(1, 3, 3)
 
         d5 = np.array(
             [[0, 0, 0], [0, 0, b3], [0, b3, 2 * b5]], dtype=np.float64
-        ).reshape(3, 3, 1)
+        ).reshape(1, 3, 3)
 
         d6 = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 2 * b6]], dtype=np.float64).reshape(
-            3, 3, 1
+            1, 3, 3
         )
 
-        ds = np.concatenate([d1, d2, d3, d4, d5, d6], axis=2)
+        ds = np.concatenate([d1, d2, d3, d4, d5, d6], axis=0)
 
         return ds
 
@@ -245,11 +240,12 @@ class Angular2MosaicityParameterisation(BaseParameterisation):
         """
         Compute the covariance matrix of the MVN from the parameters
         """
-        M = np.array(
-            [[self.params[0], 0, 0], [0, self.params[0], 0], [0, 0, self.params[1]]],
+        p1sq = self.params[0] ** 2
+        p2sq = self.params[1] ** 2
+        return np.array(
+            [[p1sq, 0, 0], [0, p1sq, 0], [0, 0, p2sq]],
             dtype=np.float64,
         )
-        return np.matmul(M, M.T)
 
     def mosaicity(self) -> Dict:
         """Two unique components of mosaicity"""
@@ -273,7 +269,7 @@ class Angular2MosaicityParameterisation(BaseParameterisation):
                     mosaicities["angular"] = m[i]
         return mosaicities
 
-    def first_derivatives(self) -> flex.mat3_double:
+    def first_derivatives(self) -> np.array:
         """
         Compute the first derivatives of Sigma w.r.t the parameters
         """
@@ -281,13 +277,13 @@ class Angular2MosaicityParameterisation(BaseParameterisation):
 
         d1 = np.array(
             [[2 * b1, 0, 0], [0, 2 * b1, 0], [0, 0, 0]], dtype=np.float64
-        ).reshape(3, 3, 1)
+        ).reshape(1, 3, 3)
 
         d2 = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 2 * b2]], dtype=np.float64).reshape(
-            3, 3, 1
+            1, 3, 3
         )
 
-        return np.concatenate([d1, d2], axis=2)
+        return np.concatenate([d1, d2], axis=0)
 
 
 class Angular4MosaicityParameterisation(BaseParameterisation):
@@ -313,15 +309,13 @@ class Angular4MosaicityParameterisation(BaseParameterisation):
         """
         Compute the covariance matrix of the MVN from the parameters
         """
-        M = np.array(
-            [
-                [self.params[0], 0, 0],
-                [self.params[1], self.params[2], 0],
-                [0, 0, self.params[3]],
-            ],
-            dtype=np.float64,
-        )
-        return np.matmul(M, M.T)
+        # M = [[p[0], 0, 0], [p[1], p[2], 0], [0, 0, p[3]]]
+        # return np.matmul(M, M.T)
+        ab = self.params[0] * self.params[1]
+        aa = self.params[0] ** 2
+        bcsq = self.params[1] ** 2 + self.params[2] ** 2
+        dd = self.params[3] ** 2
+        return np.array([[aa, ab, 0.0], [ab, bcsq, 0], [0, 0, dd]], dtype=np.float64)
 
     def mosaicity(self) -> Dict:
         """Three components of mosaicity"""
@@ -347,25 +341,20 @@ class Angular4MosaicityParameterisation(BaseParameterisation):
         """
         b1, b2, b3, b4 = self.params
 
-        d1 = np.array(
-            [[2 * b1, b2, 0], [b2, 0, 0], [0, 0, 0]], dtype=np.float64
-        ).reshape(3, 3, 1)
-
-        d2 = np.array(
-            [[0, b1, 0], [b1, 2 * b2, 0], [0, 0, 0]], dtype=np.float64
-        ).reshape(3, 3, 1)
-
-        d3 = np.array([[0, 0, 0], [0, 2 * b3, 0], [0, 0, 0]], dtype=np.float64).reshape(
-            3, 3, 1
-        )
-
-        d4 = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 2 * b4]], dtype=np.float64).reshape(
-            3, 3, 1
-        )
-
-        # return flex.mat3_double([d1, d2, d3, d4])
-
-        return np.concatenate([d1, d2, d3, d4], axis=2)  # flex.mat3_double([dSdb1])
+        # d1 = [[2 * b1, b2, 0], [b2, 0, 0], [0, 0, 0]]
+        # d2 = [[0, b1, 0], [b1, 2 * b2, 0], [0, 0, 0]]
+        # d3 = [[0, 0, 0], [0, 2 * b3, 0], [0, 0, 0]]
+        # d4 = [[0, 0, 0], [0, 0, 0], [0, 0, 2 * b4]]
+        ds = np.array(
+            [
+                [2 * b1, b2, 0, b2, 0, 0, 0, 0, 0],
+                [0, b1, 0, b1, 2 * b2, 0, 0, 0, 0],
+                [0, 0, 0, 0, 2 * b3, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 2 * b4],
+            ],
+            dtype=np.float64,
+        ).reshape(4, 3, 3)
+        return ds
 
 
 class ModelState(object):
@@ -497,20 +486,26 @@ class ModelState(object):
             self._L_parameterisation.parameters = params
 
     @property
-    def dU_dp(self) -> flex.mat3_double:
+    def dU_dp(self) -> np.array:
         """
         Get the first derivatives of U w.r.t its parameters
 
         """
-        return flex.mat3_double(self._U_parameterisation.get_ds_dp())
+        ds_dp = self._U_parameterisation.get_ds_dp()
+        n = len(ds_dp)
+        s = np.array([ds_dp[i] for i in range(n)], dtype=np.float64).reshape(n, 3, 3)
+        return s
 
     @property
-    def dB_dp(self) -> flex.mat3_double:
+    def dB_dp(self) -> np.array:
         """
         Get the first derivatives of B w.r.t its parameters
 
         """
-        return flex.mat3_double(self._B_parameterisation.get_ds_dp())
+        ds_dp = self._B_parameterisation.get_ds_dp()
+        n = len(ds_dp)
+        s = np.array([ds_dp[i] for i in range(n)], dtype=np.float64).reshape(n, 3, 3)
+        return s
 
     @property
     def dM_dp(self) -> np.array:
@@ -564,7 +559,7 @@ class ModelState(object):
             params = params[n_B_params:]
             self.B_params = temp
         if not self.is_mosaic_spread_fixed:
-            n_M_params = len(self.M_params)
+            n_M_params = self.M_params.size
             temp = params[:n_M_params]
             params = params[n_M_params:]
             self.M_params = np.array(temp)
@@ -603,117 +598,115 @@ class ReflectionModelState(object):
         Initialise with the state and compute derivatives
 
         """
-        M = state.mosaicity_covariance_matrix
-        L = state.wavelength_spread
 
         # Compute the reciprocal lattice vector
-        h = np.array([h], dtype=np.float64).reshape(3, 1)
-        r = np.matmul(state.A_matrix, h).reshape(3, 1)
-        s0 = np.array([s0], dtype=np.float64).reshape(3, 1)
+        self._h = np.array(h, dtype=np.float64)
+        self._r = np.einsum("ij,j->i", state.A_matrix, self._h)
+        self._s0 = np.array(s0, dtype=np.float64)
+        self._norm_s0 = (self._s0 / norm(self._s0)).flatten()
 
-        # Define rotation for W sigma components
-        q1 = np.cross(r.flatten(), s0.flatten())
-        q1 /= norm(q1)
-        q2 = np.cross(r.flatten(), q1)
-        q2 /= norm(q2)
-        q3 = r / norm(r)
-        q3 = q3.flatten()
-        Q = np.array([q1, q2, q3], dtype=np.float64).reshape(3, 3)
+        self.state = state
+        self._Q = None
 
+        n_params = 0
+        if not self.state.is_orientation_fixed:
+            n_params += len(self.state.U_params)
+        if not self.state.is_unit_cell_fixed:
+            n_params += len(self.state.B_params)
+        if not self.state.is_mosaic_spread_fixed:
+            n_params += len(self.state.M_params)
+        if not self.state.is_wavelength_spread_fixed:
+            n_params += len(self.state.L_params)
+
+        # The array of derivatives
+        self._dr_dp = np.zeros(shape=(3, n_params), dtype=np.float64)
+        self._ds_dp = np.zeros(shape=(3, 3, n_params), dtype=np.float64)
+        self._dl_dp = flex.double(n_params)
+
+        if self.state.is_mosaic_spread_angular:
+            norm_r = self._r / norm(self._r)
+            q1 = np.cross(norm_r, self._norm_s0)
+            q1 /= norm(q1)
+            q2 = np.cross(norm_r, q1)
+            q2 /= norm(q2)
+            self._Q = np.array([q1, q2, norm_r], dtype=np.float64).reshape(3, 3)
+        self._recalc_sigma()
+        self._recalc_sigma_lambda()
+        self.update()
+
+    def _recalc_sigma(self):
         # Compute the covariance matrix
-        if state.is_mosaic_spread_angular:
-            self._sigma = np.matmul(np.matmul(Q.T, M), Q)
+        M = self.state.mosaicity_covariance_matrix
+        if self.state.is_mosaic_spread_angular:
+            # Define rotation for W sigma components
+            # check if r has actually been updated
+            if (not self.state.is_orientation_fixed) or (
+                not self.state.is_unit_cell_fixed
+            ):
+                norm_r = self._r / norm(self._r)
+                q1 = np.cross(norm_r, self._norm_s0)
+                q1 /= norm(q1)
+                q2 = np.cross(norm_r, q1)
+                q2 /= norm(q2)
+                self._Q = np.array([q1, q2, norm_r], dtype=np.float64).reshape(3, 3)
+            self._sigma = np.matmul(np.matmul(self._Q.T, M), self._Q)
         else:
             self._sigma = M  #
 
-        # Set the reciprocal lattice vector
-        self._r = r
-
-        # Get the derivatives of the model state
-        dU_dp = state.dU_dp
-        dB_dp = state.dB_dp
-        dM_dp = state.dM_dp
-        dL_dp = state.dL_dp
-
+    def _recalc_sigma_lambda(self):
         # Get the wavelength spread
-        assert len(L) == len(dL_dp)
-        if len(L) == 0:
+
+        assert len(self.state.wavelength_spread) == len(self.state.dL_dp)
+        if len(self.state.wavelength_spread) == 0:
             self._sigma_lambda = 0
         else:
-            assert len(L) == 1
-            self._sigma_lambda = L[0]
+            assert len(self.state.wavelength_spread) == 1
+            self._sigma_lambda = self.state.wavelength_spread[0]
 
-        # The array of derivatives
-        self._dr_dp = np.array([], dtype=np.float64).reshape(3, 0)
-        self._ds_dp = np.array([], dtype=np.float64).reshape(3, 3, 0)
-        self._dl_dp = flex.double()
+    def update(self):
+        "Updates r, sigma, derivatives based on latest model state"
+
+        # Set the reciprocal lattice vector
+        if (not self.state.is_orientation_fixed) or (not self.state.is_unit_cell_fixed):
+            self._r = np.matmul(self.state.A_matrix, self._h)
+        if not self.state.is_wavelength_spread_fixed:
+            self._recalc_sigma_lambda()
+        if not self.state.is_mosaic_spread_fixed:
+            self._recalc_sigma()
 
         # Compute derivatives w.r.t U parameters
+        n_tot = 0
+        state = self.state
         if not state.is_orientation_fixed:
-            n_U_params = len(state.U_params)
-            dr_dp_u = np.zeros(shape=(3, n_U_params), dtype=np.float64)
-            ds_dp_u = np.zeros(shape=(3, 3, n_U_params), dtype=np.float64)
-            dl_dp_u = flex.double(n_U_params)
-            for i in range(n_U_params):
-                v = np.matmul(
-                    np.matmul(
-                        np.array(dU_dp[i], dtype=np.float64).reshape(3, 3),
-                        state.B_matrix,
-                    ),
-                    h,
-                )
-                dr_dp_u[:, i] = v[:, 0]
-            self._dr_dp = np.concatenate([self._dr_dp, dr_dp_u], axis=1)
-            self._ds_dp = np.concatenate([self._ds_dp, ds_dp_u], axis=2)
-            self._dl_dp.extend(dl_dp_u)
+            dU_dp = self.state.dU_dp
+            n_U_params = dU_dp.shape[0]
+            dUBh = np.einsum("lij,jk,k->il", dU_dp, state.B_matrix, self._h)
+            self._dr_dp[:, n_tot : n_tot + n_U_params] = dUBh
+            n_tot += n_U_params
 
         # Compute derivatives w.r.t B parameters
         if not state.is_unit_cell_fixed:
-            n_B_params = len(state.B_params)
-            dr_dp_b = np.zeros(shape=(3, n_B_params), dtype=np.float64)
-            ds_dp_b = np.zeros(shape=(3, 3, n_B_params), dtype=np.float64)
-            dl_dp_b = flex.double(n_B_params)
-            for i in range(n_B_params):
-                dr_dp_b[:, i] = np.matmul(
-                    np.matmul(
-                        state.U_matrix,
-                        np.array(dB_dp[i], dtype=np.float64).reshape(3, 3),
-                    ),
-                    h,
-                )[:, 0]
-            self._dr_dp = np.concatenate([self._dr_dp, dr_dp_b], axis=1)
-            self._ds_dp = np.concatenate([self._ds_dp, ds_dp_b], axis=2)
-            self._dl_dp.extend(dl_dp_b)
+            dB_dp = self.state.dB_dp
+            n_B_params = dB_dp.shape[0]  # state.B_params.size
+            UdBh = np.einsum("ij,ljk,k->il", state.U_matrix, dB_dp, self._h)
+            self._dr_dp[:, n_tot : n_tot + n_B_params] = UdBh
+            n_tot += n_B_params
 
         # Compute derivatives w.r.t M parameters
         if not state.is_mosaic_spread_fixed:
-            n_M_params = len(state.M_params)
-            dr_dp_m = np.zeros(shape=(3, n_M_params), dtype=np.float64)
-            ds_dp_m = np.zeros(shape=(3, 3, n_M_params), dtype=np.float64)
-            dl_dp_m = flex.double(n_M_params)
+            dM_dp = self.state.dM_dp
+            n_M_params = dM_dp.shape[0]  # state.M_params.size
             if state.is_mosaic_spread_angular:
-                for i in range(n_M_params):
-                    ds_dp_m[:, :, i] = np.matmul(
-                        np.matmul(
-                            Q.T,
-                            dM_dp[:, :, i],
-                        ),
-                        Q,
-                    )
+                QTMQ = np.einsum("ij,mjk,kl->ilm", self._Q.T, dM_dp, self._Q)
+                self._ds_dp[:, :, n_tot : n_tot + n_M_params] = QTMQ
             else:
-                for i in range(n_M_params):
-                    ds_dp_m[:, :, i] = dM_dp[:, :, i]
-            self._dr_dp = np.concatenate([self._dr_dp, dr_dp_m], axis=1)
-            self._ds_dp = np.concatenate([self._ds_dp, ds_dp_m], axis=2)
-            self._dl_dp.extend(dl_dp_m)
+                self._ds_dp[:, :, n_tot : n_tot + n_M_params] = np.transpose(
+                    dM_dp, axes=(1, 2, 0)
+                )
+            n_tot += n_M_params
         # Compute derivatives   w.r.t L parameters
         if not state.is_wavelength_spread_fixed:
-            n_l_params = len(state.L_params)
-            dr_dp_l = np.zeros(shape=(3, n_l_params), dtype=np.float64)
-            ds_dp_l = np.zeros(shape=(3, 3, n_l_params), dtype=np.float64)
-            self._dr_dp = np.concatenate([self._dr_dp, dr_dp_l], axis=1)
-            self._ds_dp = np.concatenate([self._ds_dp, ds_dp_l], axis=2)
-            self._dl_dp.extend(dL_dp)
+            self._dl_dp[n_tot] = self.state.dL_dp[0]
 
     @property
     def mosaicity_covariance_matrix(self) -> np.array:
@@ -724,7 +717,7 @@ class ReflectionModelState(object):
         Return the reciprocal lattice vector
 
         """
-        return self._r
+        return self._r.reshape(3, 1)
 
     def get_dS_dp(self) -> np.array:
         """

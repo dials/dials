@@ -77,8 +77,8 @@ class ConditionalDistribution(object):
 
     """
 
-    def __init__(self, s0, mu, dmu, S, dS):
-
+    def __init__(self, norm_s0, mu, dmu, S, dS):
+        # norm_s0 is a float i.e. norm(s0)
         self._mu = mu  # 3x1 array
         self._dmu = dmu  # 3 x n array
         self._S = S  # 3x3 array
@@ -93,10 +93,10 @@ class ConditionalDistribution(object):
         # The partitioned mean vector
         mu1 = mu[0:2, 0].reshape(2, 1)
         mu2 = mu[2, 0]
-        a = norm(s0)
+        # a = norm(s0)
 
         # The epsilon
-        self.epsilon = a - mu2
+        self.epsilon = norm_s0 - mu2
 
         # Compute the conditional mean
         self._mubar = mu1 + S12 * (1 / S22) * self.epsilon
@@ -155,66 +155,83 @@ class ConditionalDistribution(object):
 
 def rotate_vec3_double(R, A):
     """
-    Helper function to rotate a flex.mat3_double array of matrices
+    Helper function to rotate an array of matrices
 
     """
-    RA = np.concatenate(
-        [np.matmul(R, A[:, i]).reshape(3, 1) for i in range(A.shape[1])], axis=1
-    )
-    return RA
+    return np.einsum("ij,jk->ik", R, A)
 
 
 def rotate_mat3_double(R, A):
     """
-    Helper function to rotate a flex.mat3_double array of matrices
+    Helper function to rotate an array of matrices
 
     """
-    RAR = np.concatenate(
-        [
-            np.matmul(np.matmul(R, A[:, :, i]), R.T).reshape(3, 3, 1)
-            for i in range(A.shape[2])
-        ],
-        axis=2,
-    )
-    return RAR
+    return np.einsum("ij,jkv,kl->ilv", R, A, R.T)
 
 
 class ReflectionLikelihood(object):
     def __init__(self, model, s0, sp, h, ctot, mobs, sobs):
 
         # Save stuff
-        model = ReflectionModelState(model, s0, h)
-        self.s0 = s0.reshape(3, 1)  # np.array([s0], dtype=np.float64).reshape(3, 1)
-        self.sp = sp.reshape(3, 1)  # np.array([sp], dtype=np.float64).reshape(3, 1)
+        modelstate = ReflectionModelState(model, s0, h)
+        self.modelstate = modelstate
+        self.s0 = s0.reshape(3, 1)
+        self.norm_s0 = norm(s0)
+        self.sp = sp.reshape(3, 1)
         self.h = np.array([h], dtype=np.float64).reshape(3, 1)
         self.ctot = ctot
-        self.mobs = mobs.reshape(
-            2, 1
-        )  # np.array([mobs], dtype=np.float64).reshape(2, 1)
-        self.sobs = sobs  # np.array([sobs], dtype=np.float64).reshape(2, 2)
+        self.mobs = mobs.reshape(2, 1)
+        self.sobs = sobs
 
         # Compute the change of basis
-        self.R = compute_change_of_basis_operation(self.s0, self.sp)
+        self.R = compute_change_of_basis_operation(self.s0, self.sp)  # const
+        s2 = self.s0 + self.modelstate.get_r()
+        # Rotate the mean vector
+        self.mu = np.matmul(self.R, s2)
+        self.S = np.matmul(
+            np.matmul(self.R, modelstate.mosaicity_covariance_matrix), self.R.T
+        )  # const when not refining mosaicity
+        self.dS = rotate_mat3_double(
+            self.R, modelstate.get_dS_dp()
+        )  # const when not refining mosaicity?
+        self.dmu = rotate_vec3_double(
+            self.R, modelstate.get_dr_dp()
+        )  # const when not refining uc/orientation?
+        # Construct the conditional distribution
+        self.conditional = ConditionalDistribution(
+            self.norm_s0, self.mu, self.dmu, self.S, self.dS
+        )
+
+    def update(self):
 
         # The s2 vector
-        s2 = self.s0 + model.get_r()
+        s2 = self.s0 + self.modelstate.get_r()
         # Rotate the mean vector
         self.mu = np.matmul(self.R, s2)
 
         # Rotate the covariance matrix
-        self.S = np.matmul(
-            np.matmul(self.R, model.mosaicity_covariance_matrix), self.R.T
-        )
+        if not self.modelstate.state.is_mosaic_spread_fixed:
+            self.S = np.matmul(
+                np.matmul(self.R, self.modelstate.mosaicity_covariance_matrix), self.R.T
+            )  # const when not refining mosaicity
 
         # Rotate the first derivative matrices
-        self.dS = rotate_mat3_double(self.R, model.get_dS_dp())
+        if not self.modelstate.state.is_mosaic_spread_fixed:
+            self.dS = rotate_mat3_double(
+                self.R, self.modelstate.get_dS_dp()
+            )  # const when not refining mosaicity?
 
         # Rotate the first derivative of s2
-        self.dmu = rotate_vec3_double(self.R, model.get_dr_dp())
+        if (not self.modelstate.state.is_unit_cell_fixed) or not (
+            self.modelstate.state.is_orientation_fixed
+        ):
+            self.dmu = rotate_vec3_double(
+                self.R, self.modelstate.get_dr_dp()
+            )  # const when not refining uc/orientation?
 
         # Construct the conditional distribution
         self.conditional = ConditionalDistribution(
-            self.s0, self.mu, self.dmu, self.S, self.dS
+            self.norm_s0, self.mu, self.dmu, self.S, self.dS
         )
 
     def log_likelihood(self):
@@ -224,7 +241,6 @@ class ReflectionLikelihood(object):
         """
 
         # Get data
-        s0 = self.s0
         ctot = self.ctot
         mobs = self.mobs
         Sobs = self.sobs
@@ -245,7 +261,7 @@ class ReflectionLikelihood(object):
         c_w = ctot
 
         # Compute the marginal likelihood
-        m_d = norm(s0) - mu2
+        m_d = self.norm_s0 - mu2
         m_lnL = m_w * (log(S22) + S22_inv * m_d**2)
 
         # Compute the conditional likelihood
@@ -265,15 +281,13 @@ class ReflectionLikelihood(object):
 
         """
         # Get data
-        s0 = self.s0
-        # s2 = self.s2
         ctot = self.ctot
         mobs = self.mobs  # 2x1 array
         Sobs = self.sobs
 
         # Get info about marginal distribution
         S22 = self.S[2, 2]
-        dS22 = [self.dS[2, 2, i] for i in range(self.dS.shape[2])]
+        dS22_vec = self.dS[2, 2, :]  # for i in range(self.dS.shape[2])]
         S22_inv = 1 / S22
         mu2 = self.mu[2, 0]
 
@@ -285,7 +299,7 @@ class ReflectionLikelihood(object):
         Sbar_inv = inv(Sbar)
 
         # The distance from the ewald sphere
-        epsilon = norm(s0) - mu2
+        epsilon = self.norm_s0 - mu2
         c_d = mobs - mubar  # 2x1 array
 
         # Weights for marginal and conditional components
@@ -293,40 +307,25 @@ class ReflectionLikelihood(object):
         c_w = ctot
 
         # Compute the derivative wrt parameter i
-        dL = flex.double()
         I = np.array([[1.0, 0], [0, 1.0]], dtype=np.float64).reshape(2, 2)
 
         V1 = Sobs + np.matmul(c_d, c_d.T)
         V2 = I - np.matmul(Sbar_inv, V1)
-        for i in range(len(dS22)):
 
-            dmu = self.dmu[:, i]  # vec3 double
-            dmu2 = dmu[2]
-            dep = -dmu2
+        dSbar = np.array(dSbar)
+        dmbar_vec = np.array(dmbar)
 
-            U = m_w * (
-                S22_inv * dS22[i] * (1.0 - S22_inv * epsilon**2)
-                + 2 * S22_inv * epsilon * dep
-            )
+        V_vec = np.einsum("ij,ljk->ikl", Sbar_inv, dSbar)
+        V_vec = c_w * np.einsum("ijl,ji->l", V_vec, V2)
+        dep = -self.dmu[2, :]
+        U_vec = m_w * (
+            S22_inv * dS22_vec * (1.0 - S22_inv * epsilon**2)
+            + 2 * S22_inv * epsilon * dep
+        )
+        W_vec = np.einsum("ij,lkj->ikl", c_d, dmbar_vec)
+        W_vec = -2.0 * c_w * np.einsum("ij,jil->l", Sbar_inv, W_vec)
 
-            # X = c_w * np.trace(Sbar_inv * dSbar[i])
-            V = c_w * np.trace(
-                np.matmul(
-                    np.matmul(Sbar_inv, dSbar[i]),
-                    V2,
-                )
-            )
-
-            W = c_w * np.trace(
-                -2
-                * np.matmul(
-                    Sbar_inv,
-                    np.matmul(c_d, dmbar[i].T),
-                )
-            )
-            dL.append(-0.5 * (U + V + W))
-
-        # Return the derivative of the log likelihood
+        dL = -0.5 * (U_vec + V_vec + W_vec)
         return dL
 
     def fisher_information(self):
@@ -354,6 +353,7 @@ class ReflectionLikelihood(object):
 
         # Compute the fisher information wrt parameter i j
         I = flex.double(flex.grid(len(dS22), len(dS22)))
+
         for j in range(len(dS22)):
             for i in range(len(dS22)):
                 U = S22_inv * dS22[j] * S22_inv * dS22[i]
@@ -411,6 +411,11 @@ class MaximumLikelihoodTarget(object):
                 )
             )
 
+    def update(self):
+        for d in self.data:
+            d.modelstate.update()  # update the ReflectionModelState
+            d.update()  # update the ReflectionLikelihood
+
     def mse(self):
         """
         The MSE in local reflection coordinates
@@ -434,7 +439,7 @@ class MaximumLikelihoodTarget(object):
             R = self.data[i].R
             mbar = self.data[i].conditional.mean()
             xobs = self.data[i].mobs
-            norm_s0 = norm(self.data[i].s0)
+            norm_s0 = self.data[i].norm_s0
 
             s1 = np.matmul(
                 R.T,
@@ -570,7 +575,6 @@ class FisherScoringMaximumLikelihoodBase(object):
 
         # Loop through the maximum number of iterations
         for it in range(self.max_iter):
-
             # Compute the derivative and fisher information at x0
             S, I = self.score_and_fisher_information(x0)
 
@@ -674,7 +678,6 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
         Initialise the algorithm:
 
         """
-
         # Initialise the super class
         super(FisherScoringMaximumLikelihood, self).__init__(
             model.active_parameters, max_iter=max_iter, tolerance=tolerance
@@ -694,6 +697,16 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
         # Store the parameter history
         self.history = []
 
+        self._ml_target = MaximumLikelihoodTarget(
+            self.model,
+            self.s0,
+            self.sp_list,
+            self.h_list,
+            self.ctot_list,
+            self.mobs_list,
+            self.sobs_list,
+        )
+
         # Print initial
         self.callback(self.model.active_parameters)
 
@@ -703,7 +716,9 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
         :return: The log likelihood at x
 
         """
-        return self.target(x).log_likelihood()
+        self.model.active_parameters = x
+        self._ml_target.update()
+        return self._ml_target.log_likelihood()
 
     def score(self, x):
         """
@@ -711,7 +726,9 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
         :return: The score at x
 
         """
-        return self.target(x).first_derivatives()
+        self.model.active_parameters = x
+        self._ml_target.update()
+        return flumpy.from_numpy(self._ml_target.first_derivatives())
 
     def score_and_fisher_information(self, x):
         """
@@ -719,9 +736,10 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
         :return: The score and fisher information at x
 
         """
-        model = self.target(x)
-        S = model.first_derivatives()
-        I = model.fisher_information()
+        self.model.active_parameters = x
+        self._ml_target.update()
+        S = flumpy.from_numpy(self._ml_target.first_derivatives())
+        I = self._ml_target.fisher_information()
         return S, I
 
     def mse(self, x):
@@ -730,7 +748,7 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
         :return: The MSE at x
 
         """
-        return self.target(x).mse()
+        return self._ml_target.mse()
 
     def rmsd(self, x):
         """
@@ -738,7 +756,7 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
         :return: The RMSD at x
 
         """
-        return self.target(x).rmsd()
+        return self._ml_target.rmsd()
 
     def jacobian(self, x):
         """
@@ -746,25 +764,7 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
         :return: The Jacobian at x
 
         """
-        return self.target(x).jacobian()
-
-    def target(self, x):
-        """
-        :param x: The parameter estimate
-        :return: The model
-
-        """
-        self.model.active_parameters = x
-        target = MaximumLikelihoodTarget(
-            self.model,
-            self.s0,
-            self.sp_list,
-            self.h_list,
-            self.ctot_list,
-            self.mobs_list,
-            self.sobs_list,
-        )
-        return target
+        return self._ml_target.jacobian()
 
     def condition_number(self, x):
         """
@@ -796,10 +796,10 @@ class FisherScoringMaximumLikelihood(FisherScoringMaximumLikelihoodBase):
 
         """
         self.model.active_parameters = x
-        target = self.target(x)
-        lnL = target.log_likelihood()
-        mse = target.mse()
-        rmsd = target.rmsd()
+        self._ml_target.update()
+        lnL = self._ml_target.log_likelihood()
+        mse = self._ml_target.mse()
+        rmsd = self._ml_target.rmsd()
 
         # Get the unit cell
         unit_cell = self.model.unit_cell.parameters()
@@ -910,7 +910,7 @@ class Refiner(object):
         )
 
         # Initialise the algorithm
-        ml = FisherScoringMaximumLikelihood(
+        self.ml = FisherScoringMaximumLikelihood(
             self.state,
             self.s0,
             self.sp_list,
@@ -921,10 +921,10 @@ class Refiner(object):
         )
 
         # Solve the maximum likelihood equations
-        ml.solve()
+        self.ml.solve()
 
         # Get the parameters
-        self.parameters = flex.double(ml.parameters)
+        self.parameters = flex.double(self.ml.parameters)
 
         # set the parameters
         self.state.active_parameters = self.parameters
@@ -932,7 +932,7 @@ class Refiner(object):
         # Print summary table of refinement.
         rows = []
         headers = ["Iteration", "likelihood", "RMSD (pixel) X,Y"]
-        for i, h in enumerate(ml.history):
+        for i, h in enumerate(self.ml.history):
             l = h["likelihood"]
             rmsd = h["rmsd"]
             rows.append([str(i), f"{l:.4f}", f"{rmsd[0]:.3f}, {rmsd[1]:.3f}"])
@@ -948,27 +948,17 @@ class Refiner(object):
             )
 
         # Save the history
-        self.history = ml.history
+        self.history = self.ml.history
 
         # Return the optimizer
-        return ml
+        return self.ml
 
     def correlation(self):
         """
         Return the correlation matrix between parameters
 
         """
-        # Initialise the algorithm
-        ml = FisherScoringMaximumLikelihood(
-            self.state,
-            self.s0,
-            self.sp_list,
-            self.h_list,
-            self.ctot_list,
-            self.mobs_list,
-            self.sobs_list,
-        )
-        return ml.correlation(self.state.active_parameters)
+        return self.ml.correlation(self.state.active_parameters)
 
     def labels(self):
         """
