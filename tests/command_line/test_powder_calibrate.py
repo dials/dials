@@ -8,11 +8,14 @@ from dials.command_line.powder_calibrate_widget import (
     parse_args,
 )
 
+# from unittest.mock import Mock
 
-# @pytest.mark.parametrize("eyeball, eyeballed_geom", [(False, "eyeballed.geom")])
-def test_calibrate_from_eyeballed(dials_data, tmpdir):
+
+# @pytest.mark.parametrize("eyeball, eyeballed", [(False, "eyeballed.geom"), (True, 'imported.geom')])
+def test_calibrate(dials_data, tmpdir):
     aluminium_powder = dials_data("aluminium_standard", pathlib=True)
     eyeballed = aluminium_powder / "eyeballed.expt"
+
     test_calibrator = PowderCalibrator(
         eyeballed,
         standard="Al",
