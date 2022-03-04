@@ -55,7 +55,7 @@ program_defaults_phil_str = """
 indexing {
   method = fft1d
   stills {
-    indexer = stills
+    indexer = ssx
   }
 }
 output.log = dials.ssx_index.log

@@ -136,6 +136,7 @@ class SymmetryHandler:
         self.target_symmetry_reference_setting = None
         self.cb_op_inp_ref = None
         self.cb_op_inp_best = None
+        self.unit_cell = unit_cell
 
         target_space_group = space_group
         if target_space_group is not None:
@@ -206,6 +207,16 @@ class SymmetryHandler:
                 self.target_symmetry_primitive,
             )
         logger.debug("cb_op primitive->input: %s", self.cb_op_primitive_inp)
+        self.target_bravais_t = bravais_lattice(
+            group=self.target_symmetry_primitive.space_group()
+            .info()
+            .reference_setting()
+            .group()
+        )
+        if self.unit_cell:
+            self.reference_best_cell = (
+                self.target_symmetry_reference_setting.best_cell().unit_cell()
+            )
 
     def apply_symmetry(self, crystal_model):
         """Apply symmetry constraints to a crystal model.
