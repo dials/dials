@@ -627,7 +627,7 @@ ice rings, or poor spot-finding parameters.
                             "title": "Number of reflections",
                             "titleside": "right",
                         },
-                        "colorscale": "Jet",
+                        "colorscale": "Viridis",
                     }
                 ],
                 "layout": {
@@ -666,7 +666,7 @@ ice rings, or poor spot-finding parameters.
                             "title": "Number of reflections",
                             "titleside": "right",
                         },
-                        "colorscale": "Jet",
+                        "colorscale": "Viridis",
                     }
                 ],
                 "layout": {
@@ -836,7 +836,7 @@ class CentroidAnalyser:
                             "title": "Difference in X position (pixels)",
                             "titleside": "right",
                         },
-                        "colorscale": "Jet",
+                        "colorscale": "Viridis",
                     }
                 ],
                 "layout": {
@@ -859,7 +859,7 @@ class CentroidAnalyser:
                             "title": "Difference in Y position (pixels)",
                             "titleside": "right",
                         },
-                        "colorscale": "Jet",
+                        "colorscale": "Viridis",
                     }
                 ],
                 "layout": {
@@ -905,7 +905,7 @@ class CentroidAnalyser:
                             "title": "Number of reflections",
                             "titleside": "right",
                         },
-                        "colorscale": "Jet",
+                        "colorscale": "Viridis",
                     }
                 ],
                 "layout": {
@@ -1348,7 +1348,7 @@ class IntensityAnalyser:
                         "type": "heatmap",
                         "name": f"i_over_sigma_{intensity_type}",
                         "colorbar": {"title": "Log I/σ(I)", "titleside": "right"},
-                        "colorscale": "Jet",
+                        "colorscale": "Viridis",
                     }
                 ],
                 "layout": {
@@ -1386,7 +1386,7 @@ class IntensityAnalyser:
                             "title": "Number of reflections",
                             "titleside": "right",
                         },
-                        "colorscale": "Jet",
+                        "colorscale": "Viridis",
                     }
                 ],
                 "layout": {
@@ -1462,7 +1462,7 @@ class IntensityAnalyser:
                         "z": z1.transpose().tolist(),
                         "type": "heatmap",
                         "colorbar": {"title": "QE", "titleside": "right"},
-                        "colorscale": "Jet",
+                        "colorscale": "Viridis",
                     }
                 ],
                 "layout": {
@@ -1894,7 +1894,7 @@ class ReferenceProfileAnalyser:
                             "title": "Number of reflections",
                             "titleside": "right",
                         },
-                        "colorscale": "Jet",
+                        "colorscale": "Viridis",
                     }
                 ],
                 "layout": {
@@ -1989,7 +1989,7 @@ class ReferenceProfileAnalyser:
                             "title": "Correlation with reference profile",
                             "titleside": "right",
                         },
-                        "colorscale": "Jet",
+                        "colorscale": "Viridis",
                         "zmin": 0,
                         "zmax": 1,
                     }
@@ -2027,7 +2027,7 @@ class ReferenceProfileAnalyser:
                             "title": "Number of reflections",
                             "titleside": "right",
                         },
-                        "colorscale": "Jet",
+                        "colorscale": "Viridis",
                     }
                 ],
                 "layout": {
@@ -2075,7 +2075,7 @@ class ReferenceProfileAnalyser:
                             "title": "Number of reflections",
                             "titleside": "right",
                         },
-                        "colorscale": "Jet",
+                        "colorscale": "Viridis",
                     }
                 ],
                 "layout": {
