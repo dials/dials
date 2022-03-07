@@ -323,7 +323,7 @@ Dataset 1
   }
   EOF
 
-  dials.find_spots nproc=8 min_spot_size=6 filter.d_min=2.5 filter.d_max=20 \
+  dials.find_spots min_spot_size=6 filter.d_min=2.5 filter.d_max=20 \
     datablock.json find_spots.phil
 
 Dataset 2
@@ -343,7 +343,7 @@ Dataset 2
   }
   EOF
 
-  dials.find_spots nproc=8 min_spot_size=6 filter.d_min=2.6 filter.d_max=25 \
+  dials.find_spots min_spot_size=6 filter.d_min=2.6 filter.d_max=25 \
     datablock.json find_spots.phil
 
 Dataset 3
@@ -363,7 +363,7 @@ Dataset 3
   }
   EOF
 
-  dials.find_spots nproc=8 min_spot_size=10 filter.d_min=3.0 filter.d_max=25 \
+  dials.find_spots min_spot_size=10 filter.d_min=3.0 filter.d_max=25 \
     datablock.json find_spots.phil
 
 Dataset 4
@@ -383,7 +383,7 @@ Dataset 4
   }
   EOF
 
-  dials.find_spots nproc=8 min_spot_size=6 filter.d_min=2.5 filter.d_max=25 \
+  dials.find_spots min_spot_size=6 filter.d_min=2.5 filter.d_max=25 \
     datablock.json find_spots.phil
 
 Dataset 5
@@ -403,7 +403,7 @@ Dataset 5
   }
   EOF
 
-  dials.find_spots nproc=8 min_spot_size=6 filter.d_min=2.5 filter.d_max=25 \
+  dials.find_spots min_spot_size=6 filter.d_min=2.5 filter.d_max=25 \
     datablock.json find_spots.phil
 
 Dataset 6
@@ -423,7 +423,7 @@ Dataset 6
   }
   EOF
 
-  dials.find_spots nproc=8 min_spot_size=8 max_spot_size=300 filter.d_min=3.0 filter.d_max=25 \
+  dials.find_spots min_spot_size=8 max_spot_size=300 filter.d_min=3.0 filter.d_max=25 \
     datablock.json find_spots.phil
 
 Dataset 7
@@ -443,7 +443,7 @@ Dataset 7
   }
   EOF
 
-  dials.find_spots nproc=8 min_spot_size=6 filter.d_min=3.0 filter.d_max=25 \
+  dials.find_spots min_spot_size=6 filter.d_min=3.0 filter.d_max=25 \
     datablock.json find_spots.phil
 
 Indexing
@@ -735,37 +735,37 @@ processing with CCP4.
 
 1. .. code-block:: bash
 
-    dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.0
+    dials.integrate varying.json varying.pickle prediction.d_min=2.0
     dials.export integrated_experiments.json integrated.pickle mtz.hklout=integrated_1.mtz
 
 2. .. code-block:: bash
 
-    dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.3
+    dials.integrate varying.json varying.pickle prediction.d_min=2.3
     dials.export integrated_experiments.json integrated.pickle mtz.hklout=integrated_2.mtz
 
 3. .. code-block:: bash
 
-    dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.3
+    dials.integrate varying.json varying.pickle prediction.d_min=2.3
     dials.export integrated_experiments.json integrated.pickle mtz.hklout=integrated_3.mtz
 
 4. .. code-block:: bash
 
-    dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.2
+    dials.integrate varying.json varying.pickle prediction.d_min=2.2
     dials.export integrated_experiments.json integrated.pickle mtz.hklout=integrated_4.mtz
 
 5. .. code-block:: bash
 
-    dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.2
+    dials.integrate varying.json varying.pickle prediction.d_min=2.2
     dials.export integrated_experiments.json integrated.pickle mtz.hklout=integrated_5.mtz
 
 6. .. code-block:: bash
 
-    dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.5
+    dials.integrate varying.json varying.pickle prediction.d_min=2.5
     dials.export integrated_experiments.json integrated.pickle mtz.hklout=integrated_6.mtz
 
 7. .. code-block:: bash
 
-    dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.5
+    dials.integrate varying.json varying.pickle prediction.d_min=2.5
     dials.export integrated_experiments.json integrated.pickle mtz.hklout=integrated_7.mtz
 
 Scaling and merging
