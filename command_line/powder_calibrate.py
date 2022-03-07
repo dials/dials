@@ -677,18 +677,19 @@ class PowderCalibrator:
 
         if plots:
             self.show_fit(gonio_geom, label="After pyFAI fit")
-            logger.info(f"Geometry fitted by pyFAI:\n----- \n {ai} \n")
 
-            # show the cake plot as well
-            int2 = ai.integrate2d_ng(
-                data=self.expt_params.image,
-                npt_rad=500,
-                npt_azim=360,
-                unit="q_nm^-1",
-            )
-            pfjupyter.plot2d(int2, calibrant=self.calibrant)
-            plt.title("Are those lines straight?")
-            plt.show()
+        logger.info(f"Geometry fitted by pyFAI:\n----- \n {ai} \n")
+
+        # show the cake plot as well
+        int2 = ai.integrate2d_ng(
+            data=self.expt_params.image,
+            npt_rad=500,
+            npt_azim=360,
+            unit="q_nm^-1",
+        )
+        pfjupyter.plot2d(int2, calibrant=self.calibrant)
+        plt.title("Are those lines straight?")
+        plt.show()
 
 
 if __name__ == "__main__":
