@@ -2,12 +2,12 @@
 
 """
 Calibrate electron powder geometry using X-ray powder diffraction tools.
-    `pyFAI` is a well established X-ray powder diffraction tool.
-https://doi.org/10.1107/S1600576715004306
+`pyFAI` is a well established X-ray powder diffraction tool.
+See more here: https://doi.org/10.1107/S1600576715004306
 
-The matplotlib widget requires user eyes to give an initial guess of the beam center.
-Starting from this eyeballed geometry pyFAI geometry calibration can be used in the usual manner
-(ie. just like it used for X-rays).
+The calibration is done in two steps:
+    Step 1) A corse beam position calibration done by the user using a matplolib widget.
+    Step 2) Starting from the corse calibration, pyFAI geometry calibration provides a fine full geometry calibration.
 """
 
 import logging
@@ -31,6 +31,8 @@ def module_exists(module_name):
             f"""
             This script requires the {module_name} library. Try:
                 conda install -c conda-forge {module_name}
+                OR if you prefer mamba
+                mamba install {module_name}
             """
         )
     else:
@@ -313,7 +315,7 @@ class Geometry(pfGeometry):
         self.beam_m = self._beam_to_m()
         self.beam_distance = beam_params["directDist"]
 
-    def to_parsable(self, only_beam: bool) -> list[str]:
+    def to_parsable(self, only_beam: bool) -> List[str]:
         """
         Translate parameters to a parsable list to feed to dials.$command_line_program
         """
