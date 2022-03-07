@@ -350,56 +350,63 @@ class EyeballWidget:
         self.calibrant = calibrant
         self.eyeballed_geom = eyeballed_geom
         self.fig, self.ax = self.set_up_figure()
+        self.calibrant_image = self.calibrant_rings_image(self.ax)
+        self.beam_slow_slider = self.make_slider("slow")
+        self.beam_fast_slider = self.make_slider("fast")
 
     def __repr__(self):
         calibrant = os.path.splitext(os.path.basename(self.calibrant.filename))[0]
         return f"Eyeballing Widget using {calibrant} Calibrant starting from Geometry: \n {self.geometry}"
 
+    def update(self, val):
+        """
+        Update geometry from slider value
+        """
+        new_geometry = self.geometry.__deepcopy__()
+        new_geometry.update_beam_pos(
+            beam_coords_px=Point(self.beam_slow_slider.val, self.beam_fast_slider.val)
+        )
+
+        self.calibrant_image.set_array(self.calibrant_rings(new_geometry))
+        self.fig.canvas.draw_idle()
+
+    def reset(self, event):
+        """
+        Reset calibrant image to starting position
+        """
+        self.beam_slow_slider.reset()
+        self.beam_fast_slider.reset()
+
+    def save_and_exit(self, event):
+        """
+        Save geometry from widget and save to file
+        """
+        self.geometry.update_beam_pos(
+            beam_coords_px=Point(self.beam_slow_slider.val, self.beam_fast_slider.val)
+        )
+        self.geometry.save_to_expt(
+            only_beam=True,
+            output=self.eyeballed_geom,
+        )
+        plt.close()
+
     def calibrate(self):
         """
         Update geometry such that beam position is now the center of the moved calibrant rings
         """
-        beam_slow_slider = self.make_slider("slow")
-        beam_fast_slider = self.make_slider("fast")
-
-        calibrant_image = self.calibrant_rings_image(self.ax)
-
         # register the update function with each slider
-        def update(val):
-            new_geometry = self.geometry.__deepcopy__()
-            new_geometry.update_beam_pos(
-                beam_coords_px=Point(beam_slow_slider.val, beam_fast_slider.val)
-            )
-
-            calibrant_image.set_array(self.calibrant_rings(new_geometry))
-            self.fig.canvas.draw_idle()
-
-        beam_slow_slider.on_changed(update)
-        beam_fast_slider.on_changed(update)
+        self.beam_slow_slider.on_changed(self.update)
+        self.beam_fast_slider.on_changed(self.update)
 
         # register the reset function with reset button
-        def reset(event):
-            beam_slow_slider.reset()
-            beam_fast_slider.reset()
-
         reset_ax = plt.axes([0.8, 0.026, 0.1, 0.04])
         button_res = Button(reset_ax, "Reset", hovercolor="0.975")
-        button_res.on_clicked(reset)
+        button_res.on_clicked(self.reset)
 
         # register the save and exit function with save button
-        def save_and_exit(event):
-            self.geometry.update_beam_pos(
-                beam_coords_px=Point(beam_slow_slider.val, beam_fast_slider.val)
-            )
-            self.geometry.save_to_expt(
-                only_beam=True,
-                output=self.eyeballed_geom,
-            )
-            plt.close()
-
         save_ax = plt.axes([0.5, 0.026, 0.23, 0.04])
         button_save = Button(save_ax, "Save beam and exit", hovercolor="0.975")
-        button_save.on_clicked(save_and_exit)
+        button_save.on_clicked(self.save_and_exit)
 
         # finally, show plot
         plt.show()
@@ -580,7 +587,7 @@ class PowderCalibrator:
 
     def print_hints(self):
         # Tell me which geometry I'm starting from
-        logger.info(
+        print(
             f"Initial geometry from {self.expt_params.input_file}:\n-----\n {self.geometry} \n"
         )
 
@@ -617,6 +624,7 @@ class PowderCalibrator:
                 eyeballed_geom=self.user_args.eyeballed_geom,
             )
             eyeballing_widget.calibrate()
+
         else:
             logger.warning(
                 "If the starting geometry is significantly off the fit might return poor results."
