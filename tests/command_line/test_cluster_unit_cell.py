@@ -3,6 +3,7 @@ from __future__ import annotations
 import glob
 import os
 import pathlib
+import sys
 
 import procrunner
 import pytest
@@ -39,13 +40,23 @@ def test_dials_cluster_unit_cell_command_line_output_files(dials_regression, tmp
         pathlib.Path(dials_regression) / "refinement_test_data" / "multi_narrow_wedges"
     )
     experiments = list(data_dir.glob("data/sweep_*/experiments.json"))
-    reflections = list(data_dir.glob("data/sweep_*/indexed.pickle"))
+    reflections = list(data_dir.glob("data/sweep_*/reflections.pickle"))
 
     # first combine experiments
-    result = procrunner.run(
-        command=["dials.combine_experiments"] + experiments + reflections,
-        working_directory=tmp_path,
-    )
+    if sys.platform == "win32":
+        # Avoid "command line is too long" error on Windows
+        with open(tmp_path / "input.phil", "w") as f:
+            f.writelines((f"input.reflections={i}" + os.linesep for i in reflections))
+            f.writelines((f"input.experiments={i}" + os.linesep for i in experiments))
+        result = procrunner.run(
+            command=["dials.combine_experiments", "input.phil"],
+            working_directory=tmp_path,
+        )
+    else:
+        result = procrunner.run(
+            command=["dials.combine_experiments"] + experiments + reflections,
+            working_directory=tmp_path,
+        )
     assert not result.returncode
     assert (tmp_path / "combined.refl").is_file()
     assert (tmp_path / "combined.expt").is_file()
@@ -88,17 +99,33 @@ def test_dials_cluster_unit_cell_command_line_output_files(dials_regression, tmp
     experiments = list(tmp_path.glob("split_*.expt"))
     reflections = list(tmp_path.glob("split_*.refl"))
 
-    result = procrunner.run(
-        command=[
-            "dials.cluster_unit_cell",
-            "output.clusters=True",
-            "threshold=40",
-            "plot.show=False",
-        ]
-        + experiments
-        + reflections,
-        working_directory=tmp_path,
-    )
+    if sys.platform == "win32":
+        # Avoid "command line is too long" error on Windows
+        with open(tmp_path / "input.phil", "w") as f:
+            f.writelines((f"input.reflections={i}" + os.linesep for i in reflections))
+            f.writelines((f"input.experiments={i}" + os.linesep for i in experiments))
+        result = procrunner.run(
+            command=[
+                "dials.cluster_unit_cell",
+                "output.clusters=True",
+                "threshold=40",
+                "plot.show=False",
+                "input.phil",
+            ],
+            working_directory=tmp_path,
+        )
+    else:
+        result = procrunner.run(
+            command=[
+                "dials.cluster_unit_cell",
+                "output.clusters=True",
+                "threshold=40",
+                "plot.show=False",
+            ]
+            + experiments
+            + reflections,
+            working_directory=tmp_path,
+        )
     assert not result.returncode
 
 
