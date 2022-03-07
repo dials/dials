@@ -13,14 +13,14 @@ Starting from this eyeballed geometry pyFAI geometry calibration can be used in 
 import logging
 import os
 from sys import exit
-from typing import NamedTuple, Optional, Tuple, Union
+from typing import List, NamedTuple, Optional, Tuple, Union
 
 import numpy as np
 import numpy.ma as ma
 from matplotlib import pyplot as plt
 from matplotlib.widgets import Button, Slider
 
-from iotbx.phil import parse
+from libtbx.phil import parse, scope
 
 
 def module_exists(module_name):
@@ -47,12 +47,27 @@ if module_exists("pyFAI"):
 
 # dxtbx and dials must be imported after pyfai,
 # the alternative causes pyfai to segv
-from dials.util.options import OptionParser, flatten_experiments
+import dials.util
+import dials.util.log
+from dials.command_line import modify_geometry
+from dials.util.options import ArgumentParser, flatten_experiments
+from dials.util.version import dials_version
 
+# Define a logger.
 logger = logging.getLogger("dials.command_line.powder_calibrate")
 
 phil_scope = parse(
     """
+    output {
+        eyeballed_geom = eyeballed.expt
+            .type = str
+            .help = file to which the eyeballed geometry would be saved
+        calibrated_geom = calibrated.expt
+            .type = str
+            .help = file to which the calibrated geometry would be saved
+        log = dials.command_name.log
+           .type = path
+    }
   starting_geom = None
     .type = str
     .help = file containing starting geometry
@@ -62,12 +77,6 @@ phil_scope = parse(
   eyeball = True
     .type = bool
     .help = use widget to eyeball a better starting geometry?
-  eyeballed_geom = eyeballed.expt
-    .type = str
-    .help = file to which the eyeballed geometry would be saved
-  calibrated_geom = calibrated.expt
-    .type = str
-    .help = file to which the calibrated geometry would be saved
     """
 )
 
@@ -125,28 +134,44 @@ def _convert_units(
     return converted
 
 
-def parse_args(args=None) -> Tuple[ExptParams, UserArgs]:
+def parse_to_tuples(
+    args: List[str] = None, phil: scope = phil_scope
+) -> Tuple[ExptParams, UserArgs]:
     """
     Parse arguments from command line or not and return named tuple with the useful parameters
     """
-    usage = (
-        "$ dials.powder_calibrate EXPERIMENT standard=standard_name "
-        "calibrated_geom=file_name [options]"
+    usage = "$ dials.powder_calibrate imported.expt standard=standard_name [options]"
+
+    parser = ArgumentParser(
+        usage=usage, phil=phil, read_experiments=True, check_format=True, epilog=__doc__
     )
 
-    parser = OptionParser(
-        usage=usage,
-        phil=phil_scope,
-        check_format=True,
-        read_experiments=True,
-    )
+    params, options = parser.parse_args(args=args, show_diff_phil=False)
 
-    params, _, _ = parser.parse_args(
-        args=args, show_diff_phil=False, return_unhandled=True
-    )
+    # Configure the logging.
+    dials.util.log.config(options.verbose, logfile=params.output.log)
+
+    # Log the dials version
+    logger.info(dials_version())
+
+    # Log the difference between the PHIL scope definition and the active PHIL scope,
+    # which will include the parsed user inputs.
+    diff_phil = parser.diff_phil.as_str()
+    if diff_phil:
+        logger.info("The following parameters have been modified:\n%s", diff_phil)
 
     # populate experimental parameters
-    expt = flatten_experiments(params.input.experiments)[0]
+    experiments = flatten_experiments(params.input.experiments)
+
+    # Complain if command line input is wrong
+    if len(experiments) == 0:
+        parser.print_help()
+        exit("Experiment list required.")
+    if len(params.standard) == 0:
+        parser.print_help()
+        exit("Standard name required.")
+
+    expt = experiments[0]
     detector = expt.detector[0]
     beam = expt.beam
 
@@ -174,8 +199,8 @@ def parse_args(args=None) -> Tuple[ExptParams, UserArgs]:
     user_args = UserArgs(
         standard=params.standard,
         eyeball=params.eyeball,
-        eyeballed_geom=params.eyeballed_geom,
-        calibrated_geom=params.calibrated_geom,
+        eyeballed_geom=params.output.eyeballed_geom,
+        calibrated_geom=params.output.calibrated_geom,
     )
 
     return expt_params, user_args
@@ -312,8 +337,6 @@ class Geometry(pfGeometry):
         Update the geometry from start_geometry.expt and save to new output
         Pretend dials.command_line has python API
         """
-        from dials.command_line import modify_geometry
-
         new_phil = self.to_parsable(only_beam)
         modify_args = [self.expt_params.input_file] + new_phil + ["output=" + output]
         modify_geometry.run(modify_args)
@@ -502,6 +525,7 @@ class EyeballWidget:
         return cal_img_masked
 
 
+@dials.util.show_mail_on_error()
 class PowderCalibrator:
     def __init__(
         self,
@@ -559,10 +583,10 @@ class PowderCalibrator:
                 "eyeballed_geom=" + eyeballed_geom,
                 "calibrated_geom=" + calibrated_geom,
             ]
-            self.expt_params, self.user_args = parse_args(args=args)
+            self.expt_params, self.user_args = parse_to_tuples(args=args)
         elif not starting_geom and not standard:
             # command line usage
-            self.expt_params, self.user_args = parse_args()
+            self.expt_params, self.user_args = parse_to_tuples()
         elif not standard:
             exit("Standard missing")
         elif not starting_geom:
@@ -652,7 +676,7 @@ class PowderCalibrator:
 
         if plots:
             self.show_fit(gonio_geom, label="After pyFAI fit")
-            logger.info("Geometry fitted by pyFAI:\n----- \n", ai, "\n")
+            logger.info(f"Geometry fitted by pyFAI:\n----- \n {ai} \n")
 
             # show the cake plot as well
             int2 = ai.integrate2d_ng(

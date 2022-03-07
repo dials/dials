@@ -9,7 +9,7 @@ from dials.command_line.powder_calibrate import (
     Geometry,
     Point,
     PowderCalibrator,
-    parse_args,
+    parse_to_tuples,
 )
 
 
@@ -44,7 +44,7 @@ def test_calibrate_coarse(dials_data, tmpdir, eyeball, starting_geometry):
     calibrated_geom = test_calibrator.geometry
 
     expected_calibrated_file = aluminium_powder / "calibrated.expt"
-    expected_expt, _ = parse_args(
+    expected_expt, _ = parse_to_tuples(
         args=[str(expected_calibrated_file), "standard=Al", "eyeball=False"]
     )
     expected_geom = Geometry(expt_params=expected_expt)
@@ -55,13 +55,15 @@ def test_calibrate_coarse(dials_data, tmpdir, eyeball, starting_geometry):
 def test_save_geom_to_expt(dials_data, tmpdir):
     aluminium_powder = dials_data("aluminium_standard", pathlib=True)
     imported = aluminium_powder / "imported.expt"
-    imported_expt, _ = parse_args(args=[str(imported), "standard=Al", "eyeball=False"])
+    imported_expt, _ = parse_to_tuples(
+        args=[str(imported), "standard=Al", "eyeball=False"]
+    )
     imported_geom = Geometry(expt_params=imported_expt)
     outfile = str(tmpdir) + "/test_save.expt"
     imported_geom.save_to_expt(output=outfile)
     assert path.exists(outfile)
 
-    test_save_expt, _ = parse_args(args=[outfile, "standard=Al", "eyeball=False"])
+    test_save_expt, _ = parse_to_tuples(args=[outfile, "standard=Al", "eyeball=False"])
     read_from_saved_geom = Geometry(expt_params=test_save_expt)
 
     assert imported_geom.param == pytest.approx(read_from_saved_geom.param)
