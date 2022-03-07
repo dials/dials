@@ -587,7 +587,7 @@ class PowderCalibrator:
 
     def print_hints(self):
         # Tell me which geometry I'm starting from
-        print(
+        logger.info(
             f"Initial geometry from {self.expt_params.input_file}:\n-----\n {self.geometry} \n"
         )
 

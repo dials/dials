@@ -13,7 +13,9 @@ from dials.command_line.powder_calibrate import (
 )
 
 
-@pytest.mark.parametrize("eyeball, starting_geometry", [(True, "imported.expt")])
+@pytest.mark.parametrize(
+    "eyeball, starting_geometry", [(True, "imported.expt"), (False, "eyeballed.expt")]
+)
 def test_calibrate_coarse(dials_data, tmpdir, eyeball, starting_geometry):
     aluminium_powder = dials_data("aluminium_standard", pathlib=True)
     starting_geom = aluminium_powder / starting_geometry
