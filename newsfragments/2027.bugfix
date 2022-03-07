@@ -1,0 +1,1 @@
+Modify a test of ``dials.cluster_unit_cell`` so that it runs on Windows.
