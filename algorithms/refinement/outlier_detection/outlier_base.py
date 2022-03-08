@@ -297,8 +297,9 @@ outlier
     .type = choice
     .short_caption = "Outlier rejection algorithm"
 
-  nproc = Auto
+  nproc = 1
     .help = "Number of processes over which to split outlier identification."
+            "If set to Auto, DIALS will choose automatically."
     .type = int(value_min=1)
     .expert_level = 1
 
