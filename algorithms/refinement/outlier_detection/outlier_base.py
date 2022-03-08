@@ -201,38 +201,19 @@ class CentroidOutlier:
         header.extend(["Nref", "Nout", "%out"])
         rows = []
 
-        # now loop over the lowest level of splits
+        # now loop over the lowest level of splits and run outlier detection
+        for i, job in enumerate(jobs3):
+            msg = self._run_job(job, i)
+            if msg:
+                logger.debug(msg)
+
+        # loop over the completed jobs
         for i, job in enumerate(jobs3):
 
-            data = job["data"]
-            indices = job["indices"]
             iexp = job["id"]
             ipanel = job["panel"]
-            nref = len(indices)
-
-            if nref >= self._min_num_obs:
-
-                # get the subset of data as a list of columns
-                cols = [data[col] for col in self._cols]
-
-                # determine the position of outliers on this sub-dataset
-                outliers = self._detect_outliers(cols)
-
-                # get positions of outliers from the original matches
-                ioutliers = indices.select(outliers)
-
-            elif nref > 0:
-                # too few reflections in the job
-                msg = "For job {}, fewer than {} reflections are present.".format(
-                    i + 1, self._min_num_obs
-                )
-                msg += " All reflections flagged as possible outliers."
-                logger.debug(msg)
-                ioutliers = indices
-
-            else:
-                # no reflections in the job
-                ioutliers = indices
+            nref = len(job["indices"])
+            ioutliers = job["ioutliers"]
 
             # set the centroid_outlier flag in the original reflection table
             nout = len(ioutliers)
@@ -271,6 +252,38 @@ class CentroidOutlier:
         logger.debug(tabulate(rows, header))
 
         return True
+
+    def _run_job(self, job, i):
+        data = job["data"]
+        indices = job["indices"]
+        nref = len(indices)
+
+        msg = None
+        if nref >= self._min_num_obs:
+
+            # get the subset of data as a list of columns
+            cols = [data[col] for col in self._cols]
+
+            # determine the position of outliers on this sub-dataset
+            outliers = self._detect_outliers(cols)
+
+            # get positions of outliers from the original matches
+            ioutliers = indices.select(outliers)
+
+        elif nref > 0:
+            # too few reflections in the job
+            msg = "For job {}, fewer than {} reflections are present.".format(
+                i + 1, self._min_num_obs
+            )
+            msg += " All reflections flagged as possible outliers."
+            ioutliers = indices
+
+        else:
+            # no reflections in the job
+            ioutliers = indices
+
+        job["ioutliers"] = ioutliers
+        return msg
 
 
 # The phil scope for outlier rejection
