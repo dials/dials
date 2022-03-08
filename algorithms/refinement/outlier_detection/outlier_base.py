@@ -275,9 +275,14 @@ outlier
 {
   algorithm = null *auto mcd tukey sauter_poon
     .help = "Outlier rejection algorithm. If auto is selected, the algorithm is"
-            "chosen automatically"
+            "chosen automatically."
     .type = choice
     .short_caption = "Outlier rejection algorithm"
+
+  nproc = Auto
+    .help = "Number of processes over which to split outlier identification."
+    .type = int(value_min=1)
+    .expert_level = 1
 
   minimum_number_of_reflections = 20
     .help = "The minimum number of input observations per outlier rejection"
