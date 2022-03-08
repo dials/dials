@@ -20,14 +20,7 @@ def test_calibrate_coarse(dials_data, tmpdir, eyeball, starting_geometry):
     aluminium_powder = dials_data("aluminium_standard", pathlib=True)
     starting_geom = aluminium_powder / starting_geometry
 
-    test_calibrator = PowderCalibrator(
-        starting_geom,
-        standard="Al",
-        eyeball=eyeball,
-        calibrated_geom=str(tmpdir / "test_calibrated.expt"),
-    )
-
-    def mocked_calibrate(self):
+    def mocked_eyeball(self):
         """
         Mock the calibrate method to update obj geometry to an eyeballed one
         without calling matplotlib Widget tools
@@ -36,9 +29,15 @@ def test_calibrate_coarse(dials_data, tmpdir, eyeball, starting_geometry):
 
     with patch.object(
         dials.command_line.powder_calibrate.EyeballWidget,
-        "calibrate",
-        new=mocked_calibrate,
+        "eyeball",
+        new=mocked_eyeball,
     ):
+        test_calibrator = PowderCalibrator(
+            starting_geom,
+            standard="Al",
+            eyeball=eyeball,
+            calibrated_geom=str(tmpdir / "test_calibrated.expt"),
+        )
         test_calibrator.calibrate_with_calibrant(plots=False)
 
     calibrated_geom = test_calibrator.geometry

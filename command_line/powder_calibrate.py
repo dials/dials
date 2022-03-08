@@ -123,6 +123,7 @@ def _convert_units(
 ) -> Union[float, Point]:
     """Keep units sanity for pyFAI <--> DIALS conversions
     Most parameters will be kept in SI units internally
+
     :param val: the value/values to be converted
     :param unit_in: Units of input value
     :param unit_out: Units wanted for the input value
@@ -350,7 +351,8 @@ class Geometry(pfGeometry):
     def __repr__(self):
         return (
             f"Detector {self.detector.name}: PixelSize= {self.pixel1}, {self.pixel2} m  "
-            f"Distance={self.beam_distance:.2f} mm\n"
+            f"Distance= {self.beam_distance:.2f} mm\n"
+            f"Wavelength= {self.wavelength:.3e} m\n"
             f"Beam position on detector: m= {self.beam_m.slow:.4f}m, {self.beam_m.fast:.4f}m  "
             f"px= {self.beam_px.slow:.2f}, {self.beam_px.fast:.2f}"
         )
@@ -358,7 +360,7 @@ class Geometry(pfGeometry):
 
 class EyeballWidget:
     """
-    Matplotlib widget to eyeball the beam center by comparing the theoretical
+    Matplotlib widget to guestimate the beam center by comparing the theoretical
     and experimental standard.
     """
 
@@ -369,6 +371,12 @@ class EyeballWidget:
         calibrant: pfCalibrant,
         coarse_geom: str,
     ):
+        """Eyeball widget
+        :param image: 2D array of the image
+        :param start_geometry: initial geometry
+        :param calibrant: the standard used for calibration
+        :param coarse_geom: the file name to which the eyeballed geometry is to saved
+        """
         self.image = image
         self.geometry = start_geometry
         self.detector = start_geometry.detector
@@ -382,6 +390,21 @@ class EyeballWidget:
     def __repr__(self):
         calibrant = os.path.splitext(os.path.basename(self.calibrant.filename))[0]
         return f"Eyeballing Widget using {calibrant} Calibrant starting from Geometry: \n {self.geometry}"
+
+    def set_up_figure(self):
+        """
+        Add title and label axes
+        """
+        fig, ax = plt.subplots()
+        ax = pfjupyter.display(
+            self.image,
+            label="Calibrant overlay on experimental image",
+            ax=ax,
+        )
+        ax.set_xlabel("slow position [pixels]")
+        ax.set_ylabel("fast position [pixels]")
+        fig.set_size_inches(10, 10)
+        return fig, ax
 
     def update(self, val):
         """
@@ -415,7 +438,7 @@ class EyeballWidget:
         )
         plt.close()
 
-    def calibrate(self):
+    def eyeball(self):
         """
         Update geometry such that beam position is now the center of the moved calibrant rings
         """
@@ -433,22 +456,8 @@ class EyeballWidget:
         button_save = Button(save_ax, "Save beam and exit", hovercolor="0.975")
         button_save.on_clicked(self.save_and_exit)
 
-        # finally, show plot
+        # finally, show widget
         plt.show()
-
-    def set_up_figure(self):
-        """
-        Add title and label axes
-        """
-        fig, ax = plt.subplots()
-        ax = pfjupyter.display(
-            self.image,
-            label="Calibrant overlay on experimental image",
-            ax=ax,
-        )
-        ax.set_xlabel("slow position [pixels]")
-        ax.set_ylabel("fast position [pixels]")
-        return fig, ax
 
     def make_slider(self, label):
         slider = None
@@ -544,20 +553,18 @@ class PowderCalibrator:
         eyeball the beam position using a matplotlib widget which overlaps the theoretical calibrator rings
         over the measured ones. The widget part can be turned off setting `eyeball=False`.
 
-        Parameters
-        ----------
-        starting_geom: str
+        :param starting_geom: str
                 expt file containing starting geometry
-        standard: str
+        :param standard: str
                 calibrating standard
-        eyeball: bool
+        :param eyeball: bool
                 optional, default=True, toggles the usage of the eyeballing widget.
                 When set to False the calibration process only wraps pyFAI and if no
                 good starting geometry is given in geom_file then it will probably
                 return poor results.
-        coarse_geom: str
+        :param coarse_geom: str
                 optional, if given saves the coarse geometry to this file
-        calibrated_geom: str
+        :param calibrated_geom: str
                 optional, if given saves the calibrated geometry to this file
 
         Examples
@@ -621,7 +628,7 @@ class PowderCalibrator:
             f"Starting calibration using {self.user_args.standard}:\n-----\n {self.calibrant} \n "
         )
 
-        # Tell me if I'm using the eyeball widget and how to use
+        # Tell me if I'm using the EyeballWidget and how to use
         if self.user_args.eyeball:
             logger.info(
                 "Using the eyeballing widget.\n"
@@ -629,9 +636,40 @@ class PowderCalibrator:
             )
 
     @staticmethod
-    def show_fit(geometry: pfSingleGeometry, label=None):
-        pfjupyter.display(sg=geometry, label=label)
-        plt.show()
+    def show_refinement(
+        before_geometry: pfSingleGeometry,
+        after_geometry: pfSingleGeometry,
+        show: Optional[bool] = True,
+    ):
+        fig, (ax1, ax2) = plt.subplots(1, 2)
+        fig.set_size_inches(20, 8)
+        pfjupyter.display(sg=before_geometry, label="Initial geometry", ax=ax1)
+        pfjupyter.display(sg=after_geometry, label="After pyFAI fit", ax=ax2)
+
+        if show:
+            plt.show()
+        else:
+            fig.savefig("pyfai_refinement.png", bbox_inches="tight")
+            plt.close(fig)
+
+    def show_goodness_of_fit(self, ai: pfGeometry, show: Optional[bool] = True):
+        # show the cake plot as well
+        int2 = ai.integrate2d_ng(
+            data=self.expt_params.image,
+            npt_rad=500,
+            npt_azim=360,
+            unit="q_nm^-1",
+        )
+        fig, ax = plt.subplots()
+        fig.set_size_inches(8, 8)
+        pfjupyter.plot2d(int2, calibrant=self.calibrant, ax=ax)
+        plt.title("Are those lines straight?")
+
+        if show:
+            plt.show()
+        else:
+            fig.savefig("goodness_of_fit.png", bbox_inches="tight")
+            plt.close(fig)
 
     def calibrate_with_calibrant(
         self,
@@ -648,7 +686,7 @@ class PowderCalibrator:
                 calibrant=self.calibrant,
                 coarse_geom=self.user_args.coarse_geom,
             )
-            eyeballing_widget.calibrate()
+            eyeballing_widget.eyeball()
 
         else:
             logger.warning(
@@ -664,34 +702,24 @@ class PowderCalibrator:
         )
 
         gonio_geom.extract_cp(max_rings=num_rings)
-
-        if plots:
-            self.show_fit(gonio_geom, label="Starting geometry")
+        starting_geom = gonio_geom
 
         gonio_geom.geometry_refinement.refine2(fix=fix)
-        ai = gonio_geom.get_ai()
+
+        # generate plot showing the pyFAI refinement effect
+        self.show_refinement(
+            before_geometry=starting_geom, after_geometry=gonio_geom, show=plots
+        )
 
         # update geometry and save to .expt
+        ai = gonio_geom.get_ai()
         self.geometry.update_from_ai(ai)
         self.geometry.save_to_expt(output=self.user_args.calibrated_geom)
 
-        if plots:
-            self.show_fit(gonio_geom, label="After pyFAI fit")
-
-        logger.info(f"Geometry fitted by pyFAI:\n----- \n {ai} \n")
-
-        # show the cake plot as well
-        int2 = ai.integrate2d_ng(
-            data=self.expt_params.image,
-            npt_rad=500,
-            npt_azim=360,
-            unit="q_nm^-1",
-        )
-        pfjupyter.plot2d(int2, calibrant=self.calibrant)
-        plt.title("Are those lines straight?")
-        plt.show()
+        logger.info(f"Geometry fitted by pyFAI:\n----- \n {self.geometry} \n")
+        self.show_goodness_of_fit(ai, show=plots)
 
 
 if __name__ == "__main__":
     calibrator = PowderCalibrator()
-    calibrator.calibrate_with_calibrant()
+    calibrator.calibrate_with_calibrant(plots=False)
