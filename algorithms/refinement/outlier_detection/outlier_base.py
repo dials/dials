@@ -3,10 +3,12 @@ from __future__ import annotations
 import logging
 from math import pi
 
+import libtbx
 from libtbx.phil import parse
 
 from dials.array_family import flex
 from dials.util import tabulate
+from dials.util.mp import available_cores
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +25,7 @@ class CentroidOutlier:
         separate_experiments=True,
         separate_panels=True,
         block_width=None,
+        nproc=1,
     ):
 
         # column names of the data in which to look for outliers
@@ -44,6 +47,8 @@ class CentroidOutlier:
 
         # the number of rejections
         self.nreject = 0
+
+        self.nproc = nproc
 
         return
 
@@ -445,12 +450,18 @@ class CentroidOutlierFactory:
 
         if not params.outlier.separate_blocks:
             params.outlier.block_width = None
+
+        if params.outlier.nproc is libtbx.Auto:
+            params.outlier.nproc = available_cores()
+            logger.info("Setting outlier.nproc={}".format(params.outlier.nproc))
+
         od = outlier_detector(
             cols=colnames,
             min_num_obs=params.outlier.minimum_number_of_reflections,
             separate_experiments=params.outlier.separate_experiments,
             separate_panels=params.outlier.separate_panels,
             block_width=params.outlier.block_width,
+            nproc=params.outlier.nproc,
             **kwargs,
         )
         return od
