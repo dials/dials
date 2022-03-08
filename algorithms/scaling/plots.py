@@ -857,7 +857,7 @@ def normal_probability_plot(data, label=None):
                         "title": "Number of reflections",
                         "titleside": "right",
                     },
-                    "colorscale": "Jet",
+                    "colorscale": "Viridis",
                 },
                 {
                     "x": [-5, 5],
