@@ -38,6 +38,7 @@ def test1(dials_regression, tmpdir):
         "reflections_per_degree=100",
         "outlier.separate_blocks=False",
         "scan_varying=False",
+        "reflections.outlier.nproc=1",
         experiments_path,
         pickle_path,
     )
@@ -106,6 +107,7 @@ def test2(dials_regression, tmpdir):
             "crystal.orientation.smoother.interval_width_degrees=36.0",
             "crystal.unit_cell.smoother.interval_width_degrees=36.0",
             "set_scan_varying_errors=True",
+            "reflections.outlier.nproc=1",
         ),
         working_directory=tmpdir,
     )
@@ -159,6 +161,7 @@ def test3(dials_regression, tmpdir):
             "output.history=history.json",
             "crystal.orientation.smoother.interval_width_degrees=auto",
             "crystal.unit_cell.smoother.interval_width_degrees=auto",
+            "reflections.outlier.nproc=1",
         ),
         working_directory=tmpdir,
     )
