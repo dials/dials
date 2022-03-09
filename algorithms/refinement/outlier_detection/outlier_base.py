@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import concurrent.futures
 import logging
 from math import pi
 
@@ -202,10 +203,16 @@ class CentroidOutlier:
         rows = []
 
         # now loop over the lowest level of splits and run outlier detection
-        for i, job in enumerate(jobs3):
-            msg = self._run_job(job, i)
-            if msg:
-                logger.debug(msg)
+        with concurrent.futures.ProcessPoolExecutor(max_workers=self.nproc) as pool:
+            futures = [
+                pool.submit(self._run_job, job, i) for i, job in enumerate(jobs3)
+            ]
+        for f in futures:
+            result = f.result()
+            job = jobs3[result["index"]]
+            job["ioutliers"] = result["ioutliers"]
+            if result["message"]:
+                logger.debug(result["message"])
 
         # loop over the completed jobs
         for i, job in enumerate(jobs3):
@@ -282,8 +289,7 @@ class CentroidOutlier:
             # no reflections in the job
             ioutliers = indices
 
-        job["ioutliers"] = ioutliers
-        return msg
+        return {"index": i, "message": msg, "ioutliers": ioutliers}
 
 
 # The phil scope for outlier rejection
