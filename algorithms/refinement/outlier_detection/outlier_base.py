@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import concurrent.futures
 import logging
-from math import pi
+import math
 
 import libtbx
 from libtbx.phil import parse
@@ -12,8 +12,6 @@ from dials.util import tabulate
 from dials.util.mp import available_cores
 
 logger = logging.getLogger(__name__)
-
-RAD2DEG = 180.0 / pi
 
 
 class CentroidOutlier:
@@ -157,7 +155,7 @@ class CentroidOutlier:
                 if bw is None:  # detect no split for this experiment
                     jobs3.append(job)
                     continue
-                nblocks = int(round(RAD2DEG * phi_range / bw))
+                nblocks = int(round(math.degrees(phi_range / bw)))
                 nblocks = max(1, nblocks)
                 real_width = phi_range / nblocks
                 block_end = 0.0
@@ -172,8 +170,8 @@ class CentroidOutlier:
                         "panel": ipanel,
                         "data": data.select(sel),
                         "indices": indices.select(sel),
-                        "phi_start": RAD2DEG * (phi_low + block_start),
-                        "phi_end": RAD2DEG * (phi_low + block_end),
+                        "phi_start": math.degrees(phi_low + block_start),
+                        "phi_end": math.degrees(phi_low + block_end),
                     }
                     jobs3.append(job)
                 # now last block
@@ -183,8 +181,8 @@ class CentroidOutlier:
                     "panel": ipanel,
                     "data": data.select(sel),
                     "indices": indices.select(sel),
-                    "phi_start": RAD2DEG * (phi_low + block_end),
-                    "phi_end": RAD2DEG * (phi_low + phi_range),
+                    "phi_start": math.degrees(phi_low + block_end),
+                    "phi_end": math.degrees(phi_low + phi_range),
                 }
                 jobs3.append(job)
         else:
