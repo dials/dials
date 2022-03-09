@@ -238,7 +238,7 @@ class Script:
 @show_mail_handle_errors()
 def run(args=None):
     script = Script()
-    script.run(args)
+    return script.run(args)
 
 
 if __name__ == "__main__":
