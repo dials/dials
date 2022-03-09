@@ -1,1 +1,1 @@
-Changed implicit stills Scan checks to use Scan.is_still().
+Changed implicit stills Scan checks to use ``Scan.is_still()``.
