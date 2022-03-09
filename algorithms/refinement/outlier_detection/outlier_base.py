@@ -203,17 +203,18 @@ class CentroidOutlier:
         rows = []
 
         # Now loop over the lowest level of splits and run outlier detection
-        if len(jobs3) > 1:
+        if self.nproc > 1:
             with concurrent.futures.ProcessPoolExecutor(max_workers=self.nproc) as pool:
                 outlier_detection_runs = [
                     pool.submit(self._run_job, job, i) for i, job in enumerate(jobs3)
                 ]
             outlier_detection_runs = [e.result() for e in outlier_detection_runs]
         else:
-            # If there's a single job keep it in the main process
+            # For nproc=1 keep the jobs in the main process
             outlier_detection_runs = [
-                self._run_job(jobs3[0], 0),
+                self._run_job(job, i) for i, job in enumerate(jobs3)
             ]
+        # Copy results back into the job dict and report any messages
         for result in outlier_detection_runs:
             job = jobs3[result["index"]]
             job["ioutliers"] = result["ioutliers"]
