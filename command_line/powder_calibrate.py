@@ -22,30 +22,22 @@ from matplotlib.widgets import Button, Slider
 
 from libtbx.phil import parse, scope
 
-
-def module_exists(module_name):
-    try:
-        __import__(module_name)
-    except ModuleNotFoundError:
-        exit(
-            f"""
-            This script requires the {module_name} library. Try:
-                conda install -c conda-forge {module_name}
+try:
+    __import__("pyFAI")
+except ModuleNotFoundError:
+    exit(
+        """
+            This script requires the pyFAI library. Try:
+                conda install -c conda-forge pyFAI-base
                 OR if you prefer mamba
-                mamba install {module_name}
+                mamba install pyFAI-base
             """
-        )
-    else:
-        return True
-
-
-if module_exists("pyFAI"):
-    from pyFAI.calibrant import get_calibrant as pfCalibrant
-    from pyFAI.detectors import Detector as pfDetector
-    from pyFAI.geometry import Geometry as pfGeometry
-    from pyFAI.goniometer import SingleGeometry as pfSingleGeometry
-    from pyFAI.gui import jupyter as pfjupyter
-
+    )
+from pyFAI.calibrant import get_calibrant as pfCalibrant
+from pyFAI.detectors import Detector as pfDetector
+from pyFAI.geometry import Geometry as pfGeometry
+from pyFAI.goniometer import SingleGeometry as pfSingleGeometry
+from pyFAI.gui import jupyter as pfjupyter
 
 # dxtbx and dials must be imported after pyfai,
 # the alternative causes pyfai to segv
