@@ -9,8 +9,9 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-from __future__ import absolute_import, division
+from __future__ import annotations
 
+import copy
 import logging
 from math import pi
 
@@ -185,7 +186,9 @@ def initial_integrator(experiments, reflection_table):
     experiment = experiments[0]
     sel = reflection_table.get_flags(reflection_table.flags.strong)
     strong_refls = reflection_table.select(sel)
-    strong_shoeboxes = strong_refls["shoebox"]  # Save the strong shoeboxes
+    strong_shoeboxes = copy.deepcopy(
+        strong_refls["shoebox"]
+    )  # Save the strong shoeboxes
 
     # Compute and initial spot size estimate and beam vector
     sigma_d = ComputeEsdBeamDivergence(experiment.detector, strong_refls).sigma()

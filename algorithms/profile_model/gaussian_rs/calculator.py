@@ -684,7 +684,7 @@ class ScanVaryingProfileModelCalculator:
             assert n & 1
             mid = n // 2
             sigma = mid / 3.0
-            kernel = [math.exp(-((i - mid) ** 2) / (2 * sigma ** 2)) for i in range(n)]
+            kernel = [math.exp(-((i - mid) ** 2) / (2 * sigma**2)) for i in range(n)]
             kernel = [k / sum(kernel) for k in kernel]
             return kernel
 

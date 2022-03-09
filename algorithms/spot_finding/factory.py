@@ -178,7 +178,7 @@ class FilterRunner:
         predictions=None,
         observations=None,
         shoeboxes=None,
-        **kwargs  # noqa: U100
+        **kwargs,  # noqa: U100
     ):
         """
         Check the flags are set, if they're not then create a list

@@ -78,12 +78,12 @@ def mcd_finite_sample(p, n, alpha):
             math.log(-coeffqpkwad875[1][0] / p ** coeffqpkwad875[1][1]),
         ]
         A_500 = [
-            [1, -math.log(coeffqpkwad500[0][2] * p ** 2)],
-            [1, -math.log(coeffqpkwad500[1][2] * p ** 2)],
+            [1, -math.log(coeffqpkwad500[0][2] * p**2)],
+            [1, -math.log(coeffqpkwad500[1][2] * p**2)],
         ]
         A_875 = [
-            [1, -math.log(coeffqpkwad875[0][2] * p ** 2)],
-            [1, -math.log(coeffqpkwad875[1][2] * p ** 2)],
+            [1, -math.log(coeffqpkwad875[0][2] * p**2)],
+            [1, -math.log(coeffqpkwad875[1][2] * p**2)],
         ]
 
         # solve the set of equations labelled _500
@@ -112,12 +112,12 @@ def mcd_finite_sample(p, n, alpha):
         fp_875_n = 1 - math.exp(coeffic_875[0]) / n ** coeffic_875[1]
 
     elif p == 2:
-        fp_500_n = 1 - math.exp(0.673292623522027) / n ** 0.691365864961895
-        fp_875_n = 1 - math.exp(0.446537815635445) / n ** 1.06690782995919
+        fp_500_n = 1 - math.exp(0.673292623522027) / n**0.691365864961895
+        fp_875_n = 1 - math.exp(0.446537815635445) / n**1.06690782995919
 
     elif p == 1:
-        fp_500_n = 1 - math.exp(0.262024211897096) / n ** 0.604756680630497
-        fp_875_n = 1 - math.exp(-0.351584646688712) / n ** 1.01646567502486
+        fp_500_n = 1 - math.exp(0.262024211897096) / n**0.604756680630497
+        fp_875_n = 1 - math.exp(-0.351584646688712) / n**1.01646567502486
 
     if alpha <= 0.875:
         fp_alpha_n = fp_500_n + (fp_875_n - fp_500_n) / 0.375 * (alpha - 0.5)

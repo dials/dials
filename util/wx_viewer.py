@@ -955,7 +955,7 @@ class show_points_and_lines_mixin(wxGLWindow):
 
     def process_pick_points(self):
         line = scitbx.math.line_given_points(self.pick_points)
-        min_dist_sq = 1 ** 2
+        min_dist_sq = 1**2
         i_point_closest = None
         for i_point, point in enumerate(self.points):
             dist_sq = line.distance_sq(point=matrix.col(point))

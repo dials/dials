@@ -88,7 +88,7 @@ def assess_available_memory(params):
             if job_classad.memory_provisioned:
                 # Convert MB to bytes
                 available_memory = min(
-                    available_memory, job_classad.memory_provisioned * 1024 ** 2
+                    available_memory, job_classad.memory_provisioned * 1024**2
                 )
 
     available_incl_swap = available_memory + available_swap
@@ -120,7 +120,7 @@ def assess_available_memory(params):
     if rlimit:
         try:
             ulimit = resource.getrlimit(rlimit)[0]
-            if ulimit <= 0 or ulimit > (2 ** 62):
+            if ulimit <= 0 or ulimit > (2**62):
                 report.append("  no memory ulimit set")
             else:
                 ulimit_used = psutil.Process().memory_info().rss

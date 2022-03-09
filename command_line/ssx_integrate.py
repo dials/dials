@@ -28,14 +28,12 @@ Usage:
     dev.dials.ssx_integrate indexed.expt indexed.refl algorithm=stills
 """
 
-from __future__ import absolute_import, division
+from __future__ import annotations
 
 import concurrent.futures
 import copy
-import functools
 import json
 import logging
-import math
 
 import iotbx.phil
 from cctbx import crystal
@@ -43,9 +41,8 @@ from dxtbx.model import ExperimentList
 from libtbx import Auto
 from libtbx.introspection import number_of_processors
 from libtbx.utils import Sorry
-from xfel.clustering.cluster import Cluster
-from xfel.clustering.cluster_groups import unit_cell_info
 
+from dials.algorithms.indexing.ssx.analysis import report_on_crystal_clusters
 from dials.algorithms.integration.ssx.ellipsoid_integrate import (
     EllipsoidIntegrator,
     EllipsoidOutputAggregator,
@@ -306,6 +303,25 @@ def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
     return integrated_experiments, integrated_reflections
 
 
+def run_integration(reflections, experiments, params):
+    assert len(reflections) == len(experiments)
+    batches, configuration = setup(reflections, params)
+
+    # now process each batch, and do parallel processing within a batch
+    for i, b in enumerate(batches[:-1]):
+        end_ = batches[i + 1]
+        logger.info(f"Processing images {b+1} to {end_}")
+        sub_tables = reflections[b:end_]
+        sub_expts = experiments[b:end_]
+
+        integrated_experiments, integrated_reflections = process_batch(
+            sub_tables, sub_expts, configuration, batch_offset=b
+        )
+        yield integrated_experiments, integrated_reflections, configuration[
+            "aggregator"
+        ]
+
+
 @show_mail_handle_errors()
 def run(args: List[str] = None, phil=working_phil) -> None:
     """
@@ -364,90 +380,47 @@ def run(args: List[str] = None, phil=working_phil) -> None:
                 "Unequal number of reflection tables and experiments after splitting"
             )
 
-    batches, configuration = setup(reflections, params)
-
-    # determine suitable output filenames
-    template = "{prefix}_{index:0{maxindexlength:d}d}.{extension}"
-    experiments_template = functools.partial(
-        template.format,
-        prefix="integrated",
-        maxindexlength=len(str(len(batches) - 1)),
-        extension="expt",
-    )
-    reflections_template = functools.partial(
-        template.format,
-        prefix="integrated",
-        maxindexlength=len(str(len(batches) - 1)),
-        extension="refl",
-    )
-
-    # now process each batch, and do parallel processing within a batch
     integrated_crystal_symmetries = []
-    for i, b in enumerate(batches[:-1]):
-        end_ = batches[i + 1]
-        logger.info(f"Processing images {b+1} to {end_}")
-        sub_tables = reflections[b:end_]
-        sub_expts = experiments[b:end_]
 
-        integrated_experiments, integrated_reflections = process_batch(
-            sub_tables, sub_expts, configuration, batch_offset=b
-        )
+    for i, (int_expt, int_refl, aggregator) in enumerate(
+        run_integration(reflections, experiments, params)
+    ):
 
-        experiments_filename = experiments_template(index=i)
-        reflections_filename = reflections_template(index=i)
-        # Save the reflections
-        logger.info(
-            f"Saving {integrated_reflections.size()} reflections to {reflections_filename}"
-        )
-        integrated_reflections.as_file(reflections_filename)
+        reflections_filename = f"integrated_{i+1}.refl"
+        experiments_filename = f"integrated_{i+1}.expt"
+        logger.info(f"Saving {int_refl.size()} reflections to {reflections_filename}")
+        int_refl.as_file(reflections_filename)
         logger.info(f"Saving the experiments to {experiments_filename}")
-        integrated_experiments.as_file(experiments_filename)
+        int_expt.as_file(experiments_filename)
+
         integrated_crystal_symmetries.extend(
             [
                 crystal.symmetry(
                     unit_cell=copy.deepcopy(cryst.get_unit_cell()),
                     space_group=copy.deepcopy(cryst.get_space_group()),
                 )
-                for cryst in integrated_experiments.crystals()
+                for cryst in int_expt.crystals()
             ]
         )
 
-    # print some clustering information
-    ucs = Cluster.from_crystal_symmetries(integrated_crystal_symmetries)
-    clusters, _ = ucs.ab_cluster(5000, log=None, write_file_lists=False, doplot=False)
-    cluster_plots = {}
-    min_cluster_pc = 5
-    threshold = math.floor((min_cluster_pc / 100) * len(integrated_crystal_symmetries))
-    large_clusters = [c for c in clusters if len(c.members) > threshold]
-    large_clusters.sort(key=lambda x: len(x.members), reverse=True)
-    from dials.algorithms.indexing.ssx.analysis import make_cluster_plots
-
-    if large_clusters:
-        logger.info(
-            f"""
-Unit cell clustering analysis, clusters with >{min_cluster_pc}% of the number of crystals indexed
-"""
-            + unit_cell_info(large_clusters)
-        )
-        if params.output.html or params.output.json:
-            cluster_plots = make_cluster_plots(large_clusters)
-    else:
-        logger.info(
-            f"No clusters found with >{min_cluster_pc}% of the number of crystals."
-        )
+    plots = {}
+    cluster_plots, _ = report_on_crystal_clusters(
+        integrated_crystal_symmetries,
+        make_plots=(params.output.html or params.output.json),
+    )
 
     if params.output.html or params.output.json:
         # now generate plots using the aggregated data.
-        plots = configuration["aggregator"].make_plots()
-        if cluster_plots:
-            plots.update(cluster_plots)
-        if params.output.html:
-            logger.info(f"Writing html report to {params.output.html}")
-            generate_html_report(plots, params.output.html)
-        if params.output.json:
-            logger.info(f"Saving plot data in json format to {params.output.json}")
-            with open(params.output.json, "w") as outfile:
-                json.dump(plots, outfile, indent=2)
+        plots = aggregator.make_plots()
+        plots.update(cluster_plots)
+
+    if params.output.html and plots:
+        logger.info(f"Writing html report to {params.output.html}")
+        generate_html_report(plots, params.output.html)
+    if params.output.json and plots:
+        logger.info(f"Saving plot data in json format to {params.output.json}")
+        with open(params.output.json, "w") as outfile:
+            json.dump(plots, outfile, indent=2)
 
     logger.info(
         "Further program documentation can be found at dials.github.io/ssx_processing_guide.html"

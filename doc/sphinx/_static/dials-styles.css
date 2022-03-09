@@ -1,5 +1,5 @@
 body {
-  /*font-family: Helmet, Freesans, Helvetica, Arial, sans-serif;*/
+  font-family: FreeSans, Helvetica, Arial, sans-serif;
   margin: 8px;
   min-width: 240px;
   margin-left: 5%;
@@ -12,7 +12,7 @@ div.body h3,
 div.body h4,
 div.body h5,
 div.body h6 {
-  /*font-family: Helmet, Freesans, Helvetica, Arial, sans-serif;*/
+  font-family: FreeSans, Helvetica, Arial, sans-serif;
 }
 
 div.document {

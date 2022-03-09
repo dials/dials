@@ -488,7 +488,7 @@ class image_kapton_correction:
                 self.detector_dist_mm,
                 self.pixel_size_mm,
                 self.wavelength_ang,
-                *map(float, self.panel_size_px)
+                *map(float, self.panel_size_px),
             )
             detector = self.expt.detector
             # y_max = int(detector[0].millimeter_to_pixel(detector[0].get_image_size())[1])

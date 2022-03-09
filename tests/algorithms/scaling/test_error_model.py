@@ -109,11 +109,11 @@ def data_for_error_model_test(background_variance=1, multiplicity=100, b=0.05, a
         for _ in range(multiplicity):
             intensity = next(g)
             if b > 0.0:
-                alpha = (1.0 + (b ** 2 * intensity)) ** 0.5
+                alpha = (1.0 + (b**2 * intensity)) ** 0.5
                 intensities.append(int((alpha * intensity) + ((1.0 - alpha) * i)))
             else:
                 intensities.append(intensity)
-            variances.append((intensity + background_variance) / (a ** 2))
+            variances.append((intensity + background_variance) / (a**2))
             miller_index.append(idx)
 
     reflections = flex.reflection_table()

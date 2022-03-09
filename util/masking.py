@@ -180,7 +180,7 @@ def generate_ice_ring_resolution_ranges(beam, panel, params):
 
         # Yield all the d ranges
         for j, d in enumerate(ms.d_spacings().data()):
-            d_sq_inv = 1.0 / (d ** 2)
+            d_sq_inv = 1.0 / (d**2)
             d_sq_inv_min = d_sq_inv - half_width
             d_sq_inv_max = d_sq_inv + half_width
             d_max = math.sqrt(1.0 / d_sq_inv_min)

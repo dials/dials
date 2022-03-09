@@ -1,3 +1,14 @@
+DIALS 3.8.3 (2022-02-22)
+========================
+
+Bugfixes
+--------
+
+- ``dials.cosym``: Fix crash for edge case of a full dataset being excluded by the resolution filter (`#1993 <https://github.com/dials/dials/issues/1993>`_)
+- ``dials.two_theta_refine``: Fix crash if running on scaled data with ``exclude_datasets=``. (`#2006 <https://github.com/dials/dials/issues/2006>`_)
+- Fix downloads failing on MacOS with "426 Upgrade Required" (`#2012 <https://github.com/dials/dials/issues/2012>`_)
+
+
 DIALS 3.8.2 (2022-02-07)
 ========================
 

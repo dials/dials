@@ -288,7 +288,7 @@ class CosymAnalysis(symmetry_base, Subject):
 
     @Subject.notify_event(event="optimised")
     def _optimise(self, engine, max_iterations=None, max_calls=None):
-        NN = len(self.input_intensities)
+        NN = len(set(self.dataset_ids))
         n_sym_ops = len(self.target.sym_ops)
 
         coords = np.random.rand(NN * n_sym_ops * self.target.dim)
@@ -377,7 +377,7 @@ class CosymAnalysis(symmetry_base, Subject):
             to each dataset.
         """
         reindexing_ops = []
-        n_datasets = len(self.input_intensities)
+        n_datasets = len(set(self.dataset_ids))
         n_sym_ops = len(sym_ops)
         coord_ids = np.arange(n_datasets * n_sym_ops)
         dataset_ids = coord_ids % n_datasets
@@ -752,11 +752,11 @@ class ScoreSubGroup:
         power = 2
         for score in sym_op_scores:
             if score.sym_op in patterson_group:
-                self.z_cc_for += score.z_cc ** power
+                self.z_cc_for += score.z_cc**power
                 n_for += 1
                 PL_for += math.log(score.p_cc_given_s)
             else:
-                self.z_cc_against += score.z_cc ** power
+                self.z_cc_against += score.z_cc**power
                 n_against += 1
                 PL_against += math.log(score.p_cc_given_not_s)
 

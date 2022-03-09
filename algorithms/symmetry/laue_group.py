@@ -190,14 +190,14 @@ class LaueGroupAnalysis(symmetry_base):
 
         min_sd = 0.05
         min_sample = 10
-        sigma_1 = max(min_sd, self.cc_sig_fac / 200 ** 0.5)
+        sigma_1 = max(min_sd, self.cc_sig_fac / 200**0.5)
         w1 = 0
         w2 = 0
         if sigma_1 > 0.0001:
-            w1 = 1 / sigma_1 ** 2
+            w1 = 1 / sigma_1**2
         if self.cc_identity.n() > min_sample:
             sigma_2 = max(min_sd, self.cc_sig_fac / self.cc_identity.n() ** 0.5)
-            w2 = 1 / sigma_2 ** 2
+            w2 = 1 / sigma_2**2
 
         assert (w1 + w2) > 0
         self.cc_true = (w1 * self.E_cc_true + w2 * self.cc_identity.coefficient()) / (
@@ -542,7 +542,7 @@ class ScoreSymmetryElement:
             self.z_cc = 0
             return
 
-        self.sigma_cc = max(0.1, cc_sig_fac / self.n_refs ** 0.5)
+        self.sigma_cc = max(0.1, cc_sig_fac / self.n_refs**0.5)
         self.z_cc = self.cc.coefficient() / self.sigma_cc
         score_cc = ScoreCorrelationCoefficient(
             self.cc.coefficient(), self.sigma_cc, cc_true
@@ -636,11 +636,11 @@ class ScoreSubGroup:
             if score.n_refs <= 2:
                 continue
             if score.sym_op in patterson_group:
-                self.z_cc_for += score.z_cc ** power
+                self.z_cc_for += score.z_cc**power
                 n_for += 1
                 PL_for += math.log(score.p_cc_given_s)
             else:
-                self.z_cc_against += score.z_cc ** power
+                self.z_cc_against += score.z_cc**power
                 n_against += 1
                 PL_against += math.log(score.p_cc_given_not_s)
 
@@ -785,8 +785,8 @@ class CorrelationCoefficientAccumulator:
         Returns:
           float: The value of the denominator.
         """
-        return math.sqrt(self._n * self._sum_x_sq - self._sum_x ** 2) * math.sqrt(
-            self._n * self._sum_y_sq - self._sum_y ** 2
+        return math.sqrt(self._n * self._sum_x_sq - self._sum_x**2) * math.sqrt(
+            self._n * self._sum_y_sq - self._sum_y**2
         )
 
     def __iadd__(self, other):

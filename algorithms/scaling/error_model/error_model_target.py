@@ -86,12 +86,12 @@ class ErrorModelTargetRegression(ErrorModelTarget):
             assert len(params) == 1
             # if only a being refined, the R = y - xo*x - xo*b2
             b = self.error_model.parameters[1]
-            R = (self.y - (params[0] * self.x) - params[0] * (b ** 2)) ** 2
+            R = (self.y - (params[0] * self.x) - params[0] * (b**2)) ** 2
         elif apm.active_parameters == ["b"]:
             assert len(params) == 1
             a = self.error_model.parameters[0]
             # R = y - a^2*x - a^2*xo
-            R = (self.y - (a ** 2 * self.x) - (a ** 2 * params[0])) ** 2
+            R = (self.y - (a**2 * self.x) - (a**2 * params[0])) ** 2
         else:
             # R = y - xo*x - x1
             R = (self.y - (params[0] * self.x) - params[1]) ** 2
@@ -102,12 +102,12 @@ class ErrorModelTargetRegression(ErrorModelTarget):
         params = apm.x
         if apm.active_parameters == ["a"]:
             b = self.error_model.parameters[1]
-            R = self.y - (params[0] * self.x) - params[0] * (b ** 2)
-            gradient = flex.double([-2.0 * np.sum(R * (self.x + (b ** 2)))])
+            R = self.y - (params[0] * self.x) - params[0] * (b**2)
+            gradient = flex.double([-2.0 * np.sum(R * (self.x + (b**2)))])
         elif apm.active_parameters == ["b"]:
             a = self.error_model.parameters[0]
-            R = self.y - (a ** 2 * self.x) - (a ** 2 * params[0])
-            gradient = flex.double([-2.0 * np.sum(R * (a ** 2))])
+            R = self.y - (a**2 * self.x) - (a**2 * params[0])
+            gradient = flex.double([-2.0 * np.sum(R * (a**2))])
         else:
             R = self.y - (params[0] * self.x) - params[1]
             gradient = flex.double([-2.0 * np.sum(R * self.x), -2.0 * np.sum(R)])
@@ -174,7 +174,7 @@ class ErrorModelTargetB(ErrorModelTarget):
         dsig_dc = (
             b
             * np.square(I_hl)
-            * (a ** 2)
+            * (a**2)
             / (self.error_model.binner.sigmaprime * np.square(g_hl))
         )
         ddelta_dsigma = (
