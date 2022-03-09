@@ -4,19 +4,20 @@ from unittest.mock import patch
 import pytest
 
 import dials
-import dials.command_line.powder_calibrate
-from dials.command_line.powder_calibrate import (
-    Geometry,
-    Point,
-    PowderCalibrator,
-    parse_to_tuples,
-)
 
 
 @pytest.mark.parametrize(
     "eyeball, starting_geometry", [(True, "imported.expt"), (False, "eyeballed.expt")]
 )
 def test_calibrate_coarse(dials_data, tmpdir, eyeball, starting_geometry):
+    pytest.importorskip("pyFAI")
+    from dials.command_line.powder_calibrate import (
+        Geometry,
+        Point,
+        PowderCalibrator,
+        parse_to_tuples,
+    )
+
     aluminium_powder = dials_data("aluminium_standard", pathlib=True)
     starting_geom = aluminium_powder / starting_geometry
 
@@ -37,6 +38,8 @@ def test_calibrate_coarse(dials_data, tmpdir, eyeball, starting_geometry):
             standard="Al",
             eyeball=eyeball,
             calibrated_geom=str(tmpdir / "test_calibrated.expt"),
+            pyfai_improvement=str(tmpdir / "test_pyfai_improvement.png"),
+            straight_lines=str(tmpdir / "test_straight_lines.png"),
         )
         test_calibrator.calibrate_with_calibrant(plots=False)
 
@@ -52,6 +55,9 @@ def test_calibrate_coarse(dials_data, tmpdir, eyeball, starting_geometry):
 
 
 def test_save_geom_to_expt(dials_data, tmpdir):
+    pytest.importorskip("pyFAI")
+    from dials.command_line.powder_calibrate import Geometry, parse_to_tuples
+
     aluminium_powder = dials_data("aluminium_standard", pathlib=True)
     imported = aluminium_powder / "imported.expt"
     imported_expt, _ = parse_to_tuples(

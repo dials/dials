@@ -28,9 +28,9 @@ except ModuleNotFoundError:
     exit(
         """
             This script requires the pyFAI library. Try:
-                conda install -c conda-forge pyFAI-base
-                OR if you prefer mamba
-                mamba install pyFAI-base
+                $ conda install -c conda-forge pyFAI-base
+                   OR if you prefer mamba
+                $ mamba install pyFAI-base
             """
     )
 from pyFAI.calibrant import get_calibrant as pfCalibrant
@@ -59,6 +59,12 @@ phil_scope = parse(
         calibrated_geom = calibrated.expt
             .type = str
             .help = file to which the calibrated geometry would be saved
+        pyfai_improvement = pyfai_imporovement.png
+            .type = str
+            .help = file name for the pyfai calibration effect figure
+        straight_lines = straight_lines.png
+            .type = str
+            .help = file name for the cake plot showing hopefully straight lines
         log = dials.command_name.log
            .type = path
     }
@@ -108,6 +114,8 @@ class UserArgs(NamedTuple):
     standard: str
     coarse_geom: str
     calibrated_geom: str
+    pyfai_improvement: str
+    straight_lines: str
 
 
 def _convert_units(
@@ -196,6 +204,8 @@ def parse_to_tuples(
         eyeball=params.eyeball,
         coarse_geom=params.output.coarse_geom,
         calibrated_geom=params.output.calibrated_geom,
+        pyfai_improvement=params.output.pyfai_improvement,
+        straight_lines=params.output.straight_lines,
     )
 
     return expt_params, user_args
@@ -537,6 +547,8 @@ class PowderCalibrator:
         eyeball: Optional[bool] = True,
         coarse_geom: Optional[str] = "coarse_geom.expt",
         calibrated_geom: Optional[str] = "calibrated.expt",
+        pyfai_improvement: Optional[str] = "pyfai_improvement.png",
+        straight_lines: Optional[str] = "straight_lines.png",
     ):
         """
         Perform geometry calibration using an electron powder standard. Because electron powder
@@ -558,6 +570,11 @@ class PowderCalibrator:
                 optional, if given saves the coarse geometry to this file
         :param calibrated_geom: str
                 optional, if given saves the calibrated geometry to this file
+        param pyfai_improvement: str
+                optional, file name used for saving the before and after pyfai calibration
+        param straight_lines: str
+                optional, file name used for saving the cake plot, if fir was succesful
+                these lines should be straight
 
         Examples
         --------
@@ -582,6 +599,8 @@ class PowderCalibrator:
                 "eyeball=" + str(eyeball),
                 "coarse_geom=" + coarse_geom,
                 "calibrated_geom=" + calibrated_geom,
+                "pyfai_improvement=" + pyfai_improvement,
+                "straight_lines=" + straight_lines,
             ]
             self.expt_params, self.user_args = parse_to_tuples(args=args)
         elif not starting_geom and not standard:
@@ -627,8 +646,8 @@ class PowderCalibrator:
                 "Drag sliders to roughly overlap rings and then save for further fitting. \n"
             )
 
-    @staticmethod
-    def show_refinement(
+    def show_pyfai_improvement(
+        self,
         before_geometry: pfSingleGeometry,
         after_geometry: pfSingleGeometry,
         show: Optional[bool] = True,
@@ -641,10 +660,10 @@ class PowderCalibrator:
         if show:
             plt.show()
         else:
-            fig.savefig("pyfai_refinement.png", bbox_inches="tight")
+            fig.savefig(self.user_args.pyfai_improvement, bbox_inches="tight")
             plt.close(fig)
 
-    def show_goodness_of_fit(self, ai: pfGeometry, show: Optional[bool] = True):
+    def show_straight_lines(self, ai: pfGeometry, show: Optional[bool] = True):
         # show the cake plot as well
         int2 = ai.integrate2d_ng(
             data=self.expt_params.image,
@@ -660,7 +679,7 @@ class PowderCalibrator:
         if show:
             plt.show()
         else:
-            fig.savefig("goodness_of_fit.png", bbox_inches="tight")
+            fig.savefig(self.user_args.straight_lines, bbox_inches="tight")
             plt.close(fig)
 
     def calibrate_with_calibrant(
@@ -699,7 +718,7 @@ class PowderCalibrator:
         gonio_geom.geometry_refinement.refine2(fix=fix)
 
         # generate plot showing the pyFAI refinement effect
-        self.show_refinement(
+        self.show_pyfai_improvement(
             before_geometry=starting_geom, after_geometry=gonio_geom, show=plots
         )
 
@@ -709,7 +728,7 @@ class PowderCalibrator:
         self.geometry.save_to_expt(output=self.user_args.calibrated_geom)
 
         logger.info(f"Geometry fitted by pyFAI:\n----- \n {self.geometry} \n")
-        self.show_goodness_of_fit(ai, show=plots)
+        self.show_straight_lines(ai, show=plots)
 
 
 if __name__ == "__main__":
