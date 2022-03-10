@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from os import path
 from unittest.mock import patch
 
 import pytest
@@ -57,7 +56,7 @@ def test_calibrate_coarse(dials_data, tmpdir, eyeball, starting_geometry):
     assert pytest.approx(calibrated_geom.param, 1e-2) == expected_geom.param
 
 
-def test_save_geom_to_expt(dials_data, tmpdir):
+def test_save_geom_to_expt(dials_data, tmp_path):
 
     aluminium_powder = dials_data("aluminium_standard", pathlib=True)
     imported = aluminium_powder / "imported.expt"
@@ -65,9 +64,9 @@ def test_save_geom_to_expt(dials_data, tmpdir):
         args=[str(imported), "standard=Al", "eyeball=False"]
     )
     imported_geom = Geometry(expt_params=imported_expt)
-    outfile = str(tmpdir) + "/test_save.expt"
+    outfile = tmp_path / "test_save.expt"
     imported_geom.save_to_expt(output=outfile)
-    assert path.exists(outfile)
+    assert outfile.is_file()
 
     test_save_expt, _ = parse_to_tuples(args=[outfile, "standard=Al", "eyeball=False"])
     read_from_saved_geom = Geometry(expt_params=test_save_expt)
