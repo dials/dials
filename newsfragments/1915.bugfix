@@ -1,1 +1,0 @@
-``dials.export``: No longer allow (erroneous) MTZ export for multiple experiments with multiple space groups.
