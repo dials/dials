@@ -102,7 +102,7 @@ class ExptParams(NamedTuple):
     distance: float
     img_size: Tuple[int, int]
     pix_size: Tuple[float, float]
-    image: np.array
+    image: np.ndarray
 
 
 class UserArgs(NamedTuple):
@@ -131,10 +131,9 @@ def _convert_units(
     """
     si = {"A": 1e-10, "nm": 1e-9, "micron": 1e-6, "mm": 1e-3, "cm": 1e-2, "m": 1}
     if isinstance(val, Point):
-        converted = Point(*np.array(val) * si[unit_in] / si[unit_out])
+        return Point(*np.array(val) * si[unit_in] / si[unit_out])
     else:
-        converted = val * si[unit_in] / si[unit_out]
-    return converted
+        return val * si[unit_in] / si[unit_out]
 
 
 def parse_to_tuples(
@@ -245,9 +244,7 @@ class Geometry(pfGeometry):
             wavelength=_convert_units(expt_params.wavelength, "A", "m"),
         )
         # convert beam parameters from mm to m
-        beam_slow, beam_fast = _convert_units(expt_params.beam_on_detector, "mm", "m")
-
-        self.beam_m = Point(slow=beam_slow, fast=beam_fast)
+        self.beam_m = _convert_units(expt_params.beam_on_detector, "mm", "m")
         self.beam_px = self._beam_to_px()
 
         self.beam_distance = expt_params.distance
@@ -318,7 +315,7 @@ class Geometry(pfGeometry):
         self.beam_m = self._beam_to_m()
         self.beam_distance = beam_params["directDist"]
 
-    def to_parsable(self, only_beam: bool) -> List[str]:
+    def to_parsable(self, only_beam: Optional[bool] = False) -> List[str]:
         """
         Translate parameters to a parsable list to feed to dials.$command_line_program
         """
@@ -368,7 +365,7 @@ class EyeballWidget:
 
     def __init__(
         self,
-        image: np.array,
+        image: np.ndarray,
         start_geometry: Geometry,
         calibrant: pfCalibrant,
         coarse_geom: str,
@@ -515,7 +512,7 @@ class EyeballWidget:
             )
         return beam
 
-    def calibrant_rings(self, geometry: Optional[Geometry] = None) -> ma:
+    def calibrant_rings(self, geometry: Optional[Geometry] = None) -> np.ndarray:
         """
         Make a masked array for the calibration rings. If a geometry parameters
         is given then use that geometry for the calibrant, otherwise use the
