@@ -10,6 +10,8 @@ The calibration is done in two steps:
     Step 2) Starting from the coarse calibration, pyFAI geometry calibration provides a fine full geometry calibration.
 """
 
+from __future__ import annotations
+
 import logging
 import os
 from sys import exit
@@ -315,7 +317,7 @@ class Geometry(pfGeometry):
         self.beam_m = self._beam_to_m()
         self.beam_distance = beam_params["directDist"]
 
-    def to_parsable(self, only_beam: Optional[bool] = False) -> List[str]:
+    def to_parsable(self, only_beam: bool = False) -> List[str]:
         """
         Translate parameters to a parsable list to feed to dials.$command_line_program
         """
@@ -334,7 +336,7 @@ class Geometry(pfGeometry):
 
         return phil
 
-    def save_to_expt(self, output: str, only_beam: Optional[bool] = False):
+    def save_to_expt(self, output: str, only_beam: bool = False):
         """
         Update the geometry from start_geometry.expt and save to new output
         Pretend dials.command_line has python API
@@ -541,11 +543,11 @@ class PowderCalibrator:
         self,
         starting_geom: Optional[str] = None,
         standard: Optional[str] = None,
-        eyeball: Optional[bool] = True,
-        coarse_geom: Optional[str] = "coarse_geom.expt",
-        calibrated_geom: Optional[str] = "calibrated.expt",
-        pyfai_improvement: Optional[str] = "pyfai_improvement.png",
-        straight_lines: Optional[str] = "straight_lines.png",
+        eyeball: bool = True,
+        coarse_geom: str = "coarse_geom.expt",
+        calibrated_geom: str = "calibrated.expt",
+        pyfai_improvement: str = "pyfai_improvement.png",
+        straight_lines: str = "straight_lines.png",
     ):
         """
         Perform geometry calibration using an electron powder standard. Because electron powder
@@ -647,7 +649,7 @@ class PowderCalibrator:
         self,
         before_geometry: pfSingleGeometry,
         after_geometry: pfSingleGeometry,
-        show: Optional[bool] = True,
+        show: bool = True,
     ):
         fig, (ax1, ax2) = plt.subplots(1, 2)
         fig.set_size_inches(20, 8)
@@ -660,7 +662,7 @@ class PowderCalibrator:
             fig.savefig(self.user_args.pyfai_improvement, bbox_inches="tight")
             plt.close(fig)
 
-    def show_straight_lines(self, ai: pfGeometry, show: Optional[bool] = True):
+    def show_straight_lines(self, ai: pfGeometry, show: bool = True):
         # show the cake plot as well
         int2 = ai.integrate2d_ng(
             data=self.expt_params.image,
@@ -681,9 +683,9 @@ class PowderCalibrator:
 
     def calibrate_with_calibrant(
         self,
-        num_rings: Optional[int] = 4,
-        fix: Optional[Tuple] = ("rot1", "rot2", "rot3", "wavelength"),
-        plots: Optional[bool] = True,
+        num_rings: int = 4,
+        fix: Tuple = ("rot1", "rot2", "rot3", "wavelength"),
+        plots: bool = True,
     ):
 
         if self.user_args.eyeball:
