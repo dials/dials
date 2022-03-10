@@ -577,7 +577,7 @@ def test_pets(dials_data, tmp_path, intensity_choice):
             "step=1",
             "n_merged=2",
             "intensity=" + intensity_choice,
-            "filename_prefix=" + intensity_choice + ".cif_pets",
+            "filename_prefix=" + intensity_choice,
             expt,
             refl,
         ],
