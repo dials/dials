@@ -130,7 +130,7 @@ class SingleUnitCellTie:
         self._ties = []
         for t, s in zip(self._target, _sigma):
             if s is not None:
-                self._ties.append(DerivedParameterTie(t, 1.0 / s ** 2))
+                self._ties.append(DerivedParameterTie(t, 1.0 / s**2))
             else:
                 self._ties.append(None)
 
@@ -316,7 +316,7 @@ class MeanUnitCellTie:
         self.nrestraints_per_cell = self._sel.count(True)
 
         # repeat the weights for each unit cell being restrained
-        weights = [1.0 / s ** 2 for s in sigma if s > 0.0]
+        weights = [1.0 / s**2 for s in sigma if s > 0.0]
         weights = [flex.double(self._nxls, w) for w in weights]
         self._weights = weights[0]
         for w in weights[1:]:

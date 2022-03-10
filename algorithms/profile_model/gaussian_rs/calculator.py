@@ -13,7 +13,10 @@ import copy
 import logging
 import math
 
+import numpy as np
+
 import scitbx.math
+from dxtbx import flumpy
 
 from dials.array_family import flex
 
@@ -37,7 +40,7 @@ class ComputeEsdBeamDivergence:
         )
 
         # Calculate and return the e.s.d of the beam divergence
-        self._sigma = math.sqrt(flex.sum(variance) / len(variance))
+        self._sigma = math.sqrt(np.sum(variance) / variance.size)
 
     def sigma(self):
         """Return the E.S.D of the beam divergence."""
@@ -61,7 +64,7 @@ class ComputeEsdBeamDivergence:
         xyz = reflections["xyzobs.px.value"]
 
         # Loop through all the reflections
-        variance = []
+        variance = np.array([], dtype=np.float64)
 
         if centroid_definition == "com":
             # Calculate the beam vector at the centroid
@@ -77,18 +80,17 @@ class ComputeEsdBeamDivergence:
             # FIXME maybe I note in Kabsch (2010) s3.1 step (v) is
             # background subtraction, appears to be missing here.
             mask = shoebox[r].mask != 0
-            values = shoebox[r].values(mask)
+            values = flumpy.to_numpy(shoebox[r].values(mask))
             s1 = shoebox[r].beam_vectors(detector, mask)
 
-            angles = s1.angle(s1_centroid[r], deg=False)
+            angles = flumpy.to_numpy(s1.angle(s1_centroid[r], deg=False))
 
-            if flex.sum(values) > 1:
-                variance.append(
-                    flex.sum(values * flex.pow2(angles)) / (flex.sum(values) - 1)
-                )
+            if np.sum(values) > 1:
+                var = np.sum(values * np.square(angles)) / (np.sum(values) - 1)
+                variance = np.append(variance, var)
 
         # Return a list of variances
-        return flex.double(variance)
+        return variance
 
 
 class FractionOfObservedIntensity:
@@ -682,7 +684,7 @@ class ScanVaryingProfileModelCalculator:
             assert n & 1
             mid = n // 2
             sigma = mid / 3.0
-            kernel = [math.exp(-((i - mid) ** 2) / (2 * sigma ** 2)) for i in range(n)]
+            kernel = [math.exp(-((i - mid) ** 2) / (2 * sigma**2)) for i in range(n)]
             kernel = [k / sum(kernel) for k in kernel]
             return kernel
 

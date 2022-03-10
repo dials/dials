@@ -12,7 +12,8 @@ if sys.version_info.major == 2:
 libtbx.pkg_utils.define_entry_points(
     {
         "dxtbx.profile_model": [
-            "gaussian_rs = dials.extensions.gaussian_rs_profile_model_ext:GaussianRSProfileModelExt"
+            "gaussian_rs = dials.extensions.gaussian_rs_profile_model_ext:GaussianRSProfileModelExt",
+            "ellipsoid = dials.extensions.ellipsoid_profile_model_ext:EllipsoidProfileModelExt",
         ],
         "dxtbx.scaling_model_ext": [
             "physical = dials.algorithms.scaling.model.model:PhysicalScalingModel",
@@ -42,6 +43,7 @@ libtbx.pkg_utils.define_entry_points(
         "dials.spotfinder.threshold": [
             "dispersion = dials.extensions.dispersion_spotfinder_threshold_ext:DispersionSpotFinderThresholdExt",
             "dispersion_extended = dials.extensions.dispersion_extended_spotfinder_threshold_ext:DispersionExtendedSpotFinderThresholdExt",
+            "radial_profile = dials.extensions.radial_profile_spotfinder_threshold_ext:RadialProfileSpotFinderThresholdExt",
         ],
     }
 )

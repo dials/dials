@@ -305,7 +305,7 @@ def make_filtering_merging_stats_plots(merging_stats):
     cc_one_half_bins = merging_stats[0]["ccs"]
     r_pim_bins = merging_stats[0]["rpim"]
     r_merge_bins = merging_stats[0]["rmerge"]
-    resolution = [1.0 / x ** 2 for x in merging_stats[0]["d_min"]]
+    resolution = [1.0 / x**2 for x in merging_stats[0]["d_min"]]
     vals, txt = d_star_sq_to_d_ticks(resolution, 5)
     d.update(
         {
@@ -392,7 +392,7 @@ def make_filtering_merging_stats_plots(merging_stats):
         cc_one_half_bins = stats["ccs"]
         r_pim_bins = stats["rpim"]
         r_merge_bins = stats["rmerge"]
-        resolution = [1.0 / x ** 2 for x in stats["d_min"]]
+        resolution = [1.0 / x**2 for x in stats["d_min"]]
         d["cc_one_half_filter"]["data"].append(
             {
                 "x": resolution,  # d_star_sq

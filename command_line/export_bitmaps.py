@@ -155,7 +155,7 @@ def imageset_as_bitmaps(imageset, params):
     saturation = panel.get_trusted_range()[1]
     if params.saturation:
         saturation = params.saturation
-    if scan is not None and scan.get_oscillation()[1] > 0 and not params.imageset_index:
+    if scan is not None and not scan.is_still() and not params.imageset_index:
         start, end = scan.get_image_range()
     else:
         start, end = 1, len(imageset)

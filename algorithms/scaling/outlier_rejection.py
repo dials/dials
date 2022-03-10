@@ -82,7 +82,7 @@ def determine_Esq_outlier_index_arrays(Ih_table, experiment, emax=10.0):
     intensities = Ih_table.as_miller_array(experiment.crystal.get_unit_cell())
     normalised_intensities = quasi_normalisation(intensities)
 
-    sel = normalised_intensities.data() > (emax ** 2)
+    sel = normalised_intensities.data() > (emax**2)
     n_e2_outliers = sel.count(True)
     if n_e2_outliers:
         logger.info(

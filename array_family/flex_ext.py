@@ -13,7 +13,7 @@ import logging
 import operator
 import os
 import pickle
-from typing import Tuple
+from typing import List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -508,6 +508,24 @@ class _:
 
         return n0, n1
 
+    @staticmethod
+    def concat(
+        tables: List[dials_array_family_flex_ext.reflection_table],
+    ) -> dials_array_family_flex_ext.reflection_table:
+        """
+        Concatenate a list of reflection tables, taking care to correctly handle
+        experiment identifiers and ids.
+        :param tables: A list of reflection tables
+        :return: A single combined reflection table
+        """
+        from dials.util.multi_dataset_handling import renumber_table_id_columns
+
+        tables = renumber_table_id_columns(tables)
+        first = tables[0]
+        for table in tables[1:]:
+            first.extend(table)
+        return first
+
     def match_with_reference(self, other):
         """
         Match reflections with another set of reflections.
@@ -567,7 +585,7 @@ class _:
                         dx = x1[i] - x2[j]
                         dy = y1[i] - y2[j]
                         dz = z1[i] - z2[j]
-                        d.append((i, j, dx ** 2 + dy ** 2 + dz ** 2))
+                        d.append((i, j, dx**2 + dy**2 + dz**2))
                     i, j, d = min(d, key=lambda x: x[2])
                     if j not in matched:
                         matched[j] = (i, d)

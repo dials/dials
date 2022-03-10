@@ -528,7 +528,7 @@ class Resolutionizer:
 
         if self._params.emax:
             normalised = quasi_normalisation(i_obs)
-            e2_cutoff = self._params.emax ** 2
+            e2_cutoff = self._params.emax**2
             sel = normalised.data() < e2_cutoff
             logger.info(
                 f"Removing {sel.count(False)} Wilson outliers with E^2 >= {e2_cutoff}"
@@ -693,7 +693,7 @@ class Resolutionizer:
 
         fit = tanh_fit if self._params.cc_half_fit == "tanh" else polynomial_fit
         d_star_sq = flex.double(
-            1 / b.d_min ** 2 for b in self._merging_statistics.bins
+            1 / b.d_min**2 for b in self._merging_statistics.bins
         ).reversed()
 
         return resolution_fit(d_star_sq, cc_s, fit, limit)

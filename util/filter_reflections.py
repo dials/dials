@@ -80,7 +80,7 @@ def filter_reflection_table(
     reflection_table: flex.reflection_table,
     intensity_choice: List[str],
     *args: Any,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> flex.reflection_table:
     """Filter the data and delete unneeded intensity columns.
 

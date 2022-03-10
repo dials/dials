@@ -83,8 +83,11 @@ min_local = 2
   .type = int
 gain = 1
   .type = float(value_min=0)
-  .help = "Set gain for the thresholding algorithm. This does not override the"
+  .help = "Set gain for the dispersion algorithm. This does not override the"
           "detector's panel gain, but acts as a multiplier for it."
+
+include scope dials.extensions.radial_profile_spotfinder_threshold_ext.phil_str
+
 stack_images = 1
   .type = int(value_min=1)
   .expert_level = 2

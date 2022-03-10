@@ -1574,3 +1574,26 @@ def test_match_by_hkle():
 
     assert list(n0) == list(range(nn))
     assert list(n1) == i
+
+
+def test_concat():
+
+    table1 = flex.reflection_table()
+    table2 = flex.reflection_table()
+
+    table1["id"] = flex.size_t([0, 0, 1, 1])
+    table2["id"] = flex.size_t([0, 0, 1, 1])
+
+    ids1 = table1.experiment_identifiers()
+    ids2 = table2.experiment_identifiers()
+
+    ids1[0] = "a"
+    ids1[1] = "b"
+    ids2[0] = "c"
+    ids2[1] = "d"
+
+    table1 = flex.reflection_table.concat([table1, table2])
+
+    assert list(table1["id"]) == [0, 0, 1, 1, 2, 2, 3, 3]
+    assert list(ids1.keys()) == [0, 1, 2, 3]
+    assert list(ids1.values()) == ["a", "b", "c", "d"]
