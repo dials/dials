@@ -1,1 +1,1 @@
-``dials.powder_calibrate_widget``: Calibrate the geometry of an electron powder pattern using pyFAI and matplotlib widgets.
+New tool - ``dials.powder_calibrate`` to help calibrate the geometry of an electron powder pattern.
