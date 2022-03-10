@@ -11,6 +11,7 @@ Usage: dials.frame_orientations refined.expt
 from __future__ import annotations
 
 import sys
+from itertools import tee
 
 import matplotlib
 
@@ -22,6 +23,14 @@ from dials.util.options import ArgumentParser, flatten_experiments
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+
+
+# An itertools recipe in Python 3.7, but a module function in 3.10
+def pairwise(iterable):
+    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+    a, b = tee(iterable)
+    next(b, None)
+    return zip(a, b)
 
 
 class Script:
@@ -168,53 +177,90 @@ def extract_experiment_data(exp, scale=1):
 
     image_range = scan.get_image_range()
     images = list(range(image_range[0], image_range[1] + 1))
+    num_scan_points = scan.get_num_images() + 1
 
     if beam.num_scan_points > 0:
-        # There is one more scan point than the number of images. For simplicity,
-        # omit the final scan point, to leave a list of the beam directions at
-        # the _beginning_ of each image. Likewise for gonio and crystal, below.
-        directions = []
-        for i in range(beam.num_scan_points - 1):
+        us0 = []
+        for i in range(beam.num_scan_points):
             s0 = matrix.col(beam.get_s0_at_scan_point(i))
-            directions.append(s0.normalize())
+            us0.append(s0.normalize())
     else:
-        directions = [matrix.col(beam.get_unit_s0()) for _ in images]
+        us0 = [matrix.col(beam.get_unit_s0()) for _ in range(num_scan_points)]
 
     if gonio.num_scan_points > 0:
         S_mats = [
             matrix.sqr(gonio.get_setting_rotation_at_scan_point(i))
-            for i in range(gonio.num_scan_points - 1)
+            for i in range(gonio.num_scan_points)
         ]
     else:
-        S_mats = [matrix.sqr(gonio.get_setting_rotation()) for _ in images]
+        S_mats = [
+            matrix.sqr(gonio.get_setting_rotation()) for _ in range(num_scan_points)
+        ]
 
-    F_mats = [matrix.sqr(gonio.get_fixed_rotation()) for _ in images]
-    array_range = scan.get_array_range()
+    F_mats = [matrix.sqr(gonio.get_fixed_rotation()) for _ in range(num_scan_points)]
+    start, stop = scan.get_array_range()
     R_mats = []
     axis = matrix.col(gonio.get_rotation_axis_datum())
-    for i in range(*array_range):
-        phi = scan.get_angle_from_array_index(i, deg=True)
-        R = matrix.sqr(axis.axis_and_angle_as_r3_rotation_matrix(phi, deg=True))
+    for i in range(start, stop + 1):
+        phi = scan.get_angle_from_array_index(i, deg=False)
+        R = matrix.sqr(axis.axis_and_angle_as_r3_rotation_matrix(phi, deg=False))
         R_mats.append(R)
 
     if crystal.num_scan_points > 0:
-        UB_mats = [
-            matrix.sqr(crystal.get_A_at_scan_point(i))
-            for i in range(crystal.num_scan_points - 1)
+        U_mats = [
+            matrix.sqr(crystal.get_U_at_scan_point(i))
+            for i in range(crystal.num_scan_points)
+        ]
+        B_mats = [
+            matrix.sqr(crystal.get_B_at_scan_point(i))
+            for i in range(crystal.num_scan_points)
         ]
     else:
-        UB_mats = [matrix.sqr(crystal.get_A()) for _ in images]
+        U_mats = [matrix.sqr(crystal.get_U()) for _ in range(num_scan_points)]
+        B_mats = [matrix.sqr(crystal.get_B()) for _ in range(num_scan_points)]
 
-    assert len(directions) == len(S_mats) == len(F_mats) == len(R_mats) == len(UB_mats)
+    check = {len(x) for x in (us0, S_mats, F_mats, R_mats, U_mats)}
+    assert len(check) == 1
+    assert check.pop() == len(images) + 1
 
-    # Construct full setting matrix for each image
-    SRFUB = (S * R * F * UB for S, R, F, UB in zip(S_mats, R_mats, F_mats, UB_mats))
+    # Construct full orientation matrix in the lab frame for each scan-point
+    SRFU = (S * R * F * U for S, R, F, U in zip(S_mats, R_mats, F_mats, U_mats))
 
-    # SFRUB is the orthogonalisation matrix for the reciprocal space laboratory
+    # Now convert this to the orientation matrix at the centre of each frame by
+    # calculating the linear transform that goes from the start of the frame
+    # to the end, and then applying half of that to the start orientation
+    U_frames = []
+    for U1, U2 in pairwise(SRFU):
+        M = U2 * U1.transpose()
+        (
+            angle,
+            axis,
+        ) = M.r3_rotation_matrix_as_unit_quaternion().unit_quaternion_as_axis_and_angle(
+            deg=False
+        )
+        M_half = axis.axis_and_angle_as_r3_rotation_matrix(angle / 2, deg=False)
+        U_frames.append(M_half * U1)
+
+    # Convert the crystal B matrix at scan-points into a B matrix at the frame
+    # centres. In this case, the transformation is not a rotation. Approximate
+    # the answer by taking the average of the two B matrices.
+    # FIXME is this kosher?
+    B_frames = []
+    for B1, B2 in pairwise(B_mats):
+        B_frames.append((B1 + B2) / 2)
+
+    UB_frames = [U * B for U, B in zip(U_frames, B_frames)]
+    # This is the orthogonalisation matrix for the reciprocal space laboratory
     # frame. We want the real space fractionalisation matrix, which is its
     # transpose (https://dials.github.io/documentation/conventions.html)
-    frac_mats = [m.transpose() for m in SRFUB]
-    zone_axes = [frac * (d * scale) for frac, d in zip(frac_mats, directions)]
+    frac_mats = [m.transpose() for m in UB_frames]
+
+    # Calculate zone axes, which also requires the beam directions at the frame
+    # centres
+    us0_frames = []
+    for d1, d2 in pairwise(us0):
+        us0_frames.append(((d1 + d2) / 2).normalize())
+    zone_axes = [frac * (d * scale) for frac, d in zip(frac_mats, us0_frames)]
 
     # Now get the real space orthogonalisation matrix to calculate the real
     # space cell vectors at each image
@@ -225,9 +271,10 @@ def extract_experiment_data(exp, scale=1):
     real_space_axes = [(o * h, o * k, o * l) for o in orthog_mats]
     return {
         "images": images,
-        "directions": directions,
+        "directions": us0_frames,
         "zone_axes": zone_axes,
         "real_space_axes": real_space_axes,
+        "orientations": U_frames,
     }
 
 

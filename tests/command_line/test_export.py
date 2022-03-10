@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import filecmp
 import json
 
 import procrunner
@@ -560,3 +561,33 @@ def test_export_sum_or_profile_only(dials_data, tmp_path):
         )
         assert not result.returncode and not result.stderr
         assert (tmp_path / f"removed_{remove}.mtz").is_file()
+
+
+@pytest.mark.parametrize("intensity_choice", ["profile", "sum"])
+def test_pets(dials_data, tmp_path, intensity_choice):
+    expt = dials_data("quartz_processed", pathlib=True) / "integrated.expt"
+    refl = dials_data("quartz_processed", pathlib=True) / "integrated.refl"
+    # Call dials.export
+    result = procrunner.run(
+        [
+            "dials.export",
+            "intensity=scale",
+            "format=pets",
+            "id=0",
+            "step=1",
+            "n_merged=2",
+            "intensity=" + intensity_choice,
+            "filename_prefix=" + intensity_choice,
+            expt,
+            refl,
+        ],
+        working_directory=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+    output = tmp_path / (intensity_choice + ".cif_pets")
+
+    if intensity_choice == "profile":
+        reference = dials_data("quartz_processed", pathlib=True) / "dials_prf.cif_pets"
+    else:
+        reference = dials_data("quartz_processed", pathlib=True) / "dials_dyn.cif_pets"
+    assert filecmp.cmp(output, reference)
