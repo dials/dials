@@ -5,10 +5,9 @@ from unittest.mock import patch
 
 import pytest
 
-import dials
-
 pytest.importorskip("pyFAI")
 
+from dials.command_line import powder_calibrate
 from dials.command_line.powder_calibrate import (
     Geometry,
     Point,
@@ -33,7 +32,7 @@ def test_calibrate_coarse(dials_data, tmpdir, eyeball, starting_geometry):
         self.geometry.update_beam_pos(beam_coords_px=Point(1103, 1024))
 
     with patch.object(
-        dials.command_line.powder_calibrate.EyeballWidget,
+        powder_calibrate.EyeballWidget,
         "eyeball",
         new=mocked_eyeball,
     ):
