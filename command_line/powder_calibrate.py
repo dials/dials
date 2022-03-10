@@ -336,13 +336,15 @@ class Geometry(pfGeometry):
 
         return phil
 
-    def save_to_expt(self, output: str, only_beam: bool = False):
+    def save_to_expt(self, output: str | os.PathLike, only_beam: bool = False):
         """
         Update the geometry from start_geometry.expt and save to new output
         Pretend dials.command_line has python API
         """
         new_phil = self.to_parsable(only_beam)
-        modify_args = [self.expt_params.input_file] + new_phil + ["output=" + output]
+        modify_args = (
+            [self.expt_params.input_file] + new_phil + ["output=" + str(output)]
+        )
         modify_geometry.run(modify_args)
 
     def __deepcopy__(self, memo=None):
