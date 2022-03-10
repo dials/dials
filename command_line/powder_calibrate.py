@@ -150,18 +150,6 @@ def parse_to_tuples(
 
     params, options = parser.parse_args(args=args, show_diff_phil=False)
 
-    # Configure the logging.
-    dials.util.log.config(options.verbose, logfile=params.output.log)
-
-    # Log the dials version
-    logger.info(dials_version())
-
-    # Log the difference between the PHIL scope definition and the active PHIL scope,
-    # which will include the parsed user inputs.
-    diff_phil = parser.diff_phil.as_str()
-    if diff_phil:
-        logger.info("The following parameters have been modified:\n%s", diff_phil)
-
     # populate experimental parameters
     experiments = flatten_experiments(params.input.experiments)
 
@@ -600,15 +588,12 @@ class PowderCalibrator:
                 "pyfai_improvement=" + pyfai_improvement,
                 "straight_lines=" + straight_lines,
             ]
-            self.expt_params, self.user_args = parse_to_tuples(args=args)
-        elif not starting_geom and not standard:
-            # command line usage
-            self.expt_params, self.user_args = parse_to_tuples()
-        elif not standard:
+        if not standard:
             exit("Standard missing")
-        elif not starting_geom:
+        if not starting_geom:
             exit("Starting geometry missing")
 
+        self.expt_params, self.user_args = parse_to_tuples(args=args)
         self.geometry = Geometry(self.expt_params)
         self.detector = self.geometry.detector
 
@@ -670,7 +655,7 @@ class PowderCalibrator:
             unit="q_nm^-1",
         )
         fig, ax = plt.subplots()
-        fig.set_size_inches(8, 8)
+        fig.set_size_inches(10, 10)
         pfjupyter.plot2d(int2, calibrant=self.calibrant, ax=ax)
         plt.title("Are those lines straight?")
 
@@ -731,6 +716,21 @@ class PowderCalibrator:
 
 @dials.util.show_mail_handle_errors()
 def run(args=None):
+    # parse args
+    parse_to_tuples(args)
+
+    # # Configure the logging.
+    # dials.util.log.config(options.verbose, logfile=params.output.log)
+    #
+    # # Log the dials version
+    logger.info(dials_version())
+    #
+    # # Log the difference between the PHIL scope definition and the active PHIL scope,
+    # # which will include the parsed user inputs.
+    # diff_phil = parser.diff_phil.as_str()
+    # if diff_phil:
+    #     logger.info("The following parameters have been modified:\n%s", diff_phil)
+
     calibrator = PowderCalibrator()
     calibrator.calibrate_with_calibrant(plots=False)
 
