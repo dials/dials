@@ -1,5 +1,3 @@
-# LIBTBX_SET_DISPATCHER_NAME dials.powder_calibrate
-
 """
 Calibrate electron powder geometry using X-ray powder diffraction tools.
 `pyFAI` is a well established X-ray powder diffraction tool.
@@ -25,7 +23,7 @@ from matplotlib.widgets import Button, Slider
 from libtbx.phil import parse, scope
 
 try:
-    __import__("pyFAI")
+    import pyFAI  # noqa: F401
 except ModuleNotFoundError:
     exit(
         """
@@ -539,7 +537,6 @@ class EyeballWidget:
         return cal_img_masked
 
 
-@dials.util.show_mail_on_error()
 class PowderCalibrator:
     def __init__(
         self,
@@ -732,6 +729,11 @@ class PowderCalibrator:
         self.show_straight_lines(ai, show=plots)
 
 
-if __name__ == "__main__":
+@dials.util.show_mail_handle_errors()
+def run(args=None):
     calibrator = PowderCalibrator()
     calibrator.calibrate_with_calibrant(plots=False)
+
+
+if __name__ == "__main__":
+    run()
