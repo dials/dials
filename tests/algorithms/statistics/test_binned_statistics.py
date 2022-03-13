@@ -1,5 +1,7 @@
 """Tests for the BinnedStatistics class"""
 
+from __future__ import annotations
+
 from scitbx.array_family import flex
 
 from dials.algorithms.statistics import BinnedStatistics

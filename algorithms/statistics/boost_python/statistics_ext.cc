@@ -114,7 +114,6 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("get_medians", &BinnedStatistics::get_medians)
       .def("get_iqrs", &BinnedStatistics::get_iqrs)
       .def("get_values_in_bin", &BinnedStatistics::get_values_in_bin, (arg("i")));
-
   }
 
 }}}  // namespace dials::algorithms::boost_python
