@@ -231,7 +231,7 @@ indexing {
     }
   }
   stills {
-    indexer = *Auto stills sequences ssx
+    indexer = *Auto stills sequences
       .type = choice
       .help = Use the stills or sequences indexer.  Auto: choose based on the input \
               imagesets (stills or sequences).
@@ -391,7 +391,6 @@ class Indexer:
                 )
 
             use_stills_indexer = has_stills
-            use_ssx_indexer = False
 
             if not (
                 params.indexing.stills.indexer is libtbx.Auto
@@ -401,9 +400,6 @@ class Indexer:
                     use_stills_indexer = True
                 elif params.indexing.stills.indexer == "sequences":
                     use_stills_indexer = False
-                elif params.indexing.stills.indexer == "ssx":
-                    use_stills_indexer = True
-                    use_ssx_indexer = True
                 else:
                     assert False
 
@@ -441,11 +437,7 @@ class Indexer:
                 "dials.index.basis_vector_search"
             ):
                 if params.indexing.method == entry_point.name:
-                    if use_ssx_indexer:
-                        from dials.algorithms.indexing.ssx.ssx_indexer import (
-                            SSXIndexerBasisVectorSearch as IndexerType,
-                        )
-                    elif use_stills_indexer:
+                    if use_stills_indexer:
                         from dials.algorithms.indexing.stills_indexer import (
                             StillsIndexerBasisVectorSearch as IndexerType,
                         )
