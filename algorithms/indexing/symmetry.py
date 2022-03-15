@@ -113,7 +113,6 @@ def find_matching_symmetry(
 
     subgroup_cacher = MatchingSubgroupsForLatticeGroup(target_bravais_t)
     result = subgroup_cacher.get_data(info_str)
-    result = None
     if not result:
         result = calc_acentric_subgroups(lattice_group_info, target_bravais_t)
         subgroup_cacher.set_data(info_str, result)
