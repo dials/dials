@@ -12,7 +12,7 @@ Features
 - Add experimental ``dev.dials.ssx_integrate`` script for profile modelling and integration of SSX data, including `ellipsoid` profile modelling. (`#1974 <https://github.com/dials/dials/issues/1974>`_)
 - ``dials.reindex``: Allow reindexing using multi-crystal reference data files. (`#1977 <https://github.com/dials/dials/issues/1977>`_)
 - add flex.reflection_table.concat method, to concatenate a list of reflection tables, including handling their experiment identifiers and ids (`#1994 <https://github.com/dials/dials/issues/1994>`_)
-- For data reduction programs, allow exclude_images option to take a single multi-sweep command, e.g. exclude_images=0:100:120,1:150:180 (`#1996 <https://github.com/dials/dials/issues/1996>`_)
+- For data reduction programs, allow exclude_images option to take a single multi-sweep command, e.g. ``exclude_images=0:100:120,1:150:180`` (`#1996 <https://github.com/dials/dials/issues/1996>`_)
 - Enable spot-finding threshold algorithms to use information about experimental models. (`#2001 <https://github.com/dials/dials/issues/2001>`_)
 - ``dials.find_spots``: Added new ``spotfinder.threshold=radial_profile``
   threshold algorithm. This calculates an average background in 2θ shells,
