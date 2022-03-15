@@ -8,21 +8,11 @@ from cctbx.sgtbx.bravais_types import bravais_lattice
 from scitbx.array_family import flex
 
 from dials.algorithms.indexing.basis_vector_search import combinations
-from dials.algorithms.indexing.lattice_search import BasisVectorSearch, LatticeSearch
+from dials.algorithms.indexing.lattice_search import BasisVectorSearch
 from dials.algorithms.indexing.stills_indexer import StillsIndexer
 from dials.algorithms.indexing.symmetry import metric_supergroup
 
 logger = logging.getLogger(__name__)
-
-
-class SSXIndexer(StillsIndexer):
-
-    pass
-
-
-class SSXIndexerLatticeSearch(SSXIndexer, LatticeSearch):
-
-    pass
 
 
 def calc_acentric_subgroups(lattice_group_info, target_bravais_t):
@@ -235,7 +225,7 @@ def filter_known_symmetry(
         )
 
 
-class SSXIndexerBasisVectorSearch(SSXIndexer, BasisVectorSearch):
+class SSXIndexerBasisVectorSearch(StillsIndexer, BasisVectorSearch):
     def find_candidate_orientation_matrices(self, candidate_basis_vectors):
 
         candidate_crystal_models = combinations.candidate_orientation_matrices(

@@ -61,10 +61,13 @@ def find_matching_symmetry(
         assert 1 <= space_group_number <= 230
         sort_values.append(order_z * 1000 + space_group_number)
     perm = flex.sort_permutation(sort_values, reverse=True)
+    acentric_subgroups = [subgrs[i_subgr] for i_subgr in perm]
+    acentric_supergroups = [metric_supergroup(a) for a in acentric_subgroups]
+    cb_ops = [a.info().type().cb_op() for a in acentric_subgroups]
+    for acentric_subgroup, acentric_supergroup, cb_op_minimum_ref in zip(
+        acentric_subgroups, acentric_supergroups, cb_ops
+    ):
 
-    for i_subgr in perm:
-        acentric_subgroup = subgrs[i_subgr]
-        acentric_supergroup = metric_supergroup(acentric_subgroup)
         # Make symmetry object: unit-cell + space-group
         # The unit cell is potentially modified to be exactly compatible
         # with the space group symmetry.
@@ -74,7 +77,6 @@ def find_matching_symmetry(
             assert_is_compatible_unit_cell=False,
         )
         # Convert subgroup to reference setting
-        cb_op_minimum_ref = subsym.space_group_info().type().cb_op()
         ref_subsym = subsym.change_basis(cb_op_minimum_ref)
         # Ignore unwanted groups
         bravais_t = bravais_lattice(group=ref_subsym.space_group())

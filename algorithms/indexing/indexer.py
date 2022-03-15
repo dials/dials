@@ -459,11 +459,7 @@ class Indexer:
                     "dials.index.lattice_search"
                 ):
                     if params.indexing.method == entry_point.name:
-                        if use_ssx_indexer:
-                            from dials.algorithms.indexing.ssx.ssx_indexer import (
-                                SSXIndexerLatticeSearch as IndexerType,
-                            )
-                        elif use_stills_indexer:
+                        if use_stills_indexer:
                             from dials.algorithms.indexing.stills_indexer import (
                                 StillsIndexerLatticeSearch as IndexerType,
                             )
