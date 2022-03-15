@@ -51,6 +51,31 @@ def calc_acentric_subgroups(lattice_group_info, target_bravais_t):
     return acentric_subgroups, acentric_supergroups, cb_ops
 
 
+class _MatchingSubgroupsForLatticeGroup(object):
+    def __init__(self):
+        self._cached_results = {}
+
+    def get_data(self, info_str):
+        try:
+            return self._cached_results[info_str]
+        except KeyError:
+            return None
+
+    def set_data(self, info_str, data):
+        self._cached_results[info_str] = data
+
+
+class MatchingSubgroupsForLatticeGroup(object):
+
+    instances = {}
+
+    def __new__(cls, target_bravais_t):
+        str_t = str(target_bravais_t)
+        if str_t not in cls.instances:
+            cls.instances[str_t] = _MatchingSubgroupsForLatticeGroup()
+        return cls.instances[str_t]
+
+
 def find_matching_symmetry(
     unit_cell,
     target_space_group,
@@ -83,9 +108,16 @@ def find_matching_symmetry(
         enforce_max_delta_for_generated_two_folds=True,
     )
 
-    acentric_subgroups, acentric_supergroups, cb_ops = calc_acentric_subgroups(
-        lattice_group.info(), target_bravais_t
-    )
+    lattice_group_info = lattice_group.info()
+    info_str = lattice_group_info.type().lookup_symbol()
+
+    subgroup_cacher = MatchingSubgroupsForLatticeGroup(target_bravais_t)
+    result = subgroup_cacher.get_data(info_str)
+    result = None
+    if not result:
+        result = calc_acentric_subgroups(lattice_group_info, target_bravais_t)
+        subgroup_cacher.set_data(info_str, result)
+    acentric_subgroups, acentric_supergroups, cb_ops = result
 
     for acentric_subgroup, acentric_supergroup, cb_op_minimum_ref in zip(
         acentric_subgroups, acentric_supergroups, cb_ops
