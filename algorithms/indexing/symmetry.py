@@ -23,13 +23,36 @@ def metric_supergroup(group):
     )
 
 
+def calc_acentric_subgroups(lattice_group_info, target_bravais_t):
+    # Get list of sub-spacegroups
+    subgrs = subgroups.subgroups(lattice_group_info).groups_parent_setting()
+
+    # Order sub-groups
+    sort_values = flex.double()
+    for group in subgrs:
+        order_z = group.order_z()
+        space_group_number = sgtbx.space_group_type(group, False).number()
+        assert 1 <= space_group_number <= 230
+        sort_values.append(order_z * 1000 + space_group_number)
+    perm = flex.sort_permutation(sort_values, reverse=True)
+    acentric_subgroups = [subgrs[i_subgr] for i_subgr in perm]
+    acentric_supergroups = [metric_supergroup(a) for a in acentric_subgroups]
+    cb_ops = [a.info().type().cb_op() for a in acentric_subgroups]
+    return acentric_subgroups, acentric_supergroups, cb_ops
+
+
 def find_matching_symmetry(
-    unit_cell, target_space_group, max_delta=5, best_monoclinic_beta=True
+    unit_cell,
+    target_space_group,
+    max_delta=5,
+    best_monoclinic_beta=True,
+    target_bravais_t=None,
 ):
     cs = crystal.symmetry(unit_cell=unit_cell, space_group=sgtbx.space_group())
-    target_bravais_t = bravais_lattice(
-        group=target_space_group.info().reference_setting().group()
-    )
+    if target_bravais_t is None:
+        target_bravais_t = bravais_lattice(
+            group=target_space_group.info().reference_setting().group()
+        )
     best_subgroup = None
     best_angular_difference = 1e8
 
@@ -50,20 +73,10 @@ def find_matching_symmetry(
         enforce_max_delta_for_generated_two_folds=True,
     )
 
-    # Get list of sub-spacegroups
-    subgrs = subgroups.subgroups(lattice_group.info()).groups_parent_setting()
+    acentric_subgroups, acentric_supergroups, cb_ops = calc_acentric_subgroups(
+        lattice_group.info(), target_bravais_t
+    )
 
-    # Order sub-groups
-    sort_values = flex.double()
-    for group in subgrs:
-        order_z = group.order_z()
-        space_group_number = sgtbx.space_group_type(group, False).number()
-        assert 1 <= space_group_number <= 230
-        sort_values.append(order_z * 1000 + space_group_number)
-    perm = flex.sort_permutation(sort_values, reverse=True)
-    acentric_subgroups = [subgrs[i_subgr] for i_subgr in perm]
-    acentric_supergroups = [metric_supergroup(a) for a in acentric_subgroups]
-    cb_ops = [a.info().type().cb_op() for a in acentric_subgroups]
     for acentric_subgroup, acentric_supergroup, cb_op_minimum_ref in zip(
         acentric_subgroups, acentric_supergroups, cb_ops
     ):
