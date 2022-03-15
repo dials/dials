@@ -35,9 +35,19 @@ def calc_acentric_subgroups(lattice_group_info, target_bravais_t):
         assert 1 <= space_group_number <= 230
         sort_values.append(order_z * 1000 + space_group_number)
     perm = flex.sort_permutation(sort_values, reverse=True)
-    acentric_subgroups = [subgrs[i_subgr] for i_subgr in perm]
-    acentric_supergroups = [metric_supergroup(a) for a in acentric_subgroups]
-    cb_ops = [a.info().type().cb_op() for a in acentric_subgroups]
+    acentric_subgroups = []
+    acentric_supergroups = []
+    cb_ops = []
+    for i_perm in perm:
+        acentric_subgroup = subgrs[i_perm]
+        cb_op = acentric_subgroup.info().type().cb_op()
+        ref_acentric_subgroup = acentric_subgroup.change_basis(cb_op)
+        # Ignore unwanted groups
+        if bravais_lattice(group=ref_acentric_subgroup) != target_bravais_t:
+            continue
+        acentric_subgroups.append(acentric_subgroup)
+        cb_ops.append(cb_op)
+        acentric_supergroups.append(metric_supergroup(acentric_subgroup))
     return acentric_subgroups, acentric_supergroups, cb_ops
 
 
@@ -91,10 +101,6 @@ def find_matching_symmetry(
         )
         # Convert subgroup to reference setting
         ref_subsym = subsym.change_basis(cb_op_minimum_ref)
-        # Ignore unwanted groups
-        bravais_t = bravais_lattice(group=ref_subsym.space_group())
-        if bravais_t != target_bravais_t:
-            continue
 
         # Choose best setting for monoclinic and orthorhombic systems
         cb_op_best_cell = ref_subsym.change_of_basis_op_to_best_cell(
