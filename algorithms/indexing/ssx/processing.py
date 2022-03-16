@@ -45,7 +45,9 @@ def index_one(
     method_list: List[str],
     image_no: int,
 ) -> Union[Tuple[ExperimentList, flex.reflection_table], Tuple[bool, bool]]:
-
+    if not reflection_table:
+        logger.info(f"Image {image_no+1}: Failed to index, no strong spots found.")
+        return None, None
     # First suppress logging unless in verbose mode.
     if params.individual_log_verbosity < 2:
         for name in loggers_to_disable:
@@ -87,7 +89,10 @@ def index_all_concurrent(
     n_strong_per_image = {}
     for i, (expt, table) in enumerate(zip(experiments, reflections)):
         img = expt.imageset.get_path(i).split("/")[-1]
-        n_strong = table.get_flags(table.flags.strong).count(True)
+        if table:
+            n_strong = table.get_flags(table.flags.strong).count(True)
+        else:
+            n_strong = 0
         n_strong_per_image[img] = n_strong
 
     with concurrent.futures.ProcessPoolExecutor(
@@ -193,16 +198,26 @@ def preprocess(
     reflections = observed.split_by_experiment_id()
 
     if len(reflections) != len(experiments):
-        raise ValueError(
-            f"Unequal number of reflection tables {len(reflections)} and experiments {len(experiments)}"
-        )
+        # spots may not have been found on every image. In this case, the length
+        # of the list of reflection tables will be less than the length of experiments.
+        # Add in empty items to the list, so that this can be reported on
+        no_refls = set(range(len(experiments))).difference(set(observed["id"]))
+        for i in no_refls:
+            reflections.insert(i, None)
+        if len(experiments) != len(reflections):
+            raise ValueError(
+                f"Unequal number of reflection tables {len(reflections)} and experiments {len(experiments)}"
+            )
 
     # Calculate necessary quantities
     for refl, experiment in zip(reflections, experiments):
-        elist = ExperimentList([experiment])
-        refl["imageset_id"] = flex.int(refl.size(), 0)  # needed for centroid_px_to_mm
-        refl.centroid_px_to_mm(elist)
-        refl.map_centroids_to_reciprocal_space(elist)
+        if refl:
+            elist = ExperimentList([experiment])
+            refl["imageset_id"] = flex.int(
+                refl.size(), 0
+            )  # needed for centroid_px_to_mm
+            refl.centroid_px_to_mm(elist)
+            refl.map_centroids_to_reciprocal_space(elist)
 
     # Determine the max cell if applicable
     if (params.indexing.max_cell is Auto) and (
@@ -214,10 +229,11 @@ def preprocess(
             )
         max_cells = []
         for refl in reflections:
-            try:
-                max_cells.append(find_max_cell(refl).max_cell)
-            except (DialsIndexError, AssertionError):
-                pass
+            if refl:
+                try:
+                    max_cells.append(find_max_cell(refl).max_cell)
+                except (DialsIndexError, AssertionError):
+                    pass
         if not max_cells:
             raise ValueError("Unable to find a max cell for any images")
         logger.info(f"Setting max cell to {max(max_cells):.1f} " + "\u212B")
