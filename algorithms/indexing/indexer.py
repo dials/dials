@@ -438,6 +438,7 @@ class Indexer:
             ):
                 if params.indexing.method == entry_point.name:
                     if use_stills_indexer:
+                        # do something
                         from dials.algorithms.indexing.stills_indexer import (
                             StillsIndexerBasisVectorSearch as IndexerType,
                         )
