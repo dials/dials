@@ -222,6 +222,16 @@ dials_phil_str = """
         .type = strings
         .help = List of indexing methods. If indexing fails with first method, indexing will be \
                 attempted with the next, and so forth
+      ransac = False
+        .type = bool                
+      known_orientations = None
+        .type = path
+        .multiple = True
+        .expert_level = 2
+        .help = Paths to previous processing results including crystal orientations. \
+                If specified, images will not be re-indexed, but instead the known \
+                orientations will be used. Provide paths to experiment list files, using \
+                wildcards as needed.
     }
   }
 
@@ -383,7 +393,7 @@ class Script:
         from libtbx import easy_mp
 
         try:
-            from mpi4py import MPI
+            from libtbx.mpi4py import MPI
         except ImportError:
             rank = 0
             size = 1
@@ -409,6 +419,25 @@ class Script:
                 all_paths.extend(
                     [path.strip() for path in open(params.input.file_list).readlines()]
                 )
+
+            if params.indexing.stills.known_orientations:
+                known_orientations = {}
+                for path in params.indexing.stills.known_orientations:
+                    for g in glob.glob(path):
+                        ko_expts = ExperimentList.from_file(g, check_format=False)
+                        for expt in ko_expts:
+                            assert (
+                                len(expt.imageset.indices()) == 1
+                                and len(expt.imageset.paths()) == 1
+                            )
+                            key = (
+                                os.path.basename(expt.imageset.paths()[0]),
+                                expt.imageset.indices()[0],
+                            )
+                            if key not in known_orientations:
+                                known_orientations[key] = []
+                            known_orientations[key].append(expt.crystal)
+                params.indexing.stills.known_orientations = known_orientations                
         if size > 1:
             if rank == 0:
                 transmitted_info = params, options, all_paths
@@ -1011,7 +1040,19 @@ class Processor:
 
     def pre_process(self, experiments):
         """Add any pre-processing steps here"""
-
+        if self.params.indexing.stills.known_orientations:
+            for expt in experiments:
+                assert (
+                    len(expt.imageset.indices()) == 1
+                    and len(expt.imageset.paths()) == 1
+                )
+                key = (
+                    os.path.basename(expt.imageset.paths()[0]),
+                    expt.imageset.indices()[0],
+                )
+                if key not in self.params.indexing.stills.known_orientations:
+                    raise RuntimeError("Image not found in set of known orientations")
+                
         if not self.params.input.ignore_gain_mismatch:
             g1 = self.params.spotfinder.threshold.dispersion.gain
             g2 = self.params.integration.summation.detector_gain
@@ -1099,37 +1140,75 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
 
         if hasattr(self, "known_crystal_models"):
             known_crystal_models = self.known_crystal_models
+        elif self.params.indexing.stills.known_orientations:
+            known_crystal_models = []
+            extended_experiments = ExperimentList()
+            for expt in experiments:
+                assert (
+                    len(expt.imageset.indices()) == 1
+                    and len(expt.imageset.paths()) == 1
+                )
+                key = (
+                    os.path.basename(expt.imageset.paths()[0]),
+                    expt.imageset.indices()[0],
+                )
+                if key not in self.params.indexing.stills.known_orientations:
+                    raise RuntimeError("Image not found in set of known orientations")
+                oris = self.params.indexing.stills.known_orientations[key]
+                known_crystal_models.extend(oris)
+                extended_experiments.extend(ExperimentList([expt] * len(oris)))
+            experiments = extended_experiments    
         else:
             known_crystal_models = None
-
-        if params.indexing.stills.method_list is None:
-            idxr = Indexer.from_parameters(
-                reflections,
-                experiments,
-                known_crystal_models=known_crystal_models,
-                params=params,
-            )
-            idxr.index()
+            
+        all_reflections = reflections
+        indexing_error = None
+        if self.params.indexing.stills.ransac:
+            subsets = list(reversed(range(50, 101, 2)))
         else:
-            indexing_error = None
-            for method in params.indexing.stills.method_list:
-                params.indexing.method = method
-                try:
+            subsets = [100]
+        for i in subsets:
+            if i != 100:
+                reflections = all_reflections.select(
+                    flex.random_permutation(len(all_reflections))
+                )[: int(len(all_reflections) * i / 100)]
+            try:
+                if params.indexing.stills.method_list is None:
                     idxr = Indexer.from_parameters(
-                        reflections, experiments, params=params
+                        reflections,
+                        experiments,
+                        params=params
                     )
                     idxr.index()
-                except Exception as e:
-                    logger.info("Couldn't index using method %s", method)
-                    if indexing_error is None:
-                        if e is None:
-                            e = Exception(f"Couldn't index using method {method}")
-                        indexing_error = e
                 else:
-                    indexing_error = None
-                    break
-            if indexing_error is not None:
-                raise indexing_error
+                    for method in params.indexing.stills.method_list:
+                        params.indexing.method = method
+                        try:
+                            idxr = Indexer.from_parameters(
+                                reflections, experiments, params=params
+                            )
+                            idxr.index()
+                        except Exception as e:
+                            logger.info("Couldn't index using method %s", method)
+                            if indexing_error is None:
+                                if e is None:
+                                    e = Exception(
+                                        f"Couldn't index using method {method}"
+                                    )
+                                indexing_error = e
+                        else:
+                            indexing_error = None
+                            break
+                    if indexing_error is not None:
+                        raise indexing_error
+            except Exception as e:
+                indexing_error = e
+            else:
+                logger.info("Indexed using %d%% of the reflections" % i)
+                indexing_error = None
+                break
+        if indexing_error:
+            raise indexing_error                    
 
         indexed = idxr.refined_reflections
         experiments = idxr.refined_experiments
