@@ -1085,7 +1085,8 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(imageset.get_detector() != NULL);
       DIALS_ASSERT(imageset.get_scan() != NULL);
       Detector detector = *imageset.get_detector();
-      ScanBase scan = *imageset.get_scan();
+
+      boost::shared_ptr<ScanBase> scan = imageset.get_scan();
 
       // Get the size of the data buffer needed
       std::size_t zsize = imageset.size();
@@ -1095,7 +1096,7 @@ namespace dials { namespace algorithms {
       }
 
       // Get the starting frame and the underload/overload values
-      int zstart = scan.get_array_range()[0];
+      int zstart = scan->get_array_range()[0];
       double underload = detector[0].get_trusted_range()[0];
       double overload = detector[0].get_trusted_range()[1];
       DIALS_ASSERT(underload < overload);
@@ -1183,8 +1184,8 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(imageset.get_detector() != NULL);
       DIALS_ASSERT(imageset.get_scan() != NULL);
       Detector detector = *imageset.get_detector();
-      ScanBase scan = *imageset.get_scan();
-      block_size = std::min(block_size, (std::size_t)scan.get_num_images());
+      boost::shared_ptr<ScanBase> scan = imageset.get_scan();
+      block_size = std::min(block_size, (std::size_t)scan->get_num_images());
       std::size_t nelements = 0;
       for (std::size_t i = 0; i < detector.size(); ++i) {
         std::size_t xsize = detector[i].get_image_size()[0];
