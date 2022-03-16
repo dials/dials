@@ -1038,6 +1038,25 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
             experiments, self.params, is_stills=True
         )
 
+        d_max = 20
+        observed_filtered = flex.reflection_table()
+        for expt_id, experiment in enumerate(experiments):
+            refls = observed.select(observed["id"] == expt_id)
+            s0 = experiment.beam.get_s0()
+            for panel_id, panel in enumerate(experiment.detector):
+                panel_refls = refls.select(refls["panel"] == panel_id)
+                sel = flex.bool(
+                    [
+                        panel.get_resolution_at_pixel(
+                            s0, panel_refls["xyzobs.px.value"][r][0:2]
+                        )
+                        <= d_max
+                        for r in range(len(panel_refls))
+                    ]
+                )
+                observed_filtered.extend(panel_refls.select(sel))
+        observed = observed_filtered
+
         # Reset z coordinates for dials.image_viewer; see Issues #226 for details
         xyzobs = observed["xyzobs.px.value"]
         for i in range(len(xyzobs)):
