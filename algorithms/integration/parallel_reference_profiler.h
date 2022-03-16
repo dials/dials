@@ -36,7 +36,7 @@ namespace dials { namespace algorithms {
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
   using dxtbx::model::Panel;
-  using dxtbx::model::Scan;
+  using dxtbx::model::ScanBase;
 
   using dxtbx::ImageSequence;
   using dxtbx::format::Image;
@@ -448,7 +448,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(imageset.get_detector() != NULL);
       DIALS_ASSERT(imageset.get_scan() != NULL);
       Detector detector = *imageset.get_detector();
-      Scan scan = *imageset.get_scan();
+      ScanBase scan = *imageset.get_scan();
 
       // Get the size of the data buffer needed
       std::size_t zsize = imageset.size();
@@ -546,7 +546,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(imageset.get_detector() != NULL);
       DIALS_ASSERT(imageset.get_scan() != NULL);
       Detector detector = *imageset.get_detector();
-      Scan scan = *imageset.get_scan();
+      ScanBase scan = *imageset.get_scan();
       block_size = std::min(block_size, (std::size_t)scan.get_num_images());
       std::size_t nelements = 0;
       for (std::size_t i = 0; i < detector.size(); ++i) {
