@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+from typing import List
+
 import libtbx.phil
+from dxtbx.model import ExperimentList
 
 import dials.util
+from dials.command_line.dials_import import ManualGeometryUpdater
 
 help_message = """
 """
@@ -19,8 +23,31 @@ output {
 )
 
 
+def update(
+    experiments: ExperimentList, new_params: libtbx.phil.scope_extract
+) -> ExperimentList:
+
+    """
+    Modify detector, beam, goniometer and scan in experiments with the values in new_params
+    """
+
+    update_geometry = ManualGeometryUpdater(new_params)
+
+    if len(experiments):
+        imagesets = experiments.imagesets()
+
+    for imageset in imagesets:
+        imageset_new = update_geometry(imageset)
+        imageset.set_detector(imageset_new.get_detector())
+        imageset.set_beam(imageset_new.get_beam())
+        imageset.set_goniometer(imageset_new.get_goniometer())
+        imageset.set_scan(imageset_new.get_scan())
+
+    return experiments
+
+
 @dials.util.show_mail_handle_errors()
-def run(args=None):
+def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     from dials.util.options import ArgumentParser, flatten_experiments
 
     usage = "dials.modify_geometry [options] models.expt"
@@ -32,8 +59,9 @@ def run(args=None):
         check_format=False,
         epilog=help_message,
     )
-
+    print(f"---before: {parser.phil.show()}")
     params, options = parser.parse_args(args, show_diff_phil=True)
+    print(f"---after {parser.phil.show()}")
     experiments = flatten_experiments(params.input.experiments)
 
     if len(experiments) == 0:
@@ -53,6 +81,8 @@ def run(args=None):
         imageset.set_beam(imageset_new.get_beam())
         imageset.set_goniometer(imageset_new.get_goniometer())
         imageset.set_scan(imageset_new.get_scan())
+
+    experiments = update(experiments, params)
 
     if len(experiments):
         print(f"Saving modified experiments to {params.output.experiments}")
