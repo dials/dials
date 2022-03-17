@@ -7,7 +7,7 @@ from dxtbx.model import ExperimentList
 
 import dials.util
 from dials.command_line.dials_import import ManualGeometryUpdater
-from dials.util.options import ArgumentParser, flatten_experiments
+
 
 help_message = """
 """
@@ -48,6 +48,7 @@ def update(
 
 @dials.util.show_mail_handle_errors()
 def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
+    from dials.util.options import ArgumentParser, flatten_experiments
 
     usage = "dials.modify_geometry [options] models.expt"
 
@@ -60,6 +61,7 @@ def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     )
 
     params, _ = parser.parse_args(args, show_diff_phil=True)
+
     experiments = flatten_experiments(params.input.experiments)
 
     if len(experiments) == 0:
