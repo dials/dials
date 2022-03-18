@@ -166,7 +166,7 @@ def i_over_sig_i_vs_i_plot(intensities, sigmas, label=None):
                         "title": "Number of reflections",
                         "titleside": "right",
                     },
-                    "colorscale": "Jet",
+                    "colorscale": "Viridis",
                 }
             ],
             "layout": {
@@ -1102,7 +1102,7 @@ https://doi.org/10.1107/S0907444905036693
                             "title": "Number of reflections",
                             "titleside": "right",
                         },
-                        "colorscale": "Jet",
+                        "colorscale": "Viridis",
                     },
                     {
                         "x": [-5, 5],

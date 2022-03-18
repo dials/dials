@@ -3,6 +3,7 @@ from __future__ import annotations
 import collections
 import itertools
 import math
+import types
 
 import wx
 from wx.lib.intctrl import IntCtrl
@@ -28,6 +29,7 @@ from dials.algorithms.image.threshold import (
 from dials.algorithms.shoebox import MaskCode
 from dials.array_family import flex
 from dials.command_line.find_spots import phil_scope as find_spots_phil_scope
+from dials.extensions import SpotFinderThreshold
 from dials.util import masking
 from dials.util.image_viewer.mask_frame import MaskSettingsFrame
 from dials.util.image_viewer.spotfinder_wrap import chooser_wrapper
@@ -79,6 +81,33 @@ class LoadImageEvent(wx.PyCommandEvent):
 
 def create_load_image_event(destination, filename):
     wx.PostEvent(destination, LoadImageEvent(myEVT_LOADIMG, -1, filename))
+
+
+class RadialProfileThresholdDebug:
+    # The radial_profile threshold algorithm does not have an associated
+    # 'Debug' class. It does not create the same set of intermediate images
+    # as the dispersion algorithms, so we can delegate to a
+    # DispersionThresholdDebug object for those, while overriding the final_mask
+    # method. This wrapper class handles that.
+    def __init__(self, imageset, n_iqr, blur, n_bins):
+
+        self.imageset = imageset
+        params = find_spots_phil_scope.extract()
+        params.spotfinder.threshold.radial_profile.blur = blur
+        params.spotfinder.threshold.radial_profile.n_bins = n_bins
+        self.radial_profile = SpotFinderThreshold.load("radial_profile")(params)
+        self._i_panel = 0
+
+    def __call__(self, *args):
+        dispersion = DispersionThresholdDebug(*args)
+        image = args[0]
+        mask = args[1]
+        dispersion._final_mask = self.radial_profile.compute_threshold(
+            image, mask, imageset=self.imageset, i_panel=self._i_panel
+        )
+        dispersion.final_mask = types.MethodType(lambda x: x._final_mask, dispersion)
+        self._i_panel += 1
+        return dispersion
 
 
 class SpotFrame(XrayFrame):
@@ -179,7 +208,7 @@ class SpotFrame(XrayFrame):
 
         self.display_foreground_circles_patch = False  # hard code this option, for now
 
-        self._kabsch_debug_list_hash = 0
+        self._dispersion_debug_list_hash = 0
 
         if (
             self.experiments is not None
@@ -360,10 +389,10 @@ class SpotFrame(XrayFrame):
         value = self.stack.GetPhilValue()
 
         if value == 1:
-            for button in self.settings_frame.panel.kabsch_buttons:
+            for button in self.settings_frame.panel.dispersion_buttons:
                 button.Enable()
         else:
-            for button in self.settings_frame.panel.kabsch_buttons:
+            for button in self.settings_frame.panel.dispersion_buttons:
                 button.Disable()
 
         if value != self.params.stack_images:
@@ -1048,41 +1077,64 @@ class SpotFrame(XrayFrame):
                 image_data = (image_data.as_double(),)
 
         else:
-            kabsch_debug_list = self._calculate_dispersion_debug(image)
+            dispersion_debug_list = self._calculate_dispersion_debug(image)
 
             if self.settings.display == "mean":
-                mean = [kabsch.mean() for kabsch in kabsch_debug_list]
+                mean = [dispersion.mean() for dispersion in dispersion_debug_list]
                 image_data = mean
             elif self.settings.display == "variance":
-                variance = [kabsch.variance() for kabsch in kabsch_debug_list]
+                variance = [
+                    dispersion.variance() for dispersion in dispersion_debug_list
+                ]
                 image_data = variance
             elif self.settings.display == "dispersion":
-                cv = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
+                cv = [
+                    dispersion.index_of_dispersion()
+                    for dispersion in dispersion_debug_list
+                ]
                 image_data = cv
             elif self.settings.display == "sigma_b":
-                cv = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
-                cv_mask = [kabsch.cv_mask() for kabsch in kabsch_debug_list]
+                cv = [
+                    dispersion.index_of_dispersion()
+                    for dispersion in dispersion_debug_list
+                ]
+                cv_mask = [dispersion.cv_mask() for dispersion in dispersion_debug_list]
                 cv_mask = [mask.as_1d().as_double() for mask in cv_mask]
                 for i, mask in enumerate(cv_mask):
                     mask.reshape(cv[i].accessor())
                 image_data = cv_mask
             elif self.settings.display == "sigma_s":
-                cv = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
-                value_mask = [kabsch.value_mask() for kabsch in kabsch_debug_list]
+                cv = [
+                    dispersion.index_of_dispersion()
+                    for dispersion in dispersion_debug_list
+                ]
+                value_mask = [
+                    dispersion.value_mask() for dispersion in dispersion_debug_list
+                ]
                 value_mask = [mask.as_1d().as_double() for mask in value_mask]
                 for i, mask in enumerate(value_mask):
                     mask.reshape(cv[i].accessor())
                 image_data = value_mask
             elif self.settings.display == "global":
-                cv = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
-                global_mask = [kabsch.global_mask() for kabsch in kabsch_debug_list]
+                cv = [
+                    dispersion.index_of_dispersion()
+                    for dispersion in dispersion_debug_list
+                ]
+                global_mask = [
+                    dispersion.global_mask() for dispersion in dispersion_debug_list
+                ]
                 global_mask = [mask.as_1d().as_double() for mask in global_mask]
                 for i, mask in enumerate(global_mask):
                     mask.reshape(cv[i].accessor())
                 image_data = global_mask
             elif self.settings.display == "threshold":
-                cv = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
-                final_mask = [kabsch.final_mask() for kabsch in kabsch_debug_list]
+                cv = [
+                    dispersion.index_of_dispersion()
+                    for dispersion in dispersion_debug_list
+                ]
+                final_mask = [
+                    dispersion.final_mask() for dispersion in dispersion_debug_list
+                ]
                 final_mask = [mask.as_1d().as_double() for mask in final_mask]
                 for i, mask in enumerate(final_mask):
                     mask.reshape(cv[i].accessor())
@@ -1099,8 +1151,7 @@ class SpotFrame(XrayFrame):
     def _calculate_dispersion_debug(self, image):
 
         # hash current settings
-
-        kabsch_debug_list_hash = hash(
+        dispersion_debug_list_hash = hash(
             (
                 image.index,
                 self.images.selected.image_set,
@@ -1110,14 +1161,16 @@ class SpotFrame(XrayFrame):
                 self.settings.global_threshold,
                 self.settings.min_local,
                 tuple(self.settings.kernel_size),
-                self.settings.dispersion_extended,
+                self.settings.threshold_algorithm,
+                self.settings.n_iqr,
+                self.settings.blur,
+                self.settings.n_bins,
             )
         )
 
-        # compare current settings to last calculation of "Kabsch debug" list
-
-        if kabsch_debug_list_hash == self._kabsch_debug_list_hash:
-            return self._kabsch_debug_list
+        # compare current settings to last calculation of "dispersion debug" list
+        if dispersion_debug_list_hash == self._dispersion_debug_list_hash:
+            return self._dispersion_debug_list
 
         detector = image.get_detector()
         image_mask = self.get_mask(image)
@@ -1127,14 +1180,18 @@ class SpotFrame(XrayFrame):
             flex.double(image_data[i].accessor(), self.settings.gain)
             for i in range(len(detector))
         ]
-        if self.settings.dispersion_extended:
+        if self.settings.threshold_algorithm == "dispersion_extended":
             algorithm = DispersionExtendedThresholdDebug
-        else:
+        elif self.settings.threshold_algorithm == "dispersion":
             algorithm = DispersionThresholdDebug
+        else:
+            algorithm = RadialProfileThresholdDebug(
+                image, self.settings.n_iqr, self.settings.blur, self.settings.n_bins
+            )
 
-        kabsch_debug_list = []
+        dispersion_debug_list = []
         for i_panel in range(len(detector)):
-            kabsch_debug_list.append(
+            dispersion_debug_list.append(
                 algorithm(
                     image_data[i_panel].as_double(),
                     image_mask[i_panel],
@@ -1146,9 +1203,10 @@ class SpotFrame(XrayFrame):
                     self.settings.min_local,
                 )
             )
-        self._kabsch_debug_list = kabsch_debug_list
-        self._kabsch_debug_list_hash = kabsch_debug_list_hash
-        return kabsch_debug_list
+
+        self._dispersion_debug_list = dispersion_debug_list
+        self._dispersion_debug_list_hash = dispersion_debug_list_hash
+        return dispersion_debug_list
 
     def show_filters(self):
         image_data = self.get_image_data(self.pyslip.tiles.raw_image)
@@ -1377,8 +1435,10 @@ class SpotFrame(XrayFrame):
         # self.show_filters()
         if self.settings.show_threshold_pix:
             image = self.pyslip.tiles.raw_image
-            kabsch_debug_list = self._calculate_dispersion_debug(image)
-            final_mask = [kabsch.final_mask() for kabsch in kabsch_debug_list]
+            dispersion_debug_list = self._calculate_dispersion_debug(image)
+            final_mask = [
+                dispersion.final_mask() for dispersion in dispersion_debug_list
+            ]
             value = []
             for pnl, mask in enumerate(final_mask):
                 width = mask.all()[1]
@@ -2050,13 +2110,16 @@ class SpotSettingsPanel(wx.Panel):
         self.settings.display = self.params.display
         if self.settings.display == "global_threshold":
             self.settings.display = "global"
-        self.settings.dispersion_extended = True
+        self.settings.threshold_algorithm = "dispersion_extended"
         self.settings.nsigma_b = self.params.nsigma_b
         self.settings.nsigma_s = self.params.nsigma_s
         self.settings.global_threshold = self.params.global_threshold
         self.settings.kernel_size = self.params.kernel_size
         self.settings.min_local = self.params.min_local
         self.settings.gain = self.params.gain
+        self.settings.n_iqr = self.params.n_iqr
+        self.settings.blur = self.params.blur
+        self.settings.n_bins = self.params.n_bins
         self.settings.find_spots_phil = "find_spots.phil"
         self._sizer = wx.BoxSizer(wx.VERTICAL)
         s = self._sizer
@@ -2271,96 +2334,151 @@ class SpotSettingsPanel(wx.Panel):
         grid.Add(self.image_type_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         s.Add(grid)
 
-        # DispersionThreshold thresholding parameters
-        grid = wx.FlexGridSizer(cols=1, rows=1, vgap=0, hgap=0)
-        self.threshold_algorithm = wx.CheckBox(
-            self, -1, "Use dispersion extended algorithm"
+        # Choice of thresholding algorithm
+        grid = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
+        txt1 = wx.StaticText(self, -1, "Threshold algorithm:")
+        grid.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.threshold_algorithm_types = [
+            "dispersion",
+            "dispersion_extended",
+            "radial_profile",
+        ]
+        self.threshold_algorithm_ctrl = wx.Choice(
+            self, -1, choices=self.threshold_algorithm_types
         )
-        self.threshold_algorithm.SetValue(self.settings.dispersion_extended)
-        grid.Add(self.threshold_algorithm, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.threshold_algorithm_ctrl.SetSelection(
+            self.threshold_algorithm_types.index(self.settings.threshold_algorithm)
+        )
+        grid.Add(self.threshold_algorithm_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         s.Add(grid)
 
-        grid1 = wx.FlexGridSizer(cols=2, rows=8, vgap=0, hgap=0)
-        s.Add(grid1)
+        # Spotfinding parameters relevant to dispersion algorithms
+        self.dispersion_params_grid = wx.FlexGridSizer(cols=2, rows=6, vgap=0, hgap=0)
+        s.Add(self.dispersion_params_grid)
 
         txt1 = wx.StaticText(self, -1, "Sigma background")
-        grid1.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.dispersion_params_grid.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.nsigma_b_ctrl = FloatCtrl(
             self, value=self.settings.nsigma_b, name="sigma_background"
         )
         self.nsigma_b_ctrl.SetMin(0)
-        grid1.Add(self.nsigma_b_ctrl, 0, wx.ALL, 5)
+        self.dispersion_params_grid.Add(self.nsigma_b_ctrl, 0, wx.ALL, 5)
 
         txt2 = wx.StaticText(self, -1, "Sigma strong")
-        grid1.Add(txt2, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.dispersion_params_grid.Add(txt2, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.nsigma_s_ctrl = FloatCtrl(
             self, value=self.settings.nsigma_s, name="sigma_strong"
         )
         self.nsigma_s_ctrl.SetMin(0)
-        grid1.Add(self.nsigma_s_ctrl, 0, wx.ALL, 5)
+        self.dispersion_params_grid.Add(self.nsigma_s_ctrl, 0, wx.ALL, 5)
 
         txt1 = wx.StaticText(self, -1, "Global Threshold")
-        grid1.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.dispersion_params_grid.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.global_threshold_ctrl = FloatCtrl(
             self, value=self.settings.global_threshold, name="global_threshold"
         )
         self.global_threshold_ctrl.SetMin(0)
-        grid1.Add(self.global_threshold_ctrl, 0, wx.ALL, 5)
+        self.dispersion_params_grid.Add(self.global_threshold_ctrl, 0, wx.ALL, 5)
 
         txt4 = wx.StaticText(self, -1, "Min. local")
-        grid1.Add(txt4, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.dispersion_params_grid.Add(txt4, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.min_local_ctrl = PhilIntCtrl(
             self, value=self.settings.min_local, name="min_local"
         )
         self.min_local_ctrl.SetMin(0)
-        grid1.Add(self.min_local_ctrl, 0, wx.ALL, 5)
+        self.dispersion_params_grid.Add(self.min_local_ctrl, 0, wx.ALL, 5)
 
         txt4 = wx.StaticText(self, -1, "Gain")
-        grid1.Add(txt4, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.dispersion_params_grid.Add(txt4, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.gain_ctrl = FloatCtrl(self, value=self.settings.gain, name="gain")
         self.gain_ctrl.SetMin(1e-6)
-        grid1.Add(self.gain_ctrl, 0, wx.ALL, 5)
+        self.dispersion_params_grid.Add(self.gain_ctrl, 0, wx.ALL, 5)
 
         txt3 = wx.StaticText(self, -1, "Kernel size")
-        grid1.Add(txt3, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.dispersion_params_grid.Add(txt3, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.kernel_size_ctrl = IntsCtrl(
             self, value=self.settings.kernel_size, name="kernel_size"
         )
         self.kernel_size_ctrl.SetSize(2)
         self.kernel_size_ctrl.SetMin(1)
-        grid1.Add(self.kernel_size_ctrl, 0, wx.ALL, 5)
+        self.dispersion_params_grid.Add(self.kernel_size_ctrl, 0, wx.ALL, 5)
 
         self.Bind(
-            wx.EVT_CHECKBOX,
-            self.OnUpdateDispersionThresholdDebug,
-            self.threshold_algorithm,
+            EVT_PHIL_CONTROL, self.OnUpdateThresholdParameters, self.nsigma_b_ctrl
         )
         self.Bind(
-            EVT_PHIL_CONTROL, self.OnUpdateDispersionThresholdDebug, self.nsigma_b_ctrl
-        )
-        self.Bind(
-            EVT_PHIL_CONTROL, self.OnUpdateDispersionThresholdDebug, self.nsigma_s_ctrl
+            EVT_PHIL_CONTROL, self.OnUpdateThresholdParameters, self.nsigma_s_ctrl
         )
         self.Bind(
             EVT_PHIL_CONTROL,
-            self.OnUpdateDispersionThresholdDebug,
+            self.OnUpdateThresholdParameters,
             self.global_threshold_ctrl,
         )
         self.Bind(
             EVT_PHIL_CONTROL,
-            self.OnUpdateDispersionThresholdDebug,
+            self.OnUpdateThresholdParameters,
             self.kernel_size_ctrl,
         )
         self.Bind(
-            EVT_PHIL_CONTROL, self.OnUpdateDispersionThresholdDebug, self.min_local_ctrl
+            EVT_PHIL_CONTROL, self.OnUpdateThresholdParameters, self.min_local_ctrl
         )
+        self.Bind(EVT_PHIL_CONTROL, self.OnUpdateThresholdParameters, self.gain_ctrl)
+
+        # Spotfinding parameters relevant to the radial_profile algorithm
+        self.radial_profile_params_grid = wx.FlexGridSizer(
+            cols=2, rows=3, vgap=0, hgap=0
+        )
+        s.Add(self.radial_profile_params_grid)
+
+        txt1 = wx.StaticText(self, -1, "IQR multiplier")
+        self.radial_profile_params_grid.Add(
+            txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5
+        )
+        self.n_iqr_ctrl = FloatCtrl(
+            self, value=self.settings.n_iqr, name="iqr_multiplier"
+        )
+        self.n_iqr_ctrl.SetMin(0)
+        self.radial_profile_params_grid.Add(self.n_iqr_ctrl, 0, wx.ALL, 5)
+
+        txt1 = wx.StaticText(self, -1, "Blur")
+        self.radial_profile_params_grid.Add(
+            txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5
+        )
+        self.blur_choices = [
+            "None",
+            "narrow",
+            "wide",
+        ]
+        self.blur_ctrl = wx.Choice(self, -1, choices=self.blur_choices)
+        self.blur_ctrl.SetSelection(self.blur_choices.index(str(self.settings.blur)))
+        self.radial_profile_params_grid.Add(
+            self.blur_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5
+        )
+
+        txt1 = wx.StaticText(self, -1, "N bins")
+        self.radial_profile_params_grid.Add(
+            txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5
+        )
+        self.n_bins_ctrl = PhilIntCtrl(self, value=self.settings.n_bins, name="n_bins")
+        self.n_bins_ctrl.SetMin(10)
+        self.radial_profile_params_grid.Add(self.n_bins_ctrl, 0, wx.ALL, 5)
+
+        self.Bind(EVT_PHIL_CONTROL, self.OnUpdateThresholdParameters, self.n_iqr_ctrl)
+        self.Bind(wx.EVT_CHOICE, self.OnUpdateThresholdParameters, self.blur_ctrl)
         self.Bind(
-            EVT_PHIL_CONTROL, self.OnUpdateDispersionThresholdDebug, self.gain_ctrl
+            EVT_PHIL_CONTROL,
+            self.OnUpdateThresholdParameters,
+            self.n_bins_ctrl,
         )
+
+        # Save spotfinding PHIL control
+        grid1 = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
+        s.Add(grid1)
 
         self.save_params_txt_ctrl = StrCtrl(
             self, value=self.settings.find_spots_phil, name="find_spots_phil"
         )
+
         grid1.Add(self.save_params_txt_ctrl, 0, wx.ALL, 5)
         self.Bind(EVT_PHIL_CONTROL, self.OnUpdate, self.save_params_txt_ctrl)
 
@@ -2371,8 +2489,8 @@ class SpotSettingsPanel(wx.Panel):
         grid2 = wx.FlexGridSizer(cols=4, rows=2, vgap=0, hgap=0)
         s.Add(grid2)
 
-        self.kabsch_buttons = []
-        self.kabsch_labels = [
+        self.dispersion_buttons = []
+        self.dispersion_labels = [
             "image",
             "mean",
             "variance",
@@ -2382,21 +2500,24 @@ class SpotSettingsPanel(wx.Panel):
             "global",
             "threshold",
         ]
-        for label in self.kabsch_labels:
+        for label in self.dispersion_labels:
             btn = wx.ToggleButton(self, -1, label)
-            self.kabsch_buttons.append(btn)
+            self.dispersion_buttons.append(btn)
             grid2.Add(btn, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
             self.Bind(wx.EVT_TOGGLEBUTTON, self.OnDispersionThresholdDebug, btn)
 
-        for label, button in zip(self.kabsch_labels, self.kabsch_buttons):
+        for label, button in zip(self.dispersion_labels, self.dispersion_buttons):
             if self.params.stack_images > 1:
                 button.Disable()
-        for button in self.kabsch_buttons:
+        for button in self.dispersion_buttons:
             if button.GetLabelText() == self.settings.display:
                 button.SetValue(True)
                 break
 
         self.collect_values()
+
+        # Hide parameters for deselected threshold algorithm
+        self._toggle_params_grid(self.settings.threshold_algorithm)
 
         # CONTROLS 3:  Bind events to actions
 
@@ -2413,6 +2534,11 @@ class SpotSettingsPanel(wx.Panel):
 
         self.Bind(wx.EVT_CHOICE, self.OnUpdateZoomLevel, self.zoom_ctrl)
         self.Bind(wx.EVT_CHOICE, self.OnUpdateImage, self.image_type_ctrl)
+        self.Bind(
+            wx.EVT_CHOICE,
+            self.OnUpdateThresholdAlgorithm,
+            self.threshold_algorithm_ctrl,
+        )
         self.Bind(wx.EVT_CHOICE, self.OnUpdateImage, self.stack_mode_ctrl)
         self.Bind(wx.EVT_CHOICE, self.OnUpdate, self.color_ctrl)
         self.Bind(wx.EVT_CHOICE, self.OnUpdateProjection, self.projection_ctrl)
@@ -2476,7 +2602,9 @@ class SpotSettingsPanel(wx.Panel):
             self.settings.show_mask = self.show_mask.GetValue()
             self.settings.show_basis_vectors = self.show_basis_vectors.GetValue()
             self.settings.show_rotation_axis = self.show_rotation_axis.GetValue()
-            self.settings.dispersion_extended = self.threshold_algorithm.GetValue()
+            self.settings.threshold_algorithm = self.threshold_algorithm_types[
+                self.threshold_algorithm_ctrl.GetSelection()
+            ]
             self.settings.color_scheme = self.color_ctrl.GetSelection()
             self.settings.projection = self.projection_ctrl.GetSelection()
             self.settings.nsigma_b = self.nsigma_b_ctrl.GetPhilValue()
@@ -2485,6 +2613,10 @@ class SpotSettingsPanel(wx.Panel):
             self.settings.kernel_size = self.kernel_size_ctrl.GetPhilValue()
             self.settings.min_local = self.min_local_ctrl.GetPhilValue()
             self.settings.gain = self.gain_ctrl.GetPhilValue()
+            self.settings.n_iqr = self.n_iqr_ctrl.GetPhilValue()
+            self.settings.blur = self.blur_choices[self.blur_ctrl.GetSelection()]
+            self.settings.n_bins = self.n_bins_ctrl.GetPhilValue()
+
             self.settings.find_spots_phil = self.save_params_txt_ctrl.GetPhilValue()
 
     def UpdateZoomCtrl(self, event):
@@ -2556,6 +2688,19 @@ class SpotSettingsPanel(wx.Panel):
         pyslip.ZoomIn((x, y), update=False)
         pyslip.GotoPosition(center)
 
+    def _toggle_params_grid(self, to_show):
+        if to_show == "radial_profile":
+            self.dispersion_params_grid.ShowItems(False)
+            self.radial_profile_params_grid.ShowItems(True)
+        else:
+            self.dispersion_params_grid.ShowItems(True)
+            self.radial_profile_params_grid.ShowItems(False)
+        self._sizer.Layout()
+
+    def OnUpdateThresholdAlgorithm(self, event):
+        self._toggle_params_grid(event.GetString())
+        self.OnUpdateThresholdParameters(event)
+
     def OnUpdateProjection(self, event):
         self.params.projection = event.GetString()
         self.OnUpdateImage(event)
@@ -2563,10 +2708,8 @@ class SpotSettingsPanel(wx.Panel):
     def OnSaveFindSpotsParams(self, event):
         params = find_spots_phil_scope.extract()
         threshold = params.spotfinder.threshold
-        if self.settings.dispersion_extended:
-            threshold.algorithm = "dispersion_extended"
-        else:
-            threshold.algorithm = "dispersion"
+        threshold.algorithm = self.settings.threshold_algorithm
+
         dispersion = threshold.dispersion
         dispersion.gain = self.settings.gain
         dispersion.global_threshold = self.settings.global_threshold
@@ -2574,25 +2717,24 @@ class SpotSettingsPanel(wx.Panel):
         dispersion.min_local = self.settings.min_local
         dispersion.sigma_background = self.settings.nsigma_b
         dispersion.sigma_strong = self.settings.nsigma_s
+
+        radial_profile = threshold.radial_profile
+        radial_profile.n_iqr = self.settings.n_iqr
+        if self.settings.blur == "None":
+            radial_profile.blur = None
+        else:
+            radial_profile.blur = self.settings.blur
+        radial_profile.n_bins = self.settings.n_bins
+
         print(f"Saving parameters to {self.settings.find_spots_phil}")
         with open(self.settings.find_spots_phil, "w") as f:
             find_spots_phil_scope.fetch_diff(find_spots_phil_scope.format(params)).show(
                 f
             )
 
-    def OnUpdateDispersionThresholdDebug(self, event):
-        if (
-            self.settings.dispersion_extended != self.threshold_algorithm.GetValue()
-            or self.settings.nsigma_b != self.nsigma_b_ctrl.GetPhilValue()
-            or self.settings.nsigma_s != self.nsigma_s_ctrl.GetPhilValue()
-            or self.settings.global_threshold
-            != self.global_threshold_ctrl.GetPhilValue()
-            or self.settings.kernel_size != self.kernel_size_ctrl.GetPhilValue()
-            or self.settings.min_local != self.min_local_ctrl.GetPhilValue()
-            or self.settings.gain != self.gain_ctrl.GetPhilValue()
-        ):
-            self.GetParent().GetParent().show_filters()
-            self.OnUpdateImage(event)
+    def OnUpdateThresholdParameters(self, event):
+        self.GetParent().GetParent().show_filters()
+        self.OnUpdateImage(event)
 
     def OnDispersionThresholdDebug(self, event):
 
@@ -2601,7 +2743,7 @@ class SpotSettingsPanel(wx.Panel):
 
         self.settings.display = selected
 
-        # Disable corrected/raw selection when showing Kabsch debug images
+        # Disable corrected/raw selection when showing dispersion debug images
         if self.settings.display != "image":
             self.image_type_ctrl.SetSelection(0)
             self.image_type_ctrl.Disable()
@@ -2609,7 +2751,7 @@ class SpotSettingsPanel(wx.Panel):
             self.image_type_ctrl.Enable()
 
         # reset buttons
-        for btn in self.kabsch_buttons:
+        for btn in self.dispersion_buttons:
             if btn.GetLabelText() == selected:
                 btn.SetValue(True)
             else:

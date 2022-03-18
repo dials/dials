@@ -46,6 +46,10 @@ input is an models.expt file.
 XDS format exports a models.expt file as XDS.INP and XPARM.XDS files. If a
 reflection file is given it will be exported as a SPOT.XDS file.
 
+PETS format exports intensity data and diffraction data in the CIF format
+used by PETS. This is primarily intended to produce files suitable for
+dynamic diffraction refinement using Jana2020, which requires this format.
+
 Examples::
 
   # Export to mtz
@@ -74,7 +78,7 @@ Examples::
 phil_scope = parse(
     """
 
-  format = *mtz sadabs nxs mmcif mosflm xds xds_ascii json shelx
+  format = *mtz sadabs nxs mmcif mosflm xds xds_ascii json shelx pets
     .type = choice
     .help = "The output file format"
 
@@ -222,6 +226,7 @@ phil_scope = parse(
   }
 
   json {
+
     filename = rlp.json
       .type = path
     compact = True
@@ -230,9 +235,11 @@ phil_scope = parse(
       .type = int(value_min=1)
       .help = "Number of decimal places to be used for representing the"
               "reciprocal lattice points."
+
   }
 
   shelx {
+
     hklout = dials.hkl
       .type = path
       .help = "The output hkl file"
@@ -245,6 +252,44 @@ phil_scope = parse(
     scale_range = -9999.0, 9999.0
       .type = floats(size=2, value_min=-999999., value_max=9999999.)
       .help = "minimum or maximum intensity value after scaling."
+
+  }
+
+  pets {
+
+    filename_prefix = dials_dyn
+      .type = str
+      .help = "The prefix for output files, where the default will produce"
+              "dials_dyn.cif_pets"
+    id = None
+      .type = int
+      .help = "The experiment ID to export from a multi-experiment list"
+
+    partiality_cutoff = 0.99
+      .type = float
+      .help = "Cutoff for determining which reflections are deemed to be fully"
+              "recorded"
+
+    flag_filtering = False
+      .type = bool
+      .help = "If true, keep only the reflections where the relevant `integrated`"
+              "flag is set (either `integrated_sum` or `integrated_prf`). This"
+              "seems to be quite restrictive compared to"
+              "PETS, so is not set by default."
+
+    virtual_frame {
+      excitation_error_cutoff = 0.04
+        .type = float
+        .help = "Excitation error cutoff determining which reflections are"
+                "included in virtual frames"
+      n_merged = 1
+        .type = int
+        .help = "Number of frames to merge in a virtual frame"
+      step = 1
+        .type = int
+        .help = "Step between frames"
+
+    }
   }
 
   output {
@@ -505,6 +550,26 @@ def export_shelx(params, experiments, reflections):
     export_shelx(reflections[0], experiments, params)
 
 
+def export_pets(params, experiments, reflections):
+    """
+    Export reflections in PETS CIF format
+
+    :param params: The phil parameters
+    :param experiments: The experiment list
+    :param reflections: The reflection tables
+    """
+
+    # Check the input
+    _check_input(experiments, reflections, check_intensities=False)
+
+    from dials.util.export_pets import PETSOutput
+
+    pets_output = PETSOutput(experiments, reflections, params)
+    pets_output.write_dyn_cif_pets()
+
+    return
+
+
 @show_mail_handle_errors()
 def run(args=None):
     from dials.util.options import (
@@ -580,6 +645,7 @@ def run(args=None):
         "xds": export_xds,
         "json": export_json,
         "shelx": export_shelx,
+        "pets": export_pets,
     }.get(params.format)
     if not exporter:
         sys.exit(f"Unknown format: {params.format}")

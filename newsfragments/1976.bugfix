@@ -1,1 +1,0 @@
-``ThreadPool` and ``Socket`` resources were not properly closed in ``dials.find_spots_client``.

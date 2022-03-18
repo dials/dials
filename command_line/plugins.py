@@ -54,7 +54,7 @@ known_entry_points = {
     },
     "dials.spotfinder.threshold": {
         "description": "Spotfinding threshold algorithms",
-        "required": ["dispersion", "dispersion_extended"],
+        "required": ["dispersion", "dispersion_extended", "radial_profile"],
     },
 }
 
