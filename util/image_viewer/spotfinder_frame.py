@@ -685,7 +685,7 @@ class SpotFrame(XrayFrame):
         """Draw resolution rings for arbitrary detector geometry using a polygon path"""
         resolution_text_data = []
         ring_data = []
-        n_rays = 720
+        n_rays = 180
         for tt, d in zip(twotheta, spacings):
 
             # Generate rays at 2θ
@@ -806,7 +806,7 @@ class SpotFrame(XrayFrame):
 
         return
 
-    def draw_resolution_rings(self, unit_cell=None, space_group=None):
+    def draw_resolution_rings(self, unit_cell=None, space_group=None, d_values=None):
         image = self.image_chooser.GetClientData(
             self.image_chooser.GetSelection()
         ).image_set
@@ -817,10 +817,14 @@ class SpotFrame(XrayFrame):
         d_star_sq_max = uctbx.d_as_d_star_sq(d_min)
 
         if unit_cell is not None and space_group is not None:
+            assert d_values is None, "supply uc/sg or d_values but not both"
             unit_cell = space_group.average_unit_cell(unit_cell)
             generator = index_generator(unit_cell, space_group.type(), False, d_min)
             indices = generator.to_array()
             spacings = flex.sorted(unit_cell.d(indices))
+
+        elif d_values is not None:
+            spacings = flex.double(d_values)
 
         else:
             n_rings = 5
@@ -840,7 +844,7 @@ class SpotFrame(XrayFrame):
         bor2 = beamvec.cross(bor1)
 
         # For non-coplanar detectors use a polygon method rather than ellipses
-        if detector.has_projection_2d():
+        if detector.has_projection_2d() or True:
             return self._draw_resolution_polygons(
                 twotheta,
                 spacings,

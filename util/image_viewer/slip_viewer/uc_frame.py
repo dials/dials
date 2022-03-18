@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import math
+import json
+import copy
 
 import wx
 from wx.lib.agw.floatspin import EVT_FLOATSPIN, FloatSpin
@@ -194,7 +196,7 @@ class UCSettingsPanel(wx.Panel):
             self,
             digits=self.digits,
             name="Detector Distance",
-            value=img.get_detector_distance(),
+            value=0,
         )
         self.distance_ctrl.SetIncrement(0.5)
         box.Add(
@@ -287,6 +289,45 @@ class UCSettingsPanel(wx.Panel):
         )
         sizer.Add(box)
 
+        # Rotation controls
+        self._axis_rots = [0., 0.]
+        box = wx.BoxSizer(wx.HORIZONTAL)
+
+        self.spinner_rot_fast = FloatSpin(
+            self, digits=self.digits, name="rot_fast_ctrl", value=self._axis_rots[0]
+        )
+        box.Add(
+            self.spinner_rot_fast,
+            0,
+            wx.RIGHT | wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_VERTICAL,
+            5,
+        )
+        box.Add(
+            wx.StaticText(self, label="Rot fast"),
+            0,
+            wx.ALL | wx.ALIGN_CENTER_VERTICAL,
+            5,
+        )
+        self.Bind(EVT_FLOATSPIN, self.OnSpinRot, self.spinner_rot_fast)
+
+        self.spinner_rot_slow = FloatSpin(
+            self, digits=self.digits, name="rot_slow_ctrl", value=self._axis_rots[1]
+        )
+        box.Add(
+            self.spinner_rot_slow,
+            0,
+            wx.LEFT | wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_VERTICAL,
+            5,
+        )
+        box.Add(
+            wx.StaticText(self, label="Rot slow"),
+            0,
+            wx.ALL | wx.ALIGN_CENTER_VERTICAL,
+            5,
+        )
+        self.Bind(EVT_FLOATSPIN, self.OnSpinRot, self.spinner_rot_slow)
+        sizer.Add(box)
+
         box = wx.BoxSizer(wx.HORIZONTAL)
         self.clear_button = wx.Button(self, -1, "Clear")
         box.Add(self.clear_button, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
@@ -298,6 +339,39 @@ class UCSettingsPanel(wx.Panel):
         origin_box.Add(self.origin, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.Bind(EVT_FLOATSPIN, self.OnSpinCenter, self.spinner_slow)
 
+        detector = self._pyslip.tiles.raw_image.get_detector()
+        d_biggest = 0
+        for node in detector:
+          d = node.get_origin()[2]
+          if abs(d) > abs(d_biggest):
+            d_biggest = d
+        self.origin_cache = tuple(
+            a+b for a,b in zip(detector.hierarchy().get_origin(), (0,0,d_biggest))
+        )
+        origin = detector.hierarchy().get_origin()
+        new_origin = tuple(
+            a+b for a,b in zip(origin, (0,0,d_biggest))
+        )
+        detector.hierarchy().set_frame(
+            detector.hierarchy().get_fast_axis(),
+            detector.hierarchy().get_slow_axis(),
+            new_origin
+        )
+
+        for node in detector:
+          origin = node.get_origin()
+          new_origin = tuple(
+              a-b for a,b in zip(origin, (0,0,d_biggest))
+          )
+          node.set_frame(
+              node.get_fast_axis(),
+              node.get_slow_axis(),
+              new_origin
+          )
+
+        self.origin_cache = detector.hierarchy().get_origin()
+        self.fast_cache = detector.hierarchy().get_fast_axis()
+        self.slow_cache = detector.hierarchy().get_slow_axis()
         sizer.Add(origin_box)
 
         self.DrawRings()
@@ -317,6 +391,17 @@ class UCSettingsPanel(wx.Panel):
             self._center[1] = obj.GetValue()
 
         self.DrawRings()
+
+    def OnSpinRot(self, event):
+      obj = event.EventObject
+      name = obj.GetName()
+
+      if name == "rot_fast_ctrl":
+        self._axis_rots[0] = obj.GetValue()
+      elif name == "rot_slow_ctrl":
+        self._axis_rots[1] = obj.GetValue()
+
+      self.DrawRings()
 
     def OnSpinCell(self, event):
         obj = event.EventObject
@@ -397,54 +482,44 @@ class UCSettingsPanel(wx.Panel):
 
         for d in spacings:
             print(d)
+        d_values = [d[1] for d in spacings]
 
         detector = self._pyslip.tiles.raw_image.get_detector()
+        #detector = copy.deepcopy(self._detector)
 
-        wavelength = float(self.wavelength_ctrl.GetValue())
-        distance = float(self.distance_ctrl.GetValue())
         pixel_size = detector[0].get_pixel_size()[
             0
         ]  # FIXME assumes square pixels, and that all panels use same pixel size
+        origin_shift = (
+            -1 * self._center[0] * pixel_size,
+            self._center[1] * pixel_size,
+            -1 * self.distance_ctrl.GetValue()
+            )
 
-        twotheta = hkl_list.two_theta(wavelength=wavelength)
-        L_mm = []
-        L_pixels = []
-        for tt in twotheta:
-            L_mm.append(distance * math.tan(tt[1]))
-        for lmm in L_mm:
-            L_pixels.append(lmm / pixel_size)
+        rot_fast_mx = col(self.fast_cache).axis_and_angle_as_r3_rotation_matrix(
+            self._axis_rots[0], deg=True
+            )
+        rot_slow_mx = col(self.slow_cache).axis_and_angle_as_r3_rotation_matrix(
+            self._axis_rots[1], deg=True
+            )
+        rot_mx = rot_fast_mx * rot_slow_mx
+        new_origin = tuple(
+            (a+b for a,b in zip(self.origin_cache, origin_shift))
+            )
 
-        xrayframe = self.GetParent().GetParent()
-        panel_id, beam_pixel_fast, beam_pixel_slow = xrayframe.get_beam_center_px()
+        detector.hierarchy().set_frame(
+            rot_mx * col(self.fast_cache),
+            rot_mx * col(self.slow_cache),
+            new_origin
+            )
+        with open('modified.expt', 'w') as f:
+            f.write(json.dumps({"detector": detector.to_dict()}, indent=2))
 
-        (
-            beam_pixel_slow,
-            beam_pixel_fast,
-        ) = xrayframe.pyslip.tiles.flex_image.tile_readout_to_picture(
-            panel_id, beam_pixel_slow - 0.5, beam_pixel_fast - 0.5
-        )
+        wavelength = float(self.wavelength_ctrl.GetValue())
+        distance = float(self.distance_ctrl.GetValue()) #MOVE DET
 
-        center = self._pyslip.tiles.picture_fast_slow_to_map_relative(
-            beam_pixel_fast + self._center[0], beam_pixel_slow + self._center[1]
-        )
-
-        # XXX Transparency?
-        ring_data = [
-            (center[0], center[1], {"colour": "red", "radius": pxl}) for pxl in L_pixels
-        ]
-
-        # Remove the old ring layer, and draw a new one.
-        if hasattr(self, "_ring_layer") and self._ring_layer is not None:
-            self._pyslip.DeleteLayer(self._ring_layer)
-            self._ring_layer = None
-        self._ring_layer = self._pyslip.AddPointLayer(
-            ring_data,
-            map_rel=True,
-            visible=True,
-            show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
-            renderer=self._draw_rings_layer,
-            name="<ring_layer>",
-        )
+        frame.draw_resolution_rings(d_values=d_values)
+        frame.pyslip.Update()
         panel = detector[0]
         fast = col(panel.get_fast_axis())
         slow = col(panel.get_slow_axis())
@@ -454,3 +529,4 @@ class UCSettingsPanel(wx.Panel):
         z = -(panel.get_distance() - distance)
         origin = (fast * x + slow * y + norm * z) + col(panel.get_origin())
         self.origin.SetLabel("Panel 0 origin: %f, %f, %f" % origin.elems)
+
