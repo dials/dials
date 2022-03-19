@@ -10,6 +10,8 @@ from wx.lib.agw.floatspin import EVT_FLOATSPIN, FloatSpin
 import cctbx.miller
 from cctbx.crystal import symmetry
 from scitbx.matrix import col
+from dxtbx.model.experiment_list import ExperimentList, Experiment
+from dxtbx.model.beam import BeamFactory
 
 
 class UCSettingsFrame(wx.MiniFrame):
@@ -227,7 +229,7 @@ class UCSettingsPanel(wx.Panel):
 
         txtw = wx.StaticText(self, label="Wavelength")
         box.Add(txtw, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-        self.Bind(EVT_FLOATSPIN, self.OnSpin, self.wavelength_ctrl)
+        self.Bind(EVT_FLOATSPIN, self.OnSpinWavelength, self.wavelength_ctrl)
         sizer.Add(box)
 
         # d_min control
@@ -414,6 +416,12 @@ class UCSettingsPanel(wx.Panel):
     def OnSpin(self, event):
         self.DrawRings()
 
+    def OnSpinWavelength(self, event):
+        self._wavelength = float(self.wavelength_ctrl.GetValue())
+        beam = self._pyslip.tiles.raw_image.get_beam()
+        beam.set_wavelength(self._wavelength)
+        self.DrawRings()
+
     def OnSpaceGroup(self, event):
         obj = event.EventObject
         self._spacegroup = obj.GetValue()
@@ -512,10 +520,16 @@ class UCSettingsPanel(wx.Panel):
             rot_mx * col(self.slow_cache),
             new_origin
             )
-        with open('modified.expt', 'w') as f:
-            f.write(json.dumps({"detector": detector.to_dict()}, indent=2))
+        expts = ExperimentList()
+        expt = Experiment()
+        expt.detector = detector
+        expt.beam = BeamFactory.make_beam(unit_s0=(0,0,-1), wavelength=self._wavelen
+        expt.imageset = frame.image_chooser.GetClientData(
+                frame.image_chooser.GetSelection()
+                ).image_set
+        expts.append(expt)
+        expts.as_file('modified.expt')
 
-        wavelength = float(self.wavelength_ctrl.GetValue())
         distance = float(self.distance_ctrl.GetValue()) #MOVE DET
 
         frame.draw_resolution_rings(d_values=d_values)
