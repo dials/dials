@@ -307,7 +307,8 @@ def test_index_imosflm_tutorial(dials_regression, tmpdir, specify_unit_cell):
 def insulin_spotfinding(dials_data, tmpdir_factory):
     """Return experiment and reflection files for 2 images of the insulin dataset"""
 
-    data_dir = dials_data("insulin")
+    # in here we depend on the non-pathlib behaviour to copy
+    data_dir = dials_data("insulin", pathlib=False)
     tmpdir = tmpdir_factory.mktemp("insulin")
 
     command = ["dials.import"]
@@ -363,7 +364,8 @@ def insulin_spotfinding_stills(dials_data, tmpdir_factory):
     """Return experiment and reflection files for 1 image of the insulin
     dataset treated as still image"""
 
-    data_dir = dials_data("insulin")
+    # in here we depend on the non-pathlib behaviour to copy
+    data_dir = dials_data("insulin", pathlib=False)
     tmpdir = tmpdir_factory.mktemp("insulin")
 
     command = [
@@ -694,7 +696,9 @@ def test_index_ED_still_low_res_spot_match(dials_data, tmpdir, indexer_type, fix
 
     # test indexing from a single simulated lysozyme ED still
 
-    image_path = dials_data("image_examples").join("simtbx_FormatSMVJHSim_001.img")
+    image_path = (
+        dials_data("image_examples", pathlib=True) / "simtbx_FormatSMVJHSim_001.img"
+    )
 
     command = ["dials.import", image_path]
     result = procrunner.run(command, working_directory=tmpdir)
@@ -791,9 +795,9 @@ def test_real_space_grid_search_no_unit_cell(dials_regression, tmpdir):
 
 
 def test_index_known_orientation(dials_data, tmpdir):
-    data_dir = dials_data("vmxi_proteinase_k_sweeps")
-    experiments_json = data_dir.join("experiments_0.json").strpath
-    reflections = data_dir.join("reflections_0.pickle").strpath
+    data_dir = dials_data("vmxi_proteinase_k_sweeps", pathlib=True)
+    experiments_json = data_dir / "experiments_0.json"
+    reflections = data_dir / "reflections_0.pickle"
 
     expected_unit_cell = uctbx.unit_cell((68.395, 68.395, 104, 90, 90, 90))
     expected_rmsds = (0.013, 0.012, 0.008)
@@ -814,8 +818,8 @@ def test_all_expt_ids_have_expts(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.index",
-            dials_data("vmxi_thaumatin_grid_index").join("split_07602.expt"),
-            dials_data("vmxi_thaumatin_grid_index").join("split_07602.refl"),
+            dials_data("vmxi_thaumatin_grid_index", pathlib=True) / "split_07602.expt",
+            dials_data("vmxi_thaumatin_grid_index", pathlib=True) / "split_07602.refl",
             "stills.indexer=sequences",
             "indexing.method=real_space_grid_search",
             "space_group=P4",
