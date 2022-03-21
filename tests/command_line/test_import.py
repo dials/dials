@@ -268,7 +268,7 @@ def test_import_beam_centre(dials_data, tmpdir):
     assert beam_centre == pytest.approx((200, 100))
 
 
-def test_fast_slow_beam_centre(dials_regression, run_in_tmpdir):
+def test_fast_slow_beam_centre(dials_regression, run_in_tmp_path):
     # test slow_fast_beam_centre with a multi-panel CS-PAD image
     impath = os.path.join(
         dials_regression,

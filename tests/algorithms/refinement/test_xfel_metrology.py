@@ -14,7 +14,7 @@ from dials.algorithms.refinement.refiner import phil_scope as refiner_phil_scope
 from dials.array_family import flex
 
 
-def test_joint_refinement(dials_regression, run_in_tmpdir):
+def test_joint_refinement(dials_regression, run_in_tmp_path):
     """A basic test of joint refinement of the CS-PAD detector at hierarchy level 2
     with 300 crystals."""
 
@@ -50,7 +50,7 @@ def test_joint_refinement(dials_regression, run_in_tmpdir):
     assert uir.count(True) == history["num_reflections"][-1]
 
 
-def test_constrained_refinement(dials_regression, run_in_tmpdir):
+def test_constrained_refinement(dials_regression, run_in_tmp_path):
     """Do constrained refinement, checking that a panel group with no data
     on it still moves with its partners in the constraint.
     See https://github.com/dials/dials/issues/990"""

@@ -12,7 +12,7 @@ from dials.array_family import flex
 from dials.command_line.damage_analysis import PychefRunner, phil_scope, run
 
 
-def test_damage_analysis_dials_data(dials_data, run_in_tmpdir):
+def test_damage_analysis_dials_data(dials_data, run_in_tmp_path):
     """Test dials.damage_analysis on scaled data."""
     location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = location.join("scaled_20_25.refl").strpath
@@ -30,7 +30,7 @@ def test_damage_analysis_dials_data(dials_data, run_in_tmpdir):
     assert os.path.isfile("dials.damage_analysis.json")
 
 
-def test_setup_from_dials_data(dials_data, run_in_tmpdir):
+def test_setup_from_dials_data(dials_data, run_in_tmp_path):
     """Test dials.damage_analysis on scaled data."""
     location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = location.join("scaled_20_25.refl").strpath
@@ -55,7 +55,7 @@ def test_setup_from_dials_data(dials_data, run_in_tmpdir):
     assert min(runner.dose) == 2 + 10
 
 
-def test_damage_analysis_mtz(dials_data, run_in_tmpdir):
+def test_damage_analysis_mtz(dials_data, run_in_tmp_path):
     """Test dials.damage_analysis on scaled data."""
     location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = location.join("scaled_20_25.refl").strpath
@@ -68,7 +68,7 @@ def test_damage_analysis_mtz(dials_data, run_in_tmpdir):
     assert os.path.isfile("scaled.mtz")
 
     args = [
-        run_in_tmpdir.join("scaled.mtz").strpath,
+        str(run_in_tmp_path / "scaled.mtz"),
         "anomalous=True",
         "json=dials.damage_analysis.json",
     ]
@@ -77,7 +77,7 @@ def test_damage_analysis_mtz(dials_data, run_in_tmpdir):
     assert os.path.isfile("dials.damage_analysis.json")
 
 
-def test_damage_analysis_input_handling(dials_data, run_in_tmpdir):
+def test_damage_analysis_input_handling(dials_data, run_in_tmp_path):
     """Test that errors are handled if more than one refl file, no refl/expt
     file or unscaled data."""
     location = dials_data("l_cysteine_4_sweeps_scaled")

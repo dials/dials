@@ -16,7 +16,7 @@ from scitbx import matrix
 from dials.algorithms.refinement.engine import Journal
 
 
-def test(dials_regression, run_in_tmpdir):
+def test(dials_regression, run_in_tmp_path):
     data_dir = os.path.join(
         dials_regression, "refinement_test_data", "multi_narrow_wedges"
     )
@@ -78,7 +78,7 @@ def test(dials_regression, run_in_tmpdir):
         assert s0_1.accute_angle(s0_2, deg=True) < 0.0057  # ~0.1 mrad
 
 
-def test_order_invariance(dials_regression, run_in_tmpdir):
+def test_order_invariance(dials_regression, run_in_tmp_path):
     """Check that the order that datasets are included in refinement does not
     matter"""
 

@@ -267,14 +267,14 @@ def test_reindex_cb_op_exit(dials_data):
     assert "Unsuitable value" in str(e.value)
 
 
-def test_reindex_reference_multi_crystal(dials_data, run_in_tmpdir):
+def test_reindex_reference_multi_crystal(dials_data, run_in_tmp_path):
 
     mcp = dials_data("multi_crystal_proteinase_k", pathlib=True)
     args = ["dials.cosym", "space_group=P4"]
     for i in [1, 2, 3, 4]:
         args.append(str(mcp / f"experiments_{i}.json"))
         args.append(str(mcp / f"reflections_{i}.pickle"))
-    result = procrunner.run(args, working_directory=run_in_tmpdir)
+    result = procrunner.run(args, working_directory=run_in_tmp_path)
     assert not result.returncode and not result.stderr
     assert os.path.isfile("symmetrized.refl")
     assert os.path.isfile("symmetrized.expt")
@@ -288,7 +288,7 @@ def test_reindex_reference_multi_crystal(dials_data, run_in_tmpdir):
     for i in [5, 7, 8, 10]:
         args1.append(str(mcp / f"experiments_{i}.json"))
         args1.append(str(mcp / f"reflections_{i}.pickle"))
-    result1 = procrunner.run(args1, working_directory=run_in_tmpdir)
+    result1 = procrunner.run(args1, working_directory=run_in_tmp_path)
     assert not result1.returncode and not result1.stderr
     assert os.path.isfile("sub_1.expt")
     assert os.path.isfile("sub_1.refl")
@@ -300,7 +300,7 @@ def test_reindex_reference_multi_crystal(dials_data, run_in_tmpdir):
         "reference.experiments=sub_1.expt",
         "reference.reflections=sub_1.refl",
     ]
-    result2 = procrunner.run(args2, working_directory=run_in_tmpdir)
+    result2 = procrunner.run(args2, working_directory=run_in_tmp_path)
     assert not result2.returncode and not result2.stderr
     assert os.path.isfile("reindexed.expt")
     assert os.path.isfile("reindexed.refl")

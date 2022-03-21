@@ -7,7 +7,7 @@ import procrunner
 from dxtbx.model.experiment_list import ExperimentListFactory
 
 
-def test1(dials_regression, run_in_tmpdir):
+def test1(dials_regression, run_in_tmp_path):
     """
     Refinement test of 300 CSPAD images, testing auto_reduction, parameter
     fixing, constraints, SparseLevMar, and sauter_poon outlier rejection. See

@@ -62,7 +62,7 @@ output.composite_output = True
 
 
 @pytest.mark.parametrize("composite_output", [True, False])
-def test_cspad_cbf_in_memory(dials_regression, run_in_tmpdir, composite_output):
+def test_cspad_cbf_in_memory(dials_regression, run_in_tmp_path, composite_output):
     # Check the data files for this test exist
     image_path = os.path.join(
         dials_regression,
@@ -109,7 +109,7 @@ def test_cspad_cbf_in_memory(dials_regression, run_in_tmpdir, composite_output):
 
 
 @pytest.mark.parametrize("use_mpi", [True, False])
-def test_sacla_h5(dials_data, run_in_tmpdir, use_mpi, in_memory=False):
+def test_sacla_h5(dials_data, run_in_tmp_path, use_mpi, in_memory=False):
     # Only allow MPI tests if we've got MPI capabilities
     if use_mpi:
         pytest.importorskip("mpi4py")

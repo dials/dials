@@ -8,7 +8,7 @@ from scitbx import matrix
 import dials.command_line.find_rotation_axis as dials_find_rotation_axis
 
 
-def test_find_rotation_axis(dials_data, run_in_tmpdir):
+def test_find_rotation_axis(dials_data, run_in_tmp_path):
     myd88 = dials_data("MyD88_processed")
     args = [myd88.join("imported.expt").strpath, myd88.join("strong.refl").strpath]
     dials_find_rotation_axis.run(args=args)

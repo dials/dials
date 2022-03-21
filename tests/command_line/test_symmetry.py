@@ -61,7 +61,7 @@ def test_symmetry_laue_only(dials_data, tmpdir):
         assert set(joint_reflections["imageset_id"].select(sel)) == {id_}
 
 
-def test_symmetry_basis_changes_for_C2(run_in_tmpdir):
+def test_symmetry_basis_changes_for_C2(run_in_tmp_path):
     """Test the correctness of change of basis operations in dials.symmetry
 
     Supply the unit cell of beta-lactamase, which triggers a change of
@@ -75,28 +75,27 @@ def test_symmetry_basis_changes_for_C2(run_in_tmpdir):
         map_to_minimum=False,
     )
     experiments.as_json("tmp.expt")
-    expt_file = run_in_tmpdir.join("tmp.expt").strpath
+    expt_file = str(run_in_tmp_path / "tmp.expt")
     joint_table = flex.reflection_table()
     for r in reflections:
         joint_table.extend(r)
     joint_table.as_file("tmp.refl")
-    refl_file = run_in_tmpdir.join("tmp.refl").strpath
+    refl_file = str(run_in_tmp_path / "tmp.refl")
 
     command = ["dials.symmetry", expt_file, refl_file, "json=symmetry.json"]
-    result = procrunner.run(command, working_directory=run_in_tmpdir)
+    result = procrunner.run(command, working_directory=run_in_tmp_path)
     assert not result.returncode and not result.stderr
-    assert run_in_tmpdir.join("symmetrized.refl").check(file=1)
-    assert run_in_tmpdir.join("symmetrized.expt").check(file=1)
+    assert run_in_tmp_path.joinpath("symmetrized.refl").is_file()
+    symmetrized_expt_file = run_in_tmp_path.joinpath("symmetrized.expt")
+    assert symmetrized_expt_file.is_file()
 
-    expts = load.experiment_list(
-        run_in_tmpdir.join("symmetrized.expt").strpath, check_format=False
-    )
+    expts = load.experiment_list(symmetrized_expt_file, check_format=False)
     for v, expected in zip(expts[0].crystal.get_unit_cell().parameters(), unit_cell):
         assert v == pytest.approx(expected)
 
     # Using the change of basis ops from the json output we should be able to
     # reindex the input experiments to match the output experiments
-    with run_in_tmpdir.join("symmetry.json").open() as f:
+    with run_in_tmp_path.joinpath("symmetry.json").open() as f:
         d = json.load(f)
     cs = experiments[0].crystal.get_crystal_symmetry()
     cb_op_inp_min = sgtbx.change_of_basis_op(str(d["cb_op_inp_min"][0]))
@@ -500,7 +499,7 @@ def test_eliminate_sys_absent():
     ]
 
 
-def test_few_reflections(dials_data, run_in_tmpdir):
+def test_few_reflections(dials_data, run_in_tmp_path):
     """
     Test that dials.symmetry does something sensible if given few reflections.
 

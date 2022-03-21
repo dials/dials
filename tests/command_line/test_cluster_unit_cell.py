@@ -14,7 +14,7 @@ from dxtbx.serialize import load
 from dials.command_line import cluster_unit_cell
 
 
-def test_dials_cluster_unit_cell_command_line(dials_regression, run_in_tmpdir):
+def test_dials_cluster_unit_cell_command_line(dials_regression, run_in_tmp_path):
     pytest.importorskip("scipy")
     pytest.importorskip("xfel")
 

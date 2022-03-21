@@ -8,7 +8,7 @@ from dials.algorithms.refinement.engine import Journal
 
 
 def test_scan_varying_refinement_of_a_multiple_panel_detector(
-    dials_regression, run_in_tmpdir
+    dials_regression, run_in_tmp_path
 ):
     from dials.array_family import flex
 

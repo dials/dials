@@ -5,7 +5,7 @@ import os
 import procrunner
 
 
-def test(dials_regression, run_in_tmpdir):
+def test(dials_regression, run_in_tmp_path):
     experiments_path = os.path.join(
         dials_regression, "misc_test_data", "i04-indexed.json"
     )

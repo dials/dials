@@ -26,7 +26,7 @@ def run_assign_identifiers(pickle_path_list, sequence_path_list, extra_args):
     assert os.path.exists("assigned.refl")
 
 
-def test_assign_identifiers(dials_data, run_in_tmpdir):
+def test_assign_identifiers(dials_data, run_in_tmp_path):
     """Test for dials.assign_experiment_identifiers"""
     pickle_path_list = []
     sequence_path_list = []

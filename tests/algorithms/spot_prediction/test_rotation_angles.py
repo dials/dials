@@ -8,7 +8,7 @@ import pytest
 from scitbx import matrix
 
 
-def test(dials_regression, run_in_tmpdir):
+def test(dials_regression, run_in_tmp_path):
     import dxtbx
     from iotbx.xds import integrate_hkl, xparm
     from rstbx.cftbx.coordinate_frame_converter import coordinate_frame_converter

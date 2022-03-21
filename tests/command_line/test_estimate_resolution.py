@@ -15,7 +15,7 @@ from dials.command_line import estimate_resolution as cmdline
         ("AUTOMATIC_DEFAULT_scaled.refl", "AUTOMATIC_DEFAULT_scaled.expt"),
     ],
 )
-def test_x4wide(input_files, dials_data, run_in_tmpdir, capsys):
+def test_x4wide(input_files, dials_data, run_in_tmp_path, capsys):
     paths = [dials_data("x4wide_processed").join(p).strpath for p in input_files]
     reference_mtz = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled.mtz")
     result = cmdline.run(
@@ -48,7 +48,7 @@ def test_x4wide(input_files, dials_data, run_in_tmpdir, capsys):
     )
     for line in expected_output:
         assert line in captured.out
-    assert run_in_tmpdir.join("resolutionizer.html").check(file=1)
+    assert run_in_tmp_path.joinpath("resolutionizer.html").is_file()
     expected_keys = {
         "cc_half",
         "cc_ref",
@@ -59,13 +59,14 @@ def test_x4wide(input_files, dials_data, run_in_tmpdir, capsys):
         "completeness",
     }
     assert set(result.keys()) == expected_keys
-    assert run_in_tmpdir.join("resolutionizer.json").check(file=1)
-    with run_in_tmpdir.join("resolutionizer.json").open("r") as fh:
+    resolutionizer = run_in_tmp_path / "resolutionizer.json"
+    assert resolutionizer.is_file()
+    with resolutionizer.open() as fh:
         d = json.load(fh)
     assert set(d.keys()) == expected_keys
 
 
-def test_multi_sequence_with_batch_range(dials_data, run_in_tmpdir, capsys):
+def test_multi_sequence_with_batch_range(dials_data, run_in_tmp_path, capsys):
     location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = location.join("scaled_20_25.refl")
     expts = location.join("scaled_20_25.expt")
@@ -78,7 +79,7 @@ def test_multi_sequence_with_batch_range(dials_data, run_in_tmpdir, capsys):
     expected_output = "Resolution cc_half:       0.61"
     for line in expected_output:
         assert line in captured.out
-    assert run_in_tmpdir.join("dials.estimate_resolution.html").check(file=1)
+    assert run_in_tmp_path.joinpath("dials.estimate_resolution.html").is_file()
 
 
 def test_dispatcher_name():
@@ -87,7 +88,7 @@ def test_dispatcher_name():
     assert not result.stderr
 
 
-def test_handle_fit_failure(dials_data, run_in_tmpdir, capsys):
+def test_handle_fit_failure(dials_data, run_in_tmp_path, capsys):
     location = dials_data("l_cysteine_dials_output")
     filenames = [
         location.join("11_integrated.expt"),
@@ -104,10 +105,10 @@ def test_handle_fit_failure(dials_data, run_in_tmpdir, capsys):
     )
     for line in expected_output:
         assert line in captured.out
-    assert run_in_tmpdir.join("dials.estimate_resolution.html").check(file=1)
+    assert run_in_tmp_path.joinpath("dials.estimate_resolution.html").is_file()
 
 
-def test_mismatched_experiments_reflections(dials_data, run_in_tmpdir):
+def test_mismatched_experiments_reflections(dials_data, run_in_tmp_path):
     location = dials_data("l_cysteine_dials_output")
     filenames = [
         location.join("11_integrated.expt"),

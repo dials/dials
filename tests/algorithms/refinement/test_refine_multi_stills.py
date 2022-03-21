@@ -12,7 +12,7 @@ from dials.algorithms.refinement import RefinerFactory
 from dials.array_family import flex
 
 
-def test1(dials_regression, run_in_tmpdir):
+def test1(dials_regression, run_in_tmp_path):
     from scitbx import matrix
 
     data_dir = os.path.join(dials_regression, "refinement_test_data", "multi_stills")
@@ -62,7 +62,7 @@ def test1(dials_regression, run_in_tmpdir):
     reason="Multiprocessing error on Windows: 'This class cannot be instantiated from Python'",
 )
 def test_multi_process_refinement_gives_same_results_as_single_process_refinement(
-    dials_regression, run_in_tmpdir
+    dials_regression, run_in_tmp_path
 ):
     data_dir = os.path.join(dials_regression, "refinement_test_data", "multi_stills")
     cmd = [
@@ -102,7 +102,7 @@ def test_multi_process_refinement_gives_same_results_as_single_process_refinemen
 
 
 def test_restrained_refinement_with_fixed_parameterisations(
-    dials_regression, run_in_tmpdir
+    dials_regression, run_in_tmp_path
 ):
     # Avoid a regression to https://github.com/dials/dials/issues/1142 by
     # testing that refinement succeeds when some parameterisations are fixed

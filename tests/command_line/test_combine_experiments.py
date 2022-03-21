@@ -18,7 +18,7 @@ import dials.command_line.combine_experiments as combine_experiments
 from dials.array_family import flex
 
 
-def test(dials_regression, run_in_tmpdir):
+def test(dials_regression, run_in_tmp_path):
     data_dir = os.path.join(
         dials_regression, "refinement_test_data", "multi_narrow_wedges"
     )
@@ -304,7 +304,7 @@ def narrow_wedge_input_with_identifiers(dials_regression, tmpdir):
 @pytest.mark.parametrize("min_refl", ["None", "100"])
 @pytest.mark.parametrize("max_refl", ["None", "150"])
 def test_min_max_reflections_per_experiment(
-    dials_regression, run_in_tmpdir, min_refl, max_refl
+    dials_regression, run_in_tmp_path, min_refl, max_refl
 ):
 
     expected_results = {

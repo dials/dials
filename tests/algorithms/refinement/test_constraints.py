@@ -110,7 +110,7 @@ def test_contraints_manager_simple_test():
     assert constr_dL_dp[6] == dL_dp[5] + dL_dp[6] + dL_dp[7]
 
 
-def test_constrained_refinement(dials_regression, run_in_tmpdir):
+def test_constrained_refinement(dials_regression, run_in_tmp_path):
     """Test joint refinement where two detectors are constrained to enforce a
     differential distance (along the shared initial normal vector) of 1 mm.
     This test can be constructed on the fly from data already in
