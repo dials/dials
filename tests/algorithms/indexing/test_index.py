@@ -477,7 +477,7 @@ def test_index_small_molecule_multi_sequence_4(dials_regression, tmp_path):
     # of goniometer.fixed_rotation()
     data_dir = pathlib.Path(dials_regression) / "indexing_test_data" / "multi_sweep"
     pickle_paths = [
-        (data_dir / f"SWEEP{i + 1}" / "index").glob("*_strong.pickle")[0]
+        sorted((data_dir / f"SWEEP{i + 1}" / "index").glob("*_strong.pickle"))[0]
         for i in range(4)
     ]
     sequence_paths = [
@@ -504,9 +504,12 @@ def test_index_small_molecule_multi_sequence_3(dials_regression, tmp_path):
     # test for small molecule multi-sequence indexing, 3 sequences with different values
     # of goniometer setting rotation (i.e. phi scans)
     data_dir = pathlib.Path(dials_regression) / "dials-191"
-    pickle_paths = [data_dir.glob(f"SWEEP{i + 1}*_strong.pickle")[0] for i in range(3)]
+    print(data_dir)
+    pickle_paths = [
+        sorted(data_dir.glob(f"*_SWEEP{i + 1}_strong.pickle"))[0] for i in range(3)
+    ]
     sequence_paths = [
-        data_dir.glob(f"SWEEP{i + 1}*_experiment.json")[0] for i in range(3)
+        sorted(data_dir.glob(f"*_SWEEP{i + 1}_experiments.json"))[0] for i in range(3)
     ]
     extra_args = ["filter_ice=False"]
     expected_unit_cell = uctbx.unit_cell(
