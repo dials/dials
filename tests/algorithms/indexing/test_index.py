@@ -304,31 +304,28 @@ def test_index_imosflm_tutorial(dials_regression, tmpdir, specify_unit_cell):
 
 
 @pytest.fixture(scope="session")
-def insulin_spotfinding(dials_data, tmpdir_factory):
+def insulin_spotfinding(dials_data, tmp_path_factory):
     """Return experiment and reflection files for 2 images of the insulin dataset"""
 
-    # in here we depend on the non-pathlib behaviour to copy
-    data_dir = dials_data("insulin", pathlib=False)
-    tmpdir = tmpdir_factory.mktemp("insulin")
+    data_dir = dials_data("insulin", pathlib=True)
+    tmp_path = tmp_path_factory.mktemp("insulin")
 
     command = ["dials.import"]
     for i, image_path in enumerate(("insulin_1_001.img", "insulin_1_045.img")):
-        target = "image_00%i.img" % (i + 1)
-        data_dir.join(image_path).copy(tmpdir.join(target))
-        command.append(target)
+        command.append(data_dir / image_path)
 
-    result = procrunner.run(command, working_directory=tmpdir)
+    result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
 
-    experiment = tmpdir.join("imported.expt")
-    assert experiment.check()
+    experiment = tmp_path / "imported.expt"
+    assert experiment.is_file()
 
     command = ["dials.find_spots", "nproc=1", experiment]
-    result = procrunner.run(command, working_directory=tmpdir)
+    result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
 
-    reflections = tmpdir.join("strong.refl")
-    assert reflections.check()
+    reflections = tmp_path / "strong.refl"
+    assert reflections.is_file()
 
     return experiment, reflections
 
@@ -360,31 +357,30 @@ def test_index_insulin_multi_sequence(insulin_spotfinding, tmpdir, method):
 
 
 @pytest.fixture(scope="session")
-def insulin_spotfinding_stills(dials_data, tmpdir_factory):
+def insulin_spotfinding_stills(dials_data, tmp_path_factory):
     """Return experiment and reflection files for 1 image of the insulin
     dataset treated as still image"""
 
-    # in here we depend on the non-pathlib behaviour to copy
-    data_dir = dials_data("insulin", pathlib=False)
-    tmpdir = tmpdir_factory.mktemp("insulin")
+    data_dir = dials_data("insulin", pathlib=True)
+    tmp_path = tmp_path_factory.mktemp("insulin")
 
     command = [
         "dials.import",
         "convert_sequences_to_stills=True",
-        data_dir.join("insulin_1_001.img"),
+        data_dir / "insulin_1_001.img",
     ]
-    result = procrunner.run(command, working_directory=tmpdir)
+    result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
 
-    experiment = tmpdir.join("imported.expt")
-    assert experiment.check()
+    experiment = tmp_path / "imported.expt"
+    assert experiment.is_file()
 
     command = ["dials.find_spots", "nproc=1", experiment]
-    result = procrunner.run(command, working_directory=tmpdir)
+    result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
 
-    reflections = tmpdir.join("strong.refl")
-    assert reflections.check()
+    reflections = tmp_path / "strong.refl"
+    assert reflections.is_file()
 
     return experiment, reflections
 
