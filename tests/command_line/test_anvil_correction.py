@@ -6,8 +6,6 @@ Tests for dials.command_line.anvil_correction.
 from __future__ import annotations
 
 import copy
-import os
-from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
@@ -19,30 +17,6 @@ from dials.command_line.anvil_correction import (
     correct_intensities_for_dac_attenuation,
     run,
 )
-
-
-@contextmanager
-def dir_as_cwd(path: str | Path) -> Path:
-    """
-    A context manager to temporarily change the working directory.
-
-    The original working directory is restored upon exiting the context manager.
-    Note that this behaviour is not thread-safe.
-
-    Args:
-        path:  The path to the temporary working directory.
-
-    Yields:
-        The path to the temporary working directory, resolved and normalised with
-        ``pathlib.Path.resolve``.
-    """
-    cwd = Path.cwd()
-    path = Path.resolve(path)
-    try:
-        os.chdir(path)
-        yield path
-    finally:
-        os.chdir(cwd)
 
 
 def test_correct_correction(dials_data):
@@ -130,7 +104,7 @@ def test_help_message(dials_data, capsys):
             )
 
 
-def test_command_line(dials_data, tmp_path):
+def test_command_line(dials_data, run_in_tmp_path):
     """Test that the program runs correctly."""
     data_dir = dials_data("centroid_test_data", pathlib=True)
 
@@ -138,14 +112,11 @@ def test_command_line(dials_data, tmp_path):
     reflections_file = str(data_dir / "integrated.pickle")
     experiments_file = str(data_dir / "experiments.json")
 
-    with dir_as_cwd(tmp_path):
-        run([experiments_file, reflections_file])
+    run([experiments_file, reflections_file])
 
-    output = tmp_path / "corrected.refl"
+    assert Path("corrected.refl").is_file()
 
-    assert output.is_file()
-
-    with tmp_path.joinpath("dials.anvil_correction.log").open() as f:
+    with Path("dials.anvil_correction.log").open() as f:
         logfile = f.read()
 
     assert "Correcting integrated reflection intensities" in logfile
