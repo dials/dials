@@ -14,6 +14,7 @@ libtbx_path = os.path.join(installer_path, "lib")
 if libtbx_path not in sys.path:
     sys.path.append(libtbx_path)
 from libtbx.auto_build import install_distribution
+from libtbx.auto_build import installer_utils
 
 
 class installer(install_distribution.installer):
@@ -62,8 +63,10 @@ class installer(install_distribution.installer):
 
     def reconfigure(self, log=None, *args, **kwargs):
         """Intercept any errors and print log excerpt"""
+        args = list(args) + ["--skip_phenix_dispatchers"]
         try:
-            return super(installer, self).reconfigure(log=log, *args, **kwargs)
+            # Deliberately call our alternative rather than the super()
+            self.reconfigure_as_libtbx_does(log)
         except Exception:
             if not self.options.verbose:
                 print("\n" + " -=-" * 20)
@@ -79,6 +82,47 @@ class installer(install_distribution.installer):
             sys.exit(
                 "Please report this installation error to dials-support@lists.sourceforge.net"
             )
+
+    def reconfigure_as_libtbx_does(self, log):
+        """
+        Run libtbx/configure.py to configure the build in the new location.
+
+        This is copied from the cctbx_project/libtbx/auto_build/install_distribution.py,
+        which does not allow customizing the call to configure. We want
+        to customize to remove phenix dispatchers.
+        """
+        os.chdir(self.build_dir)
+
+        if "darwin" in sys.platform:
+            base_python = os.path.join(
+                self.base_dir, "python.app", "Contents", "MacOS", "python"
+            )
+        elif "win32" in sys.platform:
+            base_python = os.path.join(self.base_dir, "python.exe")
+        else:
+            base_python = os.path.join(self.base_dir, "bin", "python")
+
+        if "win32" == sys.platform:
+            args = [
+                base_python,
+                os.path.join(
+                    self.modules_dir, "cctbx_project", "libtbx", "configure.py"
+                ),
+            ]
+        else:
+            args = [
+                base_python,
+                os.path.join(
+                    self.modules_dir, "cctbx_project", "libtbx", "configure.py"
+                ),
+                "--current_working_directory",
+                self.build_dir,
+            ]
+
+        args += ["--use_conda", "--skip_phenix_dispatchers"]
+        args += self.configure_modules
+
+        installer_utils.call(args=args, log=log, verbose=self.options.verbose)
 
     def product_specific_prepackage_hook(self, directory):
         """

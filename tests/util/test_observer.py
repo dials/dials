@@ -2,6 +2,8 @@
 Test the observer module.
 """
 
+from __future__ import annotations
+
 from dials.util.observer import Observer, Subject, singleton
 
 

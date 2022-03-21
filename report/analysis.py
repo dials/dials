@@ -1,5 +1,7 @@
 """Calculations relevant to reporting."""
 
+from __future__ import annotations
+
 from cctbx import miller
 from scitbx.array_family import flex
 

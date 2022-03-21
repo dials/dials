@@ -2,6 +2,8 @@
 what should usually be used to construct a Refiner."""
 
 
+from __future__ import annotations
+
 import copy
 import logging
 import math
@@ -293,7 +295,7 @@ class RefinerFactory:
                 else:
                     exps_are_stills.append(False)
             else:
-                if exp.scan.get_oscillation()[1] <= 0.0:
+                if exp.scan.is_still():
                     raise DialsRefineConfigError("Cannot refine a zero-width scan")
                 exps_are_stills.append(False)
 

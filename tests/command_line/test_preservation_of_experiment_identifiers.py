@@ -1,4 +1,6 @@
 """Test for the preservation of identifiers in dials processing."""
+from __future__ import annotations
+
 import procrunner
 
 from dxtbx.serialize import load

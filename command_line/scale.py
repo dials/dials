@@ -36,6 +36,8 @@ More detailed documentation on usage of dials.scale can be found in the
 `dials scale user guide <https://dials.github.io/dials_scale_user_guide.html>`_
 """
 
+from __future__ import annotations
+
 import logging
 import sys
 from io import StringIO

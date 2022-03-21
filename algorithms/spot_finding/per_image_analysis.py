@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import collections
 import math
 
@@ -310,6 +312,8 @@ def estimate_resolution_limit(reflections, ice_sel=None, plot_filename=None):
     if plot_filename is not None:
         from matplotlib import pyplot
 
+        from dials.util.matplotlib_utils import resolution_formatter
+
         fig = pyplot.figure()
         ax = fig.add_subplot(1, 1, 1)
         ax.scatter(d_star_sq, log_i_over_sigi, marker="+")
@@ -365,12 +369,10 @@ def estimate_resolution_limit(reflections, ice_sel=None, plot_filename=None):
             )
 
         ax_ = ax.twiny()  # ax2 is responsible for "top" axis and "right" axis
-        xticks = ax.get_xticks()
-        xticks_d = [uctbx.d_star_sq_as_d(ds2) if ds2 > 0 else 0 for ds2 in xticks]
-        ax_.set_xticks(xticks)
+        ax_.set_xticks(ax.get_xticks())
         ax_.set_xlim(ax.get_xlim())
         ax_.set_xlabel(r"Resolution ($\AA$)")
-        ax_.set_xticklabels([f"{d:.1f}" for d in xticks_d])
+        ax_.xaxis.set_major_formatter(resolution_formatter)
         pyplot.savefig(plot_filename)
         pyplot.close()
 

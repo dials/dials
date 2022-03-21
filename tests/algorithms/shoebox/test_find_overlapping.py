@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import random
 
 from dials.algorithms.shoebox import find_overlapping

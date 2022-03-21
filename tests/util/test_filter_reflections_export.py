@@ -27,6 +27,8 @@ Lastly, partials should be correctly handled - being combined if appropriate,
 scaled and filtered below a given value where the values become unreliable.
 """
 
+from __future__ import annotations
+
 from unittest import mock
 
 import pytest

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from math import exp
 from random import randint
 
@@ -21,7 +23,7 @@ class Test:
         spot = flex.double(flex.grid(11, 11))
         for j in range(11):
             for i in range(11):
-                spot[j, i] = exp(-((j - 5) ** 2 + (i - 5) ** 2) / 2 ** 2)
+                spot[j, i] = exp(-((j - 5) ** 2 + (i - 5) ** 2) / 2**2)
 
         self.image = flex.double(flex.grid(2000, 2000))
         for n in range(200):

@@ -4,6 +4,9 @@ Only the crystal is perturbed while the beam and detector are known.
 """
 
 
+from __future__ import annotations
+
+
 def test(args=[]):
     # Python and cctbx imports
     from math import pi

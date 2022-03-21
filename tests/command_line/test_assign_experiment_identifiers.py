@@ -2,6 +2,8 @@
 Test for dials.assign_experiment_identifiers
 """
 
+from __future__ import annotations
+
 import os
 
 import procrunner

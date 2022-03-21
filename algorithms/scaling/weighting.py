@@ -2,6 +2,8 @@
 Weighting scheme definitions for scaling.
 """
 
+from __future__ import annotations
+
 from dials.array_family import flex
 
 

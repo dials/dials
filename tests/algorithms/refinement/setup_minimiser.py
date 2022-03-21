@@ -1,6 +1,8 @@
 """Setup experimental geometry for refinement test cases"""
 
 
+from __future__ import annotations
+
 from libtbx.phil import command_line, parse
 
 from dials.algorithms.refinement.engine import (

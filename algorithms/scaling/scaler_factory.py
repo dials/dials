@@ -2,6 +2,8 @@
 Collection of factories for creating the scalers.
 """
 
+from __future__ import annotations
+
 import logging
 
 from libtbx import Auto

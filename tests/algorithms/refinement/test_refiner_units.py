@@ -4,6 +4,8 @@ alone.
 """
 
 
+from __future__ import annotations
+
 from unittest.mock import Mock, patch
 
 from dials.algorithms.refinement.refiner import _copy_experiments_for_refining

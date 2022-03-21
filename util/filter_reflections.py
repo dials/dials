@@ -41,6 +41,8 @@ Classes:
       implements filtering methods for using all of prf, sum and scale intensities
 """
 
+from __future__ import annotations
+
 import logging
 from collections import defaultdict
 from typing import Any, List, Type
@@ -78,7 +80,7 @@ def filter_reflection_table(
     reflection_table: flex.reflection_table,
     intensity_choice: List[str],
     *args: Any,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> flex.reflection_table:
     """Filter the data and delete unneeded intensity columns.
 

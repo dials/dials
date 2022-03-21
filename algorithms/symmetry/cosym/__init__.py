@@ -6,6 +6,8 @@ determination of Patterson group symmetry from sparse multi-crystal data sets in
 the presence of an indexing ambiguity.
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import math
@@ -40,44 +42,59 @@ d_min = Auto
 
 min_i_mean_over_sigma_mean = 4
   .type = float(value_min=0)
+  .short_caption = "Minimum <I>/<σ>"
 
 min_cc_half = 0.6
   .type = float(value_min=0, value_max=1)
+  .short_caption = "Minimum CC½"
 
 lattice_group = None
   .type = space_group
+  .short_caption = "Lattice group"
 
 space_group = None
   .type = space_group
+  .short_caption = "Space group"
 
 lattice_symmetry_max_delta = 5.0
   .type = float(value_min=0)
+  .short_caption = "Lattice symmetry max δ"
 
 best_monoclinic_beta = True
   .type = bool
   .help = "If True, then for monoclinic centered cells, I2 will be preferred over C2 if"
           "it gives a less oblique cell (i.e. smaller beta angle)."
+  .short_caption = "Best monoclinic β"
 
 dimensions = Auto
   .type = int(value_min=2)
+  .short_caption = "Dimensions"
 
 use_curvatures = True
   .type = bool
+  .short_caption = "Use curvatures"
 
 weights = count standard_error
   .type = choice
+  .short_caption = "Weights"
 
 min_pairs = 3
   .type = int(value_min=1)
   .help = 'Minimum number of pairs for inclusion of correlation coefficient in calculation of Rij matrix.'
+  .short_caption = "Minimum number of pairs"
 
-minimization {
+minimization
+  .short_caption = "Minimization"
+{
   engine = *scitbx scipy
     .type = choice
+    .short_caption = "Engine"
   max_iterations = 100
     .type = int(value_min=0)
+    .short_caption = "Maximum number of iterations"
   max_calls = None
     .type = int(value_min=0)
+    .short_caption = "Maximum number of calls"
 }
 
 nproc = None
@@ -271,7 +288,7 @@ class CosymAnalysis(symmetry_base, Subject):
 
     @Subject.notify_event(event="optimised")
     def _optimise(self, engine, max_iterations=None, max_calls=None):
-        NN = len(self.input_intensities)
+        NN = len(set(self.dataset_ids))
         n_sym_ops = len(self.target.sym_ops)
 
         coords = np.random.rand(NN * n_sym_ops * self.target.dim)
@@ -360,7 +377,7 @@ class CosymAnalysis(symmetry_base, Subject):
             to each dataset.
         """
         reindexing_ops = []
-        n_datasets = len(self.input_intensities)
+        n_datasets = len(set(self.dataset_ids))
         n_sym_ops = len(sym_ops)
         coord_ids = np.arange(n_datasets * n_sym_ops)
         dataset_ids = coord_ids % n_datasets
@@ -735,11 +752,11 @@ class ScoreSubGroup:
         power = 2
         for score in sym_op_scores:
             if score.sym_op in patterson_group:
-                self.z_cc_for += score.z_cc ** power
+                self.z_cc_for += score.z_cc**power
                 n_for += 1
                 PL_for += math.log(score.p_cc_given_s)
             else:
-                self.z_cc_against += score.z_cc ** power
+                self.z_cc_against += score.z_cc**power
                 n_against += 1
                 PL_against += math.log(score.p_cc_given_not_s)
 

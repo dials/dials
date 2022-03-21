@@ -134,18 +134,18 @@ namespace dials { namespace model { namespace boost_python {
       .add_property("mm_xy", &centroid_get_mm_xy, &centroid_set_mm_xy)
       .add_property("angle", &centroid_get_angle, &centroid_set_angle)
       .def("update_mm",
-           (void (Centroid::*)(const Detector &, const Scan &)) & Centroid::update_mm,
+           (void(Centroid::*)(const Detector &, const Scan &)) & Centroid::update_mm,
            (arg("detector"), arg("scan")))
       .def("update_mm",
-           (void (Centroid::*)(std::size_t, const Detector &, const Scan &))
+           (void(Centroid::*)(std::size_t, const Detector &, const Scan &))
              & Centroid::update_mm,
            (arg("panel"), arg("detector"), arg("scan")))
       .def("resolution",
-           (double (Centroid::*)(const BeamBase &, const Detector &) const)
+           (double(Centroid::*)(const BeamBase &, const Detector &) const)
              & Centroid::resolution,
            (arg("beam"), arg("detector")))
       .def("resolution",
-           (double (Centroid::*)(std::size_t, const BeamBase &, const Detector &) const)
+           (double(Centroid::*)(std::size_t, const BeamBase &, const Detector &) const)
              & Centroid::resolution,
            (arg("panel"), arg("beam"), arg("detector")))
       .def("__eq__", &Centroid::operator==)

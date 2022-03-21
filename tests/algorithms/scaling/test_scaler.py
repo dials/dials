@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from unittest.mock import MagicMock, Mock
 
 import pytest
@@ -709,9 +711,9 @@ def test_sf_variance_calculation():
     variances = calc_sf_variances(components, var_cov)
     assert list(variances) == pytest.approx(
         [
-            b / (4.0 * (d1 ** 4.0)) + c / (d1 ** 2.0) + a,
-            b / (4.0 * (d2 ** 4.0)) + c / (d2 ** 2.0) + a,
-            b / (4.0 * (d3 ** 4.0)) + c / (d3 ** 2.0) + a,
+            b / (4.0 * (d1**4.0)) + c / (d1**2.0) + a,
+            b / (4.0 * (d2**4.0)) + c / (d2**2.0) + a,
+            b / (4.0 * (d3**4.0)) + c / (d3**2.0) + a,
         ]
     )
 

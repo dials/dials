@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import iotbx.phil
 from cctbx.array_family import flex
 

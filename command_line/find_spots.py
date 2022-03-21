@@ -1,6 +1,8 @@
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
 
+from __future__ import annotations
+
 import logging
 
 from libtbx.phil import parse
@@ -236,7 +238,7 @@ class Script:
 @show_mail_handle_errors()
 def run(args=None):
     script = Script()
-    script.run(args)
+    return script.run(args)
 
 
 if __name__ == "__main__":

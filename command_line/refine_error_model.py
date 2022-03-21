@@ -10,6 +10,8 @@ All scaling corrections are applied to the intensities and variances (except
 of course the error model adjustment) before the analysis is done.
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import sys

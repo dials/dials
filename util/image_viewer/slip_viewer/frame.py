@@ -3,6 +3,8 @@
 # different image types.  Ring centre on image switch.
 
 
+from __future__ import annotations
+
 import imp
 import math
 import os

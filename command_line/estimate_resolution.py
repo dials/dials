@@ -57,6 +57,8 @@ Use cc_ref resolution cutoff::
   dials.estimate_resolution cc_ref=0.3 cc_half=None reference=reference.mtz
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import sys

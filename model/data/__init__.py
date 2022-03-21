@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import boost_adaptbx.boost.python
 
 ext = boost_adaptbx.boost.python.import_ext("dials_model_data_ext")

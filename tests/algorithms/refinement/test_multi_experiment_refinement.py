@@ -2,6 +2,8 @@
 A simple test of refinement using two crystals.
 """
 
+from __future__ import annotations
+
 from math import pi
 
 from cctbx.sgtbx import space_group, space_group_symbols

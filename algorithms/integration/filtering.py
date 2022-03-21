@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from cctbx import uctbx
 from cctbx.miller import index_generator
 from iotbx.phil import parse

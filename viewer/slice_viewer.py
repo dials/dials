@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import wx
 
 from dials.viewer.viewer_low_level_util import (

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import math
 import pickle
@@ -106,10 +108,10 @@ def ellipse_matrix_form(phi, l1, l2):
     cphi = math.cos(phi)
     sphi = math.sin(phi)
 
-    a11 = l1 * cphi ** 2 + l2 * sphi ** 2
+    a11 = l1 * cphi**2 + l2 * sphi**2
     a12 = (l2 - l1) * sphi * cphi
     a21 = a12
-    a22 = l1 * sphi ** 2 + l2 * cphi ** 2
+    a22 = l1 * sphi**2 + l2 * cphi**2
 
     assert a11 * a22 - 2 * a12 > 0.0
 

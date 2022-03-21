@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 def test():
     from dials.algorithms.profile_model.modeller import (
         MultiExpProfileModeller,
