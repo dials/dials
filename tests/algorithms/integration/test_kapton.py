@@ -13,13 +13,10 @@ def test_kapton(run_in_tmpdir, dials_data):
     """Test script for kapton correction applied to integrated data.
     Currently only testing kapton 2019 correction on rayonix-340 at LCLS
     """
-    image_file = (
-        dials_data("lcls_rayonix_kapton").join("hit-20181213155134902.cbf").strpath
-    )
-    mask_file = (
-        dials_data("lcls_rayonix_kapton").join("mask_rayonix340mx_4x4.pickle").strpath
-    )
-    geom_file = dials_data("lcls_rayonix_kapton").join("experiments_000.json").strpath
+    dd = dials_data("lcls_rayonix_kapton", pathlib=True)
+    image_file = dd / "hit-20181213155134902.cbf"
+    mask_file = dd / "mask_rayonix340mx_4x4.pickle"
+    geom_file = dd / "experiments_000.json"
 
     # Create phil files for the two situations being tests
     #  a. without kapton
