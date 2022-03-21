@@ -23,7 +23,35 @@ def metric_supergroup(group):
     )
 
 
-def calc_acentric_subgroups(lattice_group_info, target_bravais_t):
+def groups_cache(fn):
+    class MultiClassCache(object):
+
+        "A set of caches for different bravais types"
+
+        instances = {}
+
+        def __new__(cls, classname):
+            if classname not in cls.instances:
+                cls.instances[classname] = {}
+            return cls.instances[classname]
+
+    def wrapped_calc(group_info: sgtbx.space_group_info, bravais_t: str):
+        cache = MultiClassCache(bravais_t)
+        info_str = group_info.type().lookup_symbol()
+        try:
+            result = cache[info_str]
+        except KeyError:
+            result = fn(group_info, bravais_t)
+            cache[info_str] = result
+        return result
+
+    return wrapped_calc
+
+
+@groups_cache
+def calc_acentric_subgroups(
+    lattice_group_info: sgtbx.space_group_info, target_bravais_str: str
+):
     # Get list of sub-spacegroups
     subgrs = subgroups.subgroups(lattice_group_info).groups_parent_setting()
 
@@ -43,7 +71,7 @@ def calc_acentric_subgroups(lattice_group_info, target_bravais_t):
         cb_op = acentric_subgroup.info().type().cb_op()
         ref_acentric_subgroup = acentric_subgroup.change_basis(cb_op)
         # Ignore unwanted groups
-        if bravais_lattice(group=ref_acentric_subgroup) != target_bravais_t:
+        if str(bravais_lattice(group=ref_acentric_subgroup)) != target_bravais_str:
             continue
         acentric_subgroups.append(acentric_subgroup)
         cb_ops.append(cb_op)
@@ -51,42 +79,17 @@ def calc_acentric_subgroups(lattice_group_info, target_bravais_t):
     return acentric_subgroups, acentric_supergroups, cb_ops
 
 
-class _MatchingSubgroupsForLatticeGroup(object):
-    def __init__(self):
-        self._cached_results = {}
-
-    def get_data(self, info_str):
-        try:
-            return self._cached_results[info_str]
-        except KeyError:
-            return None
-
-    def set_data(self, info_str, data):
-        self._cached_results[info_str] = data
-
-
-class MatchingSubgroupsForLatticeGroup(object):
-
-    instances = {}
-
-    def __new__(cls, target_bravais_t):
-        str_t = str(target_bravais_t)
-        if str_t not in cls.instances:
-            cls.instances[str_t] = _MatchingSubgroupsForLatticeGroup()
-        return cls.instances[str_t]
-
-
 def find_matching_symmetry(
     unit_cell,
     target_space_group,
     max_delta=5,
     best_monoclinic_beta=True,
-    target_bravais_t=None,
+    target_bravais_str=None,
 ):
     cs = crystal.symmetry(unit_cell=unit_cell, space_group=sgtbx.space_group())
-    if target_bravais_t is None:
-        target_bravais_t = bravais_lattice(
-            group=target_space_group.info().reference_setting().group()
+    if target_bravais_str is None:
+        target_bravais_str = str(
+            bravais_lattice(group=target_space_group.info().reference_setting().group())
         )
     best_subgroup = None
     best_angular_difference = 1e8
@@ -109,14 +112,10 @@ def find_matching_symmetry(
     )
 
     lattice_group_info = lattice_group.info()
-    info_str = lattice_group_info.type().lookup_symbol()
-
-    subgroup_cacher = MatchingSubgroupsForLatticeGroup(target_bravais_t)
-    result = subgroup_cacher.get_data(info_str)
-    if not result:
-        result = calc_acentric_subgroups(lattice_group_info, target_bravais_t)
-        subgroup_cacher.set_data(info_str, result)
-    acentric_subgroups, acentric_supergroups, cb_ops = result
+    acentric_subgroups, acentric_supergroups, cb_ops = calc_acentric_subgroups(
+        lattice_group_info,
+        target_bravais_str,
+    )
 
     for acentric_subgroup, acentric_supergroup, cb_op_minimum_ref in zip(
         acentric_subgroups, acentric_supergroups, cb_ops
