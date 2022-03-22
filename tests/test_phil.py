@@ -9,10 +9,10 @@ from dials.array_family import flex
 @mock.patch("dials.util.phil.ExperimentListFactory")
 def test(ExperimentListFactory, dials_data):
     # Only use these filenames for verification
-    path = dials_data("centroid_test_data")
-    experiments_path = path.join("experiments.json").strpath
-    reflections_path1 = path.join("integrated.pickle").strpath
-    reflections_path2 = path.join("integrated.refl").strpath
+    path = dials_data("centroid_test_data", pathlib=True)
+    experiments_path = str(path / "experiments.json")
+    reflections_path1 = str(path / "integrated.pickle")
+    reflections_path2 = str(path / "integrated.refl")
 
     phil_scope = dials.util.phil.parse(
         """
