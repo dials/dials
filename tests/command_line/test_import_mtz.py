@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import procrunner
@@ -7,7 +8,11 @@ from dxtbx.serialize import load
 
 from dials.array_family import flex
 
-base_path = Path("/dls/mx-scratch/jbe/test_import_mtz_for_multiplex")
+base_path = Path(
+    os.environ.get(
+        "TEST_IMPORT_MTZ", "/dls/mx-scratch/jbe/test_import_mtz_for_multiplex"
+    )
+)
 
 
 @pytest.mark.parametrize(
