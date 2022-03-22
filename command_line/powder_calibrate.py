@@ -279,7 +279,6 @@ class Geometry(pfGeometry):
 
         new_params_phil = parse(
             f"""
-        include scope dials.util.options.geometry_phil_scope
         geometry
             .help = "Allow overrides of experimental geometry"
             .expert_level = 2
@@ -320,7 +319,9 @@ class Geometry(pfGeometry):
             process_includes=True,
         )
 
-        return new_params_phil.fetch().extract()
+        return dials.util.options.geometry_phil_scope.fetch(
+            source=new_params_phil
+        ).extract()
 
     def save_to_expt(self, output: str | os.PathLike):
         """
@@ -328,21 +329,7 @@ class Geometry(pfGeometry):
         Output is passed either as a path or str
         """
         new_params = self.modify_geom_params(output)
-
         geometry_update(experiments=self.expt, new_params=new_params)
-
-        # from dials.command_line.modify_geometry import run
-        # new_phil = [
-        #     "fast_slow_beam_centre="
-        #     + str(self.beam_px.slow)
-        #     + ","
-        #     + str(self.beam_px.fast)
-        # ]
-        # modify_args = (
-        #         ["imported.expt"] + new_phil + ["output=" + str(output)]
-        # )
-        #
-        # run(modify_args)
 
     def __deepcopy__(self, memo=None):
         new = self.__class__(self.expt_params)
