@@ -247,7 +247,11 @@ def generate_plots(summary_data: dict) -> dict:
                     "name": f"RMSD dPsi (lattice {i+2})",
                 },
             )
-    percent_indexed = 100 * n_total_indexed / n_strong_array
+    percent_indexed = np.zeros(shape=(n_total_indexed.size,))
+    sel = n_strong_array > 0
+    sel_n_tot = n_total_indexed[sel]
+    sel_n_strong = n_strong_array[sel]
+    percent_indexed[sel] = 100 * sel_n_tot / sel_n_strong
     images = images.tolist()
     n_indexed_data.append(
         {
