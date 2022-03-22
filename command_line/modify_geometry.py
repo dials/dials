@@ -34,8 +34,7 @@ def update(
 
     update_geometry = ManualGeometryUpdater(new_params)
 
-    if len(experiments):
-        imagesets = experiments.imagesets()
+    imagesets = experiments.imagesets()
 
     for imageset in imagesets:
         imageset_new = update_geometry(imageset)
@@ -60,7 +59,7 @@ def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
         epilog=help_message,
     )
 
-    params, options = parser.parse_args(args, show_diff_phil=True)
+    params, _ = parser.parse_args(args, show_diff_phil=True)
     experiments = flatten_experiments(params.input.experiments)
 
     if len(experiments) == 0:
