@@ -7,6 +7,8 @@ Example:
 """
 
 
+from __future__ import annotations
+
 import logging
 
 from dxtbx.model import MosaicCrystalSauter2014
@@ -20,7 +22,7 @@ from dials.algorithms.refinement.prediction.managed_predictors import (
 from dials.array_family import flex
 from dials.model.data import Shoebox
 from dials.util import show_mail_handle_errors
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 
 logger = logging.getLogger("dials.command_line.sequence_to_stills")
 
@@ -86,7 +88,7 @@ def sequence_to_stills(experiments, reflections, params):
             raise RuntimeError(f"Expected key not found in reflection table: {key}")
 
     for expt_id, experiment in enumerate(experiments):
-        # Get the goniometr setting matrix
+        # Get the goniometer setting matrix
         goniometer_setting_matrix = matrix.sqr(
             experiment.goniometer.get_setting_rotation()
         )
@@ -96,25 +98,35 @@ def sequence_to_stills(experiments, reflections, params):
         refls = reflections.select(reflections["id"] == expt_id)
         _, _, _, _, z1, z2 = refls["bbox"].parts()
 
-        # Create an experiment for each scanpoint
-        for i_scan_point in range(*experiment.scan.get_array_range()):
-            if params.max_scan_points and i_scan_point >= params.max_scan_points:
+        # Create an experiment for each scanpoint.
+        # Note that a simplification of the use of scan-points here introduces a
+        # (small) error. The scan-varying crystal model has 1 more scan-point
+        # than the scan has images because scan-points are taken at the boundaries
+        # between images, including the scan extrema. This code assumes that
+        # the crystal model at the start of each image applies to the whole
+        # image and ignores the final scan-point.
+        start, stop = experiment.scan.get_array_range()
+        for i_array in range(start, stop):
+            if params.max_scan_points and i_array >= params.max_scan_points:
                 break
+            # Shift array position to scan-point index
+            i_scan_point = i_array - start
+
             # The A matrix is the goniometer setting matrix for this scan point
             # times the scan varying A matrix at this scan point. Note, the
             # goniometer setting matrix for scan point zero will be the identity
             # matrix and represents the beginning of the oscillation.
             # For stills, the A matrix needs to be positioned in the midpoint of an
-            # oscillation step. Hence, here the goniometer setting matrixis rotated
+            # oscillation step. Hence, here the goniometer setting matrix is rotated
             # by a further half oscillation step.
             A = (
                 goniometer_axis.axis_and_angle_as_r3_rotation_matrix(
-                    angle=experiment.scan.get_angle_from_array_index(i_scan_point)
+                    angle=experiment.scan.get_angle_from_array_index(i_array)
                     + (step / 2),
                     deg=True,
                 )
                 * goniometer_setting_matrix
-                * matrix.sqr(experiment.crystal.get_A_at_scan_point(i_scan_point))
+                * matrix.sqr(experiment.crystal.get_A_at_scan_point(i_array))
             )
             crystal = MosaicCrystalSauter2014(experiment.crystal)
             crystal.set_A(A)
@@ -201,7 +213,7 @@ def run(args=None, phil=phil_scope):
     usage = "usage: dials.sequence_to_stills [options] [param.phil] models.expt reflections.refl"
 
     # Create the parser
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil,
         read_experiments=True,

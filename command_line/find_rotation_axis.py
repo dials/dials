@@ -13,6 +13,8 @@ Examples::
   dials.find_rotation_axis imported.expt strong.refl
 """
 
+from __future__ import annotations
+
 import logging
 import sys
 
@@ -28,7 +30,7 @@ import dials.util.log
 from dials.array_family import flex
 
 # from dials.array_family import flex
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
 # Define a logger
@@ -203,7 +205,7 @@ def make(arr, azimuth: float, wavelength: float):
     y, x = refs_.T
 
     R = 1 / wavelength
-    C = R - np.sqrt(R ** 2 - x ** 2 - y ** 2).reshape(-1, 1)
+    C = R - np.sqrt(R**2 - x**2 - y**2).reshape(-1, 1)
     xyz = (
         np.c_[x * np.cos(angle), y, -x * np.sin(angle)]
         + C * np.c_[-np.sin(angle), np.zeros_like(angle), -np.cos(angle)]
@@ -330,7 +332,7 @@ def run(args=None, phil=phil_scope):
 
     usage = "dials.find_rotation_axis [options] imported.expt strong.refl"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil,
         read_reflections=True,

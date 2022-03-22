@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class IntegrationAlgorithm:
     """A class to perform bayesian integration"""
 

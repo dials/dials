@@ -1,5 +1,7 @@
 """LBFGS refinement engine for cosym analysis."""
 
+from __future__ import annotations
+
 import logging
 
 import scipy.optimize

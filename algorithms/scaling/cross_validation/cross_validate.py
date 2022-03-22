@@ -37,6 +37,8 @@ cross_validation_mode=multi parameter=model parameter_values="array physical"
 """
 
 
+from __future__ import annotations
+
 import itertools
 import logging
 import time

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import jinja2
 from docutils import nodes
 from docutils.parsers.rst import Directive

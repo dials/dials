@@ -208,7 +208,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(ub.size() == h.size());
       DIALS_ASSERT(ub.size() == panel.size());
       DIALS_ASSERT(ub.size() == entering.size());
-      DIALS_ASSERT(scan_.get_oscillation()[1] > 0.0);
+      DIALS_ASSERT(!scan_.is_still());
       af::reflection_table table;
       prediction_data predictions(table);
       for (std::size_t i = 0; i < h.size(); ++i) {
@@ -614,7 +614,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(ub.size() == s0.size());
       DIALS_ASSERT(ub.size() == d.size());
       DIALS_ASSERT(ub.size() == S.size());
-      DIALS_ASSERT(scan_.get_oscillation()[1] > 0.0);
+      DIALS_ASSERT(!scan_.is_still());
       af::reflection_table table;
       prediction_data predictions(table);
       for (std::size_t i = 0; i < h.size(); ++i) {

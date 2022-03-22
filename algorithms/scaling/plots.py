@@ -2,6 +2,8 @@
 Make plotly plots for html output by dials.scale, dials.report or xia2.report.
 """
 
+from __future__ import annotations
+
 import itertools
 import math
 
@@ -827,7 +829,7 @@ def normal_probability_plot(data, label=None):
     n = y.size
     width = histy.slot_centers()[1] - histy.slot_centers()[0]
     gaussian = [
-        n * width * math.exp(-(sc ** 2) / 2.0) / ((2.0 * math.pi) ** 0.5)
+        n * width * math.exp(-(sc**2) / 2.0) / ((2.0 * math.pi) ** 0.5)
         for sc in histy.slot_centers()
     ]
     key = (
@@ -855,7 +857,7 @@ def normal_probability_plot(data, label=None):
                         "title": "Number of reflections",
                         "titleside": "right",
                     },
-                    "colorscale": "Jet",
+                    "colorscale": "Viridis",
                 },
                 {
                     "x": [-5, 5],

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import socket
 import subprocess
 import sys
@@ -59,9 +61,8 @@ def wait_for_server(port, max_wait=20):
     max_time = start_time + max_wait
     while (timeit.default_timer() < max_time) and not server_ok:
         try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect(("127.0.0.1", port))
-            s.close()
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect(("127.0.0.1", port))
             server_ok = True
         except OSError as e:
             if (e.errno != 111) and (e.errno != 61):

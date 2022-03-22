@@ -2,6 +2,8 @@
 Tests for scaling utilities module.
 """
 
+from __future__ import annotations
+
 from math import pi, sqrt
 
 import numpy as np
@@ -29,7 +31,7 @@ from dials.algorithms.scaling.scaling_utilities import (
     set_wilson_outliers,
 )
 from dials.array_family import flex
-from dials.util.options import OptionParser
+from dials.util.options import ArgumentParser
 from dials_scaling_ext import (
     calc_lookup_index,
     calc_theta_phi,
@@ -473,8 +475,8 @@ def test_equality_of_two_harmonic_table_methods(dials_data):
     """,
         process_includes=True,
     )
-    optionparser = OptionParser(phil=phil_scope, check_format=False)
-    params, _ = optionparser.parse_args(args=[], quick_parse=True)
+    parser = ArgumentParser(phil=phil_scope, check_format=False)
+    params, _ = parser.parse_args(args=[], quick_parse=True)
     params.model = "physical"
     lmax = 2
     params.physical.lmax = lmax

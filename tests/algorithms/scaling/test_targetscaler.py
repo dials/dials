@@ -4,6 +4,8 @@ scaling_library function and by directly invoking the perform method scaling
 of a TargetScaler.
 """
 
+from __future__ import annotations
+
 from math import log
 
 import pytest
@@ -15,7 +17,7 @@ from dials.algorithms.scaling.model.model import KBScalingModel
 from dials.algorithms.scaling.scaler_factory import TargetScalerFactory
 from dials.algorithms.scaling.scaling_library import scale_against_target
 from dials.array_family import flex
-from dials.util.options import OptionParser
+from dials.util.options import ArgumentParser
 
 
 def generated_target_refl():
@@ -94,10 +96,8 @@ def KB_test_param():
         process_includes=True,
     )
 
-    optionparser = OptionParser(phil=phil_scope, check_format=False)
-    parameters, _ = optionparser.parse_args(
-        args=[], quick_parse=True, show_diff_phil=False
-    )
+    parser = ArgumentParser(phil=phil_scope, check_format=False)
+    parameters, _ = parser.parse_args(args=[], quick_parse=True, show_diff_phil=False)
     parameters.model = "KB"
     parameters.reflection_selection.method = "use_all"
     return parameters

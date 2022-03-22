@@ -3,6 +3,8 @@ Module of utility functions for scaling.
 """
 
 
+from __future__ import annotations
+
 import logging
 from math import acos
 
@@ -35,7 +37,6 @@ try:
             "Memory usage: %.1f MB",
             int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss) / units_per_mb,
         )
-
 
 except ImportError:
 
@@ -113,7 +114,7 @@ def align_axis_along_z(alignment_axis, vectors):
         return vectors
     (ux, uy, uz) = alignment_axis
     cross_prod_uz = flex.vec3_double([(uy, -1.0 * ux, 0.0)])
-    angle_between_u_z = +1.0 * acos(uz / ((ux ** 2 + uy ** 2 + uz ** 2) ** 0.5))
+    angle_between_u_z = +1.0 * acos(uz / ((ux**2 + uy**2 + uz**2) ** 0.5))
     phi = flex.double(vectors.size(), angle_between_u_z)
     new_vectors = rotate_vectors_about_axis(cross_prod_uz, vectors, phi)
     return flex.vec3_double(new_vectors)

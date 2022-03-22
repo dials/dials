@@ -7,6 +7,8 @@
 #  included in the root directory of this package.
 #
 
+from __future__ import annotations
+
 import logging
 
 import libtbx
@@ -70,7 +72,7 @@ class GaussNewtonIterations(AdaptLstbxSparse, GaussNewtonIterationsBase):
         log=None,
         tracking=None,
         max_iterations=20,
-        **kwds
+        **kwds,
     ):
 
         AdaptLstbxSparse.__init__(

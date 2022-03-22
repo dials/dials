@@ -1,6 +1,8 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
+from __future__ import annotations
+
 import copy
 import sys
 
@@ -577,11 +579,11 @@ def run(args=None):
 
     import os
 
-    from dials.util.options import OptionParser, flatten_experiments
+    from dials.util.options import ArgumentParser, flatten_experiments
 
     usage = "dials.geometry_viewer [options] models.expt"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_experiments=True,
@@ -601,7 +603,7 @@ def run(args=None):
     else:
         check_format = True
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_experiments=True,

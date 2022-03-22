@@ -1,16 +1,25 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
 
 
+from __future__ import annotations
+
+import functools
 import os
 
 import iotbx.mtz
 import iotbx.phil
 from cctbx import crystal
+from dxtbx.model import ExperimentList
 from xfel.clustering.cluster import Cluster
 from xfel.clustering.cluster_groups import unit_cell_info
 
 import dials.util
-from dials.util.options import OptionParser, flatten_experiments
+from dials.array_family import flex
+from dials.util.multi_dataset_handling import (
+    assign_unique_identifiers,
+    parse_multiple_datasets,
+)
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 
 help_message = """
 """
@@ -29,6 +38,10 @@ plot {
     .type = bool
     .help = 'Display the dendrogram with a log scale'
 }
+output.clusters = False
+    .type = bool
+    .help = "If True, clusters will be split at the threshold value and a pair"
+            "of output files will be created for each cluster"
 """
 )
 
@@ -37,18 +50,21 @@ plot {
 def run(args=None):
     usage = "dials.cluster_unit_cell [options] models.expt"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_experiments=True,
+        read_reflections=True,
         check_format=False,
         epilog=help_message,
     )
 
-    params, options, args = parser.parse_args(
+    params, _, args = parser.parse_args(
         args, show_diff_phil=True, return_unhandled=True
     )
-    experiments = flatten_experiments(params.input.experiments)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
     crystal_symmetries = []
 
     if len(experiments) == 0:
@@ -70,12 +86,81 @@ def run(args=None):
             )
             for expt in experiments
         ]
+    clusters = do_cluster_analysis(crystal_symmetries, params)
 
-    do_cluster_analysis(crystal_symmetries, params)
+    if params.output.clusters:
+        if len(experiments) == 0:
+            print("Clustering output can only be generated for input .expt files")
+            return
+        # Possibilities: either same number of experiments and reflection files,
+        # or just one reflection file containing multiple sequences, or no
+        # reflections given
+        # Want a combined table to work on with experiment identifiers set.
+
+        def _assign_and_return_joint(experiments, reflections):
+            experiments, reflections = assign_unique_identifiers(
+                experiments, reflections
+            )
+            joint_table = flex.reflection_table()
+            for refls in reflections:
+                joint_table.extend(refls)
+            return joint_table
+
+        if len(reflections) == 1:
+            reflections = reflections[0]
+            if len(set(reflections["id"])) != len(experiments):
+                raise ValueError(
+                    f"Mismatched number of reflection tables (f{len(set(reflections['id']))}) and experiments (f{len(experiments)})"
+                )
+            if not dict(reflections.experiment_identifiers()):
+                reflections = reflections.split_by_experiment_id()
+                reflections = _assign_and_return_joint(experiments, reflections)
+
+        elif len(reflections) > 1:
+            if not len(reflections) == len(experiments):
+                reflections = parse_multiple_datasets(reflections)
+                if len(reflections) != len(experiments):
+                    raise ValueError(
+                        f"Mismatched number of reflection tables (f{len(reflections)}) and experiments (f{len(experiments)})"
+                    )
+            reflections = _assign_and_return_joint(experiments, reflections)
+        # else: no reflections given, continue and just split experiments
+
+        template = "{prefix}_{index:0{maxindexlength:d}d}.{extension}"
+        experiments_template = functools.partial(
+            template.format,
+            prefix="cluster",
+            maxindexlength=len(str(len(clusters) - 1)),
+            extension="expt",
+        )
+        reflections_template = functools.partial(
+            template.format,
+            prefix="cluster",
+            maxindexlength=len(str(len(clusters) - 1)),
+            extension="refl",
+        )
+
+        clusters.sort(key=lambda x: len(x.members), reverse=True)
+        for j, cluster in enumerate(clusters):
+            ids = [m.lattice_id for m in cluster.members]
+            sub_expt = ExperimentList([experiments[i] for i in ids])
+            expt_filename = experiments_template(index=j)
+            n = len(ids)
+            print(f"Saving {n} lattices from cluster {j+1} to {expt_filename}")
+            sub_expt.as_file(expt_filename)
+            if reflections:
+                identifiers = sub_expt.identifiers()
+                sub_refl = reflections.select_on_experiment_identifiers(identifiers)
+                # renumber the ids to go from 0->n-1
+                sub_refl.reset_ids()
+                refl_filename = reflections_template(index=j)
+                print(f"Saving reflections from cluster {j+1} to {refl_filename}")
+                sub_refl.as_file(refl_filename)
 
 
 def do_cluster_analysis(crystal_symmetries, params):
-    ucs = Cluster.from_crystal_symmetries(crystal_symmetries)
+    lattice_ids = list(range(len(crystal_symmetries)))
+    ucs = Cluster.from_crystal_symmetries(crystal_symmetries, lattice_ids=lattice_ids)
 
     if params.plot.show or params.plot.name is not None:
         if not params.plot.show:

@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 def test_gltbx_is_available():
     """
     This is not a real test for dials.rlv, which is slightly difficult to write.

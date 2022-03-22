@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from scitbx import matrix
 
 from dials.algorithms.refinement.parameterisation.beam_parameters import BeamMixin
@@ -38,8 +40,10 @@ class ScanVaryingBeamParameterisation(ScanVaryingModelParameterisation, BeamMixi
 
         # Set up the initial state
         s0 = matrix.col(beam.get_s0())
-        s0dir = matrix.col(beam.get_unit_s0())
-        istate = s0dir
+        istate = {
+            "unit_s0": matrix.col(beam.get_unit_s0()),
+            "polarization_normal": matrix.col(beam.get_polarization_normal()),
+        }
         self._s0_at_t = s0
 
         # Factory function to provide to _build_p_list
@@ -60,7 +64,8 @@ class ScanVaryingBeamParameterisation(ScanVaryingModelParameterisation, BeamMixi
         """calculate state and derivatives for model at image number t"""
 
         # extract direction from the initial state
-        is0 = self._initial_state
+        ius0 = self._initial_state["unit_s0"]
+        ipn = self._initial_state["polarization_normal"]
 
         # extract parameter sets from the internal list
         mu1_set, mu2_set, nu_set = self._param
@@ -76,8 +81,8 @@ class ScanVaryingBeamParameterisation(ScanVaryingModelParameterisation, BeamMixi
         dnu_dp = nu_weights * (1.0 / nu_sumweights)
 
         # calculate new s0 and its derivatives wrt the values mu1, mu2 and nu
-        self._s0_at_t, ds0_dval = self._compose_core(
-            is0, mu1, mu2, nu, mu1_axis=mu1_set.axis, mu2_axis=mu2_set.axis
+        (self._s0_at_t, _), ds0_dval = self._compose_core(
+            ius0, ipn, mu1, mu2, nu, mu1_axis=mu1_set.axis, mu2_axis=mu2_set.axis
         )
 
         # calculate derivatives of state wrt underlying smoother parameters

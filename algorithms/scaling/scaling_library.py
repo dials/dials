@@ -9,8 +9,9 @@ necessary), and return common dials objects such as reflection tables and
 ExperimentLists.
 """
 
+from __future__ import annotations
+
 import logging
-import uuid
 from copy import deepcopy
 from unittest.mock import Mock
 
@@ -20,6 +21,7 @@ import pkg_resources
 import iotbx.merging_statistics
 from cctbx import crystal, miller, uctbx
 from dxtbx.model import Experiment
+from dxtbx.util import ersatz_uuid4
 from iotbx import cif, mtz
 from libtbx import Auto, phil
 
@@ -31,7 +33,7 @@ from dials.algorithms.scaling.scaling_utilities import (
 )
 from dials.array_family import flex
 from dials.util import Sorry
-from dials.util.options import OptionParser
+from dials.util.options import ArgumentParser
 
 logger = logging.getLogger("dials")
 
@@ -112,6 +114,7 @@ def choose_initial_scaling_intensities(reflection_table, intensity_choice="profi
             if "partiality.inv.variance" in reflection_table:
                 reflection_table["variance"] += (
                     reflection_table["intensity.sum.value"]
+                    * conv
                     * reflection_table["partiality.inv.variance"]
                 )
         else:
@@ -164,8 +167,8 @@ def scale_against_target(
     """,
             process_includes=True,
         )
-        optionparser = OptionParser(phil=phil_scope, check_format=False)
-        params, _ = optionparser.parse_args(args=[], quick_parse=True)
+        parser = ArgumentParser(phil=phil_scope, check_format=False)
+        params, _ = parser.parse_args(args=[], quick_parse=True)
         params.model = model
 
     from dials.algorithms.scaling.scaler_factory import TargetScalerFactory
@@ -198,8 +201,8 @@ def scale_single_dataset(reflection_table, experiment, params=None, model="physi
     """,
             process_includes=True,
         )
-        optionparser = OptionParser(phil=phil_scope, check_format=False)
-        params, _ = optionparser.parse_args(args=[], quick_parse=True)
+        parser = ArgumentParser(phil=phil_scope, check_format=False)
+        params, _ = parser.parse_args(args=[], quick_parse=True)
 
     params.model = model
 
@@ -528,7 +531,7 @@ def create_datastructures_for_target_mtz(experiments, mtz_file):
 
     exp = Experiment()
     exp.crystal = deepcopy(experiments[0].crystal)
-    exp.identifier = str(uuid.uuid4())
+    exp.identifier = ersatz_uuid4()
     r_t.experiment_identifiers()[len(experiments)] = exp.identifier
     r_t["id"] = flex.int(r_t.size(), len(experiments))
 
@@ -588,7 +591,7 @@ def create_datastructures_for_structural_model(reflections, experiments, cif_fil
     rt["intensity"] = icalc
     rt["miller_index"] = miller_idx
 
-    exp.identifier = str(uuid.uuid4())
+    exp.identifier = ersatz_uuid4()
     rt.experiment_identifiers()[len(experiments)] = exp.identifier
     rt["id"] = flex.int(rt.size(), len(experiments))
 

@@ -21,6 +21,8 @@ Examples::
 """
 
 
+from __future__ import annotations
+
 import logging
 import sys
 from typing import List, Sequence, SupportsFloat
@@ -38,7 +40,7 @@ from dials.util.multi_dataset_handling import (
     parse_multiple_datasets,
     sort_tables_to_experiments_order,
 )
-from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
+from dials.util.options import ArgumentParser, flatten_experiments, flatten_reflections
 
 Vector = Sequence[SupportsFloat]
 
@@ -277,7 +279,7 @@ def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     """
     usage = "dials.anvil_correction [options] integrated.expt integrated.refl"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil,
         read_reflections=True,

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import random
 import sys
@@ -27,7 +29,7 @@ from dials.util.multi_dataset_handling import (
     update_imageset_ids,
 )
 from dials.util.observer import Subject
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.cosym")
@@ -175,11 +177,12 @@ class cosym(Subject):
     def run(self):
         self.cosym_analysis.run()
         reindexing_ops = self.cosym_analysis.reindexing_ops
+        datasets_ = list(set(self.cosym_analysis.dataset_ids))
 
         # Log reindexing operators
         logger.info("Reindexing operators:")
         for cb_op in set(reindexing_ops):
-            datasets = [i for i, o in enumerate(reindexing_ops) if o == cb_op]
+            datasets = [d for d, o in zip(datasets_, reindexing_ops) if o == cb_op]
             logger.info(f"{cb_op}: {datasets}")
 
         self._apply_reindexing_operators(
@@ -208,7 +211,8 @@ class cosym(Subject):
 
     def _apply_reindexing_operators(self, reindexing_ops, subgroup=None):
         """Apply the reindexing operators to the reflections and experiments."""
-        for dataset_id, cb_op in enumerate(reindexing_ops):
+        unique_ids = set(self.cosym_analysis.dataset_ids)
+        for cb_op, dataset_id in zip(reindexing_ops, unique_ids):
             cb_op = sgtbx.change_of_basis_op(cb_op)
             logger.debug(
                 "Applying reindexing op %s to dataset %i", cb_op.as_xyz(), dataset_id
@@ -230,6 +234,17 @@ class cosym(Subject):
                 )
             )
             refl["miller_index"] = cb_op.apply(refl["miller_index"])
+        # Allow for the case where some datasets are filtered out.
+        if len(reindexing_ops) < len(self._experiments):
+            to_delete = [
+                i for i in range(len(self._experiments)) if i not in unique_ids
+            ]
+            for idx in sorted(to_delete, reverse=True):
+                logger.info(
+                    f"Removing dataset {idx} as unable to determine reindexing operator"
+                )
+                del self._experiments[idx]
+                del self._reflections[idx]
 
     def _filter_min_reflections(self, experiments, reflections):
         identifiers = []
@@ -304,7 +319,7 @@ Examples::
 def run(args=None):
     usage = "dials.cosym [options] models.expt observations.refl"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_reflections=True,

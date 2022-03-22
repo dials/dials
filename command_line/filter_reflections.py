@@ -1,6 +1,8 @@
 # LIBTBX_SET_DISPATCHER_NAME dials.filter_reflections
 
 
+from __future__ import annotations
+
 import logging
 import token
 from operator import itemgetter
@@ -13,7 +15,7 @@ from dials.algorithms.integration import filtering
 from dials.array_family import flex
 from dials.util import Sorry, log, show_mail_handle_errors, tabulate
 from dials.util.filter_reflections import SumAndPrfIntensityReducer, SumIntensityReducer
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 
 logger = logging.getLogger("dials")
 
@@ -409,7 +411,7 @@ def run(args=None):
     usage = "usage: dials.filter_reflections [options] experiment.expt"
 
     # Create the parser
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         epilog=help_message,

@@ -2,6 +2,8 @@
 Optimise the combination of profile and summation intensity values.
 """
 
+from __future__ import annotations
+
 import logging
 
 import boost_adaptbx.boost.python

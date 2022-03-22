@@ -11,6 +11,8 @@
 # serve to show the default.
 
 
+from __future__ import annotations
+
 import datetime
 import os
 import sys
@@ -346,9 +348,9 @@ texinfo_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
-    "python": ("https://docs.python.org/2", None),
-    "numpy": ("https://docs.scipy.org/doc/numpy/", None),
-    "scipy": ("https://docs.scipy.org/doc/scipy/reference/", None),
+    "python": ("https://docs.python.org/3", None),
+    "numpy": ("https://numpy.org/doc/stable/", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy-1.7.1/", None),
     "cctbx": ("https://cctbx.github.io/", None),
 }
 

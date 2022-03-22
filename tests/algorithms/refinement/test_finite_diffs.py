@@ -2,6 +2,9 @@
 difference calculations"""
 
 
+from __future__ import annotations
+
+
 def test(args=[]):
     # Python and cctbx imports
     import random

@@ -15,6 +15,8 @@ Examples::
 """
 
 
+from __future__ import annotations
+
 import copy
 import logging
 import sys
@@ -31,7 +33,7 @@ from dials.algorithms.refinement import (
 )
 from dials.algorithms.refinement.corrgram import create_correlation_plots
 from dials.array_family import flex
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.refine")
@@ -327,7 +329,7 @@ def run(args=None, phil=working_phil):
     )
 
     # Create the parser
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil,
         read_reflections=True,
@@ -437,24 +439,6 @@ def run(args=None, phil=working_phil):
             else:
                 logger.info("No scan-varying parameter table to write")
 
-    # Save the refined experiments to file
-    output_experiments_filename = params.output.experiments
-    logger.info(f"Saving refined experiments to {output_experiments_filename}")
-    experiments.as_file(output_experiments_filename)
-
-    # Save reflections with updated predictions if requested (allow to switch
-    # this off if it is a time-consuming step)
-    if params.output.reflections:
-        logger.info(
-            "Saving reflections with updated predictions to %s",
-            params.output.reflections,
-        )
-        if params.output.include_unused_reflections:
-            reflections.as_file(params.output.reflections)
-        else:
-            sel = reflections.get_flags(reflections.flags.used_in_refinement)
-            reflections.select(sel).as_file(params.output.reflections)
-
     # Save matches to file for debugging
     if params.output.matches:
         matches = refiner.get_matches()
@@ -471,6 +455,28 @@ def run(args=None, phil=working_phil):
     if params.output.history:
         logger.info(f"Saving refinement step history to {params.output.history}")
         history.to_json_file(params.output.history)
+
+    # Save the refined experiments to file
+    output_experiments_filename = params.output.experiments
+    logger.info(f"Saving refined experiments to {output_experiments_filename}")
+    experiments.as_file(output_experiments_filename)
+
+    # Save reflections with updated predictions. This causes a spike in memory
+    # usage (https://github.com/dials/dials/issues/2024), so delete big objects
+    # we no longer need first
+    if params.output.reflections:
+        del experiments
+        del refiner
+        del history
+        logger.info(
+            "Saving reflections with updated predictions to %s",
+            params.output.reflections,
+        )
+        if params.output.include_unused_reflections:
+            reflections.as_file(params.output.reflections)
+        else:
+            sel = reflections.get_flags(reflections.flags.used_in_refinement)
+            reflections.select(sel).as_file(params.output.reflections)
 
 
 if __name__ == "__main__":

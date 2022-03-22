@@ -5,6 +5,8 @@ This module defines a blocked datastructures for summing over groups of
 symmetry equivalent reflections, as required for scaling.
 """
 
+from __future__ import annotations
+
 from typing import List, Optional, Union
 
 import numpy as np

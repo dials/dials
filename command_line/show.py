@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import sys
 
@@ -186,11 +188,14 @@ def run(args=None):
 
     dials.util.log.print_banner()
 
-    from dials.util.options import OptionParser, reflections_and_experiments_from_files
+    from dials.util.options import (
+        ArgumentParser,
+        reflections_and_experiments_from_files,
+    )
 
     usage = "dials.show [options] models.expt | image_*.cbf"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_experiments=True,
@@ -247,7 +252,7 @@ def show_experiments(experiments, show_scan_varying=False):
     for i_expt, expt in enumerate(experiments):
         text.append("Experiment %i:" % i_expt)
         format_class = expt.imageset.get_format_class()
-        if format_class.__name__ != "Format":
+        if not format_class.is_abstract():
             text.append(f"Format class: {format_class.__name__}")
         if expt.identifier != "":
             text.append(f"Experiment identifier: {expt.identifier}")

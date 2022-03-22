@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import sys
 
@@ -13,7 +15,7 @@ from dials.util.image_viewer.slip_viewer.tile_generation import (
     get_flex_image,
     get_flex_image_multipanel,
 )
-from dials.util.options import OptionParser, flatten_experiments
+from dials.util.options import ArgumentParser, flatten_experiments
 
 help_message = """
 
@@ -105,7 +107,7 @@ colour_schemes = {"greyscale": 0, "rainbow": 1, "heatmap": 2, "inverse_greyscale
 def run(args=None):
     usage = "dials.export_bitmaps [options] models.expt | image.cbf"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_experiments=True,
@@ -153,7 +155,7 @@ def imageset_as_bitmaps(imageset, params):
     saturation = panel.get_trusted_range()[1]
     if params.saturation:
         saturation = params.saturation
-    if scan is not None and scan.get_oscillation()[1] > 0 and not params.imageset_index:
+    if scan is not None and not scan.is_still() and not params.imageset_index:
         start, end = scan.get_image_range()
     else:
         start, end = 1, len(imageset)

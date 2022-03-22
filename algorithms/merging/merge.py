@@ -1,5 +1,7 @@
 """Merging functions for experiment lists and reflection tables."""
 
+from __future__ import annotations
+
 import logging
 from io import StringIO
 

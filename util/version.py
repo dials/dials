@@ -1,5 +1,7 @@
 # DIALS version numbers are constructed from
 #  1. a common prefix
+from __future__ import annotations
+
 __dials_version_format = "DIALS %s"
 #  2. the most recent annotated git tag (or failing that: a default string)
 __dials_version_default = "3.dev"

@@ -9,6 +9,8 @@ Examples::
   dials.reference_profile_viewer reference_profiles.pickle
 """
 
+from __future__ import annotations
+
 import copy
 import os
 import pickle
@@ -27,7 +29,7 @@ from matplotlib.figure import Figure
 
 import dials.util
 import dials.util.log
-from dials.util.options import OptionParser
+from dials.util.options import ArgumentParser
 
 
 class ProfilesFrame(wx.Frame):
@@ -303,7 +305,7 @@ class ProfileStore:
 def run():
     dials.util.log.print_banner()
     usage = "dials.reference_profile_viewer [options] reference_profiles.pickle"
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         read_reflections=False,
         read_experiments=False,

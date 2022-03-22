@@ -1,4 +1,6 @@
 """Test that compute_delta_cchalf returns required values"""
+from __future__ import annotations
+
 import json
 from unittest import mock
 
@@ -10,7 +12,7 @@ from dials.algorithms.scaling.model.model import KBScalingModel
 from dials.algorithms.scaling.scale_and_filter import AnalysisResults, log_cycle_results
 from dials.algorithms.statistics.cc_half_algorithm import CCHalfFromDials, DeltaCCHalf
 from dials.array_family import flex
-from dials.util.options import OptionParser
+from dials.util.options import ArgumentParser
 
 
 def generate_test_reflections(n=2):
@@ -37,10 +39,8 @@ def generated_params():
   """,
         process_includes=True,
     )
-    optionparser = OptionParser(phil=phil_scope, check_format=False)
-    parameters, _ = optionparser.parse_args(
-        args=[], quick_parse=True, show_diff_phil=False
-    )
+    parser = ArgumentParser(phil=phil_scope, check_format=False)
+    parameters, _ = parser.parse_args(args=[], quick_parse=True, show_diff_phil=False)
     parameters.model = "KB"
     return parameters
 

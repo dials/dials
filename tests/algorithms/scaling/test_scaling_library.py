@@ -2,6 +2,8 @@
 Tests for scaling library module.
 """
 
+from __future__ import annotations
+
 from unittest.mock import Mock, patch
 
 import pytest
@@ -23,7 +25,7 @@ from dials.algorithms.scaling.scaling_library import (
     scaled_data_as_miller_array,
 )
 from dials.array_family import flex
-from dials.util.options import OptionParser
+from dials.util.options import ArgumentParser
 
 
 @pytest.fixture
@@ -150,10 +152,8 @@ def generated_param(absorption_term=False):
   """,
         process_includes=True,
     )
-    optionparser = OptionParser(phil=phil_scope, check_format=False)
-    parameters, _ = optionparser.parse_args(
-        args=[], quick_parse=True, show_diff_phil=False
-    )
+    parser = ArgumentParser(phil=phil_scope, check_format=False)
+    parameters, _ = parser.parse_args(args=[], quick_parse=True, show_diff_phil=False)
     parameters.physical.absorption_correction = absorption_term
     parameters.array.absorption_correction = absorption_term
     parameters.array.n_resolution_bins = 1  # to stop example dataset

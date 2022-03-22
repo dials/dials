@@ -19,15 +19,17 @@ graphically through the DIALS User Interface, DUI_.
 
 .. _DUI: https://github.com/ccp4/DUI
 
-DUI is part of CCP4 and can be launched from ccp4i2 by selecting the relevant
-icon from within the "Integrate X-ray images" task folder.
+An older version of DUI is available in CCP4 7.1, but in this case we want to use
+an updated version that works with DIALS 3.7. If you are at Diamond Light Source
+this version is already installed, otherwise if you want to install DUI into an
+existing DIALS 3.7 installation, you can follow `these instructions`_.
 
-.. image:: https://dials.github.io/images/process_detail_betalactamase_dui/ccp4i2_dui.png
+.. _`these instructions`: https://github.com/dials/dials/wiki/Installing-DUI
 
 Tutorial data
 -------------
 
-The following example uses a Beta-Lactamase dataset collected using
+The following example uses a Beta-lactamase dataset collected using
 beamline I04 at Diamond Light Source, and reprocessed especially for
 these tutorials.
 
@@ -55,7 +57,7 @@ following.
 
 At this stage you can resize various parts of the interface until you are
 comfortable with the layout, but you can't do much else until the dataset is
-imported by DIALS. To do this, click on the "Select File(s)" button, navigate
+imported by DIALS. To do this, click on the "Select file(s)" button, navigate
 to the location of the images and select any one of them. DUI will automatically
 determine the filename template and will show that with a wildcard in the text
 box. If there are problems with this template it is possible to edit this before
@@ -135,7 +137,7 @@ able to see the crystal's reciprocal lattice by eye in the strong spot
 positions. Some practice may be needed in rotating the lattice to an
 orientation that shows off the periodicity in reciprocal lattice positions.
 
-.. image:: /figures/process_detail_betalactamase/reciprocal_lattice_strong.png
+.. image:: https://dials.github.io/images/process_detail_betalactamase_dui/reciprocal_lattice_strong.png
 
 Although the reciprocal spacing is visible, in this data, there are clearly
 some systematic distortions. These will be solved during indexing.
@@ -145,17 +147,17 @@ Indexing
 
 The next step will be indexing of the strong spots. Click on the "Index" button
 to move on to this step, and form a new node in the history tree. Here we see
-that the simple parameters allow only to select between different "Indexing
-Methods", the default of which is the 3D FFT algorithm. The other options are
+that the simple parameters allows to select between different "Indexing
+Methods", the default of which is the 3D FFT algorithm. The other options include
 the 1D FFT (DPS) algorithm and a special version of the 3D FFT called
 :samp:`real_space_grid_search`, which is particularly useful for narrow wedges
 containing multiple lattices, but requires a known cell and space group to be
 set under the "Advanced" parameters. If we do know the cell and space group,
-these can also be set as hints for either of the other two indexing algorithms.
+these can also be set as hints for any of the other indexing algorithms.
 This can help in difficult cases and will be used to constrain the lattice
 during refinement. Otherwise
 indexing and refinement will be carried out in the primitive lattice
-using space group P1.
+using space group :math:`P\ 1`.
 
 In this case, keep the method set to the default :samp:`fft3d` and click "Run" to
 start the indexing job. Once the job has finished running, you can see in the
@@ -164,8 +166,10 @@ start the indexing job. Once the job has finished running, you can see in the
 
 .. image:: https://dials.github.io/images/process_detail_betalactamase_dui/status_after_index.png
 
-Now let's click through the all the tabs of output. First, on the "Image" tab
-you will now see that indexed strong spots are assigned Miller indices. If you
+Now let's click through the tabs of output. First, on the "Image" tab
+you will now see that indexed strong spots are assigned Miller indices. By
+default only the nearest one to the mouse cursor is shown, but this can be
+changed under the "Display" settings. If you
 also click on the "Predictions" checkbox, under "Reflection Type" you will in
 addition see centroid positions and Miller indices for all predicted
 reflections, not just the strong spots.
@@ -188,7 +192,7 @@ an initial estimate for the unit cell parameters.
 
 What then follows are 'macro-cycles' of refinement where the experimental model
 is first tuned to get the best possible fit from the data, and then the
-resolution limit is reduced to cover more data than the previous cycle. 16
+:samp:`d_min` limit is reduced to cover more data than the previous cycle. 16
 parameters of the diffraction geometry are tuned: 6 for the detector, one for
 beam angle, 3 crystal orientation angles and the 6 triclinic cell parameters.
 At each stage only 36000 reflections are used in the refinement job. In order
@@ -204,7 +208,7 @@ the positional RMSDs:
 
 Second and subsequent macrocycles are refined using the same number of
 reflections, but after extending to higher resolution. The RMSDs at the
-start of each cycle start off worse than at the end of the previous
+start of each cycle are worse than at the end of the previous
 cycle, because the best fit model for lower resolution data is being
 applied to higher resolution reflections. As long as each macrocyle
 shows a reduction in RMSDs then refinement is doing its job of extending
@@ -220,8 +224,8 @@ macrocycle there were some outliers identified and removed from
 refinement as resolution increases. Large outliers can dominate refinement
 using a least squares target, so it is important to be able to remove these.
 More about this is discussed below in :ref:`detailbetal-sec-refinement`.
-It's also worth checking the total number of reflections that were unable to
-be assigned an index:
+It's also worth checking the total number of reflections that were not
+assigned an index:
 
 .. dials_tutorial_include:: betalactamase/dials.index.log.extract_unindexed
    :start-after: [START_EXTRACT]
@@ -249,13 +253,13 @@ In this case, we can see that the refinement has clearly resolved whatever
 systematic error was causing distortions in the reciprocal space view, and the
 determined reciprocal unit cell fits the data well:
 
-.. image:: /figures/process_detail_betalactamase/reciprocal_lattice_indexed.png
+.. image:: https://dials.github.io/images/process_detail_betalactamase_dui/reciprocal_lattice_indexed.png
 
 Bravais Lattice Refinement
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Since we didn't know the Bravais lattice before indexing, we can now determine
-likely candidates - by taking the results of the P1 autoindexing, and running
+likely candidates - by taking the results of the :math:`P\ 1` autoindexing, and running
 refinement with all of the possible Bravais settings applied. You can then
 choose your preferred solution. This step is accessed by the "Lattice" button
 on the left of the DUI window. As before, run this without altering any of
@@ -269,9 +273,9 @@ cell for each Bravais setting.
 The scores for each setting include max δ (a metric fit measured in degrees),
 RMSDs (in mm), and the best and worse correlation coefficients for data related
 by symmetry elements (the symmetry elements implied by the lowest symmetry
-space group from the Bravais setting). This uses the raw spot intensity
+space group from the Bravais setting). This only uses the raw spot intensity
 measurement from the spot-finding procedure (uncorrected and unscaled) but
-provides a very useful check to see if the data does appear to adhere to the
+still provides a very useful check to see if the data does appear to adhere to the
 proposed symmetry operators.
 
 DIALS uses an heuristic to determine which solutions are acceptable or not,
@@ -286,13 +290,17 @@ Refinement
 ^^^^^^^^^^
 
 The model is already refined during indexing, but we can also add explicit
-refinement steps here. This is beneficial because it will use all reflections in
+refinement steps here, now including the monoclinic constraints from
+our chosen reindexed solution. An extra refinement step is also beneficial
+because it will use all reflections in
 refinement rather than a subset, uses a more sophisticated outlier rejection
-algorithm and will later allow us to fit a scan-varying model of the crystal.
+algorithm and allows us to fit a scan-varying model of the crystal. This allows
+small misset rotations to occur over the course of the scan. There are usually
+even small changes to the cell dimensions (typically resulting in a net
+increase in cell volume) caused by exposure to radiation during data
+collection.
 
-We start by refining a static model including the monoclinic constraints from
-our chosen reindexed solution. For this we leave "Scan Varying Refinement" as
-"False". There are various choices of outlier rejection algorithm allowed by
+There are various choices of outlier rejection algorithm allowed by
 refinement. The default selection of "auto" will choose the "mcd" algorithm
 for a rotation scan like this, which performs outlier rejection on the X, Y and
 φ residuals simultaneously, taking into account the multivariate nature of the
@@ -301,28 +309,12 @@ before during indexing the rougher, but less computationally expensive "tukey"
 option was used instead.
 
 As before, click "Run" to start the job. The "Log Text" is familiar from the
-indexing stage. We see that all strong reflections were used in refinement,
-providing a small reduction in RMSDs. However, the refined model is still
-static over the whole dataset. We would like to do an additional refinement job
-at this point, to fit a more sophisticated model for the crystal, allowing
-small misset rotations to occur over the course of the scan. There are usually
-even small changes to the cell dimensions (typically resulting in a net
-increase in cell volume) caused by exposure to radiation during data
-collection. To account for both of these effects we can extend our
-parameterisation to obtain a smoothed *scan-varying* model for both the crystal
-orientation and unit cell.
+indexing stage, but now there are two macrocyles: one for scan-static refinement
+and a second for scan-varying refinement of the crystal orientation and unit
+cell. The log output shows a decrease in each dimension, but
+especially in Y.
 
-This means running a further refinement job starting
-from the output of the previous job. To do that, note that the current "refine"
-node is a completed job and the parameters we entered are now greyed-out and
-cannot be edited. To do a second refinement starting from this point we simply
-click on the "refine" button again, opening a new green node in the history
-tree. Here we can select "Scan Varying Refinement" as "True" and click "Run"
-again to start the job.
-
-The log output shows a decrease in each dimension, but especially in Y.
-
-.. dials_tutorial_include:: betalactamase/dials.sv_refine.log
+.. dials_tutorial_include:: betalactamase/dials.refine.log
    :start-after: Refinement steps
    :end-before: RMSD no longer decreasing
 
@@ -330,7 +322,7 @@ The final RMSDs are less than a quarter of a pixel in both X and Y, and just
 under a fifth of a pixel in φ. This is about as good as we can expect from
 a high quality Pilatus data set such as this.
 
-In the "Report View" we can now see plots of how the cell and orientation
+On the "Report" tab we can now see plots of how the cell and orientation
 changes during the scan. The smoothness of these plots is guaranteed by the
 smoother model used by :doc:`dials.refine<../programs/dials_refine>`. However,
 we are satisfied that this model is sufficient to match real changes present
@@ -364,21 +356,21 @@ damage from the *lack* of considerable change observed.
 Integration
 ^^^^^^^^^^^
 
-After the refinement is done the next step is integration. Click on the
+After the refinement is done, the next step is integration. Click on the
 "integrate" button to move to this job. Mostly,
 the default parameters are fine for Pilatus data, which will perform
 XDS-like 3D profile fitting while using a generalized linear model in order
-to fit a Poisson-distributed background model. As with spot-finding, the
-number of processes can be set >1 to speed the job up (but DUI will have
-selected a suitable default). Click "Run" to start integration. This is the
+to fit a Poisson-distributed background model. Click "Run" to start integration. This is the
 most computationally-demanding stage of processing, so it will take a while to
 complete.
 
-Checking the "Log Text" output, we see that after loading in the reference
+Checking the "Log" output, we see that after loading in the reference
 reflections, new predictions are made up to the highest resolution at the
 corner of the detector. This is fine, but if we wanted to we could have
-adjusted the resolution limits using parameters :samp:`d_min` and :samp:`d_max`
-under :samp:`prediction` in the "Advanced" parameters tab. The predictions are
+adjusted the high resolution limit using the control on the simple input tab.
+To adjust the low resolution limit, or any other parameter for integration, you
+can also use the "Advanced" tab, where the resolution limits :samp:`d_min` and :samp:`d_max`
+are under the :samp:`prediction` section. The predictions are
 made using the scan-varying crystal model from the previous step. As this
 scan-varying model was determined in advance of integration, each of the
 integration jobs is independent and we can take advantage of true parallelism
@@ -398,24 +390,24 @@ overlap, so reflections are assigned to one or more jobs. What follows are
 blocks of information specific to each integration job.
 
 After these jobs are finished, the reflections are 'post-processed', which
-includes the application of the LP correction to the intensities. Then
+includes the calculation of the LP correction for the intensities. Then
 summary tables are printed giving quality statistics first by frame, and
 then by resolution bin.
 
-On the "Image View" tab we can now see integration "shoeboxes" around the spots,
+On the "Image" tab we can now see integration "shoeboxes" around the spots,
 not just tight boxes around the strong pixels. If all stages up to this point
 have gone well, then the boxes should be centred on the strong pixels and should
 extend beyond the strong pixels to include pixels used for local background level
 determination.
 
-The "Report View" now contains additional plots under the "Analysis of
+The "Report" now contains additional plots under the "Analysis of
 reflection intensities" and "Analysis of reference profiles" sections. It is
 worth checking through these, particularly paying attention to the following:
 
 * **Reflection and reference correlations binned in X/Y**.
   These are useful companions to the
   plots of centroid residual as a function of detector position above.
-  Whereas the above plots show systematic errors in the positions and
+  Whereas the previous plots show systematic errors in the positions and
   orientations of tiles of a multi-panel detector, these plots indicate what
   effect that (and any other position-specific systematic error) has on the
   integrated data quality. The first of these plots shows the correlation
@@ -475,21 +467,20 @@ a scale factor to apply to each reflection, such that the scaled intensities are
 representative of the 'true' scattering intensity from the contents of the unit
 cell.
 
-During scaling, a scaling model is created, from which we derive scale factors for
+During this process, a scaling model is created, from which we derive scale factors for
 each reflection. By default, three components are used to create a physical model
-for scaling (:samp:`model=physical`), in a similar manner to that used in the
+for scaling, in a similar manner to that used in the
 program aimless_. This model consists of a smoothly varying scale factor as a
 function of rotation angle, a smoothly varying B-factor to
 account for radiation damage as a function of rotation angle
 and an absorption surface correction, dependent on the direction of the incoming
 and scattered beam vector relative to the crystal.
 
-Let's scale the Beta-lactamase dataset, after setting a resolution cutoff (`d_min`)
-of 1.4. This job is created by clicking the "scale" button. Enter 1.4 in the
-`d_min` field in the "simple" tab and click "Run" to start the job.
+Let's scale the Beta-lactamase dataset, after setting a resolution cutoff
+of 1.4 Å. This job is created by clicking the "scale" button. Enter 1.4 in the
+"High resolution limit" field in the "Simple" tab and click "Run" to start the job.
 
-As can be seen from the "Log Text", 70 parameters are used to parameterise the
-scaling model for this dataset. A subset of reflections are selected to be used in
+As can be seen from the "Log", a subset of reflections are selected to be used in
 scaling model minimisation, which helps to speed up the algorithm (the model is
 used to calculate scales for all reflections at the end).
 Outlier rejection is performed at several stages, as outliers have a
@@ -503,35 +494,37 @@ presented, which give indications of the quality of the scaled dataset.
 
 ::
 
-             ----------Overall merging statistics (non-anomalous)----------
+              -------------Summary of merging statistics--------------
 
-  Resolution: 69.19 - 1.40
-
-  Observations: 274799
-
-  Unique reflections: 41140
-
-  Redundancy: 6.7
-
-  Completeness: 94.11%
-
-  Mean intensity: 80.7
-
-  Mean I/sigma(I): 15.4
-
-  R-merge: 0.065
-
-  R-meas:  0.071
-
-  R-pim:   0.027
+                                              Overall    Low     High
+  High resolution limit                           1.40    3.80    1.40
+  Low resolution limit                           69.19   69.28    1.42
+  Completeness                                   94.1    99.0    90.5
+  Multiplicity                                    6.9     6.7     6.1
+  I/sigma                                        19.8    69.6     2.0
+  Rmerge(I)                                     0.063   0.037   0.643
+  Rmerge(I+/-)                                  0.053   0.030   0.581
+  Rmeas(I)                                      0.068   0.040   0.703
+  Rmeas(I+/-)                                   0.063   0.035   0.704
+  Rpim(I)                                       0.026   0.015   0.280
+  Rpim(I+/-)                                    0.033   0.019   0.391
+  CC half                                       0.999   0.998   0.887
+  Anomalous completeness                         94.3    99.1    89.2
+  Anomalous multiplicity                          3.5     3.5     3.1
+  Anomalous correlation                         0.362   0.375  -0.013
+  Anomalous slope                               1.185
+  dF/F                                          0.059
+  dI/s(dI)                                      1.308
+  Total observations                           283277   15064   11794
+  Total unique                                  41136    2234    1935
 
 
 Inspecting the results
 """"""""""""""""""""""
 
 To see what the scaling is telling us about the dataset, plots of the scaling
-model should be viewed. These are visible within the "Report View" tab, at the
-bottom under "Analysis of scaling model".
+model should be viewed. These are visible within the "Report" tab, at the
+bottom under "Analysis of scaling results".
 
 .. image:: https://dials.github.io/images/process_detail_betalactamase_dui/report_scaling_plots.png
 
@@ -539,49 +532,12 @@ What is immediately apparent is the periodic nature of the scale term, with peak
 and troughs 90° apart. This indicates that the illuminated volume was changing
 significantly during the experiment: a reflection would be measured as twice as
 intense if it was measured at rotation angle of ~120° compared to at ~210°.
-The absorption surface also shows a similar periodicity, as may be expected.
 What is less clear is the form of the relative B-factor, which also has a
 periodic nature. As a B-factor can be understood to represent radiation damage,
 this would not be expected to be periodic, and it is likely that this model
 component is accounting for variation that could be described only by a scale
 and absorption term. To test this, we can repeat the scaling process but turn
-off the :samp:`decay_term`.
-
-To do this in DUI, click "Retry" to set up a new scaling job continuing from
-the successful symmetry-determination step. This time, enter the "Advanced" tab
-and under `parameterisation` change the value of `decay_term` to `False`. Now
-click "Run" to start the job.
-
-::
-
-             ----------Overall merging statistics (non-anomalous)----------
-
-  Resolution: 69.19 - 1.40
-
-  Observations: 274578
-
-  Unique reflections: 41140
-
-  Redundancy: 6.7
-
-  Completeness: 94.11%
-
-  Mean intensity: 76.6
-
-  Mean I/sigma(I): 16.0
-
-  R-merge: 0.064
-
-  R-meas:  0.070
-
-  R-pim:   0.027
-
-
-By inspecting the statistics in the output, we can see that removing the decay
-term has had the effect of causing around 200 more reflections to be marked as
-outliers (taking the outlier count from 0.72% to 0.80% of the data), while
-improving some of the R-factors and mean I/sigma(I). Therefore it is probably
-best to exclude the decay correction for this dataset. Other options which
+off the :samp:`decay_correction`. Other options which
 could be explored under the "Advanced" tab are the numbers of parameters used
 for the various components, for example by changing the :samp:`scale_interval`,
 or by adjusting the outlier rejection criterion with a different
@@ -590,14 +546,24 @@ or by adjusting the outlier rejection criterion with a different
 Exporting as MTZ
 ^^^^^^^^^^^^^^^^
 
-Once we are happy with the results from scaling, the data can be exported as
-an unmerged mtz file, for further symmetry analysis with pointless_ or to start
-structural solution.
+Once we are happy with the results from scaling, the data can be exported
+in MTZ format. To do this, click on the "export" button. Make sure the
+"Output scaled intensities" box is ticked otherwise the exported MTZ will only
+contain intensities from integration. The next choice is whether to merge the
+symmetry-related reflections or not. Some downstream steps require merged MTZ
+data, but it is always possible to do this later within CCP4. This time we will
+export both versions, starting with the unmerged file. So, leave this box
+unticked and then click on "Change output file" to give the file a sensible
+name, for example "unmerged.mtz". Click "Run" to export the file. The "Log" view
+gives some basic information about the MTZ file that was created.
 
-To do this, click on the "export" button. This gives the option of an mtz output
-name and the option to output scaled intensities. Make sure that box is
-ticked otherwise the exported MTZ will only contain intensities from integration.
+Now, to export a merged MTZ, click back on the parent "scale" job in the
+"History Tree" and then click on "export" to get a fresh export node in the
+tree. This time, tick "Output merged reflections" and write to a new file,
+say "merged.mtz". After you run the job, the log file will show merging
+statistics as well as basic information about the MTZ that was created.
 
-.. _pointless: http://www.ccp4.ac.uk/html/pointless.html
+These files can then be imported into CCP4 Cloud or ccp4i2 to continue to
+structure solution and refinement.
+
 .. _aimless: http://www.ccp4.ac.uk/html/aimless.html
-.. _ctruncate: http://www.ccp4.ac.uk/html/ctruncate.html

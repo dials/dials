@@ -31,6 +31,8 @@ dials.damage_analysis scaled.expt scaled.refl shared_crystal=True
 
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import os
@@ -47,7 +49,7 @@ from dials.command_line.symmetry import median_unit_cell
 from dials.pychef import Statistics, batches_to_dose, interpret_images_to_doses_options
 from dials.util import log, resolution_analysis, show_mail_handle_errors
 from dials.util.filter_reflections import filter_reflection_table
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
 try:
@@ -282,7 +284,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
 
     usage = "dials.damage_analysis [options] scaled.expt scaled.refl | scaled.mtz"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil,
         epilog=__doc__,

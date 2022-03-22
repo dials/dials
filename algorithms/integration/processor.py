@@ -1,6 +1,10 @@
+from __future__ import annotations
+
 import itertools
 import logging
 import math
+import os
+import pathlib
 from time import time
 
 import psutil
@@ -67,6 +71,26 @@ def assess_available_memory(params):
     # Obtain information about system memory
     available_memory = psutil.virtual_memory().available
     available_swap = psutil.swap_memory().free
+
+    # https://htcondor.readthedocs.io/en/latest/users-manual/services-for-jobs.html#extra-environment-variables-htcondor-sets-for-jobs
+    condor_job_ad = os.environ.get("_CONDOR_JOB_AD")
+    if condor_job_ad:
+        try:
+            job_classad = dials.util.parse_htcondor_job_classad(
+                pathlib.Path(condor_job_ad)
+            )
+        except Exception as e:
+            logger.error(
+                f"Error parsing _CONDOR_JOB_AD {condor_job_ad}: {e}",
+                exc_info=True,
+            )
+        else:
+            if job_classad.memory_provisioned:
+                # Convert MB to bytes
+                available_memory = min(
+                    available_memory, job_classad.memory_provisioned * 1024**2
+                )
+
     available_incl_swap = available_memory + available_swap
     available_limit = available_incl_swap * params.block.max_memory_usage
     available_immediate_limit = available_memory * params.block.max_memory_usage
@@ -96,7 +120,7 @@ def assess_available_memory(params):
     if rlimit:
         try:
             ulimit = resource.getrlimit(rlimit)[0]
-            if ulimit <= 0 or ulimit > (2 ** 62):
+            if ulimit <= 0 or ulimit > (2**62):
                 report.append("  no memory ulimit set")
             else:
                 ulimit_used = psutil.Process().memory_info().rss

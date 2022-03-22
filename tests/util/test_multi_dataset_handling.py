@@ -2,6 +2,8 @@
 Tests for dials.util.multi_dataset_handling functions
 """
 
+from __future__ import annotations
+
 import pytest
 
 from dxtbx.model import Experiment, ExperimentList

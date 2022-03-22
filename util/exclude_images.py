@@ -4,6 +4,8 @@ command line option, as well as obtaining a selection to use for selecting
 the corresponding reflections.
 """
 
+from __future__ import annotations
+
 from orderedset import OrderedSet
 
 import iotbx.phil
@@ -18,6 +20,10 @@ phil_scope = iotbx.phil.parse(
     .help = "Input in the format exp:start:end"
             "Exclude a range of images (start, stop) from the dataset with"
             "experiment identifier exp  (inclusive of frames start, stop)."
+            "Multiple ranges can be given in one go, e.g."
+            "exclude_images=0:150:200,1:200:250"
+            "exclude_images='0:150:200 1:200:250'"
+    .short_caption = "Exclude images"
     .expert_level = 1
 """
 )
@@ -88,28 +94,35 @@ def _parse_exclude_images_commands(commands, experiments, reflections):
     """
     ranges_to_remove = []
     for com in commands:
-        vals = com[0].split(":")
-        if len(vals) == 2:
-            if len(experiments) > 1:
-                raise ValueError(
-                    "Exclude images must be in the form experimentnumber:start:stop for multiple experiments"
-                )
-            else:
-                ranges_to_remove.append(
-                    (experiments[0].identifier, (int(vals[0]), int(vals[1])))
-                )
+        if len(com) > 1:
+            sub = com
+        elif "," in com[0]:
+            sub = com[0].split(",")
         else:
-            if len(vals) != 3:
-                raise ValueError(
-                    "Exclude images must be input in the form experimentnumber:start:stop, or start:stop for a single experiment"
-                )
-            dataset_id = int(vals[0])
-            for table in reflections:
-                if dataset_id in table.experiment_identifiers():
-                    expid = table.experiment_identifiers()[dataset_id]
-                    ranges_to_remove.append((expid, (int(vals[1]), int(vals[2]))))
-                    break
-
+            sub = com
+        for subvals in sub:
+            vals = subvals.split(":")
+            if len(vals) == 2:
+                if len(experiments) > 1:
+                    raise ValueError(
+                        "Exclude images must be in the form experimentnumber:start:stop for multiple experiments"
+                    )
+                else:
+                    ranges_to_remove.append(
+                        (experiments[0].identifier, (int(vals[0]), int(vals[1])))
+                    )
+            else:
+                if len(vals) != 3:
+                    raise ValueError(
+                        "Exclude images must be input in the form experimentnumber:start:stop, or start:stop for a single experiment"
+                        + "Multiple ranges can be specified by comma or space separated values e.g 0:100:150,1:120:200"
+                    )
+                dataset_id = int(vals[0])
+                for table in reflections:
+                    if dataset_id in table.experiment_identifiers():
+                        expid = table.experiment_identifiers()[dataset_id]
+                        ranges_to_remove.append((expid, (int(vals[1]), int(vals[2]))))
+                        break
     return ranges_to_remove
 
 

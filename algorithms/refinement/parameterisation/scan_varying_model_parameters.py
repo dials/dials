@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from scitbx.array_family import flex
 
 from dials.algorithms.refinement.parameterisation.model_parameters import (

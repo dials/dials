@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import copy
 import itertools
 import json
@@ -198,7 +200,8 @@ class ScanVaryingCrystalAnalyser:
             aa = [round(i, ndigits=6) for i in aa]
             bb = [round(i, ndigits=6) for i in bb]
             cc = [round(i, ndigits=6) for i in cc]
-            phi = [scan.get_angle_from_array_index(t) for t in scan_pts]
+            start, stop = scan.get_array_range()
+            phi = [scan.get_angle_from_array_index(t) for t in range(start, stop + 1)]
             vol = [e.volume() for e in cells]
             cell_dat = {
                 "phi": phi,
@@ -348,7 +351,8 @@ the refinement algorithm accounting for unmodelled features in the data.
                 continue
 
             scan_pts = list(range(crystal.num_scan_points))
-            phi = [scan.get_angle_from_array_index(t) for t in scan_pts]
+            start, stop = scan.get_array_range()
+            phi = [scan.get_angle_from_array_index(t) for t in range(start, stop + 1)]
             Umats = [matrix.sqr(crystal.get_U_at_scan_point(t)) for t in scan_pts]
             if self._relative_to_static_orientation:
                 # factor out static U
@@ -623,7 +627,7 @@ ice rings, or poor spot-finding parameters.
                             "title": "Number of reflections",
                             "titleside": "right",
                         },
-                        "colorscale": "Jet",
+                        "colorscale": "Viridis",
                     }
                 ],
                 "layout": {
@@ -662,7 +666,7 @@ ice rings, or poor spot-finding parameters.
                             "title": "Number of reflections",
                             "titleside": "right",
                         },
-                        "colorscale": "Jet",
+                        "colorscale": "Viridis",
                     }
                 ],
                 "layout": {
@@ -832,7 +836,7 @@ class CentroidAnalyser:
                             "title": "Difference in X position (pixels)",
                             "titleside": "right",
                         },
-                        "colorscale": "Jet",
+                        "colorscale": "Viridis",
                     }
                 ],
                 "layout": {
@@ -855,7 +859,7 @@ class CentroidAnalyser:
                             "title": "Difference in Y position (pixels)",
                             "titleside": "right",
                         },
-                        "colorscale": "Jet",
+                        "colorscale": "Viridis",
                     }
                 ],
                 "layout": {
@@ -901,7 +905,7 @@ class CentroidAnalyser:
                             "title": "Number of reflections",
                             "titleside": "right",
                         },
-                        "colorscale": "Jet",
+                        "colorscale": "Viridis",
                     }
                 ],
                 "layout": {
@@ -1344,7 +1348,7 @@ class IntensityAnalyser:
                         "type": "heatmap",
                         "name": f"i_over_sigma_{intensity_type}",
                         "colorbar": {"title": "Log I/σ(I)", "titleside": "right"},
-                        "colorscale": "Jet",
+                        "colorscale": "Viridis",
                     }
                 ],
                 "layout": {
@@ -1382,7 +1386,7 @@ class IntensityAnalyser:
                             "title": "Number of reflections",
                             "titleside": "right",
                         },
-                        "colorscale": "Jet",
+                        "colorscale": "Viridis",
                     }
                 ],
                 "layout": {
@@ -1458,7 +1462,7 @@ class IntensityAnalyser:
                         "z": z1.transpose().tolist(),
                         "type": "heatmap",
                         "colorbar": {"title": "QE", "titleside": "right"},
-                        "colorscale": "Jet",
+                        "colorscale": "Viridis",
                     }
                 ],
                 "layout": {
@@ -1821,8 +1825,8 @@ class ReferenceProfileAnalyser:
         for d_bin in binner.bins:
             d_min = d_bin.d_min
             d_max = d_bin.d_max
-            ds3_min = 1 / d_min ** 3
-            ds3_max = 1 / d_max ** 3
+            ds3_min = 1 / d_min**3
+            ds3_max = 1 / d_max**3
             ds3_centre = (ds3_max - ds3_min) / 2 + ds3_min
             d_centre = 1 / ds3_centre ** (1 / 3)
             sel = (d_spacings < d_max) & (d_spacings >= d_min)
@@ -1890,7 +1894,7 @@ class ReferenceProfileAnalyser:
                             "title": "Number of reflections",
                             "titleside": "right",
                         },
-                        "colorscale": "Jet",
+                        "colorscale": "Viridis",
                     }
                 ],
                 "layout": {
@@ -1985,7 +1989,7 @@ class ReferenceProfileAnalyser:
                             "title": "Correlation with reference profile",
                             "titleside": "right",
                         },
-                        "colorscale": "Jet",
+                        "colorscale": "Viridis",
                         "zmin": 0,
                         "zmax": 1,
                     }
@@ -2023,7 +2027,7 @@ class ReferenceProfileAnalyser:
                             "title": "Number of reflections",
                             "titleside": "right",
                         },
-                        "colorscale": "Jet",
+                        "colorscale": "Viridis",
                     }
                 ],
                 "layout": {
@@ -2071,7 +2075,7 @@ class ReferenceProfileAnalyser:
                             "title": "Number of reflections",
                             "titleside": "right",
                         },
-                        "colorscale": "Jet",
+                        "colorscale": "Viridis",
                     }
                 ],
                 "layout": {
@@ -2458,11 +2462,11 @@ class Script:
 
     def __init__(self):
         """Initialise the script."""
-        from dials.util.options import OptionParser
+        from dials.util.options import ArgumentParser
 
         # Create the parser
         usage = "usage: dials.report [options] observations.refl"
-        self.parser = OptionParser(
+        self.parser = ArgumentParser(
             usage=usage,
             phil=phil_scope,
             read_reflections=True,

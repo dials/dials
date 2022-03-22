@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 def export_text(integrated_data):
     """Export contents of a dials reflection table as text."""
 

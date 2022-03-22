@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dials.algorithms.refinement.outlier_detection import CentroidOutlier
 from dials.array_family import flex
 
