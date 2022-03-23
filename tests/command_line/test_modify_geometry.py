@@ -5,9 +5,10 @@ from os import path
 import procrunner
 import pytest
 
+import libtbx.phil
 from dxtbx.serialize import load
 
-from dials.command_line.modify_geometry import update
+from dials.command_line.modify_geometry import phil_scope, update
 
 
 def test_run(dials_regression, tmp_path):
@@ -35,8 +36,7 @@ def test_run(dials_regression, tmp_path):
     assert new_gonio.get_angles() == pytest.approx([10, 20, 30])
 
 
-def test_load(dials_data, tmp_path):
-    from dials.command_line.modify_geometry import phil_scope as modify_geom_phil
+def test_load(dials_data):
 
     orig_expt = dials_data("aluminium_standard", pathlib=True) / "imported.expt"
     assert orig_expt.is_file()
@@ -45,18 +45,11 @@ def test_load(dials_data, tmp_path):
     orig_beam = orig_expt.beams()[0]
     assert orig_beam.get_wavelength() == pytest.approx(0.02508235604)
 
-    new_expt = tmp_path / "modified.expt"
+    working_params = phil_scope.fetch(
+        libtbx.phil.parse("geometry.beam.wavelength=0.05")
+    ).extract()
 
-    ## this is the idiosyncratic way to update phils
-    ## and it should work but in fact does nothing
-    working_params = modify_geom_phil.extract()
-    working_params.geometry.beam.wavelength = 0.05
-    working_params.output.experiments = str(new_expt)
-
-    update(orig_expt, working_params)
-    assert new_expt.is_file()
-
-    new_expt = load.experiment_list(new_expt, check_format=False)
+    new_expt = update(orig_expt, working_params)
 
     new_beam = new_expt.beams()[0]
     assert new_beam.get_wavelength() == pytest.approx(0.05)
