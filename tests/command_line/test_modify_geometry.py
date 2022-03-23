@@ -5,7 +5,6 @@ from os import path
 import procrunner
 import pytest
 
-import libtbx.phil
 from dxtbx.serialize import load
 
 from dials.command_line.modify_geometry import phil_scope, update
@@ -36,7 +35,7 @@ def test_run(dials_regression, tmp_path):
     assert new_gonio.get_angles() == pytest.approx([10, 20, 30])
 
 
-def test_load(dials_data):
+def test_update(dials_data):
 
     orig_expt = dials_data("aluminium_standard", pathlib=True) / "imported.expt"
     assert orig_expt.is_file()
@@ -45,9 +44,8 @@ def test_load(dials_data):
     orig_beam = orig_expt.beams()[0]
     assert orig_beam.get_wavelength() == pytest.approx(0.02508235604)
 
-    working_params = phil_scope.fetch(
-        libtbx.phil.parse("geometry.beam.wavelength=0.05")
-    ).extract()
+    working_params = phil_scope.fetch().extract()
+    working_params.geometry.beam.wavelength = 0.05
 
     new_expt = update(orig_expt, working_params)
 
