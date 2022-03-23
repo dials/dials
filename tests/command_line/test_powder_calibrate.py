@@ -9,12 +9,7 @@ pytest.importorskip("pyFAI")
 from dxtbx.serialize import load
 
 from dials.command_line import powder_calibrate
-from dials.command_line.powder_calibrate import (
-    Geometry,
-    Point,
-    PowderCalibrator,
-    get_expt_params,
-)
+from dials.command_line.powder_calibrate import Geometry, Point, PowderCalibrator
 
 
 @pytest.mark.parametrize(
@@ -51,8 +46,7 @@ def test_calibrate_coarse(dials_data, tmp_path, eyeball, starting_geometry):
     calibrated_geom = test_calibrator.geometry
 
     expected_geom_exptlist = load.experiment_list(aluminium_powder / "calibrated.expt")
-    expected_expt_params = get_expt_params(expected_geom_exptlist)
-    expected_geom = Geometry(expt_params=expected_expt_params)
+    expected_geom = Geometry(expt=expected_geom_exptlist)
 
     assert pytest.approx(calibrated_geom.param, 1e-2) == expected_geom.param
 
@@ -62,16 +56,13 @@ def test_save_geom_to_expt(dials_data, tmp_path):
     aluminium_powder = dials_data("aluminium_standard", pathlib=True)
 
     imported_exptlist = load.experiment_list(aluminium_powder / "imported.expt")
-    imported_expt_params = get_expt_params(imported_exptlist)
-    imported_geom = Geometry(expt_params=imported_expt_params)
+    imported_geom = Geometry(expt=imported_exptlist)
 
     outfile = tmp_path / "test_save.expt"
     imported_geom.save_to_expt(output=outfile)
     assert outfile.is_file()
 
-    # test_save_expt, _ = parse_to_tuples(
-    #     args=[str(outfile), "standard=Al", "eyeball=False"]
-    # )
-    # read_from_saved_geom = Geometry(expt_params=test_save_expt)
-    #
-    # assert imported_geom.param == pytest.approx(read_from_saved_geom.param)
+    from_saved_expt = load.experiment_list(outfile)
+    read_from_saved_geom = Geometry(expt=from_saved_expt)
+
+    assert imported_geom.param == pytest.approx(read_from_saved_geom.param)

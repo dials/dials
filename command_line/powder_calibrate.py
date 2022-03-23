@@ -194,19 +194,19 @@ class Geometry(pfGeometry):
     Similarly, PyFAI.geometry.setFit2D does the reverse.
     """
 
-    def __init__(self, expt: ExperimentList, expt_params: ExptParams):
+    def __init__(self, expt: ExperimentList):
         self.expt = expt
-        self.expt_params = expt_params
+        self.expt_params = get_expt_params(expt)
 
         super().__init__(
-            detector=Detector(expt_params),
-            wavelength=_convert_units(expt_params.wavelength, "A", "m"),
+            detector=Detector(self.expt_params),
+            wavelength=_convert_units(self.expt_params.wavelength, "A", "m"),
         )
         # convert beam parameters from mm to m
-        self.beam_m = _convert_units(expt_params.beam_on_detector, "mm", "m")
+        self.beam_m = _convert_units(self.expt_params.beam_on_detector, "mm", "m")
         self.beam_px = self._beam_to_px()
 
-        self.beam_distance = expt_params.distance
+        self.beam_distance = self.expt_params.distance
 
         # pyFAI calibration will need its poni parameters
         self._set_poni()
@@ -272,64 +272,28 @@ class Geometry(pfGeometry):
         self.beam_m = self._beam_to_m()
         self.beam_distance = beam_params["directDist"]
 
-    def modify_geom_params(self, output: str | os.PathLike) -> scope_extract:
+    def modify_geom_params(self) -> scope_extract:
         """
         Make a phil object out of the geometry parameters to be updated.
         """
-
-        new_params_phil = parse(
-            f"""
-        geometry
-            .help = "Allow overrides of experimental geometry"
-            .expert_level = 2
-            {{
-            include scope dxtbx.model.beam.beam_phil_scope
-            include scope dxtbx.model.detector.detector_phil_scope
-            include scope dxtbx.model.goniometer.goniometer_phil_scope
-            include scope dxtbx.model.scan.scan_phil_scope
-            detector {{
-                fast_slow_beam_centre = {self.beam_px.fast}, {self.beam_px.slow}
-                    .type = floats(size=2)
-                    .short_caption = "Beam centre coordinates (px fast, px slow, [panel id])"
-                distance = {self.beam_distance}
-                    .type = float
-            }}
-
-            beam {{
-                wavelength = {_convert_units(self.wavelength, 'm', 'A')}
-                    .type = float
-            }}
-
-            convert_stills_to_sequences = False
-                .type = bool
-                .help = "When overriding the scan, convert stills into sequences"
-                .short_caption = "Convert stills into sequences"
-
-            convert_sequences_to_stills = False
-                .type = bool
-                .help = "When overriding the scan, convert sequences into stills"
-                .short_caption = "Convert sequences into stills"
-        }}
-
-        output {{
-            experiment = {output}
-                .type = path
-        }}
-        """,
-            process_includes=True,
+        param = dials.command_line.modify_geometry.phil_scope.fetch().extract()
+        param.geometry.detector.fast_slow_beam_centre = (
+            self.beam_px.fast,
+            self.beam_px.slow,
         )
+        param.geometry.detector.distance = self.beam_distance
+        param.geometry.beam.wavelength = _convert_units(self.wavelength, "m", "A")
 
-        return dials.util.options.geometry_phil_scope.fetch(
-            source=new_params_phil
-        ).extract()
+        return param
 
     def save_to_expt(self, output: str | os.PathLike):
         """
         Update the geometry from start_geometry.expt and save to new output
         Output is passed either as a path or str
         """
-        new_params = self.modify_geom_params(output)
-        geometry_update(experiments=self.expt, new_params=new_params)
+        new_params = self.modify_geom_params()
+        new_geometry = geometry_update(experiments=self.expt, new_params=new_params)
+        new_geometry.as_file(output)
 
     def __deepcopy__(self, memo=None):
         new = self.__class__(self.expt_params)
@@ -610,7 +574,7 @@ class PowderCalibrator:
         """
         self.expt = expts
         self.expt_params = get_expt_params(expts)
-        self.geometry = Geometry(self.expt, self.expt_params)
+        self.geometry = Geometry(self.expt)
         self.detector = self.geometry.detector
         self.standard = standard
         self.eyeball = eyeball
