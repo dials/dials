@@ -210,10 +210,16 @@ class NullScalerFactory(ScalerFactory):
 
         logger.info("Preprocessing target dataset for scaling. \n")
         reflection_table = cls.filter_bad_reflections(reflection_table)
-        variance_mask = reflection_table["variance"] <= 0.0
-        reflection_table.set_flags(
-            variance_mask, reflection_table.flags.excluded_for_scaling
-        )
+        if "variance" in reflection_table:
+            variance_mask = reflection_table["variance"] <= 0.0
+            reflection_table.set_flags(
+                variance_mask, reflection_table.flags.excluded_for_scaling
+            )
+        else:
+            reflection_table.set_flags(
+                flex.bool(reflection_table.size(), False),
+                reflection_table.flags.excluded_for_scaling,
+            )
         logger.info(
             "%s reflections not suitable for scaling\n",
             reflection_table.get_flags(
