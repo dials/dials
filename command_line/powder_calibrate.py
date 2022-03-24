@@ -274,7 +274,8 @@ class Geometry(pfGeometry):
 
     def modify_geom_params(self) -> scope_extract:
         """
-        Make a phil object out of the geometry parameters to be updated.
+        Make a new set of phil parameters by modifying beam position, beam distance,
+        and beam wavelength in the geometry phil
         """
         param = dials.command_line.modify_geometry.phil_scope.fetch().extract()
         param.geometry.detector.fast_slow_beam_centre = (
