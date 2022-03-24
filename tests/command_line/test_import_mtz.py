@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 from pathlib import Path
 
@@ -153,7 +155,7 @@ def test_multiplex_on_imported_mtz(tmp_path, pipe):
         result = procrunner.run(cmd, working_directory=tmp_path)
         assert not result.returncode and not result.stderr
 
-    cmd = ["xia2.multiplex"]
+    cmd = ["xia2.multiplex", "unit_cell.refine=None"]
     for section in ["first", "last"]:
         cmd.extend(
             [
