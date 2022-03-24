@@ -565,42 +565,9 @@ def create_datastructures_for_structural_model(reflections, experiments, model_f
     exp.scaling_model = KBScalingModel.from_data(params, [], [])
     exp.scaling_model.set_scaling_model_as_scaled()  # Set as scaled to fix scale.
 
-    # Now put the calculated I's on roughly a common scale with the data.
-    miller_indices = flex.miller_index([])
-    intensities = flex.double([])
-
-    for refl in reflections:
-        miller_indices.extend(refl["miller_index"])
-        if "intensity.prf.value" in refl:
-            intensities.extend(refl["intensity.prf.value"])
-        else:
-            intensities.extend(refl["intensity.sum.value"])
-    miller_set = miller.set(
-        crystal_symmetry=crystal.symmetry(
-            space_group=experiments[0].crystal.get_space_group()
-        ),
-        indices=miller_indices,
-        anomalous_flag=True,
-    )
-    idata = miller.array(miller_set, data=intensities)
-
-    match = idata.match_indices(ic)
-    pairs = match.pairs()
-
-    icalc = flex.double()
-    iobs = flex.double()
-    miller_idx = flex.miller_index()
-    for p in pairs:
-        # Note : will create miller_idx duplicates in i_calc - problem?
-        iobs.append(idata.data()[p[0]])
-        icalc.append(ic.data()[p[1]])
-        miller_idx.append(ic.indices()[p[1]])
-
-    icalc *= flex.sum(iobs) / flex.sum(icalc)
-
     rt = flex.reflection_table()
-    rt["intensity"] = icalc
-    rt["miller_index"] = miller_idx
+    rt["intensity"] = ic.data()
+    rt["miller_index"] = ic.indices()
 
     exp.identifier = ersatz_uuid4()
     rt.experiment_identifiers()[len(experiments)] = exp.identifier
