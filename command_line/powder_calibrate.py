@@ -1,11 +1,26 @@
 """
-Calibrate electron powder geometry using X-ray powder diffraction tools.
-"pyFAI" is a well established X-ray powder diffraction tool.
-See more here: https://doi.org/10.1107/S1600576715004306
+Use a powder diffraction pattern of a known standard to calibrate goniometer geometry.
+This can be either an electron or X-ray diffraction pattern. The parameters
+calibrated are beam position, beam distance and beam wavelength. Detector tilt
+calibration can be implemented as need arises.
+
+This code wraps [pyFAI](https://doi.org/10.1107/S1600576715004306),
+a well established X-ray powder diffraction tool.
 
 The calibration is done in two steps:
     Step 1) A coarse beam position calibration done by the user using a matplolib widget.
-    Step 2) Starting from the coarse calibration, pyFAI geometry calibration provides a fine full geometry calibration.
+    Step 2) Starting from the coarse calibration, pyFAI geometry calibration provides
+a fine full geometry calibration.
+
+
+Usage examples:
+1. Use the widget to generate a starting, coarse geometry after which the fine
+geometry calibration is applied. Overwrite the default name of the coarse geometry output file
+    $ dials.powder_calibrate poor_geom.expt standard="Al" coarse_geom="a_starting_geom.expt"
+
+2. Starting from a coarse geometry file, perform fine calibration with pyFAI bypassing the
+widget tool.
+    $ dials.powder_calibrate coarse_geom.expt standard="Al" eyeball=False
 """
 
 from __future__ import annotations
@@ -560,9 +575,9 @@ class PowderCalibrator:
 
         Examples
         --------
-        1. Use the widget to generate a starting geometry. Overwrite the default name of the
-         "coarse_geom.expt". Do this from command line:
-            $ dials.powder_calibrate poor_geom.expt standard="Al" coarse_geom="coarse_geom_new.expt"
+        1. Use the widget to generate a starting, coarse geometry after which the fine calibration
+         is applied. Overwrite the default name of the coarse geometry output file. Do this from command line:
+            $ dials.powder_calibrate poor_geom.expt standard="Al" coarse_geom="a_starting_geometry.expt"
 
         2. Starting from a coarse geometry file, perform fine calibration with pyFAI bypassing the
         widget tool. Do this using python API:
@@ -729,6 +744,13 @@ def run(args: List[str] = None, phil: scope = phil_scope) -> None:
 
     parameters, options = parser.parse_args(args=args, show_diff_phil=False)
 
+    experiments = flatten_experiments(parameters.input.experiments)
+
+    # Check user is holding the tool right
+    if experiments == 0 or not parameters.standard:
+        parser.print_help()
+        exit()
+
     # Configure the logging.
     dials.util.log.config(options.verbose, logfile=parameters.output.log)
 
@@ -743,7 +765,7 @@ def run(args: List[str] = None, phil: scope = phil_scope) -> None:
 
     # make a calibrator instance based on these parameters and call calibrate
     calibrator = PowderCalibrator(
-        expts=flatten_experiments(parameters.input.experiments),
+        expts=experiments,
         standard=parameters.standard,
         eyeball=parameters.eyeball,
         coarse_geometry=parameters.output.coarse_geom,
