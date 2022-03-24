@@ -297,7 +297,7 @@ class Geometry(pfGeometry):
         new_geometry.as_file(output)
 
     def __deepcopy__(self, memo=None):
-        new = self.__class__(self.expt_params)
+        new = self.__class__(self.expt)
         return new
 
     def __repr__(self):
