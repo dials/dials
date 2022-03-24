@@ -524,7 +524,7 @@ class PowderCalibrator:
     def __init__(
         self,
         expts: ExperimentList,
-        standard: Optional[str] = None,
+        standard: str,
         eyeball: bool = True,
         coarse_geometry: str = "coarse_geom.expt",
         calibrated_geometry: str = "calibrated.expt",
@@ -540,7 +540,7 @@ class PowderCalibrator:
 
         :param expts: ExperimentList
                 experiement list containing starting geometry
-        :param standard: optional, str
+        :param standard: str
                 calibrating standard name in periodic table name format.
                 Call calibrator.show_calibrants to see available calibrants.
         :param eyeball: bool
@@ -577,7 +577,14 @@ class PowderCalibrator:
         self.expt_params = get_expt_params(expts)
         self.geometry = Geometry(self.expt)
         self.detector = self.geometry.detector
-        self.standard = standard
+
+        # check if calibrant name make sense, else complain
+        if standard in PowderCalibrator.available_calibrants:
+            self.standard = standard
+        else:
+            PowderCalibrator.list_calibrants()
+            exit(f"The standard name {standard} was not recognised")
+
         self.eyeball = eyeball
         self.calibrant = pfCalibrant(standard)
         self.calibrant.wavelength = _convert_units(
@@ -632,7 +639,8 @@ class PowderCalibrator:
             fig.savefig(self.output.pyfai_improv, bbox_inches="tight")
             plt.close(fig)
 
-    def list_calibrants(self):
+    @staticmethod
+    def list_calibrants():
         print(f"Available calibrants: {PowderCalibrator.available_calibrants}")
 
     def show_straight_lines(self, ai: pfGeometry, show: bool = True):
