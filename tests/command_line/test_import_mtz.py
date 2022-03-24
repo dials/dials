@@ -62,7 +62,7 @@ def test_import_mtz_on_xia2_processing(tmp_path, pipe, section):
     # Check detector properties. Can't check precise orientation as MTZ lacks
     # the metadata, so we assume fast along X and slow along -Y.
     assert expt_1.detector[0].get_distance() == pytest.approx(
-        imported_expt.detector[0].get_distance(), abs=1e-3
+        imported_expt.detector[0].get_distance(), abs=1.0
     )
     assert expt_1.detector[0].get_pixel_size()[0] == pytest.approx(
         imported_expt.detector[0].get_pixel_size()[0], abs=1e-3
@@ -70,8 +70,9 @@ def test_import_mtz_on_xia2_processing(tmp_path, pipe, section):
     assert expt_1.detector[0].get_pixel_size()[1] == pytest.approx(
         imported_expt.detector[0].get_pixel_size()[1], abs=1e-3
     )
-    assert expt_1.detector[0].get_beam_centre(expt_1.beam.get_s0()) == pytest.approx(
-        imported_expt.detector[0].get_beam_centre(imported_expt.beam.get_s0()), abs=1e-3
+    assert expt_1.detector[0].get_beam_centre_px(expt_1.beam.get_s0()) == pytest.approx(
+        imported_expt.detector[0].get_beam_centre_px(imported_expt.beam.get_s0()),
+        abs=2.0,
     )
 
     # Check scan properties
