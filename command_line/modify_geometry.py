@@ -9,7 +9,6 @@ import dials.util
 from dials.command_line.dials_import import ManualGeometryUpdater
 from dials.util.options import ArgumentParser, flatten_experiments
 
-
 help_message = """
 """
 
