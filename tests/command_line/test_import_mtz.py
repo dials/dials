@@ -53,28 +53,10 @@ def test_import_mtz_on_xia2_processing(tmp_path, pipe, section):
     expt_1 = load.experiment_list(str(integrated_expt), check_format=False)[0]
     refl_1 = flex.reflection_table.from_file(str(integrated_refl))
 
-    # Check goniometer properties
-    assert expt_1.goniometer == imported_expt.goniometer
-    assert (
-        expt_1.goniometer.get_fixed_rotation()
-        == imported_expt.goniometer.get_fixed_rotation()
-    )
-    assert (
-        expt_1.goniometer.get_setting_rotation()
-        == imported_expt.goniometer.get_setting_rotation()
-    )
-    assert (
-        expt_1.goniometer.get_rotation_axis_datum()
-        == imported_expt.goniometer.get_rotation_axis_datum()
-    )
-
     # Check beam properties
     assert expt_1.beam.get_wavelength() == pytest.approx(
         imported_expt.beam.get_wavelength()
     )
-    assert expt_1.beam.get_unit_s0() == pytest.approx(
-        imported_expt.beam.get_unit_s0(), abs=2e-2
-    )  # beam is refined in dials
 
     # Check detector properties
     assert expt_1.detector[0].get_origin() == pytest.approx(
