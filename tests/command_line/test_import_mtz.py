@@ -53,14 +53,16 @@ def test_import_mtz_on_xia2_processing(tmp_path, pipe, section):
     expt_1 = load.experiment_list(str(integrated_expt), check_format=False)[0]
     refl_1 = flex.reflection_table.from_file(str(integrated_refl))
 
-    # Check beam properties
+    # Check beam properties. Can't check direction, as MTZ does not store that
+    # (?), so it is forced to be along -Z
     assert expt_1.beam.get_wavelength() == pytest.approx(
         imported_expt.beam.get_wavelength()
     )
 
-    # Check detector properties
-    assert expt_1.detector[0].get_origin() == pytest.approx(
-        imported_expt.detector[0].get_origin(), abs=2.0
+    # Check detector properties. Can't check precise orientation as MTZ lacks
+    # the metadata, so we assume fast along X and slow along -Y.
+    assert expt_1.detector[0].get_distance() == pytest.approx(
+        imported_expt.detector[0].get_distance(), abs=1e-3
     )
     assert expt_1.detector[0].get_pixel_size()[0] == pytest.approx(
         imported_expt.detector[0].get_pixel_size()[0], abs=1e-3
@@ -68,14 +70,11 @@ def test_import_mtz_on_xia2_processing(tmp_path, pipe, section):
     assert expt_1.detector[0].get_pixel_size()[1] == pytest.approx(
         imported_expt.detector[0].get_pixel_size()[1], abs=1e-3
     )
-    assert expt_1.detector[0].get_fast_axis() == pytest.approx(
-        imported_expt.detector[0].get_fast_axis(), abs=1e-2
-    )
-    assert expt_1.detector[0].get_slow_axis() == pytest.approx(
-        imported_expt.detector[0].get_slow_axis(), abs=1e-2
+    assert expt_1.detector[0].get_beam_centre(expt_1.beam.get_s0()) == pytest.approx(
+        imported_expt.detector[0].get_beam_centre(imported_expt.beam.get_s0()), abs=1e-3
     )
 
-    # Check scan peroperties
+    # Check scan properties
     assert expt_1.scan.get_image_range() == imported_expt.scan.get_image_range()
     assert expt_1.scan.get_oscillation() == imported_expt.scan.get_oscillation()
     # now for the crystal, as we are trying to put everything into our DIALS
