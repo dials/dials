@@ -667,12 +667,16 @@ class SparseGradientsMixin:
 
         # loop over parameters, building full width blocks of the full Jacobian
         for i in range(nparam):
-            for block, grad in zip(blocks, grads_each_dim):
+            for j, block in enumerate(blocks):
+                grad = grads_each_dim[j]
                 block[:, i] = grad[i]
+                # Having copied this block, delete the source data
+                grads_each_dim[j][i] = None
 
         # set the blocks in the Jacobian
         for i, block in enumerate(blocks):
             jacobian.assign_block(block, (i * nref), 0)
+            blocks[i] = None
 
         return jacobian
 

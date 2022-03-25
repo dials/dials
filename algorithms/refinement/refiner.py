@@ -482,7 +482,7 @@ class RefinerFactory:
         """Configure whether to use sparse datatypes"""
         # Automatic selection for sparse parameter
         if params.refinement.parameterisation.sparse == libtbx.Auto:
-            if len(experiments) > 1:
+            if len(experiments) > 1 or params.refinement.parameterisation.scan_varying:
                 params.refinement.parameterisation.sparse = True
             else:
                 params.refinement.parameterisation.sparse = False

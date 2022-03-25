@@ -286,6 +286,9 @@ def run_dials_refine(experiments, reflections, params):
     if scan_varying is Auto:
         params.refinement.parameterisation.scan_varying = False
 
+    # Similarly, keep track of sparse to reset that for scan-varying macrocycle
+    sparse = params.refinement.parameterisation.sparse
+
     if params.n_static_macrocycles == 1:
         refiner, reflections, history = run_macrocycle(params, reflections, experiments)
         experiments = refiner.get_experiments()
@@ -301,6 +304,7 @@ def run_dials_refine(experiments, reflections, params):
     if scan_varying is Auto and refiner.experiment_type == "scans":
         logger.info("\nScan-varying refinement")
         params.refinement.parameterisation.scan_varying = True
+        params.refinement.parameterisation.sparse = sparse
         refiner, reflections, history = run_macrocycle(params, reflections, experiments)
         experiments = refiner.get_experiments()
 

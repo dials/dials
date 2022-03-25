@@ -10,6 +10,149 @@ from dials.algorithms.refinement.parameterisation.prediction_parameters import (
     XYPhiPredictionParameterisation,
 )
 from dials.array_family import flex
+from dials_refinement_helpers_ext import (
+    build_reconstitute_derivatives_mat3,
+    build_reconstitute_derivatives_vec3,
+    intersection_i_seqs_unsorted,
+)
+
+
+class SparseFlex:
+    """A wrapper for flex arrays that allows sparse storage by recording the
+    values as a dense array, the length of the sparse array and the indices
+    of the values into the sparse array. This is designed as a simple means
+    to achieve sparse storage of flex mat3 and vec3 arrays and allows some
+    operations to be performed with flex arrays and other SparseFlex arrays.
+
+    The operations that can be performed are purposely limited. For example,
+    addition and subtraction are only performed between two SparseFlex arrays,
+    where it is assumed (not tested) that these have the same pattern of
+    structural zeroes."""
+
+    def __init__(self, dimension, elements, indices):
+
+        if len(elements) != len(indices):
+            raise ValueError(
+                "The arrays of elements and indices must be of equal length"
+            )
+        self._size = dimension
+        self._data = elements
+        self._indices = indices
+
+    def select(self, indices):
+
+        try:
+            indices = indices.iselection()
+        except AttributeError:
+            pass
+
+        if self._data is None:
+            return self
+
+        # New object must have the dimension of the selection
+        dimension = len(indices)
+
+        # Calculate the intersection of these indices
+        index_a, index_b = intersection_i_seqs_unsorted(self._indices, indices)
+
+        # The first set of indices select the data, while the second set
+        # provide their new indices
+        elements = self._data.select(index_a)
+        return SparseFlex(dimension, elements, index_b)
+
+    @property
+    def size(self):
+        return self._size
+
+    @property
+    def non_zeroes(self):
+        return len(self._data)
+
+    def as_dense_vector(self):
+        v = self._data.deep_copy()
+        v *= 0.0
+        v.resize(self._size)
+        v.set_selected(self._indices, self._data)
+        return v
+
+    @property
+    def data_and_indices(self):
+        return (self._data, self._indices)
+
+    def _extract_explicit_data(self, other):
+        """Return the flex array of explicit data elements if other is a flex
+        array or a SparseFlex"""
+
+        # Take only the explicit data if other is a SparseFlex
+        if isinstance(other, SparseFlex):
+            return other._data
+
+        # Otherwise select only explicit elements from a flex array
+        try:
+            other = other.select(self._indices)
+        except AttributeError:
+            pass
+
+        return other
+
+    def __mul__(self, other):
+
+        other = self._extract_explicit_data(other)
+
+        return SparseFlex(self._size, self._data * other, self._indices)
+
+    def __rmul__(self, other):
+
+        other = self._extract_explicit_data(other)
+
+        return SparseFlex(self._size, other * self._data, self._indices)
+
+    def __truediv__(self, other):
+
+        other = self._extract_explicit_data(other)
+
+        return SparseFlex(self._size, self._data / other, self._indices)
+
+    def __add__(self, other):
+
+        if not isinstance(other, SparseFlex):
+            raise TypeError("Addition is only defined between two SparseFlex arrays")
+
+        other = self._extract_explicit_data(other)
+
+        return SparseFlex(self._size, self._data + other, self._indices)
+
+    def __sub__(self, other):
+
+        if not isinstance(other, SparseFlex):
+            raise TypeError("Subtraction is only defined between two SparseFlex arrays")
+
+        other = self._extract_explicit_data(other)
+
+        return SparseFlex(self._size, self._data - other, self._indices)
+
+    def dot(self, other):
+
+        other = self._extract_explicit_data(other)
+
+        return SparseFlex(self._size, self._data.dot(other), self._indices)
+
+    def rotate_around_origin(self, direction, angle):
+
+        angle = self._extract_explicit_data(angle)
+        direction = self._extract_explicit_data(direction)
+        return SparseFlex(
+            self._size, self._data.rotate_around_origin(direction, angle), self._indices
+        )
+
+    def parts(self):
+
+        x, y, z = self._data.parts()
+        return (
+            SparseFlex(self._size, x, self._indices),
+            SparseFlex(self._size, y, self._indices),
+            SparseFlex(self._size, z, self._indices),
+        )
 
 
 class StateDerivativeCache:
@@ -49,24 +192,21 @@ class StateDerivativeCache:
         if shape is None:
             raise TypeError("No model state derivatives found")
         if shape == (3, 1):
-            arr_type = flex.vec3_double
-            null = (0, 0, 0)
+            build = build_reconstitute_derivatives_vec3
         elif shape == (3, 3):
-            arr_type = flex.mat3_double
-            null = (0, 0, 0, 0, 0, 0, 0, 0, 0)
+            build = build_reconstitute_derivatives_mat3
         else:
             raise TypeError("Unrecognised model state derivative type")
 
         # Loop over the data for each parameter
         for p_data in entry:
 
-            # Build an empty array of the same length as the original reflection
-            # list used when the cache was filled
-            ds_dp = arr_type(self._nref, null)
-
-            # Reconstitute full array from the cache
+            # Reconstitute full array from the cache and pack into a SparseFlex
+            total_nelem = sum(pair.iselection.size() for pair in p_data)
+            recon = build(total_nelem)
             for pair in p_data:
-                ds_dp.set_selected(pair.iselection, pair.derivative)
+                recon.add_data(pair.derivative, pair.iselection)
+            ds_dp = SparseFlex(self._nref, recon.get_data(), recon.get_indices())
 
             # First select only elements relevant to the current gradient calculation
             # block (i.e. if nproc > 1 or gradient_calculation_blocksize was set)

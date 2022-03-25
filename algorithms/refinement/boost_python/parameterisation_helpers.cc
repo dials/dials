@@ -77,6 +77,30 @@ namespace dials { namespace refinement { namespace boost_python {
       .def("d2", &PanelGroupCompose::d2)
       .def("origin", &PanelGroupCompose::origin)
       .def("derivatives_for_panel", &PanelGroupCompose::derivatives_for_panel);
+
+    def("intersection_i_seqs_unsorted",
+        &intersection_i_seqs_unsorted,
+        (arg("left"), arg("right")));
+
+    class_<ReconstituteDerivatives<mat3<double> > >("ReconstituteDerivativesMat3",
+                                                    no_init)
+      .def("get_data", &ReconstituteDerivatives<mat3<double> >::get_data)
+      .def("get_indices", &ReconstituteDerivatives<mat3<double> >::get_indices)
+      .def("add_data", &ReconstituteDerivatives<mat3<double> >::add_data);
+
+    class_<ReconstituteDerivatives<vec3<double> > >("ReconstituteDerivativesVec3",
+                                                    no_init)
+      .def("get_data", &ReconstituteDerivatives<vec3<double> >::get_data)
+      .def("get_indices", &ReconstituteDerivatives<vec3<double> >::get_indices)
+      .def("add_data", &ReconstituteDerivatives<vec3<double> >::add_data);
+
+    def("build_reconstitute_derivatives_mat3",
+        &build_reconstitute_derivatives_mat3,
+        (arg("nelem")));
+
+    def("build_reconstitute_derivatives_vec3",
+        &build_reconstitute_derivatives_vec3,
+        (arg("nelem")));
   }
 
 }}}  // namespace dials::refinement::boost_python
