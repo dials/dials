@@ -1,16 +1,17 @@
 from __future__ import annotations
 
+import concurrent.futures
 import logging
-from math import pi
+import math
 
+import libtbx
 from libtbx.phil import parse
 
 from dials.array_family import flex
 from dials.util import tabulate
+from dials.util.mp import available_cores
 
 logger = logging.getLogger(__name__)
-
-RAD2DEG = 180.0 / pi
 
 
 class CentroidOutlier:
@@ -23,6 +24,7 @@ class CentroidOutlier:
         separate_experiments=True,
         separate_panels=True,
         block_width=None,
+        nproc=1,
     ):
 
         # column names of the data in which to look for outliers
@@ -44,6 +46,8 @@ class CentroidOutlier:
 
         # the number of rejections
         self.nreject = 0
+
+        self.nproc = nproc
 
         return
 
@@ -151,7 +155,7 @@ class CentroidOutlier:
                 if bw is None:  # detect no split for this experiment
                     jobs3.append(job)
                     continue
-                nblocks = int(round(RAD2DEG * phi_range / bw))
+                nblocks = int(round(math.degrees(phi_range / bw)))
                 nblocks = max(1, nblocks)
                 real_width = phi_range / nblocks
                 block_end = 0.0
@@ -166,8 +170,8 @@ class CentroidOutlier:
                         "panel": ipanel,
                         "data": data.select(sel),
                         "indices": indices.select(sel),
-                        "phi_start": RAD2DEG * (phi_low + block_start),
-                        "phi_end": RAD2DEG * (phi_low + block_end),
+                        "phi_start": math.degrees(phi_low + block_start),
+                        "phi_end": math.degrees(phi_low + block_end),
                     }
                     jobs3.append(job)
                 # now last block
@@ -177,8 +181,8 @@ class CentroidOutlier:
                     "panel": ipanel,
                     "data": data.select(sel),
                     "indices": indices.select(sel),
-                    "phi_start": RAD2DEG * (phi_low + block_end),
-                    "phi_end": RAD2DEG * (phi_low + phi_range),
+                    "phi_start": math.degrees(phi_low + block_end),
+                    "phi_end": math.degrees(phi_low + phi_range),
                 }
                 jobs3.append(job)
         else:
@@ -196,38 +200,32 @@ class CentroidOutlier:
         header.extend(["Nref", "Nout", "%out"])
         rows = []
 
-        # now loop over the lowest level of splits
+        # Now loop over the lowest level of splits and run outlier detection
+        if self.nproc > 1:
+            with concurrent.futures.ProcessPoolExecutor(max_workers=self.nproc) as pool:
+                outlier_detection_runs = [
+                    pool.submit(self._run_job, job, i) for i, job in enumerate(jobs3)
+                ]
+            outlier_detection_runs = [e.result() for e in outlier_detection_runs]
+        else:
+            # For nproc=1 keep the jobs in the main process
+            outlier_detection_runs = [
+                self._run_job(job, i) for i, job in enumerate(jobs3)
+            ]
+        # Copy results back into the job dict and report any messages
+        for result in outlier_detection_runs:
+            job = jobs3[result["index"]]
+            job["ioutliers"] = result["ioutliers"]
+            if result["message"]:
+                logger.debug(result["message"])
+
+        # loop over the completed jobs
         for i, job in enumerate(jobs3):
 
-            data = job["data"]
-            indices = job["indices"]
             iexp = job["id"]
             ipanel = job["panel"]
-            nref = len(indices)
-
-            if nref >= self._min_num_obs:
-
-                # get the subset of data as a list of columns
-                cols = [data[col] for col in self._cols]
-
-                # determine the position of outliers on this sub-dataset
-                outliers = self._detect_outliers(cols)
-
-                # get positions of outliers from the original matches
-                ioutliers = indices.select(outliers)
-
-            elif nref > 0:
-                # too few reflections in the job
-                msg = "For job {}, fewer than {} reflections are present.".format(
-                    i + 1, self._min_num_obs
-                )
-                msg += " All reflections flagged as possible outliers."
-                logger.debug(msg)
-                ioutliers = indices
-
-            else:
-                # no reflections in the job
-                ioutliers = indices
+            nref = len(job["indices"])
+            ioutliers = job["ioutliers"]
 
             # set the centroid_outlier flag in the original reflection table
             nout = len(ioutliers)
@@ -267,6 +265,37 @@ class CentroidOutlier:
 
         return True
 
+    def _run_job(self, job, i):
+        data = job["data"]
+        indices = job["indices"]
+        nref = len(indices)
+
+        msg = None
+        if nref >= self._min_num_obs:
+
+            # get the subset of data as a list of columns
+            cols = [data[col] for col in self._cols]
+
+            # determine the position of outliers on this sub-dataset
+            outliers = self._detect_outliers(cols)
+
+            # get positions of outliers from the original matches
+            ioutliers = indices.select(outliers)
+
+        elif nref > 0:
+            # too few reflections in the job
+            msg = "For job {}, fewer than {} reflections are present.".format(
+                i + 1, self._min_num_obs
+            )
+            msg += " All reflections flagged as possible outliers."
+            ioutliers = indices
+
+        else:
+            # no reflections in the job
+            ioutliers = indices
+
+        return {"index": i, "message": msg, "ioutliers": ioutliers}
+
 
 # The phil scope for outlier rejection
 phil_str = """
@@ -275,9 +304,15 @@ outlier
 {
   algorithm = null *auto mcd tukey sauter_poon
     .help = "Outlier rejection algorithm. If auto is selected, the algorithm is"
-            "chosen automatically"
+            "chosen automatically."
     .type = choice
     .short_caption = "Outlier rejection algorithm"
+
+  nproc = 1
+    .help = "Number of processes over which to split outlier identification."
+            "If set to Auto, DIALS will choose automatically."
+    .type = int(value_min=1)
+    .expert_level = 1
 
   minimum_number_of_reflections = 20
     .help = "The minimum number of input observations per outlier rejection"
@@ -440,12 +475,18 @@ class CentroidOutlierFactory:
 
         if not params.outlier.separate_blocks:
             params.outlier.block_width = None
+
+        if params.outlier.nproc is libtbx.Auto:
+            params.outlier.nproc = available_cores()
+            logger.info("Setting outlier.nproc={}".format(params.outlier.nproc))
+
         od = outlier_detector(
             cols=colnames,
             min_num_obs=params.outlier.minimum_number_of_reflections,
             separate_experiments=params.outlier.separate_experiments,
             separate_panels=params.outlier.separate_panels,
             block_width=params.outlier.block_width,
+            nproc=params.outlier.nproc,
             **kwargs,
         )
         return od

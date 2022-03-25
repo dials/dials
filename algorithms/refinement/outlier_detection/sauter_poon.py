@@ -14,6 +14,7 @@ class SauterPoon(CentroidOutlier):
         separate_experiments=True,
         separate_panels=True,
         block_width=None,
+        nproc=1,
         px_sz=(1, 1),
         verbose=False,
         pdf=None,
@@ -28,6 +29,7 @@ class SauterPoon(CentroidOutlier):
             separate_experiments=separate_experiments,
             separate_panels=separate_panels,
             block_width=block_width,
+            nproc=nproc,
         )
 
         self._px_sz = px_sz

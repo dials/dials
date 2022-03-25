@@ -17,6 +17,7 @@ class MCD(CentroidOutlier):
         separate_experiments=True,
         separate_panels=True,
         block_width=None,
+        nproc=1,
         alpha=0.5,
         max_n_groups=5,
         min_group_size=300,
@@ -36,6 +37,7 @@ class MCD(CentroidOutlier):
             separate_experiments=separate_experiments,
             separate_panels=separate_panels,
             block_width=block_width,
+            nproc=nproc,
         )
 
         # Keep the FastMCD options here

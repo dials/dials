@@ -101,6 +101,8 @@ phil_overrides = libtbx.phil.parse(
   refinement
   {
     parameterisation.scan_varying = Auto
+
+    reflections.outlier.nproc = Auto
   }
 """
 )
