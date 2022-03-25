@@ -157,7 +157,7 @@ def scan_info_from_batch_headers(
     batches = unmerged_mtz.batches()
 
     # Determine rotation matrix to convert to the DIALS frame
-    R = align_reference_frame(
+    M = align_reference_frame(
         matrix.col(batches[0].source()),
         matrix.col((0, 0, -1)),
         matrix.col(batches[0].scanax()),
@@ -173,8 +173,9 @@ def scan_info_from_batch_headers(
                 "batch_end": None,
                 "angle_begin": batches[0].phistt(),
                 "angle_end": None,
-                "umat_start": R * matrix.sqr(batches[0].umat()),
-                "s0n": R * matrix.col(batches[0].so()),
+                "umat_start": batches[0].umat(),
+                "s0n": batches[0].so(),
+                "transform_to_dials": M,
             }
         }
     )
@@ -185,6 +186,15 @@ def scan_info_from_batch_headers(
 
     for b in batches[1:]:
         if abs(b.phistt() - phi_end) > 0.0001:
+
+            # Determine rotation matrix to convert to the DIALS frame
+            M = align_reference_frame(
+                matrix.col(b[0].source()),
+                matrix.col((0, 0, -1)),
+                matrix.col(b[0].scanax()),
+                matrix.col((1, 0, 0)),
+            )
+
             scans[scan_no]["angle_end"] = phi_end
             scans[scan_no]["batch_end"] = last_batch
             scans[scan_no]["end_image"] = last_batch - scans[scan_no]["batch_begin"] + 1
@@ -197,8 +207,9 @@ def scan_info_from_batch_headers(
                 "batch_end": None,
                 "angle_begin": b.phistt(),
                 "angle_end": None,
-                "umat_start": R * matrix.sqr(b.umat()),
-                "s0n": R * matrix.col(b.so()),
+                "umat_start": batches[0].umat(),
+                "s0n": batches[0].so(),
+                "transform_to_dials": M,
             }
 
         phi_end = b.phiend()
@@ -576,12 +587,13 @@ only single wavelength MTZ files supported."""
         if not goniometer:
             # do the default goniometer
             goniometer = GoniometerFactory.single_axis()
-        Umat = matrix.sqr(scan["umat_start"])
+        Umat = matrix.sqr(
+            scan["umat_start"]
+        ).transpose()  # Convert from Fortranic ordering
+        UB = scan["transform_to_dials"] * Umat * Bmat
         ### FIXME do we need to transform by the fixed rotation?
         F = matrix.sqr(goniometer.get_fixed_rotation())
-        crystal = Crystal(
-            A=(F.inverse() * Umat.transpose() * Bmat), space_group=space_group
-        )
+        crystal = Crystal(A=(F.inverse() * UB), space_group=space_group)
         d = Detector()
         p = d.add_panel()
         p.set_image_size(panel_size)
@@ -651,14 +663,15 @@ Scan image range from mtz headers: {(scan["start_image"], scan["end_image"])}"""
 
     Bmat = mosflm_B_matrix(unit_cell)
     for i, scan in enumerate(scans.values()):
-        Umat = matrix.sqr(scan["umat_start"])
+        Umat = matrix.sqr(
+            scan["umat_start"]
+        ).transpose()  # Convert from Fortranic ordering
+        UB = scan["transform_to_dials"] * Umat * Bmat
         # In dials, we apply F to U before exporting to MTZ, so if we have
         # this we want to use it to get back to the dials UB
         ### FIXME what about mtz from other programs?
         F = matrix.sqr(experiments[0].goniometer.get_fixed_rotation())
-        crystal = Crystal(
-            A=(F.inverse() * Umat.transpose() * Bmat), space_group=space_group
-        )
+        crystal = Crystal(A=(F.inverse() * UB), space_group=space_group)
         experiments[i].crystal = crystal
 
     return experiments
