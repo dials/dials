@@ -3,7 +3,7 @@ dials.import_mtz, a tool for creating DIALS working data formats (reflection
 tables and experiments) from an MTZ file.
 """
 
-from __future__ import absolute_import, division, print_function
+from __future__ import annotations
 
 import logging
 import math
@@ -23,6 +23,7 @@ import scitbx.array_family
 from dxtbx import flumpy
 from dxtbx.model import Beam, Crystal, Detector, Experiment, ExperimentList, Scan
 from dxtbx.model.goniometer import GoniometerFactory
+from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
 from scitbx import matrix
 
 from dials.algorithms.spot_prediction import ray_intersection
@@ -155,6 +156,14 @@ def scan_info_from_batch_headers(
 ) -> OrderedDict:
     batches = unmerged_mtz.batches()
 
+    # Determine rotation matrix to convert to the DIALS frame
+    R = align_reference_frame(
+        matrix.col(batches[0].source()),
+        matrix.col((0, 0, -1)),
+        matrix.col(batches[0].scanax()),
+        matrix.col((1, 0, 0)),
+    )
+
     scans = OrderedDict(
         {
             1: {
@@ -164,8 +173,8 @@ def scan_info_from_batch_headers(
                 "batch_end": None,
                 "angle_begin": batches[0].phistt(),
                 "angle_end": None,
-                "umat_start": batches[0].umat(),
-                "s0n": batches[0].so(),
+                "umat_start": R * matrix.sqr(batches[0].umat()),
+                "s0n": R * matrix.col(batches[0].so()),
             }
         }
     )
@@ -188,8 +197,8 @@ def scan_info_from_batch_headers(
                 "batch_end": None,
                 "angle_begin": b.phistt(),
                 "angle_end": None,
-                "umat_start": b.umat(),
-                "s0n": b.so(),
+                "umat_start": R * matrix.sqr(b.umat()),
+                "s0n": R * matrix.col(b.so()),
             }
 
         phi_end = b.phiend()
@@ -378,12 +387,12 @@ profile-fitted integrated intensities."""
             correction *= data.qe
         if data.qe or data.lp:
             table["intensity.sum.value"] *= correction
-            table["intensity.sum.variance"] *= correction ** 2
+            table["intensity.sum.variance"] *= correction**2
             table["intensity.prf.value"] *= correction
-            table["intensity.prf.variance"] *= correction ** 2
+            table["intensity.prf.variance"] *= correction**2
         if data.partiality:
             table["intensity.sum.value"] *= data.partiality
-            table["intensity.sum.variance"] *= data.partiality ** 2
+            table["intensity.sum.variance"] *= data.partiality**2
 
     else:  # only one intensity set, assume profile intensities.
         logger.info(
@@ -403,12 +412,12 @@ profile-fitted integrated intensities."""
             correction *= data.qe
         if data.qe or data.lp:
             table["intensity.prf.value"] *= correction
-            table["intensity.prf.variance"] *= correction ** 2
+            table["intensity.prf.variance"] *= correction**2
 
     if data.bg:
         table["background.sum.value"] = data.bg
     if data.bgsig:
-        table["background.sum.variance"] = data.bgsig ** 2
+        table["background.sum.variance"] = data.bgsig**2
     table["partial_id"] = flex.double(range(0, table.size()))
     table.set_flags(flex.bool(table.size(), True), table.flags.predicted)
     table["id"] = flex.int(table.size(), 0)
