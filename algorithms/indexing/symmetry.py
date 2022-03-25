@@ -23,13 +23,74 @@ def metric_supergroup(group):
     )
 
 
+def groups_cache(fn):
+    class MultiClassCache(object):
+
+        "A set of caches for different bravais types"
+
+        instances = {}
+
+        def __new__(cls, classname):
+            if classname not in cls.instances:
+                cls.instances[classname] = {}
+            return cls.instances[classname]
+
+    def wrapped_calc(group_info: sgtbx.space_group_info, bravais_t: str):
+        cache = MultiClassCache(bravais_t)
+        info_str = group_info.type().lookup_symbol()
+        try:
+            result = cache[info_str]
+        except KeyError:
+            result = fn(group_info, bravais_t)
+            cache[info_str] = result
+        return result
+
+    return wrapped_calc
+
+
+@groups_cache
+def calc_acentric_subgroups(
+    lattice_group_info: sgtbx.space_group_info, target_bravais_str: str
+):
+    # Get list of sub-spacegroups
+    subgrs = subgroups.subgroups(lattice_group_info).groups_parent_setting()
+
+    # Order sub-groups
+    sort_values = flex.double()
+    for group in subgrs:
+        order_z = group.order_z()
+        space_group_number = sgtbx.space_group_type(group, False).number()
+        assert 1 <= space_group_number <= 230
+        sort_values.append(order_z * 1000 + space_group_number)
+    perm = flex.sort_permutation(sort_values, reverse=True)
+    acentric_subgroups = []
+    acentric_supergroups = []
+    cb_ops = []
+    for i_perm in perm:
+        acentric_subgroup = subgrs[i_perm]
+        cb_op = acentric_subgroup.info().type().cb_op()
+        ref_acentric_subgroup = acentric_subgroup.change_basis(cb_op)
+        # Ignore unwanted groups
+        if str(bravais_lattice(group=ref_acentric_subgroup)) != target_bravais_str:
+            continue
+        acentric_subgroups.append(acentric_subgroup)
+        cb_ops.append(cb_op)
+        acentric_supergroups.append(metric_supergroup(acentric_subgroup))
+    return acentric_subgroups, acentric_supergroups, cb_ops
+
+
 def find_matching_symmetry(
-    unit_cell, target_space_group, max_delta=5, best_monoclinic_beta=True
+    unit_cell,
+    target_space_group,
+    max_delta=5,
+    best_monoclinic_beta=True,
+    target_bravais_str=None,
 ):
     cs = crystal.symmetry(unit_cell=unit_cell, space_group=sgtbx.space_group())
-    target_bravais_t = bravais_lattice(
-        group=target_space_group.info().reference_setting().group()
-    )
+    if target_bravais_str is None:
+        target_bravais_str = str(
+            bravais_lattice(group=target_space_group.info().reference_setting().group())
+        )
     best_subgroup = None
     best_angular_difference = 1e8
 
@@ -50,21 +111,16 @@ def find_matching_symmetry(
         enforce_max_delta_for_generated_two_folds=True,
     )
 
-    # Get list of sub-spacegroups
-    subgrs = subgroups.subgroups(lattice_group.info()).groups_parent_setting()
+    lattice_group_info = lattice_group.info()
+    acentric_subgroups, acentric_supergroups, cb_ops = calc_acentric_subgroups(
+        lattice_group_info,
+        target_bravais_str,
+    )
 
-    # Order sub-groups
-    sort_values = flex.double()
-    for group in subgrs:
-        order_z = group.order_z()
-        space_group_number = sgtbx.space_group_type(group, False).number()
-        assert 1 <= space_group_number <= 230
-        sort_values.append(order_z * 1000 + space_group_number)
-    perm = flex.sort_permutation(sort_values, reverse=True)
+    for acentric_subgroup, acentric_supergroup, cb_op_minimum_ref in zip(
+        acentric_subgroups, acentric_supergroups, cb_ops
+    ):
 
-    for i_subgr in perm:
-        acentric_subgroup = subgrs[i_subgr]
-        acentric_supergroup = metric_supergroup(acentric_subgroup)
         # Make symmetry object: unit-cell + space-group
         # The unit cell is potentially modified to be exactly compatible
         # with the space group symmetry.
@@ -74,12 +130,7 @@ def find_matching_symmetry(
             assert_is_compatible_unit_cell=False,
         )
         # Convert subgroup to reference setting
-        cb_op_minimum_ref = subsym.space_group_info().type().cb_op()
         ref_subsym = subsym.change_basis(cb_op_minimum_ref)
-        # Ignore unwanted groups
-        bravais_t = bravais_lattice(group=ref_subsym.space_group())
-        if bravais_t != target_bravais_t:
-            continue
 
         # Choose best setting for monoclinic and orthorhombic systems
         cb_op_best_cell = ref_subsym.change_of_basis_op_to_best_cell(

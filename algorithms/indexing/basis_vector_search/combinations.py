@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import math
 
+from cctbx.sgtbx.bravais_types import bravais_lattice
 from dxtbx.model import Crystal
 from scitbx.array_family import flex
 
@@ -110,11 +111,18 @@ def filter_known_symmetry(
                 cb_op_ref_to_primitive
             )
         )
+    target_bravais_str = str(
+        bravais_lattice(
+            group=target_symmetry_primitive.space_group_info()
+            .reference_setting()
+            .group()
+        )
+    )
 
     for model in crystal_models:
         uc = model.get_unit_cell()
         best_subgroup = find_matching_symmetry(
-            uc, target_symmetry_primitive.space_group(), max_delta=max_delta
+            uc, None, max_delta=max_delta, target_bravais_str=target_bravais_str
         )
         if best_subgroup is not None:
             if target_symmetry.unit_cell() is not None and not (
