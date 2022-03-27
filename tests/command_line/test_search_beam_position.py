@@ -95,7 +95,7 @@ def test_index_after_search(dials_data, run_in_tmp_path):
     unit cell is obtained and that the RMSDs are smaller than or equal to some
     expected values."""
 
-    insulin = dials_data("insulin_processed")
+    insulin = dials_data("insulin_processed", pathlib=True)
 
     # load the original experiment and perturbate the beam centre by a small offset
     experiments = load.experiment_list(insulin / "imported.expt", check_format=False)
@@ -117,10 +117,10 @@ def test_index_after_search(dials_data, run_in_tmp_path):
     search_beam_position.run(
         [
             str(run_in_tmp_path / "shifted.expt"),
-            insulin.join("strong.refl").strpath,
+            str(insulin / "strong.refl"),
         ]
     )
-    assert os.path.exists("optimised.expt")
+    assert run_in_tmp_path.joinpath("optimised.expt").is_file()
 
     # check we can actually index the resulting optimized experiments
     expected_unit_cell = uctbx.unit_cell(
@@ -156,7 +156,7 @@ def test_search_single(run_in_tmp_path, dials_regression):
     experiments_path = os.path.join(data_dir, "datablock.json")
 
     search_beam_position.run([experiments_path, pickle_path])
-    assert os.path.exists("optimised.expt")
+    assert run_in_tmp_path.joinpath("optimised.expt").is_file()
 
     experiments = load.experiment_list(experiments_path, check_format=False)
     original_imageset = experiments.imagesets()[0]
@@ -182,12 +182,12 @@ def test_search_small_molecule(dials_data, run_in_tmp_path):
     in detector origin.
     """
 
-    data = dials_data("l_cysteine_dials_output")
-    experiments_path = data.join("imported.expt").strpath
-    refl_path = data.join("strong.refl").strpath
+    data = dials_data("l_cysteine_dials_output", pathlib=True)
+    experiments_path = data / "imported.expt"
+    refl_path = data / "strong.refl"
 
-    search_beam_position.run([experiments_path, refl_path])
-    assert os.path.exists("optimised.expt")
+    search_beam_position.run([os.fspath(experiments_path), os.fspath(refl_path)])
+    assert run_in_tmp_path.joinpath("optimised.expt").is_file()
 
     experiments = load.experiment_list(experiments_path, check_format=False)
     optimised_experiments = load.experiment_list("optimised.expt", check_format=False)
@@ -218,7 +218,7 @@ def test_multi_sweep_fixed_rotation(dials_regression, run_in_tmp_path):
     )
 
     search_beam_position.run(reflection_files + experiment_files)
-    assert os.path.exists("optimised.expt")
+    assert run_in_tmp_path.joinpath("optimised.expt").is_file()
 
     experiments = ExperimentList()
     for path in experiment_files:
