@@ -35,11 +35,21 @@ def server_port(tmp_path) -> int:
 
 
 def test_server_return_codes(dials_data, server_port):
-    first_file = sorted(dials_data("centroid_test_data", pathlib=True).glob("*.cbf"))[0]
-    response = urllib.request.urlopen(f"http://127.0.0.1:{server_port}/{first_file}")
-    assert response.code == 200
-    with pytest.raises(urllib.error.HTTPError):
-        urllib.request.urlopen(f"http://127.0.0.1:{server_port}/some/junk/filename")
+    try:
+        first_file = sorted(
+            dials_data("centroid_test_data", pathlib=True).glob("*.cbf")
+        )[0]
+        response = urllib.request.urlopen(
+            f"http://127.0.0.1:{server_port}/{first_file}"
+        )
+        assert response.code == 200
+        with pytest.raises(urllib.error.HTTPError):
+            urllib.request.urlopen(f"http://127.0.0.1:{server_port}/some/junk/filename")
+    finally:
+        result = procrunner.run(
+            ["dials.find_spots_client", f"port={server_port}", "stop"]
+        )
+        assert not result.returncode and not result.stderr
 
 
 def test_find_spots_server_client(dials_data, tmp_path, server_port):
