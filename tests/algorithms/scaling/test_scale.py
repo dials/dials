@@ -648,6 +648,9 @@ def test_scale_and_filter_image_group_single_dataset(dials_data, tmp_path):
 
 def test_scale_when_a_dataset_is_filtered_out(dials_data, tmp_path):
     location = dials_data("multi_crystal_proteinase_k", pathlib=True)
+    # Modify one of the input tables so that it gets filtered out
+    # during scaler initialisation. Triggers the bug referenced in
+    # https://github.com/dials/dials/issues/2045
     refls = flex.reflection_table.from_file(location / "reflections_3.pickle")
     refls["partiality"] = flex.double(refls.size(), 0.3)
     refls.as_file(tmp_path / "modified_3.refl")
