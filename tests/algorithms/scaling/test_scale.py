@@ -646,6 +646,23 @@ def test_scale_and_filter_image_group_single_dataset(dials_data, tmp_path):
     assert analysis_results["termination_reason"] == "no_more_removed"
 
 
+def test_scale_when_a_dataset_is_filtered_out(dials_data, tmp_path):
+    location = dials_data("multi_crystal_proteinase_k", pathlib=True)
+    refls = flex.reflection_table.from_file(location / "reflections_3.pickle")
+    refls["partiality"] = flex.double(refls.size(), 0.3)
+    refls.as_file(tmp_path / "modified_3.refl")
+    command = ["dials.scale", "d_min=2.0", tmp_path / "modified_3.refl"]
+    for i in [1, 2, 3, 4]:
+        command.append(location / f"experiments_{i}.json")
+    for i in [1, 2, 4]:
+        command.append(location / f"reflections_{i}.pickle")
+    result = procrunner.run(command, working_directory=tmp_path)
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "scaled.refl").is_file()
+    expts = load.experiment_list(tmp_path / "scaled.expt", check_format=False)
+    assert len(expts) == 3
+
+
 def test_scale_dose_decay_model(dials_data, tmp_path):
     """Test the scale and filter command line program."""
     location = dials_data("multi_crystal_proteinase_k", pathlib=True)
