@@ -244,32 +244,27 @@ Targeted outlier rejection requires a target Ih_table with nblocks = 1"""
         target_asu_Ih_dict = dict(
             zip(target.asu_miller_index, zip(target.Ih_values, target.variances))
         )
-        Ih_table.Ih_table["target_Ih_value"] = np.zeros(Ih_table.size)
-        Ih_table.Ih_table["target_Ih_sigmasq"] = np.zeros(Ih_table.size)
+        target_Ih_value = np.zeros(Ih_table.size)
+        target_Ih_sigmasq = np.zeros(Ih_table.size)
         for j, miller_idx in enumerate(Ih_table.asu_miller_index):
-            if miller_idx in target_asu_Ih_dict:
-                Ih_table.Ih_table.loc[j, "target_Ih_value"] = target_asu_Ih_dict[
-                    miller_idx
-                ][0]
-                Ih_table.Ih_table.loc[j, "target_Ih_sigmasq"] = target_asu_Ih_dict[
-                    miller_idx
-                ][1]
+            try:
+                vals = target_asu_Ih_dict[miller_idx]
+            except KeyError:
+                pass
+            else:
+                target_Ih_value[j] = vals[0]
+                target_Ih_sigmasq[j] = vals[1]
 
-        nz_sel = Ih_table.Ih_table["target_Ih_value"].to_numpy() != 0.0
+        nz_sel = target_Ih_value != 0.0
+        target_Ih_value = target_Ih_value[nz_sel]
+        target_Ih_sigmasq = target_Ih_sigmasq[nz_sel]
         Ih_table = Ih_table.select(nz_sel)
         norm_dev = (
-            Ih_table.intensities
-            - (
-                Ih_table.inverse_scale_factors
-                * Ih_table.Ih_table["target_Ih_value"].to_numpy()
-            )
+            Ih_table.intensities - (Ih_table.inverse_scale_factors * target_Ih_value)
         ) / (
             np.sqrt(
                 Ih_table.variances
-                + (
-                    np.square(Ih_table.inverse_scale_factors)
-                    * Ih_table.Ih_table["target_Ih_sigmasq"].to_numpy()
-                )
+                + (np.square(Ih_table.inverse_scale_factors) * target_Ih_sigmasq)
             )
         )
         outliers_sel = np.abs(norm_dev) > self._zmax
