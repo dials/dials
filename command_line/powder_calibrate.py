@@ -59,8 +59,6 @@ from libtbx.phil import parse, scope, scope_extract
 # the alternative causes pyfai to segv
 import dials.util
 import dials.util.log
-
-# from dials.command_line.modify_geometry import phil_scope as modify_geom_scope
 from dials.command_line.modify_geometry import update as geometry_update
 from dials.util.options import ArgumentParser, flatten_experiments
 from dials.util.version import dials_version
@@ -70,7 +68,6 @@ logger = logging.getLogger("dials.command_line.powder_calibrate")
 
 phil_scope = parse(
     """
-    include scope dials.util.options.geometry_phil_scope
     standard = None
         .type = str
         .help = calibrant name
@@ -93,7 +90,6 @@ phil_scope = parse(
         log = dials.command_name.log
            .type = path
     }
-
     """
 )
 
@@ -320,7 +316,7 @@ class Geometry(pfGeometry):
             f"Detector {self.detector.name}: PixelSize= {self.pixel1}, {self.pixel2} m  "
             f"Distance= {self.beam_distance:.2f} mm\n"
             f"Wavelength= {self.wavelength:.3e} m\n"
-            f"Beam position on detector: m= {self.beam_m.slow:.4f}m, {self.beam_m.fast:.4f}m  "
+            f"Beam position on detector: m= {self.beam_m.slow:.5f}m, {self.beam_m.fast:.5f}m  "
             f"px= {self.beam_px.slow:.2f}, {self.beam_px.fast:.2f}"
         )
 
@@ -615,7 +611,7 @@ class PowderCalibrator:
 
     def __repr__(self):
         return (
-            f"{self.params.standard} Calibrator for {self.expt_params.input_file} \n"
+            f"{self.standard} Calibrator for {self.expt_params.input_file} \n"
             f"Current geometry: \n {self.geometry}"
         )
 
@@ -647,6 +643,17 @@ class PowderCalibrator:
         fig.set_size_inches(20, 8)
         pfjupyter.display(sg=before_geometry, label="Initial geometry", ax=ax1)
         pfjupyter.display(sg=after_geometry, label="After pyFAI fit", ax=ax2)
+
+        # show only a quarter of the image
+        custom_xlim = (
+            self.geometry.detector.max_shape[0] * 0.5,
+            self.geometry.detector.max_shape[0] * 0.75,
+        )
+        custom_ylim = (
+            self.geometry.detector.max_shape[1] * 0.5,
+            self.geometry.detector.max_shape[1] * 0.75,
+        )
+        plt.setp((ax1, ax2), xlim=custom_xlim, ylim=custom_ylim)
 
         if show:
             plt.show()
