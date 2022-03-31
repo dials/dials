@@ -90,7 +90,7 @@ def index_all_concurrent(
     # first determine n_strong per image:
     n_strong_per_image = {}
     for i, (expt, table) in enumerate(zip(experiments, reflections)):
-        img = expt.imageset.get_path(i).split("/")[-1]
+        img = expt.imageset.get_image_identifier(i).split("/")[-1]
         if table:
             n_strong = table.get_flags(table.flags.strong).count(True)
         else:
@@ -101,10 +101,10 @@ def index_all_concurrent(
         max_workers=params.indexing.nproc
     ) as pool:
         sys.stdout = open(os.devnull, "w")  # block printing from rstbx
-        futures = {
-            pool.submit(index_one, expt, table, params, method_list, i): i
-            for i, (table, expt) in enumerate(zip(reflections, experiments))
-        }
+        futures = {}
+        for i, (table, expt) in enumerate(zip(reflections, experiments)):
+            if table:
+                futures[pool.submit(index_one, expt, table, params, method_list, i)] = i
         tables_list = [None] * len(reflections)
         expts_list = [None] * len(reflections)
 
@@ -140,9 +140,10 @@ def index_all_concurrent(
     indexed_reflections = flex.reflection_table()
     n_tot = 0
     for idx, (elist, table) in enumerate(zip(expts_list, tables_list)):
+        img = experiments[idx].imageset.get_image_identifier(idx).split("/")[-1]
+        n_strong = n_strong_per_image[img]
         if not (elist and table):
-            img = experiments[idx].imageset.get_path(idx).split("/")[-1]
-            n_strong = n_strong_per_image[img]
+
             results_summary[idx].append(
                 {
                     "Image": img,
@@ -151,9 +152,6 @@ def index_all_concurrent(
                 }
             )
             continue
-        path = elist[0].imageset.get_path(0)
-        img = path.split("/")[-1]
-        n_strong = n_strong_per_image[img]
         indexed_experiments.extend(elist)
         ids_map = dict(table.experiment_identifiers())
         for k in table.experiment_identifiers().keys():

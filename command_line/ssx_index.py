@@ -161,7 +161,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     summary_table = make_summary_table(summary_data)
     logger.info("\nSummary of images sucessfully indexed\n" + summary_table)
 
-    n_images = len({e.imageset.get_path(0) for e in indexed_experiments})
+    n_images = len([1 for v in summary_data.values() if v[0]["n_indexed"]])
     logger.info(f"{indexed_reflections.size()} spots indexed on {n_images} images\n")
 
     crystal_symmetries = [
