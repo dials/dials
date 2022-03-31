@@ -188,8 +188,7 @@ class UnmergedMTZWriter(MTZWriterBase):
                 _U = U
 
             # apply the fixed rotation to this to unify matrix definitions - F * U
-            # was what was used in the actual prediction: U appears to be stored
-            # as the transpose?! At least is for Mosflm...
+            # was what was used in the actual prediction
             #
             # FIXME Do we need to apply the setting rotation here somehow? i.e. we have
             # the U.B. matrix assuming that the axis is equal to S * axis_datum but
@@ -203,6 +202,7 @@ class UnmergedMTZWriter(MTZWriterBase):
             _unit_cell_params = _unit_cell.parameters()
             for j in range(6):
                 cell_array[i, j] = _unit_cell_params[j]
+            # Transpose to put in column-major order for MTZ export
             _U_t_elements = _U.transpose().elems
             for j in range(9):
                 umat_array[i, j] = _U_t_elements[j]
