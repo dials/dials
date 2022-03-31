@@ -16,8 +16,9 @@ from dials.command_line import estimate_resolution as cmdline
     ],
 )
 def test_x4wide(input_files, dials_data, run_in_tmp_path, capsys):
-    paths = [dials_data("x4wide_processed").join(p).strpath for p in input_files]
-    reference_mtz = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled.mtz")
+    x4wide = dials_data("x4wide_processed", pathlib=True)
+    paths = [str(x4wide / p) for p in input_files]
+    reference_mtz = x4wide / "AUTOMATIC_DEFAULT_scaled.mtz"
     result = cmdline.run(
         [
             "cc_half=0.9",
@@ -67,12 +68,12 @@ def test_x4wide(input_files, dials_data, run_in_tmp_path, capsys):
 
 
 def test_multi_sequence_with_batch_range(dials_data, run_in_tmp_path, capsys):
-    location = dials_data("l_cysteine_4_sweeps_scaled")
-    refls = location.join("scaled_20_25.refl")
-    expts = location.join("scaled_20_25.expt")
+    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    refls = location / "scaled_20_25.refl"
+    expts = location / "scaled_20_25.expt"
 
     cmdline.run(
-        ["batch_range=1900,3600", refls.strpath, expts.strpath],
+        ["batch_range=1900,3600", str(refls), str(expts)],
     )
     captured = capsys.readouterr()
 
@@ -89,14 +90,19 @@ def test_dispatcher_name():
 
 
 def test_handle_fit_failure(dials_data, run_in_tmp_path, capsys):
-    location = dials_data("l_cysteine_dials_output")
-    filenames = [
-        location.join("11_integrated.expt"),
-        location.join("11_integrated.refl"),
-        location.join("23_integrated.expt"),
-        location.join("23_integrated.refl"),
-    ]
-    cmdline.run(["misigma=1"] + [f.strpath for f in filenames])
+    location = dials_data("l_cysteine_dials_output", pathlib=True)
+    cmdline.run(
+        ["misigma=1"]
+        + [
+            str(location / f)
+            for f in (
+                "11_integrated.expt",
+                "11_integrated.refl",
+                "23_integrated.expt",
+                "23_integrated.refl",
+            )
+        ]
+    )
     captured = capsys.readouterr()
 
     expected_output = (
@@ -109,11 +115,15 @@ def test_handle_fit_failure(dials_data, run_in_tmp_path, capsys):
 
 
 def test_mismatched_experiments_reflections(dials_data, run_in_tmp_path):
-    location = dials_data("l_cysteine_dials_output")
-    filenames = [
-        location.join("11_integrated.expt"),
-        location.join("11_integrated.refl"),
-        location.join("23_integrated.refl"),
-    ]
+    location = dials_data("l_cysteine_dials_output", pathlib=True)
     with pytest.raises(SystemExit):
-        cmdline.run([f.strpath for f in filenames])
+        cmdline.run(
+            [
+                str(location / f)
+                for f in (
+                    "11_integrated.expt",
+                    "11_integrated.refl",
+                    "23_integrated.refl",
+                )
+            ]
+        )
