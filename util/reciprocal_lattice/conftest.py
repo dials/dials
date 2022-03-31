@@ -28,10 +28,10 @@ def multi_sequence_data(dials_regression):
 @pytest.fixture
 def centroid_test_data(dials_data):
     experiments = load.experiment_list(
-        dials_data("centroid_test_data").join("experiments.json").strpath,
+        dials_data("centroid_test_data", pathlib=True) / "experiments.json",
         check_format=False,
     )
     reflections = flex.reflection_table.from_file(
-        dials_data("centroid_test_data").join("integrated.pickle").strpath
+        dials_data("centroid_test_data", pathlib=True) / "integrated.pickle"
     )
     return {"reflections": reflections, "experiments": experiments}
