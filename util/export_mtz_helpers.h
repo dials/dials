@@ -183,11 +183,9 @@ namespace dials { namespace util {
     }
   }
 
-  mat3<double> dials_u_to_mosflm(const mat3<double> dials_U, unit_cell uc) {
+  mat3<double> ub_to_mosflm_u(const mat3<double> UB, unit_cell uc) {
     scitbx::af::double6 p = uc.parameters();
     scitbx::af::double6 rp = uc.reciprocal_parameters();
-    scitbx::mat3<double> dials_B = uc.fractionalization_matrix().transpose();
-    scitbx::mat3<double> dials_UB = dials_U * dials_B;
 
     double d2r = atan(1.0) / 45.0;
 
@@ -201,7 +199,7 @@ namespace dials { namespace util {
                                   0,
                                   1.0 / p[2]);
 
-    scitbx::mat3<double> mosflm_U = dials_UB * mosflm_B.inverse();
+    scitbx::mat3<double> mosflm_U = UB * mosflm_B.inverse();
 
     return mosflm_U;
   }

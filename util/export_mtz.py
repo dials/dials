@@ -161,11 +161,7 @@ class UnmergedMTZWriter(MTZWriterBase):
         umat_array = flex.float(flex.grid(n_batches, 9))
         cell_array = flex.float(flex.grid(n_batches, 6))
 
-        U = matrix.sqr(experiment.crystal.get_U())
-        if experiment.goniometer is not None:
-            F = matrix.sqr(experiment.goniometer.get_fixed_rotation())
-        else:
-            F = matrix.sqr((1, 0, 0, 0, 1, 0, 0, 0, 1))
+        UB = matrix.sqr(experiment.crystal.get_A())
 
         i0 = image_range[0]
         for i in range(n_batches):
@@ -182,20 +178,15 @@ class UnmergedMTZWriter(MTZWriterBase):
                 # Get the index of the image in the sequence e.g. first => 0, second => 1
                 image_index = i + i0 - experiment.scan.get_image_range()[0]
                 _unit_cell = experiment.crystal.get_unit_cell_at_scan_point(image_index)
-                _U = matrix.sqr(experiment.crystal.get_U_at_scan_point(image_index))
+                _UB = matrix.sqr(experiment.crystal.get_A_at_scan_point(image_index))
             else:
                 _unit_cell = experiment.crystal.get_unit_cell()
-                _U = U
+                _UB = UB
 
-            # apply the fixed rotation to this to unify matrix definitions - F * U
-            # was what was used in the actual prediction
-            #
-            # FIXME Do we need to apply the setting rotation here somehow? i.e. we have
-            # the U.B. matrix assuming that the axis is equal to S * axis_datum but
-            # here we are just giving the effective axis so at scan angle 0 this will
-            # not be correct... FIXME 2 not even sure we can express the stack of
-            # matrices S * R * F * U * B in MTZ format?... see [=A=] below
-            _U = matrix.sqr(dials.util.ext.dials_u_to_mosflm(F * _U, _unit_cell))
+            # We assume a single-axis goniometer as it is not clear that multi-
+            # axis goniometry was ever fully supported in MTZ format. Orientation
+            # will be taken from the laboratory frame for this image.
+            _U = matrix.sqr(dials.util.ext.ub_to_mosflm_u(_UB, _unit_cell))
 
             # FIXME need to get what was refined and what was constrained from the
             # crystal model - see https://github.com/dials/dials/issues/355
