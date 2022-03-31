@@ -1128,9 +1128,13 @@ class MultiScalerBase(ScalerBase):
                 anomalous=self.params.anomalous
             )
         if self.params.scaling_options.outlier_rejection:
+            if target:
+                method = "target"
+            else:
+                method = self.params.scaling_options.outlier_rejection
             outlier_index_arrays = determine_outlier_index_arrays(
                 self.global_Ih_table,
-                self.params.scaling_options.outlier_rejection,
+                method,
                 self.params.scaling_options.outlier_zmax,
                 target=target,
             )
@@ -1152,7 +1156,7 @@ class MultiScalerBase(ScalerBase):
             if self._free_Ih_table:
                 free_outlier_index_arrays = determine_outlier_index_arrays(
                     self._free_Ih_table,
-                    self.params.scaling_options.outlier_rejection,
+                    method,
                     self.params.scaling_options.outlier_zmax,
                     target=target,
                 )
