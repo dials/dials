@@ -220,6 +220,99 @@ namespace dials { namespace algorithms {
       frame_++;
     }
 
+    /**
+     * Extract the pixels from the image and copy to the relevant shoeboxes.
+     * @param image The image to process
+     * @param frame The current image frame
+     */
+    template <typename T>
+    void next_data_only(const Image<T>& image) {
+      using dials::af::boost_python::flex_table_suite::select_rows_index;
+      using dials::af::boost_python::flex_table_suite::set_selected_rows_index;
+      typedef Shoebox<>::float_type float_type;
+      typedef af::ref<float_type, af::c_grid<3> > sbox_data_type;
+      typedef af::ref<int, af::c_grid<3> > sbox_mask_type;
+      DIALS_ASSERT(frame_ >= frame0_ && frame_ < frame1_);
+      DIALS_ASSERT(image.npanels() == npanels_);
+
+      // Get the initial time
+      double start_time = timestamp();
+
+      // For each image, extract shoeboxes of reflections recorded.
+      // Allocate data where necessary
+      af::ref<Shoebox<> > shoebox = data_["shoebox"];
+      af::shared<std::size_t> process_indices;
+      for (std::size_t p = 0; p < image.npanels(); ++p) {
+        af::const_ref<std::size_t> ind = indices(frame_, p);
+        af::const_ref<T, af::c_grid<2> > data = image.data(p);
+        af::const_ref<bool, af::c_grid<2> > mask = image.mask(p);
+        DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
+        for (std::size_t i = 0; i < ind.size(); ++i) {
+          DIALS_ASSERT(ind[i] < shoebox.size());
+          Shoebox<>& sbox = shoebox[ind[i]];
+          if (frame_ == sbox.bbox[4]) {
+            DIALS_ASSERT(sbox.is_allocated() == false);
+            sbox.allocate();
+          }
+          int6 b = sbox.bbox;
+          sbox_data_type sdata = sbox.data.ref();
+          sbox_mask_type smask = sbox.mask.ref();
+          DIALS_ASSERT(b[1] > b[0]);
+          DIALS_ASSERT(b[3] > b[2]);
+          DIALS_ASSERT(b[5] > b[4]);
+          DIALS_ASSERT(frame_ >= b[4] && frame_ < b[5]);
+          int x0 = b[0];
+          int x1 = b[1];
+          int y0 = b[2];
+          int y1 = b[3];
+          int z0 = b[4];
+          int xs = x1 - x0;
+          int ys = y1 - y0;
+          int z = frame_ - z0;
+          int yi = (int)data.accessor()[0];
+          int xi = (int)data.accessor()[1];
+          int xb = x0 >= 0 ? 0 : std::abs(x0);
+          int yb = y0 >= 0 ? 0 : std::abs(y0);
+          int xe = x1 <= xi ? xs : xs - (x1 - xi);
+          int ye = y1 <= yi ? ys : ys - (y1 - yi);
+          if (yb >= ye || xb >= xe) {
+            continue;
+          }
+          DIALS_ASSERT(yb >= 0 && ye <= ys);
+          DIALS_ASSERT(xb >= 0 && xe <= xs);
+          DIALS_ASSERT(yb + y0 >= 0 && ye + y0 <= yi);
+          DIALS_ASSERT(xb + x0 >= 0 && xe + x0 <= xi);
+          DIALS_ASSERT(sbox.is_consistent());
+          if (flatten_) {
+            for (std::size_t y = yb; y < ye; ++y) {
+              for (std::size_t x = xb; x < xe; ++x) {
+                sdata(0, y, x) += data(y + y0, x + x0);
+                bool sv = smask(0, y, x) & Valid;
+                bool mv = mask(y + y0, x + x0);
+                smask(0, y, x) = (mv && (z == 0 ? true : sv) ? Valid : 0);
+              }
+            }
+          } else {
+            for (std::size_t y = yb; y < ye; ++y) {
+              for (std::size_t x = xb; x < xe; ++x) {
+                sdata(z, y, x) = data(y + y0, x + x0);
+                smask(z, y, x) = mask(y + y0, x + x0) ? Valid : 0;
+              }
+            }
+          }
+          if (frame_ == sbox.bbox[5] - 1) {
+            process_indices.push_back(ind[i]);
+          }
+        }
+      }
+
+      // Update timing info
+      double end_time = timestamp();
+      extract_time_ += end_time - start_time;
+
+      // Update the frame counter
+      frame_++;
+    }
     /** @returns The first frame.  */
     int frame0() const {
       return frame0_;

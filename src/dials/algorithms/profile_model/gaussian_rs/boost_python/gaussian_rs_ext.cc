@@ -144,6 +144,10 @@ namespace dials {
                   int,
                   int>())
         .def("coord", &GaussianRSProfileModeller::coord)
+        .def("model", &GaussianRSProfileModeller::model, (arg("reflections")))
+        .def("fit_reciprocal_space",
+             &GaussianRSProfileModeller::fit_reciprocal_space,
+             (arg("reflections")))
         .def_pickle(GaussianRSProfileModellerPickleSuite());
 
       scope in_modeller = result;
