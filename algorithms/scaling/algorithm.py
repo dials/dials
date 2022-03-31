@@ -279,11 +279,11 @@ class ScalingAlgorithm:
         # also remove negative scales (or scales below 0.001)
         n = 0
         for table in self.reflections:
-            bad_sf = table["inverse_scale_factor"] < 0.001
+            bad_sf = table["inverse_scale_factor"] < 1e-9
             n += bad_sf.count(True)
             table.set_flags(bad_sf, table.flags.excluded_for_scaling)
         if n > 0:
-            logger.info("%s reflections excluded: scale factor < 0.001", n)
+            logger.info("%s reflections excluded: scale factor < 1e-9", n)
 
     def calculate_merging_stats(self):
         try:
@@ -326,12 +326,12 @@ class ScalingAlgorithm:
         joint_table = flex.reflection_table.concat(self.reflections)
 
         # remove reflections with very low scale factors
-        sel = joint_table["inverse_scale_factor"] <= 0.001
+        sel = joint_table["inverse_scale_factor"] <= 1e-9
         good_sel = ~joint_table.get_flags(joint_table.flags.bad_for_scaling, all=False)
         n_neg = (good_sel & sel).count(True)
         if n_neg > 0:
             logger.warning(
-                """%s non-excluded reflections were assigned scale factors < 0.001 during scaling.
+                """%s non-excluded reflections were assigned scale factors < 1e-9 during scaling.
 These will be excluded in the output reflection table. It may be best to rerun
 scaling from this point for an improved model.""",
                 n_neg,
