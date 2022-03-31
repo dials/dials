@@ -5,9 +5,13 @@ import time
 from collections import Counter
 from math import isclose
 
+import numpy as np
+
 from iotbx import mtz
 from libtbx import env
+from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
 from scitbx import matrix
+from scitbx.math import r3_rotation_axis_and_angle_from_matrix
 
 import dials.util.ext
 from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
@@ -424,6 +428,9 @@ def export_mtz(
     reflection_table.assert_experiment_identifiers_are_consistent(experiment_list)
     expids_in_list = list(experiment_list.identifiers())
 
+    # Convert geometry to the Cambridge frame
+    experiment_list = convert_to_cambridge(experiment_list)
+
     # Convert experiment_list to a real python list or else identity assumptions
     # fail like:
     #   assert experiment_list[0] is experiment_list[0]
@@ -607,3 +614,57 @@ def match_wavelengths(experiments, absolute_tolerance=1e-4):
             match_w = list(wavelengths.keys())[matches.index(True)]
             wavelengths[match_w].append(i)
     return wavelengths
+
+
+def convert_to_cambridge(experiments):
+    """Rotate the geometry of an experiment list to match the Cambridge frame,
+    in which X is along the idealized X-ray beam and Z is along the primary
+    rotation axis"""
+
+    for expt in experiments:
+        if expt.goniometer:
+            primary_axis = matrix.col(expt.goniometer.get_rotation_axis_datum())
+        else:
+            primary_axis = matrix.col((1.0, 0.0, 0.0))
+        us0 = expt.beam.get_unit_s0()
+
+        R = align_reference_frame(primary_axis, (0, 0, 1), us0, (1, 0, 0))
+        axis_angle = r3_rotation_axis_and_angle_from_matrix(R)
+        axis = axis_angle.axis
+        angle = axis_angle.angle()
+        logger.info(
+            f"Rotating experiment{'s' if len(experiments) else ''} about axis {axis} by {np.degrees(angle)}°"
+        )
+        expt.detector.rotate_around_origin(axis, angle, deg=False)
+        expt.beam.rotate_around_origin(axis, angle, deg=False)
+
+        # For the goniometer, each component needs transformation
+        F = matrix.sqr(expt.goniometer.get_fixed_rotation())
+        expt.goniometer.set_fixed_rotation(R * F * R.transpose())
+        expt.goniometer.set_rotation_axis_datum(R * primary_axis)
+        S = matrix.sqr(expt.goniometer.get_setting_rotation())
+        expt.goniometer.set_setting_rotation(R * S * R.transpose())
+
+        if expt.crystal is not None:
+            expt.crystal = rotate_crystal(expt.crystal, R, axis, angle)
+
+    return experiments
+
+
+def rotate_crystal(crystal, Rmat, axis, angle):
+
+    Amats = []
+    if crystal.num_scan_points > 0:
+        scan_pts = list(range(crystal.num_scan_points))
+        Amats = [
+            Rmat
+            * matrix.sqr(crystal.get_U_at_scan_point(t))
+            * matrix.sqr(crystal.get_B_at_scan_point(t))
+            for t in scan_pts
+        ]
+
+    crystal.rotate_around_origin(axis, angle, deg=False)
+    if Amats:
+        crystal.set_A_at_scan_points(Amats)
+
+    return crystal
