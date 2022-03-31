@@ -99,8 +99,8 @@ class Point(NamedTuple):
     Use the blessing of namedtuple for x y coordinates
     """
 
-    slow: float
     fast: float
+    slow: float
 
 
 class ExptParams(NamedTuple):
@@ -228,8 +228,8 @@ class Geometry(pfGeometry):
         """
         self.setFit2D(
             directDist=self.beam_distance,
-            centerX=self.beam_px.slow,
-            centerY=self.beam_px.fast,
+            centerX=self.beam_px.fast,
+            centerY=self.beam_px.slow,
         )
 
     def _beam_to_px(self):
@@ -239,8 +239,8 @@ class Geometry(pfGeometry):
         if not self.beam_m:
             exit("No beam information provided")
         return Point(
-            slow=self.beam_m.slow / self.detector.pixel1,
-            fast=self.beam_m.fast / self.detector.pixel2,
+            fast=self.beam_m.fast / self.detector.pixel1,
+            slow=self.beam_m.slow / self.detector.pixel2,
         )
 
     def _beam_to_m(self):
@@ -250,8 +250,8 @@ class Geometry(pfGeometry):
         if not self.beam_px:
             exit("No beam information provided")
         return Point(
-            slow=self.beam_px.slow * self.detector.pixel1,
-            fast=self.beam_px.fast * self.detector.pixel2,
+            fast=self.beam_px.fast * self.detector.pixel1,
+            slow=self.beam_px.slow * self.detector.pixel2,
         )
 
     def update_beam_pos(
@@ -278,7 +278,7 @@ class Geometry(pfGeometry):
         self.set_param(geom.param)
         beam_params = self.getFit2D()
 
-        self.beam_px = Point(slow=beam_params["centerX"], fast=beam_params["centerY"])
+        self.beam_px = Point(fast=beam_params["centerX"], slow=beam_params["centerY"])
 
         self.beam_m = self._beam_to_m()
         self.beam_distance = beam_params["directDist"]
@@ -317,8 +317,8 @@ class Geometry(pfGeometry):
             f"ImageSize={self.detector.max_shape}px\n"
             f"Distance= {_convert_units(self.beam_distance, 'mm', 'm'):.2f} m\n"
             f"Wavelength= {self.wavelength:.3e} m\n"
-            f"Beam position on detector: m= {self.beam_m.slow:.5f}m, {self.beam_m.fast:.5f}m  "
-            f"px= {self.beam_px.slow:.2f}, {self.beam_px.fast:.2f}"
+            f"Beam position on detector: m= {self.beam_m.fast:.5f}m, {self.beam_m.slow:.5f}m  "
+            f"px= {self.beam_px.fast:.2f}, {self.beam_px.slow:.2f}"
         )
 
 
@@ -348,8 +348,8 @@ class EyeballWidget:
         self.coarse_geom = coarse_geom
         self.fig, self.ax = self.set_up_figure()
         self.calibrant_image = self.calibrant_rings_image(self.ax)
-        self.beam_slow_slider = self.make_slider("slow")
         self.beam_fast_slider = self.make_slider("fast")
+        self.beam_slow_slider = self.make_slider("slow")
 
     def __repr__(self):
         calibrant = os.path.splitext(os.path.basename(self.calibrant.filename))[0]
@@ -365,8 +365,8 @@ class EyeballWidget:
             label="Calibrant overlay on experimental image",
             ax=ax,
         )
-        ax.set_xlabel("slow position [pixels]")
-        ax.set_ylabel("fast position [pixels]")
+        ax.set_xlabel("fast position [pixels]")
+        ax.set_ylabel("slow position [pixels]")
         fig.set_size_inches(10, 10)
         return fig, ax
 
@@ -376,7 +376,7 @@ class EyeballWidget:
         """
         new_geometry = self.geometry.__deepcopy__()
         new_geometry.update_beam_pos(
-            beam_coords_px=Point(self.beam_slow_slider.val, self.beam_fast_slider.val)
+            beam_coords_px=Point(self.beam_fast_slider.val, self.beam_slow_slider.val)
         )
 
         self.calibrant_image.set_array(self.calibrant_rings(new_geometry))
@@ -386,15 +386,15 @@ class EyeballWidget:
         """
         Reset calibrant image to starting position
         """
-        self.beam_slow_slider.reset()
         self.beam_fast_slider.reset()
+        self.beam_slow_slider.reset()
 
     def save_and_exit(self, event):
         """
         Save geometry from widget and save to file
         """
         self.geometry.update_beam_pos(
-            beam_coords_px=Point(self.beam_slow_slider.val, self.beam_fast_slider.val)
+            beam_coords_px=Point(self.beam_fast_slider.val, self.beam_slow_slider.val)
         )
         self.geometry.save_to_expt(
             output=self.coarse_geom,
@@ -406,8 +406,8 @@ class EyeballWidget:
         Update geometry such that beam position is now the center of the moved calibrant rings
         """
         # register the update function with each slider
-        self.beam_slow_slider.on_changed(self.update)
         self.beam_fast_slider.on_changed(self.update)
+        self.beam_slow_slider.on_changed(self.update)
 
         # register the reset function with reset button
         reset_ax = plt.axes([0.8, 0.026, 0.1, 0.04])
@@ -424,29 +424,29 @@ class EyeballWidget:
 
     def make_slider(self, label):
         slider = None
-        if label == "slow":
+        if label == "fast":
             plt.subplots_adjust(bottom=0.25)
-            # Make a horizontal slider to control the beam slow position.
-            ax_beam_slow = plt.axes([0.25, 0.1, 0.65, 0.03])
+            # Make a horizontal slider to control the beam fast position.
+            ax_beam_fast = plt.axes([0.25, 0.1, 0.65, 0.03])
 
-            slider = Slider(
-                ax=ax_beam_slow,
-                label="Beam center slow [px]",
-                valmin=self.detector.max_shape[0] * 0.25,
-                valmax=self.detector.max_shape[0] * 0.75,
-                valinit=self.geometry.beam_px.slow,
-            )
-
-        elif label == "fast":
-            plt.subplots_adjust(left=0.25)
-            # Make a vertically oriented slider to the beam fast position
-            ax_beam_fast = plt.axes([0.1, 0.25, 0.0225, 0.63])
             slider = Slider(
                 ax=ax_beam_fast,
                 label="Beam center fast [px]",
+                valmin=self.detector.max_shape[0] * 0.25,
+                valmax=self.detector.max_shape[0] * 0.75,
+                valinit=self.geometry.beam_px.fast,
+            )
+
+        elif label == "slow":
+            plt.subplots_adjust(left=0.25)
+            # Make a vertically oriented slider to the beam slow position
+            ax_beam_slow = plt.axes([0.1, 0.25, 0.0225, 0.63])
+            slider = Slider(
+                ax=ax_beam_slow,
+                label="Beam center slow [px]",
                 valmin=self.detector.max_shape[1] * 0.25,
                 valmax=self.detector.max_shape[1] * 0.75,
-                valinit=self.geometry.beam_px.fast,
+                valinit=self.geometry.beam_px.slow,
                 orientation="vertical",
             )
         return slider
@@ -466,13 +466,13 @@ class EyeballWidget:
         """
         if geometry:
             beam = Point(
-                slow=geometry.poni2 / self.detector.pixel2,
                 fast=geometry.poni1 / self.detector.pixel1,
+                slow=geometry.poni2 / self.detector.pixel2,
             )
         else:
             beam = Point(
-                slow=self.geometry.poni2 / self.detector.pixel2,
                 fast=self.geometry.poni1 / self.detector.pixel1,
+                slow=self.geometry.poni2 / self.detector.pixel2,
             )
         return beam
 
