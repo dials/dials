@@ -475,17 +475,18 @@ class IhTable:
 
 class TargetAsuDictCache(object):
 
-    instance = None
+    instances = {}
 
     def __new__(cls, target_Ih_table):
-        if not cls.instance:
-            cls.instance = dict(
+        id_ = id(target_Ih_table)
+        if id_ not in cls.instances:
+            cls.instances[id_] = dict(
                 zip(
                     target_Ih_table.blocked_data_list[0].asu_miller_index,
                     target_Ih_table.blocked_data_list[0].Ih_values,
                 )
             )
-        return cls.instance
+        return cls.instances[id_]
 
 
 class IhTableBlock:
