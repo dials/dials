@@ -313,8 +313,9 @@ class Geometry(pfGeometry):
 
     def __repr__(self):
         return (
-            f"Detector {self.detector.name}: PixelSize= {self.pixel1}, {self.pixel2} m  "
-            f"Distance= {self.beam_distance:.2f} mm\n"
+            f"Detector {self.detector.name}: PixelSize= ({self.detector.pixel1}, {self.detector.pixel2})m, "
+            f"ImageSize={self.detector.max_shape}px\n"
+            f"Distance= {_convert_units(self.beam_distance, 'mm', 'm'):.2f} m\n"
             f"Wavelength= {self.wavelength:.3e} m\n"
             f"Beam position on detector: m= {self.beam_m.slow:.5f}m, {self.beam_m.fast:.5f}m  "
             f"px= {self.beam_px.slow:.2f}, {self.beam_px.fast:.2f}"
@@ -618,12 +619,16 @@ class PowderCalibrator:
     def print_hints(self):
         # Tell me which geometry I'm starting from
         logger.info(
-            f"Initial geometry from {self.expt_params.input_file}:\n-----\n {self.geometry} \n"
+            f"Initial geometry from {self.expt_params.input_file}:\n"
+            f"-----\n"
+            f"{self.geometry}\n"
         )
 
         # Tell me what calibrant I am using
         logger.info(
-            f"Starting calibration using {self.standard}:\n-----\n {self.calibrant} \n "
+            f"Starting calibration using {self.standard}:\n"
+            f"-----\n"
+            f"{self.calibrant}\n"
         )
 
         # Tell me if I'm using the EyeballWidget and how to use
@@ -729,7 +734,7 @@ class PowderCalibrator:
         self.geometry.update_from_ai(ai)
         self.geometry.save_to_expt(output=self.output.calibrated_geom)
 
-        logger.info(f"Geometry fitted by pyFAI:\n----- \n {self.geometry} \n")
+        logger.info(f"Geometry fitted by pyFAI:\n" f"-----\n" f"{self.geometry}\n")
         self.show_straight_lines(ai, show=plots)
 
 
