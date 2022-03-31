@@ -473,6 +473,21 @@ class IhTable:
         return _reflection_table_to_iobs(joint_table, unit_cell, self.space_group)
 
 
+class TargetAsuDictCache(object):
+
+    instance = None
+
+    def __new__(cls, target_Ih_table):
+        if not cls.instance:
+            cls.instance = dict(
+                zip(
+                    target_Ih_table.blocked_data_list[0].asu_miller_index,
+                    target_Ih_table.blocked_data_list[0].Ih_values,
+                )
+            )
+        return cls.instance
+
+
 class IhTableBlock:
     """
     A datastructure for efficient summations over symmetry equivalent reflections.
@@ -680,12 +695,7 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
         matching reflection is found, then the values are removed from the table.
         """
         assert target_Ih_table.n_work_blocks == 1
-        target_asu_Ih_dict = dict(
-            zip(
-                target_Ih_table.blocked_data_list[0].asu_miller_index,
-                target_Ih_table.blocked_data_list[0].Ih_values,
-            )
-        )
+        target_asu_Ih_dict = TargetAsuDictCache(target_Ih_table)
         new_Ih_values = np.zeros(self.size, dtype=float)
         location_in_unscaled_array = 0
         sorted_asu_indices, permuted = get_sorted_asu_indices(
