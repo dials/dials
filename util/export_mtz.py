@@ -217,8 +217,6 @@ class UnmergedMTZWriter(MTZWriterBase):
         else:
             axis = flex.float((0.0, 0.0, 0.0))
 
-        # FIXME hard-coded assumption on idealized beam vector in add_dials_batches... this may be
-        # broken when we come to process data from a non-imgCIF frame
         source = flex.float(experiment.beam.get_sample_to_source_direction())
 
         # get the mosaic spread though today it may not actually be set - should

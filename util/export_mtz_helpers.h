@@ -10,12 +10,14 @@
 #include <scitbx/array_family/tiny_types.h>
 #include <cctbx/uctbx.h>
 #include <iotbx/mtz/object.h>
+#include <scitbx/array_family/misc_functions.h>
 
 namespace dials { namespace util {
 
   using cctbx::uctbx::unit_cell;
   using iotbx::mtz::object;
   using scitbx::mat3;
+  using scitbx::af::min_index;
 
   void add_dials_batches(iotbx::mtz::object* mtz,
                          int dataset_id,
@@ -30,7 +32,7 @@ namespace dials { namespace util {
                          af::tiny<int, 2> panel_size,
                          float panel_distance,
                          af::shared<float> axis,
-                         af::shared<float> s0n) {
+                         af::shared<float> source) {
     // static assertions at the start
 #if defined(__DECCXX_VER)
     BOOST_STATIC_ASSERT(sizeof(float) == sizeof(int));
@@ -86,12 +88,15 @@ namespace dials { namespace util {
       p->divvd = 0.0;
 
       for (int j = 0; j < 3; j++) {
-        p->so[j] = s0n[j];
+        p->so[j] = source[j];
       }
 
       p->source[0] = 0;
       p->source[1] = 0;
-      p->source[2] = -1;
+      p->source[2] = 0;
+      // Find element closest to -1 for ideal beam direction
+      std::size_t i_min = scitbx::af::min_index(source.const_ref());
+      p->source[i_min] = -1;
 
       p->bbfac = 0.0;
       p->bscale = 1.0;
