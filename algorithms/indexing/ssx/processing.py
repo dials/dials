@@ -46,7 +46,9 @@ def index_one(
     image_no: int,
 ) -> Union[Tuple[ExperimentList, flex.reflection_table], Tuple[bool, bool]]:
     if not reflection_table:
-        logger.info(f"Image {image_no+1}: Failed to index, no strong spots found.")
+        logger.info(
+            f"Image {image_no+1}: Skipped indexing, no strong spots found/remaining."
+        )
         return None, None
     # First suppress logging unless in verbose mode.
     if params.individual_log_verbosity < 2:
@@ -204,20 +206,30 @@ def preprocess(
         no_refls = set(range(len(experiments))).difference(set(observed["id"]))
         for i in no_refls:
             reflections.insert(i, None)
+        logger.info(f"Filtered {len(no_refls)} images with no spots found.")
         if len(experiments) != len(reflections):
             raise ValueError(
                 f"Unequal number of reflection tables {len(reflections)} and experiments {len(experiments)}"
             )
 
     # Calculate necessary quantities
-    for refl, experiment in zip(reflections, experiments):
+    n_filtered_out = 0
+    for i, (refl, experiment) in enumerate(zip(reflections, experiments)):
         if refl:
-            elist = ExperimentList([experiment])
-            refl["imageset_id"] = flex.int(
-                refl.size(), 0
-            )  # needed for centroid_px_to_mm
-            refl.centroid_px_to_mm(elist)
-            refl.map_centroids_to_reciprocal_space(elist)
+            if refl.size() >= params.min_spots:
+                elist = ExperimentList([experiment])
+                refl["imageset_id"] = flex.int(
+                    refl.size(), 0
+                )  # needed for centroid_px_to_mm
+                refl.centroid_px_to_mm(elist)
+                refl.map_centroids_to_reciprocal_space(elist)
+            else:
+                n_filtered_out += 1
+                reflections[i] = None
+    if n_filtered_out:
+        logger.info(
+            f"Filtered {n_filtered_out} images with fewer than {params.min_spots} spots"
+        )
 
     # Determine the max cell if applicable
     if (params.indexing.max_cell is Auto) and (
