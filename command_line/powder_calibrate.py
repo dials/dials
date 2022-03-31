@@ -162,7 +162,8 @@ def get_expt_params(expts: ExperimentList) -> ExptParams:
     distance = detector.get_distance()
     wavelength = beam.get_wavelength()
     pix_size = detector.get_pixel_size()
-    img_size = detector.get_image_size()
+    # detector size has dimensions flipped wrt data array
+    img_size = detector.get_image_size()[::-1]
     image = np.array(expt.imageset.get_corrected_data(0)[0]).reshape(img_size)
 
     expt_params = ExptParams(
