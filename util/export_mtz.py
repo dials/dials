@@ -217,9 +217,9 @@ class UnmergedMTZWriter(MTZWriterBase):
         else:
             axis = flex.float((0.0, 0.0, 0.0))
 
-        # FIXME hard-coded assumption on idealized beam vector below... this may be
+        # FIXME hard-coded assumption on idealized beam vector in add_dials_batches... this may be
         # broken when we come to process data from a non-imgCIF frame
-        s0n = flex.float(matrix.col(experiment.beam.get_s0()).normalize().elems)
+        source = flex.float(experiment.beam.get_sample_to_source_direction())
 
         # get the mosaic spread though today it may not actually be set - should
         # this be in the BATCH headers?
@@ -243,7 +243,7 @@ class UnmergedMTZWriter(MTZWriterBase):
             panel_size,
             panel_distance,
             axis,
-            s0n,
+            source,
         )
 
     def write_columns(self, reflection_table):
