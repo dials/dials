@@ -239,17 +239,14 @@ class MultiScalerFactory:
                 idx_to_remove.append(i)
             else:
                 single_scalers.append(scaler)
+        ms = MultiScaler(single_scalers)
         if idx_to_remove:
-            for j in idx_to_remove[::-1]:
-                del experiments[j]
-                del reflections[j]
+            for i in idx_to_remove:
+                ms.removed_datasets.append(experiments[i].identifier)
             logger.info(
                 "Removed experiments %s", " ".join(str(i) for i in idx_to_remove)
             )
-        n_exp, n_refl, n_ss = (len(experiments), len(reflections), len(single_scalers))
-        assert n_exp == n_ss, (n_exp, n_ss)
-        assert n_exp == n_refl, (n_exp, n_refl)
-        return MultiScaler(single_scalers)
+        return ms
 
     @staticmethod
     def create_from_targetscaler(targetscaler):
@@ -282,22 +279,17 @@ class TargetScalerFactory:
                 idx_to_remove.append(i)
             else:
                 unscaled_scalers.append(scaler)
-        if idx_to_remove:
-            for j in idx_to_remove[::-1]:
-                del experiments[j]
-                del reflections[j]
-            logger.info(
-                "Removed experiments %s", " ".join(str(i) for i in idx_to_remove)
-            )
         scaled_scalers = [
             NullScalerFactory.create(params, experiments[-1], reflections[-1])
         ]
-
-        n_exp, n_refl = (len(experiments), len(reflections))
-        n_ss, n_us = (len(scaled_scalers), len(unscaled_scalers))
-        assert n_exp == n_ss + n_us, (n_exp, str(n_ss) + " + " + str(n_us))
-        assert n_exp == n_refl, (n_exp, n_refl)
-        return TargetScaler(scaled_scalers, unscaled_scalers)
+        ts = TargetScaler(scaled_scalers, unscaled_scalers)
+        if idx_to_remove:
+            for i in idx_to_remove:
+                ts.removed_datasets.append(experiments[i].identifier)
+            logger.info(
+                "Removed experiments %s", " ".join(str(i) for i in idx_to_remove)
+            )
+        return ts
 
     @staticmethod
     def create(params, experiments, reflections):

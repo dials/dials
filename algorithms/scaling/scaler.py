@@ -1103,6 +1103,10 @@ class MultiScalerBase(ScalerBase):
                 datasets_to_remove.append(i)
         if datasets_to_remove:
             self.remove_datasets(self.active_scalers, datasets_to_remove)
+            (
+                self._global_Ih_table,
+                self._free_Ih_table,
+            ) = self._create_global_Ih_table(self.params.anomalous)
         self._create_Ih_table()
         self._update_model_data()
 
@@ -1225,7 +1229,6 @@ class MultiScalerBase(ScalerBase):
                 self.global_Ih_table.Ih_table_blocks[0],
                 random_phil.multi_dataset.Isigma_cutoff,
             )
-
             for i, scaler in enumerate(self.active_scalers):
                 # first set cross dataset connected reflections identified.
                 # scaler.scaling_selection = flex.bool(scaler.n_suitable_refl, False)
