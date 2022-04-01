@@ -117,8 +117,6 @@ if __name__ == "__main__":
     predicted_reflections.compute_mask(experiments)
     predicted_reflections.compute_summed_intensity()
     predicted_reflections.compute_partiality(experiments)
-    predicted_reflections.compute_zeta(experiment)
-    predicted_reflections.compute_d_single(experiment)
 
     """
     Load modeller that will calculate reference profiles and
@@ -160,7 +158,6 @@ if __name__ == "__main__":
     """
 
     reference_profile_modeller.model(predicted_reflections)
-    reference_profile_modeller.finalize()
 
     """
     Carry out the integration by fitting to reference profiles in 1D.
