@@ -950,7 +950,6 @@ class MultiScalerBase(ScalerBase):
                 dataset_id=i,
                 column="inverse_scale_factor",
             )
-            self.global_Ih_table.calc_Ih()
             if self._free_Ih_table:
                 self._free_Ih_table.update_data_in_blocks(
                     scaler.reflection_table["inverse_scale_factor"].select(
@@ -959,7 +958,10 @@ class MultiScalerBase(ScalerBase):
                     dataset_id=i,
                     column="inverse_scale_factor",
                 )
-                self._free_Ih_table.calc_Ih()
+
+        self.global_Ih_table.calc_Ih()
+        if self._free_Ih_table:
+            self._free_Ih_table.calc_Ih()
         logger.info(
             "Scale factors determined during minimisation have now been\n"
             "applied to all datasets.\n"
