@@ -1,0 +1,1 @@
+All tests now use dials-data pathlib objects rather than outdated py.path objects. A number of pytest tests were also updated to use pathlib fixtures over py.path ones.
