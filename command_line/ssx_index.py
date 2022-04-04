@@ -24,11 +24,11 @@ Usage:
 
 from __future__ import annotations
 
-import functools.reduce
 import json
 import logging
 import sys
 import time
+from functools import reduce
 
 from cctbx import crystal
 from libtbx import Auto, phil
@@ -162,7 +162,7 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     summary_table = make_summary_table(summary_data)
     logger.info("\nSummary of images sucessfully indexed\n" + summary_table)
 
-    n_images = functools.reduce(
+    n_images = reduce(
         lambda a, v: a + (v[0]["n_indexed"] > 0), summary_data.values(), 0
     )
     logger.info(f"{indexed_reflections.size()} spots indexed on {n_images} images\n")
