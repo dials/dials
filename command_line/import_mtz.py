@@ -756,15 +756,20 @@ def update_experiments_and_reflection_table(
             x_fit = linregress(x_px, x_mm)
             y_fit = linregress(y_px, y_mm)
 
-            pixel_size = round(x_fit.slope, 3), round(y_fit.slope, 3)
+            pixel_size_x, pixel_size_y = round(x_fit.slope, 3), round(y_fit.slope, 3)
+            shift_x, shift_y = x_fit.intercept, y_fit.intercept
+            if pixel_size_x < 0:
+                pixel_size_x *= -1
+                shift_x *= -1
+            if pixel_size_y < 0:
+                pixel_size_y *= -1
+                shift_y *= -1
             origin = (
-                panel.get_distance() * dn
-                + float(x_fit.intercept) * df
-                + float(y_fit.intercept) * ds
+                panel.get_distance() * dn + float(shift_x) * df + float(shift_y) * ds
             )
 
             panel.set_frame(df, ds, origin)
-            panel.set_pixel_size(pixel_size)
+            panel.set_pixel_size((pixel_size_x, pixel_size_y))
 
     # Update the mm positions
     if "xyzobs.mm.value" not in reflections:
