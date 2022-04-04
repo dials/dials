@@ -9,6 +9,8 @@ from numpy.random import poisson
 from scitbx.array_family import flex
 
 from dials.algorithms.image.threshold import (
+    DispersionElectronThreshold,
+    DispersionElectronThresholdDebug,
     DispersionExtendedThreshold,
     DispersionExtendedThresholdDebug,
     DispersionThreshold,
@@ -227,8 +229,45 @@ class Test:
         result4 = debug.final_mask()
         assert result2 == result4
 
+    def test_dispersion_electron_threshold(self):
+        from dials.algorithms.image.threshold import (
+            DispersionElectronThreshold,
+            DispersionElectronThresholdDebug,
+        )
+        from dials.array_family import flex
+
+        nsig_b = 3
+        nsig_s = 3
+        algorithm = DispersionElectronThreshold(
+            self.image.all(), self.size, nsig_b, nsig_s, 0, self.min_count
+        )
+        result1 = flex.bool(flex.grid(self.image.all()))
+        result2 = flex.bool(flex.grid(self.image.all()))
+        algorithm(self.image, self.mask, result1)
+        algorithm(self.image, self.mask, self.gain, result2)
+
+        debug = DispersionElectronThresholdDebug(
+            self.image, self.mask, self.size, nsig_b, nsig_s, 0, self.min_count
+        )
+        result3 = debug.final_mask()
+
+        assert result1.all_eq(result3)
+
+        debug = DispersionElectronThresholdDebug(
+            self.image,
+            self.mask,
+            self.gain,
+            self.size,
+            nsig_b,
+            nsig_s,
+            0,
+            self.min_count,
+        )
+        result4 = debug.final_mask()
+        assert result2 == result4
+
     @pytest.mark.parametrize(
-        "algorithm", [DispersionThreshold, DispersionExtendedThreshold]
+        "algorithm", [DispersionThreshold, DispersionExtendedThreshold, DispersionElectronThreshold]
     )
     def test_dispersion_algorithm_symmetry(self, algorithm):
 
@@ -263,7 +302,7 @@ class Test:
         assert (result1 == result2_t).all_eq(True)
 
     @pytest.mark.parametrize(
-        "algorithm", [DispersionThresholdDebug, DispersionExtendedThresholdDebug]
+        "algorithm", [DispersionThresholdDebug, DispersionExtendedThresholdDebug, DispersionElectronThresholdDebug]
     )
     def test_dispersion_debug_algorithm_symmetry(self, algorithm):
 
