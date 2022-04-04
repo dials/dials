@@ -3,6 +3,8 @@ from __future__ import annotations
 from dials_algorithms_image_threshold_ext import *  # noqa: F403; lgtm
 
 __all__ = (  # noqa: F405
+    "DispersionElectronThreshold",
+    "DispersionElectronThresholdDebug",
     "DispersionExtendedThreshold",
     "DispersionExtendedThresholdDebug",
     "DispersionThreshold",

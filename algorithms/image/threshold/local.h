@@ -786,7 +786,7 @@ namespace dials { namespace algorithms {
    * A class to help debug spot finding by exposing the results of various bits
    * of processing.
    */
-  class DispersionExtendedThresholdDebug {
+  class DispersionElectronThresholdDebug {
   public:
     /**
      * Do the processing.
@@ -798,7 +798,7 @@ namespace dials { namespace algorithms {
      * @param threshold The global threshold value
      * @param min_count The minimum number of pixels in the local area
      */
-    DispersionExtendedThresholdDebug(const af::const_ref<double, af::c_grid<2> > &image,
+    DispersionElectronThresholdDebug(const af::const_ref<double, af::c_grid<2> > &image,
                                      const af::const_ref<bool, af::c_grid<2> > &mask,
                                      int2 size,
                                      double nsig_b,
@@ -819,7 +819,7 @@ namespace dials { namespace algorithms {
      * @param threshold The global threshold value
      * @param min_count The minimum number of pixels in the local area
      */
-    DispersionExtendedThresholdDebug(const af::const_ref<double, af::c_grid<2> > &image,
+    DispersionElectronThresholdDebug(const af::const_ref<double, af::c_grid<2> > &image,
                                      const af::const_ref<bool, af::c_grid<2> > &mask,
                                      const af::const_ref<double, af::c_grid<2> > &gain,
                                      int2 size,
@@ -913,7 +913,7 @@ namespace dials { namespace algorithms {
       chebyshev_distance(cv_mask_.const_ref(), false, distance.ref());
 
       // Erode the strong pixel mask and set a mask containing only strong pixels
-      double erosion_distance = 0.5*std::min(size[0], size[1]);
+      double erosion_distance = 0.5 * std::min(size[0], size[1]);
       af::versa<int, af::c_grid<2> > temp_mask(image.accessor(), 0);
       for (std::size_t i = 0; i < image.size(); ++i) {
         if (temp[i]) {
@@ -951,7 +951,7 @@ namespace dials { namespace algorithms {
   /**
    * A class to compute the threshold using index of dispersion
    */
-  class DispersionExtendedThreshold {
+  class DispersionElectronThreshold {
   public:
     /**
      * Enable more efficient memory usage by putting components required for the
@@ -964,7 +964,7 @@ namespace dials { namespace algorithms {
       T y;
     };
 
-    DispersionExtendedThreshold(int2 image_size,
+    DispersionElectronThreshold(int2 image_size,
                                 int2 kernel_size,
                                 double nsig_b,
                                 double nsig_s,
@@ -1188,7 +1188,7 @@ namespace dials { namespace algorithms {
       chebyshev_distance(src, false, distance.ref());
 
       // The erosion distance
-      double erosion_distance = 0.5*std::min(kernel_size_[0], kernel_size_[1]);
+      double erosion_distance = 0.5 * std::min(kernel_size_[0], kernel_size_[1]);
 
       // Compute the eroded mask
       for (std::size_t k = 0; k < dst.size(); ++k) {
@@ -1371,7 +1371,7 @@ namespace dials { namespace algorithms {
       af::ref<Data<T> > table(reinterpret_cast<Data<T> *>(&buffer_[0]), buffer_.size());
 
       // Initialise a temp mask
-      af::versa< bool, af::c_grid<2> > temp_mask(mask.accessor()); 
+      af::versa<bool, af::c_grid<2> > temp_mask(mask.accessor());
 
       // compute the summed area table
       compute_sat(table, src, mask);
@@ -1416,7 +1416,7 @@ namespace dials { namespace algorithms {
       af::ref<Data<T> > table((Data<T> *)&buffer_[0], buffer_.size());
 
       // Initialise a temp mask
-      af::versa< bool, af::c_grid<2> > temp_mask(mask.accessor()); 
+      af::versa<bool, af::c_grid<2> > temp_mask(mask.accessor());
 
       // compute the summed area table
       compute_sat(table, src, mask);
