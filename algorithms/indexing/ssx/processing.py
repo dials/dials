@@ -143,7 +143,6 @@ def index_all_concurrent(
         img = experiments[idx].imageset.get_image_identifier(idx).split("/")[-1]
         n_strong = n_strong_per_image[img]
         if not (elist and table):
-
             results_summary[idx].append(
                 {
                     "Image": img,
