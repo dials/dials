@@ -163,7 +163,7 @@ def scan_info_from_batch_headers(
         scanax = matrix.col((0, 0, 1))
     M = align_reference_frame(
         matrix.col(batches[0].source()),
-        matrix.col((0, 0, -1)),
+        matrix.col((0, 0, 1)),
         matrix.col(scanax),
         matrix.col((1, 0, 0)),
     )
@@ -602,7 +602,7 @@ only single wavelength MTZ files supported."""
         p = d.add_panel()
         p.set_image_size(panel_size)
         origin = p.get_origin()
-        p.set_frame((1, 0, 0), (0, -1, 0), (origin[0], origin[1], panel_distance))
+        p.set_frame((1, 0, 0), (0, -1, 0), (origin[0], origin[1], -1 * panel_distance))
         experiments.append(
             Experiment(
                 beam=beam,
