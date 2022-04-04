@@ -157,10 +157,14 @@ def scan_info_from_batch_headers(
     batches = unmerged_mtz.batches()
 
     # Determine rotation matrix to convert to the DIALS frame
+    scanax = matrix.col(batches[0].scanax())
+    if scanax.length() == 0.0:
+        # Default for MOSFLM, which does not set scanax
+        scanax = matrix.col((0, 0, 1))
     M = align_reference_frame(
         matrix.col(batches[0].source()),
         matrix.col((0, 0, -1)),
-        matrix.col(batches[0].scanax()),
+        matrix.col(scanax),
         matrix.col((1, 0, 0)),
     )
 
