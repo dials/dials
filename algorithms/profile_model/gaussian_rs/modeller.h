@@ -465,7 +465,7 @@ namespace dials { namespace algorithms {
             flags[i] |= af::IntegratedPrf;
             success[i] = true;
 
-          } catch (dials::error e) {
+          } catch (dials::error const &e) {
             /* std::cout << e.what() << std::endl; */
             continue;
           }
@@ -557,7 +557,7 @@ namespace dials { namespace algorithms {
             flags[i] |= af::IntegratedPrf;
             success[i] = true;
 
-          } catch (dials::error e) {
+          } catch (dials::error const &e) {
             continue;
           }
         }

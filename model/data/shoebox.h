@@ -51,7 +51,7 @@ namespace dials { namespace model {
     try {
       result.px.variance = algorithm.unbiased_variance();
       result.px.std_err_sq = algorithm.mean_sq_error();
-    } catch (dials::error) {
+    } catch (dials::error const &) {
       result.px.variance = vec3<double>(0.0, 0.0, 0.0);
       result.px.std_err_sq = vec3<double>(1.0 / 12.0, 1.0 / 12.0, 1.0 / 12.0);
     }
@@ -328,7 +328,7 @@ namespace dials { namespace model {
         if (bbox[5] == bbox[4] + 1) {
           result.px.position[2] = bbox[4] + 0.5;
         }
-      } catch (dials::error) {
+      } catch (dials::error const &) {
         double xmid = (bbox[1] + bbox[0]) / 2.0;
         double ymid = (bbox[3] + bbox[2]) / 2.0;
         double zmid = (bbox[5] + bbox[4]) / 2.0;
@@ -412,7 +412,7 @@ namespace dials { namespace model {
       try {
         Centroider centroid(foreground_data, foreground_mask);
         result = extract_centroid_object(centroid, offset);
-      } catch (dials::error) {
+      } catch (dials::error const &) {
         double xmid = (bbox[1] + bbox[0]) / 2.0;
         double ymid = (bbox[3] + bbox[2]) / 2.0;
         double zmid = (bbox[5] + bbox[4]) / 2.0;

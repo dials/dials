@@ -1,10 +1,18 @@
+from __future__ import annotations
+
 import itertools
+import logging
 import os
+import pathlib
 import warnings
 
 import psutil
 
 import libtbx.easy_mp
+
+import dials.util
+
+logger = logging.getLogger(__name__)
 
 
 def available_cores() -> int:
@@ -15,6 +23,20 @@ def available_cores() -> int:
     which may not be available on a specific OS and/or version of Python. So try
     them in order and return the first successful one.
     """
+
+    # https://htcondor.readthedocs.io/en/latest/users-manual/services-for-jobs.html#extra-environment-variables-htcondor-sets-for-jobs
+    condor_job_ad = os.environ.get("_CONDOR_JOB_AD")
+    if condor_job_ad:
+        try:
+            classad = dials.util.parse_htcondor_job_classad(pathlib.Path(condor_job_ad))
+        except Exception as e:
+            logger.error(
+                f"Error parsing _CONDOR_JOB_AD {condor_job_ad}: {e}",
+                exc_info=True,
+            )
+        else:
+            if classad.cpus_provisioned:
+                return classad.cpus_provisioned
 
     nproc = os.environ.get("NSLOTS", 0)
     try:
@@ -54,7 +76,6 @@ def parallel_map(
     asynchronous=True,
     callback=None,
     preserve_order=True,
-    preserve_exception_message=...,
     job_category="low",
 ):
     """
@@ -64,12 +85,11 @@ def parallel_map(
     """
     from dials.util.cluster_map import cluster_map as drmaa_parallel_map
 
-    if preserve_exception_message is not Ellipsis:
-        warnings.warn(
-            "keyword argument 'preserve_exception_message' is deprecated",
-            DeprecationWarning,
-            stacklevel=2,
-        )
+    warnings.warn(
+        "The dials.util.parallel_map function is deprecated",
+        UserWarning,
+        stacklevel=2,
+    )
 
     if method == "drmaa":
         return drmaa_parallel_map(
@@ -107,18 +127,11 @@ class __cluster_function_wrapper:
         nproc=1,
         asynchronous=True,
         preserve_order=True,
-        preserve_exception_message=...,
     ):
         self.func = func
         self.nproc = nproc
         self.asynchronous = asynchronous
         self.preserve_order = (preserve_order,)
-        if preserve_exception_message is not Ellipsis:
-            warnings.warn(
-                "keyword argument 'preserve_exception_message' is deprecated",
-                DeprecationWarning,
-                stacklevel=2,
-            )
 
     def __call__(self, iterable):
         return libtbx.easy_mp.parallel_map(
@@ -159,18 +172,11 @@ def multi_node_parallel_map(
     asynchronous=True,
     callback=None,
     preserve_order=True,
-    preserve_exception_message=...,
 ):
     """
     A wrapper function to call a function using multiple cluster nodes and with
     multiple processors on each node
     """
-    if preserve_exception_message is not Ellipsis:
-        warnings.warn(
-            "keyword argument 'preserve_exception_message' is deprecated",
-            DeprecationWarning,
-            stacklevel=2,
-        )
 
     # The function to all on the cluster
     cluster_func = __cluster_function_wrapper(
@@ -178,7 +184,6 @@ def multi_node_parallel_map(
         nproc=nproc,
         asynchronous=asynchronous,
         preserve_order=preserve_order,
-        preserve_exception_message=True,
     )
 
     # Create the cluster iterable
@@ -191,16 +196,32 @@ def multi_node_parallel_map(
         cluster_callback = None
 
     # Do the parallel map on the cluster
-    result = parallel_map(
-        func=cluster_func,
-        iterable=cluster_iterable,
-        callback=cluster_callback,
-        method=cluster_method,
-        nslots=nproc,
-        processes=njobs,
-        asynchronous=asynchronous,
-        preserve_order=preserve_order,
-    )
+    # Call either drmaa or easy_mp to do a parallel map calculation.
+    # This function is set up so that in each case we can select
+    # the number of cores on a machine
+    if cluster_method == "drmaa":
+        from dials.util.cluster_map import cluster_map as drmaa_parallel_map
+
+        result = drmaa_parallel_map(
+            func=cluster_func,
+            iterable=cluster_iterable,
+            callback=cluster_callback,
+            nslots=nproc,
+            njobs=njobs,
+            job_category="low",
+        )
+    else:
+        result = libtbx.easy_mp.parallel_map(
+            func=cluster_func,
+            iterable=cluster_iterable,
+            callback=cluster_callback,
+            method=cluster_method,
+            processes=njobs,
+            qsub_command=f"qsub -pe smp {nproc}",
+            asynchronous=asynchronous,
+            preserve_order=preserve_order,
+            preserve_exception_message=True,
+        )
 
     # return result
     return [item for rlist in result for item in rlist]

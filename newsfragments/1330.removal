@@ -1,1 +1,0 @@
-The previously deprecated ``dials.resolutionizer`` command has been removed. Please use ``dials.estimate_resolution`` instead.

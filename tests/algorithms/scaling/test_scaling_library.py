@@ -2,6 +2,8 @@
 Tests for scaling library module.
 """
 
+from __future__ import annotations
+
 from unittest.mock import Mock, patch
 
 import pytest
@@ -20,9 +22,10 @@ from dials.algorithms.scaling.scaling_library import (
     create_scaling_model,
     determine_best_unit_cell,
     scale_single_dataset,
+    scaled_data_as_miller_array,
 )
 from dials.array_family import flex
-from dials.util.options import OptionParser
+from dials.util.options import ArgumentParser
 
 
 @pytest.fixture
@@ -149,10 +152,8 @@ def generated_param(absorption_term=False):
   """,
         process_includes=True,
     )
-    optionparser = OptionParser(phil=phil_scope, check_format=False)
-    parameters, _ = optionparser.parse_args(
-        args=[], quick_parse=True, show_diff_phil=False
-    )
+    parser = ArgumentParser(phil=phil_scope, check_format=False)
+    parameters, _ = parser.parse_args(args=[], quick_parse=True, show_diff_phil=False)
     parameters.physical.absorption_correction = absorption_term
     parameters.array.absorption_correction = absorption_term
     parameters.array.n_resolution_bins = 1  # to stop example dataset
@@ -345,3 +346,21 @@ def test_determine_best_unit_cell(test_experiments):
     assert determine_best_unit_cell(test_experiments).parameters() == pytest.approx(
         recalc_uc.parameters()
     )
+
+
+def test_scaled_data_as_miller_array(dials_data):
+    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    reflections = flex.reflection_table.from_file(location / "scaled_20_25.refl")
+    experiments = ExperimentList.from_file(
+        location / "scaled_20_25.expt", check_format=False
+    )
+    reflections = [reflections.select(reflections["id"] == i) for i in range(2)]
+    print([refl.size() for refl in reflections])
+
+    miller_array = scaled_data_as_miller_array(reflections, experiments)
+    assert miller_array.size() == 5503
+    assert miller_array.info().wavelength == experiments[0].beam.get_wavelength()
+
+    miller_array = scaled_data_as_miller_array(reflections, experiments, wavelength=1)
+    assert miller_array.size() == 5503
+    assert miller_array.info().wavelength == 1

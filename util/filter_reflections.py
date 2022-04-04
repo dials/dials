@@ -41,6 +41,8 @@ Classes:
       implements filtering methods for using all of prf, sum and scale intensities
 """
 
+from __future__ import annotations
+
 import logging
 from collections import defaultdict
 from typing import Any, List, Type
@@ -78,7 +80,7 @@ def filter_reflection_table(
     reflection_table: flex.reflection_table,
     intensity_choice: List[str],
     *args: Any,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> flex.reflection_table:
     """Filter the data and delete unneeded intensity columns.
 
@@ -520,7 +522,7 @@ class FilterForExportAlgorithm(FilteringReductionMethods):
 
     @classmethod
     def apply_scaling_factors(cls, reflection_table):
-        """Apply the relevent scaling factors including lp, qde, scale etc."""
+        """Apply the relevant scaling factors including lp, qde, scale etc."""
         raise NotImplementedError()
 
 
@@ -803,6 +805,10 @@ def sum_partial_reflections(reflection_table):
     profile fitted reflections. N.B. this will report total partiality for
     the summed reflection.
     """
+
+    if ("partiality" not in reflection_table) or ("partial_id" not in reflection_table):
+        return reflection_table
+
     nrefl = reflection_table.size()
     intensities = []
     for intensity in ["prf", "scale", "sum"]:

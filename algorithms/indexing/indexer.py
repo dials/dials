@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import math
 
@@ -48,7 +50,7 @@ max_cell_estimation
     .expert_level = 2
   step_size = 45
     .type = float(value_min=0)
-    .help = "Step size, in degrees, of the blocks used to peform the max_cell "
+    .help = "Step size, in degrees, of the blocks used to perform the max_cell "
             "estimation."
     .expert_level = 2
   nearest_neighbor_percentile = None
@@ -110,7 +112,7 @@ indexing {
       .help = "Target unit cell for indexing."
     relative_length_tolerance = 0.1
       .type = float
-      .help = "Relative tolerance for unit cell lengths in unit cell comparision."
+      .help = "Relative tolerance for unit cell lengths in unit cell comparison."
       .expert_level = 1
     absolute_angle_tolerance = 5
       .type = float
@@ -245,7 +247,7 @@ indexing {
     candidate_outlier_rejection = True
       .type = bool
       .expert_level = 1
-      .help = If True, while refining candiate basis solutions, also apply Sauter/ \
+      .help = If True, while refining candidate basis solutions, also apply Sauter/ \
               Poon (2010) outlier rejection
     refine_candidates_with_known_symmetry = False
       .type = bool
@@ -472,6 +474,7 @@ class Indexer:
             target_space_group = target_space_group.group()
         else:
             target_space_group = sgtbx.space_group()
+            self.params.known_symmetry.space_group = target_space_group.info()
         self._symmetry_handler = SymmetryHandler(
             unit_cell=target_unit_cell,
             space_group=target_space_group,
@@ -737,18 +740,15 @@ class Indexer:
                 volume_change = abs(uc1.volume() - uc2.volume()) / uc1.volume()
                 cutoff = 0.5
                 if volume_change > cutoff:
-                    msg = (
-                        "\n".join(
-                            (
-                                "Unrealistic unit cell volume increase during refinement of %.1f%%.",
-                                "Please try refining fewer parameters, either by enforcing symmetry",
-                                "constraints (space_group=) and/or disabling experimental geometry",
-                                "refinement (detector.fix=all and beam.fix=all). To disable this",
-                                "sanity check set disable_unit_cell_volume_sanity_check=True.",
-                            )
+                    msg = "\n".join(
+                        (
+                            "Unrealistic unit cell volume increase during refinement of %.1f%%.",
+                            "Please try refining fewer parameters, either by enforcing symmetry",
+                            "constraints (space_group=) and/or disabling experimental geometry",
+                            "refinement (detector.fix=all and beam.fix=all). To disable this",
+                            "sanity check set disable_unit_cell_volume_sanity_check=True.",
                         )
-                        % (100 * volume_change)
-                    )
+                    ) % (100 * volume_change)
                     raise DialsIndexError(msg)
 
     def _apply_symmetry_post_indexing(

@@ -2,6 +2,8 @@
 Command line script to allow merging and truncating of a dials dataset.
 """
 
+from __future__ import annotations
+
 import logging
 import sys
 from io import StringIO
@@ -21,7 +23,7 @@ from dials.algorithms.merging.merge import (
 from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
 from dials.util import Sorry, log, show_mail_handle_errors
 from dials.util.export_mtz import match_wavelengths
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
 help_message = """
@@ -207,11 +209,13 @@ def merge_data_to_mtz(params, experiments, reflections):
 
         anom_amplitudes = None
         if params.truncate:
-            amplitudes, anom_amplitudes = truncate(merged_intensities)
+            amplitudes, anom_amplitudes, dano = truncate(merged_intensities)
             # This will add the data for F, SIGF
             mtz_dataset.amplitudes = amplitudes
             # This will add the data for F(+), F(-), SIGF(+), SIGF(-)
             mtz_dataset.anomalous_amplitudes = anom_amplitudes
+            # This will add the data for DANO, SIGDANO
+            mtz_dataset.dano = dano
 
         # print out analysis statistics
         show_wilson_scaling_analysis(merged_intensities)
@@ -229,7 +233,7 @@ def run(args=None):
     """Run the merging from the command-line."""
     usage = """Usage: dials.merge scaled.refl scaled.expt [options]"""
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         read_experiments=True,
         read_reflections=True,

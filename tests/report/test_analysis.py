@@ -1,5 +1,7 @@
 """Tests for dials.report.analysis module"""
 
+from __future__ import annotations
+
 from unittest import mock
 
 import pytest
@@ -119,6 +121,7 @@ def test_reflections_to_batch_properties(
     experiments = [mock.Mock()]
     experiments[0].scan.get_image_range.return_value = [1, 10]
     experiments[0].crystal = example_crystal
+    experiments[0].beam.get_wavelength.return_value = 1
 
     (
         bins,
@@ -145,8 +148,10 @@ def test_reflections_to_batch_properties(
     experiments = [mock.Mock(), mock.Mock()]
     experiments[0].scan.get_image_range.return_value = [1, 10]
     experiments[0].crystal = example_crystal
+    experiments[0].beam.get_wavelength.return_value = 1
     experiments[1].scan.get_image_range.return_value = [1, 10]
     experiments[1].crystal = example_crystal
+    experiments[1].beam.get_wavelength.return_value = 1
 
     (
         bins,

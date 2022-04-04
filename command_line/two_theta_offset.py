@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from itertools import combinations
 
 from libtbx.phil import parse
@@ -5,7 +7,7 @@ from scitbx import matrix
 from scitbx.math import r3_rotation_axis_and_angle_from_matrix
 
 import dials.util
-from dials.util.options import OptionParser, flatten_experiments
+from dials.util.options import ArgumentParser, flatten_experiments
 
 help_message = """
 
@@ -37,7 +39,7 @@ class Script:
         usage = "usage: dials.two_theta_offset [options] experiment_one.expt experiment_two.expt"
 
         # Create the parser
-        self.parser = OptionParser(
+        self.parser = ArgumentParser(
             usage=usage,
             phil=phil_scope,
             epilog=help_message,
@@ -128,7 +130,7 @@ def component(a, n):
 
 
 def find_centre_of_rotation(x1, x2, y1, y2):
-    """Find centre of rotation which takes postion x1 -> x2 and y1 -> y2"""
+    """Find centre of rotation which takes position x1 -> x2 and y1 -> y2"""
 
     # chords of rotation of x, y
 

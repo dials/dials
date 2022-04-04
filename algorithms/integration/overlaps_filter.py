@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from libtbx.phil import parse
 
 from dials.array_family import flex

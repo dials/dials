@@ -3,6 +3,8 @@ Test refinement of multiple narrow sequences.
 """
 
 
+from __future__ import annotations
+
 import os
 
 import procrunner

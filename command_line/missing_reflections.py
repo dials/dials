@@ -12,6 +12,8 @@ Examples::
   dials.missing_reflections scaled.expt scaled.refl min_component_size=10
 """
 
+from __future__ import annotations
+
 import io
 import logging
 import sys
@@ -24,7 +26,7 @@ import dials.util.log
 from dials.report.analysis import scaled_data_as_miller_array
 from dials.util import missing_reflections, tabulate
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
-from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
+from dials.util.options import ArgumentParser, flatten_experiments, flatten_reflections
 from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.missing_reflections")
@@ -46,7 +48,7 @@ phil_scope = libtbx.phil.parse(
 def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     usage = "dials.missing_reflections [options] scaled.expt scaled.refl"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil,
         read_reflections=True,

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import math
 
 from iotbx import phil
@@ -486,7 +488,7 @@ class image_kapton_correction:
                 self.detector_dist_mm,
                 self.pixel_size_mm,
                 self.wavelength_ang,
-                *map(float, self.panel_size_px)
+                *map(float, self.panel_size_px),
             )
             detector = self.expt.detector
             # y_max = int(detector[0].millimeter_to_pixel(detector[0].get_image_size())[1])
@@ -642,7 +644,7 @@ class multi_kapton_correction:
             if len(refl_zero) > 0 and self.params.smart_sigmas:
                 # process nonzero intensity reflections with smart sigmas as requested
                 # but turn them off for zero intensity reflections to avoid a division by zero
-                # during error propogation. Not at all certain this is the best way.
+                # during error propagation. Not at all certain this is the best way.
                 self.corrected_reflections.extend(
                     correct(refl_nonzero, smart_sigmas=True)
                 )

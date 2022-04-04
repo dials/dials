@@ -3,18 +3,20 @@ This module defines a number of general plots, which may be relevant to
 for reports of several programs.
 """
 
+from __future__ import annotations
+
 import logging
-from collections import OrderedDict
 from io import StringIO
 
 import numpy as np
 from scipy.optimize import least_squares
+from scipy.stats import norm
 
 from cctbx import uctbx
+from dxtbx import flumpy
 from mmtbx.scaling.absolute_scaling import expected_intensity, scattering_information
 from mmtbx.scaling.matthews import matthews_rupp
 from scitbx.array_family import flex
-from scitbx.math import distributions
 
 logger = logging.getLogger("dials")
 
@@ -164,7 +166,7 @@ def i_over_sig_i_vs_i_plot(intensities, sigmas, label=None):
                         "title": "Number of reflections",
                         "titleside": "right",
                     },
-                    "colorscale": "Jet",
+                    "colorscale": "Viridis",
                 }
             ],
             "layout": {
@@ -236,14 +238,12 @@ class IntensityStatisticsPlots:
                 self._xanalysis = None
 
     def generate_resolution_dependent_plots(self):
-        d = OrderedDict()
-        d.update(self.second_moments_plot())
+        d = self.second_moments_plot()
         d.update(self.wilson_plot())
         return d
 
     def generate_miscellanous_plots(self):
-        d = OrderedDict()
-        d.update(self.cumulative_intensity_distribution_plot())
+        d = self.cumulative_intensity_distribution_plot()
         d.update(self.l_test_plot())
         d.update(self.multiplicity_histogram())
         return d
@@ -547,8 +547,7 @@ class ResolutionPlotsAndStats:
 
     def make_all_plots(self, cc_one_half_method=None):
         """Make a dictionary containing all available resolution-dependent plots."""
-        d = OrderedDict()
-        d.update(self.cc_one_half_plot(method=cc_one_half_method))
+        d = self.cc_one_half_plot(method=cc_one_half_method)
         d.update(self.i_over_sig_i_plot())
         d.update(self.completeness_plot())
         d.update(self.multiplicity_vs_resolution_plot())
@@ -871,7 +870,7 @@ class AnomalousPlotter:
             ).array()
 
     def make_plots(self):
-        d = OrderedDict()
+        d = {}
         if self.strong_cutoff > 0.0:
             d.update(self.del_anom_normal_plot(self.strong_merged, self.strong_cutoff))
             d.update(
@@ -1059,35 +1058,28 @@ https://doi.org/10.1107/S0907444905036693
             return {}
         delta = diff_array.data() / diff_array.sigmas()
 
-        norm = distributions.normal_distribution()
+        n = delta.size()
+        y = np.sort(flumpy.to_numpy(delta))
+        d = 0.5 / n
+        v = np.linspace(start=d, stop=1.0 - d, endpoint=True, num=n)
+        x = norm.ppf(v)
 
-        n = len(delta)
-        if n <= 10:
-            a = 3 / 8
-        else:
-            a = 0.5
-
-        y = flex.sorted(delta)
-        x = [norm.quantile((i + 1 - a) / (n + 1 - (2 * a))) for i in range(n)]
-
-        H, xedges, yedges = np.histogram2d(
-            np.array(x), y.as_numpy_array(), bins=(200, 200)
-        )
+        H, xedges, yedges = np.histogram2d(x, y, bins=(200, 200))
         nonzeros = np.nonzero(H)
         z = np.empty(H.shape)
         z[:] = np.NAN
         z[nonzeros] = H[nonzeros]
 
         # also make a histogram
-        histy = flex.histogram(y, n_slots=100)
+        histy = flex.histogram(flumpy.from_numpy(y), n_slots=100)
         # make a gaussian for reference also
-        n = y.size()
+        n = y.size
         width = histy.slot_centers()[1] - histy.slot_centers()[0]
         gaussian = []
         from math import exp, pi
 
         for x in histy.slot_centers():
-            gaussian.append(n * width * exp(-(x ** 2) / 2.0) / ((2.0 * pi) ** 0.5))
+            gaussian.append(n * width * exp(-(x**2) / 2.0) / ((2.0 * pi) ** 0.5))
 
         title = "Normal probability plot of anomalous differences"
         plotname = "normal_distribution_plot"
@@ -1110,7 +1102,7 @@ https://doi.org/10.1107/S0907444905036693
                             "title": "Number of reflections",
                             "titleside": "right",
                         },
-                        "colorscale": "Jet",
+                        "colorscale": "Viridis",
                     },
                     {
                         "x": [-5, 5],

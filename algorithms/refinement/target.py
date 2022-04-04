@@ -2,7 +2,10 @@
 principally Target and ReflectionManager."""
 
 
+from __future__ import annotations
+
 import math
+from typing import Any, Tuple, Union
 
 from libtbx.phil import parse
 from scitbx import sparse
@@ -374,7 +377,7 @@ class Target:
         self.update_matches()
         return self._extract_residuals_and_weights(self._matches)
 
-    def split_matches_into_blocks(self, nproc=1):
+    def split_matches_into_blocks(self, nproc: int = 1):
         """Return a list of the matches, split into blocks according to the
         gradient_calculation_blocksize parameter and the number of processes (if relevant).
         The number of blocks will be set such that the total number of reflections
@@ -409,7 +412,9 @@ class Target:
         blocks.append(self._matches[start:end])
         return blocks
 
-    def compute_residuals_and_gradients(self, block=None):
+    def compute_residuals_and_gradients(
+        self, block=None
+    ) -> Tuple[Any, Union[flex.double, sparse.matrix], Any]:
         """return the vector of residuals plus their gradients and weights for
         non-linear least squares methods"""
 
@@ -454,7 +459,9 @@ class Target:
             return None
 
     @staticmethod
-    def _build_jacobian(grads_each_dim, nelem=None, nparam=None):
+    def _build_jacobian(
+        grads_each_dim, nelem=None, nparam=None
+    ) -> Union[sparse.matrix, flex.double]:
         """construct Jacobian from lists of gradient vectors. The elements of
         grads_each_dim refer to the gradients of each dimension of the problem
         (e.g. dX, dY, dZ). The elements for a single dimension give the arrays
@@ -474,7 +481,7 @@ class Target:
     @staticmethod
     def _concatenate_gradients(grads):
         """concatenate gradient vectors and return a flex.double. This method
-        may be overriden for the case where these vectors use sparse storage"""
+        may be overridden for the case where these vectors use sparse storage"""
 
         result = grads[0]
         for g in grads[1:]:
@@ -593,7 +600,7 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
             self._binsize_cutoffs = absolute_cutoffs
 
     @staticmethod
-    def _extract_residuals_and_weights(matches):
+    def _extract_residuals_and_weights(matches) -> Tuple[flex.double, Any]:
 
         # return residuals and weights as 1d flex.double vectors
         residuals = flex.double.concatenate(matches["x_resid"], matches["y_resid"])
@@ -660,12 +667,16 @@ class SparseGradientsMixin:
 
         # loop over parameters, building full width blocks of the full Jacobian
         for i in range(nparam):
-            for block, grad in zip(blocks, grads_each_dim):
+            for j, block in enumerate(blocks):
+                grad = grads_each_dim[j]
                 block[:, i] = grad[i]
+                # Having copied this block, delete the source data
+                grads_each_dim[j][i] = None
 
         # set the blocks in the Jacobian
         for i, block in enumerate(blocks):
             jacobian.assign_block(block, (i * nref), 0)
+            blocks[i] = None
 
         return jacobian
 

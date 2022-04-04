@@ -1,5 +1,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dials.import
 
+from __future__ import annotations
+
 import logging
 import pickle
 from collections import namedtuple
@@ -94,9 +96,9 @@ phil_scope = parse(
 
   input {
 
-    ignore_unhandled = False
+    ignore_unhandled = True
       .type = bool
-      .help = "Don't throw exception if some args are unhandled"
+      .help = "Ignore unhandled input (e.g. log files)"
 
     template = None
       .type = str
@@ -217,6 +219,7 @@ def _extract_or_read_imagesets(params):
         # Check if a template has been set and print help if not, otherwise try to
         # import the images based on the template input
         if len(params.input.template) > 0:
+
             experiments = ExperimentListFactory.from_templates(
                 params.input.template,
                 image_range=params.geometry.scan.image_range,
@@ -741,11 +744,11 @@ class ImageImporter:
 
     def __init__(self, phil=phil_scope):
         """Set the expected options."""
-        from dials.util.options import OptionParser
+        from dials.util.options import ArgumentParser
 
         # Create the option parser
         usage = "dials.import [options] /path/to/image/files"
-        self.parser = OptionParser(
+        self.parser = ArgumentParser(
             usage=usage,
             sort_options=True,
             phil=phil,

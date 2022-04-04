@@ -2,6 +2,8 @@
 Tools for analysis of missing reflections.
 """
 
+from __future__ import annotations
+
 from annlib_ext import AnnAdaptor
 
 import cctbx.miller
@@ -61,7 +63,7 @@ def connected_components(
         vertex_type="vector",
         edge_type="set",
     )
-    distance_cutoff = 2 ** 0.5
+    distance_cutoff = 2**0.5
     for i in range(missing_set.size()):
         ik = i * k
         for i_ann in range(k):

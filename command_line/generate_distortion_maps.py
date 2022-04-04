@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import math
 import pickle
@@ -7,7 +9,7 @@ from scitbx import matrix
 
 from dials.array_family import flex
 from dials.util import Sorry, log, show_mail_handle_errors
-from dials.util.options import OptionParser, flatten_experiments
+from dials.util.options import ArgumentParser, flatten_experiments
 from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.generate_distortion_maps")
@@ -106,10 +108,10 @@ def ellipse_matrix_form(phi, l1, l2):
     cphi = math.cos(phi)
     sphi = math.sin(phi)
 
-    a11 = l1 * cphi ** 2 + l2 * sphi ** 2
+    a11 = l1 * cphi**2 + l2 * sphi**2
     a12 = (l2 - l1) * sphi * cphi
     a21 = a12
-    a22 = l1 * sphi ** 2 + l2 * cphi ** 2
+    a22 = l1 * sphi**2 + l2 * cphi**2
 
     assert a11 * a22 - 2 * a12 > 0.0
 
@@ -169,7 +171,7 @@ def make_dx_dy_ellipse(imageset, phi, l1, l2, centre_xy):
 def run(args=None):
     usage = "dials.generate_distortion_maps [options] image_*.cbf"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=scope,
         read_experiments=True,

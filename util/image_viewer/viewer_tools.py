@@ -3,6 +3,8 @@ Various tools/controls used by the image viewer
 """
 
 
+from __future__ import annotations
+
 import wx
 import wx.lib.newevent
 from orderedset import OrderedSet
@@ -109,7 +111,7 @@ class ImageChooserControl(wx.Control):
         # Fix the slider height so that we can fit the whole text in
         w, h = self.GetSize()
         self._slider.SetMinSize((w, h - self.size_y))
-        # Delgate to the sizers for the rest of the calculation
+        # Delegate to the sizers for the rest of the calculation
         super().Layout()
 
     def set_temporary_label(self, label):

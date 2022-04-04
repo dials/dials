@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import math
 import pickle
 import random
@@ -78,7 +80,7 @@ def evaluate_gaussian(x, a, x0, sx):
 
     g = 0.0
     for xi, x0i, sxi in zip(x, x0, sx):
-        g += (xi - x0i) ** 2 / (2.0 * sxi ** 2)
+        g += (xi - x0i) ** 2 / (2.0 * sxi**2)
 
     return a * math.exp(-g)
 

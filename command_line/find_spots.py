@@ -1,6 +1,8 @@
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
 
+from __future__ import annotations
+
 import logging
 
 from libtbx.phil import parse
@@ -11,7 +13,7 @@ from dials.array_family import flex
 from dials.util import log, show_mail_handle_errors
 from dials.util.ascii_art import spot_counts_per_image_plot
 from dials.util.multi_dataset_handling import generate_experiment_identifiers
-from dials.util.options import OptionParser, flatten_experiments
+from dials.util.options import ArgumentParser, flatten_experiments
 from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.find_spots")
@@ -105,7 +107,7 @@ class Script:
         )
 
         # Initialise the base class
-        self.parser = OptionParser(
+        self.parser = ArgumentParser(
             usage=usage,
             phil=phil,
             epilog=help_message,
@@ -177,12 +179,12 @@ class Script:
             if experiment.imageset not in imagesets:
                 imagesets.append(experiment.imageset)
 
-        for imageset in imagesets:
+        for i, imageset in enumerate(imagesets):
             selected = flex.bool(reflections.nrows(), False)
-            for i, experiment in enumerate(experiments):
+            for j, experiment in enumerate(experiments):
                 if experiment.imageset is not imageset:
                     continue
-                selected.set_selected(reflections["id"] == i, True)
+                selected.set_selected(reflections["id"] == j, True)
             ascii_plot = spot_counts_per_image_plot(reflections.select(selected))
             if len(ascii_plot):
                 logger.info("\nHistogram of per-image spot count for imageset %i:", i)
@@ -236,7 +238,7 @@ class Script:
 @show_mail_handle_errors()
 def run(args=None):
     script = Script()
-    script.run(args)
+    return script.run(args)
 
 
 if __name__ == "__main__":

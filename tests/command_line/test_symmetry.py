@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import math
 
@@ -56,7 +58,7 @@ def test_symmetry_laue_only(dials_data, tmpdir):
     assert len(set(joint_reflections["imageset_id"])) == 2
     for id_ in range(2):
         sel = joint_reflections["id"] == id_
-        assert set(joint_reflections["imageset_id"].select(sel)) == set([id_])
+        assert set(joint_reflections["imageset_id"].select(sel)) == {id_}
 
 
 def test_symmetry_basis_changes_for_C2(run_in_tmpdir):
@@ -232,15 +234,11 @@ def test_map_to_minimum_cell():
     )
     cb_ops_as_xyz = [cb_op.as_xyz() for cb_op in cb_ops]
     # Actual cb_ops are machine dependent (sigh)
-    assert (
-        cb_ops_as_xyz
-        == [
-            "-x+y,-2*y,z",
-            "-x+z,-z,-y",
-            "x+y,-2*x,z",
-        ]
-        or cb_ops_as_xyz == ["x-y,2*y,z", "x-z,z,-y", "-x-y,2*x,z"]
-    )
+    assert cb_ops_as_xyz == [
+        "-x+y,-2*y,z",
+        "-x+z,-z,-y",
+        "x+y,-2*x,z",
+    ] or cb_ops_as_xyz == ["x-y,2*y,z", "x-z,z,-y", "-x-y,2*x,z"]
 
     expts_min, reflections = apply_change_of_basis_ops(expts, reflections, cb_ops)
     # Verify that the unit cells have been transformed as expected

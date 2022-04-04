@@ -76,11 +76,11 @@ namespace dials { namespace algorithms { namespace background {
           af::tiny<FloatType, 2> r = this->operator()(shoeboxes[i]);
           mse[i] = r[0];
           dispersion[i] = r[1];
-        } catch (dials::error) {
+        } catch (dials::error const &) {
           result[i] = false;
           mse[i] = 0.0;
           dispersion[i] = 0.0;
-        } catch (std::runtime_error) {
+        } catch (std::runtime_error const &) {
           result[i] = false;
           mse[i] = 0.0;
           dispersion[i] = 0.0;
@@ -121,9 +121,9 @@ namespace dials { namespace algorithms { namespace background {
 
           // Need to set the background in volume
           v.set_background(b, bgrd.const_ref());
-        } catch (scitbx::error) {
+        } catch (scitbx::error const &) {
           success[i] = false;
-        } catch (dials::error) {
+        } catch (dials::error const &) {
           success[i] = false;
         }
       }

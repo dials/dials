@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dials.algorithms.refinement.outlier_detection.outlier_base import CentroidOutlier
 from dials.algorithms.statistics.fast_mcd import FastMCD, maha_dist_sq
 from dials_refinement_helpers_ext import qchisq
@@ -14,7 +16,9 @@ class MCD(CentroidOutlier):
         min_num_obs=20,
         separate_experiments=True,
         separate_panels=True,
+        separate_images=False,
         block_width=None,
+        nproc=1,
         alpha=0.5,
         max_n_groups=5,
         min_group_size=300,
@@ -33,7 +37,9 @@ class MCD(CentroidOutlier):
             min_num_obs=min_num_obs,
             separate_experiments=separate_experiments,
             separate_panels=separate_panels,
+            separate_images=separate_images,
             block_width=block_width,
+            nproc=nproc,
         )
 
         # Keep the FastMCD options here

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys
 
 from libtbx import phil
@@ -8,7 +10,7 @@ from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
     parse_multiple_datasets,
 )
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 
 help_message = """Command line script which assigns experiment identifiers
 to reflections and experiments and saves them back to disk.
@@ -36,7 +38,7 @@ def run(args=None):
     usage = (
         """Usage: dials.assign_experiment_identifiers observations.refl models.expt"""
     )
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         read_experiments=True,
         read_reflections=True,

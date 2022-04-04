@@ -37,7 +37,7 @@ namespace dials { namespace model {
       /** Construct with values */
       PositionData(vec3<double> px_, vec3<double> mm_) : px(px_), mm(mm_) {}
 
-      /** Construct with seperate values */
+      /** Construct with separate values */
       PositionData(vec2<double> px_, double frame_, vec2<double> mm_, double angle_)
           : px(px_[0], px_[1], frame_), mm(mm_[0], mm_[1], angle_) {}
 

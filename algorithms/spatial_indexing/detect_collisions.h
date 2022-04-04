@@ -196,7 +196,7 @@ namespace dials { namespace algorithms {
    * a collision is encountered then the pair of indices are added
    * to a list. The list assumes there is a method "push_back" where new
    * elements can be added. Additionally it assumes that it defines a
-   * dependant type "value_type" (which could be a std::pair<int, int>)
+   * dependent type "value_type" (which could be a std::pair<int, int>)
    * whose constructor takes two indices.
    *
    * @tparam Iterator The type of random access iterator
@@ -341,7 +341,7 @@ namespace dials { namespace algorithms {
      *
      * The list assumes there is a method "push_back" where new
      * elements can be added. Additionally it assumes that it defines a
-     * dependant type "value_type" (which could be a std::pair<int, int>)
+     * dependent type "value_type" (which could be a std::pair<int, int>)
      * whose constructor takes two indices.
      *
      * @param first The first iterator in the range
@@ -367,7 +367,7 @@ namespace dials { namespace algorithms {
       }
 
       // Calculate the maximum depth we can go to. Make sure that max depth
-      // is atleast twice the size of the smallest object or zero.
+      // is at least twice the size of the smallest object or zero.
       CoordType min_length = box.max[0] - box.min[0];
       std::size_t j = 0;
       for (std::size_t i = 0; i < DIM; ++i) {
@@ -401,8 +401,8 @@ namespace dials { namespace algorithms {
      * there fewer elements than the hard coded threshold to do a brute-force
      * search of collisions.
      *
-     * If we haven't reached the exit criteria then split the bouding box in
-     * half along the current axis. Parition the index array so that all
+     * If we haven't reached the exit criteria then split the bounding box in
+     * half along the current axis. Partition the index array so that all
      * elements with the lower bound of their bounding box less than the split
      * are to the left and all those greater to the right. Then partition along
      * the next axis recursively.
@@ -415,7 +415,7 @@ namespace dials { namespace algorithms {
      * next axis recursively.
      *
      * Once the exit condition has been met, do a brute-force search for
-     * collisions amoung the remaining elements.
+     * collisions among the remaining elements.
      *
      * @todo The algorithm uses a dumb max recursion depth to exit, this could
      *    be improved on since it is non-optimal for highly clustered data with
@@ -429,8 +429,8 @@ namespace dials { namespace algorithms {
      * @param last The iterator pointing to the end of the range to partition
      * @param data The start of the data range
      * @param collisions The collision list
-     * @param box The bouding box of the range we're to partition
-     * @param depth The current recusion depth.
+     * @param box The bounding box of the range we're to partition
+     * @param depth The current recursion depth.
      */
     template <int D>
     void partition_data(IndexIterator first,
@@ -442,7 +442,7 @@ namespace dials { namespace algorithms {
       // The next dimensions: X -> Y -> Z -> X ...
       const int D_NEXT = (D + 1) % DIM;
 
-      // Keep recusing until we either reach the maximum recusion depth or
+      // Keep recursing until we either reach the maximum recursion depth or
       // the threshold of number of objects for brute force search is reached.
       if (depth < max_depth_ && last - first > BF_THRESHOLD) {
         IndexIterator mid;
@@ -473,13 +473,13 @@ namespace dials { namespace algorithms {
 
       } else {
         // If the stopping condition has been met, then proceed with a
-        // brute-force search for all the collison in the current level.
+        // brute-force search for all the collision in the current level.
         detect_brute_force_w_check(first, last, data, collisions, box);
       }
     }
 
     /**
-     * Parition the data based on the lower bound of the data in the given
+     * Partition the data based on the lower bound of the data in the given
      * axis. All elements with their lower bound lower than the split to the
      * left, all others to the right.
      */
@@ -496,7 +496,7 @@ namespace dials { namespace algorithms {
     };
 
     /**
-     * Parition the data based on the upper bound of the data in the given
+     * Partition the data based on the upper bound of the data in the given
      * axis. All elements with their upper bound lower than the split to the
      * left, all others to the right.
      */

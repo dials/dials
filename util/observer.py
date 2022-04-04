@@ -4,8 +4,9 @@ Define an interface for observers and subjects.
 A singleton decorator is also defined.
 """
 
+from __future__ import annotations
+
 import functools
-from collections import OrderedDict
 
 
 def singleton(cls):
@@ -32,7 +33,7 @@ class Subject:
     def __init__(self, events):
         self.observers = {}
         for event in events:
-            self.observers[event] = OrderedDict()
+            self.observers[event] = {}
 
     @staticmethod
     def notify_event(event):

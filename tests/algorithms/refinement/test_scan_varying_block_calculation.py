@@ -3,6 +3,8 @@ for scan-varying refinement. This exercises the issue originally flagged in
 https://github.com/dials/dials/issues/511"""
 
 
+from __future__ import annotations
+
 from math import pi
 
 import pytest

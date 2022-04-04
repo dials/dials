@@ -1,10 +1,13 @@
+from __future__ import annotations
+
 import logging
+import sys
 
 from libtbx.phil import parse
 
 from dials.algorithms.statistics.cc_half_algorithm import CCHalfFromDials, CCHalfFromMTZ
 from dials.util import log, show_mail_handle_errors
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 
 logger = logging.getLogger("dials.command_line.compute_delta_cchalf")
 
@@ -89,7 +92,7 @@ def run(args=None, phil=phil_scope):
 
     usage = "dials.compute_delta_cchalf [options] scaled.expt scaled.refl"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil,
         epilog=help_message,
@@ -111,7 +114,10 @@ def run(args=None, phil=phil_scope):
             parser.print_help()
             return
         else:
-            script = CCHalfFromMTZ(params, params.input.mtzfile)
+            try:
+                script = CCHalfFromMTZ(params, params.input.mtzfile)
+            except ValueError as e:
+                sys.exit(f"Error: {e}")
     else:
         if not experiments or not reflections:
             parser.print_help()
@@ -129,7 +135,10 @@ of datasets in the reflection table (%s)
                     len(experiments),
                     n_datasets,
                 )
-            script = CCHalfFromDials(params, experiments, reflections[0])
+            try:
+                script = CCHalfFromDials(params, experiments, reflections[0])
+            except ValueError as e:
+                sys.exit(f"Error: {e}")
 
     script.run()
     script.output()

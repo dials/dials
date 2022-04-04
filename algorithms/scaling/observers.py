@@ -2,14 +2,16 @@
 Helper functions/classes for making HTML report and scaling summary output.
 """
 
+from __future__ import annotations
+
 import json
 import logging
-from collections import OrderedDict
 
 from jinja2 import ChoiceLoader, Environment, PackageLoader
 from orderedset import OrderedSet
 
 from cctbx import uctbx
+from dxtbx import flumpy
 from scitbx.array_family import flex
 
 from dials.algorithms.scaling.error_model.error_model import (
@@ -196,7 +198,9 @@ def _make_scaling_html(scaling_script):
     if not (html_file or json_file):
         return
     data = {}
-    data.update(make_scaling_model_plots(scaling_script.experiments))
+    data.update(
+        make_scaling_model_plots(scaling_script.experiments, scaling_script.reflections)
+    )
     data.update(
         make_outlier_plots(scaling_script.reflections, scaling_script.experiments)
     )
@@ -238,15 +242,15 @@ def _make_scaling_html(scaling_script):
             json.dump(data, outfile)
 
 
-def make_scaling_model_plots(experiments):
+def make_scaling_model_plots(experiments, reflection_tables):
     """Collect scaling model plots for html report."""
-    data = {i: e.scaling_model.to_dict() for i, e in enumerate(experiments)}
-    d = OrderedDict()
+    data = {i: e.scaling_model for i, e in enumerate(experiments)}
+    d = {}
     combined_plots = make_combined_plots(data)
     if combined_plots:
         d.update(combined_plots)
     for key in sorted(data.keys()):
-        scaling_model_plots = plot_scaling_models(data[key])
+        scaling_model_plots = plot_scaling_models(data[key], reflection_tables[key])
         for plot in scaling_model_plots.values():
             plot["layout"]["title"] += f" (dataset {key})"
         for name, plot in scaling_model_plots.items():
@@ -276,13 +280,13 @@ def print_scaling_model_error_summary(experiments):
         frac_high_uncertainty = (log_p_sigmas < 0.69315).count(True) / len(log_p_sigmas)
         if frac_high_uncertainty > 0.5:
             msg = (
-                "Warning: Over half ({:.2f}%) of model parameters have signficant\n"
+                "Warning: Over half ({:.2f}%) of model parameters have significant\n"
                 "uncertainty (sigma/abs(parameter) > 0.5), which could indicate a\n"
                 "poorly-determined scaling problem or overparameterisation.\n"
             ).format(frac_high_uncertainty * 100)
         else:
             msg = (
-                "{:.2f}% of model parameters have signficant uncertainty\n"
+                "{:.2f}% of model parameters have significant uncertainty\n"
                 "(sigma/abs(parameter) > 0.5)\n"
             ).format(frac_high_uncertainty * 100)
     return msg
@@ -308,7 +312,7 @@ def make_outlier_plots(reflection_tables, experiments):
             "image_size": expt.detector[0].get_image_size(),
             "z_range": zrange,
         }
-    d = OrderedDict()
+    d = {}
     for key in sorted(data):
         outlier_plots = plot_outliers(data[key])
         for plot in outlier_plots.values():
@@ -360,7 +364,11 @@ def make_error_model_plots(params, experiments):
         for i, emd in enumerate(error_model_data):
             d["error_model_plots"].update(normal_probability_plot(emd, label=i + 1))
             d["error_model_plots"].update(
-                i_over_sig_i_vs_i_plot(emd["intensity"], emd["sigma"], label=i + 1)
+                i_over_sig_i_vs_i_plot(
+                    flumpy.from_numpy(emd["intensity"]),
+                    flumpy.from_numpy(emd["sigma"]),
+                    label=i + 1,
+                )
             )
             d["error_model_plots"].update(error_model_variance_plot(emd, label=i + 1))
             if "regression_x" in emd:
@@ -387,10 +395,10 @@ def make_merging_stats_plots(script):
     """Make merging stats plots for HTML report"""
     d = {
         "scaling_tables": ([], []),
-        "resolution_plots": OrderedDict(),
-        "batch_plots": OrderedDict(),
-        "misc_plots": OrderedDict(),
-        "anom_plots": OrderedDict(),
+        "resolution_plots": {},
+        "batch_plots": {},
+        "misc_plots": {},
+        "anom_plots": {},
         "image_range_tables": [],
     }
     (

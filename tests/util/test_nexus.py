@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 def test_run(dials_regression, run_in_tmpdir):
     from os.path import join
 

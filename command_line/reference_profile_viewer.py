@@ -9,6 +9,8 @@ Examples::
   dials.reference_profile_viewer reference_profiles.pickle
 """
 
+from __future__ import annotations
+
 import copy
 import os
 import pickle
@@ -27,7 +29,7 @@ from matplotlib.figure import Figure
 
 import dials.util
 import dials.util.log
-from dials.util.options import OptionParser
+from dials.util.options import ArgumentParser
 
 
 class ProfilesFrame(wx.Frame):
@@ -246,7 +248,6 @@ class ProfilesFrame(wx.Frame):
 
 class ProfileStore:
     def __init__(self, filename):
-
         with open(filename, "rb") as f:
             data = pickle.load(f)
 
@@ -255,9 +256,8 @@ class ProfileStore:
             self._experiment_data.append(self._process_experiment(d))
 
     def _process_experiment(self, data):
-
         # Reorganise data by Z block
-        z_blocks = set(e["coord"][2] for e in data)
+        z_blocks = {e["coord"][2] for e in data}
         z_blocks = dict.fromkeys(z_blocks)
         for model in data:
             z_coord = model["coord"][2]
@@ -278,8 +278,8 @@ class ProfileStore:
 
     @staticmethod
     def _process_block(block):
-        x_coords = sorted(set(e["coord"][0] for e in block))
-        y_coords = sorted(set(e["coord"][1] for e in block))
+        x_coords = sorted({e["coord"][0] for e in block})
+        y_coords = sorted({e["coord"][1] for e in block})
 
         for profile in block:
             x, y, _ = profile["coord"]
@@ -305,7 +305,7 @@ class ProfileStore:
 def run():
     dials.util.log.print_banner()
     usage = "dials.reference_profile_viewer [options] reference_profiles.pickle"
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         read_reflections=False,
         read_experiments=False,

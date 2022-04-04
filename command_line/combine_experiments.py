@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import os
 import random
@@ -21,7 +23,7 @@ import dials.util
 from dials.algorithms.integration.stills_significance_filter import SignificanceFilter
 from dials.array_family import flex
 from dials.util import tabulate
-from dials.util.options import OptionParser, flatten_experiments
+from dials.util.options import ArgumentParser, flatten_experiments
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +35,7 @@ matched to reflections in the order they are provided as input.
 
 Reference models can be chosen from any of the input experiments files. These
 will replace all other models of that type in the output experiments file.
-This is useful, for example, for combining mutiple experiments that should
+This is useful, for example, for combining multiple experiments that should
 differ only in their crystal models. No checks are made to ensure that a
 reference model is a good replacement model.
 
@@ -160,7 +162,7 @@ phil_scope = parse(
       .type = int
       .expert_level = 2
       .help = "If not None, split the resultant combined set of experiments"
-              "into seperate files, each at most max_batch_size number of"
+              "into separate files, each at most max_batch_size number of"
               "experiments. Example, if there were 5500 experiments and"
               "max_batch_size is 1000, 6 experiment lists will be created,"
               "of sizes 917, 917, 917, 917, 916, 916"
@@ -384,7 +386,7 @@ class Script:
         )
 
         # Create the parser
-        self.parser = OptionParser(
+        self.parser = ArgumentParser(
             usage=usage,
             phil=phil_scope,
             read_reflections=True,

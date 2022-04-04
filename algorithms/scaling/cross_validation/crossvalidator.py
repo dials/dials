@@ -3,6 +3,8 @@ This module defines an abstract CrossValidator and an implementation of a
 cross validator for dials.scale
 """
 
+from __future__ import annotations
+
 import itertools
 from copy import deepcopy
 
@@ -185,7 +187,7 @@ is provided. For example, physical.decay_correction rather than decay_correction
         if params.model:
             phil_branches.append(params.__getattribute__(str(params.model)))
         elif ("." in name) and (name.split(".")[0] in available_models):
-            # if the user hasnt specified the model, but have done
+            # if the user hasn't specified the model, but have done
             # e.g physical.parameter = *, then set model=physical
             params.model = name.split(".")[0]
             phil_branches.append(params.__getattribute__(str(params.model)))

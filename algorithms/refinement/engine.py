@@ -2,20 +2,24 @@
 LevenbergMarquardtIterations, GaussNewtonIterations, SimpleLBFGS and LBFGScurvs
 are the current concrete implementations"""
 
+from __future__ import annotations
 
 import copy
 import json
 import logging
 from io import StringIO
+from typing import List, Union
 
 import libtbx
 from libtbx import easy_mp
 from libtbx.phil import parse
-from scitbx import lbfgs
+from scitbx import lbfgs, sparse
 from scitbx.array_family import flex
 from scitbx.lstbx import normal_eqns, normal_eqns_solving
 
 from dials.algorithms.refinement import DialsRefineRuntimeError
+
+from .target import Target
 
 logger = logging.getLogger(__name__)
 
@@ -66,9 +70,18 @@ refinery
               "each step of refinement."
       .type = bool
 
+    track_jacobian_structure = False
+      .help = "Record numbers of explicit and structural zeroes in each column"
+              "of the Jacobian at each step of refinement."
+      .type = bool
+
     track_condition_number = False
       .help = "Record condition number of the Jacobian for each step of "
               "refinement."
+      .type = bool
+
+    track_normal_matrix = False
+      .help = "Record the full normal matrix at each step of refinement"
       .type = bool
 
     track_out_of_sample_rmsd = False
@@ -168,7 +181,7 @@ class Refinery:
 
     def __init__(
         self,
-        target,
+        target: Target,
         prediction_parameterisation,
         constraints_manager=None,
         log=None,
@@ -191,7 +204,7 @@ class Refinery:
         # undefined initial functional and gradients values
         self._f = None
         self._g = None
-        self._jacobian = None
+        self._jacobian: Union[flex.double, sparse.matrix, None] = None
 
         # filename for an optional log file
         self._log = log
@@ -207,21 +220,27 @@ class Refinery:
         self.history = Journal()
         self.history.add_column("num_reflections")
         self.history.add_column("objective")  # flex.double()
-        if tracking.track_gradient:
-            self.history.add_column("gradient")
         self.history.add_column("gradient_norm")  # flex.double()
-        if tracking.track_parameter_correlation:
-            self.history.add_column("parameter_correlation")
-        if tracking.track_step:
-            self.history.add_column("solution")
-        if tracking.track_out_of_sample_rmsd:
-            self.history.add_column("out_of_sample_rmsd")
         self.history.add_column("solution_norm")  # flex.double()
         self.history.add_column("parameter_vector")
         self.history.add_column("parameter_vector_norm")  # flex.double()
         self.history.add_column("rmsd")
+
+        # Optional tracking
+        if tracking.track_step:
+            self.history.add_column("solution")
+        if tracking.track_gradient:
+            self.history.add_column("gradient")
+        if tracking.track_parameter_correlation:
+            self.history.add_column("parameter_correlation")
         if tracking.track_condition_number:
             self.history.add_column("condition_number")
+        if tracking.track_jacobian_structure:
+            self.history.add_column("jacobian_structure")
+        if tracking.track_normal_matrix:
+            self.history.add_column("normal_matrix")
+        if tracking.track_out_of_sample_rmsd:
+            self.history.add_column("out_of_sample_rmsd")
 
         # number of processes to use, for engines that support multiprocessing
         self._nproc = 1
@@ -265,6 +284,8 @@ class Refinery:
             for r, j in zip(resid_names, jblocks):
                 corrmats[r] = self._packed_corr_mat(j)
             self.history.set_last_cell("parameter_correlation", corrmats)
+        if "jacobian_structure" in self.history and self._jacobian is not None:
+            self.history.set_last_cell("jacobian_structure", self._jacobian_structure())
         if "condition_number" in self.history and self._jacobian is not None:
             self.history.set_last_cell(
                 "condition_number", self.jacobian_condition_number()
@@ -275,15 +296,15 @@ class Refinery:
                 "out_of_sample_rmsd", self._target.rmsds_for_reflection_table(preds)
             )
 
-    def split_jacobian_into_blocks(self):
+    def split_jacobian_into_blocks(self) -> List[flex.double]:
         """Split the Jacobian into blocks each corresponding to a separate
-        residual"""
+        residual, converting sparse to flex.double if appropriate"""
 
         nblocks = len(self._target.rmsd_names)
 
         try:
             # The Jacobian might be a sparse matrix
-            j = self._jacobian.as_dense_matrix()
+            j: flex.double = self._jacobian.as_dense_matrix()
         except AttributeError:
             j = self._jacobian
 
@@ -295,28 +316,18 @@ class Refinery:
         return blocks
 
     @staticmethod
-    def _packed_corr_mat(m):
-        """Return a 1D flex array containing the upper diagonal values of the
-        correlation matrix calculated between columns of 2D matrix m"""
+    def _packed_corr_mat(m: flex.double) -> List[float]:
+        """Return a list containing the upper diagonal values of the
+        correlation matrix calculated between columns of 2D matrix flex.double
+        matrix m"""
 
-        nr, nc = m.all()
+        _, nc = m.all()
 
-        try:  # convert a flex.double matrix to sparse
-            from scitbx import sparse
-
-            m2 = sparse.matrix(nr, nc)
-            m2.assign_block(m, 0, 0)
-            m = m2
-        except AttributeError:
-            pass  # assume m is already scitbx_sparse_ext.matrix
-
-        packed_len = (m.n_cols * (m.n_cols + 1)) // 2
-        i = 0
-        tmp = flex.double(packed_len)
-        for col1 in range(m.n_cols):
-            for col2 in range(col1, m.n_cols):
+        tmp = []
+        for col1 in range(nc):
+            for col2 in range(col1, nc):
                 if col1 == col2:
-                    tmp[i] = 1.0
+                    tmp.append(1.0)
                 else:
                     # Avoid spuriously high correlation between a column that should be
                     # zero (such as the gradient of X residuals wrt the Shift2 parameter)
@@ -324,10 +335,9 @@ class Refinery:
                     # Dist parameter) by rounding values to 15 places. It seems that such
                     # spurious correlations may occur in cases where gradients are
                     # calculated to be zero by matrix operations, rather than set to zero.
-                    v1 = m.col(col1).as_dense_vector().round(15)
-                    v2 = m.col(col2).as_dense_vector().round(15)
-                    tmp[i] = flex.linear_correlation(v1, v2).coefficient()
-                i += 1
+                    v1 = m.matrix_copy_column(col1).round(15)
+                    v2 = m.matrix_copy_column(col2).round(15)
+                    tmp.append(flex.linear_correlation(v1, v2).coefficient())
 
         return tmp
 
@@ -454,12 +464,41 @@ class Refinery:
     def run(self):
         """
         To be implemented by derived class. It is expected that each step of
-        refinement be preceeded by a call to prepare_for_step and followed by
+        refinement be preceded by a call to prepare_for_step and followed by
         calls to update_journal and test_for_termination (in that order).
         """
 
         # Specify a minimizer and its parameters, and run
         raise NotImplementedError()
+
+    def _dump_normal_matrix(self):
+        """Output the full normal matrix at the current step as a string for debugging."""
+        try:
+            s = (
+                self.normal_matrix_packed_u()
+                .matrix_packed_u_as_symmetric()
+                .as_scitbx_matrix()
+                .matlab_form(format=None, one_row_per_line=True)
+            )
+        except AttributeError:
+            s = "Unavailable"
+        return s
+
+    def _jacobian_structure(self):
+        """Calculate the structure of the Jacobian matrix and output as a table for
+        display"""
+        result = []
+        p_names = self._parameters.get_param_names()
+        for name, col in zip(p_names, self._jacobian.cols()):
+            result.append(
+                {
+                    "parameter": name,
+                    "nrows": col.size,
+                    "structural_zeroes": (col.size - col.non_zeroes),
+                    "all_zeroes": ((col.as_dense_vector() == 0.0).count(True)),
+                }
+            )
+        return result
 
 
 class DisableMPmixin:
@@ -717,13 +756,16 @@ class AdaptLstbx(Refinery, normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_
                 for block in blocks:
                     (
                         residuals,
-                        self._jacobian,
+                        jacobian,
                         weights,
                     ) = self._target.compute_residuals_and_gradients(block)
-                    j = self._jacobian
                     if self._constr_manager is not None:
-                        j = self._constr_manager.constrain_jacobian(j)
-                    self.add_equations(residuals, j, weights)
+                        jacobian = self._constr_manager.constrain_jacobian(jacobian)
+
+                    self.add_equations(residuals, jacobian, weights)
+
+                # Keep reference to the Jacobian in case required by the Journal
+                self._jacobian = jacobian
 
         # restraints terms
         restraints = self._target.compute_restraints_residuals_and_gradients()
@@ -789,17 +831,6 @@ class AdaptLstbx(Refinery, normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_
         s = flex.sqrt(s2)
         self._parameters.set_param_esds(s)
 
-    def _print_normal_matrix(self):
-        """Print the full normal matrix at the current step. For debugging only"""
-        logger.debug("The normal matrix for the current step is:")
-        logger.debug(
-            self.normal_matrix_packed_u()
-            .matrix_packed_u_as_symmetric()
-            .as_scitbx_matrix()
-            .matlab_form(format=None, one_row_per_line=True)
-        )
-        logger.debug("\n")
-
 
 class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
     """Refinery implementation, using lstbx Gauss Newton iterations"""
@@ -858,6 +889,8 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
             # cache some items for the journal prior to solve
             pvn = self.parameter_vector_norm()
             gn = self.opposite_of_gradient().norm_inf()
+            if "normal_matrix" in self.history:
+                nm = self._dump_normal_matrix()
 
             # solve the normal equations
             self.solve()
@@ -869,6 +902,8 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
             # add cached items to the journal
             self.history.set_last_cell("parameter_vector_norm", pvn)
             self.history.set_last_cell("gradient_norm", gn)
+            if "normal_matrix" in self.history:
+                self.history.set_last_cell("normal_matrix", nm)
 
             # extra journalling post solve
             if "solution" in self.history:
@@ -981,6 +1016,8 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
             # cache some items for the journal prior to solve
             pvn = self.parameter_vector_norm()
             gn = self.opposite_of_gradient().norm_inf()
+            if "normal_matrix" in self.history:
+                nm = self._dump_normal_matrix()
 
             self.add_constant_to_diagonal(self.mu)
 
@@ -999,6 +1036,8 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
             # add cached items to the journal
             self.history.set_last_cell("parameter_vector_norm", pvn)
             self.history.set_last_cell("gradient_norm", gn)
+            if "normal_matrix" in self.history:
+                self.history.set_last_cell("normal_matrix", nm)
 
             # extra journalling post solve
             self.history.set_last_cell("mu", self.mu)

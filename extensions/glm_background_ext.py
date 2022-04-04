@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class GLMBackgroundExt:
     """An extension class implementing a robust GLM background algorithm."""
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dials_util_ext import *  # noqa: F403; lgtm
 
 __all__ = (  # noqa: F405

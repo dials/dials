@@ -6,6 +6,8 @@ must be moved to the proper location to work.
 """
 
 
+from __future__ import annotations
+
 import os.path
 import sys
 

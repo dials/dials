@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections import namedtuple
 
 from scitbx import matrix, sparse
@@ -390,7 +392,7 @@ class PredictionParameterisation:
         """Extend results list by n empty results. These will each be a dictionary
         indexed by the given keys. The value for each key will be an empty vector of
         size m, to store the derivatives of n parameters, for m reflections. This
-        method may be overriden by a derived class to e.g. use sparse vectors"""
+        method may be overridden by a derived class to e.g. use sparse vectors"""
 
         new_results = []
         for i in range(n):
@@ -534,9 +536,19 @@ class PredictionParameterisation:
                 iparam = self._iparam
                 for dX, dY in zip(dX_ddet_p, dY_ddet_p):
                     if dX is not None:
-                        results[iparam][self._grad_names[0]].set_selected(sub_isel, dX)
+                        try:
+                            dX, indices = dX.data_and_indices
+                            indices = sub_isel.select(indices)
+                        except AttributeError:
+                            indices = sub_isel
+                        results[iparam][self._grad_names[0]].set_selected(indices, dX)
                     if dY is not None:
-                        results[iparam][self._grad_names[1]].set_selected(sub_isel, dY)
+                        try:
+                            dY, indices = dY.data_and_indices
+                            indices = sub_isel.select(indices)
+                        except AttributeError:
+                            indices = sub_isel
+                        results[iparam][self._grad_names[1]].set_selected(indices, dY)
                     # increment the local parameter index pointer
                     iparam += 1
 
@@ -587,23 +599,42 @@ class PredictionParameterisation:
             u_w_inv = self._u_w_inv.select(isel)
             v_w_inv = self._v_w_inv.select(isel)
 
-            dpv_dbeam_p, dAngle_dbeam_p = derivatives_fn(
+            dpv_dp, dAngle_dp = derivatives_fn(
                 isel, parameterisation=p, reflections=reflections
             )
 
             # convert to dX/dp, dY/dp and assign the elements of the vectors
             # corresponding to this experiment
-            dX_dbeam_p, dY_dbeam_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
-                w_inv, u_w_inv, v_w_inv, dpv_dbeam_p
+            dX_dp, dY_dp = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
+                w_inv, u_w_inv, v_w_inv, dpv_dp
             )
-            for dX, dY, dAngle in zip(dX_dbeam_p, dY_dbeam_p, dAngle_dbeam_p):
+
+            # Loop over gradients and paste them into the correct rows in the
+            # results arrays, taking care of whether the gradients are flex
+            # or SparseFlex arrays.
+            for dX, dY, dAngle in zip(dX_dp, dY_dp, dAngle_dp):
                 if dX is not None:
-                    results[self._iparam][self._grad_names[0]].set_selected(isel, dX)
+                    try:
+                        dX, indices = dX.data_and_indices
+                        indices = isel.select(indices)
+                    except AttributeError:
+                        indices = isel
+                    results[self._iparam][self._grad_names[0]].set_selected(indices, dX)
                 if dY is not None:
-                    results[self._iparam][self._grad_names[1]].set_selected(isel, dY)
+                    try:
+                        dY, indices = dY.data_and_indices
+                        indices = isel.select(indices)
+                    except AttributeError:
+                        indices = isel
+                    results[self._iparam][self._grad_names[1]].set_selected(indices, dY)
                 if dAngle is not None:
+                    try:
+                        dAngle, indices = dAngle.data_and_indices
+                        indices = isel.select(indices)
+                    except AttributeError:
+                        indices = isel
                     results[self._iparam][self._grad_names[2]].set_selected(
-                        isel, dAngle
+                        indices, dAngle
                     )
                 if callback is not None:
                     results[self._iparam] = callback(results[self._iparam])
@@ -776,7 +807,7 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
                 continue
 
             # calculate the derivative of phi for this parameter
-            dphi = (r.dot(der) / e_r_s0) * -1.0
+            dphi = (der.dot(r) / e_r_s0) * -1.0
             dphi_dp.append(dphi)
 
             # calculate the derivative of pv for this parameter

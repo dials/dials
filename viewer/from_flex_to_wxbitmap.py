@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dials.viewer.bitmap_from_array import wxbmp_from_np_array
 
 

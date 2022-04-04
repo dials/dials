@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import collections
 import copy
 import glob
 import logging
@@ -6,7 +9,6 @@ import pickle
 import sys
 import tarfile
 import time
-from collections import OrderedDict
 from io import BytesIO
 
 from dxtbx.model.experiment_list import (
@@ -23,10 +25,9 @@ from dials.util import log
 
 logger = logging.getLogger("dials.command_line.stills_process")
 
-
 help_message = """
 DIALS script for processing still images. Import, index, refine, and integrate are all done for each image
-seperately.
+separately.
 """
 
 control_phil_str = """
@@ -112,7 +113,7 @@ control_phil_str = """
     output_dir = .
       .type = str
       .help = Directory output files will be placed
-    composite_output = False
+    composite_output = True
       .type = bool
       .help = If True, save one set of experiment/reflection files per process, where each is a \
               concatenated list of all the successful events examined by that process. \
@@ -121,12 +122,13 @@ control_phil_str = """
     logging_dir = None
       .type = str
       .help = Directory output log files will be placed
-    experiments_filename = %s_imported.expt
+    experiments_filename = None
       .type = str
-      .help = The filename for output experiments
-    strong_filename = %s_strong.refl
+      .help = The filename for output experiments. For example, %s_imported.expt
+    strong_filename = None
       .type = str
-      .help = The filename for strong reflections from spot finder output.
+      .help = The filename for strong reflections from spot finder output. For example: \
+              %s_strong.refl
     indexed_filename = %s_indexed.refl
       .type = str
       .help = The filename for indexed reflections.
@@ -191,6 +193,9 @@ dials_phil_str = """
       .type = str
       .help = Provide an models.expt file with exactly one detector model. Data processing will use \
               that geometry instead of the geometry found in the image headers.
+    sync_reference_geom = True
+      .type = bool
+      .help = ensures the reference hierarchy agrees with the image format
   }
 
   output {
@@ -236,6 +241,16 @@ dials_phil_str = """
         .type = floats(size=2)
         .help = "Override the panel trusted range (underload and saturation) during integration."
         .short_caption = "Panel trusted range"
+    }
+  }
+
+  profile {
+    gaussian_rs {
+      parameters {
+        sigma_b_cutoff = 0.1
+          .type = float
+          .help = Maximum sigma_b before the image is rejected
+      }
     }
   }
 """
@@ -328,7 +343,7 @@ class Script:
 
     def __init__(self):
         """Initialise the script."""
-        from dials.util.options import OptionParser
+        from dials.util.options import ArgumentParser
 
         # The script usage
         usage = "usage: dials.stills_process [options] [param.phil] filenames"
@@ -337,13 +352,11 @@ class Script:
         self.reference_detector = None
 
         # Create the parser
-        self.parser = OptionParser(usage=usage, phil=phil_scope, epilog=help_message)
+        self.parser = ArgumentParser(usage=usage, phil=phil_scope, epilog=help_message)
 
     def load_reference_geometry(self):
         if self.params.input.reference_geometry is None:
             return
-
-        from dxtbx.model.experiment_list import ExperimentListFactory
 
         try:
             ref_experiments = ExperimentListFactory.from_json_file(
@@ -553,12 +566,15 @@ class Script:
 
                     if self.reference_detector is not None:
                         experiment = experiments[0]
-                        imageset = experiment.imageset
-                        sync_geometry(
-                            self.reference_detector.hierarchy(),
-                            imageset.get_detector().hierarchy(),
-                        )
-                        experiment.detector = imageset.get_detector()
+                        if self.params.input.sync_reference_geom:
+                            imageset = experiment.imageset
+                            sync_geometry(
+                                self.reference_detector.hierarchy(),
+                                imageset.get_detector().hierarchy(),
+                            )
+                            experiment.detector = imageset.get_detector()
+                        else:
+                            experiment.detector = copy.deepcopy(self.reference_detector)
 
                     processor.process_experiments(tag, experiments)
                     imageset.clear_cache()
@@ -569,13 +585,11 @@ class Script:
             iterable = list(zip(tags, range(len(split_experiments))))
 
         else:
-            basenames = OrderedDict()
-            for filename in sorted(all_paths):
+            basenames = collections.defaultdict(int)
+            sorted_paths = sorted(all_paths)
+            for filename in sorted_paths:
                 basename = os.path.splitext(os.path.basename(filename))[0]
-                if basename in basenames:
-                    basenames[basename] += 1
-                else:
-                    basenames[basename] = 1
+                basenames[basename] += 1
             tags = []
             all_paths2 = []
             for i, (basename, count) in enumerate(basenames.items()):
@@ -588,7 +602,7 @@ class Script:
                     or tag in self.params.input.image_tag
                 ):
                     tags.append(tag)
-                    all_paths2.append(all_paths[i])
+                    all_paths2.append(sorted_paths[i])
             all_paths = all_paths2
 
             # Wrapper function
@@ -622,12 +636,17 @@ class Script:
                         continue
 
                     if self.reference_detector is not None:
-                        imageset = experiments[0].imageset
-                        sync_geometry(
-                            self.reference_detector.hierarchy(),
-                            imageset.get_detector().hierarchy(),
-                        )
-                        experiments[0].detector = imageset.get_detector()
+                        if self.params.input.sync_reference_geom:
+                            imageset = experiments[0].imageset
+                            sync_geometry(
+                                self.reference_detector.hierarchy(),
+                                imageset.get_detector().hierarchy(),
+                            )
+                            experiments[0].detector = imageset.get_detector()
+                        else:
+                            experiments[0].detector = copy.deepcopy(
+                                self.reference_detector
+                            )
 
                     processor.process_experiments(tag, experiments)
                 if finalize:
@@ -727,7 +746,7 @@ class Script:
                 error_list = [r[2] for r in result]
                 if error_list.count(None) != len(error_list):
                     print(
-                        "Some processes failed excecution. Not all images may have processed. Error messages:"
+                        "Some processes failed execution. Not all images may have processed. Error messages:"
                     )
                     for error in error_list:
                         if error is None:
@@ -784,7 +803,6 @@ class Processor:
 
         if params.output.composite_output:
             assert composite_tag is not None
-            from dxtbx.model.experiment_list import ExperimentList
 
             self.all_imported_experiments = ExperimentList()
             self.all_strong_reflections = flex.reflection_table()
@@ -1219,6 +1237,30 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
         # Match the predictions with the reference
         # Create the integrator
         experiments = ProfileModelFactory.create(self.params, experiments, indexed)
+        new_experiments = ExperimentList()
+        new_reflections = flex.reflection_table()
+        for expt_id, expt in enumerate(experiments):
+            if (
+                self.params.profile.gaussian_rs.parameters.sigma_b_cutoff is None
+                or expt.profile.sigma_b()
+                < self.params.profile.gaussian_rs.parameters.sigma_b_cutoff
+            ):
+                refls = indexed.select(indexed["id"] == expt_id)
+                refls["id"] = flex.int(len(refls), len(new_experiments))
+                # refls.reset_ids()
+                del refls.experiment_identifiers()[expt_id]
+                refls.experiment_identifiers()[len(new_experiments)] = expt.identifier
+                new_reflections.extend(refls)
+                new_experiments.append(expt)
+            else:
+                logger.info(
+                    "Rejected expt %d with sigma_b %f"
+                    % (expt_id, expt.profile.sigma_b())
+                )
+        experiments = new_experiments
+        indexed = new_reflections
+        if len(experiments) == 0:
+            raise RuntimeError("No experiments after filtering by sigma_b")
         logger.info("")
         logger.info("=" * 80)
         logger.info("")
@@ -1255,8 +1297,6 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 )()
 
         if self.params.significance_filter.enable:
-            from dxtbx.model.experiment_list import ExperimentList
-
             from dials.algorithms.integration.stills_significance_filter import (
                 SignificanceFilter,
             )
@@ -1504,7 +1544,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                             int_pickles,
                             int_pickle_filenames,
                         ) = comm.recv(source=MPI.ANY_SOURCE)
-                        logger.info("Rank %d recieved data from rank %d", rank, sender)
+                        logger.info("Rank %d received data from rank %d", rank, sender)
 
                         def extend_with_bookkeeping(
                             src_expts, src_refls, dest_expts, dest_refls

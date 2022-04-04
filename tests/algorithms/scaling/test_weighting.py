@@ -2,6 +2,8 @@
 Test for the scaling weighting module.
 """
 
+from __future__ import annotations
+
 from unittest.mock import Mock
 
 import pytest

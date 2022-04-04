@@ -1,3 +1,6 @@
+# LIBTBX_SET_DISPATCHER_NAME dials.refine_bravais_settings
+# LIBTBX_SET_DISPATCHER_NAME dials.rbs
+
 """Refinement of Bravais settings consistent with the primitive unit cell.
 
 This program takes as input the output of dials.index, i.e. indexed.expt
@@ -27,6 +30,8 @@ Examples::
 """
 
 
+from __future__ import annotations
+
 import collections
 import json
 import logging
@@ -44,7 +49,7 @@ from dials.algorithms.indexing.bravais_settings import (
 )
 from dials.array_family import flex
 from dials.util import log
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.refine_bravais_settings")
@@ -71,13 +76,13 @@ output {
 
 
 def bravais_lattice_to_space_groups(chiral_only=True):
-    bravais_lattice_to_sg = collections.OrderedDict()
+    bravais_lattice_to_sg = collections.defaultdict(list)
     for sgn in range(230):
         sg = sgtbx.space_group_info(number=sgn + 1).group()
         if (not chiral_only) or (sg.is_chiral()):
             bravais_lattice = bravais_types.bravais_lattice(group=sg)
-            bravais_lattice_to_sg.setdefault(str(bravais_lattice), [])
             bravais_lattice_to_sg[str(bravais_lattice)].append(sg)
+    bravais_lattice_to_sg["mI"] = [sgtbx.space_group_info("I2").group()]
     return bravais_lattice_to_sg
 
 
@@ -149,7 +154,7 @@ def select_datasets_on_crystal_id(experiments, reflections, crystal_id):
 def run(args=None):
     usage = "dials.refine_bravais_settings indexed.expt indexed.refl [options]"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_experiments=True,

@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class SimpleCentroidExt:
     """An extension class implementing a simple centroid algorithm."""
 

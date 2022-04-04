@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import copy
 
 from scitbx.array_family import flex
@@ -72,7 +74,7 @@ def slice_reflections(reflections, image_ranges):
         sub_isel = isel.select(in_lim)
         to_keep.extend(sub_isel)
 
-    # implictly also removes any reflections with ID outside the range of the
+    # implicitly also removes any reflections with ID outside the range of the
     # length of image_ranges
     return reflections.select(to_keep)
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 
 from dials.command_line.frame_orientations import extract_experiment_data
@@ -20,7 +22,7 @@ def test_extract_experiment_data():
     scan = ScanFactory.make_scan(
         image_range=(1, 91),
         exposure_times=0.1,
-        oscillation=(0, 1.0),
+        oscillation=(-0.5, 1.0),
         epochs=list(range(91)),
         deg=True,
     )
@@ -33,13 +35,13 @@ def test_extract_experiment_data():
     # Check results are as expected
     za = dat["zone_axes"]
 
-    # At the first image the c axis is aligned antiparallel with the beam vector,
-    # while the a and b axes are orthogonal. The zone axis calculation is scaled
-    # by 100 (i.e. the max cell dimension, which is the default), therefore we
-    # expect the zone axis [uvw] = [0 0 -100/80]
+    # At the middle of the first image the c axis is aligned antiparallel with
+    # the beam vector, while the a and b axes are orthogonal. The zone axis
+    # calculation is scaled by 100 (i.e. the max cell dimension, which is the
+    # default), therefore we expect the zone axis [uvw] = [0 0 -100/80]
     assert za[0].elems == pytest.approx((0, 0, -100 / 80))
 
-    # At the start of the 91st image the crystal has rotated by 90 degrees, so
+    # At the middle of the 91st image the crystal has rotated by 90 degrees, so
     # now c is orthogonal to the beam while b is anti-parallel to it. The zone
     # axis is now expected to be [uvw] = [0 -100/90 0]
     assert za[-1].elems == pytest.approx((0, -100 / 90, 0))

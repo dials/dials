@@ -48,8 +48,11 @@ scitbx::af::shared<double> get_kapton_path_cpp(
           intersection_xy_list.push_back(
             detector[0].get_lab_coord(detector[0].get_ray_intersection(*it)));
         }
-      } catch (dxtbx::error) {
+      } catch (dxtbx::error const&) {
         // Do nothing
+      }
+      if (intersection_xy_list.size() == 2) {
+        break;
       }
     }  // kapton faces
     /*

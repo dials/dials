@@ -2,6 +2,8 @@
 Collection of factories for creating the scalers.
 """
 
+from __future__ import annotations
+
 import logging
 
 from libtbx import Auto
@@ -16,6 +18,7 @@ from dials.algorithms.scaling.scaling_library import choose_initial_scaling_inte
 from dials.algorithms.scaling.scaling_utilities import (
     BadDatasetForScalingException,
     Reasons,
+    align_axis_along_z,
     calc_crystal_frame_vectors,
     quasi_normalisation,
 )
@@ -180,13 +183,15 @@ class SingleScalerFactory(ScalerFactory):
             and "absorption" in experiment.scaling_model.components
         ):
             if experiment.scan:
-                # calc theta and phi cryst
-                reflection_table["phi"] = (
-                    reflection_table["xyzobs.px.value"].parts()[2]
-                    * experiment.scan.get_oscillation()[1]
-                )
                 reflection_table = calc_crystal_frame_vectors(
                     reflection_table, experiment
+                )
+                alignment_axis = (1.0, 0.0, 0.0)
+                reflection_table["s0c"] = align_axis_along_z(
+                    alignment_axis, reflection_table["s0c"]
+                )
+                reflection_table["s1c"] = align_axis_along_z(
+                    alignment_axis, reflection_table["s1c"]
                 )
         try:
             scaler = SingleScaler(params, experiment, reflection_table, for_multi)
@@ -205,10 +210,16 @@ class NullScalerFactory(ScalerFactory):
 
         logger.info("Preprocessing target dataset for scaling. \n")
         reflection_table = cls.filter_bad_reflections(reflection_table)
-        variance_mask = reflection_table["variance"] <= 0.0
-        reflection_table.set_flags(
-            variance_mask, reflection_table.flags.excluded_for_scaling
-        )
+        if "variance" in reflection_table:
+            variance_mask = reflection_table["variance"] <= 0.0
+            reflection_table.set_flags(
+                variance_mask, reflection_table.flags.excluded_for_scaling
+            )
+        else:
+            reflection_table.set_flags(
+                flex.bool(reflection_table.size(), False),
+                reflection_table.flags.excluded_for_scaling,
+            )
         logger.info(
             "%s reflections not suitable for scaling\n",
             reflection_table.get_flags(
@@ -236,17 +247,14 @@ class MultiScalerFactory:
                 idx_to_remove.append(i)
             else:
                 single_scalers.append(scaler)
+        ms = MultiScaler(single_scalers)
         if idx_to_remove:
-            for j in idx_to_remove[::-1]:
-                del experiments[j]
-                del reflections[j]
+            for i in idx_to_remove:
+                ms.removed_datasets.append(experiments[i].identifier)
             logger.info(
                 "Removed experiments %s", " ".join(str(i) for i in idx_to_remove)
             )
-        n_exp, n_refl, n_ss = (len(experiments), len(reflections), len(single_scalers))
-        assert n_exp == n_ss, (n_exp, n_ss)
-        assert n_exp == n_refl, (n_exp, n_refl)
-        return MultiScaler(single_scalers)
+        return ms
 
     @staticmethod
     def create_from_targetscaler(targetscaler):
@@ -279,22 +287,17 @@ class TargetScalerFactory:
                 idx_to_remove.append(i)
             else:
                 unscaled_scalers.append(scaler)
-        if idx_to_remove:
-            for j in idx_to_remove[::-1]:
-                del experiments[j]
-                del reflections[j]
-            logger.info(
-                "Removed experiments %s", " ".join(str(i) for i in idx_to_remove)
-            )
         scaled_scalers = [
             NullScalerFactory.create(params, experiments[-1], reflections[-1])
         ]
-
-        n_exp, n_refl = (len(experiments), len(reflections))
-        n_ss, n_us = (len(scaled_scalers), len(unscaled_scalers))
-        assert n_exp == n_ss + n_us, (n_exp, str(n_ss) + " + " + str(n_us))
-        assert n_exp == n_refl, (n_exp, n_refl)
-        return TargetScaler(scaled_scalers, unscaled_scalers)
+        ts = TargetScaler(scaled_scalers, unscaled_scalers)
+        if idx_to_remove:
+            for i in idx_to_remove:
+                ts.removed_datasets.append(experiments[i].identifier)
+            logger.info(
+                "Removed experiments %s", " ".join(str(i) for i in idx_to_remove)
+            )
+        return ts
 
     @staticmethod
     def create(params, experiments, reflections):

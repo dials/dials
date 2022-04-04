@@ -1,6 +1,13 @@
+from __future__ import annotations
+
+from typing import List
+
 import libtbx.phil
+from dxtbx.model import ExperimentList
 
 import dials.util
+from dials.command_line.dials_import import ManualGeometryUpdater
+from dials.util.options import ArgumentParser, flatten_experiments
 
 help_message = """
 """
@@ -17,33 +24,17 @@ output {
 )
 
 
-@dials.util.show_mail_handle_errors()
-def run(args=None):
-    from dials.util.options import OptionParser, flatten_experiments
+def update(
+    experiments: ExperimentList, new_params: libtbx.phil.scope_extract
+) -> ExperimentList:
 
-    usage = "dials.modify_geometry [options] models.expt"
+    """
+    Modify detector, beam, goniometer and scan in experiments with the values in new_params
+    """
 
-    parser = OptionParser(
-        usage=usage,
-        phil=phil_scope,
-        read_experiments=True,
-        check_format=False,
-        epilog=help_message,
-    )
+    update_geometry = ManualGeometryUpdater(new_params)
 
-    params, options = parser.parse_args(args, show_diff_phil=True)
-    experiments = flatten_experiments(params.input.experiments)
-
-    if len(experiments) == 0:
-        parser.print_help()
-        exit(0)
-
-    from dials.command_line.dials_import import ManualGeometryUpdater
-
-    update_geometry = ManualGeometryUpdater(params)
-
-    if len(experiments):
-        imagesets = experiments.imagesets()
+    imagesets = experiments.imagesets()
 
     for imageset in imagesets:
         imageset_new = update_geometry(imageset)
@@ -52,9 +43,34 @@ def run(args=None):
         imageset.set_goniometer(imageset_new.get_goniometer())
         imageset.set_scan(imageset_new.get_scan())
 
-    if len(experiments):
+    return experiments
+
+
+@dials.util.show_mail_handle_errors()
+def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
+
+    usage = "dials.modify_geometry [options] models.expt"
+
+    parser = ArgumentParser(
+        usage=usage,
+        phil=phil_scope,
+        read_experiments=True,
+        check_format=False,
+        epilog=help_message,
+    )
+
+    params, _ = parser.parse_args(args, show_diff_phil=True)
+    experiments = flatten_experiments(params.input.experiments)
+
+    if len(experiments) == 0:
+        parser.print_help()
+        exit(0)
+
+    new_experiments = update(experiments, params)
+
+    if len(new_experiments):
         print(f"Saving modified experiments to {params.output.experiments}")
-        experiments.as_file(params.output.experiments)
+        new_experiments.as_file(params.output.experiments)
 
 
 if __name__ == "__main__":

@@ -5,11 +5,20 @@ This module defines a blocked datastructures for summing over groups of
 symmetry equivalent reflections, as required for scaling.
 """
 
-from orderedset import OrderedSet
+from __future__ import annotations
 
-from cctbx import crystal, miller, uctbx
+from typing import List, Optional, Union
+
+import numpy as np
+import pandas as pd
+from orderedset import OrderedSet
+from scipy.sparse import csc_matrix
+
+from cctbx import crystal, miller, sgtbx, uctbx
+from dxtbx import flumpy
 from scitbx import sparse
 
+from dials.algorithms.scaling.error_model.error_model import BasicErrorModel
 from dials.array_family import flex
 
 
@@ -68,14 +77,14 @@ class IhTable:
 
     def __init__(
         self,
-        reflection_tables,
-        space_group,
-        indices_lists=None,
-        nblocks=1,
-        free_set_percentage=0,
-        free_set_offset=0,
-        additional_cols=None,
-        anomalous=False,
+        reflection_tables: List[flex.reflection_table],
+        space_group: sgtbx.space_group,
+        indices_lists: Optional[List[flex.size_t]] = None,
+        nblocks: int = 1,
+        free_set_percentage: float = 0,
+        free_set_offset: int = 0,
+        additional_cols: Optional[List[str]] = None,
+        anomalous: bool = False,
     ):
         """
         Distribute the input data into the required structure.
@@ -85,7 +94,7 @@ class IhTable:
 
         A list of flex.size_t indices can be provided - this allows the
         reflection table data to maintain a reference to a dataset from which
-        it was selecte; these will be used when making the block selections.
+        it was selected; these will be used when making the block selections.
         e.g selection = flex.bool([True, False, True])
             r_1 = r_master.select(selection)
             indices_list = selection.iselection() = flex.size_t([0, 2])
@@ -95,7 +104,8 @@ class IhTable:
         if indices_lists:
             assert len(indices_lists) == len(reflection_tables)
         self.anomalous = anomalous
-        self.asu_index_dict = {}
+        self._asu_index_dict = {}
+        self._free_asu_index_dict = {}
         self.space_group = space_group
         self.n_work_blocks = nblocks
         self.n_datasets = len(reflection_tables)
@@ -106,7 +116,10 @@ class IhTable:
             "n_reflections_in_each_block": {},
             "miller_index_boundaries": [],
         }
-        self._determine_required_block_structures(reflection_tables)
+        self.free_set_percentage = free_set_percentage
+        self._determine_required_block_structures(
+            reflection_tables, free_set_percentage, free_set_offset
+        )
         self._create_empty_Ih_table_blocks()
         for i, table in enumerate(reflection_tables):
             if indices_lists:
@@ -118,11 +131,13 @@ class IhTable:
         self.generate_block_selections()
         self.free_Ih_table = None
         if free_set_percentage > 0:
-            self.extract_free_set(free_set_percentage, offset=free_set_offset)
+            self.extract_free_set()
             self.free_Ih_table = True
         self.calc_Ih()
 
-    def update_data_in_blocks(self, data, dataset_id, column="intensity"):
+    def update_data_in_blocks(
+        self, data: flex.double, dataset_id: int, column: str = "intensity"
+    ) -> None:
         """
         Update a given column across all blocks for a given dataset.
 
@@ -131,16 +146,18 @@ class IhTable:
         this up and set in individual blocks.
         """
         assert column in ["intensity", "variance", "inverse_scale_factor"]
-        assert dataset_id in range(0, self.n_datasets)
+        assert dataset_id in range(self.n_datasets)
         # split up data for blocks
+        data = flumpy.to_numpy(data)
         for block in self.blocked_data_list:
-            data_for_block = data.select(block.block_selections[dataset_id])
+            data_for_block = data[block.block_selections[dataset_id]]
             start = block.dataset_info[dataset_id]["start_index"]
             end = block.dataset_info[dataset_id]["end_index"]
-            sel = flex.size_t(range(start, end))
-            block.Ih_table[column].set_selected(sel, data_for_block)
+            block.Ih_table.loc[
+                np.arange(start=start, stop=end), column
+            ] = data_for_block
 
-    def get_block_selections_for_dataset(self, dataset):
+    def get_block_selections_for_dataset(self, dataset: int) -> List[flex.size_t]:
         """Generate the block selection list for a given dataset."""
         assert dataset in range(self.n_datasets)
         if self.free_Ih_table:
@@ -153,37 +170,39 @@ class IhTable:
         ]
 
     @property
-    def size(self):
+    def size(self) -> int:
         """Sum the sizes of all work blocks to give the total number of reflections."""
         if self.free_Ih_table:
             return sum(block.size for block in self.Ih_table_blocks[:-1])
         return sum(block.size for block in self.Ih_table_blocks)
 
-    def generate_block_selections(self):
+    def generate_block_selections(self) -> None:
         """Generate and set an updated blocked_selection_list."""
         self.blocked_selection_list = [
             block.block_selections for block in self.Ih_table_blocks
         ]
 
-    def update_weights(self, error_model=None, dataset_id=None):
+    def update_weights(
+        self, error_model: Optional[BasicErrorModel] = None, dataset_id: int = None
+    ) -> None:
         """Update the error model in the blocks."""
         for block in self.Ih_table_blocks:
             block.update_weights(error_model, dataset_id)
 
     @property
-    def blocked_data_list(self):
+    def blocked_data_list(self) -> List["IhTableBlock"]:
         """Return the list of IhTableBlock instances."""
         return self.Ih_table_blocks
 
-    def set_derivatives(self, derivatives, block_id):
+    def set_derivatives(self, derivatives: sparse.matrix, block_id: int) -> None:
         """Set the derivatives matrix for a given block."""
         self.Ih_table_blocks[block_id].derivatives = derivatives
 
-    def set_inverse_scale_factors(self, new_scales, block_id):
+    def set_inverse_scale_factors(self, new_scales: np.array, block_id: int) -> None:
         """Set the inverse scale factors for a given block."""
         self.Ih_table_blocks[block_id].inverse_scale_factors = new_scales
 
-    def calc_Ih(self, block_id=None):
+    def calc_Ih(self, block_id: int = None) -> None:
         """Calculate the latest value of Ih, for a given block or for all blocks."""
         if block_id is not None:
             self.Ih_table_blocks[block_id].calc_Ih()
@@ -191,7 +210,12 @@ class IhTable:
             for block in self.Ih_table_blocks:
                 block.calc_Ih()
 
-    def _determine_required_block_structures(self, reflection_tables):
+    def _determine_required_block_structures(
+        self,
+        reflection_tables: List[flex.reflection_table],
+        free_set_percentage: float = 0,
+        free_set_offset: int = 0,
+    ) -> None:
         """
         Inspect the input to determine how to split into blocks.
 
@@ -208,10 +232,34 @@ class IhTable:
         sorted_joint_asu_indices, _ = get_sorted_asu_indices(
             joint_asu_indices, self.space_group, self.anomalous
         )
+        if not sorted_joint_asu_indices:
+            raise ValueError("No data found in input file(s)")
 
         asu_index_set = OrderedSet(sorted_joint_asu_indices)
         n_unique_groups = len(asu_index_set)
-        self.n_work_blocks = min(self.n_work_blocks, n_unique_groups)
+        n_free_groups = None
+        interval_between_free_groups = None
+        if free_set_percentage:
+            n_free_groups = int(free_set_percentage * n_unique_groups / 100.0)
+            n_work_groups = n_unique_groups - n_free_groups
+            interval_between_free_groups = int(100 / free_set_percentage)
+        else:
+            n_work_groups = n_unique_groups
+        self.n_work_blocks = min(self.n_work_blocks, n_work_groups)
+        # first remove the free set groups
+        if free_set_percentage:
+            groups_for_free_set = np.full(n_unique_groups, False, dtype=bool)
+            for_free = np.arange(
+                0 + free_set_offset, n_unique_groups, interval_between_free_groups
+            )
+            groups_for_free_set[for_free] = True
+            asu_index_set = np.array(list(asu_index_set))
+            # work_asu_index_set = asu_index_set[~groups_for_free_set]
+            free_asu_index_set = asu_index_set[groups_for_free_set]
+        else:
+            # work_asu_index_set = asu_index_set
+            free_asu_index_set = None
+
         # also record how many unique groups go into each block
         group_boundaries = [
             int(i * n_unique_groups / self.n_work_blocks)
@@ -227,13 +275,24 @@ class IhTable:
                 self.properties_dict["n_unique_in_each_block"].append(
                     group_id_in_block_i
                 )
-                self.properties_dict["miller_index_boundaries"].append(index)
+                self.properties_dict["miller_index_boundaries"].append(tuple(index))
                 block_id += 1
                 next_boundary = group_boundaries[block_id + 1]
                 group_id_in_block_i = 0
-            self.asu_index_dict[index] = (group_id_in_block_i, block_id)
+            self._asu_index_dict[tuple(index)] = group_id_in_block_i
             group_id_in_block_i += 1
-        # record the number in the last block
+        # record the number in the last work block
+        self.properties_dict["n_unique_in_each_block"].append(group_id_in_block_i)
+        self.properties_dict["miller_index_boundaries"].append((10000, 10000, 10000))
+
+        block_id += 1
+        group_id_in_block_i = 0
+        if free_asu_index_set is not None:
+            for index in free_asu_index_set:
+                # no boundaries as all go into the final block
+                self._free_asu_index_dict[tuple(index)] = group_id_in_block_i
+                group_id_in_block_i += 1
+        # record the number in the free block
         self.properties_dict["n_unique_in_each_block"].append(group_id_in_block_i)
         self.properties_dict["miller_index_boundaries"].append((10000, 10000, 10000))
         # ^ to avoid bounds checking when in last group
@@ -255,7 +314,7 @@ class IhTable:
             len(sorted_joint_asu_indices) - idx_prev
         )
 
-    def _create_empty_Ih_table_blocks(self):
+    def _create_empty_Ih_table_blocks(self) -> None:
         for n in range(self.n_work_blocks):
             n_refl_in_block = self.properties_dict["n_reflections_in_each_block"][n]
             n_groups_in_block = self.properties_dict["n_unique_in_each_block"][n]
@@ -268,77 +327,96 @@ class IhTable:
             )
 
     def _add_dataset_to_blocks(
-        self, dataset_id, reflections, indices_array=None, additional_cols=None
-    ):
+        self,
+        dataset_id: int,
+        reflections: flex.reflection_table,
+        indices_array: Optional[flex.size_t] = None,
+        additional_cols: Optional[List[str]] = None,
+    ) -> None:
         sorted_asu_indices, perm = get_sorted_asu_indices(
             reflections["asu_miller_index"], self.space_group, self.anomalous
         )
-        r = flex.reflection_table()
-        r["intensity"] = reflections["intensity"]
-        r["asu_miller_index"] = reflections["asu_miller_index"]
-        r["variance"] = reflections["variance"]
-        r["inverse_scale_factor"] = reflections["inverse_scale_factor"]
+        hkl = reflections["asu_miller_index"]
+        df = pd.DataFrame()
+        df["intensity"] = flumpy.to_numpy(reflections["intensity"])
+        df["variance"] = flumpy.to_numpy(reflections["variance"])
+        df["inverse_scale_factor"] = flumpy.to_numpy(
+            reflections["inverse_scale_factor"]
+        )
         if isinstance(additional_cols, list):
             for col in additional_cols:
                 if col in reflections:
-                    r[col] = reflections[col]
+                    df[col] = flumpy.to_numpy(reflections[col])
         if indices_array:
-            r["loc_indices"] = indices_array
+            df["loc_indices"] = flumpy.to_numpy(indices_array)
         else:
-            r["loc_indices"] = flex.size_t(range(r.size()))
-        r = r.select(perm)
-        r["dataset_id"] = flex.int(r.size(), dataset_id)
+            df["loc_indices"] = np.arange(df.shape[0], dtype=np.uint64)
+        df = df.iloc[flumpy.to_numpy(perm)]
+        hkl = hkl.select(perm)
+        df["dataset_id"] = np.full(df.shape[0], dataset_id, dtype=np.uint64)
         # if data are sorted by asu_index, then up until boundary, should be in same
         # block (still need to read group_id though)
-
         # sort data, get group ids and block_ids
-        group_ids = flex.int([])
+        group_ids = np.zeros(sorted_asu_indices.size(), dtype=np.uint64)
         boundary = self.properties_dict["miller_index_boundaries"][0]
         boundary_id = 0
         boundaries_for_this_datset = [0]  # use to slice
         # make this a c++ method for speed?
+        prev = (0, 0, 0)
+        group_id = -1
         for i, index in enumerate(sorted_asu_indices):
-            while index >= boundary:
-                boundaries_for_this_datset.append(i)
-                boundary_id += 1
-                boundary = self.properties_dict["miller_index_boundaries"][boundary_id]
-            group_id, _ = self.asu_index_dict[index]
-            group_ids.append(group_id)
+            if index != prev:
+                while index >= boundary:
+                    boundaries_for_this_datset.append(i)
+                    boundary_id += 1
+                    boundary = self.properties_dict["miller_index_boundaries"][
+                        boundary_id
+                    ]
+                group_id = self._asu_index_dict[tuple(index)]
+                prev = index
+            group_ids[i] = group_id
         while len(boundaries_for_this_datset) < self.n_work_blocks + 1:
             # catch case where last boundaries aren't reached
             boundaries_for_this_datset.append(len(sorted_asu_indices))
         # so now have group ids as well for individual dataset
         if self.n_work_blocks == 1:
-            self.Ih_table_blocks[0].add_data(dataset_id, group_ids, r)
+            self.Ih_table_blocks[0].add_data(dataset_id, group_ids, df, hkl)
         else:
             for i, val in enumerate(boundaries_for_this_datset[:-1]):
                 start = val
                 end = boundaries_for_this_datset[i + 1]
                 self.Ih_table_blocks[i].add_data(
-                    dataset_id, group_ids[start:end], r[start:end]
+                    dataset_id, group_ids[start:end], df[start:end], hkl[start:end]
                 )
 
-    def extract_free_set(self, free_set_percentage, offset=0):
+    def extract_free_set(self) -> None:
         """Extract a free set from all blocks."""
         assert not self.free_Ih_table
-        interval_between_groups = int(100 / free_set_percentage)
-        free_reflection_table = flex.reflection_table()
-        free_indices = flex.size_t()
+        free_reflection_table = pd.DataFrame()
+        free_indices = np.array([], dtype=int).reshape((0,))
+        free_hkl = flex.miller_index([])
+        # for each block, remove a fraction of the groups
         for j, block in enumerate(self.Ih_table_blocks):
-            n_groups = block.h_index_matrix.n_cols
-            groups_for_free_set = flex.bool(n_groups, False)
-            for_free = flex.size_t(
-                list(range(0 + offset, n_groups, interval_between_groups))
+            n_groups = block.n_groups
+            groups_for_free_set = np.full(n_groups, False, dtype=bool)
+            for_free = np.array(
+                [
+                    tuple(i) in self._free_asu_index_dict
+                    for i in OrderedSet(block.asu_miller_index)
+                ]
             )
-            groups_for_free_set.set_selected(for_free, True)
+            groups_for_free_set[for_free] = True
             free_block = block.select_on_groups(groups_for_free_set)
-            free_reflection_table.extend(free_block.Ih_table)
+            free_reflection_table = pd.concat(
+                [free_reflection_table, free_block.Ih_table]
+            )
+            free_hkl.extend(free_block.asu_miller_index)
             for sel in free_block.block_selections:
-                free_indices.extend(sel)
+                free_indices = np.concatenate([free_indices, sel])
             self.Ih_table_blocks[j] = block.select_on_groups(~groups_for_free_set)
             # Now need to update dataset_info dict.
             removed_from_each_dataset = [
-                (free_block.Ih_table["dataset_id"] == i).count(True)
+                np.count_nonzero(free_block.Ih_table["dataset_id"].to_numpy() == i)
                 for i in range(0, block.n_datasets)
             ]
             n_removed = 0
@@ -353,41 +431,44 @@ class IhTable:
         datasets = set(free_reflection_table["dataset_id"])
         tables = []
         indices_lists = []
+        n_refl = 0
         for id_ in datasets:
-            dataset_sel = free_reflection_table["dataset_id"] == id_
-            tables.append(free_reflection_table.select(dataset_sel))
-            indices_lists.append(free_indices.select(dataset_sel))
-        free_Ih_table = IhTable(
-            tables, self.space_group, indices_lists, nblocks=1, anomalous=self.anomalous
+            dataset_sel = free_reflection_table["dataset_id"].to_numpy() == id_
+            n_refl += np.count_nonzero(dataset_sel)
+            tables.append(free_reflection_table[dataset_sel])
+            indices_lists.append(free_indices[dataset_sel])
+        free_block = IhTableBlock(
+            n_groups=len(set(free_hkl)), n_refl=n_refl, n_datasets=len(datasets)
         )
-        # add to blocks list and selection list
-        self.Ih_table_blocks.append(free_Ih_table.blocked_data_list[0])
-        self.blocked_selection_list.append(free_Ih_table.blocked_selection_list[0])
+        group_ids = np.array(
+            [self._free_asu_index_dict[tuple(index)] for index in free_hkl],
+            dtype=np.uint64,
+        )
+        for id_, t in zip(datasets, tables):
+            dataset_sel = free_reflection_table["dataset_id"].to_numpy() == id_
+            group_id_this = group_ids[dataset_sel]
+            hkl_this = free_hkl.select(flumpy.from_numpy(dataset_sel))
+            free_block.add_data(id_, group_id_this, t, hkl_this)
 
-    def as_miller_array(self, unit_cell, return_free_set_data=False):
+        self.Ih_table_blocks.append(free_block)
+        self.blocked_selection_list.append(free_block.block_selections)
+
+    def as_miller_array(
+        self, unit_cell: uctbx.unit_cell, return_free_set_data: bool = False
+    ) -> miller.array:
         """Get a scaled miller array from the Ih_table and an experiment."""
         blocked_data_list = self.blocked_data_list
-
+        joint_table = flex.reflection_table([])
         if self.free_Ih_table:
             if return_free_set_data:
                 blocked_data_list = [blocked_data_list[-1]]
             else:
                 blocked_data_list = blocked_data_list[:-1]
         if len(blocked_data_list) > 1:
-            joint_table = flex.reflection_table()
             for block in blocked_data_list:
-                # better to just create many miller arrays and join them?
-                refl_for_joint_table = flex.reflection_table()
-                for col in [
-                    "asu_miller_index",
-                    "intensity",
-                    "inverse_scale_factor",
-                    "variance",
-                ]:
-                    refl_for_joint_table[col] = block.Ih_table[col]
-                joint_table.extend(refl_for_joint_table)
+                joint_table.extend(block.as_reflection_table())
         else:
-            joint_table = blocked_data_list[0].Ih_table
+            joint_table = blocked_data_list[0].as_reflection_table()
         # Filter out negative scale factors to avoid merging statistics errors.
         return _reflection_table_to_iobs(joint_table, unit_cell, self.space_group)
 
@@ -418,9 +499,9 @@ class IhTableBlock:
             parameters.
     """
 
-    def __init__(self, n_groups, n_refl, n_datasets=1):
+    def __init__(self, n_groups: int, n_refl: int, n_datasets: int = 1):
         """Create empty datastructures to which data can later be added."""
-        self.Ih_table = flex.reflection_table()
+        self.Ih_table = pd.DataFrame()
         self.block_selections = [None] * n_datasets
         self.h_index_matrix = sparse.matrix(n_refl, n_groups)
         self._setup_info = {"next_row": 0, "next_dataset": 0, "setup_complete": False}
@@ -429,8 +510,19 @@ class IhTableBlock:
         self.h_expand_matrix = None
         self.derivatives = None
         self.binner = None
+        self._csc_rows = np.array([], dtype=np.uint64).reshape((0,))
+        self._csc_cols = np.array([], dtype=np.uint64).reshape((0,))
+        self._csc_h_index_matrix = None
+        self._csc_h_expand_matrix = None
+        self._hkl = flex.miller_index([])
 
-    def add_data(self, dataset_id, group_ids, reflections):
+    def add_data(
+        self,
+        dataset_id: int,
+        group_ids: np.array,
+        reflections: pd.DataFrame,
+        hkl: flex.miller_index,
+    ) -> None:
         """
         Add data to all blocks for a given dataset.
 
@@ -452,22 +544,35 @@ Datasets must be added in correct order: expected: {}, this dataset: {}""".forma
             self._setup_info["next_dataset"],
             dataset_id,
         )
-        assert "asu_miller_index" in reflections
         for i, id_ in enumerate(group_ids):
-            self.h_index_matrix[i + self._setup_info["next_row"], id_] = 1.0
+            rowidx = i + self._setup_info["next_row"]
+            self.h_index_matrix[rowidx, int(id_)] = 1.0
+        cols = group_ids
+        rows = np.arange(
+            start=self._setup_info["next_row"],
+            stop=self._setup_info["next_row"] + group_ids.size,
+            dtype=np.uint64,
+        )
+
+        self._csc_cols = np.concatenate([self._csc_cols, cols])
+        self._csc_rows = np.concatenate([self._csc_rows, rows])
+        self._hkl.extend(hkl)
+
         self.dataset_info[dataset_id] = {"start_index": self._setup_info["next_row"]}
         self._setup_info["next_row"] += len(group_ids)
         self._setup_info["next_dataset"] += 1
         self.dataset_info[dataset_id]["end_index"] = self._setup_info["next_row"]
-        self.Ih_table.extend(reflections)
+        self.Ih_table = pd.concat([self.Ih_table, reflections], ignore_index=True)
         if "loc_indices" in reflections:
-            self.block_selections[dataset_id] = reflections["loc_indices"]
+            self.block_selections[dataset_id] = reflections["loc_indices"].to_numpy()
         else:
-            self.block_selections[dataset_id] = flex.int(range(len(reflections)))
+            self.block_selections[dataset_id] = np.arange(
+                reflections.shape[0], dtype=np.uint64
+            )
         if self._setup_info["next_dataset"] == len(self.block_selections):
             self._complete_setup()
 
-    def _complete_setup(self):
+    def _complete_setup(self) -> None:
         """Finish the setup of the Ih_table once all data has been added."""
         self.h_index_matrix.compact()
         assert (
@@ -475,26 +580,38 @@ Datasets must be added in correct order: expected: {}, this dataset: {}""".forma
         ), """
 Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
         self.h_expand_matrix = self.h_index_matrix.transpose()
+        data = np.full(self._csc_cols.size, 1.0)
+        self._csc_h_index_matrix = csc_matrix((data, (self._csc_rows, self._csc_cols)))
+        self._csc_h_expand_matrix = self._csc_h_index_matrix.transpose()
         self.weights = 1.0 / self.variances
         self._setup_info["setup_complete"] = True
 
-    def group_multiplicities(self):
+    def group_multiplicities(self, output: str = "per_group") -> np.array:
         """Return the multiplicities of the symmetry groups."""
-        return flex.double(self.size, 1.0) * self.h_index_matrix
+        return self.sum_in_groups(np.full(self.size, 1.0), output=output)
 
-    def select(self, sel):
+    def select(self, sel: np.array) -> "IhTableBlock":
         """Select a subset of the data, returning a new IhTableBlock object."""
-        Ih_table = self.Ih_table.select(sel)
-        h_idx_sel = self.h_expand_matrix.select_columns(sel.iselection())
+        Ih_table = self.Ih_table[sel]
+        Ih_table.reset_index(drop=True, inplace=True)
+        h_idx_sel = self.h_expand_matrix.select_columns(
+            flumpy.from_numpy(sel).iselection()
+        )
         reduced_h_idx = h_idx_sel.transpose()
-        unity = flex.double(reduced_h_idx.n_rows, 1.0)
+        unity = flex.double(int(Ih_table.size), 1.0)
         nz_col_sel = (unity * reduced_h_idx) > 0
         h_index_matrix = reduced_h_idx.select_columns(nz_col_sel.iselection())
         h_expand = h_index_matrix.transpose()
+        csc_h_idx_sel = self._csc_h_expand_matrix[:, sel]
+        csc_h_index_matrix = csc_h_idx_sel.transpose()[:, flumpy.to_numpy(nz_col_sel)]
+        csc_h_expand_matrix = csc_h_index_matrix.transpose()
         newtable = IhTableBlock(n_groups=0, n_refl=0, n_datasets=self.n_datasets)
         newtable.Ih_table = Ih_table
+        newtable._hkl = self._hkl.select(flumpy.from_numpy(sel))
         newtable.h_expand_matrix = h_expand
         newtable.h_index_matrix = h_index_matrix
+        newtable._csc_h_index_matrix = csc_h_index_matrix
+        newtable._csc_h_expand_matrix = csc_h_expand_matrix
         newtable.block_selections = []
         offset = 0
         for i in range(newtable.n_datasets):
@@ -502,66 +619,59 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
             block_sel_i = self.block_selections[i]
             n_in_dataset_i = len(block_sel_i)
             newtable.block_selections.append(
-                block_sel_i.select(sel[offset : offset + n_in_dataset_i])
+                block_sel_i[sel[offset : offset + n_in_dataset_i]]
             )
             offset += n_in_dataset_i
             newtable.dataset_info[i]["end_index"] = offset
         return newtable
 
-    def select_on_groups(self, sel):
+    def select_on_groups(self, sel: np.array) -> "IhTableBlock":
         """Select a subset of the unique groups, returning a new IhTableBlock."""
-        reduced_h_idx = self.h_index_matrix.select_columns(sel.iselection())
-        unity = flex.double(reduced_h_idx.n_cols, 1.0)
+        reduced_h_idx = self._csc_h_index_matrix[:, sel]
+        unity = np.full(reduced_h_idx.shape[1], 1.0)
         nz_row_sel = (unity * reduced_h_idx.transpose()) > 0
         return self.select(nz_row_sel)
 
-    def select_on_groups_isel(self, isel):
-        """Select a subset of the unique groups, returning a new IhTableBlock."""
-        reduced_h_idx = self.h_index_matrix.select_columns(isel)
-        unity = flex.double(reduced_h_idx.n_cols, 1.0)
-        nz_row_sel = (unity * reduced_h_idx.transpose()) > 0
-        return self.select(nz_row_sel)
-
-    def calc_Ih(self):
+    def calc_Ih(self) -> None:
         """Calculate the current best estimate for Ih for each reflection group."""
-        scale_factors = self.Ih_table["inverse_scale_factor"]
-        gsq = flex.pow2(scale_factors) * self.weights
-        sumgsq = gsq * self.h_index_matrix
-        gI = (scale_factors * self.Ih_table["intensity"]) * self.weights
-        sumgI = gI * self.h_index_matrix
+        scale_factors = self.inverse_scale_factors
+        sumgsq = self.sum_in_groups(np.square(scale_factors) * self.weights)
+        sumgI = self.sum_in_groups(scale_factors * self.intensities * self.weights)
         Ih = sumgI / sumgsq
-        self.Ih_table["Ih_values"] = Ih * self.h_expand_matrix
+        self.Ih_table.loc[:, "Ih_values"] = Ih @ self._csc_h_expand_matrix
 
-    def update_weights(self, error_model=None, dataset_id=None):
+    def update_weights(
+        self,
+        error_model: Optional[BasicErrorModel] = None,
+        dataset_id: Optional[int] = None,
+    ) -> None:
         """Update the scaling weights based on an error model."""
         if error_model:
             if dataset_id is not None:  # note the first dataset has an id of 0
-                sel = self.Ih_table["dataset_id"] == dataset_id
+                sel = self.Ih_table["dataset_id"].to_numpy() == dataset_id
                 sigmaprimesq = error_model.update_variances(
-                    self.variances.select(sel), self.intensities.select(sel)
+                    self.variances[sel], self.intensities[sel]
                 )
-                self.weights.set_selected(sel, 1.0 / sigmaprimesq)
+                self.Ih_table.loc[sel, "weights"] = 1.0 / sigmaprimesq
             else:
                 sigmaprimesq = error_model.update_variances(
                     self.variances, self.intensities
                 )
-                self.weights = 1.0 / sigmaprimesq
+                self.Ih_table.loc[:, "weights"] = 1.0 / sigmaprimesq
         else:
             if dataset_id is not None:  # note the first dataset has an id of 0
-                sel = self.Ih_table["dataset_id"] == dataset_id
-                self.weights.set_selected(sel, 1.0 / self.variances.select(sel))
+                sel = self.Ih_table["dataset_id"].to_numpy() == dataset_id
+                self.Ih_table.loc[sel, "weights"] = 1.0 / self.variances[sel]
             else:
-                self.weights = 1.0 / self.variances
+                self.Ih_table.loc[:, "weights"] = 1.0 / self.variances
 
-    def calc_nh(self):
+    def calc_nh(self) -> np.array:
         """Calculate the number of refls in the group to which the reflection belongs.
 
         This is a vector of length n_refl."""
-        return (
-            flex.double(self.size, 1.0) * self.h_index_matrix
-        ) * self.h_expand_matrix
+        return self.sum_in_groups(np.full(self.size, 1.0), output="per_refl")
 
-    def match_Ih_values_to_target(self, target_Ih_table):
+    def match_Ih_values_to_target(self, target_Ih_table: IhTable) -> None:
         """
         Use an Ih_table as a target to set Ih values in this table.
 
@@ -576,23 +686,22 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
                 target_Ih_table.blocked_data_list[0].Ih_values,
             )
         )
-        new_Ih_values = flex.double(self.size, 0.0)
+        new_Ih_values = np.zeros(self.size, dtype=float)
         location_in_unscaled_array = 0
         sorted_asu_indices, permuted = get_sorted_asu_indices(
-            self.Ih_table["asu_miller_index"],
+            self.asu_miller_index,
             target_Ih_table.space_group,
             anomalous=target_Ih_table.anomalous,
         )
         for j, miller_idx in enumerate(OrderedSet(sorted_asu_indices)):
-            n_in_group = self.h_index_matrix.col(j).non_zeroes
+            n_in_group = self._csc_h_index_matrix.getcol(j).count_nonzero()
             if miller_idx in target_asu_Ih_dict:
                 i = location_in_unscaled_array
-                new_Ih_values.set_selected(
-                    flex.size_t(range(i, i + n_in_group)),
-                    flex.double(n_in_group, target_asu_Ih_dict[miller_idx]),
+                new_Ih_values[np.arange(i, i + n_in_group, dtype=np.uint64)] = np.full(
+                    n_in_group, target_asu_Ih_dict[miller_idx]
                 )
             location_in_unscaled_array += n_in_group
-        self.Ih_values.set_selected(permuted, new_Ih_values)
+        self.Ih_table.loc[flumpy.to_numpy(permuted), "Ih_values"] = new_Ih_values
         sel = self.Ih_values != 0.0
         new_table = self.select(sel)
         # now set attributes to update object
@@ -600,81 +709,90 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
         self.h_index_matrix = new_table.h_index_matrix
         self.h_expand_matrix = new_table.h_expand_matrix
         self.block_selections = new_table.block_selections
+        self._csc_h_expand_matrix = new_table._csc_h_expand_matrix
+        self._csc_h_index_matrix = new_table._csc_h_index_matrix
 
     @property
-    def inverse_scale_factors(self):
+    def inverse_scale_factors(self) -> np.array:
         """The inverse scale factors of the reflections."""
-        return self.Ih_table["inverse_scale_factor"]
+        return self.Ih_table["inverse_scale_factor"].to_numpy()
 
     @inverse_scale_factors.setter
-    def inverse_scale_factors(self, new_scales):
-        if new_scales.size() != self.size:
+    def inverse_scale_factors(self, new_scales: np.array) -> None:
+        if new_scales.size != self.size:
             assert 0, """attempting to set a new set of scale factors of different
       length than previous assignment: was {}, attempting {}""".format(
-                self.inverse_scale_factors.size(),
-                new_scales.size(),
+                self.inverse_scale_factors.size,
+                new_scales.size,
             )
         else:
-            self.Ih_table["inverse_scale_factor"] = new_scales
+            self.Ih_table.loc[:, "inverse_scale_factor"] = new_scales
 
     @property
-    def variances(self):
+    def variances(self) -> np.array:
         """The variances of the reflections."""
-        return self.Ih_table["variance"]
+        return self.Ih_table["variance"].to_numpy()
 
     @variances.setter
-    def variances(self, new_variances):
-        assert new_variances.size() == self.size
-        self.Ih_table["variance"] = new_variances
+    def variances(self, new_variances: np.array) -> None:
+        assert new_variances.size == self.size
+        self.Ih_table.loc[:, "variance"] = new_variances
 
     @property
-    def intensities(self):
+    def intensities(self) -> np.array:
         """The unscaled reflection intensities."""
-        return self.Ih_table["intensity"]
+        return self.Ih_table["intensity"].to_numpy()
 
     @intensities.setter
     def intensities(self, new_intensities):
-        assert new_intensities.size() == self.size
-        self.Ih_table["intensity"] = new_intensities
+        assert new_intensities.size == self.size
+        self.Ih_table.loc[:, "intensity"] = new_intensities
 
     @property
-    def Ih_values(self):
+    def Ih_values(self) -> np.array:
         """The bset-estimated intensities of symmetry equivalent reflections."""
-        return self.Ih_table["Ih_values"]
+        return self.Ih_table["Ih_values"].to_numpy()
 
     @property
-    def weights(self):
+    def weights(self) -> np.array:
         """The weights that will be used in scaling."""
-        return self.Ih_table["weights"]
+        return self.Ih_table["weights"].to_numpy()
 
     @weights.setter
     def weights(self, new_weights):
-        if new_weights.size() != self.size:
+        if new_weights.size != self.size:
             assert 0, """attempting to set a new set of weights of different
       length than previous assignment: was {}, attempting {}""".format(
                 self.size,
-                new_weights.size(),
+                new_weights.size,
             )
-        self.Ih_table["weights"] = new_weights
+        self.Ih_table.loc[:, "weights"] = new_weights
 
     @property
-    def size(self):
+    def size(self) -> int:
         """Return the length of the stored Ih_table (a reflection table)."""
-        return self.Ih_table.size()
+        return self.Ih_table.shape[0]
 
     @property
-    def n_groups(self):
+    def n_groups(self) -> int:
         """Return the length of the stored Ih_table (a reflection table)."""
-        return self.h_index_matrix.n_cols
+        return self._csc_h_index_matrix.shape[1]
 
     @property
-    def asu_miller_index(self):
+    def asu_miller_index(self) -> flex.miller_index:
         """Return the miller indices in the asymmetric unit."""
-        return self.Ih_table["asu_miller_index"]
+        return self._hkl
 
-    def setup_binner(self, unit_cell, space_group, n_resolution_bins):
+    def setup_binner(
+        self,
+        unit_cell: uctbx.unit_cell,
+        space_group: sgtbx.space_group,
+        n_resolution_bins: int,
+    ) -> None:
         """Create a binner for the reflections contained in the table."""
-        ma = _reflection_table_to_iobs(self.Ih_table, unit_cell, space_group)
+        ma = _reflection_table_to_iobs(
+            self.as_reflection_table(), unit_cell, space_group
+        )
         # need d star sq step
         d_star_sq = ma.d_star_sq().data()
         d_star_sq_min = flex.min(d_star_sq)
@@ -693,9 +811,37 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
             d_star_sq_step=step,
         )
 
+    def sum_in_groups(
+        self, array: Union[csc_matrix, np.array], output: str = "per_group"
+    ) -> np.array:
+        """
+        Sums an array object over the symmetry equivalent groups.
+        The array's final dimension must equal the size of the Ih_table.
+        """
+        if output == "per_group":
+            return array @ self._csc_h_index_matrix
+        elif output == "per_refl":  # return the summed quantity per reflection
+            return (array @ self._csc_h_index_matrix) @ self._csc_h_expand_matrix
+        else:
+            raise ValueError(
+                f"""Bad value for output= parameter
+(value={output}, allowed values: per_group, per_refl)"""
+            )
 
-def _reflection_table_to_iobs(table, unit_cell, space_group):
+    def as_reflection_table(self) -> flex.reflection_table:
+        """Return the data in flex reflection table format"""
+        table = flex.reflection_table()
+        table["asu_miller_index"] = self.asu_miller_index
+        for k, v in self.Ih_table.iteritems():
+            table[k] = flumpy.from_numpy(v.to_numpy())
+        return table
 
+
+def _reflection_table_to_iobs(
+    table: flex.reflection_table,
+    unit_cell: uctbx.unit_cell,
+    space_group: sgtbx.space_group,
+) -> miller.array:
     miller_set = miller.set(
         crystal_symmetry=crystal.symmetry(
             unit_cell=unit_cell,

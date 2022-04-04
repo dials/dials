@@ -1,6 +1,8 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
 
 
+from __future__ import annotations
+
 import pickle
 import sys
 
@@ -8,11 +10,11 @@ import iotbx.phil
 
 import dials.util.log
 from dials.util.image_viewer.spotfinder_wrap import spot_wrapper
-from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
+from dials.util.options import ArgumentParser, flatten_experiments, flatten_reflections
 
 help_message = """
 
-This program can be used for viewing diffraction images, optionally overlayed
+This program can be used for viewing diffraction images, optionally overlaid
 with the results of spot finding, indexing or integration.
 
 Examples::
@@ -62,6 +64,8 @@ show_mask = False
   .type = bool
 show_basis_vectors = True
   .type = bool
+show_rotation_axis = False
+  .type = bool
 basis_vector_scale = 10
   .type = int(value_min=1, value_max=20)
 display = *image mean variance dispersion sigma_b \
@@ -79,8 +83,11 @@ min_local = 2
   .type = int
 gain = 1
   .type = float(value_min=0)
-  .help = "Set gain for the thresholding algorithm. This does not override the"
+  .help = "Set gain for the dispersion algorithm. This does not override the"
           "detector's panel gain, but acts as a multiplier for it."
+
+include scope dials.extensions.radial_profile_spotfinder_threshold_ext.phil_str
+
 stack_images = 1
   .type = int(value_min=1)
   .expert_level = 2
@@ -159,7 +166,7 @@ load_models = True
 
 zmq_endpoint = None
   .type = str
-  .help = "The endpoint to bind a zeromq PULL socket to, for recieving commands"
+  .help = "The endpoint to bind a zeromq PULL socket to, for receiving commands"
   .expert_level = 3
 """,
     process_includes=True,
@@ -175,7 +182,7 @@ def show_image_viewer(params, experiments, reflections):
 def run(args=None):
     dials.util.log.print_banner()
     usage_message = "dials.image_viewer models.expt [observations.refl]"
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage_message,
         phil=phil_scope,
         read_experiments=True,

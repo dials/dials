@@ -1,6 +1,8 @@
 """
 Refinement engine and functions for error model refinement.
 """
+from __future__ import annotations
+
 import logging
 
 from dials.algorithms.refinement.engine import SimpleLBFGS
@@ -78,7 +80,7 @@ class ErrorModelRegressionRefiner(SimpleLBFGS):
 
     """Use LBFGS for convenience, actually is a linear regression.
 
-    Therefore target.predict step is unneccesary."""
+    Therefore target.predict step is unnecessary."""
 
     def __init__(self, model, *args, **kwargs):
         self.model = model

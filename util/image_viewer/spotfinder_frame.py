@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import collections
 import itertools
 import math
+import types
 
 import wx
 from wx.lib.intctrl import IntCtrl
@@ -8,7 +11,7 @@ from wx.lib.intctrl import IntCtrl
 from cctbx import crystal, uctbx
 from cctbx.miller import index_generator
 from dxtbx.imageset import ImageSet
-from dxtbx.model.detector_helpers import project_2d
+from dxtbx.model.detector_helpers import get_detector_projection_2d_axes
 from dxtbx.model.experiment_list import ExperimentList, ExperimentListFactory
 from libtbx.utils import flat_list
 from scitbx import matrix
@@ -26,6 +29,7 @@ from dials.algorithms.image.threshold import (
 from dials.algorithms.shoebox import MaskCode
 from dials.array_family import flex
 from dials.command_line.find_spots import phil_scope as find_spots_phil_scope
+from dials.extensions import SpotFinderThreshold
 from dials.util import masking
 from dials.util.image_viewer.mask_frame import MaskSettingsFrame
 from dials.util.image_viewer.spotfinder_wrap import chooser_wrapper
@@ -79,6 +83,33 @@ def create_load_image_event(destination, filename):
     wx.PostEvent(destination, LoadImageEvent(myEVT_LOADIMG, -1, filename))
 
 
+class RadialProfileThresholdDebug:
+    # The radial_profile threshold algorithm does not have an associated
+    # 'Debug' class. It does not create the same set of intermediate images
+    # as the dispersion algorithms, so we can delegate to a
+    # DispersionThresholdDebug object for those, while overriding the final_mask
+    # method. This wrapper class handles that.
+    def __init__(self, imageset, n_iqr, blur, n_bins):
+
+        self.imageset = imageset
+        params = find_spots_phil_scope.extract()
+        params.spotfinder.threshold.radial_profile.blur = blur
+        params.spotfinder.threshold.radial_profile.n_bins = n_bins
+        self.radial_profile = SpotFinderThreshold.load("radial_profile")(params)
+        self._i_panel = 0
+
+    def __call__(self, *args):
+        dispersion = DispersionThresholdDebug(*args)
+        image = args[0]
+        mask = args[1]
+        dispersion._final_mask = self.radial_profile.compute_threshold(
+            image, mask, imageset=self.imageset, i_panel=self._i_panel
+        )
+        dispersion.final_mask = types.MethodType(lambda x: x._final_mask, dispersion)
+        self._i_panel += 1
+        return dispersion
+
+
 class SpotFrame(XrayFrame):
     def __init__(self, *args, **kwds):
         self.experiments = kwds.pop("experiments")
@@ -96,19 +127,20 @@ class SpotFrame(XrayFrame):
 
         super().__init__(*args, **kwds)
 
-        # Precalculate best-fit frame for image display, except for P12M
+        # Precalculate best-fit frame for image display if required
         for experiment_list in self.experiments:
             for experiment in experiment_list:
                 detector = experiment.detector
-                if len(detector) == 24 and detector[0].get_image_size() == (2463, 195):
+                if not detector:
                     self.params.projection = None
-                elif len(detector) == 120 and detector[0].get_image_size() == (
-                    487,
-                    195,
-                ):
+                    continue
+                if detector.has_projection_2d():
                     self.params.projection = None
+                    continue
                 else:
-                    detector.projected_2d = project_2d(detector)
+                    detector.projection_2d_axes = get_detector_projection_2d_axes(
+                        detector
+                    )
                 detector.projection = self.params.projection
 
         self.viewing_stills = True
@@ -176,7 +208,7 @@ class SpotFrame(XrayFrame):
 
         self.display_foreground_circles_patch = False  # hard code this option, for now
 
-        self._kabsch_debug_list_hash = 0
+        self._dispersion_debug_list_hash = 0
 
         if (
             self.experiments is not None
@@ -357,10 +389,10 @@ class SpotFrame(XrayFrame):
         value = self.stack.GetPhilValue()
 
         if value == 1:
-            for button in self.settings_frame.panel.kabsch_buttons:
+            for button in self.settings_frame.panel.dispersion_buttons:
                 button.Enable()
         else:
-            for button in self.settings_frame.panel.kabsch_buttons:
+            for button in self.settings_frame.panel.dispersion_buttons:
                 button.Disable()
 
         if value != self.params.stack_images:
@@ -647,6 +679,133 @@ class SpotFrame(XrayFrame):
         else:
             return "#3b3b3b"  # dark grey
 
+    def _draw_resolution_polygons(
+        self, twotheta, spacings, beamvec, bor1, bor2, detector, unit_cell, space_group
+    ):
+        """Draw resolution rings for arbitrary detector geometry using a polygon path"""
+        resolution_text_data = []
+        ring_data = []
+        n_rays = 720
+        for tt, d in zip(twotheta, spacings):
+
+            # Generate rays at 2θ
+            cone_base_centre = beamvec * math.cos(tt)
+            cone_base_radius = (beamvec * math.sin(tt)).length()
+            rad1 = bor1.normalize() * cone_base_radius
+            rad2 = bor2.normalize() * cone_base_radius
+            ticks = (2 * math.pi / n_rays) * flex.double_range(n_rays)
+            offset1 = flex.vec3_double(n_rays, rad1) * flex.cos(ticks)
+            offset2 = flex.vec3_double(n_rays, rad2) * flex.sin(ticks)
+            rays = flex.vec3_double(n_rays, cone_base_centre) + offset1 + offset2
+
+            # Get the ray intersections. Need to set a dummy phi value
+            rt = flex.reflection_table.empty_standard(n_rays)
+            rt["s1"] = rays
+            rt["phi"] = flex.double(n_rays, 0)
+            from dials.algorithms.spot_prediction import ray_intersection
+
+            intersect = ray_intersection(detector, rt)
+            rt = rt.select(intersect)
+            if len(rt) == 0:
+                continue
+
+            curr_panel_id = rt[0]["panel"]
+            panel = detector[curr_panel_id]
+
+            # Split the intersections into sets of vertices in separate paths
+            paths = []
+            vertices = []
+            for ref in rt.rows():
+                if ref["panel"] != curr_panel_id:
+                    # close off the current path and reset the vertices
+                    paths.append(vertices)
+                    vertices = []
+                    curr_panel_id = ref["panel"]
+                    panel = detector[curr_panel_id]
+                x, y = panel.millimeter_to_pixel(ref["xyzcal.mm"][0:2])
+                vertices.append(self.map_coords(x, y, curr_panel_id))
+            paths.append(vertices)
+
+            # For each path, convert vertices to segments and add to the ring data
+            segments = []
+            for vertices in paths:
+                for i in range(len(vertices) - 1):
+                    segments.append(
+                        (
+                            (vertices[i], vertices[i + 1]),
+                            {
+                                "width": self.pyslip.DefaultPolygonWidth,
+                                "color": "red",
+                                "closed": False,
+                            },
+                        )
+                    )
+            ring_data.extend(segments)
+
+            # Add labels to the iso-resolution lines
+            if unit_cell is None and space_group is None:
+                cb1 = beamvec.rotate_around_origin(axis=bor1, angle=tt)
+                for angle in (45, 135, 225, 315):
+                    txtvec = cb1.rotate_around_origin(
+                        axis=beamvec, angle=math.radians(angle)
+                    )
+                    try:
+                        panel_id, txtpos = detector.get_ray_intersection(txtvec)
+                    except RuntimeError:
+                        continue
+                    txtpos = detector[panel_id].millimeter_to_pixel(txtpos)
+                    txtpos = self.pyslip.tiles.flex_image.tile_readout_to_picture(
+                        panel_id, txtpos[1], txtpos[0]
+                    )[::-1]
+                    x, y = self.pyslip.tiles.picture_fast_slow_to_map_relative(
+                        txtpos[0], txtpos[1]
+                    )
+                    resolution_text_data.append(
+                        (
+                            x,
+                            y,
+                            f"{d:.2f}",
+                            {
+                                "placement": "cc",
+                                "colour": "red",
+                            },
+                        )
+                    )
+
+        # Remove the old ring layer, and draw a new one.
+        if hasattr(self, "_ring_layer") and self._ring_layer is not None:
+            self.pyslip.DeleteLayer(self._ring_layer, update=False)
+            self._ring_layer = None
+
+        self._ring_layer = self.pyslip.AddPolygonLayer(
+            ring_data,
+            name="<ring_layer>",
+            show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
+            update=False,
+        )
+
+        # Remove the old resolution text layer, and draw a new one.
+        if (
+            hasattr(self, "_resolution_text_layer")
+            and self._resolution_text_layer is not None
+        ):
+            self.pyslip.DeleteLayer(self._resolution_text_layer, update=False)
+            self._resolution_text_layer = None
+        if resolution_text_data:
+            self._resolution_text_layer = self.pyslip.AddTextLayer(
+                resolution_text_data,
+                map_rel=True,
+                visible=True,
+                show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
+                selectable=False,
+                name="<resolution_text_layer>",
+                fontsize=self.settings.fontsize,
+                textcolour=self._choose_text_colour(),
+                update=False,
+            )
+
+        return
+
     def draw_resolution_rings(self, unit_cell=None, space_group=None):
         image = self.image_chooser.GetClientData(
             self.image_chooser.GetSelection()
@@ -669,31 +828,32 @@ class SpotFrame(XrayFrame):
             spacings = flex.double(
                 [uctbx.d_star_sq_as_d((i + 1) * step) for i in range(0, n_rings)]
             )
-        resolution_text_data = []
 
         wavelength = beam.get_wavelength()
-        distance = detector[0].get_distance()
-        pixel_size = detector[0].get_pixel_size()[
-            0
-        ]  # FIXME assumes square pixels, and that all panels use same pixel size
-
         twotheta = uctbx.d_star_sq_as_two_theta(
             uctbx.d_as_d_star_sq(spacings), wavelength
         )
-        L_mm = []
-        L_pixels = []
-        for tt in twotheta:
-            L_mm.append(distance * math.tan(tt))
-        for lmm in L_mm:
-            L_pixels.append(lmm / pixel_size)
 
         # Get beam vector and two orthogonal vectors
         beamvec = matrix.col(beam.get_s0())
         bor1 = beamvec.ortho()
         bor2 = beamvec.cross(bor1)
 
-        ring_data = []
+        # For non-coplanar detectors use a polygon method rather than ellipses
+        if detector.has_projection_2d():
+            return self._draw_resolution_polygons(
+                twotheta,
+                spacings,
+                beamvec,
+                bor1,
+                bor2,
+                detector,
+                unit_cell,
+                space_group,
+            )
 
+        resolution_text_data = []
+        ring_data = []
         # FIXME Currently assuming that all panels are in same plane
         p_id = detector.get_panel_intersection(beam.get_s0())
         if p_id == -1:
@@ -701,7 +861,7 @@ class SpotFrame(XrayFrame):
             p_id = 0
         pan = detector[p_id]
 
-        for tt, d, pxl in zip(twotheta, spacings, L_pixels):
+        for tt, d in zip(twotheta, spacings):
             try:
                 # Find 4 rays for given d spacing / two theta angle
                 cb1 = beamvec.rotate_around_origin(axis=bor1, angle=tt)
@@ -906,51 +1066,75 @@ class SpotFrame(XrayFrame):
 
     def get_image_data(self, image):
         image.set_image_data(None)
-        if self.settings.image_type == "corrected":
-            image_data = image.get_image_data()
-        else:
-            image_data = image.get_image_data(corrected=False)
-        if isinstance(image_data, tuple):
-            image_data = tuple(id.as_double() for id in image_data)
-        else:
-            image_data = (image_data.as_double(),)
+        if self.settings.display == "image":
+            if self.settings.image_type == "corrected":
+                image_data = image.get_image_data()
+            else:
+                image_data = image.get_image_data(corrected=False)
+            if isinstance(image_data, tuple):
+                image_data = tuple(id.as_double() for id in image_data)
+            else:
+                image_data = (image_data.as_double(),)
 
-        if self.settings.display != "image":
-            kabsch_debug_list = self._calculate_dispersion_debug(image)
+        else:
+            dispersion_debug_list = self._calculate_dispersion_debug(image)
 
             if self.settings.display == "mean":
-                mean = [kabsch.mean() for kabsch in kabsch_debug_list]
+                mean = [dispersion.mean() for dispersion in dispersion_debug_list]
                 image_data = mean
             elif self.settings.display == "variance":
-                variance = [kabsch.variance() for kabsch in kabsch_debug_list]
+                variance = [
+                    dispersion.variance() for dispersion in dispersion_debug_list
+                ]
                 image_data = variance
             elif self.settings.display == "dispersion":
-                cv = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
+                cv = [
+                    dispersion.index_of_dispersion()
+                    for dispersion in dispersion_debug_list
+                ]
                 image_data = cv
             elif self.settings.display == "sigma_b":
-                cv = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
-                cv_mask = [kabsch.cv_mask() for kabsch in kabsch_debug_list]
+                cv = [
+                    dispersion.index_of_dispersion()
+                    for dispersion in dispersion_debug_list
+                ]
+                cv_mask = [dispersion.cv_mask() for dispersion in dispersion_debug_list]
                 cv_mask = [mask.as_1d().as_double() for mask in cv_mask]
                 for i, mask in enumerate(cv_mask):
                     mask.reshape(cv[i].accessor())
                 image_data = cv_mask
             elif self.settings.display == "sigma_s":
-                cv = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
-                value_mask = [kabsch.value_mask() for kabsch in kabsch_debug_list]
+                cv = [
+                    dispersion.index_of_dispersion()
+                    for dispersion in dispersion_debug_list
+                ]
+                value_mask = [
+                    dispersion.value_mask() for dispersion in dispersion_debug_list
+                ]
                 value_mask = [mask.as_1d().as_double() for mask in value_mask]
                 for i, mask in enumerate(value_mask):
                     mask.reshape(cv[i].accessor())
                 image_data = value_mask
             elif self.settings.display == "global":
-                cv = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
-                global_mask = [kabsch.global_mask() for kabsch in kabsch_debug_list]
+                cv = [
+                    dispersion.index_of_dispersion()
+                    for dispersion in dispersion_debug_list
+                ]
+                global_mask = [
+                    dispersion.global_mask() for dispersion in dispersion_debug_list
+                ]
                 global_mask = [mask.as_1d().as_double() for mask in global_mask]
                 for i, mask in enumerate(global_mask):
                     mask.reshape(cv[i].accessor())
                 image_data = global_mask
             elif self.settings.display == "threshold":
-                cv = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
-                final_mask = [kabsch.final_mask() for kabsch in kabsch_debug_list]
+                cv = [
+                    dispersion.index_of_dispersion()
+                    for dispersion in dispersion_debug_list
+                ]
+                final_mask = [
+                    dispersion.final_mask() for dispersion in dispersion_debug_list
+                ]
                 final_mask = [mask.as_1d().as_double() for mask in final_mask]
                 for i, mask in enumerate(final_mask):
                     mask.reshape(cv[i].accessor())
@@ -967,8 +1151,7 @@ class SpotFrame(XrayFrame):
     def _calculate_dispersion_debug(self, image):
 
         # hash current settings
-
-        kabsch_debug_list_hash = hash(
+        dispersion_debug_list_hash = hash(
             (
                 image.index,
                 self.images.selected.image_set,
@@ -978,14 +1161,16 @@ class SpotFrame(XrayFrame):
                 self.settings.global_threshold,
                 self.settings.min_local,
                 tuple(self.settings.kernel_size),
-                self.settings.dispersion_extended,
+                self.settings.threshold_algorithm,
+                self.settings.n_iqr,
+                self.settings.blur,
+                self.settings.n_bins,
             )
         )
 
-        # compare current settings to last calculation of "Kabsch debug" list
-
-        if kabsch_debug_list_hash == self._kabsch_debug_list_hash:
-            return self._kabsch_debug_list
+        # compare current settings to last calculation of "dispersion debug" list
+        if dispersion_debug_list_hash == self._dispersion_debug_list_hash:
+            return self._dispersion_debug_list
 
         detector = image.get_detector()
         image_mask = self.get_mask(image)
@@ -995,14 +1180,18 @@ class SpotFrame(XrayFrame):
             flex.double(image_data[i].accessor(), self.settings.gain)
             for i in range(len(detector))
         ]
-        if self.settings.dispersion_extended:
+        if self.settings.threshold_algorithm == "dispersion_extended":
             algorithm = DispersionExtendedThresholdDebug
-        else:
+        elif self.settings.threshold_algorithm == "dispersion":
             algorithm = DispersionThresholdDebug
+        else:
+            algorithm = RadialProfileThresholdDebug(
+                image, self.settings.n_iqr, self.settings.blur, self.settings.n_bins
+            )
 
-        kabsch_debug_list = []
+        dispersion_debug_list = []
         for i_panel in range(len(detector)):
-            kabsch_debug_list.append(
+            dispersion_debug_list.append(
                 algorithm(
                     image_data[i_panel].as_double(),
                     image_mask[i_panel],
@@ -1014,9 +1203,10 @@ class SpotFrame(XrayFrame):
                     self.settings.min_local,
                 )
             )
-        self._kabsch_debug_list = kabsch_debug_list
-        self._kabsch_debug_list_hash = kabsch_debug_list_hash
-        return kabsch_debug_list
+
+        self._dispersion_debug_list = dispersion_debug_list
+        self._dispersion_debug_list_hash = dispersion_debug_list_hash
+        return dispersion_debug_list
 
     def show_filters(self):
         image_data = self.get_image_data(self.pyslip.tiles.raw_image)
@@ -1245,8 +1435,10 @@ class SpotFrame(XrayFrame):
         # self.show_filters()
         if self.settings.show_threshold_pix:
             image = self.pyslip.tiles.raw_image
-            kabsch_debug_list = self._calculate_dispersion_debug(image)
-            final_mask = [kabsch.final_mask() for kabsch in kabsch_debug_list]
+            dispersion_debug_list = self._calculate_dispersion_debug(image)
+            final_mask = [
+                dispersion.final_mask() for dispersion in dispersion_debug_list
+            ]
             value = []
             for pnl, mask in enumerate(final_mask):
                 width = mask.all()[1]
@@ -1356,26 +1548,86 @@ class SpotFrame(XrayFrame):
 
         return selection
 
-    def get_spotfinder_data(self):
+    def map_coords(self, x, y, p):
+        """Convert coordinates in pixel, pixel, panel to picture coordinates
+        required for correct positioning of overlays"""
+        y, x = self.pyslip.tiles.flex_image.tile_readout_to_picture(p, y - 0.5, x - 0.5)
+        return self.pyslip.tiles.picture_fast_slow_to_map_relative(x, y)
+
+    def _rotation_axis_overlay_data(self):
+        imageset = self.images.selected.image_set
+        detector = self.pyslip.tiles.raw_image.get_detector()
+        scan = imageset.get_scan()
+        beam = imageset.get_beam()
+        gonio = imageset.get_goniometer()
+        still = scan is None or gonio is None
+        if still:
+            return
+        axis = gonio.get_rotation_axis()
+        try:
+            panel, beam_centre = detector.get_ray_intersection(beam.get_s0())
+        except RuntimeError as e:
+            if "DXTBX_ASSERT(w_max > 0)" in str(e):
+                # direct beam didn't hit a panel
+                panel = 0
+                beam_centre = detector[panel].get_ray_intersection(beam.get_s0())
+            else:
+                raise
+
+        beam_x, beam_y = detector[panel].millimeter_to_pixel(beam_centre)
+        beam_x, beam_y = self.map_coords(beam_x, beam_y, panel)
+
+        # Find the plane containing the rotation axis and s0
+        normal = matrix.col(beam.get_unit_s0()).cross(matrix.col(axis))
+
+        # Find scattering angle at max inscribed resolution
+        d_min = detector.get_max_inscribed_resolution(beam.get_s0())
+        theta = math.asin(beam.get_wavelength() / (2.0 * d_min))
+
+        # Rotate s0 in the plane so as to point to the inscribed circle
+        # along the rotation axis
+        a = matrix.col(beam.get_s0()).rotate(normal, 2.0 * theta)
+        b = matrix.col(beam.get_s0()).rotate(normal, -2.0 * theta)
+
+        panel_a = detector.get_panel_intersection(a)
+        if panel_a < 0:
+            return
+        panel_b = detector.get_panel_intersection(b)
+        if panel_b < 0:
+            return
+        x_a, y_a = detector[panel_a].get_ray_intersection_px(a)
+        x_a, y_a = self.map_coords(x_a, y_a, panel_a)
+        x_b, y_b = detector[panel_b].get_ray_intersection_px(b)
+        x_b, y_b = self.map_coords(x_b, y_b, panel_b)
+
+        result = []
+        result.append(
+            (
+                ((x_b, y_b), (x_a, y_a)),
+                {"width": 4, "color": "#1776f6", "closed": False},
+            )
+        )
+        result.append(
+            (
+                x_a,
+                y_a,
+                "axis",
+                {
+                    "placement": "ne",
+                    "fontsize": self.settings.fontsize,
+                    "textcolor": "#1776f6",
+                },
+            )
+        )
+        return result
+
+    def _reflection_overlay_data(self, i_frame):
+
         fg_code = MaskCode.Valid | MaskCode.Foreground
         strong_code = MaskCode.Valid | MaskCode.Strong
-
-        def map_coords(x, y, p):
-            y, x = self.pyslip.tiles.flex_image.tile_readout_to_picture(
-                p, y - 0.5, x - 0.5
-            )
-            return self.pyslip.tiles.picture_fast_slow_to_map_relative(x, y)
-
         shoebox_dict = {"width": 2, "color": "#0000FFA0", "closed": False}
         ctr_mass_dict = {"width": 2, "color": "#FF0000", "closed": False}
-        vector_dict = {"width": 4, "color": "#F62817", "closed": False}
-        if self.viewing_stills:
-            i_frame = self.images.selected_index  # NOTE, the underbar is intentional
-        else:
-            i_frame = self.images.selected.index
-        imageset = self.images.selected.image_set
-        if imageset.get_scan() is not None:
-            i_frame += imageset.get_scan().get_array_range()[0]
+
         shoebox_data = []
         all_pix_data = {}
         all_foreground_circles = {}
@@ -1384,26 +1636,6 @@ class SpotFrame(XrayFrame):
         max_pix_data = []
         predictions_data = []
         miller_indices_data = []
-        vector_data = []
-        vector_text_data = []
-        detector = self.pyslip.tiles.raw_image.get_detector()
-        scan = self.pyslip.tiles.raw_image.get_scan()
-        to_degrees = 180 / math.pi
-        # self.prediction_colours = ["#a6cee3", "#1f78b4", "#b2df8a", "#33a02c",
-        # "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00",
-        # "#cab2d6"] * 10
-        # alternative colour scheme
-        self.prediction_colours = [
-            "#e41a1c",
-            "#377eb8",
-            "#4daf4a",
-            "#984ea3",
-            "#ff7f00",
-            "#ffff33",
-            "#a65628",
-            "#f781bf",
-            "#999999",
-        ] * 10
 
         for ref_list_id, ref_list in enumerate(self.reflections):
             if self.viewing_stills and ref_list_id != i_frame:
@@ -1411,7 +1643,9 @@ class SpotFrame(XrayFrame):
 
             # If we have more than one imageset, then we could be on the wrong one
             if not self.have_one_imageset:
-                exp_filter = self.__get_imageset_filter(ref_list, imageset)
+                exp_filter = self.__get_imageset_filter(
+                    ref_list, self.images.selected.image_set
+                )
                 if exp_filter is None:
                     continue
                 ref_list = ref_list.select(exp_filter)
@@ -1466,7 +1700,7 @@ class SpotFrame(XrayFrame):
                                 if (mask_value == strong_code) or (
                                     mask_value == fg_code
                                 ):
-                                    x_, y_ = map_coords(
+                                    x_, y_ = self.map_coords(
                                         ix + x0 + 0.5, iy + y0 + 0.5, panel
                                     )
                                     this_spot_foreground_pixels.append(
@@ -1508,10 +1742,10 @@ class SpotFrame(XrayFrame):
                             )
 
                     if self.settings.show_shoebox:
-                        x0y0 = map_coords(x0, y0, panel)
-                        x0y1 = map_coords(x0, y1, panel)
-                        x1y0 = map_coords(x1, y0, panel)
-                        x1y1 = map_coords(x1, y1, panel)
+                        x0y0 = self.map_coords(x0, y0, panel)
+                        x0y1 = self.map_coords(x0, y1, panel)
+                        x1y0 = self.map_coords(x1, y0, panel)
+                        x1y1 = self.map_coords(x1, y1, panel)
                         # Change shoebox colour depending on index id
                         my_attrs = dict(shoebox_dict)
                         # Reflections with *only* strong set should get default
@@ -1539,7 +1773,7 @@ class SpotFrame(XrayFrame):
                         offset, i = divmod(offset, shoebox.all()[0])
                         max_index = (i, j, k)
                         if z0 + max_index[0] == i_frame or self.viewing_stills:
-                            x, y = map_coords(
+                            x, y = self.map_coords(
                                 x0 + max_index[2] + 0.5,
                                 y0 + max_index[1] + 0.5,
                                 reflection["panel"],
@@ -1554,13 +1788,13 @@ class SpotFrame(XrayFrame):
                             <= centroid[2]
                             <= (i_frame + self.params.stack_images)
                         ):
-                            x, y = map_coords(
+                            x, y = self.map_coords(
                                 centroid[0], centroid[1], reflection["panel"]
                             )
-                            xm1, ym1 = map_coords(
+                            xm1, ym1 = self.map_coords(
                                 centroid[0] - 1, centroid[1] - 1, reflection["panel"]
                             )
-                            xp1, yp1 = map_coords(
+                            xp1, yp1 = self.map_coords(
                                 centroid[0] + 1, centroid[1] + 1, reflection["panel"]
                             )
                             lines = [
@@ -1577,7 +1811,8 @@ class SpotFrame(XrayFrame):
                     frame_numbers = ref_list["xyzcal.px"].parts()[2]
                 else:
                     phi = ref_list["xyzcal.mm"].parts()[2]
-                    frame_numbers = scan.get_array_index_from_angle(phi * to_degrees)
+                    scan = self.pyslip.tiles.raw_image.get_scan()
+                    frame_numbers = scan.get_array_index_from_angle(math.degrees(phi))
                 n = self.params.stack_images
                 for i_expt in range(flex.max(ref_list["id"]) + 1):
                     expt_sel = ref_list["id"] == i_expt
@@ -1596,16 +1831,17 @@ class SpotFrame(XrayFrame):
                         ):
                             x = None
                             if "xyzcal.px" in reflection:
-                                x, y = map_coords(
+                                x, y = self.map_coords(
                                     reflection["xyzcal.px"][0],
                                     reflection["xyzcal.px"][1],
                                     reflection["panel"],
                                 )
                             elif "xyzcal.mm" in reflection:
+                                detector = self.pyslip.tiles.raw_image.get_detector()
                                 x, y = detector[
                                     reflection["panel"]
                                 ].millimeter_to_pixel(reflection["xyzcal.mm"][:2])
-                                x, y = map_coords(x, y, reflection["panel"])
+                                x, y = self.map_coords(x, y, reflection["panel"])
                             if x is None:
                                 next
 
@@ -1635,83 +1871,145 @@ class SpotFrame(XrayFrame):
             # show overlapped pixels in a different color
             all_pix_data[max(all_pix_data.keys()) + 1] = overlapped_data
 
+        return {
+            "shoebox_data": shoebox_data,
+            "all_pix_data": all_pix_data,
+            "all_foreground_circles": all_foreground_circles,
+            "overlapped_data": overlapped_data,
+            "ctr_mass_data": ctr_mass_data,
+            "max_pix_data": max_pix_data,
+            "predictions_data": predictions_data,
+            "miller_indices_data": miller_indices_data,
+        }
+
+    def _basis_vector_overlay_data(self, i_expt, i_frame, experiment):
+        imageset = self.images.selected.image_set
+        detector = self.pyslip.tiles.raw_image.get_detector()
+        crystal_model = experiment.crystal
+        cs = crystal.symmetry(
+            unit_cell=crystal_model.get_unit_cell(),
+            space_group=crystal_model.get_space_group(),
+        )
+        cb_op = cs.change_of_basis_op_to_reference_setting()
+        crystal_model = crystal_model.change_basis(cb_op)
+        A = matrix.sqr(crystal_model.get_A())
+        scan = imageset.get_scan()
+        beam = imageset.get_beam()
+        gonio = imageset.get_goniometer()
+        still = scan is None or gonio is None
+        if not still:
+            phi = scan.get_angle_from_array_index(
+                i_frame - imageset.get_array_range()[0], deg=True
+            )
+            axis = matrix.col(imageset.get_goniometer().get_rotation_axis())
+        try:
+            panel, beam_centre = detector.get_ray_intersection(beam.get_s0())
+        except RuntimeError as e:
+            if "DXTBX_ASSERT(w_max > 0)" in str(e):
+                # direct beam didn't hit a panel
+                panel = 0
+                beam_centre = detector[panel].get_ray_intersection(beam.get_s0())
+            else:
+                raise
+        beam_x, beam_y = detector[panel].millimeter_to_pixel(beam_centre)
+        beam_x, beam_y = self.map_coords(beam_x, beam_y, panel)
+
+        vector_data = []
+        label_data = []
+        for i, h in enumerate(((1, 0, 0), (0, 1, 0), (0, 0, 1))):
+            r = A * matrix.col(h) * self.settings.basis_vector_scale
+
+            if still:
+                s1 = matrix.col(beam.get_s0()) + r
+            else:
+                r_phi = r.rotate_around_origin(axis, phi, deg=True)
+                s1 = matrix.col(beam.get_s0()) + r_phi
+            panel = detector.get_panel_intersection(s1)
+            if panel < 0:
+                continue
+            x, y = detector[panel].get_ray_intersection_px(s1)
+            x, y = self.map_coords(x, y, panel)
+
+            vector_data.append(
+                (
+                    ((beam_x, beam_y), (x, y)),
+                    {
+                        "width": 4,
+                        "color": self.prediction_colours[i_expt],
+                        "closed": False,
+                    },
+                ),
+            )
+
+            label_data.append(
+                (
+                    x,
+                    y,
+                    ("a*", "b*", "c*")[i],
+                    {
+                        "placement": "ne",
+                        "fontsize": self.settings.fontsize,
+                        "textcolor": self.prediction_colours[i_expt],
+                    },
+                )
+            )
+        return vector_data, label_data
+
+    def get_spotfinder_data(self):
+
+        self.prediction_colours = [
+            "#e41a1c",
+            "#377eb8",
+            "#4daf4a",
+            "#984ea3",
+            "#ff7f00",
+            "#ffff33",
+            "#a65628",
+            "#f781bf",
+            "#999999",
+        ] * 10
+
+        if self.viewing_stills:
+            i_frame = self.images.selected_index  # NOTE, the underbar is intentional
+        else:
+            i_frame = self.images.selected.index
+        imageset = self.images.selected.image_set
+        if imageset.get_scan() is not None:
+            i_frame += imageset.get_scan().get_array_range()[0]
+
+        refl_data = self._reflection_overlay_data(i_frame)
+
+        vector_data = []
+        vector_text_data = []
+        if self.settings.show_rotation_axis:
+            axis_data = self._rotation_axis_overlay_data()
+            if axis_data:
+                vector_data.append(axis_data[0])
+                vector_text_data.append(axis_data[1])
+
         if (
             self.settings.show_basis_vectors
             and self.crystals is not None
             and self.crystals[0] is not None
         ):
             for experiments in self.experiments:
-                for experiment in experiments:
+                for i_expt, experiment in enumerate(experiments):
                     if experiment.imageset != imageset:
                         continue
-                    crystal_model = experiment.crystal
-                    cs = crystal.symmetry(
-                        unit_cell=crystal_model.get_unit_cell(),
-                        space_group=crystal_model.get_space_group(),
+                    basis_vector_data = self._basis_vector_overlay_data(
+                        i_expt, i_frame, experiment
                     )
-                    cb_op = cs.change_of_basis_op_to_reference_setting()
-                    crystal_model = crystal_model.change_basis(cb_op)
-                    A = matrix.sqr(crystal_model.get_A())
-                    scan = imageset.get_scan()
-                    beam = imageset.get_beam()
-                    gonio = imageset.get_goniometer()
-                    still = scan is None or gonio is None
-                    if not still:
-                        phi = scan.get_angle_from_array_index(
-                            i_frame - imageset.get_array_range()[0], deg=True
-                        )
-                        axis = matrix.col(imageset.get_goniometer().get_rotation_axis())
-                    try:
-                        panel, beam_centre = detector.get_ray_intersection(
-                            beam.get_s0()
-                        )
-                    except RuntimeError as e:
-                        if "DXTBX_ASSERT(w_max > 0)" in str(e):
-                            # direct beam didn't hit a panel
-                            panel = 0
-                            beam_centre = detector[panel].get_ray_intersection(
-                                beam.get_s0()
-                            )
-                        else:
-                            raise
-                    beam_x, beam_y = detector[panel].millimeter_to_pixel(beam_centre)
-                    beam_x, beam_y = map_coords(beam_x, beam_y, panel)
-                    for i, h in enumerate(((1, 0, 0), (0, 1, 0), (0, 0, 1))):
-                        r = A * matrix.col(h) * self.settings.basis_vector_scale
-
-                        if still:
-                            s1 = matrix.col(beam.get_s0()) + r
-                        else:
-                            r_phi = r.rotate_around_origin(axis, phi, deg=True)
-                            s1 = matrix.col(beam.get_s0()) + r_phi
-                        panel = detector.get_panel_intersection(s1)
-                        if panel < 0:
-                            continue
-                        x, y = detector[panel].get_ray_intersection_px(s1)
-                        x, y = map_coords(x, y, panel)
-                        vector_data.append((((beam_x, beam_y), (x, y)), vector_dict))
-
-                        vector_text_data.append(
-                            (
-                                x,
-                                y,
-                                ("a*", "b*", "c*")[i],
-                                {
-                                    "placement": "ne",
-                                    "fontsize": self.settings.fontsize,
-                                    "color": "#F62817",
-                                },
-                            )
-                        )
+                    vector_data.extend(basis_vector_data[0])
+                    vector_text_data.extend(basis_vector_data[1])
 
         return SpotfinderData(
-            all_pix_data=all_pix_data,
-            all_foreground_circles=all_foreground_circles,
-            shoebox_data=shoebox_data,
-            ctr_mass_data=ctr_mass_data,
-            max_pix_data=max_pix_data,
-            predictions_data=predictions_data,
-            miller_indices_data=miller_indices_data,
+            all_pix_data=refl_data["all_pix_data"],
+            all_foreground_circles=refl_data["all_foreground_circles"],
+            shoebox_data=refl_data["shoebox_data"],
+            ctr_mass_data=refl_data["ctr_mass_data"],
+            max_pix_data=refl_data["max_pix_data"],
+            predictions_data=refl_data["predictions_data"],
+            miller_indices_data=refl_data["miller_indices_data"],
             vector_data=vector_data,
             vector_text_data=vector_text_data,
         )
@@ -1746,7 +2044,7 @@ class SpotFrame(XrayFrame):
 
     def OnZeroMQEvent(self, event):
         message = event.message
-        print("ZMQ Event recieved by gui:", message)
+        print("ZMQ Event received by gui:", message)
         try:
             if message["command"] == "load_image":
                 filename = message["image"]
@@ -1808,16 +2106,20 @@ class SpotSettingsPanel(wx.Panel):
         self.settings.basis_vector_scale = self.params.basis_vector_scale
         self.settings.show_mask = self.params.show_mask
         self.settings.show_basis_vectors = self.params.show_basis_vectors
+        self.settings.show_rotation_axis = self.params.show_rotation_axis
         self.settings.display = self.params.display
         if self.settings.display == "global_threshold":
             self.settings.display = "global"
-        self.settings.dispersion_extended = True
+        self.settings.threshold_algorithm = "dispersion_extended"
         self.settings.nsigma_b = self.params.nsigma_b
         self.settings.nsigma_s = self.params.nsigma_s
         self.settings.global_threshold = self.params.global_threshold
         self.settings.kernel_size = self.params.kernel_size
         self.settings.min_local = self.params.min_local
         self.settings.gain = self.params.gain
+        self.settings.n_iqr = self.params.n_iqr
+        self.settings.blur = self.params.blur
+        self.settings.n_bins = self.params.n_bins
         self.settings.find_spots_phil = "find_spots.phil"
         self._sizer = wx.BoxSizer(wx.VERTICAL)
         s = self._sizer
@@ -1846,7 +2148,7 @@ class SpotSettingsPanel(wx.Panel):
         txt12 = wx.StaticText(self, -1, "Projection:")
         projection_choices = ["lab", "image"]
         self.projection_ctrl = wx.Choice(self, -1, choices=projection_choices)
-        if self.params.projection is None:  # I23 special case
+        if self.params.projection is None:
             self.projection_ctrl.SetSelection(1)
             self.projection_ctrl.Enable(False)
             txt12.Enable(False)
@@ -1913,7 +2215,7 @@ class SpotSettingsPanel(wx.Panel):
         )
         grid.Add(self.basis_vector_scale_ctrl, 0, wx.ALL, 5)
 
-        grid = wx.FlexGridSizer(cols=2, rows=8, vgap=0, hgap=0)
+        grid = wx.FlexGridSizer(cols=2, rows=9, vgap=0, hgap=0)
         s.Add(grid)
 
         # Resolution rings control
@@ -1986,6 +2288,11 @@ class SpotSettingsPanel(wx.Panel):
         self.integrated.SetValue(self.settings.show_integrated)
         grid.Add(self.integrated, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
 
+        # Toggle rotation axis display
+        self.show_rotation_axis = wx.CheckBox(self, -1, "Rotation axis")
+        self.show_rotation_axis.SetValue(self.settings.show_rotation_axis)
+        grid.Add(self.show_rotation_axis, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+
         grid = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
         self.clear_all_button = wx.Button(self, -1, "Clear all")
         grid.Add(self.clear_all_button, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
@@ -2027,96 +2334,151 @@ class SpotSettingsPanel(wx.Panel):
         grid.Add(self.image_type_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         s.Add(grid)
 
-        # DispersionThreshold thresholding parameters
-        grid = wx.FlexGridSizer(cols=1, rows=1, vgap=0, hgap=0)
-        self.threshold_algorithm = wx.CheckBox(
-            self, -1, "Use dispersion extended algorithm"
+        # Choice of thresholding algorithm
+        grid = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
+        txt1 = wx.StaticText(self, -1, "Threshold algorithm:")
+        grid.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.threshold_algorithm_types = [
+            "dispersion",
+            "dispersion_extended",
+            "radial_profile",
+        ]
+        self.threshold_algorithm_ctrl = wx.Choice(
+            self, -1, choices=self.threshold_algorithm_types
         )
-        self.threshold_algorithm.SetValue(self.settings.dispersion_extended)
-        grid.Add(self.threshold_algorithm, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.threshold_algorithm_ctrl.SetSelection(
+            self.threshold_algorithm_types.index(self.settings.threshold_algorithm)
+        )
+        grid.Add(self.threshold_algorithm_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         s.Add(grid)
 
-        grid1 = wx.FlexGridSizer(cols=2, rows=8, vgap=0, hgap=0)
-        s.Add(grid1)
+        # Spotfinding parameters relevant to dispersion algorithms
+        self.dispersion_params_grid = wx.FlexGridSizer(cols=2, rows=6, vgap=0, hgap=0)
+        s.Add(self.dispersion_params_grid)
 
         txt1 = wx.StaticText(self, -1, "Sigma background")
-        grid1.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.dispersion_params_grid.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.nsigma_b_ctrl = FloatCtrl(
             self, value=self.settings.nsigma_b, name="sigma_background"
         )
         self.nsigma_b_ctrl.SetMin(0)
-        grid1.Add(self.nsigma_b_ctrl, 0, wx.ALL, 5)
+        self.dispersion_params_grid.Add(self.nsigma_b_ctrl, 0, wx.ALL, 5)
 
         txt2 = wx.StaticText(self, -1, "Sigma strong")
-        grid1.Add(txt2, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.dispersion_params_grid.Add(txt2, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.nsigma_s_ctrl = FloatCtrl(
             self, value=self.settings.nsigma_s, name="sigma_strong"
         )
         self.nsigma_s_ctrl.SetMin(0)
-        grid1.Add(self.nsigma_s_ctrl, 0, wx.ALL, 5)
+        self.dispersion_params_grid.Add(self.nsigma_s_ctrl, 0, wx.ALL, 5)
 
         txt1 = wx.StaticText(self, -1, "Global Threshold")
-        grid1.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.dispersion_params_grid.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.global_threshold_ctrl = FloatCtrl(
             self, value=self.settings.global_threshold, name="global_threshold"
         )
         self.global_threshold_ctrl.SetMin(0)
-        grid1.Add(self.global_threshold_ctrl, 0, wx.ALL, 5)
+        self.dispersion_params_grid.Add(self.global_threshold_ctrl, 0, wx.ALL, 5)
 
         txt4 = wx.StaticText(self, -1, "Min. local")
-        grid1.Add(txt4, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.dispersion_params_grid.Add(txt4, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.min_local_ctrl = PhilIntCtrl(
             self, value=self.settings.min_local, name="min_local"
         )
         self.min_local_ctrl.SetMin(0)
-        grid1.Add(self.min_local_ctrl, 0, wx.ALL, 5)
+        self.dispersion_params_grid.Add(self.min_local_ctrl, 0, wx.ALL, 5)
 
         txt4 = wx.StaticText(self, -1, "Gain")
-        grid1.Add(txt4, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.dispersion_params_grid.Add(txt4, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.gain_ctrl = FloatCtrl(self, value=self.settings.gain, name="gain")
-        self.gain_ctrl.SetMin(0)
-        grid1.Add(self.gain_ctrl, 0, wx.ALL, 5)
+        self.gain_ctrl.SetMin(1e-6)
+        self.dispersion_params_grid.Add(self.gain_ctrl, 0, wx.ALL, 5)
 
         txt3 = wx.StaticText(self, -1, "Kernel size")
-        grid1.Add(txt3, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.dispersion_params_grid.Add(txt3, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.kernel_size_ctrl = IntsCtrl(
             self, value=self.settings.kernel_size, name="kernel_size"
         )
         self.kernel_size_ctrl.SetSize(2)
         self.kernel_size_ctrl.SetMin(1)
-        grid1.Add(self.kernel_size_ctrl, 0, wx.ALL, 5)
+        self.dispersion_params_grid.Add(self.kernel_size_ctrl, 0, wx.ALL, 5)
 
         self.Bind(
-            wx.EVT_CHECKBOX,
-            self.OnUpdateDispersionThresholdDebug,
-            self.threshold_algorithm,
+            EVT_PHIL_CONTROL, self.OnUpdateThresholdParameters, self.nsigma_b_ctrl
         )
         self.Bind(
-            EVT_PHIL_CONTROL, self.OnUpdateDispersionThresholdDebug, self.nsigma_b_ctrl
-        )
-        self.Bind(
-            EVT_PHIL_CONTROL, self.OnUpdateDispersionThresholdDebug, self.nsigma_s_ctrl
+            EVT_PHIL_CONTROL, self.OnUpdateThresholdParameters, self.nsigma_s_ctrl
         )
         self.Bind(
             EVT_PHIL_CONTROL,
-            self.OnUpdateDispersionThresholdDebug,
+            self.OnUpdateThresholdParameters,
             self.global_threshold_ctrl,
         )
         self.Bind(
             EVT_PHIL_CONTROL,
-            self.OnUpdateDispersionThresholdDebug,
+            self.OnUpdateThresholdParameters,
             self.kernel_size_ctrl,
         )
         self.Bind(
-            EVT_PHIL_CONTROL, self.OnUpdateDispersionThresholdDebug, self.min_local_ctrl
+            EVT_PHIL_CONTROL, self.OnUpdateThresholdParameters, self.min_local_ctrl
         )
+        self.Bind(EVT_PHIL_CONTROL, self.OnUpdateThresholdParameters, self.gain_ctrl)
+
+        # Spotfinding parameters relevant to the radial_profile algorithm
+        self.radial_profile_params_grid = wx.FlexGridSizer(
+            cols=2, rows=3, vgap=0, hgap=0
+        )
+        s.Add(self.radial_profile_params_grid)
+
+        txt1 = wx.StaticText(self, -1, "IQR multiplier")
+        self.radial_profile_params_grid.Add(
+            txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5
+        )
+        self.n_iqr_ctrl = FloatCtrl(
+            self, value=self.settings.n_iqr, name="iqr_multiplier"
+        )
+        self.n_iqr_ctrl.SetMin(0)
+        self.radial_profile_params_grid.Add(self.n_iqr_ctrl, 0, wx.ALL, 5)
+
+        txt1 = wx.StaticText(self, -1, "Blur")
+        self.radial_profile_params_grid.Add(
+            txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5
+        )
+        self.blur_choices = [
+            "None",
+            "narrow",
+            "wide",
+        ]
+        self.blur_ctrl = wx.Choice(self, -1, choices=self.blur_choices)
+        self.blur_ctrl.SetSelection(self.blur_choices.index(str(self.settings.blur)))
+        self.radial_profile_params_grid.Add(
+            self.blur_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5
+        )
+
+        txt1 = wx.StaticText(self, -1, "N bins")
+        self.radial_profile_params_grid.Add(
+            txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5
+        )
+        self.n_bins_ctrl = PhilIntCtrl(self, value=self.settings.n_bins, name="n_bins")
+        self.n_bins_ctrl.SetMin(10)
+        self.radial_profile_params_grid.Add(self.n_bins_ctrl, 0, wx.ALL, 5)
+
+        self.Bind(EVT_PHIL_CONTROL, self.OnUpdateThresholdParameters, self.n_iqr_ctrl)
+        self.Bind(wx.EVT_CHOICE, self.OnUpdateThresholdParameters, self.blur_ctrl)
         self.Bind(
-            EVT_PHIL_CONTROL, self.OnUpdateDispersionThresholdDebug, self.gain_ctrl
+            EVT_PHIL_CONTROL,
+            self.OnUpdateThresholdParameters,
+            self.n_bins_ctrl,
         )
+
+        # Save spotfinding PHIL control
+        grid1 = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
+        s.Add(grid1)
 
         self.save_params_txt_ctrl = StrCtrl(
             self, value=self.settings.find_spots_phil, name="find_spots_phil"
         )
+
         grid1.Add(self.save_params_txt_ctrl, 0, wx.ALL, 5)
         self.Bind(EVT_PHIL_CONTROL, self.OnUpdate, self.save_params_txt_ctrl)
 
@@ -2127,8 +2489,8 @@ class SpotSettingsPanel(wx.Panel):
         grid2 = wx.FlexGridSizer(cols=4, rows=2, vgap=0, hgap=0)
         s.Add(grid2)
 
-        self.kabsch_buttons = []
-        self.kabsch_labels = [
+        self.dispersion_buttons = []
+        self.dispersion_labels = [
             "image",
             "mean",
             "variance",
@@ -2138,21 +2500,24 @@ class SpotSettingsPanel(wx.Panel):
             "global",
             "threshold",
         ]
-        for label in self.kabsch_labels:
+        for label in self.dispersion_labels:
             btn = wx.ToggleButton(self, -1, label)
-            self.kabsch_buttons.append(btn)
+            self.dispersion_buttons.append(btn)
             grid2.Add(btn, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
             self.Bind(wx.EVT_TOGGLEBUTTON, self.OnDispersionThresholdDebug, btn)
 
-        for label, button in zip(self.kabsch_labels, self.kabsch_buttons):
+        for label, button in zip(self.dispersion_labels, self.dispersion_buttons):
             if self.params.stack_images > 1:
                 button.Disable()
-        for button in self.kabsch_buttons:
+        for button in self.dispersion_buttons:
             if button.GetLabelText() == self.settings.display:
                 button.SetValue(True)
                 break
 
         self.collect_values()
+
+        # Hide parameters for deselected threshold algorithm
+        self._toggle_params_grid(self.settings.threshold_algorithm)
 
         # CONTROLS 3:  Bind events to actions
 
@@ -2169,6 +2534,11 @@ class SpotSettingsPanel(wx.Panel):
 
         self.Bind(wx.EVT_CHOICE, self.OnUpdateZoomLevel, self.zoom_ctrl)
         self.Bind(wx.EVT_CHOICE, self.OnUpdateImage, self.image_type_ctrl)
+        self.Bind(
+            wx.EVT_CHOICE,
+            self.OnUpdateThresholdAlgorithm,
+            self.threshold_algorithm_ctrl,
+        )
         self.Bind(wx.EVT_CHOICE, self.OnUpdateImage, self.stack_mode_ctrl)
         self.Bind(wx.EVT_CHOICE, self.OnUpdate, self.color_ctrl)
         self.Bind(wx.EVT_CHOICE, self.OnUpdateProjection, self.projection_ctrl)
@@ -2185,6 +2555,7 @@ class SpotSettingsPanel(wx.Panel):
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.indexed)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.integrated)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.show_basis_vectors)
+        self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.show_rotation_axis)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdateShowMask, self.show_mask)
 
         self.Bind(wx.EVT_UPDATE_UI, self.UpdateZoomCtrl)
@@ -2230,7 +2601,10 @@ class SpotSettingsPanel(wx.Panel):
             self.settings.basis_vector_scale = self.basis_vector_scale_ctrl.GetValue()
             self.settings.show_mask = self.show_mask.GetValue()
             self.settings.show_basis_vectors = self.show_basis_vectors.GetValue()
-            self.settings.dispersion_extended = self.threshold_algorithm.GetValue()
+            self.settings.show_rotation_axis = self.show_rotation_axis.GetValue()
+            self.settings.threshold_algorithm = self.threshold_algorithm_types[
+                self.threshold_algorithm_ctrl.GetSelection()
+            ]
             self.settings.color_scheme = self.color_ctrl.GetSelection()
             self.settings.projection = self.projection_ctrl.GetSelection()
             self.settings.nsigma_b = self.nsigma_b_ctrl.GetPhilValue()
@@ -2239,6 +2613,10 @@ class SpotSettingsPanel(wx.Panel):
             self.settings.kernel_size = self.kernel_size_ctrl.GetPhilValue()
             self.settings.min_local = self.min_local_ctrl.GetPhilValue()
             self.settings.gain = self.gain_ctrl.GetPhilValue()
+            self.settings.n_iqr = self.n_iqr_ctrl.GetPhilValue()
+            self.settings.blur = self.blur_choices[self.blur_ctrl.GetSelection()]
+            self.settings.n_bins = self.n_bins_ctrl.GetPhilValue()
+
             self.settings.find_spots_phil = self.save_params_txt_ctrl.GetPhilValue()
 
     def UpdateZoomCtrl(self, event):
@@ -2292,6 +2670,7 @@ class SpotSettingsPanel(wx.Panel):
             self.miller_indices,
             self.show_mask,
             self.show_basis_vectors,
+            self.show_rotation_axis,
             self.ice_rings_ctrl,
             self.resolution_rings_ctrl,
         ):
@@ -2309,6 +2688,19 @@ class SpotSettingsPanel(wx.Panel):
         pyslip.ZoomIn((x, y), update=False)
         pyslip.GotoPosition(center)
 
+    def _toggle_params_grid(self, to_show):
+        if to_show == "radial_profile":
+            self.dispersion_params_grid.ShowItems(False)
+            self.radial_profile_params_grid.ShowItems(True)
+        else:
+            self.dispersion_params_grid.ShowItems(True)
+            self.radial_profile_params_grid.ShowItems(False)
+        self._sizer.Layout()
+
+    def OnUpdateThresholdAlgorithm(self, event):
+        self._toggle_params_grid(event.GetString())
+        self.OnUpdateThresholdParameters(event)
+
     def OnUpdateProjection(self, event):
         self.params.projection = event.GetString()
         self.OnUpdateImage(event)
@@ -2316,10 +2708,8 @@ class SpotSettingsPanel(wx.Panel):
     def OnSaveFindSpotsParams(self, event):
         params = find_spots_phil_scope.extract()
         threshold = params.spotfinder.threshold
-        if self.settings.dispersion_extended:
-            threshold.algorithm = "dispersion_extended"
-        else:
-            threshold.algorithm = "dispersion"
+        threshold.algorithm = self.settings.threshold_algorithm
+
         dispersion = threshold.dispersion
         dispersion.gain = self.settings.gain
         dispersion.global_threshold = self.settings.global_threshold
@@ -2327,34 +2717,41 @@ class SpotSettingsPanel(wx.Panel):
         dispersion.min_local = self.settings.min_local
         dispersion.sigma_background = self.settings.nsigma_b
         dispersion.sigma_strong = self.settings.nsigma_s
+
+        radial_profile = threshold.radial_profile
+        radial_profile.n_iqr = self.settings.n_iqr
+        if self.settings.blur == "None":
+            radial_profile.blur = None
+        else:
+            radial_profile.blur = self.settings.blur
+        radial_profile.n_bins = self.settings.n_bins
+
         print(f"Saving parameters to {self.settings.find_spots_phil}")
         with open(self.settings.find_spots_phil, "w") as f:
             find_spots_phil_scope.fetch_diff(find_spots_phil_scope.format(params)).show(
                 f
             )
 
-    def OnUpdateDispersionThresholdDebug(self, event):
-        if (
-            self.settings.dispersion_extended != self.threshold_algorithm.GetValue()
-            or self.settings.nsigma_b != self.nsigma_b_ctrl.GetPhilValue()
-            or self.settings.nsigma_s != self.nsigma_s_ctrl.GetPhilValue()
-            or self.settings.global_threshold
-            != self.global_threshold_ctrl.GetPhilValue()
-            or self.settings.kernel_size != self.kernel_size_ctrl.GetPhilValue()
-            or self.settings.min_local != self.min_local_ctrl.GetPhilValue()
-            or self.settings.gain != self.gain_ctrl.GetPhilValue()
-        ):
-            self.GetParent().GetParent().show_filters()
-            self.OnUpdate(event)
+    def OnUpdateThresholdParameters(self, event):
+        self.GetParent().GetParent().show_filters()
+        self.OnUpdateImage(event)
 
     def OnDispersionThresholdDebug(self, event):
+
         button = event.GetEventObject()
         selected = button.GetLabelText()
 
         self.settings.display = selected
 
+        # Disable corrected/raw selection when showing dispersion debug images
+        if self.settings.display != "image":
+            self.image_type_ctrl.SetSelection(0)
+            self.image_type_ctrl.Disable()
+        else:
+            self.image_type_ctrl.Enable()
+
         # reset buttons
-        for btn in self.kabsch_buttons:
+        for btn in self.dispersion_buttons:
             if btn.GetLabelText() == selected:
                 btn.SetValue(True)
             else:

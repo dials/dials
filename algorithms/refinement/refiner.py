@@ -2,6 +2,8 @@
 what should usually be used to construct a Refiner."""
 
 
+from __future__ import annotations
+
 import copy
 import logging
 import math
@@ -293,7 +295,7 @@ class RefinerFactory:
                 else:
                     exps_are_stills.append(False)
             else:
-                if exp.scan.get_oscillation()[1] <= 0.0:
+                if exp.scan.is_still():
                     raise DialsRefineConfigError("Cannot refine a zero-width scan")
                 exps_are_stills.append(False)
 
@@ -480,7 +482,7 @@ class RefinerFactory:
         """Configure whether to use sparse datatypes"""
         # Automatic selection for sparse parameter
         if params.refinement.parameterisation.sparse == libtbx.Auto:
-            if len(experiments) > 1:
+            if len(experiments) > 1 or params.refinement.parameterisation.scan_varying:
                 params.refinement.parameterisation.sparse = True
             else:
                 params.refinement.parameterisation.sparse = False

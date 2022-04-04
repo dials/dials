@@ -1,14 +1,21 @@
+from __future__ import annotations
+
 import http.client
 import json
 import os
+import select
 import socket as pysocket
 import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+from multiprocessing.pool import ThreadPool
 
 import libtbx.phil
+from dxtbx.model.crystal import CrystalFactory
 from dxtbx.util import get_url_scheme
+from libtbx.introspection import number_of_processors
+from scitbx.array_family import flex
 
 import dials.util
 
@@ -23,8 +30,6 @@ def work(host, port, filename, params):
 
 
 def _nproc():
-    from libtbx.introspection import number_of_processors
-
     return number_of_processors(return_value_if_unknown=-1)
 
 
@@ -44,7 +49,6 @@ def response_to_xml(d):
         return f"<response>\n{d['error']}\n</response>"
 
     if "lattices" in d:
-        from dxtbx.model.crystal import CrystalFactory
 
         for lattice in d["lattices"]:
             crystal = CrystalFactory.from_dict(lattice["crystal"])
@@ -85,28 +89,24 @@ def work_all(
     grid=None,
     nproc=None,
 ):
-    from multiprocessing.pool import ThreadPool as thread_pool
-
     if nproc is None:
         nproc = _nproc()
-    pool = thread_pool(processes=nproc)
-    threads = {}
-    for filename in filenames:
-        threads[filename] = pool.apply_async(work, (host, port, filename, params))
-    results = []
-    for filename in filenames:
-        response = threads[filename].get()
-        d = json.loads(response)
-        results.append(d)
-        print(response_to_xml(d))
+    with ThreadPool(processes=nproc) as pool:
+        threads = {}
+        for filename in filenames:
+            threads[filename] = pool.apply_async(work, (host, port, filename, params))
+        results = []
+        for filename in filenames:
+            response = threads[filename].get()
+            d = json.loads(response)
+            results.append(d)
+            print(response_to_xml(d))
 
     if json_file is not None:
-        f"Writing results to {json_file}"
         with open(json_file, "wb") as f:
             json.dump(results, f)
 
     if plot or table:
-        from scitbx.array_family import flex
 
         from dials.algorithms.spot_finding.per_image_analysis import (
             StatsMultiImage,
@@ -202,8 +202,6 @@ grid = None
 
 @dials.util.show_mail_handle_errors()
 def run(args=None):
-    import select
-
     mixed_args = args or sys.argv[1:]
     if os.name != "nt":
         r, w, x = select.select([sys.stdin], [], [], 0)

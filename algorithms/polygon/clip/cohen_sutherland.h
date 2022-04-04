@@ -59,7 +59,7 @@ namespace dials { namespace algorithms { namespace polygon { namespace clip {
    * @param code The input code
    * @param m The line gradient
    * @param c The line intersect with 0
-   * @retuns The return code.
+   * @returns The return code.
    */
   template <typename PointType, typename BoxType>
   int cohen_sutherland_intersection(PointType &p,

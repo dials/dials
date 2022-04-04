@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import logging
 import time
-from collections import Counter, OrderedDict
+from collections import Counter
 from math import isclose
 
 from iotbx import mtz
@@ -79,6 +81,7 @@ class MergedMTZWriter(MTZWriterBase):
         anom_array=None,
         amplitudes=None,
         anom_amplitudes=None,
+        dano=None,
         multiplicities=None,
         suffix=None,
     ):
@@ -103,6 +106,10 @@ class MergedMTZWriter(MTZWriterBase):
             self.current_dataset.add_miller_array(amplitudes, "F" + suffix)
         if anom_amplitudes:
             self.current_dataset.add_miller_array(anom_amplitudes, "F" + suffix)
+        if dano:
+            self.current_dataset.add_miller_array(
+                dano, "DANO" + suffix, column_types="DQ"
+            )
 
 
 class MADMergedMTZWriter(MergedMTZWriter):
@@ -114,6 +121,7 @@ class MADMergedMTZWriter(MergedMTZWriter):
         anom_array=None,
         amplitudes=None,
         anom_amplitudes=None,
+        dano=None,
         multiplicities=None,
         suffix=None,
     ):
@@ -124,6 +132,7 @@ class MADMergedMTZWriter(MergedMTZWriter):
             anom_array,
             amplitudes,
             anom_amplitudes,
+            dano,
             multiplicities,
             suffix,
         )
@@ -431,6 +440,10 @@ def export_mtz(
                 "Experiment crystals differ. Using first experiment crystal for file-level data."
             )
 
+        # At least, all experiments must have the same space group
+        if len({x.crystal.get_space_group().make_tidy() for x in experiment_list}) != 1:
+            raise ValueError("Experiments do not have a unique space group")
+
         wavelengths = match_wavelengths(experiment_list)
         if len(wavelengths) > 1:
             logger.info(
@@ -442,7 +455,7 @@ def export_mtz(
                 ),
             )
     else:
-        wavelengths = OrderedDict({experiment_list[0].beam.get_wavelength(): [0]})
+        wavelengths = {experiment_list[0].beam.get_wavelength(): [0]}
 
     # also only work correctly with one panel (for the moment)
     if any(len(experiment.detector) != 1 for experiment in experiment_list):
@@ -584,7 +597,7 @@ def export_mtz(
 
 def match_wavelengths(experiments, absolute_tolerance=1e-4):
     """Create a dictionary matching wavelength to experiments (index in list)"""
-    wavelengths = OrderedDict()
+    wavelengths = {}
     for i, x in enumerate(experiments):
         w = x.beam.get_wavelength()
         matches = [isclose(w, k, abs_tol=absolute_tolerance) for k in wavelengths]

@@ -1,1 +1,0 @@
-The previously deprecated ``Spotfinder()()`` interface has been removed. Please use ``Spotfinder().find_spots()`` instead.

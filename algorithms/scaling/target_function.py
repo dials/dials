@@ -6,6 +6,12 @@ and have implementations of residual/gradient calculations for
 scaling.
 """
 
+from __future__ import annotations
+
+import numpy as np
+
+from dxtbx import flumpy
+
 from dials.algorithms.scaling.scaling_restraints import ScalingRestraintsCalculator
 from dials.array_family import flex
 from dials_scaling_ext import calc_dIh_by_dpi, calc_jacobian, row_multiply
@@ -32,18 +38,18 @@ class ScalingTarget:
 
     def rmsds(self, Ih_table, apm):
         """Calculate RMSDs for the matches. Also calculate R-factors."""
-        R = flex.double([])
+        R = 0
         n = 0
         for block in Ih_table.blocked_data_list:
-            R.extend(flex.pow2(self.calculate_residuals(block)) * block.weights)
+            R += np.sum(np.square(self.calculate_residuals(block)) * block.weights)
             n += block.size
         if self.param_restraints:
             restraints = ScalingRestraintsCalculator.calculate_restraints(apm)
             if restraints:
-                R.extend(restraints[0])
+                R += np.sum(restraints[0])
             else:
                 self.param_restraints = False
-        self._rmsds = [(flex.sum(R) / n) ** 0.5]
+        self._rmsds = [(R / n) ** 0.5]
         return self._rmsds
 
     @staticmethod
@@ -60,8 +66,8 @@ class ScalingTarget:
     @staticmethod
     def calculate_gradients(Ih_table):
         """Return a gradient vector on length len(self.apm.x)."""
-        gsq = flex.pow2(Ih_table.inverse_scale_factors) * Ih_table.weights
-        sumgsq = gsq * Ih_table.h_index_matrix
+        gsq = np.square(Ih_table.inverse_scale_factors) * Ih_table.weights
+        sumgsq = flumpy.from_numpy(Ih_table.sum_in_groups(gsq))
         prefactor = (
             -2.0
             * Ih_table.weights
@@ -70,25 +76,33 @@ class ScalingTarget:
                 - (Ih_table.Ih_values * Ih_table.inverse_scale_factors)
             )
         )
-        dIh = (
-            Ih_table.intensities
-            - (Ih_table.Ih_values * 2.0 * Ih_table.inverse_scale_factors)
-        ) * Ih_table.weights
+        dIh = flumpy.from_numpy(
+            (
+                Ih_table.intensities
+                - (Ih_table.Ih_values * 2.0 * Ih_table.inverse_scale_factors)
+            )
+            * Ih_table.weights
+        )
         dIh_by_dpi = calc_dIh_by_dpi(
             dIh, sumgsq, Ih_table.h_index_matrix, Ih_table.derivatives.transpose()
         )
-        term_1 = (prefactor * Ih_table.Ih_values) * Ih_table.derivatives
+        term_1 = (
+            flumpy.from_numpy(prefactor * Ih_table.Ih_values) * Ih_table.derivatives
+        )
         term_2 = (
-            prefactor * Ih_table.inverse_scale_factors * Ih_table.h_index_matrix
-        ) * dIh_by_dpi
+            flumpy.from_numpy(
+                Ih_table.sum_in_groups(prefactor * Ih_table.inverse_scale_factors)
+            )
+            * dIh_by_dpi
+        )
         gradient = term_1 + term_2
         return gradient
 
     @staticmethod
     def calculate_jacobian(Ih_table):
         """Calculate the jacobian matrix, size Ih_table.size by len(self.apm.x)."""
-        gsq = flex.pow2(Ih_table.inverse_scale_factors) * Ih_table.weights
-        sumgsq = gsq * Ih_table.h_index_matrix
+        gsq = np.square(Ih_table.inverse_scale_factors) * Ih_table.weights
+        sumgsq = Ih_table.sum_in_groups(gsq)
         dIh = (
             Ih_table.intensities
             - (Ih_table.Ih_values * 2.0 * Ih_table.inverse_scale_factors)
@@ -96,10 +110,10 @@ class ScalingTarget:
         jacobian = calc_jacobian(
             Ih_table.derivatives.transpose(),
             Ih_table.h_index_matrix,
-            Ih_table.Ih_values,
-            Ih_table.inverse_scale_factors,
-            dIh,
-            sumgsq,
+            flumpy.from_numpy(Ih_table.Ih_values),
+            flumpy.from_numpy(Ih_table.inverse_scale_factors),
+            flumpy.from_numpy(dIh),
+            flumpy.from_numpy(sumgsq),
         )
         return jacobian
 
@@ -110,7 +124,7 @@ class ScalingTarget:
         resids = cls.calculate_residuals(Ih_table)
         gradients = cls.calculate_gradients(Ih_table)
         weights = Ih_table.weights
-        functional = flex.sum(flex.pow2(resids) * weights)
+        functional = np.sum(np.square(resids) * weights)
         del Ih_table.derivatives
         return functional, gradients
 
@@ -133,7 +147,7 @@ class ScalingTarget:
         """Return the residuals array and weights."""
         residuals = cls.calculate_residuals(Ih_table)
         weights = Ih_table.weights
-        return residuals, weights
+        return flumpy.from_numpy(residuals), flumpy.from_numpy(weights)
 
     @classmethod
     def compute_residuals_and_gradients(cls, Ih_table):
@@ -142,7 +156,7 @@ class ScalingTarget:
         jacobian = cls.calculate_jacobian(Ih_table)
         weights = Ih_table.weights
         Ih_table.derivatives = None
-        return residuals, jacobian, weights
+        return flumpy.from_numpy(residuals), jacobian, flumpy.from_numpy(weights)
 
     def compute_restraints_residuals_and_gradients(self, apm):
         """Return the restraints for the residuals and jacobian."""
@@ -164,11 +178,16 @@ class ScalingTargetFixedIH(ScalingTarget):
         rhl = Ih_table.intensities - (
             Ih_table.Ih_values * Ih_table.inverse_scale_factors
         )
-        G = -2.0 * rhl * Ih_table.weights * Ih_table.Ih_values * Ih_table.derivatives
+        G = (
+            flumpy.from_numpy(-2.0 * rhl * Ih_table.weights * Ih_table.Ih_values)
+            * Ih_table.derivatives
+        )
         return G
 
     @staticmethod
     def calculate_jacobian(Ih_table):
         """Calculate the jacobian matrix, size Ih_table.size by len(self.apm.x)."""
-        jacobian = row_multiply(Ih_table.derivatives, -1.0 * Ih_table.Ih_values)
+        jacobian = row_multiply(
+            Ih_table.derivatives, flumpy.from_numpy(-1.0 * Ih_table.Ih_values)
+        )
         return jacobian

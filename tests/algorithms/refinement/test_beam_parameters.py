@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import random
 from math import pi
 
@@ -34,10 +36,12 @@ def test_beam_parameters():
     for i in range(attempts):
 
         # make a random beam vector and parameterise it
-        s0 = bf.make_beam(
-            matrix.col.random(3, 0.5, 1.5), wavelength=random.uniform(0.8, 1.5)
-        )
-        s0p = BeamParameterisation(s0)
+        sample_to_source = matrix.col.random(3, 0.5, 1.5).normalize()
+        beam = bf.make_beam(sample_to_source, wavelength=random.uniform(0.8, 1.5))
+        # Ensure consistent polarization (https://github.com/cctbx/dxtbx/issues/454)
+        beam.set_polarization_normal(sample_to_source.ortho().normalize())
+
+        s0p = BeamParameterisation(beam)
 
         # apply a random parameter shift
         p_vals = s0p.get_param_vals()
@@ -63,3 +67,14 @@ def test_beam_parameters():
                 print("so that difference fd_ds_dp - an_ds_dp =")
                 print(fd_ds_dp[j] - an_ds_dp[j])
                 raise
+
+        # Ensure the polarization normal vector remains orthogonal to the beam
+        # (https://github.com/dials/dials/issues/1939)
+        assert (
+            abs(
+                matrix.col(beam.get_unit_s0()).dot(
+                    matrix.col(beam.get_polarization_normal())
+                )
+            )
+            < 1e-10
+        )

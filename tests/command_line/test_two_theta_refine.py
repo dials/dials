@@ -4,6 +4,10 @@ data and comparing with expected output.
 """
 
 
+from __future__ import annotations
+
+from pathlib import Path
+
 import procrunner
 import pytest
 
@@ -13,13 +17,13 @@ from dxtbx.model.experiment_list import ExperimentListFactory
 def test(dials_data, tmpdir):
     """Test two theta refine on integrated data."""
     # use multiple scan small molecule data for this test
-    data_dir = dials_data("l_cysteine_dials_output")
+    data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
     prefix = (20, 25, 30, 35)
     exp_path = [data_dir / ("%d_integrated_experiments.json" % p) for p in prefix]
     pkl_path = [data_dir / ("%d_integrated.pickle" % p) for p in prefix]
 
     for pth in exp_path + pkl_path:
-        assert pth.check(), f"{pth.strpath} missing"
+        assert pth.is_file(), f"{str(pth)} missing"
 
     cmd = (
         [
@@ -27,8 +31,8 @@ def test(dials_data, tmpdir):
             "cif=refined_cell.cif",
             "output.correlation_plot.filename=corrplot.png",
         ]
-        + exp_path
-        + pkl_path
+        + [str(p) for p in exp_path]
+        + [str(p) for p in pkl_path]
     )
 
     print(cmd)
@@ -36,9 +40,9 @@ def test(dials_data, tmpdir):
     # work in a temporary directory
     result = procrunner.run(cmd, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("refined_cell.expt").check()
+    assert Path(tmpdir / "refined_cell.expt").is_file()
     ref_exp = ExperimentListFactory.from_json_file(
-        tmpdir.join("refined_cell.expt").strpath, check_format=False
+        str(tmpdir / "refined_cell.expt"), check_format=False
     )
 
     xls = ref_exp.crystals()
@@ -57,9 +61,9 @@ def test(dials_data, tmpdir):
 
 def test_two_theta_refine_scaled_data(dials_data, tmpdir):
     """Test two theta refine on scaled data."""
-    location = dials_data("l_cysteine_4_sweeps_scaled")
-    refls = location.join("scaled_20_25.refl")
-    expts = location.join("scaled_20_25.expt")
+    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    refls = str(location / "scaled_20_25.refl")
+    expts = str(location / "scaled_20_25.expt")
 
     command = [
         "dials.two_theta_refine",
@@ -70,10 +74,10 @@ def test_two_theta_refine_scaled_data(dials_data, tmpdir):
     ]
     result = procrunner.run(command, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("refined_cell.expt").check()
+    assert Path(tmpdir / "refined_cell.expt").is_file()
 
     ref_exp = ExperimentListFactory.from_json_file(
-        tmpdir.join("refined_cell.expt").strpath, check_format=False
+        str(tmpdir / "refined_cell.expt"), check_format=False
     )
 
     assert len(ref_exp.crystals()) == 2

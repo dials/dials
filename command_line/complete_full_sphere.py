@@ -1,6 +1,8 @@
 # LIBTBX_SET_DISPATCHER_NAME dials.complete_full_sphere
 
 
+from __future__ import annotations
+
 import logging
 import math
 import sys
@@ -14,7 +16,7 @@ from dials.algorithms.refinement import rotation_decomposition
 from dials.algorithms.shadowing.filter import filter_shadowed_reflections
 from dials.array_family import flex
 from dials.util import log, show_mail_handle_errors
-from dials.util.options import OptionParser, flatten_experiments
+from dials.util.options import ArgumentParser, flatten_experiments
 
 logger = logging.getLogger("dials.command_line.complete_full_sphere")
 
@@ -46,7 +48,7 @@ class Script:
         usage = "usage: dials.complete_full_sphere [options] "
 
         # Create the parser
-        self.parser = OptionParser(
+        self.parser = ArgumentParser(
             usage=usage,
             phil=phil_scope,
             epilog=help_message,

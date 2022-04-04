@@ -2,7 +2,8 @@
 Definitions of the scaling algorithm.
 """
 
-import gc
+from __future__ import annotations
+
 import itertools
 import json
 import logging
@@ -262,9 +263,10 @@ class ScalingAlgorithm:
             or self.params.scaling_options.target_mtz
             or self.params.scaling_options.only_target
         ):
-            self.experiments = self.experiments[:-1]
-            self.reflections = self.reflections[:-1]
-
+            # now remove things that were used as the target:
+            n_target = len(self.experiments) - len(self.scaler.active_scalers)
+            self.experiments = self.experiments[:-n_target]
+            self.reflections = self.reflections[:-n_target]
         # remove any bad datasets:
         removed_ids = self.scaler.removed_datasets
         if removed_ids:
@@ -303,18 +305,25 @@ class ScalingAlgorithm:
         # joining reflection tables - just need experiments for mtz export
         # and a reflection table.
         del self.scaler
-        for experiment in self.experiments:
-            for component in experiment.scaling_model.components.keys():
-                del experiment.scaling_model.components[component].data
-        gc.collect()
+        cols_to_del = [
+            "variance",
+            "intensity",
+            "s0",
+            "s0c",
+            "s1c",
+            "prescaling_correction",
+            "batch",
+        ]
+        for table in self.reflections:
+            for col in cols_to_del:
+                try:
+                    del table[col]
+                except KeyError:
+                    pass
+
         # update imageset ids before combining reflection tables.
         self.reflections = update_imageset_ids(self.experiments, self.reflections)
-        joint_table = flex.reflection_table()
-        for i in range(len(self.reflections)):
-            joint_table.extend(self.reflections[i])
-            # del reflection_table
-            self.reflections[i] = 0
-            gc.collect()
+        joint_table = flex.reflection_table.concat(self.reflections)
 
         # remove reflections with very low scale factors
         sel = joint_table["inverse_scale_factor"] <= 0.001
@@ -328,21 +337,6 @@ scaling from this point for an improved model.""",
                 n_neg,
             )
             joint_table.set_flags(sel, joint_table.flags.excluded_for_scaling)
-
-        to_del = [
-            "variance",
-            "intensity",
-            "s0",
-            "s0c",
-            "s1c",
-            "prescaling_correction",
-            "batch",
-        ]
-        for col in to_del:
-            try:
-                del joint_table[col]
-            except KeyError:
-                pass
 
         return self.experiments, joint_table
 
@@ -418,13 +412,11 @@ multi-dataset scaling mode (not single dataset or scaling against a reference)""
                     logger.info(
                         "Finishing scaling and filtering as no data removed in this cycle."
                     )
+                    self.reflections = parse_multiple_datasets(
+                        [script.filtered_reflection_table]
+                    )
                     if self.params.scaling_options.full_matrix:
-                        self.reflections = parse_multiple_datasets(
-                            [script.filtered_reflection_table]
-                        )
                         results = self._run_final_scale_cycle(results)
-                    else:
-                        self.reflections = [script.filtered_reflection_table]
                     results.finish(termination_reason="no_more_removed")
                     break
 

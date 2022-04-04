@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import collections
 import copy
 import json
@@ -37,7 +39,7 @@ from dials.util.multi_dataset_handling import (
     parse_multiple_datasets,
     update_imageset_ids,
 )
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.symmetry")
@@ -87,7 +89,7 @@ change_of_basis_op = None
 best_monoclinic_beta = True
   .type = bool
   .help = "If True, then for monoclinic centered cells, I2 will be preferred over C2 if"
-          "it gives a more oblique cell (i.e. smaller beta angle)."
+          "it gives a less oblique cell (i.e. smaller beta angle)."
 
 systematic_absences {
 
@@ -280,7 +282,7 @@ def get_subset_for_symmetry(experiments, reflection_tables, exclude_images=None)
             sel = get_selection_for_valid_image_ranges(refl, expt)
             if not sel.count(False):
                 # Use first 360 degrees if <360 deg i.e. first measured data,
-                # but only if no reflections have been exlicitly excluded
+                # but only if no reflections have been explicitly excluded
                 # already
                 scan_end = int(math.ceil(360 / abs(expt.scan.get_oscillation()[1])))
                 if scan_end < len(expt.scan):
@@ -516,7 +518,7 @@ def run(args=None):
     """Run symmetry analysis from the command-line."""
     usage = "dials.symmetry [options] models.expt observations.refl"
 
-    parser = OptionParser(
+    parser = ArgumentParser(
         usage=usage,
         phil=phil_scope,
         read_reflections=True,

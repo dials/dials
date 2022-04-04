@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 
 from libtbx.phil import parse
@@ -40,10 +42,10 @@ class Script:
 
     def __init__(self):
         """Initialise the script."""
-        from dials.util.options import OptionParser
+        from dials.util.options import ArgumentParser
 
         usage = "usage: dials.create_profile_model [options] models.expt spots.refl"
-        self.parser = OptionParser(
+        self.parser = ArgumentParser(
             usage=usage,
             epilog=help_message,
             phil=phil_scope,

@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 import math
 import sys
 
 import wx
 
 import scitbx.matrix
+from dxtbx.model.detector_helpers import get_panel_projection_2d_from_axes
 from scitbx.array_family import flex
 
 ######
@@ -58,7 +61,6 @@ def get_flex_image_multipanel(
 
     from iotbx.detectors import generic_flex_image
     from libtbx.test_utils import approx_equal
-    from xfel.cftbx.detector.metrology import get_projection_matrix
 
     assert len(detector) == len(image_data), (len(detector), len(image_data))
 
@@ -89,9 +91,9 @@ def get_flex_image_multipanel(
             assert approx_equal(saturation, panel.get_trusted_range()[1])
     assert saturation is not None
 
-    # Create rawdata and my_flex_image before populating it.
+    # Create rawdata and flex_image_multipanel before populating it.
     rawdata = flex.double(flex.grid(len(detector) * data_padded[0], data_padded[1]))
-    my_flex_image = generic_flex_image(
+    flex_image_multipanel = generic_flex_image(
         rawdata=rawdata,
         binning=binning,
         size1_readout=data_max_focus[0],
@@ -118,6 +120,7 @@ def get_flex_image_multipanel(
     # be assigned to the panel defined first.  XXX Use a Z-buffer
     # instead?
     for i, panel in enumerate(detector):
+
         # Determine the pixel size for the panel (in meters), as pixel
         # sizes need not be identical.
         data = image_data[i]
@@ -126,115 +129,36 @@ def get_flex_image_multipanel(
             block=data.as_double(), i_row=i * data_padded[0], i_column=0
         )
 
-        pixel_size = (
-            panel.get_pixel_size()[0] * 1e-3,
-            panel.get_pixel_size()[1] * 1e-3,
-        )
-
-        if len(detector) == 24 and detector[0].get_image_size() == (2463, 195):
-            # XXX hardcoded panel height and row gap
-            my_flex_image.add_transformation_and_translation(
-                (1, 0, 0, 1), (-i * (195 + 17), 0)
-            )
-
-            continue
-
-        elif len(detector) == 120 and detector[0].get_image_size() == (487, 195):
-            i_row = i // 5
-            i_col = i % 5
-            # XXX hardcoded panel height and row gap
-            my_flex_image.add_transformation_and_translation(
-                (1, 0, 0, 1), (-i_row * (195 + 17), -i_col * (487 + 7))
-            )
-
-            continue
-
-        if getattr(detector, "projection", "lab") == "image":
-            # Get axes from precalculated 2D projection.
-            origin_2d, fast_2d, slow_2d = detector.projected_2d
-            fast = scitbx.matrix.col(fast_2d[i] + (0,))
-            slow = scitbx.matrix.col(slow_2d[i] + (0,))
-            origin = scitbx.matrix.col(origin_2d[i] + (0,)) * 1e-3
+        # If the panel already has a 2d projection then use it
+        if panel.get_projection_2d():
+            panel_r, panel_t = panel.get_projection_2d()
         else:
-            # Get unit vectors in the fast and slow directions, as well as the
-            # the locations of the origin and the center of the panel, in
-            # meters. The origin is taken w.r.t. to average beam center of all
-            # panels. This avoids excessive translations that can result from
-            # rotations around the laboratory origin. Related to beam centre above
-            # and dials#380 not sure this is right for detectors which are not
-            # coplanar since system derived from first panel...
-            fast = scitbx.matrix.col(panel.get_fast_axis())
-            slow = scitbx.matrix.col(panel.get_slow_axis())
-            origin = scitbx.matrix.col(panel.get_origin()) * 1e-3 - beam_center
+            if getattr(detector, "projection", "lab") == "image":
+                # Get axes from precalculated 2D projection.
+                origin_2d, fast_2d, slow_2d = detector.projection_2d_axes
+                fast = scitbx.matrix.col(fast_2d[i] + (0,))
+                slow = scitbx.matrix.col(slow_2d[i] + (0,))
+                origin = scitbx.matrix.col(origin_2d[i] + (0,)) * 1e-3
+            else:
+                # Get unit vectors in the fast and slow directions, as well as the
+                # the locations of the origin and the center of the panel, in
+                # meters. The origin is taken w.r.t. to average beam center of all
+                # panels. This avoids excessive translations that can result from
+                # rotations around the laboratory origin. Related to beam centre above
+                # and dials#380 not sure this is right for detectors which are not
+                # coplanar since system derived from first panel...
+                fast = scitbx.matrix.col(panel.get_fast_axis())
+                slow = scitbx.matrix.col(panel.get_slow_axis())
+                origin = scitbx.matrix.col(panel.get_origin()) * 1e-3 - beam_center
 
-        center = (
-            origin
-            + (data.focus()[0] - 1) / 2 * pixel_size[1] * slow
-            + (data.focus()[1] - 1) / 2 * pixel_size[0] * fast
-        )
-        normal = slow.cross(fast).normalize()
-
-        # Determine rotational and translational components of the
-        # homogeneous transformation that maps the readout indices to the
-        # three-dimensional laboratory frame.
-        Rf = scitbx.matrix.sqr(
-            (
-                fast(0, 0),
-                fast(1, 0),
-                fast(2, 0),
-                -slow(0, 0),
-                -slow(1, 0),
-                -slow(2, 0),
-                normal(0, 0),
-                normal(1, 0),
-                normal(2, 0),
+            panel_r, panel_t = get_panel_projection_2d_from_axes(
+                panel, data, fast, slow, origin
             )
-        )
-        tf = -Rf * center
-        Tf = scitbx.matrix.sqr(
-            (
-                Rf(0, 0),
-                Rf(0, 1),
-                Rf(0, 2),
-                tf(0, 0),
-                Rf(1, 0),
-                Rf(1, 1),
-                Rf(1, 2),
-                tf(1, 0),
-                Rf(2, 0),
-                Rf(2, 1),
-                Rf(2, 2),
-                tf(2, 0),
-                0,
-                0,
-                0,
-                1,
-            )
-        )
 
-        # E maps picture coordinates onto metric Cartesian coordinates,
-        # i.e. [row, column, 1 ] -> [x, y, z, 1].  Both frames share the
-        # same origin, but the first coordinate of the screen coordinate
-        # system increases downwards, while the second increases towards
-        # the right.  XXX Is this orthographic projection the only one
-        # that makes any sense?
-        E = scitbx.matrix.rec(
-            elems=[0, +pixel_size[1], 0, -pixel_size[0], 0, 0, 0, 0, 0, 0, 0, 1],
-            n=[4, 3],
-        )
+        flex_image_multipanel.add_transformation_and_translation(panel_r, panel_t)
 
-        # P: [x, y, z, 1] -> [row, column, 1].  Note that data.focus()
-        # needs to be flipped to give (horizontal, vertical) size,
-        # i.e. (width, height).
-        Pf = get_projection_matrix(pixel_size, (data.focus()[1], data.focus()[0]))[0]
-
-        # Last row of T is always [0, 0, 0, 1].
-        T = Pf * Tf * E
-        R = scitbx.matrix.sqr((T(0, 0), T(0, 1), T(1, 0), T(1, 1)))
-        t = scitbx.matrix.col((T(0, 2), T(1, 2)))
-        my_flex_image.add_transformation_and_translation(R, t)
-    my_flex_image.followup_brightness_scale()
-    return my_flex_image
+    flex_image_multipanel.followup_brightness_scale()
+    return flex_image_multipanel
 
 
 class _Tiles:
@@ -388,7 +312,7 @@ class _Tiles:
             return wx_image.ConvertToBitmap()
         elif self.raw_image is not None:
             self.flex_image.setZoom(self.zoom_level)
-            fraction = 256.0 / self.flex_image.size1() / (2 ** self.zoom_level)
+            fraction = 256.0 / self.flex_image.size1() / (2**self.zoom_level)
             self.flex_image.setWindowCart(y, x, fraction)
             self.flex_image.prep_string()
             w, h = self.flex_image.ex_size2(), self.flex_image.ex_size1()
@@ -404,7 +328,7 @@ class _Tiles:
     def get_binning(self):
         if self.zoom_level >= 0:
             return 1.0
-        return 2.0 ** -self.zoom_level
+        return 2.0**-self.zoom_level
 
     def UseLevel(self, n):
         """Prepare to serve tiles from the required level.
@@ -427,23 +351,23 @@ class _Tiles:
             self.center_x_lon = self.center_y_lat = 500.0
             return (1024, 1024, 1.0, 1.0)
         self.num_tiles_x = int(
-            math.ceil((self.flex_image.size1() * (2 ** self.zoom_level)) / 256.0)
+            math.ceil((self.flex_image.size1() * (2**self.zoom_level)) / 256.0)
         )
         self.num_tiles_y = int(
-            math.ceil((self.flex_image.size2() * (2 ** self.zoom_level)) / 256.0)
+            math.ceil((self.flex_image.size2() * (2**self.zoom_level)) / 256.0)
         )
-        self.ppd_x = 2.0 ** self.zoom_level
-        self.ppd_y = 2.0 ** self.zoom_level
+        self.ppd_x = 2.0**self.zoom_level
+        self.ppd_y = 2.0**self.zoom_level
         # print "USELEVEL %d # tiles: %d %d"%(n,self.num_tiles_x,self.num_tiles_y)
         # print "USELEVEL %d returning"%n,(self.tile_size_x * self.num_tiles_x,
         #        self.tile_size_y * self.num_tiles_y,
         #        self.ppd_x, self.ppd_y)
         # The longitude & latitude coordinates at the image center:
         self.center_x_lon = self.extent[0] + (1.0 / self.ppd_x) * (
-            0 + self.flex_image.size2() * (2 ** self.zoom_level) / 2.0
+            0 + self.flex_image.size2() * (2**self.zoom_level) / 2.0
         )
         self.center_y_lat = self.extent[3] - (1.0 / self.ppd_y) * (
-            0 + self.flex_image.size1() * (2 ** self.zoom_level) / 2.0
+            0 + self.flex_image.size1() * (2**self.zoom_level) / 2.0
         )
         # The 2+num_tiles is just a trick to get PySlip to think the map is
         # slightly larger, allowing zoom level -3 to be properly framed:

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys
 import threading
 
@@ -19,7 +21,6 @@ try:
             "Memory usage: %.1f MB"
             % (int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss) / units_per_mb)
         )
-
 
 except ImportError:
 
@@ -140,7 +141,7 @@ class ZMQEventListener(threading.Thread):
             event_count = self.socket.poll(timeout=0.1)
             for _ in range(event_count):
                 message = self.socket.recv_json()
-                print("Recieved ZMQ Message: ", message)
+                print("Received ZMQ Message: ", message)
                 self._handle_message(message)
 
     def _handle_message(self, message):

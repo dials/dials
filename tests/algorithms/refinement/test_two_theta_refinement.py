@@ -3,6 +3,8 @@ Test refinement of a crystal unit cell using a two theta target.
 """
 
 
+from __future__ import annotations
+
 import os
 from copy import deepcopy
 from math import pi

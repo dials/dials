@@ -1,6 +1,8 @@
 # Example code for how to load experiments and reflections in the DIALS
 
 
+from __future__ import annotations
+
 from libtbx.phil import parse
 
 import dials.util.options
@@ -27,7 +29,7 @@ class Script:
     def __init__(self):
         usage = "dials.experiment_data [options] indexed.expt indexed.refl"
 
-        self.parser = dials.util.options.OptionParser(
+        self.parser = dials.util.options.ArgumentParser(
             usage=usage,
             phil=phil_scope,
             epilog=help_message,

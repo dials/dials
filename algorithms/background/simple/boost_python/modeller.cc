@@ -23,7 +23,7 @@ namespace dials { namespace algorithms { namespace background { namespace boost_
       .def("params", &Model::params)
       .def("variances", &Model::variances);
 
-    // An abtract class for background modeller
+    // An abstract class for background modeller
     class_<Modeller, boost::noncopyable>("Modeller", no_init)
       .def("create", &Modeller::create, (arg("data"), arg("mask")));
 

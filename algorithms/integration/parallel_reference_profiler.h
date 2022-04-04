@@ -119,7 +119,7 @@ namespace dials { namespace algorithms {
       // Compute the background
       try {
         compute_background_(reflection);
-      } catch (dials::error) {
+      } catch (dials::error const &) {
         finalize_shoebox(reflection, adjacent_reflections, underload_, overload_);
         return;
       }
@@ -133,7 +133,7 @@ namespace dials { namespace algorithms {
       // Compute the profile fitted intensity
       try {
         compute_reference_(reflection);
-      } catch (dials::error) {
+      } catch (dials::error const &) {
         // pass
       }
 
@@ -193,7 +193,7 @@ namespace dials { namespace algorithms {
     /**
      * Before exiting do some stuff on the shoebox
      * @param reflection The reflection
-     * @param adjacent_reflections The adjancent reflections
+     * @param adjacent_reflections The adjacent reflections
      */
     void finalize_shoebox(af::Reflection &reflection,
                           std::vector<af::Reflection> &adjacent_reflections,
@@ -285,7 +285,7 @@ namespace dials { namespace algorithms {
     /**
      * Delete the shoebox
      * @param reflection The reflection
-     * @param adjacent_reflections The adjancent reflections
+     * @param adjacent_reflections The adjacent reflections
      */
     void delete_shoebox(af::Reflection &reflection,
                         std::vector<af::Reflection> &adjacent_reflections) const {

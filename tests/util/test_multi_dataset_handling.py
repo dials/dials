@@ -2,6 +2,8 @@
 Tests for dials.util.multi_dataset_handling functions
 """
 
+from __future__ import annotations
+
 import pytest
 
 from dxtbx.model import Experiment, ExperimentList
@@ -414,4 +416,4 @@ def test_update_imageset_ids(dials_data):
     assert len(set(joint_reflections["imageset_id"])) == 8
     for id_ in range(8):
         sel = joint_reflections["id"] == id_
-        assert set(joint_reflections["imageset_id"].select(sel)) == set([id_])
+        assert set(joint_reflections["imageset_id"].select(sel)) == {id_}

@@ -3,20 +3,23 @@ Definition of the target function for error model minimisation.
 """
 
 
+from __future__ import annotations
+
+import numpy as np
+
+from dxtbx import flumpy
+
 from dials.array_family import flex
 
 
 def calculate_regression_x_y(Ih_table):
     """Calculate regression data points."""
-    n = Ih_table.group_multiplicities() - 1.0
-    group_variances = (
-        flex.pow2(
-            Ih_table.intensities - (Ih_table.inverse_scale_factors * Ih_table.Ih_values)
-        )
-        * Ih_table.h_index_matrix
-    ) / n
-    sigmasq_obs = group_variances * Ih_table.h_expand_matrix
-    isq = flex.pow2(Ih_table.intensities)
+    n = Ih_table.group_multiplicities(output="per_refl")
+    var_over_n_minus_1 = np.square(
+        Ih_table.intensities - (Ih_table.inverse_scale_factors * Ih_table.Ih_values)
+    ) / (n - 1.0)
+    sigmasq_obs = Ih_table.sum_in_groups(var_over_n_minus_1, output="per_refl")
+    isq = np.square(Ih_table.intensities)
     y = sigmasq_obs / isq
     x = Ih_table.variances / isq
     return x, y
@@ -50,8 +53,9 @@ class ErrorModelTarget:
         # cache rmsd calculation for achieved test
         R = self.calculate_residuals(apm)
         n = R.size()
-        R.extend(flex.double([self.compute_restraints_functional_gradients(apm)[0]]))
-        self._rmsds = [(flex.sum(R) / n) ** 0.5]
+        R = flex.sum(R)
+        R += self.compute_restraints_functional_gradients(apm)[0]
+        self._rmsds = [(R / n) ** 0.5]
         return self._rmsds
 
     def achieved(self):
@@ -73,7 +77,7 @@ class ErrorModelTargetRegression(ErrorModelTarget):
         super().__init__(error_model)
         # calculate variances needed for minimisation.
         self.x, self.y = calculate_regression_x_y(self.error_model.filtered_Ih_table)
-        self.n_refl = self.y.size()
+        self.n_refl = self.y.size
 
     def calculate_residuals(self, apm):
         """Return the residual vector"""
@@ -82,31 +86,31 @@ class ErrorModelTargetRegression(ErrorModelTarget):
             assert len(params) == 1
             # if only a being refined, the R = y - xo*x - xo*b2
             b = self.error_model.parameters[1]
-            R = (self.y - (params[0] * self.x) - params[0] * (b ** 2)) ** 2
+            R = (self.y - (params[0] * self.x) - params[0] * (b**2)) ** 2
         elif apm.active_parameters == ["b"]:
             assert len(params) == 1
             a = self.error_model.parameters[0]
             # R = y - a^2*x - a^2*xo
-            R = (self.y - (a ** 2 * self.x) - (a ** 2 * params[0])) ** 2
+            R = (self.y - (a**2 * self.x) - (a**2 * params[0])) ** 2
         else:
             # R = y - xo*x - x1
             R = (self.y - (params[0] * self.x) - params[1]) ** 2
-        return R
+        return flumpy.from_numpy(R)
 
     def calculate_gradients(self, apm):
         "calculate the gradient vector"
         params = apm.x
         if apm.active_parameters == ["a"]:
             b = self.error_model.parameters[1]
-            R = self.y - (params[0] * self.x) - params[0] * (b ** 2)
-            gradient = flex.double([-2.0 * flex.sum(R * (self.x + (b ** 2)))])
+            R = self.y - (params[0] * self.x) - params[0] * (b**2)
+            gradient = flex.double([-2.0 * np.sum(R * (self.x + (b**2)))])
         elif apm.active_parameters == ["b"]:
             a = self.error_model.parameters[0]
-            R = self.y - (a ** 2 * self.x) - (a ** 2 * params[0])
-            gradient = flex.double([-2.0 * flex.sum(R * (a ** 2))])
+            R = self.y - (a**2 * self.x) - (a**2 * params[0])
+            gradient = flex.double([-2.0 * np.sum(R * (a**2))])
         else:
             R = self.y - (params[0] * self.x) - params[1]
-            gradient = flex.double([-2.0 * flex.sum(R * self.x), -2.0 * flex.sum(R)])
+            gradient = flex.double([-2.0 * np.sum(R * self.x), -2.0 * np.sum(R)])
         return gradient
 
 
@@ -147,14 +151,14 @@ class ErrorModelTargetB(ErrorModelTarget):
         bin_vars = self.error_model.binner.bin_variances
         R = (
             (
-                flex.pow2(flex.double(bin_vars.size(), 0.5) - bin_vars)
+                np.square(np.full(bin_vars.size, 0.5) - bin_vars)
                 + (1.0 / bin_vars)
-                - flex.double(bin_vars.size(), 1.25)
+                - np.full(bin_vars.size, 1.25)
             )
             * self.error_model.binner.weights
-            / flex.sum(self.error_model.binner.weights)
+            / np.sum(self.error_model.binner.weights)
         )
-        return R
+        return flumpy.from_numpy(R)
 
     def calculate_gradients(self, apm):
         "calculate the gradient vector"
@@ -169,24 +173,27 @@ class ErrorModelTargetB(ErrorModelTarget):
         bin_counts = self.error_model.binner.binning_info["refl_per_bin"]
         dsig_dc = (
             b
-            * flex.pow2(I_hl)
-            * (a ** 2)
-            / (self.error_model.binner.sigmaprime * flex.pow2(g_hl))
+            * np.square(I_hl)
+            * (a**2)
+            / (self.error_model.binner.sigmaprime * np.square(g_hl))
         )
         ddelta_dsigma = (
             -1.0 * self.error_model.binner.delta_hl / self.error_model.binner.sigmaprime
         )
         deriv = ddelta_dsigma * dsig_dc
         dphi_by_dvar = -2.0 * (
-            flex.double(bin_vars.size(), 0.5)
-            - bin_vars
-            + (1.0 / (2.0 * flex.pow2(bin_vars)))
+            np.full(bin_vars.size, 0.5) - bin_vars + (1.0 / (2.0 * np.square(bin_vars)))
         )
-        term1 = 2.0 * self.error_model.binner.delta_hl * deriv * sum_matrix
-        term2a = self.error_model.binner.delta_hl * sum_matrix
-        term2b = deriv * sum_matrix
+        term1 = flumpy.to_numpy(
+            flumpy.from_numpy(2.0 * self.error_model.binner.delta_hl * deriv)
+            * sum_matrix
+        )
+        term2a = flumpy.to_numpy(
+            flumpy.from_numpy(self.error_model.binner.delta_hl) * sum_matrix
+        )
+        term2b = flumpy.to_numpy(flumpy.from_numpy(deriv) * sum_matrix)
         grad = dphi_by_dvar * (
-            (term1 / bin_counts) - (2.0 * term2a * term2b / flex.pow2(bin_counts))
+            (term1 / bin_counts) - (2.0 * term2a * term2b / np.square(bin_counts))
         )
-        gradients = flex.double([flex.sum(grad * weights) / flex.sum(weights)])
+        gradients = flex.double([np.sum(grad * weights) / np.sum(weights)])
         return gradients

@@ -14,6 +14,7 @@ import argparse
 import json
 import multiprocessing.pool
 import os
+import platform
 import re
 import shutil
 import socket as pysocket
@@ -43,7 +44,7 @@ devnull = open(os.devnull, "wb")  # to redirect unwanted subprocess output
 allowed_ssh_connections = {}
 concurrent_git_connection_limit = threading.Semaphore(5)
 
-_prebuilt_cctbx_base = "2021.6"  # July 2021 release
+_prebuilt_cctbx_base = "2021.9"  # October 2021 release
 
 
 def make_executable(filepath):
@@ -63,7 +64,10 @@ def install_micromamba(python, include_cctbx):
     elif sys.platform == "darwin":
         conda_platform = "macos"
         member = "bin/micromamba"
-        url = "https://micromamba.snakepit.net/api/micromamba/osx-64/latest"
+        if platform.machine() == "arm64":
+            url = "https://micromamba.snakepit.net/api/micromamba/osx-arm64/latest"
+        else:
+            url = "https://micromamba.snakepit.net/api/micromamba/osx-64/latest"
     elif os.name == "nt":
         conda_platform = "windows"
         member = "Library/bin/micromamba.exe"
@@ -498,7 +502,7 @@ def download_to_file(url, file, quiet=False):
         # if url fails to open, try using curl
         # temporary fix for old OpenSSL in system Python on macOS
         # https://github.com/cctbx/cctbx_project/issues/33
-        command = ["/usr/bin/curl", "--http1.0", "-fLo", file, "--retry", "5", url]
+        command = ["/usr/bin/curl", "-fLo", file, "--retry", "5", url]
         subprocess.call(command)
         socket = None  # prevent later socket code from being run
         try:
@@ -756,6 +760,21 @@ def git(module, git_available, ssh_available, reference_base, settings):
     else:
         remote_pattern = "https://github.com/%s.git"
 
+    if git_available:
+        # Determine the git version
+        p = subprocess.Popen(
+            ["git", "--version"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        )
+        output, _ = p.communicate()
+        output = output.decode("latin-1")
+        parts = output.split(" ", 2)
+        if p.returncode or not parts[:2] == ["git", "version"]:
+            raise RuntimeError("Could not determine git version")
+        # Version comes in:
+        #    "git version x.y.z"
+        # or "git version x.y.z.windows.n"
+        git_version = tuple(int(x) if x.isnumeric() else x for x in parts[2].split("."))
+
     secondary_remote = settings.get("effective-repository") and (
         settings["effective-repository"] != settings.get("base-repository")
     )
@@ -764,7 +783,17 @@ def git(module, git_available, ssh_available, reference_base, settings):
         direct_branch_checkout = ["-b", remote_branch]
     reference_parameters = []
     if reference_base and os.path.exists(os.path.join(reference_base, module, ".git")):
-        reference_parameters = ["--reference", os.path.join(reference_base, module)]
+        # Use -if-able so that we don't have errors over unreferenced submodules
+        reference_type = "--reference-if-able"
+        if git_version < (2, 11, 0):
+            # As a fallback, use the old parameter. This will fail if
+            # there are submodules and the reference does not have all
+            # the required submodules
+            reference_type = "--reference"
+        reference_parameters = [
+            reference_type,
+            os.path.join(reference_base, module),
+        ]
 
     with concurrent_git_connection_limit:
         p = subprocess.Popen(
@@ -1235,7 +1264,7 @@ be passed separately with quotes to avoid confusion (e.g
         "--python",
         help="Install this minor version of Python (default: %(default)s)",
         default="3.9",
-        choices=("3.6", "3.7", "3.8", "3.9"),
+        choices=("3.8", "3.9", "3.10"),
     )
     parser.add_argument(
         "--branch",
@@ -1246,13 +1275,6 @@ be passed separately with quotes to avoid confusion (e.g
             "during 'update' step when a repository is newly cloned set it to a given branch."
             "Specify as repository@branch, eg. 'dials@dials-next'"
         ),
-    )
-    parser.add_argument(
-        # Deprecated, 2021-05-28
-        "--mamba",
-        help=argparse.SUPPRESS,
-        default=False,
-        action="store_true",
     )
     parser.add_argument(
         "--conda",
@@ -1276,8 +1298,6 @@ be passed separately with quotes to avoid confusion (e.g
     )
 
     options = parser.parse_args()
-    if os.name == "nt" and options.python == "3.6":
-        sys.exit("Python 3.6 is not supported on Windows")
 
     print("Performing actions:", " ".join(options.actions))
 
@@ -1308,12 +1328,6 @@ be passed separately with quotes to avoid confusion (e.g
         run_tests()
 
     print("\nBootstrap success: %s" % ", ".join(options.actions))
-
-    if options.mamba:
-        print(
-            "\nNOTE: --mamba is now the default, "
-            "you do not need to specify it any more"
-        )
 
 
 if __name__ == "__main__":

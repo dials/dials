@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import math
 
@@ -207,9 +209,9 @@ class NaveParameters:
         R_prime = R_L + 1.0 / self._ML_domain_size_ang
         domain_size_volume = part_vol * math.pow(
             R_prime, 3.0
-        )  # expanded volume accomodating spot size
+        )  # expanded volume accommodating spot size
 
-        # compicated integral for mosaic spread volume, must be calculated numerically
+        # complicated integral for mosaic spread volume, must be calculated numerically
         summation = 0.0
         N_terms = 100
         for x in range(N_terms):

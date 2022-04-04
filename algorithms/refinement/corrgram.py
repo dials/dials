@@ -1,6 +1,8 @@
 """Creation of 'corrgram' correlation matrix plots"""
 
 
+from __future__ import annotations
+
 import json
 import logging
 import math
@@ -27,7 +29,7 @@ phil_str = """
       col_select = None
         .type = strings
         .help = "Specific columns to include in the plots of parameter"
-                "correlations, either specifed by parameter name or 0-based"
+                "correlations, either specified by parameter name or 0-based"
                 "column index. Defaults to all columns."
                 "This option is useful when there is a large number of"
                 "parameters"

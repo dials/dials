@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import functools
 
 from orderedset import OrderedSet
@@ -9,7 +11,7 @@ import dials.util
 from dials.array_family import flex
 from dials.util import Sorry
 from dials.util.export_mtz import match_wavelengths
-from dials.util.options import OptionParser, reflections_and_experiments_from_files
+from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 
 help_message = """
 
@@ -90,7 +92,7 @@ class Script:
         )
 
         # Create the parser
-        self.parser = OptionParser(
+        self.parser = ArgumentParser(
             usage=usage,
             phil=phil_scope,
             read_reflections=True,

@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import logging
 import math
 
+from cctbx.sgtbx.bravais_types import bravais_lattice
 from dxtbx.model import Crystal
 from scitbx.array_family import flex
 
@@ -88,7 +91,7 @@ def filter_known_symmetry(
         crystal_models (list): A list of :class:`dxtbx.model.Crystal` objects.
         target_symmetry (cctbx.crystal.symmetry): The target symmetry for filtering.
         relative_length_tolerance (float): Relative tolerance for unit cell lengths in
-            unit cell comparision (default value is 0.1).
+            unit cell comparison (default value is 0.1).
         absolute_angle_tolerance (float): Angular tolerance (in degrees) in unit cell
             comparison (default value is 5).
         max_delta (float): Maximum allowed Le Page delta used in searching for basis
@@ -108,11 +111,18 @@ def filter_known_symmetry(
                 cb_op_ref_to_primitive
             )
         )
+    target_bravais_str = str(
+        bravais_lattice(
+            group=target_symmetry_primitive.space_group_info()
+            .reference_setting()
+            .group()
+        )
+    )
 
     for model in crystal_models:
         uc = model.get_unit_cell()
         best_subgroup = find_matching_symmetry(
-            uc, target_symmetry_primitive.space_group(), max_delta=max_delta
+            uc, None, max_delta=max_delta, target_bravais_str=target_bravais_str
         )
         if best_subgroup is not None:
             if target_symmetry.unit_cell() is not None and not (
