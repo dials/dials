@@ -3,7 +3,6 @@ from __future__ import annotations
 import os.path
 
 import procrunner
-import pytest
 
 from dxtbx.serialize import load
 
@@ -52,8 +51,11 @@ def test_ssx_index_bad_input(dials_data, run_in_tmpdir):
     expts = str(ssx / "imported_no_ref_5.expt")
     refls = str(ssx / "strong_1.refl")
 
-    with pytest.raises(ValueError):
-        run([expts, refls])
+    run([expts, refls])
+    assert os.path.exists("indexed.refl")
+    assert os.path.exists("indexed.expt")
+    experiments = load.experiment_list("indexed.expt", check_format=False)
+    assert len(experiments) == 0
 
 
 def test_ssx_index_input_unit_cell(dials_data, run_in_tmpdir):

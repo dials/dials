@@ -46,7 +46,9 @@ def index_one(
     image_no: int,
 ) -> Union[Tuple[ExperimentList, flex.reflection_table], Tuple[bool, bool]]:
     if not reflection_table:
-        logger.info(f"Image {image_no+1}: Failed to index, no strong spots found.")
+        logger.info(
+            f"Image {image_no+1}: Skipped indexing, no strong spots found/remaining."
+        )
         return None, None
     # First suppress logging unless in verbose mode.
     if params.individual_log_verbosity < 2:
@@ -88,7 +90,7 @@ def index_all_concurrent(
     # first determine n_strong per image:
     n_strong_per_image = {}
     for i, (expt, table) in enumerate(zip(experiments, reflections)):
-        img = expt.imageset.get_path(i).split("/")[-1]
+        img = expt.imageset.get_image_identifier(i).split("/")[-1]
         if table:
             n_strong = table.get_flags(table.flags.strong).count(True)
         else:
@@ -99,10 +101,10 @@ def index_all_concurrent(
         max_workers=params.indexing.nproc
     ) as pool:
         sys.stdout = open(os.devnull, "w")  # block printing from rstbx
-        futures = {
-            pool.submit(index_one, expt, table, params, method_list, i): i
-            for i, (table, expt) in enumerate(zip(reflections, experiments))
-        }
+        futures = {}
+        for i, (table, expt) in enumerate(zip(reflections, experiments)):
+            if table:
+                futures[pool.submit(index_one, expt, table, params, method_list, i)] = i
         tables_list = [None] * len(reflections)
         expts_list = [None] * len(reflections)
 
@@ -138,9 +140,9 @@ def index_all_concurrent(
     indexed_reflections = flex.reflection_table()
     n_tot = 0
     for idx, (elist, table) in enumerate(zip(expts_list, tables_list)):
+        img = experiments[idx].imageset.get_image_identifier(idx).split("/")[-1]
+        n_strong = n_strong_per_image[img]
         if not (elist and table):
-            img = experiments[idx].imageset.get_path(idx).split("/")[-1]
-            n_strong = n_strong_per_image[img]
             results_summary[idx].append(
                 {
                     "Image": img,
@@ -149,9 +151,6 @@ def index_all_concurrent(
                 }
             )
             continue
-        path = elist[0].imageset.get_path(0)
-        img = path.split("/")[-1]
-        n_strong = n_strong_per_image[img]
         indexed_experiments.extend(elist)
         ids_map = dict(table.experiment_identifiers())
         for k in table.experiment_identifiers().keys():
@@ -204,20 +203,30 @@ def preprocess(
         no_refls = set(range(len(experiments))).difference(set(observed["id"]))
         for i in no_refls:
             reflections.insert(i, None)
+        logger.info(f"Filtered {len(no_refls)} images with no spots found.")
         if len(experiments) != len(reflections):
             raise ValueError(
                 f"Unequal number of reflection tables {len(reflections)} and experiments {len(experiments)}"
             )
 
     # Calculate necessary quantities
-    for refl, experiment in zip(reflections, experiments):
+    n_filtered_out = 0
+    for i, (refl, experiment) in enumerate(zip(reflections, experiments)):
         if refl:
-            elist = ExperimentList([experiment])
-            refl["imageset_id"] = flex.int(
-                refl.size(), 0
-            )  # needed for centroid_px_to_mm
-            refl.centroid_px_to_mm(elist)
-            refl.map_centroids_to_reciprocal_space(elist)
+            if refl.size() >= params.min_spots:
+                elist = ExperimentList([experiment])
+                refl["imageset_id"] = flex.int(
+                    refl.size(), 0
+                )  # needed for centroid_px_to_mm
+                refl.centroid_px_to_mm(elist)
+                refl.map_centroids_to_reciprocal_space(elist)
+            else:
+                n_filtered_out += 1
+                reflections[i] = None
+    if n_filtered_out:
+        logger.info(
+            f"Filtered {n_filtered_out} images with fewer than {params.min_spots} spots"
+        )
 
     # Determine the max cell if applicable
     if (params.indexing.max_cell is Auto) and (

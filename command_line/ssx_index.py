@@ -28,6 +28,7 @@ import json
 import logging
 import sys
 import time
+from functools import reduce
 
 from cctbx import crystal
 from libtbx import Auto, phil
@@ -84,6 +85,10 @@ nproc = Auto
     .type = int
     .expert_level = 1
     .help = "Set the number of processors to use in indexing"
+min_spots = 10
+    .type = int
+    .expert_level = 2
+    .help = "Images with fewer than this number of strong spots will not be indexed"
 output.html = dials.ssx_index.html
     .type = str
 output.json = None
@@ -157,7 +162,9 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     summary_table = make_summary_table(summary_data)
     logger.info("\nSummary of images sucessfully indexed\n" + summary_table)
 
-    n_images = len({e.imageset.get_path(0) for e in indexed_experiments})
+    n_images = reduce(
+        lambda a, v: a + (v[0]["n_indexed"] > 0), summary_data.values(), 0
+    )
     logger.info(f"{indexed_reflections.size()} spots indexed on {n_images} images\n")
 
     crystal_symmetries = [
@@ -167,17 +174,18 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
         )
         for expt in indexed_experiments
     ]
-    cluster_plots, _ = report_on_crystal_clusters(
-        crystal_symmetries,
-        make_plots=(params.output.html or params.output.json),
-    )
+    if crystal_symmetries:
+        cluster_plots, _ = report_on_crystal_clusters(
+            crystal_symmetries,
+            make_plots=(params.output.html or params.output.json),
+        )
 
     logger.info(f"Saving indexed experiments to {params.output.experiments}")
     indexed_experiments.as_file(params.output.experiments)
     logger.info(f"Saving indexed reflections to {params.output.reflections}")
     indexed_reflections.as_file(params.output.reflections)
 
-    if params.output.html or params.output.json:
+    if (params.output.html or params.output.json) and indexed_experiments:
         summary_plots = generate_plots(summary_data)
         if cluster_plots:
             summary_plots.update(cluster_plots)
