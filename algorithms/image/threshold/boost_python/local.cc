@@ -153,6 +153,52 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("__call__", &DispersionExtendedThreshold::threshold<double>)
       /* .def("__call__", &DispersionExtendedThreshold::threshold_w_gain<int>) */
       .def("__call__", &DispersionExtendedThreshold::threshold_w_gain<double>);
+
+    class_<DispersionElectronThresholdDebug>("DispersionElectronThresholdDebug",
+                                             no_init)
+      .def(init<const af::const_ref<double, af::c_grid<2> > &,
+                const af::const_ref<bool, af::c_grid<2> > &,
+                int2,
+                double,
+                double,
+                double,
+                int>((arg("image"),
+                      arg("mask"),
+                      arg("size"),
+                      arg("n_sigma_b"),
+                      arg("n_sigma_s"),
+                      arg("threshold"),
+                      arg("min_count"))))
+      .def(init<const af::const_ref<double, af::c_grid<2> > &,
+                const af::const_ref<bool, af::c_grid<2> > &,
+                const af::const_ref<double, af::c_grid<2> > &,
+                int2,
+                double,
+                double,
+                double,
+                int>((arg("image"),
+                      arg("mask"),
+                      arg("gain"),
+                      arg("size"),
+                      arg("n_sigma_b"),
+                      arg("n_sigma_s"),
+                      arg("threshold"),
+                      arg("min_count"))))
+      .def("mean", &DispersionElectronThresholdDebug::mean)
+      .def("variance", &DispersionElectronThresholdDebug::variance)
+      .def("index_of_dispersion",
+           &DispersionElectronThresholdDebug::index_of_dispersion)
+      .def("global_mask", &DispersionElectronThresholdDebug::global_mask)
+      .def("cv_mask", &DispersionElectronThresholdDebug::cv_mask)
+      .def("value_mask", &DispersionElectronThresholdDebug::value_mask)
+      .def("final_mask", &DispersionElectronThresholdDebug::final_mask);
+
+    class_<DispersionElectronThreshold>("DispersionElectronThreshold", no_init)
+      .def(init<int2, int2, double, double, double, int>())
+      /* .def("__call__", &DispersionElectronThreshold::threshold<int>) */
+      .def("__call__", &DispersionElectronThreshold::threshold<double>)
+      /* .def("__call__", &DispersionElectronThreshold::threshold_w_gain<int>) */
+      .def("__call__", &DispersionElectronThreshold::threshold_w_gain<double>);
   }
 
 }}}  // namespace dials::algorithms::boost_python

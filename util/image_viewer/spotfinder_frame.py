@@ -23,6 +23,7 @@ from wxtbx.phil_controls.ints import IntsCtrl
 from wxtbx.phil_controls.strctrl import StrCtrl
 
 from dials.algorithms.image.threshold import (
+    DispersionElectronThresholdDebug,
     DispersionExtendedThresholdDebug,
     DispersionThresholdDebug,
 )
@@ -1184,6 +1185,8 @@ class SpotFrame(XrayFrame):
             algorithm = DispersionExtendedThresholdDebug
         elif self.settings.threshold_algorithm == "dispersion":
             algorithm = DispersionThresholdDebug
+        elif self.settings.threshold_algorithm == "dispersion_electron":
+            algorithm = DispersionElectronThresholdDebug
         else:
             algorithm = RadialProfileThresholdDebug(
                 image, self.settings.n_iqr, self.settings.blur, self.settings.n_bins
@@ -2341,6 +2344,7 @@ class SpotSettingsPanel(wx.Panel):
         self.threshold_algorithm_types = [
             "dispersion",
             "dispersion_extended",
+            "dispersion_electron",
             "radial_profile",
         ]
         self.threshold_algorithm_ctrl = wx.Choice(
