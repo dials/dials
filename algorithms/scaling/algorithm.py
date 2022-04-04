@@ -152,7 +152,7 @@ def prepare_input(params, experiments, reflections):
     elif params.scaling_options.target_mtz:
         logger.info("Extracting data from merged mtz.")
         exp, reflection_table = create_datastructures_for_target_mtz(
-            experiments, params.scaling_options.target_mtz
+            experiments, params.scaling_options.target_mtz, anomalous=params.anomalous
         )
         experiments.append(exp)
         reflections.append(reflection_table)
