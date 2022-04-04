@@ -72,7 +72,7 @@ def test_import_mtz_on_xia2_processing(tmp_path, pipe, section):
     )
     assert expt_1.detector[0].get_beam_centre_px(expt_1.beam.get_s0()) == pytest.approx(
         imported_expt.detector[0].get_beam_centre_px(imported_expt.beam.get_s0()),
-        abs=2.0,
+        abs=3.5,
     )
 
     # Check scan properties
