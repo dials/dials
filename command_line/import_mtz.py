@@ -3,7 +3,7 @@ dials.import_mtz, a tool for creating DIALS working data formats (reflection
 tables and experiments) from an MTZ file.
 """
 
-from __future__ import absolute_import, division, print_function
+from __future__ import annotations
 
 import logging
 import math
@@ -23,6 +23,7 @@ import scitbx.array_family
 from dxtbx import flumpy
 from dxtbx.model import Beam, Crystal, Detector, Experiment, ExperimentList, Scan
 from dxtbx.model.goniometer import GoniometerFactory
+from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
 from scitbx import matrix
 
 from dials.algorithms.spot_prediction import ray_intersection
@@ -155,6 +156,18 @@ def scan_info_from_batch_headers(
 ) -> OrderedDict:
     batches = unmerged_mtz.batches()
 
+    # Determine rotation matrix to convert to the DIALS frame
+    scanax = matrix.col(batches[0].scanax())
+    if scanax.length() == 0.0:
+        # Default for MOSFLM, which does not set scanax
+        scanax = matrix.col((0, 0, 1))
+    M = align_reference_frame(
+        matrix.col(batches[0].source()),
+        matrix.col((0, 0, 1)),
+        matrix.col(scanax),
+        matrix.col((1, 0, 0)),
+    )
+
     scans = OrderedDict(
         {
             1: {
@@ -166,6 +179,7 @@ def scan_info_from_batch_headers(
                 "angle_end": None,
                 "umat_start": batches[0].umat(),
                 "s0n": batches[0].so(),
+                "transform_to_dials": M,
             }
         }
     )
@@ -176,6 +190,15 @@ def scan_info_from_batch_headers(
 
     for b in batches[1:]:
         if abs(b.phistt() - phi_end) > 0.0001:
+
+            # Determine rotation matrix to convert to the DIALS frame
+            M = align_reference_frame(
+                matrix.col(b[0].source()),
+                matrix.col((0, 0, -1)),
+                matrix.col(b[0].scanax()),
+                matrix.col((1, 0, 0)),
+            )
+
             scans[scan_no]["angle_end"] = phi_end
             scans[scan_no]["batch_end"] = last_batch
             scans[scan_no]["end_image"] = last_batch - scans[scan_no]["batch_begin"] + 1
@@ -188,8 +211,9 @@ def scan_info_from_batch_headers(
                 "batch_end": None,
                 "angle_begin": b.phistt(),
                 "angle_end": None,
-                "umat_start": b.umat(),
-                "s0n": b.so(),
+                "umat_start": batches[0].umat(),
+                "s0n": batches[0].so(),
+                "transform_to_dials": M,
             }
 
         phi_end = b.phiend()
@@ -378,12 +402,12 @@ profile-fitted integrated intensities."""
             correction *= data.qe
         if data.qe or data.lp:
             table["intensity.sum.value"] *= correction
-            table["intensity.sum.variance"] *= correction ** 2
+            table["intensity.sum.variance"] *= correction**2
             table["intensity.prf.value"] *= correction
-            table["intensity.prf.variance"] *= correction ** 2
+            table["intensity.prf.variance"] *= correction**2
         if data.partiality:
             table["intensity.sum.value"] *= data.partiality
-            table["intensity.sum.variance"] *= data.partiality ** 2
+            table["intensity.sum.variance"] *= data.partiality**2
 
     else:  # only one intensity set, assume profile intensities.
         logger.info(
@@ -403,12 +427,12 @@ profile-fitted integrated intensities."""
             correction *= data.qe
         if data.qe or data.lp:
             table["intensity.prf.value"] *= correction
-            table["intensity.prf.variance"] *= correction ** 2
+            table["intensity.prf.variance"] *= correction**2
 
     if data.bg:
         table["background.sum.value"] = data.bg
     if data.bgsig:
-        table["background.sum.variance"] = data.bgsig ** 2
+        table["background.sum.variance"] = data.bgsig**2
     table["partial_id"] = flex.double(range(0, table.size()))
     table.set_flags(flex.bool(table.size(), True), table.flags.predicted)
     table["id"] = flex.int(table.size(), 0)
@@ -567,17 +591,18 @@ only single wavelength MTZ files supported."""
         if not goniometer:
             # do the default goniometer
             goniometer = GoniometerFactory.single_axis()
-        Umat = matrix.sqr(scan["umat_start"])
+        Umat = matrix.sqr(
+            scan["umat_start"]
+        ).transpose()  # Convert from Fortranic ordering
+        UB = scan["transform_to_dials"] * Umat * Bmat
         ### FIXME do we need to transform by the fixed rotation?
         F = matrix.sqr(goniometer.get_fixed_rotation())
-        crystal = Crystal(
-            A=(F.inverse() * Umat.transpose() * Bmat), space_group=space_group
-        )
+        crystal = Crystal(A=(F.inverse() * UB), space_group=space_group)
         d = Detector()
         p = d.add_panel()
         p.set_image_size(panel_size)
         origin = p.get_origin()
-        p.set_frame((1, 0, 0), (0, -1, 0), (origin[0], origin[1], panel_distance))
+        p.set_frame((1, 0, 0), (0, -1, 0), (origin[0], origin[1], -1 * panel_distance))
         experiments.append(
             Experiment(
                 beam=beam,
@@ -642,14 +667,15 @@ Scan image range from mtz headers: {(scan["start_image"], scan["end_image"])}"""
 
     Bmat = mosflm_B_matrix(unit_cell)
     for i, scan in enumerate(scans.values()):
-        Umat = matrix.sqr(scan["umat_start"])
+        Umat = matrix.sqr(
+            scan["umat_start"]
+        ).transpose()  # Convert from Fortranic ordering
+        UB = scan["transform_to_dials"] * Umat * Bmat
         # In dials, we apply F to U before exporting to MTZ, so if we have
         # this we want to use it to get back to the dials UB
         ### FIXME what about mtz from other programs?
         F = matrix.sqr(experiments[0].goniometer.get_fixed_rotation())
-        crystal = Crystal(
-            A=(F.inverse() * Umat.transpose() * Bmat), space_group=space_group
-        )
+        crystal = Crystal(A=(F.inverse() * UB), space_group=space_group)
         experiments[i].crystal = crystal
 
     return experiments
@@ -730,15 +756,20 @@ def update_experiments_and_reflection_table(
             x_fit = linregress(x_px, x_mm)
             y_fit = linregress(y_px, y_mm)
 
-            pixel_size = round(x_fit.slope, 3), round(y_fit.slope, 3)
+            pixel_size_x, pixel_size_y = round(x_fit.slope, 3), round(y_fit.slope, 3)
+            shift_x, shift_y = x_fit.intercept, y_fit.intercept
+            if pixel_size_x < 0:
+                pixel_size_x *= -1
+                shift_x *= -1
+            if pixel_size_y < 0:
+                pixel_size_y *= -1
+                shift_y *= -1
             origin = (
-                panel.get_distance() * dn
-                + float(x_fit.intercept) * df
-                + float(y_fit.intercept) * ds
+                panel.get_distance() * dn + float(shift_x) * df + float(shift_y) * ds
             )
 
             panel.set_frame(df, ds, origin)
-            panel.set_pixel_size(pixel_size)
+            panel.set_pixel_size((pixel_size_x, pixel_size_y))
 
     # Update the mm positions
     if "xyzobs.mm.value" not in reflections:
