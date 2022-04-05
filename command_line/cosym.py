@@ -42,7 +42,7 @@ partiality_threshold = 0.4
 
 unit_cell_clustering {
   threshold = 5000
-    .type = float(value_min=0)
+    .type = float(value_min=0, allow_none=True)
     .help = 'Threshold value for the clustering'
   log = False
     .type = bool
@@ -105,7 +105,7 @@ class cosym(Subject):
             value: key for key, value in self.ids_to_identifiers_map.items()
         }
 
-        if len(self._experiments) > 1:
+        if len(self._experiments) > 1 and self.params.unit_cell_clustering.threshold:
             # perform unit cell clustering
             identifiers = self._unit_cell_clustering(self._experiments)
             if len(identifiers) < len(self._experiments):
