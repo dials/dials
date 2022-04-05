@@ -239,6 +239,11 @@ class Script:
             self.parser.print_help()
             return
 
+        if any((e.profile is None for e in experiments)):
+            sys.exit(
+                "Experiments must contain a profile model (for example, after integration)"
+            )
+
         # Only handle a single imageset at once
         imagesets = {expr.imageset for expr in experiments}
         if len(imagesets) != 1:
