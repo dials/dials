@@ -251,16 +251,17 @@ def show_experiments(experiments, show_scan_varying=False):
     text = []
     for i_expt, expt in enumerate(experiments):
         text.append("Experiment %i:" % i_expt)
-        template = None
         if expt.imageset:
             format_class = expt.imageset.get_format_class()
-            template = expt.imageset.get_template()
             if not format_class.is_abstract():
                 text.append(f"Format class: {format_class.__name__}")
         if expt.identifier != "":
             text.append(f"Experiment identifier: {expt.identifier}")
-        if template:
-            text.append(f"Image template: {template}")
+        # get_template() only exists for ImageSequence, not ImageSet
+        try:
+            text.append(f"Image template: {expt.imageset.get_template()}")
+        except AttributeError:
+            pass
         text.append(str(expt.detector))
         text.append(
             "Max resolution (at corners): %f"
