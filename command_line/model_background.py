@@ -1,3 +1,14 @@
+"""Calculate a global background model and diagnostic images from integrated
+experiments. This background model may improve subsequent integration in some
+cases, such as in the presence of ice rings. The method is described in the
+publication https://doi.org/10.1107/S2052252517010259.
+
+Usage:
+    dials.model_background integrated.expt
+    dials.integrate integrated.expt refined.refl background.algorithm=gmodel gmodel.robust.algorithm=True gmodel.model=background.pickle
+"""
+
+
 from __future__ import annotations
 
 import logging
@@ -10,9 +21,6 @@ import dials.util
 import dials.util.log
 
 logger = logging.getLogger("dials.command_line.model_background")
-
-help_message = """
-"""
 
 # Set the phil scope
 phil_scope = parse(
@@ -199,7 +207,7 @@ class Script:
 
         # Initialise the base class
         self.parser = ArgumentParser(
-            usage=usage, phil=phil_scope, epilog=help_message, read_experiments=True
+            usage=usage, phil=phil_scope, epilog=__doc__, read_experiments=True
         )
 
     def run(self, args=None):

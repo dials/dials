@@ -2,7 +2,7 @@ from __future__ import annotations
 
 
 class GModelBackgroundExt:
-    """An extension class implementing a robust GLM background algorithm."""
+    """An extension class implementing a global background algorithm."""
 
     name = "gmodel"
 
