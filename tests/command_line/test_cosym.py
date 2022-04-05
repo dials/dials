@@ -64,6 +64,7 @@ def test_cosym_partial_dataset(dials_data, run_in_tmpdir):
     # Add another good dataset at the end of the input list
     args.append(os.fspath(mcp / "experiments_10.json"))
     args.append(os.fspath(mcp / "reflections_10.pickle"))
+    args.append("threshold=None")
 
     dials_cosym.run(args=args)
     assert pathlib.Path("symmetrized.refl").is_file()
