@@ -41,7 +41,7 @@ logger = logging.getLogger("dials.command_line.two_theta_refine")
 help_message = """
 
 Refine the unit cell(s) of input experiments against the input indexed
-reflections using a 2theta angle target. Report the refined cell and its
+reflections using a 2θ angle target. Report the refined cell and its
 estimated standard deviation.
 
 Examples::
