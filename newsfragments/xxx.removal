@@ -1,0 +1,1 @@
+``dials.integrate``: removal of unused ``background.algorithm=median`` option.
