@@ -124,13 +124,14 @@ def test_mtz_best_unit_cell(dials_data, tmp_path):
 def test_multi_sequence_integrated_mtz(dials_data, tmp_path):
     """Test dials.export on multi-sequence integrated data."""
     # first combine two integrated files
+    data = dials_data("multi_crystal_proteinase_k", pathlib=True)
     result = procrunner.run(
         [
             "dials.combine_experiments",
-            dials_data("multi_crystal_proteinase_k") / "experiments_1.json",
-            dials_data("multi_crystal_proteinase_k") / "reflections_1.pickle",
-            dials_data("multi_crystal_proteinase_k") / "experiments_2.json",
-            dials_data("multi_crystal_proteinase_k") / "reflections_2.pickle",
+            data / "experiments_1.json",
+            data / "reflections_1.pickle",
+            data / "experiments_2.json",
+            data / "reflections_2.pickle",
         ],
         working_directory=tmp_path,
     )

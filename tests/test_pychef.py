@@ -23,8 +23,8 @@ def test_observations():
 
 
 def test_accumulators(dials_data):
-    f = dials_data("pychef").join("insulin_dials_scaled_unmerged.mtz").strpath
-    mtz_object = iotbx.mtz.object(file_name=f)
+    f = dials_data("pychef", pathlib=True) / "insulin_dials_scaled_unmerged.mtz"
+    mtz_object = iotbx.mtz.object(file_name=str(f))
     arrays = mtz_object.as_miller_arrays(merge_equivalents=False)
     for ma in arrays:
         if ma.info().labels == ["BATCH"]:

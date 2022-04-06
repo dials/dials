@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import math
+import os
 from typing import List
 
 import numpy as np
@@ -17,7 +18,7 @@ from dials.util import tabulate
 logger = logging.getLogger("dials.algorithms.indexing.ssx.analysis")
 
 
-def generate_html_report(plots: dict, filename: str) -> None:
+def generate_html_report(plots: dict, filename: str | os.PathLike) -> None:
     loader = ChoiceLoader(
         [
             PackageLoader("dials", "templates"),

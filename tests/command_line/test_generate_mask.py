@@ -29,19 +29,18 @@ from dials.command_line.generate_mask import generate_mask, phil_scope
 )
 def experiments_masks(request, dials_data):
     filename = (
-        dials_data(request.param["directory"]) / request.param["filename"]
-    ).strpath
+        dials_data(request.param["directory"], pathlib=True) / request.param["filename"]
+    )
     return ExperimentList.from_file(filename), request.param["masks"]
 
 
-def test_generate_mask(experiments_masks, tmpdir):
+def test_generate_mask(experiments_masks, run_in_tmp_path):
     experiments, masks = experiments_masks
 
     params = phil_scope.fetch().extract()
-    with tmpdir.as_cwd():
-        generate_mask(experiments, params)
+    generate_mask(experiments, params)
 
-    assert all(tmpdir.join(mask).check() for mask in masks)
+    assert all(run_in_tmp_path.joinpath(mask).is_file() for mask in masks)
 
 
 def test_generate_mask_with_untrusted_rectangle(experiments_masks, tmpdir):
@@ -149,7 +148,7 @@ def test_generate_mask_function_with_untrusted_rectangle(experiments_masks, tmpd
     assert all(mask.check() for mask in masks)
     assert tmpdir.join("masked.expt").check()
 
-    experiments = ExperimentList.from_file(tmpdir.join("masked.expt").strpath)
+    experiments = ExperimentList.from_file(tmpdir / "masked.expt")
     associated_masks = [
         imageset.external_lookup.mask.filename for imageset in experiments.imagesets()
     ]
@@ -159,13 +158,15 @@ def test_generate_mask_function_with_untrusted_rectangle(experiments_masks, tmpd
 def test_generate_mask_trusted_range(dials_data, tmpdir):
     # https://github.com/dials/dials/issues/978
 
-    image_files = [f.strpath for f in dials_data("x4wide").listdir("*.cbf", sort=True)]
+    image_files = sorted(
+        str(f) for f in dials_data("x4wide", pathlib=True).glob("*.cbf")
+    )
     with tmpdir.as_cwd():
         # Import as usual
         importer = ImageImporter(import_phil_scope)
         importer.import_image(["output.experiments=no-overloads.expt"] + image_files)
 
-        experiments = ExperimentList.from_file(tmpdir.join("no-overloads.expt").strpath)
+        experiments = ExperimentList.from_file(tmpdir / "no-overloads.expt")
         params = phil_scope.fetch(
             phil.parse("untrusted.rectangle=100,200,100,200")
         ).extract()
@@ -178,7 +179,7 @@ def test_generate_mask_trusted_range(dials_data, tmpdir):
             ["trusted_range=-1,100", "output.experiments=overloads.expt"] + image_files
         )
 
-        experiments = ExperimentList.from_file(tmpdir.join("overloads.expt").strpath)
+        experiments = ExperimentList.from_file(tmpdir / "overloads.expt")
         params = phil_scope.fetch(
             phil.parse("untrusted.rectangle=100,200,100,200")
         ).extract()

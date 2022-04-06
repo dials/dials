@@ -14,7 +14,7 @@ from dials.command_line import search_beam_position
 from dials.tests.algorithms.indexing.test_index import run_indexing
 
 
-def test_search_i04_weak_data_image_range(mocker, run_in_tmpdir, dials_regression):
+def test_search_i04_weak_data_image_range(mocker, run_in_tmp_path, dials_regression):
     """Perform a beam-centre search and check that the output is sane."""
 
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
@@ -52,7 +52,7 @@ def test_search_i04_weak_data_image_range(mocker, run_in_tmpdir, dials_regressio
     assert shift.elems == pytest.approx((0.27, -0.12, 0.0), abs=1e-1)
 
 
-def test_search_multiple(run_in_tmpdir, dials_regression):
+def test_search_multiple(run_in_tmp_path, dials_regression):
     """Perform a beam-centre search and check that the output is sane.
 
     Do the following:
@@ -84,7 +84,7 @@ def test_search_multiple(run_in_tmpdir, dials_regression):
     assert shift.elems == pytest.approx((-0.518, 0.192, 0.0), abs=1e-1)
 
 
-def test_index_after_search(dials_data, run_in_tmpdir):
+def test_index_after_search(dials_data, run_in_tmp_path):
     """Integrate the beam centre search with the rest of the toolchain
 
     Do the following:
@@ -95,7 +95,7 @@ def test_index_after_search(dials_data, run_in_tmpdir):
     unit cell is obtained and that the RMSDs are smaller than or equal to some
     expected values."""
 
-    insulin = dials_data("insulin_processed")
+    insulin = dials_data("insulin_processed", pathlib=True)
 
     # load the original experiment and perturbate the beam centre by a small offset
     experiments = load.experiment_list(insulin / "imported.expt", check_format=False)
@@ -111,16 +111,16 @@ def test_index_after_search(dials_data, run_in_tmpdir):
         shifted_origin,
     )
     assert experiments[0].detector.hierarchy().get_origin() == shifted_origin
-    experiments.as_file(run_in_tmpdir / "shifted.expt")
+    experiments.as_file(run_in_tmp_path / "shifted.expt")
 
     # search the beam centre
     search_beam_position.run(
         [
-            run_in_tmpdir.join("shifted.expt").strpath,
-            insulin.join("strong.refl").strpath,
+            str(run_in_tmp_path / "shifted.expt"),
+            str(insulin / "strong.refl"),
         ]
     )
-    assert os.path.exists("optimised.expt")
+    assert run_in_tmp_path.joinpath("optimised.expt").is_file()
 
     # check we can actually index the resulting optimized experiments
     expected_unit_cell = uctbx.unit_cell(
@@ -130,8 +130,8 @@ def test_index_after_search(dials_data, run_in_tmpdir):
     expected_hall_symbol = " P 1"
     run_indexing(
         insulin / "strong.refl",
-        run_in_tmpdir / "optimised.expt",
-        run_in_tmpdir,
+        run_in_tmp_path / "optimised.expt",
+        run_in_tmp_path,
         [],
         expected_unit_cell,
         expected_rmsds,
@@ -139,7 +139,7 @@ def test_index_after_search(dials_data, run_in_tmpdir):
     )
 
 
-def test_search_single(run_in_tmpdir, dials_regression):
+def test_search_single(run_in_tmp_path, dials_regression):
     """Perform a beam-centre search and check that the output is sane.
 
     Do the following:
@@ -156,7 +156,7 @@ def test_search_single(run_in_tmpdir, dials_regression):
     experiments_path = os.path.join(data_dir, "datablock.json")
 
     search_beam_position.run([experiments_path, pickle_path])
-    assert os.path.exists("optimised.expt")
+    assert run_in_tmp_path.joinpath("optimised.expt").is_file()
 
     experiments = load.experiment_list(experiments_path, check_format=False)
     original_imageset = experiments.imagesets()[0]
@@ -169,7 +169,7 @@ def test_search_single(run_in_tmpdir, dials_regression):
     assert shift.elems == pytest.approx((-0.976, 2.497, 0.0), abs=1e-1)
 
 
-def test_search_small_molecule(dials_data, run_in_tmpdir):
+def test_search_small_molecule(dials_data, run_in_tmp_path):
     """Perform a beam-centre search on a multi-sequence data set..
 
     Do the following:
@@ -182,12 +182,12 @@ def test_search_small_molecule(dials_data, run_in_tmpdir):
     in detector origin.
     """
 
-    data = dials_data("l_cysteine_dials_output")
-    experiments_path = data.join("imported.expt").strpath
-    refl_path = data.join("strong.refl").strpath
+    data = dials_data("l_cysteine_dials_output", pathlib=True)
+    experiments_path = data / "imported.expt"
+    refl_path = data / "strong.refl"
 
-    search_beam_position.run([experiments_path, refl_path])
-    assert os.path.exists("optimised.expt")
+    search_beam_position.run([os.fspath(experiments_path), os.fspath(refl_path)])
+    assert run_in_tmp_path.joinpath("optimised.expt").is_file()
 
     experiments = load.experiment_list(experiments_path, check_format=False)
     optimised_experiments = load.experiment_list("optimised.expt", check_format=False)
@@ -206,7 +206,7 @@ def test_search_small_molecule(dials_data, run_in_tmpdir):
         assert shift.elems == pytest.approx((0.091, -1.11, 0), abs=1e-2)
 
 
-def test_multi_sweep_fixed_rotation(dials_regression, run_in_tmpdir):
+def test_multi_sweep_fixed_rotation(dials_regression, run_in_tmp_path):
     data_dir = os.path.join(dials_regression, "indexing_test_data", "multi_sweep")
     reflection_files = sorted(
         glob.glob(os.path.join(data_dir, "SWEEP[1,2]", "index", "*_strong.pickle"))
@@ -218,7 +218,7 @@ def test_multi_sweep_fixed_rotation(dials_regression, run_in_tmpdir):
     )
 
     search_beam_position.run(reflection_files + experiment_files)
-    assert os.path.exists("optimised.expt")
+    assert run_in_tmp_path.joinpath("optimised.expt").is_file()
 
     experiments = ExperimentList()
     for path in experiment_files:

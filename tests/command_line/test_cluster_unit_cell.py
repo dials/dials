@@ -14,7 +14,7 @@ from dxtbx.serialize import load
 from dials.command_line import cluster_unit_cell
 
 
-def test_dials_cluster_unit_cell_command_line(dials_regression, run_in_tmpdir):
+def test_dials_cluster_unit_cell_command_line(dials_regression, tmp_path):
     pytest.importorskip("scipy")
     pytest.importorskip("xfel")
 
@@ -26,9 +26,10 @@ def test_dials_cluster_unit_cell_command_line(dials_regression, run_in_tmpdir):
     result = procrunner.run(
         command=["dials.cluster_unit_cell", "plot.show=False"] + experiments,
         print_stdout=False,
+        working_directory=tmp_path,
     )
     assert not result.returncode
-    assert os.path.exists("cluster_unit_cell.png")
+    assert tmp_path.joinpath("cluster_unit_cell.png").is_file()
 
 
 def test_dials_cluster_unit_cell_command_line_output_files(dials_regression, tmp_path):

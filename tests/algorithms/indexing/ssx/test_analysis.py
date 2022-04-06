@@ -129,11 +129,11 @@ def test_generate_plots(n_lattices):
     assert sum(plots["rmsdz_hist"]["data"][0]["y"]) == n_lattices + 1
 
 
-def test_generate_html_report(run_in_tmpdir):
+def test_generate_html_report(tmp_path):
     plots = generate_plots(generate_test_results_dict())
     fname = "test_report_name.html"
-    generate_html_report(plots, fname)
-    assert (run_in_tmpdir / "test_report_name.html").check()
+    generate_html_report(plots, tmp_path / fname)
+    assert tmp_path.joinpath("test_report_name.html").is_file()
 
 
 def test_make_cluster_plots():
