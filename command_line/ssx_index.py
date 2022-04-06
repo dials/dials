@@ -1,33 +1,44 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.ssx_index
 """
-This program is a script to run indexing on the spotfinding results from a
-still sequence i.e. SSX data. This scripts wraps a call to the regular
-indexing code, and so all parameters from dials.index can be set here.
+This program runs indexing on the spotfinding results from a
+still sequence i.e. SSX data. This wraps a call to the regular
+indexing code, and so all parameters from dials.index can be set.
 
-Saves the indexed result into a single experiment list/reflection table
-with a joint detector and beam model. Also generates a html output report
-showing indexing statistics as well as clustering statistics.
+If a unit cell is given, indexing of each image will be attempted with the
+fft1d algorithm, followed by the real_space_grid_search algorithm if indexing
+with the fft1d algorithm was unsuccessful. If no unit cell is given, only fft1d
+indexing can be attempted.
+
+Indexing statistics are reported in a table and a unit cell clustering analysis
+is performed, which can be useful for assessing the crystal symmetry if the unit
+cell is unknown. An extensive html report is generated showing the indexing
+and clustering statistics. The indexed data are saved into a single reflection
+file and a single experiment list file, with a joint detector and beam model.
+
+Further program documentation can be found at dials.github.io/ssx_processing_guide.html
 
 Usage:
     dev.dials.ssx_index imported.expt strong.refl
+    dev.dials.ssx_index imported.expt strong.refl unit_cell=x space_group=y
 """
+
+from __future__ import annotations
 
 import json
 import logging
-import math
 import sys
 import time
+from functools import reduce
 
 from cctbx import crystal
-from libtbx import phil
-from xfel.clustering.cluster import Cluster
-from xfel.clustering.cluster_groups import unit_cell_info
+from libtbx import Auto, phil
+from libtbx.introspection import number_of_processors
 
 from dials.algorithms.indexing.ssx.analysis import (
     generate_html_report,
     generate_plots,
-    make_cluster_plots,
     make_summary_table,
+    report_on_crystal_clusters,
 )
 from dials.algorithms.indexing.ssx.processing import index
 from dials.util import log, show_mail_handle_errors
@@ -70,6 +81,14 @@ phil_scope = phil.parse(
     """
 method = *fft1d *real_space_grid_search
     .type = choice(multi=True)
+nproc = Auto
+    .type = int
+    .expert_level = 1
+    .help = "Set the number of processors to use in indexing"
+min_spots = 10
+    .type = int
+    .expert_level = 2
+    .help = "Images with fewer than this number of strong spots will not be indexed"
 output.html = dials.ssx_index.html
     .type = str
 output.json = None
@@ -127,6 +146,14 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     if diff_phil:
         logger.info("The following parameters have been modified:\n%s", diff_phil)
 
+    if params.nproc is Auto:
+        params.nproc = number_of_processors(return_value_if_unknown=1)
+
+    if params.nproc > 1:
+        params.indexing.nproc = params.nproc
+
+    logger.info(f"Using {params.indexing.nproc} processes for indexing")
+
     st = time.time()
     indexed_experiments, indexed_reflections, summary_data = index(
         experiments, reflections[0], params
@@ -135,38 +162,22 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
     summary_table = make_summary_table(summary_data)
     logger.info("\nSummary of images sucessfully indexed\n" + summary_table)
 
-    n_images = len({e.imageset.get_path(0) for e in indexed_experiments})
+    n_images = reduce(
+        lambda a, v: a + (v[0]["n_indexed"] > 0), summary_data.values(), 0
+    )
     logger.info(f"{indexed_reflections.size()} spots indexed on {n_images} images\n")
 
-    # print some clustering information
-    ucs = Cluster.from_crystal_symmetries(
-        [
-            crystal.symmetry(
-                unit_cell=expt.crystal.get_unit_cell(),
-                space_group=expt.crystal.get_space_group(),
-            )
-            for expt in indexed_experiments
-        ]
-    )
-    clusters, _ = ucs.ab_cluster(5000, log=None, write_file_lists=False, doplot=False)
-    cluster_plots = {}
-    min_cluster_pc = 5
-    threshold = math.floor((min_cluster_pc / 100) * len(indexed_experiments))
-    large_clusters = [c for c in clusters if len(c.members) > threshold]
-    large_clusters.sort(key=lambda x: len(x.members), reverse=True)
-
-    if large_clusters:
-        logger.info(
-            f"""
-Unit cell clustering analysis, clusters with >{min_cluster_pc}% of the number of crystals indexed
-"""
-            + unit_cell_info(large_clusters)
+    crystal_symmetries = [
+        crystal.symmetry(
+            unit_cell=expt.crystal.get_unit_cell(),
+            space_group=expt.crystal.get_space_group(),
         )
-        if params.output.html or params.output.json:
-            cluster_plots = make_cluster_plots(large_clusters)
-    else:
-        logger.info(
-            f"No clusters found with >{min_cluster_pc}% of the number of crystals."
+        for expt in indexed_experiments
+    ]
+    if crystal_symmetries:
+        cluster_plots, _ = report_on_crystal_clusters(
+            crystal_symmetries,
+            make_plots=(params.output.html or params.output.json),
         )
 
     logger.info(f"Saving indexed experiments to {params.output.experiments}")
@@ -174,7 +185,7 @@ Unit cell clustering analysis, clusters with >{min_cluster_pc}% of the number of
     logger.info(f"Saving indexed reflections to {params.output.reflections}")
     indexed_reflections.as_file(params.output.reflections)
 
-    if params.output.html or params.output.json:
+    if (params.output.html or params.output.json) and indexed_experiments:
         summary_plots = generate_plots(summary_data)
         if cluster_plots:
             summary_plots.update(cluster_plots)
@@ -185,6 +196,9 @@ Unit cell clustering analysis, clusters with >{min_cluster_pc}% of the number of
                 json.dump(summary_plots, outfile)
 
     logger.info(f"Total time: {time.time() - st:.2f}s")
+    logger.info(
+        "Further program documentation can be found at dials.github.io/ssx_processing_guide.html"
+    )
 
 
 if __name__ == "__main__":

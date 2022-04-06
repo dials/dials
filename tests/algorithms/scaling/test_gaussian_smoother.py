@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from math import exp
 
 import pytest
@@ -25,10 +27,10 @@ def test_2DGaussianSmoother():
     assert weight.non_zeroes == 6 * 2
     assert GS2D.sigma() == 0.65
     # Calculate tand verify the expected value at the first position.
-    expected_sumw = (2.0 * exp(-2.5 / (0.65 ** 2))) + 4.0 * exp(-0.5 / (0.65 ** 2))
+    expected_sumw = (2.0 * exp(-2.5 / (0.65**2))) + 4.0 * exp(-0.5 / (0.65**2))
     assert expected_sumw == pytest.approx(sumw[0])
-    expected_value_numerator = (10.0 * exp(-0.5 / (0.65 ** 2))) + (
-        2.0 * exp(-2.5 / (0.65 ** 2))
+    expected_value_numerator = (10.0 * exp(-0.5 / (0.65**2))) + (
+        2.0 * exp(-2.5 / (0.65**2))
     )
     assert value[0] == pytest.approx(expected_value_numerator / expected_sumw)
 
@@ -72,10 +74,10 @@ def test_3DGaussianSmoother():
     assert GS3D.sigma() == 0.65
 
     # Calculate tand verify the expected value at the first position.
-    expected_sumw = (4.0 * exp(-2.75 / (0.65 ** 2))) + (8.0 * exp(-0.75 / (0.65 ** 2)))
+    expected_sumw = (4.0 * exp(-2.75 / (0.65**2))) + (8.0 * exp(-0.75 / (0.65**2)))
     assert expected_sumw == pytest.approx(sumw[0])
-    expected_value_numerator = (20.0 * exp(-0.75 / (0.65 ** 2))) + (
-        4.0 * exp(-2.75 / (0.65 ** 2))
+    expected_value_numerator = (20.0 * exp(-0.75 / (0.65**2))) + (
+        4.0 * exp(-2.75 / (0.65**2))
     )
     assert value[0] == pytest.approx(expected_value_numerator / expected_sumw)
 

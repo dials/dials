@@ -1,34 +1,39 @@
+from __future__ import annotations
+
 import os
+from pathlib import Path
 
 import procrunner
 import pytest
 
 from dxtbx.model.experiment_list import ExperimentListFactory
 from libtbx import phil
+from scitbx import matrix
 
 from dials.algorithms.refinement import RefinerFactory
 from dials.array_family import flex
 
 
-def test1(dials_regression, run_in_tmpdir):
-    from scitbx import matrix
-
-    data_dir = os.path.join(dials_regression, "refinement_test_data", "multi_stills")
+def test1(dials_regression, tmp_path):
+    data_dir = Path(dials_regression) / "refinement_test_data" / "multi_stills"
 
     result = procrunner.run(
         [
             "dials.refine",
-            os.path.join(data_dir, "combined_experiments.json"),
-            os.path.join(data_dir, "combined_reflections.pickle"),
-        ]
+            data_dir / "combined_experiments.json",
+            data_dir / "combined_reflections.pickle",
+        ],
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
 
     # load results
     reg_exp = ExperimentListFactory.from_json_file(
-        os.path.join(data_dir, "regression_experiments.json"), check_format=False
+        data_dir / "regression_experiments.json", check_format=False
     )
-    ref_exp = ExperimentListFactory.from_json_file("refined.expt", check_format=False)
+    ref_exp = ExperimentListFactory.from_json_file(
+        tmp_path / "refined.expt", check_format=False
+    )
 
     # compare results
     tol = 1e-5
@@ -60,29 +65,35 @@ def test1(dials_regression, run_in_tmpdir):
     reason="Multiprocessing error on Windows: 'This class cannot be instantiated from Python'",
 )
 def test_multi_process_refinement_gives_same_results_as_single_process_refinement(
-    dials_regression, run_in_tmpdir
+    dials_regression, tmp_path
 ):
-    data_dir = os.path.join(dials_regression, "refinement_test_data", "multi_stills")
+    data_dir = Path(dials_regression) / "refinement_test_data" / "multi_stills"
     cmd = [
         "dials.refine",
-        os.path.join(data_dir, "combined_experiments.json"),
-        os.path.join(data_dir, "combined_reflections.pickle"),
+        data_dir / "combined_experiments.json",
+        data_dir / "combined_reflections.pickle",
         "outlier.algorithm=null",
         "engine=LBFGScurvs",
         "output.reflections=None",
     ]
-    result = procrunner.run(cmd + ["output.experiments=refined_nproc4.expt", "nproc=4"])
+    result = procrunner.run(
+        cmd + ["output.experiments=refined_nproc4.expt", "nproc=4"],
+        working_directory=tmp_path,
+    )
     assert not result.returncode and not result.stderr
 
-    result = procrunner.run(cmd + ["output.experiments=refined_nproc1.expt", "nproc=1"])
+    result = procrunner.run(
+        cmd + ["output.experiments=refined_nproc1.expt", "nproc=1"],
+        working_directory=tmp_path,
+    )
     assert not result.returncode and not result.stderr
 
     # load results
     nproc1 = ExperimentListFactory.from_json_file(
-        "refined_nproc1.expt", check_format=False
+        tmp_path / "refined_nproc1.expt", check_format=False
     )
     nproc4 = ExperimentListFactory.from_json_file(
-        "refined_nproc4.expt", check_format=False
+        tmp_path / "refined_nproc4.expt", check_format=False
     )
 
     # compare results
@@ -99,9 +110,7 @@ def test_multi_process_refinement_gives_same_results_as_single_process_refinemen
         )
 
 
-def test_restrained_refinement_with_fixed_parameterisations(
-    dials_regression, run_in_tmpdir
-):
+def test_restrained_refinement_with_fixed_parameterisations(dials_regression, tmp_path):
     # Avoid a regression to https://github.com/dials/dials/issues/1142 by
     # testing that refinement succeeds when some parameterisations are fixed
     # by parameter auto reduction code, but restraints are requested for
@@ -138,9 +147,9 @@ refinement {
     working_params = working_phil.extract()
 
     # use the multi stills test data
-    data_dir = os.path.join(dials_regression, "refinement_test_data", "multi_stills")
-    experiments_path = os.path.join(data_dir, "combined_experiments.json")
-    pickle_path = os.path.join(data_dir, "combined_reflections.pickle")
+    data_dir = Path(dials_regression) / "refinement_test_data" / "multi_stills"
+    experiments_path = data_dir / "combined_experiments.json"
+    pickle_path = data_dir / "combined_reflections.pickle"
 
     experiments = ExperimentListFactory.from_json_file(
         experiments_path, check_format=False

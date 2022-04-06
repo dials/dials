@@ -11,6 +11,8 @@ defined for scaling multiple datasets simultaneously and a TargetScaler is
 defined for targeted scaling.
 """
 
+from __future__ import annotations
+
 import copy
 import logging
 import time
@@ -1103,6 +1105,10 @@ class MultiScalerBase(ScalerBase):
                 datasets_to_remove.append(i)
         if datasets_to_remove:
             self.remove_datasets(self.active_scalers, datasets_to_remove)
+            (
+                self._global_Ih_table,
+                self._free_Ih_table,
+            ) = self._create_global_Ih_table(self.params.anomalous)
         self._create_Ih_table()
         self._update_model_data()
 
@@ -1122,9 +1128,13 @@ class MultiScalerBase(ScalerBase):
                 anomalous=self.params.anomalous
             )
         if self.params.scaling_options.outlier_rejection:
+            if target:
+                method = "target"
+            else:
+                method = self.params.scaling_options.outlier_rejection
             outlier_index_arrays = determine_outlier_index_arrays(
                 self.global_Ih_table,
-                self.params.scaling_options.outlier_rejection,
+                method,
                 self.params.scaling_options.outlier_zmax,
                 target=target,
             )
@@ -1146,7 +1156,7 @@ class MultiScalerBase(ScalerBase):
             if self._free_Ih_table:
                 free_outlier_index_arrays = determine_outlier_index_arrays(
                     self._free_Ih_table,
-                    self.params.scaling_options.outlier_rejection,
+                    method,
                     self.params.scaling_options.outlier_zmax,
                     target=target,
                 )
@@ -1225,7 +1235,6 @@ class MultiScalerBase(ScalerBase):
                 self.global_Ih_table.Ih_table_blocks[0],
                 random_phil.multi_dataset.Isigma_cutoff,
             )
-
             for i, scaler in enumerate(self.active_scalers):
                 # first set cross dataset connected reflections identified.
                 # scaler.scaling_selection = flex.bool(scaler.n_suitable_refl, False)

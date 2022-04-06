@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from cctbx import miller
 from dxtbx.model import ExperimentList
 
@@ -7,7 +9,7 @@ from dials.util import missing_reflections
 
 def test_connected_components(dials_data):
     experiment = ExperimentList.from_file(
-        dials_data("centroid_test_data").join("experiments.json").strpath
+        dials_data("centroid_test_data", pathlib=True) / "experiments.json"
     )[0]
 
     image_ranges = [(1, 9), (1, 100), (1, 1000)]
@@ -33,7 +35,8 @@ def test_connected_components(dials_data):
 
 def test_connected_components_centred_cell(dials_data):
     experiment = ExperimentList.from_file(
-        dials_data("insulin_processed").join("scaled.expt").strpath, check_format=False
+        dials_data("insulin_processed", pathlib=True) / "scaled.expt",
+        check_format=False,
     )[0]
 
     experiment.scan.set_image_range((1, 10))

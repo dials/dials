@@ -1,6 +1,9 @@
 """Lattice search strategies."""
 
 
+from __future__ import annotations
+
+
 class Strategy:
     """A base class for lattice search strategies."""
 

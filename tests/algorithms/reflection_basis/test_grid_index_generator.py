@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import math
 import random
 
@@ -9,7 +11,7 @@ from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem, transfo
 
 def test_run(dials_data):
     sequence = load.imageset(
-        dials_data("centroid_test_data").join("sweep.json").strpath
+        dials_data("centroid_test_data", pathlib=True) / "sweep.json"
     )
 
     # Get the models
@@ -51,7 +53,6 @@ def test_run(dials_data):
 
     for j in range(0, 20):
         for i in range(0, 20):
-
             xx = x0 + i
             yy = y0 + j
             if xx < 0 or yy < 0 or xx >= image_size[0] or yy >= image_size[0]:

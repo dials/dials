@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from libtbx.phil import parse
 
 from dials.algorithms.shadowing.filter import filter_shadowed_reflections

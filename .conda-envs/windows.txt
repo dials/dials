@@ -13,7 +13,7 @@ conda-forge::eigen
 conda-forge::future
 conda-forge::gemmi
 conda-forge::h5py>=3.1.0
-conda-forge::hdf5<1.11
+conda-forge::hdf5<1.13
 conda-forge::hdf5plugin
 conda-forge::iota
 conda-forge::jinja2
@@ -32,7 +32,7 @@ conda-forge::procrunner>=2.2.0
 conda-forge::psutil
 conda-forge::pybind11
 conda-forge::pyrtf
-conda-forge::pytest>=4.5
+conda-forge::pytest>=4.5,<7.0
 conda-forge::pytest-forked
 conda-forge::pytest-mock
 conda-forge::pytest-xdist

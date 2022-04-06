@@ -1,5 +1,7 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
 
+from __future__ import annotations
+
 from dials.algorithms.shoebox import MaskCode
 from dials.array_family import flex
 from dials.viewer.slice_viewer import show_3d

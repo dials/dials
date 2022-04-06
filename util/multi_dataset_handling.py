@@ -4,11 +4,14 @@ and experiment lists.
 """
 
 
+from __future__ import annotations
+
 import copy
 import logging
-import uuid
 
 from orderedset import OrderedSet
+
+from dxtbx.util import ersatz_uuid4
 
 from dials.array_family import flex
 
@@ -38,7 +41,7 @@ def generate_experiment_identifiers(experiments, identifier_type="uuid"):
     """Generate unique identifiers for each experiment."""
     if identifier_type == "uuid":
         for expt in experiments:
-            expt.identifier = str(uuid.uuid4())
+            expt.identifier = ersatz_uuid4()
     elif identifier_type == "timestamp":
         pass
 
@@ -238,7 +241,7 @@ def assign_unique_identifiers(experiments, reflections, identifiers=None):
         # it is already set, and reset table id column from 0..n-1
         for i, (exp, refl) in enumerate(zip(experiments, reflections)):
             if exp.identifier == "":
-                strid = str(uuid.uuid4())
+                strid = ersatz_uuid4()
                 exp.identifier = strid
                 refl.experiment_identifiers()[i] = strid
             else:

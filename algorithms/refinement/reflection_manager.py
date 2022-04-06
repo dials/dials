@@ -1,6 +1,8 @@
 """Contains classes used to manage the reflections used during refinement,
 principally ReflectionManager."""
 
+from __future__ import annotations
+
 import logging
 import math
 import random

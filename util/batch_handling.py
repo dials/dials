@@ -2,6 +2,8 @@
 Functions to help with calculating batch properties for experiments objects.
 """
 
+from __future__ import annotations
+
 import logging
 
 from dials.array_family import flex

@@ -9,8 +9,9 @@ necessary), and return common dials objects such as reflection tables and
 ExperimentLists.
 """
 
+from __future__ import annotations
+
 import logging
-import uuid
 from copy import deepcopy
 from unittest.mock import Mock
 
@@ -20,7 +21,8 @@ import pkg_resources
 import iotbx.merging_statistics
 from cctbx import crystal, miller, uctbx
 from dxtbx.model import Experiment
-from iotbx import cif, mtz
+from dxtbx.util import ersatz_uuid4
+from iotbx import cif, mtz, pdb
 from libtbx import Auto, phil
 
 from dials.algorithms.scaling.Ih_table import IhTable
@@ -429,15 +431,25 @@ def merging_stats_from_scaled_array(
     return result, anom_result
 
 
-def intensity_array_from_cif_file(cif_file):
+def intensity_array_from_cif_file(cif_file, anomalous_flag=True, d_min=0.4):
     """Return an intensity miller array from a cif file."""
-    structures = cif.reader(file_path=cif_file).build_crystal_structures()
-    try:
-        model = structures["1"]
-    except KeyError:
-        raise KeyError("Unable to extract structure from cif file")
+    xray_structure = cif.reader(file_path=cif_file).file_object.xray_structure_simple()
     ic = (
-        model.structure_factors(anomalous_flag=True, d_min=0.4, algorithm="direct")
+        xray_structure.structure_factors(
+            anomalous_flag=anomalous_flag, d_min=d_min, algorithm="direct"
+        )
+        .f_calc()
+        .as_intensity_array()
+    )
+    return ic
+
+
+def intensity_array_from_pdb_file(pdb_file, anomalous_flag=True, d_min=2.0):
+    xray_structure = pdb.hierarchy.input(pdb_file).xray_structure_simple()
+    ic = (
+        xray_structure.structure_factors(
+            anomalous_flag=anomalous_flag, d_min=d_min, algorithm="direct"
+        )
         .f_calc()
         .as_intensity_array()
     )
@@ -518,7 +530,7 @@ def create_datastructures_for_target_mtz(experiments, mtz_file):
 
     exp = Experiment()
     exp.crystal = deepcopy(experiments[0].crystal)
-    exp.identifier = str(uuid.uuid4())
+    exp.identifier = ersatz_uuid4()
     r_t.experiment_identifiers()[len(experiments)] = exp.identifier
     r_t["id"] = flex.int(r_t.size(), len(experiments))
 
@@ -531,13 +543,19 @@ def create_datastructures_for_target_mtz(experiments, mtz_file):
     return exp, r_t
 
 
-def create_datastructures_for_structural_model(reflections, experiments, cif_file):
-    """Read a cif file, calculate intensities and scale them to the average
+def create_datastructures_for_structural_model(reflections, experiments, model_file):
+    """Read a cif/pdb file, calculate intensities and scale them to the average
     intensity of the reflections. Return an experiment and reflection table to
     be used for the structural model in scaling."""
 
     # read model, compute Fc, square to F^2
-    ic = intensity_array_from_cif_file(cif_file)
+    if model_file.endswith(".cif"):
+        ic = intensity_array_from_cif_file(model_file)
+    elif model_file.endswith(".pdb"):
+        ic = intensity_array_from_pdb_file(model_file)
+    else:
+        raise ValueError("target_model not a recognised format (.pdb/.cif)")
+
     exp = deepcopy(experiments[0])
     params = Mock()
     params.decay_correction.return_value = False
@@ -550,7 +568,10 @@ def create_datastructures_for_structural_model(reflections, experiments, cif_fil
 
     for refl in reflections:
         miller_indices.extend(refl["miller_index"])
-        intensities.extend(refl["intensity.prf.value"])
+        if "intensity.prf.value" in refl:
+            intensities.extend(refl["intensity.prf.value"])
+        else:
+            intensities.extend(refl["intensity.sum.value"])
     miller_set = miller.set(
         crystal_symmetry=crystal.symmetry(
             space_group=experiments[0].crystal.get_space_group()
@@ -578,7 +599,7 @@ def create_datastructures_for_structural_model(reflections, experiments, cif_fil
     rt["intensity"] = icalc
     rt["miller_index"] = miller_idx
 
-    exp.identifier = str(uuid.uuid4())
+    exp.identifier = ersatz_uuid4()
     rt.experiment_identifiers()[len(experiments)] = exp.identifier
     rt["id"] = flex.int(rt.size(), len(experiments))
 

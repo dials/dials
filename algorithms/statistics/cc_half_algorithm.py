@@ -1,6 +1,8 @@
 """ΔCC½ algorithm definitions"""
 
 
+from __future__ import annotations
+
 import logging
 from collections import defaultdict
 from math import sqrt

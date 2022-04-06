@@ -2,6 +2,8 @@
 Test for dials.assign_experiment_identifiers
 """
 
+from __future__ import annotations
+
 import os
 
 import procrunner
@@ -24,14 +26,14 @@ def run_assign_identifiers(pickle_path_list, sequence_path_list, extra_args):
     assert os.path.exists("assigned.refl")
 
 
-def test_assign_identifiers(dials_data, run_in_tmpdir):
+def test_assign_identifiers(dials_data, run_in_tmp_path):
     """Test for dials.assign_experiment_identifiers"""
     pickle_path_list = []
     sequence_path_list = []
-    data_dir = dials_data("l_cysteine_dials_output")
+    data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
     for i in [20, 25]:
-        pickle_path_list.append(data_dir / str(i) + "_integrated.pickle")
-        sequence_path_list.append(data_dir / str(i) + "_integrated_experiments.json")
+        pickle_path_list.append(data_dir / f"{i}_integrated.pickle")
+        sequence_path_list.append(data_dir / f"{i}_integrated_experiments.json")
 
     run_assign_identifiers(pickle_path_list, sequence_path_list, extra_args=[])
 
@@ -58,8 +60,8 @@ def test_assign_identifiers(dials_data, run_in_tmpdir):
     pickle_path_list = ["assigned.refl"]
     sequence_path_list = ["assigned.expt"]
     for i in [30, 35]:
-        pickle_path_list.append(data_dir / str(i) + "_integrated.pickle")
-        sequence_path_list.append(data_dir / str(i) + "_integrated_experiments.json")
+        pickle_path_list.append(data_dir / f"{i}_integrated.pickle")
+        sequence_path_list.append(data_dir / f"{i}_integrated_experiments.json")
 
     run_assign_identifiers(
         pickle_path_list, sequence_path_list, extra_args=["identifiers=0 5 10 15"]

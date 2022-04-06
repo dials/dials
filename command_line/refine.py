@@ -15,6 +15,8 @@ Examples::
 """
 
 
+from __future__ import annotations
+
 import copy
 import logging
 import sys
@@ -99,6 +101,8 @@ phil_overrides = libtbx.phil.parse(
   refinement
   {
     parameterisation.scan_varying = Auto
+
+    reflections.outlier.nproc = Auto
   }
 """
 )
@@ -284,6 +288,9 @@ def run_dials_refine(experiments, reflections, params):
     if scan_varying is Auto:
         params.refinement.parameterisation.scan_varying = False
 
+    # Similarly, keep track of sparse to reset that for scan-varying macrocycle
+    sparse = params.refinement.parameterisation.sparse
+
     if params.n_static_macrocycles == 1:
         refiner, reflections, history = run_macrocycle(params, reflections, experiments)
         experiments = refiner.get_experiments()
@@ -299,6 +306,7 @@ def run_dials_refine(experiments, reflections, params):
     if scan_varying is Auto and refiner.experiment_type == "scans":
         logger.info("\nScan-varying refinement")
         params.refinement.parameterisation.scan_varying = True
+        params.refinement.parameterisation.sparse = sparse
         refiner, reflections, history = run_macrocycle(params, reflections, experiments)
         experiments = refiner.get_experiments()
 
@@ -437,24 +445,6 @@ def run(args=None, phil=working_phil):
             else:
                 logger.info("No scan-varying parameter table to write")
 
-    # Save the refined experiments to file
-    output_experiments_filename = params.output.experiments
-    logger.info(f"Saving refined experiments to {output_experiments_filename}")
-    experiments.as_file(output_experiments_filename)
-
-    # Save reflections with updated predictions if requested (allow to switch
-    # this off if it is a time-consuming step)
-    if params.output.reflections:
-        logger.info(
-            "Saving reflections with updated predictions to %s",
-            params.output.reflections,
-        )
-        if params.output.include_unused_reflections:
-            reflections.as_file(params.output.reflections)
-        else:
-            sel = reflections.get_flags(reflections.flags.used_in_refinement)
-            reflections.select(sel).as_file(params.output.reflections)
-
     # Save matches to file for debugging
     if params.output.matches:
         matches = refiner.get_matches()
@@ -471,6 +461,28 @@ def run(args=None, phil=working_phil):
     if params.output.history:
         logger.info(f"Saving refinement step history to {params.output.history}")
         history.to_json_file(params.output.history)
+
+    # Save the refined experiments to file
+    output_experiments_filename = params.output.experiments
+    logger.info(f"Saving refined experiments to {output_experiments_filename}")
+    experiments.as_file(output_experiments_filename)
+
+    # Save reflections with updated predictions. This causes a spike in memory
+    # usage (https://github.com/dials/dials/issues/2024), so delete big objects
+    # we no longer need first
+    if params.output.reflections:
+        del experiments
+        del refiner
+        del history
+        logger.info(
+            "Saving reflections with updated predictions to %s",
+            params.output.reflections,
+        )
+        if params.output.include_unused_reflections:
+            reflections.as_file(params.output.reflections)
+        else:
+            sel = reflections.get_flags(reflections.flags.used_in_refinement)
+            reflections.select(sel).as_file(params.output.reflections)
 
 
 if __name__ == "__main__":

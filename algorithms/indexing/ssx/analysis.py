@@ -1,4 +1,8 @@
+from __future__ import annotations
+
+import logging
 import math
+import os
 from typing import List
 
 import numpy as np
@@ -6,12 +10,15 @@ from jinja2 import ChoiceLoader, Environment, PackageLoader
 
 from scitbx.array_family import flex
 from xfel.clustering.cluster import Cluster
+from xfel.clustering.cluster_groups import unit_cell_info
 
 from dials.algorithms.clustering import plots as cluster_plotter
 from dials.util import tabulate
 
+logger = logging.getLogger("dials.algorithms.indexing.ssx.analysis")
 
-def generate_html_report(plots: dict, filename: str) -> None:
+
+def generate_html_report(plots: dict, filename: str | os.PathLike) -> None:
     loader = ChoiceLoader(
         [
             PackageLoader("dials", "templates"),
@@ -98,6 +105,31 @@ def make_cluster_plots(large_clusters: List[Cluster]) -> dict:
         d_this[f"uc_hist_{n}"] = d_this.pop("uc_hist")
         cluster_plots.update(d_this)
     return cluster_plots
+
+
+def report_on_crystal_clusters(crystal_symmetries, make_plots=True):
+    ucs = Cluster.from_crystal_symmetries(crystal_symmetries)
+    clusters, _ = ucs.ab_cluster(5000, log=None, write_file_lists=False, doplot=False)
+    cluster_plots = {}
+    min_cluster_pc = 5
+    threshold = math.floor((min_cluster_pc / 100) * len(crystal_symmetries))
+    large_clusters = [c for c in clusters if len(c.members) > threshold]
+    large_clusters.sort(key=lambda x: len(x.members), reverse=True)
+
+    if large_clusters:
+        logger.info(
+            f"""
+Unit cell clustering analysis, clusters with >{min_cluster_pc}% of the number of crystals indexed
+{unit_cell_info(large_clusters)}
+"""
+        )
+        if make_plots:
+            cluster_plots = make_cluster_plots(large_clusters)
+    else:
+        logger.info(
+            f"No clusters found with >{min_cluster_pc}% of the number of crystals."
+        )
+    return cluster_plots, large_clusters
 
 
 def generate_plots(summary_data: dict) -> dict:
@@ -216,7 +248,11 @@ def generate_plots(summary_data: dict) -> dict:
                     "name": f"RMSD dPsi (lattice {i+2})",
                 },
             )
-    percent_indexed = 100 * n_total_indexed / n_strong_array
+    percent_indexed = np.zeros(shape=(n_total_indexed.size,))
+    sel = n_strong_array > 0
+    sel_n_tot = n_total_indexed[sel]
+    sel_n_strong = n_strong_array[sel]
+    percent_indexed[sel] = 100 * sel_n_tot / sel_n_strong
     images = images.tolist()
     n_indexed_data.append(
         {

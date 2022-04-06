@@ -1,6 +1,8 @@
 """Tests for dials.merge command line program."""
 
 
+from __future__ import annotations
+
 import procrunner
 import pytest
 

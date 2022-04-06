@@ -2,6 +2,8 @@
 Phil scope of options for scaling.
 """
 
+from __future__ import annotations
+
 import iotbx.phil
 
 phil_scope = iotbx.phil.parse(
@@ -148,7 +150,7 @@ phil_scope = iotbx.phil.parse(
       .expert_level = 2
     target_model = None
       .type = path
-      .help = "Path to cif file to use to calculate target intensities for
+      .help = "Path to cif or pdb file to use to calculate target intensities for
               scaling."
       .expert_level = 2
     target_mtz = None

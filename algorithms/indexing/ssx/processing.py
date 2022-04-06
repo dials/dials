@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import concurrent.futures
 import logging
 import math
@@ -43,7 +45,11 @@ def index_one(
     method_list: List[str],
     image_no: int,
 ) -> Union[Tuple[ExperimentList, flex.reflection_table], Tuple[bool, bool]]:
-
+    if not reflection_table:
+        logger.info(
+            f"Image {image_no+1}: Skipped indexing, no strong spots found/remaining."
+        )
+        return None, None
     # First suppress logging unless in verbose mode.
     if params.individual_log_verbosity < 2:
         for name in loggers_to_disable:
@@ -84,18 +90,21 @@ def index_all_concurrent(
     # first determine n_strong per image:
     n_strong_per_image = {}
     for i, (expt, table) in enumerate(zip(experiments, reflections)):
-        img = expt.imageset.get_path(i).split("/")[-1]
-        n_strong = table.get_flags(table.flags.strong).count(True)
+        img = expt.imageset.get_image_identifier(i).split("/")[-1]
+        if table:
+            n_strong = table.get_flags(table.flags.strong).count(True)
+        else:
+            n_strong = 0
         n_strong_per_image[img] = n_strong
 
     with concurrent.futures.ProcessPoolExecutor(
         max_workers=params.indexing.nproc
     ) as pool:
         sys.stdout = open(os.devnull, "w")  # block printing from rstbx
-        futures = {
-            pool.submit(index_one, expt, table, params, method_list, i): i
-            for i, (table, expt) in enumerate(zip(reflections, experiments))
-        }
+        futures = {}
+        for i, (table, expt) in enumerate(zip(reflections, experiments)):
+            if table:
+                futures[pool.submit(index_one, expt, table, params, method_list, i)] = i
         tables_list = [None] * len(reflections)
         expts_list = [None] * len(reflections)
 
@@ -131,9 +140,9 @@ def index_all_concurrent(
     indexed_reflections = flex.reflection_table()
     n_tot = 0
     for idx, (elist, table) in enumerate(zip(expts_list, tables_list)):
+        img = experiments[idx].imageset.get_image_identifier(idx).split("/")[-1]
+        n_strong = n_strong_per_image[img]
         if not (elist and table):
-            img = experiments[idx].imageset.get_path(idx).split("/")[-1]
-            n_strong = n_strong_per_image[img]
             results_summary[idx].append(
                 {
                     "Image": img,
@@ -142,9 +151,6 @@ def index_all_concurrent(
                 }
             )
             continue
-        path = elist[0].imageset.get_path(0)
-        img = path.split("/")[-1]
-        n_strong = n_strong_per_image[img]
         indexed_experiments.extend(elist)
         ids_map = dict(table.experiment_identifiers())
         for k in table.experiment_identifiers().keys():
@@ -191,16 +197,36 @@ def preprocess(
     reflections = observed.split_by_experiment_id()
 
     if len(reflections) != len(experiments):
-        raise ValueError(
-            f"Unequal number of reflection tables {len(reflections)} and experiments {len(experiments)}"
-        )
+        # spots may not have been found on every image. In this case, the length
+        # of the list of reflection tables will be less than the length of experiments.
+        # Add in empty items to the list, so that this can be reported on
+        no_refls = set(range(len(experiments))).difference(set(observed["id"]))
+        for i in no_refls:
+            reflections.insert(i, None)
+        logger.info(f"Filtered {len(no_refls)} images with no spots found.")
+        if len(experiments) != len(reflections):
+            raise ValueError(
+                f"Unequal number of reflection tables {len(reflections)} and experiments {len(experiments)}"
+            )
 
     # Calculate necessary quantities
-    for refl, experiment in zip(reflections, experiments):
-        elist = ExperimentList([experiment])
-        refl["imageset_id"] = flex.int(refl.size(), 0)  # needed for centroid_px_to_mm
-        refl.centroid_px_to_mm(elist)
-        refl.map_centroids_to_reciprocal_space(elist)
+    n_filtered_out = 0
+    for i, (refl, experiment) in enumerate(zip(reflections, experiments)):
+        if refl:
+            if refl.size() >= params.min_spots:
+                elist = ExperimentList([experiment])
+                refl["imageset_id"] = flex.int(
+                    refl.size(), 0
+                )  # needed for centroid_px_to_mm
+                refl.centroid_px_to_mm(elist)
+                refl.map_centroids_to_reciprocal_space(elist)
+            else:
+                n_filtered_out += 1
+                reflections[i] = None
+    if n_filtered_out:
+        logger.info(
+            f"Filtered {n_filtered_out} images with fewer than {params.min_spots} spots"
+        )
 
     # Determine the max cell if applicable
     if (params.indexing.max_cell is Auto) and (
@@ -212,10 +238,11 @@ def preprocess(
             )
         max_cells = []
         for refl in reflections:
-            try:
-                max_cells.append(find_max_cell(refl).max_cell)
-            except (DialsIndexError, AssertionError):
-                pass
+            if refl:
+                try:
+                    max_cells.append(find_max_cell(refl).max_cell)
+                except (DialsIndexError, AssertionError):
+                    pass
         if not max_cells:
             raise ValueError("Unable to find a max cell for any images")
         logger.info(f"Setting max cell to {max(max_cells):.1f} " + "\u212B")

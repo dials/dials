@@ -2,6 +2,8 @@
 Tests for the functions in dials.util.options
 """
 
+from __future__ import annotations
+
 from unittest.mock import Mock
 
 import pytest
@@ -21,10 +23,10 @@ from dials.util.options import (
 
 
 def test_cannot_read_headerless_h5(dials_data):
-    data_h5 = dials_data("vmxi_thaumatin").join("image_15799_data_000001.h5").strpath
+    data_h5 = dials_data("vmxi_thaumatin", pathlib=True) / "image_15799_data_000001.h5"
     parser = ArgumentParser(read_experiments_from_images=True)
     with pytest.raises(Sorry):
-        parser.parse_args([data_h5])
+        parser.parse_args([str(data_h5)])
 
 
 def test_flatten_experiments_updating_id_values():

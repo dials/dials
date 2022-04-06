@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import shutil
 
@@ -46,6 +48,8 @@ Beam:
     sigma divergence: 0
     polarization normal: {0,1,0}
     polarization fraction: 0.999
+    flux: 0
+    transmission: 1
 Beam centre:
     mm: (212.48,220.00)
     px: (1235.34,1279.08)
@@ -118,6 +122,8 @@ Beam:
     sigma divergence: 0
     polarization normal: {0,1,0}
     polarization fraction: 0.999
+    flux: 0
+    transmission: 1
 Beam centre:
     mm: (210.76,205.28)
     px: (1225.35,1193.47)
@@ -137,7 +143,7 @@ Goniometer:
 def test_dials_show_centroid_test_data(dials_data):
     result = procrunner.run(
         ["dials.show"]
-        + list(dials_data("centroid_test_data").listdir("centroid_*.cbf")),
+        + sorted(dials_data("centroid_test_data", pathlib=True).glob("centroid_*.cbf")),
         environment_override={"DIALS_NOBANNER": "1"},
     )
     assert not result.returncode and not result.stderr
@@ -175,6 +181,8 @@ Beam:
     sigma divergence: 0
     polarization normal: {0,1,0}
     polarization fraction: 0.999
+    flux: 0
+    transmission: 1
 Beam centre:
     mm: (212.48,220.00)
     px: (1235.34,1279.08)
@@ -228,7 +236,7 @@ Panel:
     )
 
     assert (
-        "\n".join(output[-42:])
+        "\n".join(output[-44:])
         == """
 Panel:
   name: row-23
@@ -258,6 +266,8 @@ Beam:
     sigma divergence: 0
     polarization normal: {0,1,0}
     polarization fraction: 0.999
+    flux: 0
+    transmission: 1
 Beam centre:
     mm: panel 12, (191.95,7.22)
     px: panel 12, (1116.00,41.96)
@@ -279,7 +289,10 @@ Goniometer:
 def test_dials_show_reflection_table(dials_data):
     """Test the output of dials.show on a reflection_table pickle file"""
     result = procrunner.run(
-        ["dials.show", dials_data("centroid_test_data").join("integrated.pickle")],
+        [
+            "dials.show",
+            dials_data("centroid_test_data", pathlib=True) / "integrated.pickle",
+        ],
         environment_override={"DIALS_NOBANNER": "1"},
     )
     assert not result.returncode and not result.stderr
@@ -364,9 +377,9 @@ def test_dials_show_image_statistics_with_no_image_data(dials_regression):
 
 def test_dials_show_on_scaled_data(dials_data):
     """Test that dials.show works on scaled data."""
-    location = dials_data("l_cysteine_4_sweeps_scaled")
-    refl = location.join("scaled_30.refl")
-    expt = location.join("scaled_30.expt")
+    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    refl = location / "scaled_30.refl"
+    expt = location / "scaled_30.expt"
 
     result = procrunner.run(["dials.show", refl, expt])
     assert not result.returncode and not result.stderr
@@ -374,10 +387,8 @@ def test_dials_show_on_scaled_data(dials_data):
 
 def test_model_connectivity(dials_data):
     """Test that dials.show experiments_has_model option."""
-    location = dials_data("l_cysteine_dials_output")
-    expts = load.experiment_list(
-        location.join("indexed.expt").strpath, check_format=False
-    )
+    location = dials_data("l_cysteine_dials_output", pathlib=True)
+    expts = load.experiment_list(location / "indexed.expt", check_format=False)
     assert (
         model_connectivity(expts)
         == """\
@@ -408,9 +419,8 @@ Experiment 3  x"""
 
 def test_dials_show_shared_models(dials_data, capsys):
     """Test that dials.show experiments_has_model option."""
-    location = dials_data("l_cysteine_dials_output")
-    expt = location.join("indexed.expt")
-    run([expt.strpath, "show_shared_models=True"])
+    location = dials_data("l_cysteine_dials_output", pathlib=True)
+    run([str(location / "indexed.expt"), "show_shared_models=True"])
     stdout, stderr = capsys.readouterr()
     assert not stderr
     assert "Experiment / Models" in stdout
@@ -419,7 +429,7 @@ def test_dials_show_shared_models(dials_data, capsys):
 def test_dials_show_centroid_test_data_image_zero(dials_data, tmpdir):
     """Integration test: import image 0; show import / show works"""
 
-    im1 = dials_data("centroid_test_data").join("centroid_0001.cbf").strpath
+    im1 = dials_data("centroid_test_data", pathlib=True) / "centroid_0001.cbf"
     im0 = tmpdir.join("centroid_0000.cbf").strpath
 
     shutil.copyfile(im1, im0)
