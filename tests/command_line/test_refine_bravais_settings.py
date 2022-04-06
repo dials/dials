@@ -171,6 +171,17 @@ def test_refine_bravais_settings_554(dials_regression, tmpdir):
     assert bravais_summary["5"]["recommended"] is True
 
 
+def test_input_not_p1(dials_data, tmpdir):
+    data_dir = dials_data("insulin_processed", pathlib=True)
+    refl = data_dir / "indexed.refl"
+    expt = data_dir / "indexed.expt"
+
+    with tmpdir.as_cwd():
+        with pytest.raises(SystemExit) as error:
+            refine_bravais_settings.run([str(expt), str(refl)])
+        assert error.type == SystemExit
+
+
 @pytest.mark.parametrize(
     "best_monoclinic_beta,expected_space_group,expected_unit_cell",
     [

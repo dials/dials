@@ -204,6 +204,9 @@ def run(args=None):
                 "experiment."
             )
 
+    if experiments.crystals()[0].get_crystal_symmetry().space_group_number() != 1:
+        sys.exit("Data must be input in P1")
+
     reflections = eliminate_sys_absent(experiments, reflections)
     map_to_primitive(experiments, reflections)
 
