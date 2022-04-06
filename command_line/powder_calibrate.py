@@ -88,7 +88,7 @@ phil_scope = parse(
         straight_lines = straight_lines.png
             .type = str
             .help = file name for the cake plot showing hopefully straight lines
-        log = dials.command_name.log
+        log = dials.powder_calibrate.log
            .type = path
     }
     """
