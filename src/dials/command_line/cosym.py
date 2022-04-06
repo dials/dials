@@ -66,6 +66,11 @@ relative_length_tolerance = 0.05
 absolute_angle_tolerance = 2
   .type = float(value_min=0)
 
+cc_star_threshold = 0
+  .type = float(value_min=0,value_max=1)
+  .help = "Filter out datasets whose coordinates length (an estimate of cc star)"
+          "is below this threshold."
+
 min_reflections = 10
   .type = int(value_min=1)
   .help = "The minimum number of reflections per experiment."
@@ -203,25 +208,44 @@ class cosym(Subject):
     @Subject.notify_event(event="run_cosym")
     def run(self):
         self.cosym_analysis.run()
+
+        coord_x = self.cosym_analysis.coords[:, 0]
+        coord_y = self.cosym_analysis.coords[:, 1]
+        s = np.sqrt(np.square(coord_x) + np.square(coord_y))
+        sel = s >= self.params.cc_star_threshold
+
         reindexing_ops = self.cosym_analysis.reindexing_ops
         datasets_ = list(set(self.cosym_analysis.dataset_ids))
+
+        n_datasets = len(reindexing_ops)
+        bad = set(i % n_datasets for i, j in enumerate(sel) if not j)
+        if bad:
+            logger.info(
+                f"Datasets with estimated cc* < {self.params.cc_star_threshold}:"
+            )
+            logger.info(",".join(str(i) for i in list(bad)))
 
         # Log reindexing operators
         logger.info("Reindexing operators:")
         for cb_op in set(reindexing_ops):
-            datasets = [d for d, o in zip(datasets_, reindexing_ops) if o == cb_op]
+            datasets = [
+                d
+                for d, o, g in zip(datasets_, reindexing_ops, sel)
+                if (o == cb_op and g)
+            ]
             logger.info(f"{cb_op}: {datasets}")
 
         self._apply_reindexing_operators(
-            reindexing_ops, subgroup=self.cosym_analysis.best_subgroup
+            reindexing_ops, subgroup=self.cosym_analysis.best_subgroup, filter_out=bad
         )
 
     def export(self):
         """Output the datafiles for cosym.
 
         This includes the cosym.json, reflections and experiments files."""
-
         reindexed_reflections = flex.reflection_table()
+        if not self._reflections:
+            raise ValueError("No datasets successfully processed")
         self._reflections = update_imageset_ids(self._experiments, self._reflections)
         for refl in self._reflections:
             reindexed_reflections.extend(refl)
@@ -236,7 +260,9 @@ class cosym(Subject):
         )
         reindexed_reflections.as_file(self.params.output.reflections)
 
-    def _apply_reindexing_operators(self, reindexing_ops, subgroup=None):
+    def _apply_reindexing_operators(
+        self, reindexing_ops, subgroup=None, filter_out=None
+    ):
         """Apply the reindexing operators to the reflections and experiments."""
         unique_ids = set(self.cosym_analysis.dataset_ids)
         for cb_op, dataset_id in zip(reindexing_ops, unique_ids):
@@ -261,8 +287,12 @@ class cosym(Subject):
                 )
             )
             refl["miller_index"] = cb_op.apply(refl["miller_index"])
+
+        if filter_out:
+            unique_ids = unique_ids.difference(set(filter_out))
+
         # Allow for the case where some datasets are filtered out.
-        if len(reindexing_ops) < len(self._experiments):
+        if len(reindexing_ops) < len(self._experiments) or filter_out:
             to_delete = [
                 i for i in range(len(self._experiments)) if i not in unique_ids
             ]
