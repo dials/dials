@@ -82,7 +82,7 @@ phil_scope = parse(
         calibrated_geom = calibrated.expt
             .type = str
             .help = file to which the calibrated geometry would be saved
-        pyfai_improvement = pyfai_imporovement.png
+        pyfai_improvement = pyfai_improvement.png
             .type = str
             .help = file name for the pyfai calibration effect figure
         straight_lines = straight_lines.png
@@ -783,7 +783,7 @@ def run(args: List[str] = None, phil: scope = phil_scope) -> None:
     experiments = flatten_experiments(parameters.input.experiments)
 
     # Check user is holding the tool right
-    if experiments == 0 or not parameters.standard:
+    if not experiments or not parameters.standard:
         parser.print_help()
         exit()
 
