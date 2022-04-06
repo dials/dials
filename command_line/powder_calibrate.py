@@ -33,6 +33,7 @@ from typing import List, NamedTuple, Optional, Tuple, Union
 import numpy as np
 import numpy.ma as ma
 from matplotlib import pyplot as plt
+from matplotlib.colors import SymLogNorm
 from matplotlib.widgets import Button, Slider
 
 try:
@@ -162,6 +163,7 @@ def get_expt_params(expts: ExperimentList) -> ExptParams:
     distance = detector.get_distance()
     wavelength = beam.get_wavelength()
     pix_size = detector.get_pixel_size()
+
     # detector size has dimensions flipped wrt data array
     img_size = detector.get_image_size()[::-1]
     image = np.array(expt.imageset.get_corrected_data(0)[0]).reshape(img_size)
@@ -183,12 +185,12 @@ def get_expt_params(expts: ExperimentList) -> ExptParams:
 class Detector(pfDetector):
     def __init__(self, expt_params: ExptParams):
         px, py = expt_params.pix_size
-        size_x, size_y = expt_params.img_size
+        det_shape = expt_params.img_size
 
         super().__init__(
             pixel1=_convert_units(px, "mm", "m"),
             pixel2=_convert_units(py, "mm", "m"),
-            max_shape=(size_x, size_y),
+            max_shape=det_shape,
         )
 
 
@@ -348,7 +350,7 @@ class EyeballWidget:
         self.calibrant = calibrant
         self.coarse_geom = coarse_geom
         self.fig, self.ax = self.set_up_figure()
-        self.calibrant_image = self.calibrant_rings_image(self.ax)
+        self.calibrant_image = self.calibrant_rings_image()
         self.beam_fast_slider = self.make_slider("fast")
         self.beam_slow_slider = self.make_slider("slow")
 
@@ -360,12 +362,17 @@ class EyeballWidget:
         """
         Add title and label axes
         """
-        fig, ax = plt.subplots()
-        ax = pfjupyter.display(
-            self.image,
-            label="Calibrant overlay on experimental image",
-            ax=ax,
+        # often these images will have negative intensities
+        # ignore them for calibration purposes
+        self.image[self.image <= 0] = 0
+
+        colornorm = SymLogNorm(
+            1, base=10, vmin=np.nanmin(self.image), vmax=np.nanmax(self.image)
         )
+
+        fig, ax = plt.subplots()
+        ax.imshow(self.image, origin="lower", cmap="inferno", norm=colornorm)
+
         ax.set_xlabel("fast position [pixels]")
         ax.set_ylabel("slow position [pixels]")
         fig.set_size_inches(10, 10)
@@ -452,15 +459,6 @@ class EyeballWidget:
             )
         return slider
 
-    def calibrant_rings_image(self, ax: plt.axes) -> plt.axes:
-        cal_img_masked = self.calibrant_rings()
-
-        rings_img = ax.imshow(cal_img_masked, alpha=0.3, cmap="inferno", origin="lower")
-        # add the beam position
-        ax.plot(*self.beam_position(self.geometry), "rx")
-
-        return rings_img
-
     def beam_position(self, geometry: Optional[Geometry] = None) -> Point:
         """
         Compute the beam position either from a new geometry or from self.geometry
@@ -495,9 +493,22 @@ class EyeballWidget:
         else:
             cal_img = self.calibrant.fake_calibration_image(self.geometry, W=w)
 
+        # TODO: fix that hardcoded value
         cal_img_masked = ma.masked_where(cal_img <= 1e-4, cal_img)
 
         return cal_img_masked
+
+    def calibrant_rings_image(self) -> plt.axes:
+        cal_img_masked = self.calibrant_rings()
+
+        rings_img = self.ax.imshow(
+            cal_img_masked, alpha=0.1, cmap="inferno", origin="lower"
+        )
+
+        # add the beam position
+        self.ax.plot(*self.beam_position(self.geometry), "rx")
+
+        return rings_img
 
 
 class PowderCalibrator:
@@ -692,10 +703,22 @@ class PowderCalibrator:
 
     def calibrate_with_calibrant(
         self,
-        num_rings: int = 4,
+        num_rings: int = 5,
         fix: Tuple = ("rot1", "rot2", "rot3", "wavelength"),
         plots: bool = True,
     ):
+        """
+        Do the actual calibration
+
+        :param num_rings: int
+                number of Debye Scherrer rings to fit starting from low resolution
+        :param fix: tuple
+                variables to keep fixed while fitting
+                Note that, for electrons, virtual detector distance and wavelength are not independent,
+                so keeping wavelength fixed would yield more useful results
+        :param plots: bool
+                show the fitting plots or keep it quiet
+        """
 
         if self.eyeball:
             # first use user eyes for rough fit
