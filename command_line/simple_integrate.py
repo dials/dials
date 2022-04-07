@@ -12,6 +12,7 @@ from dials.algorithms.profile_model.gaussian_rs.calculator import (
     ComputeEsdReflectingRange,
 )
 from dials.array_family import flex
+from dials.command_line.integrate import process_reference
 from dials.model.data import make_image
 from dials.util.phil import parse
 from dials_algorithms_integration_integrator_ext import ShoeboxProcessor
@@ -47,6 +48,8 @@ if __name__ == "__main__":
     reflections = reflection_table.from_msgpack_file(reflections_file)
     reflections["id"] = cctbx.array_family.flex.int(len(reflections), 0)
     experiment = experiments[0]
+    # Remove bad reflections (e.g. those not indexed)
+    reflections, _ = process_reference(reflections)
 
     """
     Predict reflections using experiment crystal
@@ -82,7 +85,7 @@ if __name__ == "__main__":
     ).sigma()
     # The Gaussian model given in 2.3 of Kabsch 2010
     experiment.profile = GaussianRSProfileModel(
-        params=params, n_sigma=1, sigma_b=sigma_b, sigma_m=sigma_m
+        params=params, n_sigma=3, sigma_b=sigma_b, sigma_m=sigma_m
     )
 
     """
