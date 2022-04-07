@@ -124,9 +124,10 @@ if __name__ == "__main__":
         mask = experiment.imageset.get_mask(i)
         shoebox_processor.next_data_only(make_image(image, mask))
 
+    predicted_reflections.is_overloaded(experiments)
+    predicted_reflections.compute_mask(experiments)
     predicted_reflections.compute_background(experiments)
     predicted_reflections.compute_centroid(experiments)
-    predicted_reflections.compute_mask(experiments)
     predicted_reflections.compute_summed_intensity()
     predicted_reflections.compute_partiality(experiments)
 
