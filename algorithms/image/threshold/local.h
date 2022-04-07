@@ -413,7 +413,7 @@ namespace dials { namespace algorithms {
         T x = 0;
         T y = 0;
         for (std::size_t i = 0; i < xsize; ++i, ++k) {
-          int mm = (mask[k] && src[k] >= 0 && src[k] < BIG) ? 1 : 0;
+          int mm = (mask[k] && src[k] < BIG) ? 1 : 0;
           m += mm;
           x += mm * src[k];
           y += mm * src[k] * src[k];
@@ -744,7 +744,7 @@ namespace dials { namespace algorithms {
       // Copy the mask into a temp variable
       af::versa<int, af::c_grid<2> > temp(mask.accessor());
       for (std::size_t i = 0; i < temp.size(); ++i) {
-        temp[i] = (mask[i] && image[i] >= 0) ? 1 : 0;
+        temp[i] = mask[i] ? 1 : 0;
       }
 
       // Calculate the masked index_of_dispersion filtered image
