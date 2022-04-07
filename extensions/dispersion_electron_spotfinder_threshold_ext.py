@@ -5,7 +5,7 @@ import logging
 import libtbx
 
 from dials.algorithms.spot_finding.threshold import DispersionElectronThresholdStrategy
-from dials.interfaces.dispersion_extended_spotfinder_threshold_ext import (
+from dials.extensions.dispersion_extended_spotfinder_threshold_ext import (
     estimate_global_threshold,
 )
 

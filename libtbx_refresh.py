@@ -43,6 +43,7 @@ libtbx.pkg_utils.define_entry_points(
         "dials.spotfinder.threshold": [
             "dispersion = dials.extensions.dispersion_spotfinder_threshold_ext:DispersionSpotFinderThresholdExt",
             "dispersion_extended = dials.extensions.dispersion_extended_spotfinder_threshold_ext:DispersionExtendedSpotFinderThresholdExt",
+            "dispersion_electron = dials.extensions.dispersion_electron_spotfinder_threshold_ext:DispersionElectronSpotFinderThresholdExt",
             "radial_profile = dials.extensions.radial_profile_spotfinder_threshold_ext:RadialProfileSpotFinderThresholdExt",
         ],
     }
