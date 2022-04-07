@@ -218,7 +218,6 @@ class Test:
         assert result2 == result4
 
     def test_dispersion_electron_threshold(self):
-        from dials.array_family import flex
 
         nsig_b = 3
         nsig_s = 3
