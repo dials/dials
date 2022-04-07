@@ -55,7 +55,9 @@ if __name__ == "__main__":
     Predict reflections using experiment crystal
     """
 
-    predicted_reflections = flex.reflection_table.from_predictions(experiment)
+    predicted_reflections = flex.reflection_table.from_predictions(
+        experiment, padding=1.0
+    )
     predicted_reflections["id"] = cctbx.array_family.flex.int(
         len(predicted_reflections), 0
     )
