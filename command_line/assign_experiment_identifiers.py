@@ -35,9 +35,11 @@ phil_scope = phil.parse(
 @show_mail_handle_errors()
 def run(args=None):
     """Run assign experiment identifiers from the command line."""
-    usage = (
-        """Usage: dials.assign_experiment_identifiers observations.refl models.expt"""
-    )
+    usage = """
+    dials.assign_experiment_identifiers observations.refl models.expt
+
+    dials.assign_experiment_identifiers observations.refl models.expt identifiers="0 1 2"
+"""
     parser = ArgumentParser(
         usage=usage,
         read_experiments=True,
