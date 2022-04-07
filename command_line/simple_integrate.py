@@ -69,10 +69,16 @@ if __name__ == "__main__":
     This is used to predict reflection properties.
     """
 
-    reflections.compute_zeta(experiment)
+    # Filter reflections to use to create the model
+    min_zeta = 0.05
+    used_in_ref = reflections.get_flags(reflections.flags.used_in_refinement)
+    model_reflections = reflections.select(used_in_ref)
+    zeta = model_reflections.compute_zeta(experiment)
+    model_reflections = model_reflections.select(flex.abs(zeta) >= min_zeta)
+
     # sigma_D in 3.1 of Kabsch 2010
     sigma_b = ComputeEsdBeamDivergence(
-        experiment.detector, reflections, centroid_definition="s1"
+        experiment.detector, model_reflections, centroid_definition="s1"
     ).sigma()
     # sigma_m in 3.1 of Kabsch 2010
     sigma_m = ComputeEsdReflectingRange(
@@ -81,7 +87,8 @@ if __name__ == "__main__":
         experiment.detector,
         experiment.goniometer,
         experiment.scan,
-        reflections,
+        model_reflections,
+        algorithm="extended",
     ).sigma()
     # The Gaussian model given in 2.3 of Kabsch 2010
     experiment.profile = GaussianRSProfileModel(
