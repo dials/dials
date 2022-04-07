@@ -196,9 +196,9 @@ class DispersionElectronThresholdStrategy(ThresholdStrategy):
         from dials.array_family import flex
 
         # Initialise the algorithm
-        try:
+        if image.all() in self.algorithm:
             algorithm = self.algorithm[image.all()]
-        except Exception:
+        else:
             algorithm = threshold.DispersionElectronThreshold(
                 image.all(),
                 self._kernel_size,
