@@ -168,7 +168,7 @@ class DispersionElectronThresholdStrategy(ThresholdStrategy):
         """
 
         # Initialise the base class
-        ThresholdStrategy.__init__(self, **kwargs)
+        super().__init__(**kwargs)
 
         # Get the parameters
         self._kernel_size = kwargs.get("kernel_size", (3, 3))

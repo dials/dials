@@ -130,11 +130,7 @@ class Test:
         assert result3 == result4
 
     def test_dispersion_debug(self):
-        from dials.algorithms.image.threshold import (
-            DispersionThresholdDebug,
-            dispersion,
-            dispersion_w_gain,
-        )
+        from dials.algorithms.image.threshold import dispersion, dispersion_w_gain
 
         nsig_b = 3
         nsig_s = 3
@@ -164,11 +160,7 @@ class Test:
         assert result3 == result4
 
     def test_dispersion_threshold(self):
-        from dials.algorithms.image.threshold import (
-            DispersionThreshold,
-            dispersion,
-            dispersion_w_gain,
-        )
+        from dials.algorithms.image.threshold import dispersion, dispersion_w_gain
         from dials.array_family import flex
 
         nsig_b = 3
@@ -193,10 +185,6 @@ class Test:
         assert result2 == result4
 
     def test_dispersion_extended_threshold(self):
-        from dials.algorithms.image.threshold import (
-            DispersionExtendedThreshold,
-            DispersionExtendedThresholdDebug,
-        )
         from dials.array_family import flex
 
         nsig_b = 3
@@ -230,10 +218,6 @@ class Test:
         assert result2 == result4
 
     def test_dispersion_electron_threshold(self):
-        from dials.algorithms.image.threshold import (
-            DispersionElectronThreshold,
-            DispersionElectronThresholdDebug,
-        )
         from dials.array_family import flex
 
         nsig_b = 3
@@ -241,17 +225,17 @@ class Test:
         algorithm = DispersionElectronThreshold(
             self.image.all(), self.size, nsig_b, nsig_s, 0, self.min_count
         )
-        result1 = flex.bool(flex.grid(self.image.all()))
-        result2 = flex.bool(flex.grid(self.image.all()))
-        algorithm(self.image, self.mask, result1)
-        algorithm(self.image, self.mask, self.gain, result2)
+        result_no_gain = flex.bool(flex.grid(self.image.all()))
+        result_with_gain = flex.bool(flex.grid(self.image.all()))
+        algorithm(self.image, self.mask, result_no_gain)
+        algorithm(self.image, self.mask, self.gain, result_with_gain)
 
         debug = DispersionElectronThresholdDebug(
             self.image, self.mask, self.size, nsig_b, nsig_s, 0, self.min_count
         )
-        result3 = debug.final_mask()
+        result_no_gain_debug = debug.final_mask()
 
-        assert result1.all_eq(result3)
+        assert result_no_gain.all_eq(result_no_gain_debug)
 
         debug = DispersionElectronThresholdDebug(
             self.image,
@@ -263,8 +247,8 @@ class Test:
             0,
             self.min_count,
         )
-        result4 = debug.final_mask()
-        assert result2 == result4
+        result_with_gain_debug = debug.final_mask()
+        assert result_with_gain == result_with_gain_debug
 
     @pytest.mark.parametrize(
         "algorithm", [DispersionThreshold, DispersionExtendedThreshold, DispersionElectronThreshold]
