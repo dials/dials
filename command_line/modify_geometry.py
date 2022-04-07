@@ -60,6 +60,7 @@ def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     )
 
     params, _ = parser.parse_args(args, show_diff_phil=True)
+
     experiments = flatten_experiments(params.input.experiments)
 
     if len(experiments) == 0:
