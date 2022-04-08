@@ -47,6 +47,7 @@ if __name__ == "__main__":
     experiments = ExperimentList.from_file(experiment_file)
     reflections = reflection_table.from_msgpack_file(reflections_file)
     reflections["id"] = cctbx.array_family.flex.int(len(reflections), 0)
+    reflections["imageset_id"] = cctbx.array_family.flex.int(len(reflections), 0)
     experiment = experiments[0]
     # Remove bad reflections (e.g. those not indexed)
     reflections, _ = process_reference(reflections)
@@ -59,6 +60,9 @@ if __name__ == "__main__":
         experiment, padding=1.0
     )
     predicted_reflections["id"] = cctbx.array_family.flex.int(
+        len(predicted_reflections), 0
+    )
+    predicted_reflections["imageset_id"] = cctbx.array_family.flex.int(
         len(predicted_reflections), 0
     )
     # Updates flags to set which reflections to use in generating reference profiles
@@ -124,12 +128,14 @@ if __name__ == "__main__":
         mask = experiment.imageset.get_mask(i)
         shoebox_processor.next_data_only(make_image(image, mask))
 
+    predicted_reflections.compute_d(experiments)
+    predicted_reflections.compute_zeta(experiment)
+    predicted_reflections.compute_partiality(experiments)
     predicted_reflections.is_overloaded(experiments)
     predicted_reflections.compute_mask(experiments)
     predicted_reflections.compute_background(experiments)
     predicted_reflections.compute_centroid(experiments)
     predicted_reflections.compute_summed_intensity()
-    predicted_reflections.compute_partiality(experiments)
 
     """
     Load modeller that will calculate reference profiles and
@@ -158,19 +164,19 @@ if __name__ == "__main__":
         fit_method,
     )
 
-    # Just flag all predicted reflections for integration
-    predicted_reflections.unset_flags(
-        flex.bool(len(predicted_reflections), True),
-        predicted_reflections.flags.dont_integrate,
-    )
-
     """
     Calculate grid of reference profiles from predicted reflections
     that matched observed.
     ("Learning phase" of 3.3 in Kabsch 2010)
     """
 
-    reference_profile_modeller.model(predicted_reflections)
+    # Get the predicted reflections that matched with observed
+    sel = predicted_reflections.get_flags(predicted_reflections.flags.reference_spot)
+    reference_reflections = predicted_reflections.select(sel)
+
+    # Use these reflections to create the grid of reference profiles
+    reference_profile_modeller.model(reference_reflections)
+    reference_profile_modeller.normalize_profiles()
 
     """
     Carry out the integration by fitting to reference profiles in 1D.
@@ -178,5 +184,6 @@ if __name__ == "__main__":
     """
 
     reference_profile_modeller.fit_reciprocal_space(predicted_reflections)
+    del predicted_reflections["shoebox"]
 
     predicted_reflections.as_msgpack_file("integrated.refl")
