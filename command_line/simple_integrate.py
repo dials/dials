@@ -11,8 +11,9 @@ from dials.algorithms.profile_model.gaussian_rs.calculator import (
     ComputeEsdBeamDivergence,
     ComputeEsdReflectingRange,
 )
+from dials.algorithms.shoebox import MaskCode
 from dials.array_family import flex
-from dials.command_line.integrate import process_reference
+from dials.command_line.integrate import filter_reference_pixels, process_reference
 from dials.model.data import make_image
 from dials.util.phil import parse
 from dials_algorithms_integration_integrator_ext import ShoeboxProcessor
@@ -51,6 +52,7 @@ if __name__ == "__main__":
     experiment = experiments[0]
     # Remove bad reflections (e.g. those not indexed)
     reflections, _ = process_reference(reflections)
+    reflections = filter_reference_pixels(reflections, experiments)
 
     """
     Predict reflections using experiment crystal
@@ -133,6 +135,27 @@ if __name__ == "__main__":
     predicted_reflections.compute_partiality(experiments)
     predicted_reflections.is_overloaded(experiments)
     predicted_reflections.compute_mask(experiments)
+    predicted_reflections.contains_invalid_pixels()
+
+    # Filter reflections with a high fraction of masked foreground
+    valid_foreground_threshold = 0.75  # DIALS default
+    sboxs = predicted_reflections["shoebox"]
+    nvalfg = sboxs.count_mask_values(MaskCode.Valid | MaskCode.Foreground)
+    nforeg = sboxs.count_mask_values(MaskCode.Foreground)
+    fraction_valid = nvalfg.as_double() / nforeg.as_double()
+    selection = fraction_valid < valid_foreground_threshold
+    predicted_reflections.set_flags(
+        selection, predicted_reflections.flags.dont_integrate
+    )
+
+    predicted_reflections["num_pixels.valid"] = sboxs.count_mask_values(MaskCode.Valid)
+    predicted_reflections["num_pixels.background"] = sboxs.count_mask_values(
+        MaskCode.Valid | MaskCode.Background
+    )
+    predicted_reflections["num_pixels.background_used"] = sboxs.count_mask_values(
+        MaskCode.Valid | MaskCode.Background | MaskCode.BackgroundUsed
+    )
+    predicted_reflections["num_pixels.foreground"] = nvalfg
     predicted_reflections.compute_background(experiments)
     predicted_reflections.compute_centroid(experiments)
     predicted_reflections.compute_summed_intensity()
@@ -184,6 +207,15 @@ if __name__ == "__main__":
     """
 
     reference_profile_modeller.fit_reciprocal_space(predicted_reflections)
+
+    """
+    Corrections
+    """
+    predicted_reflections.compute_corrections(experiments)
+
+    """
+    Remove some columns
+    """
     del predicted_reflections["shoebox"]
 
     predicted_reflections.as_msgpack_file("integrated.refl")
