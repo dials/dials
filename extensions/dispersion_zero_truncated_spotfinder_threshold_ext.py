@@ -4,20 +4,22 @@ import logging
 
 import libtbx
 
-from dials.algorithms.spot_finding.threshold import DispersionElectronThresholdStrategy
+from dials.algorithms.spot_finding.threshold import (
+    DispersionZeroTruncatedThresholdStrategy,
+)
 from dials.extensions.dispersion_extended_spotfinder_threshold_ext import (
     estimate_global_threshold,
 )
 
 logger = logging.getLogger(
-    "dials.extensions.dispersion_electron_spotfinder_threshold_ext"
+    "dials.extensions.dispersion_zero_truncated_spotfinder_threshold_ext"
 )
 
 
-class DispersionElectronSpotFinderThresholdExt:
+class DispersionZeroTruncatedSpotFinderThresholdExt:
     """Extensions to do dispersion threshold."""
 
-    name = "dispersion_electron"
+    name = "dispersion_zero_truncated"
 
     default = False
 
@@ -53,7 +55,7 @@ class DispersionElectronSpotFinderThresholdExt:
                 params.spotfinder.threshold.dispersion.global_threshold,
             )
 
-        self._algorithm = DispersionElectronThresholdStrategy(
+        self._algorithm = DispersionZeroTruncatedThresholdStrategy(
             kernel_size=params.spotfinder.threshold.dispersion.kernel_size,
             gain=params.spotfinder.threshold.dispersion.gain,
             mask=params.spotfinder.lookup.mask,

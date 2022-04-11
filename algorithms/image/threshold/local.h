@@ -1443,7 +1443,7 @@ namespace dials { namespace algorithms {
    * A class to help debug spot finding by exposing the results of various bits
    * of processing.
    */
-  class DispersionElectronThresholdDebug {
+  class DispersionZeroTruncatedThresholdDebug {
   public:
     /**
      * Do the processing.
@@ -1455,13 +1455,14 @@ namespace dials { namespace algorithms {
      * @param threshold The global threshold value
      * @param min_count The minimum number of pixels in the local area
      */
-    DispersionElectronThresholdDebug(const af::const_ref<double, af::c_grid<2> > &image,
-                                     const af::const_ref<bool, af::c_grid<2> > &mask,
-                                     int2 size,
-                                     double nsig_b,
-                                     double nsig_s,
-                                     double threshold,
-                                     int min_count) {
+    DispersionZeroTruncatedThresholdDebug(
+      const af::const_ref<double, af::c_grid<2> > &image,
+      const af::const_ref<bool, af::c_grid<2> > &mask,
+      int2 size,
+      double nsig_b,
+      double nsig_s,
+      double threshold,
+      int min_count) {
       af::versa<double, af::c_grid<2> > gain(image.accessor(), 1.0);
       init(image, mask, gain.const_ref(), size, nsig_b, nsig_s, threshold, min_count);
     }
@@ -1476,14 +1477,15 @@ namespace dials { namespace algorithms {
      * @param threshold The global threshold value
      * @param min_count The minimum number of pixels in the local area
      */
-    DispersionElectronThresholdDebug(const af::const_ref<double, af::c_grid<2> > &image,
-                                     const af::const_ref<bool, af::c_grid<2> > &mask,
-                                     const af::const_ref<double, af::c_grid<2> > &gain,
-                                     int2 size,
-                                     double nsig_b,
-                                     double nsig_s,
-                                     double threshold,
-                                     int min_count) {
+    DispersionZeroTruncatedThresholdDebug(
+      const af::const_ref<double, af::c_grid<2> > &image,
+      const af::const_ref<bool, af::c_grid<2> > &mask,
+      const af::const_ref<double, af::c_grid<2> > &gain,
+      int2 size,
+      double nsig_b,
+      double nsig_s,
+      double threshold,
+      int min_count) {
       init(image, mask, gain, size, nsig_b, nsig_s, threshold, min_count);
     }
 
@@ -1608,7 +1610,7 @@ namespace dials { namespace algorithms {
   /**
    * A class to compute the threshold using index of dispersion
    */
-  class DispersionElectronThreshold {
+  class DispersionZeroTruncatedThreshold {
   public:
     /**
      * Enable more efficient memory usage by putting components required for the
@@ -1621,12 +1623,12 @@ namespace dials { namespace algorithms {
       T y;
     };
 
-    DispersionElectronThreshold(int2 image_size,
-                                int2 kernel_size,
-                                double nsig_b,
-                                double nsig_s,
-                                double threshold,
-                                int min_count)
+    DispersionZeroTruncatedThreshold(int2 image_size,
+                                     int2 kernel_size,
+                                     double nsig_b,
+                                     double nsig_s,
+                                     double threshold,
+                                     int min_count)
         : image_size_(image_size),
           kernel_size_(kernel_size),
           nsig_b_(nsig_b),

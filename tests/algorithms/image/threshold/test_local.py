@@ -9,12 +9,12 @@ from numpy.random import poisson
 from scitbx.array_family import flex
 
 from dials.algorithms.image.threshold import (
-    DispersionElectronThreshold,
-    DispersionElectronThresholdDebug,
     DispersionExtendedThreshold,
     DispersionExtendedThresholdDebug,
     DispersionThreshold,
     DispersionThresholdDebug,
+    DispersionZeroTruncatedThreshold,
+    DispersionZeroTruncatedThresholdDebug,
 )
 
 
@@ -217,11 +217,11 @@ class Test:
         result4 = debug.final_mask()
         assert result2 == result4
 
-    def test_dispersion_electron_threshold(self):
+    def test_dispersion_zero_truncated_threshold(self):
 
         nsig_b = 3
         nsig_s = 3
-        algorithm = DispersionElectronThreshold(
+        algorithm = DispersionZeroTruncatedThreshold(
             self.image.all(), self.size, nsig_b, nsig_s, 0, self.min_count
         )
         result_no_gain = flex.bool(flex.grid(self.image.all()))
@@ -229,14 +229,14 @@ class Test:
         algorithm(self.image, self.mask, result_no_gain)
         algorithm(self.image, self.mask, self.gain, result_with_gain)
 
-        debug = DispersionElectronThresholdDebug(
+        debug = DispersionZeroTruncatedThresholdDebug(
             self.image, self.mask, self.size, nsig_b, nsig_s, 0, self.min_count
         )
         result_no_gain_debug = debug.final_mask()
 
         assert result_no_gain.all_eq(result_no_gain_debug)
 
-        debug = DispersionElectronThresholdDebug(
+        debug = DispersionZeroTruncatedThresholdDebug(
             self.image,
             self.mask,
             self.gain,
@@ -250,7 +250,7 @@ class Test:
         assert result_with_gain == result_with_gain_debug
 
     @pytest.mark.parametrize(
-        "algorithm", [DispersionThreshold, DispersionExtendedThreshold, DispersionElectronThreshold]
+        "algorithm", [DispersionThreshold, DispersionExtendedThreshold, DispersionZeroTruncatedThreshold]
     )
     def test_dispersion_algorithm_symmetry(self, algorithm):
 
@@ -285,7 +285,7 @@ class Test:
         assert (result1 == result2_t).all_eq(True)
 
     @pytest.mark.parametrize(
-        "algorithm", [DispersionThresholdDebug, DispersionExtendedThresholdDebug, DispersionElectronThresholdDebug]
+        "algorithm", [DispersionThresholdDebug, DispersionExtendedThresholdDebug, DispersionZeroTruncatedThresholdDebug]
     )
     def test_dispersion_debug_algorithm_symmetry(self, algorithm):
 

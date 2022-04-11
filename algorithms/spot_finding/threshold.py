@@ -157,7 +157,7 @@ class DispersionExtendedThresholdStrategy(ThresholdStrategy):
         return result
 
 
-class DispersionElectronThresholdStrategy(ThresholdStrategy):
+class DispersionZeroTruncatedThresholdStrategy(ThresholdStrategy):
     """
     A class implementing a 'gain' threshold.
     """
@@ -199,7 +199,7 @@ class DispersionElectronThresholdStrategy(ThresholdStrategy):
         if image.all() in self.algorithm:
             algorithm = self.algorithm[image.all()]
         else:
-            algorithm = threshold.DispersionElectronThreshold(
+            algorithm = threshold.DispersionZeroTruncatedThreshold(
                 image.all(),
                 self._kernel_size,
                 self._n_sigma_b,
