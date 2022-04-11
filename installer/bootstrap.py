@@ -676,6 +676,8 @@ def git(module, git_available, ssh_available, reference_base, settings):
     destination = os.path.join("modules", module)
 
     if os.path.exists(destination):
+        if os.path.isfile(os.path.join(destination, ".git")):
+            return module, "WARNING", "Existing git worktree directory -- skipping"
         if not os.path.isdir(os.path.join(destination, ".git")):
             return module, "WARNING", "Existing non-git directory -- skipping"
         if not git_available:
