@@ -1,0 +1,1 @@
+``dials.find_shared_models`` has been retired. The command will now redirect users to ``dials.show`` in combination with the ``show_shared_models=True`` option. This command stub will be removed in a future version.
