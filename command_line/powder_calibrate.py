@@ -261,7 +261,21 @@ class Geometry(pfGeometry):
         self,
         beam_coords_px: Optional[Point] = None,
         beam_coords_m: Optional[Point] = None,
+        beam_dist_mm: Optional[float] = None,
     ):
+        """
+        Update beam position
+
+        :param beam_coords_px: new beam position in pixels
+        :param beam_coords_m: new beam position in meters
+        :param beam_dist: new detector distance along beam direction
+        """
+        if beam_coords_px and beam_coords_m:
+            exit(
+                f"Expected either beam position in pixels or in m. "
+                f"Instead both {beam_coords_px} pixels and {beam_coords_m} m were given."
+            )
+
         if beam_coords_px:
             self.beam_px = beam_coords_px
             self.beam_m = self._beam_to_m()
@@ -269,6 +283,9 @@ class Geometry(pfGeometry):
         elif beam_coords_m:
             self.beam_m = beam_coords_m
             self.beam_px = self._beam_to_px()
+
+        if beam_dist_mm:
+            self.beam_distance = beam_dist_mm
 
         self._set_poni()
 
@@ -351,8 +368,9 @@ class EyeballWidget:
         self.coarse_geom = coarse_geom
         self.fig, self.ax = self.set_up_figure()
         self.calibrant_image = self.calibrant_rings_image()
-        self.beam_fast_slider = self.make_slider("fast")
-        self.beam_slow_slider = self.make_slider("slow")
+        self.beam_fast_slider = self._make_slider("fast")
+        self.beam_slow_slider = self._make_slider("slow")
+        self.distance_slider = self._make_slider("distance")
 
     def __repr__(self):
         calibrant = os.path.splitext(os.path.basename(self.calibrant.filename))[0]
@@ -362,7 +380,7 @@ class EyeballWidget:
         """
         Add title and label axes
         """
-        # often these images will have negative intensities
+        # often the ED data will have negative intensities
         # ignore them for calibration purposes
         self.image[self.image <= 0] = 0
 
@@ -375,62 +393,10 @@ class EyeballWidget:
 
         ax.set_xlabel("fast position [pixels]")
         ax.set_ylabel("slow position [pixels]")
-        fig.set_size_inches(10, 10)
+        fig.set_size_inches(12, 10)
         return fig, ax
 
-    def update(self, val):
-        """
-        Update geometry from slider value
-        """
-        new_geometry = self.geometry.__deepcopy__()
-        new_geometry.update_beam_pos(
-            beam_coords_px=Point(self.beam_fast_slider.val, self.beam_slow_slider.val)
-        )
-
-        self.calibrant_image.set_array(self.calibrant_rings(new_geometry))
-        self.fig.canvas.draw_idle()
-
-    def reset(self, event):
-        """
-        Reset calibrant image to starting position
-        """
-        self.beam_fast_slider.reset()
-        self.beam_slow_slider.reset()
-
-    def save_and_exit(self, event):
-        """
-        Save geometry from widget and save to file
-        """
-        self.geometry.update_beam_pos(
-            beam_coords_px=Point(self.beam_fast_slider.val, self.beam_slow_slider.val)
-        )
-        self.geometry.save_to_expt(
-            output=self.coarse_geom,
-        )
-        plt.close()
-
-    def eyeball(self):
-        """
-        Update geometry such that beam position is now the center of the moved calibrant rings
-        """
-        # register the update function with each slider
-        self.beam_fast_slider.on_changed(self.update)
-        self.beam_slow_slider.on_changed(self.update)
-
-        # register the reset function with reset button
-        reset_ax = plt.axes([0.8, 0.026, 0.1, 0.04])
-        button_res = Button(reset_ax, "Reset", hovercolor="0.975")
-        button_res.on_clicked(self.reset)
-
-        # register the save and exit function with save button
-        save_ax = plt.axes([0.5, 0.026, 0.23, 0.04])
-        button_save = Button(save_ax, "Save beam and exit", hovercolor="0.975")
-        button_save.on_clicked(self.save_and_exit)
-
-        # finally, show widget
-        plt.show()
-
-    def make_slider(self, label):
+    def _make_slider(self, label):
         slider = None
         if label == "fast":
             plt.subplots_adjust(bottom=0.25)
@@ -447,8 +413,9 @@ class EyeballWidget:
 
         elif label == "slow":
             plt.subplots_adjust(left=0.25)
-            # Make a vertically oriented slider to the beam slow position
+            # Make a vertical slider to control the beam slow position
             ax_beam_slow = plt.axes([0.1, 0.25, 0.0225, 0.63])
+
             slider = Slider(
                 ax=ax_beam_slow,
                 label="Beam center slow [px]",
@@ -457,7 +424,76 @@ class EyeballWidget:
                 valinit=self.geometry.beam_px.slow,
                 orientation="vertical",
             )
+        elif label == "distance":
+            plt.subplots_adjust(right=0.75)
+            # Make another vertical slider to control the detector distance
+            ax_beam_dist = plt.axes([0.9, 0.25, 0.0225, 0.63])
+
+            slider = Slider(
+                ax=ax_beam_dist,
+                label="Detector beam distance [mm]",
+                valmin=min(100, self.geometry.beam_distance),
+                valmax=max(1000, self.geometry.beam_distance),
+                valinit=self.geometry.beam_distance,
+                orientation="vertical",
+            )
         return slider
+
+    def update(self, val):
+        """
+        Update geometry from slider value
+        """
+        new_geometry = self.geometry.__deepcopy__()
+        new_geometry.update_beam_pos(
+            beam_coords_px=Point(self.beam_fast_slider.val, self.beam_slow_slider.val),
+            beam_dist_mm=self.distance_slider.val,
+        )
+
+        self.calibrant_image.set_array(self.calibrant_rings(new_geometry))
+        self.fig.canvas.draw_idle()
+
+    def reset(self, event):
+        """
+        Reset calibrant image to starting position
+        """
+        self.beam_fast_slider.reset()
+        self.beam_slow_slider.reset()
+        self.distance_slider.reset()
+
+    def save_and_exit(self, event):
+        """
+        Save geometry from widget and save to file
+        """
+        self.geometry.update_beam_pos(
+            beam_coords_px=Point(self.beam_fast_slider.val, self.beam_slow_slider.val),
+            beam_dist_mm=self.distance_slider.val,
+        )
+        self.geometry.save_to_expt(
+            output=self.coarse_geom,
+        )
+        plt.close()
+
+    def eyeball(self):
+        """
+        Update geometry such that beam position is now the center of the moved calibrant rings
+        """
+        # register the update function with each slider
+        self.beam_fast_slider.on_changed(self.update)
+        self.beam_slow_slider.on_changed(self.update)
+        self.distance_slider.on_changed(self.update)
+
+        # register the reset function with reset button
+        reset_ax = plt.axes([0.8, 0.026, 0.1, 0.04])
+        button_res = Button(reset_ax, "Reset", hovercolor="0.975")
+        button_res.on_clicked(self.reset)
+
+        # register the save and exit function with save button
+        save_ax = plt.axes([0.5, 0.026, 0.23, 0.04])
+        button_save = Button(save_ax, "Save beam and exit", hovercolor="0.975")
+        button_save.on_clicked(self.save_and_exit)
+
+        # finally, show widget
+        plt.show()
 
     def beam_position(self, geometry: Optional[Geometry] = None) -> Point:
         """
@@ -494,7 +530,7 @@ class EyeballWidget:
             cal_img = self.calibrant.fake_calibration_image(self.geometry, W=w)
 
         # TODO: fix that hardcoded value
-        cal_img_masked = ma.masked_where(cal_img <= 1e-4, cal_img)
+        cal_img_masked = ma.masked_where(cal_img <= 1e-3, cal_img)
 
         return cal_img_masked
 
@@ -502,7 +538,7 @@ class EyeballWidget:
         cal_img_masked = self.calibrant_rings()
 
         rings_img = self.ax.imshow(
-            cal_img_masked, alpha=0.1, cmap="inferno", origin="lower"
+            cal_img_masked, alpha=0.2, cmap="inferno", origin="lower"
         )
 
         # add the beam position
@@ -648,6 +684,7 @@ class PowderCalibrator:
             logger.info(
                 "Using the eyeballing widget.\n"
                 "Drag sliders to roughly overlap rings and then save for further fitting. \n"
+                "If the detector distance is very off start with that."
             )
 
     def show_pyfai_improvement(
@@ -809,7 +846,7 @@ def run(args: List[str] = None, phil: scope = phil_scope) -> None:
         pyfai_improvement=parameters.output.pyfai_improvement,
         straight_lines=parameters.output.straight_lines,
     )
-    calibrator.calibrate_with_calibrant(plots=False)
+    calibrator.calibrate_with_calibrant(plots=True)
 
 
 if __name__ == "__main__":
