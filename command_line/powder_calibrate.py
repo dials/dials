@@ -366,8 +366,10 @@ class EyeballWidget:
         self.detector = start_geometry.detector
         self.calibrant = calibrant
         self.coarse_geom = coarse_geom
+
         self.fig, self.ax = self.set_up_figure()
         self.calibrant_image = self.calibrant_rings_image()
+
         self.beam_fast_slider = self._make_slider("fast")
         self.beam_slow_slider = self._make_slider("slow")
         self.distance_slider = self._make_slider("distance")
@@ -398,6 +400,7 @@ class EyeballWidget:
 
     def _make_slider(self, label):
         slider = None
+
         if label == "fast":
             plt.subplots_adjust(bottom=0.25)
             # Make a horizontal slider to control the beam fast position.
@@ -424,6 +427,7 @@ class EyeballWidget:
                 valinit=self.geometry.beam_px.slow,
                 orientation="vertical",
             )
+
         elif label == "distance":
             plt.subplots_adjust(right=0.75)
             # Make another vertical slider to control the detector distance
@@ -437,6 +441,7 @@ class EyeballWidget:
                 valinit=self.geometry.beam_distance,
                 orientation="vertical",
             )
+
         return slider
 
     def update(self, val):
@@ -741,7 +746,7 @@ class PowderCalibrator:
     def calibrate_with_calibrant(
         self,
         num_rings: int = 5,
-        fix: Tuple = ("rot1", "rot2", "rot3", "wavelength"),
+        fix: Tuple = ("rot3", "wavelength"),
         plots: bool = True,
     ):
         """
