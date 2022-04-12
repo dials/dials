@@ -530,9 +530,9 @@ def show_reflections(
                 rows.append(
                     [
                         k,
-                        formats.get(k, "%s") % col.min(),
-                        formats.get(k, "%s") % col.max(),
-                        formats.get(k, "%s") % col.mean(),
+                        formats.get(k, "%.2f, %.2f, %.2f") % col.min(),
+                        formats.get(k, "%.2f, %.2f, %.2f") % col.max(),
+                        formats.get(k, "%.2f, %.2f, %.2f") % col.mean(),
                     ]
                 )
             elif isinstance(col, flex.shoebox):
