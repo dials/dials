@@ -7,8 +7,11 @@ from dials.util import tabulate
 from dials_algorithms_integration_ext import *  # noqa: F403; lgtm
 from dials_algorithms_integration_kapton_ext import *  # noqa: F403; lgtm
 
+# constants removed from elsewhere - EPS which is the "standard small number"
+# and FULL_PARTIALITY which corresponds to the greatest partiality we can
+# reasonably expect integrating to +/- 3 sigma
 EPS = 1e-7
-FULL_PARTIALITY = math.erf(3 / math.sqrt(2)) - EPS
+FULL_PARTIALITY = math.erf(3 / math.sqrt(2))
 
 __all__ = (  # noqa: F405
     "Corrections",
