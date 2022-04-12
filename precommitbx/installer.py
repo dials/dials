@@ -42,6 +42,7 @@ repo_precommit_conflict = (
 )
 repo_precommit_legacy = YELLOW + "pre-commit out of date" + NC
 repo_precommit_available = MAGENTA + "pre-commit available but not installed" + NC
+repo_is_worktree = "(is a git worktree checkout)"
 
 
 def precommitbx_template():
@@ -228,6 +229,9 @@ def main():
     for module in sorted(repositories):
         if not repositories[module].joinpath(".pre-commit-config.yaml").is_file():
             print(repo_prefix.format(module), repo_no_precommit)
+            continue
+        if repositories[module].joinpath(".git").is_file():
+            print(repo_prefix.format(module), repo_is_worktree)
             continue
         message = (
             check_precommitbx_hook(repositories[module]) or repo_precommit_available
