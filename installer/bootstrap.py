@@ -1165,6 +1165,7 @@ def configure_build(config_flags, prebuilt_cctbx):
         "wxtbx",
         "cbflib",
         "dxtbx",
+        "xfel",
         "dials",
         "xia2",
         "prime",
