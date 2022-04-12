@@ -33,6 +33,7 @@ from dials.algorithms.profile_model.gaussian_rs.calculator import (
 )
 from dials.algorithms.spot_prediction import IndexGenerator
 from dials.array_family import flex
+from dials.constants import FULL_PARTIALITY
 
 logger = logging.getLogger("dials")
 
@@ -45,7 +46,7 @@ ellipsoid_algorithm_phil_scope = parse(
 
     shoebox {
 
-      probability = 0.9973
+      probability = %f
         .type = float
 
     }
@@ -86,6 +87,7 @@ ellipsoid_algorithm_phil_scope = parse(
 
 
 """
+    % FULL_PARTIALITY
 )
 
 # Parameters
@@ -228,7 +230,7 @@ def final_integrator(
     reflection_table,
     sigma_d,
     use_crude_shoebox_mask=False,
-    shoebox_probability=0.9973,
+    shoebox_probability=FULL_PARTIALITY,
 ):
     """Performs an initial integration of all predicted spots"""
 
@@ -473,7 +475,7 @@ def run_ellipsoid_refinement(
     return experiments, reflection_table, output_data
 
 
-def predict(experiments, d_min=None, prediction_probability=0.9973):
+def predict(experiments, d_min=None, prediction_probability=FULL_PARTIALITY):
     """Predict the reflections"""
     logger.info("\n" + "=" * 80 + "\nPredicting reflections")
 
