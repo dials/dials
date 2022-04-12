@@ -10,16 +10,14 @@ import pytest
 
 from dxtbx.model import Experiment, ExperimentList
 
-from dials.tests.util import (
-    mock_reflection_file_object,
-    mock_two_reflection_file_object,
-)
 from dials.util import Sorry
 from dials.util.options import (
     ArgumentParser,
     flatten_reflections,
     reflections_and_experiments_from_files,
 )
+
+from . import mock_reflection_file_object, mock_two_reflection_file_object
 
 
 def test_cannot_read_headerless_h5(dials_data):

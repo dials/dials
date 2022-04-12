@@ -45,7 +45,8 @@ class _Test:
         from dxtbx.model import ScanFactory
         from libtbx.phil import parse
 
-        from dials.tests.algorithms.refinement.setup_geometry import Extract
+        from . import geometry_phil
+        from .setup_geometry import Extract
 
         if cmdline_overrides is None:
             cmdline_overrides = []
@@ -53,12 +54,7 @@ class _Test:
 geometry.parameters.crystal.b.length.range = 10 50
 geometry.parameters.crystal.c.length.range = 10 50"""
 
-        master_phil = parse(
-            """
-    include scope dials.tests.algorithms.refinement.geometry_phil
-    """,
-            process_includes=True,
-        )
+        master_phil = parse(geometry_phil)
 
         # Extract models
         models = Extract(master_phil, overrides, cmdline_args=cmdline_overrides)
