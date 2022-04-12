@@ -35,6 +35,8 @@ from dials_algorithms_integration_parallel_integrator_ext import (
     SimpleReflectionManager,
 )
 
+from . import EPS, FULL_PARTIALITY
+
 __all__ = [
     "BackgroundCalculatorFactory",
     "GLMBackgroundCalculator",
@@ -423,8 +425,7 @@ class IntegrationJob:
         self.reflections.compute_partiality(self.experiments)
 
         # Get some info
-        EPS = 1e-7
-        full_value = 0.997300203937 - EPS
+        full_value = FULL_PARTIALITY - EPS
         fully_recorded = self.reflections["partiality"] > full_value
         npart = fully_recorded.count(False)
         nfull = fully_recorded.count(True)
@@ -871,8 +872,7 @@ class ReferenceCalculatorJob:
         self.reflections.compute_partiality(self.experiments)
 
         # Get some info
-        EPS = 1e-7
-        full_value = 0.997300203937 - EPS
+        full_value = FULL_PARTIALITY - EPS
         fully_recorded = self.reflections["partiality"] > full_value
         npart = fully_recorded.count(False)
         nfull = fully_recorded.count(True)
