@@ -18,6 +18,7 @@ from dials.util.mp import multi_node_parallel_map
 # relies on - it assumes the binding for EmpiricalProfileModeller exists
 import dials.algorithms.profile_model.modeller  # noqa: F401 # isort: split
 
+from dials.constants import EPS, FULL_PARTIALITY
 from dials_algorithms_integration_parallel_integrator_ext import (
     GaussianRSIntensityCalculator,
     GaussianRSMaskCalculator,
@@ -34,8 +35,6 @@ from dials_algorithms_integration_parallel_integrator_ext import (
     SimpleBlockList,
     SimpleReflectionManager,
 )
-
-from . import EPS, FULL_PARTIALITY
 
 __all__ = [
     "BackgroundCalculatorFactory",

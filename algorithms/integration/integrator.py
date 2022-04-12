@@ -33,6 +33,9 @@ from dials.algorithms.integration.validation import ValidatedMultiExpProfileMode
 from dials.algorithms.profile_model.modeller import MultiExpProfileModeller
 from dials.algorithms.shoebox import MaskCode
 from dials.array_family import flex
+
+# constants
+from dials.constants import EPS, FULL_PARTIALITY
 from dials.util import Sorry, phil, pprint, tabulate
 from dials.util.command_line import heading
 from dials.util.report import Report
@@ -42,9 +45,6 @@ from dials_algorithms_integration_integrator_ext import (
     ReflectionManager,
     max_memory_needed,
 )
-
-# constants
-from . import EPS, FULL_PARTIALITY
 
 logger = logging.getLogger(__name__)
 

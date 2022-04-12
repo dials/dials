@@ -2,9 +2,8 @@ from __future__ import annotations
 
 from dials.array_family import flex
 from dials.array_family.flex import Binner
+from dials.constants import FULL_PARTIALITY
 from dials.util.report import Array, Report, Table
-
-from . import FULL_PARTIALITY
 
 
 def flex_ios(val, var):
