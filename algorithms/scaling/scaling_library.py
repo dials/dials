@@ -20,6 +20,7 @@ import pkg_resources
 
 import iotbx.merging_statistics
 from cctbx import crystal, miller, uctbx
+from dxtbx import flumpy
 from dxtbx.model import Experiment
 from dxtbx.util import ersatz_uuid4
 from iotbx import cif, mtz, pdb
@@ -468,7 +469,6 @@ def create_datastructures_for_target_mtz(experiments, mtz_file, anomalous=False)
     cols = m.columns()
     col_dict = {c.label(): c for c in cols}
     r_t = flex.reflection_table()
-    from dxtbx import flumpy
 
     def _extract_anom(ind, col_dict):
         table = flex.reflection_table()
