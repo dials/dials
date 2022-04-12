@@ -632,9 +632,11 @@ class ProfileModellerExecutor(Executor):
         :param reflections: The reflections that will be processed
         """
 
-        # Get some info
+        # Count "effectively full" and partial reflections N.B.
+        # here effectively full is equivalent to area under a normal
+        # curve to +/- 3 sigma
         EPS = 1e-7
-        full_value = 0.997300203937 - EPS
+        full_value = math.erf(3 / math.sqrt(2)) - EPS
         fully_recorded = reflections["partiality"] > full_value
         npart = fully_recorded.count(False)
         nfull = fully_recorded.count(True)
