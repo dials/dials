@@ -309,10 +309,7 @@ class Geometry(pfGeometry):
         and beam wavelength in the geometry phil
         """
         param = dials.command_line.modify_geometry.phil_scope.fetch().extract()
-        param.geometry.detector.fast_slow_beam_centre = (
-            self.beam_px.fast,
-            self.beam_px.slow,
-        )
+        param.geometry.detector.fast_slow_beam_centre = self.beam_px
         param.geometry.detector.distance = self.beam_distance
         param.geometry.beam.wavelength = _convert_units(self.wavelength, "m", "A")
 
@@ -376,7 +373,7 @@ class EyeballWidget:
 
     def __repr__(self):
         calibrant = os.path.splitext(os.path.basename(self.calibrant.filename))[0]
-        return f"Eyeballing Widget using {calibrant} Calibrant starting from Geometry: \n {self.geometry}"
+        return f"Eyeballing Widget instance using {calibrant} Calibrant starting from Geometry: \n {self.geometry}"
 
     def set_up_figure(self):
         """
@@ -446,20 +443,25 @@ class EyeballWidget:
 
     def update(self, val):
         """
-        Update geometry from slider value
+        Update calibrant geometry from slider values
         """
         new_geometry = self.geometry.__deepcopy__()
         new_geometry.update_beam_pos(
-            beam_coords_px=Point(self.beam_fast_slider.val, self.beam_slow_slider.val),
+            beam_coords_px=Point(
+                fast=self.beam_fast_slider.val, slow=self.beam_slow_slider.val
+            ),
             beam_dist_mm=self.distance_slider.val,
         )
 
+        # update calibrant rings
         self.calibrant_image.set_array(self.calibrant_rings(new_geometry))
+
+        # redraw current figure
         self.fig.canvas.draw_idle()
 
     def reset(self, event):
         """
-        Reset calibrant image to starting position
+        Reset calibrant rings image to starting position
         """
         self.beam_fast_slider.reset()
         self.beam_slow_slider.reset()
@@ -470,7 +472,9 @@ class EyeballWidget:
         Save geometry from widget and save to file
         """
         self.geometry.update_beam_pos(
-            beam_coords_px=Point(self.beam_fast_slider.val, self.beam_slow_slider.val),
+            beam_coords_px=Point(
+                fast=self.beam_fast_slider.val, slow=self.beam_slow_slider.val
+            ),
             beam_dist_mm=self.distance_slider.val,
         )
         self.geometry.save_to_expt(
@@ -500,22 +504,6 @@ class EyeballWidget:
         # finally, show widget
         plt.show()
 
-    def beam_position(self, geometry: Optional[Geometry] = None) -> Point:
-        """
-        Compute the beam position either from a new geometry or from self.geometry
-        """
-        if geometry:
-            beam = Point(
-                fast=geometry.poni1 / self.detector.pixel1,
-                slow=geometry.poni2 / self.detector.pixel2,
-            )
-        else:
-            beam = Point(
-                fast=self.geometry.poni1 / self.detector.pixel1,
-                slow=self.geometry.poni2 / self.detector.pixel2,
-            )
-        return beam
-
     def calibrant_rings(self, geometry: Optional[Geometry] = None) -> np.ndarray:
         """
         Make a masked array for the calibration rings. If a geometry parameters
@@ -524,7 +512,7 @@ class EyeballWidget:
         For smaller wavelengths (electrons) reduce the rings blurring
         """
 
-        if self.calibrant.wavelength < 1e-1:
+        if self.calibrant.wavelength < 1e-1:  # electrons
             w = 1e-7
         else:
             w = 1e-3
@@ -547,7 +535,7 @@ class EyeballWidget:
         )
 
         # add the beam position
-        self.ax.plot(*self.beam_position(self.geometry), "rx")
+        self.ax.plot(*self.geometry.beam_px, "rx")
 
         return rings_img
 
@@ -746,18 +734,25 @@ class PowderCalibrator:
     def calibrate_with_calibrant(
         self,
         num_rings: int = 5,
-        fix: Tuple = ("rot3", "wavelength"),
+        fix: Tuple = ("rot1", "rot2", "rot3", "wavelength"),
+        pts_per_deg: float = 1.0,
+        Imin: float = 10.0,
         plots: bool = True,
     ):
         """
         Do the actual calibration
 
         :param num_rings: int
-                number of Debye Scherrer rings to fit starting from low resolution
+                number of Debye-Scherrer rings to fit starting from low resolution
         :param fix: tuple
                 variables to keep fixed while fitting
-                Note that, for electrons, virtual detector distance and wavelength are not independent,
-                so keeping wavelength fixed would yield more useful results
+                Note that, detector distance and wavelength are highly correlated,
+                in order to calibrate both a higher number of rings must be used.
+        :param pts_per_deg: float
+                number of spots per radial degree to be searched for.
+                If rings are sparse the number should be lower
+        :param Imin: float
+                minimum intensity for deciding somenthins is a peak
         :param plots: bool
                 show the fitting plots or keep it quiet
         """
@@ -778,16 +773,26 @@ class PowderCalibrator:
             )
 
         # then use pyFAI for fine calibration
-        gonio_geom = pfSingleGeometry(
-            label=self.standard + " calibrant",
+        starting_geom = pfSingleGeometry(
+            label=self.standard + " calibrant in starting geom",
             image=self.expt_params.image,
             calibrant=self.calibrant,
             geometry=self.geometry,
         )
 
-        gonio_geom.extract_cp(max_rings=num_rings)
-        starting_geom = gonio_geom
+        starting_geom.extract_cp(
+            max_rings=num_rings, pts_per_deg=pts_per_deg, Imin=Imin
+        )
 
+        gonio_geom = pfSingleGeometry(
+            label=self.standard + " calibrant in calibrated geom",
+            image=self.expt_params.image,
+            calibrant=self.calibrant,
+            geometry=self.geometry,
+        )
+        gonio_geom.extract_cp(max_rings=num_rings, pts_per_deg=pts_per_deg, Imin=Imin)
+
+        # fit the data to the calibrant to refine geometry
         gonio_geom.geometry_refinement.refine2(fix=fix)
 
         # generate plot showing the pyFAI refinement effect
@@ -851,7 +856,13 @@ def run(args: List[str] = None, phil: scope = phil_scope) -> None:
         pyfai_improvement=parameters.output.pyfai_improvement,
         straight_lines=parameters.output.straight_lines,
     )
-    calibrator.calibrate_with_calibrant(plots=True)
+    calibrator.calibrate_with_calibrant(
+        num_rings=5,
+        fix=("rot1", "rot2", "rot3", "wavelength"),
+        Imin=10,
+        pts_per_deg=1.0,
+        plots=True,
+    )
 
 
 if __name__ == "__main__":
