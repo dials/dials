@@ -596,11 +596,6 @@ class PowderCalibrator:
         :param standard: str
                 calibrating standard name in periodic table name format.
                 Call calibrator.show_calibrants to see available calibrants.
-        :param eyeball: bool
-                optional, default=True, toggles the usage of the eyeballing widget.
-                When set to False the calibration process only wraps pyFAI and if no
-                good starting geometry is given in geom_file then it will probably
-                return poor results.
         :param coarse_geometry: str
                 optional, if given saves the coarse geometry to this file
         :param calibrated_geometry: str
@@ -614,17 +609,28 @@ class PowderCalibrator:
         Examples
         --------
         1. Use the widget to generate a starting, coarse geometry after which the fine calibration
-         is applied. Overwrite the default name of the coarse geometry output file. Do this from command line:
-            $ dials.powder_calibrate poor_geom.expt standard="Al" coarse_geom="a_starting_geometry.expt"
+        is applied. Overwrite the default name of the coarse geometry output file. Do this from command line:
+
+        .. code-block:: console
+           dials.powder_calibrate poor_geom.expt standard="Al" coarse_geom="a_starting_geometry.expt"
 
         2. Starting from a coarse geometry file, perform fine calibration with pyFAI bypassing the
         widget tool. Do this using python API:
-            >>> from dials.command_line.powder_calibrate import PowderCalibrator
-            >>> al_calibrator = PowderCalibrator("coarse_geom.expt", standard="Al", eyeball=False)
-            >>> al_calibrator.calibrate_with_calibrant()
 
-        3. Do the same from command line:
-            $ dials.powder_calibrate coarse_geom.expt standard="Al" eyeball=False
+        .. code-block:: python
+           from dials.command_line.powder_calibrate import PowderCalibrator
+           al_calibrator = PowderCalibrator(expts="coarse_geom.expt", standard="Al", eyeball=False)
+           al_calibrator.calibrate_with_widget()
+           al_calibrator.refine_with_pyfai(num_rings=5,
+                                           fix=("rot1", "rot2", "rot3", "wavelength"),
+                                           Imin=10,
+                                           pts_per_deg=1.0,
+                                           plots=True)
+
+        3. Do the same from command line::
+
+        .. code-block:: console
+           dials.powder_calibrate coarse_geom.expt standard="Al" eyeball=False
         """
         self.expt = expts
         self.expt_params = get_expt_params(expts)
@@ -638,7 +644,6 @@ class PowderCalibrator:
             PowderCalibrator.list_calibrants()
             exit(f"The standard name {standard} was not recognised")
 
-        self.eyeball = eyeball
         self.calibrant = pfCalibrant(standard)
         self.calibrant.wavelength = _convert_units(
             self.expt_params.wavelength, "A", "m"
@@ -671,14 +676,6 @@ class PowderCalibrator:
             f"-----\n"
             f"{self.calibrant}\n"
         )
-
-        # Tell me if I'm using the EyeballWidget and how to use
-        if self.eyeball:
-            logger.info(
-                "Using the eyeballing widget.\n"
-                "Drag sliders to roughly overlap rings and then save for further fitting. \n"
-                "If the detector distance is very off start with that."
-            )
 
     def show_pyfai_improvement(
         self,
@@ -731,7 +728,23 @@ class PowderCalibrator:
             fig.savefig(self.output.strt_lines, bbox_inches="tight")
             plt.close(fig)
 
-    def calibrate_with_calibrant(
+    def calibrate_with_widget(self):
+        # Tell me if I'm using the EyeballWidget and how to use
+        logger.info(
+            "Using the eyeballing widget.\n"
+            "Drag sliders to roughly overlap rings and then save for further fitting. \n"
+            "If the detector distance is very off start with that."
+        )
+        # first use user eyes for rough fit
+        eyeballing_widget = EyeballWidget(
+            image=self.expt_params.image,
+            start_geometry=self.geometry,
+            calibrant=self.calibrant,
+            coarse_geom=self.output.coarse_geom,
+        )
+        eyeballing_widget.eyeball()
+
+    def refine_with_pyfai(
         self,
         num_rings: int = 5,
         fix: Tuple = ("rot1", "rot2", "rot3", "wavelength"),
@@ -756,23 +769,7 @@ class PowderCalibrator:
         :param plots: bool
                 show the fitting plots or keep it quiet
         """
-
-        if self.eyeball:
-            # first use user eyes for rough fit
-            eyeballing_widget = EyeballWidget(
-                image=self.expt_params.image,
-                start_geometry=self.geometry,
-                calibrant=self.calibrant,
-                coarse_geom=self.output.coarse_geom,
-            )
-            eyeballing_widget.eyeball()
-
-        else:
-            logger.warning(
-                "If the starting geometry is significantly off the fit might return poor results."
-            )
-
-        # then use pyFAI for fine calibration
+        # store starting geometry for future plotting
         starting_geom = pfSingleGeometry(
             label=self.standard + " calibrant in starting geom",
             image=self.expt_params.image,
@@ -780,16 +777,21 @@ class PowderCalibrator:
             geometry=self.geometry,
         )
 
+        # pick spots around rings
         starting_geom.extract_cp(
             max_rings=num_rings, pts_per_deg=pts_per_deg, Imin=Imin
         )
 
+        # single geometry to refine,
+        # I could't deepcopy the above, so creating a fresh one
         gonio_geom = pfSingleGeometry(
             label=self.standard + " calibrant in calibrated geom",
             image=self.expt_params.image,
             calibrant=self.calibrant,
             geometry=self.geometry,
         )
+
+        # pick spots again,
         gonio_geom.extract_cp(max_rings=num_rings, pts_per_deg=pts_per_deg, Imin=Imin)
 
         # fit the data to the calibrant to refine geometry
@@ -846,17 +848,20 @@ def run(args: List[str] = None, phil: scope = phil_scope) -> None:
     if diff_phil:
         logger.info("The following parameters have been modified:\n%s", diff_phil)
 
-    # make a calibrator instance based on these parameters and call calibrate
+    # make a calibrator instance based on these parameters and then calibrate
     calibrator = PowderCalibrator(
         expts=experiments,
         standard=parameters.standard,
-        eyeball=parameters.eyeball,
         coarse_geometry=parameters.output.coarse_geom,
         calibrated_geometry=parameters.output.calibrated_geom,
         pyfai_improvement=parameters.output.pyfai_improvement,
         straight_lines=parameters.output.straight_lines,
     )
-    calibrator.calibrate_with_calibrant(
+
+    if parameters.eyeball:
+        calibrator.calibrate_with_widget()
+
+    calibrator.refine_with_pyfai(
         num_rings=5,
         fix=("rot1", "rot2", "rot3", "wavelength"),
         Imin=10,

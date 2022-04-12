@@ -43,14 +43,15 @@ def test_calibrate_coarse(dials_data, tmp_path, eyeball, starting_geometry):
             pyfai_improvement=str(tmp_path / "test_pyfai_improvement.png"),
             straight_lines=str(tmp_path / "test_straight_lines.png"),
         )
-        test_calibrator.calibrate_with_calibrant(plots=False)
+        test_calibrator.calibrate_with_widget()
+        test_calibrator.refine_with_pyfai(plots=False)
 
     calibrated_geom = test_calibrator.geometry
 
     expected_geom_exptlist = load.experiment_list(aluminium_powder / "calibrated.expt")
     expected_geom = Geometry(expt=expected_geom_exptlist)
 
-    assert pytest.approx(calibrated_geom.param, 1e-2) == expected_geom.param
+    assert pytest.approx(calibrated_geom.param, 1e-3) == expected_geom.param
 
 
 def test_save_geom_to_expt(dials_data, tmp_path):
