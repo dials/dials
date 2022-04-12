@@ -26,7 +26,9 @@ def test_calibrate_coarse(dials_data, tmp_path, eyeball, starting_geometry):
         Mock the calibrate method to update obj geometry to an eyeballed one
         without calling matplotlib Widget tools
         """
-        self.geometry.update_beam_pos(beam_coords_px=Point(1103, 1024))
+        self.geometry.update_beam_pos(
+            beam_coords_px=Point(1103, 1024), beam_dist_mm=635
+        )
 
     with patch.object(
         powder_calibrate.EyeballWidget,
