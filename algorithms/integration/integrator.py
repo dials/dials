@@ -43,6 +43,9 @@ from dials_algorithms_integration_integrator_ext import (
     max_memory_needed,
 )
 
+# constants
+from . import EPS, FULL_PARTIALITY
+
 logger = logging.getLogger(__name__)
 
 __all__ = [
@@ -635,8 +638,7 @@ class ProfileModellerExecutor(Executor):
         # Count "effectively full" and partial reflections N.B.
         # here effectively full is equivalent to area under a normal
         # curve to +/- 3 sigma
-        EPS = 1e-7
-        full_value = math.erf(3 / math.sqrt(2)) - EPS
+        full_value = FULL_PARTIALITY - EPS
         fully_recorded = reflections["partiality"] > full_value
         npart = fully_recorded.count(False)
         nfull = fully_recorded.count(True)
@@ -737,8 +739,7 @@ class ProfileValidatorExecutor(Executor):
         """
 
         # Get some info
-        EPS = 1e-7
-        full_value = 0.997300203937 - EPS
+        full_value = FULL_PARTIALITY - EPS
         fully_recorded = reflections["partiality"] > full_value
         npart = fully_recorded.count(False)
         nfull = fully_recorded.count(True)
@@ -845,8 +846,7 @@ class IntegratorExecutor(Executor):
         """
 
         # Get some info
-        EPS = 1e-7
-        full_value = 0.997300203937 - EPS
+        full_value = FULL_PARTIALITY - EPS
         fully_recorded = reflections["partiality"] > full_value
         npart = fully_recorded.count(False)
         nfull = fully_recorded.count(True)

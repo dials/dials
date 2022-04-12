@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import collections
+import math
 
 from dials.util import tabulate
 from dials_algorithms_integration_ext import *  # noqa: F403; lgtm
 from dials_algorithms_integration_kapton_ext import *  # noqa: F403; lgtm
+
+EPS = 1e-7
+FULL_PARTIALITY = math.erf(3 / math.sqrt(2)) - EPS
 
 __all__ = (  # noqa: F405
     "Corrections",
