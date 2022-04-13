@@ -329,13 +329,18 @@ class Geometry(pfGeometry):
         return new
 
     def __repr__(self):
+        return f"<Geometry({self.expt_params.input_file})>"
+
+    def __str__(self):
         return (
-            f"Detector {self.detector.name}: PixelSize= ({self.detector.pixel1}, {self.detector.pixel2})m, "
-            f"ImageSize={self.detector.max_shape}px\n"
-            f"Distance= {_convert_units(self.beam_distance, 'mm', 'm'):.2f} m\n"
-            f"Wavelength= {self.wavelength:.3e} m\n"
-            f"Beam position on detector: m= {self.beam_m.fast:.5f}m, {self.beam_m.slow:.5f}m  "
-            f"px= {self.beam_px.fast:.2f}, {self.beam_px.slow:.2f}"
+            f"Geometry instance with following current parameters:\n"
+            f"  Detector: \n"
+            f"        pixel size = {_convert_units(self.detector.pixel1, 'm', 'mm')} mm x {_convert_units(self.detector.pixel2, 'm', 'mm')} mm \n"
+            f"        image size = {self.detector.max_shape[0]} px x {self.detector.max_shape[1]} px\n"
+            f"        distance along beam = {_convert_units(self.beam_distance, 'mm', 'm'):.2f} m\n"
+            f"  Wavelength = {_convert_units(self.wavelength, 'm', 'A'):.4f} A\n"
+            f"  Beam position on detector: (fast, slow) = ({self.beam_m.fast:.4f}, {self.beam_m.slow:.4f})m or"
+            f" ({self.beam_px.fast:.2f}, {self.beam_px.slow:.2f})px"
         )
 
 
@@ -347,7 +352,7 @@ class EyeballWidget:
 
     def __init__(
         self,
-        image: np.ndarray,
+        expt_params: ExptParams,
         start_geometry: Geometry,
         calibrant: pfCalibrant,
         coarse_geom: str,
@@ -358,7 +363,8 @@ class EyeballWidget:
         :param calibrant: the standard used for calibration
         :param coarse_geom: the file name to which the eyeballed geometry is to saved
         """
-        self.image = image
+        self.input_model = expt_params.input_file
+        self.image = expt_params.image
         self.geometry = start_geometry
         self.detector = start_geometry.detector
         self.calibrant = calibrant
@@ -372,6 +378,15 @@ class EyeballWidget:
         self.distance_slider = self._make_slider("distance")
 
     def __repr__(self):
+        return (
+            f"EyeballWidget(image = {self.input_model},\n"
+            f"              start_geometry = \n"
+            f"{self.geometry},\n\n"
+            f"              calibrant = {self.calibrant},\n"
+            f"              coarse_geom = {self.coarse_geom})"
+        )
+
+    def __str__(self):
         calibrant = os.path.splitext(os.path.basename(self.calibrant.filename))[0]
         return f"Eyeballing Widget instance using {calibrant} Calibrant starting from Geometry: \n {self.geometry}"
 
@@ -578,7 +593,6 @@ class PowderCalibrator:
         self,
         expts: ExperimentList,
         standard: str,
-        eyeball: bool = True,
         coarse_geometry: str = "coarse_geom.expt",
         calibrated_geometry: str = "calibrated.expt",
         pyfai_improvement: str = "pyfai_improvement.png",
@@ -658,7 +672,14 @@ class PowderCalibrator:
 
     def __repr__(self):
         return (
-            f"{self.standard} Calibrator for {self.expt_params.input_file} \n"
+            f"<PowderCalibrator(expts = {self.expt_params.input_file},\n"
+            f"                  standard = {self.standard},\n"
+            f"                  output = {self.output})>"
+        )
+
+    def __str__(self):
+        return (
+            f"{self.standard} PowderCalibrator for {self.expt_params.input_file} \n"
             f"Current geometry: \n {self.geometry}"
         )
 
@@ -737,7 +758,7 @@ class PowderCalibrator:
         )
         # first use user eyes for rough fit
         eyeballing_widget = EyeballWidget(
-            image=self.expt_params.image,
+            expt_params=self.expt_params,
             start_geometry=self.geometry,
             calibrant=self.calibrant,
             coarse_geom=self.output.coarse_geom,

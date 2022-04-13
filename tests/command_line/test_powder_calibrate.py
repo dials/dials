@@ -38,12 +38,12 @@ def test_calibrate_coarse(dials_data, tmp_path, eyeball, starting_geometry):
         test_calibrator = PowderCalibrator(
             expts=starting_geom_exptlist,
             standard="Al",
-            eyeball=eyeball,
             calibrated_geometry=str(tmp_path / "test_calibrated.expt"),
             pyfai_improvement=str(tmp_path / "test_pyfai_improvement.png"),
             straight_lines=str(tmp_path / "test_straight_lines.png"),
         )
-        test_calibrator.calibrate_with_widget()
+        if eyeball:
+            test_calibrator.calibrate_with_widget()
         test_calibrator.refine_with_pyfai(plots=False)
 
     calibrated_geom = test_calibrator.geometry
