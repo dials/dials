@@ -201,7 +201,7 @@ phil_scope = parse(
       .type = choice
       .help = "Choose compression format (also appended to the file name)"
 
-    pdb_version = v5 *v5_next
+    pdb_version = *v5 v5_next
       .type = choice
       .help = "This controls which pdb mmcif dictionary version the output"
               "mmcif file should comply with. v5_next adds support for"
