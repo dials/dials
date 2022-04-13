@@ -164,7 +164,7 @@ def get_expt_params(expts: ExperimentList) -> ExptParams:
     wavelength = beam.get_wavelength()
     pix_size = detector.get_pixel_size()
 
-    # detector size has dimensions flipped wrt data array
+    # Detector size has dimensions flipped wrt data array
     img_size = detector.get_image_size()[::-1]
     image = np.array(expt.imageset.get_corrected_data(0)[0]).reshape(img_size)
 
@@ -225,6 +225,21 @@ class Geometry(pfGeometry):
         # pyFAI calibration will need its poni parameters
         self._set_poni()
 
+    def __repr__(self):
+        return f"<Geometry({self.expt_params.input_file})>"
+
+    def __str__(self):
+        return (
+            f"Geometry instance with following current parameters:\n"
+            f"  Detector: \n"
+            f"        pixel size = {_convert_units(self.detector.pixel1, 'm', 'mm')} mm x {_convert_units(self.detector.pixel2, 'm', 'mm')} mm \n"
+            f"        image size = {self.detector.max_shape[0]} px x {self.detector.max_shape[1]} px\n"
+            f"        distance along beam = {_convert_units(self.beam_distance, 'mm', 'm'):.2f} m\n"
+            f"  Wavelength = {_convert_units(self.wavelength, 'm', 'A'):.4f} A\n"
+            f"  Beam position on detector: (fast, slow) = ({self.beam_m.fast:.4f}, {self.beam_m.slow:.4f})m or"
+            f" ({self.beam_px.fast:.2f}, {self.beam_px.slow:.2f})px"
+        )
+
     def _set_poni(self):
         """
         Call fit2D to translate beam parameters to poni parameters
@@ -260,29 +275,17 @@ class Geometry(pfGeometry):
     def update_beam_pos(
         self,
         beam_coords_px: Optional[Point] = None,
-        beam_coords_m: Optional[Point] = None,
         beam_dist_mm: Optional[float] = None,
     ):
         """
         Update beam position
 
         :param beam_coords_px: new beam position in pixels
-        :param beam_coords_m: new beam position in meters
         :param beam_dist: new detector distance along beam direction
         """
-        if beam_coords_px and beam_coords_m:
-            exit(
-                f"Expected either beam position in pixels or in m. "
-                f"Instead both {beam_coords_px} pixels and {beam_coords_m} m were given."
-            )
 
-        if beam_coords_px:
-            self.beam_px = beam_coords_px
-            self.beam_m = self._beam_to_m()
-
-        elif beam_coords_m:
-            self.beam_m = beam_coords_m
-            self.beam_px = self._beam_to_px()
+        self.beam_px = beam_coords_px
+        self.beam_m = self._beam_to_m()
 
         if beam_dist_mm:
             self.beam_distance = beam_dist_mm
@@ -323,25 +326,6 @@ class Geometry(pfGeometry):
         new_params = self.modify_geom_params()
         new_geometry = geometry_update(experiments=self.expt, new_params=new_params)
         new_geometry.as_file(output)
-
-    def __deepcopy__(self, memo=None):
-        new = self.__class__(self.expt)
-        return new
-
-    def __repr__(self):
-        return f"<Geometry({self.expt_params.input_file})>"
-
-    def __str__(self):
-        return (
-            f"Geometry instance with following current parameters:\n"
-            f"  Detector: \n"
-            f"        pixel size = {_convert_units(self.detector.pixel1, 'm', 'mm')} mm x {_convert_units(self.detector.pixel2, 'm', 'mm')} mm \n"
-            f"        image size = {self.detector.max_shape[0]} px x {self.detector.max_shape[1]} px\n"
-            f"        distance along beam = {_convert_units(self.beam_distance, 'mm', 'm'):.2f} m\n"
-            f"  Wavelength = {_convert_units(self.wavelength, 'm', 'A'):.4f} A\n"
-            f"  Beam position on detector: (fast, slow) = ({self.beam_m.fast:.4f}, {self.beam_m.slow:.4f})m or"
-            f" ({self.beam_px.fast:.2f}, {self.beam_px.slow:.2f})px"
-        )
 
 
 class EyeballWidget:
@@ -456,35 +440,9 @@ class EyeballWidget:
 
         return slider
 
-    def update(self, val):
+    def _update_with_slider(self, val):
         """
         Update calibrant geometry from slider values
-        """
-        new_geometry = self.geometry.__deepcopy__()
-        new_geometry.update_beam_pos(
-            beam_coords_px=Point(
-                fast=self.beam_fast_slider.val, slow=self.beam_slow_slider.val
-            ),
-            beam_dist_mm=self.distance_slider.val,
-        )
-
-        # update calibrant rings
-        self.calibrant_image.set_array(self.calibrant_rings(new_geometry))
-
-        # redraw current figure
-        self.fig.canvas.draw_idle()
-
-    def reset(self, event):
-        """
-        Reset calibrant rings image to starting position
-        """
-        self.beam_fast_slider.reset()
-        self.beam_slow_slider.reset()
-        self.distance_slider.reset()
-
-    def save_and_exit(self, event):
-        """
-        Save geometry from widget and save to file
         """
         self.geometry.update_beam_pos(
             beam_coords_px=Point(
@@ -492,31 +450,51 @@ class EyeballWidget:
             ),
             beam_dist_mm=self.distance_slider.val,
         )
+
+        # Update calibrant rings
+        self.calibrant_image.set_array(self.calibrant_rings(self.geometry))
+
+        # Redraw current figure
+        self.fig.canvas.draw_idle()
+
+    def _reset_button(self, event):
+        """
+        Reset calibrant rings image to starting position
+        """
+        self.beam_fast_slider.reset()
+        self.beam_slow_slider.reset()
+        self.distance_slider.reset()
+
+    def _save_and_exit_button(self, event):
+        """
+        Save geometry from widget and save to file
+        """
         self.geometry.save_to_expt(
             output=self.coarse_geom,
         )
+
         plt.close()
 
     def eyeball(self):
         """
         Update geometry such that beam position is now the center of the moved calibrant rings
         """
-        # register the update function with each slider
-        self.beam_fast_slider.on_changed(self.update)
-        self.beam_slow_slider.on_changed(self.update)
-        self.distance_slider.on_changed(self.update)
+        # Register the update function with each slider
+        self.beam_fast_slider.on_changed(self._update_with_slider)
+        self.beam_slow_slider.on_changed(self._update_with_slider)
+        self.distance_slider.on_changed(self._update_with_slider)
 
-        # register the reset function with reset button
+        # Register the reset function with reset button
         reset_ax = plt.axes([0.8, 0.026, 0.1, 0.04])
         button_res = Button(reset_ax, "Reset", hovercolor="0.975")
-        button_res.on_clicked(self.reset)
+        button_res.on_clicked(self._reset_button)
 
-        # register the save and exit function with save button
+        # Register the save and exit function with save button
         save_ax = plt.axes([0.5, 0.026, 0.23, 0.04])
         button_save = Button(save_ax, "Save beam and exit", hovercolor="0.975")
-        button_save.on_clicked(self.save_and_exit)
+        button_save.on_clicked(self._save_and_exit_button)
 
-        # finally, show widget
+        # Finally, show widget
         plt.show()
 
     def calibrant_rings(self, geometry: Optional[Geometry] = None) -> np.ndarray:
@@ -549,7 +527,7 @@ class EyeballWidget:
             cal_img_masked, alpha=0.2, cmap="inferno", origin="lower"
         )
 
-        # add the beam position
+        # Add the beam position
         self.ax.plot(*self.geometry.beam_px, "rx")
 
         return rings_img
@@ -651,7 +629,7 @@ class PowderCalibrator:
         self.geometry = Geometry(self.expt)
         self.detector = self.geometry.detector
 
-        # check if calibrant name make sense, else complain
+        # Check if calibrant name makes sense, else complain
         if standard in PowderCalibrator.available_calibrants:
             self.standard = standard
         else:
@@ -706,10 +684,10 @@ class PowderCalibrator:
     ):
         fig, (ax1, ax2) = plt.subplots(1, 2)
         fig.set_size_inches(20, 8)
-        pfjupyter.display(sg=before_geometry, label="Initial geometry", ax=ax1)
-        pfjupyter.display(sg=after_geometry, label="After pyFAI fit", ax=ax2)
+        pfjupyter.display(sg=before_geometry, label="Before pyFAI refine", ax=ax1)
+        pfjupyter.display(sg=after_geometry, label="After pyFAI refine", ax=ax2)
 
-        # show only a quarter of the image
+        # Show only a quarter of the image
         custom_xlim = (
             self.geometry.detector.max_shape[0] * 0.5,
             self.geometry.detector.max_shape[0] * 0.75,
@@ -731,7 +709,7 @@ class PowderCalibrator:
         print(f"Available calibrants: {PowderCalibrator.available_calibrants}")
 
     def show_straight_lines(self, ai: pfGeometry, show: bool = True):
-        # show the cake plot as well
+        # Show the cake plot as well
         int2 = ai.integrate2d_ng(
             data=self.expt_params.image,
             npt_rad=500,
@@ -756,7 +734,7 @@ class PowderCalibrator:
             "Drag sliders to roughly overlap rings and then save for further fitting. \n"
             "If the detector distance is very off start with that."
         )
-        # first use user eyes for rough fit
+        # First use user eyes for rough fit
         eyeballing_widget = EyeballWidget(
             expt_params=self.expt_params,
             start_geometry=self.geometry,
@@ -790,7 +768,7 @@ class PowderCalibrator:
         :param plots: bool
                 show the fitting plots or keep it quiet
         """
-        # store starting geometry for future plotting
+        # Store starting geometry for future plotting
         starting_geom = pfSingleGeometry(
             label=self.standard + " calibrant in starting geom",
             image=self.expt_params.image,
@@ -798,13 +776,14 @@ class PowderCalibrator:
             geometry=self.geometry,
         )
 
-        # pick spots around rings
+        # Pick spots around rings
         starting_geom.extract_cp(
             max_rings=num_rings, pts_per_deg=pts_per_deg, Imin=Imin
         )
 
-        # single geometry to refine,
-        # I could't deepcopy the above, so creating a fresh one
+        # Single geometry to refine
+        # This obj is thread locked so not obvious how to deepcopy it,
+        # make a fresh one instead
         gonio_geom = pfSingleGeometry(
             label=self.standard + " calibrant in calibrated geom",
             image=self.expt_params.image,
@@ -812,18 +791,18 @@ class PowderCalibrator:
             geometry=self.geometry,
         )
 
-        # pick spots again,
+        # Pick spots again
         gonio_geom.extract_cp(max_rings=num_rings, pts_per_deg=pts_per_deg, Imin=Imin)
 
-        # fit the data to the calibrant to refine geometry
+        # Fit the data to the calibrant to refine geometry
         gonio_geom.geometry_refinement.refine2(fix=fix)
 
-        # generate plot showing the pyFAI refinement effect
+        # Generate plot showing the pyFAI refinement effect
         self.show_pyfai_improvement(
             before_geometry=starting_geom, after_geometry=gonio_geom, show=plots
         )
 
-        # update geometry and save to .expt
+        # Update geometry and save to .expt
         ai = gonio_geom.get_ai()
         self.geometry.update_from_ai(ai)
         self.geometry.save_to_expt(output=self.output.calibrated_geom)
@@ -869,7 +848,7 @@ def run(args: List[str] = None, phil: scope = phil_scope) -> None:
     if diff_phil:
         logger.info("The following parameters have been modified:\n%s", diff_phil)
 
-    # make a calibrator instance based on these parameters and then calibrate
+    # Make a calibrator instance based on these parameters and then calibrate
     calibrator = PowderCalibrator(
         expts=experiments,
         standard=parameters.standard,
@@ -885,7 +864,7 @@ def run(args: List[str] = None, phil: scope = phil_scope) -> None:
     calibrator.refine_with_pyfai(
         num_rings=5,
         fix=("rot1", "rot2", "rot3", "wavelength"),
-        Imin=10,
+        Imin=20,
         pts_per_deg=1.0,
         plots=True,
     )
