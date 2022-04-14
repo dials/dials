@@ -1,0 +1,1 @@
+Refactor ``dials.find_spots`` and ``dials.import`` so that logging doesn't depend on being ``__main__``.
