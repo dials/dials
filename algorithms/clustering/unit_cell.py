@@ -28,9 +28,9 @@ class Cluster:
         lattice_ids: list[int],
         name="",
     ):
+        assert len(crystal_symmetries) == len(lattice_ids)
         self.crystal_symmetries = crystal_symmetries
         self.lattice_ids = lattice_ids
-        assert len(crystal_symmetries) == len(lattice_ids)
         self.unit_cells = np.array(
             [cs.unit_cell().parameters() for cs in crystal_symmetries]
         )
@@ -60,7 +60,7 @@ class Cluster:
 @dataclass
 class ClusteringResult:
     clusters: list[Cluster]
-    dendrogram: dict
+    dendrogram: Optional[dict] = None
 
     def __str__(self):
         text = [
@@ -179,11 +179,13 @@ class ClusteringResult:
 
 def cluster_unit_cells(
     crystal_symmetries: list[crystal.symmetry],
-    lattice_ids: list[int],
+    lattice_ids: Optional[list[int]] = None,
     threshold: int = 10000,
     ax: Optional["matplotlib.axes.Axes"] = None,
     no_plot: bool = True,
 ):
+    if not lattice_ids:
+        lattice_ids = list(range(len(crystal_symmetries)))
     cluster = Cluster(crystal_symmetries, lattice_ids)
     uc = cluster.unit_cells
 

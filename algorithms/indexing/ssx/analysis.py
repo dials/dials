@@ -9,10 +9,13 @@ import numpy as np
 from jinja2 import ChoiceLoader, Environment, PackageLoader
 
 from scitbx.array_family import flex
-from xfel.clustering.cluster import Cluster
-from xfel.clustering.cluster_groups import unit_cell_info
 
 from dials.algorithms.clustering import plots as cluster_plotter
+from dials.algorithms.clustering.unit_cell import (
+    Cluster,
+    ClusteringResult,
+    cluster_unit_cells,
+)
 from dials.util import tabulate
 
 logger = logging.getLogger("dials.algorithms.indexing.ssx.analysis")
@@ -94,8 +97,8 @@ def make_cluster_plots(large_clusters: List[Cluster]) -> dict:
     cluster_plots = {}
     for n, cluster in enumerate(large_clusters):
         uc_params = [flex.double() for i in range(6)]
-        for c in cluster.members:
-            ucp = c.crystal_symmetry.unit_cell().parameters()
+        for cs in cluster.crystal_symmetries:
+            ucp = cs.unit_cell().parameters()
             for i in range(6):
                 uc_params[i].append(ucp[i])
         d_this = cluster_plotter.plot_uc_histograms(uc_params)
@@ -108,19 +111,21 @@ def make_cluster_plots(large_clusters: List[Cluster]) -> dict:
 
 
 def report_on_crystal_clusters(crystal_symmetries, make_plots=True):
-    ucs = Cluster.from_crystal_symmetries(crystal_symmetries)
-    clusters, _ = ucs.ab_cluster(5000, log=None, write_file_lists=False, doplot=False)
+    clustering = cluster_unit_cells(
+        crystal_symmetries,
+        threshold=5000,
+    )
     cluster_plots = {}
     min_cluster_pc = 5
     threshold = math.floor((min_cluster_pc / 100) * len(crystal_symmetries))
-    large_clusters = [c for c in clusters if len(c.members) > threshold]
-    large_clusters.sort(key=lambda x: len(x.members), reverse=True)
+    large_clusters = [c for c in clustering.clusters if len(c) > threshold]
+    large_clusters.sort(key=len, reverse=True)
 
     if large_clusters:
         logger.info(
             f"""
 Unit cell clustering analysis, clusters with >{min_cluster_pc}% of the number of crystals indexed
-{unit_cell_info(large_clusters)}
+{ClusteringResult(large_clusters)}
 """
         )
         if make_plots:
