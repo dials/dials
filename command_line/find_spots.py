@@ -199,7 +199,7 @@ def do_spotfinding(
 
 
 @show_mail_handle_errors()
-def run(args=None, *, phil=working_phil):
+def run(args=None, *, phil=working_phil, return_results=False) -> None:
     # The script usage
     usage = (
         "usage: dials.find_spots [options] [param.phil] "
@@ -233,7 +233,9 @@ def run(args=None, *, phil=working_phil):
         parser.print_help()
         return
 
-    return do_spotfinding(experiments, params)
+    results = do_spotfinding(experiments, params)
+    if return_results:
+        return results
 
 
 if __name__ == "__main__":

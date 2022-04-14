@@ -370,6 +370,7 @@ def test_find_spots_radial_profile(dials_data, blur, expected_nref, run_in_tmp_p
             for f in dials_data("centroid_test_data", pathlib=True).glob(
                 "centroid*.cbf"
             )
-        ]
+        ],
+        return_results=True,
     )
     assert len(reflections) == expected_nref
