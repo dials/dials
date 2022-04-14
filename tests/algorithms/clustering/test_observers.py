@@ -8,7 +8,7 @@ from dxtbx.model import Crystal, Experiment, ExperimentList
 from scitbx import matrix
 
 from dials.algorithms.clustering import observers
-from dials.algorithms.clustering.unit_cell import UnitCellCluster
+from dials.algorithms.clustering.unit_cell import cluster_unit_cells
 
 
 def test_UnitCellAnalysisObserver():
@@ -39,15 +39,12 @@ def test_UnitCellAnalysisObserver():
     # generate dendrogram
     crystal_symmetries = [expt.crystal.get_crystal_symmetry() for expt in experiments]
     lattice_ids = experiments.identifiers()
-    ucs = UnitCellCluster.from_crystal_symmetries(
-        crystal_symmetries, lattice_ids=lattice_ids
-    )
-    _, dendrogram, _ = ucs.ab_cluster(write_file_lists=False, doplot=False)
+    result = cluster_unit_cells(crystal_symmetries, lattice_ids)
 
     # setup script
     script = mock.Mock()
     script._experiments = experiments
-    script.unit_cell_dendrogram = dendrogram
+    script.unit_cell_dendrogram = result.dendrogram
 
     # test the observer
     observer = observers.UnitCellAnalysisObserver()
