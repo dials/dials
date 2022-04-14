@@ -5,7 +5,8 @@ from __future__ import annotations
 
 import logging
 
-from libtbx.phil import parse
+import libtbx.phil
+from dxtbx.model import ExperimentList
 
 from dials.algorithms.shoebox import MaskCode
 from dials.algorithms.spot_finding import per_image_analysis
@@ -46,7 +47,7 @@ Examples::
 """
 
 # Set the phil scope
-phil_scope = parse(
+phil_scope = libtbx.phil.parse(
     """
 
   output {
@@ -83,7 +84,7 @@ phil_scope = parse(
 )
 
 # Local overrides for dials.find_spots
-phil_overrides = parse(
+phil_overrides = libtbx.phil.parse(
     """
 spotfinder {
   mp {
@@ -95,150 +96,144 @@ spotfinder {
 working_phil = phil_scope.fetch(sources=[phil_overrides])
 
 
-class Script:
-    """A class for running the script."""
+def do_spotfinding(
+    experiments: ExperimentList,
+    params: libtbx.phil.scope_extract,
+) -> tuple[ExperimentList, flex.reflection_table]:
 
-    def __init__(self, phil=working_phil):
-        """Initialise the script."""
-        # The script usage
-        usage = (
-            "usage: dials.find_spots [options] [param.phil] "
-            "{models.expt | image1.file [image2.file ...]}"
-        )
+    # did input have identifier?
+    had_identifiers = False
+    if all(i != "" for i in experiments.identifiers()):
+        had_identifiers = True
+    else:
+        generate_experiment_identifiers(
+            experiments
+        )  # add identifier e.g. if coming straight from images
 
-        # Initialise the base class
-        self.parser = ArgumentParser(
-            usage=usage,
-            phil=phil,
-            epilog=help_message,
-            read_experiments_from_images=True,
-            read_experiments=True,
-        )
-
-    def run(self, args=None):
-        """Execute the script."""
-
-        # Parse the command line
-        params, options = self.parser.parse_args(args=args, show_diff_phil=False)
-
-        if __name__ == "__main__":
-            # Configure the logging
-            log.config(verbosity=options.verbose, logfile=params.output.log)
-        logger.info(dials_version())
-
-        # Log the diff phil
-        diff_phil = self.parser.diff_phil.as_str()
-        if diff_phil != "":
-            logger.info("The following parameters have been modified:\n")
-            logger.info(diff_phil)
-
-        # Ensure we have a data block
-        experiments = flatten_experiments(params.input.experiments)
-
-        # did input have identifier?
-        had_identifiers = False
-        if all(i != "" for i in experiments.identifiers()):
-            had_identifiers = True
-        else:
-            generate_experiment_identifiers(
-                experiments
-            )  # add identifier e.g. if coming straight from images
-
-        if len(experiments) == 0:
-            self.parser.print_help()
-            return
-
-        # If maximum_trusted_value assigned, use this temporarily for the
-        # spot finding
-        if params.maximum_trusted_value is not None:
-            logger.info(
-                "Overriding maximum trusted value to %.1f", params.maximum_trusted_value
-            )
-            input_trusted_ranges = {}
-            for _d, detector in enumerate(experiments.detectors()):
-                for _p, panel in enumerate(detector):
-                    trusted = panel.get_trusted_range()
-                    input_trusted_ranges[(_d, _p)] = trusted
-                    panel.set_trusted_range((trusted[0], params.maximum_trusted_value))
-
-        # Loop through all the imagesets and find the strong spots
-        reflections = flex.reflection_table.from_observations(experiments, params)
-
-        # Add n_signal column - before deleting shoeboxes
-        good = MaskCode.Foreground | MaskCode.Valid
-        reflections["n_signal"] = reflections["shoebox"].count_mask_values(good)
-
-        # Delete the shoeboxes
-        if not params.output.shoeboxes:
-            del reflections["shoebox"]
-
-        # ascii spot count per image plot - per imageset
-
-        imagesets = []
-        for i, experiment in enumerate(experiments):
-            if experiment.imageset not in imagesets:
-                imagesets.append(experiment.imageset)
-
-        for i, imageset in enumerate(imagesets):
-            selected = flex.bool(reflections.nrows(), False)
-            for j, experiment in enumerate(experiments):
-                if experiment.imageset is not imageset:
-                    continue
-                selected.set_selected(reflections["id"] == j, True)
-            ascii_plot = spot_counts_per_image_plot(reflections.select(selected))
-            if len(ascii_plot):
-                logger.info("\nHistogram of per-image spot count for imageset %i:", i)
-                logger.info(ascii_plot)
-
-        # Save the reflections to file
-        logger.info("\n" + "-" * 80)
-        # If started with images and not saving experiments, then remove id mapping
-        # as the experiment linked to will no longer exists after exit.
-        if not had_identifiers:
-            if not params.output.experiments:
-                for k in reflections.experiment_identifiers().keys():
-                    del reflections.experiment_identifiers()[k]
-
-        reflections.as_file(params.output.reflections)
+    # If maximum_trusted_value assigned, use this temporarily for the
+    # spot finding
+    if params.maximum_trusted_value is not None:
         logger.info(
-            "Saved %s reflections to %s", len(reflections), params.output.reflections
+            "Overriding maximum trusted value to %.1f", params.maximum_trusted_value
         )
+        input_trusted_ranges = {}
+        for _d, detector in enumerate(experiments.detectors()):
+            for _p, panel in enumerate(detector):
+                trusted = panel.get_trusted_range()
+                input_trusted_ranges[(_d, _p)] = trusted
+                panel.set_trusted_range((trusted[0], params.maximum_trusted_value))
 
-        # Reset the trusted ranges
-        if params.maximum_trusted_value is not None:
-            for _d, detector in enumerate(experiments.detectors()):
-                for _p, panel in enumerate(detector):
-                    trusted = input_trusted_ranges[(_d, _p)]
-                    panel.set_trusted_range(trusted)
+    # Loop through all the imagesets and find the strong spots
+    reflections = flex.reflection_table.from_observations(experiments, params)
 
-        # Save the experiments
-        if params.output.experiments:
+    # Add n_signal column - before deleting shoeboxes
+    good = MaskCode.Foreground | MaskCode.Valid
+    reflections["n_signal"] = reflections["shoebox"].count_mask_values(good)
 
-            logger.info(f"Saving experiments to {params.output.experiments}")
-            experiments.as_file(params.output.experiments)
+    # Delete the shoeboxes
+    if not params.output.shoeboxes:
+        del reflections["shoebox"]
 
-        # Print some per image statistics
-        if params.per_image_statistics:
-            for i, experiment in enumerate(experiments):
-                logger.info("Number of centroids per image for imageset %i:", i)
-                refl = reflections.select(reflections["id"] == i)
-                refl.centroid_px_to_mm([experiment])
-                refl.map_centroids_to_reciprocal_space([experiment])
-                stats = per_image_analysis.stats_per_image(
-                    experiment, refl, resolution_analysis=False
-                )
-                logger.info(str(stats))
+    # ascii spot count per image plot - per imageset
 
-        if params.output.experiments:
-            return experiments, reflections
-        else:
-            return reflections
+    imagesets = []
+    for i, experiment in enumerate(experiments):
+        if experiment.imageset not in imagesets:
+            imagesets.append(experiment.imageset)
+
+    for i, imageset in enumerate(imagesets):
+        selected = flex.bool(reflections.nrows(), False)
+        for j, experiment in enumerate(experiments):
+            if experiment.imageset is not imageset:
+                continue
+            selected.set_selected(reflections["id"] == j, True)
+        ascii_plot = spot_counts_per_image_plot(reflections.select(selected))
+        if len(ascii_plot):
+            logger.info("\nHistogram of per-image spot count for imageset %i:", i)
+            logger.info(ascii_plot)
+
+    # Save the reflections to file
+    logger.info("\n" + "-" * 80)
+    # If started with images and not saving experiments, then remove id mapping
+    # as the experiment linked to will no longer exists after exit.
+    if not had_identifiers:
+        if not params.output.experiments:
+            for k in reflections.experiment_identifiers().keys():
+                del reflections.experiment_identifiers()[k]
+
+    reflections.as_file(params.output.reflections)
+
+    logger.info(
+        "Saved %s reflections to %s", len(reflections), params.output.reflections
+    )
+
+    # Reset the trusted ranges
+    if params.maximum_trusted_value is not None:
+        for _d, detector in enumerate(experiments.detectors()):
+            for _p, panel in enumerate(detector):
+                trusted = input_trusted_ranges[(_d, _p)]
+                panel.set_trusted_range(trusted)
+
+    # Save the experiments
+    if params.output.experiments:
+
+        logger.info(f"Saving experiments to {params.output.experiments}")
+        experiments.as_file(params.output.experiments)
+
+    # Print some per image statistics
+    if params.per_image_statistics:
+        for i, experiment in enumerate(experiments):
+            logger.info("Number of centroids per image for imageset %i:", i)
+            refl = reflections.select(reflections["id"] == i)
+            refl.centroid_px_to_mm([experiment])
+            refl.map_centroids_to_reciprocal_space([experiment])
+            stats = per_image_analysis.stats_per_image(
+                experiment, refl, resolution_analysis=False
+            )
+            logger.info(str(stats))
+
+    if params.output.experiments:
+        return experiments, reflections
+    else:
+        return reflections
 
 
 @show_mail_handle_errors()
-def run(args=None):
-    script = Script()
-    return script.run(args)
+def run(args=None, *, phil=working_phil):
+    # The script usage
+    usage = (
+        "usage: dials.find_spots [options] [param.phil] "
+        "{models.expt | image1.file [image2.file ...]}"
+    )
+
+    # Initialise the base class
+    parser = ArgumentParser(
+        usage=usage,
+        phil=phil,
+        epilog=help_message,
+        read_experiments_from_images=True,
+        read_experiments=True,
+    )
+
+    # Parse the command line
+    params, options = parser.parse_args(args=args, show_diff_phil=False)
+    log.config(verbosity=options.verbose, logfile=params.output.log)
+    logger.info(dials_version())
+
+    # Log the diff phil
+    diff_phil = parser.diff_phil.as_str()
+    if diff_phil != "":
+        logger.info("The following parameters have been modified:\n")
+        logger.info(diff_phil)
+
+    # Ensure we have a data block
+    experiments = flatten_experiments(params.input.experiments)
+
+    if len(experiments) == 0:
+        parser.print_help()
+        return
+
+    return do_spotfinding(experiments, params)
 
 
 if __name__ == "__main__":
