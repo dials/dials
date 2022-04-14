@@ -5,6 +5,7 @@ from sys import argv
 import cctbx.array_family.flex
 from dxtbx.model import ExperimentList
 
+from dials.algorithms.integration.report import IntegrationReport, ProfileModelReport
 from dials.algorithms.profile_model.gaussian_rs import GaussianRSProfileModeller
 from dials.algorithms.profile_model.gaussian_rs import Model as GaussianRSProfileModel
 from dials.algorithms.profile_model.gaussian_rs.calculator import (
@@ -20,9 +21,9 @@ from dials_algorithms_integration_integrator_ext import ShoeboxProcessor
 from dials_array_family_flex_ext import reflection_table
 
 """
-Tested with C2sum_1_*.cbf.gz using default parameters for each step of the workflow.
+Tested with LCY_15_15_2_*.cbf.gz using default parameters for each step of the workflow.
 
-Kabasch 2010 refers to
+Kabsch 2010 refers to
 Kabsch W., Integration, scaling, space-group assignment and
 post-refinment, Acta Crystallographica Section D, 2010, D66, 133-144
 
@@ -50,8 +51,10 @@ if __name__ == "__main__":
     reflections["id"] = cctbx.array_family.flex.int(len(reflections), 0)
     reflections["imageset_id"] = cctbx.array_family.flex.int(len(reflections), 0)
     experiment = experiments[0]
+
     # Remove bad reflections (e.g. those not indexed)
     reflections, _ = process_reference(reflections)
+    # Mask neighbouring pixels to shoeboxes
     reflections = filter_reference_pixels(reflections, experiments)
 
     """
@@ -88,6 +91,7 @@ if __name__ == "__main__":
     sigma_b = ComputeEsdBeamDivergence(
         experiment.detector, model_reflections, centroid_definition="s1"
     ).sigma()
+
     # sigma_m in 3.1 of Kabsch 2010
     sigma_m = ComputeEsdReflectingRange(
         experiment.crystal,
@@ -98,6 +102,7 @@ if __name__ == "__main__":
         model_reflections,
         algorithm="extended",
     ).sigma()
+
     # The Gaussian model given in 2.3 of Kabsch 2010
     experiment.profile = GaussianRSProfileModel(
         params=params, n_sigma=3, sigma_b=sigma_b, sigma_m=sigma_m
@@ -105,11 +110,20 @@ if __name__ == "__main__":
 
     """
     Compute properties for predicted reflections using profile model,
-    accessed via experiments[0].profile_model. These reflection_table
-    methods are just wrappers for profile_model.compute_bbox etc.
+    accessed via experiment.profile_model. These reflection_table
+    methods are largely just wrappers for profile_model.compute_bbox etc.
+
+    Note: I do not think all these properties are needed for integration,
+    but are all present in the current dials.integrate output.
     """
 
     predicted_reflections.compute_bbox(experiments)
+    predicted_reflections.compute_d(experiments)
+    min_zeta = 0.05
+    zeta = predicted_reflections.compute_zeta(experiment)
+    predicted_reflections = predicted_reflections.select(flex.abs(zeta) >= min_zeta)
+    predicted_reflections.compute_partiality(experiments)
+
     # Shoeboxes
     predicted_reflections["shoebox"] = flex.shoebox(
         predicted_reflections["panel"],
@@ -117,7 +131,7 @@ if __name__ == "__main__":
         allocate=False,
         flatten=False,
     )
-    # Actual shoebox values
+    # Get actual shoebox values and the reflections for each image
     shoebox_processor = ShoeboxProcessor(
         predicted_reflections,
         len(experiment.detector),
@@ -125,17 +139,18 @@ if __name__ == "__main__":
         len(experiment.imageset),
         False,
     )
+
     for i in range(len(experiment.imageset)):
         image = experiment.imageset.get_corrected_data(i)
         mask = experiment.imageset.get_mask(i)
         shoebox_processor.next_data_only(make_image(image, mask))
 
-    predicted_reflections.compute_d(experiments)
-    predicted_reflections.compute_zeta(experiment)
-    predicted_reflections.compute_partiality(experiments)
     predicted_reflections.is_overloaded(experiments)
     predicted_reflections.compute_mask(experiments)
     predicted_reflections.contains_invalid_pixels()
+    predicted_reflections.compute_background(experiments)
+    predicted_reflections.compute_centroid(experiments)
+    predicted_reflections.compute_summed_intensity()
 
     # Filter reflections with a high fraction of masked foreground
     valid_foreground_threshold = 0.75  # DIALS default
@@ -156,9 +171,6 @@ if __name__ == "__main__":
         MaskCode.Valid | MaskCode.Background | MaskCode.BackgroundUsed
     )
     predicted_reflections["num_pixels.foreground"] = nvalfg
-    predicted_reflections.compute_background(experiments)
-    predicted_reflections.compute_centroid(experiments)
-    predicted_reflections.compute_summed_intensity()
 
     """
     Load modeller that will calculate reference profiles and
@@ -170,7 +182,7 @@ if __name__ == "__main__":
     grid_method = 2  # regular grid
     grid_size = 5  # Downsampling grid size described in 3.3 of Kabsch 2010
     num_scan_points = 72
-    n_sigma = 3.0  # multiplier to expand bounding boxes
+    n_sigma = 4.5  # multiplier to expand bounding boxes
     fitting_threshold = 0.02
     reference_profile_modeller = GaussianRSProfileModeller(
         experiment.beam,
@@ -193,29 +205,41 @@ if __name__ == "__main__":
     ("Learning phase" of 3.3 in Kabsch 2010)
     """
 
-    # Get the predicted reflections that matched with observed
     sel = predicted_reflections.get_flags(predicted_reflections.flags.reference_spot)
     reference_reflections = predicted_reflections.select(sel)
-
-    # Use these reflections to create the grid of reference profiles
+    sel = reference_reflections.get_flags(reference_reflections.flags.dont_integrate)
+    sel = ~sel
+    reference_reflections = reference_reflections.select(sel)
     reference_profile_modeller.model(reference_reflections)
     reference_profile_modeller.normalize_profiles()
+
+    profile_model_report = ProfileModelReport(
+        experiments, [reference_profile_modeller], model_reflections
+    )
+    print(profile_model_report.as_str(prefix=" "))
 
     """
     Carry out the integration by fitting to reference profiles in 1D.
     (Calculates intensity using 3.4 of Kabsch 2010)
     """
 
+    sel = predicted_reflections.get_flags(predicted_reflections.flags.dont_integrate)
+    sel = ~sel
+    predicted_reflections = predicted_reflections.select(sel)
     reference_profile_modeller.fit_reciprocal_space(predicted_reflections)
-
-    """
-    Corrections
-    """
     predicted_reflections.compute_corrections(experiments)
 
+    integration_report = IntegrationReport(experiments, predicted_reflections)
+    print(integration_report.as_str(prefix=" "))
+
     """
-    Remove some columns
+    Save the reflections
     """
+
     del predicted_reflections["shoebox"]
+    sel = predicted_reflections.get_flags(
+        predicted_reflections.flags.integrated, all=False
+    )
+    predicted_reflections = predicted_reflections.select(sel)
 
     predicted_reflections.as_msgpack_file("integrated.refl")
