@@ -25,10 +25,10 @@ class Cluster:
     def __init__(
         self,
         crystal_symmetries: list[crystal.symmetry],
-        lattice_ids: list[int],
+        lattice_ids: Optional[list[int]] = None,
         name="",
     ):
-        assert len(crystal_symmetries) == len(lattice_ids)
+        assert lattice_ids is None or len(crystal_symmetries) == len(lattice_ids)
         self.crystal_symmetries = crystal_symmetries
         self.lattice_ids = lattice_ids
         self.unit_cells = np.array(
@@ -61,6 +61,9 @@ class Cluster:
 class ClusteringResult:
     clusters: list[Cluster]
     dendrogram: Optional[dict] = None
+
+    def __len__(self):
+        return len(self.clusters)
 
     def __str__(self):
         text = [

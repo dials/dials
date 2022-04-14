@@ -6,7 +6,6 @@ import random
 import sys
 
 import dxtbx.model.compare as compare
-import xfel.clustering.cluster
 from dxtbx.command_line.image_average import splitit
 from dxtbx.model.experiment_list import (
     BeamComparison,
@@ -17,9 +16,9 @@ from dxtbx.model.experiment_list import (
 )
 from libtbx.phil import parse
 from scitbx import matrix
-from xfel.clustering.cluster_groups import unit_cell_info
 
 import dials.util
+from dials.algorithms.clustering.unit_cell import cluster_unit_cells
 from dials.algorithms.integration.stills_significance_filter import SignificanceFilter
 from dials.array_family import flex
 from dials.util import tabulate
@@ -344,35 +343,32 @@ class CombineWithReference:
         )
 
 
-class Cluster:
-    def __init__(
-        self, experiments, reflections, dendrogram=False, threshold=1000, n_max=None
-    ):
-        if dendrogram:
-            import matplotlib.pyplot as plt
+def do_unit_cell_clustering(
+    experiments, reflections, dendrogram=False, threshold=1000, n_max=None
+):
+    if dendrogram:
+        import matplotlib.pyplot as plt
 
-            axes = plt.gca()
-        else:
-            axes = None
+        ax = plt.gca()
+    else:
+        ax = None
 
-        ucs = xfel.clustering.cluster.Cluster.from_expts(
-            refl_table=reflections, expts_list=experiments, n_images=n_max
-        )
-        self.clusters, _ = ucs.ab_cluster(
-            threshold=threshold,
-            log=True,  # log scale
-            ax=axes,
-            write_file_lists=False,
-            schnell=False,
-            doplot=dendrogram,
-        )
-        print(unit_cell_info(self.clusters))
-        self.clustered_frames = {
-            int(c.cname.split("_")[1]): c.members for c in self.clusters
-        }
-        if dendrogram:
-            plt.tight_layout()
-            plt.show()
+    crystal_symmetries = [expt.crystal.get_crystal_symmetry() for expt in experiments]
+    clustering = cluster_unit_cells(
+        crystal_symmetries,
+        lattice_ids=list(experiments.identifiers()),
+        threshold=threshold,
+        # n_images=n_max,
+        ax=ax,
+        no_plot=not dendrogram,
+    )
+
+    if dendrogram:
+        ax.set_yscale("symlog", linthresh=1)
+        plt.tight_layout()
+        plt.show()
+
+    return clustering
 
 
 class Script:
@@ -739,82 +735,61 @@ class Script:
                 ref_filename = os.path.splitext(refl_name)[0] + "_%03d.refl" % i
                 self._save_output(batch_expts, batch_refls, exp_filename, ref_filename)
 
-        def combine_in_clusters(
-            experiments_l, reflections_l, exp_name, refl_name, end_count
-        ):
-            result = []
-            for cluster, experiment in enumerate(experiments_l):
-                cluster_expts = ExperimentList()
-                cluster_refls = flex.reflection_table()
-                for i, expts in enumerate(experiment):
-                    refls = reflections_l[cluster][i]
-                    if refls.experiment_identifiers().keys():
-                        identifier = refls.experiment_identifiers().values()[0]
-                        id_val = refls.experiment_identifiers().keys()[0]
-                        del refls.experiment_identifiers()[id_val]
-                        refls["id"] = flex.int(len(refls), i)
-                        refls.experiment_identifiers()[i] = identifier
-                        refls.assert_experiment_identifiers_are_consistent(
-                            experiment[i : i + 1]
-                        )
-                    else:
-                        refls["id"] = flex.int(len(refls), i)
-                    cluster_expts.append(expts)
-                    cluster_refls.extend(refls)
-                exp_filename = os.path.splitext(exp_name)[0] + (
-                    "_cluster%d.expt" % (end_count - cluster)
-                )
-                ref_filename = os.path.splitext(refl_name)[0] + (
-                    "_cluster%d.refl" % (end_count - cluster)
-                )
-                result.append(
-                    (cluster_expts, cluster_refls, exp_filename, ref_filename)
-                )
-            return result
-
         # cluster the resulting experiments if requested
         if params.clustering.use:
-            clustered = Cluster(
+            clustered = do_unit_cell_clustering(
                 experiments,
                 reflections,
                 dendrogram=params.clustering.dendrogram,
                 threshold=params.clustering.threshold,
                 n_max=params.clustering.max_crystals,
             )
-            n_clusters = len(clustered.clustered_frames)
-
-            def not_too_many(keeps):
-                if params.clustering.max_clusters is not None:
-                    return len(keeps) < params.clustering.max_clusters
-                return True
-
-            keep_frames = []
-            sorted_keys = sorted(clustered.clustered_frames.keys())
-            while len(clustered.clustered_frames) > 0 and not_too_many(keep_frames):
-                keep_frames.append(clustered.clustered_frames.pop(sorted_keys.pop(-1)))
+            n_clusters = len(clustered)
+            clusters = sorted(clustered.clusters, key=len, reverse=True)[
+                : min(params.clustering.max_clusters, n_clusters)
+            ]
             if params.clustering.exclude_single_crystal_clusters:
-                keep_frames = [k for k in keep_frames if len(k) > 1]
+                clusters = [c for c in clusters if len(c) > 1]
             clustered_experiments = [
-                ExperimentList([f.experiment for f in frame_cluster])
-                for frame_cluster in keep_frames
+                ExperimentList(
+                    [
+                        expt
+                        for expt in experiments
+                        if expt.identifier in cluster.lattice_ids
+                    ]
+                )
+                for cluster in clusters
             ]
             clustered_reflections = [
-                [f.reflections for f in frame_cluster] for frame_cluster in keep_frames
+                reflections.select_on_experiment_identifiers(cluster.lattice_ids)
+                for cluster in clusters
             ]
-            list_of_combined = combine_in_clusters(
-                clustered_experiments,
-                clustered_reflections,
-                params.output.experiments_filename,
-                params.output.reflections_filename,
-                n_clusters,
-            )
-            for saveable_tuple in list_of_combined:
+            for i_cluster, (expts, refl) in enumerate(
+                zip(clustered_experiments, clustered_reflections)
+            ):
+                refl.reset_ids()
+                exp_name = os.path.splitext(params.output.experiments_filename)[0] + (
+                    "_cluster%d.expt" % (n_clusters - i_cluster)
+                )
+                refl_name = os.path.splitext(params.output.reflections_filename)[0] + (
+                    "_cluster%d.refl" % (n_clusters - i_cluster)
+                )
                 if params.output.max_batch_size is None:
-                    self._save_output(*saveable_tuple)
+                    self._save_output(
+                        expts,
+                        refl,
+                        exp_name,
+                        refl_name,
+                    )
                 else:
                     save_in_batches(
-                        *saveable_tuple, batch_size=params.output.max_batch_size
+                        expts,
+                        refl,
+                        exp_name,
+                        refl_name,
+                        batch_size=params.output.max_batch_size,
                     )
+
         else:
             if params.output.max_batch_size is None:
                 self._save_output(
