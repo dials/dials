@@ -9,6 +9,7 @@ import numpy as np
 import iotbx.phil
 from cctbx import sgtbx
 
+from dials.algorithms.clustering.unit_cell import cluster_unit_cells
 from dials.algorithms.symmetry.cosym import CosymAnalysis
 from dials.algorithms.symmetry.cosym.observers import register_default_cosym_observers
 from dials.array_family import flex
@@ -264,8 +265,6 @@ class cosym(Subject):
         lattice_ids = [
             self.identifiers_to_ids_map[i] for i in experiments.identifiers()
         ]
-
-        from dials.algorithms.clustering.unit_cell import cluster_unit_cells
 
         clustering = cluster_unit_cells(
             crystal_symmetries,

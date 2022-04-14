@@ -3,6 +3,7 @@ from __future__ import annotations
 import collections
 import logging
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 import scipy.spatial.distance as ssd
@@ -12,6 +13,10 @@ from cctbx import crystal, uctbx
 from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from cctbx.uctbx.determine_unit_cell import NCDist
 from dxtbx.util import format_float_with_standard_uncertainty
+
+if TYPE_CHECKING:
+    import matplotlib.axes
+
 
 logger = logging.getLogger(__name__)
 
@@ -176,6 +181,8 @@ def cluster_unit_cells(
     crystal_symmetries: list[crystal.symmetry],
     lattice_ids: list[int],
     threshold: int = 10000,
+    ax: Optional["matplotlib.axes.Axes"] = None,
+    no_plot: bool = True,
 ):
     cluster = Cluster(crystal_symmetries, lattice_ids)
     uc = cluster.unit_cells
@@ -226,8 +233,8 @@ def cluster_unit_cells(
         leaf_font_size=8,
         leaf_rotation=90.0,
         color_threshold=threshold,
-        # ax=ax,
-        no_plot=True,
+        ax=ax,
+        no_plot=no_plot,
     )
 
     return ClusteringResult(clusters=sub_clusters, dendrogram=dendrogram)
