@@ -442,11 +442,12 @@ namespace dials { namespace util {
         if (this->good()) this->flush();
       } catch (bp::error_already_set&) {
         PyErr_Clear();
-        throw std::runtime_error(
-          "Problem closing python ostream.\n"
-          "  Known limitation: the error is unrecoverable. Sorry.\n"
-          "  Suggestion for programmer: add ostream.flush() before"
-          " returning.");
+        std::cerr << "Problem closing python ostream.\n"
+                     "  Known limitation: the error is unrecoverable. Sorry.\n"
+                     "  Suggestion for programmer: add ostream.flush() before"
+                     " returning."
+                  << std::endl;
+        std::terminate();
       }
     }
   };

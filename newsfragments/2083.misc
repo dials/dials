@@ -1,0 +1,1 @@
+Fix warning during compilation about throwing exceptions during constructor.
