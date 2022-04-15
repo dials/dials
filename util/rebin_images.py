@@ -4,6 +4,8 @@ import binascii
 import os
 import random
 
+from dxtbx.ext import compress
+
 
 def gz_open(filename, mode):
     import gzip
@@ -57,8 +59,6 @@ def read_image(in_image):
 
 
 def write_image(out_image, pixel_values, header, nn=1):
-    from cbflib_adaptbx import compress
-
     assert not os.path.exists(out_image)
     start_tag = binascii.unhexlify("0c1a04d5")
 
