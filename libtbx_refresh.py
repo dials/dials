@@ -15,19 +15,20 @@ except ModuleNotFoundError:
     pkg_resources = None
 
 # Hack:
-# libtbx_refresh needs to import from the package before it's configured.
-# Historically, without src/ layout, the full package was implicitly on
-# the sys.path, so this worked. Now, it doesn't - other packages might
-# attempt to import dials, which would only get a namespace package. This
-# means even just setting the path wouldn't work. So, check to see if
-# we have a namespace package imported, remove it, set the __path__, then
-# import the real copy of DIALS.
+# Other packages, configured first, might attempt to import dials, which
+# would only get a namespace package. This means even just setting the
+# path wouldn't work.
+# So, check to see if we have a namespace package imported, remove it (and
+# any sub-packages), set the __path__, then import the real copy of DIALS.
 #
 # This is probably... not something we want to do, but it allows moving
 # to src/ without drastically changing this part of the setup.
-
+#
+# If this is *only* dxtbx, then we can probably get away without this by
+# removing this part from dxtbx.
 _dials = sys.modules.get("dials")
 if _dials and _dials.__file__ is None:
+    # Someone tried to import us and got a namespace package
     _src_path_root = str(Path(libtbx.env.dist_path("dials")).joinpath("src"))
     del sys.modules["dials"]
     # Remove any sub-modules that we might have tried and failed to import
