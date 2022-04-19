@@ -120,10 +120,6 @@ phil_scope = parse(
       .type = int
       .help = "Maximum number of clusters to save as jsons."
 
-    max_crystals = None
-      .type = int
-      .help = "Maximum number of crystals to cluster."
-
     exclude_single_crystal_clusters = True
       .type = bool
       .help = "Don't produce a 'cluster' containing only one crystal."
@@ -343,9 +339,7 @@ class CombineWithReference:
         )
 
 
-def do_unit_cell_clustering(
-    experiments, reflections, dendrogram=False, threshold=1000, n_max=None
-):
+def do_unit_cell_clustering(experiments, reflections, dendrogram=False, threshold=1000):
     if dendrogram:
         import matplotlib.pyplot as plt
 
@@ -358,7 +352,6 @@ def do_unit_cell_clustering(
         crystal_symmetries,
         lattice_ids=list(experiments.identifiers()),
         threshold=threshold,
-        # n_images=n_max,
         ax=ax,
         no_plot=not dendrogram,
     )
@@ -742,7 +735,6 @@ class Script:
                 reflections,
                 dendrogram=params.clustering.dendrogram,
                 threshold=params.clustering.threshold,
-                n_max=params.clustering.max_crystals,
             )
             n_clusters = len(clustered)
             clusters = sorted(clustered.clusters, key=len, reverse=True)[
