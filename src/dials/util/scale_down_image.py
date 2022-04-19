@@ -3,6 +3,7 @@ from __future__ import annotations
 import binascii
 import os
 
+from dxtbx.ext import compress
 from scitbx.array_family import flex
 
 from dials.util.ext import scale_down_array
@@ -55,8 +56,6 @@ def write_image_from_flex_array(out_image, pixel_values, header):
     """Write a scaled CBF image from an array of pixel values and a header to
     add at the top. N.B. clobbers the binary size of the compressed data &
     the MD5 hash of the data."""
-    from cbflib_adaptbx import compress
-
     assert not os.path.exists(out_image)
     start_tag = binascii.unhexlify("0c1a04d5")
 
