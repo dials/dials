@@ -32,7 +32,7 @@ def get_entry_point(filename: Path, prefix: str, import_path: str) -> list[str]:
     Returns:
         A list of entry_point specifications
     """
-    contents = filename.read_text()
+    contents = filename.read_text(encoding="utf-8")
     tree = ast.parse(contents)
     # Find root functions named "run"
     has_run = any(
