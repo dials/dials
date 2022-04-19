@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 import libtbx
+import libtbx.pkg_utils
 
 try:
     import pkg_resources
@@ -43,6 +44,9 @@ except Exception:
     pass
 
 dials.precommitbx.nagger.nag()
+
+# During src/ transition, this ensures that the old entry points are cleared
+libtbx.pkg_utils.define_entry_points({})
 
 
 def _install_setup_readonly_fallback(package_name: str):
