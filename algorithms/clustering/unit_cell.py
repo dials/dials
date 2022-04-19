@@ -186,7 +186,7 @@ def cluster_unit_cells(
     threshold: int = 10000,
     ax: Optional["matplotlib.axes.Axes"] = None,
     no_plot: bool = True,
-):
+) -> Optional[ClusteringResult]:
     if not lattice_ids:
         lattice_ids = list(range(len(crystal_symmetries)))
     cluster = Cluster(crystal_symmetries, lattice_ids)
@@ -213,7 +213,7 @@ def cluster_unit_cells(
         logger.debug("Clusters have been calculated")
     else:
         logger.debug("No distances were calculated. Aborting clustering.")
-        return [], None
+        return None
 
     # Create an array of sub-cluster objects from the clustering
     sub_clusters: list[Cluster] = []
