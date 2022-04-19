@@ -36,6 +36,23 @@ if _dials and _dials.__file__ is None:
     # Add the new path at the front of the system paths list
     sys.path.insert(0, _src_path_root)
 
+# Now, check to see if we configured XFEL first. If so, this is an error and we
+# have a mis-configured environment.
+if xfel_module := libtbx.env.module_dict.get("xfel"):
+    dials_module = libtbx.env.module_dict.get("dials")
+    if libtbx.env.module_list.index(xfel_module) < libtbx.env.module_list.index(
+        dials_module
+    ):
+        sys.exit(
+            """
+\033[31;1mError: \033[34mxfel\033[31m module is configured before \033[34mdials\033[31m, but now requires dials first.
+
+To fix this, please run:
+
+        \033[0;1mlibtbx.configure --exclude=xfel $(libtbx.list_modules) xfel\033[0m
+"""
+        )
+
 if sys.version_info.major == 2:
     sys.exit("Python 2 is no longer supported")
 
