@@ -221,7 +221,7 @@ def cluster_unit_cells(
         sel = np.where(cluster_ids == i_cluster)[0]
         cluster = Cluster(
             [crystal_symmetries[i] for i in sel],
-            [lattice_ids[i] for i in sel],
+            [lattice_ids[int(i)] for i in sel],
         )
         sub_clusters.append(cluster)
 
