@@ -43,13 +43,16 @@ if xfel_module := libtbx.env.module_dict.get("xfel"):
     if libtbx.env.module_list.index(xfel_module) < libtbx.env.module_list.index(
         dials_module
     ):
+        module_names = [x.name for x in libtbx.env.module_list]
+        module_names.remove("xfel")
+        module_names.insert(0, "xfel")
         sys.exit(
-            """
-\033[31;1mError: \033[34mxfel\033[31m module is configured before \033[34mdials\033[31m, but now requires dials first.
+            f"""
+\033[31;1mError: \033[34mxfel\033[31m module is configured before \033[34mdials\033[31m, but now requires dials configured first.
 
 To fix this, please run:
 
-        \033[0;1mlibtbx.configure --exclude=xfel $(libtbx.list_modules) xfel\033[0m
+        \033[0;1mlibtbx.configure --exclude=xfel {' '.join(module_names)}\033[0m
 """
         )
 
