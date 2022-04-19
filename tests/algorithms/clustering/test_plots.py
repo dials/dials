@@ -29,7 +29,7 @@ def test_scipy_dendrogram_to_plotly_json():
         sgi.any_compatible_crystal_symmetry(volume=random.uniform(990, 1010))
         for i in range(10)
     ]
-    lattice_ids = flex.int_range(0, len(crystal_symmetries)).as_string()
+    lattice_ids = list(range(len(crystal_symmetries)))
     result = cluster_unit_cells(crystal_symmetries, lattice_ids)
     d = plots.scipy_dendrogram_to_plotly_json(
         result.dendrogram, title="Unit cell clustering"

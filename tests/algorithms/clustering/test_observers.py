@@ -38,8 +38,9 @@ def test_UnitCellAnalysisObserver():
 
     # generate dendrogram
     crystal_symmetries = [expt.crystal.get_crystal_symmetry() for expt in experiments]
-    lattice_ids = experiments.identifiers()
-    result = cluster_unit_cells(crystal_symmetries, lattice_ids)
+    result = cluster_unit_cells(
+        crystal_symmetries, lattice_ids=list(experiments.identifiers())
+    )
 
     # setup script
     script = mock.Mock()
