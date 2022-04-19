@@ -2,5 +2,5 @@
     "extra_command_line_locations": ["src/dials"],
     "modules_required_for_build": ["boost", "scitbx", "cctbx", "dxtbx", "rstbx"],
     "modules_required_for_use": ["boost_adaptbx", "iotbx", "mmtbx"],
-    "optional_modules": ["crys3d", "gltbx", "xfel"],
+    "optional_modules": ["crys3d", "gltbx"],
 }
