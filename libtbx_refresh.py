@@ -25,13 +25,14 @@ except ModuleNotFoundError:
 #
 # This is probably... not something we want to do, but it allows moving
 # to src/ without drastically changing this part of the setup.
+
 _dials = sys.modules.get("dials")
 if _dials and _dials.__file__ is None:
     _src_path_root = str(Path(libtbx.env.dist_path("dials")).joinpath("src"))
     del sys.modules["dials"]
     # Remove any sub-modules that we might have tried and failed to import
-    for module in [x for x in sys.modules if x.startswith("dials.")]:
-        del sys.modules[module]
+    for _module in [x for x in sys.modules if x.startswith("dials.")]:
+        del sys.modules[_module]
     # Add the new path at the front of the system paths list
     sys.path.insert(0, _src_path_root)
 
