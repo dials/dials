@@ -1,1 +1,1 @@
-dxtbx: remove Python2 version check
+remove Python 2 version check for libtbx refresh
