@@ -57,11 +57,9 @@ def build(setup_kwargs: dict[str, Any]) -> None:
     console_scripts = entry_points.setdefault("console_scripts", [])
     # Work out what dispatchers to add
     all_dispatchers = sorted(
-        itertools.chain(
-            *[
-                get_entry_point(f, "dials", "dials.command_line")
-                for f in (package_path / "command_line").glob("*.py")
-            ]
+        itertools.chain.from_iterable(
+            get_entry_point(f, "dials", "dials.command_line")
+            for f in (package_path / "command_line").glob("*.py")
         )
     )
     console_scripts.extend(x for x in all_dispatchers if x not in console_scripts)
