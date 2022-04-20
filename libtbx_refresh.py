@@ -57,9 +57,6 @@ To fix this, please run:
 """
         )
 
-if sys.version_info.major == 2:
-    sys.exit("Python 2 is no longer supported")
-
 import dials.precommitbx.nagger
 
 try:
