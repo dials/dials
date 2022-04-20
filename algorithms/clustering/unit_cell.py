@@ -31,13 +31,13 @@ class Cluster:
         assert lattice_ids is None or len(crystal_symmetries) == len(lattice_ids)
         self.crystal_symmetries = crystal_symmetries
         self.lattice_ids = lattice_ids
+        self.name = name
         self.unit_cells = np.array(
             [cs.unit_cell().parameters() for cs in crystal_symmetries]
         )
         self.median_cell = np.median(self.unit_cells, axis=0).tolist()
         self.cell_std = np.std(self.unit_cells, axis=0).tolist()
         self.mean_cell = np.mean(self.unit_cells, axis=0).tolist()
-
         self.pg_composition = collections.Counter(
             cs.space_group().type().lookup_symbol() for cs in crystal_symmetries
         )
