@@ -8,9 +8,8 @@ import numpy as np
 
 import iotbx.phil
 from cctbx import sgtbx
-from xfel.clustering.cluster_groups import unit_cell_info
 
-from dials.algorithms.clustering.unit_cell import UnitCellCluster
+from dials.algorithms.clustering.unit_cell import cluster_unit_cells
 from dials.algorithms.symmetry.cosym import CosymAnalysis
 from dials.algorithms.symmetry.cosym.observers import register_default_cosym_observers
 from dials.array_family import flex
@@ -267,21 +266,17 @@ class cosym(Subject):
             self.identifiers_to_ids_map[i] for i in experiments.identifiers()
         ]
 
-        ucs = UnitCellCluster.from_crystal_symmetries(
-            crystal_symmetries, lattice_ids=lattice_ids
+        clustering = cluster_unit_cells(
+            crystal_symmetries,
+            lattice_ids=lattice_ids,
         )
-        self.unit_cell_clusters, self.unit_cell_dendrogram, _ = ucs.ab_cluster(
-            self.params.unit_cell_clustering.threshold,
-            log=self.params.unit_cell_clustering.log,
-            labels="lattice_id",
-            write_file_lists=False,
-            schnell=False,
-            doplot=False,
-        )
-        logger.info(unit_cell_info(self.unit_cell_clusters))
+        self.unit_cell_clusters = clustering.clusters
+        self.unit_cell_dendrogram = clustering.dendrogram
+
+        logger.info(clustering)
         largest_cluster_lattice_ids = None
         for cluster in self.unit_cell_clusters:
-            cluster_lattice_ids = [m.lattice_id for m in cluster.members]
+            cluster_lattice_ids = cluster.lattice_ids
             if largest_cluster_lattice_ids is None:
                 largest_cluster_lattice_ids = cluster_lattice_ids
             elif len(cluster_lattice_ids) > len(largest_cluster_lattice_ids):

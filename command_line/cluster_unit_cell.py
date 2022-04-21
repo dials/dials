@@ -10,10 +10,9 @@ import iotbx.mtz
 import iotbx.phil
 from cctbx import crystal
 from dxtbx.model import ExperimentList
-from xfel.clustering.cluster import Cluster
-from xfel.clustering.cluster_groups import unit_cell_info
 
 import dials.util
+from dials.algorithms.clustering.unit_cell import cluster_unit_cells
 from dials.array_family import flex
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
@@ -140,13 +139,13 @@ def run(args=None):
             extension="refl",
         )
 
-        clusters.sort(key=lambda x: len(x.members), reverse=True)
+        clusters.sort(key=len, reverse=True)
         for j, cluster in enumerate(clusters):
-            ids = [m.lattice_id for m in cluster.members]
-            sub_expt = ExperimentList([experiments[i] for i in ids])
+            sub_expt = ExperimentList([experiments[i] for i in cluster.lattice_ids])
             expt_filename = experiments_template(index=j)
-            n = len(ids)
-            print(f"Saving {n} lattices from cluster {j+1} to {expt_filename}")
+            print(
+                f"Saving {len(clusters)} lattices from cluster {j+1} to {expt_filename}"
+            )
             sub_expt.as_file(expt_filename)
             if reflections:
                 identifiers = sub_expt.identifiers()
@@ -160,9 +159,8 @@ def run(args=None):
 
 def do_cluster_analysis(crystal_symmetries, params):
     lattice_ids = list(range(len(crystal_symmetries)))
-    ucs = Cluster.from_crystal_symmetries(crystal_symmetries, lattice_ids=lattice_ids)
 
-    if params.plot.show or params.plot.name is not None:
+    if params.plot.show or params.plot.name:
         if not params.plot.show:
             import matplotlib
 
@@ -172,27 +170,34 @@ def do_cluster_analysis(crystal_symmetries, params):
 
         plt.figure("Andrews-Bernstein distance dendogram", figsize=(12, 8))
         ax = plt.gca()
-        clusters, cluster_axes = ucs.ab_cluster(
-            params.threshold,
-            log=params.plot.log,
-            ax=ax,
-            write_file_lists=False,
-            doplot=True,
-        )
-        print(unit_cell_info(clusters))
+        no_plot = False
+    else:
+        ax = None
+        no_plot = True
+
+    clustering = cluster_unit_cells(
+        crystal_symmetries,
+        lattice_ids=lattice_ids,
+        threshold=params.threshold,
+        ax=ax,
+        no_plot=no_plot,
+    )
+    print(clustering)
+
+    if params.plot.show or params.plot.name:
+
+        if params.plot.log:
+            ax.set_yscale("symlog", linthresh=1)
+        else:
+            ax.set_ylim(-ax.get_ylim()[1] / 100, ax.get_ylim()[1])
+
         plt.tight_layout()
-        if params.plot.name is not None:
+        if params.plot.name:
             plt.savefig(params.plot.name)
         if params.plot.show:
             plt.show()
 
-    else:
-        clusters, cluster_axes = ucs.ab_cluster(
-            params.threshold, log=params.plot.log, write_file_lists=False, doplot=False
-        )
-        print(unit_cell_info(clusters))
-
-    return clusters
+    return clustering.clusters
 
 
 if __name__ == "__main__":
