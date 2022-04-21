@@ -40,11 +40,9 @@ def french_wilson(
     rejected = (sigmas <= 0) & ((intensities <= 0) | (sigmas < 0))
 
     # Compute expected intensities
-    four_stol_sq = 4 * flumpy.to_numpy(
-        merged_intensities.sin_theta_over_lambda_sq().data()
-    )
+    d_star_cubed = flumpy.to_numpy(merged_intensities.d_star_cubed().data())
     expected_intensities = compute_expected_intensities(
-        four_stol_sq,
+        d_star_cubed,
         intensities,
         n_bins=n_bins,
         m_estimator=standardized_median,
