@@ -139,8 +139,8 @@ def test_cluster_unit_cell_api(dials_regression):
     clusters = cluster_unit_cell.do_cluster_analysis(crystal_symmetries, params)
     assert len(clusters) == 1
     cluster = clusters[0]
-    assert len(cluster.members) == 40
-    assert cluster.medians == pytest.approx(
+    assert len(cluster) == 40
+    assert cluster.median_cell == pytest.approx(
         [
             90.9430182020995,
             90.9430182020995,
@@ -151,7 +151,7 @@ def test_cluster_unit_cell_api(dials_regression):
         ],
         abs=1e-6,
     )
-    assert cluster.stdevs == pytest.approx(
+    assert cluster.cell_std == pytest.approx(
         [0.09509739126548639, 0.09509739126548526, 0.0950973912654865, 0, 0, 0],
         abs=1e-6,
     )

@@ -4,20 +4,23 @@ from __future__ import annotations
 
 import logging
 import pickle
+import sys
+import warnings
 from collections import namedtuple
 
 import dxtbx.model.compare as compare
+import libtbx.phil
 from dxtbx.imageset import ImageGrid, ImageSequence
 from dxtbx.model.experiment_list import (
     Experiment,
     ExperimentList,
     ExperimentListFactory,
 )
-from libtbx.phil import parse
 
-from dials.util import Sorry, show_mail_handle_errors
+from dials.util import Sorry, log, show_mail_handle_errors
 from dials.util.multi_dataset_handling import generate_experiment_identifiers
-from dials.util.options import flatten_experiments
+from dials.util.options import ArgumentParser, flatten_experiments
+from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.import")
 
@@ -71,7 +74,7 @@ Examples::
 
 
 # Create the phil parameters
-phil_scope = parse(
+phil_scope = libtbx.phil.parse(
     """
 
   output {
@@ -739,215 +742,236 @@ class MetaDataUpdater:
         return result
 
 
-class ImageImporter:
-    """Class to parse the command line options."""
+def print_sequence_diff(sequence1, sequence2, params):
+    """
+    Print a diff between sequences.
+    """
+    logger.info(
+        compare.sequence_diff(sequence1, sequence2, tolerance=params.input.tolerance)
+    )
 
-    def __init__(self, phil=phil_scope):
-        """Set the expected options."""
-        from dials.util.options import ArgumentParser
 
-        # Create the option parser
-        usage = "dials.import [options] /path/to/image/files"
-        self.parser = ArgumentParser(
-            usage=usage,
-            sort_options=True,
-            phil=phil,
-            read_experiments_from_images=True,
-            epilog=help_message,
-        )
-
-    def import_image(self, args=None):
-        """Parse the options."""
-
-        # Parse the command line arguments in two passes to set up logging early
-        params, options = self.parser.parse_args(
-            args=args, show_diff_phil=False, quick_parse=True
-        )
-
-        # Configure logging, if this is the main process
-        if __name__ == "__main__":
-            from dials.util import log
-
-            log.config(verbosity=options.verbose, logfile=params.output.log)
-
-        from dials.util.version import dials_version
-
-        logger.info(dials_version())
-
-        # Parse the command line arguments completely
-        if params.input.ignore_unhandled:
-            params, options, unhandled = self.parser.parse_args(
-                args=args, show_diff_phil=False, return_unhandled=True
-            )
-            # Remove any False values from unhandled (eliminate empty strings)
-            unhandled = [x for x in unhandled if x]
-        else:
-            params, options = self.parser.parse_args(args=args, show_diff_phil=False)
-            unhandled = None
-
-        # Log the diff phil
-        diff_phil = self.parser.diff_phil.as_str()
-        if diff_phil:
-            logger.info("The following parameters have been modified:\n")
-            logger.info(diff_phil)
-
-        # Print a warning if something unhandled
-        if unhandled:
-            msg = "Unable to handle the following arguments:\n"
-            msg += "\n".join(["  %s" % a for a in unhandled])
-            msg += "\n"
-            logger.warning(msg)
-
-        # Print help if no input
-        if len(params.input.experiments) == 0 and not (
-            params.input.template or params.input.directory
-        ):
-            self.parser.print_help()
-            return
-
-        # Re-extract the imagesets to rebuild experiments from
-        imagesets = _extract_or_read_imagesets(params)
-
-        metadata_updater = MetaDataUpdater(params)
-        experiments = metadata_updater(imagesets)
-
-        # Compute some numbers
-        num_sweeps = 0
-        num_still_sequences = 0
-        num_stills = 0
-        num_images = 0
-
-        # importing a lot of experiments all pointing at one imageset should
-        # work gracefully
-        counted_imagesets = []
-
-        for e in experiments:
-            if e.imageset in counted_imagesets:
-                continue
-            if isinstance(e.imageset, ImageSequence):
-                if e.imageset.get_scan().is_still():
-                    num_still_sequences += 1
-                else:
-                    num_sweeps += 1
-            else:
-                num_stills += 1
-            num_images += len(e.imageset)
-            counted_imagesets.append(e.imageset)
-
-        format_list = {str(e.imageset.get_format_class()) for e in experiments}
-
-        # Print out some bulk info
-        logger.info("-" * 80)
-        for f in format_list:
-            logger.info("  format: %s", f)
-        logger.info("  num images: %d", num_images)
-        logger.info("  sequences:")
-        logger.info("    still:    %d", num_still_sequences)
-        logger.info("    sweep:    %d", num_sweeps)
-        logger.info("  num stills: %d", num_stills)
-
-        # Print out info for all experiments
-        for experiment in experiments:
-
-            # Print some experiment info - override the output of image range
-            # if appropriate
-            image_range = params.geometry.scan.image_range
-            if isinstance(experiment.imageset, ImageSequence):
-                imageset_type = "sequence"
-            else:
-                imageset_type = "stills"
-
-            logger.debug("-" * 80)
-            logger.debug("  format: %s", str(experiment.imageset.get_format_class()))
-            logger.debug("  imageset type: %s", imageset_type)
-            if image_range is None:
-                logger.debug("  num images:    %d", len(experiment.imageset))
-            else:
-                logger.debug("  num images:    %d", image_range[1] - image_range[0] + 1)
-
-            logger.debug("")
-            logger.debug(experiment.imageset.get_beam())
-            logger.debug(experiment.imageset.get_goniometer())
-            logger.debug(experiment.imageset.get_detector())
-            logger.debug(experiment.imageset.get_scan())
-
-        # Only allow a single sequence
-        if params.input.allow_multiple_sequences is False:
-            self.assert_single_sequence(experiments, params)
-
-        # Write the experiments to file
-        self.write_experiments(experiments, params)
-
-    def write_experiments(self, experiments, params):
-        """
-        Output the experiments to file.
-        """
-        if params.output.experiments:
-            logger.info("-" * 80)
-            logger.info("Writing experiments to %s", params.output.experiments)
-            experiments.as_file(
-                params.output.experiments, compact=params.output.compact
-            )
-
-    def assert_single_sequence(self, experiments, params):
-        """
-        Print an error message if more than 1 sequence
-        """
-        sequences = [
-            e.imageset for e in experiments if isinstance(e.imageset, ImageSequence)
-        ]
-
-        if len(sequences) > 1:
-
-            # Print some info about multiple sequences
-            self.diagnose_multiple_sequences(sequences, params)
-
-            # Raise exception
-            raise Sorry(
-                """
-        More than 1 sequence was found. Two things may be happening here:
-
-        1. There really is more than 1 sequence. If you expected this to be the
-           case, set the parameter allow_multiple_sequences=True. If you don't
-           expect this, then check the input to dials.import.
-
-        2. There may be something wrong with your image headers (for example,
-           the rotation ranges of each image may not match up). You should
-           investigate what went wrong, but you can force dials.import to treat
-           your images as a single sequence by using the template=image_####.cbf
-           parameter (see help).
-      """
-            )
-
-    def diagnose_multiple_sequences(self, sequences, params):
-        """
-        Print a diff between sequences.
-        """
-        logger.info("")
-        for i in range(1, len(sequences)):
-            logger.info("=" * 80)
-            logger.info("Diff between sequence %d and %d", i - 1, i)
-            logger.info("")
-            self.print_sequence_diff(sequences[i - 1], sequences[i], params)
+def diagnose_multiple_sequences(sequences, params):
+    """
+    Print a diff between sequences.
+    """
+    logger.info("")
+    for i in range(1, len(sequences)):
         logger.info("=" * 80)
+        logger.info("Diff between sequence %d and %d", i - 1, i)
         logger.info("")
+        print_sequence_diff(sequences[i - 1], sequences[i], params)
+    logger.info("=" * 80)
+    logger.info("")
 
-    @staticmethod
-    def print_sequence_diff(sequence1, sequence2, params):
-        """
-        Print a diff between sequences.
-        """
-        logger.info(
-            compare.sequence_diff(
-                sequence1, sequence2, tolerance=params.input.tolerance
-            )
+
+def write_experiments(experiments, params):
+    """
+    Output the experiments to file.
+    """
+    if params.output.experiments:
+        logger.info("-" * 80)
+        logger.info("Writing experiments to %s", params.output.experiments)
+        experiments.as_file(params.output.experiments, compact=params.output.compact)
+
+
+def assert_single_sequence(experiments, params):
+    """
+    Print an error message if more than 1 sequence
+    """
+    sequences = [
+        e.imageset for e in experiments if isinstance(e.imageset, ImageSequence)
+    ]
+
+    if len(sequences) > 1:
+
+        # Print some info about multiple sequences
+        diagnose_multiple_sequences(sequences, params)
+
+        # Raise exception
+        raise Sorry(
+            """
+    More than 1 sequence was found. Two things may be happening here:
+
+    1. There really is more than 1 sequence. If you expected this to be the
+        case, set the parameter allow_multiple_sequences=True. If you don't
+        expect this, then check the input to dials.import.
+
+    2. There may be something wrong with your image headers (for example,
+        the rotation ranges of each image may not match up). You should
+        investigate what went wrong, but you can force dials.import to treat
+        your images as a single sequence by using the template=image_####.cbf
+        parameter (see help).
+    """
         )
+
+
+def do_import(
+    args: list[str] | None = None,
+    *,
+    phil: libtbx.phil.scope,
+    configure_logging: bool = False,
+):
+    # Create the option parser
+    usage = "dials.import [options] /path/to/image/files"
+    parser = ArgumentParser(
+        usage=usage,
+        sort_options=True,
+        phil=phil,
+        read_experiments_from_images=True,
+        epilog=help_message,
+    )
+
+    # Parse the command line arguments in two passes
+    params, options = parser.parse_args(
+        args=args, show_diff_phil=False, quick_parse=True
+    )
+
+    if configure_logging:
+        log.config(verbosity=options.verbose, logfile=params.output.log)
+
+    logger.info(dials_version())
+
+    # Parse the command line arguments completely
+    if params.input.ignore_unhandled:
+        params, options, unhandled = parser.parse_args(
+            args=args, show_diff_phil=False, return_unhandled=True
+        )
+        # Remove any False values from unhandled (eliminate empty strings)
+        unhandled = [x for x in unhandled if x]
+    else:
+        params, options = parser.parse_args(args=args, show_diff_phil=False)
+        unhandled = None
+
+    # Log the diff phil
+    diff_phil = parser.diff_phil.as_str()
+    if diff_phil:
+        logger.info("The following parameters have been modified:\n")
+        logger.info(diff_phil)
+
+    # Print a warning if something unhandled
+    if unhandled:
+        msg = "Unable to handle the following arguments:\n"
+        msg += "\n".join(["  %s" % a for a in unhandled])
+        msg += "\n"
+        logger.warning(msg)
+
+    # Print help if no input
+    if len(params.input.experiments) == 0 and not (
+        params.input.template or params.input.directory
+    ):
+        parser.print_help()
+        sys.exit(0)
+
+    # Re-extract the imagesets to rebuild experiments from
+    imagesets = _extract_or_read_imagesets(params)
+
+    metadata_updater = MetaDataUpdater(params)
+    experiments = metadata_updater(imagesets)
+
+    # Compute some numbers
+    num_sweeps = 0
+    num_still_sequences = 0
+    num_stills = 0
+    num_images = 0
+
+    # importing a lot of experiments all pointing at one imageset should
+    # work gracefully
+    counted_imagesets = []
+
+    for e in experiments:
+        if e.imageset in counted_imagesets:
+            continue
+        if isinstance(e.imageset, ImageSequence):
+            if e.imageset.get_scan().is_still():
+                num_still_sequences += 1
+            else:
+                num_sweeps += 1
+        else:
+            num_stills += 1
+        num_images += len(e.imageset)
+        counted_imagesets.append(e.imageset)
+
+    format_list = {str(e.imageset.get_format_class()) for e in experiments}
+
+    # Print out some bulk info
+    logger.info("-" * 80)
+    for f in format_list:
+        logger.info("  format: %s", f)
+    logger.info("  num images: %d", num_images)
+    logger.info("  sequences:")
+    logger.info("    still:    %d", num_still_sequences)
+    logger.info("    sweep:    %d", num_sweeps)
+    logger.info("  num stills: %d", num_stills)
+
+    # Print out info for all experiments
+    for experiment in experiments:
+
+        # Print some experiment info - override the output of image range
+        # if appropriate
+        image_range = params.geometry.scan.image_range
+        if isinstance(experiment.imageset, ImageSequence):
+            imageset_type = "sequence"
+        else:
+            imageset_type = "stills"
+
+        logger.debug("-" * 80)
+        logger.debug("  format: %s", str(experiment.imageset.get_format_class()))
+        logger.debug("  imageset type: %s", imageset_type)
+        if image_range is None:
+            logger.debug("  num images:    %d", len(experiment.imageset))
+        else:
+            logger.debug("  num images:    %d", image_range[1] - image_range[0] + 1)
+
+        logger.debug("")
+        logger.debug(experiment.imageset.get_beam())
+        logger.debug(experiment.imageset.get_goniometer())
+        logger.debug(experiment.imageset.get_detector())
+        logger.debug(experiment.imageset.get_scan())
+
+    # Only allow a single sequence
+    if params.input.allow_multiple_sequences is False:
+        assert_single_sequence(experiments, params)
+
+    # Write the experiments to file
+    write_experiments(experiments, params)
+    return experiments
 
 
 @show_mail_handle_errors()
-def run(args=None):
-    importer = ImageImporter()
-    importer.import_image(args)
+def run(args=None, *, phil=phil_scope):
+    do_import(args, phil=phil, configure_logging=True)
+
+
+class ImageImporter:
+    def __init__(self, phil=phil_scope) -> None:
+        # Deprecated: Remove after August 2022
+        warnings.warn(
+            "ImageImporter class is deprecated. Please use dials.command_line.dials_import.do_import instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        self._phil = phil
+
+    def import_image(self, args=None):
+        configure_logging = __name__ == "__main__"
+        return do_import(args, phil=self._phil, configure_logging=configure_logging)
+
+    @staticmethod
+    def print_sequence_diff(*args, **kwargs):
+        return print_sequence_diff(*args, **kwargs)
+
+    @staticmethod
+    def diagnose_multiple_sequences(*args, **kwargs):
+        return diagnose_multiple_sequences(*args, **kwargs)
+
+    @staticmethod
+    def write_experiments(*args, **kwargs):
+        return write_experiments(*args, **kwargs)
+
+    @staticmethod
+    def assert_single_sequence(*args, **kwargs):
+        return assert_single_sequence(*args, **kwargs)
 
 
 if __name__ == "__main__":
