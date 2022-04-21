@@ -6,7 +6,7 @@ import pytest
 
 from cctbx import uctbx
 
-from dials.tests.algorithms.indexing.test_index import run_indexing
+from .test_index import run_indexing
 
 
 @pytest.mark.xfail

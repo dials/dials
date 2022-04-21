@@ -1,0 +1,1 @@
+Fix usage of pytest.approx in a boolean context.
