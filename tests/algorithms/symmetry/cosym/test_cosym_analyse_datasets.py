@@ -72,7 +72,7 @@ def test_cosym(
     use_known_space_group,
     use_known_lattice_group,
     best_monoclinic_beta,
-    run_in_tmpdir,
+    tmp_path,
 ):
     import matplotlib
 

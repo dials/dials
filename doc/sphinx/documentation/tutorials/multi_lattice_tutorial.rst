@@ -34,7 +34,7 @@ find spots using the following commands::
 
   dials.import semisynthetic_multilattice_data/2/ag/trp_ag_*.cbf
 
-  dials.find_spots imported.expt min_spot_size=3 nproc=4
+  dials.find_spots imported.expt min_spot_size=3
 
 During import, all that happens here is that the image headers are read, and a
 file describing their contents (:samp:`imported.expt`) is written. The output
@@ -58,8 +58,7 @@ passed, in this case one sequence of data containing 100 images::
   Writing experiments to imported.expt
 
 For the spot finding, we tweak the minimum spot size (min_spot_size=3) to improve
-the results for this dataset and use multiple processors to speed up the
-spot-finding (nproc=4)::
+the results for this dataset::
 
   Extracted 46332 spots
   Removed 8863 spots with size < 3 pixels

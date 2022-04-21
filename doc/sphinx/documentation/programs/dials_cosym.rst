@@ -56,7 +56,7 @@ analysis. This calculates the functional of equation 2 of
 symmetry operations in the lattice group. The analysis needs to use sufficient
 dimensions to be able to separate any indexing ambiguities that may be present, but
 using too many dimensions reduces the sensitivity of the procedure. In this case, it is
-determined that 3 dimensions will be used for the analysis:
+determined that 8 dimensions will be used for the analysis:
 
 .. dials_tutorial_include:: multi_crystal/dials.cosym.log
    :start-at: Automatic determination of number of dimensions for analysis

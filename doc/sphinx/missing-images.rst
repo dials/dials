@@ -30,7 +30,7 @@ From this point, we could process each block as per the usual tutorial instructi
 The ``reference_from_experiment`` options tells ``dials.combine_experiments`` to take the goniometer, detector and beam models only from the first experiment (although any would have done as these are merely copies of each other). The resulting ``combined.expt`` file has a separate (but identical) crystal model for each scan, alongside shared goniometer, detector and beam models. Scan-varying refinement and integration can now proceed as usual::
 
   dials.refine combined.expt combined.refl scan_varying=true
-  dials.integrate refined.expt refined.refl nproc=4
+  dials.integrate refined.expt refined.refl
 
 Export
 ======
