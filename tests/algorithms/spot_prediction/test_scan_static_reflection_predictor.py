@@ -1,15 +1,20 @@
+from __future__ import annotations
+
 import copy
 import os
 
 import pytest
 
+from dxtbx.model.experiment_list import ExperimentListFactory
+
+from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor
+from dials.array_family import flex
+
 
 class Data:
     def __init__(self, dials_data, dials_regression):
-        from dxtbx.model.experiment_list import ExperimentListFactory
-
         self.experiments = ExperimentListFactory.from_json_file(
-            dials_data("centroid_test_data").join("experiments.json").strpath
+            dials_data("centroid_test_data", pathlib=True) / "experiments.json"
         )
         assert len(self.experiments) == 1
         self.experiments[0].imageset.set_beam(self.experiments[0].beam)
@@ -21,13 +26,9 @@ class Data:
             dials_regression, "prediction_test_data", "expected_reflections.pickle"
         )
 
-        from dials.array_family import flex
-
         self.reflections = flex.reflection_table.from_file(reflection_filename)
 
     def predict_new(self, experiment=None, hkl=None, panel=None):
-        from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor
-
         if experiment is None:
             experiment = self.experiments[0]
         predict = ScanStaticReflectionPredictor(experiment)
@@ -58,8 +59,6 @@ def test_number_of_predictions(data):
 
 
 def test_vs_old(data):
-    from dials.array_family import flex
-
     r_old = data.reflections
     r_new = data.predict_new()
     index1 = flex.size_t(
@@ -87,9 +86,6 @@ def test_vs_old(data):
 
 
 def test_with_old_index_generator(data):
-    from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor
-    from dials.array_family import flex
-
     predict = ScanStaticReflectionPredictor(data.experiments[0])
     r_old = predict.for_ub_old_index_generator(data.experiments[0].crystal.get_A())
     r_new = predict.for_ub(data.experiments[0].crystal.get_A())
@@ -118,9 +114,6 @@ def test_with_old_index_generator(data):
 
 
 def test_with_reflection_table(data):
-    from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor
-    from dials.array_family import flex
-
     r_old = data.reflections
     r_new = flex.reflection_table()
     r_new["miller_index"] = r_old["miller_index"]

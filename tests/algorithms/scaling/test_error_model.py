@@ -2,6 +2,8 @@
 Tests for the error model.
 """
 
+from __future__ import annotations
+
 import math
 
 import numpy as np
@@ -20,7 +22,7 @@ from dials.algorithms.scaling.error_model.error_model import (
 from dials.algorithms.scaling.error_model.error_model_target import ErrorModelTargetB
 from dials.algorithms.scaling.Ih_table import IhTable
 from dials.array_family import flex
-from dials.util.options import OptionParser
+from dials.util.options import ArgumentParser
 
 
 @pytest.fixture()
@@ -43,10 +45,8 @@ def generated_param():
   """,
         process_includes=True,
     )
-    optionparser = OptionParser(phil=phil_scope, check_format=False)
-    parameters, _ = optionparser.parse_args(
-        args=[], quick_parse=True, show_diff_phil=False
-    )
+    parser = ArgumentParser(phil=phil_scope, check_format=False)
+    parameters, _ = parser.parse_args(args=[], quick_parse=True, show_diff_phil=False)
     return parameters
 
 
@@ -109,11 +109,11 @@ def data_for_error_model_test(background_variance=1, multiplicity=100, b=0.05, a
         for _ in range(multiplicity):
             intensity = next(g)
             if b > 0.0:
-                alpha = (1.0 + (b ** 2 * intensity)) ** 0.5
+                alpha = (1.0 + (b**2 * intensity)) ** 0.5
                 intensities.append(int((alpha * intensity) + ((1.0 - alpha) * i)))
             else:
                 intensities.append(intensity)
-            variances.append((intensity + background_variance) / (a ** 2))
+            variances.append((intensity + background_variance) / (a**2))
             miller_index.append(idx)
 
     reflections = flex.reflection_table()

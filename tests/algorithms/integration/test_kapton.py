@@ -1,23 +1,22 @@
+from __future__ import annotations
+
+import procrunner
 import pytest
 
-import libtbx
 from dxtbx.model.experiment_list import ExperimentListFactory
 from libtbx.phil import parse
 
 from dials.array_family import flex
 
 
-def test_kapton(run_in_tmpdir, dials_data):
+def test_kapton(tmp_path, dials_data):
     """Test script for kapton correction applied to integrated data.
     Currently only testing kapton 2019 correction on rayonix-340 at LCLS
     """
-    image_file = (
-        dials_data("lcls_rayonix_kapton").join("hit-20181213155134902.cbf").strpath
-    )
-    mask_file = (
-        dials_data("lcls_rayonix_kapton").join("mask_rayonix340mx_4x4.pickle").strpath
-    )
-    geom_file = dials_data("lcls_rayonix_kapton").join("experiments_000.json").strpath
+    dd = dials_data("lcls_rayonix_kapton", pathlib=True)
+    image_file = dd / "hit-20181213155134902.cbf"
+    mask_file = dd / "mask_rayonix340mx_4x4.pickle"
+    geom_file = dd / "experiments_000.json"
 
     # Create phil files for the two situations being tests
     #  a. without kapton
@@ -66,39 +65,44 @@ def test_kapton(run_in_tmpdir, dials_data):
                        }"""
     )
 
-    with open("params_without_kapton.phil", "w") as fout:
-        fout.write(stills_process_input.as_str())
-        fout.write(
-            "output.integrated_filename=without_kapton.mpack\noutput.integrated_experiments_filename=without_kapton.expt"
-        )
-    with open("params_with_kapton.phil", "w") as fout:
-        fout.write(stills_process_input.as_str() + kapton_input.as_str())
-        fout.write(
-            "output.integrated_filename=with_kapton.mpack\noutput.integrated_experiments_filename=with_kapton.expt"
-        )
+    with_kapton_phil = tmp_path / "params_with_kapton.phil"
+    without_kapton_phil = tmp_path / "params_without_kapton.phil"
 
-    command_without_kapton = "dials.stills_process %s params_without_kapton.phil" % (
-        image_file
+    without_kapton_phil.write_text(
+        stills_process_input.as_str()
+        + "output.integrated_filename=without_kapton.mpack\noutput.integrated_experiments_filename=without_kapton.expt"
     )
-    command_with_kapton = f"dials.stills_process {image_file} params_with_kapton.phil"
+    with_kapton_phil.write_text(
+        stills_process_input.as_str()
+        + kapton_input.as_str()
+        + "output.integrated_filename=with_kapton.mpack\noutput.integrated_experiments_filename=with_kapton.expt"
+    )
 
-    libtbx.easy_run.fully_buffered(
-        command=command_without_kapton, stdout_splitlines=True
-    )  # .raise_if_errors()
-    libtbx.easy_run.fully_buffered(
-        command=command_with_kapton, stdout_splitlines=True
-    )  # .raise_if_errors()
+    command_without_kapton = (
+        "dials.stills_process",
+        image_file,
+        "params_without_kapton.phil",
+    )
+    command_with_kapton = (
+        "dials.stills_process",
+        image_file,
+        "params_with_kapton.phil",
+    )
+    procrunner.run(command_without_kapton, working_directory=tmp_path)
+    procrunner.run(command_with_kapton, working_directory=tmp_path)
 
     # Now compare the 2 experimental results
     # Currently just comparing the median values to get a sense of the effect if the kapton and whether it is being applied correctly
     expt_without_kapton = ExperimentListFactory.from_json_file(
-        "without_kapton.expt", check_format=False
+        tmp_path / "without_kapton.expt", check_format=False
     )
-    refl_without_kapton = flex.reflection_table.from_file("without_kapton.mpack")
+    refl_without_kapton = flex.reflection_table.from_file(
+        tmp_path / "without_kapton.mpack"
+    )
     expt_with_kapton = ExperimentListFactory.from_json_file(
-        "with_kapton.expt", check_format=False
+        tmp_path / "with_kapton.expt", check_format=False
     )
-    refl_with_kapton = flex.reflection_table.from_file("with_kapton.mpack")
+    refl_with_kapton = flex.reflection_table.from_file(tmp_path / "with_kapton.mpack")
 
     without_kapton_medians = []
     with_kapton_medians = []

@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 import random
 
 from cctbx import sgtbx
 from scitbx.array_family import flex
 
 from dials.algorithms.clustering import plots
-from dials.algorithms.clustering.unit_cell import UnitCellCluster
+from dials.algorithms.clustering.unit_cell import cluster_unit_cells
 
 
 def test_plot_uc_histograms():
@@ -27,11 +29,9 @@ def test_scipy_dendrogram_to_plotly_json():
         sgi.any_compatible_crystal_symmetry(volume=random.uniform(990, 1010))
         for i in range(10)
     ]
-    lattice_ids = flex.int_range(0, len(crystal_symmetries)).as_string()
-    ucs = UnitCellCluster.from_crystal_symmetries(
-        crystal_symmetries, lattice_ids=lattice_ids
+    lattice_ids = list(range(len(crystal_symmetries)))
+    result = cluster_unit_cells(crystal_symmetries, lattice_ids)
+    d = plots.scipy_dendrogram_to_plotly_json(
+        result.dendrogram, title="Unit cell clustering"
     )
-    _, dendrogram, _ = ucs.ab_cluster(write_file_lists=False, doplot=False)
-
-    d = plots.scipy_dendrogram_to_plotly_json(dendrogram, title="Unit cell clustering")
     assert set(d) == {"layout", "data"}

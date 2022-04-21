@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 
 import scitbx.matrix
@@ -67,16 +69,16 @@ def test_SymmetryHandler(space_group_symbol):
     crystal_new.get_crystal_symmetry(assert_is_compatible_unit_cell=True)
 
     handler = symmetry.SymmetryHandler(
-        unit_cell=cs.minimum_cell().unit_cell(),
+        unit_cell=cs_min_cell.unit_cell(),
         space_group=sgtbx.space_group(),
     )
-    assert handler.target_symmetry_primitive.unit_cell().parameters() == pytest.approx(
-        cs.minimum_cell().unit_cell().parameters()
+    assert handler.target_symmetry_primitive.unit_cell().volume() == pytest.approx(
+        cs_min_cell.unit_cell().volume()
     )
     assert handler.target_symmetry_primitive.space_group() == sgtbx.space_group("P-1")
     assert (
-        handler.target_symmetry_reference_setting.unit_cell().parameters()
-        == pytest.approx(cs.minimum_cell().unit_cell().parameters())
+        handler.target_symmetry_reference_setting.unit_cell().volume()
+        == pytest.approx(cs_min_cell.unit_cell().volume())
     )
     assert handler.target_symmetry_reference_setting.space_group() == sgtbx.space_group(
         "P-1"

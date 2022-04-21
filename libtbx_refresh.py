@@ -1,49 +1,67 @@
-import sys
+from __future__ import annotations
 
+import contextlib
+import inspect
+import io
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+import libtbx
 import libtbx.pkg_utils
 
+try:
+    import pkg_resources
+except ModuleNotFoundError:
+    pkg_resources = None
+
+# Hack:
+# Other packages, configured first, might attempt to import dials, which
+# would only get a namespace package. This means even just setting the
+# path wouldn't work.
+# So, check to see if we have a namespace package imported, remove it (and
+# any sub-packages), set the __path__, then import the real copy of DIALS.
+#
+# This is probably... not something we want to do, but it allows moving
+# to src/ without drastically changing this part of the setup.
+#
+# If this is *only* dxtbx, then we can probably get away without this by
+# removing this part from dxtbx.
+_dials = sys.modules.get("dials")
+if _dials and _dials.__file__ is None:
+    # Someone tried to import us and got a namespace package
+    _src_path_root = str(Path(libtbx.env.dist_path("dials")).joinpath("src"))
+    del sys.modules["dials"]
+    # Remove any sub-modules that we might have tried and failed to import
+    for _module in [x for x in sys.modules if x.startswith("dials.")]:
+        del sys.modules[_module]
+    # Add the new path at the front of the system paths list
+    sys.path.insert(0, _src_path_root)
+
+# Now, check to see if we configured XFEL first. If so, this is an error and we
+# have a mis-configured environment.
+if xfel_module := libtbx.env.module_dict.get("xfel"):
+    dials_module = libtbx.env.module_dict.get("dials")
+    if libtbx.env.module_list.index(xfel_module) < libtbx.env.module_list.index(
+        dials_module
+    ):
+        sys.exit(
+            """\033[31;1m
+Error:
+    The \033[34mxfel\033[31m module is loaded before the \033[34mdials\033[31m module in the libtbx
+    module list. dials has changed to \033[0;1msrc/\033[1;31m layout, so in order for xfel
+    to continue to find the headers it needs, it must be reconfigured.
+
+    To fix this, please run:
+
+        \033[0;1mlibtbx.configure xfel\033[0m
+
+    \033[31;1mApologies for the inconvenience!\033[0m
+"""
+        )
+
 import dials.precommitbx.nagger
-
-if sys.version_info.major == 2:
-    sys.exit("Python 2 is no longer supported")
-
-libtbx.pkg_utils.define_entry_points(
-    {
-        "dxtbx.profile_model": [
-            "gaussian_rs = dials.extensions.gaussian_rs_profile_model_ext:GaussianRSProfileModelExt"
-        ],
-        "dxtbx.scaling_model_ext": [
-            "physical = dials.algorithms.scaling.model.model:PhysicalScalingModel",
-            "KB = dials.algorithms.scaling.model.model:KBScalingModel",
-            "array = dials.algorithms.scaling.model.model:ArrayScalingModel",
-            "dose_decay = dials.algorithms.scaling.model.model:DoseDecay",
-        ],
-        "dials.index.basis_vector_search": [
-            "fft1d = dials.algorithms.indexing.basis_vector_search:FFT1D",
-            "fft3d = dials.algorithms.indexing.basis_vector_search:FFT3D",
-            "real_space_grid_search = dials.algorithms.indexing.basis_vector_search:RealSpaceGridSearch",
-        ],
-        "dials.index.lattice_search": [
-            "low_res_spot_match = dials.algorithms.indexing.lattice_search:LowResSpotMatch"
-        ],
-        "dials.integration.background": [
-            "Auto = dials.extensions.auto_background_ext:AutoBackgroundExt",
-            "glm = dials.extensions.glm_background_ext:GLMBackgroundExt",
-            "gmodel = dials.extensions.gmodel_background_ext:GModelBackgroundExt",
-            "simple = dials.extensions.simple_background_ext:SimpleBackgroundExt",
-            "null = dials.extensions.null_background_ext:NullBackgroundExt",
-            "median = dials.extensions.median_background_ext:MedianBackgroundExt",
-        ],
-        "dials.integration.centroid": [
-            "simple = dials.extensions.simple_centroid_ext:SimpleCentroidExt"
-        ],
-        "dials.spotfinder.threshold": [
-            "dispersion = dials.extensions.dispersion_spotfinder_threshold_ext:DispersionSpotFinderThresholdExt",
-            "dispersion_extended = dials.extensions.dispersion_extended_spotfinder_threshold_ext:DispersionExtendedSpotFinderThresholdExt",
-        ],
-    }
-)
-
 
 try:
     from dials.util.version import dials_version
@@ -53,6 +71,95 @@ except Exception:
     pass
 
 dials.precommitbx.nagger.nag()
+
+# During src/ transition, this ensures that the old entry points are cleared
+libtbx.pkg_utils.define_entry_points({})
+
+
+def _install_setup_readonly_fallback(package_name: str):
+    """
+    Partially install package in the libtbx build folder.
+    This is a less complete installation - base python console_scripts
+    entrypoints will not be installed, but the basic package metadata
+    and other entrypoints will be enumerable through dispatcher black magic
+    """
+    root_path = libtbx.env.dist_path(package_name)
+    import_path = os.path.join(root_path, "src")
+
+    # Install this into a build/dxtbx subfolder
+    build_path = abs(libtbx.env.build_path / package_name)
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "--prefix",
+            build_path,
+            "--no-build-isolation",
+            "--no-deps",
+            "-e",
+            root_path,
+        ],
+        check=True,
+    )
+
+    # Get the actual environment being configured (NOT libtbx.env)
+    env = _get_real_env_hack_hack_hack()
+
+    # Update the libtbx environment pythonpaths to point to the source
+    # location which now has an .egg-info folder; this will mean that
+    # the PYTHONPATH is written into the libtbx dispatchers
+    rel_path = libtbx.env.as_relocatable_path(import_path)
+    if rel_path not in env.pythonpath:
+        env.pythonpath.insert(0, rel_path)
+
+    # Update the sys.path so that we can find the .egg-info in this process
+    # if we do a full reconstruction of the working set
+    if import_path not in sys.path:
+        sys.path.insert(0, import_path)
+
+    # ...and add to the existing pkg_resources working_set
+    if pkg_resources:
+        pkg_resources.working_set.add_entry(import_path)
+
+    # Add the src/ folder as an extra command_line_locations for dispatchers
+    module = env.module_dict[package_name]
+    if f"src/{package_name}" not in module.extra_command_line_locations:
+        module.extra_command_line_locations.append(f"src/{package_name}")
+
+    # Regenerate dispatchers for this module, and for any other modules
+    # that might depend on it
+    my_index = env.module_list.index(module)
+    with contextlib.redirect_stdout(io.StringIO()):
+        for module in env.module_list[my_index:]:
+            module.process_command_line_directories()
+
+
+def _get_real_env_hack_hack_hack():
+    """
+    Get the real, currently-being-configured libtbx.env environment.
+    This is not libtbx.env, because although libtbx.env_config.environment.cold_start
+    does:
+        self.pickle()
+        libtbx.env = self
+    the first time there is an "import libtbx.load_env" this environment
+    gets replaced by unpickling the freshly-written libtbx_env file onto
+    libtbx.env, thereby making the environment accessed via libtbx.env
+    *not* the actual one that is currently being constructed.
+    So, the only way to get this environment being configured in order
+    to - like - configure it, is to walk the stack trace and extract the
+    self object from environment.refresh directly.
+    """
+    for frame in inspect.stack():
+        if (
+            frame.filename.endswith("env_config.py")
+            and frame.function == "refresh"
+            and "self" in frame.frame.f_locals
+        ):
+            return frame.frame.f_locals["self"]
+
+    raise RuntimeError("Could not determine real libtbx.env_config.environment object")
 
 
 def _create_dials_env_script():
@@ -171,7 +278,7 @@ def _install_dials_autocompletion():
         pass
 
     # Build a list of autocompleteable commands
-    commands_dir = os.path.join(dist_path, "command_line")
+    commands_dir = os.path.join(dist_path, "src", "dials", "command_line")
     command_list = []
     for filename in sorted(os.listdir(commands_dir)):
         if not filename.startswith("_") and filename.endswith(".py"):
@@ -192,7 +299,7 @@ def dispatcher_outer(name):
     return os.path.join(libtbx.env.under_build("bin"), name)\n\n
 def dispatcher_inner(name):
     return os.path.join(
-        libtbx.env.dist_path("dials"), "command_line", "%s.py" % name.partition(".")[2]
+        libtbx.env.dist_path("dials"), "src", "dials", "command_line", "%s.py" % name.partition(".")[2]
     )\n\n
 env.Append(
     BUILDERS={{
@@ -205,7 +312,7 @@ for cmd in [
 ]:
     ac = env.AutoComplete(cmd, [dispatcher_outer(cmd), dispatcher_inner(cmd)])
     Requires(ac, Dir(libtbx.env.under_build("lib")))
-    Depends(ac, os.path.join(libtbx.env.dist_path("dials"), "util", "options.py"))
+    Depends(ac, os.path.join(libtbx.env.dist_path("dials"), "src", "dials", "util", "options.py"))
     Depends(ac, os.path.join(libtbx.env.dist_path("dials"), "util", "autocomplete.sh"))
 """.format(
                 "\n".join([f'    "{cmd}",' for cmd in command_list])
@@ -224,5 +331,7 @@ for cmd in [
         script.write("}\n")
 
 
+# _install_package_setup("dials")
+_install_setup_readonly_fallback("dials")
 _create_dials_env_script()
 _install_dials_autocompletion()

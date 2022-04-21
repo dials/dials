@@ -68,8 +68,9 @@ Find Spots
 
 The first "real" task in any processing using DIALS is the spot finding.
 Since this is looking for spots on every image in the dataset, this process
-can take some time, so we request multiple processors (:samp:`nproc=4`) to
-speed this up:
+can take some time, so DIALS will use multiple processors by default to
+speed this up. Here we have limited it to 4, but feel free to omit this to
+let DIALS make the choice:
 
 .. dials_tutorial_include:: mpro_x0692/dials.find_spots.cmd
 
@@ -246,11 +247,18 @@ Since we didn't know the Bravais lattice before indexing, we can now use
 :doc:`dials.refine_bravais_settings<../programs/dials_refine_bravais_settings>`
 to determine likely candidates. This takes the results of the P1
 autoindexing and runs refinement with all of the possible Bravais
-settings applied, allowing you to choose your preferred solution:
+settings applied, allowing you to choose your preferred solution.
+
+Note that here we set the additional parameter ``best_monoclinic_beta=False``.
+For centred monoclinic systems, there are two alternative settings, C2/m or I2/m, and
+the "conventional" setting would be the setting that gives a beta angle closest to 90°.
+However, previously-published structures for this protein are in the C2 setting, hence
+we set ``best_monoclinic_beta=False`` to force the choice of C2 irrespective of the beta
+angle.
 
 .. dials_tutorial_include:: mpro_x0692/dials.refine_bravais_settings.cmd
 
-giving a table containing scoring data and unit cell for each Bravais
+This generates a table containing scoring data and unit cell for each Bravais
 setting:
 
 .. dials_tutorial_include:: mpro_x0692/dials.refine_bravais_settings.log
@@ -272,8 +280,7 @@ with
 
 In cases where the change of basis operator to the chosen setting is the
 identity operator (:samp:`a,b,c`) we can proceed directly to further
-refinement. However, we notice that the change of basis operator for our
-chosen solution is :samp:`a,-b,-a-b-2*c`, so it is necessary to reindex the
+refinement. However, this is not the case here, so it is necessary to reindex the
 :ref:`indexed.refl <reflection_pickle>` file output by using
 :doc:`dials.reindex<../programs/dials_reindex>`:
 
@@ -602,21 +609,4 @@ command on the scaled datafiles::
 
   dials.export scaled.refl scaled.expt
 
-It is also possible to export the integrated (unscaled) data in mtz
-format using :samp:`dials.export`. If you have an installation of CCP4_, symmetry
-analysis and scaling can then be continued with the ccp4 programs
-pointless_, aimless_ and ctruncate_ to generate a merged mtz file::
-
-  dials.export integrated.refl integrated.expt
-  pointless hklin integrated.mtz hklout sorted.mtz > pointless.log
-  aimless hklin sorted.mtz hklout scaled.mtz > aimless.log << EOF
-  resolution 1.4
-  anomalous off
-  EOF
-  ctruncate -hklin scaled.mtz -hklout truncated.mtz \
-  -colin '/*/*/[IMEAN,SIGIMEAN]' > ctruncate.log
-
-.. _CCP4: http://www.ccp4.ac.uk
 .. _aimless: http://www.ccp4.ac.uk/html/aimless.html
-.. _pointless: http://www.ccp4.ac.uk/html/pointless.html
-.. _ctruncate: http://www.ccp4.ac.uk/html/ctruncate.html

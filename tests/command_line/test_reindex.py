@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 
 import procrunner
@@ -250,7 +252,7 @@ def test_reindex_experiments():
 
 
 def test_reindex_cb_op_exit(dials_data):
-    data_dir = dials_data("insulin_processed")
+    data_dir = dials_data("insulin_processed", pathlib=True)
 
     # Want a SystemExit, rather than an uncaught exception
     with pytest.raises(SystemExit) as e:
@@ -263,3 +265,41 @@ def test_reindex_cb_op_exit(dials_data):
         )
     # Make sure this is the expected error rather than e.g. an argument error
     assert "Unsuitable value" in str(e.value)
+
+
+def test_reindex_reference_multi_crystal(dials_data, tmp_path):
+    mcp = dials_data("multi_crystal_proteinase_k", pathlib=True)
+    args = ["dials.cosym", "space_group=P4"]
+    for i in [1, 2, 3, 4]:
+        args.append(mcp / f"experiments_{i}.json")
+        args.append(mcp / f"reflections_{i}.pickle")
+    result = procrunner.run(args, working_directory=tmp_path)
+    assert not result.returncode and not result.stderr
+    assert tmp_path.joinpath("symmetrized.refl").is_file()
+    assert tmp_path.joinpath("symmetrized.expt").is_file()
+
+    args1 = [
+        "dials.cosym",
+        "space_group=P4",
+        "output.experiments=sub_1.expt",
+        "output.reflections=sub_1.refl",
+    ]
+    for i in [5, 7, 8, 10]:
+        args1.append(mcp / f"experiments_{i}.json")
+        args1.append(mcp / f"reflections_{i}.pickle")
+    result1 = procrunner.run(args1, working_directory=tmp_path)
+    assert not result1.returncode and not result1.stderr
+    assert tmp_path.joinpath("sub_1.expt").is_file()
+    assert tmp_path.joinpath("sub_1.refl").is_file()
+
+    args2 = [
+        "dials.reindex",
+        "symmetrized.refl",
+        "symmetrized.expt",
+        "reference.experiments=sub_1.expt",
+        "reference.reflections=sub_1.refl",
+    ]
+    result2 = procrunner.run(args2, working_directory=tmp_path)
+    assert not result2.returncode and not result2.stderr
+    assert tmp_path.joinpath("reindexed.expt").is_file()
+    assert tmp_path.joinpath("reindexed.refl").is_file()

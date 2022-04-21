@@ -1,13 +1,17 @@
+from __future__ import annotations
+
 import numpy as np
+
+from dxtbx.model.experiment_list import Experiment, ExperimentList
+from dxtbx.serialize import load
+from scitbx import matrix
+
+from dials.algorithms import shoebox
+from dials.algorithms.profile_model.gaussian_rs import Model
+from dials.array_family import flex
 
 
 def predict_reflections(sequence, crystal):
-    from dxtbx.model.experiment_list import Experiment, ExperimentList
-
-    from dials.algorithms import shoebox
-    from dials.algorithms.profile_model.gaussian_rs import Model
-    from dials.array_family import flex
-
     # Get models from the sequence
     beam = sequence.get_beam()
     detector = sequence.get_detector()
@@ -42,17 +46,12 @@ def predict_reflections(sequence, crystal):
 
 
 def test(dials_data):
-    from dxtbx.serialize import load
-
-    from dials.algorithms import shoebox
-    from dials.array_family import flex
-
     # Load the sequence and crystal
     sequence = load.imageset(
-        dials_data("centroid_test_data").join("sweep.json").strpath
+        dials_data("centroid_test_data", pathlib=True) / "sweep.json"
     )
     crystal = load.crystal(
-        dials_data("centroid_test_data").join("crystal.json").strpath
+        str(dials_data("centroid_test_data", pathlib=True) / "crystal.json")
     )
 
     # Get models from the sequence
@@ -95,8 +94,6 @@ def test(dials_data):
 
 def tst_non_overlapping(reflections, non_overlapping, image_size):
     """Ensure non-overlapping reflections have all their values 1."""
-    from dials.algorithms import shoebox
-
     # Check that all elements in non_overlapping masks are 1
     shoeboxes = reflections["shoebox"]
     for i in non_overlapping:
@@ -106,10 +103,6 @@ def tst_non_overlapping(reflections, non_overlapping, image_size):
 
 def tst_overlapping(reflections, overlapping, adjacency_list, image_size):
     """Ensure masks for overlapping reflections are set properly."""
-    from scitbx import matrix
-
-    from dials.algorithms import shoebox
-
     # Loop through all overlaps
     shoeboxes = reflections["shoebox"]
     coord = reflections["xyzcal.px"]

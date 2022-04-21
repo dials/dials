@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import math
 
 import pytest
@@ -11,11 +13,11 @@ from dials.array_family import flex
 def test_scan_margin(dials_data):
 
     # Use 4 scan data for this test
-    data_dir = dials_data("l_cysteine_dials_output")
+    data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
     experiments = ExperimentListFactory.from_json_file(
-        (data_dir / "indexed.expt").strpath, check_format=False
+        data_dir / "indexed.expt", check_format=False
     )
-    reflections = flex.reflection_table.from_file((data_dir / "indexed.refl").strpath)
+    reflections = flex.reflection_table.from_file(data_dir / "indexed.refl")
     orig_phi = reflections["xyzobs.mm.value"].parts()[2]
 
     # Reflection Manager works on predictions, but this dataset has none, so

@@ -1,6 +1,8 @@
 """Setup experimental geometry for refinement test cases"""
 
 
+from __future__ import annotations
+
 import random
 
 from dxtbx.model import BeamFactory, Crystal, DetectorFactory, GoniometerFactory

@@ -91,7 +91,7 @@ steps:
     export DIALS_DATA=${PWD}/data
     export PYTHONDEVMODE=1
     cd modules/dials
-    pytest -v -ra -n auto --basetemp="$(Pipeline.Workspace)/tests" --durations=10 \
+    pytest -v -ra -n auto --basetemp="$(Pipeline.Workspace)/tests" --durations=10 --dist loadgroup\
         --cov=$(pwd) --cov-report=html --cov-report=xml --cov-branch \
         --timeout=5400 --regression || echo "##vso[task.complete result=Failed;]Some tests failed"
   displayName: Run tests

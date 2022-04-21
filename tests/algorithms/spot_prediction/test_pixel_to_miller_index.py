@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 
 
@@ -7,7 +9,7 @@ def test(dials_data):
     from dials.algorithms.spot_prediction import PixelToMillerIndex
     from dials.array_family import flex
 
-    filename = dials_data("centroid_test_data").join("experiments.json").strpath
+    filename = dials_data("centroid_test_data", pathlib=True) / "experiments.json"
 
     experiments = ExperimentListFactory.from_json_file(filename)
 

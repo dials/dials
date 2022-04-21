@@ -27,6 +27,8 @@ Lastly, partials should be correctly handled - being combined if appropriate,
 scaled and filtered below a given value where the values become unreliable.
 """
 
+from __future__ import annotations
+
 from unittest import mock
 
 import pytest
@@ -192,12 +194,10 @@ def test_filtered_arrays_from_experiments_reflections():
 
 
 def test_filtered_arrays_from_experiments_reflections_with_batches(dials_data):
-    x4wide_dir = dials_data("x4wide_processed")
-    refl = flex.reflection_table.from_file(
-        x4wide_dir.join("AUTOMATIC_DEFAULT_scaled.refl").strpath
-    )
+    x4wide_dir = dials_data("x4wide_processed", pathlib=True)
+    refl = flex.reflection_table.from_file(x4wide_dir / "AUTOMATIC_DEFAULT_scaled.refl")
     expts = ExperimentListFactory.from_serialized_format(
-        x4wide_dir.join("AUTOMATIC_DEFAULT_scaled.expt").strpath, check_format=False
+        x4wide_dir / "AUTOMATIC_DEFAULT_scaled.expt", check_format=False
     )
     bad = refl.get_flags(refl.flags.bad_for_scaling, all=False)
     refl.set_flags(~bad, refl.flags.scaled)

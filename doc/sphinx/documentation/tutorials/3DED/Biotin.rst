@@ -6,12 +6,6 @@ Author: Jessica Bruhn, `NanoImaging Services <https://www.nanoimagingservices.co
 
 .. highlight:: none
 
-.. warning::
-
-  This tutorial was prepared using DIALS version 3.5.4, downloaded
-  from :doc:`this site <../../../installation>`. Results may differ with other
-  versions of the software.
-
 General Notes
 =============
 
@@ -116,7 +110,7 @@ Re-import with the correct beam center
 
 .. code-block:: bash
 
-    dials.import ../*.img slow_fast_beam_centre=988,1059 panel.pedestal=980
+    dials.import ../*.img fast_slow_beam_centre=1059,988 panel.pedestal=980
 
 Generate a mask for the beam center (optional)
 ==============================================
@@ -126,8 +120,7 @@ Generate a mask for the beam center (optional)
     dials.generate_mask imported.expt untrusted.circle=1059,988,100
 
 * The first two numbers are the beam center and the second is the
-  diameter of the mask. Note that the beam center values are flipped
-  compared to the import step.
+  diameter of the mask.
 
 Find spots
 ==========
@@ -370,16 +363,16 @@ Repeat this process for the other three datasets.
 Hint, here are the import commands I used for each dataset:
 
 801406_1
-    ``dials.import ../*.img slow_fast_beam_centre=988,1059 panel.pedestal=980``
+    ``dials.import ../*.img fast_slow_beam_centre=1059,988 panel.pedestal=980``
 
 801574_1
-    ``dials.import ../*.img slow_fast_beam_centre=992,1022 panel.pedestal=831``
+    ``dials.import ../*.img fast_slow_beam_centre=1022,992 panel.pedestal=831``
 
 802003_1
-    ``dials.import ../*.img slow_fast_beam_centre=986,1026 panel.pedestal=791``
+    ``dials.import ../*.img fast_slow_beam_centre=1026,986 panel.pedestal=791``
 
 810542_1
-    ``dials.import ../*.img slow_fast_beam_centre=998,1024 panel.pedestal=1619``
+    ``dials.import ../*.img fast_slow_beam_centre=1024,998 panel.pedestal=1619``
 
 Multi-dataset symmetry determination
 ====================================
@@ -439,25 +432,25 @@ to exclude bad frames.
 * Start at the import step and exclude some of the bad frames:
 
 801406_1
-    ``dials.import ../*.img slow_fast_beam_centre=988,1059 panel.pedestal=980 image_range=6,129``
+    ``dials.import ../*.img fast_slow_beam_centre=1059,988 panel.pedestal=980 image_range=6,129``
 
     .. image:: https://dials.github.io/images/Biotin_NIS/scale_plot_exclude_frames_801406_1.png
        :width: 50%
 
 801574_1
-    ``dials.import ../*.img slow_fast_beam_centre=992,1022 panel.pedestal=831 image_range=1,101``
+    ``dials.import ../*.img fast_slow_beam_centre=1022,992 panel.pedestal=831 image_range=1,101``
 
     .. image:: https://dials.github.io/images/Biotin_NIS/scale_plot_exclude_frames_801574_1.png
        :width: 50%
 
 802003_1
-    ``dials.import ../*.img slow_fast_beam_centre=986,1026 panel.pedestal=791 image_range=1,126``
+    ``dials.import ../*.img fast_slow_beam_centre=1026,986 panel.pedestal=791 image_range=1,126``
 
     .. image:: https://dials.github.io/images/Biotin_NIS/scale_plot_exclude_frames_802003_1.png
        :width: 50%
 
 810542_1
-    ``dials.import ../*.img slow_fast_beam_centre=998,1024 panel.pedestal=1619 image_range=3,128``
+    ``dials.import ../*.img fast_slow_beam_centre=1024,998 panel.pedestal=1619 image_range=3,128``
 
     .. image:: https://dials.github.io/images/Biotin_NIS/scale_plot_exclude_frames_810542_1.png
        :width: 50%

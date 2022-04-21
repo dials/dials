@@ -2,6 +2,8 @@
 tests for functions in dials.util.exclude_images.py
 """
 
+from __future__ import annotations
+
 import copy
 from unittest.mock import Mock
 
@@ -32,14 +34,22 @@ def make_scanless_experiment(expid="1"):
 
 def test_parse_exclude_images_commands():
     """Test for namesake function"""
-    commands = [["1:101:200"], ["0:201:300"]]
-    r1 = flex.reflection_table()
-    r1.experiment_identifiers()[1] = "1"
-    r0 = flex.reflection_table()
-    r0.experiment_identifiers()[0] = "0"
-    tables = [r0, r1]
-    ranges = _parse_exclude_images_commands(commands, [], tables)
-    assert ranges == [("1", (101, 200)), ("0", (201, 300))]
+    formats = (
+        [["1:101:200"], ["0:201:300"]],  # if given as separate exclude_images=
+        [["1:101:200,0:201:300"]],  # if given as exclude_images="1:101:200,0:201:300"
+        [
+            ["1:101:200", "0:201:300"]
+        ],  # if given as exclude_images="1:101:200 0:201:300"
+    )
+    for command in formats:
+        r1 = flex.reflection_table()
+        r1.experiment_identifiers()[1] = "1"
+        r0 = flex.reflection_table()
+        r0.experiment_identifiers()[0] = "0"
+        tables = [r0, r1]
+        ranges = _parse_exclude_images_commands(command, [], tables)
+        assert ranges == [("1", (101, 200)), ("0", (201, 300))]
+
     experiments = ["1", "2"]
     short_command = [["101:200"]]
     with pytest.raises(ValueError):

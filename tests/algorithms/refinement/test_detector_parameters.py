@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import random
 import textwrap
 from math import cos, pi, sin, sqrt
@@ -61,10 +63,8 @@ def make_multi_panel(single_panel_detector):
     """Create a 3x3 multi-panel detector filling the same space as
     a supplied single panel detector"""
 
-    from dials.tests.algorithms.refinement.setup_geometry import random_vector_close_to
-    from dials.tests.algorithms.refinement.test_multi_panel_detector_parameterisation import (
-        make_panel_in_array,
-    )
+    from .setup_geometry import random_vector_close_to
+    from .test_multi_panel_detector_parameterisation import make_panel_in_array
 
     multi_panel_detector = Detector()
     for x in range(3):

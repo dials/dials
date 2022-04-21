@@ -1,4 +1,5 @@
-"""Test for the preservation of identifiers in dials processing."""
+from __future__ import annotations
+
 import procrunner
 
 from dxtbx.serialize import load
@@ -6,7 +7,7 @@ from dxtbx.serialize import load
 from dials.array_family import flex
 
 
-def test_preservation_of_identifiers(dials_data, tmpdir):
+def test_for_preservation_of_identifiers_in_dials_processing(dials_data, tmp_path):
     """Run the dials processing workflow, checking for preservation of identifiers.
 
     This is just a simple case. The individual programs that are expected to
@@ -14,18 +15,33 @@ def test_preservation_of_identifiers(dials_data, tmpdir):
     other programs maintain the identifiers through processing.
     """
 
+    imported = tmp_path / "imported.expt"
+    strong_refl = tmp_path / "strong.refl"
+    indexed_expt = tmp_path / "indexed.expt"
+    indexed_refl = tmp_path / "indexed.refl"
+    bravais_expt = tmp_path / "bravais_setting_9.expt"
+    reindexed_expt = tmp_path / "reindexed.expt"
+    reindexed_refl = tmp_path / "reindexed.refl"
+    refined_expt = tmp_path / "refined.expt"
+    refined_refl = tmp_path / "refined.refl"
+    integrated_expt = tmp_path / "integrated.expt"
+    integrated_refl = tmp_path / "integrated.refl"
+    symmetrized_expt = tmp_path / "symmetrized.expt"
+    symmetrized_refl = tmp_path / "symmetrized.refl"
+    scaled_expt = tmp_path / "scaled.expt"
+    scaled_refl = tmp_path / "scaled.refl"
+    tt_expt = tmp_path / "tt.expt"
+
     # First import - should set a unique id.
-    image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
+    image_files = dials_data("centroid_test_data", pathlib=True).glob("centroid*.cbf")
     result = procrunner.run(
-        ["dials.import", "output.experiments=imported.expt"]
-        + [f.strpath for f in image_files],
-        working_directory=tmpdir.strpath,
+        ["dials.import", f"output.experiments={imported.name}"] + sorted(image_files),
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("imported.expt").check(file=1)
 
-    imported_exp_path = tmpdir.join("imported.expt").strpath
-    experiments = load.experiment_list(imported_exp_path)
+    assert imported.is_file()
+    experiments = load.experiment_list(imported)
     import_expt_id = experiments[0].identifier
     assert import_expt_id != ""
 
@@ -34,76 +50,69 @@ def test_preservation_of_identifiers(dials_data, tmpdir):
         [
             "dials.find_spots",
             "nproc=1",
-            imported_exp_path,
-            "output.reflections=strong.refl",
+            imported,
+            f"output.reflections={strong_refl.name}",
         ],
-        working_directory=tmpdir,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("strong.refl").check(file=1)
 
-    strong_refl_path = tmpdir.join("strong.refl").strpath
-    reflections = flex.reflection_table.from_file(strong_refl_path)
+    assert strong_refl.is_file()
+    reflections = flex.reflection_table.from_file(strong_refl)
     assert dict(reflections.experiment_identifiers()) == {0: import_expt_id}
 
     # Now index
     result = procrunner.run(
         [
             "dials.index",
-            strong_refl_path,
-            imported_exp_path,
-            "output.reflections=indexed.refl",
-            "output.experiments=indexed.expt",
+            strong_refl,
+            imported,
+            f"output.reflections={indexed_refl.name}",
+            f"output.experiments={indexed_expt.name}",
         ],
-        working_directory=tmpdir,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("indexed.refl").check(file=1)
-    assert tmpdir.join("indexed.expt").check(file=1)
 
-    indexed_exp_path = tmpdir.join("indexed.expt").strpath
-    experiments = load.experiment_list(indexed_exp_path)
-    indexed_refl_path = tmpdir.join("indexed.refl").strpath
-    reflections = flex.reflection_table.from_file(indexed_refl_path)
+    assert indexed_expt.is_file()
+    assert indexed_refl.is_file()
+    experiments = load.experiment_list(indexed_expt)
+    reflections = flex.reflection_table.from_file(indexed_refl)
 
     indexed_expt_id = experiments[0].identifier
-    assert indexed_expt_id != ""
-
+    assert indexed_expt_id
     assert list(experiments.identifiers()) == [indexed_expt_id]
     assert dict(reflections.experiment_identifiers()) == {0: indexed_expt_id}
 
     # Now refine bravais setting
     result = procrunner.run(
-        ["dials.refine_bravais_settings", indexed_refl_path, indexed_exp_path],
-        working_directory=tmpdir,
+        ["dials.refine_bravais_settings", indexed_refl, indexed_expt],
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("bravais_setting_9.expt").check(file=1)
 
-    bravais_exp_path = tmpdir.join("bravais_setting_9.expt").strpath
-    experiments = load.experiment_list(bravais_exp_path)
+    assert bravais_expt.is_file()
+    experiments = load.experiment_list(bravais_expt)
     assert experiments[0].identifier == indexed_expt_id
 
     # Now reindex
     result = procrunner.run(
         [
             "dials.reindex",
-            indexed_refl_path,
-            indexed_exp_path,
+            indexed_refl,
+            indexed_expt,
             "change_of_basis_op=b,c,a",
-            "output.reflections=reindexed.refl",
-            "output.experiments=reindexed.expt",
+            f"output.reflections={reindexed_refl.name}",
+            f"output.experiments={reindexed_expt.name}",
         ],
-        working_directory=tmpdir,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("reindexed.expt").check(file=1)
-    assert tmpdir.join("reindexed.refl").check(file=1)
 
-    reindexed_exp_path = tmpdir.join("reindexed.expt").strpath
-    experiments = load.experiment_list(reindexed_exp_path)
-    reindexed_refl_path = tmpdir.join("reindexed.refl").strpath
-    reflections = flex.reflection_table.from_file(reindexed_refl_path)
+    assert reindexed_expt.is_file()
+    assert reindexed_refl.is_file()
+    experiments = load.experiment_list(reindexed_expt)
+    reflections = flex.reflection_table.from_file(reindexed_refl)
 
     assert list(experiments.identifiers()) == [indexed_expt_id]
     assert dict(reflections.experiment_identifiers()) == {0: indexed_expt_id}
@@ -112,21 +121,19 @@ def test_preservation_of_identifiers(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.refine",
-            reindexed_refl_path,
-            reindexed_exp_path,
-            "output.reflections=refined.refl",
-            "output.experiments=refined.expt",
+            reindexed_refl,
+            reindexed_expt,
+            f"output.reflections={refined_refl.name}",
+            f"output.experiments={refined_expt.name}",
         ],
-        working_directory=tmpdir,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("refined.expt").check(file=1)
-    assert tmpdir.join("refined.refl").check(file=1)
 
-    refined_exp_path = tmpdir.join("refined.expt").strpath
-    experiments = load.experiment_list(refined_exp_path)
-    refined_refl_path = tmpdir.join("refined.refl").strpath
-    reflections = flex.reflection_table.from_file(refined_refl_path)
+    assert refined_expt.is_file()
+    assert refined_refl.is_file()
+    experiments = load.experiment_list(refined_expt)
+    reflections = flex.reflection_table.from_file(refined_refl)
 
     assert list(experiments.identifiers()) == [indexed_expt_id]
     assert dict(reflections.experiment_identifiers()) == {0: indexed_expt_id}
@@ -136,21 +143,19 @@ def test_preservation_of_identifiers(dials_data, tmpdir):
         [
             "dials.integrate",
             "nproc=1",
-            refined_refl_path,
-            refined_exp_path,
-            "output.reflections=integrated.refl",
-            "output.experiments=integrated.expt",
+            refined_refl,
+            refined_expt,
+            f"output.reflections={integrated_refl.name}",
+            f"output.experiments={integrated_expt.name}",
         ],
-        working_directory=tmpdir,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("integrated.expt").check(file=1)
-    assert tmpdir.join("integrated.refl").check(file=1)
 
-    integrated_exp_path = tmpdir.join("integrated.expt").strpath
-    experiments = load.experiment_list(integrated_exp_path)
-    integrated_refl_path = tmpdir.join("integrated.refl").strpath
-    reflections = flex.reflection_table.from_file(integrated_refl_path)
+    assert integrated_expt.is_file()
+    assert integrated_refl.is_file()
+    experiments = load.experiment_list(integrated_expt)
+    reflections = flex.reflection_table.from_file(integrated_refl)
 
     assert list(experiments.identifiers()) == [indexed_expt_id]
     assert dict(reflections.experiment_identifiers()) == {0: indexed_expt_id}
@@ -159,21 +164,19 @@ def test_preservation_of_identifiers(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.symmetry",
-            integrated_refl_path,
-            integrated_exp_path,
-            "output.reflections=symmetrized.refl",
-            "output.experiments=symmetrized.expt",
+            integrated_refl,
+            integrated_expt,
+            f"output.reflections={symmetrized_refl.name}",
+            f"output.experiments={symmetrized_expt.name}",
         ],
-        working_directory=tmpdir,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("symmetrized.expt").check(file=1)
-    assert tmpdir.join("symmetrized.refl").check(file=1)
 
-    symmetrized_exp_path = tmpdir.join("symmetrized.expt").strpath
-    experiments = load.experiment_list(symmetrized_exp_path)
-    symmetrized_refl_path = tmpdir.join("symmetrized.refl").strpath
-    reflections = flex.reflection_table.from_file(symmetrized_refl_path)
+    assert symmetrized_expt.is_file()
+    assert symmetrized_refl.is_file()
+    experiments = load.experiment_list(symmetrized_expt)
+    reflections = flex.reflection_table.from_file(symmetrized_refl)
 
     assert list(experiments.identifiers()) == [indexed_expt_id]
     assert dict(reflections.experiment_identifiers()) == {0: indexed_expt_id}
@@ -182,21 +185,19 @@ def test_preservation_of_identifiers(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.scale",
-            symmetrized_refl_path,
-            symmetrized_exp_path,
-            "output.reflections=scaled.refl",
-            "output.experiments=scaled.expt",
+            symmetrized_refl,
+            symmetrized_expt,
+            f"output.reflections={scaled_refl.name}",
+            f"output.experiments={scaled_expt.name}",
         ],
-        working_directory=tmpdir,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("scaled.expt").check(file=1)
-    assert tmpdir.join("scaled.refl").check(file=1)
 
-    scaled_exp_path = tmpdir.join("scaled.expt").strpath
-    experiments = load.experiment_list(scaled_exp_path)
-    scaled_refl_path = tmpdir.join("scaled.refl").strpath
-    reflections = flex.reflection_table.from_file(scaled_refl_path)
+    assert scaled_expt.is_file()
+    assert scaled_refl.is_file()
+    experiments = load.experiment_list(scaled_expt)
+    reflections = flex.reflection_table.from_file(scaled_refl)
 
     assert list(experiments.identifiers()) == [indexed_expt_id]
     assert dict(reflections.experiment_identifiers()) == {0: indexed_expt_id}
@@ -205,16 +206,15 @@ def test_preservation_of_identifiers(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.two_theta_refine",
-            scaled_refl_path,
-            scaled_exp_path,
-            "output.experiments=tt.expt",
+            scaled_refl,
+            scaled_expt,
+            f"output.experiments={tt_expt.name}",
         ],
-        working_directory=tmpdir,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("tt.expt").check(file=1)
 
-    tt_exp_path = tmpdir.join("tt.expt").strpath
-    experiments = load.experiment_list(tt_exp_path)
+    assert tt_expt.is_file()
+    experiments = load.experiment_list(tt_expt)
 
     assert list(experiments.identifiers()) == [indexed_expt_id]

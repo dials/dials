@@ -1,0 +1,2 @@
+Remove reference to ``nproc`` in tutorials where it is not needed.
+Also update DPF3 part 2 tutorial to match current output.

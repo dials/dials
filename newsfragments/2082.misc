@@ -1,0 +1,1 @@
+Use ``dxtbx.ext`` for cbf compression/decompression, instead of ``cbflib_adaptbx``.

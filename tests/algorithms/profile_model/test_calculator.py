@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dials.algorithms.profile_model.gaussian_rs.calculator import (
     _select_reflections_for_sigma_calc,
 )

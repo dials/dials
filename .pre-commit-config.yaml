@@ -1,26 +1,58 @@
 repos:
+# Syntax validation and some basic sanity checks
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.1.0
+  hooks:
+  - id: check-merge-conflict
+  - id: check-ast
+    fail_fast: True
+  - id: check-json
+  - id: check-added-large-files
+    args: ['--maxkb=200']
+  - id: check-yaml
+    args: ['--allow-multiple-documents']
+  - id: no-commit-to-branch
+    name: "Don't commit to 'main' directly"
 
 # Automatically sort imports
 - repo: https://github.com/PyCQA/isort
-  rev: 5.9.2
+  rev: 5.10.1
   hooks:
   - id: isort
+    args: [
+           '-a', 'from __future__ import annotations',        # 3.7-3.11
+           '--rm', 'from __future__ import absolute_import',  # -3.0
+           '--rm', 'from __future__ import division',         # -3.0
+           '--rm', 'from __future__ import generator_stop',   # -3.7
+           '--rm', 'from __future__ import generators',       # -2.3
+           '--rm', 'from __future__ import nested_scopes',    # -2.2
+           '--rm', 'from __future__ import print_function',   # -3.0
+           '--rm', 'from __future__ import unicode_literals', # -3.0
+           '--rm', 'from __future__ import with_statement',   # -2.6
+          ]
+    exclude: ^installer/
 
 # Automatic source code formatting
 - repo: https://github.com/psf/black
-  rev: 21.6b0
+  rev: 22.3.0
   hooks:
   - id: black
     args: [--safe, --quiet]
     files: \.pyi?$|SConscript$|^libtbx_config$
     types: [file]
 
+- repo: https://github.com/pre-commit/mirrors-clang-format
+  rev: v13.0.1
+  hooks:
+  - id: clang-format
+    files: \.c(c|pp|xx)?$|\.h(pp)?$
+
 # Linting
 - repo: https://github.com/PyCQA/flake8
-  rev: 3.9.2
+  rev: 4.0.1
   hooks:
   - id: flake8
-    additional_dependencies: ['flake8-comprehensions==3.5.0']
+    additional_dependencies: ['flake8-comprehensions==3.8.0']
 
 # Give a specific warning for added image files
 - repo: local
@@ -32,16 +64,3 @@ repos:
       https://github.com/dials/dials.github.io
     language: fail
     files: '.*\.png$'
-
-# Syntax validation and some basic sanity checks
-- repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.0.1
-  hooks:
-  - id: check-ast
-  - id: check-yaml
-    args: ['--allow-multiple-documents']
-  - id: check-merge-conflict
-  - id: check-added-large-files
-    args: ['--maxkb=200']
-  - id: no-commit-to-branch
-    name: "Don't commit to 'main'"

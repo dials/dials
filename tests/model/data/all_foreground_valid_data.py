@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 data = r"""cdials_array_family_flex_ext
 shoebox
 p1

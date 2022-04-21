@@ -1,9 +1,12 @@
+from __future__ import annotations
+
+
 def test_run(dials_data):
-    experiments = dials_data("centroid_test_data").join("experiments.json")
+    experiments = dials_data("centroid_test_data", pathlib=True) / "experiments.json"
 
     from dxtbx.model.experiment_list import ExperimentListFactory
 
-    experiments = ExperimentListFactory.from_json_file(experiments.strpath)
+    experiments = ExperimentListFactory.from_json_file(str(experiments))
 
     from dials.algorithms.profile_model.modeller import EwaldSphereSampler
 
@@ -32,42 +35,3 @@ def test_run(dials_data):
     assert sorted(sampler.nearest_n(25)) == sorted([9, 25, 26, 56])
     assert sorted(sampler.nearest_n(26)) == sorted([9, 26, 27, 25])
     assert sorted(sampler.nearest_n(56)) == sorted([24, 56, 25, 55])
-
-    # from scitbx import matrix
-    # from math import cos, sin
-    # s0 = matrix.col(beam.get_s0()).normalize()
-    # m2 = matrix.col(goniometer.get_rotation_axis()).normalize()
-    # zaxis = s0
-    # yaxis = zaxis.cross(m2)
-    # xaxis = zaxis.cross(yaxis)
-    # points_x = []
-    # points_y = []
-    # for i in range(len(sampler)):
-    #   a,b,phi = sampler.profile_coord(i)
-    #   x = sin(a)*cos(b)
-    #   y = sin(a)*sin(b)
-    #   z = cos(a)
-    #   s1 = x * xaxis + y*yaxis + z*zaxis
-    #   try:
-    #     px, py = detector[0].get_ray_intersection_px(s1)
-    #     points_x.append(px)
-    #     points_y.append(py)
-    #   except Exception:
-    #     pass
-
-    # width, height = detector[0].get_image_size()
-    # from dials.array_family import flex
-    # image = flex.double(flex.grid(height, width))
-
-    # for j in range(height):
-    #   for i in range(width):
-    #     coord = (i, j, 0.5)
-
-    #     index = sampler.nearest(coord)
-    #     image[j,i] = sampler.weight(index, coord)
-
-    # from matplotlib import pylab
-    # pylab.imshow(image.as_numpy_array())
-    # pylab.colorbar()
-    # pylab.scatter(points_x, points_y)
-    # pylab.show()

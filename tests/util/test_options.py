@@ -2,29 +2,29 @@
 Tests for the functions in dials.util.options
 """
 
+from __future__ import annotations
+
 from unittest.mock import Mock
 
 import pytest
 
 from dxtbx.model import Experiment, ExperimentList
 
-from dials.tests.util import (
-    mock_reflection_file_object,
-    mock_two_reflection_file_object,
-)
 from dials.util import Sorry
 from dials.util.options import (
-    OptionParser,
+    ArgumentParser,
     flatten_reflections,
     reflections_and_experiments_from_files,
 )
 
+from . import mock_reflection_file_object, mock_two_reflection_file_object
+
 
 def test_cannot_read_headerless_h5(dials_data):
-    data_h5 = dials_data("vmxi_thaumatin").join("image_15799_data_000001.h5").strpath
-    parser = OptionParser(read_experiments_from_images=True)
+    data_h5 = dials_data("vmxi_thaumatin", pathlib=True) / "image_15799_data_000001.h5"
+    parser = ArgumentParser(read_experiments_from_images=True)
     with pytest.raises(Sorry):
-        parser.parse_args([data_h5])
+        parser.parse_args([str(data_h5)])
 
 
 def test_flatten_experiments_updating_id_values():

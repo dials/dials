@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import math
 
 from dxtbx.model.experiment_list import ExperimentListFactory
@@ -7,7 +9,7 @@ from dials.algorithms.simulation.reciprocal_space import Simulator
 
 def test_simulation(dials_data):
     experiments = ExperimentListFactory.from_json_file(
-        dials_data("centroid_test_data").join("experiments.json").strpath,
+        dials_data("centroid_test_data", pathlib=True) / "experiments.json",
         check_format=False,
     )
 

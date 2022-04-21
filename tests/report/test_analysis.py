@@ -1,5 +1,7 @@
 """Tests for dials.report.analysis module"""
 
+from __future__ import annotations
+
 from unittest import mock
 
 import pytest
@@ -216,10 +218,9 @@ def test_batch_dependent_properties(batch_array, data_array):
 
 
 def test_table_1_summary(dials_data):
-
-    location = dials_data("l_cysteine_4_sweeps_scaled")
-    expts = load.experiment_list(location.join("scaled_20_25.expt"), check_format=False)
-    refls = flex.reflection_table.from_file(location.join("scaled_20_25.refl"))
+    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    expts = load.experiment_list(location / "scaled_20_25.expt", check_format=False)
+    refls = flex.reflection_table.from_file(location / "scaled_20_25.refl")
     # Get a miller array of real data and calculate an iotbx.merging_statistics
     ma = scaled_data_as_miller_array([refls], expts)
     arr, anom = merging_stats_from_scaled_array(ma)

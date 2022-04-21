@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import math
 
@@ -26,30 +28,27 @@ from dials.util.multi_dataset_handling import assign_unique_identifiers
 from dials.util.phil import parse
 
 
-def test_symmetry_laue_only(dials_data, tmpdir):
+def test_symmetry_laue_only(dials_data, tmp_path):
     """Simple test to check that dials.symmetry completes"""
 
+    lcyst_data = dials_data("l_cysteine_dials_output", pathlib=True)
     result = procrunner.run(
         [
             "dials.symmetry",
-            dials_data("l_cysteine_dials_output") / "20_integrated_experiments.json",
-            dials_data("l_cysteine_dials_output") / "20_integrated.pickle",
-            dials_data("l_cysteine_dials_output") / "25_integrated_experiments.json",
-            dials_data("l_cysteine_dials_output") / "25_integrated.pickle",
+            lcyst_data / "20_integrated_experiments.json",
+            lcyst_data / "20_integrated.pickle",
+            lcyst_data / "25_integrated_experiments.json",
+            lcyst_data / "25_integrated.pickle",
             "systematic_absences.check=False",
         ],
-        working_directory=tmpdir,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("symmetrized.refl").check()
-    assert tmpdir.join("symmetrized.expt").check()
-    exps = load.experiment_list(
-        tmpdir.join("symmetrized.expt").strpath, check_format=False
-    )
+    assert tmp_path.joinpath("symmetrized.refl").is_file()
+    assert tmp_path.joinpath("symmetrized.expt").is_file()
+    exps = load.experiment_list(tmp_path / "symmetrized.expt", check_format=False)
     assert str(exps[0].crystal.get_space_group().info()) == "P 2 2 2"
-    joint_reflections = flex.reflection_table.from_file(
-        tmpdir.join("symmetrized.refl").strpath
-    )
+    joint_reflections = flex.reflection_table.from_file(tmp_path / "symmetrized.refl")
     # check that there are 2 unique id and imageset_ids, and that these
     # correctly correspond to each experiment
     assert len(set(joint_reflections["id"])) == 2
@@ -59,7 +58,7 @@ def test_symmetry_laue_only(dials_data, tmpdir):
         assert set(joint_reflections["imageset_id"].select(sel)) == {id_}
 
 
-def test_symmetry_basis_changes_for_C2(run_in_tmpdir):
+def test_symmetry_basis_changes_for_C2(tmp_path):
     """Test the correctness of change of basis operations in dials.symmetry
 
     Supply the unit cell of beta-lactamase, which triggers a change of
@@ -72,29 +71,33 @@ def test_symmetry_basis_changes_for_C2(run_in_tmpdir):
         sample_size=1,
         map_to_minimum=False,
     )
-    experiments.as_json("tmp.expt")
-    expt_file = run_in_tmpdir.join("tmp.expt").strpath
+    experiments.as_json(tmp_path / "tmp.expt")
     joint_table = flex.reflection_table()
     for r in reflections:
         joint_table.extend(r)
-    joint_table.as_file("tmp.refl")
-    refl_file = run_in_tmpdir.join("tmp.refl").strpath
+    joint_table.as_file(tmp_path / "tmp.refl")
 
-    command = ["dials.symmetry", expt_file, refl_file, "json=symmetry.json"]
-    result = procrunner.run(command, working_directory=run_in_tmpdir)
-    assert not result.returncode and not result.stderr
-    assert run_in_tmpdir.join("symmetrized.refl").check(file=1)
-    assert run_in_tmpdir.join("symmetrized.expt").check(file=1)
-
-    expts = load.experiment_list(
-        run_in_tmpdir.join("symmetrized.expt").strpath, check_format=False
+    result = procrunner.run(
+        [
+            "dials.symmetry",
+            tmp_path / "tmp.expt",
+            tmp_path / "tmp.refl",
+            "json=symmetry.json",
+        ],
+        working_directory=tmp_path,
     )
+    assert not result.returncode and not result.stderr
+    assert tmp_path.joinpath("symmetrized.refl").is_file()
+    symmetrized_expt_file = tmp_path / "symmetrized.expt"
+    assert symmetrized_expt_file.is_file()
+
+    expts = load.experiment_list(symmetrized_expt_file, check_format=False)
     for v, expected in zip(expts[0].crystal.get_unit_cell().parameters(), unit_cell):
         assert v == pytest.approx(expected)
 
     # Using the change of basis ops from the json output we should be able to
     # reindex the input experiments to match the output experiments
-    with run_in_tmpdir.join("symmetry.json").open() as f:
+    with tmp_path.joinpath("symmetry.json").open() as f:
         d = json.load(f)
     cs = experiments[0].crystal.get_crystal_symmetry()
     cb_op_inp_min = sgtbx.change_of_basis_op(str(d["cb_op_inp_min"][0]))
@@ -108,12 +111,13 @@ def test_symmetry_basis_changes_for_C2(run_in_tmpdir):
 def test_symmetry_with_absences(dials_data, tmpdir, option):
     """Simple test to check that dials.symmetry, with absences, completes"""
 
+    lcyst_data = dials_data("l_cysteine_dials_output", pathlib=True)
     cmd = [
         "dials.symmetry",
-        dials_data("l_cysteine_dials_output") / "20_integrated_experiments.json",
-        dials_data("l_cysteine_dials_output") / "20_integrated.pickle",
-        dials_data("l_cysteine_dials_output") / "25_integrated_experiments.json",
-        dials_data("l_cysteine_dials_output") / "25_integrated.pickle",
+        lcyst_data / "20_integrated_experiments.json",
+        lcyst_data / "20_integrated.pickle",
+        lcyst_data / "25_integrated_experiments.json",
+        lcyst_data / "25_integrated.pickle",
     ]
     if option:
         cmd.append(option)
@@ -128,27 +132,26 @@ def test_symmetry_with_absences(dials_data, tmpdir, option):
     assert str(expts[0].crystal.get_space_group().info()) == "P 21 21 21"
 
 
-def test_symmetry_with_laue_group_override(dials_data, tmpdir):
+def test_symmetry_with_laue_group_override(dials_data, tmp_path):
     """Simple test to check that dials.symmetry, with overridden laue group, completes"""
 
+    lcyst_data = dials_data("l_cysteine_dials_output", pathlib=True)
     result = procrunner.run(
         [
             "dials.symmetry",
             "laue_group=P121",
             "change_of_basis_op=-b,-a,-c",
-            dials_data("l_cysteine_dials_output") / "20_integrated_experiments.json",
-            dials_data("l_cysteine_dials_output") / "20_integrated.pickle",
-            dials_data("l_cysteine_dials_output") / "25_integrated_experiments.json",
-            dials_data("l_cysteine_dials_output") / "25_integrated.pickle",
+            lcyst_data / "20_integrated_experiments.json",
+            lcyst_data / "20_integrated.pickle",
+            lcyst_data / "25_integrated_experiments.json",
+            lcyst_data / "25_integrated.pickle",
         ],
-        working_directory=tmpdir,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("symmetrized.refl").check()
-    assert tmpdir.join("symmetrized.expt").check()
-    expts = load.experiment_list(
-        tmpdir.join("symmetrized.expt").strpath, check_format=False
-    )
+    assert tmp_path.joinpath("symmetrized.refl").is_file()
+    assert tmp_path.joinpath("symmetrized.expt").is_file()
+    expts = load.experiment_list(tmp_path / "symmetrized.expt", check_format=False)
     assert str(expts[0].crystal.get_space_group().info()) == "P 1 21 1"
     # Verify that the unit cell has been reindexed correctly
     assert expts[0].crystal.get_unit_cell().parameters() == pytest.approx(
@@ -156,30 +159,28 @@ def test_symmetry_with_laue_group_override(dials_data, tmpdir):
     )
 
 
-def test_symmetry_absences_only(dials_data, tmpdir):
+def test_symmetry_absences_only(dials_data, tmp_path):
     """Test the command line script with real data. Proteinase K in P41"""
-    location = dials_data("vmxi_proteinase_k_sweeps")
+    location = dials_data("vmxi_proteinase_k_sweeps", pathlib=True)
 
-    command = ["dials.symmetry", "laue_group=None"]
-    command.append(location.join("experiments_0.json").strpath)
-    command.append(location.join("reflections_0.pickle").strpath)
-
-    result = procrunner.run(command, working_directory=tmpdir)
+    command = [
+        "dials.symmetry",
+        "laue_group=None",
+        location / "experiments_0.json",
+        location / "reflections_0.pickle",
+    ]
+    result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("dials.symmetry.html").check()
-    assert tmpdir.join("symmetrized.expt").check()
-    exps = load.experiment_list(
-        tmpdir.join("symmetrized.expt").strpath, check_format=False
-    )
+    assert tmp_path.joinpath("dials.symmetry.html").is_file()
+    assert tmp_path.joinpath("symmetrized.expt").is_file()
+    exps = load.experiment_list(tmp_path / "symmetrized.expt", check_format=False)
     assert str(exps[0].crystal.get_space_group().info()) == "P 41"
 
     # Now try with a d_min
     command += ["d_min=4.0"]
-    result = procrunner.run(command, working_directory=tmpdir)
+    result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
-    exps = load.experiment_list(
-        tmpdir.join("symmetrized.expt").strpath, check_format=False
-    )
+    exps = load.experiment_list(tmp_path / "symmetrized.expt", check_format=False)
     assert str(exps[0].crystal.get_space_group().info()) == "P 41"
 
 
@@ -232,15 +233,11 @@ def test_map_to_minimum_cell():
     )
     cb_ops_as_xyz = [cb_op.as_xyz() for cb_op in cb_ops]
     # Actual cb_ops are machine dependent (sigh)
-    assert (
-        cb_ops_as_xyz
-        == [
-            "-x+y,-2*y,z",
-            "-x+z,-z,-y",
-            "x+y,-2*x,z",
-        ]
-        or cb_ops_as_xyz == ["x-y,2*y,z", "x-z,z,-y", "-x-y,2*x,z"]
-    )
+    assert cb_ops_as_xyz == [
+        "-x+y,-2*y,z",
+        "-x+z,-z,-y",
+        "x+y,-2*x,z",
+    ] or cb_ops_as_xyz == ["x-y,2*y,z", "x-z,z,-y", "-x-y,2*x,z"]
 
     expts_min, reflections = apply_change_of_basis_ops(expts, reflections, cb_ops)
     # Verify that the unit cells have been transformed as expected
@@ -502,7 +499,7 @@ def test_eliminate_sys_absent():
     ]
 
 
-def test_few_reflections(dials_data, run_in_tmpdir):
+def test_few_reflections(dials_data, run_in_tmp_path):
     """
     Test that dials.symmetry does something sensible if given few reflections.
 
@@ -518,7 +515,7 @@ def test_few_reflections(dials_data, run_in_tmpdir):
     params = symmetry.phil_scope.fetch(source=parse("")).extract()
 
     # Use the integrated data from the first ten images of the first sweep.
-    data_dir = dials_data("l_cysteine_dials_output")
+    data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
     experiments = ExperimentList.from_file(data_dir / "11_integrated.expt")
     reflections = [flex.reflection_table.from_file(data_dir / "11_integrated.refl")]
 

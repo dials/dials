@@ -10,6 +10,8 @@ cctbx.python tst_orientation_refinement.py \
 """
 
 
+from __future__ import annotations
+
 import sys
 
 
@@ -30,9 +32,6 @@ def test(args=[]):
     from scitbx import matrix
     from scitbx.array_family import flex
 
-    # Get modules to build models and minimiser using PHIL
-    import dials.tests.algorithms.refinement.setup_geometry as setup_geometry
-    import dials.tests.algorithms.refinement.setup_minimiser as setup_minimiser
     from dials.algorithms.refinement.parameterisation.beam_parameters import (
         BeamParameterisation,
     )
@@ -64,17 +63,14 @@ def test(args=[]):
     # Reflection prediction
     from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
 
+    # Get modules to build models and minimiser using PHIL
+    from . import geometry_phil, minimiser_phil, setup_geometry, setup_minimiser
+
     #############################
     # Setup experimental models #
     #############################
 
-    master_phil = parse(
-        """
-      include scope dials.tests.algorithms.refinement.geometry_phil
-      include scope dials.tests.algorithms.refinement.minimiser_phil
-      """,
-        process_includes=True,
-    )
+    master_phil = parse(f"{geometry_phil}\n{minimiser_phil}")
 
     models = setup_geometry.Extract(master_phil, cmdline_args=args)
 

@@ -6,6 +6,8 @@ ensuring the results are the same.
 """
 
 
+from __future__ import annotations
+
 from collections import namedtuple
 from math import pi
 
@@ -20,8 +22,6 @@ from libtbx.test_utils import approx_equal
 from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enlarge
 from scitbx import matrix
 
-import dials.tests.algorithms.refinement.setup_geometry as setup_geometry
-import dials.tests.algorithms.refinement.setup_minimiser as setup_minimiser
 from dials.algorithms.refinement.parameterisation.beam_parameters import (
     BeamParameterisation,
 )
@@ -47,6 +47,8 @@ from dials.algorithms.refinement.target import (
 )
 from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
 from dials.array_family import flex
+
+from . import geometry_phil, minimiser_phil, setup_geometry, setup_minimiser
 
 
 def make_panel_in_array(array_elt, reference_panel):
@@ -78,11 +80,10 @@ def make_panel_in_array(array_elt, reference_panel):
 
 # Setup experimental models
 master_phil = parse(
+    f"""
+    {geometry_phil}
+    {minimiser_phil}
     """
-    include scope dials.tests.algorithms.refinement.geometry_phil
-    include scope dials.tests.algorithms.refinement.minimiser_phil
-    """,
-    process_includes=True,
 )
 
 

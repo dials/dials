@@ -1,14 +1,12 @@
-"""
-Test standalone error model refinement on scaled data
-"""
+from __future__ import annotations
+
 import procrunner
 
 
-def test_refine_error_model(dials_data, tmpdir):
-    """Test the program on scaled data."""
-    location = dials_data("l_cysteine_4_sweeps_scaled")
-    refls = location.join("scaled_20_25.refl")
-    expts = location.join("scaled_20_25.expt")
+def test_standalone_error_model_refinement_on_scaled_data(dials_data, tmp_path):
+    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    refls = location / "scaled_20_25.refl"
+    expts = location / "scaled_20_25.expt"
 
     # Use a range of options, some default.
     command = [
@@ -22,7 +20,7 @@ def test_refine_error_model(dials_data, tmpdir):
         "basic.minimisation=individual",
     ]
 
-    result = procrunner.run(command, working_directory=tmpdir.strpath)
+    result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("error_model.html").check(file=1)
-    assert tmpdir.join("error_model.json").check(file=1)
+    assert tmp_path.joinpath("error_model.html").is_file()
+    assert tmp_path.joinpath("error_model.json").is_file()

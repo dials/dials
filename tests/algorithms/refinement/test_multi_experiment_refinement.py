@@ -2,6 +2,8 @@
 A simple test of refinement using two crystals.
 """
 
+from __future__ import annotations
+
 from math import pi
 
 from cctbx.sgtbx import space_group, space_group_symbols
@@ -14,7 +16,6 @@ from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enl
 from scitbx import matrix
 from scitbx.array_family import flex
 
-import dials.tests.algorithms.refinement.setup_geometry as setup_geometry
 from dials.algorithms.refinement.parameterisation.beam_parameters import (
     BeamParameterisation,
 )
@@ -32,6 +33,8 @@ from dials.algorithms.refinement.prediction.managed_predictors import (
 from dials.algorithms.refinement.refiner import RefinerFactory, phil_scope
 from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
 
+from . import geometry_phil, minimiser_phil, setup_geometry
+
 
 def test(args=[]):
 
@@ -39,13 +42,7 @@ def test(args=[]):
     # Setup experimental models #
     #############################
 
-    master_phil = parse(
-        """
-        include scope dials.tests.algorithms.refinement.geometry_phil
-        include scope dials.tests.algorithms.refinement.minimiser_phil
-        """,
-        process_includes=True,
-    )
+    master_phil = parse(f"{geometry_phil}\n{minimiser_phil}")
 
     models = setup_geometry.Extract(
         master_phil,

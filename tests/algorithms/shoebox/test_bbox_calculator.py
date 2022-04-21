@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import math
 import random
 
@@ -15,7 +17,7 @@ from dials.algorithms.profile_model.gaussian_rs import (
 @pytest.fixture
 def setup(dials_data):
     sequence = load.imageset(
-        dials_data("centroid_test_data").join("sweep.json").strpath
+        dials_data("centroid_test_data", pathlib=True) / "sweep.json"
     )
 
     fixture = {}
@@ -54,7 +56,6 @@ def test_outer_bounds(setup):
     zrange = setup["scan"].get_array_range()
 
     for i in range(1000):
-
         # Get random x, y, z
         x = random.uniform(0, 2000)
         y = random.uniform(0, 2000)
@@ -134,7 +135,6 @@ def test_radius(setup):
     radius12 = setup["delta_divergence"]
 
     for i in range(1000):
-
         # Get random x, y, z
         x = random.uniform(0, 2000)
         y = random.uniform(0, 2000)
@@ -163,8 +163,8 @@ def test_radius(setup):
             e11, e21, e31 = xcs.from_beam_vector_and_rotation_angle(sdash1, phi)
             e12, e22, e31 = xcs.from_beam_vector_and_rotation_angle(sdash2, phi)
             if bbox[0] > 0 and bbox[1] < width:
-                assert math.sqrt(e11 ** 2 + e21 ** 2) >= radius12
-                assert math.sqrt(e12 ** 2 + e22 ** 2) >= radius12
+                assert math.sqrt(e11**2 + e21**2) >= radius12
+                assert math.sqrt(e12**2 + e22**2) >= radius12
 
         # Check horizontal edges
         for i in range(bbox[0], bbox[1] + 1):
@@ -175,5 +175,5 @@ def test_radius(setup):
             e11, e21, e32 = xcs.from_beam_vector_and_rotation_angle(sdash1, phi)
             e12, e22, e32 = xcs.from_beam_vector_and_rotation_angle(sdash2, phi)
             if bbox[2] > 0 and bbox[3] < height:
-                assert math.sqrt(e11 ** 2 + e21 ** 2) >= radius12
-                assert math.sqrt(e12 ** 2 + e22 ** 2) >= radius12
+                assert math.sqrt(e11**2 + e21**2) >= radius12
+                assert math.sqrt(e12**2 + e22**2) >= radius12

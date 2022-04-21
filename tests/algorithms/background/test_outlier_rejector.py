@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import random
 
 from dials.algorithms.background.simple import (

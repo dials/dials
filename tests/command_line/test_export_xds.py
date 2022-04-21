@@ -1,11 +1,15 @@
+from __future__ import annotations
+
 import procrunner
 
+from dials.array_family import flex
 
-def test_spots_xds(tmpdir):
+
+def test_spots_xds(tmp_path):
     xds_input = "SPOT.XDS"
     output_pickle = "spot.refl"
 
-    tmpdir.join(xds_input).write(
+    tmp_path.joinpath(xds_input).write_text(
         """\
  2411.40 1000.70 25.00 16384. 0 0 0
  1328.60 2170.40 20.57 7326. 0 0 0
@@ -28,27 +32,25 @@ def test_spots_xds(tmpdir):
             "output.filename=" + output_pickle,
             "remove_invalid=True",
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join(output_pickle).check(file=1)
+    assert tmp_path.joinpath(output_pickle).is_file()
 
-    from dials.array_family import flex
-
-    reflections = flex.reflection_table.from_file(tmpdir.join(output_pickle).strpath)
+    reflections = flex.reflection_table.from_file(tmp_path / output_pickle)
     assert len(reflections) == 5
 
-    tmpdir.join(xds_input).remove()
-    assert not tmpdir.join(xds_input).check()
+    tmp_path.joinpath(xds_input).unlink()
+    assert not tmp_path.joinpath(xds_input).exists()
 
     # now test we can export it again
     result = procrunner.run(
-        ["dials.export", "format=xds", output_pickle], working_directory=tmpdir.strpath
+        ["dials.export", "format=xds", output_pickle], working_directory=tmp_path
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("xds", "SPOT.XDS").check(file=1)
+    assert tmp_path.joinpath("xds", "SPOT.XDS").is_file()
 
-    txt = tmpdir.join("xds", "SPOT.XDS").read()
+    txt = tmp_path.joinpath("xds", "SPOT.XDS").read_text()
     assert [line.strip() for line in txt.split("\n")] == [
         line.strip()
         for line in """\
@@ -63,59 +65,56 @@ def test_spots_xds(tmpdir):
     ]
 
 
-def test_export_xds(dials_data, tmpdir):
+def test_export_xds(dials_data, tmp_path):
+    experiment = dials_data("centroid_test_data", pathlib=True) / "experiments.json"
     result = procrunner.run(
-        [
-            "dials.find_spots",
-            "nproc=1",
-            dials_data("centroid_test_data").join("experiments.json").strpath,
-        ],
-        working_directory=tmpdir.strpath,
+        ["dials.find_spots", "nproc=1", experiment], working_directory=tmp_path
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("strong.refl").check(file=1)
+    assert tmp_path.joinpath("strong.refl").is_file()
 
     result = procrunner.run(
         [
             "dials.export",
             "format=xds",
-            dials_data("centroid_test_data").join("experiments.json").strpath,
+            experiment,
             "strong.refl",
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("xds", "XDS.INP").check(file=1)
-    assert tmpdir.join("xds", "XPARM.XDS").check(file=1)
-    assert tmpdir.join("xds", "SPOT.XDS").check(file=1)
+    assert tmp_path.joinpath("xds", "XDS.INP").is_file()
+    assert tmp_path.joinpath("xds", "XPARM.XDS").is_file()
+    assert tmp_path.joinpath("xds", "SPOT.XDS").is_file()
 
-    tmpdir.join("xds", "XDS.INP").remove()
-    tmpdir.join("xds", "XPARM.XDS").remove()
-    assert not tmpdir.join("xds", "XDS.INP").check(file=1)
-    assert not tmpdir.join("xds", "XPARM.XDS").check(file=1)
+    tmp_path.joinpath("xds", "XDS.INP").unlink()
+    tmp_path.joinpath("xds", "XPARM.XDS").unlink()
+    assert not tmp_path.joinpath("xds", "XDS.INP").is_file()
+    assert not tmp_path.joinpath("xds", "XPARM.XDS").is_file()
     result = procrunner.run(
         [
             "dials.export",
             "format=xds",
-            dials_data("centroid_test_data").join("experiments.json").strpath,
+            experiment,
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("xds", "XDS.INP").check(file=1)
-    assert tmpdir.join("xds", "XPARM.XDS").check(file=1)
+    assert tmp_path.joinpath("xds", "XDS.INP").is_file()
+    assert tmp_path.joinpath("xds", "XPARM.XDS").is_file()
 
 
-def test_export_imported_experiments(dials_data, tmpdir):
+def test_export_imported_experiments(dials_data, tmp_path):
     result = procrunner.run(
         [
             "dials.export",
             "format=xds",
-            dials_data("centroid_test_data").join("imported_experiments.json").strpath,
+            dials_data("centroid_test_data", pathlib=True)
+            / "imported_experiments.json",
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("xds", "XDS.INP").check(file=1)
-    assert not tmpdir.join("xds", "XPARM.XDS").check(file=1)
-    assert not tmpdir.join("xds", "SPOT.XDS").check(file=1)
+    assert tmp_path.joinpath("xds", "XDS.INP").is_file()
+    assert not tmp_path.joinpath("xds", "XPARM.XDS").is_file()
+    assert not tmp_path.joinpath("xds", "SPOT.XDS").is_file()

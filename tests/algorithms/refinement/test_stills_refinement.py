@@ -4,6 +4,9 @@ Only the crystal is perturbed while the beam and detector are known.
 """
 
 
+from __future__ import annotations
+
+
 def test(args=[]):
     # Python and cctbx imports
     from math import pi
@@ -21,9 +24,6 @@ def test(args=[]):
     from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enlarge
     from scitbx import matrix
 
-    # Get module to build models using PHIL
-    import dials.tests.algorithms.refinement.setup_geometry as setup_geometry
-
     # Crystal parameterisations
     from dials.algorithms.refinement.parameterisation.crystal_parameters import (
         CrystalOrientationParameterisation,
@@ -40,17 +40,14 @@ def test(args=[]):
     # Import for surgery on reflection_tables
     from dials.array_family import flex
 
+    # Get module to build models using PHIL
+    from . import geometry_phil, minimiser_phil, setup_geometry
+
     #############################
     # Setup experimental models #
     #############################
 
-    master_phil = parse(
-        """
-      include scope dials.tests.algorithms.refinement.geometry_phil
-      include scope dials.tests.algorithms.refinement.minimiser_phil
-      """,
-        process_includes=True,
-    )
+    master_phil = parse(f"{geometry_phil}\n{minimiser_phil}")
 
     # build models, with a larger crystal than default in order to get enough
     # reflections on the 'still' image

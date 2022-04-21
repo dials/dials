@@ -2,12 +2,14 @@
 Tests for the constraints system used in refinement
 """
 
+from __future__ import annotations
 
-import os
 from copy import deepcopy
+from pathlib import Path
+
+import procrunner
 
 from dxtbx.model.experiment_list import ExperimentListFactory
-from libtbx import easy_run
 from libtbx.test_utils import approx_equal
 from scitbx import sparse
 
@@ -108,7 +110,7 @@ def test_contraints_manager_simple_test():
     assert constr_dL_dp[6] == dL_dp[5] + dL_dp[6] + dL_dp[7]
 
 
-def test_constrained_refinement(dials_regression, run_in_tmpdir):
+def test_constrained_refinement(dials_regression, tmp_path):
     """Test joint refinement where two detectors are constrained to enforce a
     differential distance (along the shared initial normal vector) of 1 mm.
     This test can be constructed on the fly from data already in
@@ -118,9 +120,9 @@ def test_constrained_refinement(dials_regression, run_in_tmpdir):
     # useful because the detector has fast and slow exactly aligned with X, -Y
     # so the distance is exactly along the normal vector and can be altered
     # directly by changing the Z component of the origin vector
-    data_dir = os.path.join(dials_regression, "refinement_test_data", "centroid")
-    experiments_path = os.path.join(data_dir, "experiments_XPARM_REGULARIZED.json")
-    pickle_path = os.path.join(data_dir, "spot_1000_xds.pickle")
+    data_dir = Path(dials_regression) / "refinement_test_data" / "centroid"
+    experiments_path = data_dir / "experiments_XPARM_REGULARIZED.json"
+    pickle_path = data_dir / "spot_1000_xds.pickle"
 
     # load the experiments and spots
     el = ExperimentListFactory.from_json_file(experiments_path, check_format=False)
@@ -145,7 +147,7 @@ def test_constrained_refinement(dials_regression, run_in_tmpdir):
 
     # append to the experiment list and write out
     el.append(e2)
-    el.as_json("foo.expt")
+    el.as_json(tmp_path / "foo.expt")
 
     # duplicate the reflections and increment the experiment id
     rt2 = deepcopy(rt)
@@ -153,19 +155,27 @@ def test_constrained_refinement(dials_regression, run_in_tmpdir):
 
     # concatenate reflections and write out
     rt.extend(rt2)
-    rt.as_file("foo.refl")
+    rt.as_file(tmp_path / "foo.refl")
 
     # set up refinement, constraining the distance parameter
-    cmd = (
-        "dials.refine foo.expt foo.refl "
-        "history=history.json refinement.parameterisation.detector."
-        "constraints.parameter=Dist scan_varying=False"
+    result = procrunner.run(
+        (
+            "dials.refine",
+            "foo.expt",
+            "foo.refl",
+            "history=history.json",
+            "refinement.parameterisation.detector.constraints.parameter=Dist",
+            "scan_varying=False",
+        ),
+        working_directory=tmp_path,
     )
-    easy_run.fully_buffered(command=cmd).raise_if_errors()
+    assert result.returncode == 0 and not result.stderr
 
     # load refinement history
-    history = Journal.from_json_file("history.json")
-    ref_exp = ExperimentListFactory.from_json_file("refined.expt", check_format=False)
+    history = Journal.from_json_file(tmp_path / "history.json")
+    ref_exp = ExperimentListFactory.from_json_file(
+        tmp_path / "refined.expt", check_format=False
+    )
 
     # we expect 8 steps of constrained refinement
     assert history.get_nrows() == 8

@@ -3,7 +3,9 @@ Test refinement of multiple narrow sequences.
 """
 
 
-import os
+from __future__ import annotations
+
+from pathlib import Path
 
 import procrunner
 import pytest
@@ -14,10 +16,8 @@ from scitbx import matrix
 from dials.algorithms.refinement.engine import Journal
 
 
-def test(dials_regression, run_in_tmpdir):
-    data_dir = os.path.join(
-        dials_regression, "refinement_test_data", "multi_narrow_wedges"
-    )
+def test(dials_regression, tmp_path):
+    data_dir = Path(dials_regression) / "refinement_test_data" / "multi_narrow_wedges"
 
     selection = (2, 3, 4, 5, 6, 7, 9, 11, 12, 13, 14, 17, 18, 19, 20)
 
@@ -37,7 +37,8 @@ def test(dials_regression, run_in_tmpdir):
         + [
             f"reflections={data_dir}/data/sweep_%03d/reflections.pickle" % n
             for n in selection
-        ]
+        ],
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
 
@@ -53,18 +54,19 @@ def test(dials_regression, run_in_tmpdir):
             "scan_varying=false",
             "outlier.algorithm=null",
             "close_to_spindle_cutoff=0.05",
-        ]
+        ],
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
 
     refined_experiments = ExperimentListFactory.from_json_file(
-        "refined.expt", check_format=False
+        tmp_path / "refined.expt", check_format=False
     )
 
     # Check results are as expected
 
     regression_experiments = ExperimentListFactory.from_json_file(
-        os.path.join(data_dir, "regression_experiments.json"), check_format=False
+        data_dir / "regression_experiments.json", check_format=False
     )
 
     for e1, e2 in zip(refined_experiments, regression_experiments):
@@ -76,13 +78,11 @@ def test(dials_regression, run_in_tmpdir):
         assert s0_1.accute_angle(s0_2, deg=True) < 0.0057  # ~0.1 mrad
 
 
-def test_order_invariance(dials_regression, run_in_tmpdir):
+def test_order_invariance(dials_regression, tmp_path):
     """Check that the order that datasets are included in refinement does not
     matter"""
 
-    data_dir = os.path.join(
-        dials_regression, "refinement_test_data", "multi_narrow_wedges"
-    )
+    data_dir = Path(dials_regression) / "refinement_test_data" / "multi_narrow_wedges"
     selection1 = (2, 3, 4, 5, 6)
     selection2 = (2, 3, 4, 6, 5)
 
@@ -101,7 +101,8 @@ def test_order_invariance(dials_regression, run_in_tmpdir):
         + [
             f"reflections={data_dir}/data/sweep_%03d/reflections.pickle" % n
             for n in selection1
-        ]
+        ],
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
     result = procrunner.run(
@@ -114,7 +115,8 @@ def test_order_invariance(dials_regression, run_in_tmpdir):
             "history=history1.json",
             "output.experiments=refined1.expt",
             "output.reflections=refined1.refl",
-        ]
+        ],
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
 
@@ -133,7 +135,8 @@ def test_order_invariance(dials_regression, run_in_tmpdir):
         + [
             f"reflections={data_dir}/data/sweep_%03d/reflections.pickle" % n
             for n in selection2
-        ]
+        ],
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
     result = procrunner.run(
@@ -146,20 +149,21 @@ def test_order_invariance(dials_regression, run_in_tmpdir):
             "history=history2.json",
             "output.experiments=refined2.expt",
             "output.reflections=refined2.refl",
-        ]
+        ],
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
 
     # Load results
     refined_experiments1 = ExperimentListFactory.from_json_file(
-        "refined1.expt", check_format=False
+        tmp_path / "refined1.expt", check_format=False
     )
     refined_experiments2 = ExperimentListFactory.from_json_file(
-        "refined2.expt", check_format=False
+        tmp_path / "refined2.expt", check_format=False
     )
 
-    history1 = Journal.from_json_file("history1.json")
-    history2 = Journal.from_json_file("history1.json")
+    history1 = Journal.from_json_file(tmp_path / "history1.json")
+    history2 = Journal.from_json_file(tmp_path / "history1.json")
 
     # Compare RMSDs
     rmsd1 = history1["rmsd"]

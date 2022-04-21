@@ -1,5 +1,7 @@
 """Tests for ΔCC½ algorithms."""
 
+from __future__ import annotations
+
 from unittest import mock
 
 from dxtbx.model import Crystal, Experiment, ExperimentList, Scan
