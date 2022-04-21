@@ -945,8 +945,9 @@ def run(args=None, *, phil=phil_scope):
 
 class ImageImporter:
     def __init__(self, phil=phil_scope) -> None:
+        # Deprecated: Remove after August 2022
         warnings.warn(
-            "ImageImporter class is deprecated. Please use dials.command_line.dials_import.run instead",
+            "ImageImporter class is deprecated. Please use dials.command_line.dials_import.do_import instead",
             DeprecationWarning,
             stacklevel=2,
         )
