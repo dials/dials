@@ -71,6 +71,10 @@ cc_star_threshold = 0
   .help = "Filter out datasets whose coordinates length (an estimate of cc star)"
           "is below this threshold."
 
+angular_separation_threshold = None
+  .type = float(value_min=0,value_max=45,allow_none=True)
+  .help = "Filter out datasets which have a coordinate within this angle (in degrees) of y=x"
+
 min_reflections = 10
   .type = int(value_min=1)
   .help = "The minimum number of reflections per experiment."
@@ -214,14 +218,23 @@ class cosym(Subject):
         s = np.sqrt(np.square(coord_x) + np.square(coord_y))
         sel = s >= self.params.cc_star_threshold
 
+        threshold = self.params.angular_separation_threshold
+        if threshold:
+            deg = np.arctan2(coord_y, coord_x) * 180 / np.pi
+            sel1 = (deg < 45.0 + threshold) & (deg > 45.0 - threshold)
+            sel2 = (deg < -45.0 + threshold) & (deg > -45.0 - threshold)
+            sel3 = sel1 | sel2
+            sel = sel & ~sel3
+
         reindexing_ops = self.cosym_analysis.reindexing_ops
         datasets_ = list(set(self.cosym_analysis.dataset_ids))
 
         n_datasets = len(reindexing_ops)
-        bad = set(i % n_datasets for i, j in enumerate(sel) if not j)
+        bad = {i % n_datasets for i, j in enumerate(sel) if not j}
         if bad:
             logger.info(
-                f"Datasets with estimated cc* < {self.params.cc_star_threshold}:"
+                f"""Datasets with estimated cc* < {self.params.cc_star_threshold}
+or below the angular separation threshold {threshold}:"""
             )
             logger.info(",".join(str(i) for i in list(bad)))
 
