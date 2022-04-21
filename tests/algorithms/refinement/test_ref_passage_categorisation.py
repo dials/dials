@@ -8,6 +8,8 @@ import math
 
 import pytest
 
+from . import geometry_phil, minimiser_phil
+
 
 def test():
     from cctbx.sgtbx import space_group, space_group_symbols
@@ -28,15 +30,9 @@ def test():
     from dials.algorithms.spot_prediction import IndexGenerator
 
     # Building experimental models
-    from dials.tests.algorithms.refinement.setup_geometry import Extract
+    from .setup_geometry import Extract
 
-    master_phil = parse(
-        """
-  include scope dials.tests.algorithms.refinement.geometry_phil
-  include scope dials.tests.algorithms.refinement.minimiser_phil
-  """,
-        process_includes=True,
-    )
+    master_phil = parse(f"{geometry_phil}\n{minimiser_phil}")
 
     overrides = """geometry.parameters.crystal.a.length.range = 10 50
   geometry.parameters.crystal.b.length.range = 10 50

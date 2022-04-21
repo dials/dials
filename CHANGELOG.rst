@@ -1,3 +1,21 @@
+DIALS 3.8.4 (2022-04-01)
+========================
+
+Bugfixes
+--------
+
+- ``dials.scale``: Fix crash when a dataset is filtered out during the scaling process (issue #2045). (`#2045 <https://github.com/dials/dials/issues/2045>`_)
+
+
+DIALS 3.9.1 (2022-03-31)
+========================
+
+Bugfixes
+--------
+
+- ``dials.scale``: Fix crash when a dataset is filtered out during the scaling process (issue #2045). (`#2045 <https://github.com/dials/dials/issues/2045>`_)
+
+
 DIALS 3.9.0 (2022-03-14)
 ========================
 

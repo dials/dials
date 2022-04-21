@@ -1,0 +1,1 @@
+``dials.scale``: Don't directly call garbage collector after deleting scaler datastructure.

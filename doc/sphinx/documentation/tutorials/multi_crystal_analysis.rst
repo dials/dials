@@ -852,7 +852,7 @@ to be made for the BLEND results::
 
   dials.integrate combined.refl refined.expt \
     prediction.d_min=7.0 prediction.d_max=8.1 \
-    profile.fitting=False nproc=4
+    profile.fitting=False
 
 This will integrate each dataset without profile fitting, using multiple
 processors, but only between 7.0 and 8.1 Angstrom to produce a quick result
