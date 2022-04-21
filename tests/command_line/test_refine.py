@@ -8,6 +8,8 @@ have not changed format and so on.
 """
 
 
+from __future__ import annotations
+
 import os
 
 import procrunner
@@ -20,7 +22,7 @@ from dials.algorithms.refinement.engine import Journal
 from dials.array_family import flex
 
 
-def test1(dials_regression, tmpdir):
+def test1(dials_regression, tmp_path):
     # use the i04_weak_data for this test
     data_dir = os.path.join(dials_regression, "refinement_test_data", "i04_weak_data")
     experiments_path = os.path.join(data_dir, "experiments.json")
@@ -36,17 +38,18 @@ def test1(dials_regression, tmpdir):
         "reflections_per_degree=100",
         "outlier.separate_blocks=False",
         "scan_varying=False",
+        "reflections.outlier.nproc=1",
         experiments_path,
         pickle_path,
     )
-    result = procrunner.run(cmd, working_directory=tmpdir)
+    result = procrunner.run(cmd, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
     # load results
     reg_exp = ExperimentListFactory.from_json_file(
         os.path.join(data_dir, "regression_experiments.json"), check_format=False
     )[0]
     ref_exp = ExperimentListFactory.from_json_file(
-        tmpdir.join("refined.expt").strpath, check_format=False
+        tmp_path / "refined.expt", check_format=False
     )[0]
 
     # test refined models against expected
@@ -61,7 +64,7 @@ def test1(dials_regression, tmpdir):
     assert ref_exp.crystal.get_cell_volume_sd() == pytest.approx(23.8063382, abs=1e-6)
 
 
-def test2(dials_regression, tmpdir):
+def test2(dials_regression, tmp_path):
     """Run scan-varying refinement, comparing RMSD table with expected values.
     This test automates what was manually done periodically and recorded in
     dials_regression/refinement_test_data/centroid/README.txt"""
@@ -85,9 +88,11 @@ def test2(dials_regression, tmpdir):
             "outlier.algorithm=null",
             "close_to_spindle_cutoff=0.05",
         ),
-        working_directory=tmpdir,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
+    # NB Requesting corrgram.pdf and history.json exercises
+    # https://github.com/dials/dials/issues/1923
     result = procrunner.run(
         (
             "dials.refine",
@@ -95,19 +100,21 @@ def test2(dials_regression, tmpdir):
             pickle_path,
             "scan_varying=true",
             "output.history=history.json",
+            "correlation_plot.filename=corrgram.pdf",
             "reflections_per_degree=50",
             "outlier.algorithm=null",
             "close_to_spindle_cutoff=0.05",
             "crystal.orientation.smoother.interval_width_degrees=36.0",
             "crystal.unit_cell.smoother.interval_width_degrees=36.0",
             "set_scan_varying_errors=True",
+            "reflections.outlier.nproc=1",
         ),
-        working_directory=tmpdir,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
 
     # load and check results
-    history = Journal.from_json_file(tmpdir.join("history.json").strpath)
+    history = Journal.from_json_file(tmp_path / "history.json")
 
     expected_rmsds = [
         (0.088488398, 0.114583571, 0.001460382),
@@ -127,12 +134,12 @@ def test2(dials_regression, tmpdir):
         assert a == pytest.approx(b, abs=1e-6)
 
     # check that the used_in_refinement flag got set correctly
-    rt = flex.reflection_table.from_file(tmpdir.join("refined.refl").strpath)
+    rt = flex.reflection_table.from_file(tmp_path / "refined.refl")
     uir = rt.get_flags(rt.flags.used_in_refinement)
     assert uir.count(True) == history["num_reflections"][-1]
 
 
-def test3(dials_regression, tmpdir):
+def test3(dials_regression, tmp_path):
     """Strict check for scan-varying refinement using automated outlier rejection
     block width and interval width setting"""
 
@@ -154,13 +161,14 @@ def test3(dials_regression, tmpdir):
             "output.history=history.json",
             "crystal.orientation.smoother.interval_width_degrees=auto",
             "crystal.unit_cell.smoother.interval_width_degrees=auto",
+            "reflections.outlier.nproc=1",
         ),
-        working_directory=tmpdir,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
 
     # load and check results
-    history = Journal.from_json_file(tmpdir.join("history.json").strpath)
+    history = Journal.from_json_file(tmp_path / "history.json")
 
     expected_rmsds = [
         [0.619507829, 0.351326044, 0.006955399],
@@ -175,14 +183,14 @@ def test3(dials_regression, tmpdir):
 
     # check the refined unit cell
     ref_exp = ExperimentListFactory.from_json_file(
-        tmpdir.join("refined.expt").strpath, check_format=False
+        tmp_path / "refined.expt", check_format=False
     )[0]
     unit_cell = ref_exp.crystal.get_unit_cell().parameters()
     assert unit_cell == pytest.approx(
         [42.27482, 42.27482, 39.66893, 90.00000, 90.00000, 90.00000], abs=1e-3
     )
 
-    refined_refl = flex.reflection_table.from_file(tmpdir.join("refined.refl").strpath)
+    refined_refl = flex.reflection_table.from_file(tmp_path / "refined.refl")
     # re-predict reflections using the refined experiments
     predicted = flex.reflection_table.from_predictions_multi([ref_exp])
 
@@ -197,25 +205,25 @@ def test3(dials_regression, tmpdir):
 
 
 @pytest.mark.parametrize("fix", ["cell", "orientation"])
-def test_scan_varying_with_fixed_crystal(fix, dials_data, tmpdir):
-    location = dials_data("multi_crystal_proteinase_k")
-    refls = location.join("reflections_1.pickle")
-    expts = location.join("experiments_1.json")
+def test_scan_varying_with_fixed_crystal(fix, dials_data, tmp_path):
+    location = dials_data("multi_crystal_proteinase_k", pathlib=True)
+    refls = location / "reflections_1.pickle"
+    expts = location / "experiments_1.json"
 
     result = procrunner.run(
-        ("dials.refine", expts, refls, "crystal.fix=" + fix), working_directory=tmpdir
+        ("dials.refine", expts, refls, f"crystal.fix={fix}"), working_directory=tmp_path
     )
     assert not result.returncode and not result.stderr
 
 
-def test_scan_varying_missing_segments_multi_crystal(dials_data, tmpdir):
+def test_scan_varying_missing_segments_multi_crystal(dials_data, tmp_path):
     # https://github.com/dials/dials/issues/1053
-    location = dials_data("i19_1_pdteet_index")
-    refls = location.join("indexed.refl")
-    expts = location.join("indexed.expt")
+    location = dials_data("i19_1_pdteet_index", pathlib=True)
+    refls = location / "indexed.refl"
+    expts = location / "indexed.expt"
 
     # first remove some reflections to keep dials.refine sharp
-    data = flex.reflection_table.from_file(refls.strpath)
+    data = flex.reflection_table.from_file(refls)
 
     # prune only indexed reflections
 
@@ -228,16 +236,16 @@ def test_scan_varying_missing_segments_multi_crystal(dials_data, tmpdir):
     sel = ((data["id"] == 0) & (z > 200)) | ((data["id"] == 1) & (z < 650))
     trimmed = data.select(sel)
 
-    trimmed_filename = tmpdir.join("indexed_trim.refl").strpath
+    trimmed_filename = tmp_path / "indexed_trim.refl"
     trimmed.as_file(trimmed_filename)
 
     result = procrunner.run(
-        ("dials.refine", expts, trimmed_filename), working_directory=tmpdir
+        ("dials.refine", expts, trimmed_filename), working_directory=tmp_path
     )
     assert not result.returncode and not result.stderr
 
     el = ExperimentListFactory.from_json_file(
-        tmpdir.join("refined.expt").strpath, check_format=False
+        tmp_path / "refined.expt", check_format=False
     )
 
     # verify scans start and finish correctly
@@ -248,11 +256,11 @@ def test_scan_varying_missing_segments_multi_crystal(dials_data, tmpdir):
 
 
 @pytest.mark.parametrize("gcb", ["None", "3000"])
-def test_scan_varying_multi_scan_one_crystal(gcb, dials_data, tmpdir):
+def test_scan_varying_multi_scan_one_crystal(gcb, dials_data, tmp_path):
     # https://github.com/dials/dials/issues/994
-    location = dials_data("l_cysteine_dials_output")
-    refls = location.join("indexed.refl")
-    expts = location.join("indexed.expt")
+    location = dials_data("l_cysteine_dials_output", pathlib=True)
+    refls = location / "indexed.refl"
+    expts = location / "indexed.expt"
 
     # Set options for quick rather than careful refinement
     result = procrunner.run(
@@ -267,19 +275,19 @@ def test_scan_varying_multi_scan_one_crystal(gcb, dials_data, tmpdir):
             "orientation.smoother.interval_width_degrees=56",
             "gradient_calculation_blocksize=" + gcb,
         ),
-        working_directory=tmpdir,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
 
     el = ExperimentListFactory.from_json_file(
-        tmpdir.join("refined.expt").strpath, check_format=False
+        tmp_path / "refined.expt", check_format=False
     )
 
     # Crystal has been copied into each experiment for scan-varying refinement
     assert len(el.crystals()) == 4
 
     # load and check results
-    history = Journal.from_json_file(tmpdir.join("history.json").strpath)
+    history = Journal.from_json_file(tmp_path / "history.json")
 
     expected_rmsds = [
         (0.1401658782847504, 0.2225931584837884, 0.002349912655443814),

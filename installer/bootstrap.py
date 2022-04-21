@@ -44,7 +44,7 @@ devnull = open(os.devnull, "wb")  # to redirect unwanted subprocess output
 allowed_ssh_connections = {}
 concurrent_git_connection_limit = threading.Semaphore(5)
 
-_prebuilt_cctbx_base = "2021.7"  # August 2021 release
+_prebuilt_cctbx_base = "2021.9"  # October 2021 release
 
 
 def make_executable(filepath):
@@ -502,7 +502,7 @@ def download_to_file(url, file, quiet=False):
         # if url fails to open, try using curl
         # temporary fix for old OpenSSL in system Python on macOS
         # https://github.com/cctbx/cctbx_project/issues/33
-        command = ["/usr/bin/curl", "--http1.0", "-fLo", file, "--retry", "5", url]
+        command = ["/usr/bin/curl", "-fLo", file, "--retry", "5", url]
         subprocess.call(command)
         socket = None  # prevent later socket code from being run
         try:
@@ -676,7 +676,9 @@ def git(module, git_available, ssh_available, reference_base, settings):
     destination = os.path.join("modules", module)
 
     if os.path.exists(destination):
-        if not os.path.exists(os.path.join(destination, ".git")):
+        if os.path.isfile(os.path.join(destination, ".git")):
+            return module, "WARNING", "Existing git worktree directory -- skipping"
+        if not os.path.isdir(os.path.join(destination, ".git")):
             return module, "WARNING", "Existing non-git directory -- skipping"
         if not git_available:
             return module, "WARNING", "Cannot update module, git command not found"
@@ -1163,6 +1165,7 @@ def configure_build(config_flags, prebuilt_cctbx):
         "wxtbx",
         "cbflib",
         "dxtbx",
+        "xfel",
         "dials",
         "xia2",
         "prime",
@@ -1264,7 +1267,7 @@ be passed separately with quotes to avoid confusion (e.g
         "--python",
         help="Install this minor version of Python (default: %(default)s)",
         default="3.9",
-        choices=("3.7", "3.8", "3.9"),
+        choices=("3.8", "3.9", "3.10"),
     )
     parser.add_argument(
         "--branch",

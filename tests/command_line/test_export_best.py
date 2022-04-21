@@ -1,24 +1,25 @@
+from __future__ import annotations
+
 import procrunner
 
 
-def test_export_best(dials_data, tmpdir):
+def test_export_best(dials_data, tmp_path):
     result = procrunner.run(
         [
             "dials.import",
             "template="
-            + dials_data("centroid_test_data").join("centroid_####.cbf").strpath,
+            + str(dials_data("centroid_test_data", pathlib=True) / "centroid_####.cbf"),
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
     result = procrunner.run(
-        ["dials.find_spots", "imported.expt", "nproc=1"],
-        working_directory=tmpdir.strpath,
+        ["dials.find_spots", "imported.expt", "nproc=1"], working_directory=tmp_path
     )
     assert not result.returncode and not result.stderr
     result = procrunner.run(
         ["dials.index", "imported.expt", "strong.refl", "space_group=P422"],
-        working_directory=tmpdir.strpath,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
     result = procrunner.run(
@@ -30,20 +31,20 @@ def test_export_best(dials_data, tmpdir):
             "prediction.padding=0",
             "sigma_m_algorithm=basic",
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
     result = procrunner.run(
         ["dials.export_best", "integrated.expt", "integrated.refl"],
-        working_directory=tmpdir.strpath,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
 
-    assert tmpdir.join("best.dat").check()
-    assert tmpdir.join("best.hkl").check()
-    assert tmpdir.join("best.par").check()
+    assert tmp_path.joinpath("best.dat").is_file()
+    assert tmp_path.joinpath("best.hkl").is_file()
+    assert tmp_path.joinpath("best.par").is_file()
 
-    with tmpdir.join("best.dat").open("r") as f:
+    with tmp_path.joinpath("best.dat").open("r") as f:
         lines = "".join(f.readlines()[:10])
     assert (
         lines
@@ -61,7 +62,7 @@ def test_export_best(dials_data, tmpdir):
 """
     )
 
-    with tmpdir.join("best.hkl").open("r") as f:
+    with tmp_path.joinpath("best.hkl").open("r") as f:
         lines = "".join(f.readlines()[:10])
     assert (
         lines
@@ -79,7 +80,7 @@ def test_export_best(dials_data, tmpdir):
 """
     )
 
-    lines = tmpdir.join("best.par").read()
+    lines = tmp_path.joinpath("best.par").read_text()
     assert (
         lines
         == """\

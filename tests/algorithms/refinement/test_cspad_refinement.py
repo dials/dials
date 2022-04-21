@@ -1,37 +1,39 @@
-import os
+from __future__ import annotations
+
+from pathlib import Path
 
 import procrunner
 
 from dxtbx.model.experiment_list import ExperimentListFactory
+from scitbx import matrix
 
 
-def test1(dials_regression, run_in_tmpdir):
+def test1(dials_regression, tmp_path):
     """
     Refinement test of 300 CSPAD images, testing auto_reduction, parameter
     fixing, constraints, SparseLevMar, and sauter_poon outlier rejection. See
     README in the regression folder for more details.
     """
-    from scitbx import matrix
-
-    data_dir = os.path.join(
-        dials_regression, "refinement_test_data", "cspad_refinement"
-    )
+    data_dir = Path(dials_regression) / "refinement_test_data" / "cspad_refinement"
 
     result = procrunner.run(
         [
             "dials.refine",
-            os.path.join(data_dir, "cspad_refined_experiments_step6_level2_300.json"),
-            os.path.join(data_dir, "cspad_reflections_step7_300.pickle"),
-            os.path.join(data_dir, "refine.phil"),
-        ]
+            data_dir / "cspad_refined_experiments_step6_level2_300.json",
+            data_dir / "cspad_reflections_step7_300.pickle",
+            data_dir / "refine.phil",
+        ],
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
 
     # load results
     reg_exp = ExperimentListFactory.from_json_file(
-        os.path.join(data_dir, "regression_experiments.json"), check_format=False
+        data_dir / "regression_experiments.json", check_format=False
     )
-    ref_exp = ExperimentListFactory.from_json_file("refined.expt", check_format=False)
+    ref_exp = ExperimentListFactory.from_json_file(
+        tmp_path / "refined.expt", check_format=False
+    )
 
     # compare results
     tol = 1e-5

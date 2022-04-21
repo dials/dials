@@ -1,10 +1,13 @@
 """Tests for dials.compute_delta_cchalf."""
 
+from __future__ import annotations
+
 import os
 
 import procrunner
+import pytest
 
-from dials.command_line.compute_delta_cchalf import CCHalfFromMTZ, phil_scope
+from dials.command_line.compute_delta_cchalf import CCHalfFromMTZ, phil_scope, run
 
 
 def check_cchalf_result(fileobj):
@@ -14,11 +17,25 @@ def check_cchalf_result(fileobj):
     assert lines[1] == "0 0.001234\n"
 
 
-def test_compute_delta_cchalf_scaled_data(dials_data, tmpdir):
+def test_suitable_exit_on_bad_input(dials_data, run_in_tmp_path):
+    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    refl = location / "scaled_35.refl"
+    expt = location / "scaled_35.expt"
+
+    args = [str(refl), str(expt)]
+    with pytest.raises(SystemExit):
+        run(args)
+
+    args = [str(refl), str(expt), "mode=image_group", "group_size=10000"]
+    with pytest.raises(SystemExit):
+        run(args)
+
+
+def test_compute_delta_cchalf_scaled_data(dials_data, tmp_path):
     """Test dials.compute_delta_cchalf on scaled data."""
-    location = dials_data("l_cysteine_4_sweeps_scaled")
-    refls = location.join("scaled_20_25.refl").strpath
-    expts = location.join("scaled_20_25.expt").strpath
+    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    refls = location / "scaled_20_25.refl"
+    expts = location / "scaled_20_25.expt"
 
     # set cutoff to 0.0 to force one to be 'rejected'
     command = [
@@ -29,39 +46,39 @@ def test_compute_delta_cchalf_scaled_data(dials_data, tmpdir):
         "output.reflections=filtered.refl",
         "output.experiments=filtered.expt",
     ]
-    result = procrunner.run(command, working_directory=tmpdir)
+    result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("filtered.expt").check()
-    assert tmpdir.join("filtered.refl").check()
-    assert tmpdir.join("delta_cchalf.dat").check()
-    assert tmpdir.join("compute_delta_cchalf.html").check()
-    with open(tmpdir.join("delta_cchalf.dat").strpath) as f:
+    assert (tmp_path / "filtered.expt").is_file()
+    assert (tmp_path / "filtered.refl").is_file()
+    assert (tmp_path / "delta_cchalf.dat").is_file()
+    assert (tmp_path / "compute_delta_cchalf.html").is_file()
+    with open(tmp_path / "delta_cchalf.dat") as f:
         check_cchalf_result(f)
 
 
-def test_compute_delta_cchalf_scaled_data_mtz(dials_data, tmpdir):
+def test_compute_delta_cchalf_scaled_data_mtz(dials_data, tmp_path):
     """Test dials.compute_delta_cchalf on scaled data."""
-    location = dials_data("l_cysteine_4_sweeps_scaled")
-    refls = location.join("scaled_20_25.refl").strpath
-    expts = location.join("scaled_20_25.expt").strpath
+    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    refls = location / "scaled_20_25.refl"
+    expts = location / "scaled_20_25.expt"
 
     # First export the data
     command = ["dials.export", refls, expts, "partiality_threshold=0.99"]
-    result = procrunner.run(command, working_directory=tmpdir)
+    result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("scaled.mtz").check()
+    assert (tmp_path / "scaled.mtz").is_file()
 
     # set cutoff to 0.0 to force one to be 'rejected'
     command = [
         "dials.compute_delta_cchalf",
-        f"mtzfile={tmpdir.join('scaled.mtz').strpath}",
+        f"mtzfile={tmp_path / 'scaled.mtz'}",
         "stdcutoff=0.0",
     ]
-    result = procrunner.run(command, working_directory=tmpdir)
+    result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("delta_cchalf.dat").check()
-    assert tmpdir.join("compute_delta_cchalf.html").check()
-    with open(tmpdir.join("delta_cchalf.dat").strpath) as f:
+    assert (tmp_path / "delta_cchalf.dat").is_file()
+    assert (tmp_path / "compute_delta_cchalf.html").is_file()
+    with open(tmp_path / "delta_cchalf.dat") as f:
         check_cchalf_result(f)
 
 

@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import json
 import math
 import os
+import pathlib
 import shutil
 
 import procrunner
@@ -16,10 +19,10 @@ def test_basic_integrate(dials_data, tmpdir):
     # Call dials.integrate
 
     exp = load.experiment_list(
-        dials_data("centroid_test_data").join("experiments.json").strpath
+        dials_data("centroid_test_data", pathlib=True) / "experiments.json"
     )
     exp[0].identifier = "foo"
-    exp.as_json(tmpdir.join("modified_input.json").strpath)
+    exp.as_json(tmpdir.join("modified_input.json"))
 
     result = procrunner.run(
         [
@@ -34,7 +37,7 @@ def test_basic_integrate(dials_data, tmpdir):
     )
     assert not result.returncode and not result.stderr
 
-    experiments = load.experiment_list(tmpdir.join("integrated.expt").strpath)
+    experiments = load.experiment_list(tmpdir / "integrated.expt")
     assert experiments[0].identifier == "foo"
 
     table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
@@ -51,14 +54,18 @@ def test_basic_integrate(dials_data, tmpdir):
 
     tmpdir.join("integrated.refl").remove()
 
+    tmp_path = pathlib.Path(tmpdir)
     for i in range(1, 10):
-        source = dials_data("centroid_test_data").join("centroid_000%d.cbf" % i)
-        destination = source.new(
-            dirname=tmpdir.strpath, basename="centroid_001%d.cbf" % i
-        )
-        source.copy(destination)
+        source = dials_data("centroid_test_data", pathlib=True) / f"centroid_000{i}.cbf"
+        destination = tmp_path / f"centroid_001{i}.cbf"
+        try:
+            destination.symlink_to(source)
+        except OSError:
+            shutil.copyfile(source, destination)
 
-    with dials_data("centroid_test_data").join("experiments.json").open("r") as fh:
+    with dials_data("centroid_test_data", pathlib=True).joinpath(
+        "experiments.json"
+    ).open("r") as fh:
         j = json.load(fh)
     assert j["scan"][0]["image_range"] == [1, 9]
     j["scan"][0]["image_range"] = [11, 19]
@@ -82,7 +89,7 @@ def test_basic_integrate(dials_data, tmpdir):
     )
     assert not result.returncode and not result.stderr
 
-    experiments = load.experiment_list(tmpdir.join("integrated.expt").strpath)
+    experiments = load.experiment_list(tmpdir / "integrated.expt")
     assert experiments[0].identifier == "bar"
 
     table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
@@ -119,7 +126,9 @@ def test_basic_integrate(dials_data, tmpdir):
     [(None, None), (1, "degrees"), (2, "frames"), (1, "frames")],
 )
 def test_basic_blocking_options(dials_data, tmp_path, block_size, block_units):
-    exp = load.experiment_list(dials_data("centroid_test_data") / "experiments.json")
+    exp = load.experiment_list(
+        dials_data("centroid_test_data", pathlib=True) / "experiments.json"
+    )
     exp[0].identifier = "foo"
     exp.as_json(tmp_path / "modified_input.json")
 
@@ -136,8 +145,8 @@ def test_basic_blocking_options(dials_data, tmp_path, block_size, block_units):
 def test_basic_threaded_integrate(dials_data, tmp_path):
     """Test the threaded integrator on single imageset data."""
 
-    expts = dials_data("centroid_test_data") / "indexed.expt"
-    refls = dials_data("centroid_test_data") / "indexed.refl"
+    expts = dials_data("centroid_test_data", pathlib=True) / "indexed.expt"
+    refls = dials_data("centroid_test_data", pathlib=True) / "indexed.refl"
 
     result = procrunner.run(
         [
@@ -165,10 +174,10 @@ def test_basic_threaded_integrate(dials_data, tmp_path):
 def test_basic_integrate_output_integrated_only(dials_data, tmpdir):
 
     exp = load.experiment_list(
-        dials_data("centroid_test_data").join("experiments.json").strpath
+        dials_data("centroid_test_data", pathlib=True) / "experiments.json"
     )
     exp[0].identifier = "bar"
-    exp.as_json(tmpdir.join("modified_input.json").strpath)
+    exp.as_json(tmpdir.join("modified_input.json"))
 
     result = procrunner.run(
         [
@@ -184,7 +193,7 @@ def test_basic_integrate_output_integrated_only(dials_data, tmpdir):
     )
     assert not result.returncode and not result.stderr
 
-    experiments = load.experiment_list(tmpdir.join("integrated.expt").strpath)
+    experiments = load.experiment_list(tmpdir / "integrated.expt")
     assert experiments[0].identifier == "bar"
 
     table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
@@ -201,10 +210,10 @@ def test_basic_integrate_output_integrated_only(dials_data, tmpdir):
 def test_integration_with_sampling(dials_data, tmpdir):
 
     exp = load.experiment_list(
-        dials_data("centroid_test_data").join("experiments.json").strpath
+        dials_data("centroid_test_data", pathlib=True) / "experiments.json"
     )
     exp[0].identifier = "foo"
-    exp.as_json(tmpdir.join("modified_input.json").strpath)
+    exp.as_json(tmpdir / "modified_input.json")
 
     result = procrunner.run(
         [
@@ -219,7 +228,7 @@ def test_integration_with_sampling(dials_data, tmpdir):
         working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
-    experiments = load.experiment_list(tmpdir.join("integrated.expt").strpath)
+    experiments = load.experiment_list(tmpdir / "integrated.expt")
     assert experiments[0].identifier == "foo"
 
     table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
@@ -231,12 +240,11 @@ def test_integration_with_sampling(dials_data, tmpdir):
 
 
 def test_integration_with_sample_size(dials_data, tmpdir):
-
     exp = load.experiment_list(
-        dials_data("centroid_test_data").join("experiments.json").strpath
+        dials_data("centroid_test_data", pathlib=True) / "experiments.json"
     )
     exp[0].identifier = "foo"
-    exp.as_json(tmpdir.join("modified_input.json").strpath)
+    exp.as_json(tmpdir / "modified_input.json")
 
     result = procrunner.run(
         [
@@ -252,7 +260,7 @@ def test_integration_with_sample_size(dials_data, tmpdir):
         working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
-    experiments = load.experiment_list(tmpdir.join("integrated.expt").strpath)
+    experiments = load.experiment_list(tmpdir / "integrated.expt")
     assert experiments[0].identifier == "foo"
     table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
     assert len(table) == 415
@@ -327,9 +335,8 @@ def test_imageset_id_output_with_multi_sweep(dials_data, tmp_path):
 
 
 def test_basic_integration_with_profile_fitting(dials_data, tmpdir):
-
-    expts = dials_data("centroid_test_data") / "indexed.expt"
-    refls = dials_data("centroid_test_data") / "indexed.refl"
+    expts = dials_data("centroid_test_data", pathlib=True) / "indexed.expt"
+    refls = dials_data("centroid_test_data", pathlib=True) / "indexed.refl"
 
     result = procrunner.run(
         [
@@ -356,7 +363,6 @@ def test_basic_integration_with_profile_fitting(dials_data, tmpdir):
 
 
 def test_multi_sweep(dials_regression, tmpdir):
-
     expts = os.path.join(
         dials_regression, "integration_test_data", "multi_sweep", "experiments.json"
     )
@@ -364,7 +370,7 @@ def test_multi_sweep(dials_regression, tmpdir):
     experiments = load.experiment_list(expts)
     for i, expt in enumerate(experiments):
         expt.identifier = str(100 + i)
-    experiments.as_json(tmpdir.join("modified_input.json").strpath)
+    experiments.as_json(tmpdir / "modified_input.json")
 
     refls = os.path.join(
         dials_regression, "integration_test_data", "multi_sweep", "indexed.pickle"
@@ -384,7 +390,7 @@ def test_multi_sweep(dials_regression, tmpdir):
     assert (tmpdir / "integrated.refl").check()
     assert (tmpdir / "integrated.expt").check()
 
-    experiments = load.experiment_list(tmpdir.join("integrated.expt").strpath)
+    experiments = load.experiment_list(tmpdir / "integrated.expt")
     for i, expt in enumerate(experiments):
         assert expt.identifier == str(100 + i)
 
@@ -412,7 +418,6 @@ def test_multi_sweep(dials_regression, tmpdir):
 
 
 def test_multi_lattice(dials_regression, tmpdir):
-
     expts = os.path.join(
         dials_regression, "integration_test_data", "multi_lattice", "experiments.json"
     )
@@ -420,7 +425,7 @@ def test_multi_lattice(dials_regression, tmpdir):
     experiments = load.experiment_list(expts)
     for i, expt in enumerate(experiments):
         expt.identifier = str(100 + i)
-    experiments.as_json(tmpdir.join("modified_input.json").strpath)
+    experiments.as_json(tmpdir / "modified_input.json")
 
     result = procrunner.run(
         [
@@ -441,7 +446,7 @@ def test_multi_lattice(dials_regression, tmpdir):
     assert tmpdir.join("integrated.refl").check()
     assert tmpdir.join("integrated.expt").check()
 
-    experiments = load.experiment_list(tmpdir.join("integrated.expt").strpath)
+    experiments = load.experiment_list(tmpdir / "integrated.expt")
     for i, expt in enumerate(experiments):
         assert expt.identifier == str(100 + i)
 

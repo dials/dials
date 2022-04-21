@@ -78,8 +78,9 @@ Find Spots
 
 The first "real" task in any processing using DIALS is the spot finding.
 Since this is looking for spots on every image in the dataset, this process
-can take some time, so we request multiple processors (:samp:`nproc=4`) to
-speed this up:
+can take some time, so DIALS will use multiple processors by default to
+speed this up. Here we have limited it to 4, but feel free to omit this to
+let DIALS make the choice:
 
 .. dials_tutorial_include:: betalactamase/dials.find_spots.cmd
 
@@ -318,7 +319,7 @@ and descriptions of each of the options can be included by adding ``-a1`` to
 the command. All of the main DIALS tools have equivalent command-line options
 to list available options.
 
-To refine a static model including the monoclinic constraints
+To refine over all reflections, and include the monoclinic constraints
 from ``dials.refine_bravais_settings`` run:
 
 .. dials_tutorial_include:: betalactamase/dials.refine.cmd
@@ -332,40 +333,20 @@ from ``dials.refine_bravais_settings`` run:
     .. dials_tutorial_include:: betalactamase/dials.refine.log
         :linenos:
 
+This provides a good reduction in RMSDs, indicating a better fit, and writes
+the results out to ``refined.expt`` and ``refined.refl``.
 
-This uses all reflections in refinement rather than a subset and provided a
-small reduction in RMSDs, writing the results out to ``refined.expt``
-and ``refined.refl``.
+Two passes of refinement are actually done here - an initial pass where unit
+cell and crystal rotation is consistent over the length of the experiment, and
+a second pass where these are allowed to vary. This *scan-varying* refinement
+allows compensation for small missets in the rotation of the goniometer, and
+compensation for changes to the unit cell dimensions; typically due to
+radiation damage. By default, the refinement looks for smooth changes over
+intervals of 30°, to avoid fitting unphysical models to noise, though this
+interval can be configured.
 
-However, the refined model is still static over
-the whole dataset. We may want to do an additional refinement job to fit a
-more sophisticated model for the crystal, allowing small misset rotations to
-occur over the course of the scan. There are usually even small changes to
-the cell dimensions (typically resulting in a net increase in cell volume)
-caused by exposure to radiation during data collection. To account for both
-of these effects we can extend our parameterisation to obtain a smoothed
-*scan-varying* model for both the crystal orientation and unit cell. This means
-running a further refinement job starting from the output of the
-previous job:
-
-.. dials_tutorial_include:: betalactamase/dials.sv_refine.cmd
-
-.. container:: toggle
-
-    .. container:: header
-
-        **Show/Hide Log**
-
-    .. dials_tutorial_include:: betalactamase/dials.sv_refine.log
-        :linenos:
-
-which writes over the ``refined.expt`` and
-``refined.refl`` from the previous refinement step. By default the
-scan-varying refinement looks for smooth changes over an interval of 36°
-intervals, to avoid fitting unphysical models to noise, though this
-parameter can be tuned. We can use the :ref:`betalactamase-html-report`,
-described shortly, to
-view the results of fitting to smoothly varying crystal cell parameters:
+We can use the :ref:`betalactamase-html-report`, described shortly, to view the
+results of fitting to smoothly varying crystal cell parameters:
 
 .. image:: /figures/process_detail_betalactamase/scan_varying.png
 

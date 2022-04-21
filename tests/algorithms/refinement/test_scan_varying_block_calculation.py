@@ -3,6 +3,8 @@ for scan-varying refinement. This exercises the issue originally flagged in
 https://github.com/dials/dials/issues/511"""
 
 
+from __future__ import annotations
+
 from math import pi
 
 import pytest
@@ -11,6 +13,8 @@ from dxtbx.model.experiment_list import Experiment, ExperimentList
 from scitbx.array_family import flex
 
 from dials.algorithms.refinement.reflection_manager import BlockCalculator
+
+from . import geometry_phil
 
 
 def create_experiments(image_start=1):
@@ -21,13 +25,9 @@ def create_experiments(image_start=1):
     overrides = """geometry.parameters.crystal.a.length.range = 10 50
   geometry.parameters.crystal.b.length.range = 10 50
   geometry.parameters.crystal.c.length.range = 10 50"""
-    master_phil = parse(
-        """
-      include scope dials.tests.algorithms.refinement.geometry_phil
-      """,
-        process_includes=True,
-    )
-    from dials.tests.algorithms.refinement.setup_geometry import Extract
+    master_phil = parse(geometry_phil)
+
+    from .setup_geometry import Extract
 
     models = Extract(master_phil, overrides)
 

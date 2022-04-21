@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import os
+import pathlib
 
 import pytest
 
@@ -16,15 +19,15 @@ from dials.util import Sorry
 @pytest.mark.parametrize(
     "space_group,engine", [(None, "scitbx"), ("P 1", "scipy"), ("P 4", "scipy")]
 )
-def test_cosym(dials_data, run_in_tmpdir, space_group, engine):
-    mcp = dials_data("multi_crystal_proteinase_k")
+def test_cosym(dials_data, run_in_tmp_path, space_group, engine):
+    mcp = dials_data("multi_crystal_proteinase_k", pathlib=True)
     args = ["space_group=" + str(space_group), "seed=0", f"engine={engine}"]
     for i in [1, 2, 3, 4, 5, 7, 8, 10]:
-        args.append(mcp.join("experiments_%d.json" % i).strpath)
-        args.append(mcp.join("reflections_%d.pickle" % i).strpath)
+        args.append(os.fspath(mcp / f"experiments_{i}.json"))
+        args.append(os.fspath(mcp / f"reflections_{i}.pickle"))
     dials_cosym.run(args=args)
-    assert os.path.isfile("symmetrized.refl")
-    assert os.path.isfile("symmetrized.expt")
+    assert pathlib.Path("symmetrized.refl").is_file()
+    assert pathlib.Path("symmetrized.expt").is_file()
     experiments = load.experiment_list("symmetrized.expt", check_format=False)
     if space_group is None:
         assert (
@@ -45,39 +48,60 @@ def test_cosym(dials_data, run_in_tmpdir, space_group, engine):
         assert set(joint_reflections["imageset_id"].select(sel)) == {id_}
 
 
-def test_cosym_partial_dataset(dials_data, run_in_tmpdir):
+def test_cosym_partial_dataset(dials_data, run_in_tmp_path):
     """Test how cosym handles partial/bad datasets."""
-    mcp = dials_data("multi_crystal_proteinase_k")
+    mcp = dials_data("multi_crystal_proteinase_k", pathlib=True)
     args = []
     for i in [1, 2]:
-        args.append(mcp.join("experiments_%d.json" % i).strpath)
-        args.append(mcp.join("reflections_%d.pickle" % i).strpath)
+        args.append(os.fspath(mcp / f"experiments_{i}.json"))
+        args.append(os.fspath(mcp / f"reflections_{i}.pickle"))
     # Make one dataset that will be removed in prefiltering
-    r = flex.reflection_table.from_file(mcp.join("reflections_8.pickle").strpath)
+    r = flex.reflection_table.from_file(mcp / "reflections_8.pickle")
     r["partiality"] = flex.double(r.size(), 0.1)
     r.as_file("renamed.refl")
     args.append("renamed.refl")
-    args.append(mcp.join("experiments_8.json").strpath)
+    args.append(os.fspath(mcp / "experiments_8.json"))
     # Add another good dataset at the end of the input list
-    args.append(mcp.join("experiments_10.json").strpath)
-    args.append(mcp.join("reflections_10.pickle").strpath)
+    args.append(os.fspath(mcp / "experiments_10.json"))
+    args.append(os.fspath(mcp / "reflections_10.pickle"))
+    args.append("threshold=None")
 
     dials_cosym.run(args=args)
-    assert os.path.exists("symmetrized.refl")
-    assert os.path.exists("symmetrized.expt")
+    assert pathlib.Path("symmetrized.refl").is_file()
+    assert pathlib.Path("symmetrized.expt").is_file()
     experiments = load.experiment_list("symmetrized.expt", check_format=False)
     assert len(experiments) == 3
 
 
-def test_cosym_partial_dataset_raises_sorry(dials_data, run_in_tmpdir, capsys):
+def test_cosym_resolution_filter_excluding_datasets(dials_data, run_in_tmp_path):
+    mcp = dials_data("multi_crystal_proteinase_k", pathlib=True)
+    args = ["space_group=P4", "seed=0", "d_min=20.0"]
+    for i in [1, 2, 3, 4, 5, 7, 8, 10]:
+        args.append(os.fspath(mcp / f"experiments_{i}.json"))
+        args.append(os.fspath(mcp / f"reflections_{i}.pickle"))
+    dials_cosym.run(args=args)
+    assert pathlib.Path("symmetrized.refl").is_file()
+    assert pathlib.Path("symmetrized.expt").is_file()
+
+    joint_reflections = flex.reflection_table.from_file("symmetrized.refl")
+    # check that there are 8 unique id and imageset_ids, and that these
+    # correctly correspond to each experiment
+    assert set(joint_reflections["id"]) == {0, 1, 2, 3, 4, 5, 6}
+    assert len(set(joint_reflections["imageset_id"])) == 7
+    for id_ in range(7):
+        sel = joint_reflections["id"] == id_
+        assert set(joint_reflections["imageset_id"].select(sel)) == {id_}
+
+
+def test_cosym_partial_dataset_raises_sorry(dials_data, run_in_tmp_path, capsys):
     """Test how cosym handles partial/bad datasets."""
-    mcp = dials_data("multi_crystal_proteinase_k")
-    args = ["renamed.refl", mcp.join("experiments_8.json").strpath]
-    r2 = flex.reflection_table.from_file(mcp.join("reflections_10.pickle").strpath)
+    mcp = dials_data("multi_crystal_proteinase_k", pathlib=True)
+    args = ["renamed.refl", os.fspath(mcp / "experiments_8.json")]
+    r2 = flex.reflection_table.from_file(mcp / "reflections_10.pickle")
     r2["partiality"] = flex.double(r2.size(), 0.1)
     r2.as_file("renamed2.refl")
     args.append("renamed2.refl")
-    args.append(mcp.join("experiments_10.json").strpath)
+    args.append(os.fspath(mcp / "experiments_10.json"))
 
     with pytest.raises(Sorry):
         dials_cosym.run(args=args)
@@ -107,7 +131,7 @@ def test_synthetic(
     sample_size,
     use_known_space_group,
     use_known_lattice_group,
-    run_in_tmpdir,
+    run_in_tmp_path,
 ):
     space_group = sgtbx.space_group_info(space_group).group()
     if unit_cell is not None:
@@ -146,10 +170,10 @@ def test_synthetic(
         args.append(f"dimensions={dimensions}")
 
     dials_cosym.run(args=args)
-    assert os.path.isfile("symmetrized.refl")
-    assert os.path.isfile("symmetrized.expt")
-    assert os.path.isfile("cosym.html")
-    assert os.path.isfile("cosym.json")
+    assert pathlib.Path("symmetrized.refl").is_file()
+    assert pathlib.Path("symmetrized.expt").is_file()
+    assert pathlib.Path("cosym.html").is_file()
+    assert pathlib.Path("cosym.json").is_file()
     cosym_expts = load.experiment_list("symmetrized.expt", check_format=False)
     assert len(cosym_expts) == len(experiments)
     for expt in cosym_expts:

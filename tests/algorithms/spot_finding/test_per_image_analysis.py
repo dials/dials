@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 
 from dxtbx.serialize import load
@@ -9,48 +11,48 @@ from dials.array_family import flex
 @pytest.fixture
 def centroid_test_data(dials_data):
     reflections = flex.reflection_table.from_file(
-        dials_data("centroid_test_data").join("strong.pickle").strpath
+        dials_data("centroid_test_data", pathlib=True) / "strong.pickle"
     )
     experiments = load.experiment_list(
-        dials_data("centroid_test_data").join("imported_experiments.json")
+        dials_data("centroid_test_data", pathlib=True) / "imported_experiments.json"
     )
     reflections.centroid_px_to_mm(experiments)
     reflections.map_centroids_to_reciprocal_space(experiments)
     return experiments, reflections
 
 
-def test_estimate_resolution_limit_distl_method1(centroid_test_data, tmpdir):
+def test_estimate_resolution_limit_distl_method1(centroid_test_data, tmp_path):
     experiments, reflections = centroid_test_data
-    plot_file = tmpdir.join("distl1.png")
+    plot_file = tmp_path / "distl1.png"
     d_min, noisiness = per_image_analysis.estimate_resolution_limit_distl_method1(
-        reflections=reflections, plot_filename=plot_file.strpath
+        reflections=reflections, plot_filename=plot_file
     )
     assert d_min == pytest.approx(1.8771983880778702)
     assert noisiness == pytest.approx(0.021021021021021023)
-    assert plot_file.check()
+    assert plot_file.is_file()
 
 
-def test_estimate_resolution_limit_distl_method2(centroid_test_data, tmpdir):
+def test_estimate_resolution_limit_distl_method2(centroid_test_data, tmp_path):
     experiments, reflections = centroid_test_data
-    plot_file = tmpdir.join("distl2.png")
+    plot_file = tmp_path / "distl2.png"
     d_min, noisiness = per_image_analysis.estimate_resolution_limit_distl_method2(
-        reflections=reflections, plot_filename=plot_file.strpath
+        reflections=reflections, plot_filename=plot_file
     )
     assert d_min == pytest.approx(1.6293601446185495)
     assert noisiness == pytest.approx(0.0858974358974359)
-    assert plot_file.check()
+    assert plot_file.is_file()
 
 
-def test_estimate_resolution(centroid_test_data, tmpdir):
+def test_estimate_resolution(centroid_test_data, tmp_path):
     experiments, reflections = centroid_test_data
     ice_sel = per_image_analysis.ice_rings_selection(reflections, width=0.004)
     assert ice_sel.count(True) == 76
-    plot_file = tmpdir.join("i_over_sigi_vs_resolution.png")
+    plot_file = tmp_path / "i_over_sigi_vs_resolution.png"
     d_min = per_image_analysis.estimate_resolution_limit(
-        reflections=reflections, plot_filename=plot_file.strpath
+        reflections=reflections, plot_filename=plot_file
     )
     assert d_min == pytest.approx(1.446715534174674)
-    assert plot_file.check()
+    assert plot_file.is_file()
     d_min = per_image_analysis.estimate_resolution_limit(
         reflections=reflections, ice_sel=ice_sel
     )
@@ -136,11 +138,11 @@ def test_stats_table_no_resolution_analysis(centroid_test_data):
     assert t[0] == ["image", "#spots", "#spots_no_ice", "total_intensity"]
 
 
-def test_plot_stats(centroid_test_data, tmpdir):
+def test_plot_stats(centroid_test_data, tmp_path):
     experiments, reflections = centroid_test_data
     stats = per_image_analysis.stats_per_image(
         experiments[0], reflections, resolution_analysis=False
     )
-    image_file = tmpdir.join("pia.png")
-    per_image_analysis.plot_stats(stats, filename=image_file.strpath)
-    assert image_file.check()
+    image_file = tmp_path / "pia.png"
+    per_image_analysis.plot_stats(stats, filename=image_file)
+    assert image_file.is_file()

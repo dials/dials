@@ -4,12 +4,6 @@ MyD88\ :sup:`TIR` small wedges
 
 .. highlight:: none
 
-.. warning::
-
-  This tutorial was prepared using DIALS version 3.5.4 for Linux, downloaded
-  from :doc:`this site <../../../installation>`. Results may differ with other
-  versions of the software.
-
 Introduction
 ============
 
@@ -120,92 +114,6 @@ We see from the position of the blue cross in the centre of the region of low
 angle scatter that the beam centre seems to be correctly recorded in the image
 headers.
 
-Tilt axis orientation
----------------------
-
-The diffraction geometry metadata printed by ``dials.show imported.expt``
-suggests that the orientation of the rotation axis is given by
-
-.. code-block::
-
-    Rotation axis:   {0.782563,-0.622571,0}
-
-But should we trust this? It is not as immediately visible a thing as the beam centre,
-but sometimes we *can* get a visual clue from the image viewer.
-Thinking of the geometry of the diffraction experiment, we realise
-that spots that are perpendicular to the rotation axis appear and disappear
-rapidly during rotation of the sample. Conversely, spots located along the rotation
-axis remain in the diffracting condition for a long time. Therefore, by clicking
-through the diffraction images we can look for a direction in the images in which
-spots seem to persist for a long time. Doing this quickly should produce a view similar
-to this animation:
-
-.. image:: https://dials.github.io/images/MyD88/diffraction_movie.gif
-   :width: 50%
-   :align: center
-
-If we look carefully we see that the spots in the lower left
-and upper right persist on more images than spots in the upper left and lower
-right. Therefore, we expect the rotation axis to be approximately along the
-lower left to upper right diagonal.
-
-We can also get some idea of the axis orientation by stacking the images. It is helpful to alter
-the ``Stack type`` on the ``Settings`` window first to select ``max``, and then
-in the main image viewer window change the value of ``Stack`` from ``1`` to
-``72``. The view now shows a composite image consisting of the maximum value at
-each pixel position through the whole dataset.
-
-.. image:: https://dials.github.io/images/MyD88/stack.png
-   :width: 80%
-   :align: center
-
-It is possible to make out a diagonal line from bottom left to top right along
-which there are few spots. Those spots that are present are those that persisted
-for a long time in the animation. We'll take the position of one of these as an
-anchor point to estimate the orientation of the rotation axis. At the bottom of
-the image viewer is a status bar from which we can read information
-like the pixel position of the cursor. Reading out the pixel position gives us
-
-.. code-block::
-
-   Readout 0: slow=112.660 / fast=334.812 pixels
-
-Now hovering over the beam centre we see this is located at about 235 pixels in
-the slow direction and 228 in the fast direction. Therefore the line from the
-beam centre to the pixel position we found before is approximately
-:math:`113 - 235 = -122` pixels in the slow direction and :math:`335 - 228 = 107`
-pixels in the fast direction. Returning to the output of ``dials.show imported.expt``
-we see
-
-.. code-block::
-
-   fast_axis: {1,0,0}
-   slow_axis: {0,-1,0}
-
-from which we can construct a putative rotation axis direction
-
-.. math::
-
-  \vec{\textrm{axis}} = 107 \times \begin{pmatrix}1\\0\\0\end{pmatrix}
-   - 122 \times \begin{pmatrix}0\\-1\\0\end{pmatrix}
-  = \begin{pmatrix}107\\122\\0\end{pmatrix}
-
-We don't know if the direction of right handed rotation is along
-this axis or its inverse though. This is something we'll come back to during indexing.
-At the moment, we'll just re-import the data with this axis and move on to
-spot-finding.
-
-.. code-block:: bash
-
-   dials.import ../../814/1/*.img distance=2193 goniometer.axis=107,122,0.0
-
-.. note::
-   There is currently no easy way to determine the rotation axis using the
-   :doc:`dials.image_viewer<../../programs/dials_image_viewer>`, hence these manual
-   steps. As with the detector distance and beam centre it is best if these
-   things are carefully calibrated for the data collection and recorded with
-   the images.
-
 Spot-finding
 ------------
 
@@ -271,11 +179,56 @@ viewer with this command:
 
 Another useful viewer is the 3D
 :doc:`dials.reciprocal_lattice_viewer<../../programs/dials_reciprocal_lattice_viewer>`,
-which we can now launch like this
+which we will now launch like this
 
 .. code-block:: bash
 
    dials.reciprocal_lattice_viewer imported.expt strong.refl
+
+But here we see a problem. The reciprocal lattice positions do not make a
+clean lattice. Here we have oriented the view down the putative rotation axis
+and instead of seeing separate spots we see arcs of points around that axis.
+
+.. image:: https://dials.github.io/images/MyD88/rlv-strong-wrong-axis.png
+   :width: 100%
+
+
+Tilt axis orientation
+---------------------
+
+The diffraction geometry metadata printed by ``dials.show imported.expt``
+suggests that the orientation of the rotation axis is given by
+
+.. code-block::
+
+    Rotation axis:   {0.782563,-0.622571,0}
+
+But should we trust this? DIALS can search for the correct rotation axis like this:
+
+.. code-block:: bash
+
+   dials.find_rotation_axis imported.expt strong.refl
+
+This runs three levels of search: a global search, a local search and then a
+fine-search. The optimised rotation axis is written to a few file, ``optimised.expt``
+and printed at the end of the log:
+
+.. code-block::
+
+  Rotation axis:   {-0.627963,-0.778243,0}
+
+We can view the new rotation axis by opening ``optimised.expt`` in the image viewer
+and clicking on the "Rotation axis" checkbox.
+
+.. image:: https://dials.github.io/images/MyD88/rotation_axis.png
+   :width: 80%
+   :align: center
+
+Now let's view the reciprocal lattice:
+
+.. code-block:: bash
+
+   dials.reciprocal_lattice_viewer optimised.expt strong.refl
 
 .. image:: https://dials.github.io/images/MyD88/rlv-strong.png
    :width: 100%
@@ -300,17 +253,12 @@ by a scaling of the cell volume with negligible
 differences in the predicted spot positions. To avoid refinement wandering off
 to give unreasonable values for both the cell and distance, we typically fix the latter
 by adding the option ``detector.fix=distance`` to jobs that include
-geometry refinement.
-
-We may also have some reasonable doubts about the accuracy of our estimated
-rotation axis orientation. Usually in DIALS the rotation axis is assumed to be
-known very well and fixed to the laboratory frame, but we can change that behaviour by setting the
-option ``goniometer.fix=None``. We will otherwise do indexing using the standard 3D FFT
+geometry refinement. We will otherwise do indexing using the standard 3D FFT
 algorithm and other parameters as default, so the command we need is:
 
 .. code-block:: bash
 
-   dials.index imported.expt strong.refl detector.fix=distance goniometer.fix=None
+   dials.index optimised.expt strong.refl detector.fix=distance
 
 At the end of the log for this job we see a high proportion of indexed spots:
 
@@ -333,77 +281,13 @@ observed spots quite nicely:
   |   Exp |   Nref |   RMSD_X |   RMSD_Y |     RMSD_Z |
   |    id |        |     (px) |     (px) |   (images) |
   |-------+--------+----------+----------+------------|
-  |     0 |    500 |  0.50338 |  0.68044 |    0.57072 |
-  +-------+--------+----------+----------+------------+
-
-But before we continue, we must remember that we haven't resolved the handedness
-of the rotation axis yet!
-
-Direction of rotation
-^^^^^^^^^^^^^^^^^^^^^
-
-The flat Ewald sphere in electron diffraction not only causes increased
-correlation between parameters in refinement, but it also makes it possible to
-index a lattice with either direction of the rotation axis! This is explained in
-detail in this paper:
-
-.. pubmed:: 29872002 Electron diffraction
-
-To investigate the alternative we need to invert the rotation axis on import and try
-indexing again. We don't need to repeat the spot-finding though, as the experimental
-geometry does not affect the spots that are found on each image.
-
-.. code-block:: bash
-
-  dials.import ../../814/1/*.img distance=2193 goniometer.axis=-107,-122,0.0
-  dials.index imported.expt strong.refl detector.fix=distance goniometer.fix=None
-
-In this case there is one more indexed spot:
-
-.. code-block::
-
-  +------------+-------------+---------------+-------------+
-  |   Imageset |   # indexed |   # unindexed | % indexed   |
-  |------------+-------------+---------------+-------------|
-  |          0 |         563 |            69 | 89.1%       |
-  +------------+-------------+---------------+-------------+
-
-but most tellingly, the ``RMSD_Z`` value has significantly decreased:
-
-.. code-block::
-
-  RMSDs by experiment:
-  +-------+--------+----------+----------+------------+
-  |   Exp |   Nref |   RMSD_X |   RMSD_Y |     RMSD_Z |
-  |    id |        |     (px) |     (px) |   (images) |
-  |-------+--------+----------+----------+------------|
-  |     0 |    528 |   0.5165 |  0.67284 |    0.28888 |
+  |     0 |    528 |  0.51747 |  0.67141 |    0.28935 |
   +-------+--------+----------+----------+------------+
 
 The RMSDs are the root mean square deviation between observed and predicted
-spot positions for reflections used in refinement. For both this job and the
-previous one, the positional RMSDs are less than 1 pixel
-in both X (fast) and Y (slow) directions on the image. However, the RMSD in
-the tilt angle direction dropped from about 0.6 images to less than 0.3. This is
-the best indication we have to show that the rotation axis is actually inverted
-from our original guess.
-
-.. note::
-
-  The effect of inverting the rotation axis in electron diffraction is rather
-  subtle. As an aside we can investigate this with
-  ``dials.reciprocal_lattice_viewer indexed.expt indexed.refl`` and then ticking
-  the box next to ``Invert rotation axis``. We see that the orientation of the
-  spots changes, but they still make a clear lattice either way.
-
-In this case, we will continue with the inverted axis. As a recap and to ensure
-we are working with the right files, the correct steps up to this point are:
-
-.. code-block:: bash
-
-  dials.import ../../814/1/*.img distance=2193 goniometer.axis=-107,-122,0.0
-  dials.find_spots imported.expt d_max=20
-  dials.index imported.expt strong.refl detector.fix=distance goniometer.fix=None
+spot positions for reflections used in refinement. The positional RMSDs are less
+than 1 pixel in both X (fast) and Y (slow) directions on the image and the RMSD in
+the tilt angle direction is less than 0.3 images.
 
 Determining lattice symmetry
 ----------------------------
@@ -427,12 +311,12 @@ a centred monoclinic lattice:
 
   Chiral space groups corresponding to each Bravais lattice:
   aP: P1
-  mC: C2
+  mI: I2
   +------------+--------------+--------+--------------+----------+-----------+------------------------------------------+----------+--------------+
   |   Solution |   Metric fit |   rmsd | min/max cc   |   #spots | lattice   | unit_cell                                |   volume | cb_op        |
   |------------+--------------+--------+--------------+----------+-----------+------------------------------------------+----------+--------------|
-  |   *      2 |       1.4551 |  0.118 | 0.950/0.950  |      531 | mC        | 64.31  37.02 115.99  90.00 104.37  90.00 |   267525 | c,a,-a+2*b-c |
-  |   *      1 |       0      |  0.047 | -/-          |      529 | aP        | 37.07  61.62  64.40  72.89  89.26  73.47 |   134380 | a,b,c        |
+  |   *      2 |       1.4508 |  0.118 | 0.953/0.953  |      533 | mI        | 64.31  37.02 115.99  90.00 104.37  90.00 |   267504 | c,a,-a+2*b-c |
+  |   *      1 |       0      |  0.047 | -/-          |      528 | aP        | 37.07  61.63  64.40  72.88  89.25  73.45 |   134383 | a,b,c        |
   +------------+--------------+--------+--------------+----------+-----------+------------------------------------------+----------+--------------+
   * = recommended solution
 
@@ -447,13 +331,11 @@ at the cell from the published paper. There it is given as
   α, β, γ (°)     90.00, 107.70, 90.00
   =============== =====
 
-Clearly we have found a different cell! In fact, here ``dials.refine_bravais_settings`` found an
-:math:`I\ 2` setting but erroneously reported it as :math:`C\ 2`. This
-issue has been fixed (https://github.com/dials/dials/pull/1825) so that from the
-next release of DIALS the table above will correctly read ``mI``. The reason
-DIALS selects the :math:`I\ 2` setting here is because by default it favours
-monoclinic centred cells that have β angles closer to 90°. However, we can change
-that behaviour and run again:
+Clearly we have found a different cell! There are two issues. The first is that
+``dials.refine_bravais_settings`` selects the :math:`I\ 2` setting here because
+by default, following standard practice, it favours monoclinic centred cells
+that have β angles closer to 90°. To compare our solution with the published
+:math:`C\ 2` cell we can change that behaviour and run again:
 
 .. code-block:: bash
 
@@ -469,8 +351,8 @@ and with that we get
   +------------+--------------+--------+--------------+----------+-----------+-------------------------------------------+----------+-----------+
   |   Solution |   Metric fit |   rmsd | min/max cc   |   #spots | lattice   | unit_cell                                 |   volume | cb_op     |
   |------------+--------------+--------+--------------+----------+-----------+-------------------------------------------+----------+-----------|
-  |   *      2 |       1.4551 |  0.118 | 0.950/0.950  |      531 | mC        | 117.84  37.02  64.31  90.00 107.54  90.00 |   267525 | a-2*b,a,c |
-  |   *      1 |       0      |  0.047 | -/-          |      529 | aP        | 37.07  61.62  64.40  72.89  89.26  73.47  |   134380 | a,b,c     |
+  |   *      2 |       1.4508 |  0.118 | 0.953/0.953  |      533 | mC        | 117.84  37.02  64.31  90.00 107.54  90.00 |   267504 | a-2*b,a,c |
+  |   *      1 |       0      |  0.047 | -/-          |      528 | aP        | 37.07  61.63  64.40  72.88  89.25  73.45  |   134383 | a,b,c     |
   +------------+--------------+--------+--------------+----------+-----------+-------------------------------------------+----------+-----------+
   * = recommended solution
 
@@ -577,7 +459,7 @@ which contains the line:
 
 .. code-block::
 
-  distance: 1843.51
+  distance: 1843.57
 
 .. note::
 
@@ -587,7 +469,8 @@ which contains the line:
   detector distance is properly calibrated and stored along with the
   diffraction images!
 
-We can now return to import with the correct detector distance, followed by the
+We can now return to import with the correct detector distance and the rotation
+axis orientation, followed by the
 other steps to get back to the correctly indexed cell. We will skip the
 ``dials.refine_bravais_settings`` and ``dials.reindex`` steps now that we have
 determined the lattice symmetry, by selecting ``space_group=C2`` during the
@@ -596,9 +479,9 @@ datasets.
 
 .. code-block:: bash
 
-  dials.import ../../814/1/*.img distance=1843.51 goniometer.axis=-107,-122,0.0
+  dials.import ../../814/1/*.img distance=1843.57 goniometer.axis=-0.627963,-0.778243,0
   dials.find_spots imported.expt d_max=20
-  dials.index imported.expt strong.refl detector.fix=distance goniometer.fix=None\
+  dials.index imported.expt strong.refl detector.fix=distance\
     space_group=C2 output.experiments=C2.expt output.reflections=C2.refl
 
 Further refinement
@@ -623,16 +506,16 @@ The crystal model is printed at the end of the log:
 .. code-block::
 
   Crystal:
-      Unit cell: 99.08(14), 31.103(16), 54.08(12), 90.0, 107.62(14), 90.0
+      Unit cell: 99.07(14), 31.124(17), 54.12(12), 90.0, 107.59(14), 90.0
       Space group: C 1 2 1
-      U matrix:  {{ 0.2686, -0.6801,  0.6822},
-                  {-0.2567, -0.7331, -0.6298},
-                  { 0.9284, -0.0059, -0.3715}}
+      U matrix:  {{ 0.2799, -0.6495,  0.7070},
+                  {-0.2456, -0.7603, -0.6013},
+                  { 0.9281, -0.0053, -0.3723}}
       B matrix:  {{ 0.0101,  0.0000,  0.0000},
-                  {-0.0000,  0.0322,  0.0000},
-                  { 0.0032,  0.0000,  0.0194}}
-      A = UB:    {{ 0.0049, -0.0219,  0.0132},
-                  {-0.0046, -0.0236, -0.0122},
+                  {-0.0000,  0.0321,  0.0000},
+                  { 0.0032, -0.0000,  0.0194}}
+      A = UB:    {{ 0.0051, -0.0209,  0.0137},
+                  {-0.0044, -0.0244, -0.0117},
                   { 0.0082, -0.0002, -0.0072}}
       A sampled at 73 scan points
 
@@ -660,24 +543,24 @@ fitting then we should investigate. In this case though, everything looks okay.
   +---------------------------------------+-----------+--------+--------+
   | Item                                  |   Overall |    Low |   High |
   |---------------------------------------+-----------+--------+--------|
-  | dmin                                  |      2.12 |   5.75 |   2.12 |
+  | dmin                                  |      2.12 |   5.76 |   2.12 |
   | dmax                                  |     47.23 |  47.23 |   2.16 |
-  | number fully recorded                 |   4326    | 539    |   9    |
-  | number partially recorded             |    951    | 111    |   2    |
-  | number with invalid background pixels |    998    |   0    |  11    |
-  | number with invalid foreground pixels |    407    |   0    |  11    |
+  | number fully recorded                 |   4328    | 540    |   9    |
+  | number partially recorded             |    950    | 111    |   2    |
+  | number with invalid background pixels |    993    |   0    |  11    |
+  | number with invalid foreground pixels |    403    |   0    |  11    |
   | number with overloaded pixels         |      0    |   0    |   0    |
   | number in powder rings                |      0    |   0    |   0    |
-  | number processed with summation       |   4862    | 650    |   0    |
-  | number processed with profile fitting |   4929    | 636    |   2    |
+  | number processed with summation       |   4849    | 643    |   0    |
+  | number processed with profile fitting |   4917    | 631    |   2    |
   | number failed in background modelling |      0    |   0    |   0    |
-  | number failed in summation            |    407    |   0    |  11    |
-  | number failed in profile fitting      |    340    |  14    |   9    |
-  | ibg                                   |     35.88 |  95.57 |  13.85 |
-  | i/sigi (summation)                    |      4.34 |  20.85 |   0    |
-  | i/sigi (profile fitting)              |      6.75 |  30.23 |   0    |
+  | number failed in summation            |    403    |   0    |  11    |
+  | number failed in profile fitting      |    335    |  12    |   9    |
+  | ibg                                   |     35.73 |  94.97 |  13.84 |
+  | i/sigi (summation)                    |      3.94 |  18.54 |   0    |
+  | i/sigi (profile fitting)              |      5.98 |  25.45 |   0    |
   | cc prf                                |      0.99 |   0.99 |   0.99 |
-  | cc_pearson sum/prf                    |      0.86 |   0.86 |   0    |
+  | cc_pearson sum/prf                    |      0.99 |   0.99 |   0    |
   | cc_spearman sum/prf                   |      0.77 |   0.92 |   0    |
   +---------------------------------------+-----------+--------+--------+
 
@@ -700,11 +583,11 @@ reflection shoebox model is given towards the top of ``dials.integrate.log``:
 
 .. code-block::
 
-  Using 458 / 458 reflections for sigma calculation
+  Using 454 / 455 reflections for sigma calculation
   Calculating E.S.D Beam Divergence.
   Calculating E.S.D Reflecting Range (mosaicity).
-   sigma b: 0.003931 degrees
-   sigma m: 1.087761 degrees
+   sigma b: 0.003907 degrees
+   sigma m: 1.083698 degrees
 
 At this stage we would learn much more about the quality of the data from scaling
 and merging. However this single dataset is very incomplete. We should try
@@ -740,7 +623,7 @@ and enter these lines:
   do
     cd "$i"
 
-    dials.import ../../814/"$i"/*.img goniometer.axis=-107,-122,0.0 distance=1843.51
+    dials.import ../../814/"$i"/*.img goniometer.axis=-0.627963,-0.778243,0 distance=1843.57
     dials.find_spots imported.expt d_max=20 d_min=2.5
     dials.index imported.expt strong.refl detector.fix=distance goniometer.fix=None space_group=C2
     dials.refine indexed.expt indexed.refl detector.fix=distance
@@ -750,7 +633,12 @@ and enter these lines:
     cd ..
   done
 
-We can make this executable and run it like this:
+Note we made a change compared to the processing instructions above for the first
+dataset. Because we determined the rotation axis only for that dataset, it might
+not be exactly right for all datasets in general. By adding the option
+``goniometer.fix=None`` to the ``dials.index`` we allow optimisation of the
+rotation axis during diffraction geometry refinement. We now make this script
+executable and run it like this:
 
 .. code-block:: bash
 
@@ -812,27 +700,27 @@ statistics:
 
 .. code-block::
 
-                                               Overall    Low     High
-  High resolution limit                           3.00    8.10    3.00
-  Low resolution limit                           31.27   31.27    3.05
-  Completeness                                   77.5    74.4    78.1
-  Multiplicity                                   13.5    14.9     6.9
-  I/sigma                                         6.8    12.8     1.8
-  Rmerge(I)                                     0.439   0.319   1.765
-  Rmerge(I+/-)                                  0.434   0.319   1.677
-  Rmeas(I)                                      0.456   0.330   1.910
-  Rmeas(I+/-)                                   0.464   0.338   1.890
-  Rpim(I)                                       0.114   0.080   0.673
-  Rpim(I+/-)                                    0.156   0.107   0.837
-  CC half                                       0.934   0.960   0.320
-  Anomalous completeness                         78.7    81.5    72.9
-  Anomalous multiplicity                          7.2     8.5     3.7
-  Anomalous correlation                        -0.350  -0.452  -0.253
-  Anomalous slope                               0.981
-  dF/F                                          0.168
-  dI/s(dI)                                      0.793
-  Total observations                            36758    2157     983
-  Total unique                                   2717     145     143
+                                                 Overall    Low     High
+    High resolution limit                           3.00    8.10    3.00
+    Low resolution limit                           31.17   31.18    3.05
+    Completeness                                   77.5    74.2    77.0
+    Multiplicity                                   13.6    14.8     7.1
+    I/sigma                                         6.9    12.9     1.9
+    Rmerge(I)                                     0.435   0.317   1.746
+    Rmerge(I+/-)                                  0.429   0.317   1.637
+    Rmeas(I)                                      0.452   0.328   1.886
+    Rmeas(I+/-)                                   0.460   0.336   1.830
+    Rpim(I)                                       0.113   0.080   0.657
+    Rpim(I+/-)                                    0.154   0.106   0.787
+    CC half                                       0.919   0.936   0.291
+    Anomalous completeness                         78.7    81.3    72.3
+    Anomalous multiplicity                          7.2     8.4     3.8
+    Anomalous correlation                        -0.419  -0.773  -0.082
+    Anomalous slope                               1.015
+    dF/F                                          0.173
+    dI/s(dI)                                      0.811
+    Total observations                            36662    2125     974
+    Total unique                                   2705     144     137
 
 These, and many more, details are also saved to a HTML format report page. On Linux you
 can usually open this up with the command

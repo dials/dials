@@ -1,4 +1,6 @@
-import os
+from __future__ import annotations
+
+from pathlib import Path
 
 import procrunner
 import pytest
@@ -12,7 +14,7 @@ from dials.algorithms.refinement.refiner import phil_scope as refiner_phil_scope
 from dials.array_family import flex
 
 
-def test_joint_refinement(dials_regression, run_in_tmpdir):
+def test_joint_refinement(dials_regression, tmp_path):
     """A basic test of joint refinement of the CS-PAD detector at hierarchy level 2
     with 300 crystals."""
 
@@ -20,35 +22,36 @@ def test_joint_refinement(dials_regression, run_in_tmpdir):
     if not hasattr(bevington, "non_linear_ls_eigen_wrapper"):
         pytest.skip("Skipping test as SparseLevMar engine not available")
 
-    data_dir = os.path.join(dials_regression, "refinement_test_data", "xfel_metrology")
+    data_dir = Path(dials_regression) / "refinement_test_data" / "xfel_metrology"
 
     # Do refinement and load the history
     result = procrunner.run(
         [
             "dials.refine",
-            os.path.join(data_dir, "benchmark_level2d.json"),
-            os.path.join(data_dir, "benchmark_level2d.pickle"),
-            os.path.join(data_dir, "refine.phil"),
+            data_dir / "benchmark_level2d.json",
+            data_dir / "benchmark_level2d.pickle",
+            data_dir / "refine.phil",
             "history=history.json",
-        ]
+        ],
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
 
     # there are plenty of things we could do with the refinement history, but
     # here just check that final RMSDs are low enough
-    history = Journal.from_json_file("history.json")
+    history = Journal.from_json_file(tmp_path / "history.json")
     final_rmsd = history["rmsd"][-1]
     assert final_rmsd[0] < 0.0354
     assert final_rmsd[1] < 0.0406
     assert final_rmsd[2] < 0.0018
 
     # also check that the used_in_refinement flag got set correctly
-    rt = flex.reflection_table.from_file("refined.refl")
+    rt = flex.reflection_table.from_file(tmp_path / "refined.refl")
     uir = rt.get_flags(rt.flags.used_in_refinement)
     assert uir.count(True) == history["num_reflections"][-1]
 
 
-def test_constrained_refinement(dials_regression, run_in_tmpdir):
+def test_constrained_refinement(dials_regression, tmp_path):
     """Do constrained refinement, checking that a panel group with no data
     on it still moves with its partners in the constraint.
     See https://github.com/dials/dials/issues/990"""
@@ -57,23 +60,18 @@ def test_constrained_refinement(dials_regression, run_in_tmpdir):
     if not hasattr(bevington, "non_linear_ls_eigen_wrapper"):
         pytest.skip("Skipping test as SparseLevMar engine not available")
 
-    data_dir = os.path.join(dials_regression, "refinement_test_data", "xfel_metrology")
+    data_dir = Path(dials_regression) / "refinement_test_data" / "xfel_metrology"
 
     # Load experiments and reflections
-    refl = flex.reflection_table.from_file(
-        os.path.join(data_dir, "benchmark_level2d.pickle")
-    )
-    expt = ExperimentListFactory.from_json_file(
-        os.path.join(data_dir, "benchmark_level2d.json")
-    )
+    refl = flex.reflection_table.from_file(data_dir / "benchmark_level2d.pickle")
+    expt = ExperimentListFactory.from_json_file(data_dir / "benchmark_level2d.json")
 
     # There are zero reflections on some panels, so these will only move via constraints
     for i in [8, 10, 11, 26, 27, 40, 42, 43, 56, 58, 59]:
         assert (refl["panel"] == i).count(True) == 0
 
     # Get parameters, combining refine.phil with constraints that enforce distances to move in lockstep
-    with open(os.path.join(data_dir, "refine.phil")) as f:
-        refine_phil = phil.parse(f.read())
+    refine_phil = phil.parse(data_dir.joinpath("refine.phil").read_text())
     constraint_phil = phil.parse(
         """
 refinement {

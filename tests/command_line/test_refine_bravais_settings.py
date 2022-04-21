@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import os
 
@@ -26,10 +28,10 @@ def test_refine_bravais_settings_i04_weak_data(dials_regression, tmpdir):
             ]
         )
     for i in range(1, 10):
-        assert tmpdir.join("tst_bravais_setting_%i.expt" % i).check()
+        assert tmpdir.join(f"tst_bravais_setting_{i}.expt").check()
 
     experiments_list = load.experiment_list(
-        tmpdir.join("tst_bravais_setting_9.expt").strpath, check_format=False
+        tmpdir.join("tst_bravais_setting_9.expt"), check_format=False
     )
     assert len(experiments_list) == 1
     assert (
@@ -62,10 +64,10 @@ def test_refine_bravais_settings_multi_sweep(dials_regression, tmpdir):
     with tmpdir.as_cwd():
         refine_bravais_settings.run([pickle_path, experiments_path])
     for i in range(1, 10):
-        assert tmpdir.join("bravais_setting_%i.expt" % i).check()
+        assert tmpdir.join(f"bravais_setting_{i}.expt").check()
 
     experiments_list = load.experiment_list(
-        tmpdir.join("bravais_setting_9.expt").strpath, check_format=False
+        tmpdir.join("bravais_setting_9.expt"), check_format=False
     )
     assert len(experiments_list) == 4
     assert len(experiments_list.crystals()) == 1
@@ -96,10 +98,10 @@ def test_refine_bravais_settings_trypsin(dials_regression, tmpdir):
     with tmpdir.as_cwd():
         refine_bravais_settings.run([pickle_path, experiments_path, "crystal_id=1"])
     for i in range(1, 10):
-        assert tmpdir.join("bravais_setting_%i.expt" % i).check()
+        assert tmpdir.join(f"bravais_setting_{i}.expt").check()
 
     experiments_list = load.experiment_list(
-        tmpdir.join("bravais_setting_5.expt").strpath, check_format=False
+        tmpdir.join("bravais_setting_5.expt"), check_format=False
     )
     assert len(experiments_list) == 1
     assert (
@@ -132,10 +134,10 @@ def test_refine_bravais_settings_554(dials_regression, tmpdir):
     with tmpdir.as_cwd():
         refine_bravais_settings.run([pickle_path, experiments_path])
     for i in range(1, 5):
-        assert tmpdir.join("bravais_setting_%i.expt" % i).check()
+        assert tmpdir.join(f"bravais_setting_{i}.expt").check()
 
     experiments_list = load.experiment_list(
-        tmpdir.join("bravais_setting_5.expt").strpath, check_format=False
+        tmpdir.join("bravais_setting_5.expt"), check_format=False
     )
     assert len(experiments_list) == 7
     assert len(experiments_list.crystals()) == 1
@@ -184,20 +186,20 @@ def test_setting_c2_vs_i2(
     tmpdir,
     capsys,
 ):
-    data_dir = dials_data("mpro_x0305_processed")
-    refl_path = data_dir.join("indexed.refl")
-    experiments_path = data_dir.join("indexed.expt")
+    data_dir = dials_data("mpro_x0305_processed", pathlib=True)
+    refl_path = data_dir / "indexed.refl"
+    experiments_path = data_dir / "indexed.expt"
     with tmpdir.as_cwd():
         refine_bravais_settings.run(
             [
-                experiments_path.strpath,
-                refl_path.strpath,
+                os.fspath(experiments_path),
+                os.fspath(refl_path),
                 f"best_monoclinic_beta={best_monoclinic_beta}",
             ]
         )
-    expts_orig = load.experiment_list(experiments_path.strpath, check_format=False)
+    expts_orig = load.experiment_list(experiments_path, check_format=False)
     expts = load.experiment_list(
-        tmpdir.join("bravais_setting_2.expt").strpath, check_format=False
+        tmpdir.join("bravais_setting_2.expt"), check_format=False
     )
     expected_bravais_lattice = str(
         sgtbx.bravais_types.bravais_lattice(symbol=expected_space_group)

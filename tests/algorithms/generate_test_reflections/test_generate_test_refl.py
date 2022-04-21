@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 from libtbx.phil import command_line
 
 from dials.algorithms.simulation.generate_test_reflections import main, master_phil
 
 
-def test_generate_test_reflections(run_in_tmpdir):
+def test_generate_test_reflections(run_in_tmp_path):
     cmd = command_line.argument_interpreter(master_phil=master_phil)
     working_phil = cmd.process_and_fetch(
         args=[
@@ -50,4 +52,4 @@ rotation {
         ]
     )
     main(working_phil.extract())
-    assert (run_in_tmpdir / "all_refl.refl").check()
+    assert (run_in_tmp_path / "all_refl.refl").exists()

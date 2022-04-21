@@ -1,12 +1,14 @@
+from __future__ import annotations
+
 import os
 import subprocess
 
 # Flake8 validation
 known_bad = {
-    "algorithms/rs_mapper/__init__.py": {"F401", "F403"},
-    "algorithms/shoebox/__init__.py": {"F401", "F403"},
-    "nexus/__init__.py": {"F401", "F403"},
-    "test/command_line/test_generate_distortion_maps.py": {"F841"},
+    "src/dials/algorithms/rs_mapper/__init__.py": {"F401", "F403"},
+    "src/dials/algorithms/shoebox/__init__.py": {"F401", "F403"},
+    "src/dials/nexus/__init__.py": {"F401", "F403"},
+    "src/dials/test/command_line/test_generate_distortion_maps.py": {"F841"},
 }
 failures = 0
 try:

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import random
 
 import pytest
@@ -14,7 +16,7 @@ from dials.array_family import flex
 def setup(request):
     space_group_symbol = request.param
     sgi = sgtbx.space_group_info(space_group_symbol)
-    cs = sgi.any_compatible_crystal_symmetry(volume=random.randint(1e4, 1e6))
+    cs = sgi.any_compatible_crystal_symmetry(volume=random.randint(10_000, 1_000_000))
     ms = cs.build_miller_set(anomalous_flag=True, d_min=3).expand_to_p1()
 
     # the reciprocal matrix

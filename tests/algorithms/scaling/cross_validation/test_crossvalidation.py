@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from unittest import mock
 
 import pytest
@@ -8,7 +10,7 @@ from dials.algorithms.scaling.cross_validation.cross_validate import cross_valid
 from dials.algorithms.scaling.cross_validation.crossvalidator import (
     DialsScaleCrossValidator,
 )
-from dials.util.options import OptionParser
+from dials.util.options import ArgumentParser
 
 
 def generated_param():
@@ -19,10 +21,8 @@ def generated_param():
   """,
         process_includes=True,
     )
-    optionparser = OptionParser(phil=phil_scope, check_format=False)
-    parameters, _ = optionparser.parse_args(
-        args=[], quick_parse=True, show_diff_phil=False
-    )
+    parser = ArgumentParser(phil=phil_scope, check_format=False)
+    parameters, _ = parser.parse_args(args=[], quick_parse=True, show_diff_phil=False)
     return parameters
 
 

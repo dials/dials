@@ -1,12 +1,15 @@
+from __future__ import annotations
+
 import os
 
 import pytest
 
 from cctbx import uctbx
 
-from dials.tests.algorithms.indexing.test_index import run_indexing
+from .test_index import run_indexing
 
 
+@pytest.mark.xfail
 def test_run(dials_regression, tmpdir):
     expected_unit_cell = uctbx.unit_cell(
         (11.624, 13.550, 30.103, 89.964, 93.721, 90.132)

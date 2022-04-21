@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 
 from dials.algorithms.indexing.basis_vector_search import (

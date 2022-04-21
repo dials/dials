@@ -91,14 +91,6 @@ be on the A face, not the conventional C face::
 
   dials.reindex bravais_setting_5.expt space_group=A222
 
-Here is part of the output::
-
-  New crystal:
-  Crystal:
-      Unit cell: (56.277, 99.550, 121.252, 90.000, 90.000, 90.000)
-      Space group: A 2 2 2
-
-
 We now have a face centred space group, which we can use to index the strong
 reflections as follows::
 
@@ -111,21 +103,21 @@ unconventional setting. We can fix this as follows::
 
 Solution 5 is what we want::
 
-  ----------------------------------------------------------------------------------------------------------------
-  Solution Metric fit  rmsd  min/max cc #spots lattice                                 unit_cell volume      cb_op
-  ----------------------------------------------------------------------------------------------------------------
-  *      5     0.0000 0.071 0.736/0.839  20000      oC  99.51 121.24  56.27  90.00  90.00  90.00 678839  b-c,b+c,a
-  *      4     0.0000 0.072 0.739/0.739  20000      mC  99.51 121.25  56.27  90.00  90.00  90.00 678994  b-c,b+c,a
-  *      3     0.0000 0.071 0.736/0.736  20000      mC 121.23  99.49  56.26  90.00  90.02  90.00 678556 b+c,-b+c,a
-  *      2     0.0000 0.069 0.839/0.839  20000      mP  78.35  56.24  78.39  90.00 101.24  90.00 338768    -c,-a,b
-  *      1     0.0000 0.070         -/-  20000      aP  56.22  78.38  78.34  78.75  90.00  90.01 338557      a,b,c
-  ----------------------------------------------------------------------------------------------------------------
+  +------------+--------------+--------+--------------+----------+-----------+-------------------------------------------+----------+------------+
+  |   Solution |   Metric fit |   rmsd | min/max cc   |   #spots | lattice   | unit_cell                                 |   volume | cb_op      |
+  |------------+--------------+--------+--------------+----------+-----------+-------------------------------------------+----------+------------|
+  |   *      5 |            0 |  0.071 | 0.736/0.839  |    20000 | oC        | 99.51 121.24  56.27  90.00  90.00  90.00  |   678848 | b+c,-b+c,a |
+  |   *      4 |            0 |  0.071 | 0.736/0.736  |    20000 | mC        | 121.21  99.48  56.26  90.00  89.99  90.00 |   678373 | b-c,b+c,a  |
+  |   *      3 |            0 |  0.071 | 0.739/0.739  |    20000 | mC        | 99.51 121.24  56.27  90.00  90.00  90.00  |   678914 | b+c,-b+c,a |
+  |   *      2 |            0 |  0.07  | 0.839/0.839  |    20000 | mP        | 78.39  56.23  78.35  90.00 101.24  90.00  |   338728 | c,a,b      |
+  |   *      1 |            0 |  0.07  | -/-          |    20000 | aP        | 56.22  78.33  78.37 101.24  90.01  90.00  |   338516 | a,b,c      |
+  +------------+--------------+--------+--------------+----------+-----------+-------------------------------------------+----------+------------+
 
 
 The table tells us that the indexed spots need a change of basis to be
 consistent with the conventional oC lattice::
 
-  dials.reindex indexed.refl change_of_basis_op=b-c,b+c,a
+  dials.reindex indexed.refl change_of_basis_op=b+c,-b+c,a
 
 This gives us :file:`reindexed.refl`. We can now pass this along with
 :file:`bravais_setting_5.expt` to refinement and then to integration.

@@ -14,6 +14,7 @@ Main processing commands:
    dials_reindex
    dials_refine
    dials_integrate
+   dials_two_theta_refine
    dials_cosym
    dials_symmetry
    dials_scale

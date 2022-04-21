@@ -2,6 +2,8 @@
 Tests for the reflection selection algorithm.
 """
 
+from __future__ import annotations
+
 import itertools
 from unittest.mock import Mock
 

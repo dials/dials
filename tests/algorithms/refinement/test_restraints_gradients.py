@@ -4,6 +4,8 @@ restraints
 """
 
 
+from __future__ import annotations
+
 import math
 import os
 
@@ -19,19 +21,13 @@ def test(dials_regression):
     )
 
     # Get modules to build models and minimiser using PHIL
-    from dials.tests.algorithms.refinement import setup_geometry
+    from . import geometry_phil, minimiser_phil, setup_geometry
 
     # Symmetry constrained parameterisation for the unit cell
     DEG2RAD = math.pi / 180.0
     RAD2DEG = 180.0 / math.pi
 
-    master_phil = parse(
-        """
-      include scope dials.tests.algorithms.refinement.geometry_phil
-      include scope dials.tests.algorithms.refinement.minimiser_phil
-      """,
-        process_includes=True,
-    )
+    master_phil = parse(f"{geometry_phil}\n{minimiser_phil}")
 
     # make cell more oblique
     args = [

@@ -1,6 +1,8 @@
 """Test Refiners can be constructed with various configurations"""
 
 
+from __future__ import annotations
+
 import os
 from copy import deepcopy
 
@@ -56,11 +58,11 @@ def test_multi_panel_parameterisations(
 def test_trim_scans_to_observations(dials_data):
 
     # Use 4 scan data for this test
-    data_dir = dials_data("l_cysteine_dials_output")
+    data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
     experiments = ExperimentListFactory.from_json_file(
-        (data_dir / "indexed.expt").strpath, check_format=False
+        data_dir / "indexed.expt", check_format=False
     )
-    reflections = flex.reflection_table.from_file((data_dir / "indexed.refl").strpath)
+    reflections = flex.reflection_table.from_file(data_dir / "indexed.refl")
 
     # Check the image and oscillation range are what we expect
     image_ranges = [e.scan.get_image_range() for e in experiments]
