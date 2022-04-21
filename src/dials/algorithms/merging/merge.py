@@ -29,6 +29,8 @@ from dials.util import tabulate
 from dials.util.export_mtz import MADMergedMTZWriter, MergedMTZWriter
 from dials.util.filter_reflections import filter_reflection_table
 
+from .french_wilson import french_wilson
+
 logger = logging.getLogger("dials")
 
 
@@ -277,7 +279,7 @@ def truncate(merged_intensities):
     logger.info("\nPerforming French-Wilson treatment of scaled intensities")
     out = StringIO()
     if merged_intensities.anomalous_flag():
-        anom_amplitudes = merged_intensities.french_wilson(log=out)
+        anom_amplitudes = french_wilson(merged_intensities)
         n_removed = merged_intensities.size() - anom_amplitudes.size()
         assert anom_amplitudes.is_xray_amplitude_array()
         amplitudes = anom_amplitudes.as_non_anomalous_array()
@@ -286,7 +288,7 @@ def truncate(merged_intensities):
     else:
         anom_amplitudes = None
         dano = None
-        amplitudes = merged_intensities.french_wilson(log=out)
+        amplitudes = french_wilson(merged_intensities)
         n_removed = merged_intensities.size() - amplitudes.size()
     logger.info("Total number of rejected intensities %s", n_removed)
     logger.debug(out.getvalue())
