@@ -50,9 +50,8 @@ if xfel_module := libtbx.env.module_dict.get("xfel"):
             """\033[31;1m
 Error:
     The \033[34mxfel\033[31m module is loaded before the \033[34mdials\033[31m module in the libtbx
-    module list. dials has changed source location layout, so in order
-    for xfel to continue to find the headers it needs, it must be
-    reconfigured.
+    module list. dials has changed to \033[0;1msrc/\033[1;31m layout, so in order for xfel
+    to continue to find the headers it needs, it must be reconfigured.
 
     To fix this, please run:
 
