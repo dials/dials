@@ -301,7 +301,7 @@ def test_flatten():
 
 
 def test_all_foreground_valid():
-    from dials.tests.model.data.all_foreground_valid_data import data
+    from .all_foreground_valid_data import data
 
     shoeboxes = pickle.loads(bytes(data, encoding="latin-1"), encoding="bytes")
     for i, shoebox in enumerate(shoeboxes):
