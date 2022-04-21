@@ -46,16 +46,19 @@ if xfel_module := libtbx.env.module_dict.get("xfel"):
     if libtbx.env.module_list.index(xfel_module) < libtbx.env.module_list.index(
         dials_module
     ):
-        module_names = [x.name for x in libtbx.env.module_list]
-        module_names.remove("xfel")
-        module_names.insert(0, "xfel")
         sys.exit(
-            f"""
-\033[31;1mError: \033[34mxfel\033[31m module is configured before \033[34mdials\033[31m, but now requires dials configured first.
+            """\033[31;1m
+Error:
+    The \033[34mxfel\033[31m module is loaded before the \033[34mdials\033[31m module in the libtbx
+    module list. dials has changed source location layout, so in order
+    for xfel to continue to find the headers it needs, it must be
+    reconfigured.
 
-To fix this, please run:
+    To fix this, please run:
 
-        \033[0;1mlibtbx.configure --exclude=xfel {' '.join(module_names)}\033[0m
+        \033[0;1mlibtbx.configure xfel\033[0m
+
+    \033[31;1mApologies for the inconvenience!\033[0m
 """
         )
 
