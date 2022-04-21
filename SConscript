@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import libtbx.load_env
 import os
 import platform
@@ -7,7 +5,7 @@ from libtbx.env_config import get_boost_library_with_python_version
 
 Import("env_etc")
 
-env_etc.dials_dist = libtbx.env.dist_path("dials")
+env_etc.dials_dist = os.path.join(libtbx.env.dist_path("dials"), "src", "dials")
 env_etc.dials_include = os.path.dirname(env_etc.dials_dist)
 if not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include"):
     Import("env_no_includes_boost_python_ext")
@@ -43,13 +41,13 @@ if not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include"):
         LIBS=env_etc.libm
         + ["scitbx_boost_python", boost_python, "boost_thread", "cctbx"],
     )
-    env.SConscript("model/SConscript", exports={"env": env})
-    env.SConscript("array_family/SConscript", exports={"env": env})
-    env.SConscript("algorithms/SConscript", exports={"env": env})
-    env.SConscript("pychef/SConscript", exports={"env": env})
-    env.SConscript("viewer/SConscript", exports={"env": env})
-    # env.SConscript('nexus/SConscript', exports={ 'env' : env })
-    env.SConscript("util/SConscript", exports={"env": env})
+    env.SConscript("src/dials/model/SConscript", exports={"env": env})
+    env.SConscript("src/dials/array_family/SConscript", exports={"env": env})
+    env.SConscript("src/dials/algorithms/SConscript", exports={"env": env})
+    env.SConscript("src/dials/pychef/SConscript", exports={"env": env})
+    env.SConscript("src/dials/viewer/SConscript", exports={"env": env})
+    # env.SConscript('src/dials/nexus/SConscript', exports={ 'env' : env })
+    env.SConscript("src/dials/util/SConscript", exports={"env": env})
 
     autocomplete_scons = os.path.join(
         libtbx.env.under_build(os.path.join("dials", "autocomplete")), "SConscript"
