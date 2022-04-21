@@ -17,7 +17,7 @@ from dials.algorithms.profile_model.gaussian_rs import (
 @pytest.fixture
 def setup(dials_data):
     sequence = load.imageset(
-        dials_data("centroid_test_data").join("sweep.json").strpath
+        dials_data("centroid_test_data", pathlib=True) / "sweep.json"
     )
 
     fixture = {}
@@ -56,7 +56,6 @@ def test_outer_bounds(setup):
     zrange = setup["scan"].get_array_range()
 
     for i in range(1000):
-
         # Get random x, y, z
         x = random.uniform(0, 2000)
         y = random.uniform(0, 2000)
@@ -136,7 +135,6 @@ def test_radius(setup):
     radius12 = setup["delta_divergence"]
 
     for i in range(1000):
-
         # Get random x, y, z
         x = random.uniform(0, 2000)
         y = random.uniform(0, 2000)
