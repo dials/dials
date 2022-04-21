@@ -18,7 +18,7 @@ from dials.array_family import flex
 
 def test(dials_data):
     experiment = ExperimentList.from_file(
-        dials_data("centroid_test_data").join("experiments.json")
+        dials_data("centroid_test_data", pathlib=True) / "experiments.json"
     )
 
     beam = experiment[0].beam
