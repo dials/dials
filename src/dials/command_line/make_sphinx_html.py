@@ -2,88 +2,83 @@
 
 from __future__ import annotations
 
-import os
+import argparse
+import shutil
 import sys
-from optparse import SUPPRESS_HELP, OptionParser
+from pathlib import Path
 
 import procrunner
-import py
 
 import dials.util
 
 
 @dials.util.show_mail_handle_errors()
 def run(args=None):
-    dials_dir = py.path.local(dials.__file__).dirpath()
+    # Navigate to the DIALS root
+    dials_dir = Path(dials.__file__).parent.parent.parent
     sphinx_dir = dials_dir / "doc" / "sphinx"
+    if not sphinx_dir.is_dir():
+        sys.exit(
+            "Error: Could not find DIALS sphinx folder at ../../doc/sphinx - are you running from a checkout?"
+        )
     tutorial_doc_dir = sphinx_dir / "documentation" / "tutorials"
 
-    parser = OptionParser(description="Generate documentation website for DIALS")
-    parser.add_option("-?", action="help", help=SUPPRESS_HELP)
-    parser.add_option(
+    parser = argparse.ArgumentParser(
+        description="Generate documentation website for DIALS",
+        prog="dev.dials.make_sphinx_html",
+    )
+    parser.add_argument("-?", action="help", help=argparse.SUPPRESS)
+    parser.add_argument(
         "-s",
         "--strict",
-        dest="strict",
         action="store_true",
         default=True,
         help="Run in strict mode and stop on encountering any errors or warnings (default)",
     )
-    parser.add_option(
+    parser.add_argument(
         "-i",
         "--ignore",
         dest="strict",
         action="store_false",
         help="Ignore any errors or warnings",
     )
-    parser.add_option(
+    parser.add_argument(
         "-l",
         "--logs",
         dest="logs",
-        action="store",
-        type="string",
-        default=None,
-        help="Use generated dials output logs from this location",
+        type=Path,
+        help="Use generated dials output logs from this location.",
     )
-    parser.add_option(
+    parser.add_argument(
         "-o",
         "--output",
-        dest="output",
-        action="store",
-        type="string",
-        default=(sphinx_dir / "build" / "html").strpath,
-        help="Generate output in this location",
+        type=Path,
+        default=str((sphinx_dir / "build" / "html")),
+        help="Generate output in this location. Defaults to dials doc/sphinx dir.",
     )
-    parser.add_option(
+    parser.add_argument(
         "--legacy-version",
-        dest="legacy_version",
-        action="store",
-        type="string",
-        default=None,
         metavar="VERSION",
         help="Add a warning message to every page saying that this documentation "
         "relates to the out-of-date version VERSION",
     )
-    parser.add_option(
+    parser.add_argument(
         "--clean",
-        dest="clean",
         action="store_true",
-        default=False,
         help="Empty the output directory before building the documentation",
     )
-    parser.add_option(
+    parser.add_argument(
         "--parallel",
-        dest="parallel",
         action="store_true",
-        default=False,
         help="Build documentation in parallel",
     )
-    options, _ = parser.parse_args(args)
+    options = parser.parse_args(args)
 
-    output_dir = py.path.local(options.output)
+    output_dir = Path(options.output)
     if options.clean:
-        print("Cleaning out", output_dir.strpath)
-        output_dir.remove()
-    print("Generating documentation into", output_dir.strpath)
+        print(f"Cleaning out {output_dir}")
+        shutil.rmtree(output_dir)
+    print(f"Generating documentation into {output_dir}")
 
     command = ["libtbx.sphinx-build", "-b", "html", ".", output_dir]
     if options.parallel:
@@ -98,15 +93,16 @@ def run(args=None):
         if options.legacy_version:
             branch = "dials-" + options.legacy_version
         log_dir = dials_dir / ".." / "dials.github.io" / "tutorial_data" / branch
-        if log_dir.check(dir=1):
-            options.logs = log_dir.strpath
-            print("Using DIALS logs from", options.logs)
+        if log_dir.is_dir():
+            options.logs = Path(log_dir)
+            print(f"Using DIALS logs from {options.logs}")
 
     if options.logs:
-        command.extend(["-D", "dials_logs=" + os.path.abspath(options.logs)])
+        command.extend(["-D", f"dials_logs={options.logs.resolve()}"])
         for report in ("betalactamase", "thaumatin"):
-            py.path.local(options.logs).join(report).join("dials.report.html").copy(
-                tutorial_doc_dir.join(report + "-report.html")
+            shutil.copy(
+                Path(options.logs) / report / "dials.report.html",
+                tutorial_doc_dir / f"{report}-report.html",
             )
     else:
         sys.exit(
@@ -114,15 +110,11 @@ def run(args=None):
         )
 
     env = {}
-    # Disable all HTTPS verification. This is to work around an issue
-    # in biopython, possibly biopython relying on unreliable servers.
-    # env["PYTHONHTTPSVERIFY"] = "0"
-
     result = procrunner.run(
         command, environment_override=env, working_directory=sphinx_dir
     )
     if result.returncode:
-        sys.exit("Sphinx build failed with exit code %d" % result.returncode)
+        sys.exit(f"Sphinx build failed with exit code {result.returncode}")
 
 
 if __name__ == "__main__":
