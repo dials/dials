@@ -7,7 +7,7 @@ import pytest
 from dxtbx.model import ExperimentList
 from libtbx import phil
 
-from dials.command_line.dials_import import ImageImporter
+from dials.command_line.dials_import import do_import
 from dials.command_line.dials_import import phil_scope as import_phil_scope
 from dials.command_line.generate_mask import generate_mask, phil_scope
 
@@ -163,8 +163,10 @@ def test_generate_mask_trusted_range(dials_data, tmpdir):
     )
     with tmpdir.as_cwd():
         # Import as usual
-        importer = ImageImporter(import_phil_scope)
-        importer.import_image(["output.experiments=no-overloads.expt"] + image_files)
+        do_import(
+            ["output.experiments=no-overloads.expt"] + image_files,
+            phil=import_phil_scope,
+        )
 
         experiments = ExperimentList.from_file(tmpdir / "no-overloads.expt")
         params = phil_scope.fetch(
@@ -174,9 +176,9 @@ def test_generate_mask_trusted_range(dials_data, tmpdir):
         generate_mask(experiments, params)
 
         # Import with narrow trusted range to produce overloads
-        importer = ImageImporter(import_phil_scope)
-        importer.import_image(
-            ["trusted_range=-1,100", "output.experiments=overloads.expt"] + image_files
+        do_import(
+            ["trusted_range=-1,100", "output.experiments=overloads.expt"] + image_files,
+            phil=import_phil_scope,
         )
 
         experiments = ExperimentList.from_file(tmpdir / "overloads.expt")

@@ -1,0 +1,1 @@
+``dials.command_line.dials_import.ImageImporter`` is now deprecated. Please use ``dials_import.do_import`` instead.
