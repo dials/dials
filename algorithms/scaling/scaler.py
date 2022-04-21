@@ -950,7 +950,6 @@ class MultiScalerBase(ScalerBase):
                 dataset_id=i,
                 column="inverse_scale_factor",
             )
-            self.global_Ih_table.calc_Ih()
             if self._free_Ih_table:
                 self._free_Ih_table.update_data_in_blocks(
                     scaler.reflection_table["inverse_scale_factor"].select(
@@ -959,7 +958,10 @@ class MultiScalerBase(ScalerBase):
                     dataset_id=i,
                     column="inverse_scale_factor",
                 )
-                self._free_Ih_table.calc_Ih()
+
+        self.global_Ih_table.calc_Ih()
+        if self._free_Ih_table:
+            self._free_Ih_table.calc_Ih()
         logger.info(
             "Scale factors determined during minimisation have now been\n"
             "applied to all datasets.\n"
@@ -1661,6 +1663,7 @@ class TargetScaler(MultiScalerBase):
         logger.info("Determining symmetry equivalent reflections across datasets.\n")
         self.unscaled_scalers = unscaled_scalers
         self._active_scalers = unscaled_scalers
+        self._target_active_scalers = unscaled_scalers
         self._global_Ih_table, self._free_Ih_table = self._create_global_Ih_table(
             self.params.anomalous
         )
@@ -1705,12 +1708,17 @@ class TargetScaler(MultiScalerBase):
     @Subject.notify_event(event="performed_scaling")
     def perform_scaling(self, engine=None, max_iterations=None, tolerance=None):
         """Minimise the scaling model, using a fixed-Ih target."""
-        self._perform_scaling(
-            target_type=ScalingTargetFixedIH,
-            engine=engine,
-            max_iterations=max_iterations,
-            tolerance=tolerance,
-        )
+        for scaler in self._target_active_scalers:
+            self._active_scalers = [scaler]
+            self._create_Ih_table()
+            self._update_model_data()
+            self._perform_scaling(
+                target_type=ScalingTargetFixedIH,
+                engine=engine,
+                max_iterations=max_iterations,
+                tolerance=tolerance,
+            )
+        self._active_scalers = self._target_active_scalers
 
 
 class NullScaler(ScalerBase):

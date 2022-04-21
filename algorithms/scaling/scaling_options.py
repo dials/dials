@@ -126,6 +126,11 @@ phil_scope = iotbx.phil.parse(
       .help = "Value below which reflections are removed from the dataset due"
               "to low I/sigI in either profile or summation intensity estimates"
       .expert_level = 1
+    small_scale_cutoff = 1e-9
+      .type = float
+      .help = "After scaling, remove reflections with scale factors below this"
+              "value, in order to avoid reflections with negative scale factors."
+      .expert_level = 3
   }
   scaling_options {
     check_consistent_indexing = False
