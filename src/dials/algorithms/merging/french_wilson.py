@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import math
 from dataclasses import dataclass
 
 import numpy as np
@@ -46,6 +47,7 @@ def french_wilson(
         four_stol_sq,
         intensities,
         n_bins=n_bins,
+        m_estimator=standardized_median,
     )
     rejected |= expected_intensities == 0
     valid = ~rejected
@@ -87,14 +89,19 @@ def french_wilson(
     )
 
 
+def standardized_median(a: np.ndarray) -> float:
+    return np.median(a) / math.log(2)
+
+
 def compute_expected_intensities(
     x: np.ndarray,
     intensities: np.ndarray,
     n_bins: int,
+    m_estimator="mean",
 ) -> np.ndarray:
     # Compute the mean intensities binned according to x
     bin_means, bin_edges, binnumber = stats.binned_statistic(
-        x, intensities, statistic="mean", bins=n_bins
+        x, intensities, statistic=m_estimator, bins=n_bins
     )
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
 
