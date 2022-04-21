@@ -2,6 +2,9 @@
 difference calculations"""
 
 
+from __future__ import annotations
+
+
 def test(args=[]):
     # Python and cctbx imports
     import random
@@ -48,8 +51,10 @@ def test(args=[]):
     # Reflection prediction
     from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
 
+    from . import geometry_phil
+
     # Experimental model builder
-    from dials.tests.algorithms.refinement.setup_geometry import Extract
+    from .setup_geometry import Extract
 
     # Local functions
     def random_direction_close_to(vector, sd=0.5):
@@ -68,12 +73,7 @@ def test(args=[]):
   geometry.parameters.crystal.b.length.range = 10 15
   geometry.parameters.crystal.c.length.range = 10 15"""
 
-    master_phil = parse(
-        """
-      include scope dials.tests.algorithms.refinement.geometry_phil
-      """,
-        process_includes=True,
-    )
+    master_phil = parse(geometry_phil)
 
     models = Extract(master_phil, overrides, cmdline_args=args)
 

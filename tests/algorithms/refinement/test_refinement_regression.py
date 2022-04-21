@@ -4,6 +4,9 @@ parameters using generated reflection positions from ideal geometry.
 """
 
 
+from __future__ import annotations
+
+
 def test():
     # Python and cctbx imports
     from math import pi
@@ -22,9 +25,6 @@ def test():
     from scitbx import matrix
     from scitbx.array_family import flex
 
-    # Get modules to build models and minimiser using PHIL
-    import dials.tests.algorithms.refinement.setup_geometry as setup_geometry
-    import dials.tests.algorithms.refinement.setup_minimiser as setup_minimiser
     from dials.algorithms.refinement.parameterisation.beam_parameters import (
         BeamParameterisation,
     )
@@ -56,6 +56,9 @@ def test():
     # Reflection prediction
     from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
 
+    # Get modules to build models and minimiser using PHIL
+    from . import geometry_phil, minimiser_phil, setup_geometry, setup_minimiser
+
     #############################
     # Setup experimental models #
     #############################
@@ -84,13 +87,7 @@ def test():
     detector.centre.exactly.value=1.0 -0.5 199.0
   }"""
 
-    master_phil = parse(
-        """
-  include scope dials.tests.algorithms.refinement.geometry_phil
-  include scope dials.tests.algorithms.refinement.minimiser_phil
-  """,
-        process_includes=True,
-    )
+    master_phil = parse(f"{geometry_phil}\n{minimiser_phil}")
 
     models = setup_geometry.Extract(
         master_phil, local_overrides=override, verbose=False

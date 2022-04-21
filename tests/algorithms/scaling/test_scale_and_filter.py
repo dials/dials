@@ -1,5 +1,7 @@
 """Test that compute_delta_cchalf returns required values"""
+from __future__ import annotations
 
+import json
 from unittest import mock
 
 from dxtbx.model import Crystal, Experiment, Scan
@@ -10,7 +12,7 @@ from dials.algorithms.scaling.model.model import KBScalingModel
 from dials.algorithms.scaling.scale_and_filter import AnalysisResults, log_cycle_results
 from dials.algorithms.statistics.cc_half_algorithm import CCHalfFromDials, DeltaCCHalf
 from dials.array_family import flex
-from dials.util.options import OptionParser
+from dials.util.options import ArgumentParser
 
 
 def generate_test_reflections(n=2):
@@ -37,10 +39,8 @@ def generated_params():
   """,
         process_includes=True,
     )
-    optionparser = OptionParser(phil=phil_scope, check_format=False)
-    parameters, _ = optionparser.parse_args(
-        args=[], quick_parse=True, show_diff_phil=False
-    )
+    parser = ArgumentParser(phil=phil_scope, check_format=False)
+    parameters, _ = parser.parse_args(args=[], quick_parse=True, show_diff_phil=False)
     parameters.model = "KB"
     return parameters
 
@@ -186,3 +186,19 @@ def test_compute_delta_cchalf_returned_results():
     assert [(6, 10), 0] in results_summary["dataset_removal"]["image_ranges_removed"]
     assert [(1, 5), 0] in results_summary["dataset_removal"]["image_ranges_removed"]
     assert len(results_summary["dataset_removal"]["image_ranges_removed"]) == 2
+
+
+def test_analysis_results_to_from_dict():
+    d = {
+        "termination_reason": "made up",
+        "initial_expids_and_image_ranges": [["foo", [1, 42]], ["bar", [1, 10]]],
+        "expids_and_image_ranges": [["foo", [1, 42]]],
+        "cycle_results": {"1": {"some stat": -424242}},
+        "initial_n_reflections": 424242,
+        "final_stats": "some final stats",
+    }
+    results = AnalysisResults.from_dict(d)
+    # The cycle_results dict output by AnalysisResults has integer keys but after
+    # conversion to json has str keys. AnalysisResults.from_dict expects str keys,
+    # hence do the comparison after converting to/from json
+    assert json.loads(json.dumps(results.to_dict())) == d

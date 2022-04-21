@@ -1,6 +1,10 @@
+from __future__ import annotations
+
 import math
 
 import pytest
+
+from . import geometry_phil
 
 
 def test():
@@ -36,7 +40,7 @@ def test():
     from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
 
     ##### Import model builder
-    from dials.tests.algorithms.refinement.setup_geometry import Extract
+    from .setup_geometry import Extract
 
     #### Create models
 
@@ -44,12 +48,7 @@ def test():
   geometry.parameters.crystal.b.length.range = 10 50
   geometry.parameters.crystal.c.length.range = 10 50"""
 
-    master_phil = parse(
-        """
-      include scope dials.tests.algorithms.refinement.geometry_phil
-      """,
-        process_includes=True,
-    )
+    master_phil = parse(geometry_phil)
 
     models = Extract(master_phil, overrides)
 

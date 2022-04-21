@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import collections
-import glob
 import os
+import pathlib
 
 import procrunner
 import pytest
@@ -59,14 +61,14 @@ def run_indexing(
     result = procrunner.run(commands, working_directory=working_directory)
     assert not result.returncode and not result.stderr
 
-    out_expts = working_directory.join("indexed.expt")
-    out_refls = working_directory.join("indexed.refl")
-    assert out_expts.check()
-    assert out_refls.check()
+    out_expts = working_directory / "indexed.expt"
+    out_refls = working_directory / "indexed.refl"
+    assert out_expts.is_file()
+    assert out_refls.is_file()
 
-    experiments_list = load.experiment_list(out_expts.strpath, check_format=False)
+    experiments_list = load.experiment_list(out_expts, check_format=False)
     assert len(experiments_list.crystals()) == n_expected_lattices
-    indexed_reflections = flex.reflection_table.from_file(out_refls.strpath)
+    indexed_reflections = flex.reflection_table.from_file(out_refls)
     indexed_reflections.assert_experiment_identifiers_are_consistent(experiments_list)
     rmsds = None
 
@@ -109,7 +111,7 @@ def run_indexing(
     return _indexing_result(indexed_reflections, experiments_list, rmsds)
 
 
-def test_index_i04_weak_data_fft3d(dials_regression, tmpdir):
+def test_index_i04_weak_data_fft3d(dials_regression, tmp_path):
     # thaumatin
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
     pickle_path = os.path.join(data_dir, "full.pickle")
@@ -127,7 +129,7 @@ def test_index_i04_weak_data_fft3d(dials_regression, tmpdir):
     run_indexing(
         pickle_path,
         sequence_path,
-        tmpdir,
+        tmp_path,
         extra_args,
         expected_unit_cell,
         expected_rmsds,
@@ -135,11 +137,11 @@ def test_index_i04_weak_data_fft3d(dials_regression, tmpdir):
     )
 
 
-def test_index_trypsin_four_lattice_P212121(dials_regression, tmpdir):
+def test_index_trypsin_four_lattice_P212121(dials_regression, tmp_path):
     # synthetic trypsin multi-lattice dataset (4 lattices)
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
-    pickle_path = os.path.join(data_dir, "P1_X6_1_2_3_4.pickle")
-    sequence_path = os.path.join(data_dir, "experiments_P1_X6_1_2_3_4.json")
+    data_dir = pathlib.Path(dials_regression) / "indexing_test_data" / "trypsin"
+    pickle_path = data_dir / "P1_X6_1_2_3_4.pickle"
+    sequence_path = data_dir / "experiments_P1_X6_1_2_3_4.json"
     extra_args = [
         "indexing.method=real_space_grid_search",
         "reflections_per_degree=10",
@@ -159,7 +161,7 @@ def test_index_trypsin_four_lattice_P212121(dials_regression, tmpdir):
     run_indexing(
         pickle_path,
         sequence_path,
-        tmpdir,
+        tmp_path,
         extra_args,
         expected_unit_cell,
         expected_rmsds,
@@ -170,11 +172,11 @@ def test_index_trypsin_four_lattice_P212121(dials_regression, tmpdir):
     )
 
 
-def test_index_i04_weak_data_fft1d(dials_regression, tmpdir):
+def test_index_i04_weak_data_fft1d(dials_regression, tmp_path):
     # thaumatin
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
-    pickle_path = os.path.join(data_dir, "full.pickle")
-    sequence_path = os.path.join(data_dir, "experiments_import.json")
+    data_dir = pathlib.Path(dials_regression) / "indexing_test_data" / "i04_weak_data"
+    pickle_path = data_dir / "full.pickle"
+    sequence_path = data_dir / "experiments_import.json"
     extra_args = [
         "n_macro_cycles=2",
         "indexing.method=fft1d",
@@ -190,7 +192,7 @@ def test_index_i04_weak_data_fft1d(dials_regression, tmpdir):
     run_indexing(
         pickle_path,
         sequence_path,
-        tmpdir,
+        tmp_path,
         extra_args,
         expected_unit_cell,
         expected_rmsds,
@@ -198,11 +200,11 @@ def test_index_i04_weak_data_fft1d(dials_regression, tmpdir):
     )
 
 
-def test_index_trypsin_index_assignment_local(dials_regression, tmpdir):
+def test_index_trypsin_index_assignment_local(dials_regression, tmp_path):
     # synthetic trypsin multi-lattice dataset (3 lattices)
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
-    pickle_path = os.path.join(data_dir, "P1_X6_1_2_3.pickle")
-    sequence_path = os.path.join(data_dir, "experiments_P1_X6_1_2_3.json")
+    data_dir = pathlib.Path(dials_regression) / "indexing_test_data" / "trypsin"
+    pickle_path = data_dir / "P1_X6_1_2_3.pickle"
+    sequence_path = data_dir / "experiments_P1_X6_1_2_3.json"
     extra_args = [
         "indexing.method=real_space_grid_search",
         "d_min_start=3",
@@ -225,7 +227,7 @@ def test_index_trypsin_index_assignment_local(dials_regression, tmpdir):
     run_indexing(
         pickle_path,
         sequence_path,
-        tmpdir,
+        tmp_path,
         extra_args,
         expected_unit_cell,
         expected_rmsds,
@@ -236,11 +238,11 @@ def test_index_trypsin_index_assignment_local(dials_regression, tmpdir):
     )
 
 
-def test_index_peak_search_clean(dials_regression, tmpdir):
+def test_index_peak_search_clean(dials_regression, tmp_path):
     # test indexing from single image of i04_weak_data
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
-    pickle_path = os.path.join(data_dir, "first_image.pickle")
-    sequence_path = os.path.join(data_dir, "experiments_import.json")
+    data_dir = pathlib.Path(dials_regression) / "indexing_test_data" / "i04_weak_data"
+    pickle_path = data_dir / "first_image.pickle"
+    sequence_path = data_dir / "experiments_import.json"
     extra_args = [
         "indexing.method=fft3d",
         "known_symmetry.space_group=P4",
@@ -258,7 +260,7 @@ def test_index_peak_search_clean(dials_regression, tmpdir):
     run_indexing(
         pickle_path,
         sequence_path,
-        tmpdir,
+        tmp_path,
         extra_args,
         expected_unit_cell,
         expected_rmsds,
@@ -267,12 +269,12 @@ def test_index_peak_search_clean(dials_regression, tmpdir):
 
 
 @pytest.mark.parametrize("specify_unit_cell", [False, True])
-def test_index_imosflm_tutorial(dials_regression, tmpdir, specify_unit_cell):
+def test_index_imosflm_tutorial(dials_regression, tmp_path, specify_unit_cell):
     # test on spots derived from imosflm tutorial data:
     # http://www.ccp4.ac.uk/courses/BCA2005/tutorials/dataproc-tutorial.html
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "imosflm_hg_mar")
-    pickle_path = os.path.join(data_dir, "strong.pickle")
-    sequence_path = os.path.join(data_dir, "experiments.json")
+    data_dir = pathlib.Path(dials_regression) / "indexing_test_data" / "imosflm_hg_mar"
+    pickle_path = data_dir / "strong.pickle"
+    sequence_path = data_dir / "experiments.json"
 
     unit_cell = uctbx.unit_cell((58.373, 58.373, 155.939, 90, 90, 120))
     hall_symbol = '-R 3 2"'
@@ -293,7 +295,7 @@ def test_index_imosflm_tutorial(dials_regression, tmpdir, specify_unit_cell):
     run_indexing(
         pickle_path,
         sequence_path,
-        tmpdir,
+        tmp_path,
         extra_args,
         expected_unit_cell,
         expected_rmsds,
@@ -302,36 +304,34 @@ def test_index_imosflm_tutorial(dials_regression, tmpdir, specify_unit_cell):
 
 
 @pytest.fixture(scope="session")
-def insulin_spotfinding(dials_data, tmpdir_factory):
+def insulin_spotfinding(dials_data, tmp_path_factory):
     """Return experiment and reflection files for 2 images of the insulin dataset"""
 
-    data_dir = dials_data("insulin")
-    tmpdir = tmpdir_factory.mktemp("insulin")
+    data_dir = dials_data("insulin", pathlib=True)
+    tmp_path = tmp_path_factory.mktemp("insulin")
 
     command = ["dials.import"]
     for i, image_path in enumerate(("insulin_1_001.img", "insulin_1_045.img")):
-        target = "image_00%i.img" % (i + 1)
-        data_dir.join(image_path).copy(tmpdir.join(target))
-        command.append(target)
+        command.append(data_dir / image_path)
 
-    result = procrunner.run(command, working_directory=tmpdir)
+    result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
 
-    experiment = tmpdir.join("imported.expt")
-    assert experiment.check()
+    experiment = tmp_path / "imported.expt"
+    assert experiment.is_file()
 
     command = ["dials.find_spots", "nproc=1", experiment]
-    result = procrunner.run(command, working_directory=tmpdir)
+    result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
 
-    reflections = tmpdir.join("strong.refl")
-    assert reflections.check()
+    reflections = tmp_path / "strong.refl"
+    assert reflections.is_file()
 
     return experiment, reflections
 
 
 @pytest.mark.parametrize("method", ["fft3d", "fft1d", "real_space_grid_search"])
-def test_index_insulin_multi_sequence(insulin_spotfinding, tmpdir, method):
+def test_index_insulin_multi_sequence(insulin_spotfinding, tmp_path, method):
     experiment, reflections = insulin_spotfinding
     expected_unit_cell = uctbx.unit_cell(
         (78.163, 78.163, 78.163, 90.000, 90.000, 90.000)
@@ -348,7 +348,7 @@ def test_index_insulin_multi_sequence(insulin_spotfinding, tmpdir, method):
     run_indexing(
         reflections,
         experiment,
-        tmpdir,
+        tmp_path,
         extra_args,
         expected_unit_cell,
         expected_rmsds,
@@ -357,36 +357,36 @@ def test_index_insulin_multi_sequence(insulin_spotfinding, tmpdir, method):
 
 
 @pytest.fixture(scope="session")
-def insulin_spotfinding_stills(dials_data, tmpdir_factory):
+def insulin_spotfinding_stills(dials_data, tmp_path_factory):
     """Return experiment and reflection files for 1 image of the insulin
     dataset treated as still image"""
 
-    data_dir = dials_data("insulin")
-    tmpdir = tmpdir_factory.mktemp("insulin")
+    data_dir = dials_data("insulin", pathlib=True)
+    tmp_path = tmp_path_factory.mktemp("insulin")
 
     command = [
         "dials.import",
         "convert_sequences_to_stills=True",
-        data_dir.join("insulin_1_001.img"),
+        data_dir / "insulin_1_001.img",
     ]
-    result = procrunner.run(command, working_directory=tmpdir)
+    result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
 
-    experiment = tmpdir.join("imported.expt")
-    assert experiment.check()
+    experiment = tmp_path / "imported.expt"
+    assert experiment.is_file()
 
     command = ["dials.find_spots", "nproc=1", experiment]
-    result = procrunner.run(command, working_directory=tmpdir)
+    result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
 
-    reflections = tmpdir.join("strong.refl")
-    assert reflections.check()
+    reflections = tmp_path / "strong.refl"
+    assert reflections.is_file()
 
     return experiment, reflections
 
 
 @pytest.mark.parametrize("method", ["fft3d", "fft1d", "real_space_grid_search"])
-def test_index_insulin_force_stills(insulin_spotfinding_stills, tmpdir, method):
+def test_index_insulin_force_stills(insulin_spotfinding_stills, tmp_path, method):
     experiment, reflections = insulin_spotfinding_stills
     expected_unit_cell = uctbx.unit_cell(
         (78.163, 78.163, 78.163, 90.000, 90.000, 90.000)
@@ -405,7 +405,7 @@ def test_index_insulin_force_stills(insulin_spotfinding_stills, tmpdir, method):
     run_indexing(
         reflections,
         experiment,
-        tmpdir,
+        tmp_path,
         extra_args,
         expected_unit_cell,
         expected_rmsds,
@@ -413,15 +413,15 @@ def test_index_insulin_force_stills(insulin_spotfinding_stills, tmpdir, method):
     )
 
 
-def test_multiple_experiments(dials_regression, tmpdir):
+def test_multiple_experiments(dials_regression, tmp_path):
     # Test indexing 4 lysozyme still shots in a single dials.index job
     #   - the first image doesn't index
     #   - the last three images do index
-    data_dir = os.path.join(
-        dials_regression, "indexing_test_data", "i24_lysozyme_stills"
+    data_dir = (
+        pathlib.Path(dials_regression) / "indexing_test_data" / "i24_lysozyme_stills"
     )
-    pickle_path = os.path.join(data_dir, "strong.pickle")
-    experiments_json = os.path.join(data_dir, "imported_experiments.json")
+    pickle_path = data_dir / "strong.pickle"
+    experiments_json = data_dir / "imported_experiments.json"
 
     expected_unit_cell = uctbx.unit_cell((38.06, 78.78, 78.91, 90, 90, 90))
     expected_hall_symbol = " P 1"
@@ -436,7 +436,7 @@ def test_multiple_experiments(dials_regression, tmpdir):
     run_indexing(
         pickle_path,
         experiments_json,
-        tmpdir,
+        tmp_path,
         extra_args,
         expected_unit_cell,
         expected_rmsds,
@@ -446,10 +446,10 @@ def test_multiple_experiments(dials_regression, tmpdir):
     )
 
 
-def test_index_4rotation(dials_regression, tmpdir):
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "4rotation")
-    pickle_path = os.path.join(data_dir, "strong.pickle")
-    sequence_path = os.path.join(data_dir, "experiments.json")
+def test_index_4rotation(dials_regression, tmp_path):
+    data_dir = pathlib.Path(dials_regression) / "indexing_test_data" / "4rotation"
+    pickle_path = data_dir / "strong.pickle"
+    sequence_path = data_dir / "experiments.json"
     extra_args = [
         "max_refine=10",
         "reflections_per_degree=50",
@@ -463,7 +463,7 @@ def test_index_4rotation(dials_regression, tmpdir):
     result = run_indexing(
         pickle_path,
         sequence_path,
-        tmpdir,
+        tmp_path,
         extra_args,
         expected_unit_cell,
         expected_rmsds,
@@ -472,21 +472,16 @@ def test_index_4rotation(dials_regression, tmpdir):
     assert len(result.indexed_reflections) > 276800, len(result.indexed_reflections)
 
 
-def test_index_small_molecule_multi_sequence_4(dials_regression, tmpdir):
+def test_index_small_molecule_multi_sequence_4(dials_regression, tmp_path):
     # test for small molecule multi-sequence indexing, 4 sequences with different values
     # of goniometer.fixed_rotation()
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "multi_sweep")
+    data_dir = pathlib.Path(dials_regression) / "indexing_test_data" / "multi_sweep"
     pickle_paths = [
-        glob.glob(
-            os.path.join(data_dir, "SWEEP%i" % (i + 1), "index", "*_strong.pickle")
-        )[0]
+        sorted((data_dir / f"SWEEP{i + 1}" / "index").glob("*_strong.pickle"))[0]
         for i in range(4)
     ]
     sequence_paths = [
-        glob.glob(
-            os.path.join(data_dir, "SWEEP%i" % (i + 1), "index", "experiments.json")
-        )[0]
-        for i in range(4)
+        data_dir / f"SWEEP{i + 1}" / "index" / "experiments.json" for i in range(4)
     ]
     extra_args = ["known_symmetry.space_group=I4", "filter_ice=False"]
     expected_unit_cell = uctbx.unit_cell((7.310, 7.310, 6.820, 90.000, 90.000, 90.000))
@@ -496,7 +491,7 @@ def test_index_small_molecule_multi_sequence_4(dials_regression, tmpdir):
     result = run_indexing(
         pickle_paths,
         sequence_paths,
-        tmpdir,
+        tmp_path,
         extra_args,
         expected_unit_cell,
         expected_rmsds,
@@ -505,17 +500,16 @@ def test_index_small_molecule_multi_sequence_4(dials_regression, tmpdir):
     assert len(result.indexed_reflections) > 1250, len(result.indexed_reflections)
 
 
-def test_index_small_molecule_multi_sequence_3(dials_regression, tmpdir):
+def test_index_small_molecule_multi_sequence_3(dials_regression, tmp_path):
     # test for small molecule multi-sequence indexing, 3 sequences with different values
     # of goniometer setting rotation (i.e. phi scans)
-    data_dir = os.path.join(dials_regression, "dials-191")
+    data_dir = pathlib.Path(dials_regression) / "dials-191"
+    print(data_dir)
     pickle_paths = [
-        glob.glob(os.path.join(data_dir, "*SWEEP%i*_strong.pickle" % (i + 1)))[0]
-        for i in range(3)
+        sorted(data_dir.glob(f"*_SWEEP{i + 1}_strong.pickle"))[0] for i in range(3)
     ]
     sequence_paths = [
-        glob.glob(os.path.join(data_dir, "*SWEEP%i*_experiments.json" % (i + 1)))[0]
-        for i in range(3)
+        sorted(data_dir.glob(f"*_SWEEP{i + 1}_experiments.json"))[0] for i in range(3)
     ]
     extra_args = ["filter_ice=False"]
     expected_unit_cell = uctbx.unit_cell(
@@ -527,7 +521,7 @@ def test_index_small_molecule_multi_sequence_3(dials_regression, tmpdir):
     result = run_indexing(
         pickle_paths,
         sequence_paths,
-        tmpdir,
+        tmp_path,
         extra_args,
         expected_unit_cell,
         expected_rmsds,
@@ -539,7 +533,7 @@ def test_index_small_molecule_multi_sequence_3(dials_regression, tmpdir):
         assert (result.indexed_reflections["id"] == i).count(True) > 2000
 
 
-def test_index_small_molecule_ice_max_cell(dials_regression, tmpdir):
+def test_index_small_molecule_ice_max_cell(dials_regression, tmp_path):
     # test for small molecule indexing: presence of ice rings makes max-cell
     # estimation tricky
     data_dir = os.path.join(dials_regression, "indexing_test_data", "MXSW-904")
@@ -553,7 +547,7 @@ def test_index_small_molecule_ice_max_cell(dials_regression, tmpdir):
     result = run_indexing(
         pickle_path,
         experiments,
-        tmpdir,
+        tmp_path,
         extra_args,
         expected_unit_cell,
         expected_rmsds,
@@ -562,7 +556,8 @@ def test_index_small_molecule_ice_max_cell(dials_regression, tmpdir):
     assert len(result.indexed_reflections) > 1300, len(result.indexed_reflections)
 
 
-def test_refinement_failure_on_max_lattices_a15(dials_regression, tmpdir):
+@pytest.mark.xfail
+def test_refinement_failure_on_max_lattices_a15(dials_regression, tmp_path):
     """Problem: Sometimes there is enough data to index, but not enough to
     refine. If this happens in the (N>1)th crystal of max_lattices, then
     all existing solutions are also dropped."""
@@ -575,12 +570,13 @@ def test_refinement_failure_on_max_lattices_a15(dials_regression, tmpdir):
             os.path.join(data_dir, "lpe4-2-a15_datablock.json"),
             "max_lattices=3",
         ],
-        working_directory=tmpdir,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("indexed.refl").check() and tmpdir.join("indexed.expt").check()
+    assert (tmp_path / "indexed.refl").if_file()
+    assert (tmp_path / "indexed.expt").is_file()
     experiments_list = load.experiment_list(
-        tmpdir.join("indexed.expt").strpath, check_format=False
+        tmp_path / "indexed.expt", check_format=False
     )
     assert len(experiments_list) == 2
 
@@ -588,21 +584,22 @@ def test_refinement_failure_on_max_lattices_a15(dials_regression, tmpdir):
     result = procrunner.run(
         [
             "dials.index",
-            tmpdir.join("indexed.expt").strpath,
+            tmp_path / "indexed.expt",
             os.path.join(data_dir, "lpe4-2-a15_strong.pickle"),
             "max_lattices=2",
         ],
-        working_directory=tmpdir,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("indexed.refl").check() and tmpdir.join("indexed.expt").check()
+    assert (tmp_path / "indexed.refl").is_file()
+    assert (tmp_path / "indexed.expt").is_file()
     experiments_list = load.experiment_list(
-        tmpdir.join("indexed.expt").strpath, check_format=False
+        tmp_path / "indexed.expt", check_format=False
     )
     assert len(experiments_list) == 2
 
 
-def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_regression, tmpdir):
+def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_regression, tmp_path):
     """Problem: In stills_indexer, before calling the refine function, the
     experiment list contains a list of dxtbx crystal models (that are not
     MosaicSauter2014 models). The conversion to MosaicSauter2014 is made
@@ -687,24 +684,28 @@ def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_regression, tmp
 @pytest.mark.parametrize(
     "indexer_type,fix_cell", (("sequences", False), ("stills", True))
 )
-def test_index_ED_still_low_res_spot_match(dials_data, tmpdir, indexer_type, fix_cell):
+def test_index_ED_still_low_res_spot_match(
+    dials_data, tmp_path, indexer_type, fix_cell
+):
 
     # test indexing from a single simulated lysozyme ED still
 
-    image_path = dials_data("image_examples").join("simtbx_FormatSMVJHSim_001.img")
+    image_path = (
+        dials_data("image_examples", pathlib=True) / "simtbx_FormatSMVJHSim_001.img"
+    )
 
     command = ["dials.import", image_path]
-    result = procrunner.run(command, working_directory=tmpdir)
+    result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
 
-    experiment = tmpdir.join("imported.expt")
-    assert experiment.check()
+    experiment = tmp_path / "imported.expt"
+    assert experiment.is_file()
 
     command = ["dials.find_spots", "nproc=1", experiment]
-    result = procrunner.run(command, working_directory=tmpdir)
+    result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
 
-    reflections = tmpdir.join("strong.refl")
+    reflections = tmp_path / "strong.refl"
 
     extra_args = [
         "indexing.method=low_res_spot_match",
@@ -718,13 +719,13 @@ def test_index_ED_still_low_res_spot_match(dials_data, tmpdir, indexer_type, fix
         extra_args += ["crystal.fix=cell"]
 
     expected_unit_cell = uctbx.unit_cell((78.84, 78.84, 38.29, 90, 90, 90))
-    expected_rmsds = (0.007, 0.006, 0.000)
+    expected_rmsds = (0.0065, 0.0065, 0.000)
     expected_hall_symbol = " P 4nw 2abw"
 
     run_indexing(
         reflections,
         experiment,
-        tmpdir,
+        tmp_path,
         extra_args,
         expected_unit_cell,
         expected_rmsds,
@@ -732,17 +733,54 @@ def test_index_ED_still_low_res_spot_match(dials_data, tmpdir, indexer_type, fix
     )
 
 
-def test_real_space_grid_search_no_unit_cell(dials_regression, tmpdir):
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
-    experiments_json = os.path.join(data_dir, "experiments_import.json")
-    pickle_path = os.path.join(data_dir, "full.pickle")
+@pytest.mark.parametrize(
+    "cell_params",
+    [
+        (44.47, 52.85, 62.23, 115.14, 101.72, 90.01),
+        (52.85, 62.23, 44.47, 101.72, 90.01, 115.14),
+    ],
+)
+def test_unconventional_P1_cell(dials_data, tmp_path, cell_params):
+    """
+    Indexing in P1 should succeed even if the cell parameters are provided in
+    a non-conventional setting
+    """
+    data_dir = dials_data("mpro_x0305_processed", pathlib=True)
+    experiment = data_dir / "imported.expt"
+    reflections = data_dir / "strong.refl"
+
+    cell_params_str = ",".join([str(x) for x in cell_params])
+    extra_args = [
+        "indexing.method=fft3d",
+        "known_symmetry.space_group=P1",
+        "known_symmetry.unit_cell=" + cell_params_str,
+    ]
+    expected_unit_cell = uctbx.unit_cell(cell_params)
+    expected_rmsds = (1, 1, 1)
+    expected_hall_symbol = " P 1"
+
+    run_indexing(
+        reflections,
+        experiment,
+        tmp_path,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+    )
+
+
+def test_real_space_grid_search_no_unit_cell(dials_regression, tmp_path):
+    data_dir = pathlib.Path(dials_regression) / "indexing_test_data" / "i04_weak_data"
+    experiments_json = data_dir / "experiments_import.json"
+    pickle_path = data_dir / "full.pickle"
     commands = [
         "dials.index",
         experiments_json,
         pickle_path,
         "indexing.method=real_space_grid_search",
     ]
-    result = procrunner.run(commands, working_directory=tmpdir)
+    result = procrunner.run(commands, working_directory=tmp_path)
     assert result.stderr
     assert (
         result.stderr.strip()
@@ -750,10 +788,10 @@ def test_real_space_grid_search_no_unit_cell(dials_regression, tmpdir):
     )
 
 
-def test_index_known_orientation(dials_data, tmpdir):
-    data_dir = dials_data("vmxi_proteinase_k_sweeps")
-    experiments_json = data_dir.join("experiments_0.json").strpath
-    reflections = data_dir.join("reflections_0.pickle").strpath
+def test_index_known_orientation(dials_data, tmp_path):
+    data_dir = dials_data("vmxi_proteinase_k_sweeps", pathlib=True)
+    experiments_json = data_dir / "experiments_0.json"
+    reflections = data_dir / "reflections_0.pickle"
 
     expected_unit_cell = uctbx.unit_cell((68.395, 68.395, 104, 90, 90, 90))
     expected_rmsds = (0.013, 0.012, 0.008)
@@ -762,7 +800,7 @@ def test_index_known_orientation(dials_data, tmpdir):
     run_indexing(
         reflections,
         experiments_json,
-        tmpdir,
+        tmp_path,
         [],
         expected_unit_cell,
         expected_rmsds,
@@ -770,12 +808,12 @@ def test_index_known_orientation(dials_data, tmpdir):
     )
 
 
-def test_all_expt_ids_have_expts(dials_data, tmpdir):
+def test_all_expt_ids_have_expts(dials_data, tmp_path):
     result = procrunner.run(
         [
             "dials.index",
-            dials_data("vmxi_thaumatin_grid_index").join("split_07602.expt"),
-            dials_data("vmxi_thaumatin_grid_index").join("split_07602.refl"),
+            dials_data("vmxi_thaumatin_grid_index", pathlib=True) / "split_07602.expt",
+            dials_data("vmxi_thaumatin_grid_index", pathlib=True) / "split_07602.refl",
             "stills.indexer=sequences",
             "indexing.method=real_space_grid_search",
             "space_group=P4",
@@ -784,13 +822,13 @@ def test_all_expt_ids_have_expts(dials_data, tmpdir):
             "beam.fix=all",
             "detector.fix=all",
         ],
-        working_directory=tmpdir,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("indexed.expt").check(file=1)
-    assert tmpdir.join("indexed.refl").check(file=1)
+    assert (tmp_path / "indexed.expt").is_file()
+    assert (tmp_path / "indexed.refl").is_file()
 
-    refl = flex.reflection_table.from_file(tmpdir / "indexed.refl")
-    expt = ExperimentList.from_file(tmpdir / "indexed.expt", check_format=False)
+    refl = flex.reflection_table.from_file(tmp_path / "indexed.refl")
+    expt = ExperimentList.from_file(tmp_path / "indexed.expt", check_format=False)
 
     assert flex.max(refl["id"]) + 1 == len(expt)

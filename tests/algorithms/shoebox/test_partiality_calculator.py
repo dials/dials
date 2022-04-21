@@ -1,11 +1,16 @@
+from __future__ import annotations
+
 import math
+
+from dxtbx.model.experiment_list import ExperimentList, ExperimentListFactory
+
+from dials.algorithms.profile_model.gaussian_rs import Model, PartialityCalculator3D
+from dials.array_family import flex
 
 
 def test(dials_data):
-    from dxtbx.model.experiment_list import ExperimentList, ExperimentListFactory
-
     exlist = ExperimentListFactory.from_json_file(
-        dials_data("centroid_test_data").join("fake_long_experiments.json").strpath
+        dials_data("centroid_test_data", pathlib=True) / "fake_long_experiments.json"
     )
 
     assert len(exlist) == 1
@@ -16,15 +21,10 @@ def test(dials_data):
     sigma_b = 0.060 * math.pi / 180
     sigma_m = 0.154 * math.pi / 180
 
-    from dials.algorithms.profile_model.gaussian_rs import Model
-
     profile_model = Model(None, n_sigma, sigma_b, sigma_m)
     experiment.profile = profile_model
     experiments = ExperimentList()
     experiments.append(experiment)
-
-    from dials.algorithms.profile_model.gaussian_rs import PartialityCalculator3D
-    from dials.array_family import flex
 
     calculator = PartialityCalculator3D(
         experiment.beam, experiment.goniometer, experiment.scan, sigma_m

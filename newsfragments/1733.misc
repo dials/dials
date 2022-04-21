@@ -1,1 +1,0 @@
-dxtbx now relies on the ``hdf5plugin`` package to provide HDF5 plugin support

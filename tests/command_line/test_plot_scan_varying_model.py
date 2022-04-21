@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 import os
 
 import procrunner
 
 
-def test(dials_regression, run_in_tmpdir):
+def test(dials_regression, run_in_tmp_path):
     result = procrunner.run(
         [
             "dials.plot_scan_varying_model",

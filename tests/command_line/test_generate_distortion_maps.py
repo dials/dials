@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import pickle
 
@@ -49,7 +51,7 @@ def make_detector():
     return d
 
 
-def test_translate(dials_regression, run_in_tmpdir):
+def test_translate(dials_regression, run_in_tmp_path):
     """Test as written in https://github.com/dials/dials/issues/471. This
     is pretty slow!"""
 
@@ -84,7 +86,7 @@ def test_translate(dials_regression, run_in_tmpdir):
     # and expt2.detector
 
 
-def test_elliptical_distortion(run_in_tmpdir):
+def test_elliptical_distortion(run_in_tmp_path):
     """Create distortion maps for elliptical distortion using a dummy experiments
     with a small detector, for speed. Check those maps seem sensible"""
 

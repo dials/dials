@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import procrunner
 
 
-def test(run_in_tmpdir):
+def test(run_in_tmp_path):
     from dials.array_family import flex
 
     table = flex.reflection_table()

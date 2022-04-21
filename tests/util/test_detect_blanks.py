@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 
 from dxtbx.model import ExperimentList
@@ -8,15 +10,16 @@ from dials.util import detect_blanks
 
 def test_blank_counts_analysis(dials_data):
     expts = ExperimentList.from_file(
-        dials_data("insulin_processed") / "imported.expt", check_format=False
+        dials_data("insulin_processed", pathlib=True) / "imported.expt",
+        check_format=False,
     )
     refl = flex.reflection_table.from_file(
-        dials_data("insulin_processed") / "strong.refl"
+        dials_data("insulin_processed", pathlib=True) / "strong.refl"
     )
     results = detect_blanks.blank_counts_analysis(
         refl, expts[0].scan, phi_step=5, fractional_loss=0.1
     )
-    assert set(results.keys()) == {"data", "layout", "blank_regions"}
+    assert set(results) == {"data", "layout", "blank_regions"}
     assert results["data"][0]["x"] == [
         2.5,
         7.5,
@@ -53,10 +56,11 @@ def test_blank_counts_analysis(dials_data):
 
 def test_blank_integrated_analysis(dials_data):
     expts = ExperimentList.from_file(
-        dials_data("insulin_processed") / "integrated.expt", check_format=False
+        dials_data("insulin_processed", pathlib=True) / "integrated.expt",
+        check_format=False,
     )
     refl = flex.reflection_table.from_file(
-        dials_data("insulin_processed") / "integrated.refl"
+        dials_data("insulin_processed", pathlib=True) / "integrated.refl"
     )
     results = detect_blanks.blank_integrated_analysis(
         refl, expts[0].scan, phi_step=5, fractional_loss=0.1

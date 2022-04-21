@@ -2,13 +2,21 @@
 Tests for scaling utilities module.
 """
 
+from __future__ import annotations
+
 from math import pi, sqrt
-from unittest.mock import Mock
 
 import numpy as np
 import pytest
 
-from dxtbx.model import Crystal, Experiment
+from dxtbx.model import (
+    Beam,
+    Crystal,
+    Experiment,
+    ExperimentList,
+    GoniometerFactory,
+    Scan,
+)
 from dxtbx.serialize import load
 from libtbx import phil
 from scitbx.sparse import matrix  # noqa: F401 - Needed to call calc_theta_phi
@@ -16,14 +24,14 @@ from scitbx.sparse import matrix  # noqa: F401 - Needed to call calc_theta_phi
 from dials.algorithms.scaling.scaling_library import create_scaling_model
 from dials.algorithms.scaling.scaling_utilities import (
     Reasons,
-    align_rotation_axis_along_z,
+    align_axis_along_z,
     calc_crystal_frame_vectors,
     calculate_prescaling_correction,
     quasi_normalisation,
     set_wilson_outliers,
 )
 from dials.array_family import flex
-from dials.util.options import OptionParser
+from dials.util.options import ArgumentParser
 from dials_scaling_ext import (
     calc_lookup_index,
     calc_theta_phi,
@@ -34,12 +42,69 @@ from dials_scaling_ext import (
 
 
 @pytest.fixture(scope="module")
-def mock_exp():
+def test_experiment_singleaxisgonio():
+    gonio = GoniometerFactory.from_dict(
+        {
+            "axes": [
+                [1.0, 0.0, 0.0],
+            ],
+            "angles": [0.0],
+            "names": ["GON_PHI"],
+            "scan_axis": 0,
+        }
+    )
+    return Experiment(
+        beam=Beam(s0=(0.0, 0.0, 2.0)),
+        goniometer=gonio,
+        scan=Scan(image_range=[1, 90], oscillation=[0.0, 1.0]),
+    )
+
+
+def test_experiments_multiaxisgonio():
     """Create a mock experiments object."""
-    exp = Mock()
-    exp.beam.get_sample_to_source_direction.return_value = (1.0, 0.0, 0.0)
-    exp.goniometer.get_rotation_axis.return_value = (0.0, 0.0, 1.0)
-    return exp
+    # beam along +z
+    gonio_1 = GoniometerFactory.from_dict(
+        {
+            "axes": [
+                [
+                    1.0 / sqrt(2.0),
+                    0.0,
+                    -1.0 / sqrt(2.0),
+                ],
+                [1.0, 0.0, 0.0],
+            ],
+            "angles": [0.0, 0.0],
+            "names": ["GON_PHI", "GON_OMEGA"],
+            "scan_axis": 1,
+        }
+    )
+    gonio_2 = GoniometerFactory.from_dict(
+        {
+            "axes": [
+                [
+                    1.0 / sqrt(2.0),
+                    0.0,
+                    -1.0 / sqrt(2.0),
+                ],
+                [1.0, 0.0, 0.0],
+            ],
+            "angles": [0.0, 0.0],
+            "names": ["GON_PHI", "GON_OMEGA"],
+            "scan_axis": 0,
+        }
+    )
+
+    experiments = ExperimentList()
+    for g in [gonio_1, gonio_2]:
+        experiments.append(
+            Experiment(
+                beam=Beam(s0=(0.0, 0.0, 2.0)),
+                goniometer=g,
+                scan=Scan(image_range=[1, 90], oscillation=[0.0, 1.0]),
+            )
+        )
+
+    return experiments
 
 
 @pytest.fixture(scope="module")
@@ -95,6 +160,9 @@ def generate_reflection_table():
     s1_vec = (1.0 / sqrt(2.0), 0.0, 1.0 / sqrt(2.0))
     rt["s1"] = flex.vec3_double([s1_vec, s1_vec, s1_vec])
     rt["phi"] = flex.double([0.0, 45.0, 90.0])
+    rt["xyzobs.px.value"] = flex.vec3_double(
+        [(0.0, 0.0, 0.0), (0.0, 0.0, 45.0), (0.0, 0.0, 90.0)]
+    )
     return rt
 
 
@@ -159,62 +227,158 @@ def test_quasi_normalisation(simple_reflection_table, test_exp_E2, test_exp_P1):
     # and then the call to interpolate causes the last values to be incorrect.
 
 
-def test_calc_crystal_frame_vectors(test_reflection_table, mock_exp):
+def test_calc_crystal_frame_vectors_single_axis_gonio(
+    test_reflection_table, test_experiment_singleaxisgonio
+):
     """Test the namesake function, to check that the vectors are correctly rotated
     into the crystal frame."""
-    rt, exp = test_reflection_table, mock_exp
-    s0_vec = (1.0, 0.0, 0.0)
-    s1_vec = (1.0 / sqrt(2.0), 0.0, 1.0 / sqrt(2.0))
+    rt, exp = test_reflection_table, test_experiment_singleaxisgonio
     reflection_table = calc_crystal_frame_vectors(rt, exp)
-    assert list(reflection_table["s0"]) == list(
-        flex.vec3_double([s0_vec, s0_vec, s0_vec])
-    )
-    expected = [s0_vec, (1.0 / sqrt(2.0), -1.0 / sqrt(2.0), 0.0), (0.0, -1.0, 0.0)]
-    for v1, v2 in zip(reflection_table["s0c"], expected):
-        assert v1 == pytest.approx(v2)
-    expected = [
-        s1_vec,
-        (1.0 / 2.0, -1.0 / 2.0, 1.0 / sqrt(2.0)),
-        (0.0, -1.0 / sqrt(2.0), 1.0 / sqrt(2.0)),
+
+    # s0c and s1c are normalised. s0c points towards the source.
+    # as the crystal rotates about the x axis, the s0 vector moves in the y-z plane towards -y
+    expected_s0c = [
+        (0.0, 0.0, -1.0),
+        (0.0, -1.0 / sqrt(2.0), -1.0 / sqrt(2.0)),
+        (0.0, -1.0, 0.0),
     ]
-    for v1, v2 in zip(reflection_table["s1c"], expected):
+    for v1, v2 in zip(reflection_table["s0c"], expected_s0c):
+        assert v1 == pytest.approx(v2)
+    # the s1c vector should have fixed x-component, rotating in the y-z plane towards +y
+    expected_s1c = [
+        (1.0 / sqrt(2.0), 0.0, 1.0 / sqrt(2.0)),
+        (1.0 / sqrt(2.0), 0.5, 0.5),
+        (1.0 / sqrt(2.0), 1.0 / sqrt(2.0), 0.0),
+    ]
+    for v1, v2 in zip(reflection_table["s1c"], expected_s1c):
         assert v1 == pytest.approx(v2)
 
-
-def test_align_rotation_axis_along_z():
-    """Test the function to rotate the coordinate system such that the rotation
-    axis is along z. In the test, the rotation axis is x, so we expect the
-    transformation to be: x > z, y > y, z > -x, x+z > -x+z."""
-    rot_axis = flex.vec3_double([(1.0, 0.0, 0.0)])
-    vectors = flex.vec3_double(
-        [(1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0), (1.0, 0.0, 1.0)]
+    # now test redefined coordinates so that the lab x-axis is along the
+    # z-axis in the crystal frame
+    alignment_axis = (1.0, 0.0, 0.0)
+    reflection_table["s1c"] = align_axis_along_z(
+        alignment_axis, reflection_table["s1c"]
     )
-    rotated_vectors = align_rotation_axis_along_z(rot_axis, vectors)
-    expected = [(0.0, 0.0, 1.0), (0.0, 1.0, 0.0), (-1.0, 0.0, 0.0), (-1.0, 0.0, 1.0)]
-    for v1, v2 in zip(rotated_vectors, expected):
+    reflection_table["s0c"] = align_axis_along_z(
+        alignment_axis, reflection_table["s0c"]
+    )
+    expected_s0c_realigned = [
+        (1.0, 0.0, 0.0),
+        (1.0 / sqrt(2.0), -1.0 / sqrt(2.0), 0.0),
+        (0.0, -1.0, 0.0),
+    ]
+    for v1, v2 in zip(reflection_table["s0c"], expected_s0c_realigned):
+        assert v1 == pytest.approx(v2)
+    expected_s1c_realigned = [
+        (-1.0 / sqrt(2.0), 0.0, 1.0 / sqrt(2.0)),
+        (-0.5, 0.5, 1.0 / sqrt(2.0)),
+        (0.0, 1.0 / sqrt(2.0), 1.0 / sqrt(2.0)),
+    ]
+    for v1, v2 in zip(reflection_table["s1c"], expected_s1c_realigned):
         assert v1 == pytest.approx(v2)
 
 
-def test_create_sph_harm_table(test_reflection_table, mock_exp):
+def test_calc_crystal_frame_vectors_multi_axis_gonio(test_reflection_table):
+    """Test the namesake function, to check that the vectors are correctly rotated
+    into the crystal frame."""
+    experiments = test_experiments_multiaxisgonio()
+    table = generate_reflection_table()
+
+    # for the first scan, the rotation axis is the (1,0,0) direction, like the
+    # single axis gonio test case above, so check that first.
+
+    table = calc_crystal_frame_vectors(table, experiments[0])
+
+    # s0c and s1c are normalised. s0c points towards the source.
+    # as the crystal rotates about the x axis, the s0 vector moves in the y-z plane towards -y
+    expected_s0c = [
+        (0.0, 0.0, -1.0),
+        (0.0, -1.0 / sqrt(2.0), -1.0 / sqrt(2.0)),
+        (0.0, -1.0, 0.0),
+    ]
+    for v1, v2 in zip(table["s0c"], expected_s0c):
+        assert v1 == pytest.approx(v2)
+    # the s1c vector should have fixed x-component, rotating in the y-z plane towards +y
+    expected_s1c = [
+        (1.0 / sqrt(2.0), 0.0, 1.0 / sqrt(2.0)),
+        (1.0 / sqrt(2.0), 0.5, 0.5),
+        (1.0 / sqrt(2.0), 1.0 / sqrt(2.0), 0.0),
+    ]
+    for v1, v2 in zip(table["s1c"], expected_s1c):
+        assert v1 == pytest.approx(v2)
+
+    # for second scan, the rotation axis is the (1,1,0) direction
+    table = generate_reflection_table().select(flex.bool([True, False, True]))
+    table = calc_crystal_frame_vectors(table, experiments[1])
+
+    # s0c and s1c are normalised. s0c points towards the source.
+    # as the crystal rotates about the (1,1,0) axis, the s0 vector rotates towards (1, -sqrt2, -1)
+    # the y-z plane towards -y
+    expected_s0c = [
+        (0.0, 0.0, -1.0),
+        (0.5, -1.0 / sqrt(2.0), -0.5),
+    ]
+    for v1, v2 in zip(table["s0c"], expected_s0c):
+        assert v1 == pytest.approx(v2)
+    # the s1c vector should rotate to +y
+    expected_s1c = [
+        (1.0 / sqrt(2.0), 0.0, 1.0 / sqrt(2.0)),
+        (0.0, 1.0, 0.0),
+    ]
+    for v1, v2 in zip(table["s1c"], expected_s1c):
+        assert v1 == pytest.approx(v2)
+
+    # now test redefined coordinates so that the lab x-axis is along the
+    # z-axis in the crystal frame
+    alignment_axis = (1.0, 0.0, 0.0)
+    table["s1c"] = align_axis_along_z(alignment_axis, table["s1c"])
+    table["s0c"] = align_axis_along_z(alignment_axis, table["s0c"])
+    expected_s0c_realigned = [
+        (1.0, 0.0, 0.0),
+        (0.5, -1.0 / sqrt(2.0), 0.5),
+    ]
+    for v1, v2 in zip(table["s0c"], expected_s0c_realigned):
+        assert v1 == pytest.approx(v2)
+    # the s1c vector should rotate to +y
+    expected_s1c_realigned = [
+        (-1.0 / sqrt(2.0), 0.0, 1.0 / sqrt(2.0)),
+        (0.0, 1.0, 0.0),
+    ]
+    for v1, v2 in zip(table["s1c"], expected_s1c_realigned):
+        assert v1 == pytest.approx(v2)
+
+
+def test_create_sph_harm_table(test_reflection_table, test_experiment_singleaxisgonio):
     """Simple test for the spherical harmonic table, constructing the table step
     by step, and verifying the values of a few easy-to-calculate entries.
     This also acts as a test for the calc_theta_phi function as well."""
 
-    rt, exp = test_reflection_table, mock_exp
+    rt, exp = test_reflection_table, test_experiment_singleaxisgonio
     reflection_table = calc_crystal_frame_vectors(rt, exp)
+    reflection_table["s0c"] = align_axis_along_z(
+        (1.0, 0.0, 0.0), reflection_table["s0c"]
+    )
+    reflection_table["s1c"] = align_axis_along_z(
+        (1.0, 0.0, 0.0), reflection_table["s1c"]
+    )
     theta_phi = calc_theta_phi(reflection_table["s0c"])
+    # so s0c vectors realigned in xyz is
+    #    (1.0, 0.0, 0.0),
+    #    (1.0 / sqrt(2.0), -1.0 / sqrt(2.0), 0.0),
+    #    (0.0, -1.0, 0.0),
+    # physics conventions, theta from 0 to pi, phi from 0 to 2pi
     expected = [
         (pi / 2.0, 0.0),
-        (pi / 2.0, -1.0 * pi / 4.0),
-        (pi / 2.0, -1.0 * pi / 2.0),
+        (pi / 2.0, 7.0 * pi / 4.0),
+        (pi / 2.0, 3.0 * pi / 2.0),
     ]
     for v1, v2 in zip(theta_phi, expected):
         assert v1 == pytest.approx(v2)
     theta_phi_2 = calc_theta_phi(reflection_table["s1c"])
     expected = [
-        (pi / 4.0, 0.0),
-        (pi / 4.0, -1.0 * pi / 4.0),
-        (pi / 4.0, -1.0 * pi / 2.0),
+        (pi / 4.0, pi),
+        (pi / 4.0, 3 * pi / 4.0),
+        (pi / 4.0, 1.0 * pi / 2.0),
     ]
     for v1, v2 in zip(theta_phi_2, expected):
         assert v1 == pytest.approx(v2)
@@ -252,7 +416,7 @@ def test_calculate_prescaling_correction():
         0.8 / 0.4,
     ]
 
-    # Test compatibilty for old datasets
+    # Test compatibility for old datasets
     del reflection_table["qe"]
     reflection_table["dqe"] = flex.double([0.6, 0.5, 0.4])
     reflection_table = calculate_prescaling_correction(reflection_table)
@@ -301,9 +465,9 @@ def test_calculate_harmonic_tables_from_selections():
 
 
 def test_equality_of_two_harmonic_table_methods(dials_data):
-    data_dir = dials_data("l_cysteine_dials_output")
-    pickle_path = data_dir / "20_integrated.pickle"
-    sequence_path = data_dir / "20_integrated_experiments.json"
+    location = dials_data("l_cysteine_dials_output", pathlib=True)
+    refl = location / "20_integrated.pickle"
+    expt = location / "20_integrated_experiments.json"
 
     phil_scope = phil.parse(
         """
@@ -311,14 +475,14 @@ def test_equality_of_two_harmonic_table_methods(dials_data):
     """,
         process_includes=True,
     )
-    optionparser = OptionParser(phil=phil_scope, check_format=False)
-    params, _ = optionparser.parse_args(args=[], quick_parse=True)
+    parser = ArgumentParser(phil=phil_scope, check_format=False)
+    params, _ = parser.parse_args(args=[], quick_parse=True)
     params.model = "physical"
     lmax = 2
     params.physical.lmax = lmax
 
-    reflection_table = flex.reflection_table.from_file(pickle_path)
-    experiments = load.experiment_list(sequence_path, check_format=False)
+    reflection_table = flex.reflection_table.from_file(refl)
+    experiments = load.experiment_list(expt, check_format=False)
     experiments = create_scaling_model(params, experiments, [reflection_table])
 
     experiment = experiments[0]
@@ -329,9 +493,15 @@ def test_equality_of_two_harmonic_table_methods(dials_data):
         * experiment.scan.get_oscillation()[1]
     )
     reflection_table = calc_crystal_frame_vectors(reflection_table, experiment)
+    reflection_table["s1c"] = align_axis_along_z(
+        (1.0, 0.0, 0.0), reflection_table["s1c"]
+    )
+    reflection_table["s0c"] = align_axis_along_z(
+        (1.0, 0.0, 0.0), reflection_table["s0c"]
+    )
     theta_phi_0 = calc_theta_phi(reflection_table["s0c"])  # array of tuples in radians
     theta_phi_1 = calc_theta_phi(reflection_table["s1c"])
-    points_per_degree = 2
+    points_per_degree = 4
     s0_lookup_index = calc_lookup_index(theta_phi_0, points_per_degree)
     s1_lookup_index = calc_lookup_index(theta_phi_1, points_per_degree)
     print(list(s0_lookup_index[0:20]))
@@ -382,7 +552,9 @@ def test_equality_of_two_harmonic_table_methods(dials_data):
 
 def test_calc_lookup_index():
     pi = 3.141
-    theta_phi = flex.vec2_double([(0.001, -pi), (pi, pi), (0.001, pi), (pi, -pi)])
+    theta_phi = flex.vec2_double(
+        [(0.001, 0.0), (pi, 2.0 * pi), (0.001, 2.0 * pi), (pi, 0)]
+    )
     indices = calc_lookup_index(theta_phi, 1)
     assert list(indices) == [0, 64799, 359, 64440]
     indices = calc_lookup_index(theta_phi, 2)

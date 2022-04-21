@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import procrunner
 
 import iotbx.mtz
@@ -6,7 +8,7 @@ from libtbx.test_utils import approx_equal
 
 
 def test(dials_data, tmpdir):
-    g = [f.strpath for f in dials_data("x4wide").listdir(sort=True)]
+    g = sorted(f for f in dials_data("x4wide", pathlib=True).glob("*"))
     assert len(g) == 90
 
     commands = [

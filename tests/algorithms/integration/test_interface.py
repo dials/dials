@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import random
 
 import pytest
@@ -409,7 +411,7 @@ def test_integrator_3d(dials_data, nproc):
     from dials.algorithms.profile_model.gaussian_rs import Model
     from dials.array_family import flex
 
-    path = dials_data("centroid_test_data").join("experiments.json").strpath
+    path = dials_data("centroid_test_data", pathlib=True) / "experiments.json"
 
     exlist = ExperimentListFactory.from_json_file(path)
     exlist[0].profile = Model(
@@ -449,7 +451,7 @@ def test_summation(dials_data):
     from dials.algorithms.profile_model.gaussian_rs import Model
     from dials.array_family import flex
 
-    path = dials_data("centroid_test_data").join("experiments.json").strpath
+    path = dials_data("centroid_test_data", pathlib=True) / "experiments.json"
 
     exlist = ExperimentListFactory.from_json_file(path)
     exlist[0].profile = Model(

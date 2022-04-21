@@ -3,7 +3,10 @@ Tests for dials.command_line.anvil_correction.
 """
 
 
+from __future__ import annotations
+
 import copy
+from pathlib import Path
 
 import pytest
 
@@ -18,11 +21,11 @@ from dials.command_line.anvil_correction import (
 
 def test_correct_correction(dials_data):
     """Test that the anvil absorption correction is producing expected values."""
-    data_dir = dials_data("centroid_test_data")
+    data_dir = dials_data("centroid_test_data", pathlib=True)
 
     # We'll need an integrated reflection table and an experiment list.
-    reflections_file = data_dir.join("integrated.pickle")
-    experiments_file = data_dir.join("experiments.json")
+    reflections_file = data_dir / "integrated.pickle"
+    experiments_file = data_dir / "experiments.json"
 
     # We need only test with the first ten reflections.
     reflections = flex.reflection_table.from_file(reflections_file)
@@ -81,14 +84,14 @@ def test_correct_correction(dials_data):
 
 def test_help_message(dials_data, capsys):
     """Test that we get a help message when improper input is provided."""
-    data_dir = dials_data("centroid_test_data")
+    data_dir = dials_data("centroid_test_data", pathlib=True)
 
     # We'll need an integrated reflection table and an experiment list.
-    reflections_file = data_dir.join("integrated.pickle").strpath
-    experiments_file = data_dir.join("experiments.json").strpath
+    reflections_file = str(data_dir / "integrated.pickle")
+    experiments_file = str(data_dir / "experiments.json")
 
     for arguments in (
-        None,
+        [],
         [reflections_file],
         [experiments_file],
         [experiments_file, reflections_file, "anvil.normal=0,0,0"],
@@ -101,22 +104,20 @@ def test_help_message(dials_data, capsys):
             )
 
 
-def test_command_line(dials_data, tmpdir):
+def test_command_line(dials_data, run_in_tmp_path):
     """Test that the program runs correctly."""
-    data_dir = dials_data("centroid_test_data")
+    data_dir = dials_data("centroid_test_data", pathlib=True)
 
     # We'll need an integrated reflection table and an experiment list.
-    reflections_file = data_dir.join("integrated.pickle").strpath
-    experiments_file = data_dir.join("experiments.json").strpath
+    reflections_file = str(data_dir / "integrated.pickle")
+    experiments_file = str(data_dir / "experiments.json")
 
-    with tmpdir.as_cwd():
-        run([experiments_file, reflections_file])
+    run([experiments_file, reflections_file])
 
-    output = tmpdir.join("corrected.refl")
+    assert Path("corrected.refl").is_file()
 
-    assert output.check(file=True)
-
-    logfile = tmpdir.join("dials.anvil_correction.log").read()
+    with Path("dials.anvil_correction.log").open() as f:
+        logfile = f.read()
 
     assert "Correcting integrated reflection intensities" in logfile
     assert "Writing the reflection table" in logfile

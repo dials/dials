@@ -2,6 +2,8 @@
 Tests for the active parameter manager module.
 """
 
+from __future__ import annotations
+
 from unittest.mock import Mock
 
 import pytest
@@ -44,6 +46,7 @@ def mock_data_manager(components):
     """Return a mock data manager of a general model."""
     dm = Mock()
     dm.components = components
+    dm.fixed_components = []
     return dm
 
 
@@ -238,6 +241,22 @@ def test_ParameterManagerGenerator_concurrent():
     assert "1" in multi_apm.apm_list[1].components_list
     assert "2" in multi_apm.apm_list[1].components_list
 
+    # now try fixing a component
+    data_manager.fixed_components = ["absorption"]
+    pmg = ParameterManagerGenerator(
+        [data_manager],
+        apm_type=active_parameter_manager,
+        target=ScalingTarget(),
+        mode="concurrent",
+    )
+    apms = pmg.parameter_managers()
+    assert len(apms) == 1
+    apm = apms[0]
+    assert isinstance(apm, multi_active_parameter_manager)
+    assert "scale" in apm.components_list
+    assert "decay" in apm.components_list
+    assert "absorption" not in apm.components_list
+
 
 def test_ParameterManagerGenerator_consecutive():
     """Test the apm factory for consecutive refinement."""
@@ -321,6 +340,27 @@ def test_ParameterManagerGenerator_consecutive():
     assert multi_apm.apm_list[0].components_list == ["absorption"]
     # Only change relative to previous test case.
     assert multi_apm.apm_list[1].components_list == []
+
+    # Test fixing the decay parameter.
+    data_manager.fixed_components = ["decay"]
+    pmg = ParameterManagerGenerator(
+        [data_manager],
+        apm_type=active_parameter_manager,
+        target=ScalingTarget(),
+        mode="consecutive",
+    )
+    apms = list(pmg.parameter_managers())
+    assert len(apms) == 2
+    apm = apms[0]
+    assert isinstance(apm, multi_active_parameter_manager)
+    assert "scale" in apm.components_list
+    assert "decay" not in apm.components_list
+    assert "absorption" not in apm.components_list
+    apm = apms[1]
+    assert isinstance(apm, multi_active_parameter_manager)
+    assert "scale" not in apm.components_list
+    assert "decay" not in apm.components_list
+    assert "absorption" in apm.components_list
 
 
 def test_scaling_active_parameter_manager():

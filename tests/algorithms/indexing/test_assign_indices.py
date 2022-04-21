@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import copy
 import os
 import random
@@ -248,7 +250,7 @@ def test_local_multiple_rotations(dials_data):
     """Test the fix for https://github.com/dials/dials/issues/1458"""
 
     experiments = load.experiment_list(
-        dials_data("insulin_processed").join("indexed.expt"),
+        dials_data("insulin_processed", pathlib=True) / "indexed.expt",
         check_format=False,
     )
     # Override the scan range to ensure we have 4 full rotations

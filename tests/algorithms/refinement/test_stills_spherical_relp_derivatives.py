@@ -3,6 +3,8 @@ Test derivatives typed up in dials_regression/doc/notes/prediction/stills_predic
 """
 
 
+from __future__ import annotations
+
 import pytest
 
 from cctbx.sgtbx import space_group, space_group_symbols
@@ -26,7 +28,9 @@ from dials.algorithms.refinement.parameterisation.prediction_parameters_stills i
 from dials.algorithms.refinement.prediction.managed_predictors import ScansRayPredictor
 from dials.algorithms.spot_prediction import IndexGenerator, StillsReflectionPredictor
 from dials.array_family import flex
-from dials.tests.algorithms.refinement.setup_geometry import Extract
+
+from . import geometry_phil
+from .setup_geometry import Extract
 
 
 class Predictor:
@@ -234,12 +238,7 @@ def test():
   geometry.parameters.crystal.c.length.range=40 50;
   geometry.parameters.random_seed = 42"""
 
-    master_phil = parse(
-        """
-      include scope dials.tests.algorithms.refinement.geometry_phil
-      """,
-        process_includes=True,
-    )
+    master_phil = parse(geometry_phil)
 
     models = Extract(master_phil, overrides)
 

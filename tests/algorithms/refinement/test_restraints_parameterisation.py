@@ -1,5 +1,7 @@
 """Tests for RestraintsParameterisation and associated classes used in refinement"""
 
+from __future__ import annotations
+
 import os
 import random
 
@@ -31,18 +33,15 @@ def test_single_crystal_restraints_gradients():
     from dials.algorithms.refinement.parameterisation.prediction_parameters import (
         XYPhiPredictionParameterisation,
     )
-    from dials.tests.algorithms.refinement.setup_geometry import Extract
+
+    from . import geometry_phil
+    from .setup_geometry import Extract
 
     overrides = """geometry.parameters.crystal.a.length.range = 10 50
   geometry.parameters.crystal.b.length.range = 10 50
   geometry.parameters.crystal.c.length.range = 10 50"""
 
-    master_phil = parse(
-        """
-      include scope dials.tests.algorithms.refinement.geometry_phil
-      """,
-        process_includes=True,
-    )
+    master_phil = parse(geometry_phil)
 
     models = Extract(master_phil, overrides)
 
@@ -167,18 +166,15 @@ def test_two_triclinic_crystals():
     from dials.algorithms.refinement.parameterisation.prediction_parameters import (
         XYPhiPredictionParameterisation,
     )
-    from dials.tests.algorithms.refinement.setup_geometry import Extract
+
+    from . import geometry_phil
+    from .setup_geometry import Extract
 
     overrides = """geometry.parameters.crystal.a.length.range = 10 50
   geometry.parameters.crystal.b.length.range = 10 50
   geometry.parameters.crystal.c.length.range = 10 50"""
 
-    master_phil = parse(
-        """
-      include scope dials.tests.algorithms.refinement.geometry_phil
-      """,
-        process_includes=True,
-    )
+    master_phil = parse(geometry_phil)
 
     models = Extract(master_phil, overrides)
 

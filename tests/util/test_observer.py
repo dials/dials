@@ -2,6 +2,8 @@
 Test the observer module.
 """
 
+from __future__ import annotations
+
 from dials.util.observer import Observer, Subject, singleton
 
 
@@ -70,7 +72,7 @@ def test_Subject():
     assert subject.get_observers("event1") == {observer: observer.mycallback}
     assert subject.get_observers("event2") == {}
 
-    # Now test call to nofity.
+    # Now test call to notify.
     subject.notify("event1")
     assert observer.count == 1
     subject.notify("event2")
