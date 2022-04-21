@@ -10,10 +10,6 @@ from dxtbx.model import Experiment, ExperimentList
 from dxtbx.serialize import load
 
 from dials.array_family import flex
-from dials.tests.util import (
-    mock_reflection_file_object,
-    mock_two_reflection_file_object,
-)
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
     parse_multiple_datasets,
@@ -22,6 +18,8 @@ from dials.util.multi_dataset_handling import (
     sort_tables_to_experiments_order,
     update_imageset_ids,
 )
+
+from . import mock_reflection_file_object, mock_two_reflection_file_object
 
 
 @pytest.fixture
