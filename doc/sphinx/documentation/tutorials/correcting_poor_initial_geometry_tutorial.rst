@@ -95,11 +95,9 @@ To see the positions of strong pixels identified by the spot finding
 algorithm, select the ``threshold`` button at the bottom of the image
 viewer's ``Settings`` window. In this case, the default settings are not too
 bad: the strong pixels clearly follow the diffraction pattern. So, we will
-run the :program:`dials.find_spots` program with default settings, apart from
-requesting more than one process to speed the job up (feel free to set this
-greater than 4, if appropriate)::
+run the :program:`dials.find_spots` program with default settings::
 
-  dials.find_spots imported.expt nproc=4
+  dials.find_spots imported.expt
 
 After finding strong spots it is *always* worth viewing them using
 :program:`dials.reciprocal_lattice_viewer`::

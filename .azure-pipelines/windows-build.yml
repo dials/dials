@@ -24,7 +24,7 @@ steps:
 # Create a new conda environment using the bootstrap script
 - script: |
     set PYTHONUNBUFFERED=TRUE
-    python modules/dials/installer/bootstrap.py base --mamba --clean --python $(PYTHON_VERSION)
+    python modules/dials/installer/bootstrap.py base --clean --python $(PYTHON_VERSION)
   displayName: Create python $(PYTHON_VERSION) environment
   workingDirectory: $(Pipeline.Workspace)
 
@@ -46,8 +46,7 @@ steps:
     conda install -y dials-data pytest-azurepipelines pytest-timeout
     dials.data info -v
     echo "##vso[task.setvariable variable=DIALS_DATA_VERSION_FULL]$(dials.data info -v | grep version.full)"
-    echo "##vso[task.setvariable variable=DIALS_DATA_VERSION]$(dials.data info -v | grep version.major)"
-    REM                                                              this is a bug in dials-data ^^^^^
+    echo "##vso[task.setvariable variable=DIALS_DATA_VERSION]$(dials.data info -v | grep version.major_minor)"
     mkdir -p data
   displayName: Install additional packages
   workingDirectory: $(Pipeline.Workspace)
@@ -72,11 +71,11 @@ steps:
 
 - script: |
     set DIALS_DATA=$(Pipeline.Workspace)\data
+    set PYTHONDEVMODE=1
     set PYTHONUNBUFFERED=TRUE
-
     call dials.bat
     cd modules/dials
-    pytest -v -ra -n auto --basetemp="$(Pipeline.Workspace)\tests" --durations=10 --timeout=5400 || echo "##vso[task.complete result=Failed;]Some tests failed"
+    libtbx.python -m pytest -v -ra -n auto --basetemp="$(Pipeline.Workspace)\tests" --durations=10 --dist loadgroup --timeout=5400 || echo "##vso[task.complete result=Failed;]Some tests failed"
   displayName: Run some tests (temporary)
   workingDirectory: $(Pipeline.Workspace)
 
@@ -105,13 +104,13 @@ steps:
 
     if (Test-Path -Path tests) {
       echo ""
-      echo "Test artefacts:"
+      echo "Test artifacts:"
       cd tests
       Get-ChildItem -Directory | ForEach-Object { "{1,10:N2} MB  {0:S}" -f $_, ((Get-ChildItem $_ -Recurse -ErrorAction SilentlyContinue | Measure-Object -ErrorAction SilentlyContinue -Property Length -sum).sum / 1Mb) }
       cd ..
 
       echo ""
-      echo "Cleaning up test artefacts"
+      echo "Cleaning up test artifacts"
       Get-ChildItem -Path tests -Recurse -Force -ErrorAction SilentlyContinue | Where-Object { if($_.Attributes -match "ReparsePoint"){$_.Delete()} }
       Remove-Item -Path tests -Recurse -Force -ErrorAction SilentlyContinue
     }

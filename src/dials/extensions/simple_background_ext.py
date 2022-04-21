@@ -1,0 +1,153 @@
+from __future__ import annotations
+
+
+class SimpleBackgroundExt:
+    """An extension class implementing simple background subtraction."""
+
+    name = "simple"
+
+    @staticmethod
+    def phil():
+        from libtbx.phil import parse
+
+        phil = parse(
+            """
+      outlier
+        .help = "Outlier rejection prior to background fit"
+      {
+        algorithm = *null nsigma truncated normal plane tukey
+          .help = "The outlier rejection algorithm."
+          .type = choice
+
+        nsigma
+          .help = "Parameters for nsigma outlier rejector"
+          .expert_level = 1
+        {
+          lower = 3
+            .help = "Lower n sigma"
+            .type = float
+          upper = 3
+            .help = "Upper n sigma"
+            .type = float
+        }
+
+        truncated
+          .help = "Parameters for truncated outlier rejector"
+          .expert_level = 1
+        {
+          lower = 0.01
+            .help = "Lower bound"
+            .type = float
+          upper = 0.01
+            .help = "Upper bound"
+            .type = float
+        }
+
+        normal
+          .help = "Parameters for normal outlier rejector"
+          .expert_level = 1
+        {
+          min_pixels = 10
+            .help = "The minimum number of pixels to use in calculating the"
+                    "background intensity."
+            .type = int
+        }
+
+        plane
+          .help = "Parameters for mosflm-like outlier rejector. This algorithm"
+                  "is mainly used in conjunction with a linear 2d background."
+          .expert_level = 1
+        {
+          fraction = 1.0
+            .help = "The fraction of pixels to use in determining the initial"
+                    "plane used for outlier rejection."
+            .type = float
+
+          n_sigma = 4.0
+            .help = "The number of standard deviations above the threshold plane"
+                    "to use in rejecting outliers from background calculation."
+            .type = float
+        }
+
+        tukey
+          .help = "Parameters for tukey outlier rejector"
+          .expert_level = 1
+        {
+          lower = 1.5
+            .help = "Lower IQR multiplier"
+            .type = float
+          upper = 1.5
+            .help = "Upper IQR multiplier"
+            .type = float
+        }
+      }
+
+      model
+        .help = "Background model"
+      {
+        algorithm = constant2d *constant3d linear2d linear3d
+          .help = "The choice of background model"
+          .type = choice
+      }
+
+      min_pixels = 10
+        .type = int(value_min=1)
+        .help = "The minimum number of pixels to compute the background"
+    """
+        )
+        return phil
+
+    def __init__(self, params, experiments):
+        """
+        Initialise the algorithm.
+
+        :param params: The input parameters
+        :param experiments: The list of experiments
+        """
+        from libtbx.phil import parse
+
+        from dials.algorithms.background.simple import BackgroundAlgorithm
+
+        # Create some default parameters
+        if params is None:
+            params = self.phil().fetch(parse("")).extract()
+        else:
+            params = params.integration.background.simple
+
+        # Create some keyword parameters
+        kwargs = {
+            "model": params.model.algorithm,
+            "outlier": params.outlier.algorithm,
+            "min_pixels": params.min_pixels,
+        }
+
+        # Create all the keyword parameters
+        if params.outlier.algorithm == "null":
+            pass
+        elif params.outlier.algorithm == "truncated":
+            kwargs["lower"] = params.outlier.truncated.lower
+            kwargs["upper"] = params.outlier.truncated.upper
+        elif params.outlier.algorithm == "nsigma":
+            kwargs["lower"] = params.outlier.nsigma.lower
+            kwargs["upper"] = params.outlier.nsigma.upper
+        elif params.outlier.algorithm == "normal":
+            kwargs["min_pixels"] = params.outlier.normal.min_pixels
+        elif params.outlier.algorithm == "plane":
+            kwargs["fraction"] = params.outlier.plane.fraction
+            kwargs["n_sigma"] = params.outlier.plane.n_sigma
+        elif params.outlier.algorithm == "tukey":
+            kwargs["lower"] = params.outlier.tukey.lower
+            kwargs["upper"] = params.outlier.tukey.upper
+
+        # Create the algorithm
+        self._algorithm = BackgroundAlgorithm(experiments, **kwargs)
+
+    def compute_background(self, reflections, image_volume=None):
+        """
+        Compute the background.
+
+        :param reflections: The list of reflections
+        """
+        return self._algorithm.compute_background(
+            reflections, image_volume=image_volume
+        )
