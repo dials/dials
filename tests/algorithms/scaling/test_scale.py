@@ -884,8 +884,10 @@ def test_multi_scale_exclude_images(dials_data, tmp_path):
     ).scaling_models()
     assert scaling_models[0].configdict["valid_image_range"] == [1, 1600]
     assert scaling_models[1].configdict["valid_image_range"] == [1, 1500]
-    assert pytest.approx(scaling_models[0].configdict["valid_osc_range"], [0, 160.0])
-    assert pytest.approx(scaling_models[1].configdict["valid_osc_range"], [-145.0, 5.0])
+    assert [0, 160.0] == pytest.approx(scaling_models[0].configdict["valid_osc_range"])
+    assert [-145.0, 5.0] == pytest.approx(
+        scaling_models[1].configdict["valid_osc_range"]
+    )
 
     # Run again, excluding some more from one run.
     extra_args = [
@@ -900,8 +902,10 @@ def test_multi_scale_exclude_images(dials_data, tmp_path):
     ).scaling_models()
     assert scaling_models[0].configdict["valid_image_range"] == [1, 1400]
     assert scaling_models[1].configdict["valid_image_range"] == [1, 1500]
-    assert pytest.approx(scaling_models[0].configdict["valid_osc_range"], [0, 140.0])
-    assert pytest.approx(scaling_models[1].configdict["valid_osc_range"], [-145.0, 5.0])
+    assert [0, 140.0] == pytest.approx(scaling_models[0].configdict["valid_osc_range"])
+    assert [-145.0, 5.0] == pytest.approx(
+        scaling_models[1].configdict["valid_osc_range"]
+    )
 
     refls = flex.reflection_table.from_file(tmp_path / "scaled.refl")
     d1 = refls.select(refls["id"] == 0)
