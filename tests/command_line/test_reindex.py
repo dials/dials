@@ -252,7 +252,7 @@ def test_reindex_experiments():
 
 
 def test_reindex_cb_op_exit(dials_data):
-    data_dir = dials_data("insulin_processed")
+    data_dir = dials_data("insulin_processed", pathlib=True)
 
     # Want a SystemExit, rather than an uncaught exception
     with pytest.raises(SystemExit) as e:
@@ -267,17 +267,16 @@ def test_reindex_cb_op_exit(dials_data):
     assert "Unsuitable value" in str(e.value)
 
 
-def test_reindex_reference_multi_crystal(dials_data, run_in_tmpdir):
-
+def test_reindex_reference_multi_crystal(dials_data, tmp_path):
     mcp = dials_data("multi_crystal_proteinase_k", pathlib=True)
     args = ["dials.cosym", "space_group=P4"]
     for i in [1, 2, 3, 4]:
-        args.append(str(mcp / f"experiments_{i}.json"))
-        args.append(str(mcp / f"reflections_{i}.pickle"))
-    result = procrunner.run(args, working_directory=run_in_tmpdir)
+        args.append(mcp / f"experiments_{i}.json")
+        args.append(mcp / f"reflections_{i}.pickle")
+    result = procrunner.run(args, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
-    assert os.path.isfile("symmetrized.refl")
-    assert os.path.isfile("symmetrized.expt")
+    assert tmp_path.joinpath("symmetrized.refl").is_file()
+    assert tmp_path.joinpath("symmetrized.expt").is_file()
 
     args1 = [
         "dials.cosym",
@@ -286,12 +285,12 @@ def test_reindex_reference_multi_crystal(dials_data, run_in_tmpdir):
         "output.reflections=sub_1.refl",
     ]
     for i in [5, 7, 8, 10]:
-        args1.append(str(mcp / f"experiments_{i}.json"))
-        args1.append(str(mcp / f"reflections_{i}.pickle"))
-    result1 = procrunner.run(args1, working_directory=run_in_tmpdir)
+        args1.append(mcp / f"experiments_{i}.json")
+        args1.append(mcp / f"reflections_{i}.pickle")
+    result1 = procrunner.run(args1, working_directory=tmp_path)
     assert not result1.returncode and not result1.stderr
-    assert os.path.isfile("sub_1.expt")
-    assert os.path.isfile("sub_1.refl")
+    assert tmp_path.joinpath("sub_1.expt").is_file()
+    assert tmp_path.joinpath("sub_1.refl").is_file()
 
     args2 = [
         "dials.reindex",
@@ -300,7 +299,7 @@ def test_reindex_reference_multi_crystal(dials_data, run_in_tmpdir):
         "reference.experiments=sub_1.expt",
         "reference.reflections=sub_1.refl",
     ]
-    result2 = procrunner.run(args2, working_directory=run_in_tmpdir)
+    result2 = procrunner.run(args2, working_directory=tmp_path)
     assert not result2.returncode and not result2.stderr
-    assert os.path.isfile("reindexed.expt")
-    assert os.path.isfile("reindexed.refl")
+    assert tmp_path.joinpath("reindexed.expt").is_file()
+    assert tmp_path.joinpath("reindexed.refl").is_file()
