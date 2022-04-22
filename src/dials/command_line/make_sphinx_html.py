@@ -53,7 +53,7 @@ def run(args=None):
         "-o",
         "--output",
         type=Path,
-        default=str((sphinx_dir / "build" / "html")),
+        default=sphinx_dir / "build" / "html",
         help="Generate output in this location. Defaults to dials doc/sphinx dir.",
     )
     parser.add_argument(
@@ -73,8 +73,9 @@ def run(args=None):
         help="Build documentation in parallel",
     )
     options = parser.parse_args(args)
+    print(options)
 
-    output_dir = Path(options.output)
+    output_dir = Path(options.output).resolve()
     if options.clean:
         print(f"Cleaning out {output_dir}")
         shutil.rmtree(output_dir)
