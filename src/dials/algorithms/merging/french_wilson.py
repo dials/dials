@@ -151,8 +151,8 @@ def compute_posterior_moments_acentric(
     sigF = np.empty_like(h)
 
     # Set up interpolation functions as a function of h
-    n_interp = len(ac_zj)
-    x = (np.array(range(n_interp))) / 10 - 4
+    # Tables give values from h = -4.0 to h = 10.0 in steps of 0.1
+    x = (np.array(range(len(ac_zj)))) / 10 - 4
     J_h = interpolate.interp1d(x, ac_zj)
     sigJ_h = interpolate.interp1d(x, ac_zj_sd)
     F_h = interpolate.interp1d(x, ac_zf)
@@ -199,12 +199,12 @@ def compute_posterior_moments_centric(
     sigF = np.empty_like(h)
 
     # Set up interpolation functions as a function of h
-    n_interp = len(c_zj)
-    xh = (np.array(range(n_interp))) / 10 - 4
-    J_h = interpolate.interp1d(xh, c_zj)
-    sigJ_h = interpolate.interp1d(xh, c_zj_sd)
-    F_h = interpolate.interp1d(xh, c_zf)
-    sigF_h = interpolate.interp1d(xh, c_zf_sd)
+    # Tables give values from h = -4.0 to h = 10.0 in steps of 0.1
+    x = (np.array(range(len(c_zj)))) / 10 - 4
+    J_h = interpolate.interp1d(x, c_zj)
+    sigJ_h = interpolate.interp1d(x, c_zj_sd)
+    F_h = interpolate.interp1d(x, c_zf)
+    sigF_h = interpolate.interp1d(x, c_zf_sd)
 
     # Obtain posterior moments via interpolation for -4 < h < 4
     sel = valid & (h < 4)
