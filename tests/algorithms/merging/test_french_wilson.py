@@ -13,6 +13,16 @@ MAX_SIGF_OVER_F_CENTRIC = max(
 )
 
 
+def check_french_wilson_amplitudes(amplitudes):
+    assert amplitudes.is_xray_amplitude_array()
+    assert flex.min(amplitudes.data()) >= 0
+    assert flex.min(amplitudes.sigmas()) >= 0
+    sigF_over_F = amplitudes.sigmas() / amplitudes.data()
+    is_centric = amplitudes.centric_flags().data()
+    assert flex.max(sigF_over_F.select(~is_centric)) <= MAX_SIGF_OVER_F_ACENTRIC
+    assert flex.max(sigF_over_F.select(is_centric)) <= MAX_SIGF_OVER_F_CENTRIC
+
+
 def test_french_wilson_insulin(dials_data):
     insulin = dials_data("insulin_processed", pathlib=True)
     expts = load.experiment_list(insulin / "scaled.expt", check_format=False)
@@ -21,10 +31,15 @@ def test_french_wilson_insulin(dials_data):
     merged_intensities = merged.array()
 
     amplitudes = french_wilson.french_wilson(merged_intensities)
-    assert amplitudes.is_xray_amplitude_array()
-    assert flex.min(amplitudes.data()) >= 0
-    assert flex.min(amplitudes.sigmas()) >= 0
-    sigF_over_F = amplitudes.sigmas() / amplitudes.data()
-    is_centric = amplitudes.centric_flags().data()
-    assert flex.max(sigF_over_F.select(~is_centric)) <= MAX_SIGF_OVER_F_ACENTRIC
-    assert flex.max(sigF_over_F.select(is_centric)) <= MAX_SIGF_OVER_F_CENTRIC
+    check_french_wilson_amplitudes(amplitudes)
+
+
+def test_french_wilson_l_cysteine(dials_data):
+    l_cysteine = dials_data("l_cysteine_4_sweeps_scaled")
+    expts = load.experiment_list(l_cysteine / "scaled_30.expt", check_format=False)
+    refls = flex.reflection_table.from_file(l_cysteine / "scaled_30.refl")
+    merged, _, _ = merge.merge(expts, refls)
+    merged_intensities = merged.array()
+
+    amplitudes = french_wilson.french_wilson(merged_intensities)
+    check_french_wilson_amplitudes(amplitudes)
