@@ -38,6 +38,9 @@ def french_wilson(
     is_acentric = ~is_centric
 
     rejected = (sigmas <= 0) & ((intensities <= 0) | (sigmas < 0))
+    logger.debug(
+        f"Rejecting {np.count_nonzero(rejected)} reflections with non-positive sigmas"
+    )
 
     # Compute expected intensities
     d_star_cubed = flumpy.to_numpy(merged_intensities.d_star_cubed().data())
@@ -47,7 +50,12 @@ def french_wilson(
         n_bins=n_bins,
         m_estimator=standardized_median,
     )
-    rejected |= expected_intensities == 0
+    expected_intensity_is_zero = expected_intensities == 0
+    logger.debug(
+        f"Rejecting {np.count_nonzero(expected_intensity_is_zero)} "
+        "reflections with expected intensity equal to zero"
+    )
+    rejected |= expected_intensity_is_zero
     valid = ~rejected
 
     J = np.zeros_like(intensities)
@@ -133,7 +141,7 @@ def compute_posterior_moments_acentric(
 ) -> PosteriorMoments:
 
     h = (intensities / sigmas) - np.abs(sigmas / expected_intensities)
-    logger.debug(f"h range: {h.min()} - {h.max}")
+    logger.debug(f"h range: {h.min():.4f} - {h.max():.4f}")
     i_sig_min = h_min + 0.3
     valid = (intensities / sigmas >= i_sig_min) & (h >= h_min)
 
@@ -181,7 +189,7 @@ def compute_posterior_moments_centric(
 ) -> PosteriorMoments:
 
     h = (intensities / sigmas) - np.abs(sigmas / (2 * expected_intensities))
-    logger.debug(f"h range: {h.min()} - {h.max}")
+    logger.debug(f"h range: {h.min():.4f} - {h.max():.4f}")
     i_sig_min = h_min + 0.3
     valid = (intensities / sigmas >= i_sig_min) & (h >= h_min)
 
