@@ -1,6 +1,8 @@
 DIALS 3.10.dev1 (2022-04-25)
 ============================
 
+This is an interim development release, for diagnosing issues with wider conda-forge deployments.
+
 Features
 --------
 
