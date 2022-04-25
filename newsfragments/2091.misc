@@ -1,1 +1,0 @@
-Skip tests that depend on the xfel module, if xfel is not present.
