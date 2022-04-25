@@ -1,3 +1,52 @@
+DIALS 3.10.dev1 (2022-04-25)
+============================
+
+Features
+--------
+
+- ``dials.refine``: parallelise outlier rejection to reduce overall run times. (`#1427 <https://github.com/dials/dials/issues/1427>`_)
+- ``dials.refine``: use sparse storage for scan-varying runs, reducing memory requirements and run times. (`#2022 <https://github.com/dials/dials/issues/2022>`_)
+- ``dials.index``: Performance improvements for serial indexing (dials.stills-process, dev.dials.ssx_index) (`#2035 <https://github.com/dials/dials/issues/2035>`_)
+- ``dials.refine``: new ``separate_images`` option performs outlier rejection on each image independently. (`#2036 <https://github.com/dials/dials/issues/2036>`_)
+- ``dials.scale``: Allow use of a pdb model to calculate target intensities for scaling (phil option ``target_model``) (`#2053 <https://github.com/dials/dials/issues/2053>`_)
+- ``dials.cosym``: Enable skipping of unit cell clustering by setting ``unit_cell_clustering.threshold`` parameter to 0 or None (`#2058 <https://github.com/dials/dials/issues/2058>`_)
+- ``dials.powder_calibrate``: Add detector distance calibration. (`#2075 <https://github.com/dials/dials/issues/2075>`_)
+- The DIALS code package now uses ``src/`` layout. You will need to at least ``libtbx.refresh`` if on a development install. (`#2077 <https://github.com/dials/dials/issues/2077>`_)
+- Add a CMake build of DIALS. (`#2096 <https://github.com/dials/dials/issues/2096>`_)
+
+
+Bugfixes
+--------
+
+- Modify a test of ``dials.cluster_unit_cell`` so that it runs on Windows. (`#2027 <https://github.com/dials/dials/issues/2027>`_)
+- ``dev.dials.ssx_index``: Handle case where the input strong.refl has no spots for some images (`#2039 <https://github.com/dials/dials/issues/2039>`_)
+- Fix dials.show for custom datatypes (`#2048 <https://github.com/dials/dials/issues/2048>`_)
+- ``dials.scale``: If scaling against a target, do targeted outlier rejection. (`#2052 <https://github.com/dials/dials/issues/2052>`_)
+- ``dev.dials.ssx_index``: Fix reporting of results for h5 files, skip indexing of an image if fewer than ``min_spots`` strong spots (default 10). (`#2055 <https://github.com/dials/dials/issues/2055>`_)
+- Handle simulation case where test reflections could fail to generate. (`#2094 <https://github.com/dials/dials/issues/2094>`_)
+
+
+Improved Documentation
+----------------------
+
+- Remove reference to ``nproc`` in tutorials where it is not needed.
+  Also update DPF3 part 2 tutorial to match current output. (`#2030 <https://github.com/dials/dials/issues/2030>`_)
+- Add ``dials.two_theta_refine`` to documentation (`#2061 <https://github.com/dials/dials/issues/2061>`_)
+
+
+Deprecations and Removals
+-------------------------
+
+- ``dials.find_shared_models`` has been retired. The command will now redirect users to ``dials.show`` in combination with the ``show_shared_models=True`` option. This command stub will be removed in a future version. (`#1070 <https://github.com/dials/dials/issues/1070>`_)
+- ``dials.command_line.dials_import.ImageImporter`` is now deprecated. Please use ``dials_import.do_import`` instead. (`#2080 <https://github.com/dials/dials/issues/2080>`_)
+
+
+Misc
+----
+
+- `#1973 <https://github.com/dials/dials/issues/1973>`_, `#2037 <https://github.com/dials/dials/issues/2037>`_, `#2038 <https://github.com/dials/dials/issues/2038>`_, `#2041 <https://github.com/dials/dials/issues/2041>`_, `#2043 <https://github.com/dials/dials/issues/2043>`_, `#2047 <https://github.com/dials/dials/issues/2047>`_, `#2051 <https://github.com/dials/dials/issues/2051>`_, `#2062 <https://github.com/dials/dials/issues/2062>`_, `#2065 <https://github.com/dials/dials/issues/2065>`_, `#2070 <https://github.com/dials/dials/issues/2070>`_, `#2071 <https://github.com/dials/dials/issues/2071>`_, `#2074 <https://github.com/dials/dials/issues/2074>`_, `#2079 <https://github.com/dials/dials/issues/2079>`_, `#2081 <https://github.com/dials/dials/issues/2081>`_, `#2082 <https://github.com/dials/dials/issues/2082>`_, `#2083 <https://github.com/dials/dials/issues/2083>`_, `#2086 <https://github.com/dials/dials/issues/2086>`_, `#2087 <https://github.com/dials/dials/issues/2087>`_, `#2088 <https://github.com/dials/dials/issues/2088>`_, `#2089 <https://github.com/dials/dials/issues/2089>`_, `#2091 <https://github.com/dials/dials/issues/2091>`_, `#2092 <https://github.com/dials/dials/issues/2092>`_, `#2093 <https://github.com/dials/dials/issues/2093>`_, `#2095 <https://github.com/dials/dials/issues/2095>`_
+
+
 DIALS 3.8.4 (2022-04-01)
 ========================
 
