@@ -6,7 +6,13 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL GNU)
     set(CMAKE_EXE_LINKER_FLAGS_COVERAGE     "${CMAKE_EXE_LINKER_FLAGS_COVERAGE} --coverage")
     set(CMAKE_SHARED_LINKER_FLAGS_COVERAGE  "${CMAKE_SHARED_LINKER_FLAGS_COVERAGE} --coverage")
 else()
-    message(FATAL_ERROR "Did not know how to run Coverage build for ${CMAKE_CXX_COMPILER_ID}")
+    # It's an error if we requested coverage, otherwise ignore
+    string( TOUPPER "${CMAKE_BUILD_TYPE}" _build_type )
+    if (_build_type STREQUAL COVERAGE)
+        message(FATAL_ERROR "Did not know how to run Coverage build for ${CMAKE_CXX_COMPILER_ID}")
+    endif()
+    message(INFO "Did not know how to run Coverage build for ${CMAKE_CXX_COMPILER_ID}")
+    return()
 endif()
 
 mark_as_advanced(
