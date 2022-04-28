@@ -74,14 +74,17 @@ def french_wilson(
     valid[is_acentric] &= posterior_moments_acentric.valid
 
     # Compute centric moments
-    posterior_moments_centric = compute_posterior_moments_centric(
-        intensities[is_centric], sigmas[is_centric], expected_intensities[is_centric]
-    )
-    J[is_centric] = posterior_moments_centric.J
-    sigJ[is_centric] = posterior_moments_centric.sigJ
-    F[is_centric] = posterior_moments_centric.F
-    sigF[is_centric] = posterior_moments_centric.sigF
-    valid[is_centric] &= posterior_moments_centric.valid
+    if np.count_nonzero(is_centric):
+        posterior_moments_centric = compute_posterior_moments_centric(
+            intensities[is_centric],
+            sigmas[is_centric],
+            expected_intensities[is_centric],
+        )
+        J[is_centric] = posterior_moments_centric.J
+        sigJ[is_centric] = posterior_moments_centric.sigJ
+        F[is_centric] = posterior_moments_centric.F
+        sigF[is_centric] = posterior_moments_centric.sigF
+        valid[is_centric] &= posterior_moments_centric.valid
 
     logger.debug(f"Rejected {np.count_nonzero(~valid)} reflections")
     return (
