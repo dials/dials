@@ -537,7 +537,8 @@ def test_scale_normal_equations_failure(dials_data, tmp_path):
 
 
 @pytest.mark.xfail(
-    sys.platform == "darwin" and platform.machine() == "arm64",
+    sys.platform == "win32"
+    or (sys.platform == "darwin" and platform.machine() == "arm64"),
     reason="CC1/2 somewhat differs for unknown reasons",
 )
 def test_scale_and_filter_image_group_mode(dials_data, tmp_path):
