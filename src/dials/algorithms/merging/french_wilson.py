@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 def french_wilson(
     merged_intensities: miller.array,
-    n_bins: int = 50,
+    max_bins: int = 60,
     sigma_iobs_rejection_criterion: float = -4.0,
 ) -> miller.array:
     assert merged_intensities.is_xray_intensity_array()
@@ -44,10 +44,11 @@ def french_wilson(
 
     # Compute expected intensities
     d_star_cubed = flumpy.to_numpy(merged_intensities.d_star_cubed().data())
+    bins = determine_binning_counting_sorted(d_star_cubed, max_bins=max_bins)
     expected_intensities = compute_expected_intensities(
         d_star_cubed,
         intensities,
-        n_bins=n_bins,
+        bins,
         m_estimator=standardized_median,
     )
     expected_intensity_is_zero = expected_intensities == 0
@@ -102,15 +103,25 @@ def standardized_median(a: np.ndarray) -> float:
     return np.median(a) / math.log(2)
 
 
+def determine_binning_counting_sorted(x: np.ndarray, max_bins=60, min_bin_size=40):
+    n_points = len(x)
+    points_per_bin = max(len(x) // max_bins, min_bin_size)
+    n_bins = len(x) // points_per_bin
+    logger.debug(f"{n_bins=}, {points_per_bin=}")
+    return np.interp(
+        np.linspace(0, n_points, n_bins + 1), np.arange(n_points), np.sort(x)
+    )
+
+
 def compute_expected_intensities(
     x: np.ndarray,
     intensities: np.ndarray,
-    n_bins: int,
+    bins: int | list[int | float],
     m_estimator="mean",
 ) -> np.ndarray:
     # Compute the mean intensities binned according to x
     bin_means, bin_edges, binnumber = stats.binned_statistic(
-        x, intensities, statistic=m_estimator, bins=n_bins
+        x, intensities, statistic=m_estimator, bins=bins
     )
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
 
