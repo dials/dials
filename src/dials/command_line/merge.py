@@ -47,7 +47,13 @@ anomalous = True
     .help = "Output anomalous as well as mean intensities."
 truncate = True
     .type = bool
-    .help = "Option to perform truncation on merged data."
+    .help = "Use the French & Wilson (1978) algorithm to correct for negative "
+            "intensities when estimating amplitudes."
+french_wilson {
+    implementation = *dials cctbx
+        .type = choice
+        .help = "Choice of implementation of the French & Wilson algorithm"
+}
 d_min = None
     .type = float
     .help = "High resolution limit to apply to the data."
@@ -209,7 +215,9 @@ def merge_data_to_mtz(params, experiments, reflections):
 
         anom_amplitudes = None
         if params.truncate:
-            amplitudes, anom_amplitudes, dano = truncate(merged_intensities)
+            amplitudes, anom_amplitudes, dano = truncate(
+                merged_intensities, implementation=params.french_wilson.implementation
+            )
             # This will add the data for F, SIGF
             mtz_dataset.amplitudes = amplitudes
             # This will add the data for F(+), F(-), SIGF(+), SIGF(-)

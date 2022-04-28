@@ -261,7 +261,7 @@ def show_wilson_scaling_analysis(merged_intensities, n_residues=200):
             logger.info(out.getvalue())
 
 
-def truncate(merged_intensities):
+def truncate(merged_intensities, implementation: str = "dials"):
     """
     Perform French-Wilson truncation procedure on merged intensities.
 
@@ -278,8 +278,13 @@ def truncate(merged_intensities):
     """
     logger.info("\nPerforming French-Wilson treatment of scaled intensities")
     out = StringIO()
+    if implementation == "cctbx":
+        do_french_wilson = lambda ma: ma.french_wilson(log=out)
+    else:
+        do_french_wilson = french_wilson
+
     if merged_intensities.anomalous_flag():
-        anom_amplitudes = french_wilson(merged_intensities)
+        anom_amplitudes = do_french_wilson(merged_intensities)
         n_removed = merged_intensities.size() - anom_amplitudes.size()
         assert anom_amplitudes.is_xray_amplitude_array()
         amplitudes = anom_amplitudes.as_non_anomalous_array()
@@ -288,7 +293,7 @@ def truncate(merged_intensities):
     else:
         anom_amplitudes = None
         dano = None
-        amplitudes = french_wilson(merged_intensities)
+        amplitudes = do_french_wilson(merged_intensities)
         n_removed = merged_intensities.size() - amplitudes.size()
     logger.info("Total number of rejected intensities %s", n_removed)
     logger.debug(out.getvalue())
