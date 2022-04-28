@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import filecmp
 import json
 
 import procrunner
@@ -586,9 +585,11 @@ def test_pets(dials_data, tmp_path, intensity_choice):
     )
     assert not result.returncode and not result.stderr
     output = tmp_path / (intensity_choice + ".cif_pets")
+    # On windows, \r\n endings are written; but our reference is \n
+    output_data = output.read_bytes().replace(b"\r\n", b"\n")
 
     if intensity_choice == "profile":
         reference = dials_data("quartz_processed", pathlib=True) / "dials_prf.cif_pets"
     else:
         reference = dials_data("quartz_processed", pathlib=True) / "dials_dyn.cif_pets"
-    assert filecmp.cmp(output, reference)
+    assert output_data == reference.read_bytes()
