@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import filecmp
 import json
+import sys
 
 import procrunner
 import pytest
@@ -564,6 +565,10 @@ def test_export_sum_or_profile_only(dials_data, tmp_path):
         assert (tmp_path / f"removed_{remove}.mtz").is_file()
 
 
+@pytest.mark.xfail(
+    sys.platform == "win32",
+    reason="Comparison to reference fails on windows, because of universal newlines",
+)
 @pytest.mark.parametrize("intensity_choice", ["profile", "sum"])
 def test_pets(dials_data, tmp_path, intensity_choice):
     expt = dials_data("quartz_processed", pathlib=True) / "integrated.expt"
