@@ -30,7 +30,7 @@ analysis. You can modify the threshold that is used for determining outliers by 
 the ``unit_cell_clustering.threshold`` parameter.
 
 .. dials_tutorial_include:: multi_crystal/dials.cosym.log
-   :start-at: Hierarchical clustering of unit cells
+   :start-at: Using Andrews-Bernstein distance from Andrews & Bernstein
    :end-at: Highest possible metric symmetry and unit cell using LePage
 
 In this case, the unit cell analysis found 1 cluster of 4 datasets in :math:`P\,4\,2\,2`.
