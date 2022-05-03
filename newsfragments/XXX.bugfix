@@ -1,1 +1,1 @@
-Fixed user setting for `show_beam_center` being overriden when running image_viewer.py.
+Fixed user setting for `show_beam_center` being overridden when running image_viewer.py.
