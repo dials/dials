@@ -1,6 +1,15 @@
 # LIBTBX_SET_DISPATCHER_NAME dials.background
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
+"""Calculate background in resolution shells and optionally produce a plot.
 
+Usage:
+    dials.background image_*.cbf
+
+    dials.background imported.expt
+
+    dials.background imported.expt images=1,10 plot=background.png
+
+"""
 
 from __future__ import annotations
 
@@ -20,15 +29,6 @@ from dials.util.options import ArgumentParser, flatten_experiments
 from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.background")
-
-help_message = """
-
-Examples::
-
-  dials.background image_*.cbf
-
-  dials.background imported.expt
-"""
 
 phil_scope = iotbx.phil.parse(
     """\
@@ -69,7 +69,7 @@ def run(args=None):
         phil=phil_scope,
         read_experiments=True,
         read_experiments_from_images=True,
-        epilog=help_message,
+        epilog=__doc__,
     )
 
     params, options = parser.parse_args(args, show_diff_phil=True)
