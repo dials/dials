@@ -385,6 +385,7 @@ def insulin_spotfinding_stills(dials_data, tmp_path_factory):
     return experiment, reflections
 
 
+@pytest.mark.xfel
 @pytest.mark.parametrize("method", ["fft3d", "fft1d", "real_space_grid_search"])
 def test_index_insulin_force_stills(insulin_spotfinding_stills, tmp_path, method):
     experiment, reflections = insulin_spotfinding_stills
@@ -599,6 +600,7 @@ def test_refinement_failure_on_max_lattices_a15(dials_regression, tmp_path):
     assert len(experiments_list) == 2
 
 
+@pytest.mark.xfel
 def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_regression, tmp_path):
     """Problem: In stills_indexer, before calling the refine function, the
     experiment list contains a list of dxtbx crystal models (that are not
@@ -682,12 +684,12 @@ def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_regression, tmp
 
 
 @pytest.mark.parametrize(
-    "indexer_type,fix_cell", (("sequences", False), ("stills", True))
+    "indexer_type,fix_cell",
+    (("sequences", False), pytest.param("stills", True, marks=pytest.mark.xfel)),
 )
 def test_index_ED_still_low_res_spot_match(
     dials_data, tmp_path, indexer_type, fix_cell
 ):
-
     # test indexing from a single simulated lysozyme ED still
 
     image_path = (

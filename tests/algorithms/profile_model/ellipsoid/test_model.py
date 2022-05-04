@@ -22,6 +22,7 @@ from dials.algorithms.profile_model.ellipsoid.parameterisation import (
 )
 from dials.algorithms.spot_prediction import IndexGenerator
 from dials.array_family import flex
+from dials.constants import FULL_PARTIALITY
 
 
 @pytest.fixture
@@ -108,11 +109,11 @@ def test_Simple1ProfileModel_predict_reflections(
     # Get an array of miller indices
     miller_indices = index_generator.to_array()
     reflections = simple1_profile_model.predict_reflections(
-        [test_experiment], miller_indices, probability=0.9973
+        [test_experiment], miller_indices, probability=FULL_PARTIALITY
     )
 
     s0 = matrix.col(test_experiment.beam.get_s0())
-    quantile = chisq_quantile(3, 0.9973)
+    quantile = chisq_quantile(3, FULL_PARTIALITY)
     sigma_inv = matrix.sqr(flumpy.from_numpy(simple1_profile_model.sigma())).inverse()
 
     for s2 in reflections["s2"]:
@@ -136,7 +137,7 @@ def test_Simple1ProfileModel_compute_bbox(simple1_profile_model, test_experiment
     # Get an array of miller indices
     miller_indices = index_generator.to_array()
     reflections = simple1_profile_model.predict_reflections(
-        experiments, miller_indices, probability=0.9973
+        experiments, miller_indices, probability=FULL_PARTIALITY
     )
 
     simple1_profile_model.compute_bbox(experiments, reflections)
@@ -155,7 +156,7 @@ def test_Simple1ProfileModel_compute_mask(simple1_profile_model, test_experiment
     # Get an array of miller indices
     miller_indices = index_generator.to_array()
     reflections = simple1_profile_model.predict_reflections(
-        experiments, miller_indices, probability=0.9973
+        experiments, miller_indices, probability=FULL_PARTIALITY
     )
 
     simple1_profile_model.compute_bbox(experiments, reflections)
@@ -206,12 +207,12 @@ def test_Simple6ProfileModel_predict_reflections(
     # Get an array of miller indices
     miller_indices = index_generator.to_array()
     reflections = simple6_profile_model.predict_reflections(
-        experiments, miller_indices, probability=0.9973
+        experiments, miller_indices, probability=FULL_PARTIALITY
     )
 
     s2 = reflections["s2"]
     s0 = matrix.col(experiments[0].beam.get_s0())
-    quantile = chisq_quantile(3, 0.9973)
+    quantile = chisq_quantile(3, FULL_PARTIALITY)
     sigma_inv = matrix.sqr(flumpy.from_numpy(simple6_profile_model.sigma())).inverse()
 
     for s2 in map(matrix.col, reflections["s2"]):
@@ -233,12 +234,12 @@ def test_Simple6ProfileModel_compute_bbox(simple6_profile_model, test_experiment
     # Get an array of miller indices
     miller_indices = index_generator.to_array()
     reflections = simple6_profile_model.predict_reflections(
-        experiments, miller_indices, probability=0.9973
+        experiments, miller_indices, probability=FULL_PARTIALITY
     )
 
     s2 = reflections["s2"]
     s0 = matrix.col(experiments[0].beam.get_s0())
-    quantile = chisq_quantile(3, 0.9973)
+    quantile = chisq_quantile(3, FULL_PARTIALITY)
     sigma_inv = matrix.sqr(flumpy.from_numpy(simple6_profile_model.sigma())).inverse()
 
     for s2 in map(matrix.col, reflections["s2"]):
@@ -262,12 +263,12 @@ def test_Simple6ProfileModel_compute_mask(simple6_profile_model, test_experiment
     # Get an array of miller indices
     miller_indices = index_generator.to_array()
     reflections = simple6_profile_model.predict_reflections(
-        experiments, miller_indices, probability=0.9973
+        experiments, miller_indices, probability=FULL_PARTIALITY
     )
 
     s2 = reflections["s2"]
     s0 = matrix.col(experiments[0].beam.get_s0())
-    quantile = chisq_quantile(3, 0.9973)
+    quantile = chisq_quantile(3, FULL_PARTIALITY)
     sigma_inv = matrix.sqr(flumpy.from_numpy(simple6_profile_model.sigma())).inverse()
 
     for s2 in map(matrix.col, reflections["s2"]):

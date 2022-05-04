@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 
 from jinja2 import ChoiceLoader, Environment, PackageLoader
 from orderedset import OrderedSet
@@ -277,7 +278,9 @@ def print_scaling_model_error_summary(experiments):
                     )
                     p_sigmas.extend(flex.abs(params - null_value) / sigmas)
         log_p_sigmas = flex.log(p_sigmas)
-        frac_high_uncertainty = (log_p_sigmas < 0.69315).count(True) / len(log_p_sigmas)
+        frac_high_uncertainty = (log_p_sigmas < math.log(2)).count(True) / len(
+            log_p_sigmas
+        )
         if frac_high_uncertainty > 0.5:
             msg = (
                 "Warning: Over half ({:.2f}%) of model parameters have significant\n"
