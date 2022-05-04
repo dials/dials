@@ -1,1 +1,1 @@
-`dials.refine_bravais_settings`: no longer accept non-P1 data (behaviour was incorrect if indexed with non-triclinic lattice)
+``dials.refine_bravais_settings``: Only accept data in P1. Previously, non-primitive settings were handled incorrectly.
