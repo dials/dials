@@ -177,9 +177,8 @@ def test_input_not_p1(dials_data, tmpdir):
     expt = data_dir / "indexed.expt"
 
     with tmpdir.as_cwd():
-        with pytest.raises(SystemExit) as error:
+        with pytest.raises(SystemExit):
             refine_bravais_settings.run([str(expt), str(refl)])
-        assert error.type == SystemExit
 
 
 @pytest.mark.parametrize(
