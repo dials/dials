@@ -18,6 +18,7 @@ from dials.algorithms.profile_model.ellipsoid.algorithm import (
     run_ellipsoid_refinement,
 )
 from dials.algorithms.profile_model.ellipsoid.indexer import reindex
+from dials.constants import FULL_PARTIALITY
 
 
 class ToFewReflections(Exception):
@@ -170,7 +171,9 @@ class EllipsoidIntegrator(SimpleIntegrator):
         return expts[0], refls, output_data
 
     @staticmethod
-    def predict(experiment, reference, d_min=None, prediction_probability=0.9973):
+    def predict(
+        experiment, reference, d_min=None, prediction_probability=FULL_PARTIALITY
+    ):
         id_map = dict(reference.experiment_identifiers())
         reflection_table = predict(
             ExperimentList([experiment]),

@@ -16,6 +16,8 @@ cpp_tests = [
     "executable", cpp_tests, ids=[p.replace("/", "-") for p in cpp_tests]
 )
 def test_cpp_program(executable):
+    if "LIBTBX_BUILD" not in os.environ:
+        pytest.skip("LIBTBX_ENV is unset; don't know how to find test executable")
     full_path = os.path.join(
         os.environ["LIBTBX_BUILD"], "dials", *(executable.split("/"))
     )

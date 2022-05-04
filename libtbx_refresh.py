@@ -16,28 +16,27 @@ try:
 except ModuleNotFoundError:
     pkg_resources = None
 
-# Hack:
-# Other packages, configured first, might attempt to import dials, which
-# would only get a namespace package. This means even just setting the
-# path wouldn't work.
-# So, check to see if we have a namespace package imported, remove it (and
-# any sub-packages), set the __path__, then import the real copy of DIALS.
-#
-# This is probably... not something we want to do, but it allows moving
-# to src/ without drastically changing this part of the setup.
+# So that we can import DIALS within this script, work out where the
+# sources are and make them importable
+_src_path_root = str(Path(libtbx.env.dist_path("dials")).joinpath("src"))
+if _src_path_root not in sys.path:
+    sys.path.insert(0, _src_path_root)
+
+# Other packages, configured first, might have attempted to import dials, which
+# would only get a namespace package, if the modules/ folder is configured as a
+# repository. This means just setting the path wouldn't work. So, check to see
+# if we have a namespace package imported, remove it (and any sub-packages),
+# set the __path__, then import the real copy of DIALS.
 #
 # If this is *only* dxtbx, then we can probably get away without this by
 # removing this part from dxtbx.
 _dials = sys.modules.get("dials")
 if _dials and _dials.__file__ is None:
     # Someone tried to import us and got a namespace package
-    _src_path_root = str(Path(libtbx.env.dist_path("dials")).joinpath("src"))
     del sys.modules["dials"]
     # Remove any sub-modules that we might have tried and failed to import
     for _module in [x for x in sys.modules if x.startswith("dials.")]:
         del sys.modules[_module]
-    # Add the new path at the front of the system paths list
-    sys.path.insert(0, _src_path_root)
 
 # Now, check to see if we configured XFEL first. If so, this is an error and we
 # have a mis-configured environment.

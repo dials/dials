@@ -1,0 +1,14 @@
+Python_add_library(
+    dials_algorithms_image_threshold_ext
+    MODULE
+    boost_python/unimodal.cc
+    boost_python/local.cc
+    boost_python/threshold_ext.cc
+)
+target_link_libraries(
+    dials_algorithms_image_threshold_ext
+    PUBLIC
+    Boost::python
+    CCTBX::cctbx
+    $<TARGET_NAME_IF_EXISTS:OpenMP::OpenMP_CXX>
+)

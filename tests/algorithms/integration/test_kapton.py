@@ -9,6 +9,7 @@ from libtbx.phil import parse
 from dials.array_family import flex
 
 
+@pytest.mark.xfel
 def test_kapton(tmp_path, dials_data):
     """Test script for kapton correction applied to integrated data.
     Currently only testing kapton 2019 correction on rayonix-340 at LCLS
