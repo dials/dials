@@ -20,6 +20,7 @@ find_package(msgpack REQUIRED)
 find_package(OpenMP)
 
 # Find the boost::python library for this version of python
+set(Boost_USE_STATIC_LIBS OFF) # This is the default everywhere except Windows
 find_package(Boost COMPONENTS thread "python${Python_VERSION_MAJOR}${Python_VERSION_MINOR}" REQUIRED)
 
 # Create Boost::python alias so we don't need to carry the python version around
