@@ -414,7 +414,14 @@ class Script:
                 "number of input experiments"
             )
 
-        flat_exps = flatten_experiments(params.input.experiments)
+        try:
+            flat_exps = flatten_experiments(params.input.experiments)
+        except RuntimeError:
+            sys.exit(
+                "Unable to combine experiments. Are experiment IDs unique? "
+                "You may need to run dials.assign_experiment_identifiers first to "
+                "reset IDs."
+            )
 
         ref_beam = params.reference_from_experiment.beam
         ref_goniometer = params.reference_from_experiment.goniometer
