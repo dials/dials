@@ -1,1 +1,1 @@
-``dials.integrate``: removal of unused ``background.algorithm=median`` option.
+``dials.integrate``: The unused ``background.algorithm=median`` has been removed.
