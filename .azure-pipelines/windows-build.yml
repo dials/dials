@@ -13,43 +13,50 @@ steps:
   fetchDepth: 1
   displayName: Checkout $(Build.SourceBranch)
 
-# Download source repositories using the bootstrap script
-- powershell: |
-    set PYTHONUNBUFFERED=TRUE
-    python.exe modules\dials\installer\bootstrap.py update
-  displayName: Repository checkout
-  failOnStderr: true
-  workingDirectory: $(Pipeline.Workspace)
+- bash: |
+    set -euxo pipefail
 
-# Create a new conda environment using the bootstrap script
-- script: |
-    set PYTHONUNBUFFERED=TRUE
-    python modules/dials/installer/bootstrap.py base --clean --python $(PYTHON_VERSION)
-  displayName: Create python $(PYTHON_VERSION) environment
-  workingDirectory: $(Pipeline.Workspace)
+    conda create -p conda_base -c conda-forge \
+      --file modules/dials/.conda-envs/windows.txt \
+      dxtbx cmake pytest-sugar ninja
 
-# Build DIALS using the bootstrap script
-- script: |
-    pushd "C:\Program Files (x86)\Microsoft Visual Studio\Installer\"
-    for /f "delims=" %%x in ('.\vswhere.exe -latest -property InstallationPath') do set VSPATH=%%x
-    popd
-    call "%VSPATH%\VC\Auxiliary\Build\vcvarsall.bat" x64
+# # Download source repositories using the bootstrap script
+# - powershell: |
+#     set PYTHONUNBUFFERED=TRUE
+#     python.exe modules\dials\installer\bootstrap.py update
+#   displayName: Repository checkout
+#   failOnStderr: true
+#   workingDirectory: $(Pipeline.Workspace)
 
-    python modules/dials/installer/bootstrap.py build
-  displayName: DIALS build
-  workingDirectory: $(Pipeline.Workspace)
+# # Create a new conda environment using the bootstrap script
+# - script: |
+#     set PYTHONUNBUFFERED=TRUE
+#     python modules/dials/installer/bootstrap.py base --clean --python $(PYTHON_VERSION)
+#   displayName: Create python $(PYTHON_VERSION) environment
+#   workingDirectory: $(Pipeline.Workspace)
 
-# Ensure we are using up-to-date testing packages.
-# Extract the dials-data version so we can correctly cache regression data.
-- script: |
-    call dials.bat
-    conda install -y dials-data pytest-azurepipelines pytest-timeout
-    dials.data info -v
-    echo "##vso[task.setvariable variable=DIALS_DATA_VERSION_FULL]$(dials.data info -v | grep version.full)"
-    echo "##vso[task.setvariable variable=DIALS_DATA_VERSION]$(dials.data info -v | grep version.major_minor)"
-    mkdir -p data
-  displayName: Install additional packages
-  workingDirectory: $(Pipeline.Workspace)
+# # Build DIALS using the bootstrap script
+# - script: |
+#     pushd "C:\Program Files (x86)\Microsoft Visual Studio\Installer\"
+#     for /f "delims=" %%x in ('.\vswhere.exe -latest -property InstallationPath') do set VSPATH=%%x
+#     popd
+#     call "%VSPATH%\VC\Auxiliary\Build\vcvarsall.bat" x64
+
+#     python modules/dials/installer/bootstrap.py build
+#   displayName: DIALS build
+#   workingDirectory: $(Pipeline.Workspace)
+
+# # Ensure we are using up-to-date testing packages.
+# # Extract the dials-data version so we can correctly cache regression data.
+# - script: |
+#     call dials.bat
+#     conda install -y dials-data pytest-azurepipelines pytest-timeout
+#     dials.data info -v
+#     echo "##vso[task.setvariable variable=DIALS_DATA_VERSION_FULL]$(dials.data info -v | grep version.full)"
+#     echo "##vso[task.setvariable variable=DIALS_DATA_VERSION]$(dials.data info -v | grep version.major_minor)"
+#     mkdir -p data
+#   displayName: Install additional packages
+#   workingDirectory: $(Pipeline.Workspace)
 
 # # Retrieve the regression data from cache if possible
 # # The cache allows day-to-day incremental updates, which is relevant only if
@@ -69,15 +76,15 @@ steps:
 #     cacheHitVar: DATA_CACHED
 #   displayName: Restore regression data cache
 
-- script: |
-    set DIALS_DATA=$(Pipeline.Workspace)\data
-    set PYTHONDEVMODE=1
-    set PYTHONUNBUFFERED=TRUE
-    call dials.bat
-    cd modules/dials
-    libtbx.python -m pytest -v -ra -n auto --basetemp="$(Pipeline.Workspace)\tests" --durations=10 --dist loadgroup --timeout=5400 || echo "##vso[task.complete result=Failed;]Some tests failed"
-  displayName: Run some tests (temporary)
-  workingDirectory: $(Pipeline.Workspace)
+# - script: |
+#     set DIALS_DATA=$(Pipeline.Workspace)\data
+#     set PYTHONDEVMODE=1
+#     set PYTHONUNBUFFERED=TRUE
+#     call dials.bat
+#     cd modules/dials
+#     libtbx.python -m pytest -v -ra -n auto --basetemp="$(Pipeline.Workspace)\tests" --durations=10 --dist loadgroup --timeout=5400 || echo "##vso[task.complete result=Failed;]Some tests failed"
+#   displayName: Run some tests (temporary)
+#   workingDirectory: $(Pipeline.Workspace)
 
 # Finally, run the full regression test suite
 # - bash: |

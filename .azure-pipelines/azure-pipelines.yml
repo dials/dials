@@ -70,37 +70,37 @@ stages:
     TODAY_ISO: $[ stageDependencies.prepare.setup.outputs['constants.TODAY_ISO'] ]
 
   jobs:
-  - job: linux
-    pool:
-      vmImage: ubuntu-20.04
-    strategy:
-      matrix:
-        python38:
-          PYTHON_VERSION: 3.8
-    timeoutInMinutes: 150
-    steps:
-    # Dependencies required for building gltbx
-    - script: |
-        sudo apt-get update
-        sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev
-      displayName: Install dependencies
+  # - job: linux
+  #   pool:
+  #     vmImage: ubuntu-20.04
+  #   strategy:
+  #     matrix:
+  #       python38:
+  #         PYTHON_VERSION: 3.8
+  #   timeoutInMinutes: 150
+  #   steps:
+  #   # Dependencies required for building gltbx
+  #   - script: |
+  #       sudo apt-get update
+  #       sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev
+  #     displayName: Install dependencies
 
-    - template: unix-build.yml
-      parameters:
-        conda_environment: .conda-envs/linux.txt
+  #   - template: unix-build.yml
+  #     parameters:
+  #       conda_environment: .conda-envs/linux.txt
 
-  - job: macos
-    pool:
-      vmImage: macOS-latest
-    strategy:
-      matrix:
-        python38:
-          PYTHON_VERSION: 3.8
-    timeoutInMinutes: 150
-    steps:
-    - template: unix-build.yml
-      parameters:
-        conda_environment: .conda-envs/macos.txt
+  # - job: macos
+  #   pool:
+  #     vmImage: macOS-latest
+  #   strategy:
+  #     matrix:
+  #       python38:
+  #         PYTHON_VERSION: 3.8
+  #   timeoutInMinutes: 150
+  #   steps:
+  #   - template: unix-build.yml
+  #     parameters:
+  #       conda_environment: .conda-envs/macos.txt
 
   - job: windows
     pool:
@@ -114,53 +114,53 @@ stages:
     timeoutInMinutes: 150
     steps:
     - template: windows-build.yml
-      parameters:
-        conda_environment: .conda-envs/windows.txt
+      # parameters:
+        # conda_environment: .conda-envs/windows.txt
 
-  - ${{ if startsWith(variables['Build.SourceBranch'], 'refs/pull/') }}:
-    - job: pr
-      displayName: ready to merge
-      dependsOn:
-      - linux
-      - macos
-      - windows
-      condition: and(eq(variables.isPullRequest, true), succeeded())
-      pool:
-        vmImage: ubuntu-20.04
-      steps:
-      - checkout: none
+  # - ${{ if startsWith(variables['Build.SourceBranch'], 'refs/pull/') }}:
+  #   - job: pr
+  #     displayName: ready to merge
+  #     dependsOn:
+  #     - linux
+  #     - macos
+  #     - windows
+  #     condition: and(eq(variables.isPullRequest, true), succeeded())
+  #     pool:
+  #       vmImage: ubuntu-20.04
+  #     steps:
+  #     - checkout: none
 
-    - job: xfel
-      displayName: XFEL regression tests
-      dependsOn:
-      - linux
-      - macos
-      - windows
-      condition: and(eq(variables.isPullRequest, true), succeededOrFailed())
-      pool:
-        vmImage: ubuntu-20.04
-      steps:
-      - checkout: none
-      - task: DownloadPipelineArtifact@2
-        inputs:
-          allowFailedBuilds: true
-          patterns: "*/xfel-regression.*"
-          path: $(Pipeline.Workspace)/artifacts
-        continueOnError: True
-      - bash: |
-          set -eu
-          if [ ! -e artifacts ] || [ ! "$(\ls -A artifacts)" ]; then
-            echo "##[error]XFEL regression tests did not run"
-          else
-            cd artifacts
-            for D in *; do
-              echo "##[group]${D}"
-              cat "${D}/xfel-regression.txt"
-              echo "##[endgroup]"
-              cat "${D}/xfel-regression.output"
-              echo
-            done
-          fi
-        displayName: Report
-        condition: always()
-        workingDirectory: $(Pipeline.Workspace)/artifacts
+  #   - job: xfel
+  #     displayName: XFEL regression tests
+  #     dependsOn:
+  #     - linux
+  #     - macos
+  #     - windows
+  #     condition: and(eq(variables.isPullRequest, true), succeededOrFailed())
+  #     pool:
+  #       vmImage: ubuntu-20.04
+  #     steps:
+  #     - checkout: none
+  #     - task: DownloadPipelineArtifact@2
+  #       inputs:
+  #         allowFailedBuilds: true
+  #         patterns: "*/xfel-regression.*"
+  #         path: $(Pipeline.Workspace)/artifacts
+  #       continueOnError: True
+  #     - bash: |
+  #         set -eu
+  #         if [ ! -e artifacts ] || [ ! "$(\ls -A artifacts)" ]; then
+  #           echo "##[error]XFEL regression tests did not run"
+  #         else
+  #           cd artifacts
+  #           for D in *; do
+  #             echo "##[group]${D}"
+  #             cat "${D}/xfel-regression.txt"
+  #             echo "##[endgroup]"
+  #             cat "${D}/xfel-regression.output"
+  #             echo
+  #           done
+  #         fi
+  #       displayName: Report
+  #       condition: always()
+  #       workingDirectory: $(Pipeline.Workspace)/artifacts
