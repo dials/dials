@@ -2124,6 +2124,7 @@ class SpotSettingsPanel(wx.Panel):
         self.settings.blur = self.params.blur
         self.settings.n_bins = self.params.n_bins
         self.settings.find_spots_phil = "find_spots.phil"
+        self.settings.show_beam_center = self.params.show_beam_center
         self._sizer = wx.BoxSizer(wx.VERTICAL)
         s = self._sizer
         self.SetSizer(self._sizer)

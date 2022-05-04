@@ -25,6 +25,7 @@ from dials.algorithms.profile_model.ellipsoid.parameterisation import (
     Simple6MosaicityParameterisation,
 )
 from dials.array_family import flex
+from dials.constants import FULL_PARTIALITY
 from dials.model.experiment.profile import ProfileModelExt
 
 phil_scope = parse(
@@ -87,9 +88,10 @@ prediction {
     d_min = None
         .type = float
 
-    probability = 0.9973
+    probability = %f
         .type = float
 }"""
+    % FULL_PARTIALITY
 )
 
 
@@ -244,7 +246,9 @@ class SimpleProfileModelBase(ProfileModelBase):
 
     """
 
-    def predict_reflections(self, experiments, miller_indices, probability=0.9973):
+    def predict_reflections(
+        self, experiments, miller_indices, probability=FULL_PARTIALITY
+    ):
         """
         Predict the reflections
 
@@ -254,7 +258,7 @@ class SimpleProfileModelBase(ProfileModelBase):
         )
         return predictor.predict(miller_indices)
 
-    def compute_bbox(self, experiments, reflections, probability=0.9973):
+    def compute_bbox(self, experiments, reflections, probability=FULL_PARTIALITY):
         """
         Compute the bounding box
 
@@ -264,7 +268,7 @@ class SimpleProfileModelBase(ProfileModelBase):
         )
         calculator.compute(reflections)
 
-    def compute_mask(self, experiments, reflections, probability=0.9973):
+    def compute_mask(self, experiments, reflections, probability=FULL_PARTIALITY):
         """
         Compute the mask
 
@@ -437,7 +441,9 @@ class AngularProfileModelBase(ProfileModelBase):
         sigma = np.matmul(np.matmul(Q.T, np.array(self.sigma()).reshape(3, 3)), Q)
         return sigma
 
-    def predict_reflections(self, experiments, miller_indices, probability=0.9973):
+    def predict_reflections(
+        self, experiments, miller_indices, probability=FULL_PARTIALITY
+    ):
         """
         Predict the reflections
 
@@ -447,7 +453,7 @@ class AngularProfileModelBase(ProfileModelBase):
         )
         return predictor.predict(miller_indices)
 
-    def compute_bbox(self, experiments, reflections, probability=0.9973):
+    def compute_bbox(self, experiments, reflections, probability=FULL_PARTIALITY):
         """
         Compute the bounding box
 
@@ -457,7 +463,7 @@ class AngularProfileModelBase(ProfileModelBase):
         )
         calculator.compute(reflections)
 
-    def compute_mask(self, experiments, reflections, probability=0.9973):
+    def compute_mask(self, experiments, reflections, probability=FULL_PARTIALITY):
         """
         Compute the mask
 
