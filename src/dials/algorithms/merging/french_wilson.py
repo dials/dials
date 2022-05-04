@@ -103,7 +103,7 @@ def standardized_median(a: np.ndarray) -> float:
     return np.median(a) / math.log(2)
 
 
-def determine_binning_counting_sorted(x: np.ndarray, max_bins=60, min_bin_size=40):
+def determine_binning_counting_sorted(x: np.ndarray, max_bins=60, min_bin_size=20):
     n_points = len(x)
     points_per_bin = max(len(x) // max_bins, min_bin_size)
     n_bins = len(x) // points_per_bin

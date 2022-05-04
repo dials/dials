@@ -53,6 +53,16 @@ french_wilson {
     implementation = *dials cctbx
         .type = choice
         .help = "Choice of implementation of the French & Wilson algorithm"
+    min_reflections = 200
+        .type = int(value_min=1)
+        .help = "Only perform French & Wilson procedure if at least this "
+                "number of reflections."
+    fallback_to_flat_prior = True
+        .type = bool
+        .help = "If insufficient number of reflections to perform the "
+                "French & Wilson procedure, fallback to assumption of a "
+                "flat prior, i.e.: "
+                "  |F| = sqrt((Io+sqrt(Io**2 +2sigma**2))/2.0)"
 }
 d_min = None
     .type = float
@@ -216,7 +226,10 @@ def merge_data_to_mtz(params, experiments, reflections):
         anom_amplitudes = None
         if params.truncate:
             amplitudes, anom_amplitudes, dano = truncate(
-                merged_intensities, implementation=params.french_wilson.implementation
+                merged_intensities,
+                implementation=params.french_wilson.implementation,
+                min_reflections=params.french_wilson.min_reflections,
+                fallback_to_flat_prior=params.french_wilson.fallback_to_flat_prior,
             )
             # This will add the data for F, SIGF
             mtz_dataset.amplitudes = amplitudes
