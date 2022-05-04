@@ -1,0 +1,1 @@
+``dials.show``: avoid crash when an experiment does not have an imageset.
