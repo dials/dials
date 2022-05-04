@@ -1,1 +1,1 @@
-Fixed user setting for `show_beam_center` being overridden when running image_viewer.py.
+``dials.image_viewer``: Fixed user setting for ``show_beam_center=`` being overridden.
