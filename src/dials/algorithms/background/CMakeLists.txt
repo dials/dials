@@ -26,8 +26,5 @@ Python_add_library(
 )
 target_link_libraries( dials_algorithms_background_glm_ext PUBLIC CCTBX::cctbx Boost::python )
 
-Python_add_library( dials_algorithms_background_median_ext MODULE median/boost_python/ext.cc )
-target_link_libraries( dials_algorithms_background_median_ext PUBLIC CCTBX::cctbx Boost::python )
-
 Python_add_library( dials_algorithms_background_gmodel_ext MODULE gmodel/boost_python/ext.cc )
 target_link_libraries( dials_algorithms_background_gmodel_ext PUBLIC CCTBX::cctbx Boost::python )
