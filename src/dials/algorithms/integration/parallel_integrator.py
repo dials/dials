@@ -18,6 +18,7 @@ from dials.util.mp import multi_node_parallel_map
 # relies on - it assumes the binding for EmpiricalProfileModeller exists
 import dials.algorithms.profile_model.modeller  # noqa: F401 # isort: split
 
+from dials.constants import EPS, FULL_PARTIALITY
 from dials_algorithms_integration_parallel_integrator_ext import (
     GaussianRSIntensityCalculator,
     GaussianRSMaskCalculator,
@@ -423,8 +424,7 @@ class IntegrationJob:
         self.reflections.compute_partiality(self.experiments)
 
         # Get some info
-        EPS = 1e-7
-        full_value = 0.997300203937 - EPS
+        full_value = FULL_PARTIALITY - EPS
         fully_recorded = self.reflections["partiality"] > full_value
         npart = fully_recorded.count(False)
         nfull = fully_recorded.count(True)
@@ -871,8 +871,7 @@ class ReferenceCalculatorJob:
         self.reflections.compute_partiality(self.experiments)
 
         # Get some info
-        EPS = 1e-7
-        full_value = 0.997300203937 - EPS
+        full_value = FULL_PARTIALITY - EPS
         fully_recorded = self.reflections["partiality"] > full_value
         npart = fully_recorded.count(False)
         nfull = fully_recorded.count(True)
