@@ -75,7 +75,6 @@ setup_kwargs = {
             "gmodel = dials.extensions.gmodel_background_ext:GModelBackgroundExt",
             "simple = dials.extensions.simple_background_ext:SimpleBackgroundExt",
             "null = dials.extensions.null_background_ext:NullBackgroundExt",
-            "median = dials.extensions.median_background_ext:MedianBackgroundExt",
         ],
         "dials.integration.centroid": [
             "simple = dials.extensions.simple_centroid_ext:SimpleCentroidExt",
