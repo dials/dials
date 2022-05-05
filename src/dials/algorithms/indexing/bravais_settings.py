@@ -89,13 +89,19 @@ class BravaisSetting(MetricSubgroup):  # inherits from dictionary
 
 
 class RefinedSettingsList(list):
+    def __init__(self, *args, cb_op_to_primitive=None, **kwargs):
+        if cb_op_to_primitive is None:
+            cb_op_to_primitive = sgtbx.change_of_basis_op()
+        self.cb_op_to_primitive = cb_op_to_primitive
+        super().__init__(*args, **kwargs)
+
     def supergroup(self):
         return self[0]
 
     def triclinic(self):
         return self[-1]
 
-    def as_dict(self):
+    def as_dict(self, cb_op_to_primitive=None):
         result = {}
 
         for item in self:
@@ -106,7 +112,7 @@ class RefinedSettingsList(list):
                 "nspots": item.Nmatches,
                 "bravais": item["bravais"],
                 "unit_cell": uc.parameters(),
-                "cb_op": item["cb_op_inp_best"].as_abc(),
+                "cb_op": str(item["cb_op_inp_best"] * self.cb_op_to_primitive),
                 "max_cc": item.max_cc,
                 "min_cc": item.min_cc,
                 "correlation_coefficients": list(item.correlation_coefficients),
@@ -150,7 +156,7 @@ class RefinedSettingsList(list):
                     f"{item['bravais']}",
                     "%6.2f %6.2f %6.2f %6.2f %6.2f %6.2f" % P,
                     f"{uc.volume():.0f}",
-                    f"{item['cb_op_inp_best'].as_abc()}",
+                    f"{str(item['cb_op_inp_best'] * self.cb_op_to_primitive)}",
                 ]
             )
 
@@ -190,7 +196,9 @@ def lowest_symmetry_space_group_for_bravais_lattice(
     ).group()
 
 
-def refined_settings_from_refined_triclinic(experiments, reflections, params):
+def refined_settings_from_refined_triclinic(
+    experiments, reflections, params, cb_op_to_primitive=None
+):
     """Generate a RefinedSettingsList from a triclinic model.
 
     Args:
@@ -220,7 +228,7 @@ def refined_settings_from_refined_triclinic(experiments, reflections, params):
     used_reflections = copy.deepcopy(reflections)
     UC = crystal.get_unit_cell()
 
-    refined_settings = RefinedSettingsList()
+    refined_settings = RefinedSettingsList(cb_op_to_primitive=cb_op_to_primitive)
     for item in iotbx_converter(
         UC, params.lepage_max_delta, best_monoclinic_beta=params.best_monoclinic_beta
     ):

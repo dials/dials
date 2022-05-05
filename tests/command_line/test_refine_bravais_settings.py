@@ -248,3 +248,45 @@ def test_setting_c2_vs_i2(
         sgtbx.space_group_info(expected_space_group).group()
     )
     assert f"{expected_bravais_lattice}: {expected_short_name}" in stdout
+
+
+def test_refine_bravais_settings_non_primitive_input(dials_data, tmp_path):
+    data_dir = dials_data("insulin_processed", pathlib=True)
+    refl_path = data_dir / "indexed.refl"
+    expt_path = data_dir / "indexed.expt"
+    result = procrunner.run(
+        [
+            "dials.refine_bravais_settings",
+            expt_path,
+            refl_path,
+        ],
+        working_directory=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+    for i in range(1, 22):
+        assert (tmp_path / f"bravais_setting_{i}.expt").is_file()
+
+    assert (tmp_path / "bravais_summary.json").is_file()
+    with (tmp_path / "bravais_summary.json").open("rb") as fh:
+        bravais_summary = json.load(fh)
+    assert bravais_summary["1"]["bravais"] == "aP"
+    assert bravais_summary["1"]["cb_op"] == "y+z,x+z,x+y"
+    assert bravais_summary["22"]["bravais"] == "cI"
+    assert bravais_summary["22"]["cb_op"] == "a,b,c"
+
+    for record in result.stdout.decode().split("\n"):
+        if "aP " in record:
+            assert "y+z,x+z,x+y" in record
+        elif "cI " in record:
+            assert "a,b,c" in record
+
+    # Verify that the reported cb_ops correctly map the input setting
+    # to the unit cell for each Bravais setting
+    input_expts = load.experiment_list(expt_path, check_format=False)
+    input_cs = input_expts[0].crystal.get_crystal_symmetry()
+    for i in range(22):
+        uc_input_to_ref = input_cs.unit_cell().change_basis(
+            sgtbx.change_of_basis_op(bravais_summary[f"{i+1}"]["cb_op"])
+        )
+        uc_ref = uctbx.unit_cell(bravais_summary[f"{i+1}"]["unit_cell"])
+        assert uc_input_to_ref.is_similar_to(uc_ref)
