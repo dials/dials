@@ -230,7 +230,7 @@ def run(args=None):
     summary_file = f"{prefix}bravais_summary.json"
     logger.info("Saving summary as %s", summary_file)
     with open(os.path.join(params.output.directory, summary_file), "w") as fh:
-        json.dump(refined_settings.as_dict(cb_op_to_primitive=cb_op_to_primitive), fh)
+        json.dump(refined_settings.as_dict(), fh)
 
     for subgroup in refined_settings:
         expts = subgroup.refined_experiments

@@ -101,7 +101,7 @@ class RefinedSettingsList(list):
     def triclinic(self):
         return self[-1]
 
-    def as_dict(self, cb_op_to_primitive=None):
+    def as_dict(self):
         result = {}
 
         for item in self:
