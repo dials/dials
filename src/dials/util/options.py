@@ -264,6 +264,7 @@ class Importer:
         for arg in args:
             # Don't expand wildcards if URI-style filename
             if "*" in arg and not get_url_scheme(arg):
+                breakpoint()
                 filenames = glob(arg)
                 if filenames:
                     args_new.extend(filenames)
@@ -289,9 +290,10 @@ class Importer:
         except FileNotFoundError as e:
             logger.error(f"File {e.filename} not found")
         else:
-            self.experiments.append(
-                FilenameDataWrapper(filename="<image files>", data=experiments)
-            )
+            if experiments:
+                self.experiments.append(
+                    FilenameDataWrapper(filename="<image files>", data=experiments)
+                )
 
         return unhandled
 
