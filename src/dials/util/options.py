@@ -264,7 +264,6 @@ class Importer:
         for arg in args:
             # Don't expand wildcards if URI-style filename
             if "*" in arg and not get_url_scheme(arg):
-                breakpoint()
                 filenames = glob(arg)
                 if filenames:
                     args_new.extend(filenames)
