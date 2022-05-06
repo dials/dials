@@ -642,6 +642,7 @@ class SpotFinder:
         no_shoeboxes_2d=False,
         min_chunksize=50,
         is_stills=False,
+        omit_ranges=None,
     ):
         """
         Initialise the class.
@@ -673,6 +674,7 @@ class SpotFinder:
         self.no_shoeboxes_2d = no_shoeboxes_2d
         self.min_chunksize = min_chunksize
         self.is_stills = is_stills
+        self.omit_ranges = omit_ranges
 
     def find_spots(self, experiments: ExperimentList) -> flex.reflection_table:
         """
@@ -720,6 +722,30 @@ class SpotFinder:
             assert missed.count(True) == 0, "Failed to remap {} experiment IDs".format(
                 missed.count(True)
             )
+
+            if self.omit_ranges is not None:
+                table_filtered = flex.reflection_table()
+                for expt_id, experiment in enumerate(experiments):
+                    refls = table.select(table["id"] == expt_id)
+                    s0 = experiment.beam.get_s0()
+                    for panel_id, panel in enumerate(experiment.detector):
+                        panel_refls = refls.select(refls["panel"] == panel_id)
+                        sel = flex.bool(len(panel_refls), True)
+                        for d1, d2 in self.omit_ranges:
+                            d1, d2 = sorted(d1, d2)
+                            subsel = flex.bool(
+                                [
+                                    d1
+                                    < panel.get_resolution_at_pixel(
+                                        s0, panel_refls["xyzobs.px.value"][i][0:2]
+                                    )
+                                    < d2
+                                    for i in range(len(panel_refls))
+                                ]
+                            )
+                            sel &= subsel
+                        table_filtered.extend(panel_refls[sel])
+                table = table_filtered
 
             reflections.extend(table)
             # Write a hot pixel mask

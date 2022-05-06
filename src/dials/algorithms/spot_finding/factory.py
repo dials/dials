@@ -105,6 +105,10 @@ def generate_phil_scope():
           .type = bool
       }
 
+      resolution_filter_method = *mask omit
+        .type = choice
+        .help = "Method for applying resolution filter. Omit: find spots in"
+                "full image before filtering (useful for high background)."
       include scope dials.util.masking.phil_scope
     }
 
@@ -450,6 +454,17 @@ class SpotFinderFactory:
         if params.spotfinder.mp.method == "none":
             params.spotfinder.mp.method = None
 
+        filter_params = params.spotfinder.filter
+        if filter_params.resolution_filter_method == "omit":
+            if filter_params.ice_rings.filter:
+                assert (
+                    filter_params.ice_rings.d_min is not None
+                ), "For the combination resolution_filter_method=omit and \
+                    ice_rings.filter=True, please also provide ice_rings.d_min."
+            omit_ranges = dials.util.masking.generate_skip_ranges(filter_params)
+        else:
+            omit_ranges = None
+
         # Setup the spot finder
         return SpotFinder(
             threshold_function=threshold_function,
@@ -471,6 +486,7 @@ class SpotFinderFactory:
             no_shoeboxes_2d=no_shoeboxes_2d,
             min_chunksize=params.spotfinder.mp.min_chunksize,
             is_stills=is_stills,
+            omit_ranges=omit_ranges,
         )
 
     @staticmethod
