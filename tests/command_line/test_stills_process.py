@@ -33,7 +33,7 @@ indexing {
 """
 
 sacla_phil = """
-dispatch.squash_errors = False
+dispatch.squash_errors = True
 dispatch.coset = True
 input.reference_geometry=%s
 indexing {
@@ -136,23 +136,22 @@ def test_sacla_h5(dials_data, tmp_path, control_flags, in_memory=False):
 
     # Write the .phil configuration to a file
     phil_path = tmp_path / "process_sacla.phil"
-    phil_path.write_text(sacla_phil % geometry_path)
+    with open(phil_path, "w") as f:
+        f.write(sacla_phil % geometry_path)
 
-    if known_orientations:
-        known_orientations_path = os.path.join(
-            sacla_path, "SACLA-MPCCD-run266702-0-subset-known_orientations.expt"
-        )
-        # assert os.path.isfile(known_orientations_path)
-        if not os.path.isfile(known_orientations_path):
-            pytest.skip(
-                "Known orientations path not available in dials.data (%s)"
-                % known_orientations_path
+        if known_orientations:
+            known_orientations_path = os.path.join(
+                sacla_path, "SACLA-MPCCD-run266702-0-subset-known_orientations.expt"
             )
+            # assert os.path.isfile(known_orientations_path)
+            if not os.path.isfile(known_orientations_path):
+                pytest.skip(
+                    "Known orientations path not available in dials.data (%s)"
+                    % known_orientations_path
+                )
 
-        phil_path.write_text(
-            "indexing.stills.known_orientations=%s\n" % known_orientations_path
-        )
-        phil_path.write_text("indexing.stills.require_known_orientation=True\n")
+            f.write("indexing.stills.known_orientations=%s\n" % known_orientations_path)
+            f.write("indexing.stills.require_known_orientation=True\n")
 
     # Call dials.stills_process
     if use_mpi:
