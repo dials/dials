@@ -724,28 +724,16 @@ class SpotFinder:
             )
 
             if self.omit_ranges is not None:
-                table_filtered = flex.reflection_table()
-                for expt_id, experiment in enumerate(experiments):
-                    refls = table.select(table["id"] == expt_id)
-                    s0 = experiment.beam.get_s0()
-                    for panel_id, panel in enumerate(experiment.detector):
-                        panel_refls = refls.select(refls["panel"] == panel_id)
-                        sel = flex.bool(len(panel_refls), True)
-                        for d1, d2 in self.omit_ranges:
-                            d1, d2 = sorted(d1, d2)
-                            subsel = flex.bool(
-                                [
-                                    d1
-                                    < panel.get_resolution_at_pixel(
-                                        s0, panel_refls["xyzobs.px.value"][i][0:2]
-                                    )
-                                    < d2
-                                    for i in range(len(panel_refls))
-                                ]
-                            )
-                            sel &= subsel
-                        table_filtered.extend(panel_refls[sel])
-                table = table_filtered
+                table.centroid_px_to_mm(experiments)
+                table.map_centroids_to_reciprocal_space(experiments)
+                d_star_sq = flex.pow2(table["rlp"].norms())
+                table["d"] = uctbx.d_star_sq_as_d(d_star_sq)
+                sel = flex.bool(len(table), True)
+                for d1, d2 in self.omit_ranges:
+                    d1, d2 = sorted([d1, d2])
+                    subsel = (d1 < table["d"]) & (table["d"] < d2)
+                    sel &= subsel
+                table = table[sel]
 
             reflections.extend(table)
             # Write a hot pixel mask
