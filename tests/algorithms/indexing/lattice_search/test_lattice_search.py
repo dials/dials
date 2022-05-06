@@ -61,6 +61,7 @@ def test_BasisVectorSearch_i04_weak_data(
     )
 
 
+@pytest.mark.xfel
 @pytest.mark.parametrize(
     "indexing_method,space_group,unit_cell",
     (

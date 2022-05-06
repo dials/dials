@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import filecmp
 import json
 
 import procrunner
@@ -124,13 +123,14 @@ def test_mtz_best_unit_cell(dials_data, tmp_path):
 def test_multi_sequence_integrated_mtz(dials_data, tmp_path):
     """Test dials.export on multi-sequence integrated data."""
     # first combine two integrated files
+    data = dials_data("multi_crystal_proteinase_k", pathlib=True)
     result = procrunner.run(
         [
             "dials.combine_experiments",
-            dials_data("multi_crystal_proteinase_k") / "experiments_1.json",
-            dials_data("multi_crystal_proteinase_k") / "reflections_1.pickle",
-            dials_data("multi_crystal_proteinase_k") / "experiments_2.json",
-            dials_data("multi_crystal_proteinase_k") / "reflections_2.pickle",
+            data / "experiments_1.json",
+            data / "reflections_1.pickle",
+            data / "experiments_2.json",
+            data / "reflections_2.pickle",
         ],
         working_directory=tmp_path,
     )
@@ -585,9 +585,11 @@ def test_pets(dials_data, tmp_path, intensity_choice):
     )
     assert not result.returncode and not result.stderr
     output = tmp_path / (intensity_choice + ".cif_pets")
+    # On windows, \r\n endings are written; but our reference is \n
+    output_data = output.read_bytes().replace(b"\r\n", b"\n")
 
     if intensity_choice == "profile":
         reference = dials_data("quartz_processed", pathlib=True) / "dials_prf.cif_pets"
     else:
         reference = dials_data("quartz_processed", pathlib=True) / "dials_dyn.cif_pets"
-    assert filecmp.cmp(output, reference)
+    assert output_data == reference.read_bytes()

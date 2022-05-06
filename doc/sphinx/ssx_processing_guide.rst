@@ -66,6 +66,29 @@ of useful statistics such as the number of spots indexed on each image, the dist
 of rmsd values and unit cell clustering analysis. This data can also be output to
 json format for further analysis, by providing a filename to the option :samp:`output.json`.
 
+For weak/sparse serial collections, it may be the case that few images contain
+a useful number of spots. To allow rapid assessment in such cases,
+:samp:`dev.dials.ssx_index` will skip attempted indexing of images which contain fewer
+than :samp:`min_spots` strong spots (default value 10).
+
+The log output of the program is minimal, however as with other DIALS programs,
+this can be increased by setting the verbosity level. :samp:`-v` will add timestamps
+to the log file, and :samp:`-vv` will show standard logging output from the underlying
+:samp:`dials.index` code.
+
+To summarise the main options (and their default values)::
+
+    space_group = None                     :   'Index in this space group'
+    unit_cell = None                       :   'Index with this unit cell'
+    max_lattices = 1                       :   'Max crystal lattices to search for per image'
+    method = fft1d real_space_grid_search  :   'Indexing methods to try if suitable'
+    min_spots = 10                         :   'Skip indexing of images with fewer than this number of spots'
+    -vv                                    :   'Output additional logging from dials.index code'
+    output.html = dials.ssx_index.html     :   'If not None, write a summary html report to this file'
+    output.json = None                     :   'If not None, write summary plots data to this file'
+
+To see the full list of options with descriptions, run :samp:`dev.dials.ssx_index -ce2 -a2`
+
 Integrating SSX data with dev.dials.ssx_integrate
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

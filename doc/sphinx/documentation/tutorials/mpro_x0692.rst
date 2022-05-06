@@ -68,8 +68,9 @@ Find Spots
 
 The first "real" task in any processing using DIALS is the spot finding.
 Since this is looking for spots on every image in the dataset, this process
-can take some time, so we request multiple processors (:samp:`nproc=4`) to
-speed this up:
+can take some time, so DIALS will use multiple processors by default to
+speed this up. Here we have limited it to 4, but feel free to omit this to
+let DIALS make the choice:
 
 .. dials_tutorial_include:: mpro_x0692/dials.find_spots.cmd
 
