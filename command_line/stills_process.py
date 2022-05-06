@@ -441,6 +441,11 @@ class Script:
                             if key not in known_orientations:
                                 known_orientations[key] = []
                             known_orientations[key].append(expt.crystal)
+                if not known_orientations:
+                    raise Sorry(
+                        "No known_orientations found at the locations specified: %s"
+                        % ", ".join(params.indexing.stills.known_orientations)
+                    )
                 params.indexing.stills.known_orientations = known_orientations
         if size > 1:
             if rank == 0:
