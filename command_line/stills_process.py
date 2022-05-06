@@ -1155,15 +1155,6 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
         else:
             known_crystal_models = None
 
-        if params.indexing.stills.method_list is None:
-            idxr = Indexer.from_parameters(
-                reflections,
-                experiments,
-                known_crystal_models=known_crystal_models,
-                params=params,
-            )
-            idxr.index()
-
         try:
             idxr = Indexer.from_parameters(
                 reflections,
