@@ -33,7 +33,7 @@ indexing {
 """
 
 sacla_phil = """
-dispatch.squash_errors = True
+dispatch.squash_errors = False
 dispatch.coset = True
 input.reference_geometry=%s
 indexing {
