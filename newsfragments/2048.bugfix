@@ -1,1 +1,1 @@
-Fix dials.show for custom datatypes
+``dials.show``: Fix display of unknown vector columns.
