@@ -1044,7 +1044,10 @@ class Processor:
 
     def pre_process(self, experiments):
         """Add any pre-processing steps here"""
-        if self.params.indexing.stills.known_orientations and self.params.indexing.stills.require_known_orientation:
+        if (
+            self.params.indexing.stills.known_orientations
+            and self.params.indexing.stills.require_known_orientation
+        ):
             for expt in experiments:
                 assert (
                     len(expt.imageset.indices()) == 1
@@ -1139,7 +1142,9 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 )
                 if key not in self.params.indexing.stills.known_orientations:
                     if self.params.indexing.stills.require_known_orientation:
-                        raise RuntimeError("Image not found in set of known orientations")
+                        raise RuntimeError(
+                            "Image not found in set of known orientations"
+                        )
                     else:
                         oris = [None]
                 else:
@@ -1158,21 +1163,21 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                 params=params,
             )
             idxr.index()
-            
+
         try:
             idxr = Indexer.from_parameters(
                 reflections,
                 experiments,
-                known_crystal_models = known_crystal_models,
-                params=params
+                known_crystal_models=known_crystal_models,
+                params=params,
             )
             idxr.index()
             if known_crystal_models:
-                logger.info('indexed from known orientation')
+                logger.info("indexed from known orientation")
             return idxr.refined_experiments, idxr.refined_reflections
         except Exception:
             if self.params.indexing.stills.require_known_orientation:
-              raise
+                raise
 
         if params.indexing.stills.method_list is None:
             idxr = Indexer.from_parameters(
