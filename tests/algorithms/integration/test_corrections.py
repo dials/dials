@@ -8,7 +8,7 @@ from dials.array_family import flex
 
 
 def test_run(dials_data):
-    filename = dials_data("centroid_test_data").join("experiments.json").strpath
+    filename = dials_data("centroid_test_data", pathlib=True) / "experiments.json"
 
     exlist = ExperimentListFactory.from_json_file(filename)
     assert len(exlist) == 1

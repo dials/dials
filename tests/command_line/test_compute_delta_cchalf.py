@@ -17,7 +17,7 @@ def check_cchalf_result(fileobj):
     assert lines[1] == "0 0.001234\n"
 
 
-def test_suitable_exit_on_bad_input(dials_data, run_in_tmpdir):
+def test_suitable_exit_on_bad_input(dials_data, run_in_tmp_path):
     location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
     refl = location / "scaled_35.refl"
     expt = location / "scaled_35.expt"

@@ -1,0 +1,1 @@
+``dev.dials.ssx_index``: Fix reporting of results for h5 files, skip indexing of an image if fewer than ``min_spots`` strong spots (default 10).

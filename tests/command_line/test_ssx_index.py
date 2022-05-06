@@ -10,6 +10,7 @@ from dxtbx.serialize import load
 from dials.command_line.ssx_index import run
 
 
+@pytest.mark.xfel
 def test_ssx_index_reference_geometry(dials_data, tmp_path):
     ssx = dials_data("cunir_serial_processed", pathlib=True)
     expts = ssx / "imported_with_ref_5.expt"
@@ -27,6 +28,7 @@ def test_ssx_index_reference_geometry(dials_data, tmp_path):
     assert len(experiments) == 4  # only 4 out of the 5 get indexed
 
 
+@pytest.mark.xfel
 def test_ssx_index_no_reference_geometry(dials_data, tmp_path):
     ssx = dials_data("cunir_serial_processed", pathlib=True)
     expts = ssx / "imported_no_ref_5.expt"
@@ -47,16 +49,20 @@ def test_ssx_index_no_reference_geometry(dials_data, tmp_path):
     )  # only 3 out of the 5 get indexed if no reference geometry
 
 
-def test_ssx_index_bad_input(dials_data, run_in_tmpdir):
+def test_ssx_index_bad_input(dials_data, run_in_tmp_path):
     ssx = dials_data("cunir_serial_processed", pathlib=True)
     expts = str(ssx / "imported_no_ref_5.expt")
     refls = str(ssx / "strong_1.refl")
 
-    with pytest.raises(ValueError):
-        run([expts, refls])
+    run([expts, refls])
+    assert os.path.exists("indexed.refl")
+    assert os.path.exists("indexed.expt")
+    experiments = load.experiment_list("indexed.expt", check_format=False)
+    assert len(experiments) == 0
 
 
-def test_ssx_index_input_unit_cell(dials_data, run_in_tmpdir):
+@pytest.mark.xfel
+def test_ssx_index_input_unit_cell(dials_data, run_in_tmp_path):
     ssx = dials_data("cunir_serial_processed", pathlib=True)
     expts = str(ssx / "imported_with_ref_5.expt")
     refls = str(ssx / "strong_5.refl")

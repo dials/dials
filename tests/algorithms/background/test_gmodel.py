@@ -24,8 +24,7 @@ def model(tmpdir):
 
 
 def test_simple(dials_data, model, tmpdir):
-    path = dials_data("centroid_test_data")
-    experiments = path.join("experiments.json")
+    experiments = dials_data("centroid_test_data", pathlib=True) / "experiments.json"
 
     reflns_simple = tmpdir.join("simple").join("observations.refl")
     reflns_g_simple = tmpdir.join("gmodel_simple").join("observations.refl")
@@ -36,7 +35,7 @@ def test_simple(dials_data, model, tmpdir):
         [
             "dials.integrate",
             "nproc=1",
-            experiments.strpath,
+            experiments,
             "profile.fitting=False",
             "background.algorithm=simple",
             "background.simple.outlier.algorithm=null",
@@ -51,7 +50,7 @@ def test_simple(dials_data, model, tmpdir):
         [
             "dials.integrate",
             "nproc=1",
-            experiments.strpath,
+            experiments,
             "profile.fitting=False",
             "background.algorithm=gmodel",
             "background.gmodel.robust.algorithm=False",
@@ -86,8 +85,7 @@ def test_simple(dials_data, model, tmpdir):
 
 
 def test_robust(dials_data, model, tmpdir):
-    path = dials_data("centroid_test_data")
-    experiments = path.join("experiments.json")
+    experiments = dials_data("centroid_test_data", pathlib=True) / "experiments.json"
 
     reflns_robust = tmpdir.join("robust").join("observations.refl")
     reflns_g_robust = tmpdir.join("gmodel_robust").join("observations.refl")
@@ -98,7 +96,7 @@ def test_robust(dials_data, model, tmpdir):
         [
             "dials.integrate",
             "nproc=1",
-            experiments.strpath,
+            experiments,
             "profile.fitting=False",
             "background.algorithm=glm",
             "output.reflections=" + reflns_robust.strpath,
@@ -112,7 +110,7 @@ def test_robust(dials_data, model, tmpdir):
         [
             "dials.integrate",
             "nproc=1",
-            experiments.strpath,
+            experiments,
             "profile.fitting=False",
             "background.algorithm=gmodel",
             "background.gmodel.robust.algorithm=True",
