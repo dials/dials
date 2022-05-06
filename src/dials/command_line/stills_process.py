@@ -403,7 +403,8 @@ class Script:
             globbed = []
             for p in all_paths:
                 g = glob.glob(p)
-                assert g, f"Unhandled path or option: {p}"
+                if not g:
+                    sys.exit(f"Error: Unhandled path or option: {p}")
                 globbed.extend(g)
             all_paths = globbed
 
