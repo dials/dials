@@ -250,7 +250,12 @@ class Test:
         assert result_with_gain == result_with_gain_debug
 
     @pytest.mark.parametrize(
-        "algorithm", [DispersionThreshold, DispersionExtendedThreshold, DispersionZeroTruncatedThreshold]
+        "algorithm",
+        [
+            DispersionThreshold,
+            DispersionExtendedThreshold,
+            DispersionZeroTruncatedThreshold,
+        ],
     )
     def test_dispersion_algorithm_symmetry(self, algorithm):
 
@@ -285,7 +290,12 @@ class Test:
         assert (result1 == result2_t).all_eq(True)
 
     @pytest.mark.parametrize(
-        "algorithm", [DispersionThresholdDebug, DispersionExtendedThresholdDebug, DispersionZeroTruncatedThresholdDebug]
+        "algorithm",
+        [
+            DispersionThresholdDebug,
+            DispersionExtendedThresholdDebug,
+            DispersionZeroTruncatedThresholdDebug,
+        ],
     )
     def test_dispersion_debug_algorithm_symmetry(self, algorithm):
 

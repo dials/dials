@@ -11,9 +11,7 @@ from dials.extensions.dispersion_extended_spotfinder_threshold_ext import (
     estimate_global_threshold,
 )
 
-logger = logging.getLogger(
-    "dials.extensions.dispersion_zero_truncated_spotfinder_threshold_ext"
-)
+logger = logging.getLogger(__name__)
 
 
 class DispersionZeroTruncatedSpotFinderThresholdExt:
