@@ -1203,12 +1203,15 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
         experiments = idxr.refined_experiments
 
         if known_crystal_models is not None:
-
-            filtered = flex.reflection_table()
-            for idx in set(indexed["miller_index"]):
-                sel = indexed["miller_index"] == idx
-                if sel.count(True) == 1:
-                    filtered.extend(indexed.select(sel))
+            filtered_sel = flex.bool(len(indexed), True)
+            for expt_id in range(len(experiments)):
+                for idx in set(
+                    indexed["miller_index"].select(indexed["id"] == expt_id)
+                ):
+                    sel = (indexed["miller_index"] == idx) & (indexed["id"] == expt_id)
+                    if sel.count(True) > 1:
+                        filtered_sel = filtered_sel & ~sel
+            filtered = indexed.select(filtered_sel)
             logger.info(
                 "Filtered duplicate reflections, %d out of %d remaining",
                 len(filtered),
