@@ -232,6 +232,12 @@ dials_phil_str = """
                 If specified, images will not be re-indexed, but instead the known \
                 orientations will be used. Provide paths to experiment list files, using \
                 wildcards as needed.
+      require_known_orientation = False
+        .type = bool
+        .expert_level = 2
+        .help = If known_orientations are provided, and an orientation for an image is not \
+                found, this is whether or not to attempt to index the image from scratch \
+                using indexing.method
     }
   }
 
@@ -1040,7 +1046,7 @@ class Processor:
 
     def pre_process(self, experiments):
         """Add any pre-processing steps here"""
-        if self.params.indexing.stills.known_orientations:
+        if self.params.indexing.stills.known_orientations and self.params.indexing.stills.require_known_orientation:
             for expt in experiments:
                 assert (
                     len(expt.imageset.indices()) == 1
@@ -1153,14 +1159,33 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                     expt.imageset.indices()[0],
                 )
                 if key not in self.params.indexing.stills.known_orientations:
-                    raise RuntimeError("Image not found in set of known orientations")
-                oris = self.params.indexing.stills.known_orientations[key]
+                    if self.params.indexing.stills.require_known_orientation:
+                        raise RuntimeError("Image not found in set of known orientations")
+                    else:
+                        oris = [None]
+                else:
+                    oris = self.params.indexing.stills.known_orientations[key]
                 known_crystal_models.extend(oris)
                 extended_experiments.extend(ExperimentList([expt] * len(oris)))
-            experiments = extended_experiments    
+            experiments = extended_experiments
         else:
             known_crystal_models = None
             
+        try:
+            idxr = Indexer.from_parameters(
+                reflections,
+                experiments,
+                known_crystal_models = known_crystal_models,
+                params=params
+            )
+            idxr.index()
+            if known_crystal_models:
+                logger.info('indexed from known orientation')
+            return idxr.refined_experiments, idxr.refined_reflections
+        except Exception:
+            if self.params.indexing.stills.require_known_orientation:
+              raise
+
         all_reflections = reflections
         indexing_error = None
         if self.params.indexing.stills.ransac:
@@ -1177,6 +1202,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                     idxr = Indexer.from_parameters(
                         reflections,
                         experiments,
+                        known_crystal_models = None,
                         params=params
                     )
                     idxr.index()
@@ -1185,7 +1211,7 @@ The detector is reporting a gain of %f but you have also supplied a gain of %f. 
                         params.indexing.method = method
                         try:
                             idxr = Indexer.from_parameters(
-                                reflections, experiments, params=params
+                                reflections, experiments, known_crystal_models = None, params=params
                             )
                             idxr.index()
                         except Exception as e:
