@@ -668,16 +668,7 @@ def convert_to_cambridge(experiments):
             f"Rotating experiment{'s' if len(experiments) else ''} about axis {axis.elems} by {np.degrees(angle):.2f}°"
         )
         expt.detector.rotate_around_origin(axis, angle, deg=False)
-
-        # FIXME Work around https://github.com/cctbx/dxtbx/issues/454 before
-        # https://github.com/cctbx/dxtbx/pull/510 is merged
-        # expt.beam.rotate_around_origin(axis, angle, deg=False)
-        s0 = matrix.col(expt.beam.get_s0()).rotate_around_origin(axis, angle, deg=False)
-        pn = matrix.col(expt.beam.get_polarization_normal()).rotate_around_origin(
-            axis, angle, deg=False
-        )
-        expt.beam.set_s0(s0)
-        expt.beam.set_polarization_normal(pn)
+        expt.beam.rotate_around_origin(axis, angle, deg=False)
 
         # For the goniometer, each component needs transformation
         F = matrix.sqr(expt.goniometer.get_fixed_rotation())
