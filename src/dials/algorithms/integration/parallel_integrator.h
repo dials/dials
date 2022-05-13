@@ -27,6 +27,7 @@
 #include <dials/algorithms/integration/sum/summation.h>
 #include <dials/algorithms/centroid/centroid.h>
 #include <dxtbx/array_family/boost_python/flex_table_suite.h>
+#include <dials/array_family/boost_python/reflection_table_suite.h>
 #include <map>
 
 #include <dials/algorithms/integration/interfaces.h>
@@ -1605,6 +1606,9 @@ namespace dials { namespace algorithms {
      * @returns The split reflection table
      */
     af::reflection_table split_reflections(af::reflection_table data) const {
+      using dxtbx::af::boost_python::flex_table_suite::reorder;
+      using dxtbx::af::boost_python::flex_table_suite::setitem_column;
+
       // Check input
       DIALS_ASSERT(data.is_consistent());
       DIALS_ASSERT(data.size() > 0);
@@ -1643,13 +1647,11 @@ namespace dials { namespace algorithms {
       data.resize(bbox_new.size());
 
       // Reorder the reflections
-      dxtbx::af::boost_python::flex_table_suite::reorder(data, indices.const_ref());
+      reorder(data, indices.const_ref());
 
       // Set the new bounding boxes
-      dxtbx::af::boost_python::flex_table_suite::setitem_column(
-        data, "bbox", bbox_new.const_ref());
-      dxtbx::af::boost_python::flex_table_suite::setitem_column(
-        data, "partial_id", indices.const_ref());
+      setitem_column(data, "bbox", bbox_new.const_ref());
+      setitem_column(data, "partial_id", indices.const_ref());
 
       // Return the data
       return data;
@@ -1661,7 +1663,7 @@ namespace dials { namespace algorithms {
      * @returns The split reflection table
      */
     af::reflection_table select_in_range_reflections(af::reflection_table data) const {
-      using namespace dxtbx::af::boost_python::flex_table_suite;
+      using dials::af::boost_python::reflection_table_suite::select_rows_index;
 
       // Check if any need to be removed
       af::const_ref<int6> bbox = data["bbox"];
@@ -1835,7 +1837,8 @@ namespace dials { namespace algorithms {
      * @returns The reflections for a particular block.
      */
     af::reflection_table split(std::size_t index) {
-      using namespace dxtbx::af::boost_python::flex_table_suite;
+      using dials::af::boost_python::reflection_table_suite::extend;
+      using dials::af::boost_python::reflection_table_suite::select_rows_index;
       DIALS_ASSERT(index < finished_.size());
 
       // Get the job range
@@ -1905,7 +1908,7 @@ namespace dials { namespace algorithms {
      * Accumulate the results.
      */
     void accumulate(std::size_t index, af::reflection_table result) {
-      using namespace dxtbx::af::boost_python::flex_table_suite;
+      using dxtbx::af::boost_python::flex_table_suite::set_selected_rows_index;
       DIALS_ASSERT(index < finished_.size());
       DIALS_ASSERT(finished_[index] == false);
 
