@@ -2,21 +2,22 @@ from __future__ import annotations
 
 from sys import argv
 
-import cctbx.array_family.flex
-from dxtbx.model import ExperimentList
-
 from dials.algorithms.integration.report import IntegrationReport, ProfileModelReport
-from dials.algorithms.profile_model.gaussian_rs import GaussianRSProfileModeller
-from dials.algorithms.profile_model.gaussian_rs import Model as GaussianRSProfileModel
 from dials.algorithms.profile_model.gaussian_rs.calculator import (
     ComputeEsdBeamDivergence,
     ComputeEsdReflectingRange,
 )
+from dials.command_line.integrate import filter_reference_pixels, process_reference
+from dials.util.phil import parse
+
+import cctbx.array_family.flex
+from dxtbx.model import ExperimentList
+
+from dials.algorithms.profile_model.gaussian_rs import GaussianRSProfileModeller
+from dials.algorithms.profile_model.gaussian_rs import Model as GaussianRSProfileModel
 from dials.algorithms.shoebox import MaskCode
 from dials.array_family import flex
-from dials.command_line.integrate import filter_reference_pixels, process_reference
 from dials.model.data import make_image
-from dials.util.phil import parse
 from dials_algorithms_integration_integrator_ext import ShoeboxProcessor
 from dials_array_family_flex_ext import reflection_table
 
@@ -32,7 +33,7 @@ $ python simple_integrate.py refined.expt refined.refl
 """
 
 
-if __name__ == "__main__":
+def run(experiment_file: str, reflections_file: str) -> None:
 
     phil_scope = parse(
         """
@@ -44,8 +45,6 @@ if __name__ == "__main__":
     Load experiment and reflections
     """
 
-    experiment_file = argv[1]
-    reflections_file = argv[2]
     experiments = ExperimentList.from_file(experiment_file)
     reflections = reflection_table.from_msgpack_file(reflections_file)
     reflections["id"] = cctbx.array_family.flex.int(len(reflections), 0)
@@ -241,5 +240,12 @@ if __name__ == "__main__":
         predicted_reflections.flags.integrated, all=False
     )
     predicted_reflections = predicted_reflections.select(sel)
+    return predicted_reflections
 
-    predicted_reflections.as_msgpack_file("integrated.refl")
+
+if __name__ == "__main__":
+
+    experiment_file = argv[1]
+    reflections_file = argv[2]
+    integrated_reflections = run(experiment_file, reflections_file)
+    integrated_reflections.as_msgpack_file("integrated.refl")
