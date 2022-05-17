@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import json
 import logging
+import pathlib
 import sys
 import time
 from functools import reduce
@@ -93,6 +94,10 @@ output.html = dials.ssx_index.html
     .type = str
 output.json = None
     .type = str
+output.nuggets = None
+    .type = path
+    .help = "Specify a directory to which a per-image summary json will be saved"
+            "during processing, as each image is indexed, to enable live monitoring."
 include scope dials.command_line.index.phil_scope
 """,
     process_includes=True,
@@ -153,6 +158,14 @@ def run(args: List[str] = None, phil: phil.scope = phil_scope) -> None:
         params.indexing.nproc = params.nproc
 
     logger.info(f"Using {params.indexing.nproc} processes for indexing")
+
+    if params.output.nuggets:
+        params.output.nuggets = pathlib.Path(params.output.nuggets)
+        if not params.output.nuggets.is_dir():
+            logger.warning(
+                "output.nuggets not recognised as a valid directory path, no nuggets will be output"
+            )
+            params.output.nuggets = None
 
     st = time.time()
     indexed_experiments, indexed_reflections, summary_data = index(

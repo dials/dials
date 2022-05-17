@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import concurrent.futures
+import json
 import logging
 import math
 import os
+import pathlib
 import sys
 from collections import defaultdict
 from typing import List, Tuple, Union
@@ -97,6 +99,10 @@ def index_all_concurrent(
             n_strong = 0
         n_strong_per_image[img] = n_strong
 
+    if params.output.nuggets:
+        if not pathlib.Path(params.output.nuggets).is_dir():
+            raise ValueError("Bad input path for params.output.nuggets")
+
     with concurrent.futures.ProcessPoolExecutor(
         max_workers=params.indexing.nproc
     ) as pool:
@@ -109,9 +115,18 @@ def index_all_concurrent(
         expts_list = [None] * len(reflections)
 
         for future in concurrent.futures.as_completed(futures):
+            j = futures[future]
+            if params.output.nuggets:
+                img = experiments[j].imageset.get_image_identifier(j).split("/")[-1]
+                msg = {
+                    "image_no": j + 1,
+                    "n_indexed": 0,
+                    "n_strong": n_strong_per_image[img],
+                    "n_cryst": 0,
+                    "image": img,
+                }
             try:
                 expts, refls = future.result()
-                j = futures[future]
             except Exception as e:
                 logger.info(e)
             else:
@@ -131,6 +146,14 @@ def index_all_concurrent(
                             )
                         )
                     expts_list[j] = elist
+                    if params.output.nuggets:
+                        msg["n_indexed"] = len(refls)
+                        msg["n_cryst"] = len(elist)
+            if params.output.nuggets:
+                with open(
+                    params.output.nuggets / f"nugget_index_{msg['image']}.json", "w"
+                ) as f:
+                    f.write(json.dumps(msg))
 
     sys.stdout = sys.__stdout__  # restore printing
 
@@ -211,6 +234,7 @@ def preprocess(
 
     # Calculate necessary quantities
     n_filtered_out = 0
+    filtered_out_images = []
     for i, (refl, experiment) in enumerate(zip(reflections, experiments)):
         if refl:
             if refl.size() >= params.min_spots:
@@ -223,10 +247,19 @@ def preprocess(
             else:
                 n_filtered_out += 1
                 reflections[i] = None
+                filtered_out_images.append(i + 1)
+        else:
+            filtered_out_images.append(i + 1)
     if n_filtered_out:
         logger.info(
             f"Filtered {n_filtered_out} images with fewer than {params.min_spots} spots"
         )
+        if params.output.nuggets:
+            jstr = json.dumps({"filtered images": filtered_out_images})
+            with open(
+                params.output.nuggets / "nugget_index_filtered_images.json", "w"
+            ) as f:
+                f.write(jstr)
 
     # Determine the max cell if applicable
     if (params.indexing.max_cell is Auto) and (
