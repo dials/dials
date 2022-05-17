@@ -139,6 +139,8 @@ format
     .type = bool
     .help = "Enable a multi-panel detector model."
             "(Not supported by all detector formats)"
+  cbf_cache_dir = None
+    .type = path
 }
 """
 )
@@ -527,19 +529,29 @@ class PhilCommandParser:
 
             # FIXME Should probably make this smarter since it requires editing here
             # and in dials.import phil scope
+            format_kwargs = {}
             try:
-                format_kwargs = {
-                    "dynamic_shadowing": params.format.dynamic_shadowing,
-                    "multi_panel": params.format.multi_panel,
-                }
+                param_ccd = params.format.cbf_cache_dir
+                if param_ccd is not None:
+                    format_kwargs["cbf_cache_dir"] = param_ccd
             except AttributeError:
+                pass
+
+            try:
+                param_ds = params.format.dynamic_shadowing
+                param_mp = params.format.multi_panel
+                format_kwargs["dynamic_shadowing"] = param_ds
+                format_kwargs["multi_panel"] = param_mp
+            except AttributeError:
+                pass
+            if not format_kwargs:
                 format_kwargs = None
+
         else:
             compare_beam = None
             compare_detector = None
             compare_goniometer = None
             scan_tolerance = None
-            format_kwargs = None
 
         try:
             load_models = params.load_models
