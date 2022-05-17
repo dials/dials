@@ -251,7 +251,7 @@ def preprocess(
             f"Filtered {n_filtered_out} images with fewer than {params.min_spots} spots"
         )
         if params.output.nuggets:
-            jstr = json.dumps({"filtered images": filtered_out_images})
+            jstr = json.dumps({"filtered_images": filtered_out_images})
             with open(
                 params.output.nuggets / "nugget_index_filtered_images.json", "w"
             ) as f:
