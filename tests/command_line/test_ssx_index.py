@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os.path
+import pathlib
 
 import procrunner
 import pytest
@@ -15,9 +16,9 @@ def test_ssx_index_reference_geometry(dials_data, tmp_path):
     ssx = dials_data("cunir_serial_processed", pathlib=True)
     expts = ssx / "imported_with_ref_5.expt"
     refls = ssx / "strong_5.refl"
-
+    pathlib.Path.mkdir(tmp_path / "nuggets")
     result = procrunner.run(
-        ["dev.dials.ssx_index", expts, refls],
+        ["dev.dials.ssx_index", expts, refls, "output.nuggets=nuggets"],
         working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
@@ -26,6 +27,10 @@ def test_ssx_index_reference_geometry(dials_data, tmp_path):
     assert (tmp_path / "dials.ssx_index.html").is_file()
     experiments = load.experiment_list(tmp_path / "indexed.expt", check_format=False)
     assert len(experiments) == 4  # only 4 out of the 5 get indexed
+    for i in range(5):
+        assert tmp_path.joinpath(
+            f"nuggets/nugget_index_merlin0047_1700{i}.cbf.json"
+        ).is_file()
 
 
 @pytest.mark.xfel

@@ -99,10 +99,6 @@ def index_all_concurrent(
             n_strong = 0
         n_strong_per_image[img] = n_strong
 
-    if params.output.nuggets:
-        if not pathlib.Path(params.output.nuggets).is_dir():
-            raise ValueError("Bad input path for params.output.nuggets")
-
     with concurrent.futures.ProcessPoolExecutor(
         max_workers=params.indexing.nproc
     ) as pool:
@@ -299,6 +295,16 @@ def index(
     observed: flex.reflection_table,
     params: phil.scope_extract,
 ) -> Tuple[ExperimentList, flex.reflection_table, dict]:
+
+    if params.output.nuggets:
+        params.output.nuggets = pathlib.Path(
+            params.output.nuggets
+        )  # needed if not going via cli
+        if not params.output.nuggets.is_dir():
+            logger.warning(
+                "output.nuggets not recognised as a valid directory path, no nuggets will be output"
+            )
+            params.output.nuggets = None
 
     reflection_tables, params, method_list = preprocess(experiments, observed, params)
 
