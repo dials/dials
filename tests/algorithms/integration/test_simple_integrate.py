@@ -8,6 +8,9 @@ from dials.array_family import flex
 
 def test_against_dials_integrate(dials_data, tmp_path):
 
+    ## ensure insulin folder exists
+    dials_data("insulin", pathlib=True)
+
     # Run as a single job to avoid splitting reflections
     procrunner.run(
         (

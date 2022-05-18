@@ -57,7 +57,7 @@ $ dials.simple_integrate.py refined.expt refined.refl
 """
 
 
-def run() -> None:
+def run():
 
     """
     Input setup
