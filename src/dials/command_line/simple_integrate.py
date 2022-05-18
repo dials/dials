@@ -1,4 +1,4 @@
-# DIALS_ENABLE_COMMAND_LINE_COMPLETION
+# LIBTBX_SET_DISPATCHER_NAME dev.dials.simple_integrate
 from __future__ import annotations
 
 import logging
@@ -25,7 +25,7 @@ from dials.util.phil import parse
 from dials.util.version import dials_version
 from dials_algorithms_integration_integrator_ext import ShoeboxProcessor
 
-logger = logging.getLogger("dials.command_line.integrate")
+logger = logging.getLogger("dials.command_line.simple_integrate")
 
 phil_scope = parse(
     """
@@ -51,7 +51,7 @@ Kabsch W., Integration, scaling, space-group assignment and
 post-refinment, Acta Crystallographica Section D, 2010, D66, 133-144
 
 Usage:
-$ dials.simple_integrate.py refined.expt refined.refl
+$ dev.dials.simple_integrate.py refined.expt refined.refl
 """
 
 
@@ -63,7 +63,7 @@ def run():
 
     phil = phil_scope.fetch()
 
-    usage = "usage: dials.simple_integrate.py models.expt reflections.expt"
+    usage = "usage: dev.dials.simple_integrate.py models.expt reflections.expt"
     parser = ArgumentParser(
         usage=usage,
         phil=phil,
