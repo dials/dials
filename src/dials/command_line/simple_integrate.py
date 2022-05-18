@@ -46,8 +46,6 @@ log = 'dials.simple_integrate.log'
 )
 
 """
-Tested with LCY_15_15_2_*.cbf.gz using default parameters for each step of the workflow.
-
 Kabsch 2010 refers to
 Kabsch W., Integration, scaling, space-group assignment and
 post-refinment, Acta Crystallographica Section D, 2010, D66, 133-144
@@ -262,7 +260,7 @@ def run_simple_integrate(params, experiments, reflections):
     )
 
     """
-/params    Calculate grid of reference profiles from predicted reflections
+    Calculate grid of reference profiles from predicted reflections
     that matched observed.
     ("Learning phase" of 3.3 in Kabsch 2010)
     """
