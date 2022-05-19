@@ -400,7 +400,10 @@ class Script:
                 all_paths.extend(params.input.glob)
             globbed = []
             for p in all_paths:
-                globbed.extend(glob.glob(p))
+                g = glob.glob(p)
+                if not g:
+                    sys.exit(f"Error: Unhandled path or option: {p}")
+                globbed.extend(g)
             all_paths = globbed
 
             if not all_paths and params.input.file_list is not None:
