@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import pytest
 
+from cctbx import crystal
+
 from dials.algorithms.indexing.ssx.analysis import (
     combine_results_dicts,
     generate_html_report,
@@ -129,29 +131,43 @@ def test_generate_plots(n_lattices):
     assert sum(plots["rmsdz_hist"]["data"][0]["y"]) == n_lattices + 1
 
 
-def test_generate_html_report(run_in_tmpdir):
+def test_generate_html_report(tmp_path):
     plots = generate_plots(generate_test_results_dict())
     fname = "test_report_name.html"
-    generate_html_report(plots, fname)
-    assert (run_in_tmpdir / "test_report_name.html").check()
+    generate_html_report(plots, tmp_path / fname)
+    assert tmp_path.joinpath("test_report_name.html").is_file()
 
 
 def test_make_cluster_plots():
-    from xfel.clustering.cluster import Cluster
+    from dials.algorithms.clustering.unit_cell import Cluster
 
-    c1 = Cluster.from_iterable(
+    c1 = Cluster(
         [
-            (10.0, 10.0, 10.0, 90, 90, 90, "P1"),
-            (10.1, 10.1, 10.1, 90, 90, 90, "P1"),
-            (10.2, 10.2, 10.2, 90, 90, 90, "P1"),
+            crystal.symmetry(
+                unit_cell=(10.0, 10.0, 10.0, 90, 90, 90), space_group="P1"
+            ),
+            crystal.symmetry(
+                unit_cell=(10.1, 10.1, 10.1, 90, 90, 90), space_group="P1"
+            ),
+            crystal.symmetry(
+                unit_cell=(10.2, 10.2, 10.2, 90, 90, 90), space_group="P1"
+            ),
         ]
     )
-    c2 = Cluster.from_iterable(
+    c2 = Cluster(
         [
-            (11.0, 11.0, 11.0, 90, 90, 90, "P1"),
-            (11.1, 11.1, 11.1, 90, 90, 90, "P1"),
-            (11.2, 11.2, 11.2, 90, 90, 90, "P1"),
-            (11.3, 11.3, 11.3, 90, 90, 90, "P1"),
+            crystal.symmetry(
+                unit_cell=(11.0, 11.0, 11.0, 90, 90, 90), space_group="P1"
+            ),
+            crystal.symmetry(
+                unit_cell=(11.1, 11.1, 11.1, 90, 90, 90), space_group="P1"
+            ),
+            crystal.symmetry(
+                unit_cell=(11.2, 11.2, 11.2, 90, 90, 90), space_group="P1"
+            ),
+            crystal.symmetry(
+                unit_cell=(11.3, 11.3, 11.3, 90, 90, 90), space_group="P1"
+            ),
         ]
     )
     clusters = [c1, c2]

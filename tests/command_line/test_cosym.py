@@ -19,7 +19,7 @@ from dials.util import Sorry
 @pytest.mark.parametrize(
     "space_group,engine", [(None, "scitbx"), ("P 1", "scipy"), ("P 4", "scipy")]
 )
-def test_cosym(dials_data, run_in_tmpdir, space_group, engine):
+def test_cosym(dials_data, run_in_tmp_path, space_group, engine):
     mcp = dials_data("multi_crystal_proteinase_k", pathlib=True)
     args = ["space_group=" + str(space_group), "seed=0", f"engine={engine}"]
     for i in [1, 2, 3, 4, 5, 7, 8, 10]:
@@ -48,7 +48,7 @@ def test_cosym(dials_data, run_in_tmpdir, space_group, engine):
         assert set(joint_reflections["imageset_id"].select(sel)) == {id_}
 
 
-def test_cosym_partial_dataset(dials_data, run_in_tmpdir):
+def test_cosym_partial_dataset(dials_data, run_in_tmp_path):
     """Test how cosym handles partial/bad datasets."""
     mcp = dials_data("multi_crystal_proteinase_k", pathlib=True)
     args = []
@@ -64,6 +64,7 @@ def test_cosym_partial_dataset(dials_data, run_in_tmpdir):
     # Add another good dataset at the end of the input list
     args.append(os.fspath(mcp / "experiments_10.json"))
     args.append(os.fspath(mcp / "reflections_10.pickle"))
+    args.append("threshold=None")
 
     dials_cosym.run(args=args)
     assert pathlib.Path("symmetrized.refl").is_file()
@@ -72,7 +73,7 @@ def test_cosym_partial_dataset(dials_data, run_in_tmpdir):
     assert len(experiments) == 3
 
 
-def test_cosym_resolution_filter_excluding_datasets(dials_data, run_in_tmpdir):
+def test_cosym_resolution_filter_excluding_datasets(dials_data, run_in_tmp_path):
     mcp = dials_data("multi_crystal_proteinase_k", pathlib=True)
     args = ["space_group=P4", "seed=0", "d_min=20.0"]
     for i in [1, 2, 3, 4, 5, 7, 8, 10]:
@@ -92,7 +93,7 @@ def test_cosym_resolution_filter_excluding_datasets(dials_data, run_in_tmpdir):
         assert set(joint_reflections["imageset_id"].select(sel)) == {id_}
 
 
-def test_cosym_partial_dataset_raises_sorry(dials_data, run_in_tmpdir, capsys):
+def test_cosym_partial_dataset_raises_sorry(dials_data, run_in_tmp_path, capsys):
     """Test how cosym handles partial/bad datasets."""
     mcp = dials_data("multi_crystal_proteinase_k", pathlib=True)
     args = ["renamed.refl", os.fspath(mcp / "experiments_8.json")]
@@ -130,7 +131,7 @@ def test_synthetic(
     sample_size,
     use_known_space_group,
     use_known_lattice_group,
-    run_in_tmpdir,
+    run_in_tmp_path,
 ):
     space_group = sgtbx.space_group_info(space_group).group()
     if unit_cell is not None:

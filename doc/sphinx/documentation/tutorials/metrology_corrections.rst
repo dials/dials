@@ -64,10 +64,9 @@ spots. It might be helpful to us a more mature image viewer such as ADXV or
 Albula for this.
 
 We have to run spot finding throughout the dataset. It is a 360 degree sequence
-so this will take a few minutes. We can use more processes to move a little
-quicker::
+so this will take a little while::
 
-  dials.find_spots imported.expt nproc=8 min_spot_size=3
+  dials.find_spots imported.expt min_spot_size=3
 
 Here we chose to set ``min_spot_size=3``, which overrides the default of 6 used
 for this detector model. We did this because otherwise this weakly diffracting
@@ -641,7 +640,7 @@ the commands from the tutorial::
   mkdir tutorial_data
   cd !$
   dials.import /path/to/th_8_2*cbf
-  dials.find_spots imported.expt nproc=4
+  dials.find_spots imported.expt
   dials.index imported.expt strong.refl space_group="P4"
   dials.refine indexed.expt indexed.refl outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0
 
@@ -659,7 +658,7 @@ Note these are the overall RMSDs (comparable to the results from the
 Now we do the scan-varying refinement and integrate::
 
   dials.refine refined.expt indexed.refl outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0 scan_varying=true output.experiments=sv_refined.expt
-  dials.integrate sv_refined.expt indexed.refl outlier.algorithm=null nproc=4
+  dials.integrate sv_refined.expt indexed.refl outlier.algorithm=null
   dials.export integrated.refl sv_refined.expt mtz.hklout=integrated.mtz
   dials.analyse_output integrated.refl grid_size=5,12
 
@@ -902,7 +901,7 @@ After correction they are as follows::
 Let's now do scan-varying refinement then integrate the dataset with corrected metrology::
 
   dials.refine corrected_refined.expt indexed.refl outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0 scan_varying=true output.experiments=corrected_sv_refined.expt
-  dials.integrate corrected_sv_refined.expt indexed.refl outlier.algorithm=null nproc=4 output.reflections=corrected_integrated.refl
+  dials.integrate corrected_sv_refined.expt indexed.refl outlier.algorithm=null output.reflections=corrected_integrated.refl
   dials.export corrected_integrated.refl corrected_sv_refined.expt mtz.hklout=corrected_integrated.mtz
   dials.analyse_output corrected_integrated.refl grid_size=5,12
 
