@@ -12,7 +12,7 @@ from dials.array_family import flex
 
 base_path = Path(
     os.environ.get(
-        "TEST_IMPORT_MTZ", "/dls/mx-scratch/jbe/test_import_mtz_for_multiplex"
+        "TEST_IMPORT_MTZ", "/dls/mx-scratch/jbe/test_import_mtz_for_multiplex20220520"
     )
 )
 
