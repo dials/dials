@@ -265,7 +265,9 @@ class cosym(Subject):
         lattice_ids = [
             self.identifiers_to_ids_map[i] for i in experiments.identifiers()
         ]
-
+        assert len(crystal_symmetries) > 1  # else clustering will be None
+        # assert should never be tripped as len(experiments) are checked before
+        # calling the _unit_cell_clustering function.
         clustering = cluster_unit_cells(
             crystal_symmetries,
             lattice_ids=lattice_ids,

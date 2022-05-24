@@ -85,6 +85,9 @@ def run(args=None):
             )
             for expt in experiments
         ]
+    if len(crystal_symmetries) <= 1:
+        print(f"Cannot cluster only {len(crystal_symmetries)} crystals, exiting.")
+        exit(0)
     clusters = do_cluster_analysis(crystal_symmetries, params)
 
     if params.output.clusters:
