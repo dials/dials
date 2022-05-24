@@ -63,7 +63,7 @@ def test_import_mtz_on_xia2_processing(tmp_path, pipe, section):
     # Check detector properties. Can't check precise orientation as MTZ lacks
     # the metadata, so we assume fast along X and slow along -Y.
     assert expt_1.detector[0].get_distance() == pytest.approx(
-        imported_expt.detector[0].get_distance(), abs=1.0
+        imported_expt.detector[0].get_distance(), abs=1.3
     )
     assert expt_1.detector[0].get_pixel_size()[0] == pytest.approx(
         imported_expt.detector[0].get_pixel_size()[0], abs=1e-3
@@ -73,7 +73,7 @@ def test_import_mtz_on_xia2_processing(tmp_path, pipe, section):
     )
     assert expt_1.detector[0].get_beam_centre_px(expt_1.beam.get_s0()) == pytest.approx(
         imported_expt.detector[0].get_beam_centre_px(imported_expt.beam.get_s0()),
-        abs=3.5,
+        abs=4.5,
     )
 
     # Check scan properties
@@ -82,7 +82,7 @@ def test_import_mtz_on_xia2_processing(tmp_path, pipe, section):
     # now for the crystal, as we are trying to put everything into our DIALS
     # geometry, both the U and B matrices should be the same
     assert expt_1.crystal.get_B() == pytest.approx(
-        imported_expt.crystal.get_B(), abs=1e-3
+        imported_expt.crystal.get_B(), abs=2e-3
     )
     # FIXME
     # assert expt_1.crystal.get_U() == pytest.approx(
