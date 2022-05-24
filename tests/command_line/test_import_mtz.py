@@ -7,6 +7,7 @@ import procrunner
 import pytest
 
 from dxtbx.serialize import load
+from scitbx import matrix
 
 from dials.array_family import flex
 
@@ -96,8 +97,8 @@ def test_import_mtz_on_xia2_processing(tmp_path, pipe, section):
         assert max(phi) < 90 and min(phi) > 60
 
     # choose a few random reflections to compare
-    check_last = [(8, -26, -12), (15, -11, -2), (-7, 14, 0)]
-    check_first = [(4, 0, 5), (13, 6, 12), (2, -7, 23)]
+    check_last = [(7, 28, 15), (-16, 20, 23), (8, 20, 10)]
+    check_first = [(5, 3, 22), (-1, 5, 3), (-3, -37, -7)]
     if pipe == "dials":
         if section == "last":
             miller_index_to_check = check_last
@@ -111,7 +112,16 @@ def test_import_mtz_on_xia2_processing(tmp_path, pipe, section):
             assert r1[0]["intensity.prf.value"] == pytest.approx(
                 r2[0]["intensity.prf.value"], abs=1e-2
             )
-            assert r1[0]["s1"] == pytest.approx(r2[0]["s1"], abs=2e-2)
+            # Can't reasonably check absolute directions, but can check
+            # scattering angle
+            tt1 = matrix.col(expt_1.beam.get_s0()).angle(
+                matrix.col(r1[0]["s1"]), deg=True
+            )
+            tt2 = matrix.col(imported_expt.beam.get_s0()).angle(
+                matrix.col(r2[0]["s1"]), deg=True
+            )
+            assert tt1 == pytest.approx(tt2, abs=0.6)  # abs is surprisingly high here!
+
             # note in dials, we export the observed x an y, and the calculated z.
             assert r1[0]["xyzcal.px"][2] == pytest.approx(
                 r2[0]["xyzcal.px"][2], abs=2e-2
