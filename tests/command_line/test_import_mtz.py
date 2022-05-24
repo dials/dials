@@ -97,7 +97,7 @@ def test_import_mtz_on_xia2_processing(tmp_path, pipe, section):
         assert max(phi) < 90 and min(phi) > 60
 
     # choose a few random reflections to compare
-    check_last = [(7, 28, 15), (-16, 20, 23), (8, 20, 10)]
+    check_last = [(8, 18, 11), (-16, 20, 23), (8, 20, 10)]
     check_first = [(5, 3, 22), (-1, 5, 3), (-3, -37, -7)]
     if pipe == "dials":
         if section == "last":
@@ -120,7 +120,7 @@ def test_import_mtz_on_xia2_processing(tmp_path, pipe, section):
             tt2 = matrix.col(imported_expt.beam.get_s0()).angle(
                 matrix.col(r2[0]["s1"]), deg=True
             )
-            assert tt1 == pytest.approx(tt2, abs=0.6)  # abs is surprisingly high here!
+            assert tt1 == pytest.approx(tt2, abs=0.4)  # abs is surprisingly high here!
 
             # note in dials, we export the observed x an y, and the calculated z.
             assert r1[0]["xyzcal.px"][2] == pytest.approx(
