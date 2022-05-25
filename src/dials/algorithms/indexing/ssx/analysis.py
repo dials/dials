@@ -116,6 +116,9 @@ def report_on_crystal_clusters(crystal_symmetries, make_plots=True):
         threshold=5000,
     )
     cluster_plots = {}
+    large_clusters = []
+    if not clustering:  # could happen e.g. if only one unit cell
+        return cluster_plots, large_clusters
     min_cluster_pc = 5
     threshold = math.floor((min_cluster_pc / 100) * len(crystal_symmetries))
     large_clusters = [c for c in clustering.clusters if len(c) > threshold]
