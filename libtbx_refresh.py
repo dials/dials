@@ -127,11 +127,9 @@ def _install_setup_readonly_fallback(package_name: str):
     if f"src/{package_name}" not in module.extra_command_line_locations:
         module.extra_command_line_locations.append(f"src/{package_name}")
 
-    # Regenerate dispatchers for this module, and for any other modules
-    # that might depend on it
-    my_index = env.module_list.index(module)
+    # Regenerate dispatchers for all modules with this new sys.path
     with contextlib.redirect_stdout(io.StringIO()):
-        for module in env.module_list[my_index:]:
+        for module in env.module_list:
             module.process_command_line_directories()
 
 
