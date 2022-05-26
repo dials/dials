@@ -95,6 +95,7 @@ class RadialProfileThresholdDebug:
         params = find_spots_phil_scope.extract()
         params.spotfinder.threshold.radial_profile.blur = blur
         params.spotfinder.threshold.radial_profile.n_bins = n_bins
+        params.spotfinder.threshold.radial_profile.n_iqr = n_iqr
         self.radial_profile = SpotFinderThreshold.load("radial_profile")(params)
         self._i_panel = 0
 
