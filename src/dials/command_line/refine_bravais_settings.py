@@ -130,10 +130,17 @@ def map_to_primitive(experiments, reflections):
         .info()
         .change_of_basis_op_to_primitive_setting()
     )
-    experiments[0].crystal.update(
-        experiments[0].crystal.change_basis(cb_op_to_primitive)
-    )
-    reflections["miller_index"] = cb_op_to_primitive.apply(reflections["miller_index"])
+    if not cb_op_to_primitive.is_identity_op():
+        logger.info(
+            f"Reindexing to primitive setting with cb_op = {cb_op_to_primitive.as_abc()}"
+        )
+        experiments[0].crystal.update(
+            experiments[0].crystal.change_basis(cb_op_to_primitive)
+        )
+        reflections["miller_index"] = cb_op_to_primitive.apply(
+            reflections["miller_index"]
+        )
+    return cb_op_to_primitive
 
 
 def select_datasets_on_crystal_id(experiments, reflections, crystal_id):
@@ -205,10 +212,13 @@ def run(args=None):
             )
 
     reflections = eliminate_sys_absent(experiments, reflections)
-    map_to_primitive(experiments, reflections)
+    cb_op_to_primitive = map_to_primitive(experiments, reflections)
 
     refined_settings = refined_settings_from_refined_triclinic(
-        experiments, reflections, params
+        experiments,
+        reflections,
+        params,
+        cb_op_to_primitive=cb_op_to_primitive,
     )
     possible_bravais_settings = {solution["bravais"] for solution in refined_settings}
     bravais_lattice_to_space_group_table(possible_bravais_settings)
