@@ -29,6 +29,8 @@ from dials.util import tabulate
 from dials.util.export_mtz import MADMergedMTZWriter, MergedMTZWriter
 from dials.util.filter_reflections import filter_reflection_table
 
+from .french_wilson import french_wilson
+
 logger = logging.getLogger("dials")
 
 
@@ -259,12 +261,24 @@ def show_wilson_scaling_analysis(merged_intensities, n_residues=200):
             logger.info(out.getvalue())
 
 
-def truncate(merged_intensities):
+def truncate(
+    merged_intensities,
+    implementation: str = "dials",
+    min_reflections: int = 200,
+    fallback_to_flat_prior: bool = True,
+):
     """
     Perform French-Wilson truncation procedure on merged intensities.
 
     Args:
-        merged_intensities: A merged miller intensity array (normal or anomalous).
+        merged_intensities (miller.array): A merged miller intensity array (normal or anomalous)
+        implementation (str): Choice of implementation of French & Wilson algorithm, either
+                              "dials" or "cctbx"
+        min_reflections (int): Minimum number of reflections to perform the French & Wilson
+                               procedure
+        fallback_to_flat_prior (bool): Fallback to assumption of a flat, positive prior,
+                                       if the number of reflections are fewer than min_reflections,
+                                       i.e. |F| = sqrt((Io+sqrt(Io**2 +2sigma**2))/2.0)
 
     Returns:
         (tuple): tuple containing:
@@ -276,8 +290,26 @@ def truncate(merged_intensities):
     """
     logger.info("\nPerforming French-Wilson treatment of scaled intensities")
     out = StringIO()
+    n_refl = merged_intensities.size()
+    if n_refl < min_reflections and fallback_to_flat_prior:
+        logger.info(
+            "Insufficient reflections for French & Wilson procedure, "
+            "falling back to assumption of a flat, positive prior, i.e.: "
+            "  |F| = sqrt((Io+sqrt(Io**2 +2sigma**2))/2.0)"
+        )
+        do_french_wilson = lambda ma: ma.enforce_positive_amplitudes()
+    elif n_refl < min_reflections:
+        raise ValueError(
+            "Insufficient reflections for French & Wilson procedure. "
+            "Either set fallback_to_flat_prior=True or truncate=False."
+        )
+    elif implementation == "cctbx":
+        do_french_wilson = lambda ma: ma.french_wilson(log=out)
+    else:
+        do_french_wilson = french_wilson
+
     if merged_intensities.anomalous_flag():
-        anom_amplitudes = merged_intensities.french_wilson(log=out)
+        anom_amplitudes = do_french_wilson(merged_intensities)
         n_removed = merged_intensities.size() - anom_amplitudes.size()
         assert anom_amplitudes.is_xray_amplitude_array()
         amplitudes = anom_amplitudes.as_non_anomalous_array()
@@ -286,7 +318,7 @@ def truncate(merged_intensities):
     else:
         anom_amplitudes = None
         dano = None
-        amplitudes = merged_intensities.french_wilson(log=out)
+        amplitudes = do_french_wilson(merged_intensities)
         n_removed = merged_intensities.size() - amplitudes.size()
     logger.info("Total number of rejected intensities %s", n_removed)
     logger.debug(out.getvalue())
