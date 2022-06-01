@@ -77,7 +77,7 @@ def test_find_bad_pixels(dials_data, tmp_path):
     image_files = sorted(dials_data("x4wide", pathlib=True).glob("*.cbf"))[:3]
     result = procrunner.run(
         [
-            "dials.find_bad_pixels",
+            "dials.import",
             "mask=pixels.mask",
         ]
         + image_files,
