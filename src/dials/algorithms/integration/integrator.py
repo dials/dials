@@ -1235,7 +1235,7 @@ class Integrator:
                         if experiment.imageset == imageset:
                             subset.extend(reflections.select(reflections["id"] == j))
                 try:
-                    if imageset.get_scan():
+                    if imageset.get_scan() and not imageset.get_scan().is_still():
                         frame0, frame1 = imageset.get_scan().get_array_range()
                     else:
                         raise RuntimeError
