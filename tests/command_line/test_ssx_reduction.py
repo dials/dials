@@ -5,7 +5,11 @@ import procrunner
 
 
 def test_ssx_reduction(dials_data, tmp_path):
-    """Run dials.cosym, dials.scale, dials.export and dials.merge"""
+    """
+    Check that dials.cosym, dials.scale, dials.export and dials.merge run
+    successfully on ssx data.
+    Also test a few smaller analysis programs.
+    """
     ssx = dials_data("cunir_serial_processed", pathlib=True)
     refls = ssx / "integrated.refl"
     expts = ssx / "integrated.expt"
