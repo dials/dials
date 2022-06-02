@@ -1264,6 +1264,8 @@ Found %s"""
                 sel_expt = self["id"] == i
             for i_panel in range(len(expt.detector)):
                 sel = sel_expt & (panel_numbers == i_panel)
+                if sel.count(True) == 0:
+                    continue
                 centroid_position, centroid_variance, _ = centroid_px_to_mm_panel(
                     expt.detector[i_panel],
                     expt.scan,
@@ -1297,6 +1299,8 @@ Found %s"""
         # reciprocal lattice viewer -> but if we are looking at the crystal
         # coordinate frame we need to look at the experiments independently
 
+        if not hasattr(self, "detector_panel_sels"):
+            self.detector_panel_sels = {det: {} for det in experiments.detectors()}
         for i, expt in enumerate(experiments):
             if not crystal_frame and "imageset_id" in self:
                 sel_expt = self["imageset_id"] == i
@@ -1304,7 +1308,12 @@ Found %s"""
                 sel_expt = self["id"] == i
 
             for i_panel in range(len(expt.detector)):
-                sel = sel_expt & (panel_numbers == i_panel)
+                sel_panel = self.detector_panel_sels[expt.detector].setdefault(
+                    i_panel, panel_numbers == i_panel
+                )
+                sel = sel_expt & sel_panel
+                if sel.count(True) == 0:
+                    continue
                 if calculated:
                     x, y, rot_angle = self["xyzcal.mm"].select(sel).parts()
                 else:
