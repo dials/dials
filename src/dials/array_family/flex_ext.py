@@ -1308,9 +1308,12 @@ Found %s"""
                 sel_expt = self["id"] == i
 
             for i_panel in range(len(expt.detector)):
-                sel_panel = self.detector_panel_sels[expt.detector].setdefault(
-                    i_panel, panel_numbers == i_panel
-                )
+                panel_sels = self.detector_panel_sels[expt.detector]
+                if i_panel in panel_sels.keys():
+                    sel_panel = panel_sels[i_panel]
+                else:
+                    sel_panel = panel_numbers == i_panel
+                    panel_sels[i_panel] = sel_panel
                 sel = sel_expt & sel_panel
                 if sel.count(True) == 0:
                     continue
