@@ -1299,8 +1299,15 @@ Found %s"""
         # reciprocal lattice viewer -> but if we are looking at the crystal
         # coordinate frame we need to look at the experiments independently
 
-        if not hasattr(self, "detector_panel_sels"):
+        if hasattr(self, "detector_panel_sels"):
+            test_subcache = self.detector_panel_sels[experiments.detectors()[0]]
+            test_key = list(test_subcache.keys())[0]
+            cache_valid = len(test_subcache[test_key]) == len(self)
+        else:
+            cache_valid = False
+        if not cache_valid:
             self.detector_panel_sels = {det: {} for det in experiments.detectors()}
+
         for i, expt in enumerate(experiments):
             if not crystal_frame and "imageset_id" in self:
                 sel_expt = self["imageset_id"] == i
@@ -1309,7 +1316,7 @@ Found %s"""
 
             for i_panel in range(len(expt.detector)):
                 panel_sels = self.detector_panel_sels[expt.detector]
-                if i_panel in panel_sels.keys():
+                if cache_valid and i_panel in panel_sels.keys():
                     sel_panel = panel_sels[i_panel]
                 else:
                     sel_panel = panel_numbers == i_panel
