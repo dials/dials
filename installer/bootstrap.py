@@ -96,19 +96,20 @@ def install_micromamba(python, include_cctbx):
         conda_info = conda_info.decode("latin-1")
     print("Using Micromamba version", conda_info.strip())
 
-    # identify packages required for environment
-    env_dir = filename = os.path.join("modules", "dials", ".conda-envs")
-    # First, check to see if we have an architecture-specific environment file
-    filename = os.path.join(env_dir, conda_arch + ".txt")
+    # Identify packages required for environment
+    env_dir = os.path.join("modules", "dials", ".conda-envs")
+    # First, check to see if we have an architecture-and-python-specific environment file
+    filename = os.path.join(env_dir, "{0}_py{1}.txt".format(conda_arch, python))
+    if not os.path.isfile(filename):
+        # Otherwise, check if we have an architecture-specific environment file
+        filename = os.path.join(env_dir, "{0}.txt".format(conda_arch))
     if not os.path.isfile(filename):
         # Otherwise, use the platform-specific fallback
         filename = os.path.join(env_dir, conda_platform + ".txt")
-        if not os.path.isfile(filename):
-            raise RuntimeError(
-                "The environment file {filename} is not available".format(
-                    filename=filename
-                )
-            )
+    if not os.path.isfile(filename):
+        raise RuntimeError(
+            "The environment file {filename} is not available".format(filename=filename)
+        )
 
     # install a new environment or update an existing one
     prefix = os.path.realpath("conda_base")
