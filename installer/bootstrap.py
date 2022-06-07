@@ -59,23 +59,24 @@ def install_micromamba(python, include_cctbx):
     """Download and install Micromamba"""
     if sys.platform.startswith("linux"):
         conda_platform = "linux"
+        conda_arch = "linux-64"
         member = "bin/micromamba"
-        url = "https://micromamba.snakepit.net/api/micromamba/linux-64/latest"
     elif sys.platform == "darwin":
         conda_platform = "macos"
         member = "bin/micromamba"
         if platform.machine() == "arm64":
-            url = "https://micromamba.snakepit.net/api/micromamba/osx-arm64/latest"
+            conda_arch = "osx-arm64"
         else:
-            url = "https://micromamba.snakepit.net/api/micromamba/osx-64/latest"
+            conda_arch = "osx-64"
     elif os.name == "nt":
         conda_platform = "windows"
         member = "Library/bin/micromamba.exe"
-        url = "https://micromamba.snakepit.net/api/micromamba/win-64/latest"
+        conda_arch = "win-64"
     else:
         raise NotImplementedError(
             "Unsupported platform %s / %s" % (os.name, sys.platform)
         )
+    url = "https://micro.mamba.pm/api/micromamba/{0}/latest".format(conda_arch)
     mamba_prefix = os.path.realpath("micromamba")
     clean_env["MAMBA_ROOT_PREFIX"] = mamba_prefix
     mamba = os.path.join(mamba_prefix, member.split("/")[-1])
@@ -96,16 +97,18 @@ def install_micromamba(python, include_cctbx):
     print("Using Micromamba version", conda_info.strip())
 
     # identify packages required for environment
-    filename = os.path.join(
-        "modules",
-        "dials",
-        ".conda-envs",
-        "{platform}.txt".format(platform=conda_platform),
-    )
+    env_dir = filename = os.path.join("modules", "dials", ".conda-envs")
+    # First, check to see if we have an architecture-specific environment file
+    filename = os.path.join(env_dir, conda_arch + ".txt")
     if not os.path.isfile(filename):
-        raise RuntimeError(
-            "The environment file {filename} is not available".format(filename=filename)
-        )
+        # Otherwise, use the platform-specific fallback
+        filename = os.path.join(env_dir, conda_platform + ".txt")
+        if not os.path.isfile(filename):
+            raise RuntimeError(
+                "The environment file {filename} is not available".format(
+                    filename=filename
+                )
+            )
 
     # install a new environment or update an existing one
     prefix = os.path.realpath("conda_base")
