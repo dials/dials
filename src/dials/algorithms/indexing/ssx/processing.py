@@ -109,8 +109,8 @@ def index_all_concurrent(
 
     with concurrent.futures.ProcessPoolExecutor(
         max_workers=params.indexing.nproc
-    ) as pool:
-        sys.stdout = open(os.devnull, "w")  # block printing from rstbx
+    ) as pool, open(os.devnull, "w") as devnull:
+        sys.stdout = devnull  # block printing from rstbx
         tables_list = [None] * len(reflections)
         expts_list = [None] * len(reflections)
         for isetno, (iset, expt_indices) in enumerate(iset_to_expt_indices.items()):
