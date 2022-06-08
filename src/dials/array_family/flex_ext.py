@@ -1299,15 +1299,29 @@ Found %s"""
         # reciprocal lattice viewer -> but if we are looking at the crystal
         # coordinate frame we need to look at the experiments independently
 
+        if hasattr(experiments, "detectors"):
+            detectors = experiments.detectors()
+        else:
+            detectors = list(set(expt.detector for expt in experiments))
         try:
-            test_subcache = self.detector_panel_sels[experiments.detectors()[0]]
+            test_subcache = self.detector_panel_sels[detectors[0]]
         except (KeyError, AttributeError):
             cache_valid = False
         else:
             test_key = list(test_subcache.keys())[0]
             cache_valid = len(test_subcache[test_key]) == len(self)
         if not cache_valid:
-            self.detector_panel_sels = {det: {} for det in experiments.detectors()}
+            self.detector_panel_sels = {det: {} for det in detectors}
+            # Dirty hack: without the following line, the reflection_table
+            # (a boost.python class) will become unpickleable because the
+            # object's python __dict__ is not empty and we have not declared
+            # that the boost-defined __getstate__ method knows about the stuff
+            # in the __dict__. In fact it still doesn't, but we don't mind if
+            # the panel_sels cache is wiped out when pickled.
+            # The hack is still dirty because __getstate_manages_dict__ is a
+            # safety rail that we are removing. See:
+            # https://stackoverflow.com/questions/63039288/what-does-getstate-manages-dict-do
+            self.__getstate_manages_dict__ = True
 
         for i, expt in enumerate(experiments):
             if not crystal_frame and "imageset_id" in self:
