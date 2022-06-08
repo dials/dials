@@ -1,1 +1,1 @@
-Fix dials.stills_process for raster scans of stills
+``dials.stills_process`` could crash for raster scans of stills.
