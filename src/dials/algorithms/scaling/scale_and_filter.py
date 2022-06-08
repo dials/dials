@@ -498,10 +498,14 @@ def make_histogram_plots(cycle_results):
         )
 
     for c, deltas in enumerate(delta_cc_half_lists):
-        if not (max(deltas) > min(deltas)):
+        flex_deltas = flex.double(deltas)  # convert list to flex array
+        if flex_deltas.all_eq(flex_deltas[0]):
             continue
         hist = flex.histogram(
-            flex.double(deltas) * 100, min(deltas) * 100, max(deltas) * 100, n_slots=40
+            flex_deltas * 100,
+            flex.min(flex_deltas) * 100,
+            flex.max(flex_deltas) * 100,
+            n_slots=40,
         )
         _add_new_histogram(d, hist, c)
     return d
