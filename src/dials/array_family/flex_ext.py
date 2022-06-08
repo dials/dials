@@ -1317,9 +1317,7 @@ Found %s"""
             # object's python __dict__ is not empty and we have not declared
             # that the boost-defined __getstate__ method knows about the stuff
             # in the __dict__. In fact it still doesn't, but we don't mind if
-            # the panel_sels cache is wiped out when pickled.
-            # The hack is still dirty because __getstate_manages_dict__ is a
-            # safety rail that we are removing. See:
+            # the panel_sels cache is wiped out when pickled. See:
             # https://stackoverflow.com/questions/63039288/what-does-getstate-manages-dict-do
             self.__getstate_manages_dict__ = True
 
