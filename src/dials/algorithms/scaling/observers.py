@@ -153,7 +153,10 @@ were considered for use when refining the scaling model.
             anom_stats = script.anom_merging_statistics_result
         logger.info(make_merging_statistics_summary(stats))
         try:
-            d_min = resolution_cc_half(stats, limit=0.3).d_min
+            if script.params.cut_data.d_min is None:
+                d_min = resolution_cc_half(stats, limit=0.3).d_min
+            else:
+                d_min = script.params.cut_data.d_min
         except RuntimeError as e:
             logger.debug(f"Resolution fit failed: {e}")
         else:

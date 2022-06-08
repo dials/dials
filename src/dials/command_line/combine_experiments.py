@@ -744,7 +744,7 @@ class Script:
                 self._save_output(batch_expts, batch_refls, exp_filename, ref_filename)
 
         # cluster the resulting experiments if requested
-        if params.clustering.use:
+        if params.clustering.use and len(experiments) > 1:
             clustered = do_unit_cell_clustering(
                 experiments,
                 reflections,

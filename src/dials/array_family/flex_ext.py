@@ -1156,13 +1156,13 @@ class _:
         """
         # First get the reverse of the map i.e. ids for a given exp_identifier
         id_values = []
-        for exp_id in list_of_identifiers:
-            for k in self.experiment_identifiers().keys():
-                if self.experiment_identifiers()[k] == exp_id:
-                    id_values.append(k)
-                    break
+        for k, v in zip(
+            self.experiment_identifiers().keys(), self.experiment_identifiers().values()
+        ):
+            if v in list_of_identifiers:
+                id_values.append(k)
         if len(id_values) != len(list_of_identifiers):
-            raise KeyError(
+            logger.warning(
                 """Not all requested identifiers
 found in the table's map, has the experiment_identifiers() map been created?
 Requested %s:
@@ -1171,7 +1171,7 @@ Found %s"""
             )
         # Build up a selection and use this
         sel = cctbx.array_family.flex.bool(self.size(), False)
-        for id_val, exp_id in zip(id_values, list_of_identifiers):
+        for id_val in id_values:
             id_sel = self["id"] == id_val
             sel.set_selected(id_sel, True)
         self = self.select(sel)
@@ -1189,13 +1189,13 @@ Found %s"""
         # First get the reverse of the map i.e. ids for a given exp_identifier
         assert "id" in self
         id_values = []
-        for exp_id in list_of_identifiers:
-            for k in self.experiment_identifiers().keys():
-                if self.experiment_identifiers()[k] == exp_id:
-                    id_values.append(k)
-                    break
+        for k, v in zip(
+            self.experiment_identifiers().keys(), self.experiment_identifiers().values()
+        ):
+            if v in list_of_identifiers:
+                id_values.append(k)
         if len(id_values) != len(list_of_identifiers):
-            raise KeyError(
+            logger.warning(
                 """Not all requested identifiers
 found in the table's map, has the experiment_identifiers() map been created?
 Requested %s:

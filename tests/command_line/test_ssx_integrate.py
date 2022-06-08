@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pathlib
+
 import procrunner
 import pytest
 
@@ -19,6 +21,7 @@ def test_ssx_integrate_fullprocess(dials_data, tmp_path):
     # Download data set and the internally referenced images
     ssx = dials_data("cunir_serial_processed", pathlib=True)
     dials_data("cunir_serial", pathlib=True)
+    pathlib.Path.mkdir(tmp_path / "nuggets")
     result = procrunner.run(
         [
             "dev.dials.ssx_integrate",
@@ -27,6 +30,7 @@ def test_ssx_integrate_fullprocess(dials_data, tmp_path):
             "nproc=1",
             "batch_size=3",
             "output.json=data.json",
+            "output.nuggets=nuggets",
             "algorithm=stills",
         ],
         working_directory=tmp_path,
@@ -38,6 +42,8 @@ def test_ssx_integrate_fullprocess(dials_data, tmp_path):
     assert tmp_path.joinpath("integrated_2.expt").is_file()
     assert tmp_path.joinpath("dials.ssx_integrate.html").is_file()
     assert tmp_path.joinpath("data.json").is_file()
+    for i in range(1, 6):
+        assert tmp_path.joinpath(f"nuggets/nugget_integrated_{i}.json").is_file()
 
 
 @pytest.mark.parametrize("algorithm,expected_n_refls", [("stills", 614)])

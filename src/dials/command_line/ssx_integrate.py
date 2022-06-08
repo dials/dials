@@ -34,6 +34,7 @@ import concurrent.futures
 import copy
 import json
 import logging
+import pathlib
 
 import iotbx.phil
 from cctbx import crystal
@@ -85,6 +86,10 @@ phil_scope = iotbx.phil.parse(
       .type = str
     json = None
       .type = str
+    nuggets = None
+      .type = path
+      .help = "Specify a directory to which a per-image summary json will be saved"
+              "during processing, as each image is integrated, to enable live monitoring."
   }
 
   ellipsoid {
@@ -263,19 +268,38 @@ def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
         tables_list = [0] * len(sub_expts)
         expts_list = [0] * len(sub_expts)
         for future in concurrent.futures.as_completed(futures):
+            j = futures[future]
+            crystalno = j + 1 + batch_offset
+            if configuration["params"].output.nuggets:
+                img = sub_expts[j].imageset.get_image_identifier(0).split("/")[-1]
+                msg = {
+                    "crystal_no": crystalno,
+                    "n_integrated": 0,
+                    "i_over_sigma_overall": 0,
+                    "image": img,
+                }
             try:
                 expt, refls, collector = future.result()
-                j = futures[future]
             except Exception as e:
                 logger.info(e)
             else:
                 if refls and expt:
-                    logger.info(f"Processed image {j+batch_offset+1}")
+                    logger.info(f"Processed crystal {crystalno}")
                     tables_list[j] = refls
                     expts_list[j] = expt
-                    configuration["aggregator"].add_dataset(
-                        collector, j + batch_offset + 1
-                    )
+                    configuration["aggregator"].add_dataset(collector, crystalno)
+                    if configuration["params"].output.nuggets:
+                        msg["n_integrated"] = collector.data["n_integrated"]
+                        msg["i_over_sigma_overall"] = round(
+                            collector.data["i_over_sigma_overall"], 2
+                        )
+            if configuration["params"].output.nuggets:
+                with open(
+                    configuration["params"].output.nuggets
+                    / f"nugget_integrated_{crystalno}.json",
+                    "w",
+                ) as f:
+                    f.write(json.dumps(msg))
 
         expts_list = list(filter(lambda a: a != 0, expts_list))
         integrated_experiments = ExperimentList(expts_list)
@@ -305,6 +329,13 @@ def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
 
 def run_integration(reflections, experiments, params):
     assert len(reflections) == len(experiments)
+    if params.output.nuggets:
+        params.output.nuggets = pathlib.Path(params.output.nuggets)
+        if not params.output.nuggets.is_dir():
+            logger.warning(
+                "output.nuggets not recognised as a valid directory path, no nuggets will be output"
+            )
+            params.output.nuggets = None
     batches, configuration = setup(reflections, params)
 
     # now process each batch, and do parallel processing within a batch

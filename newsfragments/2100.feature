@@ -1,0 +1,1 @@
+``dials.merge``: New implementation of the French & Wilson (1978) algorithm for correction of negative intensities when estimating amplitudes. This implementation makes use of the standardized median as an M-estimator for the average intensity of resolution bins, which makes the procedure robust against the presence of very negative intensities.

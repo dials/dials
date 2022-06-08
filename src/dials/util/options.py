@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import copy
 import itertools
+import logging
 import os
 import pickle
 import sys
@@ -25,6 +26,8 @@ from dials.util.multi_dataset_handling import (
     sort_tables_to_experiments_order,
 )
 from dials.util.phil import FilenameDataWrapper
+
+logger = logging.getLogger(__name__)
 
 tolerance_phil_scope = libtbx.phil.parse(
     """
@@ -261,26 +264,36 @@ class Importer:
         for arg in args:
             # Don't expand wildcards if URI-style filename
             if "*" in arg and not get_url_scheme(arg):
-                args_new.extend(glob(arg))
+                filenames = glob(arg)
+                if filenames:
+                    args_new.extend(filenames)
+                else:
+                    logger.warning(f"No files found with pattern {arg}")
             else:
                 args_new.append(arg)
         args = args_new
 
         unhandled = []
-        experiments = ExperimentListFactory.from_filenames(
-            args,
-            unhandled=unhandled,
-            compare_beam=compare_beam,
-            compare_detector=compare_detector,
-            compare_goniometer=compare_goniometer,
-            scan_tolerance=scan_tolerance,
-            format_kwargs=format_kwargs,
-            load_models=load_models,
-        )
-        if experiments:
-            self.experiments.append(
-                FilenameDataWrapper(filename="<image files>", data=experiments)
+
+        try:
+            experiments = ExperimentListFactory.from_filenames(
+                args,
+                unhandled=unhandled,
+                compare_beam=compare_beam,
+                compare_detector=compare_detector,
+                compare_goniometer=compare_goniometer,
+                scan_tolerance=scan_tolerance,
+                format_kwargs=format_kwargs,
+                load_models=load_models,
             )
+        except FileNotFoundError as e:
+            logger.error(f"File {e.filename} not found")
+        else:
+            if experiments:
+                self.experiments.append(
+                    FilenameDataWrapper(filename="<image files>", data=experiments)
+                )
+
         return unhandled
 
     def try_read_experiments(self, args, check_format, verbose):
