@@ -1301,7 +1301,7 @@ Found %s"""
 
         try:
             test_subcache = self.detector_panel_sels[experiments.detectors()[0]]
-        except (KeyError, AttributeError) as error:
+        except (KeyError, AttributeError):
             cache_valid = False
         else:
             test_key = list(test_subcache.keys())[0]
