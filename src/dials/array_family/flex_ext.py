@@ -1299,12 +1299,13 @@ Found %s"""
         # reciprocal lattice viewer -> but if we are looking at the crystal
         # coordinate frame we need to look at the experiments independently
 
-        if hasattr(self, "detector_panel_sels"):
+        try:
             test_subcache = self.detector_panel_sels[experiments.detectors()[0]]
+        except (KeyError, AttributeError) as error:
+            cache_valid = False
+        else:
             test_key = list(test_subcache.keys())[0]
             cache_valid = len(test_subcache[test_key]) == len(self)
-        else:
-            cache_valid = False
         if not cache_valid:
             self.detector_panel_sels = {det: {} for det in experiments.detectors()}
 
