@@ -34,7 +34,8 @@ class MMCIFOutputFile:
         """
         self._cif = iotbx.cif.model.cif()
         self.params = params
-        self._fmt = "%6i %2i %5i %5i %-2i %-2i %-2i"
+        self._v5_next_fmt = "%6i %2i %5i %5i %-2i %-2i %-2i"
+        self._v5_0_fmt = "%2i %6i %-2i %-2i %-2i %6i %5.3f %5.3f"
 
     def write(self, experiments, reflections):
         """
@@ -61,7 +62,10 @@ class MMCIFOutputFile:
         # Add the block
         self._cif["dials"] = self.make_cif_block(experiments, reflections)
 
-        loop_format_strings = {"_pdbx_diffrn_unmerged_refln": self._fmt}
+        if self.params.mmcif.pdb_version == "v5":
+            loop_format_strings = {"_diffrn_refln": self._v5_0_fmt}
+        else:
+            loop_format_strings = {"_pdbx_diffrn_unmerged_refln": self._v5_next_fmt}
 
         # Print to file
         if self.params.mmcif.compress and not filename.endswith(
@@ -228,7 +232,7 @@ class MMCIFOutputFile:
 
         # Write reflection data
         # Required columns
-        header = (
+        v5_next_header = (
             "_pdbx_diffrn_unmerged_refln.reflection_id",
             "_pdbx_diffrn_unmerged_refln.scan_id",
             "_pdbx_diffrn_unmerged_refln.image_id_begin",
@@ -238,7 +242,18 @@ class MMCIFOutputFile:
             "_pdbx_diffrn_unmerged_refln.index_l",
         )
 
-        extra_items = {
+        v5_0_header = (
+            "_diffrn_refln.diffrn_id",  # pointer to _diffrn.id in the DIFFRN category.
+            "_diffrn_refln.id",  # uniquely identifies reflection
+            "_diffrn_refln.index_h",
+            "_diffrn_refln.index_k",
+            "_diffrn_refln.index_l",
+            "_diffrn_refln.pdbx_image_id",
+            "_diffrn_refln.pdbx_detector_x",
+            "_diffrn_refln.pdbx_detector_y",
+        )
+
+        v5_next_extra_items = {
             "scales": ("_pdbx_diffrn_unmerged_refln.scale_value", "%5.3f"),
             "intensity.scale.value": (
                 "_pdbx_diffrn_unmerged_refln.intensity_meas",
@@ -268,6 +283,13 @@ class MMCIFOutputFile:
             "partiality": ("_pdbx_diffrn_unmerged_refln.partiality", "%7.4f"),
         }
 
+        v5_0_extra_items = {
+            "scales": ("_diffrn_refln.pdbx_scale_value", "%5.3f"),
+            "intensity.scale.value": ("_diffrn_refln.intensity_net", "%8.3f"),
+            "intensity.scale.sigma": ("_diffrn_refln.intensity_sigma", "%8.3f"),
+            "angle": ("_diffrn_refln.pdbx_scan_angle", "%7.4f"),
+        }
+
         variables_present = []
         if "scale" in self.params.intensity:
             reflections["scales"] = 1.0 / reflections["inverse_scale_factor"]
@@ -277,28 +299,35 @@ class MMCIFOutputFile:
             variables_present.extend(
                 ["scales", "intensity.scale.value", "intensity.scale.sigma"]
             )
-        if "sum" in self.params.intensity:
-            reflections["intensity.sum.sigma"] = flex.sqrt(
-                reflections["intensity.sum.variance"]
-            )
-            variables_present.extend(["intensity.sum.value", "intensity.sum.sigma"])
-        if "profile" in self.params.intensity:
-            reflections["intensity.prf.sigma"] = flex.sqrt(
-                reflections["intensity.prf.variance"]
-            )
-            variables_present.extend(["intensity.prf.value", "intensity.prf.sigma"])
+        if self.params.mmcif.pdb_version == "v5_next":
+            if "sum" in self.params.intensity:
+                reflections["intensity.sum.sigma"] = flex.sqrt(
+                    reflections["intensity.sum.variance"]
+                )
+                variables_present.extend(["intensity.sum.value", "intensity.sum.sigma"])
+            if "profile" in self.params.intensity:
+                reflections["intensity.prf.sigma"] = flex.sqrt(
+                    reflections["intensity.prf.variance"]
+                )
+                variables_present.extend(["intensity.prf.value", "intensity.prf.sigma"])
 
         # Should always exist
         reflections["angle"] = reflections["xyzcal.mm"].parts()[2] * RAD2DEG
         variables_present.extend(["angle"])
 
-        if "partiality" in reflections:
-            variables_present.extend(["partiality"])
+        if self.params.mmcif.pdb_version == "v5_next":
+            if "partiality" in reflections:
+                variables_present.extend(["partiality"])
 
         for name in variables_present:
             if name in reflections:
-                header += (extra_items[name][0],)
-                self._fmt += " " + extra_items[name][1]
+                v5_next_header += (v5_next_extra_items[name][0],)
+                self._v5_next_fmt += " " + v5_next_extra_items[name][1]
+
+        for name in variables_present:
+            if name in reflections and name in v5_0_extra_items:
+                v5_0_header += (v5_0_extra_items[name][0],)
+                self._v5_0_fmt += " " + v5_0_extra_items[name][1]
 
         if "scale" in self.params.intensity:
             # Write dataset_statistics - first make a miller array
@@ -336,6 +365,27 @@ class MMCIFOutputFile:
         # Write the crystal information
         # if v5, that's all so return
         if self.params.mmcif.pdb_version == "v5":
+            h, k, l = [
+                hkl.iround()
+                for hkl in reflections["miller_index"].as_vec3_double().parts()
+            ]
+            # Note, use observed position, so that we are within the
+            # allowed bounds (lower bound 0) for image_id
+            det_x, det_y, det_z = reflections["xyzobs.px.value"].parts()
+            image_id = flex.ceil(det_z).iround()
+            loop_values = [
+                flex.int(len(reflections), 1),  # diffn id
+                flex.size_t_range(1, len(reflections) + 1),  # refln id
+                h,
+                k,
+                l,
+                image_id,
+                det_x,
+                det_y,
+            ] + [reflections[name] for name in variables_present]
+            cif_loop = iotbx.cif.model.loop(data=dict(zip(v5_0_header, loop_values)))
+            cif_block.add_loop(cif_loop)
+
             return cif_block
         # continue if v5_next
         cif_loop = iotbx.cif.model.loop(
@@ -418,7 +468,7 @@ class MMCIFOutputFile:
             k,
             l,
         ] + [reflections[name] for name in variables_present]
-        cif_loop = iotbx.cif.model.loop(data=dict(zip(header, loop_values)))
+        cif_loop = iotbx.cif.model.loop(data=dict(zip(v5_next_header, loop_values)))
         cif_block.add_loop(cif_loop)
 
         return cif_block

@@ -1,0 +1,1 @@
+``dials.image_viewer``: the ``n_iqr`` value for ``radial_profile`` thresholding is now correctly handled.

@@ -93,6 +93,10 @@ output.html = dials.ssx_index.html
     .type = str
 output.json = None
     .type = str
+output.nuggets = None
+    .type = path
+    .help = "Specify a directory to which a per-image summary json will be saved"
+            "during processing, as each image is indexed, to enable live monitoring."
 include scope dials.command_line.index.phil_scope
 """,
     process_includes=True,

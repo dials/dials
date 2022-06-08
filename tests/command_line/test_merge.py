@@ -29,10 +29,13 @@ def validate_mtz(mtz_file, expected_labels, unexpected_labels=None):
 
 
 @pytest.mark.parametrize("anomalous", [True, False])
-@pytest.mark.parametrize("truncate", [True, False])
-def test_merge(dials_data, tmp_path, anomalous, truncate):
+@pytest.mark.parametrize(
+    "truncate,french_wilson_impl", [(True, "dials"), (True, "cctbx"), (False, None)]
+)
+def test_merge(dials_data, tmp_path, anomalous, truncate, french_wilson_impl):
     """Test the command line script with LCY data"""
     # Main options: truncate on/off, anomalous on/off
+    # french_wilson.implementation dials/cctbx
 
     mean_labels = ["IMEAN", "SIGIMEAN"]
     anom_labels = ["I(+)", "I(-)", "SIGI(+)", "SIGI(-)"]
@@ -50,6 +53,7 @@ def test_merge(dials_data, tmp_path, anomalous, truncate):
         refls,
         expts,
         f"truncate={truncate}",
+        f"french_wilson.implementation={french_wilson_impl}",
         f"anomalous={anomalous}",
         f"output.mtz={str(mtz_file)}",
         "project_name=ham",

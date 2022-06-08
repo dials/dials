@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import concurrent.futures
+import json
 import logging
 import math
 import os
+import pathlib
 import sys
 from collections import defaultdict
 from typing import List, Tuple, Union
@@ -89,48 +91,79 @@ def index_all_concurrent(
 
     # first determine n_strong per image:
     n_strong_per_image = {}
-    for i, (expt, table) in enumerate(zip(experiments, reflections)):
-        img = expt.imageset.get_image_identifier(i).split("/")[-1]
-        if table:
-            n_strong = table.get_flags(table.flags.strong).count(True)
-        else:
-            n_strong = 0
-        n_strong_per_image[img] = n_strong
+    isets = experiments.imagesets()
+    iset_to_expt_indices = {}
+    for iset in isets:
+        expt_indices = [
+            i for i, expt in enumerate(experiments) if expt.imageset == iset
+        ]
+        iset_to_expt_indices[iset] = expt_indices
+        for i, k in enumerate(expt_indices):
+            table = reflections[k]
+            img = iset.get_image_identifier(i).split("/")[-1]
+            if table:
+                n_strong = table.get_flags(table.flags.strong).count(True)
+            else:
+                n_strong = 0
+            n_strong_per_image[img] = n_strong
 
     with concurrent.futures.ProcessPoolExecutor(
         max_workers=params.indexing.nproc
     ) as pool:
         sys.stdout = open(os.devnull, "w")  # block printing from rstbx
-        futures = {}
-        for i, (table, expt) in enumerate(zip(reflections, experiments)):
-            if table:
-                futures[pool.submit(index_one, expt, table, params, method_list, i)] = i
         tables_list = [None] * len(reflections)
         expts_list = [None] * len(reflections)
-
-        for future in concurrent.futures.as_completed(futures):
-            try:
-                expts, refls = future.result()
-                j = futures[future]
-            except Exception as e:
-                logger.info(e)
-            else:
-                if refls and expts:
-                    tables_list[j] = refls
-                    elist = ExperimentList()
-                    for jexpt in expts:
-                        elist.append(
-                            Experiment(
-                                identifier=jexpt.identifier,
-                                beam=jexpt.beam,
-                                detector=jexpt.detector,
-                                scan=jexpt.scan,
-                                goniometer=jexpt.goniometer,
-                                crystal=jexpt.crystal,
-                                imageset=jexpt.imageset[j : j + 1],
+        for isetno, (iset, expt_indices) in enumerate(iset_to_expt_indices.items()):
+            if len(isets) > 1:
+                logger.info(f"Indexing imageset {isetno}")
+            futures = {}
+            for i, k in enumerate(expt_indices):
+                expt = experiments[k]
+                table = reflections[k]
+                if table:
+                    futures[
+                        pool.submit(index_one, expt, table, params, method_list, i)
+                    ] = (i, k)
+            for future in concurrent.futures.as_completed(futures):
+                (j, l) = futures[future]
+                if params.output.nuggets:
+                    img = iset.get_image_identifier(j).split("/")[-1]
+                    msg = {
+                        "image_no": j + 1,
+                        "n_indexed": 0,
+                        "n_strong": n_strong_per_image[img],
+                        "n_cryst": 0,
+                        "image": img,
+                    }
+                try:
+                    expts, refls = future.result()
+                except Exception as e:
+                    logger.info(e)
+                else:
+                    if refls and expts:
+                        tables_list[l] = refls
+                        elist = ExperimentList()
+                        for jexpt in expts:
+                            elist.append(
+                                Experiment(
+                                    identifier=jexpt.identifier,
+                                    beam=jexpt.beam,
+                                    detector=jexpt.detector,
+                                    scan=jexpt.scan,
+                                    goniometer=jexpt.goniometer,
+                                    crystal=jexpt.crystal,
+                                    imageset=jexpt.imageset[j : j + 1],
+                                )
                             )
-                        )
-                    expts_list[j] = elist
+                        expts_list[l] = elist
+                        if params.output.nuggets:
+                            msg["n_indexed"] = len(refls)
+                            msg["n_cryst"] = len(elist)
+                if params.output.nuggets:
+                    with open(
+                        params.output.nuggets / f"nugget_index_{msg['image']}.json", "w"
+                    ) as f:
+                        f.write(json.dumps(msg))
 
     sys.stdout = sys.__stdout__  # restore printing
 
@@ -139,49 +172,52 @@ def index_all_concurrent(
     indexed_experiments = ExperimentList()
     indexed_reflections = flex.reflection_table()
     n_tot = 0
-    for idx, (elist, table) in enumerate(zip(expts_list, tables_list)):
-        img = experiments[idx].imageset.get_image_identifier(idx).split("/")[-1]
-        n_strong = n_strong_per_image[img]
-        if not (elist and table):
-            results_summary[idx].append(
-                {
-                    "Image": img,
-                    "n_indexed": 0,
-                    "n_strong": n_strong,
-                }
-            )
-            continue
-        indexed_experiments.extend(elist)
-        ids_map = dict(table.experiment_identifiers())
-        for k in table.experiment_identifiers().keys():
-            del table.experiment_identifiers()[k]
-        table["id"] += n_tot
-        for k, v in ids_map.items():
-            table.experiment_identifiers()[k + n_tot] = v
-        n_tot += len(ids_map.keys())
-        indexed_reflections.extend(table)
+    for iset, expt_indices in iset_to_expt_indices.items():  # loop over imagesets
+        for i, j in enumerate(expt_indices):
+            elist = expts_list[j]
+            table = tables_list[j]
+            img = iset.get_image_identifier(i).split("/")[-1]
+            n_strong = n_strong_per_image[img]
+            if not (elist and table):
+                results_summary[j].append(
+                    {
+                        "Image": img,
+                        "n_indexed": 0,
+                        "n_strong": n_strong,
+                    }
+                )
+                continue
+            indexed_experiments.extend(elist)
+            ids_map = dict(table.experiment_identifiers())
+            for k in table.experiment_identifiers().keys():
+                del table.experiment_identifiers()[k]
+            table["id"] += n_tot
+            for k, v in ids_map.items():
+                table.experiment_identifiers()[k + n_tot] = v
+            n_tot += len(ids_map.keys())
+            indexed_reflections.extend(table)
 
-        # record some things for printing to output log/html
-        for id_, identifier in table.experiment_identifiers():
-            selr = table.select(table["id"] == id_)
-            calx, caly, _ = selr["xyzcal.px"].parts()
-            obsx, obsy, _ = selr["xyzobs.px.value"].parts()
-            delpsi = selr["delpsical.rad"]
-            rmsd_x = flex.mean((calx - obsx) ** 2) ** 0.5
-            rmsd_y = flex.mean((caly - obsy) ** 2) ** 0.5
-            rmsd_z = flex.mean(((delpsi) * RAD2DEG) ** 2) ** 0.5
-            n_id_ = calx.size()
-            results_summary[idx].append(
-                {
-                    "Image": img,
-                    "identifier": identifier,
-                    "n_indexed": n_id_,
-                    "n_strong": n_strong,
-                    "RMSD_X": rmsd_x,
-                    "RMSD_Y": rmsd_y,
-                    "RMSD_dPsi": rmsd_z,
-                }
-            )
+            # record some things for printing to output log/html
+            for id_, identifier in table.experiment_identifiers():
+                selr = table.select(table["id"] == id_)
+                calx, caly, _ = selr["xyzcal.px"].parts()
+                obsx, obsy, _ = selr["xyzobs.px.value"].parts()
+                delpsi = selr["delpsical.rad"]
+                rmsd_x = flex.mean((calx - obsx) ** 2) ** 0.5
+                rmsd_y = flex.mean((caly - obsy) ** 2) ** 0.5
+                rmsd_z = flex.mean(((delpsi) * RAD2DEG) ** 2) ** 0.5
+                n_id_ = calx.size()
+                results_summary[j].append(
+                    {
+                        "Image": img,
+                        "identifier": identifier,
+                        "n_indexed": n_id_,
+                        "n_strong": n_strong,
+                        "RMSD_X": rmsd_x,
+                        "RMSD_Y": rmsd_y,
+                        "RMSD_dPsi": rmsd_z,
+                    }
+                )
 
     indexed_reflections.assert_experiment_identifiers_are_consistent(
         indexed_experiments
@@ -211,6 +247,7 @@ def preprocess(
 
     # Calculate necessary quantities
     n_filtered_out = 0
+    filtered_out_images = []
     for i, (refl, experiment) in enumerate(zip(reflections, experiments)):
         if refl:
             if refl.size() >= params.min_spots:
@@ -223,10 +260,19 @@ def preprocess(
             else:
                 n_filtered_out += 1
                 reflections[i] = None
+                filtered_out_images.append(i + 1)
+        else:
+            filtered_out_images.append(i + 1)
     if n_filtered_out:
         logger.info(
             f"Filtered {n_filtered_out} images with fewer than {params.min_spots} spots"
         )
+        if params.output.nuggets:
+            jstr = json.dumps({"filtered_images": filtered_out_images})
+            with open(
+                params.output.nuggets / "nugget_index_filtered_images.json", "w"
+            ) as f:
+                f.write(jstr)
 
     # Determine the max cell if applicable
     if (params.indexing.max_cell is Auto) and (
@@ -266,6 +312,16 @@ def index(
     observed: flex.reflection_table,
     params: phil.scope_extract,
 ) -> Tuple[ExperimentList, flex.reflection_table, dict]:
+
+    if params.output.nuggets:
+        params.output.nuggets = pathlib.Path(
+            params.output.nuggets
+        )  # needed if not going via cli
+        if not params.output.nuggets.is_dir():
+            logger.warning(
+                "output.nuggets not recognised as a valid directory path, no nuggets will be output"
+            )
+            params.output.nuggets = None
 
     reflection_tables, params, method_list = preprocess(experiments, observed, params)
 
