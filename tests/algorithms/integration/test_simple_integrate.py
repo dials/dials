@@ -25,7 +25,7 @@ def test_against_dials_integrate(dials_data, tmp_path):
 
     procrunner.run(
         (
-            "dials.simple_integrate",
+            "dev.dials.simple_integrate",
             dials_data("insulin_processed", pathlib=True) / "refined.expt",
             dials_data("insulin_processed", pathlib=True) / "refined.refl",
         ),
