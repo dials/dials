@@ -1,1 +1,0 @@
-``dials.find_bad_pixels``: Output a mask file, as expected in the phil scope. Remove unimplemented png output option.

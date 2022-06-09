@@ -1,1 +1,0 @@
-Correctly handle cases where cluster_unit_cells returns None due to only one input crystal 
