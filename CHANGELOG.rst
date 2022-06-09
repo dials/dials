@@ -1,3 +1,24 @@
+DIALS 3.8.6 (2022-06-07)
+========================
+
+- Resolve xia2 installation issues for downstream packaging.
+
+
+DIALS 3.8.5 (2022-06-01)
+========================
+
+Features
+--------
+
+- ``dials.stills_process``: validate command-line arguments to prevent confusion when there is a typo (`#2106 <https://github.com/dials/dials/issues/2106>`_)
+
+
+Bugfixes
+--------
+
+- ``dials.show``: Fix display of unknown vector columns. (`#2048 <https://github.com/dials/dials/issues/2048>`_)
+- ``dials.image_viewer``: Fixed user setting for ``show_beam_center=`` being overridden. (`#2103 <https://github.com/dials/dials/issues/2103>`_)
+
 DIALS 3.9.2 (2022-05-09)
 ========================
 
