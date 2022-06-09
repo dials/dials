@@ -1,1 +1,0 @@
-``dials.image_viewer``: Fixed user setting for ``show_beam_center=`` being overridden.

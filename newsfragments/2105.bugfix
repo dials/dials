@@ -1,1 +1,0 @@
-``dials.refine_bravais_settings``: Ensure that the reported reindexing operators correctly map the input symmetry to the given Bravais settings, regardless of whether the input symmetry was a primitive or non-primitive setting

@@ -1,1 +1,0 @@
-Fix downstream SEGV involving wxPython and ``dials.image_viewer``.
