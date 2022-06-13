@@ -1,0 +1,1 @@
+Terminate Levenberg-Marquardt refinement if the objective is not expected to decrease.
