@@ -5,8 +5,6 @@ Test the command line script dials.scale, for successful completion.
 from __future__ import annotations
 
 import json
-import platform
-import sys
 
 import procrunner
 import pytest
@@ -268,14 +266,25 @@ def test_targeted_scaling_against_mtz(dials_data, tmp_path):
     refl = location / "scaled_30.refl"
     expt = location / "scaled_30.expt"
     target_mtz = tmp_path / "unmerged.mtz"
-    command = ["dials.scale", refl, expt, f"target_mtz={target_mtz}"]
+    command = [
+        "dials.scale",
+        refl,
+        expt,
+        f"target_mtz={target_mtz}",
+        "unmerged_mtz=unmerged_2.mtz",
+    ]
 
     result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
     assert (tmp_path / "scaled.expt").is_file()
     assert (tmp_path / "scaled.refl").is_file()
+    assert (tmp_path / "unmerged_2.mtz").is_file()
     expts = load.experiment_list(tmp_path / "scaled.expt", check_format=False)
     assert len(expts) == 1
+    result = get_merging_stats(tmp_path / "unmerged_2.mtz")
+    assert result.overall.r_pim < 0.024  # at 30/03/22, value was 0.022
+    assert result.overall.cc_one_half > 0.995  # at 30/03/22, value was 0.998
+    assert result.overall.n_obs > 3150  # at 30/03/22, value was 3188
 
 
 @pytest.mark.parametrize(
@@ -438,19 +447,6 @@ def test_scale_physical(dials_data, tmp_path):
         False
     )
 
-    # Try running again with the merged.mtz as a target, to trigger the
-    # target_mtz option
-    extra_args.append("target_mtz=merged.mtz")
-    run_one_scaling(tmp_path, [refl_1, expt_1] + extra_args)
-    result = get_merging_stats(tmp_path / "unmerged.mtz")
-    assert (
-        result.overall.r_pim < 0.026
-    )  # at 17/07/19 was 0.256 after updates to merged mtz export
-    assert (
-        result.overall.cc_one_half > 0.9955
-    )  # at 14/08/18, value was 0.999, at 07/02/19 was 0.9961
-    assert result.overall.n_obs > 2300  # at 07/01/19, was 2321, at 07/02/19 was 2321
-
     # run again with the concurrent scaling option turned off and the 'standard'
     # outlier rejection
     extra_args = [
@@ -538,10 +534,6 @@ def test_scale_normal_equations_failure(dials_data, tmp_path):
     assert (tmp_path / "scaled.expt").is_file()
 
 
-@pytest.mark.xfail(
-    sys.platform == "darwin" and platform.machine() == "arm64",
-    reason="CC1/2 somewhat differs for unknown reasons",
-)
 def test_scale_and_filter_image_group_mode(dials_data, tmp_path):
     """Test the scale and filter command line program."""
     location = dials_data("multi_crystal_proteinase_k", pathlib=True)
@@ -549,7 +541,7 @@ def test_scale_and_filter_image_group_mode(dials_data, tmp_path):
     command = [
         "dials.scale",
         "filtering.method=deltacchalf",
-        "stdcutoff=3.0",
+        "stdcutoff=4.0",
         "mode=image_group",
         "max_percent_removed=6.0",
         "max_cycles=6",
@@ -569,30 +561,29 @@ def test_scale_and_filter_image_group_mode(dials_data, tmp_path):
     assert (tmp_path / "scaled.expt").is_file()
     assert (tmp_path / "analysis_results.json").is_file()
     result = get_merging_stats(tmp_path / "unmerged.mtz")
-    assert result.overall.r_pim < 0.135  # 12/07/21 was 0.129,
-    assert result.overall.cc_one_half > 0.94  # 12/07/21 was 0.953
-    assert result.overall.n_obs > 19000  # 12/07/21 was 19579
+    assert result.overall.r_pim < 0.15  # on 04/05/22 on mac, was 0.143,
+    assert result.overall.cc_one_half > 0.89  # on 04/05/22 on mac was 0.893
+    assert result.overall.n_obs > 20000  # on 04/05/22 on mac was 20188
 
-    analysis_results = json.load((tmp_path / "analysis_results.json").open())
+    with open(tmp_path / "analysis_results.json") as fh:
+        analysis_results = json.load(fh)
     assert analysis_results["cycle_results"]["1"]["image_ranges_removed"] == [
         [[16, 24], 4]
     ]
-    assert analysis_results["cycle_results"]["2"]["image_ranges_removed"] == [
-        [[21, 25], 5]
-    ]
-    assert analysis_results["termination_reason"] == "max_percent_removed"
+    assert analysis_results["cycle_results"]["2"]["image_ranges_removed"] == []
+    assert analysis_results["termination_reason"] == "no_more_removed"
 
 
 def test_scale_and_filter_termination(dials_data, tmp_path):
     """Test the scale and filter command line program,
-    when it terminates with a cycle of no reflections removed."""
+    when it terminates with a cycle when going over the max percent removed."""
     location = dials_data("multi_crystal_proteinase_k", pathlib=True)
 
     command = [
         "dials.scale",
         "filtering.method=deltacchalf",
         "stdcutoff=2.0",
-        "max_percent_removed=40.0",
+        "max_percent_removed=5.0",
         "max_cycles=8",
         "d_min=2.0",
         "unmerged_mtz=unmerged.mtz",
@@ -610,10 +601,10 @@ def test_scale_and_filter_termination(dials_data, tmp_path):
     assert (tmp_path / "scaled.expt").is_file()
     assert (tmp_path / "analysis_results.json").is_file()
 
-    analysis_results = json.load((tmp_path / "analysis_results.json").open())
-    assert analysis_results["termination_reason"] == "no_more_removed"
+    with open(tmp_path / "analysis_results.json") as fh:
+        analysis_results = json.load(fh)
+    assert analysis_results["termination_reason"] == "max_percent_removed"
     assert len(analysis_results["cycle_results"]["1"]["removed_datasets"]) == 1
-    assert analysis_results["cycle_results"]["2"]["removed_datasets"] == []
     refls = flex.reflection_table.from_file(tmp_path / "scaled.refl")
     assert len(set(refls["id"])) == 6
     assert len(set(refls["imageset_id"])) == 6
@@ -640,10 +631,31 @@ def test_scale_and_filter_image_group_single_dataset(dials_data, tmp_path):
     assert (tmp_path / "scaled.expt").is_file()
     assert (tmp_path / "analysis_results.json").is_file()
 
-    analysis_results = json.load((tmp_path / "analysis_results.json").open())
+    with open(tmp_path / "analysis_results.json") as fh:
+        analysis_results = json.load(fh)
     assert analysis_results["cycle_results"]["1"]["image_ranges_removed"] == []
     assert len(analysis_results["cycle_results"].keys()) == 1
     assert analysis_results["termination_reason"] == "no_more_removed"
+
+
+def test_scale_when_a_dataset_is_filtered_out(dials_data, tmp_path):
+    location = dials_data("multi_crystal_proteinase_k", pathlib=True)
+    # Modify one of the input tables so that it gets filtered out
+    # during scaler initialisation. Triggers the bug referenced in
+    # https://github.com/dials/dials/issues/2045
+    refls = flex.reflection_table.from_file(location / "reflections_3.pickle")
+    refls["partiality"] = flex.double(refls.size(), 0.3)
+    refls.as_file(tmp_path / "modified_3.refl")
+    command = ["dials.scale", "d_min=2.0", tmp_path / "modified_3.refl"]
+    for i in [1, 2, 3, 4]:
+        command.append(location / f"experiments_{i}.json")
+    for i in [1, 2, 4]:
+        command.append(location / f"reflections_{i}.pickle")
+    result = procrunner.run(command, working_directory=tmp_path)
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "scaled.refl").is_file()
+    expts = load.experiment_list(tmp_path / "scaled.expt", check_format=False)
+    assert len(expts) == 3
 
 
 def test_scale_dose_decay_model(dials_data, tmp_path):
@@ -718,7 +730,8 @@ def test_scale_and_filter_dataset_mode(dials_data, tmp_path):
     assert (tmp_path / "scaled.expt").is_file()
     assert (tmp_path / "analysis_results.json").is_file()
 
-    analysis_results = json.load((tmp_path / "analysis_results.json").open())
+    with open(tmp_path / "analysis_results.json") as fh:
+        analysis_results = json.load(fh)
     assert analysis_results["cycle_results"]["1"]["removed_datasets"] == [
         analysis_results["initial_expids_and_image_ranges"][4][0]
     ]
@@ -866,8 +879,10 @@ def test_multi_scale_exclude_images(dials_data, tmp_path):
     ).scaling_models()
     assert scaling_models[0].configdict["valid_image_range"] == [1, 1600]
     assert scaling_models[1].configdict["valid_image_range"] == [1, 1500]
-    assert pytest.approx(scaling_models[0].configdict["valid_osc_range"], [0, 160.0])
-    assert pytest.approx(scaling_models[1].configdict["valid_osc_range"], [-145.0, 5.0])
+    assert [0, 160.0] == pytest.approx(scaling_models[0].configdict["valid_osc_range"])
+    assert [-145.0, 5.0] == pytest.approx(
+        scaling_models[1].configdict["valid_osc_range"]
+    )
 
     # Run again, excluding some more from one run.
     extra_args = [
@@ -882,8 +897,10 @@ def test_multi_scale_exclude_images(dials_data, tmp_path):
     ).scaling_models()
     assert scaling_models[0].configdict["valid_image_range"] == [1, 1400]
     assert scaling_models[1].configdict["valid_image_range"] == [1, 1500]
-    assert pytest.approx(scaling_models[0].configdict["valid_osc_range"], [0, 140.0])
-    assert pytest.approx(scaling_models[1].configdict["valid_osc_range"], [-145.0, 5.0])
+    assert [0, 140.0] == pytest.approx(scaling_models[0].configdict["valid_osc_range"])
+    assert [-145.0, 5.0] == pytest.approx(
+        scaling_models[1].configdict["valid_osc_range"]
+    )
 
     refls = flex.reflection_table.from_file(tmp_path / "scaled.refl")
     d1 = refls.select(refls["id"] == 0)

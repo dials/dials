@@ -123,13 +123,14 @@ def test_mtz_best_unit_cell(dials_data, tmp_path):
 def test_multi_sequence_integrated_mtz(dials_data, tmp_path):
     """Test dials.export on multi-sequence integrated data."""
     # first combine two integrated files
+    data = dials_data("multi_crystal_proteinase_k", pathlib=True)
     result = procrunner.run(
         [
             "dials.combine_experiments",
-            dials_data("multi_crystal_proteinase_k") / "experiments_1.json",
-            dials_data("multi_crystal_proteinase_k") / "reflections_1.pickle",
-            dials_data("multi_crystal_proteinase_k") / "experiments_2.json",
-            dials_data("multi_crystal_proteinase_k") / "reflections_2.pickle",
+            data / "experiments_1.json",
+            data / "reflections_1.pickle",
+            data / "experiments_2.json",
+            data / "reflections_2.pickle",
         ],
         working_directory=tmp_path,
     )
@@ -407,7 +408,8 @@ def test_json(dials_data, tmp_path):
     assert not result.returncode and not result.stderr
     assert (tmp_path / "rlp.json").is_file()
 
-    d = json.load((tmp_path / "rlp.json").open("rb"))
+    with open(tmp_path / "rlp.json", mode="rb") as fh:
+        d = json.load(fh)
     assert set(d) == {"imageset_id", "experiments", "rlp", "experiment_id"}
     assert d["rlp"][:3] == [0.123413, 0.576679, 0.186326], d["rlp"][:3]
     assert d["imageset_id"][0] == 0
@@ -434,7 +436,8 @@ def test_json_shortened(dials_data, tmp_path):
     assert not result.returncode and not result.stderr
     assert (tmp_path / "integrated.json").is_file()
 
-    d = json.load((tmp_path / "integrated.json").open("rb"))
+    with open(tmp_path / "integrated.json", mode="rb") as fh:
+        d = json.load(fh)
     assert "imageset_id" in d
     assert "rlp" in d
     assert "experiment_id" in d
@@ -560,3 +563,35 @@ def test_export_sum_or_profile_only(dials_data, tmp_path):
         )
         assert not result.returncode and not result.stderr
         assert (tmp_path / f"removed_{remove}.mtz").is_file()
+
+
+@pytest.mark.parametrize("intensity_choice", ["profile", "sum"])
+def test_pets(dials_data, tmp_path, intensity_choice):
+    expt = dials_data("quartz_processed", pathlib=True) / "integrated.expt"
+    refl = dials_data("quartz_processed", pathlib=True) / "integrated.refl"
+    # Call dials.export
+    result = procrunner.run(
+        [
+            "dials.export",
+            "intensity=scale",
+            "format=pets",
+            "id=0",
+            "step=1",
+            "n_merged=2",
+            "intensity=" + intensity_choice,
+            "filename_prefix=" + intensity_choice,
+            expt,
+            refl,
+        ],
+        working_directory=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+    output = tmp_path / (intensity_choice + ".cif_pets")
+    # On windows, \r\n endings are written; but our reference is \n
+    output_data = output.read_bytes().replace(b"\r\n", b"\n")
+
+    if intensity_choice == "profile":
+        reference = dials_data("quartz_processed", pathlib=True) / "dials_prf.cif_pets"
+    else:
+        reference = dials_data("quartz_processed", pathlib=True) / "dials_dyn.cif_pets"
+    assert output_data == reference.read_bytes()

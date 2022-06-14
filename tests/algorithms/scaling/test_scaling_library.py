@@ -50,7 +50,7 @@ def test_params():
 def mock_cif():
     """Mock a cif file for testing loading data from a cif."""
     cif = Mock()
-    cif.intensities = flex.double([1.0, 1.0])
+    cif.intensities = flex.double([1.0, 2.0])
     cif.indices = flex.miller_index([(1, 0, 0), (0, 0, 1)])
     cif.space_group = space_group("C 2y")
     return cif
@@ -246,8 +246,8 @@ def test_get_intensities_from_cif(_, test_reflections, test_experiments, mock_ci
     exp, refl = create_datastructures_for_structural_model(
         [test_reflections], test_experiments, mock_cif
     )
-    assert list(refl["intensity"]) == [5.5, 5.5, 5.5, 5.5]
-    assert list(refl["miller_index"]) == [(1, 0, 0), (0, 0, 1), (1, 0, 0), (0, 0, 1)]
+    assert list(refl["intensity"]) == [1.0, 2.0]
+    assert list(refl["miller_index"]) == [(1, 0, 0), (0, 0, 1)]
     assert exp.scaling_model.is_scaled is True
 
 

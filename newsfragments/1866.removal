@@ -1,1 +1,0 @@
-Starting with this release DIALS requires a minimum Python version of 3.8. Bootstrap no longer allows the creation of Python 3.7 environments.

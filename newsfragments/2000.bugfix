@@ -1,1 +1,0 @@
-Avoid using the ``uuid`` module, to avoid mpi errors on Python 3.8.
