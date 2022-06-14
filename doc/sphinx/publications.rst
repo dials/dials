@@ -6,6 +6,7 @@ Publications
 DIALS Journal Articles
 ----------------------
 
+* .. pubmed:: 35647922 xia2.multiplex
 * .. pubmed:: 34747533 DIALS as a toolkit
 * .. pubmed:: 32254063 dials.scale
 * .. pubmed:: 30950396 How best to use photons
