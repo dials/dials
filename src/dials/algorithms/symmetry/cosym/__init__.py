@@ -115,7 +115,7 @@ class CosymAnalysis(symmetry_base, Subject):
     the presence of an indexing ambiguity.
     """
 
-    def __init__(self, intensities, params):
+    def __init__(self, intensities, params, reference_intensities=None):
         """Initialise a CosymAnalysis object.
 
         Args:
@@ -123,6 +123,11 @@ class CosymAnalysis(symmetry_base, Subject):
             cosym analysis.
           params (libtbx.phil.scope_extract): Parameters for the analysis.
         """
+        self.using_reference = False
+        if reference_intensities:
+            intensities.append(reference_intensities)
+            self.using_reference = True
+
         super().__init__(
             intensities,
             normalisation=params.normalisation,
@@ -382,15 +387,47 @@ class CosymAnalysis(symmetry_base, Subject):
         coord_ids = np.arange(n_datasets * n_sym_ops)
         dataset_ids = coord_ids % n_datasets
 
-        # choose a high density point as seed
-        X = coords
-        nbrs = NearestNeighbors(
-            n_neighbors=min(11, len(X)), algorithm="brute", metric="cosine"
-        ).fit(X)
-        distances, indices = nbrs.kneighbors(X)
-        average_distance = np.array([dist[1:].mean() for dist in distances])
-        i = average_distance.argmin()
-        xis = np.array([X[i]])
+        if (
+            self.using_reference
+        ):  # if reference, choose the reference with reindexing op xyz as seed
+            xis = None
+            sel = np.where(dataset_ids == n_datasets - 1)
+            X = coords[sel]
+            for i in range(len(X)):
+                for partition in cosets.partitions:
+                    if sym_ops[i] in partition:
+                        cb_op = sgtbx.change_of_basis_op(partition[0]).new_denominators(
+                            self.cb_op_inp_min
+                        )
+                        reindexing_op = (
+                            self.cb_op_inp_min.inverse() * cb_op * self.cb_op_inp_min
+                        ).as_xyz()
+                        if reindexing_op == "x,y,z":
+                            xis = np.array([X[i]])
+                        break
+                if xis is not None:
+                    break
+            if xis is None:
+                raise ValueError("Unable to determine x,y,z mode of reference")
+            coordstr = ",".join(str(round(i, 4)) for i in xis[0])
+            logger.info(f"Coordinate of reference dataset with cb_op=x,y,z: {coordstr}")
+            # We no longer need the reference dataset, so remove it from the dataset ids
+            self.dataset_ids = self.dataset_ids.select(
+                self.dataset_ids != n_datasets - 1
+            )
+            n_datasets -= 1
+            # FIXME trim coords and coords_reduced?
+        else:
+            # choose a high density point as seed
+            X = coords
+            nbrs = NearestNeighbors(
+                n_neighbors=min(11, len(X)), algorithm="brute", metric="cosine"
+            ).fit(X)
+            distances, indices = nbrs.kneighbors(X)
+            average_distance = np.array([dist[1:].mean() for dist in distances])
+            i = average_distance.argmin()
+            xis = np.array([X[i]])
+            logger.info(f"High density cluster seed coordinates: {xis[0]}")
 
         for j in range(n_datasets):
             sel = np.where(dataset_ids == j)

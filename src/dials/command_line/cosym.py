@@ -8,6 +8,8 @@ import numpy as np
 
 import iotbx.phil
 from cctbx import sgtbx
+from cctbx.sgtbx.lattice_symmetry import metric_subgroups
+from libtbx import Auto
 
 from dials.algorithms.clustering.unit_cell import cluster_unit_cells
 from dials.algorithms.symmetry.cosym import CosymAnalysis
@@ -29,6 +31,7 @@ from dials.util.multi_dataset_handling import (
 )
 from dials.util.observer import Subject
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
+from dials.util.reference import intensities_from_reference_file
 from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.cosym")
@@ -47,6 +50,15 @@ unit_cell_clustering {
     .type = bool
     .help = 'Display the dendrogram with a log scale'
 }
+
+reference = None
+    .type = path
+    .help = "A file containing a reference set of intensities e.g. MTZ/cif, or a"
+            "file from which a reference set of intensities could be calculated"
+            "e.g. .pdb or .cif . If an indexing ambiguity is present, the input"
+            "data will be reindexed to be consistent with the indexing mode of"
+            "this reference file"
+    .expert_level = 2
 
 include scope dials.algorithms.symmetry.cosym.phil_scope
 
@@ -82,12 +94,46 @@ output {
 )
 
 
+def _get_reference_intensities(params):
+    # Extract/calculate a set of intensities from a reference.
+    if params.d_min not in {Auto, None}:
+        reference_intensities = intensities_from_reference_file(
+            params.reference, d_min=params.d_min
+        )
+    else:
+        reference_intensities = intensities_from_reference_file(
+            params.reference, d_min=2.0
+        )
+    group = metric_subgroups(
+        reference_intensities.crystal_symmetry(),
+        params.lattice_symmetry_max_delta,
+        enforce_max_delta_for_generated_two_folds=True,
+    ).result_groups[0]
+    ref_cb_op = (
+        group["best_subsym"].change_of_basis_op_to_minimum_cell()
+        * group["cb_op_inp_best"]
+    )
+    reference_intensities, _ = reference_intensities.apply_change_of_basis(
+        str(ref_cb_op)
+    )
+    reference_intensities = (
+        reference_intensities.as_non_anomalous_array().merge_equivalents().array()
+    )
+    if not reference_intensities.sigmas():
+        reference_intensities.set_sigmas(flex.double(reference_intensities.size(), 1))
+    return reference_intensities
+
+
 class cosym(Subject):
     def __init__(self, experiments, reflections, params=None):
         super().__init__(events=["run_cosym", "performed_unit_cell_clustering"])
         if params is None:
             params = phil_scope.extract()
         self.params = params
+
+        reference_intensities = None
+        if self.params.reference:
+            reference_intensities = _get_reference_intensities(params)
 
         self._reflections = []
         for refl, expt in zip(reflections, experiments):
@@ -160,7 +206,9 @@ class cosym(Subject):
         datasets = [
             ma.as_non_anomalous_array().merge_equivalents().array() for ma in datasets
         ]
-        self.cosym_analysis = CosymAnalysis(datasets, self.params)
+        self.cosym_analysis = CosymAnalysis(
+            datasets, self.params, reference_intensities
+        )
 
     @property
     def experiments(self):
