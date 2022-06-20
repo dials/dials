@@ -4,6 +4,7 @@ Tests for scaling library module.
 
 from __future__ import annotations
 
+import os
 from unittest.mock import Mock
 
 import pytest
@@ -159,9 +160,6 @@ def generated_param(absorption_term=False):
     parameters.array.n_resolution_bins = 1  # to stop example dataset
     # being overparameterised for array model refinement.
     return parameters
-
-
-import os
 
 
 def test_datastructure_from_structural_model(dials_data, test_experiments):
