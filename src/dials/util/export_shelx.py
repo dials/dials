@@ -90,7 +90,7 @@ def export_shelx(scaled_data, experiment_list, params):
             scale_range=params.shelx.scale_range,
             normalise_if_format_overflow=True,
         )
-    logger.info(f"Written {i_obs.size()} relflections to {hkl_file}")
+    logger.info(f"Written {i_obs.size()} reflections to {hkl_file}")
 
     # and a stub of an .ins file with information from the .expt file
     _write_ins(
