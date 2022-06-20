@@ -4,11 +4,11 @@ Tests for scaling library module.
 
 from __future__ import annotations
 
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 
-from cctbx import crystal, miller, uctbx
+from cctbx import uctbx
 from cctbx.sgtbx import space_group
 from dxtbx.model import Beam, Crystal, Detector, Experiment, Goniometer, Scan
 from dxtbx.model.experiment_list import ExperimentList
@@ -161,6 +161,18 @@ def generated_param(absorption_term=False):
     return parameters
 
 
+import os
+
+
+def test_datastructure_from_structural_model(dials_data, test_experiments):
+    pdb_file = os.fspath(dials_data("cunir_serial", pathlib=True) / "2bw4.pdb")
+    expt, table = create_datastructures_for_structural_model(test_experiments, pdb_file)
+    assert expt.scaling_model.is_scaled
+    assert table["intensity"]
+    assert table["miller_index"]
+    table.assert_experiment_identifiers_are_consistent(ExperimentList([expt]))
+
+
 @pytest.mark.parametrize("model", ["physical", "array"])
 def test_scale_single_dataset(test_reflections, test_experiments, test_params, model):
     """Test completion of scaling."""
@@ -223,32 +235,6 @@ def test_create_scaling_model():
     newer_exp = create_scaling_model(params, new_exp, [rt, rt_2, rt_3])
     for exp in newer_exp:
         assert isinstance(exp.scaling_model, PhysicalScalingModel)
-
-
-def mock_intensity_array_from_cif_file(cif):
-    """Mock cif-intensity converter to replace call in create_datastructures..."""
-    miller_set = miller.set(
-        crystal_symmetry=crystal.symmetry(space_group=cif.space_group),
-        indices=cif.indices,
-        anomalous_flag=True,
-    )
-    idata = miller.array(miller_set, data=cif.intensities)
-    return idata
-
-
-@patch(
-    "dials.algorithms.scaling.scaling_library.intensity_array_from_cif_file",
-    side_effect=mock_intensity_array_from_cif_file,
-)
-def test_get_intensities_from_cif(_, test_reflections, test_experiments, mock_cif):
-    """Test the conversion of a cif file to reflections and experiments suitable
-    for scaling."""
-    exp, refl = create_datastructures_for_structural_model(
-        [test_reflections], test_experiments, mock_cif
-    )
-    assert list(refl["intensity"]) == [1.0, 2.0]
-    assert list(refl["miller_index"]) == [(1, 0, 0), (0, 0, 1)]
-    assert exp.scaling_model.is_scaled is True
 
 
 def test_create_Ih_table(test_experiments, test_reflections):

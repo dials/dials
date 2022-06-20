@@ -20,10 +20,8 @@ import pkg_resources
 
 import iotbx.merging_statistics
 from cctbx import crystal, miller, uctbx
-from dxtbx import flumpy
 from dxtbx.model import Experiment
 from dxtbx.util import ersatz_uuid4
-from iotbx import cif, mtz, pdb
 from libtbx import Auto, phil
 
 from dials.algorithms.scaling.Ih_table import IhTable
@@ -35,6 +33,10 @@ from dials.algorithms.scaling.scaling_utilities import (
 from dials.array_family import flex
 from dials.util import Sorry
 from dials.util.options import ArgumentParser
+from dials.util.reference import (
+    intensities_from_reference_model_file,
+    intensity_array_from_mtz_file,
+)
 
 logger = logging.getLogger("dials")
 
@@ -432,162 +434,68 @@ def merging_stats_from_scaled_array(
     return result, anom_result
 
 
-def intensity_array_from_cif_file(cif_file, anomalous_flag=True, d_min=0.4):
-    """Return an intensity miller array from a cif file."""
-    xray_structure = cif.reader(file_path=cif_file).file_object.xray_structure_simple()
-    ic = (
-        xray_structure.structure_factors(
-            anomalous_flag=anomalous_flag, d_min=d_min, algorithm="direct"
-        )
-        .f_calc()
-        .as_intensity_array()
-    )
-    return ic
-
-
-def intensity_array_from_pdb_file(
-    pdb_file, anomalous_flag=True, d_min=2.0, wavelength=None
-):
-    xray_structure = pdb.hierarchy.input(pdb_file).xray_structure_simple()
-    if wavelength:
-        xray_structure.set_inelastic_form_factors(photon=wavelength, table="sasaki")
-    ic = (
-        xray_structure.structure_factors(
-            anomalous_flag=anomalous_flag, d_min=d_min, algorithm="direct"
-        )
-        .f_calc()
-        .as_intensity_array()
-    )
-    return ic
-
-
-def create_datastructures_for_target_mtz(experiments, mtz_file, anomalous=False):
+def create_datastructures_for_target_mtz(experiments, mtz_file, anomalous=True):
     """Read a merged mtz file and extract miller indices, intensities and
     variances."""
-    m = mtz.object(mtz_file)
-    ind = m.extract_miller_indices()
-    cols = m.columns()
-    col_dict = {c.label(): c for c in cols}
-    r_t = flex.reflection_table()
+    intensities = intensity_array_from_mtz_file(mtz_file)
+    if not anomalous:
+        intensities = intensities.as_non_anomalous_array().merge_equivalents().array()
 
-    def _extract_anom(ind, col_dict):
-        table = flex.reflection_table()
-        r_tplus = flex.reflection_table()
-        r_tminus = flex.reflection_table()
-        r_tplus["miller_index"] = ind
-        r_tplus["intensity"] = col_dict["I(+)"].extract_values().as_double()
-        r_tplus["variance"] = flex.pow2(
-            col_dict["SIGI(+)"].extract_values().as_double()
-        )
-        r_tminus["miller_index"] = ind
-        r_tminus["intensity"] = col_dict["I(-)"].extract_values().as_double()
-        r_tminus["variance"] = flex.pow2(
-            col_dict["SIGI(-)"].extract_values().as_double()
-        )
-        r_tplus.extend(r_tminus)
-        r_tplus.set_flags(
-            flex.bool(r_tplus.size(), False), r_tplus.flags.bad_for_scaling
-        )
-        r_tplus = r_tplus.select(r_tplus["variance"] != 0.0)
-        Ih_table = create_Ih_table(
-            [experiments[0]], [r_tplus], anomalous=True
-        ).blocked_data_list[0]
-        table["intensity"] = flumpy.from_numpy(Ih_table.Ih_values)
-        inv_var = Ih_table.sum_in_groups(Ih_table.weights, output="per_refl")
-        table["variance"] = flumpy.from_numpy(1.0 / inv_var)
-        table["miller_index"] = Ih_table.asu_miller_index
-        return table
+    table = flex.reflection_table()
+    table["intensity"] = intensities.data()
+    table["variance"] = intensities.sigmas() ** 2
+    table["miller_index"] = intensities.indices()
+    table.set_flags(flex.bool(table.size(), False), table.flags.bad_for_scaling)
 
-    if anomalous:
-        try:
-            r_t = _extract_anom(ind, col_dict)
-        except KeyError:
-            pass
-    if not r_t:
-        if "I" in col_dict:  # nice and simple
-            r_t["miller_index"] = ind
-            r_t["intensity"] = col_dict["I"].extract_values().as_double()
-            r_t["variance"] = flex.pow2(col_dict["SIGI"].extract_values().as_double())
-        elif "IMEAN" in col_dict:  # nice and simple
-            r_t["miller_index"] = ind
-            r_t["intensity"] = col_dict["IMEAN"].extract_values().as_double()
-            r_t["variance"] = flex.pow2(
-                col_dict["SIGIMEAN"].extract_values().as_double()
-            )
-        elif "I(+)" in col_dict:  # need to combine I+ and I- together into target Ih
-            if col_dict["I(+)"].n_valid_values() == 0:  # use I(-)
-                r_t["miller_index"] = ind
-                r_t["intensity"] = col_dict["I(-)"].extract_values().as_double()
-                r_t["variance"] = flex.pow2(
-                    col_dict["SIGI(-)"].extract_values().as_double()
-                )
-            elif col_dict["I(-)"].n_valid_values() == 0:  # use I(+)
-                r_t["miller_index"] = ind
-                r_t["intensity"] = col_dict["I(+)"].extract_values().as_double()
-                r_t["variance"] = flex.pow2(
-                    col_dict["SIGI(+)"].extract_values().as_double()
-                )
-            else:  # Combine both - add together then use Ih table to calculate I and sigma
-                r_t = _extract_anom(ind, col_dict)
-        else:
-            raise KeyError("Unable to find intensities (tried I, IMEAN, I(+)/I(-))")
-    logger.info(f"Extracted {r_t.size()} intensities from target mtz")
-    r_t = r_t.select(r_t["variance"] > 0.0)
-    if r_t.size() == 0:
+    logger.info(f"Extracted {table.size()} intensities from target mtz")
+    table = table.select(table["variance"] > 0.0)
+    if table.size() == 0:
         raise ValueError("No reflections with positive sigma remain after filtering")
-    r_t["d"] = (
-        miller.set(
-            crystal_symmetry=crystal.symmetry(
-                space_group=m.space_group(), unit_cell=m.crystals()[0].unit_cell()
-            ),
-            indices=r_t["miller_index"],
-        )
-        .d_spacings()
-        .data()
-    )
-    r_t.set_flags(flex.bool(r_t.size(), True), r_t.flags.integrated)
+    table["d"] = intensities.d_spacings().data()
+    table.set_flags(flex.bool(table.size(), True), table.flags.integrated)
+    table["id"] = flex.int(table.size(), len(experiments))
 
-    exp = Experiment()
-    exp.crystal = deepcopy(experiments[0].crystal)
-    exp.identifier = ersatz_uuid4()
-    r_t.experiment_identifiers()[len(experiments)] = exp.identifier
-    r_t["id"] = flex.int(r_t.size(), len(experiments))
-
+    expt = Experiment()
+    expt.crystal = deepcopy(experiments[0].crystal)
+    expt.identifier = ersatz_uuid4()
     # create a new KB scaling model for the target and set as scaled to fix scale
     # for targeted scaling.
     params = Mock()
     params.KB.decay_correction.return_value = False
-    exp.scaling_model = KBScalingModel.from_data(params, [], [])
-    exp.scaling_model.set_scaling_model_as_scaled()  # Set as scaled to fix scale.
-    return exp, r_t
+    expt.scaling_model = KBScalingModel.from_data(params, [], [])
+    expt.scaling_model.set_scaling_model_as_scaled()  # Set as scaled to fix scale.
+
+    table.experiment_identifiers()[len(experiments)] = expt.identifier
+
+    return expt, table
 
 
-def create_datastructures_for_structural_model(reflections, experiments, model_file):
-    """Read a cif/pdb file, calculate intensities and scale them to the average
-    intensity of the reflections. Return an experiment and reflection table to
-    be used for the structural model in scaling."""
+def create_datastructures_for_structural_model(
+    experiments, model_file, anomalous=True, d_min=2.0
+):
+    """Read a cif/pdb file, calculate intensities. Return an experiment and
+    reflection table to be used for the structural model in scaling."""
 
-    # read model, compute Fc, square to F^2
-    if model_file.endswith(".cif"):
-        ic = intensity_array_from_cif_file(model_file)
-    elif model_file.endswith(".pdb"):
-        wavelength = np.mean([expt.beam.get_wavelength() for expt in experiments])
-        ic = intensity_array_from_pdb_file(model_file, wavelength=wavelength)
-    else:
-        raise ValueError("target_model not a recognised format (.pdb/.cif)")
+    wavelength = np.mean([expt.beam.get_wavelength() for expt in experiments])
+    ic = intensities_from_reference_model_file(
+        model_file, d_min=d_min, wavelength=wavelength
+    )
+    if not anomalous:
+        ic = ic.as_non_anomalous_array().merge_equivalents().array()
 
-    exp = deepcopy(experiments[0])
+    table = flex.reflection_table()
+    table["intensity"] = ic.data()
+    table["miller_index"] = ic.indices()
+    table["id"] = flex.int(table.size(), len(experiments))
+    table["d"] = ic.d_spacings().data()
+
+    expt = deepcopy(experiments[0])
     params = Mock()
     params.decay_correction.return_value = False
-    exp.scaling_model = KBScalingModel.from_data(params, [], [])
-    exp.scaling_model.set_scaling_model_as_scaled()  # Set as scaled to fix scale.
+    expt.scaling_model = KBScalingModel.from_data(params, [], [])
+    expt.scaling_model.set_scaling_model_as_scaled()  # Set as scaled to fix scale.
+    expt.identifier = ersatz_uuid4()
 
-    rt = flex.reflection_table()
-    rt["intensity"] = ic.data()
-    rt["miller_index"] = ic.indices()
+    table.experiment_identifiers()[len(experiments)] = expt.identifier
 
-    exp.identifier = ersatz_uuid4()
-    rt.experiment_identifiers()[len(experiments)] = exp.identifier
-    rt["id"] = flex.int(rt.size(), len(experiments))
-
-    return exp, rt
+    return expt, table
