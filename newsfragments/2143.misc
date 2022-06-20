@@ -1,1 +1,1 @@
-Remove failing ``dials.rs_mapper`` test
+Fix failing ``dials.rs_mapper`` test
