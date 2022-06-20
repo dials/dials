@@ -42,24 +42,29 @@ def test_masked(dials_data, tmp_path):
         working_directory=tmp_path,
     )
     result = procrunner.run(
-        ["dials.rs_mapper", "imported.expt", "map_file=junk.ccp4"],
+        ["dials.rs_mapper", "imported.expt", "map_file=masked.ccp4"],
         working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert (tmp_path / "junk.ccp4").is_file()
-
-    # Load results
-    m = ccp4_map.map_reader(file_name=str(tmp_path / "junk.ccp4"))
-    assert m.header_max == pytest.approx(289.11111)
+    assert (tmp_path / "masked.ccp4").is_file()
 
     # Also check the ignore case (regressions here may indicate changes in mask handling)
     result = procrunner.run(
-        ["dials.rs_mapper", "imported.expt", "map_file=junk.ccp4", "ignore_mask=True"],
+        [
+            "dials.rs_mapper",
+            "imported.expt",
+            "map_file=unmasked.ccp4",
+            "ignore_mask=True",
+        ],
         working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
-    assert (tmp_path / "junk.ccp4").is_file()
+    assert (tmp_path / "unmasked.ccp4").is_file()
 
     # Load results
-    m = ccp4_map.map_reader(file_name=str(tmp_path / "junk.ccp4"))
-    assert m.header_max == pytest.approx(65535.0)
+    masked = ccp4_map.map_reader(file_name=str(tmp_path / "masked.ccp4"))
+    unmasked = ccp4_map.map_reader(file_name=str(tmp_path / "unmasked.ccp4"))
+
+    assert masked.header_max < unmasked.header_max
+    assert masked.header_max == pytest.approx(289.11111)
+    assert unmasked.header_max == pytest.approx(65535.0)
