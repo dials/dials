@@ -115,8 +115,7 @@ def intensity_array_from_cif_data_file(cif_file):
 
 def intensity_array_from_mtz_file(filename):
     m = mtz.object(filename)
-    cols = m.columns()
-    col_dict = {c.label(): c for c in cols}
+    col_keys = [c.label() for c in m.columns()]
     # try to make an anomalous intensity array first
     anom_labels = ["I(+)", "SIGI(+)", "I(-)", "SIGI(-)"]
     normal_labels = ["I", "SIGI"]
@@ -125,15 +124,15 @@ def intensity_array_from_mtz_file(filename):
     F_normal_labels = ["F", "SIGF"]
     I_labels_to_try = [anom_labels, normal_labels, mean_labels]
     F_labels_to_try = [F_anom_labels, F_normal_labels]
-    for l in I_labels_to_try:
-        if all(k in col_dict.keys() for k in l):
+    for labels in I_labels_to_try:
+        if all(k in col_keys for k in labels):
             for ma in m.as_miller_arrays():
-                if ma.info().labels == anom_labels:
+                if ma.info().labels == labels:
                     return ma
-    for l in F_labels_to_try:
-        if all(k in col_dict.keys() for k in l):
+    for labels in F_labels_to_try:
+        if all(k in col_keys for k in labels):
             for ma in m.as_miller_arrays():
-                if ma.info().labels == anom_labels:
+                if ma.info().labels == labels:
                     return ma.as_intensity_array()
     else:
         raise KeyError("Unable to extract intensity array from mtz file")
