@@ -376,7 +376,7 @@ def run(args=None, phil=phil_scope):
     expt = experiments[0]
     wavelength = expt.beam.get_wavelength()
     rotx, roty, _ = expt.goniometer.get_rotation_axis()
-    azimuth_current = np.degrees(np.arctan2(roty, rotx))
+    azimuth_current = np.degrees(np.arctan2(-roty, rotx))
     arr = extract_spot_data(reflections, experiments, params.max_two_theta)
 
     if params.azimuth is not None:
