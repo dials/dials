@@ -1188,6 +1188,7 @@ class MultiScalerBase(ScalerBase):
 
     def _select_reflections_for_scaling(self):
         # For multi dataset, auto means quasi random
+        datasets_to_remove = []
         if self.params.reflection_selection.method in (
             None,
             Auto,
@@ -1344,6 +1345,8 @@ class MultiScalerBase(ScalerBase):
                 total_overall += n
                 scaler.scaling_subset_sel = copy.deepcopy(scaler.scaling_selection)
                 scaler.scaling_selection &= ~scaler.outliers
+                if not n:
+                    datasets_to_remove.append(i)
 
             rows.append(
                 [
@@ -1361,7 +1364,6 @@ class MultiScalerBase(ScalerBase):
             logger.info(tabulate(rows, header))
 
         elif self.params.reflection_selection.method == "intensity_ranges":
-            datasets_to_remove = []
             for i, scaler in enumerate(self.active_scalers):
                 try:
                     overall_scaling_selection = calculate_scaling_subset_ranges_with_E2(
@@ -1379,13 +1381,9 @@ class MultiScalerBase(ScalerBase):
                         )
                     scaler.scaling_subset_sel = copy.deepcopy(scaler.scaling_selection)
                     scaler.scaling_selection &= ~scaler.outliers
-            if datasets_to_remove:
-                self.remove_datasets(self.active_scalers, datasets_to_remove)
-                # Reinitialise the global datastructures for the reduced dataset.
-                (
-                    self._global_Ih_table,
-                    self._free_Ih_table,
-                ) = self._create_global_Ih_table(self.params.anomalous)
+                    if scaler.scaling_selection.all_eq(False):
+                        datasets_to_remove.append(i)
+
         elif self.params.reflection_selection.method == "use_all":
             block = self.global_Ih_table.Ih_table_blocks[0]
             n_mult = np.count_nonzero(block.calc_nh() > 1)
@@ -1394,13 +1392,15 @@ class MultiScalerBase(ScalerBase):
                 block.size,
                 n_mult,
             )
-            for scaler in self.active_scalers:
+            for i, scaler in enumerate(self.active_scalers):
                 if self._free_Ih_table:
                     scaler.scaling_selection = ~scaler.free_set_selection
                 else:
                     scaler.scaling_selection = flex.bool(scaler.n_suitable_refl, True)
                 scaler.scaling_subset_sel = copy.deepcopy(scaler.scaling_selection)
                 scaler.scaling_selection &= ~scaler.outliers
+                if scaler.scaling_selection.all_eq(False):
+                    datasets_to_remove.append(i)
         elif self.params.reflection_selection.method == "random":
             # random means a random subset of groups,
             random_phil = self.params.reflection_selection.random
@@ -1443,8 +1443,17 @@ class MultiScalerBase(ScalerBase):
                 )
                 scaler.scaling_subset_sel = copy.deepcopy(scaler.scaling_selection)
                 scaler.scaling_selection &= ~scaler.outliers
+                if scaler.scaling_selection.all_eq(False):
+                    datasets_to_remove.append(i)
         else:
             raise ValueError("Invalid choice for 'reflection_selection.method'.")
+        if datasets_to_remove:
+            self.remove_datasets(self.active_scalers, datasets_to_remove)
+            # Reinitialise the global datastructures for the reduced dataset.
+            (
+                self._global_Ih_table,
+                self._free_Ih_table,
+            ) = self._create_global_Ih_table(self.params.anomalous)
 
     def determine_shared_model_components(self):
         shared_components = set()
