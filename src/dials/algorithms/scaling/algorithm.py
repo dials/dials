@@ -9,6 +9,8 @@ import json
 import logging
 import time
 
+from libtbx import Auto
+
 from dials.algorithms.scaling.observers import (
     ScalingHTMLContextManager,
     ScalingSummaryContextManager,
@@ -143,8 +145,14 @@ def prepare_input(params, experiments, reflections):
     #### and reflection table to the lists
     if params.scaling_options.target_model:
         logger.info("Extracting data from structural model.")
+        d_min_for_structure_model = 2.0
+        if params.cut_data.d_min not in (None, Auto):
+            d_min_for_structure_model = params.cut_data.d_min
         exp, reflection_table = create_datastructures_for_structural_model(
-            reflections, experiments, params.scaling_options.target_model
+            experiments,
+            params.scaling_options.target_model,
+            params.anomalous,
+            d_min=d_min_for_structure_model,
         )
         experiments.append(exp)
         reflections.append(reflection_table)
