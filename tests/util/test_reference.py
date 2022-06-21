@@ -14,7 +14,7 @@ from dials.util.reference import (
 def test_intensities_from_reference_model(dials_data):
     "Test importing from a pdb/cif model"
 
-    pdb_file = os.fspath(dials_data("cunir_serial", pathlib=True) / "2bw4.pdb")
+    pdb_file = os.fspath(dials_data("cunir_serial", pathlib=True) / "2BW4.pdb")
     intensities = intensities_from_reference_file(pdb_file)
     assert intensities.data()
     assert not intensities.anomalous_flag()

@@ -163,7 +163,7 @@ def generated_param(absorption_term=False):
 
 
 def test_datastructure_from_structural_model(dials_data, test_experiments):
-    pdb_file = os.fspath(dials_data("cunir_serial", pathlib=True) / "2bw4.pdb")
+    pdb_file = os.fspath(dials_data("cunir_serial", pathlib=True) / "2BW4.pdb")
     expt, table = create_datastructures_for_structural_model(test_experiments, pdb_file)
     assert expt.scaling_model.is_scaled
     assert table["intensity"]
