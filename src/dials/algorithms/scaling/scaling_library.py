@@ -33,10 +33,7 @@ from dials.algorithms.scaling.scaling_utilities import (
 from dials.array_family import flex
 from dials.util import Sorry
 from dials.util.options import ArgumentParser
-from dials.util.reference import (
-    intensities_from_reference_model_file,
-    intensity_array_from_mtz_file,
-)
+from dials.util.reference import intensities_from_reference_file
 
 logger = logging.getLogger("dials")
 
@@ -434,40 +431,54 @@ def merging_stats_from_scaled_array(
     return result, anom_result
 
 
-def create_datastructures_for_target_mtz(experiments, mtz_file, anomalous=True):
-    """Read a merged mtz file and extract miller indices, intensities and
-    variances."""
-    intensities = intensity_array_from_mtz_file(mtz_file)
+def create_datastructures_for_reference_file(
+    experiments, reference_file, anomalous=True, d_min=2.0
+):
+    # If the file is a model file, then d_min is used to determine the highest
+    # resolution calculated intensities.
+    wavelength = np.mean([expt.beam.get_wavelength() for expt in experiments])
+    intensities = intensities_from_reference_file(reference_file, d_min, wavelength)
     if not anomalous:
         intensities = intensities.as_non_anomalous_array().merge_equivalents().array()
 
     table = flex.reflection_table()
     table["intensity"] = intensities.data()
-    table["variance"] = intensities.sigmas() ** 2
     table["miller_index"] = intensities.indices()
-    table.set_flags(flex.bool(table.size(), False), table.flags.bad_for_scaling)
-
-    logger.info(f"Extracted {table.size()} intensities from target mtz")
-    table = table.select(table["variance"] > 0.0)
-    if table.size() == 0:
-        raise ValueError("No reflections with positive sigma remain after filtering")
-    table["d"] = intensities.d_spacings().data()
-    table.set_flags(flex.bool(table.size(), True), table.flags.integrated)
     table["id"] = flex.int(table.size(), len(experiments))
+    table["d"] = intensities.d_spacings().data()
+
+    if intensities.sigmas():  # only the case for a data file
+        table["variance"] = intensities.sigmas() ** 2
+        logger.info(f"Extracted {table.size()} intensities from reference file")
+        table = table.select(table["variance"] > 0.0)
+        if table.size() == 0:
+            raise ValueError(
+                "No reflections with positive sigma remain after filtering"
+            )
+
+    table.set_flags(flex.bool(table.size(), False), table.flags.bad_for_scaling)
+    table.set_flags(flex.bool(table.size(), True), table.flags.integrated)
 
     expt = Experiment()
     expt.crystal = deepcopy(experiments[0].crystal)
-    expt.identifier = ersatz_uuid4()
-    # create a new KB scaling model for the target and set as scaled to fix scale
-    # for targeted scaling.
     params = Mock()
     params.KB.decay_correction.return_value = False
     expt.scaling_model = KBScalingModel.from_data(params, [], [])
     expt.scaling_model.set_scaling_model_as_scaled()  # Set as scaled to fix scale.
+    expt.identifier = ersatz_uuid4()
+
+    table.experiment_identifiers()[len(experiments)] = expt.identifier
 
     table.experiment_identifiers()[len(experiments)] = expt.identifier
 
     return expt, table
+
+def create_datastructures_for_target_mtz(experiments, mtz_file, anomalous=True):
+    """
+    Read a merged mtz file and extract miller indices, intensities and variances.
+    Deprecated, retained for backwards compability.
+    """
+    return create_datastructures_for_reference_file(experiments, mtz_file, anomalous)
 
 
 def create_datastructures_for_structural_model(
@@ -475,27 +486,6 @@ def create_datastructures_for_structural_model(
 ):
     """Read a cif/pdb file, calculate intensities. Return an experiment and
     reflection table to be used for the structural model in scaling."""
-
-    wavelength = np.mean([expt.beam.get_wavelength() for expt in experiments])
-    ic = intensities_from_reference_model_file(
-        model_file, d_min=d_min, wavelength=wavelength
+    return create_datastructures_for_reference_file(
+        experiments, model_file, anomalous, d_min
     )
-    if not anomalous:
-        ic = ic.as_non_anomalous_array().merge_equivalents().array()
-
-    table = flex.reflection_table()
-    table["intensity"] = ic.data()
-    table["miller_index"] = ic.indices()
-    table["id"] = flex.int(table.size(), len(experiments))
-    table["d"] = ic.d_spacings().data()
-
-    expt = deepcopy(experiments[0])
-    params = Mock()
-    params.decay_correction.return_value = False
-    expt.scaling_model = KBScalingModel.from_data(params, [], [])
-    expt.scaling_model.set_scaling_model_as_scaled()  # Set as scaled to fix scale.
-    expt.identifier = ersatz_uuid4()
-
-    table.experiment_identifiers()[len(experiments)] = expt.identifier
-
-    return expt, table

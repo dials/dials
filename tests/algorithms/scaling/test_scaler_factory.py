@@ -298,7 +298,7 @@ def test_TargetScalerFactory(generated_param, mock_scaling_component):
     assert len(multiscaler.single_scalers) == 3
 
     # Test for correct initialisation when scaling against a target model.
-    generated_param.scaling_options.target_model = True
+    generated_param.scaling_options.reference = True
     target = TargetScalerFactory.create_for_target_against_reference(
         generated_param, explist, refl_list
     )
@@ -306,7 +306,7 @@ def test_TargetScalerFactory(generated_param, mock_scaling_component):
 
     # This time make one dataset bad, and check it gets removed
     refl_list, explist = test_refl_and_exp_list(mock_scaling_component, 3)
-    generated_param.scaling_options.target_model = False
+    generated_param.scaling_options.reference = False
     refl_list[1].unset_flags(flex.bool(4, True), refl_list[1].flags.integrated_prf)
     refl_list[1].unset_flags(flex.bool(4, True), refl_list[1].flags.integrated_sum)
     explist[0].scaling_model.is_scaled = True
