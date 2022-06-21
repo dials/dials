@@ -50,7 +50,7 @@ phil_scope = phil.parse(
             .help = "Name of output experiment list file.  If this is set, a copy of "
                     "the experiments, modified with the generated pixel masks, "
                     "will be saved to this location."
-        log = 'dials.generate_masks.log'
+        log = 'dials.generate_mask.log'
             .type = str
             .help = "The log filename."
     }
