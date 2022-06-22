@@ -1,0 +1,1 @@
+``dials.cosym``: Fix bug whereby the change of basis op was applied twice to the crystal model
