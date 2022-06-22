@@ -17,9 +17,11 @@ import numpy as np
 from sklearn.neighbors import NearestNeighbors
 
 import iotbx.phil
-from cctbx import sgtbx
+from cctbx import miller, sgtbx
+from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from libtbx import Auto
 from scitbx import matrix
+from scitbx.array_family import flex
 
 import dials.util
 from dials.algorithms.indexing.symmetry import find_matching_symmetry
@@ -28,6 +30,7 @@ from dials.algorithms.symmetry.cosym import engine as cosym_engine
 from dials.algorithms.symmetry.cosym import target
 from dials.algorithms.symmetry.laue_group import ScoreCorrelationCoefficient
 from dials.util.observer import Subject
+from dials.util.reference import intensities_from_reference_file
 
 logger = logging.getLogger(__name__)
 
@@ -427,7 +430,8 @@ class CosymAnalysis(symmetry_base, Subject):
             average_distance = np.array([dist[1:].mean() for dist in distances])
             i = average_distance.argmin()
             xis = np.array([X[i]])
-            logger.info(f"High density cluster seed coordinates: {xis[0]}")
+            coordstr = ",".join(str(round(i, 4)) for i in xis[0])
+            logger.info(f"High density cluster seed coordinates: {coordstr}")
 
         for j in range(n_datasets):
             sel = np.where(dataset_ids == j)
@@ -868,3 +872,34 @@ class ScoreSubGroup:
             "cb_op": f"{self.subgroup['cb_op_inp_best']}",
             "stars": self.stars,
         }
+
+
+def extract_reference_intensities(params: iotbx.phil.scope_extract) -> miller.array:
+    # Extract/calculate a set of intensities from a reference.
+    if params.d_min not in {Auto, None}:
+        reference_intensities = intensities_from_reference_file(
+            params.reference, d_min=params.d_min
+        )
+    else:
+        reference_intensities = intensities_from_reference_file(params.reference)
+    group = metric_subgroups(
+        reference_intensities.crystal_symmetry(),
+        params.lattice_symmetry_max_delta,
+        enforce_max_delta_for_generated_two_folds=True,
+    ).result_groups[0]
+    ref_cb_op = (
+        group["best_subsym"].change_of_basis_op_to_minimum_cell()
+        * group["cb_op_inp_best"]
+    )
+    import os
+
+    with open(os.devnull, "w") as devnull:
+        reference_intensities, _ = reference_intensities.apply_change_of_basis(
+            str(ref_cb_op), out=devnull
+        )
+    reference_intensities = (
+        reference_intensities.as_non_anomalous_array().merge_equivalents().array()
+    )
+    if not reference_intensities.sigmas():
+        reference_intensities.set_sigmas(flex.double(reference_intensities.size(), 1))
+    return reference_intensities
