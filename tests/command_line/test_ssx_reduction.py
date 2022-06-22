@@ -11,6 +11,7 @@ def test_ssx_reduction(dials_data, tmp_path):
     Also test a few smaller analysis programs.
     """
     ssx = dials_data("cunir_serial_processed", pathlib=True)
+    ssx_data = dials_data("cunir_serial", pathlib=True)
     refls = ssx / "integrated.refl"
     expts = ssx / "integrated.expt"
 
@@ -35,6 +36,25 @@ def test_ssx_reduction(dials_data, tmp_path):
     assert scale_expts.is_file()
     assert scale_refls.is_file()
     assert (tmp_path / "dials.scale.html").is_file()
+
+    # run scaling with reference model / cif
+    for reference in [
+        ssx_data / "2BW4.pdb",
+        ssx_data / "2bw4.cif",
+        ssx_data / "2bw4-sf.cif",
+    ]:
+        result = procrunner.run(
+            [
+                "dials.scale",
+                cosym_expts,
+                cosym_refls,
+                f"reference={reference}",
+                "output.experiments=scaled_ref.expt",
+                "output.reflections=scaled_ref.refl",
+            ],
+            working_directory=tmp_path,
+        )
+    assert not result.returncode and not result.stderr
 
     result = procrunner.run(
         ["dials.export", scale_expts, scale_refls],

@@ -18,8 +18,7 @@ from dials.algorithms.scaling.observers import (
 from dials.algorithms.scaling.scale_and_filter import AnalysisResults, log_cycle_results
 from dials.algorithms.scaling.scaler_factory import MultiScalerFactory, create_scaler
 from dials.algorithms.scaling.scaling_library import (
-    create_datastructures_for_structural_model,
-    create_datastructures_for_target_mtz,
+    create_datastructures_for_reference_file,
     create_scaling_model,
     determine_best_unit_cell,
     merging_stats_from_scaled_array,
@@ -98,6 +97,29 @@ def prepare_input(params, experiments, reflections):
             "Mismatched number of experiments and reflection tables found."
         )
 
+    #### Sort out deprecated options
+    if params.scaling_options.target_model or params.scaling_options.target_mtz:
+        if params.scaling_options.reference:
+            raise ValueError(
+                "Can't specify reference in addition to target_mtz/target_model"
+            )
+        if params.scaling_options.target_model and params.scaling_options.target_mtz:
+            raise ValueError(
+                "Can only specify one of target_mtz/target_model (both deprecated, use reference=)"
+            )
+        if params.scaling_options.target_model:
+            logger.warning(
+                "Warning: target_model option is deprecated and will be removed, please use reference="
+            )
+            params.scaling_options.reference = params.scaling_options.target_model
+            params.scaling_options.target_model = None
+        elif params.scaling_options.target_mtz:
+            logger.warning(
+                "Warning: target_mtz option is deprecated and will be removed, please use reference="
+            )
+            params.scaling_options.reference = params.scaling_options.target_mtz
+            params.scaling_options.target_mtz = None
+
     #### Assign experiment identifiers.
     experiments, reflections = assign_unique_identifiers(experiments, reflections)
     ids = itertools.chain.from_iterable(
@@ -143,26 +165,18 @@ def prepare_input(params, experiments, reflections):
 
     #### If doing targeted scaling, extract data and append an experiment
     #### and reflection table to the lists
-    if params.scaling_options.target_model:
-        logger.info("Extracting data from structural model.")
+    if params.scaling_options.reference:
+        # Set a suitable d_min in the case when we might have a model file
         d_min_for_structure_model = 2.0
         if params.cut_data.d_min not in (None, Auto):
             d_min_for_structure_model = params.cut_data.d_min
-        exp, reflection_table = create_datastructures_for_structural_model(
+        expt, reflection_table = create_datastructures_for_reference_file(
             experiments,
-            params.scaling_options.target_model,
+            params.scaling_options.reference,
             params.anomalous,
             d_min=d_min_for_structure_model,
         )
-        experiments.append(exp)
-        reflections.append(reflection_table)
-
-    elif params.scaling_options.target_mtz:
-        logger.info("Extracting data from merged mtz.")
-        exp, reflection_table = create_datastructures_for_target_mtz(
-            experiments, params.scaling_options.target_mtz, anomalous=params.anomalous
-        )
-        experiments.append(exp)
+        experiments.append(expt)
         reflections.append(reflection_table)
 
     #### Perform any non-batch cutting of the datasets, including the target dataset
@@ -248,8 +262,7 @@ class ScalingAlgorithm:
 
             if (
                 self.params.scaling_options.only_target
-                or self.params.scaling_options.target_model
-                or self.params.scaling_options.target_mtz
+                or self.params.scaling_options.reference
             ):
 
                 self.scaler = targeted_scaling_algorithm(self.scaler)
@@ -267,8 +280,7 @@ class ScalingAlgorithm:
         from the scaler during scaling."""
         # first remove target refl/exps
         if (
-            self.params.scaling_options.target_model
-            or self.params.scaling_options.target_mtz
+            self.params.scaling_options.reference
             or self.params.scaling_options.only_target
         ):
             # now remove things that were used as the target:
