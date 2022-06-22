@@ -641,6 +641,7 @@ class MaskSettingsPanel(wx.Panel):
         image_viewer_frame.OnChooseImage(event)
 
     def OnSaveMask(self, event):
+        self.OnUpdate(event)
         self.UpdateMask()
         image_viewer_frame = self.GetParent().GetParent()
 
