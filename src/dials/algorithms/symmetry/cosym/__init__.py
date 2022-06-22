@@ -882,6 +882,7 @@ def extract_reference_intensities(params: iotbx.phil.scope_extract) -> miller.ar
         )
     else:
         reference_intensities = intensities_from_reference_file(params.reference)
+    initial_space_group_info = reference_intensities.space_group_info()
     group = metric_subgroups(
         reference_intensities.crystal_symmetry(),
         params.lattice_symmetry_max_delta,
@@ -897,9 +898,10 @@ def extract_reference_intensities(params: iotbx.phil.scope_extract) -> miller.ar
         reference_intensities, _ = reference_intensities.apply_change_of_basis(
             str(ref_cb_op), out=devnull
         )
+    reference_intensities = reference_intensities.expand_to_p1()
     reference_intensities = (
         reference_intensities.as_non_anomalous_array().merge_equivalents().array()
     )
     if not reference_intensities.sigmas():
         reference_intensities.set_sigmas(flex.double(reference_intensities.size(), 1))
-    return reference_intensities
+    return reference_intensities, initial_space_group_info

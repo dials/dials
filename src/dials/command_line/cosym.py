@@ -101,18 +101,19 @@ class cosym(Subject):
 
         reference_intensities = None
         if self.params.reference:
-            reference_intensities = extract_reference_intensities(params)
+            reference_intensities, space_group_info = extract_reference_intensities(
+                params
+            )
             if self.params.space_group and (
-                self.params.space_group != reference_intensities.space_group_info()
+                self.params.space_group.type().number()
+                != space_group_info.type().number()
             ):
                 # N.B. space group phil options are actually space_group_info objects
                 raise ValueError(
-                    f"Input space group ({self.params.space_group}) does not match space group from reference file ({reference_intensities.space_group_info()})"
+                    f"Input space group ({self.params.space_group}) does not match space group from reference file ({space_group_info})"
                 )
-            logger.info(
-                f"Using space group {reference_intensities.space_group_info()} from reference"
-            )
-            self.params.space_group = reference_intensities.space_group_info()
+            logger.info(f"Using space group {space_group_info} from reference")
+            self.params.space_group = space_group_info
 
         self._reflections = []
         for refl, expt in zip(reflections, experiments):
