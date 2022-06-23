@@ -640,10 +640,12 @@ def stats_per_image(experiment, reflections, resolution_analysis=True):
     try:
         start, end = experiment.scan.get_array_range()
     except AttributeError:
-        start, end = 0, 1
+        start, end = experiment.imageset.get_array_range()
     for i in range(start, end):
+        refl = reflections.select(image_number == i)
+        refl["id"] = flex.int(refl.size(), 0)
         stats = stats_for_reflection_table(
-            reflections.select(image_number == i),
+            refl,
             resolution_analysis=resolution_analysis,
         )
         n_spots_total.append(stats.n_spots_total)
