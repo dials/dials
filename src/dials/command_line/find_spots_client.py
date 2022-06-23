@@ -108,10 +108,7 @@ def work_all(
 
     if plot or table:
 
-        from dials.algorithms.spot_finding.per_image_analysis import (
-            StatsMultiImage,
-            plot_stats,
-        )
+        from dials.algorithms.per_image_analysis import StatsMultiImage, plot_stats
 
         estimated_d_min = flex.double()
         d_min_distl_method_1 = flex.double()

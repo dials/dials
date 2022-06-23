@@ -8,8 +8,8 @@ import logging
 import libtbx.phil
 from dxtbx.model import ExperimentList
 
+from dials.algorithms import per_image_analysis
 from dials.algorithms.shoebox import MaskCode
-from dials.algorithms.spot_finding import per_image_analysis
 from dials.array_family import flex
 from dials.util import log, show_mail_handle_errors
 from dials.util.ascii_art import spot_counts_per_image_plot

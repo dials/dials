@@ -1815,7 +1815,7 @@ class ReferenceProfileAnalyser:
         """Analyse the distribution of reference profiles."""
 
         print(" Analysing reflection correlations vs resolution")
-        from dials.algorithms.spot_finding.per_image_analysis import binner_d_star_cubed
+        from dials.algorithms.per_image_analysis import binner_d_star_cubed
 
         profile_correlation = rlist["profile.correlation"]
         d_spacings = rlist["d"]

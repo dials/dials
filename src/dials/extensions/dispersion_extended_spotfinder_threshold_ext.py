@@ -76,7 +76,7 @@ def estimate_global_threshold(image, mask=None, plot=False):
 
     # Find the elbow point of the curve, in the same manner as that used by
     # distl spotfinder for resolution method 1 (Zhang et al 2006).
-    # See also dials/algorithms/spot_finding/per_image_analysis.py
+    # See also dials/algorithms/per_image_analysis/__init__.py
 
     x = threshold.as_double()
     y = n_above_threshold.as_double()

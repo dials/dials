@@ -6,7 +6,7 @@ from scitbx.array_family import flex
 
 from dials.algorithms.indexing import DialsIndexError
 from dials.algorithms.indexing.nearest_neighbor import NeighborAnalysis
-from dials.algorithms.spot_finding.per_image_analysis import ice_rings_selection
+from dials.algorithms.per_image_analysis import ice_rings_selection
 
 logger = logging.getLogger(__name__)
 

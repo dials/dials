@@ -6,7 +6,7 @@ import sys
 import iotbx.phil
 
 import dials.util
-from dials.algorithms.spot_finding import per_image_analysis
+from dials.algorithms import per_image_analysis
 from dials.util import tabulate
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 

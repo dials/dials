@@ -13,10 +13,10 @@ from cctbx import uctbx
 from dxtbx.model.experiment_list import ExperimentListFactory
 from libtbx.introspection import number_of_processors
 
+from dials.algorithms import per_image_analysis
 from dials.algorithms.indexing import indexer
 from dials.algorithms.integration.integrator import create_integrator
 from dials.algorithms.profile_model.factory import ProfileModelFactory
-from dials.algorithms.spot_finding import per_image_analysis
 from dials.array_family import flex
 from dials.command_line.find_spots import phil_scope as find_spots_phil_scope
 from dials.command_line.index import phil_scope as index_phil_scope
