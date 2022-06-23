@@ -68,13 +68,11 @@ class Script:
 
         chunk_size = None
           .type = int
-          .expert_level = 2
           .help = "If not None, instead of creating many individual"
                   "files, create composite files with no more than"
                   "chunk_size experiments per file."
         chunk_sizes = None
           .type = ints
-          .expert_level = 2
           .help = "If not None, instead of creating many individual"
                   "files, create composite files with the number of"
                   "datasets given in the chunk_sizes list."
