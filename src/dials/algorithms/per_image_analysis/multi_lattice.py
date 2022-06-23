@@ -52,7 +52,7 @@ def compute_baseline_fit(hist: np.ndarray, bin_edges: np.ndarray) -> Polynomial:
     bin_centers = (bin_edges[1:] + bin_edges[:-1]) / 2
 
     base = peakutils.baseline(hist, deg=1)
-    fit = Polynomial.fit(bin_centers, base, deg=1)
+    fit = Polynomial.fit(bin_centers, base, deg=1).convert()
     print(f"{fit=}")
     return fit
 
@@ -93,7 +93,7 @@ def compute_K(experiments: ExperimentList, reflections: flex.reflection_table) -
         return None
     print(hist)
     baseline_fit = compute_baseline_fit(hist, bin_edges)
-    k0 = baseline_fit.coef[0]
+    k0 = baseline_fit.coef[1]
     spherical_cap_area = compute_spherical_cap(experiments, reflections)
     N = len(reflections)
 
