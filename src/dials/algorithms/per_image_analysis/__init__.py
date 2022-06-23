@@ -4,6 +4,7 @@ import collections
 import math
 
 from cctbx import sgtbx, uctbx
+from dxtbx.model import ExperimentList
 from libtbx.math_utils import nearest_integer as nint
 from scitbx import matrix
 
@@ -15,6 +16,7 @@ Slot = collections.namedtuple("Slot", "d_min d_max")
 _stats_field_names = [
     "d_min_distl_method_1",
     "d_min_distl_method_2",
+    "ddv_baseline_slope",
     "estimated_d_min",
     "n_spots_4A",
     "n_spots_no_ice",
@@ -35,7 +37,15 @@ class StatsMultiImage(collections.namedtuple("StatsMultiImage", _stats_field_nam
         else:
             image = flex.int(range(1, len(self.n_spots_total) + 1)).as_string()
 
-        rows = [["image", "#spots", "#spots_no_ice", "total_intensity"]]
+        rows = [
+            [
+                "image",
+                "#spots",
+                "#spots_no_ice",
+                "total_intensity",
+                "ddv_baseline_slope",
+            ]
+        ]
 
         estimated_d_min = None
         d_min_distl_method_1 = None
@@ -88,6 +98,10 @@ class StatsMultiImage(collections.namedtuple("StatsMultiImage", _stats_field_nam
                 str(self.n_spots_no_ice[i_image]),
                 f"{self.total_intensity[i_image]:.0f}",
             ]
+            if self.ddv_baseline_slope[i_image] is not None:
+                row.append(f"{self.ddv_baseline_slope[i_image]:.4e}")
+            else:
+                row.append("")
             if estimated_d_min is not None:
                 row.append(d_min_str)
             if d_min_distl_method_1 is not None:
@@ -573,7 +587,11 @@ def ice_rings_selection(reflections, width=0.004):
 
 
 def stats_for_reflection_table(
-    reflections, resolution_analysis=True, filter_ice=True, ice_rings_width=0.004
+    experiments,
+    reflections,
+    resolution_analysis=True,
+    filter_ice=True,
+    ice_rings_width=0.004,
 ):
     assert "rlp" in reflections, "Reflections must have been mapped to reciprocal space"
     reflections = reflections.select(reflections["rlp"].norms() > 0)
@@ -609,6 +627,9 @@ def stats_for_reflection_table(
         noisiness_method_1 = -1.0
         d_min_distl_method_2 = -1.0
         noisiness_method_2 = -1.0
+    from dials.algorithms.indexing import multi_lattice
+
+    ddv_baseline_slope = multi_lattice.compute_K(experiments, reflections)
 
     return StatsSingleImage(
         n_spots_total=n_spots_total,
@@ -620,6 +641,7 @@ def stats_for_reflection_table(
         noisiness_method_1=noisiness_method_1,
         d_min_distl_method_2=d_min_distl_method_2,
         noisiness_method_2=noisiness_method_2,
+        ddv_baseline_slope=ddv_baseline_slope,
     )
 
 
@@ -633,6 +655,7 @@ def stats_per_image(experiment, reflections, resolution_analysis=True):
     d_min_distl_method_2 = []
     noisiness_method_1 = []
     noisiness_method_2 = []
+    ddv_baseline_slope = []
 
     image_number = reflections["xyzobs.px.value"].parts()[2]
     image_number = flex.floor(image_number)
@@ -645,6 +668,7 @@ def stats_per_image(experiment, reflections, resolution_analysis=True):
         refl = reflections.select(image_number == i)
         refl["id"] = flex.int(refl.size(), 0)
         stats = stats_for_reflection_table(
+            ExperimentList([experiment]),
             refl,
             resolution_analysis=resolution_analysis,
         )
@@ -657,6 +681,7 @@ def stats_per_image(experiment, reflections, resolution_analysis=True):
         noisiness_method_1.append(stats.noisiness_method_1)
         d_min_distl_method_2.append(stats.d_min_distl_method_2)
         noisiness_method_2.append(stats.noisiness_method_2)
+        ddv_baseline_slope.append(stats.ddv_baseline_slope)
 
     return StatsMultiImage(
         n_spots_total=n_spots_total,
@@ -668,6 +693,7 @@ def stats_per_image(experiment, reflections, resolution_analysis=True):
         noisiness_method_1=noisiness_method_1,
         d_min_distl_method_2=d_min_distl_method_2,
         noisiness_method_2=noisiness_method_2,
+        ddv_baseline_slope=ddv_baseline_slope,
     )
 
 
