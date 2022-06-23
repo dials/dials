@@ -3,12 +3,15 @@ from __future__ import annotations
 import collections
 import math
 
+import numpy as np
+
 from cctbx import sgtbx, uctbx
 from dxtbx.model import ExperimentList
 from libtbx.math_utils import nearest_integer as nint
 from scitbx import matrix
 
 from dials.algorithms.integration import filtering
+from dials.algorithms.per_image_analysis import multi_lattice
 from dials.array_family import flex
 from dials.util import tabulate
 
@@ -99,7 +102,7 @@ class StatsMultiImage(collections.namedtuple("StatsMultiImage", _stats_field_nam
                 f"{self.total_intensity[i_image]:.0f}",
             ]
             if self.ddv_baseline_slope[i_image] is not None:
-                row.append(f"{self.ddv_baseline_slope[i_image]:.4e}")
+                row.append(f"{self.ddv_baseline_slope[i_image]:.1e}")
             else:
                 row.append("")
             if estimated_d_min is not None:
@@ -627,7 +630,6 @@ def stats_for_reflection_table(
         noisiness_method_1 = -1.0
         d_min_distl_method_2 = -1.0
         noisiness_method_2 = -1.0
-    from dials.algorithms.indexing import multi_lattice
 
     ddv_baseline_slope = multi_lattice.compute_K(experiments, reflections)
 
@@ -707,10 +709,11 @@ def plot_stats(stats, filename="per_image_analysis.png"):
     d_min_distl_method_1 = flex.double(stats.d_min_distl_method_1)
     d_min_distl_method_2 = flex.double(stats.d_min_distl_method_2)
     total_intensity = stats.total_intensity
+    ddv_baseline_slope = np.array(stats.ddv_baseline_slope, dtype=float)
 
     i_image = flex.int(list(range(1, len(n_spots_total) + 1)))
 
-    _, (ax1, ax2, ax3) = pyplot.subplots(nrows=3)
+    fig, (ax1, ax2, ax3, ax4) = pyplot.subplots(nrows=4)
     ax1.scatter(
         list(i_image),
         list(n_spots_total),
@@ -794,4 +797,19 @@ def plot_stats(stats, filename="per_image_analysis.png"):
     ax3.set_xlabel("Image #")
     ax3.legend(bbox_to_anchor=(1.05, 0.5), loc="center left", borderaxespad=0.0)
 
-    pyplot.savefig(filename, dpi=600, bbox_inches="tight")
+    ax4.scatter(
+        i_image,
+        ddv_baseline_slope,
+        s=5,
+        color="blue",
+        marker="o",
+        alpha=0.4,
+        label="DDV baseline slope",
+    )
+    ax4.set_ylabel("DDV baseline slope")
+    ax4.set_xlabel("Image #")
+    ax4.legend(bbox_to_anchor=(1.05, 0.5), loc="center left", borderaxespad=0.0)
+    ax4.set_ylim(0, ax4.get_ylim()[1])
+
+    fig.set_size_inches(16, 16)
+    pyplot.savefig(filename, bbox_inches="tight")

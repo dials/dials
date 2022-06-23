@@ -3,7 +3,6 @@ from __future__ import annotations
 import math
 import time
 
-import matplotlib.pyplot as plt
 import numpy as np
 import peakutils
 from matplotlib import ticker
@@ -77,39 +76,38 @@ def compute_spherical_cap(
     spherical_cap_area = (
         2 * math.pi * one_over_lambda**2 * (1 - math.cos(max_two_theta))
     )
-    N = len(reflections)
     print(f"max(2θ): {np.degrees(max_two_theta)}°")
-    print(f"{spherical_cap_area=} Å⁻²")
-    print(f"N refl: {N}")
+    print(f"r = 1 / λ = {one_over_lambda}")
+    print("S = 2 * π * r² * [1 - cos(2θ)]")
+    print(f"S = {spherical_cap_area}")
     return spherical_cap_area
 
 
-def compute_K(experiments: ExperimentList, reflections: flex.reflection_table) -> float:
+def compute_K(
+    experiments: ExperimentList, reflections: flex.reflection_table, plot=False
+) -> float:
     if len(reflections) <= 10:
         return None
 
     hist, bin_edges = compute_ddv_histogram(reflections)
     if np.all(hist == 0):
         return None
-    print(hist)
     baseline_fit = compute_baseline_fit(hist, bin_edges)
     k0 = baseline_fit.coef[1]
     spherical_cap_area = compute_spherical_cap(experiments, reflections)
     N = len(reflections)
 
-    K = k0 * spherical_cap_area / N**2
-    print(f"{k0=}, {K=}")
+    K = k0 * spherical_cap_area / (N**2)
     print("K = k0 * S / N ** 2")
     print(f"K = {k0} Å * {spherical_cap_area} Å⁻² / {N} ** 2")
-    print(f"{K=} Å⁻¹")
-    # indexes = peakutils.indexes(hist - base, thres=0.5, min_dist=10)
-
-    # print(indexes)
+    print(f"K = {K:.3e} Å⁻¹")
 
     bin_centers = (bin_edges[1:] + bin_edges[:-1]) / 2
     baseline = baseline_fit(bin_centers)
 
-    if 1:
+    if plot:
+        import matplotlib.pyplot as plt
+
         plt.plot(bin_centers, hist, label="Raw")
         # plt.scatter(bin_centers[indexes], hist[indexes], marker="+", color="red")
         # plt.scatter(bin_centers[indexes], (hist - baseline)[indexes], marker="+", color="red")
@@ -184,7 +182,7 @@ def run(args=None):
 
     # reflections = reflections.select(reflections["id"] == 0)
 
-    compute_K(experiments, reflections)
+    compute_K(experiments, reflections, plot=True)
 
 
 if __name__ == "__main__":
