@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+import math
 
 from orderedset import OrderedSet
 
@@ -124,17 +125,25 @@ class Script:
         else:
             reflections = None
 
+        if params.output.chunk_sizes:
+            n_split = len(params.output.chunk_sizes)
+        elif params.output.chunk_size:
+            n_split = int(math.ceil(len(experiments) / params.output.chunk_size))
+        else:
+            n_split = len(experiments)
+        maxindexlength = len(str(n_split - 1))
+
         experiments_template = functools.partial(
             params.output.template.format,
             prefix=params.output.experiments_prefix,
-            maxindexlength=len(str(len(experiments) - 1)),
+            maxindexlength=maxindexlength,
             extension="expt",
         )
 
         reflections_template = functools.partial(
             params.output.template.format,
             prefix=params.output.reflections_prefix,
-            maxindexlength=len(str(len(experiments) - 1)),
+            maxindexlength=maxindexlength,
             extension="refl",
         )
 
