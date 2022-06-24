@@ -24,7 +24,7 @@ def ddv_formatter(d, pos):
 def compute_ddv_histogram(
     reflections: flex.reflection_table, bins: int = 100
 ) -> tuple(np.ndarray, np.ndarray):
-    distances = np.empty((0,))
+    distances = np.empty((0,), dtype=float)
     k = 200
 
     for i in set(reflections["id"]):
@@ -42,8 +42,10 @@ def compute_ddv_histogram(
         print(f"Nearest neighbour search took {t1 - t0:.4f} seconds")
         distances = np.concatenate((distances, dist.flatten()))
     distances = distances[(distances > 0).nonzero()]
-    distances = distances[((distances >= 0.001) & (distances <= 0.04)).nonzero()]
-    hist, bin_edges = np.histogram(distances, bins=bins)
+    min_dist = 0.001
+    max_dist = 0.04
+    distances = distances[((distances >= min_dist) & (distances <= max_dist)).nonzero()]
+    hist, bin_edges = np.histogram(distances, bins=bins, range=(0, max_dist))
     return hist, bin_edges
 
 
