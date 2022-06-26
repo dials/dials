@@ -62,7 +62,10 @@ def make_summary_table(results_summary: dict) -> tabulate:
             if not cryst["n_indexed"]:
                 continue
             n_idx, n_strong = (cryst["n_indexed"], cryst["n_strong"])
-            frac_idx = f"{n_idx}/{n_strong} ({100*n_idx/n_strong:2.1f}%)"
+            if n_strong:
+                frac_idx = f"{n_idx}/{n_strong} ({100*n_idx/n_strong:2.1f}%)"
+            else:
+                frac_idx = f"{n_idx}/{n_strong} (N/A%)"
             row = [
                 cryst["Image"],
                 str(total),
