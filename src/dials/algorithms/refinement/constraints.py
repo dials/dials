@@ -215,8 +215,12 @@ class ConstraintManagerFactory:
                     )
             for j in p.get_experiment_ids():
                 if j in constraint_scope.id:
-                    prefixes.append(model_type + f"{j + 1}")
+                    prefixes.append(model_type + f"{i + 1}")
                     break
+        logger.debug(
+            "Selection of experiments by id has identified the following "
+            "models to constrain: " + ",".join(prefixes)
+        )
 
         # ignore model name prefixes
         patt1 = re.compile("^" + model_type + "[0-9]+")
