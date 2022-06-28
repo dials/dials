@@ -61,7 +61,7 @@ class EqualShiftConstraint:
 class ConstraintManager:
     def __init__(self, constraints, n_full_params):
 
-        self._constraints = constraints
+        self._constraints = [e for e in constraints if e is not None]
 
         # constraints should be a list of EqualShiftConstraint objects
         assert len(self._constraints) > 0
@@ -198,28 +198,21 @@ class ConstraintManagerFactory:
             # get one experiment id for each parameterisation to apply to all
             constraint_scope.id = [e.get_experiment_ids()[0] for e in parameterisation]
 
-        # find which parameterisations are involved, and if any are scan-varying
-        # how many sample points there are
+        # find which parameterisations are involved
         prefixes = []
-        n_samples = 0
         for i, p in enumerate(parameterisation):
             if hasattr(p, "num_samples"):
-                ns = p.num_samples()
-                if n_samples == 0:
-                    n_samples = ns
-                if ns != n_samples:
-                    raise DialsRefineConfigError(
-                        "Constraints cannot be created between scan-varying "
-                        "parameterisations when these have a different number of "
-                        "sample points."
-                    )
+                raise DialsRefineConfigError(
+                    "Constraints cannot be created between scan-varying "
+                    "parameterisations."
+                )
             for j in p.get_experiment_ids():
                 if j in constraint_scope.id:
                     prefixes.append(model_type + f"{i + 1}")
                     break
         logger.debug(
-            "Selection of experiments by id has identified the following "
-            "models to constrain: " + ",".join(prefixes)
+            "\nSelection of experiments by id has identified the following "
+            "models to link by constraints:\n  " + "\n  ".join(prefixes)
         )
 
         # ignore model name prefixes
@@ -232,26 +225,20 @@ class ConstraintManagerFactory:
         # accepting those that were chosen according to the supplied experiment
         # ids. The next part allows for additional text, like 'Group1' that may
         # be used by a multi-panel detector parameterisation. Then the parameter
-        # name itself, like 'Dist'. Finally, to accommodate scan-varying
-        # parameterisations, suffixes like '_sample0' and '_sample1' are
-        # distinguished so that these are constrained separately.
-        for i in range(max(n_samples, 1)):
-            patt2 = re.compile(
-                "^("
-                + "|".join(prefixes)
-                + r"){1}(?![0-9])(\w*"
-                + pname
-                + f")(_sample{i})?$"
-            )
-            indices = [j for j, s in enumerate(self._all_names) if patt2.match(s)]
-            if len(indices) == 1:
-                continue
-            logger.debug(
-                "\nThe following parameters will be constrained "
-                "to enforce equal shifts at each step of refinement:"
-            )
-            for k in indices:
-                logger.debug(self._all_names[k])
+        # name itself, like 'Dist'.
+        patt2 = re.compile(
+            "^(" + "|".join(prefixes) + r"){1}(?![0-9])(\w*" + pname + ")$"
+        )
+        indices = [j for j, s in enumerate(self._all_names) if patt2.match(s)]
+        if len(indices) < 2:
+            logger.warn("No pair of parameters to link by constraint")
+            return None
+        logger.debug(
+            "The following parameters will be constrained "
+            "to enforce equal shifts at each step of refinement:\n  "
+            + "\n  ".join([self._all_names[k] for k in indices])
+        )
+
         return EqualShiftConstraint(indices, self._all_vals)
 
     def __call__(self):
