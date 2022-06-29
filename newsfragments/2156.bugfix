@@ -1,0 +1,1 @@
+``dials.ssx_index``: Fix potential numpy crash when trying to generate histograms from one datapoint

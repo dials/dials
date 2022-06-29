@@ -278,6 +278,11 @@ def generate_plots(summary_data: dict) -> dict:
     def _generate_hist_data(rmsd_arrays, step=0.01):
         all_rmsd = np.concatenate(rmsd_arrays)
         all_rmsd = all_rmsd[all_rmsd > 0]
+        if len(all_rmsd) == 1:
+            return (
+                np.array([0, 1, 0]),
+                np.array([all_rmsd[0] - step, all_rmsd[0], all_rmsd[0] + step]),
+            )
         mult = int(1 / 0.01)
         start = math.floor(np.min(all_rmsd) * mult) / mult
         stop = math.ceil(np.max(all_rmsd) * mult) / mult
