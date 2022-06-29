@@ -59,7 +59,7 @@ def make_summary_table(results_summary: dict) -> tabulate:
         show_lattices = False
     for k in sorted(results_summary.keys()):
         for j, cryst in enumerate(results_summary[k]):
-            if not cryst["n_indexed"]:
+            if not cryst["n_indexed"] or not cryst["n_strong"]:
                 continue
             n_idx, n_strong = (cryst["n_indexed"], cryst["n_strong"])
             frac_idx = f"{n_idx}/{n_strong} ({100*n_idx/n_strong:2.1f}%)"
@@ -153,9 +153,12 @@ def generate_plots(summary_data: dict) -> dict:
     images = np.arange(1, len(summary_data) + 1)
     n_lattices = 1
 
-    for k in sorted(summary_data.keys()):
+    sorted_keys = sorted(summary_data.keys())
+    images = np.array(sorted_keys)
+
+    for i, k in enumerate(sorted_keys):
         n_lattices_this = len(summary_data[k])
-        n_strong_array[k] = summary_data[k][0]["n_strong"]
+        n_strong_array[i] = summary_data[k][0]["n_strong"]
         for j, cryst in enumerate(summary_data[k]):
             if not cryst["n_indexed"]:
                 continue
@@ -166,11 +169,11 @@ def generate_plots(summary_data: dict) -> dict:
                     rmsd_y_arrays.append(np.zeros(len(summary_data)))
                     rmsd_z_arrays.append(np.zeros(len(summary_data)))
                 n_lattices = n_lattices_this
-            n_indexed_arrays[j][k] = cryst["n_indexed"]
-            rmsd_x_arrays[j][k] = cryst["RMSD_X"]
-            rmsd_y_arrays[j][k] = cryst["RMSD_Y"]
-            rmsd_z_arrays[j][k] = cryst["RMSD_dPsi"]
-            n_total_indexed[k] += cryst["n_indexed"]
+            n_indexed_arrays[j][i] = cryst["n_indexed"]
+            rmsd_x_arrays[j][i] = cryst["RMSD_X"]
+            rmsd_y_arrays[j][i] = cryst["RMSD_Y"]
+            rmsd_z_arrays[j][i] = cryst["RMSD_dPsi"]
+            n_total_indexed[i] += cryst["n_indexed"]
 
     n_indexed_data = [
         {
