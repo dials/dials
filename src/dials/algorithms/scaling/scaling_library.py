@@ -473,6 +473,7 @@ def create_datastructures_for_reference_file(
 
     return expt, table
 
+
 def create_datastructures_for_target_mtz(experiments, mtz_file, anomalous=True):
     """
     Read a merged mtz file and extract miller indices, intensities and variances.
