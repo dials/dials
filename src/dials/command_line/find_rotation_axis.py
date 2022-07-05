@@ -388,10 +388,6 @@ def run(args=None, phil=phil_scope):
     azimuth_current = np.degrees(np.arctan2(-roty, rotx))
     arr = extract_spot_data(reflections, experiments, params.max_two_theta)
 
-    if params.nproc is libtbx.Auto:
-        params.nproc = available_cores()
-        logger.info("Setting nproc={}".format(params.nproc))
-
     if params.azimuth is not None:
         azimuth_current = params.azimuth
 
@@ -411,6 +407,10 @@ def run(args=None, phil=phil_scope):
         f"Azimuth (current): {azimuth_current:.5f} degrees\n"
         f"                 {np.radians(azimuth_current):.5f} radians"
     )
+
+    if params.nproc is libtbx.Auto:
+        params.nproc = available_cores()
+        logger.info("Setting nproc={}".format(params.nproc))
 
     hist_bins = 1000, 500
 
