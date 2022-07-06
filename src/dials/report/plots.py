@@ -14,6 +14,7 @@ from scipy.stats import norm
 
 from cctbx import uctbx
 from dxtbx import flumpy
+from libtbx.utils import Sorry
 from mmtbx.scaling.absolute_scaling import expected_intensity, scattering_information
 from mmtbx.scaling.matthews import matthews_rupp
 from scitbx.array_family import flex
@@ -235,7 +236,7 @@ class IntensityStatisticsPlots:
                     text_out="silent",
                     params=xtriage_params,
                 )
-            except RuntimeError:
+            except (RuntimeError, Sorry):
                 logger.warning("Xtriage analysis failed.", exc_info=True)
                 self._xanalysis = None
 
