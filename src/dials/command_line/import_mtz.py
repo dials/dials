@@ -452,23 +452,25 @@ profile-fitted integrated intensities."""
     )
 
     # now want to convert phi to z for each sweep
-    if params.input.oscillation_step:
+    """if params.input.oscillation_step:
         assert params.input.oscillation_step > 0
-        z = data.phi / params.input.oscillation_step
-    else:
-        z = flex.double(table.size(), 0.0)
-        angle = data.phi
-        for i, expt in enumerate(experiments):
-            if expt.scan.get_oscillation()[1] == 0:
-                raise ValueError(
-                    """Unable to read scan oscillation step.
+        z = (data.phi - expt.scan.get_oscillation()[0])/ params.input.oscillation_step
+    else:"""
+    z = flex.double(table.size(), 0.0)
+    angle = data.phi
+    for i, expt in enumerate(experiments):
+        if expt.scan.get_oscillation()[1] == 0:
+            raise ValueError(
+                """Unable to read scan oscillation step.
 Please provide an input value for oscillation_step"""
-                )
-            sel = table["id"] == i
-            table.experiment_identifiers()[i] = expt.identifier
-            angles_i = angle.select(sel)
-            z_i = angles_i / expt.scan.get_oscillation()[1]
-            z.set_selected(sel.iselection(), z_i)
+            )
+        sel = table["id"] == i
+        table.experiment_identifiers()[i] = expt.identifier
+        angles_i = angle.select(sel)
+        z_i = (angles_i - expt.scan.get_oscillation()[0]) / expt.scan.get_oscillation()[
+            1
+        ]
+        z.set_selected(sel.iselection(), z_i)
 
     table["xyzobs.px.value"] = flex.vec3_double(data.xpos, data.ypos, z)
     table["xyzcal.px"] = flex.vec3_double(data.xpos, data.ypos, z)
@@ -613,7 +615,6 @@ only single wavelength MTZ files supported."""
             )
         )
 
-    set_initial_valid_image_ranges(experiments)
     return experiments
 
 
@@ -706,6 +707,7 @@ def create_experiments_from_mtz(
         )
     # now set identifiers
     generate_experiment_identifiers(experiments)
+    set_initial_valid_image_ranges(experiments)
     return experiments
 
 
