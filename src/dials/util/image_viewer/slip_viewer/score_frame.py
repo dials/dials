@@ -97,7 +97,7 @@ class ScoreSettingsPanel(wx.Panel):
         keycode: int = event.GetKeyCode()
 
         key = self._get_image_key()
-        if keycode - ord("0") < len(self._id_buttons):
+        if 0 <= keycode - ord("0") < len(self._id_buttons):
             _scores[key] = keycode - ord("0")
             print(f"Scoring {key}={_scores[key]}")
             self._root_frame.OnNext(event)
