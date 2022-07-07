@@ -91,20 +91,42 @@ class ScoreSettingsPanel(wx.Panel):
                 )
             ] = None
 
+        self.Bind(wx.EVT_CHAR_HOOK, self.OnChar)
+
+    def OnChar(self, event: wx.KeyEvent) -> None:
+        keycode: int = event.GetKeyCode()
+
+        key = self._get_image_key()
+        if keycode - ord("0") < len(self._id_buttons):
+            _scores[key] = keycode - ord("0")
+            print(f"Scoring {key}={_scores[key]}")
+            self._root_frame.OnNext(event)
+        elif keycode == ord(" "):
+            # Count spacebar as zero, as 0 is far away
+            _scores[key] = 0
+            print(f"Scoring {key}={_scores[key]}")
+            self._root_frame.OnNext(event)
+        elif keycode == wx.WXK_LEFT:
+            self._root_frame.OnPrevious(event)
+        elif keycode == wx.WXK_RIGHT:
+            self._root_frame.OnNext(event)
+
     def OnNext(self, event):
         self._root_frame.OnNext(event)
 
     def OnPrevious(self, event):
         self._root_frame.OnPrevious(event)
 
-    def OnScore(self, event):
-        score = self._id_buttons.index(event.EventObject.GetId())
-        key = self._root_frame.get_key(
+    def _get_image_key(self) -> str:
+        return self._root_frame.get_key(
             self._root_frame.image_chooser.GetClientData(
                 self._root_frame.image_chooser.GetSelection()
             )
         )
-        _scores[key] = score
+
+    def OnScore(self, event):
+        score = self._id_buttons.index(event.EventObject.GetId())
+        _scores[self._get_image_key()] = score
         self.OnNext(event)
 
     def OnSave(self, event):
