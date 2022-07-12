@@ -274,6 +274,10 @@ def preprocess(
             ) as f:
                 f.write(jstr)
 
+    if n_filtered_out == len(reflections):
+        logger.info("All images filtered out, none left to attempt indexing")
+        return reflections, params, []
+
     # Determine the max cell if applicable
     if (params.indexing.max_cell is Auto) and (
         not params.indexing.known_symmetry.unit_cell

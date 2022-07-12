@@ -218,7 +218,6 @@ class cosym(Subject):
             )
             expt = self._experiments[dataset_id]
             refl = self._reflections[dataset_id]
-            expt.crystal = expt.crystal.change_basis(cb_op)
             if subgroup is not None:
                 cb_op = subgroup["cb_op_inp_best"] * cb_op
                 expt.crystal = expt.crystal.change_basis(cb_op)

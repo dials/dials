@@ -117,12 +117,13 @@ def report_on_crystal_clusters(crystal_symmetries, make_plots=True):
     )
     cluster_plots = {}
     large_clusters = []
-    if not clustering:  # could happen e.g. if only one unit cell
-        return cluster_plots, large_clusters
     min_cluster_pc = 5
-    threshold = math.floor((min_cluster_pc / 100) * len(crystal_symmetries))
-    large_clusters = [c for c in clustering.clusters if len(c) > threshold]
-    large_clusters.sort(key=len, reverse=True)
+    if not clustering:  # could happen e.g. if only one unit cell
+        large_clusters = [Cluster(crystal_symmetries)]
+    else:
+        threshold = math.floor((min_cluster_pc / 100) * len(crystal_symmetries))
+        large_clusters = [c for c in clustering.clusters if len(c) > threshold]
+        large_clusters.sort(key=len, reverse=True)
 
     if large_clusters:
         logger.info(
@@ -278,6 +279,11 @@ def generate_plots(summary_data: dict) -> dict:
     def _generate_hist_data(rmsd_arrays, step=0.01):
         all_rmsd = np.concatenate(rmsd_arrays)
         all_rmsd = all_rmsd[all_rmsd > 0]
+        if len(all_rmsd) == 1:
+            return (
+                np.array([0, 1, 0]),
+                np.array([all_rmsd[0] - step, all_rmsd[0], all_rmsd[0] + step]),
+            )
         mult = int(1 / 0.01)
         start = math.floor(np.min(all_rmsd) * mult) / mult
         stop = math.ceil(np.max(all_rmsd) * mult) / mult
