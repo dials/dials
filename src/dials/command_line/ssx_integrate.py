@@ -30,15 +30,16 @@ Usage:
 
 from __future__ import annotations
 
-import concurrent.futures
 import copy
 import json
 import logging
 import pathlib
+from dataclasses import dataclass
+from typing import Any
 
 import iotbx.phil
 from cctbx import crystal
-from dxtbx.model import ExperimentList
+from dxtbx.model import Experiment, ExperimentList
 from libtbx import Auto
 from libtbx.introspection import number_of_processors
 from libtbx.utils import Sorry
@@ -254,76 +255,101 @@ def setup(reflections, params):
     return batches, configuration
 
 
-def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
-    integrated_reflections = flex.reflection_table()
-    with concurrent.futures.ProcessPoolExecutor(
-        max_workers=configuration["params"].nproc
-    ) as pool:
-        futures = {
-            pool.submit(
-                configuration["process"], expt, table, configuration["params"]
-            ): i
-            for i, (table, expt) in enumerate(zip(sub_tables, sub_expts))
+@dataclass
+class InputToIntegrate:
+    process: Any
+    experiment: Experiment
+    table: flex.reflection_table
+    params: Any
+    crystalno: int
+
+
+@dataclass
+class IntegrationResult:
+    experiment: Experiment
+    table: flex.reflection_table
+    collector: Any
+    crystalno: int
+
+
+def wrap_integrate_one(input_to_integrate: InputToIntegrate):
+    expt, refls, collector = input_to_integrate.process(
+        input_to_integrate.experiment,
+        input_to_integrate.table,
+        input_to_integrate.params,
+    )
+
+    result = IntegrationResult(expt, refls, collector, input_to_integrate.crystalno)
+    if expt and refls:
+        if not input_to_integrate.params.debug.output.shoeboxes:
+            del result.table["shoebox"]
+        logger.info(f"Processed crystal {input_to_integrate.crystalno}")
+    if input_to_integrate.params.output.nuggets:
+        img = input_to_integrate.experiment.imageset.get_image_identifier(0).split("/")[
+            -1
+        ]
+        msg = {
+            "crystal_no": input_to_integrate.crystalno,
+            "n_integrated": 0,
+            "i_over_sigma_overall": 0,
+            "image": img,
         }
-        tables_list = [0] * len(sub_expts)
-        expts_list = [0] * len(sub_expts)
-        for future in concurrent.futures.as_completed(futures):
-            j = futures[future]
-            crystalno = j + 1 + batch_offset
-            if configuration["params"].output.nuggets:
-                img = sub_expts[j].imageset.get_image_identifier(0).split("/")[-1]
-                msg = {
-                    "crystal_no": crystalno,
-                    "n_integrated": 0,
-                    "i_over_sigma_overall": 0,
-                    "image": img,
-                }
-            try:
-                expt, refls, collector = future.result()
-            except Exception as e:
-                logger.info(e)
-            else:
-                if refls and expt:
-                    logger.info(f"Processed crystal {crystalno}")
-                    tables_list[j] = refls
-                    expts_list[j] = expt
-                    configuration["aggregator"].add_dataset(collector, crystalno)
-                    if configuration["params"].output.nuggets:
-                        msg["n_integrated"] = collector.data["n_integrated"]
-                        msg["i_over_sigma_overall"] = round(
-                            collector.data["i_over_sigma_overall"], 2
-                        )
-            if configuration["params"].output.nuggets:
-                with open(
-                    configuration["params"].output.nuggets
-                    / f"nugget_integrated_{crystalno}.json",
-                    "w",
-                ) as f:
-                    f.write(json.dumps(msg))
+        if expt and refls:
+            msg["n_integrated"] = collector.data["n_integrated"]
+            msg["i_over_sigma_overall"] = round(
+                collector.data["i_over_sigma_overall"], 2
+            )
 
-        expts_list = list(filter(lambda a: a != 0, expts_list))
-        integrated_experiments = ExperimentList(expts_list)
+        with open(
+            input_to_integrate.params.output.nuggets
+            / f"nugget_integrated_{input_to_integrate.crystalno}.json",
+            "w",
+        ) as f:
+            f.write(json.dumps(msg))
+    return result
 
-        n_integrated = 0
-        for _ in range(len(tables_list)):
-            table = tables_list.pop(0)
-            if not table:
-                continue
-            # renumber actual id before extending
-            ids_map = dict(table.experiment_identifiers())
-            assert len(ids_map) == 1, ids_map
-            del table.experiment_identifiers()[list(ids_map.keys())[0]]
-            table["id"] = flex.int(table.size(), n_integrated)
-            table.experiment_identifiers()[n_integrated] = list(ids_map.values())[0]
-            n_integrated += 1
-            if not configuration["params"].debug.output.shoeboxes:
-                del table["shoebox"]
-            integrated_reflections.extend(table)
-            del table
 
-        integrated_reflections.assert_experiment_identifiers_are_consistent(
-            integrated_experiments
+def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
+
+    # create iterable
+    input_iterable = []
+    for i, (table, expt) in enumerate(zip(sub_tables, sub_expts)):
+        input_iterable.append(
+            InputToIntegrate(
+                configuration["process"],
+                expt,
+                table,
+                configuration["params"],
+                i + 1 + batch_offset,
+            )
         )
+
+    from multiprocessing import Pool
+
+    with Pool(configuration["params"].nproc) as pool:
+        results: List[IntegrationResult] = pool.map(wrap_integrate_one, input_iterable)
+
+    # then join
+    integrated_reflections = flex.reflection_table()
+    integrated_experiments = ExperimentList()
+
+    n_integrated = 0
+    for result in results:
+        if result.table:
+            ids_map = dict(result.table.experiment_identifiers())
+            del result.table.experiment_identifiers()[list(ids_map.keys())[0]]
+            result.table["id"] = flex.int(result.table.size(), n_integrated)
+            result.table.experiment_identifiers()[n_integrated] = list(
+                ids_map.values()
+            )[0]
+            n_integrated += 1
+            integrated_reflections.extend(result.table)
+            integrated_experiments.append(result.experiment)
+            configuration["aggregator"].add_dataset(result.collector, result.crystalno)
+
+    integrated_reflections.assert_experiment_identifiers_are_consistent(
+        integrated_experiments
+    )
     return integrated_experiments, integrated_reflections
 
 
