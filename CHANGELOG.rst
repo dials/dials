@@ -1,3 +1,12 @@
+DIALS 3.10.2 (2022-07-13)
+=========================
+
+Bugfixes
+--------
+
+- Fix DIALS version reporting for release builds. (`#2166 <https://github.com/dials/dials/issues/2166>`_)
+
+
 DIALS 3.10.1 (2022-07-12)
 =========================
 
