@@ -1,7 +1,11 @@
-# DIALS version numbers are constructed from
-#  1. a common prefix
 from __future__ import annotations
 
+import os
+import subprocess
+from pathlib import Path
+
+# DIALS version numbers are constructed from
+#  1. a common prefix
 __dials_version_format = "DIALS %s"
 #  2. the most recent annotated git tag (or failing that: a default string)
 __dials_version_default = "3.10"
@@ -9,10 +13,10 @@ __dials_version_default = "3.10"
 #  4. a dash followed by a lowercase 'g' and the current commit id
 
 
-def get_git_version(dials_path, treat_merges_as_single_commit=False):
-    import os
-    import subprocess
-
+def get_git_version(
+    dials_path: Path | str, treat_merges_as_single_commit=False
+) -> str | None:
+    dials_path = str(dials_path)
     version = None
     with open(os.devnull, "w") as devnull:
         # Obtain name of the current branch. If this fails then the other commands will probably also fail
@@ -85,34 +89,32 @@ def get_git_version(dials_path, treat_merges_as_single_commit=False):
 # DIALS module directory.
 
 
-def dials_version():
+def dials_version() -> str:
     """Try to obtain the current git revision number
     and store a copy in .gitversion"""
     version = None
 
     try:
-        import os
-
-        dials_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-        version_file = os.path.join(dials_path, ".gitversion")
+        dials_path = Path(__file__).resolve().parent.parent
+        repo_root = dials_path.parent.parent  # dials is in SRC
+        version_file = dials_path / ".gitversion"
 
         # 1. Try to access information in .git directory
         #    Regenerate .gitversion if possible
-        if not os.environ.get("DIALS_SKIP_GIT_VERSIONING") and os.path.exists(
-            os.path.join(dials_path, ".git")
+        if (
+            not os.environ.get("DIALS_SKIP_GIT_VERSIONING")
+            and (repo_root / ".git").is_dir()
         ):
             try:
                 version = get_git_version(dials_path)
-                with open(version_file, "w") as gv:
-                    gv.write(version)
+                version_file.write_text(version)
             except Exception:
                 if version == "":
                     version = None
 
         # 2. If .git directory missing or 'git describe' failed, read .gitversion
-        if (version is None) and os.path.exists(version_file):
-            with open(version_file) as gv:
-                version = gv.read().rstrip()
+        if (version is None) and version_file.is_file():
+            version = version_file.read_text().rstrip()
     except Exception:
         pass
 
