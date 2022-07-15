@@ -594,6 +594,10 @@ namespace dials { namespace algorithms {
       return pointer(new GaussianRSProfileModeller(result));
     }
 
+    void normalize_profiles() {
+      finalize();
+    }
+
   private:
     /**
      * Do we want to use the reflection in profile modelling
