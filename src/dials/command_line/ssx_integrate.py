@@ -35,6 +35,7 @@ import json
 import logging
 import pathlib
 from dataclasses import dataclass
+from multiprocessing import Pool
 from typing import Any
 
 import iotbx.phil
@@ -324,10 +325,13 @@ def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
             )
         )
 
-    from multiprocessing import Pool
-
-    with Pool(configuration["params"].nproc) as pool:
-        results: List[IntegrationResult] = pool.map(wrap_integrate_one, input_iterable)
+    if configuration["params"].nproc > 1:
+        with Pool(configuration["params"].nproc) as pool:
+            results: List[IntegrationResult] = pool.map(
+                wrap_integrate_one, input_iterable
+            )
+    else:
+        results = [wrap_integrate_one(i) for i in input_iterable]
 
     # then join
     integrated_reflections = flex.reflection_table()

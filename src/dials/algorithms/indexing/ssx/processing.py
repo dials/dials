@@ -221,8 +221,12 @@ def index_all_concurrent(
 
     with open(os.devnull, "w") as devnull:
         sys.stdout = devnull  # block printing from rstbx
-        with Pool(params.indexing.nproc) as pool:
-            results: List[IndexingResult] = pool.map(wrap_index_one, input_iterable)
+
+        if params.indexing.nproc > 1:
+            with Pool(params.indexing.nproc) as pool:
+                results: List[IndexingResult] = pool.map(wrap_index_one, input_iterable)
+        else:
+            results = [wrap_index_one(i) for i in input_iterable]
 
     sys.stdout = sys.__stdout__
     # prepare tables for output
