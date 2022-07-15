@@ -150,7 +150,6 @@ def generate_plots(summary_data: dict) -> dict:
     rmsd_z_arrays = [np.zeros(len(summary_data))]
     n_total_indexed = np.zeros(len(summary_data))
     n_strong_array = np.zeros(len(summary_data))
-    images = np.arange(1, len(summary_data) + 1)
     n_lattices = 1
 
     sorted_keys = sorted(summary_data.keys())
