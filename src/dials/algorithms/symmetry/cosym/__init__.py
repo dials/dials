@@ -133,8 +133,8 @@ class CosymAnalysis(symmetry_base, Subject):
         self.seed_dataset = seed_dataset
         if self.seed_dataset:
             self.seed_dataset = int(self.seed_dataset)
-            assert 0 <= seed_dataset < len(
-                intensities
+            assert (
+                0 <= seed_dataset < len(intensities)
             ), "cosym_analysis: seed_dataset parameter must be an integer that can be used to index the intensities list"
 
         super().__init__(
@@ -400,8 +400,6 @@ class CosymAnalysis(symmetry_base, Subject):
             # if seed dataset was specified, use the reindexing op xyz as seed
             sel = np.where(dataset_ids == self.seed_dataset)
             xis = np.array([coords[sel][0]])
-            coordstr = ",".join(str(round(i, 4)) for i in xis[0])
-            logger.debug(f"Coordinate of seed dataset with cb_op=x,y,z: {coordstr}")
         else:
             # choose a high density point as seed
             X = coords
@@ -412,8 +410,8 @@ class CosymAnalysis(symmetry_base, Subject):
             average_distance = np.array([dist[1:].mean() for dist in distances])
             i = average_distance.argmin()
             xis = np.array([X[i]])
-            coordstr = ",".join(str(round(i, 4)) for i in xis[0])
-            logger.debug(f"High density cluster seed coordinates: {coordstr}")
+        coordstr = ",".join(str(round(i, 4)) for i in xis[0])
+        logger.debug(f"Coordinate of cluster seed dataset: {coordstr}")
 
         for j in range(n_datasets):
             sel = np.where(dataset_ids == j)
