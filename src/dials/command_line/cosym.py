@@ -10,7 +10,7 @@ import iotbx.phil
 from cctbx import sgtbx
 
 from dials.algorithms.clustering.unit_cell import cluster_unit_cells
-from dials.algorithms.symmetry.cosym import CosymAnalysis
+from dials.algorithms.symmetry.cosym import CosymAnalysis, extract_reference_intensities
 from dials.algorithms.symmetry.cosym.observers import register_default_cosym_observers
 from dials.array_family import flex
 from dials.command_line.symmetry import (
@@ -47,6 +47,16 @@ unit_cell_clustering {
     .type = bool
     .help = 'Display the dendrogram with a log scale'
 }
+
+reference = None
+    .type = path
+    .help = "A file containing a reference set of intensities e.g. MTZ/cif, or a"
+            "file from which a reference set of intensities can be calculated"
+            "e.g. .pdb or .cif . The space group of the reference file will"
+            "be used and if an indexing ambiguity is present, the input"
+            "data will be reindexed to be consistent with the indexing mode of"
+            "this reference file."
+    .expert_level = 2
 
 include scope dials.algorithms.symmetry.cosym.phil_scope
 
@@ -88,6 +98,22 @@ class cosym(Subject):
         if params is None:
             params = phil_scope.extract()
         self.params = params
+
+        reference_intensities = None
+        if self.params.reference:
+            reference_intensities, space_group_info = extract_reference_intensities(
+                params
+            )
+            if self.params.space_group and (
+                self.params.space_group.type().number()
+                != space_group_info.type().number()
+            ):
+                # N.B. space group phil options are actually space_group_info objects
+                raise ValueError(
+                    f"Input space group ({self.params.space_group}) does not match space group from reference file ({space_group_info})"
+                )
+            logger.info(f"Using space group {space_group_info} from reference")
+            self.params.space_group = space_group_info
 
         self._reflections = []
         for refl, expt in zip(reflections, experiments):
@@ -160,7 +186,13 @@ class cosym(Subject):
         datasets = [
             ma.as_non_anomalous_array().merge_equivalents().array() for ma in datasets
         ]
-        self.cosym_analysis = CosymAnalysis(datasets, self.params)
+        if reference_intensities:
+            datasets.append(reference_intensities)
+            self.cosym_analysis = CosymAnalysis(
+                datasets, self.params, seed_dataset=len(datasets) - 1
+            )
+        else:
+            self.cosym_analysis = CosymAnalysis(datasets, self.params)
 
     @property
     def experiments(self):
@@ -210,7 +242,11 @@ class cosym(Subject):
 
     def _apply_reindexing_operators(self, reindexing_ops, subgroup=None):
         """Apply the reindexing operators to the reflections and experiments."""
-        unique_ids = set(self.cosym_analysis.dataset_ids)
+        if self.params.reference:
+            unique_ids = set(self.cosym_analysis.dataset_ids[:-1])
+            reindexing_ops = reindexing_ops[:-1]
+        else:
+            unique_ids = set(self.cosym_analysis.dataset_ids)
         for cb_op, dataset_id in zip(reindexing_ops, unique_ids):
             cb_op = sgtbx.change_of_basis_op(cb_op)
             logger.debug(
