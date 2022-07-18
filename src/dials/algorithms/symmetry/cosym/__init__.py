@@ -396,23 +396,7 @@ class CosymAnalysis(symmetry_base, Subject):
         ):  # if reference, choose the reference with reindexing op xyz as seed
             xis = None
             sel = np.where(dataset_ids == n_datasets - 1)
-            X = coords[sel]
-            for i in range(len(X)):
-                for partition in cosets.partitions:
-                    if sym_ops[i] in partition:
-                        cb_op = sgtbx.change_of_basis_op(partition[0]).new_denominators(
-                            self.cb_op_inp_min
-                        )
-                        reindexing_op = (
-                            self.cb_op_inp_min.inverse() * cb_op * self.cb_op_inp_min
-                        ).as_xyz()
-                        if reindexing_op == "x,y,z":
-                            xis = np.array([X[i]])
-                        break
-                if xis is not None:
-                    break
-            if xis is None:
-                raise ValueError("Unable to determine x,y,z mode of reference")
+            xis = np.array([coords[sel][0]])
             coordstr = ",".join(str(round(i, 4)) for i in xis[0])
             logger.info(f"Coordinate of reference dataset with cb_op=x,y,z: {coordstr}")
             # We no longer need the reference dataset, so remove it from the dataset ids
@@ -894,13 +878,14 @@ def extract_reference_intensities(params: iotbx.phil.scope_extract) -> miller.ar
         * group["cb_op_inp_best"]
     )
 
-    with open(os.devnull, "w") as devnull:
-        reference_intensities, _ = reference_intensities.apply_change_of_basis(
-            str(ref_cb_op), out=devnull
-        )
-    reference_intensities = reference_intensities.expand_to_p1()
     reference_intensities = (
-        reference_intensities.as_non_anomalous_array().merge_equivalents().array()
+        reference_intensities.change_basis(
+            ref_cb_op,
+        )
+        .expand_to_p1()
+        .as_non_anomalous_array()
+        .merge_equivalents()
+        .array()
     )
     if not reference_intensities.sigmas():
         reference_intensities.set_sigmas(flex.double(reference_intensities.size(), 1))
