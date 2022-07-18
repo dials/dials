@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 import logging
 import math
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
@@ -118,18 +118,24 @@ class CosymAnalysis(symmetry_base, Subject):
     the presence of an indexing ambiguity.
     """
 
-    def __init__(self, intensities, params, reference_intensities=None):
+    def __init__(self, intensities, params, seed_dataset: Optional[int] = None):
         """Initialise a CosymAnalysis object.
 
         Args:
           intensities (cctbx.miller.array): The intensities on which to perform
             cosym analysis.
           params (libtbx.phil.scope_extract): Parameters for the analysis.
+          seed_dataset (int): The index into the intensities list to use when
+            choosing a seed dataset for the reindexing analysis (the x,y,z reindex
+            mode will be used for this dataset).
+            If None, a high density cluster point is chosen.
         """
-        self.using_reference = False
-        if reference_intensities:
-            intensities.append(reference_intensities)
-            self.using_reference = True
+        self.seed_dataset = seed_dataset
+        if self.seed_dataset:
+            self.seed_dataset = int(self.seed_dataset)
+            assert seed_dataset < len(
+                intensities
+            ), "cosym_analysis: seed_dataset parameter must be an integer that can be used to index the intensities list"
 
         super().__init__(
             intensities,
@@ -391,19 +397,12 @@ class CosymAnalysis(symmetry_base, Subject):
         dataset_ids = coord_ids % n_datasets
 
         if (
-            self.using_reference
-        ):  # if reference, choose the reference with reindexing op xyz as seed
-            xis = None
-            sel = np.where(dataset_ids == n_datasets - 1)
+            self.seed_dataset
+        ):  # if seed dataset was specified, use the reindexing op xyz as seed
+            sel = np.where(dataset_ids == self.seed_dataset)
             xis = np.array([coords[sel][0]])
             coordstr = ",".join(str(round(i, 4)) for i in xis[0])
-            logger.info(f"Coordinate of reference dataset with cb_op=x,y,z: {coordstr}")
-            # We no longer need the reference dataset, so remove it from the dataset ids
-            self.dataset_ids = self.dataset_ids.select(
-                self.dataset_ids != n_datasets - 1
-            )
-            n_datasets -= 1
-            # FIXME trim coords and coords_reduced?
+            logger.info(f"Coordinate of seed dataset with cb_op=x,y,z: {coordstr}")
         else:
             # choose a high density point as seed
             X = coords
