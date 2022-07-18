@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import logging
 import math
+import os
 from typing import List
 
 import numpy as np
@@ -892,7 +893,6 @@ def extract_reference_intensities(params: iotbx.phil.scope_extract) -> miller.ar
         group["best_subsym"].change_of_basis_op_to_minimum_cell()
         * group["cb_op_inp_best"]
     )
-    import os
 
     with open(os.devnull, "w") as devnull:
         reference_intensities, _ = reference_intensities.apply_change_of_basis(
