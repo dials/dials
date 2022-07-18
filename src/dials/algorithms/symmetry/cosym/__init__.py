@@ -402,7 +402,7 @@ class CosymAnalysis(symmetry_base, Subject):
             sel = np.where(dataset_ids == self.seed_dataset)
             xis = np.array([coords[sel][0]])
             coordstr = ",".join(str(round(i, 4)) for i in xis[0])
-            logger.info(f"Coordinate of seed dataset with cb_op=x,y,z: {coordstr}")
+            logger.debug(f"Coordinate of seed dataset with cb_op=x,y,z: {coordstr}")
         else:
             # choose a high density point as seed
             X = coords
@@ -414,7 +414,7 @@ class CosymAnalysis(symmetry_base, Subject):
             i = average_distance.argmin()
             xis = np.array([X[i]])
             coordstr = ",".join(str(round(i, 4)) for i in xis[0])
-            logger.info(f"High density cluster seed coordinates: {coordstr}")
+            logger.debug(f"High density cluster seed coordinates: {coordstr}")
 
         for j in range(n_datasets):
             sel = np.where(dataset_ids == j)
