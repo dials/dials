@@ -1,3 +1,23 @@
+DIALS 3.8.7 (2022-07-18)
+========================
+
+Features
+--------
+
+- ``dials.export``: MTZ files are now exported with geometry in the Cambridge frame. (`#2054 <https://github.com/dials/dials/issues/2054>`_)
+- ``dials.export``. Add extra unmerged data categories for mmcif output, conforming to the latest mmcif_pdbx.dic. Make v5 the default (rather than v5_next). (`#2078 <https://github.com/dials/dials/issues/2078>`_)
+
+
+Bugfixes
+--------
+
+- Terminate Levenberg-Marquardt refinement if the objective is not expected to decrease. (`#2135 <https://github.com/dials/dials/issues/2135>`_)
+- ``dials.scale``: Avoid edge case crashes when all reflections filtered out during reflection selection for a dataset in multi-dataset scaling (`#2146 <https://github.com/dials/dials/issues/2146>`_)
+- ``dials.cosym``: Fix bug whereby the change of basis op was applied twice to the crystal model (`#2151 <https://github.com/dials/dials/issues/2151>`_)
+- ``dials.ssx_index``: Fix potential numpy crash when trying to generate histograms from one datapoint (`#2156 <https://github.com/dials/dials/issues/2156>`_)
+- ``dials.image_viewer``: Allow viewing still collections where some images have no reflections. (`#2157 <https://github.com/dials/dials/issues/2157>`_)
+
+
 DIALS 3.8.6 (2022-06-07)
 ========================
 
