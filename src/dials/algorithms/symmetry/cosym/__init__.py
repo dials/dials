@@ -396,9 +396,8 @@ class CosymAnalysis(symmetry_base, Subject):
         coord_ids = np.arange(n_datasets * n_sym_ops)
         dataset_ids = coord_ids % n_datasets
 
-        if (
-            self.seed_dataset
-        ):  # if seed dataset was specified, use the reindexing op xyz as seed
+        if self.seed_dataset is not None:
+            # if seed dataset was specified, use the reindexing op xyz as seed
             sel = np.where(dataset_ids == self.seed_dataset)
             xis = np.array([coords[sel][0]])
             coordstr = ",".join(str(round(i, 4)) for i in xis[0])
