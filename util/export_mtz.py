@@ -3,9 +3,14 @@ import time
 from collections import Counter
 from math import isclose
 
+import numpy as np
+
+from cctbx import uctbx
 from iotbx import mtz
 from libtbx import env
+from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
 from scitbx import matrix
+from scitbx.math import r3_rotation_axis_and_angle_from_matrix
 
 import dials.util.ext
 from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
@@ -155,11 +160,13 @@ class UnmergedMTZWriter(MTZWriterBase):
         umat_array = flex.float(flex.grid(n_batches, 9))
         cell_array = flex.float(flex.grid(n_batches, 6))
 
-        U = matrix.sqr(experiment.crystal.get_U())
-        if experiment.goniometer is not None:
-            F = matrix.sqr(experiment.goniometer.get_fixed_rotation())
-        else:
-            F = matrix.sqr((1, 0, 0, 0, 1, 0, 0, 0, 1))
+        # Reciprocal lattice vectors in the lab frame at zero scan angle
+        S = matrix.sqr(experiment.goniometer.get_setting_rotation())
+        F = matrix.sqr(experiment.goniometer.get_fixed_rotation())
+        UBlab = S * F * matrix.sqr(experiment.crystal.get_A())
+
+        axis = matrix.col(experiment.goniometer.get_rotation_axis())
+        axis_datum = matrix.col(experiment.goniometer.get_rotation_axis_datum())
 
         i0 = image_range[0]
         for i in range(n_batches):
@@ -168,38 +175,69 @@ class UnmergedMTZWriter(MTZWriterBase):
                     i + i0
                 )
 
-            # unit cell (this is fine) and the what-was-refined-flags hardcoded
-            # take time-varying parameters from the *end of the frame* unlikely to
-            # be much different at the end - however only exist if scan-varying
-            # refinement was used
+            # Unit cell and UB matrix for the centre of the image for scan-varying model
             if not force_static_model and experiment.crystal.num_scan_points > 0:
+
                 # Get the index of the image in the sequence e.g. first => 0, second => 1
                 image_index = i + i0 - experiment.scan.get_image_range()[0]
-                _unit_cell = experiment.crystal.get_unit_cell_at_scan_point(image_index)
-                _U = matrix.sqr(experiment.crystal.get_U_at_scan_point(image_index))
-            else:
-                _unit_cell = experiment.crystal.get_unit_cell()
-                _U = U
 
-            # apply the fixed rotation to this to unify matrix definitions - F * U
-            # was what was used in the actual prediction: U appears to be stored
-            # as the transpose?! At least is for Mosflm...
-            #
-            # FIXME Do we need to apply the setting rotation here somehow? i.e. we have
-            # the U.B. matrix assuming that the axis is equal to S * axis_datum but
-            # here we are just giving the effective axis so at scan angle 0 this will
-            # not be correct... FIXME 2 not even sure we can express the stack of
-            # matrices S * R * F * U * B in MTZ format?... see [=A=] below
-            _U = matrix.sqr(dials.util.ext.dials_u_to_mosflm(F * _U, _unit_cell))
+                # Find the U matrix at the frame centre by calculating the linear transform
+                # that goes from the start of the frame to the end, and then applying half of
+                # that to the start value
+                U0 = matrix.sqr(experiment.crystal.get_U_at_scan_point(image_index))
+                U1 = matrix.sqr(experiment.crystal.get_U_at_scan_point(image_index + 1))
+                M = U1 * U0.inverse()
+                (
+                    angle_M,
+                    axis_M,
+                ) = M.r3_rotation_matrix_as_unit_quaternion().unit_quaternion_as_axis_and_angle(
+                    deg=False
+                )
+                M_half = axis_M.axis_and_angle_as_r3_rotation_matrix(
+                    angle_M / 2, deg=False
+                )
+                Ucentre = M_half * U0
+
+                # Find the B matrix at the frame centre by interpolation
+                B0 = matrix.sqr(experiment.crystal.get_B_at_scan_point(image_index))
+                B1 = matrix.sqr(experiment.crystal.get_B_at_scan_point(image_index + 1))
+                Bcentre = (B0 + B1) / 2
+
+                # Unit cell at the frame centre
+                unit_cell = uctbx.unit_cell(
+                    orthogonalization_matrix=Bcentre.transpose().inverse()
+                )
+
+                # Get full lab frame UB then unwind to zero scan angle
+                phi_centre = phi_start[i] + phi_range[i] / 2
+                R = matrix.sqr(
+                    axis_datum.axis_and_angle_as_r3_rotation_matrix(
+                        phi_centre, deg=False
+                    )
+                )
+                Rlab_inv = matrix.sqr(
+                    axis.axis_and_angle_as_r3_rotation_matrix(-phi_centre, deg=False)
+                )
+                _UBlab = Rlab_inv * S * R * F * Ucentre * Bcentre
+
+            else:
+                unit_cell = experiment.crystal.get_unit_cell()
+                _UBlab = UBlab
+
+            # We assume a single-axis goniometer as it is not clear that multi-
+            # axis goniometry was ever fully supported in MTZ format. Orientation
+            # will be taken from the laboratory frame for this image.
+            U = matrix.sqr(dials.util.ext.ub_to_mosflm_u(_UBlab, unit_cell))
 
             # FIXME need to get what was refined and what was constrained from the
             # crystal model - see https://github.com/dials/dials/issues/355
-            _unit_cell_params = _unit_cell.parameters()
+            _unit_cell_params = unit_cell.parameters()
             for j in range(6):
                 cell_array[i, j] = _unit_cell_params[j]
-            _U_t_elements = _U.transpose().elems
+            # Transpose to put in column-major order for MTZ export
+            U_t_elements = U.transpose().elems
             for j in range(9):
-                umat_array[i, j] = _U_t_elements[j]
+                umat_array[i, j] = U_t_elements[j]
 
         # We ignore panels beyond the first one, at the moment
         panel = experiment.detector[0]
@@ -211,9 +249,7 @@ class UnmergedMTZWriter(MTZWriterBase):
         else:
             axis = flex.float((0.0, 0.0, 0.0))
 
-        # FIXME hard-coded assumption on idealized beam vector below... this may be
-        # broken when we come to process data from a non-imgCIF frame
-        s0n = flex.float(matrix.col(experiment.beam.get_s0()).normalize().elems)
+        source = flex.float(experiment.beam.get_sample_to_source_direction())
 
         # get the mosaic spread though today it may not actually be set - should
         # this be in the BATCH headers?
@@ -237,7 +273,7 @@ class UnmergedMTZWriter(MTZWriterBase):
             panel_size,
             panel_distance,
             axis,
-            s0n,
+            source,
         )
 
     def write_columns(self, reflection_table):
@@ -422,6 +458,9 @@ def export_mtz(
     reflection_table.assert_experiment_identifiers_are_consistent(experiment_list)
     expids_in_list = list(experiment_list.identifiers())
 
+    # Convert geometry to the Cambridge frame
+    experiment_list = convert_to_cambridge(experiment_list)
+
     # Convert experiment_list to a real python list or else identity assumptions
     # fail like:
     #   assert experiment_list[0] is experiment_list[0]
@@ -605,3 +644,57 @@ def match_wavelengths(experiments, absolute_tolerance=1e-4):
             match_w = list(wavelengths.keys())[matches.index(True)]
             wavelengths[match_w].append(i)
     return wavelengths
+
+
+def convert_to_cambridge(experiments):
+    """Rotate the geometry of an experiment list to match the Cambridge frame,
+    in which X is along the idealized X-ray beam and Z is along the primary
+    rotation axis"""
+
+    for expt in experiments:
+        if expt.goniometer:
+            primary_axis = matrix.col(expt.goniometer.get_rotation_axis_datum())
+        else:
+            primary_axis = matrix.col((1.0, 0.0, 0.0))
+        us0 = expt.beam.get_unit_s0()
+
+        R = align_reference_frame(primary_axis, (0, 0, 1), us0, (1, 0, 0))
+        axis_angle = r3_rotation_axis_and_angle_from_matrix(R)
+        axis = matrix.col(axis_angle.axis)
+        angle = axis_angle.angle()
+        logger.info(
+            f"Rotating experiment{'s' if len(experiments) else ''} about axis {axis.elems} by {np.degrees(angle):.2f}°"
+        )
+        expt.detector.rotate_around_origin(axis, angle, deg=False)
+        expt.beam.rotate_around_origin(axis, angle, deg=False)
+
+        # For the goniometer, each component needs transformation
+        F = matrix.sqr(expt.goniometer.get_fixed_rotation())
+        expt.goniometer.set_fixed_rotation(R * F * R.transpose())
+        expt.goniometer.set_rotation_axis_datum(R * primary_axis)
+        S = matrix.sqr(expt.goniometer.get_setting_rotation())
+        expt.goniometer.set_setting_rotation(R * S * R.transpose())
+
+        if expt.crystal is not None:
+            expt.crystal = rotate_crystal(expt.crystal, R, axis, angle)
+
+    return experiments
+
+
+def rotate_crystal(crystal, Rmat, axis, angle):
+
+    Amats = []
+    if crystal.num_scan_points > 0:
+        scan_pts = list(range(crystal.num_scan_points))
+        Amats = [
+            Rmat
+            * matrix.sqr(crystal.get_U_at_scan_point(t))
+            * matrix.sqr(crystal.get_B_at_scan_point(t))
+            for t in scan_pts
+        ]
+
+    crystal.rotate_around_origin(axis, angle, deg=False)
+    if Amats:
+        crystal.set_A_at_scan_points(Amats)
+
+    return crystal

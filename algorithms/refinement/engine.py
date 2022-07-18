@@ -30,6 +30,8 @@ OBJECTIVE_INCREASE = "Refinement failure: objective increased"
 MAX_ITERATIONS = "Reached maximum number of iterations"
 MAX_TRIAL_ITERATIONS = "Reached maximum number of consecutive unsuccessful trial steps"
 DOF_TOO_LOW = "Not enough degrees of freedom to refine"
+OBJECTIVE_FLAT = "Refinement failure: zero expected decrease of the objective"
+
 
 refinery_phil_str = """
 refinery
@@ -1015,6 +1017,9 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
 
             h = self.step()
             expected_decrease = 0.5 * h.dot(self.mu * h - self._g)
+            if expected_decrease == 0:
+                self.history.reason_for_termination = OBJECTIVE_FLAT
+                break
             self.step_forward()
             self.n_iterations += 1
             self.build_up(objective_only=True)
