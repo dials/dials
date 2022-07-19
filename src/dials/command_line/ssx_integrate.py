@@ -313,7 +313,7 @@ def wrap_integrate_one(input_to_integrate: InputToIntegrate):
 def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
 
     # create iterable
-    input_iterable = []
+    input_iterable: List[InputToIntegrate] = []
     for i, (table, expt) in enumerate(zip(sub_tables, sub_expts)):
         input_iterable.append(
             InputToIntegrate(
@@ -331,7 +331,9 @@ def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
                 wrap_integrate_one, input_iterable
             )
     else:
-        results = [wrap_integrate_one(i) for i in input_iterable]
+        results: List[IntegrationResult] = [
+            wrap_integrate_one(i) for i in input_iterable
+        ]
 
     # then join
     integrated_reflections = flex.reflection_table()

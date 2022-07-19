@@ -196,9 +196,11 @@ def index_all_concurrent(
             refl_index = i + n
             if reflections[refl_index]:
                 expt = experiments[refl_index]
-                idx_0 = i + iset.get_scan().get_batch_offset()  # slicing index
-                new_iset = iset[idx_0 : idx_0 + 1]
-                expt.imageset = new_iset
+                scan = iset.get_scan()
+                if scan:
+                    idx_0 = i + iset.get_scan().get_batch_offset()  # slicing index
+                    new_iset = iset[idx_0 : idx_0 + 1]
+                    expt.imageset = new_iset
                 input_iterable.append(
                     InputToIndex(
                         reflection_table=reflections[refl_index],
@@ -226,7 +228,7 @@ def index_all_concurrent(
             with Pool(params.indexing.nproc) as pool:
                 results: List[IndexingResult] = pool.map(wrap_index_one, input_iterable)
         else:
-            results = [wrap_index_one(i) for i in input_iterable]
+            results: List[IndexingResult] = [wrap_index_one(i) for i in input_iterable]
 
     sys.stdout = sys.__stdout__
     # prepare tables for output
