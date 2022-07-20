@@ -162,7 +162,7 @@ In this case, it is assumed that the intensity and variance columns of the mtz
 file have already been scaled. Reference scaling would be run with the following
 command::
 
-  dials.scale integrated.refl integrated.expt target_mtz=scaled.mtz
+  dials.scale integrated.refl integrated.expt reference=scaled.mtz
 
 The reference scaling algorithm is the same regardless of the target datafile type.
 

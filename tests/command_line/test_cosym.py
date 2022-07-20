@@ -107,6 +107,22 @@ def test_cosym_partial_dataset_raises_sorry(dials_data, run_in_tmp_path, capsys)
         dials_cosym.run(args=args)
 
 
+def test_cosym_with_reference(dials_data, run_in_tmp_path):
+    """Test indexing ambiguity resolution against a reference. Use
+    SSX example data as have reference data for these."""
+    ssx = dials_data("cunir_serial_processed", pathlib=True)
+    refls = ssx / "integrated.refl"
+    expts = ssx / "integrated.expt"
+    reference = dials_data("cunir_serial", pathlib=True) / "2bw4-sf.cif"
+
+    args = ["d_min=2.0", str(refls), str(expts), f"reference={reference}"]
+    dials_cosym.run(args=args)
+    assert pathlib.Path("symmetrized.refl").is_file()
+    assert pathlib.Path("symmetrized.expt").is_file()
+    experiments = load.experiment_list("symmetrized.expt", check_format=False)
+    assert len(experiments) == 5  # check we have the right number of expts
+
+
 @pytest.mark.parametrize(
     (
         "space_group",

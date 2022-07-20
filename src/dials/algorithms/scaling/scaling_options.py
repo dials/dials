@@ -157,12 +157,21 @@ phil_scope = iotbx.phil.parse(
       .expert_level = 2
     target_model = None
       .type = path
-      .help = "Path to cif or pdb file to use to calculate target intensities for
-              scaling."
+      .help = "Path to cif or pdb file to use to calculate target intensities for"
+              "scaling."
+              "Deprecated, please use the reference= option instead."
       .expert_level = 2
     target_mtz = None
       .type = path
       .help = "Path to merged mtz file to use as a target for scaling."
+              "Deprecated, please use the reference= option instead."
+      .expert_level = 2
+    reference = None
+      .type = path
+      .help = "Path to a file to use as a reference for scaling. This can be a"
+              "data file containing intensities/amplitudes (.mtz or .cif), or a"
+              "model file containing a structure that can be used to calculate"
+              "intensities (.cif or .pdb)".
       .expert_level = 2
     nproc = 1
       .type = int(value_min=1)

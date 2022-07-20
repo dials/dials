@@ -1,3 +1,26 @@
+DIALS 3.10.2 (2022-07-13)
+=========================
+
+Bugfixes
+--------
+
+- Fix DIALS version reporting for release builds. (`#2166 <https://github.com/dials/dials/issues/2166>`_)
+
+
+DIALS 3.10.1 (2022-07-12)
+=========================
+
+Bugfixes
+--------
+
+- Refinement internals: Terminate Levenberg-Marquardt refinement if the objective is not expected to decrease. (`#2135 <https://github.com/dials/dials/issues/2135>`_)
+- ``dials.scale``: Avoid edge case crashes when all reflections filtered out during reflection selection for a dataset in multi-dataset scaling (`#2146 <https://github.com/dials/dials/issues/2146>`_)
+- ``dials.cosym``: Fix bug whereby the change of basis op was applied twice to the crystal model (`#2151 <https://github.com/dials/dials/issues/2151>`_)
+- ``dials.ssx_index``: Fix potential numpy crash when trying to generate histograms from one datapoint (`#2156 <https://github.com/dials/dials/issues/2156>`_)
+- ``dials.image_viewer``: Allow viewing still collections where some images have no reflections. (`#2157 <https://github.com/dials/dials/issues/2157>`_)
+- ``dev.dials.ssx_index``: Fix cluster reporting for only one image indexed, fix crash when all images filtered out (`#2159 <https://github.com/dials/dials/issues/2159>`_)
+
+
 DIALS 3.10.0 (2022-06-09)
 =========================
 
