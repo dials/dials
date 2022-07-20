@@ -3,7 +3,10 @@ from __future__ import annotations
 import math
 
 import scitbx.matrix
-from dxtbx.model.detector_helpers import get_panel_projection_2d_from_axes
+from dxtbx.model.detector_helpers import (
+    get_detector_projection_2d_axes,
+    get_panel_projection_2d_from_axes,
+)
 from scitbx.array_family import flex
 
 
@@ -127,6 +130,12 @@ def get_flex_image_multipanel(
             panel_r, panel_t = panel.get_projection_2d()
         else:
             if getattr(detector, "projection", "lab") == "image":
+                if not hasattr(detector, "projection_2d_axes"):
+                    # This can happen if the image wasn't preloaded as part
+                    # of an experiment list Since it's used here, catch here.
+                    detector.projection_2d_axes = get_detector_projection_2d_axes(
+                        detector
+                    )
                 # Get axes from precalculated 2D projection.
                 origin_2d, fast_2d, slow_2d = detector.projection_2d_axes
                 fast = scitbx.matrix.col(fast_2d[i] + (0,))
