@@ -506,11 +506,7 @@ class MaskSettingsPanel(wx.Panel):
         self.params.output.mask = self.save_mask_txt_ctrl.GetValue()
         self.params.output.mask_params = self.save_params_txt_ctrl.GetValue()
 
-        if self._mode_polygon and (
-            not self.mode_polygon_button.GetValue()
-            or self.mode_circle_button.GetValue()
-            or self.mode_rectangle_button.GetValue()
-        ):
+        if self._mode_polygon:
             self.AddUntrustedPolygon(self._mode_polygon_points)
             self._mode_polygon_points = []
             self._pyslip.DeleteLayer(self._mode_polygon_layer)
@@ -645,6 +641,7 @@ class MaskSettingsPanel(wx.Panel):
         image_viewer_frame.OnChooseImage(event)
 
     def OnSaveMask(self, event):
+        self.OnUpdate(event)
         self.UpdateMask()
         image_viewer_frame = self.GetParent().GetParent()
 
@@ -668,6 +665,7 @@ class MaskSettingsPanel(wx.Panel):
             pickle.dump(mask, fh, protocol=pickle.HIGHEST_PROTOCOL)
 
     def OnSaveMaskParams(self, event):
+        self.OnUpdate(event)
         file_name = self.params.output.mask_params
         with open(file_name, "w") as f:
             print(f"Saving parameters to {file_name}")
