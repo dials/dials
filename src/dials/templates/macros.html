@@ -110,3 +110,46 @@
     </div>
 </div>
 {%- endmacro %}
+
+{% macro merging_statistics(scaling_tables, id) -%}
+
+<div>
+    <h2> Merging statistics</h2>
+
+    <div class="panel-group">
+
+        <div class="panel panel-default">
+            <div class="panel-heading" data-toggle="collapse" data-target="#collapse_overall_{{id}}">
+                <h4 class="panel-title">
+                    <a>Overall</a>
+                </h4>
+            </div>
+            <div id="collapse_overall_{{id}}" class="panel-collapse collapse in">
+                <div class="panel-body">
+                    <div style="width: 800px">
+                        {{ table(scaling_tables[0],
+                                        has_column_header=true,
+                                        has_row_header=true) }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel panel-default">
+            <div class="panel-heading" data-toggle="collapse" data-target="#collapse_merging_stats_{{id}}">
+                <h4 class="panel-title">
+                    <a>Resolution shells</a>
+                </h4>
+            </div>
+            <div id="collapse_merging_stats_{{id}}" class="panel-collapse collapse">
+                <div class="panel-body">
+                    {{ table(scaling_tables[1],
+                                    has_column_header=true) }}
+                    *significant at p={{ cc_half_significance_level }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{%- endmacro %}

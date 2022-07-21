@@ -59,13 +59,12 @@ def test_merge(dials_data, tmp_path, anomalous, truncate, french_wilson_impl):
         "project_name=ham",
         "crystal_name=jam",
         "dataset_name=spam",
+        "json=dials.merge.json",
     ]
     result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
-    if truncate and anomalous:
-        assert (tmp_path / "dials.merge.html").is_file()
-    else:
-        assert not (tmp_path / "dials.merge.html").is_file()
+    assert (tmp_path / "dials.merge.html").is_file()
+    assert (tmp_path / "dials.merge.json").is_file()
     expected_labels = mean_labels
     unexpected_labels = []
 

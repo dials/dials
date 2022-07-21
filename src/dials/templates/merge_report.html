@@ -1,0 +1,64 @@
+{% extends "report_base.html" %}
+{% block content %}
+
+{% macro indiv_wl_report(item, id) -%}
+{% set indiv_id = id | replace(".", "_")%}
+{{macros.merging_statistics(item['scaling_tables'], indiv_id)}}
+<div>
+    <h2>Analysis plots</h2>
+    <div class="panel-group">
+        {{ macros.panel('Analysis by resolution', 'resolution_plots_'+ indiv_id, item['resolution_plots']) }}
+        {{ macros.panel('Miscellaneous plots', 'misc_plots_'+ indiv_id, item['misc_plots']) }}
+    </div>
+</div>
+
+{%- endmacro %}
+
+
+<div class="container-fluid">
+
+    <div class="page-header">
+        <h1>{{ page_title }}</h1>
+    </div>
+
+    <ul class="nav nav-tabs">
+        <li class="active"><a data-toggle="tab" data-target="#home">Wavelength={{first_wl}}</a></li>
+
+        {% for wl, item in extra_wl_reports.items() %}
+            <li><a data-toggle="tab" data-target="#dataset_{{ wl | replace(".", "_")}}">Wavelength={{ wl }}</a></li>
+        {% endfor %}
+
+        {% if multi_data %}
+            <li><a data-toggle="tab" data-target="#multi_plots">All wavelengths</a></li>
+        {% endif %}
+    </ul>
+
+    <div class="tab-content">
+
+        <div id="home" class="tab-pane in active">
+            {{indiv_wl_report(first_wl_report, first_wl)}}
+        </div>
+
+
+        {% for wl, item in extra_wl_reports.items() %}
+        <div id="dataset_{{ wl | replace(".", "_")}}" class="tab-pane">
+            {{indiv_wl_report(item, wl)}}
+        </div>
+        {% endfor %}
+
+        {% if multi_data %}
+        <div id="multi_plots" class="tab-pane">
+            <div>
+                <h2>Analysis plots</h2>
+                <div id="multi" class="panel-group" >
+                    {{ macros.panel('Analysis by resolution', 'combined_plots_res', multi_data['combined_plots_resolution'], show=True) }}
+                </div>
+            </div>
+        </div>
+
+        {% endif %}
+
+    </div>
+</div>
+
+{% endblock %}

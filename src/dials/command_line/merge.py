@@ -4,8 +4,10 @@ Command line script to allow merging and truncating of a dials dataset.
 
 from __future__ import annotations
 
+import json
 import logging
 import sys
+from contextlib import contextmanager
 from io import StringIO
 
 from dxtbx.model import ExperimentList
@@ -13,12 +15,15 @@ from iotbx import phil
 
 from dials.algorithms.merging.merge import (
     MTZDataClass,
-    generate_html_report,
-    make_dano_table,
     make_merged_mtz_file,
     merge,
     show_wilson_scaling_analysis,
     truncate,
+)
+from dials.algorithms.merging.reporting import (
+    MergeJSONCollector,
+    generate_html_report,
+    make_dano_table,
 )
 from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
 from dials.util import Sorry, log, show_mail_handle_errors
@@ -109,6 +114,9 @@ output {
     html = dials.merge.html
         .type = str
         .help = "Filename for html output report."
+    json = None
+        .type = str
+        .help = "Filename to output data from html report in json format."
     crystal_names = XTAL
         .type = strings
         .help = "Crystal name to be used in MTZ file output (multiple names
@@ -124,6 +132,23 @@ output {
 """,
     process_includes=True,
 )
+
+
+@contextmanager
+def collect_html_data_from_merge():
+    try:
+        html_collector = MergeJSONCollector()
+        yield html_collector
+    finally:
+        html_collector.reset()
+
+
+def merge_data_to_mtz_with_report_collection(params, experiments, reflections):
+    """Run the merge_data_to_mtz function, also collecting data for json/html output"""
+    with collect_html_data_from_merge() as collector:
+        mtz = merge_data_to_mtz(params, experiments, reflections)
+        json_data = collector.create_json()
+    return mtz, json_data
 
 
 def merge_data_to_mtz(params, experiments, reflections):
@@ -240,10 +265,16 @@ def merge_data_to_mtz(params, experiments, reflections):
 
         # print out analysis statistics
         show_wilson_scaling_analysis(merged_intensities)
-        if stats_summary:
-            logger.info(stats_summary)
+
         if anom_amplitudes:
             logger.info(make_dano_table(anom_amplitudes))
+
+        if stats_summary.merging_statistics_result:
+            logger.info(stats_summary)
+
+        if MergeJSONCollector.initiated:
+            stats_summary.anomalous_amplitudes = anom_amplitudes
+            MergeJSONCollector.data[mtz_dataset.wavelength] = stats_summary
 
     # pass the dataclasses to an MTZ writer to generate the mtz file and return.
     return make_merged_mtz_file(mtz_datasets)
@@ -302,7 +333,9 @@ Only scaled data can be processed with dials.merge"""
             )
 
     try:
-        mtz_file = merge_data_to_mtz(params, experiments, reflections)
+        mtz_file, json_data = merge_data_to_mtz_with_report_collection(
+            params, experiments, reflections
+        )
     except ValueError as e:
         raise Sorry(e)
 
@@ -313,7 +346,10 @@ Only scaled data can be processed with dials.merge"""
     mtz_file.write(params.output.mtz)
 
     if params.output.html:
-        generate_html_report(mtz_file, params.output.html)
+        generate_html_report(json_data, params.output.html)
+    if params.output.json:
+        with open(params.output.json, "w") as f:
+            json.dump(json_data, f, indent=2)
 
 
 if __name__ == "__main__":
