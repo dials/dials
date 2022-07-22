@@ -337,7 +337,7 @@ def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
 
     # then join
     integrated_reflections = flex.reflection_table()
-    integrated_experiments = ExperimentList()
+    integrated_experiments = []
 
     n_integrated = 0
     for result in results:
@@ -353,6 +353,7 @@ def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
             integrated_experiments.append(result.experiment)
             configuration["aggregator"].add_dataset(result.collector, result.crystalno)
 
+    integrated_experiments = ExperimentList(integrated_experiments)
     integrated_reflections.assert_experiment_identifiers_are_consistent(
         integrated_experiments
     )
