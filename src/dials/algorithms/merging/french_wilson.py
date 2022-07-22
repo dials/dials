@@ -65,14 +65,17 @@ def french_wilson(
     sigF = np.zeros_like(intensities)
 
     # Compute acentric moments
-    posterior_moments_acentric = compute_posterior_moments_acentric(
-        intensities[is_acentric], sigmas[is_acentric], expected_intensities[is_acentric]
-    )
-    J[is_acentric] = posterior_moments_acentric.J
-    sigJ[is_acentric] = posterior_moments_acentric.sigJ
-    F[is_acentric] = posterior_moments_acentric.F
-    sigF[is_acentric] = posterior_moments_acentric.sigF
-    valid[is_acentric] &= posterior_moments_acentric.valid
+    if np.count_nonzero(is_acentric):
+        posterior_moments_acentric = compute_posterior_moments_acentric(
+            intensities[is_acentric],
+            sigmas[is_acentric],
+            expected_intensities[is_acentric],
+        )
+        J[is_acentric] = posterior_moments_acentric.J
+        sigJ[is_acentric] = posterior_moments_acentric.sigJ
+        F[is_acentric] = posterior_moments_acentric.F
+        sigF[is_acentric] = posterior_moments_acentric.sigF
+        valid[is_acentric] &= posterior_moments_acentric.valid
 
     # Compute centric moments
     if np.count_nonzero(is_centric):
