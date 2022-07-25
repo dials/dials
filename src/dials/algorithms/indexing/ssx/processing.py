@@ -66,6 +66,50 @@ debug_loggers_to_disable = [
 ]
 
 
+class manage_loggers(object):
+
+    """
+    A contextmanager for reducing logging levels for the underlying code of
+    parallel ssx programs.
+    If individual_log_verbosity < 2, only timing info will logged.
+    If individual_log_verbosity = 2, then the info logs will be shown, but not debug
+    logs
+    If individual_log_verbosity > 2, then debug logs will be shown.
+
+    """
+
+    def __init__(
+        self, individual_log_verbosity, loggers_to_disable, debug_loggers_to_diable=None
+    ):
+        self.individual_log_verbosity = individual_log_verbosity
+        self.loggers = loggers_to_disable
+        if debug_loggers_to_disable:
+            self.debug_loggers = debug_loggers_to_disable
+        else:
+            self.debug_loggers = []
+
+    def __enter__(self):
+        if self.individual_log_verbosity < 2:
+            for name in self.loggers:
+                logging.getLogger(name).disabled = True
+        elif self.individual_log_verbosity == 2:
+            for name in self.loggers:
+                logging.getLogger(name).setLevel(logging.INFO)
+            for name in self.debug_loggers:
+                logging.getLogger(name).setLevel(logging.INFO)
+
+    def __exit__(self, ex_type, ex_value, ex_traceback):
+        # Reenable the disabled loggers or reset logging levels.
+        if self.individual_log_verbosity < 2:
+            for logname in self.loggers:
+                logging.getLogger(logname).disabled = False
+        elif self.individual_log_verbosity == 2:
+            for name in self.loggers:
+                logging.getLogger(name).setLevel(logging.DEBUG)
+            for name in self.debug_loggers:
+                logging.getLogger(name).setLevel(logging.DEBUG)
+
+
 def index_one(
     experiment: Experiment,
     reflection_table: flex.reflection_table,
@@ -74,22 +118,7 @@ def index_one(
     image_no: int,
     known_crystal_models: List[Crystal] = None,
 ) -> Union[Tuple[ExperimentList, flex.reflection_table], Tuple[bool, bool]]:
-    if not reflection_table:
-        logger.info(
-            f"Image {image_no+1}: Skipped indexing, no strong spots found/remaining."
-        )
-        return None, None
-    # First suppress logging unless in verbose mode.
-    if params.individual_log_verbosity < 2:
-        for name in loggers_to_disable:
-            logging.getLogger(name).disabled = True
-    elif params.individual_log_verbosity == 2:
-        for name in loggers_to_disable:
-            logging.getLogger(name).setLevel(logging.INFO)
-        for name in debug_loggers_to_disable:
-            logging.getLogger(name).setLevel(logging.INFO)
 
-    # Now try indexing with the chosen methods
     elist = ExperimentList([experiment])
     for method in method_list:
         params.indexing.method = method
@@ -223,12 +252,20 @@ def index_all_concurrent(
 
     with open(os.devnull, "w") as devnull:
         sys.stdout = devnull  # block printing from rstbx
-
-        if params.indexing.nproc > 1:
-            with Pool(params.indexing.nproc) as pool:
-                results: List[IndexingResult] = pool.map(wrap_index_one, input_iterable)
-        else:
-            results: List[IndexingResult] = [wrap_index_one(i) for i in input_iterable]
+        with manage_loggers(
+            params.individual_log_verbosity,
+            loggers_to_disable,
+            debug_loggers_to_disable,
+        ):
+            if params.indexing.nproc > 1:
+                with Pool(params.indexing.nproc) as pool:
+                    results: List[IndexingResult] = pool.map(
+                        wrap_index_one, input_iterable
+                    )
+            else:
+                results: List[IndexingResult] = [
+                    wrap_index_one(i) for i in input_iterable
+                ]
 
     sys.stdout = sys.__stdout__
     # prepare tables for output

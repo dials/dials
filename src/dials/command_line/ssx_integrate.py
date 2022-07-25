@@ -46,12 +46,14 @@ from libtbx.introspection import number_of_processors
 from libtbx.utils import Sorry
 
 from dials.algorithms.indexing.ssx.analysis import report_on_crystal_clusters
+from dials.algorithms.indexing.ssx.processing import manage_loggers
 from dials.algorithms.integration.ssx.ellipsoid_integrate import (
     EllipsoidIntegrator,
     EllipsoidOutputAggregator,
 )
 from dials.algorithms.integration.ssx.ssx_integrate import (
     OutputAggregator,
+    SimpleIntegrator,
     generate_html_report,
 )
 from dials.algorithms.integration.ssx.stills_integrate import StillsIntegrator
@@ -61,7 +63,7 @@ from dials.util.options import ArgumentParser, flatten_experiments, flatten_refl
 from dials.util.version import dials_version
 
 try:
-    from typing import List
+    from typing import List, Type
 except ImportError:
     pass
 
@@ -165,42 +167,9 @@ loggers_to_disable_for_stills = loggers_to_disable + [
 ]
 
 
-def disable_loggers(lognames: List[str]) -> None:
-    for logname in lognames:
-        logging.getLogger(logname).disabled = True
-
-
-def process_one_image_ellipsoid_integrator(experiment, table, params):
-
-    if params.individual_log_verbosity < 2:
-        disable_loggers(loggers_to_disable)  # disable the loggers within each process
-    elif params.individual_log_verbosity == 2:
-        for name in loggers_to_disable:
-            logging.getLogger(name).setLevel(logging.INFO)
-
+def process_one_image(experiment, table, params, integrator_class):
     collect_data = params.output.html or params.output.json
-    integrator = EllipsoidIntegrator(params, collect_data)
-    try:
-        experiment, table, collector = integrator.run(experiment, table)
-    except RuntimeError as e:
-        logger.info(f"Processing failed due to error: {e}")
-        return (None, None, None)
-    else:
-        return experiment, table, collector
-
-
-def process_one_image_stills_integrator(experiment, table, params):
-
-    if params.individual_log_verbosity < 2:
-        disable_loggers(
-            loggers_to_disable_for_stills
-        )  # disable the loggers within each process
-    elif params.individual_log_verbosity == 2:
-        for name in loggers_to_disable_for_stills:
-            logging.getLogger(name).setLevel(logging.INFO)
-
-    collect_data = params.output.html or params.output.json
-    integrator = StillsIntegrator(params, collect_data)
+    integrator = integrator_class(params, collect_data)
     try:
         experiment, table, collector = integrator.run(experiment, table)
     except RuntimeError as e:
@@ -239,10 +208,10 @@ def setup(reflections, params):
 
     # aggregate some output for json, html etc
     if params.algorithm == "ellipsoid":
-        process = process_one_image_ellipsoid_integrator
+        process = EllipsoidIntegrator
         aggregator = EllipsoidOutputAggregator()
     elif params.algorithm == "stills":
-        process = process_one_image_stills_integrator
+        process = StillsIntegrator
         aggregator = OutputAggregator()
     else:
         raise ValueError("Invalid algorithm choice")
@@ -251,6 +220,11 @@ def setup(reflections, params):
         "process": process,
         "aggregator": aggregator,
         "params": params,
+        "loggers_to_disable": (
+            loggers_to_disable
+            if params.algorithm == "ellipsoid"
+            else loggers_to_disable_for_stills
+        ),
     }
 
     return batches, configuration
@@ -258,7 +232,7 @@ def setup(reflections, params):
 
 @dataclass
 class InputToIntegrate:
-    process: Any
+    integrator_class: Type[SimpleIntegrator]
     experiment: Experiment
     table: flex.reflection_table
     params: Any
@@ -274,10 +248,11 @@ class IntegrationResult:
 
 
 def wrap_integrate_one(input_to_integrate: InputToIntegrate):
-    expt, refls, collector = input_to_integrate.process(
+    expt, refls, collector = process_one_image(
         input_to_integrate.experiment,
         input_to_integrate.table,
         input_to_integrate.params,
+        input_to_integrate.integrator_class,
     )
 
     result = IntegrationResult(expt, refls, collector, input_to_integrate.crystalno)
@@ -325,15 +300,19 @@ def process_batch(sub_tables, sub_expts, configuration, batch_offset=0):
             )
         )
 
-    if configuration["params"].nproc > 1:
-        with Pool(configuration["params"].nproc) as pool:
-            results: List[IntegrationResult] = pool.map(
-                wrap_integrate_one, input_iterable
-            )
-    else:
-        results: List[IntegrationResult] = [
-            wrap_integrate_one(i) for i in input_iterable
-        ]
+    with manage_loggers(
+        configuration["params"].individual_log_verbosity,
+        configuration["loggers_to_disable"],
+    ):
+        if configuration["params"].nproc > 1:
+            with Pool(configuration["params"].nproc) as pool:
+                results: List[IntegrationResult] = pool.map(
+                    wrap_integrate_one, input_iterable
+                )
+        else:
+            results: List[IntegrationResult] = [
+                wrap_integrate_one(i) for i in input_iterable
+            ]
 
     # then join
     integrated_reflections = flex.reflection_table()
