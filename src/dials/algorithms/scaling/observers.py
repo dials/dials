@@ -436,7 +436,7 @@ def make_merging_stats_plots(script, run_xtriage_analysis=False, make_batch_plot
         plotter = IntensityStatisticsPlots(
             script.scaled_miller_array, run_xtriage_analysis=run_xtriage_analysis
         )
-        d["xtriage_output"] = plotter.xtriage_output()
+        d["xtriage_output"] = plotter.generate_xtriage_output()
         d["resolution_plots"].update(plotter.generate_resolution_dependent_plots())
         if d["resolution_plots"]["cc_one_half"]["data"][2]:
             cc_anom = d["resolution_plots"]["cc_one_half"]["data"][2]["y"]

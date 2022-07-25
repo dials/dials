@@ -226,6 +226,34 @@ class _xtriage_output(printed_output):
         self._out_orig.flush()
 
 
+def xtriage_output(xanalysis):
+    xtriage_success = []
+    xtriage_warnings = []
+    xtriage_danger = []
+    xs = StringIO()
+    xout = _xtriage_output(xs)
+    xanalysis.show(out=xout)
+    xout.flush()
+    sub_header_to_out = xout._sub_header_to_out
+    issues = xanalysis.summarize_issues()
+    # issues.show()
+
+    for level, text, sub_header in issues._issues:
+        summary = sub_header_to_out.get(sub_header, StringIO()).getvalue()
+        d = {"level": level, "text": text, "summary": summary, "header": sub_header}
+        if level == 0:
+            xtriage_success.append(d)
+        elif level == 1:
+            xtriage_warnings.append(d)
+        elif level == 2:
+            xtriage_danger.append(d)
+    return {
+        "xtriage_success": xtriage_success,
+        "xtriage_warnings": xtriage_warnings,
+        "xtriage_danger": xtriage_danger,
+    }
+
+
 class IntensityStatisticsPlots:
     """Generate plots for intensity-derived statistics."""
 
@@ -268,34 +296,10 @@ class IntensityStatisticsPlots:
                 logger.warning("Xtriage analysis failed.", exc_info=True)
                 self._xanalysis = None
 
-    def xtriage_output(self):
+    def generate_xtriage_output(self):
         if not self._xanalysis:
             return {}
-        xtriage_success = []
-        xtriage_warnings = []
-        xtriage_danger = []
-        xs = StringIO()
-        xout = _xtriage_output(xs)
-        self._xanalysis.show(out=xout)
-        xout.flush()
-        sub_header_to_out = xout._sub_header_to_out
-        issues = self._xanalysis.summarize_issues()
-        # issues.show()
-
-        for level, text, sub_header in issues._issues:
-            summary = sub_header_to_out.get(sub_header, StringIO()).getvalue()
-            d = {"level": level, "text": text, "summary": summary, "header": sub_header}
-            if level == 0:
-                xtriage_success.append(d)
-            elif level == 1:
-                xtriage_warnings.append(d)
-            elif level == 2:
-                xtriage_danger.append(d)
-        return {
-            "xtriage_success": xtriage_success,
-            "xtriage_warnings": xtriage_warnings,
-            "xtriage_danger": xtriage_danger,
-        }
+        return xtriage_output(self._xanalysis)
 
     def generate_resolution_dependent_plots(self):
         d = self.second_moments_plot()
