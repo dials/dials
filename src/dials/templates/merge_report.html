@@ -3,7 +3,7 @@
 
 {% macro indiv_wl_report(item, id) -%}
 {% set indiv_id = id | replace(".", "_")%}
-{{macros.merging_statistics(item['scaling_tables'], indiv_id)}}
+{{macros.merging_statistics(item['scaling_tables'], item['xtriage_output'], indiv_id)}}
 <div>
     <h2>Analysis plots</h2>
     <div class="panel-group">
@@ -21,44 +21,60 @@
         <h1>{{ page_title }}</h1>
     </div>
 
-    <ul class="nav nav-tabs">
-        <li class="active"><a data-toggle="tab" data-target="#home">Wavelength={{first_wl}}</a></li>
+    {% if multi_data %}
 
-        {% for wl, item in extra_wl_reports.items() %}
-            <li><a data-toggle="tab" data-target="#dataset_{{ wl | replace(".", "_")}}">Wavelength={{ wl }}</a></li>
-        {% endfor %}
+        <ul class="nav nav-tabs">
+            <li class="active"><a data-toggle="tab" data-target="#home">Summary</a></li>
 
-        {% if multi_data %}
-            <li><a data-toggle="tab" data-target="#multi_plots">All wavelengths</a></li>
-        {% endif %}
-    </ul>
+            {% for wl, item in individual_reports.items() %}
+                <li><a data-toggle="tab" data-target="#dataset_{{ wl | replace(".", "_")}}">Wavelength {{ wl }} &#8491 </a></li>
+            {% endfor %}
 
-    <div class="tab-content">
+        </ul>
 
-        <div id="home" class="tab-pane in active">
-            {{indiv_wl_report(first_wl_report, first_wl)}}
-        </div>
+        <div class="tab-content">
 
-
-        {% for wl, item in extra_wl_reports.items() %}
-        <div id="dataset_{{ wl | replace(".", "_")}}" class="tab-pane">
-            {{indiv_wl_report(item, wl)}}
-        </div>
-        {% endfor %}
-
-        {% if multi_data %}
-        <div id="multi_plots" class="tab-pane">
-            <div>
-                <h2>Analysis plots</h2>
+            <div id="home" class="tab-pane in active">
+                <h2>Merging statistics</h2>
                 <div id="multi" class="panel-group" >
-                    {{ macros.panel('Analysis by resolution', 'combined_plots_res', multi_data['combined_plots_resolution'], show=True) }}
+                    <div class="panel panel-default">
+                        <div class="panel-heading" data-toggle="collapse" data-target="#collapse_overall_summary">
+                            <h4 class="panel-title">
+                                <a>Overall</a>
+                            </h4>
+                        </div>
+                        <div id="collapse_overall_summary" class="panel-collapse collapse in">
+                            <div class="panel-body">
+                                <div style="width: 800px">
+                                    {{ macros.table(multi_data["overall_summary"],
+                                                    has_column_header=true,
+                                                    has_row_header=true) }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
+
+
+            {% for wl, item in individual_reports.items() %}
+            <div id="dataset_{{ wl | replace(".", "_")}}" class="tab-pane">
+                {{indiv_wl_report(item, wl)}}
+            </div>
+            {% endfor %}
+
         </div>
 
-        {% endif %}
+    {% else %}
+        <div id="home">
+            {% for wl, item in individual_reports.items() %} {# note just one item in the dict #}
+            {{indiv_wl_report(item, wl)}}
+            {% endfor %}
+        </div>
 
-    </div>
+    {% endif %}
+
 </div>
 
 {% endblock %}

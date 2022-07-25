@@ -62,7 +62,7 @@
                 </div>
                 <div id="collapse_scaling" class="panel-collapse collapse">
             <div class="panel-body">
-                {{macros.merging_statistics(scaling_tables, 'main')}}
+                {{macros.merging_statistics(scaling_tables, xtriage_output, 'main')}}
             </div>
             {{ macros.panel('Analysis by resolution', 'cc_one_half', resolution_plots) }}
             {{ macros.panel('Analysis by image number', 'batch', batch_graphs, tables=image_range_tables) }}

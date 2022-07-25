@@ -2107,6 +2107,7 @@ def merging_stats_data(reflections, experiments):
     )
     return (
         stats_plots["resolution_plots"],
+        stats_plots["xtriage_output"],
         stats_plots["misc_plots"],
         intensity_plots,
         stats_plots["batch_plots"],
@@ -2159,6 +2160,7 @@ class Analyser:
             json_data.update(
                 {
                     "scaling_model": {},
+                    "xtriage_output": {},
                     "resolution_graphs": {},
                     "batch_graphs": {},
                     "misc_graphs": {},
@@ -2184,6 +2186,7 @@ class Analyser:
                     try:
                         (
                             resolution_plots,
+                            xtriage_output,
                             misc_plots,
                             scaled_intensity_plots,
                             batch_plots,
@@ -2194,6 +2197,7 @@ class Analyser:
                         print(e)
                     else:
                         json_data["resolution_graphs"] = resolution_plots
+                        json_data["xtriage_output"] = xtriage_output
                         json_data["batch_graphs"] = batch_plots
                         json_data["misc_graphs"] = misc_plots
                         json_data["scaled_intensity_graphs"] = scaled_intensity_plots
@@ -2228,6 +2232,7 @@ class Analyser:
                 page_title="DIALS analysis report",
                 scan_varying_graphs=graphs["scan_varying"],
                 scaling_model_graphs=graphs["scaling_model"],
+                xtriage_output=graphs["xtriage_output"],
                 resolution_plots=graphs["resolution_graphs"],
                 batch_graphs=graphs["batch_graphs"],
                 image_range_tables=graphs["image_range_tables"],

@@ -345,11 +345,11 @@ Only scaled data can be processed with dials.merge"""
     logger.info(out.getvalue())
     mtz_file.write(params.output.mtz)
 
-    if params.output.html:
-        generate_html_report(json_data, params.output.html)
     if params.output.json:
         with open(params.output.json, "w") as f:
             json.dump(json_data, f, indent=2)
+    if params.output.html:
+        generate_html_report(json_data, params.output.html)
 
 
 if __name__ == "__main__":

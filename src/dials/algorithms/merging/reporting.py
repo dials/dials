@@ -50,11 +50,22 @@ def generate_json_data(data: dict[float, MergingStatisticsData]) -> dict:
                 make_dano_plots({wl: stats.anomalous_amplitudes})["dF"]
             )
     if len(json_data) > 1:
-        anom_data = {wl: stats.anomalous_amplitudes for wl, stats in data.items()}
-        if all(anom_data.values()):
-            json_data["multi_data"] = {
-                "combined_plots_resolution": make_dano_plots(anom_data)["dF"]
-            }
+        # create an overall summary table
+        headers = [""] + ["Wavelength " + f"{wl:.5f}" + " Å" for wl in data.keys()]
+        rows = []
+        first_wl = f"{list(data.keys())[0]:.5f}"
+        for k, v in json_data[first_wl]["scaling_tables"][
+            "overall_summary_data"
+        ].items():
+            rows.append([k, v])
+        for wl in list(data.keys())[1:]:
+            for i, v in enumerate(
+                json_data[f"{wl:.5f}"]["scaling_tables"][
+                    "overall_summary_data"
+                ].values()
+            ):
+                rows[i].append(v)
+        json_data["multi_data"] = {"overall_summary": [headers] + rows}
     return json_data
 
 
@@ -192,20 +203,11 @@ def generate_html_report(json_data, filename):
     multi_data = None
     if "multi_data" in json_data:
         multi_data = json_data.pop("multi_data")
-    json_keys = list(json_data.keys())
-    first_wl_report = json_data.pop(json_keys[0])
-    first_wl = json_keys[0]
-    # need to give each graph a unique key for html report.
-    if json_data:
-        for wl, v in json_data.items():
-            str_wl = wl.replace(".", "_")
-            for plot_cat in ["resolution_plots", "misc_plots"]:
-                for name in list(v[plot_cat].keys()):
-                    v[plot_cat][name + "_" + str_wl] = v[plot_cat].pop(name)
-    if multi_data:
-        for plot_cat in ["combined_plots_resolution"]:
-            for name in list(multi_data[plot_cat].keys()):
-                multi_data[plot_cat][name + "_multi"] = multi_data[plot_cat].pop(name)
+    for wl, v in json_data.items():
+        str_wl = wl.replace(".", "_")
+        for plot_cat in ["resolution_plots", "misc_plots"]:
+            for name in list(v[plot_cat].keys()):
+                v[plot_cat][name + "_" + str_wl] = v[plot_cat].pop(name)
 
     loader = ChoiceLoader(
         [
@@ -217,9 +219,7 @@ def generate_html_report(json_data, filename):
     template = env.get_template("merge_report.html")
     html = template.render(
         page_title="DIALS merge report",
-        first_wl=first_wl,
-        first_wl_report=first_wl_report,
-        extra_wl_reports=json_data,
+        individual_reports=json_data,
         multi_data=multi_data,
     )
     logger.info("Writing html report to %s", filename)
