@@ -235,6 +235,7 @@ def xtriage_output(xanalysis):
     try:
         xanalysis.show(out=xout)
     except Exception:
+        xout.flush()
         return {}
     xout.flush()
     sub_header_to_out = xout._sub_header_to_out
