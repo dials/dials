@@ -143,7 +143,7 @@ def test_sacla_h5(dials_data, tmp_path, control_flags, in_memory=False):
             known_orientations_path = os.path.join(
                 sacla_path, "SACLA-MPCCD-run266702-0-subset-known_orientations.expt"
             )
-            # assert os.path.isfile(known_orientations_path)
+            assert os.path.isfile(known_orientations_path)
             if not os.path.isfile(known_orientations_path):
                 pytest.skip(
                     "Known orientations path not available in dials.data (%s)"
