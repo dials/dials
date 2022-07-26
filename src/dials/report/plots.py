@@ -14,6 +14,8 @@ from scipy.stats import norm
 
 from cctbx import uctbx
 from dxtbx import flumpy
+from libtbx.utils import Sorry
+from mmtbx.scaling import printed_output
 from mmtbx.scaling.absolute_scaling import expected_intensity, scattering_information
 from mmtbx.scaling.matthews import matthews_rupp
 from scitbx.array_family import flex
@@ -195,6 +197,63 @@ def d_star_sq_to_d_ticks(d_star_sq, nticks):
     return tickvals, ticktext
 
 
+class _xtriage_output(printed_output):
+    def __init__(self, out):
+        super().__init__(out)
+        self.gui_output = True
+        self._out_orig = self.out
+        self.out = StringIO()
+        self._sub_header_to_out = {}
+
+    def show_big_header(self, text):
+        pass
+
+    def show_header(self, text):
+        self._out_orig.write(self.out.getvalue())
+        self.out = StringIO()
+        super().show_header(text)
+
+    def show_sub_header(self, title):
+        self._out_orig.write(self.out.getvalue())
+        self.out = StringIO()
+        self._current_sub_header = title
+        assert title not in self._sub_header_to_out
+        self._sub_header_to_out[title] = self.out
+
+    def flush(self):
+        self._out_orig.write(self.out.getvalue())
+        self.out.flush()
+        self._out_orig.flush()
+
+
+def xtriage_output(xanalysis):
+    xtriage_success = []
+    xtriage_warnings = []
+    xtriage_danger = []
+    xs = StringIO()
+    xout = _xtriage_output(xs)
+    xanalysis.show(out=xout)
+    xout.flush()
+    sub_header_to_out = xout._sub_header_to_out
+    issues = xanalysis.summarize_issues()
+    # issues.show()
+
+    for level, text, sub_header in issues._issues:
+        summary = sub_header_to_out.get(sub_header, StringIO()).getvalue()
+        d = {"level": level, "text": text, "summary": summary, "header": sub_header}
+        if level == 0:
+            xtriage_success.append(d)
+        elif level == 1:
+            xtriage_warnings.append(d)
+        elif level == 2:
+            xtriage_danger.append(d)
+    return {
+        "xtriage_success": xtriage_success,
+        "xtriage_warnings": xtriage_warnings,
+        "xtriage_danger": xtriage_danger,
+    }
+
+
 class IntensityStatisticsPlots:
     """Generate plots for intensity-derived statistics."""
 
@@ -233,9 +292,14 @@ class IntensityStatisticsPlots:
                     text_out="silent",
                     params=xtriage_params,
                 )
-            except RuntimeError:
+            except (RuntimeError, Sorry):
                 logger.warning("Xtriage analysis failed.", exc_info=True)
                 self._xanalysis = None
+
+    def generate_xtriage_output(self):
+        if not self._xanalysis:
+            return {}
+        return xtriage_output(self._xanalysis)
 
     def generate_resolution_dependent_plots(self):
         d = self.second_moments_plot()
@@ -848,9 +912,39 @@ class ResolutionPlotsAndStats:
 
         return overall_stats_table
 
+    def overall_statistics_summary_data(self):
+        o = self.dataset_statistics.overall
+        h = self.dataset_statistics.bins[-1]
+        data = {
+            "Resolution range (Å)": f"{o.d_max:.2f} - {o.d_min:.2f} ({h.d_max:.2f} - {h.d_min:.2f})",
+            "Completeness (%)": f"{(o.completeness * 100):.2f} ({(h.completeness * 100):.2f})",
+            "Multiplicity": f"{o.mean_redundancy:.2f} ({h.mean_redundancy:.2f})",
+            "CC-half": f"{o.cc_one_half:.4f} ({h.cc_one_half:.4f})",
+            "I/sigma": f"{o.i_over_sigma_mean:.2f} ({h.i_over_sigma_mean:.2f})",
+            "Rmerge(I)": f"{o.r_merge:.4f} ({h.r_merge:.4f})",
+        }
+        if self.anomalous_dataset_statistics:
+            o_anom = self.anomalous_dataset_statistics.overall
+            h_anom = self.anomalous_dataset_statistics.bins[-1]
+            data[
+                "Anomalous completeness (%)"
+            ] = f"{(o_anom.anom_completeness * 100):.2f} ({(h_anom.anom_completeness * 100):.2f})"
+            data[
+                "Anomalous multiplicity"
+            ] = f"{o_anom.mean_redundancy:.2f} ({h_anom.mean_redundancy:.2f})"
+        else:
+            data["Anomalous completeness (%)"] = "-"
+            data["Anomalous multiplicity"] = "-"
+        return data
+
     def statistics_tables(self):
         """Generate the overall and by-resolution tables."""
-        return (self.overall_statistics_table(), self.merging_statistics_table())
+        return {
+            "overall": self.overall_statistics_table(),
+            "resolution_binned": self.merging_statistics_table(),
+            "cc_half_significance_level": 0.01,  # Note - in dials.scale and dials.merge, this is a hardcoded value
+            "overall_summary_data": self.overall_statistics_summary_data(),
+        }
 
 
 class AnomalousPlotter:

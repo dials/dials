@@ -397,29 +397,33 @@ def make_filtering_plots(script):
     return {"filter_plots": {}}
 
 
-def make_merging_stats_plots(script):
+def make_merging_stats_plots(script, run_xtriage_analysis=False, make_batch_plots=True):
     """Make merging stats plots for HTML report"""
     d = {
-        "scaling_tables": ([], []),
+        "scaling_tables": {},
         "resolution_plots": {},
         "batch_plots": {},
         "misc_plots": {},
         "anom_plots": {},
         "image_range_tables": [],
     }
-    (
-        batches,
-        rvb,
-        isigivb,
-        svb,
-        batch_data,
-    ) = reflection_tables_to_batch_dependent_properties(  # pylint: disable=unbalanced-tuple-unpacking
-        script.reflections,
-        script.experiments,
-        script.scaled_miller_array,
-    )
-    bm = batch_manager(batches, batch_data)
-    image_range_tables = make_image_range_table(script.experiments, bm)
+    if make_batch_plots:
+        (
+            batches,
+            rvb,
+            isigivb,
+            svb,
+            batch_data,
+        ) = reflection_tables_to_batch_dependent_properties(  # pylint: disable=unbalanced-tuple-unpacking
+            script.reflections,
+            script.experiments,
+            script.scaled_miller_array,
+        )
+        bm = batch_manager(batches, batch_data)
+        image_range_tables = make_image_range_table(script.experiments, bm)
+        d["image_range_tables"] = [image_range_tables]
+        d["batch_plots"].update(scale_rmerge_vs_batch_plot(bm, rvb, svb))
+        d["batch_plots"].update(i_over_sig_i_vs_batch_plot(bm, isigivb))
 
     if script.merging_statistics_result:
         stats = script.merging_statistics_result
@@ -429,11 +433,10 @@ def make_merging_stats_plots(script):
         plotter = ResolutionPlotsAndStats(stats, anom_stats, is_centric)
         d["resolution_plots"].update(plotter.make_all_plots())
         d["scaling_tables"] = plotter.statistics_tables()
-        d["batch_plots"].update(scale_rmerge_vs_batch_plot(bm, rvb, svb))
-        d["batch_plots"].update(i_over_sig_i_vs_batch_plot(bm, isigivb))
         plotter = IntensityStatisticsPlots(
-            script.scaled_miller_array, run_xtriage_analysis=False
+            script.scaled_miller_array, run_xtriage_analysis=run_xtriage_analysis
         )
+        d["xtriage_output"] = plotter.generate_xtriage_output()
         d["resolution_plots"].update(plotter.generate_resolution_dependent_plots())
         if d["resolution_plots"]["cc_one_half"]["data"][2]:
             cc_anom = d["resolution_plots"]["cc_one_half"]["data"][2]["y"]
@@ -455,5 +458,4 @@ def make_merging_stats_plots(script):
         )
         anom_plotter = AnomalousPlotter(intensities_anom, strong_cutoff=d_min)
         d["anom_plots"].update(anom_plotter.make_plots())
-    d["image_range_tables"] = [image_range_tables]
     return d
