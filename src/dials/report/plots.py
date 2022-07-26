@@ -232,7 +232,10 @@ def xtriage_output(xanalysis):
     xtriage_danger = []
     xs = StringIO()
     xout = _xtriage_output(xs)
-    xanalysis.show(out=xout)
+    try:
+        xanalysis.show(out=xout)
+    except Exception:
+        return {}
     xout.flush()
     sub_header_to_out = xout._sub_header_to_out
     issues = xanalysis.summarize_issues()

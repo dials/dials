@@ -109,6 +109,7 @@ def test_merge_dmin_dmax(dials_data, tmp_path, best_unit_cell):
         "crystal_name=jam",
         "dataset_name=spam",
         f"best_unit_cell={best_unit_cell}",
+        "output.html=None",
     ]
     result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
