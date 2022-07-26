@@ -143,7 +143,10 @@ def _filter_reflections_based_on_centroid_distance(
 
     # Initialise the fast_mcd outlier algorithm
     # fast_mcd = FastMCD((Xres, Yres, Eres))
-    fast_mcd = FastMCD((Xres, Yres))
+    try:
+        fast_mcd = FastMCD((Xres, Yres))
+    except AssertionError as e:
+        raise RuntimeError(e)
 
     # get location and MCD scatter estimate
     T, S = fast_mcd.get_corrected_T_and_S()
