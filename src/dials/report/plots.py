@@ -227,23 +227,25 @@ class _xtriage_output(printed_output):
 
 
 def xtriage_output(xanalysis):
+
+    with StringIO() as xs:
+        xout = _xtriage_output(xs)
+        try:
+            xanalysis.show(out=xout)
+            sub_header_to_out = xout._sub_header_to_out
+            issues = xanalysis.summarize_issues()
+        except Exception:
+            return {}
+        finally:
+            xout.flush()
+
     xtriage_success = []
     xtriage_warnings = []
     xtriage_danger = []
-    xs = StringIO()
-    xout = _xtriage_output(xs)
-    try:
-        xanalysis.show(out=xout)
-    except Exception:
-        xout.flush()
-        return {}
-    xout.flush()
-    sub_header_to_out = xout._sub_header_to_out
-    issues = xanalysis.summarize_issues()
-    # issues.show()
 
     for level, text, sub_header in issues._issues:
-        summary = sub_header_to_out.get(sub_header, StringIO()).getvalue()
+        with StringIO() as tmp_out:
+            summary = sub_header_to_out.get(sub_header, tmp_out).getvalue()
         d = {"level": level, "text": text, "summary": summary, "header": sub_header}
         if level == 0:
             xtriage_success.append(d)
@@ -251,6 +253,7 @@ def xtriage_output(xanalysis):
             xtriage_warnings.append(d)
         elif level == 2:
             xtriage_danger.append(d)
+
     return {
         "xtriage_success": xtriage_success,
         "xtriage_warnings": xtriage_warnings,
