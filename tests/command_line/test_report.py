@@ -52,6 +52,6 @@ def test_report_scaled_data(dials_data, tmpdir):
         "xtriage_output",
         "image_range_tables",
     }
-    with report_json.open(encoding="utf8") as fh:
+    with report_json.open(encoding="utf-8") as fh:
         d = json.load(fh)
         assert not expected_keys - set(d.keys())

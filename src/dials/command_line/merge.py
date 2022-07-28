@@ -350,7 +350,7 @@ Only scaled data can be processed with dials.merge"""
     mtz_file.write(params.output.mtz)
 
     if params.output.json:
-        with open(params.output.json, "w", encoding="utf8") as f:
+        with open(params.output.json, "w", encoding="utf-8") as f:
             json.dump(json_data, f, indent=2)
     if params.output.html:
         generate_html_report(json_data, params.output.html)
