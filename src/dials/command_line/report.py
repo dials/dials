@@ -2254,7 +2254,7 @@ class Analyser:
 
         if self.params.output.json is not None:
             print(f"Writing json data to: {self.params.output.json}")
-            with open(self.params.output.json, "w") as f:
+            with open(self.params.output.json, "w", encoding="utf8") as f:
                 json.dump(json_data, f)
 
     def experiments_table(self, experiments):

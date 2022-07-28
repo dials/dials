@@ -242,7 +242,7 @@ def _make_scaling_html(scaling_script):
             f.write(html.encode("utf-8", "xmlcharrefreplace"))
     if json_file:
         logger.info("Writing html report data to %s", json_file)
-        with open(json_file, "w") as outfile:
+        with open(json_file, "w", encoding="utf8") as outfile:
             json.dump(data, outfile)
 
 
