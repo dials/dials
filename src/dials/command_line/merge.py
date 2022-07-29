@@ -333,9 +333,13 @@ Only scaled data can be processed with dials.merge"""
             )
 
     try:
-        mtz_file, json_data = merge_data_to_mtz_with_report_collection(
-            params, experiments, reflections
-        )
+        if params.output.json or params.output.html:
+            mtz_file, json_data = merge_data_to_mtz_with_report_collection(
+                params, experiments, reflections
+            )
+        else:
+            mtz_file = merge_data_to_mtz(params, experiments, reflections)
+            json_data = {}
     except ValueError as e:
         raise Sorry(e)
 
@@ -346,7 +350,7 @@ Only scaled data can be processed with dials.merge"""
     mtz_file.write(params.output.mtz)
 
     if params.output.json:
-        with open(params.output.json, "w") as f:
+        with open(params.output.json, "w", encoding="utf-8") as f:
             json.dump(json_data, f, indent=2)
     if params.output.html:
         generate_html_report(json_data, params.output.html)
