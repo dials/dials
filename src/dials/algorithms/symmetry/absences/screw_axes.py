@@ -109,7 +109,55 @@ class ScrewAxis(Subject):
                 self.sigmas.extend(sigmas)
 
     def score_axis(self, reflection_table, significance_level=0.95):
-        """Score the axis give a reflection table of data."""
+        """Score the axis given a reflection table of data."""
+        return self.score_axis_fourier(reflection_table, significance_level)
+
+    def score_axis_fourier(self, reflection_table, significance_level=0.95):
+        """Estimate the probability of a screw axis using Fourier analysis."""
+        import numpy as np
+
+        idx = self.select_axial_reflections(reflection_table["miller_index"])
+        axial_refls = reflection_table.select(idx)
+        miller_index = np.array(axial_refls["miller_index"])[:, self.axis_idx]
+        i_sigi = axial_refls["intensity"].as_numpy_array() / np.sqrt(
+            axial_refls["variance"].as_numpy_array()
+        )
+
+        # We must take care to make sure the length of the fourier transformed vector is divisible by 6
+        n = miller_index.max() + 1
+        n = 6 * ((n // 6) + 1)
+        direct_space = np.zeros(n)
+        direct_space[miller_index] = i_sigi
+
+        # Fourier transform i over sigma
+        fourier_space = np.abs(np.fft.fft(direct_space))
+
+        # Indices for Fourier frequencies which may correspond to screw periodicities
+        # These correspond to absences every 0, 2, 3, 4, and 6 reflections.
+        idx = np.arange(n)
+        screw_idx = np.any(
+            idx == np.array([0, n // 2, n // 3, n // 4, n // 6])[:, None], axis=0
+        )
+        null_idx = ~screw_idx
+
+        # To determine the probability of a screw axis, use the frequencies which do not
+        # correspond to any screw axis periodicity to form a null model. The ask what
+        # the probability of the candidate frequency is under the null model.
+        # In this case, we will parameterize the null frequencies by a normal distribution.
+        from scipy.stats import norm
+
+        mean = fourier_space[null_idx].mean()
+        std = fourier_space[null_idx].std()
+        p_screw = norm.cdf(fourier_space[n // self.axis_repeat], loc=mean, scale=std)
+
+        # Zero out the probability if it is less than the significance_level
+        if p_screw < significance_level:
+            return 0.0
+
+        return p_screw
+
+    def score_axis_direct(self, reflection_table, significance_level=0.95):
+        """Score the axis given a reflection table of data."""
         assert significance_level in [0.95, 0.975, 0.99]
         self.get_all_suitable_reflections(reflection_table)
 
