@@ -384,6 +384,9 @@ def symmetry(experiments, reflection_tables, params=None):
             )
         )
         # Reindex the input data
+        _, refls_for_sym = _reindex_experiments_reflections(
+            experiments, refls_for_sym, best_space_group, cb_op_inp_best
+        )
         experiments, reflection_tables = _reindex_experiments_reflections(
             experiments, reflection_tables, best_space_group, cb_op_inp_best
         )
