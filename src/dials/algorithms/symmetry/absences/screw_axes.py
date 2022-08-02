@@ -121,7 +121,13 @@ class ScrewAxis(Subject):
         """Estimate the probability of a screw axis using Fourier analysis."""
 
         self.get_all_suitable_reflections(reflection_table)
-        if not self.i_over_sigma:
+        expected_sel = self.miller_axis_vals.iround() % self.axis_repeat == 0
+
+        expected = self.i_over_sigma.select(expected_sel)
+        expected_abs = self.i_over_sigma.select(~expected_sel)
+        self.n_refl_used = (expected.size(), expected_abs.size())
+
+        if not expected or not expected_abs:
             return 0.0
         i_sigi = np.array(self.i_over_sigma)
         miller_index = np.array(self.miller_axis_vals.iround())
