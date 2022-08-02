@@ -264,7 +264,8 @@ def merge_data_to_mtz(params, experiments, reflections):
             mtz_dataset.dano = dano
 
         # print out analysis statistics
-        show_wilson_scaling_analysis(merged_intensities)
+        B_iso = show_wilson_scaling_analysis(merged_intensities)
+        stats_summary.Wilson_B_iso = B_iso
 
         if anom_amplitudes:
             logger.info(make_dano_table(anom_amplitudes))
