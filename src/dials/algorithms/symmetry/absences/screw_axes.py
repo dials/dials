@@ -140,6 +140,7 @@ class ScrewAxis(Subject):
         miller_index = np.array(self.miller_axis_vals.iround())
 
         # We must take care to make sure the length of the fourier transformed vector is divisible by 6
+        miller_index = miller_index - miller_index.min()
         n = miller_index.max() + 1
         n = 6 * ((n // 6) + 1)
         direct_space = np.zeros(n)
