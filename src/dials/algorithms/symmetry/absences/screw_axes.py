@@ -5,7 +5,9 @@ from __future__ import annotations
 import logging
 import math
 
+import numpy as np
 from jinja2 import ChoiceLoader, Environment, PackageLoader
+from scipy.stats import norm
 
 from scitbx.array_family import flex
 
@@ -108,20 +110,21 @@ class ScrewAxis(Subject):
                 self.intensities.extend(intensities)
                 self.sigmas.extend(sigmas)
 
-    def score_axis(self, reflection_table, significance_level=0.95):
+    def score_axis(self, reflection_table, significance_level=0.95, method="direct"):
         """Score the axis given a reflection table of data."""
-        return self.score_axis_fourier(reflection_table, significance_level)
+        if method == "direct":
+            return self.score_axis_direct(reflection_table, significance_level)
+        else:
+            return self.score_axis_fourier(reflection_table, significance_level)
 
     def score_axis_fourier(self, reflection_table, significance_level=0.95):
         """Estimate the probability of a screw axis using Fourier analysis."""
-        import numpy as np
 
-        idx = self.select_axial_reflections(reflection_table["miller_index"])
-        axial_refls = reflection_table.select(idx)
-        miller_index = np.array(axial_refls["miller_index"])[:, self.axis_idx]
-        i_sigi = axial_refls["intensity"].as_numpy_array() / np.sqrt(
-            axial_refls["variance"].as_numpy_array()
-        )
+        self.get_all_suitable_reflections(reflection_table)
+        if not self.i_over_sigma:
+            return 0.0
+        i_sigi = np.array(self.i_over_sigma)
+        miller_index = np.array(self.miller_axis_vals.iround())
 
         # We must take care to make sure the length of the fourier transformed vector is divisible by 6
         n = miller_index.max() + 1
@@ -144,7 +147,6 @@ class ScrewAxis(Subject):
         # correspond to any screw axis periodicity to form a null model. The ask what
         # the probability of the candidate frequency is under the null model.
         # In this case, we will parameterize the null frequencies by a normal distribution.
-        from scipy.stats import norm
 
         mean = fourier_space[null_idx].mean()
         std = fourier_space[null_idx].std()
