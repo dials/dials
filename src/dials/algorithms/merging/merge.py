@@ -456,6 +456,11 @@ def generate_html_report(mtz_file, filename):
         ):
             anom_data[array.info().wavelength] = array
     data = {"dF": {}}
+    for wave in list(anom_data.keys()):
+        if (
+            anom_data[wave].anomalous_flag() is False
+        ):  # i.e. if not anomalous data e.g. P-1 s.g
+            del anom_data[wave]
     if not anom_data:
         return
     data = make_dano_plots(anom_data)

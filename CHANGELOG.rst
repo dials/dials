@@ -1,3 +1,14 @@
+DIALS 3.10.3 (2022-08-02)
+=========================
+
+Bugfixes
+--------
+
+- ``dials.image_viewer``: Fix error after loading images with the "Load" button. (`#2168 <https://github.com/dials/dials/issues/2168>`_)
+- ``dials.merge``: Fix crash for P-1 datasets. (`#2175 <https://github.com/dials/dials/issues/2175>`_)
+- ``dials.export format=mtz``: Handle shared experiment models when converting to cambridge frame (`#2182 <https://github.com/dials/dials/issues/2182>`_)
+
+
 DIALS 3.10.2 (2022-07-13)
 =========================
 
