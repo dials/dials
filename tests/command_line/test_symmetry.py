@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import math
+import subprocess
 
 import procrunner
 import pytest
@@ -521,3 +522,27 @@ def test_few_reflections(dials_data, run_in_tmp_path):
 
     # Run dials.symmetry on the above data files.
     symmetry.symmetry(experiments, reflections, params)
+
+
+def test_x4wide(dials_data, tmp_path):
+    """Verify reflections are reindexed before systematic absence analysis.
+
+    Exercise a bug fix in https://github.com/dials/dials/pull/2183
+
+    Expected space group is P 43 21 2 (or its enantiomorphic equivalent, P 41 21 2)
+    See also https://www.rcsb.org/structure/3QF8
+    """
+    x4wide = dials_data("x4wide_processed", pathlib=True)
+    result = subprocess.run(
+        [
+            "dials.symmetry",
+            x4wide / "AUTOMATIC_DEFAULT_scaled.expt",
+            x4wide / "AUTOMATIC_DEFAULT_scaled.refl",
+        ],
+        cwd=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+    assert tmp_path.joinpath("symmetrized.refl").is_file()
+    assert tmp_path.joinpath("symmetrized.expt").is_file()
+    exps = load.experiment_list(tmp_path / "symmetrized.expt", check_format=False)
+    assert str(exps[0].crystal.get_space_group().info()) == "P 41 21 2"
