@@ -1,6 +1,7 @@
 import logging
 import time
 from collections import Counter
+from copy import deepcopy
 from math import isclose
 
 import numpy as np
@@ -650,6 +651,23 @@ def convert_to_cambridge(experiments):
     """Rotate the geometry of an experiment list to match the Cambridge frame,
     in which X is along the idealized X-ray beam and Z is along the primary
     rotation axis"""
+
+    # First handle the potential for shared experiment models - we don't
+    # want to apply multiple transformations to shared models, simplest way is
+    # to make a copy for each experiment.
+    n_expt = len(experiments)
+    if len(experiments.crystals()) < n_expt:
+        for expt in experiments:
+            expt.crystal = deepcopy(expt.crystal)
+    if len(experiments.beams()) < n_expt:
+        for expt in experiments:
+            expt.beam = deepcopy(expt.beam)
+    if len(experiments.detectors()) < n_expt:
+        for expt in experiments:
+            expt.detector = deepcopy(expt.detector)
+    if any(experiments.goniometers()) and len(experiments.goniometers()) < n_expt:
+        for expt in experiments:
+            expt.goniometer = deepcopy(expt.goniometer)
 
     for expt in experiments:
         if expt.goniometer:
