@@ -159,7 +159,8 @@ def test_symmetry_with_laue_group_override(dials_data, tmp_path):
     )
 
 
-def test_symmetry_absences_only(dials_data, tmp_path):
+@pytest.mark.parametrize("method", ["direct", "fourier"])
+def test_symmetry_absences_only(dials_data, tmp_path, method):
     """Test the command line script with real data. Proteinase K in P41"""
     location = dials_data("vmxi_proteinase_k_sweeps", pathlib=True)
 
@@ -168,6 +169,7 @@ def test_symmetry_absences_only(dials_data, tmp_path):
         "laue_group=None",
         location / "experiments_0.json",
         location / "reflections_0.pickle",
+        f"method={method}",
     ]
     result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr

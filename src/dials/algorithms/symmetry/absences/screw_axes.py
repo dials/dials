@@ -129,6 +129,13 @@ class ScrewAxis(Subject):
 
         if not expected or not expected_abs:
             return 0.0
+
+        self.mean_I_sigma_abs = flex.mean(expected_abs)
+        self.mean_I_sigma = flex.mean(expected)
+
+        self.mean_I = flex.mean(self.intensities.select(expected_sel))
+        self.mean_I_abs = flex.mean(self.intensities.select(~expected_sel))
+
         i_sigi = np.array(self.i_over_sigma)
         miller_index = np.array(self.miller_axis_vals.iround())
 
