@@ -165,6 +165,7 @@ class MergingStatisticsData:
     merging_statistics_result: Optional[dataset_statistics] = None
     anom_merging_statistics_result: Optional[dataset_statistics] = None
     anomalous_amplitudes: Optional[miller.array] = None
+    Wilson_B_iso: Optional[float] = None
 
     def __str__(self):
         if not self.merging_statistics_result:
@@ -173,6 +174,7 @@ class MergingStatisticsData:
         stats_summary += table_1_summary(
             self.merging_statistics_result,
             self.anom_merging_statistics_result,
+            Wilson_B_iso=self.Wilson_B_iso,
         )
         return stats_summary
 
@@ -283,6 +285,8 @@ def show_wilson_scaling_analysis(merged_intensities, n_residues=200):
             out = StringIO()
             wilson_scaling.show(out=out)
             logger.info(out.getvalue())
+            return wilson_scaling.iso_b_wilson
+    return None
 
 
 def truncate(
