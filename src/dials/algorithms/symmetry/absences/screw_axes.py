@@ -117,6 +117,60 @@ class ScrewAxis(Subject):
         else:
             return self.score_axis_fourier(reflection_table, significance_level)
 
+    @staticmethod
+    def _score_axis_fourier(miller_index, i_over_sigma, axis_repeat):
+        """
+        Score screw axis based on selected miller indices and I over SigI values
+
+        Parameters
+        ----------
+        miller_index : np.array
+            Vector of miller indices along the chosen axis.
+        i_over_sigma : np.array
+            Vector of signal to noise ratios with the same shape as miller_indices.
+        axis_repeat : int
+            The expected periodicity of the screw axis. Must be one of {2, 3, 4, 6}.
+        """
+        if axis_repeat not in {2, 3, 4, 6}:
+            raise ValueError(
+                f"Received axis_repeat, {axis_repeat}, but expected an integer in {2, 3, 4, 6}"
+            )
+
+        # We must take care to make sure the length of the fourier transformed vector is divisible by 6
+        miller_index = miller_index - miller_index.min()
+        n = miller_index.max() + 1
+        n = 6 * ((n // 6) + 1)
+        direct_space = np.zeros(n)
+        direct_space[miller_index] = i_over_sigma
+
+        # Fourier transform i over sigma
+        fourier_space = np.abs(np.fft.fft(direct_space))
+
+        # Indices for Fourier frequencies which may correspond to screw periodicities
+        # These correspond to absences every 0, 2, 3, 4, and 6 reflections.
+        screw_idx = [0]
+        if axis_repeat == 2:
+            screw_idx += [n // 2]
+        elif axis_repeat == 3:
+            screw_idx += [n // 3, -n // 3]
+        elif axis_repeat == 4:
+            screw_idx += [n // 4, n // 2, -n // 4]
+        else:
+            screw_idx += [n // 6, n // 3, n // 2, -n // 3, -n // 6]
+
+        null_idx = np.ones_like(fourier_space, dtype=bool)
+        null_idx[screw_idx] = False
+
+        # To determine the probability of a screw axis, use the frequencies which do not
+        # correspond to any screw axis periodicity to form a null model. The ask what
+        # the probability of the candidate frequency is under the null model.
+        # In this case, we will parameterize the null frequencies by a normal distribution.
+
+        mean = fourier_space[null_idx].mean()
+        std = fourier_space[null_idx].std()
+        p_screw = norm.cdf(fourier_space[n // axis_repeat], loc=mean, scale=std)
+        return p_screw
+
     def score_axis_fourier(self, reflection_table, significance_level=0.95):
         """Estimate the probability of a screw axis using Fourier analysis."""
 
@@ -130,42 +184,9 @@ class ScrewAxis(Subject):
         if not expected or not expected_abs:
             return 0.0
 
-        self.mean_I_sigma_abs = flex.mean(expected_abs)
-        self.mean_I_sigma = flex.mean(expected)
-
-        self.mean_I = flex.mean(self.intensities.select(expected_sel))
-        self.mean_I_abs = flex.mean(self.intensities.select(~expected_sel))
-
-        i_sigi = np.array(self.i_over_sigma)
+        i_over_sigma = np.array(self.i_over_sigma)
         miller_index = np.array(self.miller_axis_vals.iround())
-
-        # We must take care to make sure the length of the fourier transformed vector is divisible by 6
-        miller_index = miller_index - miller_index.min()
-        n = miller_index.max() + 1
-        n = 6 * ((n // 6) + 1)
-        direct_space = np.zeros(n)
-        direct_space[miller_index] = i_sigi
-
-        # Fourier transform i over sigma
-        fourier_space = np.abs(np.fft.fft(direct_space))
-
-        # Indices for Fourier frequencies which may correspond to screw periodicities
-        # These correspond to absences every 0, 2, 3, 4, and 6 reflections.
-        idx = np.arange(n)
-        screw_idx = np.any(
-            idx == np.array([0, n // 2, n // 3, n // 4, n // 6])[:, None], axis=0
-        )
-        null_idx = ~screw_idx
-
-        # To determine the probability of a screw axis, use the frequencies which do not
-        # correspond to any screw axis periodicity to form a null model. The ask what
-        # the probability of the candidate frequency is under the null model.
-        # In this case, we will parameterize the null frequencies by a normal distribution.
-
-        mean = fourier_space[null_idx].mean()
-        std = fourier_space[null_idx].std()
-        p_screw = norm.cdf(fourier_space[n // self.axis_repeat], loc=mean, scale=std)
-
+        p_screw = self._score_axis_fourier(miller_index, i_over_sigma, self.axis_repeat)
         # Zero out the probability if it is less than the significance_level
         if p_screw < significance_level:
             return 0.0
