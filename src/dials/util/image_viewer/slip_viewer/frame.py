@@ -222,8 +222,12 @@ class XrayFrame(XFBaseClass):
                 possible_intensity = None
                 fi = self.pyslip.tiles.raw_image
                 detector = fi.get_detector()
-                ifs = (int(coords[1]), int(coords[0]))  # int fast slow
-                isf = (int(coords[0]), int(coords[1]))  # int slow fast
+                # the dials convention is that the center of the pixel is 0,0, so the extent
+                # of the 0,0 pixel is from -0.5,-0.5 to 0.5,0.5 in pixel space.  Here we are
+                # reading the intensity of the pixel so we need to add 0.5 so that we cover
+                # from 0.0,0.0 to 1.0,1.0 in data space
+                ifs = (int(coords[1] + 0.5), int(coords[0] + 0.5))  # int fast slow
+                isf = (int(coords[0] + 0.5), int(coords[1] + 0.5))  # int slow fast
                 image_data = fi.get_image_data()
                 if not isinstance(image_data, tuple):
                     image_data = (image_data,)
@@ -447,9 +451,7 @@ class XrayFrame(XFBaseClass):
         if abs(detector[0].get_distance()) > 0:
 
             def map_coords(x, y, p):
-                y, x = self.pyslip.tiles.flex_image.tile_readout_to_picture(
-                    p, y - 0.5, x - 0.5
-                )
+                y, x = self.pyslip.tiles.flex_image.tile_readout_to_picture(p, y, x)
                 return self.pyslip.tiles.picture_fast_slow_to_map_relative(x, y)
 
             panel_id, beam_pixel_fast, beam_pixel_slow = self.get_beam_center_px()
