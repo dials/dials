@@ -5,6 +5,8 @@ import pickle
 import procrunner
 import pytest
 
+from dxtbx.serialize import load
+
 
 @pytest.fixture
 def model(tmpdir):
@@ -31,11 +33,17 @@ def test_simple(dials_data, model, tmpdir):
     reflns_simple.dirpath().ensure(dir=1)
     reflns_g_simple.dirpath().ensure(dir=1)
 
+    exp = load.experiment_list(experiments)
+    panel = exp[0].detector[0]
+    max_trusted = panel.get_trusted_range()[1]
+    panel.set_trusted_range((0, max_trusted))
+    exp.as_json(tmpdir.join("trusted_range_patch.expt"))
+
     result = procrunner.run(
         [
             "dials.integrate",
             "nproc=1",
-            experiments,
+            "trusted_range_patch.expt",
             "profile.fitting=False",
             "background.algorithm=simple",
             "background.simple.outlier.algorithm=null",
@@ -50,7 +58,7 @@ def test_simple(dials_data, model, tmpdir):
         [
             "dials.integrate",
             "nproc=1",
-            experiments,
+            "trusted_range_patch.expt",
             "profile.fitting=False",
             "background.algorithm=gmodel",
             "background.gmodel.robust.algorithm=False",
@@ -92,11 +100,17 @@ def test_robust(dials_data, model, tmpdir):
     reflns_robust.dirpath().ensure(dir=1)
     reflns_g_robust.dirpath().ensure(dir=1)
 
+    exp = load.experiment_list(experiments)
+    panel = exp[0].detector[0]
+    max_trusted = panel.get_trusted_range()[1]
+    panel.set_trusted_range((0, max_trusted))
+    exp.as_json(tmpdir.join("trusted_range_patch.expt"))
+
     result = procrunner.run(
         [
             "dials.integrate",
             "nproc=1",
-            experiments,
+            "trusted_range_patch.expt",
             "profile.fitting=False",
             "background.algorithm=glm",
             "output.reflections=" + reflns_robust.strpath,
@@ -110,7 +124,7 @@ def test_robust(dials_data, model, tmpdir):
         [
             "dials.integrate",
             "nproc=1",
-            experiments,
+            "trusted_range_patch.expt",
             "profile.fitting=False",
             "background.algorithm=gmodel",
             "background.gmodel.robust.algorithm=True",
