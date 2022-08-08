@@ -795,7 +795,7 @@ def test_extract_shoeboxes():
                 def __getitem__(self, index):
                     class FakePanel:
                         def get_trusted_range(self):
-                            return (-1, 1000000)
+                            return (0, 1000000)
 
                     return FakePanel()
 
