@@ -243,7 +243,7 @@ def _dials_phil_str():
     integration_only_overrides {
       trusted_range = None
         .type = floats(size=2)
-        .help = "Override the panel trusted range (underload and saturation) during integration."
+        .help = "Override the panel trusted range [min_trusted_value, max_trusted_value] during integration."
         .short_caption = "Panel trusted range"
     }
   }
