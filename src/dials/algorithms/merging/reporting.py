@@ -6,6 +6,8 @@ from jinja2 import ChoiceLoader, Environment, PackageLoader
 
 from cctbx import uctbx
 
+from dials.algorithms.clustering import plots as cluster_plotter
+from dials.algorithms.clustering.observers import uc_params_from_experiments
 from dials.algorithms.merging.merge import MergingStatisticsData
 from dials.algorithms.scaling.observers import make_merging_stats_plots
 from dials.array_family import flex
@@ -44,6 +46,10 @@ def generate_json_data(data: dict[float, MergingStatisticsData]) -> dict:
         # remove unneeded items
         for i in ["batch_plots", "anom_plots", "image_range_tables"]:
             del stats_plots[i]
+        uc_params = uc_params_from_experiments(stats.experiments)
+        stats_plots["unit_cell_plots"] = cluster_plotter.plot_uc_histograms(
+            uc_params, scatter_style="heatmap"
+        )
         json_data[f"{wl:.5f}"] = stats_plots
         if stats.anomalous_amplitudes:
             json_data[f"{wl:.5f}"]["resolution_plots"].update(
