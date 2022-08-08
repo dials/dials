@@ -1096,12 +1096,12 @@ namespace dials { namespace algorithms {
 
       // Get the starting frame and the underload/overload values
       int zstart = scan.get_array_range()[0];
-      double underload = detector[0].get_trusted_range()[0];
-      double overload = detector[0].get_trusted_range()[1];
-      DIALS_ASSERT(underload < overload);
+      double min_trusted = detector[0].get_trusted_range()[0];
+      double max_trusted = detector[0].get_trusted_range()[1];
+      DIALS_ASSERT(min_trusted < max_trusted);
       for (std::size_t i = 1; i < detector.size(); ++i) {
-        DIALS_ASSERT(underload == detector[i].get_trusted_range()[0]);
-        DIALS_ASSERT(overload == detector[i].get_trusted_range()[1]);
+        DIALS_ASSERT(min_trusted == detector[i].get_trusted_range()[0]);
+        DIALS_ASSERT(max_trusted == detector[i].get_trusted_range()[1]);
       }
 
       // Get the reflection flags and bbox
