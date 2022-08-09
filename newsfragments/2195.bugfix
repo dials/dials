@@ -1,0 +1,1 @@
+``trusted_range`` is now defined consistently as the inclusive range between the minimum and maximum trusted values.
