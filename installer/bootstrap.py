@@ -1002,7 +1002,7 @@ def update_sources(options):
             ("cctbx/cctbx_project", "master"),
             ("cctbx/dxtbx", "main"),
             ("dials/annlib", "master"),
-            ("dials/cbflib", "master"),
+            ("dials/cbflib", "main"),
             ("dials/ccp4io", "master"),
             ("dials/ccp4io_adaptbx", "master"),
             ("dials/dials", "main"),
