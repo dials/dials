@@ -38,8 +38,8 @@ def run_systematic_absences_checks(
     )
 
     logger.info(
-        "%s",
-        tabulate(
+        f"Scoring method: {method}\n"
+        + tabulate(
             [
                 [
                     a.name,
