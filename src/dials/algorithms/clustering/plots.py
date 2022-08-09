@@ -208,7 +208,8 @@ def plot_uc_histograms(uc_params, scatter_style="points"):
     subplots = []
 
     n = 0
-    if len(set(al)) > 1:
+    # only plot if not symmetry constrained, or only one crystal
+    if len(set(al)) > 1 or len(al) == 1:
         n += 1
         uc_angle_hist["data"].append(
             {
@@ -225,7 +226,7 @@ def plot_uc_histograms(uc_params, scatter_style="points"):
         uc_angle_hist["layout"]["xaxis" if n == 1 else f"xaxis{n}"] = {
             "title": "alpha (°)"
         }
-    if len(set(be)) > 1:
+    if len(set(be)) > 1 or len(be) == 1:
         n += 1
         uc_angle_hist["data"].append(
             {
@@ -242,7 +243,7 @@ def plot_uc_histograms(uc_params, scatter_style="points"):
         uc_angle_hist["layout"]["xaxis" if n == 1 else f"xaxis{n}"] = {
             "title": "beta (°)"
         }
-    if len(set(ga)) > 1:
+    if len(set(ga)) > 1 or len(ga) == 1:
         n += 1
         uc_angle_hist["data"].append(
             {
