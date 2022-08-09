@@ -27,6 +27,8 @@ class ScrewAxisObserver(Observer):
             "i_over_sigma": screw_axis.i_over_sigma,
             "intensities": screw_axis.intensities,
             "sigmas": screw_axis.sigmas,
+            "fourier_space_data": screw_axis.fourier_space_data,
+            "axis_repeat": screw_axis.axis_repeat,
         }
 
     def generate_html_report(self, filename):
@@ -59,7 +61,7 @@ class ScrewAxis(Subject):
     name = None
 
     def __init__(self):
-        super().__init__(events=["selected data for scoring"])
+        super().__init__(events=["scored axis"])
         self.equivalent_axes = []
         self.n_refl_used = (0.0, 0.0)
         self.miller_axis_vals = []
@@ -70,6 +72,7 @@ class ScrewAxis(Subject):
         self.mean_I_sigma = 0.0
         self.mean_I_abs = 0.0
         self.mean_I = 0.0
+        self.fourier_space_data = {}
 
     def add_equivalent_axis(self, equivalent):
         """Add a symmetry equivalent axis."""
@@ -86,7 +89,6 @@ class ScrewAxis(Subject):
             selection = (h == 0) & (k == 0)
         return selection
 
-    @Subject.notify_event(event="selected data for scoring")
     def get_all_suitable_reflections(self, reflection_table):
         """Select suitable reflections for testing the screw axis."""
         refl = reflection_table
@@ -110,6 +112,7 @@ class ScrewAxis(Subject):
                 self.intensities.extend(intensities)
                 self.sigmas.extend(sigmas)
 
+    @Subject.notify_event(event="scored axis")
     def score_axis(self, reflection_table, significance_level=0.95, method="direct"):
         """Score the axis given a reflection table of data."""
         if method == "direct":
@@ -169,7 +172,8 @@ class ScrewAxis(Subject):
         mean = fourier_space[null_idx].mean()
         std = fourier_space[null_idx].std()
         p_screw = norm.cdf(fourier_space[n // axis_repeat], loc=mean, scale=std)
-        return p_screw
+        fourier_space_data = {"fourier_space": fourier_space, "n": n}
+        return p_screw, fourier_space_data
 
     def score_axis_fourier(self, reflection_table, significance_level=0.95):
         """Estimate the probability of a screw axis using Fourier analysis."""
@@ -184,9 +188,19 @@ class ScrewAxis(Subject):
         if not expected or not expected_abs:
             return 0.0
 
+        # Log these quantities for reporting.
+        self.mean_I_sigma_abs = flex.mean(expected_abs)
+        self.mean_I_sigma = flex.mean(expected)
+        self.mean_I = flex.mean(self.intensities.select(expected_sel))
+        self.mean_I_abs = flex.mean(self.intensities.select(~expected_sel))
+
         i_over_sigma = np.array(self.i_over_sigma)
         miller_index = np.array(self.miller_axis_vals.iround())
-        p_screw = self._score_axis_fourier(miller_index, i_over_sigma, self.axis_repeat)
+        p_screw, fourier_space_data = self._score_axis_fourier(
+            miller_index, i_over_sigma, self.axis_repeat
+        )
+        # Record the fourier data for reporting.
+        self.fourier_space_data = fourier_space_data
         # Zero out the probability if it is less than the significance_level
         if p_screw < significance_level:
             return 0.0

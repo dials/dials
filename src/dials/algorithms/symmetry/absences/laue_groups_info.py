@@ -26,9 +26,7 @@ def score_screw_axes(
     axes = []
     for axis in laue_group_info["unique_axes"]:
         a = axis()
-        a.register_observer(
-            event="selected data for scoring", observer=ScrewAxisObserver()
-        )
+        a.register_observer(event="scored axis", observer=ScrewAxisObserver())
         if "equivalent_axes" in laue_group_info:
             if axis in laue_group_info["equivalent_axes"]:
                 for equivalent in laue_group_info["equivalent_axes"][axis]:
