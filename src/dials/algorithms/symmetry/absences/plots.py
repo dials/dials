@@ -86,12 +86,16 @@ def plot_screw_axes(screw_axes_data):
                     "layout": {
                         "title": "Fourier amplitudes for axis " + name,
                         "xaxis": {
-                            "title": "1 / l",
+                            "title": "frequency",
                             "tickvals": xtickvals,
                             "ticktext": xticktext,
                         },
                         "yaxis": {"title": "Amplitude", "domain": [y_min, y_max]},
                     },
+                    "help": """
+This plot shows the amplitudes of the frequency spectrum of I/sigma, calculated via
+a discrete fourier transform. The frequencies corresponding to systematic absences
+are indicated by vertical lines.""",
                 }
             }
             for i, dash in zip([2, 3, 4, 6], ["dash", "dot", "dashdot", "solid"]):
