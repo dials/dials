@@ -60,9 +60,9 @@ def plot_screw_axes(screw_axes_data):
             y_min = min(data["fourier_space_data"]["fourier_space"])
             y_max = max(data["fourier_space_data"]["fourier_space"])
             n = data["fourier_space_data"]["n"]
-            xtickvals = []
-            xticktext = ["1/2", "1/2", "1/3", "2/3", "1/4", "3/4", "1/6", "5/6"]
-            for i in [2, 3, 4, 6]:
+            xtickvals = [float(n // 2)]
+            xticktext = ["1/2", "1/3", "2/3", "1/4", "3/4", "1/6", "5/6"]
+            for i in [3, 4, 6]:
                 xloc = float(n // i)
                 xloc2 = n - xloc
                 xtickvals.extend([xloc, xloc2])
@@ -115,6 +115,8 @@ are indicated by vertical lines.""",
                         "name": f"{i}-fold repeat",
                     }
                 )
+                if i == 2:
+                    continue  # don't plot same thing twice
                 xloc2 = float(n - xloc)
                 plot["frequencies_plot_" + name]["data"].append(
                     {
