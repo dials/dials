@@ -9,6 +9,94 @@ def flex_double_as_string(flex_array, n_digits=None):
     return list(flex_array.as_string())
 
 
+def heatmap_unit_cell_scatter_plots(uc_params, nbins=100, mask_zeros=True):
+    """
+    Generate heatmap-style unit cell scatter plots.
+
+    If mask_zeros is True, the output will have NaN values where there is no
+    data, which will be absent (white) in the resulting plotly plots.
+    """
+
+    a, b, c = uc_params[0:3]
+
+    def uc_param_hist2d(p1, p2):
+        H, xedges, yedges = np.histogram2d(p1, p2, bins=nbins)
+        H = np.rot90(H)
+        H = np.flipud(H)
+        if mask_zeros:
+            Hmasked = np.ma.masked_where(H == 0, H)
+            return xedges, yedges, Hmasked
+        return xedges, yedges, H
+
+    x1, y1, z1 = uc_param_hist2d(a, b)
+    x2, y2, z2 = uc_param_hist2d(b, c)
+    x3, y3, z3 = uc_param_hist2d(c, a)
+    maxz = max(np.max(z1), np.max(z2), np.max(z3))
+    return {
+        "data": [
+            {
+                "x": x1.tolist(),
+                "y": y1.tolist(),
+                "z": z1.tolist(),
+                "type": "heatmap",
+                "mode": "markers",
+                "name": "a vs. b",
+                "colorscale": "Viridis",
+                "xaxis": "x",
+                "yaxis": "y",
+                "zaxis": "z",
+                "zmin": 1,
+                "zmax": maxz,
+            },
+            {
+                "x": x2.tolist(),
+                "y": y2.tolist(),
+                "z": z2.tolist(),
+                "type": "heatmap",
+                "mode": "markers",
+                "name": "b vs. c",
+                "colorscale": "Viridis",
+                "xaxis": "x2",
+                "yaxis": "y2",
+                "zaxis": "z",
+                "zmin": 1,
+                "zmax": maxz,
+            },
+            {
+                "x": x3.tolist(),
+                "y": y3.tolist(),
+                "z": z3.tolist(),
+                "type": "heatmap",
+                "mode": "markers",
+                "name": "c vs. a",
+                "colorbar": {
+                    "title": "Frequency",
+                    "titleside": "right",
+                },
+                "colorscale": "Viridis",
+                "xaxis": "x3",
+                "yaxis": "y3",
+                "zmin": 1,
+                "zmax": maxz,
+            },
+        ],
+        "layout": {
+            "title": "Distribution of unit cell parameters",
+            "showlegend": False,
+            "grid": {"rows": 1, "columns": 3, "subplots": [["xy", "x2y2", "x3y3"]]},
+            "xaxis": {"title": "a (Å)"},
+            "yaxis": {"title": "b (Å)"},
+            "xaxis2": {"title": "b (Å)"},
+            "yaxis2": {"title": "c (Å)"},
+            "xaxis3": {"title": "c (Å)"},
+            "yaxis3": {"title": "a (Å)"},
+        },
+        "help": """\
+The distribution of the unit cell parameters: a vs. b, b vs. c and c vs.a respectively.
+""",
+    }
+
+
 def plot_uc_histograms(uc_params, scatter_style="points"):
     a, b, c, al, be, ga = (flex_double_as_string(p, n_digits=4) for p in uc_params)
     if scatter_style == "points":
@@ -58,83 +146,7 @@ def plot_uc_histograms(uc_params, scatter_style="points"):
     """,
         }
     elif scatter_style == "heatmap":
-        a_, b_, c_ = uc_params[0:3]
-
-        def uc_param_hist2d(p1, p2):
-            nbins = 100
-            H, xedges, yedges = np.histogram2d(p1, p2, bins=nbins)
-            H = np.rot90(H)
-            H = np.flipud(H)
-            Hmasked = np.ma.masked_where(H == 0, H)
-            return xedges, yedges, Hmasked
-
-        x1, y1, z1 = uc_param_hist2d(np.array(a_), np.array(b_))
-        x2, y2, z2 = uc_param_hist2d(np.array(b_), np.array(c_))
-        x3, y3, z3 = uc_param_hist2d(np.array(c_), np.array(a_))
-        maxz = max(np.max(z1), np.max(z2), np.max(z3))
-        uc_scatter_plots = {
-            "data": [
-                {
-                    "x": x1.tolist(),
-                    "y": y1.tolist(),
-                    "z": z1.tolist(),
-                    "type": "heatmap",
-                    "mode": "markers",
-                    "name": "a vs. b",
-                    "colorscale": "Viridis",
-                    "xaxis": "x",
-                    "yaxis": "y",
-                    "zaxis": "z",
-                    "zmin": 1,
-                    "zmax": maxz,
-                },
-                {
-                    "x": x2.tolist(),
-                    "y": y2.tolist(),
-                    "z": z2.tolist(),
-                    "type": "heatmap",
-                    "mode": "markers",
-                    "name": "b vs. c",
-                    "colorscale": "Viridis",
-                    "xaxis": "x2",
-                    "yaxis": "y2",
-                    "zaxis": "z",
-                    "zmin": 1,
-                    "zmax": maxz,
-                },
-                {
-                    "x": x3.tolist(),
-                    "y": y3.tolist(),
-                    "z": z3.tolist(),
-                    "type": "heatmap",
-                    "mode": "markers",
-                    "name": "c vs. a",
-                    "colorbar": {
-                        "title": "Frequency",
-                        "titleside": "right",
-                    },
-                    "colorscale": "Viridis",
-                    "xaxis": "x3",
-                    "yaxis": "y3",
-                    "zmin": 1,
-                    "zmax": maxz,
-                },
-            ],
-            "layout": {
-                "title": "Distribution of unit cell parameters",
-                "showlegend": False,
-                "grid": {"rows": 1, "columns": 3, "subplots": [["xy", "x2y2", "x3y3"]]},
-                "xaxis": {"title": "a (Å)"},
-                "yaxis": {"title": "b (Å)"},
-                "xaxis2": {"title": "b (Å)"},
-                "yaxis2": {"title": "c (Å)"},
-                "xaxis3": {"title": "c (Å)"},
-                "yaxis3": {"title": "a (Å)"},
-            },
-            "help": """\
-    The distribution of the unit cell parameters: a vs. b, b vs. c and c vs.a respectively.
-    """,
-        }
+        uc_scatter_plots = heatmap_unit_cell_scatter_plots(uc_params)
     else:
         raise ValueError("Bad input for scatter_type parameter")
 
@@ -211,7 +223,7 @@ def plot_uc_histograms(uc_params, scatter_style="points"):
         )
         subplots.append("xy" if n == 1 else f"x{n}y")
         uc_angle_hist["layout"]["xaxis" if n == 1 else f"xaxis{n}"] = {
-            "title": "alpha (degrees)"
+            "title": "alpha (°)"
         }
     if len(set(be)) > 1:
         n += 1
@@ -228,7 +240,7 @@ def plot_uc_histograms(uc_params, scatter_style="points"):
         )
         subplots.append("xy" if n == 1 else f"x{n}y")
         uc_angle_hist["layout"]["xaxis" if n == 1 else f"xaxis{n}"] = {
-            "title": "beta (degrees)"
+            "title": "beta (°)"
         }
     if len(set(ga)) > 1:
         n += 1
@@ -245,7 +257,7 @@ def plot_uc_histograms(uc_params, scatter_style="points"):
         )
         subplots.append("xy" if n == 1 else f"x{n}y")
         uc_angle_hist["layout"]["xaxis" if n == 1 else f"xaxis{n}"] = {
-            "title": "gamma (degrees)"
+            "title": "gamma (°)"
         }
     if n:
         grid = {"rows": 1, "columns": 3, "subplots": [subplots]}
