@@ -4,6 +4,7 @@ import json
 import math
 import subprocess
 
+import procrunner
 import pytest
 
 import scitbx.matrix
@@ -32,7 +33,7 @@ def test_symmetry_laue_only(dials_data, tmp_path):
     """Simple test to check that dials.symmetry completes"""
 
     lcyst_data = dials_data("l_cysteine_dials_output", pathlib=True)
-    result = subprocess.run(
+    result = procrunner.run(
         [
             "dials.symmetry",
             lcyst_data / "20_integrated_experiments.json",
@@ -41,7 +42,7 @@ def test_symmetry_laue_only(dials_data, tmp_path):
             lcyst_data / "25_integrated.pickle",
             "systematic_absences.check=False",
         ],
-        cwd=tmp_path,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
     assert tmp_path.joinpath("symmetrized.refl").is_file()
@@ -77,14 +78,14 @@ def test_symmetry_basis_changes_for_C2(tmp_path):
         joint_table.extend(r)
     joint_table.as_file(tmp_path / "tmp.refl")
 
-    result = subprocess.run(
+    result = procrunner.run(
         [
             "dials.symmetry",
             tmp_path / "tmp.expt",
             tmp_path / "tmp.refl",
             "json=symmetry.json",
         ],
-        cwd=tmp_path,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
     assert tmp_path.joinpath("symmetrized.refl").is_file()
@@ -122,7 +123,7 @@ def test_symmetry_with_absences(dials_data, tmpdir, option):
     if option:
         cmd.append(option)
 
-    result = subprocess.run(cmd, cwd=tmpdir)
+    result = procrunner.run(cmd, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
     assert tmpdir.join("symmetrized.refl").check()
     assert tmpdir.join("symmetrized.expt").check()
@@ -136,7 +137,7 @@ def test_symmetry_with_laue_group_override(dials_data, tmp_path):
     """Simple test to check that dials.symmetry, with overridden laue group, completes"""
 
     lcyst_data = dials_data("l_cysteine_dials_output", pathlib=True)
-    result = subprocess.run(
+    result = procrunner.run(
         [
             "dials.symmetry",
             "laue_group=P121",
@@ -146,7 +147,7 @@ def test_symmetry_with_laue_group_override(dials_data, tmp_path):
             lcyst_data / "25_integrated_experiments.json",
             lcyst_data / "25_integrated.pickle",
         ],
-        cwd=tmp_path,
+        working_directory=tmp_path,
     )
     assert not result.returncode and not result.stderr
     assert tmp_path.joinpath("symmetrized.refl").is_file()
@@ -169,7 +170,7 @@ def test_symmetry_absences_only(dials_data, tmp_path):
         location / "experiments_0.json",
         location / "reflections_0.pickle",
     ]
-    result = subprocess.run(command, cwd=tmp_path)
+    result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
     assert tmp_path.joinpath("dials.symmetry.html").is_file()
     assert tmp_path.joinpath("symmetrized.expt").is_file()
@@ -178,7 +179,7 @@ def test_symmetry_absences_only(dials_data, tmp_path):
 
     # Now try with a d_min
     command += ["d_min=4.0"]
-    result = subprocess.run(command, cwd=tmp_path)
+    result = procrunner.run(command, working_directory=tmp_path)
     assert not result.returncode and not result.stderr
     exps = load.experiment_list(tmp_path / "symmetrized.expt", check_format=False)
     assert str(exps[0].crystal.get_space_group().info()) == "P 41"
