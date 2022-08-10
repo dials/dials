@@ -51,6 +51,7 @@ def prepare_merged_reflection_table(
             reflection_table,
             intensity_choice=["scale"],
             d_min=d_min,
+            d_max=d_max,
             partiality_threshold=partiality_threshold,
         )
         reflections["intensity"] = reflections["intensity.scale.value"]
