@@ -8,6 +8,8 @@ from dxtbx.serialize import load
 def test(dials_data, tmp_path):
     experiments = dials_data("centroid_test_data", pathlib=True) / "experiments.json"
 
+    # Patched data file, should be updated with new data
+    # https://github.com/dials/dials/issues/2200
     exp = load.experiment_list(experiments)
     panel = exp[0].detector[0]
     max_trusted = panel.get_trusted_range()[1]

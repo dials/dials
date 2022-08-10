@@ -13,6 +13,8 @@ def test_model_background(dials_data, tmp_path):
     centroid = dials_data("centroid_test_data", pathlib=True)
     expts = centroid / "experiments.json"
 
+    # Patched data file, should be updated with new data
+    # https://github.com/dials/dials/issues/2200
     exp = load.experiment_list(expts)
     panel = exp[0].detector[0]
     max_trusted = panel.get_trusted_range()[1]
