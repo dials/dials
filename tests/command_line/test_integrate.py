@@ -432,7 +432,6 @@ def test_multi_sweep(dials_regression, tmpdir):
     panel = experiments[0].detector[0]
     max_trusted = panel.get_trusted_range()[1]
     panel.set_trusted_range((0, max_trusted))
-    # experiments.as_json(tmpdir.join("trusted_range_patch.expt"))
 
     experiments.as_json(tmpdir / "modified_input.json")
 
