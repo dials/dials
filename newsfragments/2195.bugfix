@@ -1,1 +1,1 @@
-``trusted_range`` is now defined consistently as the inclusive range between the minimum and maximum trusted values.
+``trusted_range`` is now defined consistently as the _inclusive_ range between the minimum and maximum trusted values, i.e. valid pixels are those less than or equal to the maximum trusted value and greater than or equal to the minimum trusted value.
