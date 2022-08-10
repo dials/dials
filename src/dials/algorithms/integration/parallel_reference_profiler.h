@@ -57,8 +57,8 @@ namespace dials { namespace algorithms {
      * @param compute_reference The intensity calculation function
      * @param buffer The image buffer array
      * @param zstart The first image index
-     * @param min_trusted The min_trusted value
-     * @param max_trusted The max_trusted value
+     * @param min_trusted The minimum trusted value
+     * @param max_trusted The maximum trusted value
      */
     ReflectionReferenceProfiler(const MaskCalculatorIface &compute_mask,
                                 const BackgroundCalculatorIface &compute_background,
