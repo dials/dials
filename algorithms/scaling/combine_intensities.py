@@ -342,9 +342,8 @@ class MultiDatasetIntensityCombiner:
             combined_indices = flex.miller_index([])
             for dataset in self.datasets:
                 Int, Var = _get_Is_from_Imidval(dataset, Imid)
-                Int *= dataset["prescaling_correction"]
                 sigma = flex.sqrt(Var) * dataset["prescaling_correction"]
-                combined_intensities.extend(Int)
+                combined_intensities.extend(Int * dataset["prescaling_correction"])
                 combined_sigmas.extend(sigma)
                 combined_scales.extend(dataset["inverse_scale_factor"])
                 combined_indices.extend(dataset["miller_index"])
