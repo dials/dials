@@ -89,7 +89,6 @@ def test_basic_integrate(dials_data, tmpdir):
     panel = exp[0].detector[0]
     max_trusted = panel.get_trusted_range()[1]
     panel.set_trusted_range((0, max_trusted))
-    # exp.as_json(tmpdir.join("trusted_range_patch.expt"))
 
     exp.as_json(tmpdir.join("models.expt"))
 
