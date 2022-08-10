@@ -13,7 +13,9 @@ def test_model_background(dials_data, tmp_path):
     centroid = dials_data("centroid_test_data", pathlib=True)
     expts = centroid / "experiments.json"
 
-    # Patched data file, should be updated with new data
+    # Patched data file. Original had trusted_range from -1, but now this range
+    # is defined to start from the minimum trusted value. This test should be
+    # updated with new data.
     # https://github.com/dials/dials/issues/2200
     exp = load.experiment_list(expts)
     panel = exp[0].detector[0]

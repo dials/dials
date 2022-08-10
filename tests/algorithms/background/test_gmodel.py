@@ -33,6 +33,10 @@ def test_simple(dials_data, model, tmpdir):
     reflns_simple.dirpath().ensure(dir=1)
     reflns_g_simple.dirpath().ensure(dir=1)
 
+    # Patched data file. Original had trusted_range from -1, but now this range
+    # is defined to start from the minimum trusted value. This test should be
+    # updated with new data.
+    # https://github.com/dials/dials/issues/2200
     exp = load.experiment_list(experiments)
     panel = exp[0].detector[0]
     max_trusted = panel.get_trusted_range()[1]
@@ -100,6 +104,10 @@ def test_robust(dials_data, model, tmpdir):
     reflns_robust.dirpath().ensure(dir=1)
     reflns_g_robust.dirpath().ensure(dir=1)
 
+    # Patched data file. Original had trusted_range from -1, but now this range
+    # is defined to start from the minimum trusted value. This test should be
+    # updated with new data.
+    # https://github.com/dials/dials/issues/2200
     exp = load.experiment_list(experiments)
     panel = exp[0].detector[0]
     max_trusted = panel.get_trusted_range()[1]

@@ -8,7 +8,9 @@ from dxtbx.serialize import load
 def test(dials_data, tmp_path):
     experiments = dials_data("centroid_test_data", pathlib=True) / "experiments.json"
 
-    # Patched data file, should be updated with new data
+    # Patched data file. Original had trusted_range from -1, but now this range
+    # is defined to start from the minimum trusted value. This test should be
+    # updated with new data.
     # https://github.com/dials/dials/issues/2200
     exp = load.experiment_list(experiments)
     panel = exp[0].detector[0]
