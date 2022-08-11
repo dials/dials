@@ -1009,7 +1009,11 @@ class AnomalousPlotter:
                         rmsd_1min1 = (
                             flex.sum(flex.pow2(dano1 + dano2)) / (2.0 * dano1.size())
                         ) ** 0.5
-                        correl_ratios.append(rmsd_1min1 / rmsd_11)
+                        if abs(rmsd_11) < 1e-6:
+                            # possible for sparse data if a few dano values approx equal
+                            correl_ratios.append(1e6)
+                        else:
+                            correl_ratios.append(rmsd_1min1 / rmsd_11)
                     else:
                         correl_ratios.append(0.0)
                 else:
