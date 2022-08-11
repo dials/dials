@@ -454,7 +454,10 @@ Using space group I 2 2 2, space group I 21 21 21 is equally likely.\n"""
                 joint_reflections = refls_for_sym[0]
 
             merged_reflections = prepare_merged_reflection_table(
-                experiments, joint_reflections, d_min
+                experiments,
+                joint_reflections,
+                d_min,
+                partiality_threshold=params.partiality_threshold,
             )
             run_systematic_absences_checks(
                 experiments,
