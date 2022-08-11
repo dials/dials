@@ -289,7 +289,7 @@ def generate_plots(summary_data: dict) -> dict:
         mult = int(1 / 0.01)
         start = math.floor(np.min(all_rmsd) * mult) / mult
         stop = math.ceil(np.max(all_rmsd) * mult) / mult
-        nbins = int((stop - start) / step)
+        nbins = max(1, int((stop - start) / step))
         hist, bin_edges = np.histogram(
             all_rmsd,
             bins=nbins,
