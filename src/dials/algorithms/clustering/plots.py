@@ -92,7 +92,7 @@ def heatmap_unit_cell_scatter_plots(uc_params, nbins=100, mask_zeros=True):
             "yaxis3": {"title": "a (Å)"},
         },
         "help": """\
-The distribution of the unit cell parameters: a vs. b, b vs. c and c vs.a respectively.
+The distribution of the unit cell parameters: a vs b, b vs c and c vs a respectively.
 """,
     }
 
