@@ -97,6 +97,11 @@ systematic_absences {
     .type = bool
     .help = "Check systematic absences for the current laue group."
 
+  method = *direct fourier
+    .type = choice
+    .help = "Use fourier analysis or direct analysis of I/sigma to determine"
+            "likelihood of systematic absences"
+
   significance_level = *0.95 0.975 0.99
     .type = choice
     .help = "Signficance to use when testing whether axial reflections are "
@@ -463,6 +468,7 @@ Using space group I 2 2 2, space group I 21 21 21 is equally likely.\n"""
                 experiments,
                 merged_reflections,
                 float(params.systematic_absences.significance_level),
+                method=params.systematic_absences.method,
             )
 
     logger.info(
