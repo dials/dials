@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import copy
+
 import numpy as np
 
 from dxtbx import flumpy
@@ -78,7 +80,6 @@ class EllipsoidIntegrator(SimpleIntegrator):
             fix_list.append("unit_cell")
         if self.params.profile.ellipsoid.orientation.fixed:
             fix_list.append("orientation")
-        import copy
 
         initial_table = copy.deepcopy(table)
 

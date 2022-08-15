@@ -58,6 +58,7 @@ from dials.algorithms.integration.ssx.ssx_integrate import (
 )
 from dials.algorithms.integration.ssx.stills_integrate import StillsIntegrator
 from dials.array_family import flex
+from dials.command_line.combine_experiments import CombineWithReference
 from dials.util import log, show_mail_handle_errors
 from dials.util.options import ArgumentParser, flatten_experiments, flatten_reflections
 from dials.util.version import dials_version
@@ -424,7 +425,6 @@ def run(args: List[str] = None, phil=working_phil) -> None:
             )
 
     integrated_crystal_symmetries = []
-    from dials.command_line.combine_experiments import CombineWithReference
 
     for i, (int_expt, int_refl, aggregator) in enumerate(
         run_integration(reflections, experiments, params)
