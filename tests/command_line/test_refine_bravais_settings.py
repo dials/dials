@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 
+import procrunner
 import pytest
 
 from cctbx import sgtbx, uctbx
@@ -11,27 +12,29 @@ from dxtbx.serialize import load
 from dials.command_line import refine_bravais_settings
 
 
-def test_refine_bravais_settings_i04_weak_data(dials_regression, tmpdir):
+def test_refine_bravais_settings_i04_weak_data(dials_regression, tmp_path):
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
     pickle_path = os.path.join(data_dir, "indexed.pickle")
     experiments_path = os.path.join(data_dir, "experiments.json")
-    with tmpdir.as_cwd():
-        refine_bravais_settings.run(
-            [
-                pickle_path,
-                experiments_path,
-                "reflections_per_degree=5",
-                "minimum_sample_size=500",
-                "beam.fix=all",
-                "detector.fix=all",
-                "prefix=tst_",
-            ]
-        )
+    result = procrunner.run(
+        [
+            "dials.refine_bravais_settings",
+            pickle_path,
+            experiments_path,
+            "reflections_per_degree=5",
+            "minimum_sample_size=500",
+            "beam.fix=all",
+            "detector.fix=all",
+            "prefix=tst_",
+        ],
+        working_directory=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
     for i in range(1, 10):
-        assert tmpdir.join(f"tst_bravais_setting_{i}.expt").check()
+        assert (tmp_path / f"tst_bravais_setting_{i}.expt").is_file()
 
     experiments_list = load.experiment_list(
-        tmpdir.join("tst_bravais_setting_9.expt"), check_format=False
+        tmp_path / "tst_bravais_setting_9.expt", check_format=False
     )
     assert len(experiments_list) == 1
     assert (
@@ -41,8 +44,8 @@ def test_refine_bravais_settings_i04_weak_data(dials_regression, tmpdir):
     )
     assert experiments_list[0].crystal.get_space_group().type().hall_symbol() == " P 4"
 
-    assert tmpdir.join("tst_bravais_summary.json").check()
-    with tmpdir.join("tst_bravais_summary.json").open("rb") as fh:
+    assert (tmp_path / "tst_bravais_summary.json").is_file()
+    with (tmp_path / "tst_bravais_summary.json").open("rb") as fh:
         bravais_summary = json.load(fh)
     assert set(bravais_summary) == {"1", "2", "3", "4", "5", "6", "7", "8", "9"}
     assert set(bravais_summary["9"]).issuperset(
@@ -57,17 +60,20 @@ def test_refine_bravais_settings_i04_weak_data(dials_regression, tmpdir):
     assert bravais_summary["9"]["rmsd"] == pytest.approx(0.047, abs=1e-2)
 
 
-def test_refine_bravais_settings_multi_sweep(dials_regression, tmpdir):
+def test_refine_bravais_settings_multi_sweep(dials_regression, tmp_path):
     data_dir = os.path.join(dials_regression, "indexing_test_data", "multi_sweep")
     pickle_path = os.path.join(data_dir, "indexed.pickle")
     experiments_path = os.path.join(data_dir, "experiments.json")
-    with tmpdir.as_cwd():
-        refine_bravais_settings.run([pickle_path, experiments_path])
+    result = procrunner.run(
+        ["dials.refine_bravais_settings", pickle_path, experiments_path],
+        working_directory=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
     for i in range(1, 10):
-        assert tmpdir.join(f"bravais_setting_{i}.expt").check()
+        assert (tmp_path / f"bravais_setting_{i}.expt").is_file()
 
     experiments_list = load.experiment_list(
-        tmpdir.join("bravais_setting_9.expt"), check_format=False
+        tmp_path / "bravais_setting_9.expt", check_format=False
     )
     assert len(experiments_list) == 4
     assert len(experiments_list.crystals()) == 1
@@ -77,8 +83,8 @@ def test_refine_bravais_settings_multi_sweep(dials_regression, tmpdir):
         .is_similar_to(uctbx.unit_cell((7.31, 7.31, 6.82, 90.00, 90.00, 90.00)))
     )
     assert experiments_list[0].crystal.get_space_group().type().hall_symbol() == " I 4"
-    assert tmpdir.join("bravais_summary.json").check()
-    with tmpdir.join("bravais_summary.json").open("rb") as fh:
+    assert (tmp_path / "bravais_summary.json").is_file()
+    with (tmp_path / "bravais_summary.json").open("rb") as fh:
         bravais_summary = json.load(fh)
     for i in range(1, 23):
         assert str(i) in bravais_summary
@@ -91,17 +97,25 @@ def test_refine_bravais_settings_multi_sweep(dials_regression, tmpdir):
     assert bravais_summary["9"]["recommended"] is True
 
 
-def test_refine_bravais_settings_trypsin(dials_regression, tmpdir):
+def test_refine_bravais_settings_trypsin(dials_regression, tmp_path):
     data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
     pickle_path = os.path.join(data_dir, "indexed.pickle")
     experiments_path = os.path.join(data_dir, "experiments.json")
-    with tmpdir.as_cwd():
-        refine_bravais_settings.run([pickle_path, experiments_path, "crystal_id=1"])
+    result = procrunner.run(
+        [
+            "dials.refine_bravais_settings",
+            pickle_path,
+            experiments_path,
+            "crystal_id=1",
+        ],
+        working_directory=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
     for i in range(1, 10):
-        assert tmpdir.join(f"bravais_setting_{i}.expt").check()
+        assert (tmp_path / f"bravais_setting_{i}.expt").is_file()
 
     experiments_list = load.experiment_list(
-        tmpdir.join("bravais_setting_5.expt"), check_format=False
+        tmp_path / "bravais_setting_5.expt", check_format=False
     )
     assert len(experiments_list) == 1
     assert (
@@ -113,8 +127,8 @@ def test_refine_bravais_settings_trypsin(dials_regression, tmpdir):
         experiments_list[0].crystal.get_space_group().type().hall_symbol() == " P 2 2"
     )
 
-    assert tmpdir.join("bravais_summary.json").check()
-    with tmpdir.join("bravais_summary.json").open("rb") as fh:
+    assert (tmp_path / "bravais_summary.json").is_file()
+    with (tmp_path / "bravais_summary.json").open("rb") as fh:
         bravais_summary = json.load(fh)
     assert set(bravais_summary) == {"1", "2", "3", "4", "5", "6", "7", "8", "9"}
 
@@ -127,17 +141,20 @@ def test_refine_bravais_settings_trypsin(dials_regression, tmpdir):
     assert bravais_summary["9"]["recommended"] is False
 
 
-def test_refine_bravais_settings_554(dials_regression, tmpdir):
+def test_refine_bravais_settings_554(dials_regression, tmp_path):
     data_dir = os.path.join(dials_regression, "dials-554")
     pickle_path = os.path.join(data_dir, "indexed.pickle")
     experiments_path = os.path.join(data_dir, "experiments.json")
-    with tmpdir.as_cwd():
-        refine_bravais_settings.run([pickle_path, experiments_path])
+    result = procrunner.run(
+        ["dials.refine_bravais_settings", pickle_path, experiments_path],
+        working_directory=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
     for i in range(1, 5):
-        assert tmpdir.join(f"bravais_setting_{i}.expt").check()
+        assert (tmp_path / f"bravais_setting_{i}.expt").is_file()
 
     experiments_list = load.experiment_list(
-        tmpdir.join("bravais_setting_5.expt"), check_format=False
+        tmp_path / "bravais_setting_5.expt", check_format=False
     )
     assert len(experiments_list) == 7
     assert len(experiments_list.crystals()) == 1
@@ -157,8 +174,8 @@ def test_refine_bravais_settings_554(dials_regression, tmpdir):
         assert experiments_list[i].detector[0].get_origin() == pytest.approx(
             (-41, 91, -99), abs=1
         )
-    assert tmpdir.join("bravais_summary.json").check()
-    with tmpdir.join("bravais_summary.json").open("rb") as fh:
+    assert (tmp_path / "bravais_summary.json").is_file()
+    with (tmp_path / "bravais_summary.json").open("rb") as fh:
         bravais_summary = json.load(fh)
     for i in range(1, 5):
         assert str(i) in bravais_summary
@@ -183,23 +200,24 @@ def test_setting_c2_vs_i2(
     expected_space_group,
     expected_unit_cell,
     dials_data,
-    tmpdir,
-    capsys,
+    tmp_path,
 ):
     data_dir = dials_data("mpro_x0305_processed", pathlib=True)
     refl_path = data_dir / "indexed.refl"
     experiments_path = data_dir / "indexed.expt"
-    with tmpdir.as_cwd():
-        refine_bravais_settings.run(
-            [
-                os.fspath(experiments_path),
-                os.fspath(refl_path),
-                f"best_monoclinic_beta={best_monoclinic_beta}",
-            ]
-        )
+    result = procrunner.run(
+        [
+            "dials.refine_bravais_settings",
+            os.fspath(experiments_path),
+            os.fspath(refl_path),
+            f"best_monoclinic_beta={best_monoclinic_beta}",
+        ],
+        working_directory=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
     expts_orig = load.experiment_list(experiments_path, check_format=False)
     expts = load.experiment_list(
-        tmpdir.join("bravais_setting_2.expt"), check_format=False
+        tmp_path / "bravais_setting_2.expt", check_format=False
     )
     expected_bravais_lattice = str(
         sgtbx.bravais_types.bravais_lattice(symbol=expected_space_group)
@@ -208,7 +226,7 @@ def test_setting_c2_vs_i2(
     assert expts[0].crystal.get_unit_cell().parameters() == pytest.approx(
         expected_unit_cell, abs=1e-2
     )
-    with tmpdir.join("bravais_summary.json").open("rb") as fh:
+    with (tmp_path / "bravais_summary.json").open("rb") as fh:
         bravais_summary = json.load(fh)
     assert bravais_summary["2"]["bravais"] == expected_bravais_lattice
     # Verify that the cb_op converts from the input setting to the refined setting
@@ -223,10 +241,52 @@ def test_setting_c2_vs_i2(
             absolute_angle_tolerance=1,
         )
     )
-    captured = capsys.readouterr()
-    assert bravais_summary["2"]["cb_op"] in captured.out
-    assert f"| {expected_bravais_lattice}        |" in captured.out
+    stdout = result.stdout.decode()
+    assert bravais_summary["2"]["cb_op"] in stdout
+    assert f"| {expected_bravais_lattice}        |" in stdout
     expected_short_name = refine_bravais_settings.short_space_group_name(
         sgtbx.space_group_info(expected_space_group).group()
     )
-    assert f"{expected_bravais_lattice}: {expected_short_name}" in captured.out
+    assert f"{expected_bravais_lattice}: {expected_short_name}" in stdout
+
+
+def test_refine_bravais_settings_non_primitive_input(dials_data, tmp_path):
+    data_dir = dials_data("insulin_processed", pathlib=True)
+    refl_path = data_dir / "indexed.refl"
+    expt_path = data_dir / "indexed.expt"
+    result = procrunner.run(
+        [
+            "dials.refine_bravais_settings",
+            expt_path,
+            refl_path,
+        ],
+        working_directory=tmp_path,
+    )
+    assert not result.returncode and not result.stderr
+    for i in range(1, 22):
+        assert (tmp_path / f"bravais_setting_{i}.expt").is_file()
+
+    assert (tmp_path / "bravais_summary.json").is_file()
+    with (tmp_path / "bravais_summary.json").open("rb") as fh:
+        bravais_summary = json.load(fh)
+    assert bravais_summary["1"]["bravais"] == "aP"
+    assert bravais_summary["1"]["cb_op"] == "y+z,x+z,x+y"
+    assert bravais_summary["22"]["bravais"] == "cI"
+    assert bravais_summary["22"]["cb_op"] == "a,b,c"
+
+    for record in result.stdout.decode().split("\n"):
+        if "aP " in record:
+            assert "y+z,x+z,x+y" in record
+        elif "cI " in record:
+            assert "a,b,c" in record
+
+    # Verify that the reported cb_ops correctly map the input setting
+    # to the unit cell for each Bravais setting
+    input_expts = load.experiment_list(expt_path, check_format=False)
+    input_cs = input_expts[0].crystal.get_crystal_symmetry()
+    for i in range(22):
+        uc_input_to_ref = input_cs.unit_cell().change_basis(
+            sgtbx.change_of_basis_op(bravais_summary[f"{i+1}"]["cb_op"])
+        )
+        uc_ref = uctbx.unit_cell(bravais_summary[f"{i+1}"]["unit_cell"])
+        assert uc_input_to_ref.is_similar_to(uc_ref)

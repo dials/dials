@@ -110,3 +110,168 @@
     </div>
 </div>
 {%- endmacro %}
+
+{% macro merging_statistics(scaling_tables, xtriage_output, id) -%}
+
+<div>
+    <h2> Merging statistics</h2>
+
+    <div class="panel-group">
+
+        <div class="panel panel-default">
+            <div class="panel-heading" data-toggle="collapse" data-target="#collapse_overall_{{id}}">
+                <h4 class="panel-title">
+                    <a>Overall</a>
+                </h4>
+            </div>
+            <div id="collapse_overall_{{id}}" class="panel-collapse collapse in">
+                <div class="panel-body">
+                    <div style="width: 800px">
+                        {{ table(scaling_tables['overall'],
+                                        has_column_header=true,
+                                        has_row_header=true) }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel panel-default">
+            <div class="panel-heading" data-toggle="collapse" data-target="#collapse_merging_stats_{{id}}">
+                <h4 class="panel-title">
+                    <a>Resolution shells</a>
+                </h4>
+            </div>
+            <div id="collapse_merging_stats_{{id}}" class="panel-collapse collapse">
+                <div class="panel-body">
+                    {{ table(scaling_tables['resolution_binned'],
+                                    has_column_header=true) }}
+                    *significant at p={{ scaling_tables['cc_half_significance_level'] }}
+                </div>
+            </div>
+        </div>
+
+        {% if xtriage_output %}
+            {{ xtriage_results(
+                xtriage_output['xtriage_success'],
+                xtriage_output['xtriage_warnings'],
+                xtriage_output['xtriage_danger'],
+                suffix=id,) }}
+        {% endif %}
+
+    </div>
+</div>
+
+{%- endmacro %}
+
+{% macro xtriage_results(success, warning, danger, suffix='') -%}
+
+{% if success or warning or danger %}
+    <div class="panel panel-default">
+        <div class="panel-heading" data-toggle="collapse" data-target="#collapse_xtriage{{ suffix }}">
+            <h4 class="panel-title">
+                <a>Xtriage</a>
+            </h4>
+        </div>
+        <div id="collapse_xtriage{{ suffix }}" class="panel-collapse collapse in">
+            <div class="panel-body">
+                <div class="panel-group">
+                    {% if danger %}
+                        <div class="panel panel-danger">
+                            <div class="panel-heading" data-toggle="collapse" data-target="#collapse_xtriage_danger{{suffix}}">
+                                <h4 class="panel-title">
+                                    <span class="glyphicon glyphicon-remove"></span>
+                                    <a>{{ danger|length}} serious warning{% if danger|length > 1%}s{% endif %}</a>
+                                </h4>
+                            </div>
+                            <div id="collapse_xtriage_danger{{suffix}}" class="panel-collapse collapse in">
+                                <div class="panel-body">
+                                    {% for issue in danger %}
+                                        <button type="button" class="btn btn-danger btn-block" style="text-align:left; padding-left:6px" data-toggle="modal" data-target="#danger{{ suffix }}{{ loop.index }}">
+                                        <span class="glyphicon glyphicon-remove"></span>
+                                        {{ issue.text }}
+                                        </button>
+                                    {{ xtriage_modal(issue.header, issue.summary, "danger"+suffix+loop.index|string)}}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    {% if warning %}
+                        <div class="panel panel-warning">
+                            <div class="panel-heading" data-toggle="collapse" data-target="#collapse_xtriage_warning{{suffix}}">
+                                <h4 class="panel-title">
+                                    <span class="glyphicon glyphicon-exclamation-sign"></span>
+                                    <a>{{ warning|length}} alert{% if warning|length > 1%}s{% endif %}</a>
+                                </h4>
+                            </div>
+                            <div id="collapse_xtriage_warning{{suffix}}" class="panel-collapse collapse in">
+                                <div class="panel-body">
+                                    {% for issue in warning %}
+                                        <button type="button" class="btn btn-warning btn-block" style="text-align:left; padding-left:6px" data-toggle="modal" data-target="#warning{{ suffix }}{{ loop.index }}">
+                                        <span class="glyphicon glyphicon-exclamation-sign"></span>
+                                        {{ issue.text }}
+                                        </button>
+                                    {{ xtriage_modal(issue.header, issue.summary, "warning"+suffix+loop.index|string)}}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    {% if success %}
+                        <div class="panel panel-success">
+                            <div class="panel-heading" data-toggle="collapse" data-target="#collapse_xtriage_success{{suffix}}">
+                                <h4 class="panel-title">
+                                    <span class="glyphicon glyphicon-ok"></span>
+                                    <a>{{ success|length}} check{% if success|length > 1%}s{% endif %} passed</a>
+                                </h4>
+                            </div>
+                            <div id="collapse_xtriage_success{{suffix}}" class="panel-collapse collapse">
+                                <div class="panel-body">
+                                    {% for issue in success %}
+                                        <button type="button" class="btn btn-success btn-block" style="text-align:left; padding-left:6px" data-toggle="modal" data-target="#success{{ suffix }}{{ loop.index }}">
+                                        <span class="glyphicon glyphicon-ok"></span>
+                                        {{ issue.text }}
+                                        </button>
+                                    {{ xtriage_modal(issue.header, issue.summary, "success"+suffix+loop.index|string)}}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+                <small>
+                    Zwart, P. H., Grosse-Kunstleve, R. W. &amp; Adams, P. D. (2005). <i>CCP4 Newsl.</i> <b>43</b>, contribution 7.
+                </small>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+{%- endmacro %}
+
+{% macro xtriage_modal(header, content, id) -%}
+
+<!-- Modal -->
+<div id="{{ id }}" class="modal fade" role="dialog">
+  <div class="modal-dialog modal-lg">
+
+    <!-- Modal content-->
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">{{ header }}</h4>
+      </div>
+      <div class="modal-body">
+        {% autoescape true %}
+          <pre>{{ content }}</pre>
+        {% endautoescape %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{%- endmacro %}

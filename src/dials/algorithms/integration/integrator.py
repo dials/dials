@@ -33,6 +33,9 @@ from dials.algorithms.integration.validation import ValidatedMultiExpProfileMode
 from dials.algorithms.profile_model.modeller import MultiExpProfileModeller
 from dials.algorithms.shoebox import MaskCode
 from dials.array_family import flex
+
+# constants
+from dials.constants import EPS, FULL_PARTIALITY
 from dials.util import Sorry, phil, pprint, tabulate
 from dials.util.command_line import heading
 from dials.util.report import Report
@@ -632,9 +635,10 @@ class ProfileModellerExecutor(Executor):
         :param reflections: The reflections that will be processed
         """
 
-        # Get some info
-        EPS = 1e-7
-        full_value = 0.997300203937 - EPS
+        # Count "effectively full" and partial reflections N.B.
+        # here effectively full is equivalent to area under a normal
+        # curve to +/- 3 sigma
+        full_value = FULL_PARTIALITY - EPS
         fully_recorded = reflections["partiality"] > full_value
         npart = fully_recorded.count(False)
         nfull = fully_recorded.count(True)
@@ -735,8 +739,7 @@ class ProfileValidatorExecutor(Executor):
         """
 
         # Get some info
-        EPS = 1e-7
-        full_value = 0.997300203937 - EPS
+        full_value = FULL_PARTIALITY - EPS
         fully_recorded = reflections["partiality"] > full_value
         npart = fully_recorded.count(False)
         nfull = fully_recorded.count(True)
@@ -843,8 +846,7 @@ class IntegratorExecutor(Executor):
         """
 
         # Get some info
-        EPS = 1e-7
-        full_value = 0.997300203937 - EPS
+        full_value = FULL_PARTIALITY - EPS
         fully_recorded = reflections["partiality"] > full_value
         npart = fully_recorded.count(False)
         nfull = fully_recorded.count(True)

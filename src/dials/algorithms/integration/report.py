@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dials.array_family import flex
 from dials.array_family.flex import Binner
+from dials.constants import FULL_PARTIALITY
 from dials.util.report import Array, Report, Table
 
 
@@ -213,7 +214,7 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
             data[key] = reflections[key]
 
     # Compute some flag stuff
-    data["full"] = data["partiality"] > 0.997300203937
+    data["full"] = data["partiality"] >= FULL_PARTIALITY
     data["over"] = reflections.get_flags(flags.overloaded)
     data["ice"] = reflections.get_flags(flags.in_powder_ring)
     data["sum"] = reflections.get_flags(flags.integrated_sum)

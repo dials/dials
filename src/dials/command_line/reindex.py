@@ -340,6 +340,10 @@ experiments file must also be specified with the option: reference.experiments= 
             if "Unsuitable value for rational rotation matrix." in str(e):
                 original_message = str(e).split(":")[-1].strip()
                 sys.exit(f"Error: {original_message} Is your change_of_basis_op valid?")
+            elif "DXTBX_ASSERT(detail::is_r3_rotation_matrix(U)) failure" in str(e):
+                sys.exit(
+                    "Error: U is not a rotation matrix. Is your change_of_basis_op valid?"
+                )
             raise
 
         print(f"Saving reindexed experimental models to {params.output.experiments}")

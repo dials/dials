@@ -30,7 +30,9 @@ DIALS script for processing still images. Import, index, refine, and integrate a
 separately.
 """
 
-control_phil_str = """
+
+def _control_phil_str():
+    return """
   input {
     file_list = None
       .type = path
@@ -187,7 +189,9 @@ control_phil_str = """
   }
 """
 
-dials_phil_str = """
+
+def _dials_phil_str():
+    return """
   input {
     reference_geometry = None
       .type = str
@@ -255,7 +259,9 @@ dials_phil_str = """
   }
 """
 
-program_defaults_phil_str = """
+
+def _program_defaults_phil_str():
+    return """
 indexing {
   method = fft1d
 }
@@ -286,6 +292,11 @@ integration {
 }
 profile.gaussian_rs.min_spots.overall = 0
 """
+
+
+control_phil_str = _control_phil_str()
+dials_phil_str = _dials_phil_str()
+program_defaults_phil_str = _program_defaults_phil_str()
 
 phil_scope = parse(control_phil_str + dials_phil_str, process_includes=True).fetch(
     parse(program_defaults_phil_str)
@@ -402,7 +413,10 @@ class Script:
                 all_paths.extend(params.input.glob)
             globbed = []
             for p in all_paths:
-                globbed.extend(glob.glob(p))
+                g = glob.glob(p)
+                if not g:
+                    sys.exit(f"Error: Unhandled path or option: {p}")
+                globbed.extend(g)
             all_paths = globbed
 
             if not all_paths and params.input.file_list is not None:

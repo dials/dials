@@ -44,7 +44,7 @@ devnull = open(os.devnull, "wb")  # to redirect unwanted subprocess output
 allowed_ssh_connections = {}
 concurrent_git_connection_limit = threading.Semaphore(5)
 
-_prebuilt_cctbx_base = "2021.9"  # October 2021 release
+_prebuilt_cctbx_base = "2022.3"  # April 2022 release
 
 
 def make_executable(filepath):
@@ -59,23 +59,24 @@ def install_micromamba(python, include_cctbx):
     """Download and install Micromamba"""
     if sys.platform.startswith("linux"):
         conda_platform = "linux"
+        conda_arch = "linux-64"
         member = "bin/micromamba"
-        url = "https://micromamba.snakepit.net/api/micromamba/linux-64/latest"
     elif sys.platform == "darwin":
         conda_platform = "macos"
         member = "bin/micromamba"
         if platform.machine() == "arm64":
-            url = "https://micromamba.snakepit.net/api/micromamba/osx-arm64/latest"
+            conda_arch = "osx-arm64"
         else:
-            url = "https://micromamba.snakepit.net/api/micromamba/osx-64/latest"
+            conda_arch = "osx-64"
     elif os.name == "nt":
         conda_platform = "windows"
         member = "Library/bin/micromamba.exe"
-        url = "https://micromamba.snakepit.net/api/micromamba/win-64/latest"
+        conda_arch = "win-64"
     else:
         raise NotImplementedError(
             "Unsupported platform %s / %s" % (os.name, sys.platform)
         )
+    url = "https://micro.mamba.pm/api/micromamba/{0}/latest".format(conda_arch)
     mamba_prefix = os.path.realpath("micromamba")
     clean_env["MAMBA_ROOT_PREFIX"] = mamba_prefix
     mamba = os.path.join(mamba_prefix, member.split("/")[-1])
@@ -95,13 +96,16 @@ def install_micromamba(python, include_cctbx):
         conda_info = conda_info.decode("latin-1")
     print("Using Micromamba version", conda_info.strip())
 
-    # identify packages required for environment
-    filename = os.path.join(
-        "modules",
-        "dials",
-        ".conda-envs",
-        "{platform}.txt".format(platform=conda_platform),
-    )
+    # Identify packages required for environment
+    env_dir = os.path.join("modules", "dials", ".conda-envs")
+    # First, check to see if we have an architecture-and-python-specific environment file
+    filename = os.path.join(env_dir, "{0}_py{1}.txt".format(conda_arch, python))
+    if not os.path.isfile(filename):
+        # Otherwise, check if we have an architecture-specific environment file
+        filename = os.path.join(env_dir, "{0}.txt".format(conda_arch))
+    if not os.path.isfile(filename):
+        # Otherwise, use the platform-specific fallback
+        filename = os.path.join(env_dir, conda_platform + ".txt")
     if not os.path.isfile(filename):
         raise RuntimeError(
             "The environment file {filename} is not available".format(filename=filename)
@@ -998,7 +1002,7 @@ def update_sources(options):
             ("cctbx/cctbx_project", "master"),
             ("cctbx/dxtbx", "main"),
             ("dials/annlib", "master"),
-            ("dials/cbflib", "master"),
+            ("dials/cbflib", "main"),
             ("dials/ccp4io", "master"),
             ("dials/ccp4io_adaptbx", "master"),
             ("dials/dials", "main"),

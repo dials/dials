@@ -11,7 +11,7 @@ from dxtbx.model.detector_helpers import get_detector_projection_2d_axes
 from dials.algorithms.image.threshold import DispersionThresholdDebug
 from dials.array_family import flex
 from dials.util import Sorry, show_mail_handle_errors
-from dials.util.image_viewer.slip_viewer.tile_generation import (
+from dials.util.image_viewer.slip_viewer.flex_image import (
     get_flex_image,
     get_flex_image_multipanel,
 )

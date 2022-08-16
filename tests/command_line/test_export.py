@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import filecmp
 import json
 
 import procrunner
@@ -409,7 +408,8 @@ def test_json(dials_data, tmp_path):
     assert not result.returncode and not result.stderr
     assert (tmp_path / "rlp.json").is_file()
 
-    d = json.load((tmp_path / "rlp.json").open("rb"))
+    with open(tmp_path / "rlp.json", mode="rb") as fh:
+        d = json.load(fh)
     assert set(d) == {"imageset_id", "experiments", "rlp", "experiment_id"}
     assert d["rlp"][:3] == [0.123413, 0.576679, 0.186326], d["rlp"][:3]
     assert d["imageset_id"][0] == 0
@@ -436,7 +436,8 @@ def test_json_shortened(dials_data, tmp_path):
     assert not result.returncode and not result.stderr
     assert (tmp_path / "integrated.json").is_file()
 
-    d = json.load((tmp_path / "integrated.json").open("rb"))
+    with open(tmp_path / "integrated.json", mode="rb") as fh:
+        d = json.load(fh)
     assert "imageset_id" in d
     assert "rlp" in d
     assert "experiment_id" in d
@@ -586,9 +587,11 @@ def test_pets(dials_data, tmp_path, intensity_choice):
     )
     assert not result.returncode and not result.stderr
     output = tmp_path / (intensity_choice + ".cif_pets")
+    # On windows, \r\n endings are written; but our reference is \n
+    output_data = output.read_bytes().replace(b"\r\n", b"\n")
 
     if intensity_choice == "profile":
         reference = dials_data("quartz_processed", pathlib=True) / "dials_prf.cif_pets"
     else:
         reference = dials_data("quartz_processed", pathlib=True) / "dials_dyn.cif_pets"
-    assert filecmp.cmp(output, reference)
+    assert output_data == reference.read_bytes()

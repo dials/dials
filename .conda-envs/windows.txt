@@ -35,6 +35,7 @@ conda-forge::pyrtf
 conda-forge::pytest>=4.5,<7.0
 conda-forge::pytest-forked
 conda-forge::pytest-mock
+conda-forge::pytest-nunit=1.0.0
 conda-forge::pytest-xdist
 conda-forge::python-dateutil>=2.7.0
 conda-forge::reportlab

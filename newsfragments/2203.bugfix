@@ -1,0 +1,1 @@
+``dev.dials.ssx_index``: Fix edge-case crash when generating plotting data if rmsd values almost all equivalent 

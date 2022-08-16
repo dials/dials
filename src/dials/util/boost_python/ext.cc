@@ -38,7 +38,7 @@ namespace dials { namespace util { namespace boost_python {
   BOOST_PYTHON_MODULE(dials_util_ext) {
     def("scale_down_array", &scale_down_array, (arg("image"), arg("scale_factor")));
 
-    def("dials_u_to_mosflm", &dials_u_to_mosflm, (arg("dials_U"), arg("uc")));
+    def("ub_to_mosflm_u", &ub_to_mosflm_u, (arg("UB"), arg("uc")));
 
     def("add_dials_batches",
         &add_dials_batches,

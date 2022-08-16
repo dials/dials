@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 
 from jinja2 import ChoiceLoader, Environment, PackageLoader
 from orderedset import OrderedSet
@@ -152,7 +153,10 @@ were considered for use when refining the scaling model.
             anom_stats = script.anom_merging_statistics_result
         logger.info(make_merging_statistics_summary(stats))
         try:
-            d_min = resolution_cc_half(stats, limit=0.3).d_min
+            if script.params.cut_data.d_min is None:
+                d_min = resolution_cc_half(stats, limit=0.3).d_min
+            else:
+                d_min = script.params.cut_data.d_min
         except RuntimeError as e:
             logger.debug(f"Resolution fit failed: {e}")
         else:
@@ -238,7 +242,7 @@ def _make_scaling_html(scaling_script):
             f.write(html.encode("utf-8", "xmlcharrefreplace"))
     if json_file:
         logger.info("Writing html report data to %s", json_file)
-        with open(json_file, "w") as outfile:
+        with open(json_file, "w", encoding="utf-8") as outfile:
             json.dump(data, outfile)
 
 
@@ -277,7 +281,9 @@ def print_scaling_model_error_summary(experiments):
                     )
                     p_sigmas.extend(flex.abs(params - null_value) / sigmas)
         log_p_sigmas = flex.log(p_sigmas)
-        frac_high_uncertainty = (log_p_sigmas < 0.69315).count(True) / len(log_p_sigmas)
+        frac_high_uncertainty = (log_p_sigmas < math.log(2)).count(True) / len(
+            log_p_sigmas
+        )
         if frac_high_uncertainty > 0.5:
             msg = (
                 "Warning: Over half ({:.2f}%) of model parameters have significant\n"
@@ -391,29 +397,33 @@ def make_filtering_plots(script):
     return {"filter_plots": {}}
 
 
-def make_merging_stats_plots(script):
+def make_merging_stats_plots(script, run_xtriage_analysis=False, make_batch_plots=True):
     """Make merging stats plots for HTML report"""
     d = {
-        "scaling_tables": ([], []),
+        "scaling_tables": {},
         "resolution_plots": {},
         "batch_plots": {},
         "misc_plots": {},
         "anom_plots": {},
         "image_range_tables": [],
     }
-    (
-        batches,
-        rvb,
-        isigivb,
-        svb,
-        batch_data,
-    ) = reflection_tables_to_batch_dependent_properties(  # pylint: disable=unbalanced-tuple-unpacking
-        script.reflections,
-        script.experiments,
-        script.scaled_miller_array,
-    )
-    bm = batch_manager(batches, batch_data)
-    image_range_tables = make_image_range_table(script.experiments, bm)
+    if make_batch_plots:
+        (
+            batches,
+            rvb,
+            isigivb,
+            svb,
+            batch_data,
+        ) = reflection_tables_to_batch_dependent_properties(  # pylint: disable=unbalanced-tuple-unpacking
+            script.reflections,
+            script.experiments,
+            script.scaled_miller_array,
+        )
+        bm = batch_manager(batches, batch_data)
+        image_range_tables = make_image_range_table(script.experiments, bm)
+        d["image_range_tables"] = [image_range_tables]
+        d["batch_plots"].update(scale_rmerge_vs_batch_plot(bm, rvb, svb))
+        d["batch_plots"].update(i_over_sig_i_vs_batch_plot(bm, isigivb))
 
     if script.merging_statistics_result:
         stats = script.merging_statistics_result
@@ -423,11 +433,10 @@ def make_merging_stats_plots(script):
         plotter = ResolutionPlotsAndStats(stats, anom_stats, is_centric)
         d["resolution_plots"].update(plotter.make_all_plots())
         d["scaling_tables"] = plotter.statistics_tables()
-        d["batch_plots"].update(scale_rmerge_vs_batch_plot(bm, rvb, svb))
-        d["batch_plots"].update(i_over_sig_i_vs_batch_plot(bm, isigivb))
         plotter = IntensityStatisticsPlots(
-            script.scaled_miller_array, run_xtriage_analysis=False
+            script.scaled_miller_array, run_xtriage_analysis=run_xtriage_analysis
         )
+        d["xtriage_output"] = plotter.generate_xtriage_output()
         d["resolution_plots"].update(plotter.generate_resolution_dependent_plots())
         if d["resolution_plots"]["cc_one_half"]["data"][2]:
             cc_anom = d["resolution_plots"]["cc_one_half"]["data"][2]["y"]
@@ -449,5 +458,4 @@ def make_merging_stats_plots(script):
         )
         anom_plotter = AnomalousPlotter(intensities_anom, strong_cutoff=d_min)
         d["anom_plots"].update(anom_plotter.make_plots())
-    d["image_range_tables"] = [image_range_tables]
     return d

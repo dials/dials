@@ -1,0 +1,1 @@
+``dials.scale``: Fix bug in intensity combination scoring for multi-sweep datasets, affecting midpoint test values.

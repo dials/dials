@@ -4,9 +4,10 @@ import logging
 import os
 import random
 import sys
+from collections.abc import Sequence
+from typing import Iterator, TypeVar
 
 import dxtbx.model.compare as compare
-from dxtbx.command_line.image_average import splitit
 from dxtbx.model.experiment_list import (
     BeamComparison,
     DetectorComparison,
@@ -185,6 +186,13 @@ phil_scope = parse(
 """,
     process_includes=True,
 )
+
+T = TypeVar("T")
+
+
+def _split_equal_parts_of_length(a: Sequence[T], n: int) -> Iterator[Sequence[T]]:
+    k, m = divmod(len(a), n)
+    return (a[i * k + min(i, m) : (i + 1) * k + min(i + 1, m)] for i in range(n))
 
 
 def find_experiment_in(experiment, all_experiments):
@@ -406,7 +414,14 @@ class Script:
                 "number of input experiments"
             )
 
-        flat_exps = flatten_experiments(params.input.experiments)
+        try:
+            flat_exps = flatten_experiments(params.input.experiments)
+        except RuntimeError:
+            sys.exit(
+                "Unable to combine experiments. Are experiment IDs unique? "
+                "You may need to run dials.assign_experiment_identifiers first to "
+                "reset IDs."
+            )
 
         ref_beam = params.reference_from_experiment.beam
         ref_goniometer = params.reference_from_experiment.goniometer
@@ -707,7 +722,7 @@ class Script:
             experiments, reflections, exp_name, refl_name, batch_size=1000
         ):
             for i, indices in enumerate(
-                splitit(
+                _split_equal_parts_of_length(
                     list(range(len(experiments))), (len(experiments) // batch_size) + 1
                 )
             ):
@@ -729,7 +744,7 @@ class Script:
                 self._save_output(batch_expts, batch_refls, exp_filename, ref_filename)
 
         # cluster the resulting experiments if requested
-        if params.clustering.use:
+        if params.clustering.use and len(experiments) > 1:
             clustered = do_unit_cell_clustering(
                 experiments,
                 reflections,

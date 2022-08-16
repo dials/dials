@@ -59,7 +59,7 @@ def make_summary_table(results_summary: dict) -> tabulate:
         show_lattices = False
     for k in sorted(results_summary.keys()):
         for j, cryst in enumerate(results_summary[k]):
-            if not cryst["n_indexed"]:
+            if not cryst["n_indexed"] or not cryst["n_strong"]:
                 continue
             n_idx, n_strong = (cryst["n_indexed"], cryst["n_strong"])
             frac_idx = f"{n_idx}/{n_strong} ({100*n_idx/n_strong:2.1f}%)"
@@ -104,8 +104,12 @@ def make_cluster_plots(large_clusters: List[Cluster]) -> dict:
         d_this = cluster_plotter.plot_uc_histograms(uc_params)
         d_this["uc_scatter"]["layout"]["title"] += f" cluster {n+1}"
         d_this["uc_hist"]["layout"]["title"] += f" cluster {n+1}"
+        if "uc_angle_hist" in d_this:
+            d_this["uc_angle_hist"]["layout"]["title"] += f" cluster {n+1}"
         d_this[f"uc_scatter_{n}"] = d_this.pop("uc_scatter")
         d_this[f"uc_hist_{n}"] = d_this.pop("uc_hist")
+        if "uc_angle_hist" in d_this:
+            d_this[f"uc_angle_hist_{n}"] = d_this.pop("uc_angle_hist")
         cluster_plots.update(d_this)
     return cluster_plots
 
@@ -116,10 +120,14 @@ def report_on_crystal_clusters(crystal_symmetries, make_plots=True):
         threshold=5000,
     )
     cluster_plots = {}
+    large_clusters = []
     min_cluster_pc = 5
-    threshold = math.floor((min_cluster_pc / 100) * len(crystal_symmetries))
-    large_clusters = [c for c in clustering.clusters if len(c) > threshold]
-    large_clusters.sort(key=len, reverse=True)
+    if not clustering:  # could happen e.g. if only one unit cell
+        large_clusters = [Cluster(crystal_symmetries)]
+    else:
+        threshold = math.floor((min_cluster_pc / 100) * len(crystal_symmetries))
+        large_clusters = [c for c in clustering.clusters if len(c) > threshold]
+        large_clusters.sort(key=len, reverse=True)
 
     if large_clusters:
         logger.info(
@@ -146,12 +154,14 @@ def generate_plots(summary_data: dict) -> dict:
     rmsd_z_arrays = [np.zeros(len(summary_data))]
     n_total_indexed = np.zeros(len(summary_data))
     n_strong_array = np.zeros(len(summary_data))
-    images = np.arange(1, len(summary_data) + 1)
     n_lattices = 1
 
-    for k in sorted(summary_data.keys()):
+    sorted_keys = sorted(summary_data.keys())
+    images = np.array(sorted_keys)
+
+    for i, k in enumerate(sorted_keys):
         n_lattices_this = len(summary_data[k])
-        n_strong_array[k] = summary_data[k][0]["n_strong"]
+        n_strong_array[i] = summary_data[k][0]["n_strong"]
         for j, cryst in enumerate(summary_data[k]):
             if not cryst["n_indexed"]:
                 continue
@@ -162,11 +172,11 @@ def generate_plots(summary_data: dict) -> dict:
                     rmsd_y_arrays.append(np.zeros(len(summary_data)))
                     rmsd_z_arrays.append(np.zeros(len(summary_data)))
                 n_lattices = n_lattices_this
-            n_indexed_arrays[j][k] = cryst["n_indexed"]
-            rmsd_x_arrays[j][k] = cryst["RMSD_X"]
-            rmsd_y_arrays[j][k] = cryst["RMSD_Y"]
-            rmsd_z_arrays[j][k] = cryst["RMSD_dPsi"]
-            n_total_indexed[k] += cryst["n_indexed"]
+            n_indexed_arrays[j][i] = cryst["n_indexed"]
+            rmsd_x_arrays[j][i] = cryst["RMSD_X"]
+            rmsd_y_arrays[j][i] = cryst["RMSD_Y"]
+            rmsd_z_arrays[j][i] = cryst["RMSD_dPsi"]
+            n_total_indexed[i] += cryst["n_indexed"]
 
     n_indexed_data = [
         {
@@ -275,10 +285,15 @@ def generate_plots(summary_data: dict) -> dict:
     def _generate_hist_data(rmsd_arrays, step=0.01):
         all_rmsd = np.concatenate(rmsd_arrays)
         all_rmsd = all_rmsd[all_rmsd > 0]
+        if len(all_rmsd) == 1:
+            return (
+                np.array([0, 1, 0]),
+                np.array([all_rmsd[0] - step, all_rmsd[0], all_rmsd[0] + step]),
+            )
         mult = int(1 / 0.01)
         start = math.floor(np.min(all_rmsd) * mult) / mult
         stop = math.ceil(np.max(all_rmsd) * mult) / mult
-        nbins = int((stop - start) / step)
+        nbins = max(1, int((stop - start) / step))
         hist, bin_edges = np.histogram(
             all_rmsd,
             bins=nbins,

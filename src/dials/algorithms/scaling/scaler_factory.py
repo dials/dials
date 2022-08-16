@@ -41,8 +41,8 @@ def create_scaler(params, experiments, reflections):
         scaler = SingleScalerFactory.create(params, experiments[0], reflections[0])
     else:
         is_scaled_list = [expt.scaling_model.is_scaled for expt in experiments]
-        # if target mtz/model -> want to do targeted scaling only
-        if params.scaling_options.target_mtz or params.scaling_options.target_model:
+        # if target datafile/model -> want to do targeted scaling only
+        if params.scaling_options.reference:
             # last experiment/refl is target, rest are to scale against this
             scaler = TargetScalerFactory.create_for_target_against_reference(
                 params, experiments, reflections
@@ -273,7 +273,7 @@ class TargetScalerFactory:
 
     @staticmethod
     def create_for_target_against_reference(params, experiments, reflections):
-        """Create TargetScaler for case where have a target_mtz or target_model."""
+        """Create TargetScaler for case where have a reference datafile or model."""
         scaled_scalers = []
         unscaled_scalers = []
         idx_to_remove = []

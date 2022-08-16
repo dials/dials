@@ -11,15 +11,17 @@ from __future__ import annotations
 import json
 import logging
 import math
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 
 import iotbx.phil
-from cctbx import sgtbx
+from cctbx import miller, sgtbx
+from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from libtbx import Auto
 from scitbx import matrix
+from scitbx.array_family import flex
 
 import dials.util
 from dials.algorithms.indexing.symmetry import find_matching_symmetry
@@ -28,6 +30,7 @@ from dials.algorithms.symmetry.cosym import engine as cosym_engine
 from dials.algorithms.symmetry.cosym import target
 from dials.algorithms.symmetry.laue_group import ScoreCorrelationCoefficient
 from dials.util.observer import Subject
+from dials.util.reference import intensities_from_reference_file
 
 logger = logging.getLogger(__name__)
 
@@ -115,14 +118,25 @@ class CosymAnalysis(symmetry_base, Subject):
     the presence of an indexing ambiguity.
     """
 
-    def __init__(self, intensities, params):
+    def __init__(self, intensities, params, seed_dataset: Optional[int] = None):
         """Initialise a CosymAnalysis object.
 
         Args:
           intensities (cctbx.miller.array): The intensities on which to perform
             cosym analysis.
           params (libtbx.phil.scope_extract): Parameters for the analysis.
+          seed_dataset (int): The index into the intensities list to use when
+            choosing a seed dataset for the reindexing analysis (the x,y,z reindex
+            mode will be used for this dataset).
+            If None, a high density cluster point is chosen.
         """
+        self.seed_dataset = seed_dataset
+        if self.seed_dataset:
+            self.seed_dataset = int(self.seed_dataset)
+            assert (
+                0 <= seed_dataset < len(intensities)
+            ), "cosym_analysis: seed_dataset parameter must be an integer that can be used to index the intensities list"
+
         super().__init__(
             intensities,
             normalisation=params.normalisation,
@@ -382,15 +396,22 @@ class CosymAnalysis(symmetry_base, Subject):
         coord_ids = np.arange(n_datasets * n_sym_ops)
         dataset_ids = coord_ids % n_datasets
 
-        # choose a high density point as seed
-        X = coords
-        nbrs = NearestNeighbors(
-            n_neighbors=min(11, len(X)), algorithm="brute", metric="cosine"
-        ).fit(X)
-        distances, indices = nbrs.kneighbors(X)
-        average_distance = np.array([dist[1:].mean() for dist in distances])
-        i = average_distance.argmin()
-        xis = np.array([X[i]])
+        if self.seed_dataset is not None:
+            # if seed dataset was specified, use the reindexing op xyz as seed
+            sel = np.where(dataset_ids == self.seed_dataset)
+            xis = np.array([coords[sel][0]])
+        else:
+            # choose a high density point as seed
+            X = coords
+            nbrs = NearestNeighbors(
+                n_neighbors=min(11, len(X)), algorithm="brute", metric="cosine"
+            ).fit(X)
+            distances, indices = nbrs.kneighbors(X)
+            average_distance = np.array([dist[1:].mean() for dist in distances])
+            i = average_distance.argmin()
+            xis = np.array([X[i]])
+        coordstr = ",".join(str(round(i, 4)) for i in xis[0])
+        logger.debug(f"Coordinate of cluster seed dataset: {coordstr}")
 
         for j in range(n_datasets):
             sel = np.where(dataset_ids == j)
@@ -831,3 +852,36 @@ class ScoreSubGroup:
             "cb_op": f"{self.subgroup['cb_op_inp_best']}",
             "stars": self.stars,
         }
+
+
+def extract_reference_intensities(params: iotbx.phil.scope_extract) -> miller.array:
+    # Extract/calculate a set of intensities from a reference.
+    if params.d_min not in {Auto, None}:
+        reference_intensities = intensities_from_reference_file(
+            params.reference, d_min=params.d_min
+        )
+    else:
+        reference_intensities = intensities_from_reference_file(params.reference)
+    initial_space_group_info = reference_intensities.space_group_info()
+    group = metric_subgroups(
+        reference_intensities.crystal_symmetry(),
+        params.lattice_symmetry_max_delta,
+        enforce_max_delta_for_generated_two_folds=True,
+    ).result_groups[0]
+    ref_cb_op = (
+        group["best_subsym"].change_of_basis_op_to_minimum_cell()
+        * group["cb_op_inp_best"]
+    )
+
+    reference_intensities = (
+        reference_intensities.change_basis(
+            ref_cb_op,
+        )
+        .expand_to_p1()
+        .as_non_anomalous_array()
+        .merge_equivalents()
+        .array()
+    )
+    if not reference_intensities.sigmas():
+        reference_intensities.set_sigmas(flex.double(reference_intensities.size(), 1))
+    return reference_intensities, initial_space_group_info

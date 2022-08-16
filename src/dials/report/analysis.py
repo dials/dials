@@ -249,6 +249,7 @@ def table_1_summary(
     anomalous_statistics=None,
     selected_statistics=None,
     selected_anomalous_statistics=None,
+    Wilson_B_iso=None,
 ):
     """Make a summary table of the merging statistics."""
     text = "\n            -------------Summary of merging statistics--------------           \n\n"
@@ -257,6 +258,7 @@ def table_1_summary(
         anomalous_statistics,
         selected_statistics,
         selected_anomalous_statistics,
+        Wilson_B_iso,
     )
     text += format_statistics(stats)
     return text
@@ -267,6 +269,7 @@ def table_1_stats(
     anomalous_statistics=None,
     selected_statistics=None,
     selected_anomalous_statistics=None,
+    Wilson_B_iso=None,
 ):
     """Extract a statistics dict from merging stats objects"""
     key_to_var = {
@@ -317,6 +320,8 @@ def table_1_stats(
                 stats[key] = values
 
     generate_stats(key_to_var, merging_statistics, selected_statistics)
+    if Wilson_B_iso:
+        stats["Wilson B factor"] = [Wilson_B_iso]
 
     if anomalous_statistics:
         anom_probability_plot = (
