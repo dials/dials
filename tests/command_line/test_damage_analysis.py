@@ -28,7 +28,7 @@ def test_damage_analysis_on_scaled_data(dials_data, run_in_tmp_path):
     assert run_in_tmp_path.joinpath("dials.damage_analysis.json").is_file()
 
 
-def test_damage_analysis_damage_series(dials_data, run_in_tmpdir):
+def test_damage_analysis_damage_series(dials_data, run_in_tmp_path):
     location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
     refls = location / "scaled_20_25.refl"
     expts = location / "scaled_20_25.expt"
@@ -106,7 +106,7 @@ def test_damage_analysis_on_scaled_mtz(dials_data, run_in_tmp_path):
     assert run_in_tmp_path.joinpath("dials.damage_analysis.json").is_file()
 
 
-def test_damage_analysis_mtz_damage_series(dials_data, run_in_tmpdir):
+def test_damage_analysis_mtz_damage_series(dials_data, run_in_tmp_path):
     """Test dials.damage_analysis on scaled data."""
     location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
     refls = location / "scaled_20_25.refl"
@@ -114,12 +114,12 @@ def test_damage_analysis_mtz_damage_series(dials_data, run_in_tmpdir):
 
     # First export the data
     command = ["dials.export", refls, expts]
-    result = procrunner.run(command, working_directory=run_in_tmpdir)
+    result = procrunner.run(command, working_directory=run_in_tmp_path)
     assert not result.returncode and not result.stderr
     assert os.path.isfile("scaled.mtz")
 
     args = [
-        str(run_in_tmpdir / "scaled.mtz"),
+        str(run_in_tmp_path / "scaled.mtz"),
         "anomalous=True",
         "json=dials.damage_analysis.json",
         "dose_group_size=500",
