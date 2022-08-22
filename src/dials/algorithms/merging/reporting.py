@@ -38,6 +38,7 @@ class MergeJSONCollector(object):
 def generate_json_data(data: dict[float, MergingStatisticsData]) -> dict:
     json_data = {}
     for wl, stats in data.items():
+        wl_key = f"{wl:.5f}"
         stats_plots = make_merging_stats_plots(
             stats,
             run_xtriage_analysis=True,
@@ -50,11 +51,15 @@ def generate_json_data(data: dict[float, MergingStatisticsData]) -> dict:
         stats_plots["unit_cell_plots"] = cluster_plotter.plot_uc_histograms(
             uc_params, scatter_style="heatmap"
         )
-        json_data[f"{wl:.5f}"] = stats_plots
+        json_data[wl_key] = stats_plots
         if stats.anomalous_amplitudes:
-            json_data[f"{wl:.5f}"]["resolution_plots"].update(
+            json_data[wl_key]["resolution_plots"].update(
                 make_dano_plots({wl: stats.anomalous_amplitudes})["dF"]
             )
+        json_data[wl_key]["merging_stats"] = stats.merging_statistics_result.as_dict()
+        json_data[wl_key][
+            "merging_stats_anom"
+        ] = stats.anom_merging_statistics_result.as_dict()
     if len(json_data) > 1:
         # create an overall summary table
         headers = [""] + ["Wavelength " + f"{wl:.5f}" + " Å" for wl in data.keys()]
