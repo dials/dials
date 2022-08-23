@@ -1,4 +1,4 @@
-"""Tests for dials.split_experiments when experiment ids are set"""
+"""Tests for dials.split when experiment ids are set"""
 
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ def test_split_chunk_sizes(tmpdir, option, with_identifiers):
 
     result = procrunner.run(
         [
-            "dials.split_experiments",
+            "dials.split",
             tmpdir.join("tmp.expt").strpath,
             tmpdir.join("tmp.refl").strpath,
             option,
@@ -63,7 +63,7 @@ def test_split_chunk_sizes(tmpdir, option, with_identifiers):
 
 
 def test_split_by_wavelength(tmpdir):
-    """Test the split_by_wavelength option of dials.split_experiments"""
+    """Test the split_by_wavelength option of dials.split"""
     experiments = ExperimentList()
     exp = generate_exp(wavelength=1.0)
     exp.identifier = "0"
@@ -82,7 +82,7 @@ def test_split_by_wavelength(tmpdir):
     reflections.as_file(tmpdir.join("tmp.refl").strpath)
 
     result = procrunner.run(
-        ["dials.split_experiments", "tmp.expt", "tmp.refl", "by_wavelength=True"],
+        ["dials.split", "tmp.expt", "tmp.refl", "by_wavelength=True"],
         working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
@@ -109,7 +109,7 @@ def test_split_by_wavelength(tmpdir):
     experiments[1].identifier = ""
     experiments.as_json(tmpdir.join("tmp.expt").strpath)
     result = procrunner.run(
-        ["dials.split_experiments", "tmp.expt", "tmp.refl", "by_wavelength=True"],
+        ["dials.split", "tmp.expt", "tmp.refl", "by_wavelength=True"],
         working_directory=tmpdir,
     )
     assert result.returncode == 1
@@ -122,7 +122,7 @@ def test_split_by_wavelength(tmpdir):
     experiments.as_json(tmpdir.join("tmp.expt").strpath)
     reflections.as_file(tmpdir.join("tmp.refl").strpath)
     result = procrunner.run(
-        ["dials.split_experiments", "tmp.expt", "tmp.refl", "by_wavelength=True"],
+        ["dials.split", "tmp.expt", "tmp.refl", "by_wavelength=True"],
         working_directory=tmpdir,
     )
     assert result.returncode == 1

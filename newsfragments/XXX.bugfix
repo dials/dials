@@ -1,0 +1,1 @@
+rename dials.split_experiments to dials.split as by default it can split both experiments and reflections

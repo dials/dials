@@ -24,7 +24,7 @@ required.
 
 Example::
 
-  dials.split_experiments combined.expt combined.refl
+  dials.split combined.expt combined.refl
 """
 
 
@@ -86,7 +86,7 @@ class Script:
 
         # The script usage
         usage = (
-            "usage: dials.split_experiments [options] [param.phil] "
+            "usage: dials.split [options] [param.phil] "
             "experiments1.expt experiments2.expt reflections1.refl "
             "reflections2.refl..."
         )
