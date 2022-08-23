@@ -1,3 +1,6 @@
+# LIBTBX_SET_DISPATCHER_NAME dials.combine
+# LIBTBX_SET_DISPATCHER_NAME dials.combine_experiments
+
 from __future__ import annotations
 
 import logging
@@ -44,7 +47,7 @@ combinations of experiments can be created by repeat runs.
 
 Examples::
 
-  dials.combine_experiments experiments_0.expt experiments_1.expt \\
+  dials.combine experiments_0.expt experiments_1.expt \\
     reflections_0.refl reflections_1.refl \\
     reference_from_experiment.beam=0 \\
     reference_from_experiment.detector=0
