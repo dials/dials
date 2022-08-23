@@ -1,6 +1,3 @@
-# LIBTBX_SET_DISPATCHER_NAME dials.combine
-# LIBTBX_SET_DISPATCHER_NAME dials.combine_experiments
-
 from __future__ import annotations
 
 import logging

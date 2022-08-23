@@ -1,6 +1,3 @@
-# LIBTBX_SET_DISPATCHER_NAME dials.split
-# LIBTBX_SET_DISPATCHER_NAME dials.split_experiments
-
 from __future__ import annotations
 
 import functools
