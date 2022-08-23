@@ -1,1 +1,1 @@
-Rename dials.split_experiments to dials.split as by default it can split both experiments and reflections, and likewise for combine_experiments. Leave alias in place to old program names.
+``dials.split_experiments`` is now called ``dials.split``, and ``dials.combine_experiments`` is now called ``dials.combine``, as they can work on both experiments and reflections. The old names are now deprecated.

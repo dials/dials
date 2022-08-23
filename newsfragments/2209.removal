@@ -1,0 +1,1 @@
+``dials.split_experiments`` and ``dials.combine_experiments`` are now deprecated. Please use the new names ``dials.split`` and ``dials.combine`` instead.
