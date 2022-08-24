@@ -156,28 +156,26 @@ def work_all(
             pyplot.savefig("spot_count.png")
 
 
-def stop(host, port, nproc):
-    stopped = 0
-    for j in range(nproc):
-        try:
-            url_request = urllib.request.Request(f"http://{host}:{port}/Ctrl-C")
-            socket = urllib.request.urlopen(url_request, None, 3)
-            if socket.getcode() == "200":
-                stopped = stopped + 1
-            else:
-                print("socket returned code", socket.getcode())
-        except (pysocket.timeout, urllib.error.HTTPError) as e:
-            print("error on stopping server:", e)
-        except urllib.error.URLError as e:
-            if e.reason.errno != 111:
-                print("error on stopping server:", e)
-        except pysocket.error:
-            # Assuming this means the server killed itself before the reply left the send buffer.
-            stopped = stopped + 1
-        except http.client.BadStatusLine:
-            # Regular occurrence. Probably means the server stopped anyway.
-            stopped = stopped + 1
-    return stopped
+def stop(host, port):
+    try:
+        url_request = urllib.request.Request(f"http://{host}:{port}/Ctrl-C")
+        socket = urllib.request.urlopen(url_request, None, 3)
+        if int(socket.getcode()) == 200:
+            return True
+        else:
+            print("Error: Socket returned code", socket.getcode())
+    except (pysocket.timeout, urllib.error.HTTPError) as e:
+        print("Error on stopping server:", e)
+    except urllib.error.URLError as e:
+        if e.reason.errno != 111:
+            print("Error on stopping server:", e)
+    except pysocket.error:
+        # Assuming this means the server killed itself before the reply left the send buffer.
+        print("pysocket error closing server")
+        return True
+    except http.client.BadStatusLine:
+        print('Error "BadStatusLine" closing server')
+    return
 
 
 phil_scope = libtbx.phil.parse(
@@ -233,8 +231,8 @@ def run(args=None):
         nproc = params.nproc
 
     if len(unhandled) and unhandled[0] == "stop":
-        stopped = stop(params.host, params.port, params.nproc)
-        print("Stopped %d findspots processes" % stopped)
+        if stop(params.host, params.port):
+            print("Successfully sent server stop message.")
     elif len(unhandled) and unhandled[0] == "ping":
         url = "http://%s:%i" % (params.host, params.port)
         try:
