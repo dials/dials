@@ -1,1 +1,0 @@
-``dev.dials.ssx_integrate``: Fix divergent refinement bug when n_macro_cycles > 1.
