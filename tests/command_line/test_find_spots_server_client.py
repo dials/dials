@@ -62,7 +62,7 @@ def test_find_spots_server_client(dials_data, tmp_path, server_port):
 
 
 def wait_for_server(port, max_wait=20):
-    print(f"Waiting up to {max_wait} seconds for server to start")
+    print(f"Waiting up to {max_wait} seconds for server :{port} to start")
     server_ok = False
     start_time = timeit.default_timer()
     max_time = start_time + max_wait
@@ -77,7 +77,7 @@ def wait_for_server(port, max_wait=20):
             # ignore connection failures (111 connection refused on linux; 61 connection refused on mac)
             time.sleep(0.1)
     if not server_ok:
-        raise Exception("Server failed to start after %d seconds" % max_wait)
+        raise RuntimeError("Server failed to start after %d seconds" % max_wait)
     print(
         "dials.find_spots_server up after %f seconds"
         % (timeit.default_timer() - start_time)

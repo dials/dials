@@ -223,7 +223,6 @@ def run(args=None):
         args, custom_processor="collect_remaining"
     )
     params = params.extract()
-
     if params.nproc is libtbx.Auto:
         nproc = None
         params.nproc = 1024
@@ -237,10 +236,10 @@ def run(args=None):
         url = "http://%s:%i" % (params.host, params.port)
         try:
             _ = urllib.request.urlopen(url).read()
-            print("Success")
+            print("Ping reports success.")
             sys.exit(0)
-        except Exception:
-            print("Failure")
+        except Exception as e:
+            print("Ping reports failure:", e)
             sys.exit(1)
     else:
         if len(filenames) == 1:
