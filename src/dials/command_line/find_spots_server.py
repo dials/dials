@@ -304,6 +304,9 @@ class handler(http.server.BaseHTTPRequestHandler):
         if self.path == "/":
             self.send_response(200)
             self.end_headers()
+            self.wfile.write(
+                b'{"error": "Usage: http://server:port/path/to/image/file.cbf"}\n'
+            )
             return
 
         if self.path == "/Ctrl-C":
