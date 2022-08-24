@@ -25,7 +25,7 @@ def server_port(tmp_path) -> int:
     # Start the server
     server_command = ["dials.find_spots_server", f"port={port}", "nproc=3"]
     p = subprocess.Popen(server_command, cwd=tmp_path)
-    wait_for_server(port)
+    wait_for_server(port, p)
     yield port
     p.terminate()
     p.wait(timeout=3)
@@ -61,23 +61,35 @@ def test_find_spots_server_client(dials_data, tmp_path, server_port):
         assert not result.returncode and not result.stderr
 
 
-def wait_for_server(port, max_wait=20):
+def wait_for_server(port, server_process: subprocess.Popen, max_wait=20):
     print(f"Waiting up to {max_wait} seconds for server :{port} to start")
     server_ok = False
     start_time = timeit.default_timer()
     max_time = start_time + max_wait
-    while (timeit.default_timer() < max_time) and not server_ok:
+    while (
+        (timeit.default_timer() < max_time)
+        and not server_ok
+        and server_process.poll() is None
+    ):
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect(("127.0.0.1", port))
             server_ok = True
+            break
         except OSError as e:
             if (e.errno != 111) and (e.errno != 61):
                 raise
             # ignore connection failures (111 connection refused on linux; 61 connection refused on mac)
             time.sleep(0.1)
-    if not server_ok:
+    if not server_ok and server_process.poll() is not None:
+        # The server closed
+        raise RuntimeError(
+            f"Server terminated early without starting after {timeit.default_timer()-start_time:.2f} seconds."
+        )
+    elif not server_ok:
+        # The server didn't close, but we didn't get a connection
         raise RuntimeError("Server failed to start after %d seconds" % max_wait)
+
     print(
         "dials.find_spots_server up after %f seconds"
         % (timeit.default_timer() - start_time)
