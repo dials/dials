@@ -299,6 +299,13 @@ class handler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         """Respond to a GET request."""
+
+        # Special case - no arguments, just an empty ping
+        if self.path == "/":
+            self.send_response(200)
+            self.end_headers()
+            return
+
         if self.path == "/Ctrl-C":
             self.send_response(200)
             self.end_headers()
