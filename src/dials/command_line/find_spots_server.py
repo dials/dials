@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import http.server as server_base
+import http.server
 import json
 import logging
 import multiprocessing
@@ -73,7 +73,7 @@ To stop the server::
   dials.find_spots_client stop [host=hostname] [port=1234]
 """
 
-stop = False
+stop = multiprocessing.Event()
 
 
 def _filter_by_resolution(experiments, reflections, d_min=None, d_max=None):
@@ -293,15 +293,17 @@ indexing_min_spots = 10
     return stats
 
 
-class handler(server_base.BaseHTTPRequestHandler):
+class handler(http.server.BaseHTTPRequestHandler):
+
+    stop_event = multiprocessing.Event()
+
     def do_GET(self):
         """Respond to a GET request."""
         if self.path == "/Ctrl-C":
             self.send_response(200)
             self.end_headers()
 
-            global stop
-            stop = True
+            self.stop_event.set()
             return
 
         filename = self.path.split(";")[0]
@@ -328,12 +330,13 @@ class handler(server_base.BaseHTTPRequestHandler):
         self.wfile.write(response)
 
 
-def serve(httpd):
+def serve(httpd: http.server.HTTPServer) -> None:
     try:
-        while not stop:
+        while not httpd.RequestHandlerClass.stop_event.is_set():
             httpd.handle_request()
     except KeyboardInterrupt:
-        pass
+        # We got the signal... stop the collective
+        httpd.RequestHandlerClass.stop_event.set()
 
 
 phil_scope = libtbx.phil.parse(
@@ -347,15 +350,18 @@ port = 1701
 
 
 def main(nproc, port):
-    server_class = server_base.HTTPServer
-    httpd = server_class(("", port), handler)
+    httpd = http.server.HTTPServer(("", port), handler)
     print(time.asctime(), "Serving %d processes on port %d" % (nproc, port))
 
-    for j in range(nproc - 1):
+    for _ in range(nproc - 1):
         proc = multiprocessing.Process(target=serve, args=(httpd,))
         proc.daemon = True
         proc.start()
-    serve(httpd)
+    try:
+        handler.stop_event.wait()
+    except KeyboardInterrupt:
+        handler.stop_event.set()
+
     httpd.server_close()
     print(time.asctime(), "done")
 
@@ -366,7 +372,11 @@ def run(args=None):
 
     # Python 3.8 on macOS... needs fork
     if sys.hexversion >= 0x3080000 and sys.platform == "darwin":
-        multiprocessing.set_start_method("fork")
+        try:
+            multiprocessing.set_start_method("fork")
+        except RuntimeError as e:
+            if "context has already been set" not in str(e):
+                raise
 
     parser = ArgumentParser(usage=usage, phil=phil_scope, epilog=help_message)
     params, options = parser.parse_args(args, show_diff_phil=True)
