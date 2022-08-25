@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 import pickle
 import sys
-import warnings
 from collections import namedtuple
 
 import dxtbx.model.compare as compare
@@ -941,37 +940,6 @@ def do_import(
 @show_mail_handle_errors()
 def run(args=None, *, phil=phil_scope):
     do_import(args, phil=phil, configure_logging=True)
-
-
-class ImageImporter:
-    def __init__(self, phil=phil_scope) -> None:
-        # Deprecated: Remove after August 2022
-        warnings.warn(
-            "ImageImporter class is deprecated. Please use dials.command_line.dials_import.do_import instead",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        self._phil = phil
-
-    def import_image(self, args=None):
-        configure_logging = __name__ == "__main__"
-        return do_import(args, phil=self._phil, configure_logging=configure_logging)
-
-    @staticmethod
-    def print_sequence_diff(*args, **kwargs):
-        return print_sequence_diff(*args, **kwargs)
-
-    @staticmethod
-    def diagnose_multiple_sequences(*args, **kwargs):
-        return diagnose_multiple_sequences(*args, **kwargs)
-
-    @staticmethod
-    def write_experiments(*args, **kwargs):
-        return write_experiments(*args, **kwargs)
-
-    @staticmethod
-    def assert_single_sequence(*args, **kwargs):
-        return assert_single_sequence(*args, **kwargs)
 
 
 if __name__ == "__main__":

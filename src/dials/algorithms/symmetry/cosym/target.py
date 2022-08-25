@@ -5,7 +5,6 @@ from __future__ import annotations
 import copy
 import itertools
 import logging
-import warnings
 
 import numpy as np
 import pandas as pd
@@ -33,7 +32,6 @@ class Target:
         min_pairs=3,
         lattice_group=None,
         dimensions=None,
-        nproc=None,
     ):
         r"""Initialise a Target object.
 
@@ -57,11 +55,7 @@ class Target:
             in the analysis. If not set, then the number of dimensions used is
             equal to the greater of 2 or the number of symmetry operations in the
             lattice group.
-          nproc (int): Deprecated
         """
-        if nproc is not None:
-            warnings.warn("nproc is deprecated", UserWarning)
-
         if weights is not None:
             assert weights in ("count", "standard_error")
         self._weights = weights
@@ -371,15 +365,3 @@ class Target:
             x[i] += eps  # reset to original values
             curvs[i] += (fm - 2 * f + fp) / (eps**2)
         return curvs
-
-    def get_sym_ops(self):
-        """Get the list of symmetry operations used in the analysis.
-
-        Returns:
-          List[cctbx.sgtbx.rt_mx]: The list of symmetry operations.
-        """
-        warnings.warn(
-            "get_sym_ops() is deprecated, use sym_ops property instead",
-            UserWarning,
-        )
-        return self.sym_ops
