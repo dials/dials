@@ -9,7 +9,19 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+import warnings
 from multiprocessing.pool import ThreadPool
+
+try:
+    import colorama
+
+    YELLOW = colorama.Fore.YELLOW
+    NC = colorama.Style.RESET_ALL
+except ImportError:
+    YELLOW = ""
+    NC = ""
+else:
+    colorama.init()
 
 import libtbx.phil
 from dxtbx.model.crystal import CrystalFactory
@@ -264,4 +276,14 @@ def run(args=None):
 
 
 if __name__ == "__main__":
-    run()
+    print(
+        f"\n{YELLOW}Warning: dials.find_spots_client is now deprecated and will be removed in a future release.\n\n{NC}",
+        file=sys.stderr,
+    )
+    run()  # noqa: F405
+else:
+    warnings.warn(
+        "dials.command_line.find_spots_client is deprecated and will be removed in a future release.",
+        UserWarning,
+        stacklevel=1,
+    )
