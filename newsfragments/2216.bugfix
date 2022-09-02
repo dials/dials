@@ -1,0 +1,1 @@
+Revert default installation to Python 3.9, to avoid WXPython incompatibilities.
