@@ -1,3 +1,12 @@
+DIALS 3.11.1 (2022-09-02)
+=========================
+
+Bugfixes
+--------
+
+- Revert default installation to Python 3.9, to avoid WXPython incompatibilities. (`#2216 <https://github.com/dials/dials/issues/2216>`_)
+
+
 DIALS 3.11.0 (2022-08-24)
 =========================
 
