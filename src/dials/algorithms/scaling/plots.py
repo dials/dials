@@ -21,7 +21,7 @@ def _get_smooth_plotting_data_from_model(model, component="scale"):
     """Return a tuple of phis, parameters, parameter esds,
     sample positions for plotting and sample scale values."""
     valid_osc = model.configdict["valid_osc_range"]
-    if model.id_ == "physical":
+    if model.id_ in {"physical", "analytical_absorption"}:
         sample_values = flex.double(
             np.linspace(
                 valid_osc[0],
@@ -199,7 +199,7 @@ def _add_decay_model_scales_to_data(model, data, yaxis="y", resolution=3.0):
     configdict = model.configdict
     valid_osc = configdict["valid_osc_range"]
 
-    if model.id_ == "physical":
+    if model.id_ in {"physical", "analytical_absorption"}:
         sample_values = flex.double(
             np.linspace(
                 valid_osc[0],
