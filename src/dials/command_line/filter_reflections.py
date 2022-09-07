@@ -96,6 +96,7 @@ phil_str = """
     remove_by_index = None
       .type = ints(value_min=0)
       .help = "Remove reflections by row index in the table"
+      .expert_level = 6
 
     dead_time
     {
